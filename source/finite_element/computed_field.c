@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 10 May 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -1272,7 +1272,7 @@ Must call Computed_field_end_wrap to clean up the returned field after use.
 	ENTER(Computed_field_begin_wrap_orientation_scale_field);
 	if (orientation_scale_field&&coordinate_field&&
 		Computed_field_is_orientation_scale_capable(orientation_scale_field,NULL)&&
-		Computed_field_has_1_to_3_components(coordinate_field,NULL))
+		Computed_field_has_up_to_3_numerical_components(coordinate_field,NULL))
 	{
 		coordinate_system_type=get_coordinate_system_type(
 			&(orientation_scale_field->coordinate_system));
@@ -1426,7 +1426,7 @@ Only certain field types require a special implementation of this function.
 int Computed_field_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element)
 /*******************************************************************************
-LAST MODIFIED :  29 October  1999
+LAST MODIFIED : 29 October 1999
 
 DESCRIPTION :
 Returns true if <field> can be calculated in <element>. If the field depends on
@@ -1482,6 +1482,60 @@ any other fields, this function is recursively called for them.
 
 	return (return_code);
 } /* Computed_field_is_defined_in_element */
+
+int Computed_field_is_defined_in_element_conditional(
+	struct Computed_field *field,void *element_void)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Manager conditional function version of Computed_field_is_defined_in_element.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_defined_in_element_conditional);
+	return_code=Computed_field_is_defined_in_element(field,
+		(struct FE_element *)element_void);
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_defined_in_element_conditional */
+
+int Computed_field_is_scalar_integer_grid_in_element(
+	struct Computed_field *field,void *element_void)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2000
+
+DESCRIPTION :
+Returns true if <field> has a 1 integer component FINITE_ELEMENT wrapper which
+is defined in <element> AND is grid-based.
+Used for choosing field suitable for identifying grid points.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element *element;
+
+	ENTER(Computed_field_is_scalar_integer_grid_in_element);
+	if (field&&(element=(struct FE_element *)element_void))
+	{
+		return_code=
+			(1==field->number_of_components)&&
+			(COMPUTED_FIELD_FINITE_ELEMENT==field->type)&&
+			(INT_VALUE==get_FE_field_value_type(field->fe_field))&&
+			Computed_field_is_defined_in_element(field,element)&&
+			FE_element_field_is_grid_based(element,field->fe_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_scalar_integer_grid_in_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_scalar_integer_grid_in_element */
 
 int Computed_field_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node)
@@ -2600,11 +2654,97 @@ currently cached field/node are not already correct before finding a new one.
 	return (return_code);
 } /* Computed_field_get_default_coordinate_source_field_in_element */
 
+static int Computed_field_calculate_FE_element_field_values_for_element(
+	struct Computed_field *field,int calculate_derivatives,
+	struct FE_element *element,struct FE_element *top_level_element)
+/*******************************************************************************
+LAST MODIFIED : 24 May 2000
+
+DESCRIPTION :
+Establishes the FE_element_field values necessary for evaluating <field>, which
+must be of type COMPUTED_FIELD_FINITE_ELEMENT. <calculate_derivatives> flag
+controls whether basis functions for derivatives are also evaluated. If <field>
+is already set up in the correct way, does nothing.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_calculate_FE_element_field_values_for_element);
+	if (field&&(COMPUTED_FIELD_FINITE_ELEMENT==field->type)&&element)
+	{
+		return_code=1;
+		/* clear the cache if values already cached for a node */
+		if (field->node)
+		{
+			Computed_field_clear_cache(field);
+		}
+		/* ensure we have FE_element_field_values for element, with
+			 derivatives_calculated if requested */
+		if ((!field->fe_element_field_values)||
+			(!FE_element_field_values_are_for_element(
+				field->fe_element_field_values,element,top_level_element))||
+			(calculate_derivatives&&
+				(!field->fe_element_field_values->derivatives_calculated)))
+		{
+			if (!field->fe_element_field_values)
+			{
+				if (ALLOCATE(field->fe_element_field_values,
+					struct FE_element_field_values,1))
+				{
+					/* clear element to indicate that values are clear */
+					field->fe_element_field_values->element=
+						(struct FE_element *)NULL;
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			else
+			{
+				if (field->fe_element_field_values->element)
+				{
+					/* following clears fe_element_field_values->element */
+					clear_FE_element_field_values(field->fe_element_field_values);
+				}
+			}
+			if (return_code)
+			{
+				/* note that FE_element_field_values accesses the element */
+				if (!calculate_FE_element_field_values(element,field->fe_field,
+					calculate_derivatives,field->fe_element_field_values,
+					top_level_element))
+				{
+					/* clear element to indicate that values are clear */
+					field->fe_element_field_values->element=(struct FE_element *)NULL;
+					return_code=0;
+				}
+			}
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_calculate_FE_element_field_values_for_element.  "
+				"Failed");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_calculate_FE_element_field_values_for_element.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_calculate_FE_element_field_values_for_element */
+
 static int Computed_field_evaluate_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
 	struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
 Calculates the values and derivatives (if <calculate_derivatives> set) of
@@ -2799,48 +2939,9 @@ is avoided.
 					{
 						/* ensure we have FE_element_field_values for element, with
 							 derivatives_calculated if requested */
-						if ((!field->fe_element_field_values)||
-							(!FE_element_field_values_are_for_element(
-								field->fe_element_field_values,element,top_level_element))||
-							(calculate_derivatives&&
-								(!field->fe_element_field_values->derivatives_calculated)))
-						{
-							if (!field->fe_element_field_values)
-							{
-								if (ALLOCATE(field->fe_element_field_values,
-									struct FE_element_field_values,1))
-								{
-									/* clear element to indicate that values are clear */
-									field->fe_element_field_values->element=
-										(struct FE_element *)NULL;
-								}
-								else
-								{
-									return_code=0;
-								}
-							}
-							else
-							{
-								if (field->fe_element_field_values->element)
-								{
-									/* following clears fe_element_field_values->element */
-									clear_FE_element_field_values(field->fe_element_field_values);
-								}
-							}
-							if (return_code)
-							{
-								/* note that FE_element_field_values accesses the element */
-								if (!calculate_FE_element_field_values(element,field->fe_field,
-									calculate_derivatives,field->fe_element_field_values,
-									top_level_element))
-								{
-									/* clear element to indicate that values are clear */
-									field->fe_element_field_values->element=
-										(struct FE_element *)NULL;
-									return_code=0;
-								}
-							}
-						}
+						return_code=
+							Computed_field_calculate_FE_element_field_values_for_element(
+								field,calculate_derivatives,element,top_level_element);
 					} break;
 					case COMPUTED_FIELD_CURL:
 					case COMPUTED_FIELD_DIVERGENCE:
@@ -3679,10 +3780,88 @@ is avoided.
 	return (return_code);
 } /* Computed_field_evaluate_cache_in_element */
 
+char *Computed_field_evaluate_component_as_string_in_element(
+	struct Computed_field *field,int component_number,
+	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Returns a string representing the value of <field>.<component_number> at
+<element>:<xi>. If <field> is a FINITE_ELEMENT wrapper without a value type of
+FE_VALUE_VALUE, requests the string from it, otherwise calls
+Computed_field_evaluate_cache_in_element and converts the value for
+<component_number> to a string (since result may already be in cache).
+
+The <top_level_element> parameter has the same use as in
+Computed_field_evaluate_cache_in_element.
+
+Some basic field types such as CMISS_NUMBER have special uses in this function.
+It is up to the calling function to DEALLOCATE the returned string.
+???RC.  Allow derivatives to be evaluated as string too?
+==============================================================================*/
+{
+	char *return_string,tmp_string[50];
+
+	ENTER(Computed_field_evaluate_component_as_string_in_element);
+	return_string=(char *)NULL;
+	if (field&&element&&xi&&(0<=component_number)&&
+		(component_number < field->number_of_components))
+	{
+		if ((COMPUTED_FIELD_FINITE_ELEMENT==field->type)&&
+			(FE_VALUE_VALUE != get_FE_field_value_type(field->fe_field)))
+		{
+			/* ensure we have FE_element_field_values for element, without
+				 requiring derivatives to be calculated  */
+			if (Computed_field_calculate_FE_element_field_values_for_element(
+				field,/*calculate_derivatives*/0,element,top_level_element))
+			{
+				calculate_FE_element_field_as_string(component_number,
+					field->fe_element_field_values,xi,&return_string);
+			}
+		}
+		else
+		{
+			if (COMPUTED_FIELD_CMISS_NUMBER==field->type)
+			{
+				/* put out the cmiss number as a string */
+				sprintf(tmp_string,"%d",element->cm.number);
+				return_string=duplicate_string(tmp_string);
+			}
+			else
+			{
+				/* write the component value in %g format */
+				if (Computed_field_evaluate_cache_in_element(field,element,xi,
+					top_level_element,/*calculate_derivatives*/0))
+				{
+					sprintf(tmp_string,"%g",field->values[component_number]);
+					return_string=duplicate_string(tmp_string);
+				}
+			}
+		}
+		if (!return_string)
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_evaluate_component_as_string_in_element.  Failed");
+			/* clear the cache since values may be half set */
+			Computed_field_clear_cache(field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_component_as_string_in_element.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Computed_field_evaluate_component_as_string_in_element */
+
 char *Computed_field_evaluate_as_string_in_element(struct Computed_field *field,
 	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 17 October 1999
+LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
 Returns a string describing the value/s of the <field> at <element>:<xi>. If the
@@ -3701,7 +3880,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 ==============================================================================*/
 {
 	char *return_string,tmp_string[50];
-	int error,i,return_code;
+	int error,i;
 
 	ENTER(Computed_field_evaluate_as_string_in_element);
 	return_string=(char *)NULL;
@@ -3710,63 +3889,13 @@ It is up to the calling function to DEALLOCATE the returned string.
 		if ((COMPUTED_FIELD_FINITE_ELEMENT==field->type)&&
 			(FE_VALUE_VALUE != get_FE_field_value_type(field->fe_field)))
 		{
-			return_code=1;
-			/*???RC this code from Computed_field_evaluate_cache_in_element */
-			/* handle separately since can have types other than FE_value */
-			/* clear the cache if values already cached for a node */
-			if (field->node)
-			{
-				Computed_field_clear_cache(field);
-			}
-			/* ensure element_field_values are calculated for fe_field in element */
-			if (field->element != element)
-			{
-				/* ensure we have FE_element_field_values for element, with
-					 derivatives_calculated if requested */
-				if ((!field->fe_element_field_values)||
-					(!FE_element_field_values_are_for_element(
-						field->fe_element_field_values,element,top_level_element)))
-				{
-					if (!field->fe_element_field_values)
-					{
-						if (ALLOCATE(field->fe_element_field_values,
-							struct FE_element_field_values,1))
-						{
-							/* clear element to indicate that values are clear */
-							field->fe_element_field_values->element=
-								(struct FE_element *)NULL;
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
-					else
-					{
-						if (field->fe_element_field_values->element)
-						{
-							/* following clears fe_element_field_values->element */
-							clear_FE_element_field_values(field->fe_element_field_values);
-						}
-					}
-					if (return_code)
-					{
-						/* note that FE_element_field_values accesses the element */
-						if (!calculate_FE_element_field_values(element,field->fe_field,
-							/*calculate_derivatives*/0,field->fe_element_field_values,
-							top_level_element))
-						{
-							/* clear element to indicate that values are clear */
-							field->fe_element_field_values->element=(struct FE_element *)NULL;
-							return_code=0;
-						}
-					}
-				}
-			}
-			if (return_code)
+			/* ensure we have FE_element_field_values for element, without
+				 requiring derivatives to be calculated  */
+			if (Computed_field_calculate_FE_element_field_values_for_element(
+				field,/*calculate_derivatives*/0,element,top_level_element))
 			{
 				/* component_number of -1 = all components */
-				return_code=calculate_FE_element_field_as_string(/*component_number*/-1,
+				calculate_FE_element_field_as_string(/*component_number*/-1,
 					field->fe_element_field_values,xi,&return_string);
 			}
 		}
@@ -6803,6 +6932,301 @@ The calling function must not deallocate the returned string.
 	return (field_type_string);
 } /* Computed_field_type_to_string */
 
+int Computed_field_has_numerical_components(struct Computed_field *field,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 24 May 2000
+
+DESCRIPTION :
+Conditional function returning true if <field> returns numerical components.
+Note that whether the numbers were integer, FE_value or double, they may be
+returned as FE_value when evaluated.
+#### Must ensure implemented correctly for new Computed_field_type. ####
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_has_numerical_components);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		switch (field->type)
+		{
+			case COMPUTED_FIELD_EMBEDDED:
+			{
+				return_code=Computed_field_has_numerical_components(
+					field->source_fields[0],(void *)NULL);
+			} break;
+			case COMPUTED_FIELD_FINITE_ELEMENT:
+			case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
+			case COMPUTED_FIELD_NODE_VALUE:
+			{
+				return_code=Value_type_is_numeric_simple(
+					get_FE_field_value_type(field->fe_field));
+			} break;
+			default:
+			{
+				return_code=1;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_has_numerical_components.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_has_numerical_components */
+
+int Computed_field_is_scalar(struct Computed_field *field,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Conditional function returning true if <field> has 1 component and it is
+numerical.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_scalar);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		return_code=(1 == field->number_of_components)&&
+			Computed_field_has_numerical_components(field,(void *)NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Computed_field_is_scalar.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_scalar */
+
+int Computed_field_has_up_to_3_numerical_components(
+	struct Computed_field *field,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Conditional function returning true if <field> has up to 3 components and they
+are numerical - useful for selecting vector/coordinate fields.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_has_up_to_3_numerical_components);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		return_code=(3 >= field->number_of_components)&&
+			Computed_field_has_numerical_components(field,(void *)NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_has_up_to_3_numerical_components.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_has_up_to_3_numerical_components */
+
+int Computed_field_has_up_to_4_numerical_components(
+	struct Computed_field *field,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Conditional function returning true if <field> has up to 4 components and they
+are numerical - useful for selecting vector/coordinate fields.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_has_up_to_4_numerical_components);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		return_code=(4 >= field->number_of_components)&&
+			Computed_field_has_numerical_components(field,(void *)NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_has_up_to_4_numerical_components.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_has_up_to_4_numerical_components */
+
+int Computed_field_has_at_least_2_components(struct Computed_field *field,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 16 March 1999
+
+DESCRIPTION :
+Iterator/conditional function returning true if <field> has at least 2 components.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_has_at_least_2_components);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		return_code=(2 <= field->number_of_components);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_has_at_least_2_components.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_has_at_least_2_components */
+
+int Computed_field_has_4_components(struct Computed_field *field,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 11 March 1999
+
+DESCRIPTION :
+Iterator/conditional function returning true if <field> has exactly four
+components - useful for selecting vector/coordinate fields.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_has_4_components);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		return_code=(4 == field->number_of_components);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_has_4_components.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_has_4_components */
+
+int Computed_field_is_of_type(struct Computed_field *field,
+	void *computed_field_type_void)
+/*******************************************************************************
+LAST MODIFIED : 1 December 1999
+
+DESCRIPTION :
+Returns true if the <field> is of the given <computed_field_type>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_of_type);
+	if (field)
+	{
+		return_code=
+			(enum Computed_field_type)computed_field_type_void == field->type;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_of_type.  Missing field");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_of_type */
+
+int Computed_field_is_orientation_scale_capable(struct Computed_field *field,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 12 February 1999
+
+DESCRIPTION :
+Conditional function returning true if the field can be used to orient or scale
+glyphs. Generally, this means it has 1,2,3,4,6 or 9 components, where:
+1 = scalar (no vector, isotropic scaling).
+2 = 1 2-D vector (2nd axis is normal in plane, 3rd is out of 2-D plane);
+3 = 1 3-D vector (orthogonal 2nd and 3rd axes are arbitrarily chosen);
+4 = 2 2-D vectors (3rd axis taken as out of 2-D plane);
+6 = 2 3-D vectors (3rd axis found from cross product);
+9 = 3 3-D vectors = complete definition of 3 axes.
+???RC.  Include coordinate system in test?
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_orientation_scale_capable);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		return_code=(
+			(1==field->number_of_components)||(2==field->number_of_components)||
+			(3==field->number_of_components)||(4==field->number_of_components)||
+			(6==field->number_of_components)||(9==field->number_of_components));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_orientation_scale_capable.  Missing field");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_orientation_scale_capable */
+
+int Computed_field_is_stream_vector_capable(struct Computed_field *field,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 15 March 1999
+
+DESCRIPTION :
+Conditional function returning true if the field is suitable for 3-D streamline
+tracking. This means it has either 3, 6 or 9 components (with 3 components per
+vector), or has a FIBRE coordinate_system, meaning it can be wrapped to produce
+9-component fibre_axes.
+The number of components controls how the field is interpreted:
+3 = 1 3-D vector (lateral direction and normal worked out from curl of field);
+6 = 2 3-D vectors (2nd vector is lateral direction. Stream ribbon normal found
+    from cross product);
+9 = 3 3-D vectors (2nd vector is lateral direction; 3rd vector is stream ribbon
+    normal).
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_stream_vector_capable);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		return_code=((3==field->number_of_components)||
+			(6==field->number_of_components)||(9==field->number_of_components)||
+			((3>=field->number_of_components)&&
+				(FIBRE==get_coordinate_system_type(&(field->coordinate_system)))));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_stream_vector_capable.  Missing field");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_stream_vector_capable */
+
 int Computed_field_get_type_2D_strain(struct Computed_field *field,
 	struct Computed_field **deformed_coordinate_field,
 	struct Computed_field **undeformed_coordinate_field,
@@ -8783,7 +9207,7 @@ Use function Computed_field_get_type to determine the field type.
 int Computed_field_set_type_finite_element(struct Computed_field *field,
 	struct FE_field *fe_field)
 /*******************************************************************************
-LAST MODIFIED : 31 August 1999
+LAST MODIFIED : 22 May 2000
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_FINITE_ELEMENT, wrapping the given
@@ -8792,7 +9216,6 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	enum Value_type value_type;
 	int return_code;
 
 	ENTER(Computed_field_set_type_finite_element);
@@ -8804,24 +9227,7 @@ although its cache may be lost.
 		Computed_field_clear_type(field);
 		/* 3. establish the new type */
 		field->type=COMPUTED_FIELD_FINITE_ELEMENT;
-		/* if the value_type of the fe_field is not numerical then the number of
-			 components from this computed field is zero */
-		value_type=get_FE_field_value_type(fe_field);
-		switch (value_type)
-		{
-			case DOUBLE_VALUE:
-			case FE_VALUE_VALUE:
-			case FLT_VALUE:
-			case INT_VALUE:
-			{
-				field->number_of_components =
-					get_FE_field_number_of_components(fe_field);
-			} break;
-			default:
-			{
-				field->number_of_components = 0;
-			} break;
-		}
+		field->number_of_components=get_FE_field_number_of_components(fe_field);
 		field->fe_field=ACCESS(FE_field)(fe_field);
 		return_code=1;
 	}
@@ -9198,6 +9604,103 @@ although its cache may be lost.
 	return (return_code);
 } /* Computed_field_set_type_magnitude */
 
+int Computed_field_get_type_node_array_value_at_time(struct Computed_field *field,
+	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
+	int *version_number,struct Computed_field **time_field)
+/*******************************************************************************
+LAST MODIFIED : 28 October 1999
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, the fe_field,
+nodal_value_type and version_number it extracts are returned - otherwise an
+error is reported.
+Use function Computed_field_get_type to determine the field type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_node_array_value_at_time);
+	if (field&&(COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME==field->type)&&fe_field&&
+		nodal_value_type&&version_number)
+	{
+		*fe_field=field->fe_field;
+		*nodal_value_type=field->nodal_value_type;
+		*version_number=field->version_number;
+		USE_PARAMETER(time_field);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_node_array_value_at_time.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_node_array_value_at_time */
+
+int Computed_field_set_type_node_array_value_at_time(
+	struct Computed_field *field,struct FE_field *fe_field,
+	enum FE_nodal_value_type nodal_value_type,int version_number,
+	struct Computed_field *time_field)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, 
+returning the values for the
+given <nodal_value_type> and <version_number> of <fe_field> at a node.
+Makes the number of components the same as in the <fe_field>.
+Field automatically takes the coordinate system of the source fe_field. See note
+at start of this file about changing use of coordinate systems.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int return_code,number_of_source_fields;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_node_array_value_at_time);
+	if (field&&fe_field&&(FE_NODAL_UNKNOWN!=nodal_value_type)&&
+		(0<=version_number)&&time_field&&(1==time_field->number_of_components))
+	{
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_fields=1;
+		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME;
+			/* copy the coordinate system from the fe_field */
+			COPY(Coordinate_system)(&(field->coordinate_system),
+				get_FE_field_coordinate_system(fe_field));
+			field->number_of_components = get_FE_field_number_of_components(fe_field);
+			field->fe_field=ACCESS(FE_field)(fe_field);
+			field->nodal_value_type=nodal_value_type;
+			field->version_number=version_number;
+			source_fields[0]=ACCESS(Computed_field)(time_field);
+			field->source_fields=source_fields;
+			field->number_of_source_fields=number_of_source_fields;
+			return_code=1;
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_node_array_value_at_time.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_node_array_value_at_time */
+
 int Computed_field_get_type_node_value(struct Computed_field *field,
 	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
 	int *version_number)
@@ -9237,7 +9740,7 @@ int Computed_field_set_type_node_value(struct Computed_field *field,
 	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
 	int version_number)
 /*******************************************************************************
-LAST MODIFIED : 27 June 1999
+LAST MODIFIED : 22 May 2000
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_NODE_VALUE, returning the values for the
@@ -9264,16 +9767,7 @@ although its cache may be lost.
 		/* copy the coordinate system from the fe_field */
 		COPY(Coordinate_system)(&(field->coordinate_system),
 			get_FE_field_coordinate_system(fe_field));
-		/* If the value_type of the fe_field is no FE_VALUE_VALUE then
-			the number of components from this computed field is zero */
-		if (FE_VALUE_VALUE==get_FE_field_value_type(fe_field))
-		{
-			field->number_of_components = get_FE_field_number_of_components(fe_field);
-		}
-		else
-		{
-			field->number_of_components = 0;
-		}
+		field->number_of_components=get_FE_field_number_of_components(fe_field);
 		field->fe_field=ACCESS(FE_field)(fe_field);
 		field->nodal_value_type=nodal_value_type;
 		field->version_number=version_number;
@@ -9289,115 +9783,6 @@ although its cache may be lost.
 
 	return (return_code);
 } /* Computed_field_set_type_node_value */
-
-int Computed_field_get_type_node_array_value_at_time(struct Computed_field *field,
-	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
-	int *version_number,struct Computed_field **time_field)
-/*******************************************************************************
-LAST MODIFIED : 28 October 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, the fe_field,
-nodal_value_type and version_number it extracts are returned - otherwise an
-error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_node_array_value_at_time);
-	if (field&&(COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME==field->type)&&fe_field&&
-		nodal_value_type&&version_number)
-	{
-		*fe_field=field->fe_field;
-		*nodal_value_type=field->nodal_value_type;
-		*version_number=field->version_number;
-		USE_PARAMETER(time_field);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_node_array_value_at_time.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_node_array_value_at_time */
-
-int Computed_field_set_type_node_array_value_at_time(struct Computed_field *field,
-	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
-	int version_number,struct Computed_field *time_field)
-/*******************************************************************************
-LAST MODIFIED : 28 October 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, 
-returning the values for the
-given <nodal_value_type> and <version_number> of <fe_field> at a node.
-Makes the number of components the same as in the <fe_field>.
-Field automatically takes the coordinate system of the source fe_field. See note
-at start of this file about changing use of coordinate systems.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int return_code,number_of_source_fields;
-	enum Value_type value_type;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_node_array_value_at_time);
-	if (field&&fe_field&&(FE_NODAL_UNKNOWN!=nodal_value_type)&&
-		(0<=version_number)&&time_field&&(1==time_field->number_of_components))
-	{		
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME;
-			/* copy the coordinate system from the fe_field */
-			COPY(Coordinate_system)(&(field->coordinate_system),
-				get_FE_field_coordinate_system(fe_field));
-			/* If the value_type of the fe_field is not an array type then
-				 the number of components from this computed field is zero */				
-			value_type=get_FE_field_value_type(fe_field);
-			if ((value_type==FE_VALUE_ARRAY_VALUE)||(value_type==FLT_ARRAY_VALUE)||
-				(value_type==UNSIGNED_ARRAY_VALUE)||(value_type==SHORT_ARRAY_VALUE)||
-				(value_type==INT_ARRAY_VALUE))
-			{
-				field->number_of_components = get_FE_field_number_of_components(fe_field);
-			}
-			else
-			{
-				field->number_of_components = 0;
-			}
-			field->fe_field=ACCESS(FE_field)(fe_field);
-			field->nodal_value_type=nodal_value_type;
-			field->version_number=version_number;
-			source_fields[0]=ACCESS(Computed_field)(time_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_node_array_value_at_time.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_node_array_value_at_time */
 
 int Computed_field_get_type_offset(struct Computed_field *field,
 	struct Computed_field **source_field,FE_value **offsets)
@@ -9649,7 +10034,8 @@ although its cache may be lost.
 	ENTER(Computed_field_set_type_rc_vector);
 	if (field&&vector_field&&coordinate_field&&
 		Computed_field_is_orientation_scale_capable(vector_field,(void *)NULL)&&
-		Computed_field_has_1_to_3_components(coordinate_field,(void *)NULL))
+		Computed_field_has_up_to_3_numerical_components(coordinate_field,
+			(void *)NULL))
 	{
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=2;
@@ -10366,282 +10752,6 @@ although its cache may be lost.
 
 	return (return_code);
 } /* Computed_field_set_type_xi_texture_coordinates */
-
-int Computed_field_has_1_component(struct Computed_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 22 January 1999
-
-DESCRIPTION :
-Iterator/conditional function returning true if <field> has only one component.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_has_1_component);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		return_code=(1 == field->number_of_components);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_has_1_component.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_has_1_component */
-
-int Computed_field_has_at_least_1_component(struct Computed_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 15 June 1999
-
-DESCRIPTION :
-Conditional function returning true if <field> has at least one component.
-Ignores fields that are listed for selection but cannot return FE_values
-(i.e. FE_fields with values other than FE_values)
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_has_1_component);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		return_code=(0 < field->number_of_components);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_has_at_least_1_component.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_has_at_least_1_component */
-
-int Computed_field_has_1_to_3_components(struct Computed_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 22 January 1999
-
-DESCRIPTION :
-Iterator/conditional function returning true if <field> has from one to three
-components - useful for selecting vector/coordinate fields.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_has_1_to_3_components);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		return_code=((3 >= field->number_of_components)&&
-			(1 <= field->number_of_components));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_has_1_to_3_components.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_has_1_to_3_components */
-
-int Computed_field_has_1_to_4_components(struct Computed_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 12 April 1999
-
-DESCRIPTION :
-Iterator/conditional function returning true if <field> has from one to three
-components - useful for selecting vector/coordinate fields.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_has_1_to_4_components);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		return_code=((4 >= field->number_of_components)&&
-			(1 <= field->number_of_components));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_has_1_to_4_components.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_has_1_to_4_components */
-
-int Computed_field_has_at_least_2_components(struct Computed_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 16 March 1999
-
-DESCRIPTION :
-Iterator/conditional function returning true if <field> has at least 2 components.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_has_at_least_2_components);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		return_code=(2 <= field->number_of_components);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_has_at_least_2_components.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_has_at_least_2_components */
-
-int Computed_field_has_4_components(struct Computed_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Iterator/conditional function returning true if <field> has exactly four
-components - useful for selecting vector/coordinate fields.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_has_4_components);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		return_code=(4 == field->number_of_components);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_has_4_components.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_has_4_components */
-
-int Computed_field_is_of_type(struct Computed_field *field,
-	void *computed_field_type_void)
-/*******************************************************************************
-LAST MODIFIED : 1 December 1999
-
-DESCRIPTION :
-Returns true if the <field> is of the given <computed_field_type>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_of_type);
-	if (field)
-	{
-		return_code=
-			(enum Computed_field_type)computed_field_type_void == field->type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_of_type.  Missing field");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_of_type */
-
-int Computed_field_is_orientation_scale_capable(struct Computed_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 12 February 1999
-
-DESCRIPTION :
-Conditional function returning true if the field can be used to orient or scale
-glyphs. Generally, this means it has 1,2,3,4,6 or 9 components, where:
-1 = scalar (no vector, isotropic scaling).
-2 = 1 2-D vector (2nd axis is normal in plane, 3rd is out of 2-D plane);
-3 = 1 3-D vector (orthogonal 2nd and 3rd axes are arbitrarily chosen);
-4 = 2 2-D vectors (3rd axis taken as out of 2-D plane);
-6 = 2 3-D vectors (3rd axis found from cross product);
-9 = 3 3-D vectors = complete definition of 3 axes.
-???RC.  Include coordinate system in test?
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_orientation_scale_capable);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		return_code=(
-			(1==field->number_of_components)||(2==field->number_of_components)||
-			(3==field->number_of_components)||(4==field->number_of_components)||
-			(6==field->number_of_components)||(9==field->number_of_components));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_orientation_scale_capable.  Missing field");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_orientation_scale_capable */
-
-int Computed_field_is_stream_vector_capable(struct Computed_field *field,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 15 March 1999
-
-DESCRIPTION :
-Conditional function returning true if the field is suitable for 3-D streamline
-tracking. This means it has either 3, 6 or 9 components (with 3 components per
-vector), or has a FIBRE coordinate_system, meaning it can be wrapped to produce
-9-component fibre_axes.
-The number of components controls how the field is interpreted:
-3 = 1 3-D vector (lateral direction and normal worked out from curl of field);
-6 = 2 3-D vectors (2nd vector is lateral direction. Stream ribbon normal found
-    from cross product);
-9 = 3 3-D vectors (2nd vector is lateral direction; 3rd vector is stream ribbon
-    normal).
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_stream_vector_capable);
-	USE_PARAMETER(dummy_void);
-	if (field)
-	{
-		return_code=((3==field->number_of_components)||
-			(6==field->number_of_components)||(9==field->number_of_components)||
-			((3>=field->number_of_components)&&
-				(FIBRE==get_coordinate_system_type(&(field->coordinate_system)))));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_is_stream_vector_capable.  Missing field");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_stream_vector_capable */
 
 int Computed_field_is_in_use(struct Computed_field *field)
 /*******************************************************************************
@@ -11403,7 +11513,7 @@ and allows its contents to be modified.
 				"default_coordinate",computed_field_package->computed_field_manager)))
 			{
 				deformed_coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_to_3_components,(void *)NULL,
+					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager);
 			}
 			undeformed_coordinate_field = deformed_coordinate_field;
@@ -11411,7 +11521,7 @@ and allows its contents to be modified.
 				"fibres",computed_field_package->computed_field_manager)))
 			{
 				fibre_angle_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_to_3_components,(void *)NULL,
+					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager);
 			}
 		}
@@ -11433,21 +11543,21 @@ and allows its contents to be modified.
 			/* deformed coordinate */
 			set_coordinate_field_data.computed_field_package=computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[0]).to_be_modified= &deformed_coordinate_field;
 			(option_table[0]).user_data= &set_coordinate_field_data;
 			/* undeformed coordinate */
 			set_coordinate_field_data.computed_field_package=computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[1]).to_be_modified= &undeformed_coordinate_field;
 			(option_table[1]).user_data= &set_coordinate_field_data;
 			/* fibre_angle */
 			set_scalar_field_data.computed_field_package=computed_field_package;
 			set_scalar_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_scalar_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[2]).to_be_modified= &fibre_angle_field;
 			(option_table[2]).user_data= &set_scalar_field_data;
@@ -11522,7 +11632,7 @@ and allows its contents to be modified.
 			else
 			{
 				if (source_fields[0]=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_at_least_1_component,(void *)NULL,
+					Computed_field_has_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager))
 				{
 					source_fields[1] = source_fields[0];
@@ -11550,7 +11660,7 @@ and allows its contents to be modified.
 			ACCESS(Computed_field)(source_fields[0]);
 			ACCESS(Computed_field)(source_fields[1]);
 			set_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data=(void *)NULL;
 			set_field_data.computed_field_package=computed_field_package;
 			set_field_array_data.number_of_fields=2;
@@ -11627,7 +11737,7 @@ maximums as there are components in the field.
 	{
 		return_code=1;
 		set_field_data.conditional_function=
-			Computed_field_has_at_least_1_component;
+			Computed_field_has_numerical_components;
 		set_field_data.conditional_function_user_data=(void *)NULL;
 		set_field_data.computed_field_package=computed_field_package;
 		/* get source_field and maximums - from field if of type clamp_maximum */
@@ -11642,7 +11752,7 @@ maximums as there are components in the field.
 		{
 			/* get first available field, and set maximums for it to 1.0 */
 			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component,(void *)NULL,
+				Computed_field_has_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager))&&
 				ALLOCATE(maximums,FE_value,source_field->number_of_components))
 			{
@@ -11807,7 +11917,7 @@ minimums as there are components in the field.
 	{
 		return_code=1;
 		set_field_data.conditional_function=
-			Computed_field_has_at_least_1_component;
+			Computed_field_has_numerical_components;
 		set_field_data.conditional_function_user_data=(void *)NULL;
 		set_field_data.computed_field_package=computed_field_package;
 		/* get source_field and minimums - from field if of type clamp_minimum */
@@ -11822,7 +11932,7 @@ minimums as there are components in the field.
 		{
 			/* get first available field, and set minimums for it to 1.0 */
 			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component,(void *)NULL,
+				Computed_field_has_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager))&&
 				ALLOCATE(minimums,FE_value,source_field->number_of_components))
 			{
@@ -12021,7 +12131,7 @@ and allows its contents to be modified.
 		else
 		{
 			if (field_component.field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component,(void *)NULL,
+				Computed_field_has_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager))
 			{
 				field_component.component_no=0;
@@ -12087,7 +12197,7 @@ and allows its contents to be modified.
 		return_code=1;
 		set_calculate_values_field_data.computed_field_package=computed_field_package;
 		set_calculate_values_field_data.conditional_function=
-			Computed_field_has_at_least_1_component;
+			Computed_field_has_numerical_components;
 		set_calculate_values_field_data.conditional_function_user_data=(void *)NULL;
 		set_find_element_xi_field_data.computed_field_package=computed_field_package;
 		set_find_element_xi_field_data.conditional_function=
@@ -12095,7 +12205,7 @@ and allows its contents to be modified.
 		set_find_element_xi_field_data.conditional_function_user_data=(void *)NULL;
 		set_texture_coordinates_field_data.computed_field_package=computed_field_package;
 		set_texture_coordinates_field_data.conditional_function=
-			Computed_field_has_at_least_1_component;
+			Computed_field_has_numerical_components;
 		set_texture_coordinates_field_data.conditional_function_user_data=(void *)NULL;
 		/* get valid parameters for composite field */
 		if (COMPUTED_FIELD_COMPOSE==Computed_field_get_type(field))
@@ -12107,13 +12217,13 @@ and allows its contents to be modified.
 		else
 		{
 			calculate_values_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component ,(void *)NULL,
+				Computed_field_has_numerical_components ,(void *)NULL,
 				computed_field_package->computed_field_manager);
 			find_element_xi_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 				Computed_field_is_find_element_xi_capable,(void *)NULL,
 				computed_field_package->computed_field_manager);
 			texture_coordinates_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component ,(void *)NULL,
+				Computed_field_has_numerical_components ,(void *)NULL,
 				computed_field_package->computed_field_manager);
 		}
 		if (return_code)
@@ -12225,7 +12335,7 @@ and allows its contents to be modified.
 	{
 		return_code=1;
 		set_scalar_field_data.computed_field_package=computed_field_package;
-		set_scalar_field_data.conditional_function=Computed_field_has_1_component;
+		set_scalar_field_data.conditional_function=Computed_field_is_scalar;
 		set_scalar_field_data.conditional_function_user_data=(void *)NULL;
 		/* get valid parameters for composite field */
 		scalar_fields=(struct Computed_field **)NULL;
@@ -12238,7 +12348,7 @@ and allows its contents to be modified.
 		{
 			/* ALLOCATE and fill array of scalar fields */
 			temp_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_1_component,(void *)NULL,
+				Computed_field_is_scalar,(void *)NULL,
 				computed_field_package->computed_field_manager);
 			number_of_scalars=1;
 			if (ALLOCATE(scalar_fields,struct Computed_field *,number_of_scalars))
@@ -12555,7 +12665,7 @@ and allows its contents to be modified.
 		else
 		{
 			if (!(source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component,(void *)NULL,
+				Computed_field_has_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager)))
 			{
 				display_message(ERROR_MESSAGE,
@@ -12568,7 +12678,7 @@ and allows its contents to be modified.
 			/* have ACCESS/DEACCESS because set_Computed_field does */
 			ACCESS(Computed_field)(source_field);
 			set_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data=(void *)NULL;
 			set_field_data.computed_field_package=computed_field_package;
 			(option_table[0]).to_be_modified= &source_field;
@@ -12625,11 +12735,11 @@ and allows its contents to be modified.
 				"default_coordinate",computed_field_package->computed_field_manager)))
 			{
 				coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_to_3_components,(void *)NULL,
+					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager);
 			}
 			vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_1_to_3_components,(void *)NULL,
+				Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager);
 		}
 		if (return_code)
@@ -12648,14 +12758,14 @@ and allows its contents to be modified.
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* vector */
 			set_vector_field_data.computed_field_package=computed_field_package;
 			set_vector_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_vector_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"vector",&vector_field,
 				(void *)&set_vector_field_data,set_Computed_field_conditional);
@@ -12722,7 +12832,7 @@ and allows its contents to be modified.
 				(MANAGER_CONDITIONAL_FUNCTION(Control_curve) *)NULL,(void *)NULL,
 				computed_field_package->control_curve_manager);
 			source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_1_component,(void *)NULL,
+				Computed_field_is_scalar,(void *)NULL,
 				computed_field_package->computed_field_manager);
 		}
 		if (return_code)
@@ -12736,7 +12846,7 @@ and allows its contents to be modified.
 				ACCESS(Control_curve)(curve);
 			}
 			set_source_field_data.computed_field_package=computed_field_package;
-			set_source_field_data.conditional_function=Computed_field_has_1_component;
+			set_source_field_data.conditional_function=Computed_field_is_scalar;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[0]).to_be_modified= &source_field;
 			(option_table[0]).user_data= &set_source_field_data;
@@ -12848,11 +12958,11 @@ and allows its contents to be modified.
 				"default_coordinate",computed_field_package->computed_field_manager)))
 			{
 				coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_to_3_components,(void *)NULL,
+					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager);
 			}
 			vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_1_to_3_components,(void *)NULL,
+				Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager);
 		}
 		if (return_code)
@@ -12871,14 +12981,14 @@ and allows its contents to be modified.
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* vector */
 			set_vector_field_data.computed_field_package=computed_field_package;
 			set_vector_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_vector_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"vector",&vector_field,
 				(void *)&set_vector_field_data,set_Computed_field_conditional);
@@ -12945,7 +13055,7 @@ and allows its contents to be modified.
 			else
 			{
 				if (source_fields[0]=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_at_least_1_component,(void *)NULL,
+					Computed_field_has_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager))
 				{
 					source_fields[1] = source_fields[0];
@@ -12970,7 +13080,7 @@ and allows its contents to be modified.
 			ACCESS(Computed_field)(source_fields[0]);
 			ACCESS(Computed_field)(source_fields[1]);
 			set_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data=(void *)NULL;
 			set_field_data.computed_field_package=computed_field_package;
 			set_field_array_data.number_of_fields=2;
@@ -13042,7 +13152,7 @@ edit_mask flags as there are components in the field.
 	{
 		return_code=1;
 		set_field_data.conditional_function=
-			Computed_field_has_at_least_1_component;
+			Computed_field_has_numerical_components;
 		set_field_data.conditional_function_user_data=(void *)NULL;
 		set_field_data.computed_field_package=computed_field_package;
 		/* get source_field and edit_mask - from field if of type edit_mask */
@@ -13057,7 +13167,7 @@ edit_mask flags as there are components in the field.
 		{
 			/* get first available field, and set edit_mask for it to 1.0 */
 			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component,(void *)NULL,
+				Computed_field_has_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager))&&
 				ALLOCATE(edit_mask,FE_value,source_field->number_of_components))
 			{
@@ -13219,7 +13329,7 @@ and allows its contents to be modified.
 				FE_field_has_value_type,(void *)ELEMENT_XI_VALUE,
 				computed_field_package->fe_field_manager);
 			source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component,(void *)NULL,
+				Computed_field_has_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager);
 		}
 		if (return_code)
@@ -13235,7 +13345,7 @@ and allows its contents to be modified.
 			(option_table[0]).to_be_modified= &fe_field;
 			(option_table[0]).user_data= computed_field_package->fe_field_manager;
 			set_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data=(void *)NULL;
 			set_field_data.computed_field_package=computed_field_package;
 			(option_table[1]).to_be_modified= &source_field;
@@ -13328,7 +13438,7 @@ and allows its contents to be modified.
 		return_code=1;
 		set_source_field_data.computed_field_package=computed_field_package;
 		set_source_field_data.conditional_function =
-			Computed_field_has_at_least_1_component;
+			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data=(void *)NULL;
 		/* get valid parameters for external field */
 		source_fields=(struct Computed_field **)NULL;
@@ -13346,7 +13456,7 @@ and allows its contents to be modified.
 		{
 			/* ALLOCATE and fill array of source fields */
 			temp_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component,(void *)NULL,
+				Computed_field_has_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager);
 			number_of_fields=1;
 			if (ALLOCATE(source_fields,struct Computed_field *,number_of_fields))
@@ -13553,12 +13663,12 @@ and allows its contents to be modified.
 				name)("default_coordinate",
 					computed_field_package->computed_field_manager))||
 				(coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_to_3_components,(void *)NULL,
+					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager)))&&
 				((fibre_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
 					name)("fibres",computed_field_package->computed_field_manager))||
 				(fibre_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_to_3_components,(void *)NULL,
+					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager)))))
 			{
 				display_message(ERROR_MESSAGE,
@@ -13575,14 +13685,14 @@ and allows its contents to be modified.
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[0]).to_be_modified= &coordinate_field;
 			(option_table[0]).user_data= &set_coordinate_field_data;
 			/* fibre */
 			set_fibre_field_data.computed_field_package=computed_field_package;
 			set_fibre_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_fibre_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[1]).to_be_modified= &fibre_field;
 			(option_table[1]).user_data= &set_fibre_field_data;
@@ -13644,12 +13754,12 @@ already) and allows its contents to be modified.
 				name)("default_coordinate",
 					computed_field_package->computed_field_manager))||
 				(coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_to_3_components,(void *)NULL,
+					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager)))&&
 				((fibre_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
 					name)("fibres",computed_field_package->computed_field_manager))||
 				(fibre_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_to_3_components,(void *)NULL,
+					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager)))))
 			{
 				display_message(ERROR_MESSAGE,
@@ -13666,14 +13776,14 @@ already) and allows its contents to be modified.
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[0]).to_be_modified= &coordinate_field;
 			(option_table[0]).user_data= &set_coordinate_field_data;
 			/* fibre */
 			set_fibre_field_data.computed_field_package=computed_field_package;
 			set_fibre_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_fibre_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[1]).to_be_modified= &fibre_field;
 			(option_table[1]).user_data= &set_fibre_field_data;
@@ -14023,11 +14133,11 @@ and allows its contents to be modified.
 				"default_coordinate",computed_field_package->computed_field_manager)))
 			{
 				coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_to_3_components,(void *)NULL,
+					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager);
 			}
 			scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_1_component,(void *)NULL,
+				Computed_field_is_scalar,(void *)NULL,
 				computed_field_package->computed_field_manager);
 		}
 		if (return_code)
@@ -14046,14 +14156,14 @@ and allows its contents to be modified.
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				(void *)&set_coordinate_field_data,set_Computed_field_conditional);
 			/* scalar */
 			set_scalar_field_data.computed_field_package=computed_field_package;
 			set_scalar_field_data.conditional_function=
-				Computed_field_has_1_component;
+				Computed_field_is_scalar;
 			set_scalar_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"scalar",&scalar_field,
 				(void *)&set_scalar_field_data,set_Computed_field_conditional);
@@ -14116,7 +14226,7 @@ and allows its contents to be modified.
 		else
 		{
 			if (!(source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component,(void *)NULL,
+				Computed_field_has_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager)))
 			{
 				display_message(ERROR_MESSAGE,
@@ -14129,7 +14239,7 @@ and allows its contents to be modified.
 			/* have ACCESS/DEACCESS because set_Computed_field does */
 			ACCESS(Computed_field)(source_field);
 			set_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data=(void *)NULL;
 			set_field_data.computed_field_package=computed_field_package;
 			(option_table[0]).to_be_modified= &source_field;
@@ -14491,7 +14601,7 @@ Converts <field> into type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME
 				(value_type_version_option_table[0]).user_data=
 					&nodal_value_type_option_table;
 				set_time_field_data.computed_field_package=computed_field_package;
-				set_time_field_data.conditional_function=Computed_field_has_1_component;
+				set_time_field_data.conditional_function=Computed_field_is_scalar;
 				set_time_field_data.conditional_function_user_data=(void *)NULL;
 				(value_type_version_option_table[1]).to_be_modified= &time_field;
 				(value_type_version_option_table[1]).user_data= &set_time_field_data;
@@ -14588,7 +14698,7 @@ offsets as there are components in the field.
 	{
 		return_code=1;
 		set_field_data.conditional_function=
-			Computed_field_has_at_least_1_component;
+			Computed_field_has_numerical_components;
 		set_field_data.conditional_function_user_data=(void *)NULL;
 		set_field_data.computed_field_package=computed_field_package;
 		/* get source_field and offsets - from field if of type offset */
@@ -14603,7 +14713,7 @@ offsets as there are components in the field.
 		{
 			/* get first available field, and set offsets for it to 1.0 */
 			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component,(void *)NULL,
+				Computed_field_has_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager))&&
 				ALLOCATE(offsets,FE_value,source_field->number_of_components))
 			{
@@ -14763,7 +14873,7 @@ and allows its contents to be modified.
 				name)("default_coordinate",
 					computed_field_package->computed_field_manager))||
 				(coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_to_3_components,(void *)NULL,
+					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager))))
 			{
 				display_message(ERROR_MESSAGE,
@@ -14778,7 +14888,7 @@ and allows its contents to be modified.
 			ACCESS(Computed_field)(coordinate_field);
 			set_coordinate_field_data.computed_field_package=computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[0]).to_be_modified= &coordinate_field;
 			(option_table[0]).user_data= &set_coordinate_field_data;
@@ -14839,12 +14949,12 @@ and allows its contents to be modified.
 				name)("default_coordinate",
 					computed_field_package->computed_field_manager))||
 				(coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_to_3_components,(void *)NULL,
+					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager)))&&
 				((vector_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
 					name)("vectors",computed_field_package->computed_field_manager))||
 				(vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_1_to_3_components,(void *)NULL,
+					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 					computed_field_package->computed_field_manager)))))
 			{
 				display_message(ERROR_MESSAGE,
@@ -14861,7 +14971,7 @@ and allows its contents to be modified.
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[0]).to_be_modified= &coordinate_field;
 			(option_table[0]).user_data= &set_coordinate_field_data;
@@ -14926,7 +15036,7 @@ and allows its contents to be modified.
 		else
 		{
 			if (!(source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_1_to_3_components,(void *)NULL,
+				Computed_field_has_up_to_3_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager)))
 			{
 				display_message(ERROR_MESSAGE,
@@ -14940,9 +15050,9 @@ and allows its contents to be modified.
 			ACCESS(Computed_field)(source_field);
 			texture = (struct Texture *)NULL;
 			set_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_field_data.conditional_function_user_data=
-				(void *)Computed_field_has_1_to_3_components;
+				(void *)Computed_field_has_up_to_3_numerical_components;
 			set_field_data.computed_field_package=computed_field_package;
 			(option_table[0]).to_be_modified= &source_field;
 			(option_table[0]).user_data= &set_field_data;
@@ -15008,7 +15118,7 @@ scale_factors as there are components in the field.
 	{
 		return_code=1;
 		set_field_data.conditional_function=
-			Computed_field_has_at_least_1_component;
+			Computed_field_has_numerical_components;
 		set_field_data.conditional_function_user_data=(void *)NULL;
 		set_field_data.computed_field_package=computed_field_package;
 		/* get source_field and scale_factors - from field if of type scale */
@@ -15023,7 +15133,7 @@ scale_factors as there are components in the field.
 		{
 			/* get first available field, and set scale_factors for it to 1.0 */
 			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component,(void *)NULL,
+				Computed_field_has_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager))&&
 				ALLOCATE(scale_factors,FE_value,source_field->number_of_components))
 			{
@@ -15188,7 +15298,7 @@ there are components in field.
 	{
 		return_code=1;
 		set_field_data.conditional_function=
-			Computed_field_has_at_least_1_component;
+			Computed_field_has_numerical_components;
 		set_field_data.conditional_function_user_data=(void *)NULL;
 		set_field_data.computed_field_package=computed_field_package;
 		/* get source_field and weights - from field if of type sum_components */
@@ -15203,7 +15313,7 @@ there are components in field.
 		{
 			/* get first available field, and set weights for it to 1.0 */
 			if ((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_1_component,(void *)NULL,
+				Computed_field_has_numerical_components,(void *)NULL,
 				computed_field_package->computed_field_manager))&&
 				ALLOCATE(weights,FE_value,source_field->number_of_components))
 			{
@@ -15900,14 +16010,39 @@ and should not itself be managed.
 	return (return_code);
 } /* define_Computed_field */
 
+int equivalent_computed_fields_at_elements(struct FE_element *element_1,
+	struct FE_element *element_2)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Returns true if all fields are defined in the same way at the two elements.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(equivalent_computed_fields_at_elements);
+	return_code=0;
+	if (element_1&&element_2)
+	{
+		return_code=equivalent_FE_fields_at_elements(element_1,element_2);
+	}
+	else
+	{
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* equivalent_computed_fields_at_elements */
+
 int equivalent_computed_fields_at_nodes(struct FE_node *node_1,
 	struct FE_node *node_2)
 /*******************************************************************************
-LAST MODIFIED : 17 May 1999
+LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
-Returns non-zero if the same fields are defined in the same ways at the two
-nodes.
+Returns true if all fields are defined in the same way at the two nodes.
 ==============================================================================*/
 {
 	int return_code;
@@ -16874,8 +17009,8 @@ MANAGER_MODIFY_NOT_IDENTIFIER is performed.
 									"default_coordinate",computed_field_manager))||
 								(default_coordinate_field=
 									FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-										Computed_field_has_1_to_3_components,(void *)NULL,
-										computed_field_manager)))
+										Computed_field_has_up_to_3_numerical_components,
+										(void *)NULL,computed_field_manager)))
 							{
 								if (Computed_field_set_coordinate_system(temp_field,
 									Computed_field_get_coordinate_system(

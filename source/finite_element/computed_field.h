@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 10 May 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -246,6 +246,26 @@ Returns true if <field> can be calculated in <element>. If the field depends on
 any other fields, this function is recursively called for them.
 ==============================================================================*/
 
+int Computed_field_is_defined_in_element_conditional(
+	struct Computed_field *field,void *element_void);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Manager conditional function version of Computed_field_is_defined_in_element.
+==============================================================================*/
+
+int Computed_field_is_scalar_integer_grid_in_element(
+	struct Computed_field *field,void *element_void);
+/*******************************************************************************
+LAST MODIFIED : 26 May 2000
+
+DESCRIPTION :
+Returns true if <field> has a 1 integer component FINITE_ELEMENT wrapper which
+is defined in <element> AND is grid-based.
+Used for choosing field suitable for identifying grid points.
+==============================================================================*/
+
 int Computed_field_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node);
 /*******************************************************************************
@@ -292,10 +312,31 @@ Returns true if the field is of an embedded type or depends on any computed
 fields which are or an embedded type.
 ==============================================================================*/
 
+char *Computed_field_evaluate_component_as_string_in_element(
+	struct Computed_field *field,int component_number,
+	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Returns a string representing the value of <field>.<component_number> at
+<element>:<xi>. If <field> is a FINITE_ELEMENT wrapper without a value type of
+FE_VALUE_VALUE, requests the string from it, otherwise calls
+Computed_field_evaluate_cache_in_element and converts the value for
+<component_number> to a string (since result may already be in cache).
+
+The <top_level_element> parameter has the same use as in
+Computed_field_evaluate_cache_in_element.
+
+Some basic field types such as CMISS_NUMBER have special uses in this function.
+It is up to the calling function to DEALLOCATE the returned string.
+???RC.  Allow derivatives to be evaluated as string too?
+==============================================================================*/
+
 char *Computed_field_evaluate_as_string_in_element(struct Computed_field *field,
 	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element);
 /*******************************************************************************
-LAST MODIFIED : 17 October 1999
+LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
 Returns a string describing the value/s of the <field> at <element>:<xi>. If the
@@ -608,6 +649,99 @@ LAST MODIFIED : 25 January 1999
 DESCRIPTION :
 Returns a pointer to a static string token for the given <field_type>.
 The calling function must not deallocate the returned string.
+==============================================================================*/
+
+int Computed_field_has_4_components(struct Computed_field *field,
+	void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 10 March 1999
+
+DESCRIPTION :
+Conditional function returning true if <field> has exactly four components.
+==============================================================================*/
+
+int Computed_field_has_numerical_components(struct Computed_field *field,
+	void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Conditional function returning true if <field> returns numerical components.
+Note that whether the numbers were integer, FE_value or double, they may be
+returned as FE_value when evaluated.
+==============================================================================*/
+
+int Computed_field_is_scalar(struct Computed_field *field,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Conditional function returning true if <field> has 1 component and it is
+numerical.
+==============================================================================*/
+
+int Computed_field_has_up_to_3_numerical_components(
+	struct Computed_field *field,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Conditional function returning true if <field> has up to 3 components and they
+are numerical - useful for selecting vector/coordinate fields.
+==============================================================================*/
+
+int Computed_field_has_up_to_4_numerical_components(
+	struct Computed_field *field,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Conditional function returning true if <field> has up to 4 components and they
+are numerical - useful for selecting vector/coordinate fields.
+==============================================================================*/
+
+int Computed_field_is_of_type(struct Computed_field *field,
+	void *computed_field_type_void);
+/*******************************************************************************
+LAST MODIFIED : 1 December 1999
+
+DESCRIPTION :
+Returns true if the <field> is of the given <computed_field_type>.
+==============================================================================*/
+
+int Computed_field_is_orientation_scale_capable(struct Computed_field *field,
+	void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 12 February 1999
+
+DESCRIPTION :
+Conditional function returning true if the field can be used to orient or scale
+glyphs. Generally, this means it has 1,2,3,4,6 or 9 components, where:
+1 = scalar (no vector, isotropic scaling).
+2 = 1 2-D vector (2nd axis is normal in plane, 3rd is out of 2-D plane);
+3 = 1 3-D vector (orthogonal 2nd and 3rd axes are arbitrarily chosen);
+4 = 2 2-D vectors (3rd axis taken as out of 2-D plane);
+6 = 2 3-D vectors (3rd axis found from cross product);
+9 = 3 3-D vectors = complete definition of 3 axes.
+???RC.  Include coordinate system in test?
+==============================================================================*/
+
+int Computed_field_is_stream_vector_capable(struct Computed_field *field,
+	void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 15 March 1999
+
+DESCRIPTION :
+Conditional function returning true if the field is suitable for 3-D streamline
+tracking. This means it has either 3, 6 or 9 components (with 3 components per
+vector), or has a FIBRE coordinate_system, meaning it can be wrapped to produce
+9-component fibre_axes.
+The number of components controls how the field is interpreted:
+3 = 1 3-D vector (lateral direction and normal worked out from curl of field);
+6 = 2 3-D vectors (2nd vector is lateral direction. Stream ribbon normal found
+    from cross product);
+9 = 3 3-D vectors (2nd vector is lateral direction; 3rd vector is stream ribbon
+    normal).
 ==============================================================================*/
 
 int Computed_field_get_type_2D_strain(struct Computed_field *field,
@@ -1283,99 +1417,6 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 
-int Computed_field_has_1_component(struct Computed_field *field,
-	void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 22 January 1999
-
-DESCRIPTION :
-Conditional function returning true if <field> has only one component.
-==============================================================================*/
-
-int Computed_field_has_at_least_1_component(struct Computed_field *field,
-	void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 15 June 1999
-
-DESCRIPTION :
-Conditional function returning true if <field> has at least one component.
-Ignores fields that are listed for selection but cannot return FE_values
-(i.e. FE_fields with values other than FE_values)
-==============================================================================*/
-
-int Computed_field_has_1_to_3_components(struct Computed_field *field,
-	void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 22 January 1999
-
-DESCRIPTION :
-Conditional function returning true if <field> has from one to three
-components - useful for selecting vector/coordinate fields.
-==============================================================================*/
-
-int Computed_field_has_1_to_4_components(struct Computed_field *field,
-	void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 12 April 1999
-
-DESCRIPTION :
-Conditional function returning true if <field> has from one to four
-components - useful for selecting sample texture fields.
-==============================================================================*/
-
-int Computed_field_has_4_components(struct Computed_field *field,
-	void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 10 March 1999
-
-DESCRIPTION :
-Conditional function returning true if <field> has exactly four components.
-==============================================================================*/
-
-int Computed_field_is_of_type(struct Computed_field *field,
-	void *computed_field_type_void);
-/*******************************************************************************
-LAST MODIFIED : 1 December 1999
-
-DESCRIPTION :
-Returns true if the <field> is of the given <computed_field_type>.
-==============================================================================*/
-
-int Computed_field_is_orientation_scale_capable(struct Computed_field *field,
-	void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 12 February 1999
-
-DESCRIPTION :
-Conditional function returning true if the field can be used to orient or scale
-glyphs. Generally, this means it has 1,2,3,4,6 or 9 components, where:
-1 = scalar (no vector, isotropic scaling).
-2 = 1 2-D vector (2nd axis is normal in plane, 3rd is out of 2-D plane);
-3 = 1 3-D vector (orthogonal 2nd and 3rd axes are arbitrarily chosen);
-4 = 2 2-D vectors (3rd axis taken as out of 2-D plane);
-6 = 2 3-D vectors (3rd axis found from cross product);
-9 = 3 3-D vectors = complete definition of 3 axes.
-???RC.  Include coordinate system in test?
-==============================================================================*/
-
-int Computed_field_is_stream_vector_capable(struct Computed_field *field,
-	void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 15 March 1999
-
-DESCRIPTION :
-Conditional function returning true if the field is suitable for 3-D streamline
-tracking. This means it has either 3, 6 or 9 components (with 3 components per
-vector), or has a FIBRE coordinate_system, meaning it can be wrapped to produce
-9-component fibre_axes.
-The number of components controls how the field is interpreted:
-3 = 1 3-D vector (lateral direction and normal worked out from curl of field);
-6 = 2 3-D vectors (2nd vector is lateral direction. Stream ribbon normal found
-    from cross product);
-9 = 3 3-D vectors (2nd vector is lateral direction; 3rd vector is stream ribbon
-    normal).
-==============================================================================*/
-
 int Computed_field_is_in_use(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 26 January 1999
@@ -1472,14 +1513,22 @@ The <field_copy_void> parameter, if set, points to the field we are to modify
 and should not itself be managed.
 ==============================================================================*/
 
+int equivalent_computed_fields_at_elements(struct FE_element *element_1,
+	struct FE_element *element_2);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Returns true if all fields are defined in the same way at the two elements.
+==============================================================================*/
+
 int equivalent_computed_fields_at_nodes(struct FE_node *node_1,
 	struct FE_node *node_2);
 /*******************************************************************************
-LAST MODIFIED : 17 May 1999
+LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
-Returns non-zero if the same fields are defined in the same ways at the two
-nodes.
+Returns true if all fields are defined in the same way at the two nodes.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_manager_get_component_wrapper(
