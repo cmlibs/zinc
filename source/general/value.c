@@ -162,6 +162,67 @@ Eeturns UNKNOWN_VALUE without error if value_type_string not recognized.
 	return (value_type);
 } /* Value_type_from_string */
 
+char **Value_type_get_valid_strings_simple(int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 10 May 2000
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+Value_types - obtained from function Value_type_string.
+Does not return any array types.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+	enum Value_type value_type;
+	int i;
+
+	ENTER(Value_type_get_valid_strings_simple);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=0;
+		value_type=VALUE_TYPE_BEFORE_FIRST;
+		value_type++;
+		while (value_type<VALUE_TYPE_AFTER_LAST)
+		{
+			if (!Value_type_is_array(value_type))
+			{
+				(*number_of_valid_strings)++;
+			}
+			value_type++;
+		}
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			value_type=VALUE_TYPE_BEFORE_FIRST;
+			value_type++;
+			i=0;
+			while (value_type<VALUE_TYPE_AFTER_LAST)
+			{
+				if (!Value_type_is_array(value_type))
+				{
+					valid_strings[i]=Value_type_string(value_type);
+					i++;
+				}
+				value_type++;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Value_type_get_valid_strings_simple.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Value_type_get_valid_strings_simple.  Invalid argument");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Value_type_get_valid_strings_simple */
+
 int Value_type_is_array(enum Value_type value_type)
 /*******************************************************************************
 LAST MODIFIED : 16 September 1999

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : value.h
 
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
 A value type that knows what its type is.  So that can have a single function
@@ -94,6 +94,17 @@ LAST MODIFIED : 17 September 1999
 
 DESCRIPTION :
 Returns the value_type from the string, eg "integer" = INT_VALUE.
+==============================================================================*/
+
+char **Value_type_get_valid_strings_simple(int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 10 May 2000
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+Value_types - obtained from function Value_type_string.
+Does not return any array types.
+Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 
 int Value_type_is_array(enum Value_type value_type);
