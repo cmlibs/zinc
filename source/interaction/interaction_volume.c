@@ -418,6 +418,10 @@ and will span between their centres.
 				{
 					/* check projections match */
 					matching_projections=1;
+#if defined (DEBUG)				 
+					/* SAB Removed this check as we just want to use the 
+						second one and spinning scene viewers cause this to
+						happen all the time */
 					for (i=0;i<16;i++)
 					{
 						if ((interaction_volume1->data.ray_frustum.modelview_matrix[i] !=
@@ -428,6 +432,7 @@ and will span between their centres.
 							matching_projections=0;
 						}
 					}
+#endif /* defined (DEBUG) */
 					if ((interaction_volume1->data.ray_frustum.viewport_left !=
 						interaction_volume2->data.ray_frustum.viewport_left)||
 						(interaction_volume1->data.ray_frustum.viewport_width !=
@@ -452,19 +457,19 @@ and will span between their centres.
 						/* handle case where pointer is back where it started */
 						if (0.0 >= size_x)
 						{
-							size_x = 0.0001*interaction_volume1->data.ray_frustum.size_x;
+							size_x = 0.0001*interaction_volume2->data.ray_frustum.size_x;
 						}
 						if (0.0 >= size_y)
 						{
-							size_y = 0.0001*interaction_volume1->data.ray_frustum.size_y;
+							size_y = 0.0001*interaction_volume2->data.ray_frustum.size_y;
 						}
 						interaction_volume=create_Interaction_volume_ray_frustum(
-							interaction_volume1->data.ray_frustum.modelview_matrix,
-							interaction_volume1->data.ray_frustum.projection_matrix,
-							interaction_volume1->data.ray_frustum.viewport_left,
-							interaction_volume1->data.ray_frustum.viewport_bottom,
-							interaction_volume1->data.ray_frustum.viewport_width,
-							interaction_volume1->data.ray_frustum.viewport_height,
+							interaction_volume2->data.ray_frustum.modelview_matrix,
+							interaction_volume2->data.ray_frustum.projection_matrix,
+							interaction_volume2->data.ray_frustum.viewport_left,
+							interaction_volume2->data.ray_frustum.viewport_bottom,
+							interaction_volume2->data.ray_frustum.viewport_width,
+							interaction_volume2->data.ray_frustum.viewport_height,
 							centre_x,centre_y,size_x,size_y);
 					}
 					else
