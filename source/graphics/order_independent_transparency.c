@@ -500,8 +500,8 @@ Initialises the order independent transparency extension.
 		glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
 		glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
 		glCombinerOutputNV(GL_COMBINER2_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		//glDisable(GL_PER_STAGE_CONSTANTS_NV);
-		//glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
+		/* glDisable(GL_PER_STAGE_CONSTANTS_NV); */
+		/* glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0); */
 		glFinalCombinerInputNV(GL_VARIABLE_A_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
 		glFinalCombinerInputNV(GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_INVERT_NV, GL_RGB);
 		glFinalCombinerInputNV(GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
@@ -1056,7 +1056,7 @@ Actually preforms the rendering pass.
 	ENTER(order_independent_display);
 
 #if defined (ORDER_INDEPENDENT_CAPABLE)
-	//	glViewport(0, 0, data->viewport_width, data->viewport_height);
+	/* glViewport(0, 0, data->viewport_width, data->viewport_height); */
 
 	/* Copy the image that is already drawn into the back layer */
 	glBindTexture(GL_TEXTURE_RECTANGLE_NV,
@@ -1080,7 +1080,7 @@ Actually preforms the rendering pass.
 	}
 	draw_sorted_transparency(data, blending_mode);
 
-	// glCallList(data->rc_sum_display_list);
+	/* glCallList(data->rc_sum_display_list); */
 #else /* defined (ORDER_INDEPENDENT_CAPABLE) */
 	USE_PARAMETER(rendering_data);
 	USE_PARAMETER(data);
