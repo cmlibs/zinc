@@ -428,6 +428,10 @@ as the <data> field or any of its source fields.
 				return_code = 0;
 			}
 		}
+		else
+		{
+			return_code = 0;
+		}
 	}
 	else
 	{
@@ -856,6 +860,7 @@ sequential element_xi lookup should now be performed.
 		find_element_xi_data.field = field;
 		find_element_xi_data.values = values;
 		find_element_xi_data.number_of_values = number_of_values;
+		find_element_xi_data.element_dimension = element_dimension;
 		find_element_xi_data.found_number_of_xi = 0;
 		find_element_xi_data.found_derivatives = (FE_value *)NULL;
 		find_element_xi_data.tolerance = 1e-06;
