@@ -1,5 +1,5 @@
 /************************************************************************************
-   FILE: computed_field_sterology_measures.c
+   FILE: computed_field_stereology_measures.c
 
    LAST MODIFIED: 12 July 2004
 
@@ -25,7 +25,7 @@
 #define my_Min(x,y) ((x) <= (y) ? (x) : (y))
 #define my_Max(x,y) ((x) <= (y) ? (y) : (x))
 
-struct Computed_field_sterology_measures_package
+struct Computed_field_stereology_measures_package
 /*******************************************************************************
 LAST MODIFIED : 17 February 2004
 
@@ -38,7 +38,7 @@ A container for objects required to define fields in this module.
 	struct Graphics_buffer_package *graphics_buffer_package;
 };
 
-struct Computed_field_sterology_measures_type_specific_data
+struct Computed_field_stereology_measures_type_specific_data
 {
 	int number_of_dirs;
 	int radius;
@@ -56,9 +56,9 @@ struct Computed_field_sterology_measures_type_specific_data
 	void *computed_field_manager_callback_id;
 };
 
-static char computed_field_sterology_measures_type_string[] = "sterology_measures";
+static char computed_field_stereology_measures_type_string[] = "stereology_measures";
 
-int Computed_field_is_type_sterology_measures(struct Computed_field *field)
+int Computed_field_is_type_stereology_measures(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
 
@@ -67,23 +67,23 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(Computed_field_is_type_sterology_measures);
+	ENTER(Computed_field_is_type_stereology_measures);
 	if (field)
 	{
 		return_code =
-		  (field->type_string == computed_field_sterology_measures_type_string);
+		  (field->type_string == computed_field_stereology_measures_type_string);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_sterology_measures.  Missing field");
+			"Computed_field_is_type_stereology_measures.  Missing field");
 		return_code = 0;
 	}
 
 	return (return_code);
-} /* Computed_field_is_type_sterology_measures */
+} /* Computed_field_is_type_stereology_measures */
 
-static void Computed_field_sterology_measures_field_change(
+static void Computed_field_stereology_measures_field_change(
 	struct MANAGER_MESSAGE(Computed_field) *message, void *field_void)
 /*******************************************************************************
 LAST MODIFIED : 5 April 2004
@@ -94,11 +94,11 @@ we know to invalidate the image cache.
 ==============================================================================*/
 {
 	struct Computed_field *field;
-	struct Computed_field_sterology_measures_type_specific_data *data;
+	struct Computed_field_stereology_measures_type_specific_data *data;
 
-	ENTER(Computed_field_sterology_measures_source_field_change);
+	ENTER(Computed_field_stereology_measures_source_field_change);
 	if (message && (field = (struct Computed_field *)field_void) && (data =
-		(struct Computed_field_sterology_measures_type_specific_data *)
+		(struct Computed_field_stereology_measures_type_specific_data *)
 		field->type_specific_data))
 	{
 		switch (message->change)
@@ -128,13 +128,13 @@ we know to invalidate the image cache.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sterology_measures_source_field_change.  "
+			"Computed_field_stereology_measures_source_field_change.  "
 			"Invalid arguments.");
 	}
 	LEAVE;
-} /* Computed_field_sterology_measures_source_field_change */
+} /* Computed_field_stereology_measures_source_field_change */
 
-static int Computed_field_sterology_measures_clear_type_specific(
+static int Computed_field_stereology_measures_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -144,11 +144,11 @@ Clear the type specific data used by this type.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_sterology_measures_type_specific_data *data;
+	struct Computed_field_stereology_measures_type_specific_data *data;
 
-	ENTER(Computed_field_sterology_measures_clear_type_specific);
+	ENTER(Computed_field_stereology_measures_clear_type_specific);
 	if (field && (data =
-		(struct Computed_field_sterology_measures_type_specific_data *)
+		(struct Computed_field_stereology_measures_type_specific_data *)
 		field->type_specific_data))
 	{
 		if (data->region)
@@ -183,16 +183,16 @@ Clear the type specific data used by this type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sterology_measures_clear_type_specific.  "
+			"Computed_field_stereology_measures_clear_type_specific.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_sterology_measures_clear_type_specific */
+} /* Computed_field_stereology_measures_clear_type_specific */
 
-static void *Computed_field_sterology_measures_copy_type_specific(
+static void *Computed_field_stereology_measures_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -201,17 +201,17 @@ DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	struct Computed_field_sterology_measures_type_specific_data *destination,
+	struct Computed_field_stereology_measures_type_specific_data *destination,
 		*source;
 	int i;
 
-	ENTER(Computed_field_sterology_measures_copy_type_specific);
+	ENTER(Computed_field_stereology_measures_copy_type_specific);
 	if (source_field && destination_field && (source =
-		(struct Computed_field_sterology_measures_type_specific_data *)
+		(struct Computed_field_stereology_measures_type_specific_data *)
 		source_field->type_specific_data))
 	{
 		if (ALLOCATE(destination,
-			struct Computed_field_sterology_measures_type_specific_data, 1))
+			struct Computed_field_stereology_measures_type_specific_data, 1))
 		{
 			destination->number_of_dirs = source->number_of_dirs;
 			destination->radius = source->radius;
@@ -236,7 +236,7 @@ Copy the type specific data used by this type.
 			destination->computed_field_manager = source->computed_field_manager;
 			destination->computed_field_manager_callback_id =
 				MANAGER_REGISTER(Computed_field)(
-				Computed_field_sterology_measures_field_change, (void *)destination_field,
+				Computed_field_stereology_measures_field_change, (void *)destination_field,
 				destination->computed_field_manager);
 			if (source->image)
 			{
@@ -254,7 +254,7 @@ Copy the type specific data used by this type.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_sterology_measures_copy_type_specific.  "
+				"Computed_field_stereology_measures_copy_type_specific.  "
 				"Unable to allocate memory.");
 			destination = NULL;
 		}
@@ -262,16 +262,16 @@ Copy the type specific data used by this type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sterology_measures_copy_type_specific.  "
+			"Computed_field_stereology_measures_copy_type_specific.  "
 			"Invalid arguments.");
 		destination = NULL;
 	}
 	LEAVE;
 
 	return (destination);
-} /* Computed_field_sterology_measures_copy_type_specific */
+} /* Computed_field_stereology_measures_copy_type_specific */
 
-int Computed_field_sterology_measures_clear_cache_type_specific
+int Computed_field_stereology_measures_clear_cache_type_specific
    (struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -280,11 +280,11 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_sterology_measures_type_specific_data *data;
+	struct Computed_field_stereology_measures_type_specific_data *data;
 
-	ENTER(Computed_field_sterology_measures_clear_type_specific);
+	ENTER(Computed_field_stereology_measures_clear_type_specific);
 	if (field && (data =
-		(struct Computed_field_sterology_measures_type_specific_data *)
+		(struct Computed_field_stereology_measures_type_specific_data *)
 		field->type_specific_data))
 	{
 		if (data->image)
@@ -296,16 +296,16 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sterology_measures_clear_type_specific.  "
+			"Computed_field_stereology_measures_clear_type_specific.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_sterology_measures_clear_type_specific */
+} /* Computed_field_stereology_measures_clear_type_specific */
 
-static int Computed_field_sterology_measures_type_specific_contents_match(
+static int Computed_field_stereology_measures_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -315,14 +315,14 @@ Compare the type specific data
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_sterology_measures_type_specific_data *data,
+	struct Computed_field_stereology_measures_type_specific_data *data,
 		*other_data;
 
-	ENTER(Computed_field_sterology_measures_type_specific_contents_match);
+	ENTER(Computed_field_stereology_measures_type_specific_contents_match);
 	if (field && other_computed_field && (data =
-		(struct Computed_field_sterology_measures_type_specific_data *)
+		(struct Computed_field_stereology_measures_type_specific_data *)
 		field->type_specific_data) && (other_data =
-		(struct Computed_field_sterology_measures_type_specific_data *)
+		(struct Computed_field_stereology_measures_type_specific_data *)
 		other_computed_field->type_specific_data))
 	{
 		if ((data->number_of_dirs == other_data->number_of_dirs) &&
@@ -347,9 +347,9 @@ Compare the type specific data
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_sterology_measures_type_specific_contents_match */
+} /* Computed_field_stereology_measures_type_specific_contents_match */
 
-#define Computed_field_sterology_measures_is_defined_in_element \
+#define Computed_field_stereology_measures_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -358,7 +358,7 @@ DESCRIPTION :
 Check the source fields using the default.
 ==============================================================================*/
 
-#define Computed_field_sterology_measures_is_defined_at_node \
+#define Computed_field_stereology_measures_is_defined_at_node \
 	Computed_field_default_is_defined_at_node
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -367,7 +367,7 @@ DESCRIPTION :
 Check the source fields using the default.
 ==============================================================================*/
 
-#define Computed_field_sterology_measures_has_numerical_components \
+#define Computed_field_stereology_measures_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -376,7 +376,7 @@ DESCRIPTION :
 Window projection does have numerical components.
 ==============================================================================*/
 
-#define Computed_field_sterology_measures_not_in_use \
+#define Computed_field_stereology_measures_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 10 July 2004
@@ -386,7 +386,7 @@ No special criteria.
 ==============================================================================*/
 
 
-static int Image_cache_sterology_measures(struct Image_cache *image, int number_of_dirs,
+static int Image_cache_stereology_measures(struct Image_cache *image, int number_of_dirs,
          int radius, double pixel_size, int dimension, int *output_sizes,
 	 struct Set_names_from_list_data results)
 /*******************************************************************************
@@ -456,7 +456,7 @@ Perform sterologic parameters extraction on the image cache.
 	int *h;
 	int levels; /* number of grey levels */
 
-	ENTER(Image_cache_sterology_measures);
+	ENTER(Image_cache_stereology_measures);
 	if (image && (dimension == image->dimension) && (image->depth > 0))
 	{
 	        return_code = 1;
@@ -728,22 +728,22 @@ Perform sterologic parameters extraction on the image cache.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Image_cache_sterology_measures.  Not enough memory");
+				"Image_cache_stereology_measures.  Not enough memory");
 			return_code = 0;
 		}
        	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "Image_cache_sterology_measures.  "
+		display_message(ERROR_MESSAGE, "Image_cache_stereology_measures.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Image_cache_sterology_measures */
+} /* Image_cache_stereology_measures */
 
-static int Computed_field_sterology_measures_evaluate_cache_at_node(
+static int Computed_field_stereology_measures_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -753,11 +753,11 @@ Evaluate the fields cache at the node.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_sterology_measures_type_specific_data *data;
+	struct Computed_field_stereology_measures_type_specific_data *data;
 
-	ENTER(Computed_field_sterology_measures_evaluate_cache_at_node);
+	ENTER(Computed_field_stereology_measures_evaluate_cache_at_node);
 	if (field && node &&
-		(data = (struct Computed_field_sterology_measures_type_specific_data *)field->type_specific_data))
+		(data = (struct Computed_field_stereology_measures_type_specific_data *)field->type_specific_data))
 	{
 		return_code = 1;
 		/* 1. Precalculate the Image_cache */
@@ -772,7 +772,7 @@ Evaluate the fields cache at the node.
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
 
-			return_code = Image_cache_sterology_measures(data->image, data->number_of_dirs,
+			return_code = Image_cache_stereology_measures(data->image, data->number_of_dirs,
 			        data->radius, data->pixel_size,
 				data->dimension, data->output_sizes, data->results);
 		}
@@ -785,16 +785,16 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sterology_measures_evaluate_cache_at_node.  "
+			"Computed_field_stereology_measures_evaluate_cache_at_node.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_sterology_measures_evaluate_cache_at_node */
+} /* Computed_field_stereology_measures_evaluate_cache_at_node */
 
-static int Computed_field_sterology_measures_evaluate_cache_in_element(
+static int Computed_field_stereology_measures_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
@@ -805,12 +805,12 @@ Evaluate the fields cache at the node.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_sterology_measures_type_specific_data *data;
+	struct Computed_field_stereology_measures_type_specific_data *data;
 
-	ENTER(Computed_field_sterology_measures_evaluate_cache_in_element);
+	ENTER(Computed_field_stereology_measures_evaluate_cache_in_element);
 	USE_PARAMETER(calculate_derivatives);
 	if (field && element && xi && (field->number_of_source_fields > 0) &&
-		(data = (struct Computed_field_sterology_measures_type_specific_data *) field->type_specific_data) &&
+		(data = (struct Computed_field_stereology_measures_type_specific_data *) field->type_specific_data) &&
 		data->image )
 	{
 		return_code = 1;
@@ -821,7 +821,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_sterology_measures(data->image, data->number_of_dirs,
+			return_code = Image_cache_stereology_measures(data->image, data->number_of_dirs,
 			        data->radius, data->pixel_size,
 				data->dimension, data->output_sizes, data->results);
 		}
@@ -834,16 +834,16 @@ Evaluate the fields cache at the node.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sterology_measures_evaluate_cache_in_element.  "
+			"Computed_field_stereology_measures_evaluate_cache_in_element.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_sterology_measures_evaluate_cache_in_element */
+} /* Computed_field_stereology_measures_evaluate_cache_in_element */
 
-#define Computed_field_sterology_measures_evaluate_as_string_at_node \
+#define Computed_field_stereology_measures_evaluate_as_string_at_node \
 	Computed_field_default_evaluate_as_string_at_node
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -852,7 +852,7 @@ DESCRIPTION :
 Print the values calculated in the cache.
 ==============================================================================*/
 
-#define Computed_field_sterology_measures_evaluate_as_string_in_element \
+#define Computed_field_stereology_measures_evaluate_as_string_in_element \
 	Computed_field_default_evaluate_as_string_in_element
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -861,7 +861,7 @@ DESCRIPTION :
 Print the values calculated in the cache.
 ==============================================================================*/
 
-#define Computed_field_sterology_measures_set_values_at_node \
+#define Computed_field_stereology_measures_set_values_at_node \
    (Computed_field_set_values_at_node_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -870,7 +870,7 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
-#define Computed_field_sterology_measures_set_values_in_element \
+#define Computed_field_stereology_measures_set_values_in_element \
    (Computed_field_set_values_in_element_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -879,7 +879,7 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
-#define Computed_field_sterology_measures_get_native_discretization_in_element \
+#define Computed_field_stereology_measures_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -888,7 +888,7 @@ DESCRIPTION :
 Inherit result from first source field.
 ==============================================================================*/
 
-#define Computed_field_sterology_measures_find_element_xi \
+#define Computed_field_stereology_measures_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 10 April 2004
@@ -897,7 +897,7 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
-static int list_Computed_field_sterology_measures(
+static int list_Computed_field_stereology_measures(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 4 April 2004
@@ -906,11 +906,11 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_sterology_measures_type_specific_data *data;
+	struct Computed_field_stereology_measures_type_specific_data *data;
 
-	ENTER(List_Computed_field_sterology_measures);
-	if (field && (field->type_string==computed_field_sterology_measures_type_string)
-		&& (data = (struct Computed_field_sterology_measures_type_specific_data *)
+	ENTER(List_Computed_field_stereology_measures);
+	if (field && (field->type_string==computed_field_stereology_measures_type_string)
+		&& (data = (struct Computed_field_stereology_measures_type_specific_data *)
 		field->type_specific_data))
 	{
 		display_message(INFORMATION_MESSAGE,
@@ -928,15 +928,15 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_sterology_measures.  Invalid field");
+			"list_Computed_field_stereology_measures.  Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* list_Computed_field_sterology_measures */
+} /* list_Computed_field_stereology_measures */
 
-static char *Computed_field_sterology_measures_get_command_string(
+static char *Computed_field_stereology_measures_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 4 April 2004
@@ -947,17 +947,17 @@ Returns allocated command string for reproducing field. Includes type.
 {
 	char *command_string, *field_name, temp_string[40];
 	int error;
-	struct Computed_field_sterology_measures_type_specific_data *data;
+	struct Computed_field_stereology_measures_type_specific_data *data;
 
-	ENTER(Computed_field_sterology_measures_get_command_string);
+	ENTER(Computed_field_stereology_measures_get_command_string);
 	command_string = (char *)NULL;
-	if (field && (field->type_string==computed_field_sterology_measures_type_string)
-		&& (data = (struct Computed_field_sterology_measures_type_specific_data *)
+	if (field && (field->type_string==computed_field_stereology_measures_type_string)
+		&& (data = (struct Computed_field_stereology_measures_type_specific_data *)
 		field->type_specific_data) )
 	{
 		error = 0;
 		append_string(&command_string,
-			computed_field_sterology_measures_type_string, &error);
+			computed_field_stereology_measures_type_string, &error);
 		append_string(&command_string, " field ", &error);
 		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
 		{
@@ -1004,14 +1004,14 @@ Returns allocated command string for reproducing field. Includes type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_sterology_measures_get_command_string.  Invalid field");
+			"Computed_field_stereology_measures_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
 	return (command_string);
-} /* Computed_field_sterology_measures_get_command_string */
+} /* Computed_field_stereology_measures_get_command_string */
 
-#define Computed_field_sterology_measures_has_multiple_times \
+#define Computed_field_stereology_measures_has_multiple_times \
 	Computed_field_default_has_multiple_times
 /*******************************************************************************
 LAST MODIFIED : 4 April 2004
@@ -1020,7 +1020,7 @@ DESCRIPTION :
 Works out whether time influences the field.
 ==============================================================================*/
 
-int Computed_field_set_type_sterology_measures(struct Computed_field *field,
+int Computed_field_set_type_stereology_measures(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
 	int dimension, int number_of_dirs, int radius, double pixel_size,
@@ -1033,7 +1033,7 @@ int Computed_field_set_type_sterology_measures(struct Computed_field *field,
 LAST MODIFIED : 10 July 2004
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_sterology_measures with the supplied
+Converts <field> to type COMPUTED_FIELD_stereology_measures with the supplied
 fields, <source_field> and <texture_coordinate_field>.  The <number_of_dirs> specifies
 the number of directions for checking.  The <dimension> is the
 size of the <sizes>, <minimums> and <maximums> vectors and should be less than
@@ -1044,9 +1044,9 @@ although its cache may be lost.
 {
 	int depth, number_of_source_fields, return_code, i, result_depth, number_of_results;
 	struct Computed_field **source_fields;
-	struct Computed_field_sterology_measures_type_specific_data *data;
+	struct Computed_field_stereology_measures_type_specific_data *data;
 
-	ENTER(Computed_field_set_type_sterology_measures);
+	ENTER(Computed_field_set_type_stereology_measures);
 	if (field && source_field && texture_coordinate_field &&
 		(number_of_dirs > 0) && (depth = source_field->number_of_components) &&
 		(dimension <= texture_coordinate_field->number_of_components) &&
@@ -1055,9 +1055,9 @@ although its cache may be lost.
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=2;
-		data = (struct Computed_field_sterology_measures_type_specific_data *)NULL;
+		data = (struct Computed_field_stereology_measures_type_specific_data *)NULL;
 		if (ALLOCATE(source_fields, struct Computed_field *, number_of_source_fields) &&
-			ALLOCATE(data, struct Computed_field_sterology_measures_type_specific_data, 1) &&
+			ALLOCATE(data, struct Computed_field_stereology_measures_type_specific_data, 1) &&
 			ALLOCATE(data->input_sizes, int, dimension) &&
 			ALLOCATE(data->output_sizes, int, dimension) &&
 			(data->image = ACCESS(Image_cache)(CREATE(Image_cache)())) &&
@@ -1068,7 +1068,7 @@ although its cache may be lost.
 			/* 2. free current type-specific data */
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
-			field->type_string = computed_field_sterology_measures_type_string;
+			field->type_string = computed_field_stereology_measures_type_string;
 			/* 4. calculate the number of results and make dynamic allocation for data*/
 			number_of_results = 0;
 			number_of_results = my_Max(number_of_results, bvtv_index);
@@ -1155,13 +1155,13 @@ although its cache may be lost.
 			data->computed_field_manager = computed_field_manager;
 			data->computed_field_manager_callback_id =
 				MANAGER_REGISTER(Computed_field)(
-				Computed_field_sterology_measures_field_change, (void *)field,
+				Computed_field_stereology_measures_field_change, (void *)field,
 				computed_field_manager);
 
 			field->type_specific_data = data;
 
 			/* Set all the methods */
-			COMPUTED_FIELD_ESTABLISH_METHODS(sterology_measures);
+			COMPUTED_FIELD_ESTABLISH_METHODS(stereology_measures);
 		}
 		else
 		{
@@ -1180,15 +1180,15 @@ although its cache may be lost.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_sterology_measures.  Invalid argument(s)");
+			"Computed_field_set_type_stereology_measures.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_set_type_sterology_measures */
+} /* Computed_field_set_type_stereology_measures */
 
-int Computed_field_get_type_sterology_measures(struct Computed_field *field,
+int Computed_field_get_type_stereology_measures(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
 	int *dimension, int *number_of_dirs, int *radius, double *pixel_size,
@@ -1200,16 +1200,16 @@ int Computed_field_get_type_sterology_measures(struct Computed_field *field,
 LAST MODIFIED : 10 July 2004
 
 DESCRIPTION :
-If the field is of type COMPUTED_FIELD_sterology_measures, the
+If the field is of type COMPUTED_FIELD_stereology_measures, the
 parameters defining it are returned.
 ==============================================================================*/
 {
 	int i, return_code;
-	struct Computed_field_sterology_measures_type_specific_data *data;
+	struct Computed_field_stereology_measures_type_specific_data *data;
 
-	ENTER(Computed_field_get_type_sterology_measures);
-	if (field && (field->type_string==computed_field_sterology_measures_type_string)
-		&& (data = (struct Computed_field_sterology_measures_type_specific_data *)
+	ENTER(Computed_field_get_type_stereology_measures);
+	if (field && (field->type_string==computed_field_stereology_measures_type_string)
+		&& (data = (struct Computed_field_stereology_measures_type_specific_data *)
 		field->type_specific_data) && data->image)
 	{
 		*dimension = data->image->dimension;
@@ -1273,28 +1273,28 @@ parameters defining it are returned.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_get_type_sterology_measures.  Unable to allocate vectors.");
+				"Computed_field_get_type_stereology_measures.  Unable to allocate vectors.");
 			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_sterology_measures.  Invalid argument(s)");
+			"Computed_field_get_type_stereology_measures.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_get_type_sterology_measures */
+} /* Computed_field_get_type_stereology_measures */
 
-static int define_Computed_field_type_sterology_measures(struct Parse_state *state,
-	void *field_void, void *computed_field_sterology_measures_package_void)
+static int define_Computed_field_type_stereology_measures(struct Parse_state *state,
+	void *field_void, void *computed_field_stereology_measures_package_void)
 /*******************************************************************************
 LAST MODIFIED : 12 July 2004
 
 DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_sterology_measures (if it is not
+Converts <field> into type COMPUTED_FIELD_stereology_measures (if it is not
 already) and allows its contents to be modified.
 ==============================================================================*/
 {
@@ -1306,18 +1306,18 @@ already) and allows its contents to be modified.
 		radius, return_code, *input_sizes, *output_sizes;
 	double pixel_size;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
-	struct Computed_field_sterology_measures_package
-		*computed_field_sterology_measures_package;
+	struct Computed_field_stereology_measures_package
+		*computed_field_stereology_measures_package;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data,
 		set_texture_coordinate_field_data;
 	struct Set_names_from_list_data results;
 
-	ENTER(define_Computed_field_type_sterology_measures);
+	ENTER(define_Computed_field_type_stereology_measures);
 	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_sterology_measures_package=
-		(struct Computed_field_sterology_measures_package *)
-		computed_field_sterology_measures_package_void))
+		(computed_field_stereology_measures_package=
+		(struct Computed_field_stereology_measures_package *)
+		computed_field_stereology_measures_package_void))
 	{
 		return_code=1;
 		source_field = (struct Computed_field *)NULL;
@@ -1333,7 +1333,7 @@ already) and allows its contents to be modified.
 		pixel_size = 0.0;
 		/* field */
 		set_source_field_data.computed_field_manager =
-			computed_field_sterology_measures_package->computed_field_manager;
+			computed_field_stereology_measures_package->computed_field_manager;
 		set_source_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_source_field_data.conditional_function_user_data = (void *)NULL;
@@ -1358,15 +1358,15 @@ already) and allows its contents to be modified.
 		results.tokens[7].index = 0;
 		/* texture_coordinate_field */
 		set_texture_coordinate_field_data.computed_field_manager =
-			computed_field_sterology_measures_package->computed_field_manager;
+			computed_field_stereology_measures_package->computed_field_manager;
 		set_texture_coordinate_field_data.conditional_function =
 			Computed_field_has_numerical_components;
 		set_texture_coordinate_field_data.conditional_function_user_data = (void *)NULL;
 
-		if (computed_field_sterology_measures_type_string ==
+		if (computed_field_stereology_measures_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code = Computed_field_get_type_sterology_measures(field,
+			return_code = Computed_field_get_type_stereology_measures(field,
 				&source_field, &texture_coordinate_field, &dimension, &number_of_dirs,
 				&radius, &pixel_size, &results.tokens[0].index, &results.tokens[1].index,
 				&results.tokens[2].index, &results.tokens[3].index, &results.tokens[4].index,
@@ -1503,15 +1503,15 @@ already) and allows its contents to be modified.
 			/* no errors,not asking for help */
 			if (return_code)
 			{
-				return_code = Computed_field_set_type_sterology_measures(field,
+				return_code = Computed_field_set_type_stereology_measures(field,
 					source_field, texture_coordinate_field, dimension, number_of_dirs,
 					radius, pixel_size, results.tokens[0].index, results.tokens[1].index,
 				        results.tokens[2].index, results.tokens[3].index, results.tokens[4].index,
 				        results.tokens[5].index, results.tokens[6].index, results.tokens[7].index,
 					input_sizes, output_sizes, minimums, maximums, element_dimension,
-					computed_field_sterology_measures_package->computed_field_manager,
-					computed_field_sterology_measures_package->root_region,
-					computed_field_sterology_measures_package->graphics_buffer_package);
+					computed_field_stereology_measures_package->computed_field_manager,
+					computed_field_stereology_measures_package->root_region,
+					computed_field_stereology_measures_package->graphics_buffer_package);
 			}
 			if (!return_code)
 			{
@@ -1521,7 +1521,7 @@ already) and allows its contents to be modified.
 				{
 					/* error */
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_sterology_measures.  Failed");
+						"define_Computed_field_type_stereology_measures.  Failed");
 				}
 			}
 			if (source_field)
@@ -1554,15 +1554,15 @@ already) and allows its contents to be modified.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_sterology_measures.  Invalid argument(s)");
+			"define_Computed_field_type_stereology_measures.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* define_Computed_field_type_sterology_measures */
+} /* define_Computed_field_type_stereology_measures */
 
-int Computed_field_register_types_sterology_measures(
+int Computed_field_register_types_stereology_measures(
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
@@ -1572,30 +1572,30 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Computed_field_sterology_measures_package
-		computed_field_sterology_measures_package;
+	static struct Computed_field_stereology_measures_package
+		computed_field_stereology_measures_package;
 
-	ENTER(Computed_field_register_types_sterology_measures);
+	ENTER(Computed_field_register_types_stereology_measures);
 	if (computed_field_package)
 	{
-		computed_field_sterology_measures_package.computed_field_manager =
+		computed_field_stereology_measures_package.computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
-		computed_field_sterology_measures_package.root_region = root_region;
-		computed_field_sterology_measures_package.graphics_buffer_package = graphics_buffer_package;
+		computed_field_stereology_measures_package.root_region = root_region;
+		computed_field_stereology_measures_package.graphics_buffer_package = graphics_buffer_package;
 		return_code = Computed_field_package_add_type(computed_field_package,
-			            computed_field_sterology_measures_type_string,
-			            define_Computed_field_type_sterology_measures,
-			            &computed_field_sterology_measures_package);
+			            computed_field_stereology_measures_type_string,
+			            define_Computed_field_type_stereology_measures,
+			            &computed_field_stereology_measures_package);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_register_types_sterology_measures.  Invalid argument(s)");
+			"Computed_field_register_types_stereology_measures.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_register_types_sterology_measures */
+} /* Computed_field_register_types_stereology_measures */
 
