@@ -15,6 +15,8 @@
 // How to abstract?
 //==============================================================================
 
+#include <sstream>
+
 #include "computed_variable/function_coordinates.hpp"
 #include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable.hpp"
