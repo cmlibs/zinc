@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 31 July 2002
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -55,9 +55,6 @@ PROBLEMS :
 TO DO :
 1 Clear unemap.deb
 ==============================================================================*/
-
-/*???DB.  Assume that running on Intel machine */
-#define __BYTE_ORDER 1234
 
 #define USE_SOCKETS
 /*#define USE_WORMHOLES*/

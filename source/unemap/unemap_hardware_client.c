@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 13 June 2002
+LAST MODIFIED : 31 July 2002
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -35,8 +35,6 @@ TO DO :
 #include <stdio.h>
 #include <string.h>
 #if defined (WIN32)
-/*???DB.  Assume that running on Intel machine */
-#define __BYTE_ORDER 1234
 #if defined (USE_SOCKETS)
 #include <winsock2.h>
 #include <process.h>
@@ -48,8 +46,6 @@ TO DO :
 #endif /* defined (USE_WORMHOLES) */
 #endif /* defined (WIN32) */
 #if defined (UNIX)
-#include <ctype.h>
-	/*???DB.  Contains definition of __BYTE_ORDER for Linux */
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -79,10 +75,6 @@ Module constants
 #define NUMBER_OF_CHANNELS_ON_NI_CARD 64
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
 
-#if defined (WIN32)
-/*???DB.  Assume that running on Intel machine */
-#define BYTE_ORDER 1234
-#endif /* defined (WIN32) */
 #if defined (UNIX)
 #define INVALID_SOCKET (-1)
 #define SOCKET_ERROR (-1)
