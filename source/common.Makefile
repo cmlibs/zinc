@@ -192,6 +192,10 @@ ifeq ($(SYSNAME),AIX)
    MAKEDEPEND = makedepend -f-
    CPREPROCESS = 
    LINK = xlc
+   ifeq ($(ABI),32)
+      #Increase the maximum memory for a 32 bit executable
+      LINK += -bmaxdata:0x80000000
+   endif # $(ABI) == 32
    ifneq ($(DEBUG),true)
       OPTIMISATION_FLAGS = -O2 -qmaxmem=-1
    else # DEBUG != true
