@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 18 August 2003
+LAST MODIFIED : 21 August 2003
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -1221,7 +1221,7 @@ static int acquired_socket_callback(
 	)
 #endif /* defined (BACKGROUND_SAVING) && defined (UNIX) */
 /*******************************************************************************
-LAST MODIFIED : 19 August 2003
+LAST MODIFIED : 21 August 2003
 
 DESCRIPTION :
 Called when there is input on the acquired socket.
@@ -1230,12 +1230,12 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 ==============================================================================*/
 {
 	int acquired_number_of_channels,i,k,number_of_channels,
-		number_of_configured_channels,offset;
+		number_of_configured_channels;
 	long message_size;
 	short *sample,*samples;
 	struct Unemap_crate *crate;
 	unsigned char message_header[2+sizeof(long)];
-	unsigned long j,number_of_samples;
+	unsigned long j,number_of_samples,offset;
 #if !(defined (BACKGROUND_SAVING) && defined (UNIX))
 	int return_code;
 #endif /* !(defined (BACKGROUND_SAVING) && defined (UNIX)) */
