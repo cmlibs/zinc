@@ -3,6 +3,7 @@
 #include "XSUB.h"
 
 #include "computed_variable/computed_value.h"
+#include "computed_variable/computed_value_FE_value.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Value::FE_value		PACKAGE = Cmiss::Value::FE_value		PREFIX = Cmiss_value_FE_value_
