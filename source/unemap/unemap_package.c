@@ -519,7 +519,6 @@ to NULL.
 		{
 			DEACCESS(FE_field)(&(package->map_electrode_position_fields[count]));		
 		}
-		destroy_Colour(&package->no_interpolation_colour);
 		destroy_Colour(&package->background_colour);
 		package->number_of_electrode_position_fields=0;	
 		package->number_of_map_electrode_position_fields=0;
