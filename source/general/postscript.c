@@ -1457,8 +1457,7 @@ the drawable (not sure which)
 ==============================================================================*/
 {
 	char black_and_white;
-	unsigned int column,count,i,number_of_colours,return_code,
-		row,scan_line_length;
+	unsigned int column,count,i,return_code,row,scan_line_length;
 	Pixel background_pixel,*spectrum_pixel;
 	unsigned char bit_mask,byte;
 	unsigned short background_blue,background_green,background_red,
@@ -1475,7 +1474,7 @@ the drawable (not sure which)
 		if (image&&screen_visual&&(postscript.spectrum_pixels)&&
 			(0<postscript.number_of_spectrum_colours)&&
 			((unsigned int)postscript.number_of_spectrum_colours<=
-			(number_of_colours=screen_visual->map_entries)))
+			screen_visual->map_entries))
 		{
 			return_code=1;
 			background_pixel=postscript.background_drawing_colour;
