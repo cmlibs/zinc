@@ -104,7 +104,7 @@ evaluate_derivative_xs( \
 	Cmiss::Function_variable input=(Cmiss_function_variable_id)NULL, \
 	Cmiss::Function value=(Cmiss_function_id)NULL)
 	PPCODE:
-		RETVAL=(Cmiss_function_variable_id)NULL;
+		RETVAL=(Cmiss_function_id)NULL;
 		if (variable&&independent_variables_array)
 		{
 			int i,order;
