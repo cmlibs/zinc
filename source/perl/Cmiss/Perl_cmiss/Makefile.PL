@@ -39,7 +39,7 @@ WriteMakefile(
   # Insert -I. if you add *.h files later:
     'INC'    => "-I$ENV{CMGUI_DEV_SOURCE}", # e.g., '-I/usr/include/other'
   # Un-comment this if you add C files to link with later:
-    'OBJECT'    => '$(O_FILES)', # link all the C files too
+  #  'OBJECT'    => '$(O_FILES)', # link all the C files too
   # Include the typemap files of any directories above here
     'TYPEMAPS'    =>  \@typemap_array,
 );
