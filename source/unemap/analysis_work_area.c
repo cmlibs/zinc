@@ -12383,8 +12383,8 @@ Responds to update callbacks from the time object.
 								if (-1!=map->activation_front)
 								{
 									/* playing movie */
-									/* fix the range when playing the movie */
-									map->fixed_range=1;
+									/* fix the range when playing the movie */								
+									map->fixed_range=1;									
 #if defined (UNEMAP_USE_NODES)
 									/* 3d map */
 									map->frame_start_time=map_potential_time;

@@ -795,6 +795,7 @@ NULL if not successful.
 			map->auxiliary_x=(int *)NULL;
 			map->auxiliary_y=(int *)NULL;
 			map->fixed_range=0;
+			map->range_changed=0;
 			map->minimum_value=1;
 			map->maximum_value=0;
 			map->contour_minimum=1;
@@ -1552,8 +1553,8 @@ Updates the colour map being used for map.
 			XStoreColors(display,colour_map,spectrum_rgb,number_of_spectrum_colours);
 		}
 		/*Ensure spectrum is set correctly */
-		Spectrum_set_minimum_and_maximum(map->drawing_information->spectrum,map->minimum_value,
-			map->maximum_value);
+		Spectrum_set_minimum_and_maximum(map->drawing_information->spectrum,
+			map->minimum_value,map->maximum_value);
 	}
 	else
 	{
@@ -3816,30 +3817,40 @@ makes maps electrode position field, and adds to the nodes in the rig node group
 				{
 					/*set the name */
 					set_FE_field_name(map_electrode_position_field,field_name);
-					/* copy everything but the name*/
-					MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name)(map_electrode_position_field,
-						map_position_field);								
-					/* add new field to fe_field_manager */
-					if (ADD_OBJECT_TO_MANAGER(FE_field)(map_electrode_position_field,field_manager))
+					/* copy everything but the name from map_position_field */
+					/* ??JW what if map_position_field hasn't been created?  */
+					if(MANAGER_COPY_WITHOUT_IDENTIFIER(FE_field,name)(map_electrode_position_field,
+						map_position_field))
 					{
-						/* add it to the unemap package,so can use it later */
-						set_unemap_package_map_electrode_position_field(unemap_package,
-							map_electrode_position_field,region_number);
-						/* add an map_electrode_position_field to the nodes. */
-						rig_node_group_add_map_electrode_position_field(region_number, 
-							unemap_package,map_electrode_position_field);							
-						/* Set the lambda/r/z to match  the fitted surface's. Should really*/
-						/* do vice versa, ie  set surface to electrodes */
-						rig_node_group_set_map_electrode_position_lambda_r(region_number,
-							unemap_package,FIT_SOCK_LAMBDA,FIT_TORSO_R);
-					}/* if (ADD_OBJECT_TO_MANAGER(FE_field) */
+						/* add new field to fe_field_manager */
+						if (ADD_OBJECT_TO_MANAGER(FE_field)(map_electrode_position_field,field_manager))
+						{
+							/* add it to the unemap package,so can use it later */
+							set_unemap_package_map_electrode_position_field(unemap_package,
+								map_electrode_position_field,region_number);
+							/* add an map_electrode_position_field to the nodes. */
+							rig_node_group_add_map_electrode_position_field(region_number, 
+								unemap_package,map_electrode_position_field);							
+							/* Set the lambda/r/z to match  the fitted surface's. Should really*/
+							/* do vice versa, ie  set surface to electrodes */
+							rig_node_group_set_map_electrode_position_lambda_r(region_number,
+								unemap_package,FIT_SOCK_LAMBDA,FIT_TORSO_R);
+						}/* if (ADD_OBJECT_TO_MANAGER(FE_field) */
+						else
+						{
+							display_message(ERROR_MESSAGE,"make_and_add_map_electrode_position_fields."
+								" error adding map_electrode_position_field to manager");
+							return_code=0;
+							DESTROY(FE_field)(&map_electrode_position_field);					
+						}															
+					}
 					else
 					{
 						display_message(ERROR_MESSAGE,"make_and_add_map_electrode_position_fields."
-							" error adding map_electrode_position_field to manager");
+							" error copying  map_electrode_position_field ");
 						return_code=0;
-						DESTROY(FE_field)(&map_electrode_position_field);					
-					}															
+						DESTROY(FE_field)(&map_electrode_position_field);
+					}
 				}/* if(map_electrode_position_field=CREATE( */
 				else
 				{
@@ -4182,11 +4193,14 @@ This function draws the <map> in as a 3D CMGUI scene.
 	struct Scene *scene=(struct Scene *)NULL;
 	struct Graphics_window *window=(struct Graphics_window *)NULL;
 	struct Spectrum *spectrum=(struct Spectrum *)NULL;
+	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
+	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct GROUP(FE_element) *element_group=(struct GROUP(FE_element) *)NULL;
 	
 	ENTER(new_draw_map);	
 	if(map)
 	{	
+		range_set=0;
 		unemap_package=map->unemap_package;
 		if (map->type)
 		{
@@ -4196,7 +4210,8 @@ This function draws the <map> in as a 3D CMGUI scene.
 		{
 			map_type=NO_MAP_FIELD;
 		}
-		spectrum=map->drawing_information->spectrum;		
+		spectrum=map->drawing_information->spectrum;
+		spectrum_manager=get_unemap_package_spectrum_manager(unemap_package);
 		unemap_package_make_map_scene(unemap_package,spectrum);
 		map_3d_window(unemap_package);	
 		if (map->rig_pointer)
@@ -4219,7 +4234,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 				{									
 					scene=get_unemap_package_scene(unemap_package);
 					window=get_unemap_package_window(unemap_package);
-					region_item=rig->region_list;					
+					region_item=rig->region_list;	
 					for (region_number=0;region_number<number_of_regions;region_number++)
 					{
 						if (number_of_regions>1)
@@ -4276,20 +4291,26 @@ This function draws the <map> in as a 3D CMGUI scene.
 									spectrum,data_field,(struct Colour*)NULL);
 							}
 							if(!get_unemap_package_viewed_scene(unemap_package))
-							{																
+							{														
 								/* make the map_electrode_position_field, add to the rig nodes*/							
 								make_and_add_map_electrode_position_field(region_number,
-									current_region->type,unemap_package);							
+									current_region->type,unemap_package);
 							}		
 						}/* if (function=calculate_interpolation_functio */
 						region_item=region_item->next;
-					} /* for (region_number=0; */			
-					/* spectrum range fixed */
-					time=map->frame_start_time/1000;/* ms to s*/
+					} /* for (region_number=0; */		
+					
+
+					/* Alter the spectrum */
+					time=map->frame_start_time/1000;/* ms to s*/	
+					/* spectrum range changed and fixed fixed */
 					if(map->fixed_range)
-					{
-						Spectrum_set_minimum_and_maximum(spectrum,map->minimum_value,
-							map->maximum_value);
+					{		
+						if(map->range_changed)
+						{
+							 map->range_changed=0;
+							range_set=1;
+						}
 					}
 					else/* spectrum range automatic */
 					{		
@@ -4307,22 +4328,50 @@ This function draws the <map> in as a 3D CMGUI scene.
 						{
 							Scene_get_data_range_for_spectrum(scene,spectrum,&minimum,&maximum,
 								&range_set);
-							if ( range_set )
-							{
-								Spectrum_set_minimum_and_maximum(spectrum,minimum, maximum );							
-							}
 						}
 						map->minimum_value=minimum;
 						map->maximum_value=maximum;	
 						map->contour_minimum=minimum;
 						map->contour_maximum=maximum;
+						map->range_changed=0;
 					}	/* if(map->fixed_range) */
+				
+					if(range_set)
+					{
+						if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+						{
+							if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+								("spectrum_modify_temp"))
+							{
+								MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+									(spectrum_to_be_modified_copy,spectrum);
+								Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,
+									minimum,maximum);						
+								MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+									spectrum_to_be_modified_copy,spectrum_manager);
+								DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"new_draw_map.  Could not create spectrum copy.");
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"new_draw_map.  Spectrum is not in manager!");
+							return_code=0;
+						}				
+					}
+						
 					/* must re loop through regions here,now we have the spectrum */
 					for (region_number=0;region_number<number_of_regions;region_number++)
 					{
 						map_draw_map_electrodes(unemap_package,region_number,
 							map->electrodes_marker_type,spectrum,time);
-					}
+					}	
 					/* First time the scene's viewed  do "view_all"*/
 					if(!get_unemap_package_viewed_scene(unemap_package))
 					{	
@@ -4369,11 +4418,9 @@ to the drawing or writes to a postscript file.
 	USE_PARAMETER(drawing);
 	if(map)
 	{
-		
-
 		return_code=new_draw_map(map);	
 		/* update_colour_map_unemap() necessary for old style colur strip at top of*/
-		/* mapping window. Will become obselete when only cmgui methods used */		
+		/* mapping window. Will become obselete when only cmgui methods used */						
 		update_colour_map_unemap(map,drawing);		
 	}
 	else
@@ -8366,9 +8413,13 @@ extern Visual *default_visual;
 #endif /* defined (TEST_TRUE_COLOUR_VISUAL) */
 
 struct Map_drawing_information *create_Map_drawing_information(
-	struct User_interface *user_interface)
+	struct User_interface *user_interface
+#if defined (UNEMAP_USE_NODES) 
+	,struct Unemap_package *unemap_package
+#endif /* defined (UNEMAP_USE_NODES) */
+      )
 /*******************************************************************************
-LAST MODIFIED : 27 September 1999
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -8501,7 +8552,11 @@ DESCRIPTION :
 
 	ENTER(create_Map_drawing_information);
 	/* check arguments */
-	if (user_interface)
+	if ((user_interface)
+#if defined (UNEMAP_USE_NODES)
+      &&(unemap_package)
+#endif /* defined (UNEMAP_USE_NODES) */
+     )
 	{
 		if (ALLOCATE(map_drawing_information,struct Map_drawing_information,1))
 		{
@@ -8522,7 +8577,16 @@ visual=default_visual;
 			map_drawing_information->font=user_interface->normal_font;
 			map_drawing_information->number_of_spectrum_colours=MAX_SPECTRUM_COLOURS;
 			map_drawing_information->colour_map=colour_map;
-			map_drawing_information->spectrum=CREATE(Spectrum)("mapping_spectrum");     
+			map_drawing_information->spectrum=CREATE(Spectrum)("mapping_spectrum");
+#if defined (UNEMAP_USE_NODES)      
+		 if (!ADD_OBJECT_TO_MANAGER(Spectrum)(map_drawing_information->spectrum,
+				get_unemap_package_spectrum_manager(unemap_package)))
+
+       {
+			   display_message(ERROR_MESSAGE,"create_Map_drawing_information. "
+         " Could not add spectrum to manager");
+       }
+#endif /* defined (UNEMAP_USE_NODES) */
 			if (visual_info=XGetVisualInfo(display,VisualNoMask,&visual_info_template,
 				&number_of_visuals))
 			{

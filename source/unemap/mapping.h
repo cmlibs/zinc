@@ -256,6 +256,7 @@ DESCRIPTION :
 	int *auxiliary_x,*auxiliary_y;
 	int fixed_range;
 		/*???DB.  Should be combined with spectrum_range */
+	int range_changed;
 	float contour_maximum,contour_minimum,maximum_value,minimum_value;
 	int activation_front,number_of_contours;
 		/*???DB.  Replace activation_front by frame_number ? */
@@ -344,9 +345,13 @@ This function draws the colour bar or the auxiliary inputs in the <drawing>.
 ==============================================================================*/
 
 struct Map_drawing_information *create_Map_drawing_information(
-	struct User_interface *user_interface);
+	struct User_interface *user_interface
+#if defined (UNEMAP_USE_NODES) 
+	,struct Unemap_package *unemap_package
+#endif /* defined (UNEMAP_USE_NODES) */
+       );
 /*******************************************************************************
-LAST MODIFIED : 19 June 1997
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 ==============================================================================*/

@@ -3319,4 +3319,29 @@ so will be 1,2,3...
 	return(return_code);
 }/* set_unemap_package_map_info */
 
+struct MANAGER(Spectrum) *get_unemap_package_spectrum_manager(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : April 18 2000
+
+DESCRIPTION :
+gets the spectrum_manager of the unemap package.
+==============================================================================*/
+{
+	struct MANAGER(Spectrum) *spectrum_manager;
+	ENTER(get_unemap_package_spectrum_manager);
+	if(package)
+	{
+		spectrum_manager=package->spectrum_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_spectrum_manager."
+				" invalid arguments");
+		spectrum_manager = (struct MANAGER(Spectrum) *)NULL;
+	}
+	LEAVE;
+	return (spectrum_manager);
+} /* get_unemap_package_ spectrum_manager*/
+
 #endif /* #if defined (UNEMAP_USE_NODES) */

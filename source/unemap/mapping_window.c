@@ -555,6 +555,7 @@ necessary.
 		}
 		if (minimum_range!=map_dialog->range_minimum)
 		{
+			map->range_changed=1;
 			map->minimum_value=minimum_range;
 			map->contour_minimum=minimum_range;
 			map_dialog->range_minimum=minimum_range;
@@ -570,6 +571,7 @@ necessary.
 		}
 		if (maximum_range!=map_dialog->range_maximum)
 		{
+			map->range_changed=1;
 			map->maximum_value=maximum_range;
 			map->contour_maximum=maximum_range;
 			map_dialog->range_maximum=maximum_range;
@@ -1060,6 +1062,7 @@ necessary.
 		{
 			if (map->maximum_value!=map_dialog->range_maximum)
 			{
+				map->range_changed=1;
 				sprintf(temp_string,"%g",map->maximum_value);
 				sscanf(temp_string,"%f",&(map_dialog->range_maximum));
 				XtVaSetValues(map_dialog->range.maximum_value,
@@ -1068,6 +1071,7 @@ necessary.
 			}
 			if (map->minimum_value!=map_dialog->range_minimum)
 			{
+				map->range_changed=1;
 				sprintf(temp_string,"%g",map->minimum_value);
 				sscanf(temp_string,"%f",&(map_dialog->range_minimum));
 				XtVaSetValues(map_dialog->range.minimum_value,

@@ -1117,7 +1117,11 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				system->window_shell=shell;
 				system->user_interface=user_interface;
 				system->map_drawing_information=
-					create_Map_drawing_information(user_interface);
+					create_Map_drawing_information(user_interface
+#if defined (UNEMAP_USE_NODES)
+						,unemap_package
+#endif /* defined (UNEMAP_USE_NODES) */										 
+						 );
 				system->configuration_directory=(char *)NULL;
 				system->configuration_file_extension=(char *)NULL;
 				system->postscript_file_extension=(char *)NULL;
