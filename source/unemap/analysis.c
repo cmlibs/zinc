@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 13 November 2002
+LAST MODIFIED : 26 November 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -232,7 +232,7 @@ int analysis_write_signal_file(char *file_name,struct Rig *rig,int datum,
 	enum Edit_order edit_order,enum Signal_order signal_order,float level,
 	int average_width)
 /*******************************************************************************
-LAST MODIFIED : 19 November 2000
+LAST MODIFIED : 26 November 2003
 
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
@@ -321,7 +321,7 @@ named file.
 							{
 								signal_minimum=(*device)->signal_display_minimum;
 								signal_maximum=(*device)->signal_display_maximum;
-								if (0!=((*device)->channel)->gain)
+								if (0<((*device)->channel)->gain)
 								{
 									signal_minimum=(((*device)->channel)->offset)+
 										signal_minimum/(((*device)->channel)->gain);
@@ -329,12 +329,23 @@ named file.
 										signal_maximum/(((*device)->channel)->gain);
 
 								}
+								else
+								{
+									if (0>((*device)->channel)->gain)
+									{
+										signal_minimum=(((*device)->channel)->offset)+
+											signal_maximum/(((*device)->channel)->gain);
+										signal_maximum=(((*device)->channel)->offset)+
+											signal_minimum/(((*device)->channel)->gain);
+
+									}
+								}
 								if ((1==BINARY_FILE_WRITE((char *)&((*device)->signal->status),
 									sizeof(enum Event_signal_status),1,output_file))&&
-									(1==BINARY_FILE_WRITE((char *)&signal_minimum,
-										sizeof(float),1,output_file))&&
-									(1==BINARY_FILE_WRITE((char *)&signal_maximum,
-										sizeof(float),1,output_file)))
+									(1==BINARY_FILE_WRITE((char *)&signal_minimum,sizeof(float),1,
+									output_file))&&
+									(1==BINARY_FILE_WRITE((char *)&signal_maximum,sizeof(float),1,
+									output_file)))
 								{
 									/* write the events */
 									start_event=(*device)->signal->first_event;
@@ -438,7 +449,7 @@ int analysis_read_signal_file(char *file_name,struct Rig **rig_address,
 #endif /* defined (UNEMAP_USE_NODES) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2002
+LAST MODIFIED : 26 November 2003
 
 DESCRIPTION :
 Reads a signal file and the analysis information.  If there is analysis
@@ -623,14 +634,28 @@ set.
 											/*???DB.  Originally the unscaled maximum and minimum were
 												stored.  This has to be maintained for backward
 												compatability */
-											(*device)->signal_display_minimum=
-												(((*device)->channel)->gain)*
-												(((*device)->signal_display_minimum)-
-												(((*device)->channel)->offset));
-											(*device)->signal_display_maximum=
-												(((*device)->channel)->gain)*
-												(((*device)->signal_display_maximum)-
-												(((*device)->channel)->offset));
+											if (0<((*device)->channel)->gain)
+											{
+												(*device)->signal_display_minimum=
+													(((*device)->channel)->gain)*
+													(((*device)->signal_display_minimum)-
+													(((*device)->channel)->offset));
+												(*device)->signal_display_maximum=
+													(((*device)->channel)->gain)*
+													(((*device)->signal_display_maximum)-
+													(((*device)->channel)->offset));
+											}
+											else
+											{
+												(*device)->signal_display_minimum=
+													(((*device)->channel)->gain)*
+													(((*device)->signal_display_maximum)-
+													(((*device)->channel)->offset));
+												(*device)->signal_display_maximum=
+													(((*device)->channel)->gain)*
+													(((*device)->signal_display_minimum)-
+													(((*device)->channel)->offset));
+											}
 										}
 										/* read the events */
 										if (1==BINARY_FILE_READ((char *)&number_of_events,
