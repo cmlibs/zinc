@@ -791,6 +791,7 @@ Ensures slope continuity in destination curve when cubic hermite basis.
 	return (return_code);
 } /* cc_add_duplicate_element */
 
+#if defined (DEBUG)
 static int cc_list(struct Control_curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 22 November 1999
@@ -862,6 +863,7 @@ Lists the contents of the curve.
 
 	return (return_code);
 } /* cc_list */
+#endif /* defined (DEBUG) */
 
 static int cc_copy_convert_without_name(struct Control_curve *destination,
 	enum FE_basis_type fe_basis_type,int number_of_components,
