@@ -1506,10 +1506,34 @@ Clears read-only status of <field>, telling the program that the user is allowed
 to modify and destroy it.
 ==============================================================================*/
 
-int Computed_field_find_element_xi(struct Computed_field *field, FE_value *values,
-	int number_of_values, struct FE_element **element, FE_value *xi);
+struct Computed_field_iterative_find_element_xi_data
+{
+	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct Computed_field *field;
+	int number_of_values;
+	FE_value *values;
+	int found_number_of_xi;
+	FE_value *found_values;
+	FE_value *found_derivatives;
+	float tolerance;
+}; /* Computed_field_iterative_find_element_xi_data */
+
+int Computed_field_iterative_element_conditional(
+	struct FE_element *element, void *data_void);
 /*******************************************************************************
-LAST MODIFIED : 26 May 1999
+LAST MODIFIED: 16 June 2000
+
+DESCRIPTION:
+Returns true if a valid element xi is found.
+==============================================================================*/
+
+int Computed_field_find_element_xi(struct Computed_field *field, FE_value *values,
+	int number_of_values, struct FE_element **element, FE_value *xi,
+	struct GROUP(FE_element) *search_element_group, 
+	struct User_interface *user_interface,
+	float *hint_minimums, float *hint_maximums, float *hint_resolution);
+/*******************************************************************************
+LAST MODIFIED : 20 June 2000
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -1518,12 +1542,14 @@ and xi which would evaluate to the given values.
 This has been implemented so that the texture_coordinates can be used to extract
 information from textures (sample_texture computed_field) and then modified and
 then put back into another texture.
+The <search_element_group> is the set of elements from which the chosen element
+will belong.
 ==============================================================================*/
 
 int Computed_field_is_find_element_xi_capable(struct Computed_field *field,
 	void *dummy_void);
 /*******************************************************************************
-LAST MODIFIED : 15 October 1999
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 This function returns true if the <field> can find element and xi given
