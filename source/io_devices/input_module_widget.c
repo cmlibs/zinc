@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : input_module_widget.c
 
-LAST MODIFIED : 20 March 2000
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 This widget allows the user to accept input from certain devices.  Only valid
@@ -110,7 +110,7 @@ Finds the id of the buttons on the input_module widget.
 static void input_module_destroy_CB(Widget w,XtPointer user_data,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2000
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Callback for the input_module widget - tidies up all details - mem etc
@@ -126,9 +126,9 @@ Callback for the input_module widget - tidies up all details - mem etc
 	if (temp_input_module)
 	{
 		*(temp_input_module->widget_address) = (Widget)NULL;
-		DESTROY(LIST(CALLBACK(Input_module_device_change)))(
+		DESTROY(LIST(CALLBACK_ITEM(Input_module_device_change)))(
 			&(temp_input_module->device_change_callback_list));
-		DESTROY(LIST(CALLBACK(Input_module_polhemus_change)))(
+		DESTROY(LIST(CALLBACK_ITEM(Input_module_polhemus_change)))(
 			&(temp_input_module->polhemus_change_callback_list));
 		DEALLOCATE(temp_input_module);
 	}
@@ -344,9 +344,9 @@ certain client.
 			};
 #endif
 			temp_input_module->device_change_callback_list=
-				CREATE(LIST(CALLBACK(Input_module_device_change)))();
+				CREATE(LIST(CALLBACK_ITEM(Input_module_device_change)))();
 			temp_input_module->polhemus_change_callback_list=
-				CREATE(LIST(CALLBACK(Input_module_polhemus_change)))();
+				CREATE(LIST(CALLBACK_ITEM(Input_module_polhemus_change)))();
 			/* register the callbacks */
 			if (MrmSUCCESS==MrmRegisterNamesInHierarchy(input_module_widget_hierarchy,
 				callback_list,XtNumber(callback_list)))

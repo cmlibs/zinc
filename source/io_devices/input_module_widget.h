@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE :input_module_widget.h
 
-LAST MODIFIED : 20 March 2000
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 This widget allows the user to accept input from certain devices.  Only valid
@@ -46,16 +46,16 @@ DECLARE_CALLBACK_TYPES(Input_module_polhemus_change,Widget,int/*button_num*/);
 
 struct Input_module_widget_struct
 /*******************************************************************************
-LAST MODIFIED : 20 March 2000
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Contains all the information carried by the menu.
 ==============================================================================*/
 {
 	int input_device[INPUT_MODULE_NUM_DEVICES];
-	struct LIST(CALLBACK(Input_module_device_change))
+	struct LIST(CALLBACK_ITEM(Input_module_device_change))
 		*device_change_callback_list;
-	struct LIST(CALLBACK(Input_module_polhemus_change))
+	struct LIST(CALLBACK_ITEM(Input_module_polhemus_change))
 		*polhemus_change_callback_list;
 	Widget input[INPUT_MODULE_NUM_DEVICES];
 #if defined (POLHEMUS)
