@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_matrix_operations.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 5 April 2002
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
@@ -338,7 +338,7 @@ No special criteria.
 
 static int Computed_field_evaluate_eigenvalues(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 5 April 2002
 
 DESCRIPTION :
 Evaluates the eigenvalues and eigenvectors of the source field of <field> in
@@ -372,7 +372,9 @@ field->values.
 					"Eigenanalysis of field %s may be wrong as matrix not symmetric",
 					source_field->name);
 			}
-			if (Jacobi_eigenanalysis(n, data->a, data->d, data->v, &nrot))
+			/* get eigenvalues and eigenvectors sorted from largest to smallest */
+			if (Jacobi_eigenanalysis(n, data->a, data->d, data->v, &nrot) &&
+				eigensort(n, data->d, data->v))
 			{
 				/* d now contains the eigenvalues, v the eigenvectors in columns, while
 					 values of a above the main diagonal are destroyed */
