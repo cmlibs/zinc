@@ -337,6 +337,7 @@ be shared by multiple materials using the same program.
 							"PARAM eyeLightPos = state.light[0].position;\n"
 
 							"TEMP eyeVertex;\n"
+							"TEMP viewVec;\n"
 							, &error);
 						if ((MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
 							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
@@ -411,8 +412,13 @@ be shared by multiple materials using the same program.
 								"RSQ eyeNormal.w, eyeNormal.w;\n"
 								"MUL eyeNormal.xyz, eyeNormal.w, eyeNormal;\n"
 
+								"SUB viewVec, eyeCameraPos, eyeVertex;\n"
+								"DP3 viewVec.w, viewVec, viewVec;\n"
+								"RSQ viewVec.w, viewVec.w;\n"
+								"MUL viewVec.xyz, viewVec.w, viewVec;\n"
+
 								"SUB result.texcoord[1], eyeLightPos, eyeVertex;\n"
-								"SUB result.texcoord[2], eyeCameraPos, eyeVertex;\n"
+								"MOV result.texcoord[2], viewVec;\n"
 								"MOV result.texcoord[3], eyeNormal;\n"
 								, &error);
 						}
@@ -436,11 +442,19 @@ be shared by multiple materials using the same program.
 							"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
 							"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
 
-							"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
-
 							"#Set up reverse vector based on secondary colour\n"
 							"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
 							, &error);
+
+
+						if ((MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
+							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
+						{
+							append_string(&fragment_program_string, 
+								/* Load the colour texture */
+								"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
+							, &error);
+						}
 
 						if ((MATERIAL_PROGRAM_BUMP_MAPPING == material_program->type)
 							|| (MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING == material_program->type))
