@@ -841,9 +841,6 @@ a graphics object or affected by <changed_element> or <changed_node>.
 			Computed_field_begin_wrap_coordinate_field(
 				gt_element_group->default_coordinate_field))
 		{
-			/* (de)access default_rc_coordinate_field to clean up if created above */
-			ACCESS(Computed_field)(
-				settings_to_object_data.default_rc_coordinate_field);
 			settings_to_object_data.rc_coordinate_field=(struct Computed_field *)NULL;
 			settings_to_object_data.wrapper_orientation_scale_field=
 				(struct Computed_field *)NULL;
