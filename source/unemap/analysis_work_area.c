@@ -266,9 +266,11 @@ DESCRIPTION :
 		(spectrum=analysis->map_drawing_information->spectrum))
 	{
 		if ((analysis->map_type_changed)||
-			(UNKNOWN_SPECTRUM==Spectrum_get_simple_type(spectrum)))
-		/* revert to the default spectrum type if the map type has changed  */
+			(UNKNOWN_SPECTRUM==Spectrum_get_simple_type(spectrum)))		
 		{
+			/* revert to the default spectrum type if the map type has changed  */
+#if defined (OLD_CODE)
+			/*??JW Why do this?*/
 			switch (analysis->map_type)
 			{
 				case SINGLE_ACTIVATION:
@@ -281,7 +283,13 @@ DESCRIPTION :
 					Spectrum_set_simple_type(spectrum,BLUE_TO_RED_SPECTRUM);
 				} break;
 			}
+#endif
 			analysis->map_type_changed=0;
+		}
+	
+		if(UNKNOWN_SPECTRUM==Spectrum_get_simple_type(spectrum))
+		{
+			Spectrum_set_simple_type(spectrum,BLUE_TO_RED_SPECTRUM);
 		}
 		if (widget==analysis_window->display_map_warning_box)
 		{
@@ -296,8 +304,7 @@ DESCRIPTION :
 		{
 			maintain_aspect_ratio=0;
 		}
-		/*ensure projection_type matches region type */
-		
+		/*ensure projection_type matches region type */		
 		projection_type=ensure_projection_type_matches_region_type(analysis);		
 		/*???should create mapping window and map if not present */
 		if (open_mapping_window(&(analysis->mapping_window),
@@ -308,7 +315,7 @@ DESCRIPTION :
 			&(analysis->mapping_work_area->current_mapping_window),
 			&(analysis->mapping_work_area->open),
 			&(analysis->mapping_work_area->associate),&(analysis->map_type),
-			HIDE_COLOUR,HIDE_CONTOURS,SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,
+			SHOW_COLOUR,HIDE_CONTOURS,SHOW_ELECTRODE_VALUES,HIDE_FIBRES,HIDE_LANDMARKS,
 			HIDE_EXTREMA,maintain_aspect_ratio,1,projection_type,VARIABLE_THICKNESS,
 			&(analysis->rig),&(analysis->event_number),&(analysis->potential_time),
 			&(analysis->datum),&(analysis->start_search_interval),
@@ -362,9 +369,6 @@ DESCRIPTION :
 					map->undecided_accepted=0;
 				}
 			}
-			map->colour_option=SHOW_COLOUR;
-			map->contours_option=HIDE_CONTOURS;
-			map->electrodes_label_type=SHOW_ELECTRODE_VALUES;			
 			if (analysis->time_keeper && Time_keeper_is_playing(analysis->time_keeper))
 			{
 				map->activation_front = 0;
