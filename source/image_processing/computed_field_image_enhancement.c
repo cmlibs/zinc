@@ -362,6 +362,7 @@ Perform a enhancement operation on the image cache.
 	FE_value *data_index, *result_index, *kernel;
 	int filter_size, i, j, k, m, *offsets, return_code, kernel_size, storage_size;
 	FE_value local_mean;
+	FE_value *result_max, *result_min;
 	int radius;
 	int image_step, kernel_step;
 
@@ -386,6 +387,8 @@ Perform a enhancement operation on the image cache.
 		}
 		if (ALLOCATE(kernel, FE_value, kernel_size) &&
 			ALLOCATE(offsets, int, kernel_size) &&
+			ALLOCATE(result_max, FE_value, image->depth) &&
+			ALLOCATE(result_min, FE_value, image->depth) &&
 			ALLOCATE(storage, char, storage_size * sizeof(FE_value)))
 		{
 			result_index = (FE_value *)storage;
@@ -409,6 +412,11 @@ Perform a enhancement operation on the image cache.
 					kernel_step *= filter_size;
 					image_step *= image->sizes[m];
 				}
+			}
+			for (k = 0; k < image->depth; k++)
+			{
+			        result_max[k] = 0.0;
+				result_min[k] = 10000.0;
 			}
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
@@ -438,13 +446,23 @@ Perform a enhancement operation on the image cache.
 					}
 					local_mean /= (FE_value)kernel_size;
 					result_index[k] = local_mean + enhance_rate * (*(data_index + k) - local_mean);
-					if (result_index[k] < 0.0) result_index[k] = 0.0;
-					if (result_index[k] > 1.0) result_index[k] = 1.0;
+					result_max[k] = my_Max(result_max[k], result_index[k]);
+					result_min[k] = my_Min(result_min[k], result_index[k]);
+					/* if (result_index[k] < 0.0) result_index[k] = 0.0; */
+					/* if (result_index[k] > 1.0) result_index[k] = 1.0; */
 				}
 				data_index += image->depth;
 				result_index += image->depth;
 			}
-
+			for (i = (storage_size / image->depth) - 1 ; i >= 0; i--)
+			{
+			        result_index -= image->depth;
+				for (k = 0 ; k < image->depth ; k++)
+				{
+				        result_index[k] = result_index[k] - result_min[k];
+					result_index[k] /= (result_max[k] - result_min[k]);
+				}
+			}
 			if (return_code)
 			{
 				DEALLOCATE(image->data);
@@ -458,6 +476,8 @@ Perform a enhancement operation on the image cache.
 
 			DEALLOCATE(kernel);
 			DEALLOCATE(offsets);
+			DEALLOCATE(result_max);
+			DEALLOCATE(result_min);
 
 		}
 		else
