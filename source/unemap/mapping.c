@@ -1314,10 +1314,6 @@ i.e sock is a hemisphere, torso is a cylinder.
 					}	
 					template_node = create_mapping_template_node(SOCK,field_order_info,
 						package,1,1,number_of_columns);				
-					r_value_and_derivatives[0]=0;
-					r_value_and_derivatives[1]=0;
-					r_value_and_derivatives[2]=0;
-					r_value_and_derivatives[3]=0;
 					theta = function->x_mesh[0];
 					mu = 0;
 					lambda = sock_lambda;
@@ -1434,6 +1430,10 @@ i.e sock is a hemisphere, torso is a cylinder.
 					}	
 					template_node = create_mapping_template_node(TORSO,field_order_info,
 						package,1,1,1);
+					r_value_and_derivatives[0]=0;
+					r_value_and_derivatives[1]=0;
+					r_value_and_derivatives[2]=0;
+					r_value_and_derivatives[3]=0;
 					while(count<number_of_nodes)
 					{
 						/* do all rows */
@@ -7656,6 +7656,7 @@ a static string of length 11.
 		{								
 			case HIDE_ELECTRODES:									
 			{
+				sprintf(name,"%s","");
 				if (electrode->highlight)
 				{
 					*graphics_context=(drawing_information->graphics_context).
@@ -7869,8 +7870,8 @@ DESCRIPTION :  Draw the electrode in 2D, and write it's name.
 			} break;		
 			case HIDE_ELECTRODE_MARKER:
 			{
-				/* do nothing */
-				;
+				/* no name if hiding electrodes */
+				sprintf(name,"%s","");
 			} break;											
 		}
 		if (name)
