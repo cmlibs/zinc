@@ -84,7 +84,9 @@ Functions for executing cmiss commands.
 #include "finite_element/grid_field_calculator.h"
 #endif /* defined (MOTIF) */
 #include "finite_element/import_finite_element.h"
+#include "finite_element/read_fieldml.h"
 #include "finite_element/snake.h"
+#include "finite_element/write_fieldml.h"
 #include "general/debug.h"
 #include "general/error_handler.h"
 #include "general/image_utilities.h"
@@ -8224,12 +8226,8 @@ Currently limited to 1 byte per component.
 
 struct Texture_evaluate_image_data
 {
-	enum Texture_storage_type storage;
-	int depth_texels;
 	int element_dimension; /* where 0 is any dimension */
-	int height_texels;
 	int propagate_field;
-	int width_texels;
 	struct Computed_field *field, *texture_coordinates_field;
 	struct GROUP(FE_element) *element_group;
 	struct Spectrum *spectrum;	
@@ -8344,9 +8342,6 @@ Modifies the properties of a texture.
 				(data = (struct Texture_evaluate_image_data *)data_void))
 			{
 				option_table = CREATE(Option_table)();
-				/* depth_texels */
-				Option_table_add_entry(option_table, "depth_texels",
-					&data->depth_texels, NULL, set_int_positive);
 				/* element_dimension */
 				Option_table_add_entry(option_table, "element_dimension",
 					&data->element_dimension, NULL, set_element_dimension_or_all);
@@ -8363,21 +8358,12 @@ Modifies the properties of a texture.
 				set_field_data.conditional_function_user_data=(void *)NULL;
 				Option_table_add_entry(option_table, "field", &data->field,
 					&set_field_data, set_Computed_field_conditional);
-				/* format */
-				Option_table_add_entry(option_table, "format", &data->storage,
-					NULL, set_Texture_storage);
-				/* height_texels */
-				Option_table_add_entry(option_table, "height_texels",
-					&data->height_texels, NULL, set_int_positive);
 				/* propagate_field/no_propagate_field */
 				Option_table_add_switch(option_table, "propagate_field",
 					"no_propagate_field", &data->propagate_field);
 				/* spectrum */
 				Option_table_add_entry(option_table, "spectrum", &data->spectrum, 
 					command_data->spectrum_manager, set_Spectrum);
-				/* width_texels */
-				Option_table_add_entry(option_table, "width_texels",
-					&data->width_texels, NULL, set_int_positive);
 				/* texture_coordinates */
 				set_texture_coordinates_field_data.computed_field_manager=
 					Computed_field_package_get_computed_field_manager(
@@ -8598,11 +8584,12 @@ Modifies the properties of a texture.
 	enum Texture_compression_mode compression_mode;
 	enum Texture_filter_mode filter_mode;
 	enum Texture_resize_filter_mode resize_filter_mode;
+	enum Texture_storage_type specify_format;
 	enum Texture_wrap_mode wrap_mode;
 	float alpha, depth, distortion_centre_x, distortion_centre_y,
 		distortion_factor_k1, height, width;
-	int number_of_valid_strings, process, return_code, specify_height,
-		specify_width, texture_is_managed;
+	int number_of_valid_strings, process, return_code, specify_depth, specify_height, 
+		specify_number_of_bytes_per_component, specify_width, texture_is_managed;
 	struct Cmgui_image *cmgui_image;
 	struct Cmgui_image_information *cmgui_image_information;
 	struct Cmiss_command_data *command_data;
@@ -8707,8 +8694,11 @@ Modifies the properties of a texture.
 					texture_distortion[1]=(double)distortion_centre_y;
 					texture_distortion[2]=(double)distortion_factor_k1;
 
+					specify_format=TEXTURE_RGB;
 					specify_width=0;
 					specify_height=0;
+					specify_depth=0;
+					specify_number_of_bytes_per_component=0;
 
 					image_data.image_file_name=(char *)NULL;
 					image_data.crop_left_margin=0;
@@ -8720,11 +8710,7 @@ Modifies the properties of a texture.
 					evaluate_data.spectrum = (struct Spectrum *)NULL;
 					evaluate_data.element_group = (struct GROUP(FE_element) *)NULL;
 					evaluate_data.element_dimension = 0; /* any dimension */
-					evaluate_data.depth_texels = 1;
-					evaluate_data.height_texels = 64;
 					evaluate_data.propagate_field = 1;
-					evaluate_data.width_texels = 64;
-					evaluate_data.storage = TEXTURE_RGB;
 					evaluate_data.texture_coordinates_field =
 						(struct Computed_field *)NULL;
 
@@ -8827,9 +8813,19 @@ Modifies the properties of a texture.
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&resize_filter_mode_string);
 					DEALLOCATE(valid_strings);
+					/* specify_depth */
+					Option_table_add_entry(option_table, "specify_depth",&specify_depth,
+					  NULL,set_int_non_negative);
+					/* specify_format */
+					Option_table_add_entry(option_table, "specify_format", &specify_format,
+						NULL, set_Texture_storage);
 					/* specify_height */
 					Option_table_add_entry(option_table, "specify_height",&specify_height,
 					  NULL,set_int_non_negative);
+					/* specify_number_of_bytes_per_component */
+					Option_table_add_entry(option_table,
+						"specify_number_of_bytes_per_component",
+						&specify_number_of_bytes_per_component,NULL,set_int_non_negative);
 					/* specify_width */
 					Option_table_add_entry(option_table, "specify_width",&specify_width,
 					  NULL,set_int_non_negative);
@@ -8938,6 +8934,39 @@ Modifies the properties of a texture.
 								raw_image_storage_string, &raw_image_storage);
 							Cmgui_image_information_set_raw_image_storage(
 								cmgui_image_information, raw_image_storage);
+							switch (specify_format)
+							{
+								case TEXTURE_LUMINANCE:
+								{
+									Cmgui_image_information_set_number_of_components(
+										cmgui_image_information, 1);
+								} break;
+								case TEXTURE_LUMINANCE_ALPHA:
+								{
+									Cmgui_image_information_set_number_of_components(
+										cmgui_image_information, 2);
+								} break;
+								case TEXTURE_RGB:
+								{
+									Cmgui_image_information_set_number_of_components(
+										cmgui_image_information, 3);
+								} break;
+								case TEXTURE_RGBA:
+								{
+									Cmgui_image_information_set_number_of_components(
+										cmgui_image_information, 4);
+								} break;
+								case TEXTURE_ABGR:
+								{
+									Cmgui_image_information_set_number_of_components(
+										cmgui_image_information, 4);
+								} break;
+							}
+							if (specify_number_of_bytes_per_component)
+							{
+								Cmgui_image_information_set_number_of_bytes_per_component(
+									cmgui_image_information, specify_number_of_bytes_per_component);
+							}
 							if (return_code)
 							{
 								if (cmgui_image = Cmgui_image_read(cmgui_image_information))
@@ -8978,9 +9007,8 @@ Modifies the properties of a texture.
 								evaluate_data.texture_coordinates_field,
 								evaluate_data.propagate_field, 
 								evaluate_data.spectrum, evaluate_data.element_group,
-								evaluate_data.element_dimension,
-								evaluate_data.storage, evaluate_data.width_texels, 
-								evaluate_data.height_texels, evaluate_data.depth_texels,
+								evaluate_data.element_dimension, specify_format,
+								specify_width, specify_height, specify_depth,
 								command_data->user_interface);
 						}
 #if defined (GL_API)
@@ -20436,6 +20464,110 @@ otherwise the file of graphics objects is read.
 	return (return_code);
 } /* gfx_read_objects */
 
+static int gfx_read_region(struct Parse_state *state,
+	void *dummy, void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 6 September 2001
+
+DESCRIPTION :
+If a nodes file is not specified a file selection box is presented to the user,
+otherwise the nodes file is written.
+Can now specify individual node groups to read with the <group> option.
+If <use_data> is set, writing data, otherwise writing nodes.
+==============================================================================*/
+{
+	char file_ext[] = ".fml", *file_name, *group_name;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Cmiss_region cmiss_region;
+	struct FE_field_order_info *field_order_info;
+	struct FE_region fe_region;
+	struct GROUP(FE_node) *node_group;
+	struct GROUP(FE_element) *element_group;
+	struct Option_table *option_table;
+
+	ENTER(gfx_read_region);
+	USE_PARAMETER(dummy);
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	{
+		return_code = 1;
+		element_group = (struct GROUP(FE_element) *)NULL;
+		node_group = (struct GROUP(FE_node) *)NULL;
+		field_order_info = (struct FE_field_order_info *)NULL;
+		file_name = (char *)NULL;
+
+		cmiss_region.fe_region = &fe_region;
+
+		option_table = CREATE(Option_table)();
+		/* fields */
+		Option_table_add_entry(option_table, "fields", &field_order_info,
+			command_data->fe_field_manager, set_FE_fields);
+		/* group */
+		Option_table_add_entry(option_table, "group", &element_group,
+			command_data->element_group_manager, set_FE_element_group);
+		/* default option: file name */
+		Option_table_add_entry(option_table, (char *)NULL, &file_name,
+			NULL, set_name);
+
+		if (return_code = Option_table_multi_parse(option_table, state))
+		{
+			if (!file_name)
+			{
+				if (!(file_name = confirmation_get_write_filename(file_ext,
+					command_data->user_interface)))
+				{
+					return_code = 0;
+				}
+			}
+			if (element_group)
+			{
+				GET_NAME(GROUP(FE_element))(element_group,&group_name);
+				if (!(node_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node), name)(
+							group_name, command_data->node_group_manager)))
+				{
+					return_code = 0;
+				}
+				DEALLOCATE(group_name);
+			}
+			if (return_code)
+			{
+				fe_region.fe_field_manager = command_data->fe_field_manager;
+				fe_region.node_group = node_group;
+				fe_region.element_group = element_group;
+
+				/* open the file */
+				if (return_code = check_suffix(&file_name, file_ext))
+				{
+					parse_fieldml_file(file_name, command_data->basis_manager,
+						command_data->node_manager, command_data->element_manager,
+						command_data->fe_field_manager);
+				}
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+		if (field_order_info)
+		{
+			DESTROY(FE_field_order_info)(&field_order_info);
+		}
+		if (element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&element_group);
+		}
+		if (file_name)
+		{
+			DEALLOCATE(file_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "gfx_read_region.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_read_region */
+
 static int gfx_read_wavefront_obj(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -20582,6 +20714,9 @@ Executes a GFX READ command.
 			/* objects */
 			Option_table_add_entry(option_table, "objects",
 				NULL, command_data_void, gfx_read_objects);
+			/* region */
+			Option_table_add_entry(option_table, "region",
+				NULL, command_data_void, gfx_read_region);
 			/* wavefront_obj */
 			Option_table_add_entry(option_table, "wavefront_obj",
 				NULL, command_data_void, gfx_read_wavefront_obj);
@@ -24281,6 +24416,118 @@ Executes a GFX WRITE_ELEMENT_LAYOUT command.
 	return (return_code);
 } /* execute_command_gfx_write_element_layout */
 
+static int gfx_write_region(struct Parse_state *state,
+	void *dummy, void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 6 September 2001
+
+DESCRIPTION :
+If a nodes file is not specified a file selection box is presented to the user,
+otherwise the nodes file is written.
+Can now specify individual node groups to write with the <group> option.
+If <use_data> is set, writing data, otherwise writing nodes.
+==============================================================================*/
+{
+	char file_ext[] = ".fml", *file_name, *group_name;
+	FILE *file;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Cmiss_region cmiss_region;
+	struct FE_field_order_info *field_order_info;
+	struct FE_region fe_region;
+	struct GROUP(FE_node) *node_group;
+	struct GROUP(FE_element) *element_group;
+	struct Option_table *option_table;
+
+	ENTER(gfx_write_region);
+	USE_PARAMETER(dummy);
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	{
+		return_code = 1;
+		element_group = (struct GROUP(FE_element) *)NULL;
+		node_group = (struct GROUP(FE_node) *)NULL;
+		field_order_info = (struct FE_field_order_info *)NULL;
+		file_name = (char *)NULL;
+
+		cmiss_region.fe_region = &fe_region;
+
+		option_table = CREATE(Option_table)();
+		/* fields */
+		Option_table_add_entry(option_table, "fields", &field_order_info,
+			command_data->fe_field_manager, set_FE_fields);
+		/* group */
+		Option_table_add_entry(option_table, "group", &element_group,
+			command_data->element_group_manager, set_FE_element_group);
+		/* default option: file name */
+		Option_table_add_entry(option_table, (char *)NULL, &file_name,
+			NULL, set_name);
+
+		if (return_code = Option_table_multi_parse(option_table, state))
+		{
+			if (!file_name)
+			{
+				if (!(file_name = confirmation_get_write_filename(file_ext,
+					command_data->user_interface)))
+				{
+					return_code = 0;
+				}
+			}
+			if (element_group)
+			{
+				GET_NAME(GROUP(FE_element))(element_group,&group_name);
+				if (!(node_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node), name)(
+							group_name, command_data->node_group_manager)))
+				{
+					return_code = 0;
+				}
+				DEALLOCATE(group_name);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "gfx_write_region.  "
+					"Must specify a group");
+				return_code = 0;
+			}
+			if (return_code)
+			{
+				fe_region.fe_field_manager = command_data->fe_field_manager;
+				fe_region.node_group = node_group;
+				fe_region.element_group = element_group;
+
+				/* open the file */
+				if (return_code = check_suffix(&file_name, file_ext))
+				{
+					file = fopen(file_name, "w");
+					write_fieldml_file(file, &cmiss_region, "", 1, 1,
+						field_order_info);
+					fclose(file);
+				}
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+		if (field_order_info)
+		{
+			DESTROY(FE_field_order_info)(&field_order_info);
+		}
+		if (element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&element_group);
+		}
+		if (file_name)
+		{
+			DEALLOCATE(file_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "gfx_write_region.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_write_region */
+
 static int gfx_write_texture(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -24519,6 +24766,8 @@ Executes a GFX WRITE command.
 				command_data_void, gfx_write_elements);
 			Option_table_add_entry(option_table, "nodes", /*use_data*/(void *)0,
 				command_data_void, gfx_write_nodes);
+			Option_table_add_entry(option_table, "region", NULL,
+				command_data_void, gfx_write_region);
 			Option_table_add_entry(option_table, "texture", NULL,
 				command_data_void, gfx_write_texture);
 			return_code = Option_table_parse(option_table, state);
@@ -28098,8 +28347,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 	struct Command_window *command_window;
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
-	struct Coordinate_system rect_coord_system,temp_coordinate_system;
-	struct FE_field *fe_field;
+	struct Coordinate_system rect_coord_system;
 	struct Graphical_material *material;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Option_table *option_table;
@@ -28631,8 +28879,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			default_coordinate, etc. */
 		/*???RC should the default computed fields be established in
 		  CREATE(Computed_field_package)? */
-		command_data->computed_field_package=CREATE(Computed_field_package)(
-			command_data->fe_field_manager, command_data->element_manager);
+		command_data->computed_field_package=CREATE(Computed_field_package)();
 		computed_field_manager=Computed_field_package_get_computed_field_manager(
 			command_data->computed_field_package);
 
@@ -28707,24 +28954,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				{
 					DESTROY(Computed_field)(&computed_field);
 				}
-				/* create the grid_point_number field and add to FE_field_manager - 
-					wrapper Computed_field will automatically be made for it. Has special
-					use for setting grid_points in Element_point_viewer */
-				temp_coordinate_system.type = NOT_APPLICABLE;
-				if (!((fe_field=CREATE(FE_field)(command_data->fe_time))&&
-						 set_FE_field_name(fe_field,"grid_point_number")&&
-						 set_FE_field_value_type(fe_field,INT_VALUE)&&
-						 set_FE_field_number_of_components(fe_field,1)&&
-						 set_FE_field_type_general(fe_field)&&
-						 set_FE_field_CM_field_type(fe_field,CM_GENERAL_FIELD)&&
-						 set_FE_field_coordinate_system(fe_field,&temp_coordinate_system)&&
-						 set_FE_field_component_name(fe_field,0,"grid_point_number")&&
-						 ADD_OBJECT_TO_MANAGER(FE_field)(fe_field,
-							 command_data->fe_field_manager)))
-				{
-					DESTROY(FE_field)(&fe_field);
-				}
-
 				if (!((computed_field=CREATE(Computed_field)("xi"))&&
 						 Computed_field_set_coordinate_system(computed_field,
 							 &rect_coord_system)&&
