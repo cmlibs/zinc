@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendervrml.c
 
-LAST MODIFIED : 1 December 2000
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 Renders gtObjects to VRML file
@@ -2502,7 +2502,7 @@ Global functions
 */
 int export_to_vrml(char *file_name,void *scene_void)
 /******************************************************************************
-LAST MODIFIED : 9 May 1999
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 Renders the visible objects to a VRML file.
@@ -2520,9 +2520,9 @@ Renders the visible objects to a VRML file.
 	struct Scene *scene;
 
 	ENTER(export_to_vrml);
-	/* checking arguments */
 	if (file_name&&(scene=(struct Scene *)scene_void))
 	{
+		build_Scene(scene);
 		/* open file and add header */
 		if (vrml_file=fopen(file_name,"w"))
 		{

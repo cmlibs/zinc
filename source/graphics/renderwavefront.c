@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : renderwavefront.c
 
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 Renders gtObjects to Wavefront OBJ file
@@ -1293,7 +1293,7 @@ Global functions
 int export_to_wavefront(char *file_name,struct Scene *scene,
 	struct Scene_object *scene_object, int full_comments)
 /******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Renders the visible objects to Wavefront object files.
@@ -1306,9 +1306,9 @@ Renders the visible objects to Wavefront object files.
 	struct Export_to_wavefront_data export_to_wavefront_data;
 
 	ENTER(export_to_wavefront);
-	/* checking arguments */
 	if (scene)
 	{
+		build_Scene(scene);
 		if (!scene_object)
 		{
 			if (1==Scene_get_number_of_scene_objects(scene))
