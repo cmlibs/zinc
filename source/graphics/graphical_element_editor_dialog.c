@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor_dialog.c
 
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 17 May 2000
 
 DESCRIPTION :
 Routines for creating an element group editor dialog shell and standard buttons.
@@ -71,7 +71,7 @@ Module functions
 */
 
 #if defined (OLD_CODE)
-static int graphical_element_dialog_editor_update(
+static int graphical_element_editor_dialog_update(
 	struct Graphical_element_editor_dialog *gelem_editor_dialog)
 /*******************************************************************************
 LAST MODIFIED : 1 August 1997
@@ -85,7 +85,7 @@ ie. the graphical region is a class derived from a scene.
 {
 	int return_code;
 
-	ENTER(graphical_element_dialog_editor_update);
+	ENTER(graphical_element_editor_dialog_update);
 	/* checking arguments */
 	if (gelem_editor_dialog)
 	{
@@ -171,6 +171,64 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor_dialog, \
 	Graphical_element_editor_dialog,revert_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor_dialog, \
 	Graphical_element_editor_dialog,cancel_button)
+
+static int graphical_element_editor_dialog_read_defaults(
+	struct Graphical_element_editor_dialog *gelem_editor_dialog)
+/*******************************************************************************
+LAST MODIFIED : 17 May 2000
+
+DESCRIPTION :
+Reads various resources from the Xdefaults file.
+==============================================================================*/
+{
+#define XmNgraphicalElementEditorAutoApply "graphicalElementEditorAutoApply"
+#define XmCGraphicalElementEditorAutoApply "GraphicalElementEditorAutoApply"
+	int return_code;
+	struct Graphical_element_editor_dialog_defaults
+	{
+		Boolean autoapply_button_set;
+	} gelem_editor_dialog_defaults;
+	static XtResource resources[]=
+	{
+		{
+			XmNgraphicalElementEditorAutoApply,
+			XmCGraphicalElementEditorAutoApply,
+			XmRBoolean,
+			sizeof(Boolean),
+			XtOffsetOf(struct Graphical_element_editor_dialog_defaults,
+				autoapply_button_set),
+			XmRBoolean,
+			"True"
+		}
+	};
+
+	ENTER(graphical_element_editor_dialog_read_defaults);
+	if (gelem_editor_dialog)
+	{
+		gelem_editor_dialog_defaults.autoapply_button_set=True;
+		XtVaGetApplicationResources(
+			gelem_editor_dialog->user_interface->application_shell,
+			&gelem_editor_dialog_defaults,resources,XtNumber(resources),NULL);
+		if (gelem_editor_dialog_defaults.autoapply_button_set)
+		{
+			gelem_editor_dialog->autoapply=1;
+		}
+		else
+		{
+			gelem_editor_dialog->autoapply=0;
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_dialog_read_defaults.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return return_code;
+} /* graphical_element_editor_dialog_read_defaults */
 
 static void graphical_element_editor_dialog_destroy_CB(Widget widget,int *tag,
 	unsigned long *reason)
@@ -574,7 +632,7 @@ static Widget create_graphical_element_editor_dialog(
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 17 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -732,15 +790,19 @@ DESCRIPTION :
 								}
 								if (init_widgets)
 								{
-									/* make autoapply flag match the widget */
-									if (XmToggleButtonGetState(
-										gelem_editor_dialog->autoapply_button))
+									/* read in some defaults, incl. autoapply flag */
+									graphical_element_editor_dialog_read_defaults(
+										gelem_editor_dialog);
+									/* make autoapply button match the flag */
+									if (gelem_editor_dialog->autoapply)
 									{
-										gelem_editor_dialog->autoapply = 1;
+										XmToggleButtonSetState(
+											gelem_editor_dialog->autoapply_button,True,False);
 									}
 									else
 									{
-										gelem_editor_dialog->autoapply = 0;
+										XmToggleButtonSetState(
+											gelem_editor_dialog->autoapply_button,False,False);
 									}
 									graphical_element_editor_dialog_set_element_group_and_scene(
 										gelem_editor_dialog->dialog,element_group,scene);
