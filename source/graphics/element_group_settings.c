@@ -608,6 +608,10 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			{
 				DEACCESS(Spectrum)(&(settings->spectrum));
 			}
+			if (settings->seed_element)
+			{
+				DEACCESS(FE_element)(&(settings->seed_element));
+			}
 			DEALLOCATE(*settings_ptr);
 			return_code=1;
 		}
