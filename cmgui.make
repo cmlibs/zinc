@@ -177,7 +177,7 @@ cronjob :
 		echo "Must be cmiss"; \
 	fi
 
-utilities : $(SOURCE_PATH)/cmgui_sgi.make
+utilities : $(SOURCE_PATH)/cmgui_sgi.make force
 	$(COMMON_MAKE_RULE) \
 	if [ -f cmgui_sgi.make ]; then \
 		$(MAKE) -f cmgui_sgi.make utilities; \

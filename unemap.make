@@ -145,7 +145,7 @@ cronjob :
 		echo "Must be cmiss"; \
 	fi
 
-utilities : $(SOURCE_PATH)/unemap_sgi.make
+utilities : $(SOURCE_PATH)/unemap_sgi.make force
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgi.make ]; then \
 		$(MAKE) -f unemap_sgi.make utilities; \
