@@ -551,6 +551,7 @@ although its cache may be lost.
 						list_Computed_field_matrix_multiply;
 					field->list_Computed_field_commands_function = 
 						list_Computed_field_matrix_multiply_commands;
+					return_code=1;
 				}
 				else
 				{
