@@ -62,8 +62,8 @@ Functions for executing cmiss commands.
 #if defined (MOTIF)
 #include "element/element_creator.h"
 #endif /* defined (MOTIF) */
-#if defined (MOTIF)
 #include "element/element_operations.h"
+#if defined (MOTIF)
 #include "element/element_point_tool.h"
 #include "element/element_point_viewer.h"
 #include "element/element_tool.h"
@@ -155,8 +155,8 @@ Functions for executing cmiss commands.
 #include "menu/menu_window.h"
 #endif /* defined (MOTIF) */
 #include "node/node_operations.h"
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 #include "node/node_tool.h"
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 #if defined (MOTIF)
 #include "node/node_viewer.h"
@@ -8589,7 +8589,7 @@ Executes a DETACH command.
 static int execute_command_gfx_create(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 February 2003
+LAST MODIFIED : 17 May 2003
 
 DESCRIPTION :
 Executes a GFX CREATE command.
@@ -8597,7 +8597,9 @@ Executes a GFX CREATE command.
 {
 	int return_code;
 	struct Cmiss_command_data *command_data;
+#if defined (MOTIF)
 	struct Create_emoter_slider_data create_emoter_slider_data;
+#endif /* defined (MOTIF) */
 	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_create);
@@ -20123,13 +20125,16 @@ Executes a GFX command.
 static int execute_command_cm(struct Parse_state *state,
 	void *prompt_void,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 3 October 2001
+LAST MODIFIED : 17 May 2003
 
 DESCRIPTION :
 Executes a cm (back end) command.
 ==============================================================================*/
 {
-	char *current_token,*prompt;
+#if defined (LINK_CMISS)
+	char *current_token;
+#endif /* defined (LINK_CMISS) */
+	char *prompt;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 
@@ -20139,9 +20144,10 @@ Executes a cm (back end) command.
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			if (current_token=state->current_token)
+			if (state->current_token)
 			{
 #if defined (LINK_CMISS)
+				current_token=state->current_token;
 				if (CMISS)
 				{
 					/* somehow extract the whole command */
@@ -22395,14 +22401,17 @@ Executes a QUIT command.
 static int set_dir(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 November 1999
+LAST MODIFIED : 17 May 2003
 
 DESCRIPTION :
 Executes a SET DIR command.
 ==============================================================================*/
 {
+#if defined (LINK_CMISS)
+	char *token;
+#endif /* defined (LINK_CMISS) */
 	char *comfile_name, *directory_name, *example_directory, example_flag, 
-		*example_requirements, *token;
+		*example_requirements;
 	int file_name_length, return_code;
 	struct Cmiss_command_data *command_data;
 	static struct Modifier_entry option_table[]=
@@ -22419,7 +22428,11 @@ Executes a SET DIR command.
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			if (token = state->current_token)
+			if (
+#if defined (LINK_CMISS)
+					token =
+#endif /* defined (LINK_CMISS) */
+					state->current_token)
 			{
 				directory_name = (char *)NULL;
 				example_flag = 0;
@@ -22483,8 +22496,6 @@ Executes a SET DIR command.
 									return_code=execute_command_cm(state,(void *)NULL,
 										command_data_void);
 								}
-#else /* defined (LINK_CMISS) */
-								USE_PARAMETER(token);
 #endif /* defined (LINK_CMISS) */
 							}
 							else
@@ -23024,7 +23035,7 @@ Execute a <command_string>. If there is a command
 
 int cmiss_set_command(char *command_string,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 27 April 1999
+LAST MODIFIED : 17 May 2003
 
 DESCRIPTION:
 Sets the <command_string> in the command box of the CMISS command_window, ready
@@ -23032,11 +23043,16 @@ for editing and entering. If there is no command_window, does nothing.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (MOTIF)
 	struct Cmiss_command_data *command_data;
+#endif /* defined (MOTIF) */
 
 	ENTER(cmiss_set_command);
-	if (command_string&&
-		(command_data=(struct Cmiss_command_data *)command_data_void))
+	if (command_string
+#if defined (MOTIF)
+		&& (command_data=(struct Cmiss_command_data *)command_data_void)
+#endif /* defined (MOTIF) */
+			)
 	{
 #if defined (MOTIF)
 		if (command_data->command_window)
@@ -23045,7 +23061,7 @@ for editing and entering. If there is no command_window, does nothing.
 				command_data->command_window,command_string);
 		}
 #else /* defined (MOTIF) */
-		USE_PARAMETER(command_data);
+		USE_PARAMETER(command_data_void);
 #endif /* defined (MOTIF) */
 		return_code=1;
 	}
