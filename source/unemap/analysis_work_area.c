@@ -2673,20 +2673,6 @@ Sets up the analysis work area for analysing a set of signals.
 			{
 				(*(analysis->highlight))->highlight=1;
 			}
-#if defined (UNEMAP_USE_3D) 
-				/* highlight the  node (and everything else) */
-				if ((analysis->highlight)&&(*(analysis->highlight)))
-				{	
-					/*get the rig_node corresponding to the device */
-					node_selection=get_unemap_package_FE_node_selection(analysis->unemap_package);
-					device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
-					rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
-					rig_node=find_rig_node_given_device(*(analysis->highlight),rig_node_group,
-						device_name_field);
-					/*trigger the selction callback*/
-					FE_node_selection_select_node(node_selection,rig_node);
-				}
-#endif /* defined (UNEMAP_USE_3D) */
 			/* assign the signal file name */
 			if (ALLOCATE(analysis->rig->signal_file_name,char,strlen(file_name)+1))
 			{
@@ -2830,6 +2816,20 @@ Sets up the analysis work area for analysing a set of signals.
 		update_interval_drawing_area(analysis->window);
 		/* free the old analysis window title */
 		XmStringFree(old_dialog_title);
+#if defined (UNEMAP_USE_3D) /*!!jw*/
+		/* highlight the  node (and everything else) */
+		if ((analysis->highlight)&&(*(analysis->highlight)))
+		{	
+			/*get the rig_node corresponding to the device */
+			node_selection=get_unemap_package_FE_node_selection(analysis->unemap_package);
+			device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
+			rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
+			rig_node=find_rig_node_given_device(*(analysis->highlight),rig_node_group,
+				device_name_field);
+			/*trigger the selction callback*/
+			FE_node_selection_select_node(node_selection,rig_node);
+		}
+#endif /* defined (UNEMAP_USE_3D) */
 	}
 	else
 	{
