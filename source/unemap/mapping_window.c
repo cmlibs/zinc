@@ -1540,7 +1540,7 @@ Draws a frame in the activation map animation.
 static void animate_activation_map(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 25 June 1998
+LAST MODIFIED : 28 November 2001
 
 DESCRIPTION :
 Starts the activation map animation.
@@ -1588,10 +1588,7 @@ Starts the activation map animation.
 							case NO_INTERPOLATION:
 							case DIRECT_INTERPOLATION:
 							default:
-							{
-								/*do nothing */
-								;			
-
+							{											
 								Time_keeper_request_new_time(time_keeper,
 									map->start_time);					
 							}break;
@@ -5673,14 +5670,13 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 	return (return_code);
 } /* update_mapping_window_menu */
 
-
-int update_map_from_maunal_time_update(struct Mapping_window *mapping)
+int update_map_from_manual_time_update(struct Mapping_window *mapping)
 /*******************************************************************************
 LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Sets recalculate and map->interpolation_type from 
-map->draw_map_on_maunal_time_update, and update the map.
+map->draw_map_on_manual_time_update, and update the map.
 Reset map->interpolation_type to it's initial value.
 ==============================================================================*/
 {
@@ -5688,13 +5684,13 @@ Reset map->interpolation_type to it's initial value.
 	int recalculate,return_code;
 	struct Map *map;
 
-	ENTER(update_map_from_maunal_time_update);
+	ENTER(update_map_from_manual_time_update);
 	map=(struct Map *)NULL;
 	if(mapping&&(map=mapping->map))
 	{
 		return_code=1;
 		interpolation=map->interpolation_type;							
-		if(map->draw_map_on_maunal_time_update)
+		if(map->draw_map_on_manual_time_update)
 		{
 			recalculate=2;
 		}
@@ -5710,12 +5706,12 @@ Reset map->interpolation_type to it's initial value.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"update_map_from_maunal_time_update. Invalid arguments");
+			"update_map_from_manual_time_update. Invalid arguments");
 		return_code=0;
 	}
 	LEAVE;
 	return(return_code);
-}/* update_map_from_maunal_time_update */
+}/* update_map_from_manual_time_update */
 
 int highlight_electrode_or_auxiliar(struct Device *device,
 #if defined (UNEMAP_USE_NODES)
