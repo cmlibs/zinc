@@ -27971,9 +27971,9 @@ On a failed return no such array is allocated and returned.
 							{
 								memcpy(scale_factor_position, source_scale_factor_position,
 									source_number_in_scale_factor_set*sizeof(FE_value));
-								source_scale_factor_position +=
-									source_number_in_scale_factor_set;
 							}
+							source_scale_factor_position +=
+								source_number_in_scale_factor_set;
 						}
 						node_scale_field_info->number_of_scale_factor_sets =
 							number_of_scale_factor_sets;
