@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 19 December 2002
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -29,7 +29,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
-LAST MODIFIED : 18 December 2002
+LAST MODIFIED : 7 January 2003
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -55,8 +55,12 @@ Main program for the CMISS Graphical User Interface
 	{
 		Cmiss_command_data_main_loop(command_data);
 		DESTROY(Cmiss_command_data)(&command_data);
+		return_code = 0;
 	}
-
+	else
+	{
+		return_code = 1;
+	}
 	LEAVE;
 
 	return (return_code);
