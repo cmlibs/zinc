@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_composite.cpp
 //
-// LAST MODIFIED : 11 January 2005
+// LAST MODIFIED : 30 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -12,6 +12,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "computed_variable/function_composite.hpp"
+#include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable_composite.hpp"
 
 // module classes
@@ -364,6 +366,345 @@ Function_variable_handle Function_variable_composite::clone() const
 
 	return (result);
 }
+
+#if defined (USE_FUNCTION_VARIABLE_COMPOSITE_EVALUATE)
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle Function_variable_composite::evaluate()
+//******************************************************************************
+// LAST MODIFIED : 21 February 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	bool first=true,result_is_matrix=true;
+	boost::intrusive_ptr< Function_matrix<Scalar> > part_matrix;
+	Function_handle part(0),result(0);
+	Function_size_type i=variables_list.size(),part_number_of_columns,
+		part_number_of_rows,result_number_of_columns,result_number_of_rows;
+	std::list< boost::intrusive_ptr< Function_matrix<Scalar> > >
+		part_matrix_list(0);
+	std::list<Function_handle> part_list(0);
+	std::list<Function_variable_handle>::iterator variable_iterator=
+		variables_list.begin();
+
+	while ((i>0)&&(part=(*variable_iterator)->evaluate()))
+	{
+		part_list.push_back(part);
+		if (result_is_matrix)
+		{
+			if (part_matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+				Function>(part))
+			{
+				part_matrix_list.push_back(part_matrix);
+				if (first)
+				{
+					result_number_of_rows=part_matrix->number_of_rows();
+					result_number_of_columns=part_matrix->number_of_columns();
+				}
+				else
+				{
+					part_number_of_rows=part_matrix->number_of_rows();
+					part_number_of_columns=part_matrix->number_of_columns();
+					if (result_number_of_columns==part_number_of_columns)
+					{
+						result_number_of_rows += part_number_of_rows;
+					}
+					else
+					{
+						if (result_number_of_rows==part_number_of_rows)
+						{
+							result_number_of_columns += part_number_of_columns;
+						}
+						else
+						{
+							result_number_of_rows=
+								(result_number_of_rows*result_number_of_columns)+
+								(part_number_of_rows*part_number_of_columns);
+							result_number_of_columns=1;
+						}
+					}
+				}
+			}
+			else
+			{
+				result_is_matrix=false;
+			}
+		}
+		first=false;
+		--i;
+		++variable_iterator;
+	}
+	if (0==i)
+	{
+		if (result_is_matrix)
+		{
+			Function_size_type part_column,part_row,result_column=0,result_row=0;
+			Matrix result_matrix(result_number_of_rows,result_number_of_columns);
+			std::list< boost::intrusive_ptr< Function_matrix<Scalar> > >::iterator
+				part_matrix_iterator=part_matrix_list.begin();
+
+			for (i=part_matrix_list.size();i>0;--i)
+			{
+				part_matrix= *part_matrix_iterator;
+				part_number_of_rows=part_matrix->number_of_rows();
+				part_number_of_columns=part_matrix->number_of_columns();
+				for (part_row=1;part_row<=part_number_of_rows;++part_row)
+				{
+					for (part_column=1;part_column<=part_number_of_columns;++part_column)
+					{
+						result_matrix(result_row,result_column)=
+							(*part_matrix)(part_row,part_column);
+						result_column++;
+						if (result_column>=result_number_of_columns)
+						{
+							++result_row;
+							result_column=0;
+						}
+					}
+				}
+				++part_matrix_iterator;
+			}
+			result=Function_handle(new Function_matrix<Scalar>(result_matrix));
+		}
+		else
+		{
+			result=Function_handle(new Function_composite(part_list));
+		}
+	}
+
+	return (result);
+}
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool Function_variable_composite::evaluate()
+//******************************************************************************
+// LAST MODIFIED : 30 March 2005
+//
+// DESCRIPTION :
+// ???DB.  To be done?
+//==============================================================================
+{
+	return (false);
+}
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#if defined (OLD_CODE)
+Function_handle Function_variable_composite::evaluate_derivative(
+	std::list<Function_variable_handle>& independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 21 February 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	bool first=true,valid=true;
+	Function_derivative_matrix_handle part(0);
+	Function_handle result(0);
+	Function_size_type i=variables_list.size(),number_of_matrices,
+		result_number_of_rows=0;;
+	std::list<Function_derivative_matrix_handle> part_list(0);
+	std::list<Function_variable_handle>::iterator variable_iterator=
+		variables_list.begin();
+
+	while (valid&&(i>0)&&
+		(part=Function_derivative_matrix_handle(
+		new Function_derivative_matrix(*variable_iterator,independent_variables)))
+#if defined (OLD_CODE)
+		(part=boost::dynamic_pointer_cast<Function_derivative_matrix,Function>(
+		(*variable_iterator)->evaluate_derivative(independent_variables)))
+#endif // defined (OLD_CODE)
+		)
+	{
+		if (first)
+		{
+			number_of_matrices=(part->matrices).size();
+		}
+		else
+		{
+			valid=(number_of_matrices==(part->matrices).size());
+		}
+		part_list.push_back(part);
+		result_number_of_rows += (part->matrices).back().size1();
+		first=false;
+		--i;
+		++variable_iterator;
+	}
+	if (valid&&(0==i))
+	{
+		Function_size_type number_of_parts;
+
+		number_of_parts=part_list.size();
+		if (0<number_of_parts)
+		{
+			if (1==number_of_parts)
+			{
+				result=part_list.back();
+			}
+			else
+			{
+				Function_size_type j,part_number_of_rows,part_row,result_column,
+					result_row=0;;
+				std::list<Function_derivative_matrix_handle>::iterator part_iterator=
+					part_list.begin();
+				std::list<Matrix> result_matrices(0);
+				std::list<Matrix>::iterator matrix_iterator;
+				std::vector< std::list<Matrix>::iterator >
+					part_matrix_iterators(number_of_parts);
+
+				for (i=0;i<number_of_parts;i++)
+				{
+					part_matrix_iterators[i]=(*part_iterator)->matrices.begin();
+					++part_iterator;
+				}
+				i=number_of_matrices;
+				while (valid&&(i>0))
+				{
+					Function_size_type result_number_of_columns=
+						part_matrix_iterators[0]->size2();
+					Matrix result_matrix(result_number_of_rows,result_number_of_columns);
+
+					j=0;;
+					while (valid&&(j<number_of_parts))
+					{
+						Matrix& part_matrix= *part_matrix_iterators[j];
+
+						if (result_number_of_columns==part_matrix.size2())
+						{
+							part_number_of_rows=part_matrix.size1();
+							for (part_row=0;part_row<part_number_of_rows;++part_row)
+							{
+								for (result_column=0;result_column<result_number_of_columns;
+									result_column++)
+								{
+									result_matrix(result_row,result_column)=
+										part_matrix(part_row,result_column);
+								}
+								result_row++;
+							}
+						}
+						else
+						{
+							valid=false;
+						}
+						++part_matrix_iterators[j];
+						j++;
+					}
+					result_matrices.push_back(result_matrix);
+					i--;
+				}
+				if (valid)
+				{
+					result=Function_handle(new Function_derivative_matrix(
+						Function_variable_handle(this),independent_variables,
+						result_matrices));
+				}
+			}
+		}
+	}
+
+	return (result);
+}
+#endif // defined (OLD_CODE)
+
+Function_handle Function_variable_composite::evaluate_derivative(
+	std::list<Function_variable_handle>& independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 21 February 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	bool first=true,valid=true;
+	boost::intrusive_ptr< Function_matrix<Scalar> > part(0);
+	Function_handle result(0);
+	Function_size_type i=variables_list.size(),result_number_of_columns=0,
+		result_number_of_rows=0;;
+	std::list< boost::intrusive_ptr< Function_matrix<Scalar> > > part_list(0);
+	std::list<Function_variable_handle>::iterator variable_iterator=
+		variables_list.begin();
+
+	while (valid&&(i>0)&&
+		(part=boost::dynamic_pointer_cast<Function_matrix<Scalar>,Function>(
+		(*variable_iterator)->evaluate_derivative(independent_variables)))
+		)
+	{
+		if (first)
+		{
+			result_number_of_columns=part->number_of_columns();
+		}
+		else
+		{
+			valid=(part->number_of_columns()==result_number_of_columns);
+		}
+		part_list.push_back(part);
+		result_number_of_rows += part->number_of_rows();
+		first=false;
+		--i;
+		++variable_iterator;
+	}
+	if (valid&&(0==i))
+	{
+		Function_size_type number_of_parts;
+
+		number_of_parts=part_list.size();
+		if (0<number_of_parts)
+		{
+			if (1==number_of_parts)
+			{
+				result=part_list.back();
+			}
+			else
+			{
+				Function_size_type j,part_number_of_rows,part_column,part_row,
+					result_column,result_row=0;;
+				Matrix result_matrix(result_number_of_rows,result_number_of_columns);
+				std::list< boost::intrusive_ptr< Function_matrix<Scalar> > >::iterator
+					part_iterator=part_list.begin();
+
+				j=number_of_parts;;
+				while (valid&&(j>0))
+				{
+					Function_matrix<Scalar>& part_matrix= **part_iterator;
+
+					part_number_of_rows=part_matrix.number_of_rows();
+					for (part_row=1;part_row<=part_number_of_rows;++part_row)
+					{
+						part_column=1;
+						for (result_column=0;result_column<result_number_of_columns;
+							result_column++)
+						{
+							result_matrix(result_row,result_column)=
+								part_matrix(part_row,part_column);
+							part_column++;
+						}
+						result_row++;
+					}
+					--j;
+					++part_iterator;
+				}
+				result=Function_handle(new Function_matrix<Scalar>(result_matrix));
+			}
+		}
+	}
+
+	return (result);
+}
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+Function_handle Function_variable_composite::derivative(
+	const std::list<Function_variable_handle>&
+//	independent_variables
+	)
+//******************************************************************************
+// LAST MODIFIED : 30 March 2005
+//
+// DESCRIPTION :
+// ???DB.  To be done?
+//==============================================================================
+{
+	return (Function_handle(0));
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#endif // defined (USE_FUNCTION_VARIABLE_COMPOSITE_EVALUATE)
 
 string_handle Function_variable_composite::get_string_representation()
 //******************************************************************************
