@@ -65,9 +65,9 @@ PRODUCT_PATH=.
 #define UidPath uid
 #if defined (LITEWEIGHT)
 #define Target cmgui_lite
-#define SpacesToTabsTarget spaces_to_tabs_lite
-#define TabsToSpacesTarget tabs_to_spaces_lite
-#define Uid2uidhTarget uid2uidh_lite
+#define SpacesToTabsTarget spaces_to_tabs
+#define TabsToSpacesTarget tabs_to_spaces
+#define Uid2uidhTarget uid2uidh
 #define Makefile cmgui_sgilite.make
 #define DependMake cmgui_sgilite.depend
 #define ObjSuffix o
@@ -76,6 +76,32 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_lite
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #else /* defined (LITEWEIGHT) */
+#if defined (F90_INTERPRETER)
+#define Target cmgui_f90
+#define SpacesToTabsTarget spaces_to_tabs
+#define TabsToSpacesTarget tabs_to_spaces
+#define Uid2uidhTarget uid2uidh
+#define Makefile cmgui_sgif90.make
+#define DependMake cmgui_sgif90.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32_f90
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_f90
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
+#else /* defined (F90_INTERPRETER) */
+#if defined (PERL_INTERPRETER)
+#define Target cmgui_perl
+#define SpacesToTabsTarget spaces_to_tabs
+#define TabsToSpacesTarget tabs_to_spaces
+#define Uid2uidhTarget uid2uidh
+#define Makefile cmgui_sgiperl.make
+#define DependMake cmgui_sgiperl.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32_perl
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_perl
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
+#else /* defined (PERL_INTERPRETER) */
 #if !defined (OPTIMISED)
 /* The normal debug and memory check versions keep the same extension
 	as they only differ in one file */
@@ -118,6 +144,8 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_optimised
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #endif /* !defined (OPTIMISED) */
+#endif /* defined (PERL_INTERPRETER) */
+#endif /* defined (F90_INTERPRETER) */
 #endif /* defined (LITEWEIGHT) */
 #else /* !defined (O64) */
 /* The O64 version can be either OPTIMISED or not but only one
@@ -266,6 +294,31 @@ MIRAGE_SRCS = \
 	mirage/tracking_editor_dialog.c \
 	slider/emoter_dialog.c
 #endif /* !defined (MIRAGE) */
+
+#if !defined (F90_INTERPRETER)
+#if !defined (PERL_INTERPRETER)
+INTERPRETER_INC =
+INTERPRETER_SWITCH = 
+INTERPRETER_SRCS =
+INTERPRETER_LIB =
+#else /* !defined (PERL_INTERPRETER) */
+PERL_PATH=/usr/local/perl5/lib/5.00503
+INTERPRETER_INC = -I$(PERL_PATH)/irix-n32/CORE
+INTERPRETER_SWITCH = -DPERL_INTERPRETER
+INTERPRETER_SRCS = command/perl_interpreter.c
+INTERPRETER_LIB = $(PERL_PATH)/irix-n32/auto/DynaLoader/DynaLoader.a /usr/people/blackett/cmgui/source/command/Perl_cmiss/blib/arch/auto/Perl_cmiss/Perl_cmiss.a -L$(PERL_PATH)/irix-n32/CORE -lperl
+#endif /* !defined (PERL_INTERPRETER) */
+#else /* !defined (F90_INTERPRETER) */
+#if defined (CMISS_ROOT_DEFINED)
+INTERPRETER_PATH=$(CMISS_ROOT)/interpreter
+#else /* defined (CMISS_ROOT_DEFINED) */
+INTERPRETER_PATH=$(CMGUI_DEV_ROOT)/interpreter
+#endif /* defined (CMISS_ROOT_DEFINED) */
+INTERPRETER_INC = -I$(INTERPRETER_PATH)/source
+INTERPRETER_SWITCH = -DF90_INTERPRETER
+INTERPRETER_SRCS = command/f90_interpreter.c
+INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/cmissinterpreter_c_n32.a -lfortran
+#endif /* !defined (F90_INTERPRETER) */
 
 #if !defined (ROBO_APPLICATION)
 ROBO_APPLICATION_SWITCH =
@@ -589,18 +642,20 @@ ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(GRAPHICS_LIBRARY_SWITCH) $(VIDEO_SWITCH) $(HELP_DEFINES) \
 	$(POSTSCRIPT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
 	$(THREE_D_DRAWING_DEFINES) $(UNEMAP_SWITCH) $(MIRAGE_SWITCH) \
-	$(CELL_SWITCH) $(MOVIE_FILE_SWITCH) \
+	$(CELL_SWITCH) $(MOVIE_FILE_SWITCH) $(INTERPRETER_SWITCH)\
 	$(END_ALL_DEFINES)
 
 ALL_INCLUDES = $(START_ALL_INCLUDES) \
 	$(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(XVG_INC) $(WORMHOLE_INC) $(XML_INC) \
-	$(UIDH_INC) $(END_ALL_INCLUDES)
+	$(UIDH_INC) $(INTERPRETER_INC) $(END_ALL_INCLUDES)
 
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
-ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(LIB) $(VIDEO_LIB) $(WORMHOLE_LIB) \
-	$(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB) $(MOVIE_FILE_LIB) $(XML_LIB)
+ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(INTERPRETER_LIB) $(LIB) $(VIDEO_LIB) \
+	  $(WORMHOLE_LIB)	$(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB) \
+	  $(MOVIE_FILE_LIB) $(XML_LIB)
+   
 
 APPLICATION_SRCS = \
 	application/application.c 
@@ -630,6 +685,7 @@ COMMAND_SRCS = \
 	command/cmiss.c \
 	command/command.c \
 	command/command_window.c \
+	command/example_path.c \
 	command/parser.c 
 CURVE_SRCS = \
 	curve/control_curve.c \
@@ -823,6 +879,7 @@ SRCS_1 = \
 	$(THREE_D_DRAWING_SRCS)
 
 SRCS_2 = \
+	$(INTERPRETER_SRCS) \
 	$(TIME_SRCS) \
 	$(TRANSFORMATION_SRCS) \
 	$(USER_INTERFACE_SRCS) \
