@@ -16,6 +16,9 @@ int main(int argc, char *argv[])
    FILE *infile, *outfile;
 	long byte_data, data;
 	int byte_count, i, index;
+#if (defined (BYTE_ORDER)) && (1234==BYTE_ORDER)
+	int j;
+#endif /* (defined (BYTE_ORDER)) && (1234==BYTE_ORDER) */
 
 	if(argc != 3 && argc != 5)
 	{
