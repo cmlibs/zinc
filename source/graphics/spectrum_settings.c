@@ -66,7 +66,7 @@ Stores one group of settings for a single part of a spectrum rendition.
 
 #if defined (GL_EXT_texture_object)
 	/* Texture number for banded and step spectrums */
-	int texture_id;
+	unsigned int texture_id;
 #endif /* defined (GL_EXT_texture_object) */
 	 
 	/* For accessing objects */
