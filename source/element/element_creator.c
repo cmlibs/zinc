@@ -561,37 +561,29 @@ Callback for change in the global node selection.
 				}
 				if (element_creator->element)
 				{
-					/* check node uses the coordinate field just like template_node */
-					if (equivalent_FE_field_at_nodes(element_creator->coordinate_field,
-						element_creator->template_node,node))
+					/* When we make more than linear elements we will need
+						to check that the derivatives exist and are the correct ones */
+					if (set_FE_element_node(element_creator->element,
+						element_creator->number_of_clicked_nodes,node))
 					{
-						if (set_FE_element_node(element_creator->element,
-							element_creator->number_of_clicked_nodes,node))
+						sprintf(temp_string,"%d. Node %d",
+							element_creator->number_of_clicked_nodes+1,
+							get_FE_node_identifier(node));
+						new_string=XmStringCreateSimple(temp_string);
+						XmListAddItem(element_creator->node_list_widget,new_string,0);
+						XmStringFree(new_string);
+						element_creator->number_of_clicked_nodes++;
+						if (get_FE_element_number_of_nodes(element_creator->element,
+							&number_of_nodes) &&
+							(element_creator->number_of_clicked_nodes == number_of_nodes))
 						{
-							sprintf(temp_string,"%d. Node %d",
-								element_creator->number_of_clicked_nodes+1,
-								get_FE_node_identifier(node));
-							new_string=XmStringCreateSimple(temp_string);
-							XmListAddItem(element_creator->node_list_widget,new_string,0);
-							XmStringFree(new_string);
-							element_creator->number_of_clicked_nodes++;
-							if (get_FE_element_number_of_nodes(element_creator->element,
-								&number_of_nodes) &&
-								(element_creator->number_of_clicked_nodes == number_of_nodes))
-							{
-								Element_creator_add_element(element_creator);
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Element_creator_node_selection_change.  Could not set node");
+							Element_creator_add_element(element_creator);
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"Element_creator: "
-							"Selected node has incompatible coordinate field");
+						display_message(ERROR_MESSAGE,
+							"Element_creator_node_selection_change.  Could not set node");
 					}
 				}
 				else
