@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 14 June 2001
+LAST MODIFIED : 17 June 2001
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -656,6 +656,7 @@ static void print_menu(int channel_number,unsigned long number_of_channels)
 	printf("(g) Set NI gain             \n");
 	printf("(h) Shutdown SCU PC         ");
 	printf("(i) Test electrodes         \n");
+	printf("(j) Pacing                  \n");
 	printf("?\n");
 } /* print_menu */
 
@@ -5862,6 +5863,320 @@ static void process_keyboard(
 					unemap_set_channel_stimulating(0,0);
 					unemap_set_isolate_record_mode(0,1);
 					unemap_set_power(0);
+				} break;
+				case 'j':
+				{
+					char line[128],previous_response,response,signal_file_name[128];
+					float basic_cycle_length,change,control_amplitude,*pacing_voltages,
+						sampling_frequency,sampling_frequency_save,s2_delay,s2_delay_change,
+						s2_delay_change_factor,s2_resolution,voltages_per_second;
+					int channel_number,i,j,line_position,number_of_characters,
+						number_of_pacing_channels,number_of_pacing_voltages,
+						number_of_pacing_voltages_save,number_of_samples,number_of_s1,
+						number_of_s1_voltages,number_of_s2_voltages,*pacing_channels,
+						signal_file_name_length,signal_file_number;
+					unsigned long maximum_number_of_samples_save;
+
+					/* pacing */
+					printf("Sampling frequency? ");
+					scanf("%f",&sampling_frequency);
+					printf("Number_of_samples? ");
+					scanf("%d",&number_of_samples);
+					printf("Base signal file name? ");
+					scanf("%s",signal_file_name);
+					signal_file_name_length=strlen(signal_file_name);
+					signal_file_number=1;
+					if ((0<sampling_frequency)&&(0<number_of_samples))
+					{
+						unemap_get_sampling_frequency(&sampling_frequency_save);
+						unemap_get_maximum_number_of_samples(
+							&maximum_number_of_samples_save);
+						unemap_deconfigure();
+						unemap_configure(sampling_frequency,number_of_samples,
+#if defined (WINDOWS)
+							(HWND)NULL,0,
+#endif /* defined (WINDOWS) */
+#if defined (MOTIF)
+							application_context,
+#endif /* defined (MOTIF) */
+							(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,1);
+						unemap_set_power(1);
+						unemap_stop_stimulating(0);
+						unemap_set_channel_stimulating(0,0);
+						unemap_set_gain(0,(float)1,(float)1);
+						unemap_set_antialiasing_filter_frequency(0,(float)10000);
+						unemap_set_isolate_record_mode(0,0);
+						/* get the stimulating electrodes */
+						pacing_channels=(int *)NULL;
+						printf("Enter the channels (comma separated) for pacing down\n");
+						scanf("%s",line);
+						number_of_pacing_channels=0;
+						line_position=0;
+						while (1==sscanf(line+line_position,"%d%n",&channel_number,
+							&number_of_characters))
+						{
+							if ((0<channel_number)&&(channel_number<=number_of_channels))
+							{
+								number_of_pacing_channels++;
+							}
+							line_position += number_of_characters;
+							if (','==line[line_position])
+							{
+								line_position++;
+							}
+						}
+						if (0<number_of_pacing_channels)
+						{
+							if (ALLOCATE(pacing_channels,int,number_of_pacing_channels))
+							{
+								number_of_pacing_channels=0;
+								line_position=0;
+								while (1==sscanf(line+line_position,"%d%n",&channel_number,
+									&number_of_characters))
+								{
+									if ((0<channel_number)&&(channel_number<=number_of_channels))
+									{
+										pacing_channels[number_of_pacing_channels]=channel_number;
+										number_of_pacing_channels++;
+									}
+									line_position += number_of_characters;
+									if (','==line[line_position])
+									{
+										line_position++;
+									}
+								}
+							}
+							else
+							{
+								printf("ERROR.  Could not allocate pacing_channels\n");
+								number_of_pacing_channels=0;
+							}
+						}
+						else
+						{
+							printf("ERROR.  No pacing channels\n");
+						}
+						if (0<number_of_pacing_channels)
+						{
+							printf("The pacing channels are:");
+							printf(" %d",pacing_channels[0]);
+							unemap_set_channel_stimulating(pacing_channels[0],1);
+							for (i=1;i<number_of_pacing_channels;i++)
+							{
+								printf(",%d",pacing_channels[i]);
+								unemap_set_channel_stimulating(pacing_channels[i],1);
+							}
+							printf("\n");
+							printf("Starting sampling\n");
+							unemap_start_sampling();
+							/* get the basic cycle length (BCL) */
+							if (ALLOCATE(pacing_voltages,float,2))
+							{
+								response='n';
+								do
+								{
+									printf("Control square wave amplitude (V)? ");
+									scanf("%f",&control_amplitude);
+									printf("Basic cycle length (ms)? ");
+									scanf("%f",&basic_cycle_length);
+									if ((0<control_amplitude)&&(0<basic_cycle_length))
+									{
+										unemap_stop_stimulating(0);
+										pacing_voltages[0]=control_amplitude;
+										pacing_voltages[1]=0;
+										voltages_per_second=2000./basic_cycle_length;
+										unemap_load_voltage_stimulating(number_of_pacing_channels,
+											pacing_channels,2,voltages_per_second,pacing_voltages,0);
+										unemap_start_stimulating();
+										printf("Achieved capture (y/n)? ");
+										scanf("%s",line);
+										response=line[0];
+									}
+								} while (!(('y'==response)||('Y'==response)));
+								DEALLOCATE(pacing_voltages);
+							}
+							else
+							{
+								printf("ERROR.  Could not allocate pacing_voltages\n");
+							}
+							/* get the restitution time */
+							printf("Number of S1 stimuli? ");
+							scanf("%d",&number_of_s1);
+							printf("S2 resolution (ms)? ");
+							scanf("%f",&s2_resolution);
+							printf("Initial S2 delay (ms)? ");
+							scanf("%f",&s2_delay);
+							printf("Initial S2 delay change (ms)? ");
+							scanf("%f",&s2_delay_change);
+							printf("S2 delay change factor (>1)? ");
+							scanf("%f",&s2_delay_change_factor);
+							if ((0<number_of_s1)&&(0<s2_resolution)&&(0<s2_delay)&&
+								(0<s2_delay_change)&&(1<s2_delay_change_factor)&&
+								(s2_delay<basic_cycle_length))
+							{
+								number_of_pacing_voltages=(number_of_s1+3)*
+									((int)(basic_cycle_length/s2_resolution)+1);
+								if (ALLOCATE(pacing_voltages,float,number_of_pacing_voltages))
+								{
+									number_of_s1_voltages=
+										(int)(basic_cycle_length/s2_resolution+0.5);
+									number_of_pacing_voltages=0;
+									for (j=0;j<number_of_s1_voltages;j++)
+									{
+										pacing_voltages[number_of_pacing_voltages]=0;
+										number_of_pacing_voltages++;
+									}
+									for (i=0;i<number_of_s1-1;i++)
+									{
+										for (j=0;j<number_of_s1_voltages;j++)
+										{
+											if (j<number_of_s1_voltages/2)
+											{
+												pacing_voltages[number_of_pacing_voltages]=
+													control_amplitude;
+											}
+											else
+											{
+												pacing_voltages[number_of_pacing_voltages]=0;
+											}
+											number_of_pacing_voltages++;
+										}
+									}
+									number_of_pacing_voltages_save=number_of_pacing_voltages;
+									voltages_per_second=1000./s2_resolution;
+									response='y';
+									change=0;
+									do
+									{
+										previous_response=response;
+										/*???debug */
+										printf("%g %g %g %c %c\n",s2_delay,s2_delay_change,change,
+											response,previous_response);
+										number_of_pacing_voltages=number_of_pacing_voltages_save;
+										number_of_s2_voltages=
+											(int)(s2_delay/s2_resolution+0.5);
+										for (j=0;j<number_of_s2_voltages;j++)
+										{
+											if (j<number_of_s2_voltages/2)
+											{
+												pacing_voltages[number_of_pacing_voltages]=
+													control_amplitude;
+											}
+											else
+											{
+												pacing_voltages[number_of_pacing_voltages]=0;
+											}
+											number_of_pacing_voltages++;
+										}
+										for (j=number_of_s2_voltages/2;j>0;j--)
+										{
+											pacing_voltages[number_of_pacing_voltages]=
+												control_amplitude;
+											number_of_pacing_voltages++;
+										}
+										pacing_voltages[number_of_pacing_voltages]=0;
+										number_of_pacing_voltages++;
+										unemap_load_voltage_stimulating(number_of_pacing_channels,
+											pacing_channels,number_of_pacing_voltages,
+											voltages_per_second,pacing_voltages,1);
+										unemap_start_stimulating();
+										do
+										{
+											printf("Captured?\n");
+											printf("(s) Stop\n");
+											printf("(y) Yes\n");
+											printf("(n) No\n");
+											printf("(u) Yes and save\n");
+											printf("(m) No and save\n");
+											scanf("%s",line);
+											response=line[0];
+											switch (response)
+											{
+												case 's': case 'S':
+												{
+													/* do nothing */
+												} break;
+												case 'y': case 'Y': case 'u': case 'U':
+												{
+													if (('u'==response)||('U'==response))
+													{
+														sprintf(signal_file_name+signal_file_name_length,
+															"%d.signal",signal_file_number);
+														signal_file_number++;
+														register_write_signal_file(signal_file_name,1);
+													}
+													response='y';
+													if (response!=previous_response)
+													{
+														if (0!=change)
+														{
+															s2_delay_change /= s2_delay_change_factor;
+														}
+													}
+													change= -1;
+												} break;
+												case 'n': case 'N': case 'm': case 'M':
+												{
+													if (('m'==response)||('M'==response))
+													{
+														sprintf(signal_file_name+signal_file_name_length,
+															"%d.signal",signal_file_number);
+														signal_file_number++;
+														register_write_signal_file(signal_file_name,1);
+													}
+													response='n';
+													if (response!=previous_response)
+													{
+														if (0!=change)
+														{
+															s2_delay_change /= s2_delay_change_factor;
+														}
+													}
+													change=1;
+												} break;
+												default:
+												{
+													response='f';
+												} break;
+											}
+										} while ('f'==response);
+										s2_delay += change*s2_delay_change;
+									} while (!(('s'==response)||('S'==response))&&
+										(s2_resolution<=s2_delay_change)&&
+										(s2_resolution<=s2_delay)&&
+										(s2_delay<2*basic_cycle_length));
+									/*???debug */
+									printf("%g %g %g %c %c\n",s2_delay,s2_delay_change,change,
+										response,previous_response);
+									DEALLOCATE(pacing_voltages);
+								}
+								else
+								{
+									printf("ERROR.  Could not allocate pacing_voltages\n");
+								}
+							}
+							printf("Stopping sampling\n");
+							unemap_stop_sampling();
+							sprintf(signal_file_name+signal_file_name_length,"%d.signal",
+								signal_file_number);
+							register_write_signal_file(signal_file_name,1);
+						}
+						DEALLOCATE(pacing_channels);
+						unemap_stop_stimulating(0);
+						unemap_set_channel_stimulating(0,0);
+						unemap_set_isolate_record_mode(0,1);
+						unemap_set_power(0);
+						unemap_deconfigure();
+						unemap_configure(sampling_frequency_save,
+							(int)maximum_number_of_samples_save,
+#if defined (WINDOWS)
+							(HWND)NULL,0,
+#endif /* defined (WINDOWS) */
+#if defined (MOTIF)
+							application_context,
+#endif /* defined (MOTIF) */
+							(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,1);
+					}
 				} break;
 				default:
 				{
