@@ -1,4 +1,4 @@
-package Cmiss::scene_viewer;
+package Cmiss::Scene_viewer;
 
 use 5.006;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Exporter DynaLoader);
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 
-# This allows declaration	use Cmiss::scene_viewer ':all';
+# This allows declaration	use Cmiss::Scene_viewer ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
@@ -74,7 +74,7 @@ sub AUTOLOAD {
 	    goto &AutoLoader::AUTOLOAD;
 	}
 	else {
-	    croak "Your vendor has not defined Cmiss::scene_viewer macro $constname";
+	    croak "Your vendor has not defined Cmiss::Scene_viewer macro $constname";
 	}
     }
     {
@@ -90,14 +90,11 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
-use Cmiss;
-#Need an interpreter before we load the main "cmiss" library until we separate the
-#graphics from the command processing
-use Cmiss::Perl_cmiss;
-Cmiss::require_library('cmgui');
+#Scene viewers currently require the command data to be initialised.
+use Cmiss::Cmgui_command_data;
 
 require XSLoader;
-XSLoader::load('Cmiss::scene_viewer', $VERSION);
+XSLoader::load('Cmiss::Scene_viewer', $VERSION);
 
 # Preloaded methods go here.
 
@@ -114,16 +111,20 @@ __END__
 
 =head1 NAME
 
-Cmiss::scene_viewer - Perl extension for interacting with the Cmiss scene_viewer.
+Cmiss::Scene_viewer - Perl extension for interacting with the Cmiss scene_viewer.
 
 =head1 SYNOPSIS
 
-  use Cmiss::scene_viewer;
-  use Cmiss::graphics_window;
+gfx cre window 1;
+
+use Cmiss::Graphics_window;
+use Cmiss::Scene_viewer;
+
+$bob = Cmiss::Graphics_window::get_scene_viewer_by_name("1", 0);
 
 =head1 DESCRIPTION
 
-Perl bindings to the public interface of Cmiss::scene_viewer.
+Perl bindings to the public interface of Cmiss::Scene_viewer.
 
 =head2 EXPORT
 
@@ -133,51 +134,76 @@ None by default.
 
   (double eyex, double eyey, double eyez, double lookatx, double lookaty, double lookatz,
         double upx, double upy, double upz) get_lookat_parameters(
-	     Cmiss::scene_viewer scene_viewer)
+	     Cmiss::Scene_viewer scene_viewer)
 
   int set_lookat_parameters_non_skew(
-        Cmiss::scene_viewer scene_viewer,double eyex,double eyey,double eyez,
+        Cmiss::Scene_viewer scene_viewer,double eyex,double eyey,double eyez,
         double lookatx,double lookaty,double lookatz,
         double upx,double upy,double upz)
 
-  double get_view_angle(Cmiss::scene_viewer scene_viewer)
+  enum Cmiss_scene_viewer_projection_mode
+        get_projection_mode(Cmiss::Scene_viewer scene_viewer)
+
+  int set_projection_mode(Cmiss::Scene_viewer scene_viewer,
+	     enum Cmiss_scene_viewer_projection_mode projection_mode)
+
+  enum Cmiss_scene_viewer_transparency_mode transparency_mode
+        get_transparency_mode(Cmiss::Scene_viewer scene_viewer)
+
+  int set_transparency_mode(Cmiss::Scene_viewer scene_viewer,
+	     enum Cmiss_scene_viewer_transparency_mode transparency_mode)
+
+
+  int transparency_layers get_transparency_layers(
+	     Cmiss::Scene_viewer scene_viewer)
+
+  int set_transparency_layers(Cmiss::Scene_viewer scene_viewer,
+	     int transparency_layers)
+
+  double get_view_angle(Cmiss::Scene_viewer scene_viewer)
 The <view_angle> is returned in radians.
 
-  int set_view_angle(Cmiss::scene_viewer scene_viewer,
+  int set_view_angle(Cmiss::Scene_viewer scene_viewer,
         double view_angle)
 The <view_angle> should be specified in radians.
 
-  int get_antialias_mode(Cmiss::scene_viewer scene_viewer)
+(double near, double far) = get_near_and_far_plane(
+        Cmiss::Scene_viewer scene_viewer)
 
-  int set_antialias_mode(Cmiss::scene_viewer scene_viewer,
+int set_near_and_far_plane(Cmiss::Scene_viewer scene_viewer,
+	     double near, double far)
+
+  int get_antialias_mode(Cmiss::Scene_viewer scene_viewer)
+
+  int set_antialias_mode(Cmiss::Scene_viewer scene_viewer,
         int antialias_mode)
 
-  int get_perturb_lines(Cmiss::scene_viewer scene_viewer)
+  int get_perturb_lines(Cmiss::Scene_viewer scene_viewer)
 
-  int set_perturb_lines(Cmiss::scene_viewer scene_viewer,
+  int set_perturb_lines(Cmiss::Scene_viewer scene_viewer,
         int perturb_lines)
 
   (double red, double green, double blue) get_background_colour_rgb(
-		  Cmiss::scene_viewer scene_viewer)
+		  Cmiss::Scene_viewer scene_viewer)
 
-  int set_background_colour_rgb(Cmiss::scene_viewer scene_viewer,
+  int set_background_colour_rgb(Cmiss::Scene_viewer scene_viewer,
         double red, double green, double blue)
 
-  char *get_interactive_tool_name(Cmiss::scene_viewer scene_viewer)
+  char *get_interactive_tool_name(Cmiss::Scene_viewer scene_viewer)
 
-  int set_interactive_tool_by_name(Cmiss::scene_viewer scene_viewer,
+  int set_interactive_tool_by_name(Cmiss::Scene_viewer scene_viewer,
 		  char *tool_name)
 
-  char *get_scene_name(Cmiss::scene_viewer scene_viewer)
+  char *get_scene_name(Cmiss::Scene_viewer scene_viewer)
 
-  int set_scene_by_name(Cmiss::scene_viewer scene_viewer,
+  int set_scene_by_name(Cmiss::Scene_viewer scene_viewer,
 		  char *scene_name)
 
-  int view_all(Cmiss::scene_viewer scene_viewer)
+  int view_all(Cmiss::Scene_viewer scene_viewer)
 
-  int redraw_now(Cmiss::scene_viewer scene_viewer)
+  int redraw_now(Cmiss::Scene_viewer scene_viewer)
 
-  int write_image_to_file(Cmiss::scene_viewer scene_viewer,
+  int write_image_to_file(Cmiss::Scene_viewer scene_viewer,
         char *file_name, int force_onscreen, int preferred_width,
         int preferred_height)
 =head1 AUTHOR
@@ -186,7 +212,7 @@ Shane Blackett <s.blackett@auckland.ac.nz>
 
 =head1 SEE ALSO
 
-L<perl> and L<Cmiss::graphics_window>.
+L<perl> and L<Cmiss::Graphics_window>.
 
 =cut
 

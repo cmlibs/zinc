@@ -1,3 +1,3 @@
-Cmiss::scene_viewer							T_PTROBJ
+Cmiss::Scene_viewer							T_PTROBJ
 enum Cmiss_scene_viewer_projection_mode	T_IV
 enum Cmiss_scene_viewer_transparency_mode	T_IV

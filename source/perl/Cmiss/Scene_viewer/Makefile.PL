@@ -2,11 +2,11 @@ use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
 WriteMakefile(
-    'NAME'		=> 'Cmiss::scene_viewer',
-    'VERSION_FROM'	=> 'scene_viewer.pm', # finds $VERSION
+    'NAME'		=> 'Cmiss::Scene_viewer',
+    'VERSION_FROM'	=> 'Scene_viewer.pm', # finds $VERSION
     'PREREQ_PM'		=> {}, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
-      (ABSTRACT_FROM => 'scene_viewer.pm', # retrieve abstract from module
+      (ABSTRACT_FROM => 'Scene_viewer.pm', # retrieve abstract from module
        AUTHOR     => '"Shane Blackett <s.blackett@auckland.ac.nz>"') : ()),
     'LIBS'		=> [''], # e.g., '-lm'
     'DEFINE'		=> '', # e.g., '-DHAVE_SOMETHING'
