@@ -471,6 +471,7 @@ UNEMAP_SRCS = \
 	unemap/acquisition_work_area.c \
 	unemap/analysis.c \
 	unemap/analysis_calculate.c \
+	unemap/analysis_drawing.c \
 	unemap/analysis_window.c \
 	unemap/analysis_work_area.c \
 	unemap/bard.c \
