@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_window_projection.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -207,7 +207,7 @@ Clear the scene viewer reference when it is no longer valid.
 static int Computed_field_window_projection_calculate_matrix(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 27 February 2001
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -220,7 +220,7 @@ DESCRIPTION :
 		bk_texture_left, bk_texture_top, bk_texture_width, bk_texture_height,
 		bk_texture_max_pixels_per_polygon;
 	float distortion_centre_x, distortion_centre_y, distortion_factor_k1,
-		texture_width, texture_height;
+		texture_width, texture_height, texture_depth;
 	int bk_texture_undistort_on, i, j, k, lu_index[4], return_code;
 	struct Computed_field_window_projection_type_specific_data *data;
 	struct Scene_viewer *scene_viewer;
@@ -400,7 +400,7 @@ DESCRIPTION :
 							Texture_get_distortion_info(texture, &distortion_centre_x, 
 								&distortion_centre_y, &distortion_factor_k1);
 							Texture_get_physical_size(texture, &texture_width, 
-								&texture_height);
+								&texture_height, &texture_depth);
 					
 							if (bk_texture_undistort_on && distortion_factor_k1)
 							{
