@@ -170,6 +170,8 @@ DESCRIPTION :
 	void *pixel_data;
 	int antialias;
 	int perturb_lines;
+	/* Flag that indicates the update includes a change of the projection matrices */
+	int transform_flag;
 	struct User_interface *user_interface;
 }; /* struct Scene_viewer */
 
@@ -745,7 +747,15 @@ access this function.
 					{
 						Scene_viewer_calculate_transformation(scene_viewer,
 							viewport_width,viewport_height);
+						/* Send the transform callback if the flag is set */
+						if (scene_viewer->transform_flag)
+						{
+							CALLBACK_LIST_CALL(Scene_viewer_transform)(
+								scene_viewer->transform_callback_list,scene_viewer,NULL);
+							scene_viewer->transform_flag = 0;
+						}
 					}
+
 					/* It is also possible to test the extensions at compile time
 						 by using #if defined GL_EXT_polygon_offset */
 					if (query_gl_extension("GL_EXT_polygon_offset"))
@@ -1344,8 +1354,7 @@ callbacks interested in the scene_viewers transformations.
 		(resize_callback_data=(X3dThreeDDrawCallbackStruct *)call_data)&&
 		(X3dCR_RESIZE==resize_callback_data->reason))
 	{
-		CALLBACK_LIST_CALL(Scene_viewer_transform)(
-			scene_viewer->transform_callback_list,scene_viewer,NULL);		
+		scene_viewer->transform_flag = 1;
 	}
 	else
 	{
@@ -2051,9 +2060,8 @@ Converts mouse button-press and motion events into viewing transformations in
 						Scene_viewer_redraw_now(scene_viewer);
 						/* send the callbacks */
 						CALLBACK_LIST_CALL(Scene_viewer_transform)(
-							scene_viewer->transform_callback_list,scene_viewer,NULL);
-						CALLBACK_LIST_CALL(Scene_viewer_transform)(
 							scene_viewer->sync_callback_list,scene_viewer,NULL);
+						scene_viewer->transform_flag = 1;
 					}
 					old_pointer_x=pointer_x;
 					old_pointer_y=pointer_y;
@@ -2182,6 +2190,7 @@ transformations.
 							scene_viewer->viewport_pixels_per_unit_y;
 						scene_viewer->viewport_left -= dx;
 						scene_viewer->viewport_top -= dy;
+						scene_viewer->transform_flag = 1;
 						Scene_viewer_redraw(scene_viewer);
 					} break;
 					case SV_DRAG_ZOOM:
@@ -2768,6 +2777,7 @@ performed in idle time so that multiple redraws are avoided.
 					scene_viewer->light_model=ACCESS(Light_model)(default_light_model);
 					scene_viewer->antialias=0;
 					scene_viewer->perturb_lines=0;
+					scene_viewer->transform_flag=0;
 					if (default_light)
 					{
 						ADD_OBJECT_TO_LIST(Light)(default_light,
@@ -2993,62 +3003,6 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 
 	return (return_code);
 } /* DESTROY(Scene_viewer) */
-
-#if defined (OLD_CODE)
-int Scene_viewer_get_aspect(struct Scene_viewer *scene_viewer,double *aspect)
-/*******************************************************************************
-LAST MODIFIED : 21 November 1997
-
-DESCRIPTION :
-Returns the Scene_viewer aspect; see struct Scene_viewer for definition.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_get_aspect);
-	if (scene_viewer&&aspect)
-	{
-		*aspect=scene_viewer->aspect;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_aspect.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_get_aspect */
-
-int Scene_viewer_set_aspect(struct Scene_viewer *scene_viewer,double aspect)
-/*******************************************************************************
-LAST MODIFIED : 21 November 1997
-
-DESCRIPTION :
-Sets the Scene_viewer aspect; see struct Scene_viewer for definition.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_set_aspect);
-	if (scene_viewer&&(0.0<aspect))
-	{
-		scene_viewer->aspect=aspect;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_aspect.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_aspect */
-#endif /* defined (OLD_CODE) */
 
 int Scene_viewer_get_background_colour(struct Scene_viewer *scene_viewer,
 	struct Colour *background_colour)
@@ -3306,6 +3260,7 @@ only shown on the bottom and right of each viewer in the graphics window.
 			XmNrightOffset,(Dimension)border_width,
 			XmNbottomOffset,(Dimension)border_width,
 			XmNtopOffset,(Dimension)border_width,NULL);
+		scene_viewer->transform_flag = 1;
 		return_code=1;
 	}
 	else
@@ -3647,6 +3602,7 @@ Sets the view direction and orientation of the Scene_viewer.
 			scene_viewer->upx=upv[0];
 			scene_viewer->upy=upv[1];
 			scene_viewer->upz=upv[2];
+			scene_viewer->transform_flag = 1;
 			return_code=1;
 		}
 		else
@@ -3709,6 +3665,7 @@ is orthogonal to the view direction - so prejection is not skew.
 			scene_viewer->upx=upv[0];
 			scene_viewer->upy=upv[1];
 			scene_viewer->upz=upv[2];
+			scene_viewer->transform_flag = 1;
 			return_code=1;
 		}
 		else
@@ -3790,6 +3747,7 @@ consecutive across rows, eg:
 			{
 				scene_viewer->modelview_matrix[i]=modelview_matrix[i];
 			}
+			scene_viewer->transform_flag = 1;
 			return_code=1;
 		}
 		else
@@ -3868,6 +3826,7 @@ are used to position the intended viewing volume in user coordinates.
 			scene_viewer->NDC_top=NDC_top;
 			scene_viewer->NDC_width=NDC_width;
 			scene_viewer->NDC_height=NDC_height;
+			scene_viewer->transform_flag = 1;
 			return_code=1;
 		}
 		else
@@ -3998,6 +3957,7 @@ Sets the projection mode - parallel/perspective/custom - of the Scene_viewer.
 		(SCENE_VIEWER_CUSTOM==projection_mode)))
 	{
 		scene_viewer->projection_mode=projection_mode;
+		scene_viewer->transform_flag = 1;
 		return_code=1;
 	}
 	else
@@ -4071,6 +4031,7 @@ consecutive across rows, eg:
 			{
 				scene_viewer->projection_matrix[i]=projection_matrix[i];
 			}
+			scene_viewer->transform_flag = 1;
 			return_code=1;
 		}
 		else
@@ -4409,6 +4370,7 @@ For PARALLEL and PERSPECTIVE projection modes only.
 		scene_viewer->right  = centre_x + width *size_ratio;
 		scene_viewer->bottom = centre_y - height*size_ratio;
 		scene_viewer->top    = centre_y + height*size_ratio;
+		scene_viewer->transform_flag = 1;
 		return_code=1;
 	}
 	else
@@ -4472,6 +4434,7 @@ eye_distance*0.99 in front of it.
 		{
 			scene_viewer->near=eye_distance-clip_distance;
 		}
+		scene_viewer->transform_flag = 1;
 		return_code=1;
 	}
 	else
@@ -4548,6 +4511,7 @@ rendering a higher resolution image in parts.
 			scene_viewer->top=top;
 			scene_viewer->near=near;
 			scene_viewer->far=far;
+			scene_viewer->transform_flag = 1;
 			return_code=1;
 		}
 		else
@@ -4635,6 +4599,7 @@ pixels per unit enables zooming to be achieved.
 		scene_viewer->viewport_top=viewport_top;
 		scene_viewer->viewport_pixels_per_unit_x=viewport_pixels_per_unit_x;
 		scene_viewer->viewport_pixels_per_unit_y=viewport_pixels_per_unit_y;
+		scene_viewer->transform_flag = 1;
 		return_code=1;
 	}
 	else
@@ -4845,6 +4810,7 @@ viewport coordinates, which are specified relative to the window.
 		(SCENE_VIEWER_ABSOLUTE_VIEWPORT==viewport_mode)))
 	{
 		scene_viewer->viewport_mode=viewport_mode;
+		scene_viewer->transform_flag = 1;
 		return_code=1;
 	}
 	else
@@ -4905,6 +4871,7 @@ Sets the width and height of the Scene_viewers drawing area.
 		XtVaSetValues(scene_viewer->drawing_widget,
 			XmNwidth,width,
 			XmNheight,height,NULL);
+		scene_viewer->transform_flag = 1;
 		return_code=1;
 	}
 	else
@@ -5018,6 +4985,7 @@ not already a unit vector, it will be made one by this function.
 		scene_viewer->upx=a[0]*upa+new_b[0]*upb+new_c[0]*upc;
 		scene_viewer->upy=a[1]*upa+new_b[1]*upb+new_c[1]*upc;
 		scene_viewer->upz=a[2]*upa+new_b[2]*upb+new_c[2]*upc;
+		scene_viewer->transform_flag = 1;
 		return_code=1;
 	}
 	else
@@ -5342,6 +5310,7 @@ Scales of the absolute image while keeping the same centre point.
 			(width/scene_viewer->viewport_pixels_per_unit_x);
 		scene_viewer->viewport_top -= 0.5*(zoom_ratio-1.0)*
 			(height/scene_viewer->viewport_pixels_per_unit_y);
+		scene_viewer->transform_flag = 1;
 		return_code=1;
 	}
 	else
