@@ -123,7 +123,11 @@ form of arguments is used.
 	}
 	offset = strlen(error_message);
 
-	return_code=vsnprintf(error_message+offset,ERROR_MESSAGE_SIZE-offset,format,ap);
+#if defined (WIN32)
+	return_code= _vsnprintf(error_message+offset,ERROR_MESSAGE_SIZE-offset,format,ap);
+#else /* defined (WIN32) */
+	return_code= vsnprintf(error_message+offset,ERROR_MESSAGE_SIZE-offset,format,ap);
+#endif /* defined (WIN32) */
 	/*	return_code=vsprintf(error_message,format,ap); */
 	if (return_code >= (ERROR_MESSAGE_SIZE-1-offset))
 	{
@@ -2081,7 +2085,7 @@ The string should be freed when no longer required.
 
 	/* in case forget to set return_code */
 	return_code=PF_GENERAL_FAILURE_RC;
-	if (ALLOCATE(*message, char, strlen(error_message + 1)))
+	if (ALLOCATE(*message, char, strlen(error_message) + 1))
 	{
 		strcpy(*message, error_message);
 	}
