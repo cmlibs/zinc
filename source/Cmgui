@@ -27,7 +27,7 @@ cmgui.*.cmExecutable: cm
 cmgui.*.examplesDirectory: /product/cmiss/examples/
 !
 ! The URL for cmiss help
-cmgui.*.helpUrl: http://www.esc.auckland.ac.nz/Groups/Bioengineering/CMISS/help/index.html
+cmgui.*.helpUrl: http://www.bioeng.auckland.ac.nz/cmiss/help/user_help.php
 !
 ! The mycm executable to be run
 cmgui.*.mycmExecutable: mycm

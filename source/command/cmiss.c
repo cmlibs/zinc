@@ -23468,7 +23468,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			sizeof(char *),
 			XtOffsetOf(User_settings,help_url),
 			XmRString,
-			"http://www.esc.auckland.ac.nz/Groups/Bioengineering/CMISS/help/index_user.html"
+			"http://www.bioeng.auckland.ac.nz/cmiss/help/user_help.php"
 		},
 	};
 #endif /* defined (MOTIF) */
