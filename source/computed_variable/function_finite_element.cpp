@@ -1014,7 +1014,7 @@ the <node>.
 				{
 					// Check all the values are in the total sequence
 					if (number_of_times = FE_time_sequence_get_number_of_times(
-							 time_sequence))
+							 count_nodal_values_data->time_sequence))
 					{
 						FE_value time;
 						int i, index, valid_times;
