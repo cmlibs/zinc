@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendervrml.c
 
-LAST MODIFIED : 21 August 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Renders gtObjects to VRML file
@@ -563,7 +563,7 @@ int draw_glyph_set_vrml(FILE *vrml_file, int number_of_points,
 	struct Graphical_material *material, struct Spectrum *spectrum, float time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
-LAST MODIFIED : 21 August 2001
+LAST MODIFIED : 30 August 2001
 
 DESCRIPTION :
 Defines an object for the <glyph> and then draws that at <number_of_points>
@@ -984,12 +984,18 @@ points  given by the positions in <point_list> and oriented and scaled by
 							j3 = (1.0 - cos(a_angle)) * a2 * a3;
 							b_angle = clamped_acos(j1*bx1 + j2*bx2 + j3*bx3);
 							/*???DB.  Lose accuracy fairly badly here.  Need to have
-								tolerance so that not different numbers of lines for ndiff */
+								tolerance so that there are not different numbers of lines for
+								ndiff */
 #define ZERO_ROTATION_TOLERANCE 0.001
+#if defined (OLD_CODE)
+/*???DB.  I think that this is wrong.  Swapping the sign will mean that j is not
+	rotated onto bx unless they are in opposite directions.  If they are in
+	opposite directions then the cross product is zero */
 /*							if (0.0 != b_angle)*/
 							if (ZERO_ROTATION_TOLERANCE < fabs(b_angle))
 							{
 								/* get c = j1 (x) bx and normalise it */
+									/*???DB.  What if j1 and bx are colinear
 								c1 = j2*bx3 - j3*bx2;
 								c2 = j3*bx1 - j1*bx3;
 								c3 = j1*bx2 - j2*bx1;
@@ -1004,7 +1010,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 									b_angle = -b_angle;
 								}
 							}
-
+#endif /* defined (OLD_CODE) */
 							fprintf(vrml_file,"Transform {\n");
 							fprintf(vrml_file,"  translation %f %f %f\n", x,y,z);
 							/* if possible, try to avoid having two Transform nodes */
