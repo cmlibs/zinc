@@ -98,14 +98,14 @@ cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui6
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
 #Recurse on these targets so we don't have to redefine in this file what cmgui-gtk-debug is etc.
-cmgui-gtk-static-lib :
-	$(MAKE) -f $(MAKEFILE) cmgui-gtk TARGET=static_lib ;
-cmgui-gtk-debug-static-lib:
-	$(MAKE) -f $(MAKEFILE) cmgui-gtk-debug TARGET=static_lib ;
 cmgui-gtk-lib :
 	$(MAKE) -f $(MAKEFILE) cmgui-gtk TARGET=so_lib ;
 cmgui-gtk-debug-lib :
 	$(MAKE) -f $(MAKEFILE) cmgui-gtk-debug TARGET=so_lib ;
+cmgui-gtk-static-lib :
+	$(MAKE) -f $(MAKEFILE) cmgui-gtk TARGET=static_lib ;
+cmgui-gtk-debug-static-lib:
+	$(MAKE) -f $(MAKEFILE) cmgui-gtk-debug TARGET=static_lib ;
 
 .NOTPARALLEL:
 
@@ -113,7 +113,7 @@ ifeq ($(SYSNAME:IRIX%=),)
 all : cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
-all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console
+all : cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console cmgui-gtk cmgui-gtk-debug cmgui-gtk-lib cmgui-gtk-debug-lib cmgui-gtk-static-lib cmgui-gtk-debug-static-lib
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
 all : cmgui cmgui-debug cmgui64 cmgui64-debug
