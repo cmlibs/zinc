@@ -2041,7 +2041,7 @@ DESCRIPTION :
 
 	ENTER(Scene_object_update_time_behaviour);
 	/* check arguments */
-	if (scene_object)
+	if (scene_object && (time_object = (struct Time_object *)time_object_void))
 	{
 		switch (scene_object->type)
 		{
@@ -2053,10 +2053,6 @@ DESCRIPTION :
 				{
 					if(!Scene_object_has_time(scene_object))
 					{
-						if (!(time_object = (struct Time_object *)time_object_void))
-						{
-							
-						}
 						Scene_object_set_time_object(scene_object, time_object);
 					}
 				}
