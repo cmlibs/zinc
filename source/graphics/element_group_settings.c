@@ -5314,11 +5314,12 @@ struct GT_element_settings_computed_field_change_data ;
 				if (((GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)||
 					(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type)||
 					(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))&&
-					settings->orientation_scale_field&&
-					(Computed_field_depends_on_Computed_field(
-						settings->orientation_scale_field,changed_field)||
-					Computed_field_depends_on_Computed_field(
-						settings->label_field,changed_field)))
+					(settings->orientation_scale_field&&
+						Computed_field_depends_on_Computed_field(
+							settings->orientation_scale_field,changed_field))||
+					(settings->label_field&&
+						Computed_field_depends_on_Computed_field(
+							settings->label_field,changed_field)))
 				{
 					rebuild_graphics_object=1;
 				}
