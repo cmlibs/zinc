@@ -336,6 +336,9 @@ Updates the node locations for the <emoter_slider>
 										euler_angles[1] = shared_data->weights[4];
 										euler_angles[2] = shared_data->weights[3];
 										euler_to_gtMatrix(euler_angles, transformation);
+										transformation[3][0] = shared_data->weights[0];
+										transformation[3][1] = shared_data->weights[1];
+										transformation[3][2] = shared_data->weights[2];
 										Scene_object_set_transformation(
 											shared_data->transformation_scene_object,
 											&transformation);
