@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 15 May 2003
+LAST MODIFIED : 19 May 2003
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -2078,7 +2078,7 @@ Executes a GFX CREATE ENVIRONMENT_MAP command.
 static int gfx_create_flow_particles(struct Parse_state *state,
 	void *create_more,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 17 January 2003
+LAST MODIFIED : 19 May 2003
 
 DESCRIPTION :
 Executes a GFX CREATE FLOW_PARTICLES command.
@@ -2116,11 +2116,6 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 		xi[0]=0.5;
 		xi[1]=0.5;
 		xi[2]=0.5;
-
-		option_table=CREATE(Option_table)();
-		/* as */
-		Option_table_add_entry(option_table,"as",&graphics_object_name,
-			(void *)1,set_name);
 		time=0;
 		/* must access it now,because we deaccess it later */
 		material=
@@ -10739,7 +10734,10 @@ Executes a GFX ELEMENT_CREATOR command.
 			}
 		} /* parse error,help */
 		DESTROY(Option_table)(&option_table);
-		DEALLOCATE(region_path);
+		if (region_path)
+		{
+			DEALLOCATE(region_path);
+		}
 		if (coordinate_field)
 		{
 			DEACCESS(FE_field)(&coordinate_field);
@@ -11235,64 +11233,6 @@ Executes a GFX EXPORT IGES command.
 
 	return (return_code);
 } /* gfx_export_iges */
-
-#if defined (OLD_CODE)
-int gfx_export_node(struct Parse_state *state,void *dummy_to_be_modified,
-	void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 7 November 1998
-
-DESCRIPTION :
-Executes a GFX EXPORT NODE command.  This command exports nodes to cmiss as
-data.
-==============================================================================*/
-{
-	int base_number,return_code;
-	struct Cmiss_command_data *command_data;
-	struct LIST(GROUP(FE_node)) *groups;
-	static struct Modifier_entry option_table[]=
-	{
-		{"base_number",NULL,NULL,set_int},
-		{"groups",NULL,NULL,set_FE_node_group_list},
-		{NULL,NULL,NULL,NULL}
-	};
-
-	ENTER(gfx_export_node);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			groups=CREATE(LIST(GROUP(FE_node)))();
-			base_number=1;
-			/* initialise defaults */
-			(option_table[0]).to_be_modified= &base_number;
-			(option_table[1]).to_be_modified=groups;
-			(option_table[1]).user_data=command_data->node_group_manager;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
-			{
-				export_nodes(groups,base_number,command_data->execute_command);
-			} /* parse error, help */
-			DESTROY(LIST(GROUP(FE_node)))(&groups);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"gfx_export_node.  Invalid argument(s)");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_export_node.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_export_node */
-#endif /* defined (OLD_CODE) */
 
 static int gfx_export_vrml(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
@@ -17310,6 +17250,7 @@ Executes a GFX UNSELECT command.
 				}
 			}
 			DESTROY(Option_table)(&option_table);
+			DEALLOCATE(region_path);
 			if (conditional_field)
 			{
 				DEACCESS(Computed_field)(&conditional_field);
