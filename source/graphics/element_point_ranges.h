@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.h
 
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 30 May 2000
 
 DESCRIPTION :
 Structure for storing ranges of points in elements according to the various
@@ -45,10 +45,59 @@ The contents of this object are private.
 
 DECLARE_LIST_TYPES(Element_point_ranges);
 
+struct FE_element_grid_to_Element_point_ranges_list_data
+/*******************************************************************************
+LAST MODIFIED : 26 May 2000
+
+DESCRIPTION :
+Data for passing to FE_element_grid_to_Element_point_ranges_list.
+<grid_fe_field> must be a single component integer, <grid_value_ranges>
+contains the range of values of <grid_fe_field> for which points are added to
+<element_point_ranges_list>.
+==============================================================================*/
+{
+	struct LIST(Element_point_ranges) *element_point_ranges_list;
+	struct FE_field *grid_fe_field;
+	struct Multi_range *grid_value_ranges;
+};
+
 /*
 Global functions
 ----------------
 */
+
+char **Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
+	int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 30 May 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
+Xi_discretization_modes that can be used for Element_point_ranges, obtained
+from function Xi_discretization_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+int Element_point_ranges_identifier_is_valid(
+	struct Element_point_ranges_identifier *identifier);
+/*******************************************************************************
+LAST MODIFIED : 24 May 2000
+
+DESCRIPTION :
+Returns true if <identifier> has a valid element, Xi_discretization_mode and
+number_in_xi for being used in an Element_point_ranges structure.
+==============================================================================*/
+
+int Element_point_ranges_identifier_element_point_number_is_valid(
+	struct Element_point_ranges_identifier *identifier,int element_point_number);
+/*******************************************************************************
+LAST MODIFIED : 24 May 2000
+
+DESCRIPTION :
+Returns true if <element_point_number> is in the number_in_xi range for
+<identifier>. Assumes <identifier> is already validated by
+Element_point_ranges_identifier_is_valid.
+==============================================================================*/
 
 struct Element_point_ranges *CREATE(Element_point_ranges)(
 	struct Element_point_ranges_identifier *identifier);
@@ -102,6 +151,15 @@ LAST MODIFIED : 29 February 2000
 DESCRIPTION :
 Returns a pointer to the ranges in <element_point_ranges>. This should not be
 modified in any way.
+==============================================================================*/
+
+int Element_point_ranges_has_ranges(
+	struct Element_point_ranges *element_point_ranges);
+/*******************************************************************************
+LAST MODIFIED : 25 May 2000
+
+DESCRIPTION :
+Returns true if <element_point_ranges> has ranges, ie. is not empty.
 ==============================================================================*/
 
 int Element_point_ranges_add_to_list(
@@ -168,6 +226,23 @@ value of <grid_field> is in the <ranges>.
 No Element_point_ranges object is returned without error if:
 - <grid_field> is not grid-based in <element>.
 - No grid points in <element> have <grid_field> value in the given <ranges>.
+==============================================================================*/
+
+int FE_element_grid_to_Element_point_ranges_list(struct FE_element *element,
+	void *grid_to_list_data_void);
+/*******************************************************************************
+LAST MODIFIED : 26 May 2000
+
+DESCRIPTION :
+Iterator function that gets an Element_point_ranges structure representing all
+the grid_points in <element> with discretization of the single component
+integer <grid_field>, for which the field value is in the given <ranges>.
+Note that there may legitimately be none if <grid_field> is not grid-based in
+<element> or the ranges do not intersect with the values in the field.
+The structure is then added to the <element_point_ranges_list>.
+select_data_void should point to a
+struct FE_element_grid_to_Element_point_ranges_list_data.
+Uses only top level elements, type CM_ELEMENT.
 ==============================================================================*/
 
 #endif /* !defined (ELEMENT_POINT_RANGES_H) */

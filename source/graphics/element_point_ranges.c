@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.c
 
-LAST MODIFIED : 12 May 2000
+LAST MODIFIED : 30 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -119,65 +119,187 @@ Global functions
 ----------------
 */
 
+char **Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
+	int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
+Xi_discretization_modes that can be used for Element_point_ranges, obtained
+from function Xi_discretization_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+
+	ENTER(Xi_discretization_mode_get_valid_strings_for_Element_point_ranges);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=2;
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			valid_strings[0]=
+				Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CENTRES);
+			valid_strings[1]=
+				Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CORNERS);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Xi_discretization_mode_get_valid_strings_for_Element_point_ranges.  "
+				"Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Xi_discretization_mode_get_valid_strings_for_Element_point_ranges.  "
+			"Invalid argument(s)");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Xi_discretization_mode_get_valid_strings_for_Element_point_ranges */
+
+int Element_point_ranges_identifier_is_valid(
+	struct Element_point_ranges_identifier *identifier)
+/*******************************************************************************
+LAST MODIFIED : 25 May 2000
+
+DESCRIPTION :
+Returns true if <identifier> has a valid element, Xi_discretization_mode and
+number_in_xi for being used in an Element_point_ranges structure.
+Writes what is invalid about the identifier.
+==============================================================================*/
+{
+	int dimension,i,return_code;
+
+	ENTER(Element_point_ranges_identifier_is_valid);
+	if (identifier)
+	{
+		if (identifier->element)
+		{
+			if ((XI_DISCRETIZATION_CELL_CENTRES==identifier->xi_discretization_mode)||
+				(XI_DISCRETIZATION_CELL_CORNERS==identifier->xi_discretization_mode))
+			{
+				return_code=1;
+				dimension=get_FE_element_dimension(identifier->element);
+				for (i=0;i<dimension;i++)
+				{
+					if (1 > identifier->number_in_xi[i])
+					{
+						display_message(ERROR_MESSAGE,
+							"Element_point_ranges_identifier_is_valid.  "
+							"Invalid number_in_xi[%d] of %d",i,identifier->number_in_xi[i]);
+						return_code=0;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Element_point_ranges_identifier_is_valid.  "
+					"Invalid Xi_discretization_mode: %p",
+					Xi_discretization_mode_string(identifier->xi_discretization_mode));
+				return_code=0;
+			}
+		}
+		else
+		{
+			printf("Element_point_ranges_identifier_is_valid.  Missing element");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_ranges_identifier_is_valid.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return(return_code);
+} /* Element_point_ranges_identifier_is_valid */
+
+int Element_point_ranges_identifier_element_point_number_is_valid(
+	struct Element_point_ranges_identifier *identifier,int element_point_number)
+/*******************************************************************************
+LAST MODIFIED : 24 May 2000
+
+DESCRIPTION :
+Returns true if <element_point_number> is in the number_in_xi range for
+<identifier>. Assumes <identifier> is already validated by
+Element_point_ranges_identifier_is_valid.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_point_ranges_identifier_element_point_number_is_valid);
+	if (identifier)
+	{
+		return_code = ((0<=element_point_number)&&(element_point_number<
+			Xi_discretization_mode_get_number_of_xi_points(
+				identifier->xi_discretization_mode,
+				get_FE_element_dimension(identifier->element),
+				identifier->number_in_xi)));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_ranges_identifier_element_point_number_is_valid.  "
+			"Missing identifier");
+		return_code=0;
+	}
+	LEAVE;
+
+	return(return_code);
+} /* Element_point_ranges_identifier_element_point_number_is_valid */
+
 struct Element_point_ranges *CREATE(Element_point_ranges)(
 	struct Element_point_ranges_identifier *identifier)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 Creates an Element_point_ranges object that can store ranges of points in the
 element:Xi_discretization_mode of the <identifier>.
 ==============================================================================*/
 {
-	int dimension,i,return_code;
+	int dimension,i;
 	struct Element_point_ranges *element_point_ranges;
 
 	ENTER(CREATE(Element_point_ranges));
 	element_point_ranges=(struct Element_point_ranges *)NULL;
-	if (identifier&&identifier->element&&(
-		(XI_DISCRETIZATION_CELL_CENTRES==identifier->xi_discretization_mode)||
-		(XI_DISCRETIZATION_CELL_CORNERS==identifier->xi_discretization_mode)))
+	if (Element_point_ranges_identifier_is_valid(identifier))
 	{
-		dimension=get_FE_element_dimension(identifier->element);
-		return_code=1;
-		for (i=0;(i<dimension)&&return_code;i++)
+		if (ALLOCATE(element_point_ranges,struct Element_point_ranges,1)&&
+			(element_point_ranges->ranges=CREATE(Multi_range)()))
 		{
-			if (1>identifier->number_in_xi[i])
+			element_point_ranges->id.element=ACCESS(FE_element)(identifier->element);
+			element_point_ranges->id.xi_discretization_mode=
+				identifier->xi_discretization_mode;
+			dimension=get_FE_element_dimension(identifier->element);
+			for (i=0;i<dimension;i++)
 			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(Element_point_ranges).  Invalid number_in_xi");
-				return_code=0;
+				element_point_ranges->id.number_in_xi[i]=identifier->number_in_xi[i];
 			}
+			/* ensure identifier points at id for indexed lists */
+			element_point_ranges->identifier = &(element_point_ranges->id);
+			element_point_ranges->access_count=0;
 		}
-		if (return_code)
+		else
 		{
-			if (ALLOCATE(element_point_ranges,struct Element_point_ranges,1)&&
-				(element_point_ranges->ranges=CREATE(Multi_range)()))
-			{
-				element_point_ranges->id.element=
-					ACCESS(FE_element)(identifier->element);
-				element_point_ranges->id.xi_discretization_mode=
-					identifier->xi_discretization_mode;
-				for (i=0;i<dimension;i++)
-				{
-					element_point_ranges->id.number_in_xi[i]=identifier->number_in_xi[i];
-				}
-				/* ensure identifier points at id for indexed lists */
-				element_point_ranges->identifier = &(element_point_ranges->id);
-				element_point_ranges->access_count=0;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"CREATE(Element_point_ranges).  Not enough memory");
-				DEALLOCATE(element_point_ranges);
-			}
+			display_message(ERROR_MESSAGE,
+				"CREATE(Element_point_ranges).  Not enough memory");
+			DEALLOCATE(element_point_ranges);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Element_point_ranges).  Invalid argument(s)");
+			"CREATE(Element_point_ranges).  Invalid identifier");
 	}
 	LEAVE;
 
@@ -324,18 +446,47 @@ modified in any way.
 	return (ranges);
 } /* Element_point_ranges_get_ranges */
 
+int Element_point_ranges_has_ranges(
+	struct Element_point_ranges *element_point_ranges)
+/*******************************************************************************
+LAST MODIFIED : 25 May 2000
+
+DESCRIPTION :
+Returns true if <element_point_ranges> has ranges, ie. is not empty.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_point_ranges_has_ranges);
+	if (element_point_ranges)
+	{
+		return_code=
+			(0<Multi_range_get_number_of_ranges(element_point_ranges->ranges));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_ranges_has_ranges.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_point_ranges_has_ranges */
+
 int Element_point_ranges_add_to_list(
 	struct Element_point_ranges *element_point_ranges,
 	void *element_point_ranges_list_void)
 /*******************************************************************************
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 Ensures the <element_point_ranges> are in <element_point_ranges_list>.
 ==============================================================================*/
 {
 	int i,number_of_ranges,return_code,start,stop;
-	struct Element_point_ranges *existing_element_point_ranges;
+	struct Element_point_ranges *existing_element_point_ranges,
+		*new_element_point_ranges;
 	struct LIST(Element_point_ranges) *element_point_ranges_list;
 
 	ENTER(Element_point_ranges_add_to_list);
@@ -364,20 +515,23 @@ Ensures the <element_point_ranges> are in <element_point_ranges_list>.
 		}
 		else
 		{
-			if ((existing_element_point_ranges=CREATE(Element_point_ranges)(
+			if ((new_element_point_ranges=CREATE(Element_point_ranges)(
 				element_point_ranges->identifier))&&
-				Multi_range_copy(existing_element_point_ranges->ranges,
+				Multi_range_copy(new_element_point_ranges->ranges,
 					element_point_ranges->ranges)&&
 				ADD_OBJECT_TO_LIST(Element_point_ranges)(
-					existing_element_point_ranges,element_point_ranges_list))
+					new_element_point_ranges,element_point_ranges_list))
 			{
 				return_code=1;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Element_point_ranges_add_to_list.  Not enough memory");
-				DESTROY(Element_point_ranges)(&existing_element_point_ranges);
+					"Element_point_ranges_add_to_list.  Not add ranges");
+				if (new_element_point_ranges)
+				{
+					DESTROY(Element_point_ranges)(&new_element_point_ranges);
+				}
 				return_code=0;
 			}
 		}
@@ -834,3 +988,54 @@ No Element_point_ranges object is returned without error if:
 
 	return (element_point_ranges);
 } /* Element_point_ranges_from_grid_field_ranges */
+
+int FE_element_grid_to_Element_point_ranges_list(struct FE_element *element,
+	void *grid_to_list_data_void)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2000
+
+DESCRIPTION :
+Iterator function that gets an Element_point_ranges structure representing all
+the grid_points in <element> with discretization of the single component
+integer <grid_field>, for which the field value is in the given <ranges>.
+Note that there may legitimately be none if <grid_field> is not grid-based in
+<element> or the ranges do not intersect with the values in the field.
+The structure is then added to the <element_point_ranges_list>.
+select_data_void should point to a
+struct FE_element_grid_to_Element_point_ranges_list_data.
+Uses only top level elements, type CM_ELEMENT.
+==============================================================================*/
+{
+	int return_code;
+	struct Element_point_ranges *element_point_ranges;
+	struct FE_element_grid_to_Element_point_ranges_list_data *grid_to_list_data;
+
+	ENTER(FE_element_grid_to_Element_point_ranges_list);
+	if (element&&(grid_to_list_data=
+		(struct FE_element_grid_to_Element_point_ranges_list_data *)
+		grid_to_list_data_void))
+	{
+		if ((CM_ELEMENT == element->cm.type)&&
+			(element_point_ranges=Element_point_ranges_from_grid_field_ranges(
+				element,grid_to_list_data->grid_fe_field,
+				grid_to_list_data->grid_value_ranges)))
+		{
+			return_code=Element_point_ranges_add_to_list(element_point_ranges,
+				(void *)grid_to_list_data->element_point_ranges_list);
+			DESTROY(Element_point_ranges)(&element_point_ranges);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_grid_to_Element_point_ranges_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_grid_to_Element_point_ranges_list */
