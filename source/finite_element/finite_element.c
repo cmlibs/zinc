@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 24 January 2000
+LAST MODIFIED : 15 February 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -10064,6 +10064,41 @@ Iterator function for removing <node> from <node_list> if currently in it.
 
 	return (return_code);
 } /* ensure_FE_node_is_not_in_list */
+
+int toggle_FE_node_in_list(struct FE_node *node,void *node_list_void)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+If <node> is in <node_list> it is taken out, otherwise it is added.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_node) *node_list;
+
+	ENTER(toggle_FE_node_in_list);
+	if (node&&(node_list=(struct LIST(FE_node) *)node_list_void))
+	{
+		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
+			get_FE_node_cm_node_identifier(node),node_list))
+		{
+			return_code=REMOVE_OBJECT_FROM_LIST(FE_node)(node,node_list);
+		}
+		else
+		{
+			return_code=ADD_OBJECT_TO_LIST(FE_node)(node,node_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"toggle_FE_node_in_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* toggle_FE_node_in_list */
 
 int FE_node_can_be_destroyed(struct FE_node *node)
 /*******************************************************************************

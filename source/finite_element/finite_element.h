@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 21 December 1999
+LAST MODIFIED : 15 February 2000
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -1223,6 +1223,14 @@ LAST MODIFIED : 20 April 1999
 
 DESCRIPTION :
 Iterator function for removing <node> from <node_list> if currently in it.
+==============================================================================*/
+
+int toggle_FE_node_in_list(struct FE_node *node,void *node_list_void);
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+If <node> is in <node_list> it is taken out, otherwise it is added.
 ==============================================================================*/
 
 int FE_node_can_be_destroyed(struct FE_node *node);
