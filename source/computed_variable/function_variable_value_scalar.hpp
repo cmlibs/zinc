@@ -1,14 +1,14 @@
 //******************************************************************************
 // FILE : function_variable_value_scalar.hpp
 //
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 21 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 #if !defined (__FUNCTION_VARIABLE_VALUE_SCALAR_HPP__)
 #define __FUNCTION_VARIABLE_VALUE_SCALAR_HPP__
 
-#include "computed_variable/function_variable_value.hpp"
+#include "computed_variable/function_variable_value_specific.hpp"
 
 typedef Function_variable_value_specific<Scalar> Function_variable_value_scalar;
 

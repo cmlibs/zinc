@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_value_element.hpp
 //
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 21 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -12,7 +12,7 @@ extern "C"
 {
 #include "finite_element/finite_element.h"
 }
-#include "computed_variable/function_variable_value.hpp"
+#include "computed_variable/function_variable_value_specific.hpp"
 
 typedef struct FE_element* Element;
 

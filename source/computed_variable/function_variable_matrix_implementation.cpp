@@ -9,7 +9,7 @@
 #include <sstream>
 
 #include "computed_variable/function_variable_matrix.hpp"
-#include "computed_variable/function_variable_value.hpp"
+#include "computed_variable/function_variable_value_specific.hpp"
 
 
 // module classes

@@ -47,11 +47,3 @@ void intrusive_ptr_release(Function_variable_value *variable_value)
 		}
 	}
 }
-
-
-// template class Function_variable_value_specific
-// ===============================================
-
-#if defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
-#include "computed_variable/function_variable_value_specific.cpp"
-#endif // defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
