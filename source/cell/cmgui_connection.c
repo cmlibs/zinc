@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui_connection.c
 
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 Functions for talking between Cell and Cmgui.
@@ -395,7 +395,7 @@ Callback for when the export dialog is destroy via the window manager menu ??
 
 static int create_export_dialog(struct Cell_window *cell)
 /*******************************************************************************
-LAST MODIFIED : 17 September 1999
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 Create a new export dialog.
@@ -512,7 +512,8 @@ Create a new export dialog.
                     cell->export_dialog->group_chooser_form,
                     (struct GROUP(FE_element) *)NULL,
                     (cell->cell_3d).element_group_manager,
-                    (MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL))
+                    (MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL,
+										(void *)NULL))
 								{
                   XtManageChild(cell->export_dialog->window);
                   XtRealizeWidget(cell->export_dialog->shell);
