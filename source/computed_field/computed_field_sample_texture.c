@@ -211,8 +211,8 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	double texture_values[3];
-	int return_code;
+	double texture_values[4];
+	int i, number_of_components, return_code;
 	struct Computed_field_sample_texture_type_specific_data *data;
 
 	ENTER(Computed_field_sample_texture_evaluate_cache_at_node);
@@ -230,29 +230,31 @@ Evaluate the fields cache at the node.
 			Texture_get_pixel_values(data->texture,
 				field->source_fields[0]->values[0],
 				field->source_fields[0]->values[1], texture_values);
+			number_of_components = field->number_of_components;
 			if (data->minimum == 0.0)
 			{
 				if (data->maximum == 1.0)
 				{
-					field->values[0] =  texture_values[0];
-					field->values[1] =  texture_values[1];
-					field->values[2] =  texture_values[2];
+					for (i = 0 ; i < number_of_components ; i++)
+					{
+						field->values[i] =  texture_values[i];
+					}
 				}
 				else
 				{
-					field->values[0] =  texture_values[0] * data->maximum;
-					field->values[1] =  texture_values[1] * data->maximum;
-					field->values[2] =  texture_values[2] * data->maximum;
+					for (i = 0 ; i < number_of_components ; i++)
+					{
+						field->values[i] =  texture_values[i] * data->maximum;
+					}
 				}
 			}
 			else
 			{
-				field->values[0] =  (texture_values[0] - data->minimum) 
-					* (data->maximum - data->minimum);
-				field->values[1] =  (texture_values[1] - data->minimum) 
-					* (data->maximum - data->minimum);
-				field->values[2] =  (texture_values[2] - data->minimum) 
-					* (data->maximum - data->minimum);
+				for (i = 0 ; i < number_of_components ; i++)
+				{
+					field->values[i] =  (texture_values[i] - data->minimum) 
+						* (data->maximum - data->minimum);
+				}
 			}
 			field->derivatives_valid = 0;
 		}
@@ -279,8 +281,8 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	double texture_values[3];
-	int return_code;
+	double texture_values[4];
+	int i, number_of_components, return_code;
 	struct Computed_field_sample_texture_type_specific_data *data;
 
 	ENTER(Computed_field_sample_texture_evaluate_cache_in_element);
@@ -299,29 +301,31 @@ Evaluate the fields cache at the node.
 			Texture_get_pixel_values(data->texture,
 				field->source_fields[0]->values[0],
 				field->source_fields[0]->values[1], texture_values);
+			number_of_components = field->number_of_components;
 			if (data->minimum == 0.0)
 			{
 				if (data->maximum == 1.0)
 				{
-					field->values[0] =  texture_values[0];
-					field->values[1] =  texture_values[1];
-					field->values[2] =  texture_values[2];
+					for (i = 0 ; i < number_of_components ; i++)
+					{
+						field->values[i] =  texture_values[i];
+					}
 				}
 				else
 				{
-					field->values[0] =  texture_values[0] * data->maximum;
-					field->values[1] =  texture_values[1] * data->maximum;
-					field->values[2] =  texture_values[2] * data->maximum;
+					for (i = 0 ; i < number_of_components ; i++)
+					{
+						field->values[i] =  texture_values[i] * data->maximum;
+					}
 				}
 			}
 			else
 			{
-				field->values[0] =  (texture_values[0] - data->minimum) 
-					* (data->maximum - data->minimum);
-				field->values[1] =  (texture_values[1] - data->minimum) 
-					* (data->maximum - data->minimum);
-				field->values[2] =  (texture_values[2] - data->minimum) 
-					* (data->maximum - data->minimum);
+				for (i = 0 ; i < number_of_components ; i++)
+				{
+					field->values[i] =  (texture_values[i] - data->minimum) 
+						* (data->maximum - data->minimum);
+				}
 			}
 			field->derivatives_valid = 0;
 		}
@@ -481,13 +485,14 @@ LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_SAMPLE_TEXTURE with the supplied
-texture.  Sets the number of components to 3.
+texture.  Sets the number of components to equal the number of components in
+the texture.
 The returned values are scaled so that they range from <minimum> to <maximum>.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int number_of_source_fields,return_code;
+	int number_of_components, number_of_source_fields,return_code;
 	struct Computed_field **source_fields;
 	struct Computed_field_sample_texture_type_specific_data *data;
 
@@ -497,63 +502,75 @@ although its cache may be lost.
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields)&&
-			ALLOCATE(data,struct Computed_field_sample_texture_type_specific_data, 1))
+		number_of_components = Texture_get_number_of_components(texture);
+		if (number_of_components <= 4)
 		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NEW_TYPES;
-			field->type_string = Computed_field_sample_texture_type_string();
-			field->number_of_components = 3;
-			source_fields[0]=ACCESS(Computed_field)(texture_coordinate_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;			
-			field->type_specific_data = (void *)data;
-			data->texture = ACCESS(Texture)(texture);
-			data->minimum = minimum;
-			data->maximum = maximum;
-			data->package = package;
+			/* The Computed_field_sample_texture_evaluate_* code assumes 4 or less components */
+			if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields)&&
+				ALLOCATE(data,struct Computed_field_sample_texture_type_specific_data, 1))
+			{
+				/* 2. free current type-specific data */
+				Computed_field_clear_type(field);
+				/* 3. establish the new type */
+				field->type=COMPUTED_FIELD_NEW_TYPES;
+				field->type_string = Computed_field_sample_texture_type_string();
+				field->number_of_components = number_of_components;
+				source_fields[0]=ACCESS(Computed_field)(texture_coordinate_field);
+				field->source_fields=source_fields;
+				field->number_of_source_fields=number_of_source_fields;			
+				field->type_specific_data = (void *)data;
+				data->texture = ACCESS(Texture)(texture);
+				data->minimum = minimum;
+				data->maximum = maximum;
+				data->package = package;
 
-			/* Set all the methods */
-			field->computed_field_clear_type_specific_function =
-				Computed_field_sample_texture_clear_type_specific;
-			field->computed_field_copy_type_specific_function =
-				Computed_field_sample_texture_copy_type_specific;
-			field->computed_field_clear_cache_type_specific_function =
-				Computed_field_sample_texture_clear_cache_type_specific;
-			field->computed_field_type_specific_contents_match_function =
-				Computed_field_sample_texture_type_specific_contents_match;
-			field->computed_field_is_defined_in_element_function =
-				Computed_field_sample_texture_is_defined_in_element;
-			field->computed_field_is_defined_at_node_function =
-				Computed_field_sample_texture_is_defined_at_node;
-			field->computed_field_has_numerical_components_function =
-				Computed_field_sample_texture_has_numerical_components;
-			field->computed_field_evaluate_cache_at_node_function =
-				Computed_field_sample_texture_evaluate_cache_at_node;
-			field->computed_field_evaluate_cache_in_element_function =
-				Computed_field_sample_texture_evaluate_cache_in_element;
-			field->computed_field_evaluate_as_string_at_node_function =
-				Computed_field_sample_texture_evaluate_as_string_at_node;
-			field->computed_field_evaluate_as_string_in_element_function =
-				Computed_field_sample_texture_evaluate_as_string_in_element;
-			field->computed_field_set_values_at_node_function =
-				Computed_field_sample_texture_set_values_at_node;
-			field->computed_field_set_values_in_element_function =
-				Computed_field_sample_texture_set_values_in_element;
-			field->computed_field_get_native_discretization_in_element_function =
-				Computed_field_sample_texture_get_native_discretization_in_element;
-			field->computed_field_find_element_xi_function =
-				Computed_field_sample_texture_find_element_xi;
-			field->list_Computed_field_function = 
-				list_Computed_field_sample_texture;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_sample_texture_commands;
+				/* Set all the methods */
+				field->computed_field_clear_type_specific_function =
+					Computed_field_sample_texture_clear_type_specific;
+				field->computed_field_copy_type_specific_function =
+					Computed_field_sample_texture_copy_type_specific;
+				field->computed_field_clear_cache_type_specific_function =
+					Computed_field_sample_texture_clear_cache_type_specific;
+				field->computed_field_type_specific_contents_match_function =
+					Computed_field_sample_texture_type_specific_contents_match;
+				field->computed_field_is_defined_in_element_function =
+					Computed_field_sample_texture_is_defined_in_element;
+				field->computed_field_is_defined_at_node_function =
+					Computed_field_sample_texture_is_defined_at_node;
+				field->computed_field_has_numerical_components_function =
+					Computed_field_sample_texture_has_numerical_components;
+				field->computed_field_evaluate_cache_at_node_function =
+					Computed_field_sample_texture_evaluate_cache_at_node;
+				field->computed_field_evaluate_cache_in_element_function =
+					Computed_field_sample_texture_evaluate_cache_in_element;
+				field->computed_field_evaluate_as_string_at_node_function =
+					Computed_field_sample_texture_evaluate_as_string_at_node;
+				field->computed_field_evaluate_as_string_in_element_function =
+					Computed_field_sample_texture_evaluate_as_string_in_element;
+				field->computed_field_set_values_at_node_function =
+					Computed_field_sample_texture_set_values_at_node;
+				field->computed_field_set_values_in_element_function =
+					Computed_field_sample_texture_set_values_in_element;
+				field->computed_field_get_native_discretization_in_element_function =
+					Computed_field_sample_texture_get_native_discretization_in_element;
+				field->computed_field_find_element_xi_function =
+					Computed_field_sample_texture_find_element_xi;
+				field->list_Computed_field_function = 
+					list_Computed_field_sample_texture;
+				field->list_Computed_field_commands_function = 
+					list_Computed_field_sample_texture_commands;
+			}
+			else
+			{
+				DEALLOCATE(source_fields);
+				return_code=0;
+			}
 		}
 		else
 		{
-			DEALLOCATE(source_fields);
+			display_message(ERROR_MESSAGE,
+				"Computed_field_set_type_sample_texture.  "
+				"Textures with more than four components are not supported.");
 			return_code=0;
 		}
 	}

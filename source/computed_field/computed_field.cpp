@@ -462,8 +462,10 @@ Frees memory/deaccess data at <*data_address>.
 } /* DESTROY(Computed_field_type_data) */
 
 DECLARE_OBJECT_FUNCTIONS(Computed_field_type_data)
-FULL_DECLARE_LIST_TYPE(Computed_field_type_data);
-DECLARE_LIST_FUNCTIONS(Computed_field_type_data)
+FULL_DECLARE_INDEXED_LIST_TYPE(Computed_field_type_data);
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Computed_field_type_data,
+  name, char *, strcmp)
+DECLARE_INDEXED_LIST_FUNCTIONS(Computed_field_type_data)
 
 static int Computed_field_extract_rc(struct Computed_field *field,
 	int element_dimension,FE_value *rc_coordinates,FE_value *rc_derivatives)
