@@ -22928,7 +22928,7 @@ Executes a UNEMAP OPEN command.
 								XtVaGetApplicationResources(system->window_shell,
 									&standard_torso_defaults,resources,XtNumber(resources),NULL);
 								/* do nothing if no default torso file specified */
-								if(standard_torso_defaults.standard_torso_file!="")
+								if(strcmp(standard_torso_defaults.standard_torso_file,""))
 								{									
 									/* read in the default torso node and element groups */
 									if(read_FE_node_and_elem_groups_and_return_name_given_file_name(
