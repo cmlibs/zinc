@@ -5206,12 +5206,11 @@ appropriateness to curve usage.
 	char *file_name;
 	enum FE_basis_type fe_basis_type;
 	int number_of_components,return_code;
+	FILE *element_file,*node_file, *region_file;
 	struct Cmiss_region *child_cmiss_region, *cmiss_region, *element_region;
 	struct Control_curve *curve;
 	struct FE_basis *fe_basis;
 	struct FE_region *fe_region;
-	struct IO_stream *element_file,*node_file, *region_file;
-	struct IO_stream_class *stream_class;
 	struct LIST(FE_element_shape) *element_shape_list;
 	struct MANAGER(FE_basis) *basis_manager;
 
@@ -5228,13 +5227,10 @@ appropriateness to curve usage.
 			{
 				cmiss_region = (struct Cmiss_region *)NULL;
 				return_code=1;
-				stream_class = CREATE(IO_stream_class)();
 				if (sprintf(file_name,"%s.curve.exnode",file_name_stem) &&
-					(node_file=CREATE(IO_stream)(stream_class)) &&
-					(IO_stream_open_for_read(node_file, file_name)) && 
+					(node_file=fopen(file_name,"r")) && 
 					sprintf(file_name,"%s.curve.exelem",file_name_stem) &&
-					(element_file=CREATE(IO_stream)(stream_class)) &&
-					(IO_stream_open_for_read(element_file, file_name)))
+					(element_file=fopen(file_name,"r")))
 				{
 					element_region = (struct Cmiss_region *)NULL;
 					if ((cmiss_region = read_exregion_file(node_file,
@@ -5260,18 +5256,15 @@ appropriateness to curve usage.
 					{
 						DESTROY(Cmiss_region)(&element_region);
 					}
-					IO_stream_close(node_file);
-					DESTROY(IO_stream)(&node_file);
-					IO_stream_close(element_file);
-					DESTROY(IO_stream)(&element_file);
+					fclose(node_file);
+					fclose(element_file);
 				}
 				else
 				{
 					/*???RC don't wish to use combined node & element files yet --
 						format not agreed; better to wait for FieldML */
 					if (sprintf(file_name,"%s.curve.exregion",file_name_stem) &&
-						(region_file=CREATE(IO_stream)(stream_class)) &&
-						(IO_stream_open_for_read(region_file, file_name)))
+						(region_file=fopen(file_name,"r")))
 					{
 						if (cmiss_region = read_exregion_file(region_file,
 							basis_manager, element_shape_list, (struct FE_import_time_index *)NULL))
@@ -5285,8 +5278,7 @@ appropriateness to curve usage.
 						{
 							return_code = 0;
 						}
-						IO_stream_close(region_file);
-						DESTROY(IO_stream)(&region_file);
+						fclose(node_file);
 					}
 					else
 					{
