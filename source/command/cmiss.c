@@ -8588,9 +8588,9 @@ Modifies the properties of a texture.
 	enum Texture_wrap_mode wrap_mode;
 	float alpha, depth, distortion_centre_x, distortion_centre_y,
 		distortion_factor_k1, height, width;
-	int i, number_of_valid_strings, process, return_code, specify_depth,
-		specify_height, specify_number_of_bytes_per_component, specify_width,
-		texture_is_managed;
+	int file_number, i, number_of_file_names, number_of_valid_strings, process,
+		return_code, specify_depth, specify_height,
+		specify_number_of_bytes_per_component, specify_width, texture_is_managed;
 	struct Cmgui_image *cmgui_image;
 	struct Cmgui_image_information *cmgui_image_information;
 	struct Cmiss_command_data *command_data;
@@ -8988,16 +8988,17 @@ Modifies the properties of a texture.
 								}
 								if (0 != file_number_series_data.increment)
 								{
-									for (i = file_number_series_data.start +
-											  file_number_series_data.increment ; 
-										  i <= file_number_series_data.stop ;
-										  i += file_number_series_data.increment)
+									number_of_file_names = 1 + (file_number_series_data.stop -
+										file_number_series_data.start) /
+										file_number_series_data.increment;
+									file_number = file_number_series_data.start;
+									for (i = 1 ; i < number_of_file_names ; i++)
 									{
 										Cmgui_image_information_set_file_name_series(
 											cmgui_image_information,
 											/*file_name_template*/image_data.image_file_name,
-											file_number_pattern, /*start*/i, /*end*/i,
-											/*increment*/1);
+											file_number_pattern, /*start*/file_number,
+											/*end*/file_number, /*increment*/1);
 										if (cmgui_image = Cmgui_image_read(cmgui_image_information))
 										{
 											Texture_add_image(texture, cmgui_image,
@@ -9005,6 +9006,7 @@ Modifies the properties of a texture.
 												image_data.crop_width, image_data.crop_height);
 											DESTROY(Cmgui_image)(&cmgui_image);
 										}
+										file_number += file_number_series_data.increment;
 									}
 								}
 							}
