@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 26 November 2003
+LAST MODIFIED : 3 December 2003
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -2395,17 +2395,17 @@ signal type file
 	{
 		return_code=0;
 		display_message(ERROR_MESSAGE,
-			"clean_Analysis_work_area_before_load .Invalid arguments");
+			"clean_Analysis_work_area_before_load.  Invalid arguments");
 	}
 	LEAVE;
 
 	return (return_code);
-}/* clean_Analysis_work_area_before_load()*/
+} /* clean_Analysis_work_area_before_load */
 
 static int analysis_work_area_read_signal_file(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 3 December 2003
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -2421,6 +2421,7 @@ Sets up the analysis work area for analysing a set of signals.
 		minimum_separation,number_of_events,potential_time,return_code,
 		start_search_interval,threshold;
 	struct Analysis_work_area *analysis;
+	struct Map *map;
 	struct Rig *rig;
 	struct Signal_buffer *buffer;
 	struct Trace_window *trace;
@@ -2744,6 +2745,22 @@ Sets up the analysis work area for analysing a set of signals.
 			display_message(ERROR_MESSAGE,
 				"analysis_work_area_read_signal_file.  Invalid file: %s",file_name);
 		}
+		/* set the start and end frame times based on the potential time */
+		if ((analysis->rig)&&(analysis->rig->devices)&&
+			(*(analysis->rig->devices))&&
+			(buffer=get_Device_signal_buffer(*(analysis->rig->devices)))&&
+			(analysis->mapping_window)&&(map=analysis->mapping_window->map))
+		{
+			map->start_time=
+				(float)((buffer->times)[analysis->potential_time])*1000./
+				(buffer->frequency);
+			map->end_time=map->start_time;
+		}
+		else
+		{
+			map->start_time=0;
+			map->end_time=0;
+		}
 #if defined (UNEMAP_USE_3D)
 		/* convert the loaded rig to nodes/elements/fields */
 		if (convert_rig_to_nodes(analysis->rig))
@@ -3023,7 +3040,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 3 December 2003
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -3044,6 +3061,7 @@ signals.
 	struct Analysis_work_area *analysis;
 	struct Event *event,**event_next,*next_event;
 	struct Device **device;
+	struct Map *map;
 	struct Rig *rig;
 	struct Signal_buffer *buffer;
 	XmString new_dialog_title,old_dialog_title,value_xmstring;
@@ -3065,14 +3083,6 @@ signals.
 #endif /* defined (UNEMAP_USE_3D) */
 	if (file_name&&(analysis=(struct Analysis_work_area *)analysis_work_area))
 	{
-		clean_Analysis_work_area_before_load(analysis);
-		/* initialize the new analysis */
-		analysis->datum=0;
-		analysis->potential_time=0;
-		analysis->highlight=(struct Device **)NULL;
-		/* get the analysis window title */
-		XtVaGetValues(analysis->window->window,XmNdialogTitle,&old_dialog_title,
-			NULL);
 		if (input_file=fopen(file_name,"r"))
 		{
 			/* read the signal file name */
@@ -3080,6 +3090,14 @@ signals.
 			if (read_string(input_file,"[^ \n]",&signal_file_name))
 			{
 				fscanf(input_file,"\n");
+				clean_Analysis_work_area_before_load(analysis);
+				/* initialize the new analysis */
+				analysis->datum=0;
+				analysis->potential_time=0;
+				analysis->highlight=(struct Device **)NULL;
+				/* get the analysis window title */
+				XtVaGetValues(analysis->window->window,XmNdialogTitle,&old_dialog_title,
+					NULL);
 				if ((signal_input_file=fopen(signal_file_name,"rb"))&&
 					read_signal_file(signal_input_file,&(analysis->rig)
 #if defined (UNEMAP_USE_3D)
@@ -4057,6 +4075,22 @@ signals.
 #endif /* defined (UNEMAP_USE_3D) */
 
 				mapping_window_set_animation_buttons(analysis->mapping_window);
+				/* set the start and end frame times based on the potential time */
+				if ((analysis->rig)&&(analysis->rig->devices)&&
+					(*(analysis->rig->devices))&&
+					(buffer=get_Device_signal_buffer(*(analysis->rig->devices)))&&
+					(analysis->mapping_window)&&(map=analysis->mapping_window->map))
+				{
+					map->start_time=
+						(float)((buffer->times)[analysis->potential_time])*1000./
+						(buffer->frequency);
+					map->end_time=map->start_time;
+				}
+				else
+				{
+					map->start_time=0;
+					map->end_time=0;
+				}
 			}
 			else
 			{
@@ -4087,7 +4121,7 @@ signals.
 static int analysis_read_bard_signal_file(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 3 December 2003
 
 DESCRIPTION :
 Reads in the signals from the Bard file and sets up the analysis work area for
@@ -4107,25 +4141,7 @@ analysing the signals.
 	{
 		if (return_code=read_bard_signal_file(file_name,(void *)bard_rig))
 		{
-			/* clear the old analysis */
-			if (analysis->raw_rig)
-			{
-				if ((*(analysis->raw_rig->devices))&&
-					(buffer=get_Device_signal_buffer(*(analysis->raw_rig->devices))))
-				{
-					destroy_Signal_buffer(&buffer);
-				}
-				destroy_Rig(&(analysis->raw_rig));
-			}
-			if (analysis->rig)
-			{
-				if ((*(analysis->rig->devices))&&
-					(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
-				{
-					destroy_Signal_buffer(&buffer);
-				}
-				destroy_Rig(&(analysis->rig));
-			}
+			clean_Analysis_work_area_before_load(analysis);
 			/* initialize the new analysis */
 			analysis->rig=bard_rig;
 			bard_rig=(struct Rig *)NULL;
@@ -4195,6 +4211,22 @@ analysing the signals.
 					/* initialize datum */
 					analysis->datum=2*(analysis->potential_time);
 				}
+			}
+			/* set the start and end frame times based on the potential time */
+			if ((analysis->rig)&&(analysis->rig->devices)&&
+				(*(analysis->rig->devices))&&
+				(buffer=get_Device_signal_buffer(*(analysis->rig->devices)))&&
+				(analysis->mapping_window)&&(map=analysis->mapping_window->map))
+			{
+				map->start_time=
+					(float)((buffer->times)[analysis->potential_time])*1000./
+					(buffer->frequency);
+				map->end_time=map->start_time;
+			}
+			else
+			{
+				map->start_time=0;
+				map->end_time=0;
 			}
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
@@ -4300,7 +4332,7 @@ Bard signal file (window.dat).
 static int analysis_read_beekeeper_eeg_fil(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 3 December 2003
 
 DESCRIPTION :
 Reads in the signals from the Beekeeper file and sets up the analysis work area
@@ -4320,25 +4352,7 @@ for analysing the signals.
 	{
 		if (return_code=read_beekeeper_eeg_file(file_name,(void *)&rig))
 		{
-			/* clear the old analysis */
-			if (analysis->raw_rig)
-			{
-				if ((*(analysis->raw_rig->devices))&&
-					(buffer=get_Device_signal_buffer(*(analysis->raw_rig->devices))))
-				{
-					destroy_Signal_buffer(&buffer);
-				}
-				destroy_Rig(&(analysis->raw_rig));
-			}
-			if (analysis->rig)
-			{
-				if ((*(analysis->rig->devices))&&
-					(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
-				{
-					destroy_Signal_buffer(&buffer);
-				}
-				destroy_Rig(&(analysis->rig));
-			}
+			clean_Analysis_work_area_before_load(analysis);
 			/* initialize the new analysis */
 			analysis->rig=rig;
 			analysis->datum=0;
@@ -4408,6 +4422,22 @@ for analysing the signals.
 					analysis->datum=2*(analysis->potential_time);
 				}
 			}
+			/* set the start and end frame times based on the potential time */
+			if ((analysis->rig)&&(analysis->rig->devices)&&
+				(*(analysis->rig->devices))&&
+				(buffer=get_Device_signal_buffer(*(analysis->rig->devices)))&&
+				(analysis->mapping_window)&&(map=analysis->mapping_window->map))
+			{
+				map->start_time=
+					(float)((buffer->times)[analysis->potential_time])*1000./
+					(buffer->frequency);
+				map->end_time=map->start_time;
+			}
+			else
+			{
+				map->start_time=0;
+				map->end_time=0;
+			}
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
@@ -4455,7 +4485,7 @@ for analysing the signals.
 static int analysis_read_bdf_or_edf_file(struct Analysis_work_area *analysis,
 	int bdf)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 3 December 2003
 
 DESCRIPTION :
 Reads in the signals from the bdf or edf file and sets up the analysis work area
@@ -4464,6 +4494,7 @@ for analysing the signals.  <bdf>!=0 reads bdf files, else reads edf files
 {
 	char *file_name,*temp_string,ext_str[5];
 	int buffer_end,buffer_start,return_code;
+	struct Map *map;
 	struct Rig *rig;
 	struct Signal_buffer *buffer;
 	XmString new_dialog_title,old_dialog_title;
@@ -4550,6 +4581,22 @@ for analysing the signals.  <bdf>!=0 reads bdf files, else reads edf files
 				return_code=0;
 				display_message(ERROR_MESSAGE,"analysis_read_bdf_or_edf_file.  "
 					"Invalid edf file: %s or cnfg file ",file_name);
+			}
+			/* set the start and end frame times based on the potential time */
+			if ((analysis->rig)&&(analysis->rig->devices)&&
+				(*(analysis->rig->devices))&&
+				(buffer=get_Device_signal_buffer(*(analysis->rig->devices)))&&
+				(analysis->mapping_window)&&(map=analysis->mapping_window->map))
+			{
+				map->start_time=
+					(float)((buffer->times)[analysis->potential_time])*1000./
+					(buffer->frequency);
+				map->end_time=map->start_time;
+			}
+			else
+			{
+				map->start_time=0;
+				map->end_time=0;
 			}
 #if defined (UNEMAP_USE_3D)
 			/* put the rig into nodes */
@@ -4823,7 +4870,7 @@ for analysing the signals.
 static int analysis_read_neurosoft_sig_fil(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 3 December 2003
 
 DESCRIPTION :
 Reads in the signals from the Neurosoft file and sets up the analysis work area
@@ -4844,25 +4891,7 @@ for analysing the signals.
 		if (return_code=read_neurosoft_row_points_file(file_name,
 			(void *)neurosoft_rig))
 		{
-			/* clear the old analysis */
-			if (analysis->raw_rig)
-			{
-				if ((*(analysis->raw_rig->devices))&&
-					(buffer=get_Device_signal_buffer(*(analysis->raw_rig->devices))))
-				{
-					destroy_Signal_buffer(&buffer);
-				}
-				destroy_Rig(&(analysis->raw_rig));
-			}
-			if (analysis->rig)
-			{
-				if ((*(analysis->rig->devices))&&
-					(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
-				{
-					destroy_Signal_buffer(&buffer);
-				}
-				destroy_Rig(&(analysis->rig));
-			}
+			clean_Analysis_work_area_before_load(analysis);
 			/* initialize the new analysis */
 			analysis->rig=neurosoft_rig;
 			neurosoft_rig=(struct Rig *)NULL;
@@ -4932,6 +4961,22 @@ for analysing the signals.
 					/* initialize datum */
 					analysis->datum=2*(analysis->potential_time);
 				}
+			}
+			/* set the start and end frame times based on the potential time */
+			if ((analysis->rig)&&(analysis->rig->devices)&&
+				(*(analysis->rig->devices))&&
+				(buffer=get_Device_signal_buffer(*(analysis->rig->devices)))&&
+				(analysis->mapping_window)&&(map=analysis->mapping_window->map))
+			{
+				map->start_time=
+					(float)((buffer->times)[analysis->potential_time])*1000./
+					(buffer->frequency);
+				map->end_time=map->start_time;
+			}
+			else
+			{
+				map->start_time=0;
+				map->end_time=0;
 			}
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
@@ -5041,7 +5086,7 @@ the user for the Neurosoft signal file.
 static int analysis_read_cardiomapp_sig_fi(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 3 December 2003
 
 DESCRIPTION :
 Reads in the signals from the CardioMapp file and sets up the analysis work area
@@ -5061,25 +5106,7 @@ for analysing the signals.
 	{
 		if (return_code=read_cardiomapp_file(file_name,(void *)cardiomapp_rig))
 		{
-			/* clear the old analysis */
-			if (analysis->raw_rig)
-			{
-				if ((*(analysis->raw_rig->devices))&&
-					(buffer=get_Device_signal_buffer(*(analysis->raw_rig->devices))))
-				{
-					destroy_Signal_buffer(&buffer);
-				}
-				destroy_Rig(&(analysis->raw_rig));
-			}
-			if (analysis->rig)
-			{
-				if ((*(analysis->rig->devices))&&
-					(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
-				{
-					destroy_Signal_buffer(&buffer);
-				}
-				destroy_Rig(&(analysis->rig));
-			}
+			clean_Analysis_work_area_before_load(analysis);
 			/* initialize the new analysis */
 			analysis->rig=cardiomapp_rig;
 			cardiomapp_rig=(struct Rig *)NULL;
@@ -5149,6 +5176,22 @@ for analysing the signals.
 					/* initialize datum */
 					analysis->datum=2*(analysis->potential_time);
 				}
+			}
+			/* set the start and end frame times based on the potential time */
+			if ((analysis->rig)&&(analysis->rig->devices)&&
+				(*(analysis->rig->devices))&&
+				(buffer=get_Device_signal_buffer(*(analysis->rig->devices)))&&
+				(analysis->mapping_window)&&(map=analysis->mapping_window->map))
+			{
+				map->start_time=
+					(float)((buffer->times)[analysis->potential_time])*1000./
+					(buffer->frequency);
+				map->end_time=map->start_time;
+			}
+			else
+			{
+				map->start_time=0;
+				map->end_time=0;
 			}
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
