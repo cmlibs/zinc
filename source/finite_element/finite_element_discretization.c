@@ -904,8 +904,10 @@ comments for simplex and polygons shapes for more details.
 								}
 							}
 						}
+#if defined (DEBUG)
 						/*???debug*/printf("3D_TRIANGLE_LINE n = %d = %d\n",
 							n, number_of_xi_points);
+#endif /* defined (DEBUG) */
 					} break;
 					case ELEMENT_CATEGORY_3D_POLYGON_LINE:
 					{
