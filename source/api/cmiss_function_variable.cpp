@@ -71,7 +71,6 @@ Destroys the variable.  Returns a non-zero if successful and zero otherwise.
 #else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 
-#if defined (NOT_DEBUG)
 int Cmiss_function_variable_get_string_representation(
 	Cmiss_function_variable_id variable,char **result)
 /*******************************************************************************
@@ -109,7 +108,7 @@ it is no longer required.
 
 	return (return_code);
 }
-#else // defined (NOT_DEBUG)
+#if defined (NOT_DEBUG)
 int Cmiss_function_variable_get_string_representation(
 	Cmiss_function_variable_id,char **)
 /*******************************************************************************
@@ -128,6 +127,7 @@ it is no longer required.
 
 	return (return_code);
 }
+#else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 
 #if defined (NOT_DEBUG)
