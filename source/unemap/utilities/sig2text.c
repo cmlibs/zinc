@@ -1,12 +1,11 @@
 /*******************************************************************************
 FILE : sig2text.c
 
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 15 November 2000
 
 DESCRIPTION :
 Writes out a signal file as text with devices across and time down.  The columns
 are tab separated.
-cc extract_signal.c -o extract_signal -lm
 ==============================================================================*/
 #include <stddef.h>
 #include <stdio.h>
@@ -29,7 +28,7 @@ int main(int argc,char *argv[])
 
 	/* check arguments */
 	return_code=0;
-	if (3==argc)
+	if ((3==argc)||(4==argc))
 	{
 		arg_number=0;
 		/* read the signal file */
@@ -39,7 +38,7 @@ int main(int argc,char *argv[])
 			read_signal_file(signal_file,&signal_rig))
 		{
 			fclose(signal_file);
-			/* open the ratio pairs file */
+			/* open the signal text file */
 			arg_number++;
 			if (output_file=fopen(argv[arg_number],"w"))
 			{
@@ -114,10 +113,27 @@ int main(int argc,char *argv[])
 					return_code=0;
 				}
 				fclose(output_file);
+				if (4==argc)
+				{
+					/* open the signal text file */
+					arg_number++;
+					if (output_file=fopen(argv[arg_number],"w"))
+					{
+						write_configuration(signal_rig,output_file,TEXT);
+						fclose(output_file);
+					}
+					else
+					{
+						printf("ERROR.  Could not open configuration file.  %s\n",
+							argv[arg_number]);
+						return_code=0;
+					}
+				}
 			}
 			else
 			{
-				printf("ERROR.  Could not open output file.  %s\n",argv[arg_number]);
+				printf("ERROR.  Could not open text signal file.  %s\n",
+					argv[arg_number]);
 				return_code=0;
 			}
 		}
@@ -129,9 +145,10 @@ int main(int argc,char *argv[])
 	}
 	else
 	{
-		printf("usage: sig2text in_signal_file out_text_file\n");
+		printf("usage: sig2text in_signal_file out_text_file <out_cnfg_file>\n");
 		printf("  in_signal_file is the name of the signal file to be converted\n");
 		printf("  out_text_file is the name for the text file that is output\n");
+		printf("  out_cnfg_file is the name for the configuration file that is output.  This is optional\n");
 		return_code=0;
 	}
 
