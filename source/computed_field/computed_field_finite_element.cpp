@@ -1102,6 +1102,7 @@ DESCRIPTION :
 			CM_field_type_string(get_FE_field_CM_field_type(field->fe_field)));
 		display_message(INFORMATION_MESSAGE,"    Value type : %s\n",
 			Value_type_string(get_FE_field_value_type(field->fe_field)));
+		return_code = 1;
 	}
 	else
 	{
@@ -1133,6 +1134,7 @@ DESCRIPTION :
 			display_message(INFORMATION_MESSAGE," fe_field %s",field_name);
 			DEALLOCATE(field_name);
 		}
+		return_code = 1;
 	}
 	else
 	{
@@ -2384,6 +2386,7 @@ DESCRIPTION :
 	if (field)
 	{
 		/* no extra parameters */
+		return_code = 1;
 	}
 	else
 	{
@@ -2411,6 +2414,7 @@ DESCRIPTION :
 	if (field)
 	{
 		/* no extra parameters */
+		return_code = 1;
 	}
 	else
 	{

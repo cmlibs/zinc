@@ -398,6 +398,7 @@ DESCRIPTION :
 			"    field : %s\n",field->source_fields[0]->name);
 		display_message(INFORMATION_MESSAGE,
 			"    xi number : %d\n",data->xi_index+1);
+		return_code = 1;
 	}
 	else
 	{
@@ -431,6 +432,7 @@ DESCRIPTION :
 			" field %s",field->source_fields[0]->name);
 		display_message(INFORMATION_MESSAGE,
 			" xi %d\n",data->xi_index+1);
+		return_code = 1;
 	}
 	else
 	{
@@ -1072,6 +1074,7 @@ DESCRIPTION :
 			"    coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
 			"    vector field : %s\n",field->source_fields[0]->name);
+		return_code = 1;
 	}
 	else
 	{
@@ -1101,6 +1104,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			" coordinate %s vector %s",field->source_fields[1]->name,
 			field->source_fields[0]->name);
+		return_code = 1;
 	}
 	else
 	{
@@ -1765,6 +1769,7 @@ DESCRIPTION :
 			"    coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
 			"    vector field : %s\n",field->source_fields[0]->name);
+		return_code = 1;
 	}
 	else
 	{
@@ -1794,6 +1799,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			" coordinate %s vector %s",field->source_fields[1]->name,
 			field->source_fields[0]->name);
+		return_code = 1;
 	}
 	else
 	{
@@ -2453,10 +2459,11 @@ DESCRIPTION :
 	ENTER(List_Computed_field_gradient);
 	if (field)
 	{
-	  display_message(INFORMATION_MESSAGE,
-		 "    coordinate field : %s\n",field->source_fields[1]->name);
-	  display_message(INFORMATION_MESSAGE,
-		 "    scalar field : %s\n",field->source_fields[0]->name);
+		display_message(INFORMATION_MESSAGE,
+			"    coordinate field : %s\n",field->source_fields[1]->name);
+		display_message(INFORMATION_MESSAGE,
+			"    scalar field : %s\n",field->source_fields[0]->name);
+		return_code = 1;
 	}
 	else
 	{
@@ -2483,9 +2490,10 @@ DESCRIPTION :
 	ENTER(list_Computed_field_gradient_commands);
 	if (field)
 	{
-	  display_message(INFORMATION_MESSAGE,
-		 " coordinate %s scalar %s",field->source_fields[1]->name,
-		 field->source_fields[0]->name);
+		display_message(INFORMATION_MESSAGE,
+			" coordinate %s scalar %s",field->source_fields[1]->name,
+			field->source_fields[0]->name);
+		return_code = 1;
 	}
 	else
 	{

@@ -345,6 +345,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    source fields : %s %s\n",field->source_fields[0]->name,
 			field->source_fields[1]->name);
+		return_code = 1;
 	}
 	else
 	{
@@ -373,6 +374,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			" fields %s %s\n",field->source_fields[0]->name,
 			field->source_fields[1]->name);
+		return_code = 1;
 	}
 	else
 	{
@@ -499,6 +501,7 @@ If the field is of type COMPUTED_FIELD_MULTIPLY_COMPONENTS, the
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
+		return_code=1;
 	}
 	else
 	{
@@ -961,6 +964,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    source fields : %s %s\n",field->source_fields[0]->name,
 			field->source_fields[1]->name);
+		return_code = 1;
 	}
 	else
 	{
@@ -989,6 +993,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			" fields %s %s\n",field->source_fields[0]->name,
 			field->source_fields[1]->name);
+		return_code = 1;
 	}
 	else
 	{
@@ -1115,6 +1120,7 @@ If the field is of type COMPUTED_FIELD_DIVIDE_COMPONENTS, the
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
+		return_code=1;
 	}
 	else
 	{
@@ -1579,6 +1585,7 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    field 2 : %s\n    scale factor 2 : %g\n",
 			field->source_fields[1]->name,field->source_values[1]);
+		return_code = 1;
 	}
 	else
 	{
@@ -1608,6 +1615,7 @@ DESCRIPTION :
 			" fields %s %s scale_factors %g %g",
 			field->source_fields[0]->name,field->source_fields[1]->name,
 			field->source_values[0],field->source_values[1]);
+		return_code = 1;
 	}
 	else
 	{
@@ -1743,6 +1751,7 @@ If the field is of type COMPUTED_FIELD_ADD, the
 		*scale_factor1 = field->source_values[0];
 		*source_field_two = field->source_fields[1];
 		*scale_factor2 = field->source_values[1];
+		return_code=1;
 	}
 	else
 	{
@@ -2334,6 +2343,7 @@ DESCRIPTION :
 			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 		}
 		display_message(INFORMATION_MESSAGE,"\n");
+		return_code = 1;
 	}
 	else
 	{
@@ -2365,6 +2375,7 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 		}
+		return_code = 1;
 	}
 	else
 	{
@@ -3144,6 +3155,7 @@ DESCRIPTION :
 			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 		}
 		display_message(INFORMATION_MESSAGE,"\n");
+		return_code = 1;
 	}
 	else
 	{
@@ -3175,6 +3187,7 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 		}
+		return_code = 1;
 	}
 	else
 	{
@@ -3957,6 +3970,7 @@ DESCRIPTION :
 			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 		}
 		display_message(INFORMATION_MESSAGE,"\n");
+		return_code = 1;
 	}
 	else
 	{
@@ -3988,6 +4002,7 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 		}
+		return_code = 1;
 	}
 	else
 	{
@@ -4735,6 +4750,7 @@ DESCRIPTION :
 			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 		}
 		display_message(INFORMATION_MESSAGE,"\n");
+		return_code = 1;
 	}
 	else
 	{
@@ -4766,6 +4782,7 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 		}
+		return_code = 1;
 	}
 	else
 	{

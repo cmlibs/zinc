@@ -911,6 +911,7 @@ DESCRIPTION :
 		(struct Computed_field_window_projection_type_specific_data *)
 		field->type_specific_data))
 	{
+		return_code = 1;
 		if (GET_NAME(Graphics_window)(data->graphics_window, &window_name))
 		{
 			display_message(INFORMATION_MESSAGE,"    window : %s\n",
@@ -974,6 +975,7 @@ DESCRIPTION :
 		(struct Computed_field_window_projection_type_specific_data *)
 		field->type_specific_data))
 	{
+		return_code = 1;
 		if (GET_NAME(Graphics_window)(data->graphics_window, &window_name))
 		{
 			display_message(INFORMATION_MESSAGE," window %s",
@@ -1153,6 +1155,7 @@ Use function Computed_field_get_type to determine the field type.
 		*graphics_window = data->graphics_window;
 		*pane_number = data->pane_number;
 		*projection_type = data->projection_type;
+		return_code=1;
 	}
 	else
 	{

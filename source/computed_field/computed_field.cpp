@@ -3363,8 +3363,8 @@ is avoided.
 										FE_element_to_element_string(element,&temp_string);
 										display_message(ERROR_MESSAGE,
 											"Computed_field_evaluate_cache_in_element."
-											"  Element %s not found in Xi texture coordinate mapping",
-											temp_string);
+											"  Element %s not found in Xi texture coordinate mapping field %s",
+											temp_string, field->name);
 										DEALLOCATE(temp_string);
 										return_code=0;
 									}

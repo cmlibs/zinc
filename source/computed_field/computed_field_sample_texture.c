@@ -437,6 +437,7 @@ DESCRIPTION :
 		}
 		display_message(INFORMATION_MESSAGE,"    minimum : %f\n",data->minimum);
 		display_message(INFORMATION_MESSAGE,"    maximum : %f\n",data->maximum);
+		return_code = 1;
 	}
 	else
 	{
@@ -477,6 +478,7 @@ DESCRIPTION :
 		}
 		display_message(INFORMATION_MESSAGE," minimum %f",data->minimum);
 		display_message(INFORMATION_MESSAGE," maximum %f",data->maximum);
+		return_code = 1;
 	}
 	else
 	{
@@ -625,6 +627,7 @@ returned.
 		*texture = data->texture;
 		*minimum = data->minimum;
 		*maximum = data->maximum;
+		return_code=1;
 	}
 	else
 	{

@@ -356,6 +356,7 @@ DESCRIPTION :
 	{
 		display_message(INFORMATION_MESSAGE,
 			"    source field : %s\n",field->source_fields[0]->name);
+		return_code = 1;
 	}
 	else
 	{
@@ -383,6 +384,7 @@ DESCRIPTION :
 	{
 		display_message(INFORMATION_MESSAGE,
 			" field %s",field->source_fields[0]->name);
+		return_code = 1;
 	}
 	else
 	{
@@ -502,6 +504,7 @@ If the field is of type COMPUTED_FIELD_NORMALISE, the
 		(field->type_string==computed_field_normalise_type_string))
 	{
 		*source_field = field->source_fields[0];
+		return_code=1;
 	}
 	else
 	{
@@ -1103,6 +1106,7 @@ DESCRIPTION :
 			display_message(INFORMATION_MESSAGE," %s",
 				field->source_fields[i]->name);
 		}
+		return_code = 1;
 	}
 	else
 	{
@@ -1136,6 +1140,7 @@ DESCRIPTION :
 			display_message(INFORMATION_MESSAGE," %s",
 				field->source_fields[i]->name);
 		}
+		return_code = 1;
 	}
 	else
 	{
@@ -1998,6 +2003,7 @@ If the field is of type COMPUTED_FIELD_DOT_PRODUCT, the
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
+		return_code=1;
 	}
 	else
 	{
