@@ -60,7 +60,7 @@ STRICT_FLAGS =
 STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
 #else /* defined (OPTIMISED) */
 OPTIMISATION_FLAGS = -g -mips3
-COMPILE_FLAGS = -ansi -fullwarn -pedantic -woff 1521,1048
+COMPILE_FLAGS = -ansi -fullwarn -pedantic -woff 1521
 COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON 
 STRICT_FLAGS = -diag_error 1196,1409,1551
 STRICT_FLAGS_PATTERN = choose/WildC | curve/WildC | data/WildC | graphics/WildC | material/WildC | select/WildC | three_d_drawing/WildC | time/WildC | view/WildC
