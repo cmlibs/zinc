@@ -1284,7 +1284,7 @@ FE_field being made and/or modified.
 	struct Computed_field *field;
 	struct Computed_field_finite_element_package *computed_field_finite_element_package;
 	struct Coordinate_system *coordinate_system;
-	struct FE_field *existing_fe_field,*fe_field;
+	struct FE_field *existing_fe_field;
 	struct Option_table *option_table;
 
 	ENTER(define_Computed_field_type_finite_element);
@@ -1454,7 +1454,7 @@ FE_field being made and/or modified.
 				/* Fetching the field finds the correct field in the manager,
 					creating it if it doesn't exist and merging it into the region
 					automatically */
-				fe_field = FE_region_get_FE_field_with_properties(
+				FE_region_get_FE_field_with_properties(
 					computed_field_finite_element_package->fe_region,
 					field->name, GENERAL_FE_FIELD,
 					/*indexer_field*/(struct FE_field *)NULL, /*number_of_indexed_values*/0,
