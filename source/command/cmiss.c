@@ -15938,9 +15938,12 @@ user, otherwise the elements file is read.
 					return_code = 0;
 				}
 			}
-			if (!check_suffix(&file_name,".exelem"))
+			if (return_code)
 			{
-				return_code = 0;
+				if (!check_suffix(&file_name,".exelem"))
+				{
+					return_code = 0;
+				}
 			}
 			if (return_code)
 			{
