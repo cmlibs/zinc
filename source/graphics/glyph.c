@@ -539,6 +539,98 @@ lies at <1,0,0>. The radius of the cone is 0.5 at its base.
 	return (glyph);
 } /* make_glyph_cone */
 
+struct GT_object *make_glyph_cone_solid(char *name,int number_of_segments_around)
+/*******************************************************************************
+LAST MODIFIED : 20 January 2004
+
+DESCRIPTION :
+Creates a graphics object named <name> resembling a cone with the given
+<number_of_segments_around>. The base of the cone is at <0,0,0> while its head
+lies at <1,0,0>. The radius of the cone is 0.5 at its base.  This cone has a
+solid base.
+==============================================================================*/
+{
+	struct GT_object *glyph;
+	struct GT_surface *surface;
+	Triple *points,*normalpoints;
+
+	ENTER(make_glyph_cone_solid);
+	if (name&&(2<number_of_segments_around))
+	{
+		if (glyph=CREATE(GT_object)(name,g_SURFACE,
+				(struct Graphical_material *)NULL))
+		{
+			surface=(struct GT_surface *)NULL;
+			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
+				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
+			{
+				construct_tube(number_of_segments_around, 0.0, 0.5, 1.0, 0.0, 0.0, 0.0, 1,
+					points,normalpoints);
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,2,
+							number_of_segments_around+1,points,normalpoints,
+							/*texturepoints*/(Triple *)NULL,/*tangentpoints*/(Triple *)NULL,
+							g_NO_DATA,(GTDATA *)NULL)))
+				{
+					DEALLOCATE(points);
+					DEALLOCATE(normalpoints);
+				}
+			}
+			if (surface)
+			{
+				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
+				{
+					DESTROY(GT_object)(&glyph);
+					DESTROY(GT_surface)(&surface);
+				}
+			
+			}
+			else
+			{
+				glyph=(struct GT_object *)NULL;
+			}
+			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
+				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
+			{
+				construct_tube(number_of_segments_around, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 1,
+					points,normalpoints);
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,2,
+							number_of_segments_around+1,points,normalpoints,
+							/*texturepoints*/(Triple *)NULL,/*tangentpoints*/(Triple *)NULL,
+							g_NO_DATA,(GTDATA *)NULL)))
+				{
+					DEALLOCATE(points);
+					DEALLOCATE(normalpoints);
+				}
+			}
+			if (surface)
+			{
+				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
+				{
+					DESTROY(GT_object)(&glyph);
+					DESTROY(GT_surface)(&surface);
+				}
+			
+			}
+			else
+			{
+				DESTROY(GT_object)(&glyph);
+			}
+		}
+		if (!glyph)
+		{
+			display_message(ERROR_MESSAGE,"make_glyph_cone_solid.  Error creating glyph");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"make_glyph_cone_solid.  Invalid argument(s)");
+		glyph=(struct GT_object *)NULL;
+	}
+	LEAVE;
+
+	return (glyph);
+} /* make_glyph_cone_solid */
+
 struct GT_object *make_glyph_cross(char *name)
 /*******************************************************************************
 LAST MODIFIED : 16 July 1999
@@ -879,6 +971,124 @@ lies in the direction <1,0,0>. It fits into the unit cube spanning from
 		else
 		{
 			glyph=(struct GT_object *)NULL;
+		}
+		if (!glyph)
+		{
+			display_message(ERROR_MESSAGE,
+				"make_glyph_cylinder.  Error creating glyph");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"make_glyph_cylinder.  Invalid argument(s)");
+		glyph=(struct GT_object *)NULL;
+	}
+	LEAVE;
+
+	return (glyph);
+} /* make_glyph_cylinder */
+
+struct GT_object *make_glyph_cylinder_solid(char *name,int number_of_segments_around)
+/*******************************************************************************
+LAST MODIFIED : 20 January 2004
+
+DESCRIPTION :
+Creates a graphics object named <name> resembling a cylinder with the given
+<number_of_segments_around>. The cylinder is centred at (0.5,0,0) and its axis
+lies in the direction <1,0,0>. It fits into the unit cube spanning from
+(0,-0.5,-0.5) to (0,+0.5,+0.5).  This cylinder has its ends covered over.
+==============================================================================*/
+{
+	struct GT_object *glyph;
+	struct GT_surface *surface;
+	Triple *points,*normalpoints;
+
+	ENTER(make_glyph_cylinder);
+	if (name&&(2<number_of_segments_around))
+	{
+		if (glyph=CREATE(GT_object)(name,g_SURFACE,
+			(struct Graphical_material *)NULL))
+		{
+			surface=(struct GT_surface *)NULL;
+			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
+				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
+			{
+				construct_tube(number_of_segments_around,0.0,0.5,1.0,0.5,0.0,0.0,1,
+					points,normalpoints);
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,2,
+							number_of_segments_around+1,points,normalpoints,
+							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
+							g_NO_DATA,(GTDATA *)NULL)))
+				{
+					DEALLOCATE(points);
+					DEALLOCATE(normalpoints);
+				}
+			}
+			if (surface)
+			{
+				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
+				{
+					DESTROY(GT_object)(&glyph);
+					DESTROY(GT_surface)(&surface);
+				}
+			}
+			else
+			{
+				DESTROY(GT_object)(&glyph);
+			}
+			/* Cover over the ends */
+			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
+				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
+			{
+				construct_tube(number_of_segments_around,0.0,0.0,0.0,0.5,0.0,0.0,1,
+					points,normalpoints);
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,2,
+							number_of_segments_around+1,points,normalpoints,
+							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
+							g_NO_DATA,(GTDATA *)NULL)))
+				{
+					DEALLOCATE(points);
+					DEALLOCATE(normalpoints);
+				}
+			}
+			if (surface)
+			{
+				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
+				{
+					DESTROY(GT_object)(&glyph);
+					DESTROY(GT_surface)(&surface);
+				}
+			}
+			else
+			{
+				DESTROY(GT_object)(&glyph);
+			}
+			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
+				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
+			{
+				construct_tube(number_of_segments_around,1.0,0.0,1.0,0.5,0.0,0.0,1,
+					points,normalpoints);
+				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,g_QUADRILATERAL,2,
+							number_of_segments_around+1,points,normalpoints,
+							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
+							g_NO_DATA,(GTDATA *)NULL)))
+				{
+					DEALLOCATE(points);
+					DEALLOCATE(normalpoints);
+				}
+			}
+			if (surface)
+			{
+				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
+				{
+					DESTROY(GT_object)(&glyph);
+					DESTROY(GT_surface)(&surface);
+				}
+			}
+			else
+			{
+				DESTROY(GT_object)(&glyph);
+			}
 		}
 		if (!glyph)
 		{
@@ -1293,6 +1503,10 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
+		if (glyph=make_glyph_cone_solid("cone_solid",12))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
 		if (glyph=make_glyph_cross("cross"))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
@@ -1313,7 +1527,15 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
+		if (glyph=make_glyph_cylinder_solid("cylinder_solid",12))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
 		if (glyph=make_glyph_cylinder("cylinder_hires",48))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_cylinder_solid("cylinder_solid_hires",48))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
