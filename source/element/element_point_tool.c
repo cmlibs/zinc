@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_tool.c
 
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 18 September 2000
 
 DESCRIPTION :
 Interactive tool for selecting element/grid points with mouse and other devices.
@@ -59,7 +59,7 @@ Module functions
 static void Element_point_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *element_point_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 18 September 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -116,8 +116,11 @@ release.
 							REACCESS(Element_point_ranges)(
 								&(element_point_tool->last_picked_element_point),
 								picked_element_point);
-							if (clear_selection=((!shift_pressed)&&((!picked_element_point)||
-								(element_point_tool->picked_element_point_was_unselected))))
+							if (clear_selection = !shift_pressed)
+#if defined (OLD_CODE)
+								&&((!picked_element_point)||
+									(element_point_tool->picked_element_point_was_unselected))))
+#endif /*defined (OLD_CODE) */
 							{
 								Element_point_ranges_selection_begin_cache(
 									element_point_tool->element_point_ranges_selection);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : select_tool.c
 
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 18 September 2000
 
 DESCRIPTION :
 Interactive tool for selecting Any_objects associated with Scene_objects with
@@ -60,7 +60,7 @@ Module functions
 static void Select_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *select_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 18 September 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -112,8 +112,11 @@ release.
 							}
 							REACCESS(Any_object)(
 								&(select_tool->last_picked_any_object),picked_any_object);
-							if (clear_selection=((!shift_pressed)&&((!picked_any_object)||
-								(select_tool->picked_any_object_was_unselected))))
+							if (clear_selection = !shift_pressed)
+#if defined (OLD_CODE)
+								&&((!picked_any_object)||
+									(select_tool->picked_any_object_was_unselected))))
+#endif /*defined (OLD_CODE) */
 							{
 								Any_object_selection_begin_cache(
 									select_tool->any_object_selection);

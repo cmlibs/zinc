@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.c
 
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 18 September 2000
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -230,7 +230,7 @@ Attempts to destroy all the elements currently in the global selection.
 static void Element_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *element_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 18 September 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -287,8 +287,11 @@ release.
 							}
 							REACCESS(FE_element)(&(element_tool->last_picked_element),
 								picked_element);
-							if (clear_selection=((!shift_pressed)&&((!picked_element)||
-								(element_tool->picked_element_was_unselected))))
+							if (clear_selection = !shift_pressed)
+#if defined (OLD_CODE)
+								&&((!picked_element)||
+									(element_tool->picked_element_was_unselected))))
+#endif /*defined (OLD_CODE) */
 							{
 								FE_element_selection_begin_cache(
 									element_tool->element_selection);
