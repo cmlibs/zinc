@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 10 April 2001
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -2738,7 +2738,7 @@ will be printed on the windows title bar.
 										graphics_window->layout_mode_form,
 										number_of_valid_strings,valid_strings,
 										Graphics_window_layout_mode_string(
-											graphics_window->layout_mode)))
+											graphics_window->layout_mode), user_interface))
 								{
 									/* get callbacks for change of layout mode */
 									callback.data=(void *)graphics_window;
