@@ -241,27 +241,28 @@ Calls every callback in <callback_list> with <object> and <call_data>. \
 #define DEFINE_CMISS_CALLBACK_LIST_ADD_CALLBACK_FUNCTION( callback_type ) \
 PROTOTYPE_CMISS_CALLBACK_LIST_ADD_CALLBACK_FUNCTION(callback_type) \
 /***************************************************************************** \
-LAST MODIFIED : 20 March 2000 \
+LAST MODIFIED : 20 May 2003 \
 \
 DESCRIPTION : \
 Adds a callback = <function> + <user_data> to <callback_list>. \
 ============================================================================*/ \
 { \
 	int return_code; \
-  struct CMISS_CALLBACK_ITEM(callback_type) *callback, *existing_callback; \
+  struct CMISS_CALLBACK_ITEM(callback_type) *callback; \
 \
 	ENTER(CMISS_CALLBACK_LIST_ADD_CALLBACK(callback_type)); \
-	if (callback_list&&function) \
+	if (callback_list && function) \
 	{ \
-		if (callback=CREATE(CMISS_CALLBACK_ITEM(callback_type))(function,user_data)) \
+		if (callback = \
+			CREATE(CMISS_CALLBACK_ITEM(callback_type))(function, user_data)) \
 		{ \
-			if (existing_callback = \
-				FIRST_OBJECT_IN_LIST_THAT(CMISS_CALLBACK_ITEM(callback_type))( \
-				CMISS_CALLBACK_MATCHES(callback_type),(void *)callback,callback_list)) \
+			if (FIRST_OBJECT_IN_LIST_THAT(CMISS_CALLBACK_ITEM(callback_type))( \
+				CMISS_CALLBACK_MATCHES(callback_type), (void *)callback, \
+				callback_list)) \
 			{ \
-            ACCESS(CMISS_CALLBACK_ITEM(callback_type))(existing_callback); \
-            DESTROY(CMISS_CALLBACK_ITEM(callback_type))(&callback); \
-            return_code = 1; \
+         /* we already have an equivalent callback, so destroy new one */ \
+         DESTROY(CMISS_CALLBACK_ITEM(callback_type))(&callback); \
+         return_code = 1; \
 			} \
 			else \
 			{ \
