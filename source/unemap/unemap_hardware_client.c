@@ -9242,10 +9242,10 @@ attached SCU.  All other SCUs output the synchronization signal.
 ==============================================================================*/
 {
 	float crate_sampling_frequency,master_sampling_frequency;
-	int different_configurations,i,return_code,retry;
+	int different_configurations,i,master_number_of_samples_in_buffer,return_code,
+		retry;
 	struct Unemap_crate *crate;
-	unsigned long crate_number_of_samples_in_buffer,
-		master_number_of_samples_in_buffer;
+	unsigned long crate_number_of_samples_in_buffer;
 
 	ENTER(unemap_configure);
 #if defined (DEBUG)
@@ -9321,8 +9321,10 @@ attached SCU.  All other SCUs output the synchronization signal.
 							if (crate_get_sampling_frequency(crate,
 								&master_sampling_frequency)&&
 								crate_get_maximum_number_of_samples(crate,
-								&master_number_of_samples_in_buffer))
+								&crate_number_of_samples_in_buffer))
 							{
+								master_number_of_samples_in_buffer=
+									(int)crate_number_of_samples_in_buffer;
 								do
 								{
 									crate++;
@@ -9335,7 +9337,7 @@ attached SCU.  All other SCUs output the synchronization signal.
 									{
 										if ((master_sampling_frequency!=crate_sampling_frequency)||
 											(master_number_of_samples_in_buffer!=
-											crate_number_of_samples_in_buffer))
+											(int)crate_number_of_samples_in_buffer))
 										{
 											different_configurations=1;
 											if (retry)
@@ -9348,11 +9350,11 @@ attached SCU.  All other SCUs output the synchronization signal.
 												{
 													master_sampling_frequency=crate_sampling_frequency;
 												}
-												if (crate_number_of_samples_in_buffer<
+												if ((int)crate_number_of_samples_in_buffer<
 													master_number_of_samples_in_buffer)
 												{
 													master_number_of_samples_in_buffer=
-														crate_number_of_samples_in_buffer;
+														(int)crate_number_of_samples_in_buffer;
 												}
 											}
 										}
