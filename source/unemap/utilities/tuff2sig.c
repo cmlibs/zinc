@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tuff2sig.c
 
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Converts TUFF (Telefactor Universal File Format, Beehive 7) files to a unemap
@@ -536,7 +536,7 @@ required.
 
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -660,24 +660,24 @@ DESCRIPTION :
 					/*???debug */
 					printf("header block\n");
 					printf("offset=%d\n",offset);
-					strncpy(buffer,header_block.CompanySignature,COMP_SIGNATURE);
+					strncpy((char *)buffer,(const char *)header_block.CompanySignature,COMP_SIGNATURE);
 					buffer[COMP_SIGNATURE]='\0';
-					printf("CompanySignature=%s\n",buffer);
-					strncpy(buffer,header_block.FileTypeSignature,FILE_SIGNATURE);
+					printf("CompanySignature=%s\n",(char *)buffer);
+					strncpy((char *)buffer,(const char *)header_block.FileTypeSignature,FILE_SIGNATURE);
 					buffer[FILE_SIGNATURE]='\0';
-					printf("FileTypeSignature=%s\n",buffer);
+					printf("FileTypeSignature=%s\n",(char *)buffer);
 					printf("RefHeaderSize=%d\n",header_block.RefHeaderSize);
-					strncpy(buffer,header_block.RecordingSystemSignature,16);
+					strncpy((char *)buffer,(const char *)header_block.RecordingSystemSignature,16);
 					buffer[16]='\0';
-					printf("RecordingSystemSignature=%s\n",buffer);
-					strncpy(buffer,header_block.SoftwareVersionSignature,8);
+					printf("RecordingSystemSignature=%s\n",(char *)buffer);
+					strncpy((char *)buffer,(const char *)header_block.SoftwareVersionSignature,8);
 					buffer[8]='\0';
-					printf("SoftwareVersionSignature=%s\n",buffer);
-					printf("SoftwareSerialNumber=%d\n",header_block.SoftwareSerialNumber);
+					printf("SoftwareVersionSignature=%s\n",(char *)buffer);
+					printf("SoftwareSerialNumber=%lu\n",header_block.SoftwareSerialNumber);
 					printf("InputAmplifierDevice=%d\n",header_block.InputAmplifierDevice);
-					strncpy(buffer,header_block.SamplingMethod,16);
+					strncpy((char *)buffer,(const char *)header_block.SamplingMethod,16);
 					buffer[16]='\0';
-					printf("SamplingMethod=%s\n",buffer);
+					printf("SamplingMethod=%s\n",(char *)buffer);
 					printf("DCNotesOffset=%d\n",header_block.DCNotesOffset);
 					printf("AmplifierSensitivity=%d\n",header_block.AmplifierSensitivity);
 					printf("MainsFrequency=%d\n",header_block.MainsFrequency);
@@ -685,17 +685,17 @@ DESCRIPTION :
 					printf("MaxSamplingRate=%d\n",header_block.MaxSamplingRate);
 					printf("NumberOfBits=%d\n",header_block.NumberOfBits);
 					printf("PackedData=%d\n",header_block.PackedData);
-					printf("DataBlockSize=%d\n",header_block.DataBlockSize);
-					printf("StartTime=%d\n",header_block.StartTime);
-					printf("EndTime=%d\n",header_block.EndTime);
-					printf("EventTime=%d\n",header_block.EventTime);
+					printf("DataBlockSize=%lu\n",header_block.DataBlockSize);
+					printf("StartTime=%lu\n",header_block.StartTime);
+					printf("EndTime=%lu\n",header_block.EndTime);
+					printf("EventTime=%lu\n",header_block.EventTime);
 					printf("EventType=%d\n",header_block.EventType);
 					printf("SyncLength=%d\n",header_block.SyncLength);
 					printf("AlarmLength=%d\n",header_block.AlarmLength);
-					printf("TOD_Start_Time=%d\n",header_block.TOD_Start_Time);
-					printf("TOD_End_Time=%d\n",header_block.TOD_End_Time);
-					printf("DescriptorLength=%d\n",header_block.DescriptorLength);
-					printf("SyncAlarmRate=%d\n",header_block.SyncAlarmRate);
+					printf("TOD_Start_Time=%lu\n",header_block.TOD_Start_Time);
+					printf("TOD_End_Time=%lu\n",header_block.TOD_End_Time);
+					printf("DescriptorLength=%lu\n",header_block.DescriptorLength);
+					printf("SyncAlarmRate=%lu\n",header_block.SyncAlarmRate);
 					printf("EndHeaderSignature=%d\n",header_block.EndHeaderSignature);
 					printf("\n");
 					if (1024==fread(buffer,1,1024,tuff_file))
@@ -714,12 +714,12 @@ DESCRIPTION :
 						/*???debug */
 						printf("database record\n");
 						printf("offset=%d\n",offset);
-						strncpy(buffer,database_record.CompanySignature,COMP_SIGNATURE);
+						strncpy((char *)buffer,(const char *)database_record.CompanySignature,COMP_SIGNATURE);
 						buffer[COMP_SIGNATURE]='\0';
-						printf("CompanySignature=%s\n",buffer);
-						strncpy(buffer,database_record.FileTypeSignature,FILE_SIGNATURE);
+						printf("CompanySignature=%s\n",(char *)buffer);
+						strncpy((char *)buffer,(const char *)database_record.FileTypeSignature,FILE_SIGNATURE);
 						buffer[FILE_SIGNATURE]='\0';
-						printf("FileTypeSignature=%s\n",buffer);
+						printf("FileTypeSignature=%s\n",(char *)buffer);
 						printf("DBHeaderSize=%d\n",database_record.DBHeaderSize);
 						printf("\n");
 						/*???DB.  patient information is not needed */
@@ -809,22 +809,22 @@ DESCRIPTION :
 							/*???debug */
 							printf("data block header\n");
 							printf("offset=%d\n",offset);
-							printf("SyncWord=%X (ref=%X, dif=%X)\n",
+							printf("SyncWord=%lX (ref=%lX, dif=%lX)\n",
 								data_block_header.SyncWord,REF_BEG_SYNC,DIF_BEG_SYNC);
 							printf("ChangeFlag=%d\n",data_block_header.ChangeFlag);
 							printf("BlockHeaderLength=%d\n",
 								data_block_header.BlockHeaderLength);
-							printf("BlockLength=%d\n",
+							printf("BlockLength=%lu\n",
 								data_block_header.BlockLength);
-							printf("BlockNumber=%d\n",
+							printf("BlockNumber=%lu\n",
 								data_block_header.BlockNumber);
-							printf("SystemTime=%d\n",
+							printf("SystemTime=%lu\n",
 								data_block_header.SystemTime);
 							printf("FractionTime=%d\n",
 								data_block_header.FractionTime);
-							printf("VCRTime=%d\n",
+							printf("VCRTime=%lu\n",
 								data_block_header.VCRTime);
-							printf("VCRFrameCount=%d\n",
+							printf("VCRFrameCount=%lu\n",
 								data_block_header.VCRFrameCount);
 							printf("NumberOfInputs=%d\n",
 								data_block_header.NumberOfInputs);
@@ -1059,15 +1059,15 @@ DESCRIPTION :
 												fseek(tuff_file,start_of_data_block+
 													data_block_header.BlockHeaderLength,SEEK_SET);
 												if (0==strncmp(REFERENTIALDATA,
-													header_block.FileTypeSignature,
+													(const char *)header_block.FileTypeSignature,
 													strlen(REFERENTIALDATA)))
 												{
 													bytes_per_sample=
 														number_of_ac_channels*(header_block.NumberOfBits)/8+
 														(header_block.SyncLength)+
 														(header_block.AlarmLength);
-													number_of_samples=(header_block.DataBlockSize)*
-														ac_sampling_rate;
+													number_of_samples=(int)((header_block.DataBlockSize)*
+														ac_sampling_rate);
 													sampling_frequency=(float)ac_sampling_rate;
 													if ((0<number_of_samples)&&(signal_buffer=
 														create_Signal_buffer(SHORT_INT_VALUE,
@@ -1182,7 +1182,7 @@ DESCRIPTION :
 															if (return_code)
 															{
 																/*???debug */
-																printf("end of file? %d\n",ftell(tuff_file));
+																printf("end of file? %ld\n",ftell(tuff_file));
 																if (write_signal_file(signal_file,rig))
 																{
 																	printf("Created signal file: %s\n",argv[2]);
