@@ -28,7 +28,7 @@ class Function_inverse : public Function
 // to independent_variable is zero.
 //==============================================================================
 {
-	friend class Function_derivatnew_inverse;;
+	friend class Function_derivatnew_inverse;
 	friend class Function_variable_independent;
 	friend class Function_variable_iterator_representation_atomic_independent;
 	friend class Function_variable_dependent;
