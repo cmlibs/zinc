@@ -2101,8 +2101,7 @@ DESCRIPTION :
 #endif /* defined (VRML_TEXTURES) */
 				if (spectrum&&number_of_data_components&&data)
 				{
-					spectrum_start_rendervrml(vrml_file,spectrum,
-						(struct Graphical_material *)NULL);
+					spectrum_start_rendervrml(vrml_file,spectrum,last_material);
 					spectrum_rendervrml_value(vrml_file,spectrum,last_material,
 						number_of_data_components,
 						data+vertex_list[triangle_list[i*3+0]+n_vertices*ii].data_index);
