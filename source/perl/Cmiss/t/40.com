@@ -20,9 +20,19 @@ $function_3=new Cmiss::Function::Matrix(n_columns=>2,values=>[-9,-4,2,0,5,-11]);
 $variable_3=$function_3->output();
 $function_4=new Cmiss::Function::Matrix::Sum($variable_1,$variable_2);
 $variable_4=$function_4->output();
+print "$function_4 $variable_4\n";
+# mismatched summands
+$function_4a=new Cmiss::Function::Matrix::Sum($variable_1,(new Cmiss::Function::Matrix(n_columns=>2,values=>[-9,-4,2,0]))->output());
+if (defined($function_4a)&&($function_4a))
+{
+	print "$function_4a\n";
+} else
+{
+	print "undefined\n";
+}
 $function_5=new Cmiss::Function::Matrix::Sum($variable_3,$variable_4);
 $variable_5=$function_5->output();
-print "$function_4 $variable_4\n";
+print "$function_5 $variable_5\n";
 print "\n";
 
 # get value without evaluating
@@ -47,6 +57,9 @@ $function_10=$variable_5->evaluate_derivative(independent=>[$function_4->input()
 print "$function_10\n";
 $function_11=$variable_5->evaluate_derivative(independent=>[$function_5->input()]);
 print "$function_11\n";
+# second derivative
+$function_11a=$variable_5->evaluate_derivative(independent=>[$function_4->input(),$function_4->input()]);
+print "$function_11a\n";
 print "\n";
 
 # check sub-matrix
