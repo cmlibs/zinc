@@ -156,6 +156,19 @@ $(SOURCE_PATH)/cmgui_linux_optimised.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_
 	$(COMMON_IMAKE_RULE) \
 	imake -DLINUX -DOPTIMISED $${CMISS_ROOT_DEF} -s cmgui_linux_optimised.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
+#Linux dynamic OpenGL version
+cmgui_linux_dynamic : force $(SOURCE_PATH)/cmgui_linux_dynamic.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cmgui_linux_dynamic.make ]; then \
+		$(MAKE) -f cmgui_linux_dynamic.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_linux_dynamic.make $(TARGET) ; \
+	fi
+
+$(SOURCE_PATH)/cmgui_linux_dynamic.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DLINUX -DDYNAMIC_GL_LINUX $${CMISS_ROOT_DEF} -s cmgui_linux_dynamic.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
 #Linux optimised dynamic OpenGL version
 cmgui_linux_optimised_dynamic : force $(SOURCE_PATH)/cmgui_linux_optimised_dynamic.make
 	$(COMMON_MAKE_RULE) \
