@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : common.Makefile
 #
-# LAST MODIFIED : 10 June 2004
+# LAST MODIFIED : 20 August 2004
 #
 # DESCRIPTION :
 #
@@ -235,7 +235,7 @@ ifeq ($(SYSNAME),AIX)
    UIL = uil
    CC = xlc -c
    CPP = xlc -qnolm -c
-   CPP_FLAGS =
+   CPP_FLAGS = -qrtti
    FORTRAN = f77 -c
    MAKEDEPEND = makedepend -f-
    CPREPROCESS = 
