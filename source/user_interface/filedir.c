@@ -241,10 +241,8 @@ Reads the selected file in the user specified way.
 ==============================================================================*/
 {
 	char *file_name;
-	int list_item_count;
 	struct File_open_data *file_open_data;
 	XmFileSelectionBoxCallbackStruct *callback_data;
-	XmStringTable list_items;
 
 	ENTER(file_selection_read);
 	USE_PARAMETER(widget);
@@ -256,51 +254,33 @@ Reads the selected file in the user specified way.
 			{
 				if (file_open_data->operation)
 				{
-					if (file_open_data->file_list)
+					/* get the file name */
+					XmStringGetLtoR(callback_data->value,XmSTRING_DEFAULT_CHARSET,
+						&file_name);
+					busy_cursor_off(file_open_data->selection_shell,
+						file_open_data->user_interface );
+					/* perform the operation */
+					if ((file_open_data->operation)(file_name,
+							file_open_data->arguments))
 					{
-						/* get the file name */
-						XtVaGetValues(file_open_data->file_list,
-							XmNselectedItemCount,&list_item_count,
-							XmNselectedItems,&list_items,
-							NULL);
-						if ((1==list_item_count)&&(list_items))
+						/* close the file selection box */
+						XtUnmanageChild(file_open_data->selection);
+						if (file_open_data->activation)
 						{
-							XmStringGetLtoR(list_items[0],XmSTRING_DEFAULT_CHARSET,
-								&file_name);
-							busy_cursor_off(file_open_data->selection_shell,
-								file_open_data->user_interface );
-							/* perform the operation */
-							if ((file_open_data->operation)(file_name,
-								file_open_data->arguments))
-							{
-								/* close the file selection box */
-								XtUnmanageChild(file_open_data->selection);
-								if (file_open_data->activation)
-								{
-									/* unghost the activation button */
-									XtSetSensitive(file_open_data->activation,True);
-								}
-							}
-							else
-							{
-								busy_cursor_on(file_open_data->selection_shell,
-									file_open_data->user_interface );
-							}
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE,"One file must be selected");
+							/* unghost the activation button */
+							XtSetSensitive(file_open_data->activation,True);
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"file_selection_read.  No file operation");
+						busy_cursor_on(file_open_data->selection_shell,
+							file_open_data->user_interface );
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"file_selection_read.  No file_list");
+					display_message(ERROR_MESSAGE,
+						"file_selection_read.  No file operation");
 				}
 			}
 			else
@@ -981,9 +961,9 @@ name the <file_operation> is performed on the file with the <arguments>.
 							file_open_data->selection,XmDIALOG_SEPARATOR);
 						XtUnmanageChild(file_selection_child);
 						/* remove the selection text */
-						file_selection_child=XmFileSelectionBoxGetChild(
+						/* file_selection_child=XmFileSelectionBoxGetChild(
 							file_open_data->selection,XmDIALOG_TEXT);
-						XtUnmanageChild(file_selection_child);
+							XtUnmanageChild(file_selection_child); */
 						/* add cancel callback */
 						XtAddCallback(file_open_data->selection,XmNcancelCallback,
 							cancel_file_selection,client_data);
