@@ -896,6 +896,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_image_tv_restoration.c \
 	image_processing/computed_field_iteration_threshold.c \
 	image_processing/computed_field_k_nearest_mean.c \
+	image_processing/computed_field_local_histogram_features.c \
 	image_processing/computed_field_local_mean_smooth.c \
 	image_processing/computed_field_local_std.c \
 	image_processing/computed_field_local_thresholding.c \
