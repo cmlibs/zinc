@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix_vector.h
 
-LAST MODIFIED : 3 April 2000
+LAST MODIFIED : 7 November 2000
 
 DESCRIPTION:
 Code for performing vector calculations - normalize, dot product etc. -, and
@@ -143,6 +143,16 @@ Return the transpose of m rows x n columns matrix <a> in <a_transpose> - which
 will then be n rows x m columns.
 ==============================================================================*/
 
+int matrix_is_symmetric(int n, double *a, double factor);
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Returns true if n x n matrix <a> is symmetric about the main diagonal by
+checking that the difference between all opposing off-diagonal values is less
+<factor> times the largest [absolute] value in <a>.
+==============================================================================*/
+
 int LU_decompose(int n,double *a,int *indx,double *d);
 /*******************************************************************************
 LAST MODIFIED : 28 January 1998
@@ -165,6 +175,19 @@ DESCRIPTION :
 Partner routine for LU_decompose which takes the n x n LU matrix (a) and indx
 vector returned by LU_decompose and solves for x, where LU.x=b. The solution
 vector x is returned in the former right-hand-side vector <b>.
+Adapted from "Numerical Recipes in C".
+==============================================================================*/
+
+int Jacobi_eigenanalysis(int n, double *a, double *d, double *v, int *nrot);
+/*******************************************************************************
+LAST MODIFIED : 6 November 2000
+
+DESCRIPTION :
+Computes all eigenvalues and eigenvectors of real symmetric n x n matrix <a>.
+The eigenvalues of <a> are returned in <d>, the columns of v contain the
+normalised eigenvectors. <nrot> returns the number of jacobi rotations performed
+by the algorithm.
+The elements of <a> above the diagonal are destroyed by this function.
 Adapted from "Numerical Recipes in C".
 ==============================================================================*/
 

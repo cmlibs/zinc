@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix_vector.c
 
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 7 November 2000
 
 DESCRIPTION:
 Code for performing vector calculations - normalize, dot product etc. -, and
@@ -386,7 +386,6 @@ Uses matrices of floats, not doubles. For matrices od doubles, use
 	return (return_code);
 } /* multiply_matrix_float */
 
-
 int print_matrix(int m,int n,double *a,char *number_format)
 /*******************************************************************************
 LAST MODIFIED : 28 January 1998
@@ -453,6 +452,55 @@ will then be n rows x m columns.
 
 	return (return_code);
 } /* transpose_matrix */
+
+int matrix_is_symmetric(int n, double *a, double factor)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Returns true if n x n matrix <a> is symmetric about the main diagonal by
+checking that the difference between all opposing off-diagonal values is less
+<factor> times the largest [absolute] value in <a>.
+==============================================================================*/
+{
+	double allowed_difference;
+	int i, j, matrix_size, return_code;
+
+	ENTER(matrix_is_symmetric);
+	if ((0<n) && a && (0.0 <= factor) && (1.0 >= factor))
+	{
+		return_code = 1;
+		/* get the largest element in <a> */
+		matrix_size = n * n;
+		allowed_difference = 0.0;
+		for (i = 0; i < matrix_size; i++)
+		{
+			if (fabs(a[i]) > allowed_difference)
+			{
+				allowed_difference = fabs(a[i]);
+			}
+		}
+		allowed_difference *= factor;
+		for (i = 0; (i < (n-1)) && return_code; i++)
+		{
+			for (j = i + 1; (j < n) && return_code; j++)
+			{
+				if (fabs(a[i*n + j] - a[j*n + i]) > allowed_difference)
+				{
+					return_code=0;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"matrix_is_symmetric.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* matrix_is_symmetric */
 
 int LU_decompose(int n,double *a,int *indx,double *d)
 /*******************************************************************************
@@ -542,7 +590,7 @@ Adapted from "Numerical Recipes in C".
 					{
 						a[j*n+j]=TINY;
 					}
-					if (j != n)
+					if (j != (n-1))
 					{
 						dum=1.0/(a[j*n+j]);
 						for (i=j+1;i<n;i++)
@@ -634,6 +682,181 @@ Adapted from "Numerical Recipes in C".
 
 	return (return_code);
 } /* LU_backsubstitute */
+
+#define JACOBI_EIGENANALYSIS_MAX_ITERATIONS 50
+
+int Jacobi_eigenanalysis(int n, double *a, double *d, double *v, int *nrot)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+Computes all eigenvalues and eigenvectors of real symmetric n x n matrix <a>.
+The eigenvalues of <a> are returned in <d>, the columns of v contain the
+normalised eigenvectors. <nrot> returns the number of jacobi rotations performed
+by the algorithm.
+The elements of <a> above the diagonal are destroyed by this function.
+Adapted from "Numerical Recipes in C".
+==============================================================================*/
+{
+	double tresh, theta, tau, t, sm, s, h, g, c, *b, *z;
+	int converged, j, iq, ip, iteration, return_code;
+
+	ENTER(Jacobi_eigenanalysis);
+	return_code = 0;
+	if ((0 < n) && a && d && v && nrot)
+	{
+		if (ALLOCATE(b, double, n) && ALLOCATE(z, double, n))
+		{
+			return_code = 1;
+			/* eigen vector matrix starts out as identity */
+			for (ip = 0; ip < n; ip++)
+			{
+				for (iq = 0; iq < n; iq++)
+				{
+					if (ip == iq)
+					{
+						v[ip*n + iq] = 1.0;
+					}
+					else
+					{
+						v[ip*n + iq] = 0.0;
+					}
+				}
+			}
+			for (ip = 0; ip < n; ip++)
+			{
+				b[ip] = d[ip] = a[ip*n + ip];
+				z[ip] = 0.0;
+			}
+			*nrot = 0;
+			converged = 0;
+			for (iteration = 0; (!converged) &&
+				(iteration < JACOBI_EIGENANALYSIS_MAX_ITERATIONS); iteration++)
+			{
+				sm = 0.0;
+				for (ip = 0; ip < n - 1; ip++)
+				{
+					for (iq = ip + 1; iq < n; iq++)
+					{
+						sm += fabs(a[ip*n + iq]);
+					}
+				}
+				if (0.0 == sm)
+				{
+					converged = 1;
+				}
+				else
+				{
+					if (iteration < 4)
+					{
+						tresh = 0.2*sm/(n*n);
+					}
+					else
+					{
+						tresh = 0.0;
+					}
+					for (ip = 0; ip < n-1; ip++)
+					{
+						for (iq = ip+1; iq < n; iq++)
+						{
+							g = 100.0*fabs(a[ip*n + iq]);
+							if ((4 < iteration) && ((fabs(d[ip])+g) == fabs(d[ip])) &&
+								((fabs(d[iq])+g) == fabs(d[iq])))
+							{
+								a[ip*n + iq] = 0.0;
+							}
+							else if (fabs(a[ip*n + iq]) > tresh)
+							{
+								h = d[iq] - d[ip];
+								if ((fabs(h)+g) == fabs(h))
+								{
+									t = (a[ip*n + iq]) / h;
+								}
+								else
+								{
+									theta = 0.5*h / (a[ip*n + iq]);
+									t = 1.0 / (fabs(theta) + sqrt(1.0 + theta*theta));
+									if (theta < 0.0)
+									{
+										t = -t;
+									}
+								}
+								c = 1.0 / sqrt(1 + t*t);
+								s = t*c;
+								tau = s / (1.0 + c);
+								h = t*a[ip*n + iq];
+								z[ip] -= h;
+								z[iq] += h;
+								d[ip] -= h;
+								d[iq] += h;
+								a[ip*n + iq] = 0.0;
+								for (j = 0; j < ip; j++)
+								{
+									g = a[j*n + ip];
+									h = a[j*n + iq];
+									a[j*n + ip] = g - s*(h + g*tau);
+									a[j*n + iq] = h + s*(g - h*tau);
+								}
+								for (j = ip + 1; j < iq; j++)
+								{
+									g = a[ip*n + j];
+									h = a[j*n + iq];
+									a[ip*n + j] = g - s*(h + g*tau);
+									a[j*n + iq] = h + s*(g - h*tau);
+								}
+								for (j = iq + 1; j < n; j++)
+								{
+									g = a[ip*n + j];
+									h = a[iq*n + j];
+									a[ip*n + j] = g - s*(h + g*tau);
+									a[iq*n + j] = h + s*(g - h*tau);
+								}
+								for (j = 0; j < n; j++)
+								{
+									g = v[j*n + ip];
+									h = v[j*n + iq];
+									v[j*n + ip] = g - s*(h + g*tau);
+									v[j*n + iq] = h + s*(g - h*tau);
+								}
+								(*nrot)++;
+							}
+						}
+					}
+				}
+				for (ip = 0 ; ip < n; ip++)
+				{
+					b[ip] += z[ip];
+					d[ip] = b[ip];
+					z[ip] = 0.0;
+				}
+			}
+			if (converged)
+			{
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Jacobi_eigenanalysis.  "
+					"Failed to converge after %d iterations",iteration);
+			}
+			DEALLOCATE(b);
+			DEALLOCATE(z);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Jacobi_eigenanalysis.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Jacobi_eigenanalysis.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Jacobi_eigenanalysis */
+
+#undef JACOBI_EIGENANALYSIS_MAX_ITERATIONS
 
 int invert_FE_value_matrix3(FE_value *a,FE_value *a_inv)
 /*******************************************************************************
