@@ -1,0 +1,70 @@
+/*******************************************************************************
+FILE : api/cmiss_function.h
+
+LAST MODIFIED : 10 March 2004
+
+DESCRIPTION :
+The public interface to the Cmiss_function object.
+==============================================================================*/
+#ifndef __API_CMISS_FUNCTION_H__
+#define __API_CMISS_FUNCTION_H__
+
+#include "api/cmiss_function_base.h"
+
+/*
+Global functions
+----------------
+*/
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
+int Cmiss_function_destroy(Cmiss_function_id *function_address);
+/*******************************************************************************
+LAST MODIFIED : 23 February 2004
+
+DESCRIPTION :
+Destroys the function.  Returns a non-zero if successful and zero otherwise.
+==============================================================================*/
+
+const char *Cmiss_function_get_type_id_string(Cmiss_function_id function);
+/*******************************************************************************
+LAST MODIFIED : 10 March 2004
+
+DESCRIPTION :
+Returns the string which identifies the type.  The calling function must not
+DEALLOCATE the returned string.
+==============================================================================*/
+
+int Cmiss_function_get_string_representation(Cmiss_function_id function,
+	char **result);
+/*******************************************************************************
+LAST MODIFIED : 23 February 2004
+
+DESCRIPTION :
+Creates a string representation of the <function> useful for output.  Returns a
+non-zero if successful and zero otherwise.  If successful <*result> contains an
+ALLOCATED string, it is up to the calling function to DEALLOCATE the string when
+it is no longer required.
+==============================================================================*/
+
+Cmiss_function_variable_id Cmiss_function_input(Cmiss_function_id function);
+/*******************************************************************************
+LAST MODIFIED : 23 February 2004
+
+DESCRIPTION :
+Returns all the inputs of the <function> as a variable.
+==============================================================================*/
+
+Cmiss_function_variable_id Cmiss_function_output(Cmiss_function_id function);
+/*******************************************************************************
+LAST MODIFIED : 23 February 2004
+
+DESCRIPTION :
+Returns all the outputs of the <function> as a variable.
+==============================================================================*/
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+#endif /* __API_CMISS_FUNCTION_H__ */
