@@ -34,13 +34,6 @@
 #include <tchar.h>
 
 #include "service.h"
-/*???DB.  unemap hardware specific start */
-#include "unemap/unemap_hardware.h"
-#include "user_interface/message.h"
-/*???DB.  unemap hardware specific end */
-#if defined (UNEMAP_HARDWARE_SPECIFIC)
-#endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
-
 
 
 #if !defined (TEST_SOCKETS)
@@ -61,132 +54,7 @@ BOOL WINAPI ControlHandler ( DWORD dwCtrlType );
 LPTSTR GetLastErrorText( LPTSTR lpszBuf, DWORD dwSize );
 
 /*???DB.  unemap hardware specific start */
-static FILE *fopen_UNEMAP_HARDWARE(char *file_name,char *type)
-/*******************************************************************************
-LAST MODIFIED : 11 January 1999
-
-DESCRIPTION :
-Opens a file in the UNEMAP_HARDWARE directory.
-==============================================================================*/
-{
-	char *hardware_directory,*hardware_file_name;
-	FILE *hardware_file;
-
-	hardware_file=(FILE *)NULL;
-	if (file_name&&type)
-	{
-		hardware_file_name=(char *)NULL;
-		if (hardware_directory=getenv("UNEMAP_HARDWARE"))
-		{
-			if (hardware_file_name=(char *)malloc(strlen(hardware_directory)+
-				strlen(file_name)+2))
-			{
-				strcpy(hardware_file_name,hardware_directory);
-#if defined (WIN32)
-				if ('\\'!=hardware_file_name[strlen(hardware_file_name)-1])
-				{
-					strcat(hardware_file_name,"\\");
-				}
-#else /* defined (WIN32) */
-				if ('/'!=hardware_file_name[strlen(hardware_file_name)-1])
-				{
-					strcat(hardware_file_name,"/");
-				}
-#endif /* defined (WIN32) */
-			}
-		}
-		else
-		{
-			if (hardware_file_name=(char *)malloc(strlen(file_name)+1))
-			{
-				hardware_file_name[0]='\0';
-			}
-		}
-		if (hardware_file_name)
-		{
-			strcat(hardware_file_name,file_name);
-			hardware_file=fopen(hardware_file_name,type);
-			free(hardware_file_name);
-		}
-	}
-
-	return (hardware_file);
-} /* fopen_UNEMAP_HARDWARE */
-
-static int display_error_message(char *message,void *dummy)
-/*******************************************************************************
-LAST MODIFIED : 10 August 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	FILE *unemap_debug;
-	int return_code;
-
-	return_code=1;
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"ERROR: %s\n",message);
-		fclose(unemap_debug);
-	}
-	else
-	{
-		printf("ERROR: %s\n",message);
-		return_code=1;
-	}
-
-	return (return_code);
-} /* display_error_message */
-
-static int display_information_message(char *message,void *user_interface_void)
-/*******************************************************************************
-LAST MODIFIED : 10 August 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	FILE *unemap_debug;
-	int return_code;
-
-	return_code=1;
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"INFORMATION: %s",message);
-		fclose(unemap_debug);
-	}
-	else
-	{
-		printf("INFORMATION: %s",message);
-		return_code=1;
-	}
-
-	return (return_code);
-} /* display_information_message */
-
-static int display_warning_message(char *message,void *user_interface_void)
-/*******************************************************************************
-LAST MODIFIED : 10 August 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	FILE *unemap_debug;
-	int return_code;
-
-	return_code=1;
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"WARNING: %s\n",message);
-		fclose(unemap_debug);
-	}
-	else
-	{
-		printf("WARNING: %s\n",message);
-		return_code=1;
-	}
-
-	return (return_code);
-} /* display_warning_message */
+FILE *fopen_UNEMAP_HARDWARE(char *file_name,char *type);
 
 VOID AddToMessageLog(LPTSTR lpszMsg)
 {
@@ -227,10 +95,13 @@ void _CRTAPI1 main(int argc, char **argv)
         { TEXT(SZSERVICENAME), (LPSERVICE_MAIN_FUNCTION)service_main },
         { NULL, NULL }
     };
+#if defined (UNEMAP_HARDWARE_SPECIFIC)
 	/*???DB.  unemap hardware specific start */
 	unsigned long number_of_channels;
+		/*???DB.  unemap hardware specific end */
+#endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
 
-	/*???debug */
+	/*???DB.  unemap hardware specific start */
 	/* clear the error log */
 	{
 		FILE *unemap_debug;
@@ -240,19 +111,7 @@ void _CRTAPI1 main(int argc, char **argv)
 			fclose(unemap_debug);
 		}
 	}
-	/* set up messages */
-	set_display_message_function(ERROR_MESSAGE,display_error_message,
-		(void *)NULL);
-	set_display_message_function(INFORMATION_MESSAGE,display_information_message,
-		(void *)NULL);
-	set_display_message_function(WARNING_MESSAGE,display_warning_message,
-		(void *)NULL);
-	/* when the NIDAQ DLL is loaded (when the service starts), the NI cards and
-		hence the unemap cards are in an unknown state.  This call to
-		unemap_get_number_of_channels forces a call to search_for_NI_cards which in
-		turn configures the NI cards */
-	unemap_get_number_of_channels(&number_of_channels);
-		/*???DB.  unemap hardware specific end */
+	/*???DB.  unemap hardware specific end */
 #if defined (UNEMAP_HARDWARE_SPECIFIC)
 #endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
     if ( (argc > 1) &&
@@ -337,6 +196,10 @@ void WINAPI service_main(DWORD dwArgc, LPTSTR *lpszArgv)
         goto cleanup;
 
 
+#if defined (DEBUG)
+		/* rename the error log */
+		rename_UNEMAP_HARDWARE("unemap.deb","unemapsv.deb");
+#endif /* defined (DEBUG) */
     ServiceStart( dwArgc, lpszArgv );
 
 cleanup:
