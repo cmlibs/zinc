@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 18 April 2002
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -21,7 +21,7 @@ Global types
 */
 struct Cmiss_command_data
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 18 April 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -52,6 +52,7 @@ DESCRIPTION :
 	/* list of glyphs = simple graphics objects with only geometry */
 	struct LIST(GT_object) *glyph_list;
 	struct FE_time *fe_time;
+	struct MANAGER(Comfile_window) *comfile_window_manager;
 	struct Computed_field_package *computed_field_package;
 	struct MANAGER(Environment_map) *environment_map_manager;
 	struct MANAGER(FE_basis) *basis_manager;

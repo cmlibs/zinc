@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 18 April 2002
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -23,6 +23,7 @@ DESCRIPTION :
 #include <time.h>
 /*SAB I have concatenated the correct version file for each version
   externally in the shell with cat #include "version.h"*/
+#include "comfile/comfile_window.h"
 #include "command/cmiss.h"
 #include "command/command_window.h"
 #if !defined (WINDOWS_DEV_FLAG)
@@ -701,6 +702,7 @@ Main program for the CMISS Graphical User Interface
 		&(command_data.example_directory);
 	command_data.set_file_name_option_table=set_file_name_option_table;
 
+	command_data.comfile_window_manager=(struct MANAGER(Comfile_window) *)NULL;
 	command_data.default_light=(struct Light *)NULL;
 	command_data.light_manager=(struct MANAGER(Light) *)NULL;
 	command_data.default_light_model=(struct Light_model *)NULL;
@@ -830,6 +832,10 @@ Main program for the CMISS Graphical User Interface
 	}
 
 	/* create the managers */
+
+	/* comfile window manager */
+	command_data.comfile_window_manager = CREATE(MANAGER(Comfile_window))();
+
 	/* light manager */
 	if (command_data.light_manager=CREATE(MANAGER(Light))())
 	{
@@ -2124,6 +2130,7 @@ Main program for the CMISS Graphical User Interface
 				DESTROY(MANAGER(Light_model))(&command_data.light_model_manager);
 				DEACCESS(Light)(&(command_data.default_light));
 				DESTROY(MANAGER(Light))(&command_data.light_manager);
+				DESTROY(MANAGER(Comfile_window))(&command_data.comfile_window_manager);
 
 				DEACCESS(FE_time)(&(command_data.fe_time));
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 15 March 2002
+LAST MODIFIED : 18 April 2002
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -25242,49 +25242,6 @@ Executes a LIST_MEMORY command.
 	return (return_code);
 } /* execute_command_list_memory */
 
-#if defined (OLD_CODE)
-#if !defined (WINDOWS_DEV_FLAG)
-static int execute_command_open_comfile(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 24 September 1996
-
-DESCRIPTION :
-Executes a OPEN COMFILE command.
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_command_data *command_data;
-
-	ENTER(execute_command_open_comfile);
-	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			return_code=open_comfile(state,command_data->execute_command,
-				command_data->set_file_name_option_table,command_data->user_interface);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_open_comfile.  Missing command_data");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"execute_command_open_comfile.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_open_comfile */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-#endif /* defined (OLD_CODE) */
-
 #if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_open_menu(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -25393,7 +25350,7 @@ Executes a READ command.
 static int execute_command_open(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 27 April 1999
+LAST MODIFIED : 18 April 2002
 
 DESCRIPTION :
 Executes a OPEN command.
@@ -25426,6 +25383,8 @@ Executes a OPEN command.
 				open_comfile_data.execute_command=command_data->execute_command;
 				open_comfile_data.set_command=command_data->set_command;
 				open_comfile_data.file_extension=".com";
+				open_comfile_data.comfile_window_manager =
+					command_data->comfile_window_manager;
 				open_comfile_data.user_interface=command_data->user_interface;
 				(option_table[0]).user_data=(void *)&open_comfile_data;
 				(option_table[1]).user_data=command_data_void;

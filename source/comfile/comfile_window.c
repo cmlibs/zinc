@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : comfile_window.c
 
-LAST MODIFIED : 22 June 1999
+LAST MODIFIED : 18 April 2002
 
 DESCRIPTION :
 Management routines for the comfile window.
@@ -9,6 +9,7 @@ Management routines for the comfile window.
 #include <stdio.h>
 #include <string.h>
 #if defined (MOTIF)
+#include <Xm/Protocols.h>
 #include <Xm/DialogS.h>
 #include <Xm/List.h>
 #include <Xm/MwmUtil.h>
@@ -17,15 +18,58 @@ Management routines for the comfile window.
 #include "comfile/comfile_window.h"
 #include "comfile/comfile_window.uidh"
 #include "command/command.h"
+#include "general/indexed_list_private.h"
+#include "general/manager_private.h"
 #include "general/mystring.h"
+#include "general/object.h"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
 /*
+Module types
+------------
+*/
+
+struct Comfile_window
+/*******************************************************************************
+LAST MODIFIED : 18 April 2002
+
+DESCRIPTION :
+Command file or "comfile" window structure which lists a cmiss command file and
+by user selection passes commands to the command window.
+???DB.  Should there be a "window_structure" which contains shell information
+etc ?
+==============================================================================*/
+{
+	char *name;
+	/* need to keep comfile window manager so window can be destroyed by self */
+	struct MANAGER(Comfile_window) *comfile_window_manager;
+	char *file_name;
+	int number_of_commands;
+	char **commands;
+	Widget command_list;
+	Widget window;
+	Widget shell;
+	struct User_interface *user_interface;
+	/* for executing commands */
+	struct Execute_command *execute_command;
+	/* for setting command text ready to edit and enter */
+	struct Execute_command *set_command;
+	/* the number of objects accessing this window. The window cannot be removed
+		from manager unless it is 1 (ie. only the manager is accessing it) */
+	int access_count;
+}; /* struct Comfile_window */
+
+FULL_DECLARE_INDEXED_LIST_TYPE(Comfile_window);
+
+FULL_DECLARE_MANAGER_TYPE(Comfile_window);
+
+/*
 Module variables
 ----------------
 */
+
 #if defined (MOTIF)
 static int comfile_window_hierarchy_open=0;
 static MrmHierarchy comfile_window_hierarchy;
@@ -35,48 +79,10 @@ static MrmHierarchy comfile_window_hierarchy;
 Module functions
 ----------------
 */
-#if defined (MOTIF)
-static void destroy_Comfile_window(Widget widget,
-	XtPointer comfile_window_structure,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 12 June 1996
 
-DESCRIPTION :
-Destroy the comfile_window structure.
-==============================================================================*/
-{
-	int i;
-	struct Comfile_window *comfile_window;
-	char **command;
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Comfile_window, name, char *, strcmp)
 
-	ENTER(destroy_Comfile_window);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	/* check the arguments */
-	if (comfile_window=(struct Comfile_window *)comfile_window_structure)
-	{
-		/* free the memory for the file name */
-		DEALLOCATE(comfile_window->file_name);
-		/* free the memory for the commands */
-		if (command=comfile_window->commands)
-		{
-			for (i=comfile_window->number_of_commands;i>0;i--)
-			{
-				XtFree(*command);
-				command++;
-			}
-			DEALLOCATE(comfile_window->commands);
-		}
-		DEALLOCATE(comfile_window);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"destroy_Comfile_window.  Missing comfile window structure");
-	}
-	LEAVE;
-} /* destroy_Comfile_window */
-#endif /* defined (MOTIF) */
+DECLARE_LOCAL_MANAGER_FUNCTIONS(Comfile_window)
 
 #if defined (MOTIF)
 static void identify_command_list(Widget widget,
@@ -135,7 +141,7 @@ commands from the comfile into the list.
 						command++;
 					}
 					XtVaSetValues(comfile_window->window,
-						XmNdialogTitle,XmStringCreateSimple(comfile_window->file_name),
+						XmNdialogTitle, XmStringCreateSimple(comfile_window->name),
 						NULL);
 				}
 				else
@@ -165,10 +171,18 @@ commands from the comfile into the list.
 static void close_comfile_window(Widget widget,
 	XtPointer comfile_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 June 1993
+LAST MODIFIED : 18 April 2002
 
 DESCRIPTION :
-Closes the comfile window.
+Called when "close" is selected from the window menu, or it is double clicked.
+How this is made to occur is as follows. The comfile_window dialog has its
+XmNdeleteResponse == XmDO_NOTHING, and a window manager protocol callback for
+WM_DELETE_WINDOW has been set up with XmAddWMProtocolCallback to call this
+function in response to the close command. See CREATE(Comfile_window) for more
+details.
+Since the Comfile_window is a managed object, we simply remove it from its
+manager. If this is successful it will be DESTROYed automatically.
+If it is not managed, can't destroy it here.
 ==============================================================================*/
 {
 	struct Comfile_window *comfile_window;
@@ -178,8 +192,11 @@ Closes the comfile window.
 	USE_PARAMETER(call_data);
 	if (comfile_window=(struct Comfile_window *)comfile_window_structure)
 	{
-		XtPopdown(comfile_window->shell);
-		XtDestroyWidget(comfile_window->shell);
+		if (comfile_window->comfile_window_manager)
+		{
+			REMOVE_OBJECT_FROM_MANAGER(Comfile_window)(comfile_window,
+				comfile_window->comfile_window_manager);
+		}
 	}
 	else
 	{
@@ -466,18 +483,20 @@ Global functions
 ----------------
 */
 #if defined (MOTIF)
-struct Comfile_window *create_Comfile_window(char *file_name,
+struct Comfile_window *CREATE(Comfile_window)(char *name,
+	char *file_name,
 	struct Execute_command *execute_command,
 	struct Execute_command *set_command,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 27 April 1999
+LAST MODIFIED : 18 April 2002
 
 DESCRIPTION :
 Creates the structures and retrieves a comfile window widget from the Motif
 resource manager hierarchy.
 ==============================================================================*/
 {
+	Atom WM_DELETE_WINDOW;
 	FILE *comfile;
 	MrmType comfile_window_class;
 	static MrmRegisterArg callback_list[]=
@@ -492,20 +511,21 @@ resource manager hierarchy.
 	static MrmRegisterArg identifier_list[1];
 	struct Comfile_window *comfile_window;
 
-	ENTER(create_Comfile_window);
-	/* check the arguments */
-	if (file_name&&(comfile=fopen(file_name,"r"))&&
-		execute_command&&set_command&&user_interface)
+	ENTER(CREATE(Comfile_window));
+	if (name && file_name && (comfile = fopen(file_name,"r")) &&
+		execute_command && set_command && user_interface)
 	{
 		fclose(comfile);
 		if (MrmOpenHierarchy_base64_string(comfile_window_uidh,
 			&comfile_window_hierarchy,&comfile_window_hierarchy_open))
 		{
 			/* create the structure */
-			if (ALLOCATE(comfile_window,struct Comfile_window,1)&&
-				ALLOCATE(comfile_window->file_name,char,strlen(file_name)+1))
+			if (ALLOCATE(comfile_window, struct Comfile_window, 1) &&
+				(comfile_window->name = duplicate_string(name)) &&
+				(comfile_window->file_name = duplicate_string(file_name)))
 			{
-				strcpy(comfile_window->file_name,file_name);
+				comfile_window->comfile_window_manager=
+					(struct MANAGER(Comfile_window) *)NULL;
 				comfile_window->command_list=(Widget)NULL;
 				comfile_window->window=(Widget)NULL;
 				comfile_window->shell=(Widget)NULL;
@@ -514,10 +534,15 @@ resource manager hierarchy.
 				comfile_window->execute_command=execute_command;
 				comfile_window->set_command=set_command;
 				comfile_window->user_interface=user_interface;
+				comfile_window->access_count = 0;
 				/* create the window shell */
-				if (comfile_window->shell=XtVaCreatePopupShell("comfile_window_shell",
-					topLevelShellWidgetClass,user_interface->application_shell,
+				if (comfile_window->shell = XtVaCreatePopupShell(
+					"comfile_window_shell", topLevelShellWidgetClass,
+					user_interface->application_shell,
 					XmNallowShellResize,True,
+					XmNdeleteResponse,XmDO_NOTHING,
+					XmNmwmDecorations,MWM_DECOR_ALL,
+					XmNmwmFunctions,MWM_FUNC_ALL,
 #if defined (OLD_CODE)
 					/* Many of us want to close the window with a top left double click */
 					XmNmwmDecorations,MWM_DECOR_ALL|MWM_DECOR_MAXIMIZE,
@@ -525,9 +550,11 @@ resource manager hierarchy.
 #endif /* defined (OLD_CODE) */
 					NULL))
 				{
-					/* add destroy callback */
-					XtAddCallback(comfile_window->shell,XmNdestroyCallback,
-						destroy_Comfile_window,(XtPointer)comfile_window);
+					/* Set up window manager callback for close window message */
+					WM_DELETE_WINDOW = XmInternAtom(
+						XtDisplay(comfile_window->shell), "WM_DELETE_WINDOW", False);
+					XmAddWMProtocolCallback(comfile_window->shell,
+						WM_DELETE_WINDOW, close_comfile_window, comfile_window);
 					/* register callbacks with Motif resource manager */
 					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(comfile_window_hierarchy,
 						callback_list,XtNumber(callback_list)))
@@ -551,46 +578,50 @@ resource manager hierarchy.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"create_Comfile_window.  Could not retrieve widget");
+									"CREATE(Comfile_window).  Could not retrieve widget");
 								DEALLOCATE(comfile_window->file_name);
+								DEALLOCATE(comfile_window->name);
 								DEALLOCATE(comfile_window);
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"create_Comfile_window.  Could not register identifiers");
+								"CREATE(Comfile_window).  Could not register identifiers");
 							DEALLOCATE(comfile_window->file_name);
+							DEALLOCATE(comfile_window->name);
 							DEALLOCATE(comfile_window);
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"create_Comfile_window.  Could not register callbacks");
+							"CREATE(Comfile_window).  Could not register callbacks");
 						DEALLOCATE(comfile_window->file_name);
+						DEALLOCATE(comfile_window->name);
 						DEALLOCATE(comfile_window);
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"create_Comfile_window.  Could not create window shell");
+						"CREATE(Comfile_window).  Could not create window shell");
 					DEALLOCATE(comfile_window->file_name);
+					DEALLOCATE(comfile_window->name);
 					DEALLOCATE(comfile_window);
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"create_Comfile_window.  Could not allocate memory for structure");
+					"CREATE(Comfile_window).  Could not allocate memory for structure");
 				DEALLOCATE(comfile_window);
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_Comfile_window.  Could not open hierarchy");
+				"CREATE(Comfile_window).  Could not open hierarchy");
 			comfile_window=(struct Comfile_window *)NULL;
 		}
 	}
@@ -602,8 +633,248 @@ resource manager hierarchy.
 	LEAVE;
 
 	return (comfile_window);
-} /* create_Comfile_window */
+} /* CREATE(Comfile_window) */
 #endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+int DESTROY(Comfile_window)(struct Comfile_window **comfile_window_address)
+/*******************************************************************************
+LAST MODIFIED : 18 April 2002
+
+DESCRIPTION:
+Frees the contents of the Comfile_window structure and then the object itself,
+then closes down the window shell and widgets it uses. Note that responsibility
+for removing the comfile_window from a global list of windows is left with the
+calling routine. See also Comfile_window_close_CB and
+Comfile_window_destroy_CB.
+==============================================================================*/
+{
+	char **command;
+	int i, return_code;
+	struct Comfile_window *comfile_window;
+
+	ENTER(DESTROY(Comfile_window));
+	if (comfile_window_address && (comfile_window = *comfile_window_address))
+	{
+		/* destroy the comfile window widget */
+		XtDestroyWidget(comfile_window->shell);
+		/* free the memory for the file name */
+		DEALLOCATE(comfile_window->file_name);
+		DEALLOCATE(comfile_window->name);
+		/* free the memory for the commands */
+		if (command = comfile_window->commands)
+		{
+			for (i = comfile_window->number_of_commands; i > 0; i--)
+			{
+				XtFree(*command);
+				command++;
+			}
+			DEALLOCATE(comfile_window->commands);
+		}
+		DEALLOCATE(*comfile_window_address);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Comfile_window).  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Comfile_window) */
+#endif /* defined (MOTIF) */
+
+DECLARE_OBJECT_FUNCTIONS(Comfile_window)
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Comfile_window)
+
+DECLARE_INDEXED_LIST_FUNCTIONS(Comfile_window)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Comfile_window, \
+	name,char *,strcmp)
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Comfile_window,name)
+
+PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Comfile_window,name)
+{
+	char *name;
+	int return_code;
+
+	ENTER(MANAGER_COPY_WITH_IDENTIFIER(Comfile_window,name));
+	/* check arguments */
+	if (source&&destination)
+	{
+		if (source->name)
+		{
+			if (ALLOCATE(name,char,strlen(source->name)+1))
+			{
+				strcpy(name,source->name);
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"MANAGER_COPY_WITH_IDENTIFIER(Comfile_window,name).  "
+					"Insufficient memory");
+				return_code=0;
+			}
+		}
+		else
+		{
+			name=(char *)NULL;
+			return_code=1;
+		}
+		if (return_code)
+		{
+			if (return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Comfile_window,name)(
+				destination,source))
+			{
+				/* copy values */
+				DEALLOCATE(destination->name);
+				destination->name=name;
+			}
+			else
+			{
+				DEALLOCATE(name);
+				display_message(ERROR_MESSAGE,
+					"MANAGER_COPY_WITH_IDENTIFIER(Comfile_window,name).  "
+					"Could not copy without identifier");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MANAGER_COPY_WITH_IDENTIFIER(Comfile_window,name).  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* MANAGER_COPY_WITH_IDENTIFIER(Comfile_window,name) */
+
+PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Comfile_window,name)
+{
+	int return_code;
+
+	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Comfile_window,name));
+	if (source&&destination)
+	{
+		/*???RC have problems with copying scene_manager? messages? */
+		printf("MANAGER_COPY_WITHOUT_IDENTIFIER(Comfile_window,name).  "
+			"Not used\n");
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MANAGER_COPY_WITHOUT_IDENTIFIER(Comfile_window,name).  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* MANAGER_COPY_WITHOUT_IDENTIFIER(Comfile_window,name) */
+
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Comfile_window,name,char *)
+{
+	char *destination_name;
+	int return_code;
+
+	ENTER(MANAGER_COPY_IDENTIFIER(Comfile_window,name));
+	if (name&&destination)
+	{
+		if (ALLOCATE(destination_name,char,strlen(name)+1))
+		{
+			strcpy(destination_name,name);
+			if (destination->name)
+			{
+				DEALLOCATE(destination->name);
+			}
+			destination->name=destination_name;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"MANAGER_COPY_IDENTIFIER(Comfile_window,name).  Insufficient memory");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"MANAGER_COPY_IDENTIFIER(Comfile_window,name).  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* MANAGER_COPY_IDENTIFIER(Comfile_window,name) */
+
+/* NOTE: Using special ADD_OBJECT_TO_MANAGER function so that object keeps
+	pointer to its manager while it is managed. */
+DECLARE_MANAGER_FUNCTIONS(Comfile_window)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Comfile_window)
+
+DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS(Comfile_window,name, \
+	char *,comfile_window_manager)
+
+char *Comfile_window_manager_make_unique_name(
+	struct MANAGER(Comfile_window) *comfile_window_manager, char *file_name)
+/*******************************************************************************
+LAST MODIFIED : 18 April 2002
+
+DESCRIPTION :
+Allocates and returns a name based on <file_name> that is not currently in use
+in the <comfile_window_manager>. Does so by appending a number in angle
+brackets.
+Up to the calling routine to deallocate the returned string.
+==============================================================================*/
+{
+	char *return_name, temp_string[20];
+	int error, length, number;
+
+	ENTER(Comfile_window_manager_make_unique_name);
+	if (comfile_window_manager && file_name)
+	{
+		if (return_name = duplicate_string(file_name))
+		{
+			error = 0;
+			length = strlen(file_name);
+			number = 1;
+		}
+		else
+		{
+			error = 1;
+		}
+		while (return_name && ((struct Comfile_window *)NULL !=
+			FIND_BY_IDENTIFIER_IN_MANAGER(Comfile_window,name)(
+				return_name, comfile_window_manager)))
+		{
+			number++;
+			return_name[length] = '\0';
+			sprintf(temp_string, "<%d>", number);
+			append_string(&return_name, temp_string, &error);
+		}
+		if (error)
+		{
+			display_message(ERROR_MESSAGE,
+				"Comfile_window_manager_make_unique_name.  Could not allocate name");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Comfile_window_manager_make_unique_name.  Invalid argument(s)");
+		return_name = (char *)NULL;
+	}
+	LEAVE;
+
+	return (return_name);
+} /* Comfile_window_manager_make_unique_name */
 
 #if defined (MOTIF)
 int execute_comfile(char *file_name,struct Execute_command *execute_command)
@@ -662,14 +933,14 @@ Opens, executes and then closes a com file.  No window is created.
 int open_comfile(struct Parse_state *state,void *dummy_to_be_modified,
 	void *open_comfile_data_void)
 /*******************************************************************************
-LAST MODIFIED : 13 October 1998
+LAST MODIFIED : 18 April 2002
 
 DESCRIPTION :
 Opens a comfile, and a window if it is to be executed.  If a comfile is not
 specified on the command line, a file selection box is presented to the user.
 ==============================================================================*/
 {
-	char *command_string;
+	char *command_string, *name;
 	int i,length,return_code;
 	static struct Modifier_entry option_table[]=
 	{
@@ -678,6 +949,7 @@ specified on the command line, a file selection box is presented to the user.
 		{"name",NULL,(void *)1,set_name},
 		{NULL,NULL,NULL,set_name}
 	};
+	struct Comfile_window *comfile_window;
 	struct File_open_data *file_open_data;
 	struct Open_comfile_data *file_open_comfile_data,*open_comfile_data;
 #if defined (OLD_CODE)
@@ -811,10 +1083,10 @@ specified on the command line, a file selection box is presented to the user.
 #endif /* defined (OLD_CODE) */
 			}
 			/* open the file */
-			if (return_code=check_suffix(&(open_comfile_data->file_name),
+			if (return_code = check_suffix(&(open_comfile_data->file_name),
 				open_comfile_data->file_extension))
 			{
-				if (0<open_comfile_data->execute_count)
+				if (0 < open_comfile_data->execute_count)
 				{
 					for (i=open_comfile_data->execute_count;i>0;i--)
 					{
@@ -824,16 +1096,41 @@ specified on the command line, a file selection box is presented to the user.
 				}
 				else
 				{
-					if (create_Comfile_window(open_comfile_data->file_name,
-						open_comfile_data->execute_command,open_comfile_data->set_command,
-						open_comfile_data->user_interface))
+					if (name = Comfile_window_manager_make_unique_name(
+						open_comfile_data->comfile_window_manager,
+						open_comfile_data->file_name))
 					{
-						return_code=1;
+						if (comfile_window = CREATE(Comfile_window)(name,
+							open_comfile_data->file_name,
+							open_comfile_data->execute_command,
+							open_comfile_data->set_command,
+							open_comfile_data->user_interface))
+						{
+							if (ADD_OBJECT_TO_MANAGER(Comfile_window)(comfile_window,
+								open_comfile_data->comfile_window_manager))
+							{
+								return_code = 1;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"open_comfile.  Could not manage comfile window");
+								DESTROY(Comfile_window)(&comfile_window);
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"open_comfile.  Could not create comfile window");
+							return_code=0;
+						}
+						DEALLOCATE(name);
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"open_comfile.  Could not create comfile window");
+							"open_comfile.  Could not allocate window name");
 						return_code=0;
 					}
 				}
@@ -985,7 +1282,7 @@ specified on the command line, a file selection box is presented to the user.
 						}
 						else
 						{
-							if (create_Comfile_window(file_name,execute_command,
+							if (CREATE(Comfile_window)(file_name,execute_command,
 								user_interface))
 							{
 								return_code=1;
