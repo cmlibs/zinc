@@ -291,18 +291,18 @@ IMAGEMAGICK_SWITCH =
 IMAGEMAGICK_LIB = 
 #else /* !defined (IMAGEMAGICK) */
 #if defined (CMISS_ROOT_DEFINED)
-IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_utils
+IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_libraries
 #else /* defined (CMISS_ROOT_DEFINED) */
-IMAGEMAGICK_PATH = $(CMGUI_DEV_ROOT)/image_utils
+IMAGEMAGICK_PATH = $(CMGUI_DEV_ROOT)/image_libraries
 #endif /* defined (CMISS_ROOT_DEFINED) */
 #if defined (IRIX) /* switch OperatingSystem */
 IMAGEMAGICK_SWITCH = -DIMAGEMAGICK
 #if defined (O64)
-IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include64/
-IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib64/libMagick.a $(IMAGEMAGICK_PATH)/lib64/libtiff.a $(IMAGEMAGICK_PATH)/lib64/libpng.a $(IMAGEMAGICK_PATH)/lib64/libjpeg.a $(IMAGEMAGICK_PATH)/lib64/libxml2.a $(IMAGEMAGICK_PATH)/lib64/libz.a
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includeirix-64/
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/libirix-64/libMagick.a $(IMAGEMAGICK_PATH)/libirix-64/libtiff.a $(IMAGEMAGICK_PATH)/libirix-64/libpng.a $(IMAGEMAGICK_PATH)/libirix-64/libjpeg.a $(IMAGEMAGICK_PATH)/libirix-64/libxml2.a $(IMAGEMAGICK_PATH)/libirix-64/libz.a
 #else /* defined (O64) */
-IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include32/
-IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib32/libMagick.a $(IMAGEMAGICK_PATH)/lib32/libtiff.a $(IMAGEMAGICK_PATH)/lib32/libpng.a $(IMAGEMAGICK_PATH)/lib32/libjpeg.a $(IMAGEMAGICK_PATH)/lib32/libxml2.a $(IMAGEMAGICK_PATH)/lib32/libz.a
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includeirix-32/
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/libirix-32/libMagick.a $(IMAGEMAGICK_PATH)/libirix-32/libtiff.a $(IMAGEMAGICK_PATH)/libirix-32/libpng.a $(IMAGEMAGICK_PATH)/libirix-32/libjpeg.a $(IMAGEMAGICK_PATH)/libirix-32/libxml2.a $(IMAGEMAGICK_PATH)/libirix-32/libz.a
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 IMAGEMAGICK_SWITCH = -DIMAGEMAGICK -D_FILE_OFFSET_BITS=64
