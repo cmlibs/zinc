@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_update.c
 
-LAST MODIFIED : 8 October 2002
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Functions for updating values of one computed field from those of another.
@@ -39,9 +39,8 @@ this function are finished.
 	{
 		if (Computed_field_evaluate_cache_at_node(source_field, node, time))
 		{
-			/* time should be passed to following function */
 			if (Computed_field_set_values_at_node(destination_field,
-				node, source_field->values))
+				node, time, source_field->values))
 			{
 				return_code = 1;
 			}
@@ -114,7 +113,7 @@ DESCRIPTION :
 					data->time, data->values))
 				{
 					if (Computed_field_set_values_at_node_in_FE_region(data->destination_field,
-						node, data->values, data->fe_region))
+							node, data->time, data->fe_region, data->values))
 					{
 						data->success_count++;
 					}
@@ -321,7 +320,7 @@ DESCRIPTION :
 					Computed_field_is_defined_in_element(data->source_field, element))
 				{
 					if (Computed_field_get_values_in_element(data->source_field, element,
-						element_point_ranges_identifier.number_in_xi, &values, data->time))
+						element_point_ranges_identifier.number_in_xi, data->time, &values))
 					{
 						/* if individual grid points to be updated, need to evaluate
 							 the current field values and overwrite the selected ones */
@@ -329,8 +328,8 @@ DESCRIPTION :
 						{
 							if (Computed_field_get_values_in_element(
 								data->destination_field, element,
-								element_point_ranges_identifier.number_in_xi,
-								&temp_values, data->time))
+								element_point_ranges_identifier.number_in_xi, data->time,
+								&temp_values))
 							{
 								/* make values point at the current values */
 								new_values = values;
@@ -395,8 +394,8 @@ DESCRIPTION :
 						{
 							if (Computed_field_set_values_in_element_in_FE_region(
 								data->destination_field, element,
-								element_point_ranges_identifier.number_in_xi,
-								values, data->fe_region))
+								element_point_ranges_identifier.number_in_xi, data->time,
+								data->fe_region, values))
 							{
 								data->success_count++;
 							}

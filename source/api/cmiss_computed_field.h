@@ -60,9 +60,9 @@ greater than or equal to the number of components.
 ==============================================================================*/
 
 int Cmiss_computed_field_set_values_at_node(struct Cmiss_computed_field *field,
-	struct Cmiss_node *node, int number_of_values, float *values);
+	struct Cmiss_node *node, int number_of_values, float time, float *values);
 /*******************************************************************************
-LAST MODIFIED : 29 March 2004
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field

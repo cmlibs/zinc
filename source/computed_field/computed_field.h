@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 2 April 2003
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -372,9 +372,9 @@ number_of_components.
 ==============================================================================*/
 
 int Computed_field_set_values_at_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values);
+	struct FE_node *node, FE_value time, FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 20 April 2000
+LAST MODIFIED : 27 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -396,9 +396,10 @@ should not be managed at the time it is modified by this function.
 ==============================================================================*/
 
 int Computed_field_set_values_at_node_in_FE_region(struct Computed_field *field,
-	struct FE_node *node,FE_value *values, struct FE_region *fe_region);
+	struct FE_node *node, FE_value time, struct FE_region *fe_region,
+	FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 10 March 2003
+LAST MODIFIED : 27 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -424,9 +425,10 @@ Note that the values array will not be modified by this function.
 ==============================================================================*/
 
 int Computed_field_get_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value **values,FE_value time);
+	struct FE_element *element, int *number_in_xi, FE_value time,
+	FE_value **values);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 27 October 2004
 
 DESCRIPTION :
 Companion function to Computed_field_set_values_in_element.
@@ -439,9 +441,10 @@ It is up to the calling function to deallocate the returned values.
 ==============================================================================*/
 
 int Computed_field_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value *values);
+	struct FE_element *element,int *number_in_xi, FE_value time,
+	FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 20 April 2000
+LAST MODIFIED : 27 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>. Only certain
@@ -468,10 +471,10 @@ Note that the values array will not be modified by this function. Also,
 ==============================================================================*/
 
 int Computed_field_set_values_in_element_in_FE_region(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value *values,
-	struct FE_region *fe_region);
+	struct FE_element *element,int *number_in_xi, FE_value time,
+	struct FE_region *fe_region, FE_value *values);
 /*******************************************************************************
-LAST MODIFIED : 10 March 2003
+LAST MODIFIED : 27 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>. Only certain

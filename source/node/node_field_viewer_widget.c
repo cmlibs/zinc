@@ -502,7 +502,7 @@ data, and then changes the correct value in the array structure.
 							{
 								sscanf(value_string,FE_VALUE_INPUT_STRING,
 									&values[nodal_value_information->component_number]);
-								Computed_field_set_values_at_node(field,node,values);
+								Computed_field_set_values_at_node(field,node,time,values);
 							}
 							Computed_field_clear_cache(field);
 							DEALLOCATE(values);

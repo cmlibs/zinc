@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 14 March 2003
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -4731,7 +4731,7 @@ the position of the point, with appropriate coordinate conversion.
 									ACCESS(FE_node)(new_node);
 									if (((!fe_coordinate_field) ||
 										Computed_field_set_values_at_node(rc_data_coordinate_field,
-											new_node, position)) &&
+											new_node, time, position)) &&
 										set_FE_nodal_element_xi_value(new_node,
 											fe_element_xi_field, 0/*component_number*/, 0/*version*/,
 											FE_NODAL_VALUE, local_element, xi))

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_window_projection.c
 
-LAST MODIFIED : 11 February 2002
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -984,9 +984,9 @@ Print the values calculated in the cache.
 ==============================================================================*/
 
 static int Computed_field_window_projection_set_values_at_node(
-	struct Computed_field *field,struct FE_node *node,FE_value *values)
+	struct Computed_field *field,struct FE_node *node,FE_value time,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 10 October 2000
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>.
@@ -1021,7 +1021,7 @@ Sets the <values> of the computed <field> at <node>.
 					source_values[1] = (result[1] / result[3]);
 					source_values[2] = (result[2] / result[3]);
 					return_code=Computed_field_set_values_at_node(
-						field->source_fields[0],node,source_values);
+						field->source_fields[0],node,time,source_values);
 				}
 				else
 				{

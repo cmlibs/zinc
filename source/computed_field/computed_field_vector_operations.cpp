@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_vector_operations.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
@@ -2108,9 +2108,9 @@ Print the values calculated in the cache.
 ==============================================================================*/
 
 static int Computed_field_magnitude_set_values_at_node(
-	struct Computed_field *field,struct FE_node *node,FE_value *values)
+	struct Computed_field *field,struct FE_node *node,FE_value time,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>.
@@ -2127,7 +2127,7 @@ Sets the <values> of the computed <field> at <node>.
 		if (ALLOCATE(source_values,FE_value,source_number_of_components))
 		{
 			if (Computed_field_evaluate_at_node(field->source_fields[0],node,
-					 /*time*/0,source_values))
+					 time,source_values))
 			{
 				return_code=1;
 				/* if the source field is not a zero vector, set its magnitude to
@@ -2145,7 +2145,7 @@ Sets the <values> of the computed <field> at <node>.
 						source_values[i] *= magnitude;
 					}
 					return_code=Computed_field_set_values_at_node(
-						field->source_fields[0],node,source_values);
+						field->source_fields[0],node,time,source_values);
 				}
 				else
 				{
@@ -2185,9 +2185,9 @@ Sets the <values> of the computed <field> at <node>.
 
 static int Computed_field_magnitude_set_values_in_element(
 	struct Computed_field *field, struct FE_element *element,int *number_in_xi,
-	FE_value *values)
+	FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>.
@@ -2221,7 +2221,7 @@ Sets the <values> of the computed <field> over the <element>.
 		{
 			/* need current field values to "magnify" */
 			if (Computed_field_get_values_in_element(field->source_fields[0],
-					 element,number_in_xi,&source_values,/*time*/0))
+					 element,number_in_xi,time,&source_values))
 			{
 				source_number_of_components =
 					field->source_fields[0]->number_of_components;
@@ -2257,7 +2257,7 @@ Sets the <values> of the computed <field> over the <element>.
 						field->name);
 				}
 				return_code=Computed_field_set_values_in_element(
-					field->source_fields[0],element,number_in_xi,source_values);
+					field->source_fields[0],element,number_in_xi,time,source_values);
 				DEALLOCATE(source_values);
 			}
 			else

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 17 May 2003
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -505,8 +505,8 @@ applied to multiple nodes.
 						edit_info->coordinate_field,node,edit_info->time,
 						initial_coordinates)&&
 						Computed_field_set_values_at_node_in_FE_region(
-							edit_info->rc_coordinate_field,node,coordinates,
-							edit_info->fe_region)&&
+							edit_info->rc_coordinate_field,node,edit_info->time,
+							edit_info->fe_region, coordinates)&&
 						Computed_field_evaluate_at_node(edit_info->coordinate_field,
 							node,edit_info->time,final_coordinates);
 					edit_info->delta1 = final_coordinates[0] - initial_coordinates[0];
@@ -519,8 +519,8 @@ applied to multiple nodes.
 					edit_info->delta2 = coordinates[1] - initial_coordinates[1];
 					edit_info->delta3 = coordinates[2] - initial_coordinates[2];
 					return_code=Computed_field_set_values_at_node_in_FE_region(
-						edit_info->rc_coordinate_field,node,coordinates,
-						edit_info->fe_region);
+						edit_info->rc_coordinate_field,node,edit_info->time,
+						edit_info->fe_region,coordinates);
 				}
 			}
 		}
@@ -594,8 +594,8 @@ stored in the <edit_info>.
 							not just those affected, and therefore sends less efficient
 							change message */
 						if (!Computed_field_set_values_at_node_in_FE_region(
-							edit_info->coordinate_field,node,coordinates,
-							edit_info->fe_region))
+								 edit_info->coordinate_field,node,edit_info->time,
+								 edit_info->fe_region,coordinates))
 						{
 							return_code=0;
 						}
@@ -748,8 +748,8 @@ NOTE: currently does not tolerate having a variable_scale_field.
 			if (return_code)
 			{
 				if (!Computed_field_set_values_at_node_in_FE_region(
-					edit_info->wrapper_orientation_scale_field,node,orientation_scale,
-					edit_info->fe_region))
+					edit_info->wrapper_orientation_scale_field,node,edit_info->time,
+					edit_info->fe_region,orientation_scale))
 				{
 					return_code=0;
 				}
@@ -912,8 +912,8 @@ stored in the <edit_info>.
 				if (return_code)
 				{
 					if (!Computed_field_set_values_at_node_in_FE_region(
-						edit_info->orientation_scale_field,node,orientation_scale,
-						edit_info->fe_region))
+						edit_info->orientation_scale_field,node,edit_info->time,
+						edit_info->fe_region,orientation_scale))
 					{
 						return_code=0;
 					}
@@ -985,7 +985,7 @@ object's coordinate field.
 			{
 				if (Node_tool_define_field_at_node(node_tool,node)&&
 					Computed_field_set_values_at_node(rc_coordinate_field,
-						node,coordinates))
+					node,time,coordinates))
 				{
 					return_code=1;
 				}
@@ -1119,7 +1119,7 @@ the new node.
 				{
 					ACCESS(FE_node)(node);
 					if (!(Computed_field_set_values_at_node(rc_coordinate_field, node,
-						coordinates) && (merged_node =
+							/*time*/0, coordinates) && (merged_node =
 							FE_region_merge_FE_node(node_tool->fe_region, node))))
 					{
 						display_message(ERROR_MESSAGE,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_component_operations.c
 
-LAST MODIFIED : 02 October 2003
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -2424,9 +2424,9 @@ Print the values calculated in the cache.
 ==============================================================================*/
 
 static int Computed_field_scale_set_values_at_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values)
+	struct FE_node *node, FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2459,7 +2459,7 @@ DESCRIPTION :
 			if (return_code)
 			{
 				return_code=Computed_field_set_values_at_node(
-					field->source_fields[0],node,source_values);
+					field->source_fields[0],node,time,source_values);
 			}
 			DEALLOCATE(source_values);
 		}
@@ -2480,7 +2480,7 @@ DESCRIPTION :
 } /* Computed_field_scale_set_values_at_node */
 
 static int Computed_field_scale_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value *values)
+	struct FE_element *element,int *number_in_xi,FE_value time,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 14 July 2000
 
@@ -2539,7 +2539,7 @@ DESCRIPTION :
 				if (return_code)
 				{
 					return_code=Computed_field_set_values_in_element(
-						field->source_fields[0],element,number_in_xi,source_values);
+						field->source_fields[0],element,number_in_xi,time,source_values);
 				}
 				DEALLOCATE(source_values);
 			}
@@ -3219,7 +3219,7 @@ Print the values calculated in the cache.
 ==============================================================================*/
 
 static int Computed_field_clamp_maximum_set_values_at_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values)
+	struct FE_node *node,FE_value time,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 14 July 2000
 
@@ -3248,7 +3248,7 @@ DESCRIPTION :
 				}
 			}
 			return_code=Computed_field_set_values_at_node(
-				field->source_fields[0],node,source_values);
+				field->source_fields[0],node,time,source_values);
 			DEALLOCATE(source_values);
 		}
 		else
@@ -3268,7 +3268,7 @@ DESCRIPTION :
 } /* Computed_field_clamp_maximum_set_values_at_node */
 
 static int Computed_field_clamp_maximum_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value *values)
+	struct FE_element *element,int *number_in_xi,FE_value time,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 14 July 2000
 
@@ -3322,7 +3322,7 @@ DESCRIPTION :
 					}
 				}
 				return_code=Computed_field_set_values_in_element(
-					field->source_fields[0],element,number_in_xi,source_values);
+					field->source_fields[0],element,number_in_xi,time,source_values);
 				DEALLOCATE(source_values);
 			}
 			else
@@ -3940,7 +3940,7 @@ Print the values calculated in the cache.
 ==============================================================================*/
 
 static int Computed_field_clamp_minimum_set_values_at_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values)
+	struct FE_node *node,FE_value time,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 14 July 2000
 
@@ -3969,7 +3969,7 @@ DESCRIPTION :
 				}
 			}
 			return_code=Computed_field_set_values_at_node(
-				field->source_fields[0],node,source_values);
+				field->source_fields[0],node,time,source_values);
 			DEALLOCATE(source_values);
 		}
 		else
@@ -3989,7 +3989,7 @@ DESCRIPTION :
 } /* Computed_field_clamp_minimum_set_values_at_node */
 
 static int Computed_field_clamp_minimum_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value *values)
+	struct FE_element *element,int *number_in_xi,FE_value time,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 14 July 2000
 
@@ -4043,7 +4043,7 @@ DESCRIPTION :
 					}
 				}
 				return_code=Computed_field_set_values_in_element(
-					field->source_fields[0],element,number_in_xi,source_values);
+					field->source_fields[0],element,number_in_xi,time,source_values);
 				DEALLOCATE(source_values);
 			}
 			else
@@ -4640,7 +4640,7 @@ Print the values calculated in the cache.
 ==============================================================================*/
 
 static int Computed_field_offset_set_values_at_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values)
+	struct FE_node *node,FE_value time,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 14 July 2000
 
@@ -4662,7 +4662,7 @@ DESCRIPTION :
 				source_values[i] = values[i] - field->source_values[i];
 			}
 			return_code=Computed_field_set_values_at_node(
-				field->source_fields[0],node,source_values);
+				field->source_fields[0],node,time,source_values);
 			DEALLOCATE(source_values);
 		}
 		else
@@ -4682,7 +4682,7 @@ DESCRIPTION :
 } /* Computed_field_offset_set_values_at_node */
 
 static int Computed_field_offset_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value *values)
+	struct FE_element *element,int *number_in_xi,FE_value time,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 14 July 2000
 
@@ -4728,7 +4728,7 @@ DESCRIPTION :
 					}
 				}
 				return_code=Computed_field_set_values_in_element(
-					field->source_fields[0],element,number_in_xi,source_values);
+					field->source_fields[0],element,number_in_xi,time,source_values);
 				DEALLOCATE(source_values);
 			}
 			else
@@ -5987,7 +5987,7 @@ Print the values calculated in the cache.
 ==============================================================================*/
 
 static int Computed_field_edit_mask_set_values_at_node(
-	struct Computed_field *field, struct FE_node *node, FE_value *values)
+	struct Computed_field *field, struct FE_node *node, FE_value time,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 18 December 2001
 
@@ -6017,7 +6017,7 @@ DESCRIPTION :
 					}
 				}
 				return_code = Computed_field_set_values_at_node(
-					field->source_fields[0], node, source_values);
+					field->source_fields[0], node, time,source_values);
 			}
 			else
 			{
@@ -6043,7 +6043,7 @@ DESCRIPTION :
 
 static int Computed_field_edit_mask_set_values_in_element(
 	struct Computed_field *field, struct FE_element *element, int *number_in_xi,
-	FE_value *values)
+	FE_value time, FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 18 December 2001
 
@@ -6077,7 +6077,7 @@ DESCRIPTION :
 		{
 			/* need current field values to partially set */
 			if (Computed_field_get_values_in_element(field->source_fields[0],
-				element, number_in_xi, &source_values, /*time*/0))
+				element, number_in_xi, time, &source_values))
 			{
 				/* insert the components with mask on into this array */
 				for (k = 0; k < field->number_of_components; k++)
@@ -6092,7 +6092,7 @@ DESCRIPTION :
 					}
 				}
 				return_code = Computed_field_set_values_in_element(
-					field->source_fields[0], element, number_in_xi, source_values);
+					field->source_fields[0], element, number_in_xi, time, source_values);
 				DEALLOCATE(source_values);
 			}
 			else

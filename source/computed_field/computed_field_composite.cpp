@@ -401,7 +401,7 @@ Print the values calculated in the cache.
 ==============================================================================*/
 
 static int Computed_field_composite_set_values_at_node(
-	struct Computed_field *field,struct FE_node *node,FE_value *values)
+	struct Computed_field *field,struct FE_node *node,FE_value time,FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 19 October 2000
 
@@ -433,7 +433,7 @@ value for it in <values> will be used.
 				field->source_fields[source_field_number]->number_of_components))
 			{
 				if (Computed_field_evaluate_at_node(
-						 field->source_fields[source_field_number],node,/*time*/0,
+						 field->source_fields[source_field_number],node,time,
 						 source_values))
 				{
 					for (i=0;i<field->number_of_components;i++)
@@ -444,7 +444,7 @@ value for it in <values> will be used.
 						}
 					}
 					return_code=Computed_field_set_values_at_node(
-						field->source_fields[source_field_number],node,source_values);
+						field->source_fields[source_field_number],node,time,source_values);
 				}
 				else
 				{
@@ -477,9 +477,9 @@ value for it in <values> will be used.
 
 static int Computed_field_composite_set_values_in_element(
 	struct Computed_field *field, struct FE_element *element,int *number_in_xi,
-	FE_value *values)
+	FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>.
@@ -522,7 +522,7 @@ Sets the <values> of the computed <field> over the <element>.
 			{
 				if (Computed_field_get_values_in_element(
 					field->source_fields[source_field_number],element,number_in_xi,
-					&source_values, /*time*/0))
+					time, &source_values))
 				{
 					for (i=0;i<field->number_of_components;i++)
 					{
@@ -536,7 +536,7 @@ Sets the <values> of the computed <field> over the <element>.
 					}
 					return_code=Computed_field_set_values_in_element(
 						field->source_fields[source_field_number],element,number_in_xi,
-						source_values);
+						time,source_values);
 					DEALLOCATE(source_values);
 				}
 				else

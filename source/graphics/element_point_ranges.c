@@ -1653,7 +1653,7 @@ static int Field_value_index_ranges_set_grid_values(
 	struct Field_value_index_ranges *field_value_index_ranges,
 	void *set_grid_values_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Last parameter is a struct Element_point_ranges_set_grid_values_data. Sets
@@ -1779,11 +1779,11 @@ If field and element_point_ranges not identically grid-based, clear
 				{
 					if (return_code=Computed_field_get_values_in_element(field,
 						source_element,set_grid_values_data->
-						source_identifier->number_in_xi,&source_values,/*time*/0))
+						source_identifier->number_in_xi,/*time*/0,&source_values))
 					{
 						if (return_code=Computed_field_get_values_in_element(field,
-								 destination_element,number_in_xi,&destination_values,
-								 /*time*/0))
+								destination_element,number_in_xi,/*time*/0,
+								&destination_values))
 						{
 							for (i=0;(i<number_of_components)&&return_code;i++)
 							{
@@ -1803,7 +1803,7 @@ If field and element_point_ranges not identically grid-based, clear
 								}
 							}
 							return_code=Computed_field_set_values_in_element(field,
-								destination_element,number_in_xi,destination_values);
+								destination_element,number_in_xi,/*time*/0,destination_values);
 							DEALLOCATE(destination_values);
 						}
 						DEALLOCATE(source_values);

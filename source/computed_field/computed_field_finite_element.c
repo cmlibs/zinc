@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 3 June 2003
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -856,9 +856,9 @@ Print the values calculated in the cache.
 } /* Computed_field_finite_element_evaluate_as_string_in_element */
 
 static int Computed_field_finite_element_set_values_at_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values)
+	struct FE_node *node, FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>.
@@ -896,30 +896,30 @@ Sets the <values> of the computed <field> at <node>.
 					{
 						double_value=(double)values[i];
 						return_code=set_FE_nodal_double_value(node,&fe_field_component,
-							j,/*nodal_value_type*/FE_NODAL_VALUE,/*time*/0,double_value);
+							j,/*nodal_value_type*/FE_NODAL_VALUE,time,double_value);
 					} break;
 					case FE_VALUE_VALUE:
 					{
 						return_code=set_FE_nodal_FE_value_value(node,&fe_field_component,
-							j,/*nodal_value_type*/FE_NODAL_VALUE,/*time*/0,values[i]);
+							j,/*nodal_value_type*/FE_NODAL_VALUE,time,values[i]);
 					} break;
 					case FLT_VALUE:
 					{
 						float_value=(float)values[i];
 						return_code=set_FE_nodal_float_value(node,&fe_field_component,
-							j,/*nodal_value_type*/FE_NODAL_VALUE,/*time*/0,float_value);
+							j,/*nodal_value_type*/FE_NODAL_VALUE,time,float_value);
 					} break;
 					case INT_VALUE:
 					{
 						int_value=(int)floor(values[i]+0.5);
 						return_code=set_FE_nodal_int_value(node,&fe_field_component,
-							j,/*nodal_value_type*/FE_NODAL_VALUE,/*time*/0,int_value);
+							j,/*nodal_value_type*/FE_NODAL_VALUE,time,int_value);
 					} break;
 					case SHORT_VALUE:
 					{
 						short_value=(short)floor(values[i]+0.5);
 						return_code=set_FE_nodal_short_value(node,&fe_field_component,
-							j,/*nodal_value_type*/FE_NODAL_VALUE,/*time*/0,short_value);
+							j,/*nodal_value_type*/FE_NODAL_VALUE,time,short_value);
 					} break;
 					default:
 					{
@@ -951,7 +951,7 @@ Sets the <values> of the computed <field> at <node>.
 
 static int Computed_field_finite_element_set_values_in_element(
 	struct Computed_field *field, struct FE_element *element,int *number_in_xi,
-	FE_value *values)
+	FE_value time, FE_value *values)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
@@ -970,6 +970,13 @@ Sets the <values> of the computed <field> over the <element>.
 		field->type_specific_data))
 	{
 		return_code=1;
+		if (time != 0)
+		{
+			display_message(WARNING_MESSAGE,
+				"Computed_field_finite_element_set_values_in_element.  "
+				"This function is not implemented for time.");
+			return_code = 0;
+		}
 		element_dimension=get_FE_element_dimension(element);
 		number_of_points=1;
 		for (i=0;(i<element_dimension)&&return_code;i++)
@@ -3115,9 +3122,9 @@ DESCRIPTION :
 ==============================================================================*/
 
 static int Computed_field_node_value_set_values_at_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values)
+	struct FE_node *node, FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>.
@@ -3152,24 +3159,24 @@ Sets the <values> of the computed <field> at <node>.
 					{
 						double_value=(double)values[i];
 						return_code=set_FE_nodal_double_value(node,&fe_field_component,
-							data->version_number,data->nodal_value_type,/*time*/0,double_value);
+							data->version_number,data->nodal_value_type,time,double_value);
 					} break;
 					case FE_VALUE_VALUE:
 					{
 						return_code=set_FE_nodal_FE_value_value(node,&fe_field_component,
-							data->version_number,data->nodal_value_type,/*time*/0,values[i]);
+							data->version_number,data->nodal_value_type,time,values[i]);
 					} break;
 					case FLT_VALUE:
 					{
 						float_value=(float)values[i];
 						return_code=set_FE_nodal_float_value(node,&fe_field_component,
-							data->version_number,data->nodal_value_type,/*time*/0,float_value);
+							data->version_number,data->nodal_value_type,time,float_value);
 					} break;
 					case INT_VALUE:
 					{
 						int_value=(int)floor(values[i]+0.5);
 						return_code=set_FE_nodal_float_value(node,&fe_field_component,
-							data->version_number,data->nodal_value_type,/*time*/0,int_value);
+							data->version_number,data->nodal_value_type,time,int_value);
 					} break;
 					default:
 					{
@@ -4044,9 +4051,9 @@ DESCRIPTION :
 ==============================================================================*/
 
 static int Computed_field_embedded_set_values_at_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values)
+	struct FE_node *node, FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>.
@@ -4055,6 +4062,7 @@ Sets the <values> of the computed <field> at <node>.
 	int return_code;
 
 	ENTER(Computed_field_embedded_set_values_at_node);
+	USE_PARAMETER(time);
 	if (field&&node&&values)
 	{
 		return_code=0;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_coordinate.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -441,9 +441,9 @@ Print the values calculated in the cache.
 ==============================================================================*/
 
 static int Computed_field_coordinate_transformation_set_values_at_node(
-	struct Computed_field *field,struct FE_node *node,FE_value *values)
+	struct Computed_field *field,struct FE_node *node,FE_value time,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>.
@@ -465,7 +465,7 @@ Sets the <values> of the computed <field> at <node>.
 			source_field_coordinates,
 			/*jacobian*/(float *)NULL)&&
 			Computed_field_set_values_at_node(field->source_fields[0],
-			node,source_field_coordinates);
+			node,time,source_field_coordinates);
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
@@ -486,9 +486,9 @@ Sets the <values> of the computed <field> at <node>.
 
 static int Computed_field_coordinate_transformation_set_values_in_element(
 	struct Computed_field *field, struct FE_element *element,int *number_in_xi,
-	FE_value *values)
+	FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>.
@@ -548,7 +548,7 @@ Sets the <values> of the computed <field> over the <element>.
 				if (return_code)
 				{
 					return_code=Computed_field_set_values_in_element(
-						field->source_fields[0],element,number_in_xi,source_values);
+						field->source_fields[0],element,number_in_xi,time,source_values);
 				}
 				DEALLOCATE(source_values);
 			}
@@ -1120,9 +1120,9 @@ Print the values calculated in the cache.
 ==============================================================================*/
 
 static int Computed_field_vector_coordinate_transformation_set_values_at_node(
-	struct Computed_field *field,struct FE_node *node,FE_value *values)
+	struct Computed_field *field,struct FE_node *node,FE_value time,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>.
@@ -1136,7 +1136,7 @@ Sets the <values> of the computed <field> at <node>.
 	{
 		/* need jacobian at current coordinate position for converting to
 			coordinate system of source vector field (=source_fields[0]) */
-		if (Computed_field_evaluate_cache_at_node(field->source_fields[1],node,/*time*/0)
+		if (Computed_field_evaluate_cache_at_node(field->source_fields[1],node,time)
 			&&
 			convert_Coordinate_system(&(field->source_fields[1]->coordinate_system),
 				field->source_fields[1]->number_of_components,
@@ -1163,7 +1163,7 @@ Sets the <values> of the computed <field> at <node>.
 					}
 				}
 				return_code=Computed_field_set_values_at_node(
-					field->source_fields[0],node,source_values);
+					field->source_fields[0],node,time,source_values);
 				DEALLOCATE(source_values);
 			}
 			else
@@ -1195,9 +1195,9 @@ Sets the <values> of the computed <field> at <node>.
 
 static int Computed_field_vector_coordinate_transformation_set_values_in_element(
 	struct Computed_field *field, struct FE_element *element,int *number_in_xi,
-	FE_value *values)
+	FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>.
@@ -1237,7 +1237,7 @@ Sets the <values> of the computed <field> over the <element>.
 				field->source_fields[1]))
 			{
 				if (Computed_field_get_values_in_element(rc_coordinate_field,
-					element,number_in_xi,&rc_coordinate_values, /*time*/0))
+					element,number_in_xi, time, &rc_coordinate_values))
 				{
 					/* 3 values for non-rc coordinate system */
 					if (ALLOCATE(source_values,FE_value,
@@ -1284,7 +1284,7 @@ Sets the <values> of the computed <field> over the <element>.
 						if (return_code)
 						{
 							return_code=Computed_field_set_values_in_element(
-								field->source_fields[0],element,number_in_xi,source_values);
+								field->source_fields[0],element,number_in_xi,time,source_values);
 						}
 						DEALLOCATE(source_values);
 					}

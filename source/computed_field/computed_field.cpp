@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 2 April 2003
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -2733,9 +2733,9 @@ number_of_components.
 } /* Computed_field_evaluate_at_node */
 
 int Computed_field_set_values_at_node(struct Computed_field *field,
-	struct FE_node *node,FE_value *values)
+	struct FE_node *node, FE_value time, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 5 October 2000
+LAST MODIFIED : 27 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -2764,7 +2764,7 @@ should not be managed at the time it is modified by this function.
 		{
 			if (!(return_code = 
 					 field->computed_field_set_values_at_node_function(
-						 field, node, values)))
+						 field, node, time, values)))
 			{
 				display_message(ERROR_MESSAGE, "Computed_field_set_values_at_node.  "
 					"Failed for field %s of type %s", field->name, field->type_string);
@@ -2792,9 +2792,10 @@ should not be managed at the time it is modified by this function.
 } /* Computed_field_set_values_at_node */
 
 int Computed_field_set_values_at_node_in_FE_region(struct Computed_field *field,
-	struct FE_node *node,FE_value *values,struct FE_region *fe_region)
+	struct FE_node *node, FE_value time, struct FE_region *fe_region,
+	FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 2 April 2003
+LAST MODIFIED : 28 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -2838,7 +2839,8 @@ that this Computed_field depends on.
 			/* The node must be accessed as the use of cache on the nodes
 				by get values etc. access and deaccesses the nodes */
 			ACCESS(FE_node)(copy_node);
-			return_code = Computed_field_set_values_at_node(field, copy_node, values);
+			return_code = Computed_field_set_values_at_node(field, copy_node, time,
+				values);
 			/* must clear the cache before MANAGER_MODIFY as previously cached
 				 values may be invalid */
 			Computed_field_clear_cache(field);
@@ -2870,9 +2872,10 @@ that this Computed_field depends on.
 } /* Computed_field_set_values_at_node_in_FE_region */
 
 int Computed_field_get_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value **values,FE_value time)
+	struct FE_element *element, int *number_in_xi, FE_value time,
+	FE_value **values)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 27 October 2004
 
 DESCRIPTION :
 Companion function to Computed_field_set_values_in_element.
@@ -2959,9 +2962,10 @@ It is up to the calling function to deallocate the returned values.
 } /* Computed_field_get_values_in_element */
 
 int Computed_field_set_values_in_element(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value *values)
+	struct FE_element *element,int *number_in_xi, FE_value time,
+	FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 5 October 2000
+LAST MODIFIED : 27 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>. Only certain
@@ -2995,7 +2999,7 @@ Note that the values array will not be modified by this function. Also,
 		{
 			if (!(return_code = 
 					 field->computed_field_set_values_in_element_function(
-						 field, element, number_in_xi, values)))
+						 field, element, number_in_xi, time, values)))
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_set_values_in_element.  "
@@ -3024,10 +3028,10 @@ Note that the values array will not be modified by this function. Also,
 } /* Computed_field_set_values_in_element */
 
 int Computed_field_set_values_in_element_in_FE_region(struct Computed_field *field,
-	struct FE_element *element,int *number_in_xi,FE_value *values,
-	struct FE_region *fe_region)
+	struct FE_element *element, int *number_in_xi, FE_value time,
+	struct FE_region *fe_region, FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 10 March 2003
+LAST MODIFIED : 27 October 2004
 
 DESCRIPTION :
 Sets the <values> of the computed <field> over the <element>. Only certain
@@ -3077,7 +3081,7 @@ Note that the values array will not be modified by this function.
 				by get values etc. access and deaccessess the elements */
 			ACCESS(FE_element)(copy_element);
 			if (Computed_field_set_values_in_element(field,copy_element,
-				number_in_xi,values))
+					number_in_xi, time, values))
 			{
 				if (FE_region_merge_FE_element(fe_region, copy_element))
 				{

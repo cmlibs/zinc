@@ -348,13 +348,13 @@ data, and then changes the correct value in the array structure.
 							if (1==sscanf(value_string,"%g",&value))
 							{
 								if (Computed_field_get_values_in_element(field,element,
-									number_in_xi,&values,time))
+									number_in_xi,time,&values))
 								{
 									/* change the value for this component */
 									values[component_number*number_of_grid_values+
 										element_point_number]=value;
 									return_code=Computed_field_set_values_in_element(
-										field,element,number_in_xi,values);
+										field,element,number_in_xi,time,values);
 									DEALLOCATE(values);
 								}
 								/* note must clear cache so correct values are shown */
