@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cell.imake
 XCOMM
-XCOMM LAST MODIFIED : 21 April 2001
+XCOMM LAST MODIFIED : 25 May 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -488,6 +488,7 @@ GENERAL_SRCS =  \
 	general/myio.c \
 	general/mystring.c \
 	general/postscript.c \
+	general/statistics.c \
 	general/value.c 
 GRAPHICS_SRCS = \
 	graphics/auxiliary_graphics_types.c \
