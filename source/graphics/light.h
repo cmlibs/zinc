@@ -126,7 +126,7 @@ DESCRIPTION :
 Returns the colour colour of the light.
 ==============================================================================*/
 
-int get_Light_colour(struct Light *light,struct Colour *colour);
+int set_Light_colour(struct Light *light,struct Colour *colour);
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
 
