@@ -59,7 +59,7 @@ Global types
 #define CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED( object_type ) \
 	change_log_object_identifier_changed_ ## object_type
 #else
-#define CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED_ object_type ) \
+#define CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED( object_type ) \
 	CLOIC_ ## object_type
 #endif
 
