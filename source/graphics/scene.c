@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 16 October 2001
+LAST MODIFIED : 24 October 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -4822,7 +4822,6 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 	int return_code;
 	struct LIST(Light) *temp_list_of_lights;
 	struct LIST(Scene_object) *temp_scene_object_list;
-	struct Scene_object *scene_object;
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Scene,name));
 	if (source && destination)
@@ -6203,7 +6202,7 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
 	struct Interaction_volume *interaction_volume)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2001
+LAST MODIFIED : 24 October 2001
 
 DESCRIPTION :
 Returns a list of all the graphical entities in the <interaction_volume> of
@@ -6229,7 +6228,10 @@ understood for the type of <interaction_volume> passed.
 	{
 		if (scene_picked_object_list=CREATE(LIST(Scene_picked_object))())
 		{
-			if (X3dThreeDDrawingGetCurrent()&&compile_Scene(scene))
+			/* need to build and compile scene as graphics object may not exist yet
+				 for picking */
+			if (X3dThreeDDrawingGetCurrent() &&
+				build_Scene(scene) && compile_Scene(scene))
 			{
 				select_buffer=(GLuint *)NULL;
 				num_hits=-1;
