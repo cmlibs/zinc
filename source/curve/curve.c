@@ -2471,6 +2471,7 @@ of the original.
 					ALLOCATE(values,FE_value,number_of_components)&&
 					ALLOCATE(derivatives,FE_value,number_of_components))
 				{
+					return_code=1;
 					if (0<curve->value_derivatives_per_node)
 					{
 						/* cubic Hermite basis: ensure continuous slope */
@@ -2494,6 +2495,10 @@ of the original.
 								set_FE_element_scale_factor(element1,nodes_per_element-1,
 									split_xi*sf)&&
 								set_FE_element_scale_factor(element2,0,(1.0-split_xi)*sf));
+						}
+						else
+						{
+							return_code=0;
 						}
 					}
 					else
