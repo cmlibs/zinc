@@ -1479,24 +1479,25 @@ EXPORTS_LINK_FLAGS =
 $(OBJECT_PATH)/$(EXPORTS_FILE) :	
 	touch $(OBJECT_PATH)/$(EXPORTS_FILE)
 #else /* defined (EXPORT_EVERYTHING) */
-EXPORTS_FILE = cmgui.exports
-EXPORTS_LINK_FLAGS = -Wl,-exports_file,$(EXPORTS_FILE).link
+EXPORTS_FILE = cmgui.exports.link
+SRC_EXPORTS_FILE = cmgui.exports
+EXPORTS_LINK_FLAGS = -Wl,-exports_file,$(EXPORTS_FILE)
 /* The .link extension prevents the makefile predecessor cycle */
-$(OBJECT_PATH)/$(EXPORTS_FILE).link :	$(EXPORTS_FILE)
+$(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 	@if [ ! -d $(OBJECT_PATH) ]; then \
 		mkdir -p $(OBJECT_PATH); \
 	fi
 #if defined (CMISS_ROOT_DEFINED)
-	if [ -f $(EXPORTS_FILE) ]; then \
-		cp $(EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+	if [ -f $(SRC_EXPORTS_FILE) ]; then \
+		cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
 	else \
-		cp $(PRODUCT_SOURCE_PATH)/$(EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+		cp $(PRODUCT_SOURCE_PATH)/$(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
 	fi
 #else /* defined (CMISS_ROOT_DEFINED) */
-	cp $(EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
+	cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
 #endif /* defined (CMISS_ROOT_DEFINED) */
 	cd $(OBJECT_PATH) ; $(CPREPROCESS) $(ALL_DEFINES) $(EXPORTS_FILE).c
-	cp $(OBJECT_PATH)/$(EXPORTS_FILE).i $(OBJECT_PATH)/$(EXPORTS_FILE).link
+	cp $(OBJECT_PATH)/$(EXPORTS_FILE).i $(OBJECT_PATH)/$(EXPORTS_FILE)
 #endif /* defined (EXPORT_EVERYTHING) */
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
