@@ -1557,6 +1557,10 @@ x==============================================================================*
 			object_info = next;
 		}
 
+		if ((*time_keeper)->name)
+		{
+			DEALLOCATE((*time_keeper)->name);
+		}
 		DEALLOCATE(*time_keeper);
 		*time_keeper = (struct Time_keeper *)NULL;
 	}
