@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.h
 
-LAST MODIFIED : 28 September 1999
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 The data types and function prototypes used for digitizing Mirage movies.
@@ -26,6 +26,7 @@ c) One coordinate field (3D) plus information stored in Mirage structures
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "mirage/tracking_editor_data.h"
+#include "selection/node_selection.h"
 #include "user_interface/user_interface.h"
 
 /*
@@ -262,6 +263,8 @@ int enable_Mirage_movie_graphics(struct Mirage_movie *movie,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection,
 	struct MANAGER(Scene) *scene_manager,
 	struct Scene *default_scene,
 	struct MANAGER(Spectrum) *spectrum_manager,
@@ -269,7 +272,7 @@ int enable_Mirage_movie_graphics(struct Mirage_movie *movie,
 	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 From an already-created movie - eg. read in from read_Mirage_movie - creates

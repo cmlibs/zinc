@@ -1,10 +1,9 @@
 /*******************************************************************************
 FILE : unemap_package.h
 
-LAST MODIFIED :  2 September 1999
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
-
 ==============================================================================*/
 #if !defined (UNEMAP_PACKAGE_H)
 #define UNEMAP_PACKAGE_H
@@ -16,6 +15,8 @@ DESCRIPTION :
 #include "graphics/colour.h"
 #include "graphics/spectrum.h"
 #include "finite_element/finite_element.h"
+#include "selection/element_selection.h"
+#include "selection/node_selection.h"
 #include "unemap/rig.h" /* for enum Region_type.???JWMaybe we should move this elsewhere?*/
 
 /*
@@ -25,7 +26,7 @@ Global types
 struct Unemap_package/* Still need structure, for (NULL) function parameters, */ 
 /*even when UNEMAP_USE_NODE not defined*/
 /*******************************************************************************
-LAST MODIFIED : 9 July 1999
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Stores information needed to construct rig_node element,nodes, fields,
@@ -42,6 +43,10 @@ the node and element groups need to be regenerated, or just have the values chan
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager; 
 	struct MANAGER(FE_basis) *fe_basis_manager;
 	struct MANAGER(FE_element) *element_manager;
+
+	struct FE_element_selection *element_selection;
+	struct FE_node_selection *node_selection;
+
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct LIST(GT_object) *glyph_list;
 	/* fields of the rig_nodes, so we know what to clean up, and what to*/
@@ -93,29 +98,32 @@ the node and element groups need to be regenerated, or just have the values chan
 
 PROTOTYPE_OBJECT_FUNCTIONS(Unemap_package);
 
-struct Unemap_package *CREATE(Unemap_package)
-		 ( struct MANAGER(FE_field) *fe_field_manager,
-			 struct MANAGER(GROUP(FE_element))	*element_group_manager,
-			 struct MANAGER(FE_node) *node_manager,	
-			 struct MANAGER(GROUP(FE_node)) *data_group_manager,
-			 struct MANAGER(GROUP(FE_node)) *node_group_manager,
-			 struct MANAGER(FE_basis) *fe_basis_manager,
-			 struct MANAGER(FE_element) *element_manager,
-			 struct MANAGER(Computed_field) *computed_field_manager,
-			 struct MANAGER(Graphics_window) *graphics_window_manager,
-			 struct MANAGER(Texture) *texture_manager,
-			 struct MANAGER(Scene) *scene_manager,
-			 struct MANAGER(Light_model) *light_model_manager,
-			 struct MANAGER(Light) *light_manager,
-			 struct MANAGER(Spectrum) *spectrum_manager,
-			 struct MANAGER(Graphical_material) *graphical_material_manager,
-			 struct MANAGER(FE_node) *data_manager,
-			 struct LIST(GT_object) *glyph_list);
+struct Unemap_package *CREATE(Unemap_package)(
+	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct MANAGER(GROUP(FE_node)) *node_group_manager,
+	struct MANAGER(FE_basis) *fe_basis_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection,
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct MANAGER(Graphics_window) *graphics_window_manager,
+	struct MANAGER(Texture) *texture_manager,
+	struct MANAGER(Scene) *scene_manager,
+	struct MANAGER(Light_model) *light_model_manager,
+	struct MANAGER(Light) *light_manager,
+	struct MANAGER(Spectrum) *spectrum_manager,
+	struct MANAGER(Graphical_material) *graphical_material_manager,
+	struct MANAGER(FE_node) *data_manager,
+	struct LIST(GT_object) *glyph_list);
 /*******************************************************************************
-LAST MODIFIED : 2 September 1999
+LAST MODIFIED : 22 March 2000
 
-DESCRIPTION :
-
+DESCRIPTION:
+Create a Unemap package, and fill in the managers.
+The fields are filed in with set_unemap_package_fields()
 ==============================================================================*/
 
 int DESTROY(Unemap_package)(struct Unemap_package **package_address);

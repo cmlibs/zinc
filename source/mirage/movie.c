@@ -1685,6 +1685,8 @@ int enable_Mirage_movie_graphics(struct Mirage_movie *movie,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection,
 	struct MANAGER(Scene) *scene_manager,
 	struct Scene *default_scene,
 	struct MANAGER(Spectrum) *spectrum_manager,
@@ -1692,7 +1694,7 @@ int enable_Mirage_movie_graphics(struct Mirage_movie *movie,
 	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 From an already-created movie - eg. read in from read_Mirage_movie - creates
@@ -1725,7 +1727,8 @@ resulting 3-D display.
 	if (movie&&element_manager&&element_group_manager&&fe_field_manager&&
 		glyph_list&&graphical_material_manager&&default_graphical_material&&
 		light_manager&&node_manager&&node_group_manager&&data_manager&&
-		data_group_manager&&scene_manager&&default_scene&&spectrum_manager&&
+		data_group_manager&&element_selection&&node_selection&&
+		scene_manager&&default_scene&&spectrum_manager&&
 		default_spectrum&&texture_manager&&user_interface&&computed_field_package)
 	{
 		return_code=1;
@@ -1893,7 +1896,8 @@ resulting 3-D display.
 		Scene_set_graphical_element_mode(movie->scene,
 			GRAPHICAL_ELEMENT_INVISIBLE,computed_field_package,element_manager,
 			element_group_manager,fe_field_manager,node_manager,node_group_manager,
-			data_manager,data_group_manager,user_interface);
+			data_manager,data_group_manager,element_selection,node_selection,
+			user_interface);
 
 		/* enlarge axes in default scene to fit size of face */
 		axis_lengths[0]=25.0;
@@ -1980,7 +1984,8 @@ resulting 3-D display.
 		Scene_set_graphical_element_mode(movie->scene,
 			GRAPHICAL_ELEMENT_LINES,computed_field_package,element_manager,
 			element_group_manager,fe_field_manager,node_manager,node_group_manager,
-			data_manager,data_group_manager,user_interface);
+			data_manager,data_group_manager,element_selection,node_selection,
+			user_interface);
 
 		if (return_code)
 		{
@@ -2063,7 +2068,8 @@ resulting 3-D display.
 		Scene_set_graphical_element_mode(movie->scene,
 			GRAPHICAL_ELEMENT_INVISIBLE,computed_field_package,element_manager,
 			element_group_manager,fe_field_manager,node_manager,node_group_manager,
-			data_manager,data_group_manager,user_interface);
+			data_manager,data_group_manager,element_selection,node_selection,
+			user_interface);
 
 		/* Views */
 		for (view_no=0;return_code&&(view_no<movie->number_of_views);
@@ -2131,7 +2137,8 @@ resulting 3-D display.
 								GRAPHICAL_ELEMENT_INVISIBLE,
 								computed_field_package,element_manager,element_group_manager,
 								fe_field_manager,node_manager,node_group_manager,
-								data_manager,data_group_manager,user_interface)&&
+								data_manager,data_group_manager,element_selection,
+								node_selection,user_interface)&&
 							/* turn off axes in each views scene */
 							Scene_set_axis_visibility(view->scene,g_INVISIBLE)&&
 							(gt_element_group=Scene_get_graphical_element_group(
@@ -2177,7 +2184,8 @@ resulting 3-D display.
 		Scene_set_graphical_element_mode(movie->scene,
 			GRAPHICAL_ELEMENT_LINES,computed_field_package,element_manager,
 			element_group_manager,fe_field_manager,node_manager,node_group_manager,
-			data_manager,data_group_manager,user_interface);
+			data_manager,data_group_manager,element_selection,node_selection,
+			user_interface);
 
 		if (return_code)
 		{
