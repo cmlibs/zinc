@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.h
 
-LAST MODIFIED : 25 July 2000
+LAST MODIFIED : 11 September 2000
 
 DESCRIPTION :
 Implements computed fields which interface to finite element fields.
@@ -74,6 +74,17 @@ LAST MODIFIED : 17 July 2000
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
 "wrapped" by it is returned - otherwise an error is reported.
+==============================================================================*/
+
+struct LIST(FE_field) *Computed_field_get_defining_FE_field_list(
+	struct Computed_field *field,
+	struct MANAGER(Computed_field) *computed_field_manager);
+/*******************************************************************************
+LAST MODIFIED : 11 September 2000
+
+DESCRIPTION :
+Returns the list of FE_fields that <field> depends on, by sorting through the
+<computed_field_manager>.
 ==============================================================================*/
 
 int Computed_field_is_type_default_coordinate(struct Computed_field *field);

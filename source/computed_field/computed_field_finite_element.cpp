@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 16 August 2000
+LAST MODIFIED : 11 September 2000
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -6329,6 +6329,101 @@ If the field is of type COMPUTED_FIELD_FINITE_ELEMENT, the FE_field being
 
 	return (return_code);
 } /* Computed_field_get_type_finite_element */
+
+struct Computed_field_add_defining_FE_field_to_list_data
+{
+	struct Computed_field *field;
+	struct LIST(FE_field) *fe_field_list;
+};
+
+static int Computed_field_add_defining_FE_field_to_list(
+	struct Computed_field *field,void *add_data_void)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2000
+
+DESCRIPTION :
+If <field> is finite_element type and the <add_data->field> depends on it, add
+the FE_field it wraps to the <add_data->fe_field_list>.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_add_defining_FE_field_to_list_data *add_data;
+	struct FE_field *fe_field;
+
+	ENTER(Computed_field_add_defining_FE_field_to_list);
+	if (field&&(add_data=
+		(struct Computed_field_add_defining_FE_field_to_list_data *)add_data_void))
+	{
+		if (Computed_field_is_type_finite_element(field) &&
+			Computed_field_depends_on_Computed_field(add_data->field,field))
+		{
+			if (Computed_field_get_type_finite_element(field,&fe_field) &&
+				ADD_OBJECT_TO_LIST(FE_field)(fe_field,add_data->fe_field_list))
+			{
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_add_defining_FE_field_to_list.  Failed");
+				return_code=0;
+			}
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_add_defining_FE_field_to_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_add_defining_FE_field_to_list */
+
+struct LIST(FE_field) *Computed_field_get_defining_FE_field_list(
+	struct Computed_field *field,
+	struct MANAGER(Computed_field) *computed_field_manager)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2000
+
+DESCRIPTION :
+Returns the list of FE_fields that <field> depends on, by sorting through the
+<computed_field_manager>.
+==============================================================================*/
+{
+	struct Computed_field_add_defining_FE_field_to_list_data add_data;
+
+	ENTER(Computed_field_get_defining_FE_field_list);
+	if (field&&computed_field_manager)
+	{
+		if (add_data.fe_field_list=CREATE(LIST(FE_field))())
+		{
+			add_data.field=field;
+			if (!FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+				Computed_field_add_defining_FE_field_to_list,(void *)&add_data,
+				computed_field_manager))
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_get_defining_FE_field_list.  Failed");
+				DESTROY(LIST(FE_field))(&add_data.fe_field_list);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_defining_FE_field_list.  Invalid argument(s)");
+		add_data.fe_field_list = (struct LIST(FE_field) *)NULL;
+	}
+	LEAVE;
+
+	return (add_data.fe_field_list);
+} /* Computed_field_get_defining_FE_field_list */
 
 int Computed_field_is_type_default_coordinate(struct Computed_field *field)
 /*******************************************************************************
