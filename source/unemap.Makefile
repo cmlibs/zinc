@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : unemap.Makefile
 #
-# LAST MODIFIED : 14 May 2004
+# LAST MODIFIED : 22 September 2004
 #
 # DESCRIPTION :
 #
@@ -1063,6 +1063,8 @@ CHANGE_CONFIGURATION_SRCS = \
 	general/matrix_vector.c \
 	general/myio.c \
 	general/mystring.c \
+	unemap/analysis.c \
+	unemap/analysis_calculate.c \
 	unemap/interpolate.c \
 	unemap/rig.c \
 	user_interface/message.c
