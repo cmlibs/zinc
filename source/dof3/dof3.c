@@ -424,14 +424,16 @@ values for this new orientation.
 
 static void dof3_identify_button(Widget w,int button_num,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 18 April 1994
+LAST MODIFIED : 14 March 2002
 
 DESCRIPTION :
 Finds the id of the buttons on the dof3 widget.
 ==============================================================================*/
 {
-	int combo_num;
+	long int combo_num;
 	struct Dof3_struct *temp_dof3;
+	Widget parent;
+	XtPointer combo_addr;
 
 	ENTER(dof3_identify_button);
 	USE_PARAMETER(reason);
@@ -443,7 +445,9 @@ Finds the id of the buttons on the dof3 widget.
 	}
 	else
 	{
-		XtVaGetValues(XtParent(w),XmNuserData,&combo_num,NULL);
+		parent = XtParent(w);
+		XtVaGetValues(parent,XmNuserData,&combo_addr,NULL);
+		combo_num = (long int)combo_addr;
 		switch (button_num)
 		{
 			case dof3_combo_toggle_ID:
