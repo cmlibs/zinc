@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 13 November 2001
+LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1040,7 +1040,8 @@ Called when the basic cycle length pace button is toggled.
 					unemap_load_voltage_stimulating(
 						pacing_window->number_of_pacing_channels,
 						pacing_window->pacing_channels,number_of_pacing_voltages,
-						voltages_per_second,pacing_voltages,(unsigned int)0);
+						voltages_per_second,pacing_voltages,(unsigned int)0,
+						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 				}
 				if (0<pacing_window->number_of_return_channels)
 				{
@@ -1052,7 +1053,8 @@ Called when the basic cycle length pace button is toggled.
 					unemap_load_voltage_stimulating(
 						pacing_window->number_of_return_channels,
 						pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-						(unsigned int)0);
+						(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+						(void *)NULL);
 				}
 				/* start pacing */
 				unemap_start_stimulating();
@@ -1740,7 +1742,8 @@ Called when the restitution time pace button is toggled.
 					unemap_load_voltage_stimulating(
 						pacing_window->number_of_pacing_channels,
 						pacing_window->pacing_channels,number_of_pacing_voltages,
-						voltages_per_second,pacing_voltages,(unsigned int)1);
+						voltages_per_second,pacing_voltages,(unsigned int)1,
+						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 				}
 				if (0<pacing_window->number_of_return_channels)
 				{
@@ -1752,7 +1755,8 @@ Called when the restitution time pace button is toggled.
 					unemap_load_voltage_stimulating(
 						pacing_window->number_of_return_channels,
 						pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-						(unsigned int)0);
+						(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+						(void *)NULL);
 				}
 				/* start pacing */
 				unemap_start_stimulating();
@@ -1923,14 +1927,16 @@ Called when the restitution time yes button is pressed.
 				unemap_load_voltage_stimulating(
 					pacing_window->number_of_pacing_channels,
 					pacing_window->pacing_channels,number_of_pacing_voltages,
-					voltages_per_second,pacing_voltages,(unsigned int)1);
+					voltages_per_second,pacing_voltages,(unsigned int)1,
+					(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 			}
 			if (0<pacing_window->number_of_return_channels)
 			{
 				unemap_load_voltage_stimulating(
 					pacing_window->number_of_return_channels,
 					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-					(unsigned int)0);
+					(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+					(void *)NULL);
 			}
 			/* start pacing */
 			unemap_start_stimulating();
@@ -2083,14 +2089,16 @@ Called when the restitution time no button is pressed.
 				unemap_load_voltage_stimulating(
 					pacing_window->number_of_pacing_channels,
 					pacing_window->pacing_channels,number_of_pacing_voltages,
-					voltages_per_second,pacing_voltages,(unsigned int)1);
+					voltages_per_second,pacing_voltages,(unsigned int)1,
+					(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 			}
 			if (0<pacing_window->number_of_return_channels)
 			{
 				unemap_load_voltage_stimulating(
 					pacing_window->number_of_return_channels,
 					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-					(unsigned int)0);
+					(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+					(void *)NULL);
 			}
 			/* start pacing */
 			unemap_start_stimulating();
@@ -2522,7 +2530,8 @@ Called when the restitution curve pace button is toggled.
 					unemap_load_voltage_stimulating(
 						pacing_window->number_of_pacing_channels,
 						pacing_window->pacing_channels,number_of_pacing_voltages,
-						voltages_per_second,pacing_window->pacing_voltages,(unsigned int)1);
+						voltages_per_second,pacing_window->pacing_voltages,(unsigned int)1,
+						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
 				}
 				if (0<pacing_window->number_of_return_channels)
 				{
@@ -2534,7 +2543,8 @@ Called when the restitution curve pace button is toggled.
 					unemap_load_voltage_stimulating(
 						pacing_window->number_of_return_channels,
 						pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-						(unsigned int)0);
+						(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+						(void *)NULL);
 				}
 				/* start pacing */
 				unemap_start_stimulating();
