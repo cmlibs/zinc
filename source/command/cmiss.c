@@ -53,7 +53,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_adjust_contrast.h"
 #include "image_processing/computed_field_canny_filter.h"
 #include "image_processing/computed_field_color_based_segment.h"
-#include "image_processing/computed_field_cube_plugin_all.h"
+#include "image_processing/computed_field_sterology_measures.h"
 #include "image_processing/computed_field_dilate_filter.h"
 #include "image_processing/computed_field_erode_filter.h"
 #include "image_processing/computed_field_first_order_statistics.h"
@@ -24243,7 +24243,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_color_based_segment(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-				Computed_field_register_types_cube_plugin_all(
+				Computed_field_register_types_sterology_measures(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_dilate_filter(
