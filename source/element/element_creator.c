@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_creator.c
 
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Dialog for choosing the type of element constructed in response to node
@@ -9,12 +9,15 @@ selections. Elements are created in this way while dialog is open.
 ==============================================================================*/
 #include <Xm/Protocols.h>
 #include <Xm/MwmUtil.h>
-#include "general/debug.h"
+#include <Xm/Xm.h>
+#include <Xm/TextF.h>
+#include <Xm/ToggleBG.h>
+#include "choose/choose_fe_field.h"
+#include "choose/choose_element_group.h"
 #include "element/element_creator.h"
-#if defined (TEMPORARY)
 #include "element/element_creator.uidh"
-#endif /* defined (TEMPORARY) */
 #include "finite_element/finite_element.h"
+#include "general/debug.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -24,12 +27,10 @@ Module variables
 ----------------
 */
 
-#if defined (NEW_CODE)
 #if defined (MOTIF)
 static int element_creator_hierarchy_open=0;
 static MrmHierarchy element_creator_hierarchy;
 #endif /* defined (MOTIF) */
-#endif /* defined (NEW_CODE) */
 
 /*
 Module types
@@ -38,7 +39,7 @@ Module types
 
 struct Element_creator
 /*******************************************************************************
-LAST MODIFIED : 9 May 2000
+LAST MODIFIED : 26 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -53,6 +54,9 @@ DESCRIPTION :
 	struct FE_element *template_element;
 	struct User_interface *user_interface;
 
+	/* indicates whether elements are created in response to node selections */
+	int create_enabled;
+
 	/* the element being created */
 	struct FE_element *element;
 	/* number of nodes that have been set in the element being created */
@@ -64,11 +68,16 @@ DESCRIPTION :
 	/* node and element managers */
 	struct MANAGER(FE_basis) *basis_manager;
 	struct MANAGER(FE_element) *element_manager;
+	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *node_selection;
 
+	Widget coordinate_field_form,coordinate_field_widget,create_button,
+		element_dimension_text,element_group_form,element_group_widget,
+		node_list_widget;
 	Widget widget,window_shell;
 }; /* struct Element_creator */
 
@@ -76,6 +85,17 @@ DESCRIPTION :
 Module functions
 ----------------
 */
+
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_creator,Element_creator, \
+	create_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_creator,Element_creator, \
+	element_group_form)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_creator,Element_creator, \
+	element_dimension_text)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_creator,Element_creator, \
+	coordinate_field_form)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_creator,Element_creator, \
+	node_list_widget)
 
 static int Element_creator_make_template_node(
 	struct Element_creator *element_creator)
@@ -597,6 +617,165 @@ Callback for change in the global node selection.
 	LEAVE;
 } /* Element_creator_node_selection_change */
 
+static int Element_creator_refresh_element_dimension_text(
+	struct Element_creator *element_creator)
+/*******************************************************************************
+LAST MODIFIED : 26 June 2000
+
+DESCRIPTION :
+Updates what is shown on the dimension text field.
+==============================================================================*/
+{
+	char temp_string[20],*value_string;
+	int return_code;
+ 
+	ENTER(Element_creator_refresh_element_dimension_text);
+	if (element_creator)
+	{
+		return_code=1;
+		if (value_string=
+			XmTextFieldGetString(element_creator->element_dimension_text))
+		{
+			sprintf(temp_string,"%d",element_creator->element_dimension);
+			/* only set string if different from that shown */
+			if (strcmp(temp_string,value_string))
+			{
+				XmTextFieldSetString(element_creator->element_dimension_text,
+					temp_string);
+			}
+			XtFree(value_string);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_refresh_element_dimension_text.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_creator_refresh_element_dimension_text */
+
+static void Element_creator_create_button_CB(Widget widget,
+	void *element_creator_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Callback from toggle button controlling whether elements are created in
+response to node selection.
+==============================================================================*/
+{
+	struct Element_creator *element_creator;
+
+	ENTER(Element_creator_create_button_CB);
+	USE_PARAMETER(call_data);
+	if (element_creator=(struct Element_creator *)element_creator_void)
+	{
+		Element_creator_set_create_enabled(element_creator,
+			XmToggleButtonGadgetGetState(widget));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_create_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_creator_create_button_CB */
+
+static void Element_creator_update_element_group(Widget widget,
+	void *element_creator_void,void *element_group_void)
+/*******************************************************************************
+LAST MODIFIED : 26 June 2000
+
+DESCRIPTION :
+Callback for change of element group to put the new elements in.
+==============================================================================*/
+{
+	struct GROUP(FE_element) *element_group;
+	struct Element_creator *element_creator;
+
+	ENTER(Element_creator_update_element_group);
+	USE_PARAMETER(widget);
+	if (element_creator=(struct Element_creator *)element_creator_void)
+	{
+		element_group=(struct GROUP(FE_element) *)element_group_void;
+		Element_creator_set_element_group(element_creator,element_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_update_element_group.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_creator_update_element_group */
+
+static void Element_creator_element_dimension_text_CB(Widget widget,
+	void *element_creator_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 26 June 2000
+
+DESCRIPTION :
+Called when entry is made into the element_dimension_text field.
+==============================================================================*/
+{
+	char *value_string;
+	int element_dimension;
+	struct Element_creator *element_creator;
+
+	ENTER(Element_creator_element_dimension_text_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (element_creator=(struct Element_creator *)element_creator_void)
+	{
+		if (value_string=XmTextFieldGetString(widget))
+		{
+			if (1==sscanf(value_string,"%d",&element_dimension))
+			{
+				Element_creator_set_element_dimension(element_creator,
+					element_dimension);
+			}
+			XtFree(value_string);
+		}
+		/* always restore element_dimension_text to actual value stored */
+		Element_creator_refresh_element_dimension_text(element_creator);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_element_dimension_text_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_creator_element_dimension_text_CB */
+
+static void Element_creator_update_coordinate_field(Widget widget,
+	void *element_creator_void,void *coordinate_field_void)
+/*******************************************************************************
+LAST MODIFIED : 26 June 2000
+
+DESCRIPTION :
+Callback for change of coordinate field.
+==============================================================================*/
+{
+	struct FE_field *coordinate_field;
+	struct Element_creator *element_creator;
+
+	ENTER(Element_creator_update_coordinate_field);
+	USE_PARAMETER(widget);
+	if (element_creator=(struct Element_creator *)element_creator_void)
+	{
+		coordinate_field=(struct FE_field *)coordinate_field_void;
+		Element_creator_set_coordinate_field(element_creator,coordinate_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_update_coordinate_field.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_creator_update_coordinate_field */
+
 static void Element_creator_close_CB(Widget widget,
 	void *element_creator_void,void *call_data)
 /*******************************************************************************
@@ -638,13 +817,15 @@ struct Element_creator *CREATE(Element_creator)(
 	struct Element_creator **element_creator_address,
 	struct MANAGER(FE_basis) *basis_manager,
 	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 9 May 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Creates a Element_creator, giving it the element_manager to put new
@@ -653,87 +834,224 @@ enable the creation of a coordinate field.
 ==============================================================================*/
 {
 	Atom WM_DELETE_WINDOW;
+	char *group_name;
+	int init_widgets;
+	MrmType element_creator_dialog_class;
+	static MrmRegisterArg callback_list[]=
+	{
+		{"elem_cre_id_create_btn",(XtPointer)
+			DIALOG_IDENTIFY(element_creator,create_button)},
+		{"elem_cre_id_element_group_form",(XtPointer)
+			DIALOG_IDENTIFY(element_creator,element_group_form)},
+		{"elem_cre_id_dimension_text",(XtPointer)
+			DIALOG_IDENTIFY(element_creator,element_dimension_text)},
+		{"elem_cre_id_coord_field_form",(XtPointer)
+			DIALOG_IDENTIFY(element_creator,coordinate_field_form)},
+		{"elem_cre_id_node_list",(XtPointer)
+			DIALOG_IDENTIFY(element_creator,node_list_widget)},
+		{"elem_cre_create_btn_CB",
+		 (XtPointer)Element_creator_create_button_CB},
+		{"elem_cre_dimension_text_CB",
+		 (XtPointer)Element_creator_element_dimension_text_CB}
+	};
+	static MrmRegisterArg identifier_list[]=
+	{
+		{"elem_cre_structure",(XtPointer)NULL}
+	};
+	struct Callback_data callback;
 	struct Element_creator *element_creator;
 
 	ENTER(CREATE(Element_creator));
+	element_creator=(struct Element_creator *)NULL;
 	if (element_creator_address&&basis_manager&&element_manager&&
-		fe_field_manager&&node_manager&&element_selection&&node_selection&&
-		user_interface)
+		element_group_manager&&fe_field_manager&&node_manager&&node_group_manager&&
+		element_selection&&node_selection&&user_interface)
 	{
-		if (ALLOCATE(element_creator,struct Element_creator,1))
+		if (MrmOpenHierarchy_base64_string(element_creator_uidh,
+			&element_creator_hierarchy,&element_creator_hierarchy_open))
 		{
-			element_creator->element_creator_address=
-				element_creator_address;
-			element_creator->user_interface=user_interface;
-			element_creator->coordinate_field=(struct FE_field *)NULL;
-			element_creator->template_node=(struct FE_node *)NULL;
-			/* by default create 2-D elements */
-			element_creator->element_dimension=2;
-			element_creator->template_element=(struct FE_element *)NULL;
-
-			element_creator->element=(struct FE_element *)NULL;
-			element_creator->number_of_clicked_nodes=0;
-
-			element_creator->element_group=(struct GROUP(FE_element) *)NULL;
-			element_creator->node_group=(struct GROUP(FE_node) *)NULL;
-			element_creator->basis_manager=basis_manager;
-			element_creator->element_manager=element_manager;
-			element_creator->fe_field_manager=fe_field_manager;
-			element_creator->node_manager=node_manager;
-			element_creator->element_selection=element_selection;
-			element_creator->node_selection=node_selection;
-			/* initialise widgets */
-			element_creator->widget=(Widget)NULL;
-			element_creator->window_shell=(Widget)NULL;
-			/* make the dialog shell */
-			if (element_creator->window_shell=
-				XtVaCreatePopupShell("Element Creator",
-					topLevelShellWidgetClass,
-					user_interface->application_shell,
-					XmNdeleteResponse,XmDO_NOTHING,
-					XmNmwmDecorations,MWM_DECOR_ALL,
-					XmNmwmFunctions,MWM_FUNC_ALL,
-					/*XmNtransient,FALSE,*/
-					XmNallowShellResize,False,
-					XmNtitle,"Element Creator",
-					NULL))
+			if (ALLOCATE(element_creator,struct Element_creator,1))
 			{
-				/* Set up window manager callback for close window message */
-				WM_DELETE_WINDOW=
-					XmInternAtom(XtDisplay(element_creator->window_shell),
-						"WM_DELETE_WINDOW",False);
-				XmAddWMProtocolCallback(element_creator->window_shell,
-					WM_DELETE_WINDOW,Element_creator_close_CB,
-					element_creator);
-				/* Register the shell with the busy signal list */
-				create_Shell_list_item(&(element_creator->window_shell),
-					user_interface);
-				/* request callbacks from the global node_selection */
-				FE_node_selection_add_callback(node_selection,
-					Element_creator_node_selection_change,
-					(void *)element_creator);
-				XtRealizeWidget(element_creator->window_shell);
-				XtPopup(element_creator->window_shell,XtGrabNone);
+				element_creator->element_creator_address=
+					element_creator_address;
+				element_creator->user_interface=user_interface;
+				element_creator->coordinate_field=
+					FIRST_OBJECT_IN_MANAGER_THAT(FE_field)(FE_field_is_coordinate_field,
+						(void *)NULL,fe_field_manager);
+				element_creator->template_node=(struct FE_node *)NULL;
+				/* by default create 2-D elements */
+				element_creator->element_dimension=2;
+				element_creator->template_element=(struct FE_element *)NULL;
+				element_creator->create_enabled=0;
+
+				element_creator->element=(struct FE_element *)NULL;
+				element_creator->number_of_clicked_nodes=0;
+
+				element_creator->element_group=
+					FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_element))(
+						(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL,
+						(void *)NULL,element_group_manager);
+				if (element_creator->element_group&&GET_NAME(GROUP(FE_element))(
+					element_creator->element_group,&group_name))
+				{
+					element_creator->node_group=
+						FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
+							group_name,node_group_manager);
+					DEALLOCATE(group_name);
+				}
+				else
+				{
+					element_creator->node_group=(struct GROUP(FE_node) *)NULL;
+				}
+				element_creator->basis_manager=basis_manager;
+				element_creator->element_manager=element_manager;
+				element_creator->element_group_manager=element_group_manager;
+				element_creator->fe_field_manager=fe_field_manager;
+				element_creator->node_manager=node_manager;
+				element_creator->node_group_manager=node_group_manager;
+				element_creator->element_selection=element_selection;
+				element_creator->node_selection=node_selection;
+				/* initialise widgets */
+				element_creator->create_button=(Widget)NULL;
+				element_creator->element_group_form=(Widget)NULL;
+				element_creator->element_group_widget=(Widget)NULL;
+				element_creator->element_dimension_text=(Widget)NULL;
+				element_creator->coordinate_field_form=(Widget)NULL;
+				element_creator->coordinate_field_widget=(Widget)NULL;
+				element_creator->node_list_widget=(Widget)NULL;
+				element_creator->widget=(Widget)NULL;
+				element_creator->window_shell=(Widget)NULL;
+				/* make the dialog shell */
+				if (element_creator->window_shell=
+					XtVaCreatePopupShell("Element Creator",
+						topLevelShellWidgetClass,
+						user_interface->application_shell,
+						XmNdeleteResponse,XmDO_NOTHING,
+						XmNmwmDecorations,MWM_DECOR_ALL,
+						XmNmwmFunctions,MWM_FUNC_ALL,
+						/*XmNtransient,FALSE,*/
+						XmNallowShellResize,False,
+						XmNtitle,"Element Creator",
+						NULL))
+				{
+					/* Set up window manager callback for close window message */
+					WM_DELETE_WINDOW=
+						XmInternAtom(XtDisplay(element_creator->window_shell),
+							"WM_DELETE_WINDOW",False);
+					XmAddWMProtocolCallback(element_creator->window_shell,
+						WM_DELETE_WINDOW,Element_creator_close_CB,
+						element_creator);
+					/* Register the shell with the busy signal list */
+					create_Shell_list_item(&(element_creator->window_shell),
+						user_interface);
+					/* register the callbacks */
+					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
+						element_creator_hierarchy,callback_list,XtNumber(callback_list)))
+					{
+						/* assign and register the identifiers */
+						identifier_list[0].value=(XtPointer)element_creator;
+						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
+							element_creator_hierarchy,identifier_list,
+							XtNumber(identifier_list)))
+						{
+							/* fetch element creator widgets */
+							if (MrmSUCCESS==MrmFetchWidget(element_creator_hierarchy,
+								"element_creator",element_creator->window_shell,
+								&(element_creator->widget),
+								&element_creator_dialog_class))
+							{
+								init_widgets=1;
+								if (element_creator->element_group_widget=
+									CREATE_CHOOSE_OBJECT_WIDGET(GROUP(FE_element))(
+										element_creator->element_group_form,
+										element_creator->element_group,element_group_manager,
+										(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL,
+										(void *)NULL))
+								{
+									callback.data=(void *)element_creator;
+									callback.procedure=Element_creator_update_element_group;
+									CHOOSE_OBJECT_SET_CALLBACK(GROUP(FE_element))(
+										element_creator->element_group_widget,&callback);
+								}
+								else
+								{
+									init_widgets=0;
+								}
+								if (element_creator->coordinate_field_widget=
+									CREATE_CHOOSE_OBJECT_WIDGET(FE_field)(
+										element_creator->coordinate_field_form,
+										element_creator->coordinate_field,fe_field_manager,
+										FE_field_is_coordinate_field,(void *)NULL))
+								{
+									callback.data=(void *)element_creator;
+									callback.procedure=Element_creator_update_coordinate_field;
+									CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
+										element_creator->coordinate_field_widget,&callback);
+								}
+								else
+								{
+									init_widgets=0;
+								}
+								if (init_widgets)
+								{
+									Element_creator_refresh_element_dimension_text(
+										element_creator);
+									XtManageChild(element_creator->widget);
+									XtRealizeWidget(element_creator->window_shell);
+									XtPopup(element_creator->window_shell,XtGrabNone);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"CREATE(Element_creator).  Could not init widgets");
+									DESTROY(Element_creator)(&element_creator);
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"CREATE(Element_creator).  "
+									"Could not fetch element_creator");
+								DESTROY(Element_creator)(&element_creator);
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"CREATE(Element_creator).  Could not register identifiers");
+							DESTROY(Element_creator)(&element_creator);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"CREATE(Element_creator).  Could not register callbacks");
+						DESTROY(Element_creator)(&element_creator);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"CREATE(Element_creator).  Could not create Shell");
+					DESTROY(Element_creator)(&element_creator);
+				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"CREATE(Element_creator).  Could not create Shell");
-				DESTROY(Element_creator)(&element_creator);
+					"CREATE(Element_creator).  Not enough memory");
+				DEALLOCATE(element_creator);
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"CREATE(Element_creator).  Not enough memory");
-			DEALLOCATE(element_creator);
+				"CREATE(Element_creator).  Could not open hierarchy");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"CREATE(Element_creator).  Invalid argument(s)");
-		element_creator=(struct Element_creator *)NULL;
 	}
 	if (element_creator_address)
 	{
@@ -747,7 +1065,7 @@ enable the creation of a coordinate field.
 int DESTROY(Element_creator)(
 	struct Element_creator **element_creator_address)
 /*******************************************************************************
-LAST MODIFIED : 9 May 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Deaccesses objects and frees memory used by the Element_creator at
@@ -761,10 +1079,6 @@ Deaccesses objects and frees memory used by the Element_creator at
 	if (element_creator_address&&
 		(element_creator= *element_creator_address))
 	{
-		if (element_creator->coordinate_field)
-		{
-			DEACCESS(FE_field)(&(element_creator->coordinate_field));
-		}
 		if (element_creator->template_node)
 		{
 			DEACCESS(FE_node)(&(element_creator->template_node));
@@ -773,18 +1087,13 @@ Deaccesses objects and frees memory used by the Element_creator at
 		{
 			DEACCESS(FE_element)(&(element_creator->template_element));
 		}
-		if (element_creator->element_group)
+		if (element_creator->create_enabled)
 		{
-			DEACCESS(GROUP(FE_element))(&(element_creator->element_group));
+			/* remove callbacks from the global node_selection */
+			FE_node_selection_remove_callback(element_creator->node_selection,
+				Element_creator_node_selection_change,
+				(void *)element_creator);
 		}
-		if (element_creator->node_group)
-		{
-			DEACCESS(GROUP(FE_node))(&(element_creator->node_group));
-		}
-		/* remove callbacks from the global node_selection */
-		FE_node_selection_remove_callback(element_creator->node_selection,
-			Element_creator_node_selection_change,
-			(void *)element_creator);
 		if (element_creator->window_shell)
 		{
 			destroy_Shell_list_item_from_shell(
@@ -837,7 +1146,7 @@ Returns the coordinate field interpolated by elements created with
 int Element_creator_set_coordinate_field(
 	struct Element_creator *element_creator,struct FE_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 26 June 2000
 
 DESCRIPTION :
 Sets the coordinate field interpolated by elements created with
@@ -865,12 +1174,11 @@ Sets the coordinate field interpolated by elements created with
 			}
 			if (return_code)
 			{
-				REACCESS(FE_field)(&(element_creator->coordinate_field),
-					coordinate_field);
+				element_creator->coordinate_field=coordinate_field;
 				if (element_creator->element)
 				{
-					display_message(ERROR_MESSAGE,
-						"Element_creator_set_coordinate_field.  "
+					display_message(WARNING_MESSAGE,
+						"Element creator changing coordinate field:  "
 						"Aborting current element creation");
 					/* lose the element currently being created, if any */
 					DEACCESS(FE_element)(&(element_creator->element));
@@ -880,6 +1188,15 @@ Sets the coordinate field interpolated by elements created with
 					(struct FE_element *)NULL);
 				REACCESS(FE_node)(&(element_creator->template_node),
 					(struct FE_node *)NULL);
+				/* make sure the current field is shown on the widget */
+				if (CHOOSE_OBJECT_GET_OBJECT(FE_field)(
+					element_creator->coordinate_field_widget) !=
+					element_creator->coordinate_field)
+				{
+					CHOOSE_OBJECT_SET_OBJECT(FE_field)(
+						element_creator->coordinate_field_widget,
+						element_creator->coordinate_field);
+				}
 			}
 		}
 	}
@@ -893,6 +1210,98 @@ Sets the coordinate field interpolated by elements created with
 
 	return (return_code);
 } /* Element_creator_set_coordinate_field */
+
+int Element_creator_get_create_enabled(struct Element_creator *element_creator)
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Returns flag controlling whether node edits are updated during motion_notify
+events, not just at the end of a mouse gesture.
+==============================================================================*/
+{
+	int create_enabled;
+
+	ENTER(Element_creator_get_create_enabled);
+	if (element_creator)
+	{
+		create_enabled=element_creator->create_enabled;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_get_create_enabled.  Invalid argument(s)");
+		create_enabled=0;
+	}
+	LEAVE;
+
+	return (create_enabled);
+} /* Element_creator_get_create_enabled */
+
+int Element_creator_set_create_enabled(struct Element_creator *element_creator,
+	int create_enabled)
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Sets flag controlling whether elements are created in response to
+node selection.
+==============================================================================*/
+{
+	int button_state,return_code;
+
+	ENTER(Element_creator_set_create_enabled);
+	if (element_creator)
+	{
+		/* make sure value of flag is 1 */
+		if (create_enabled)
+		{
+			create_enabled=1;
+		}
+		if (create_enabled != element_creator->create_enabled)
+		{
+			element_creator->create_enabled=create_enabled;
+			if (create_enabled)
+			{
+				/* request callbacks from the global node_selection */
+				FE_node_selection_add_callback(element_creator->node_selection,
+					Element_creator_node_selection_change,
+					(void *)element_creator);
+			}
+			else
+			{
+				/* end callbacks from the global node_selection */
+				FE_node_selection_remove_callback(element_creator->node_selection,
+					Element_creator_node_selection_change,
+					(void *)element_creator);
+			}
+			/* make sure button shows current state */
+			if (XmToggleButtonGadgetGetState(element_creator->create_button))
+			{
+				button_state=1;
+			}
+			else
+			{
+				button_state=0;
+			}
+			if (button_state != element_creator->create_enabled)
+			{
+				XmToggleButtonGadgetSetState(element_creator->create_button,
+					/*state*/element_creator->create_enabled,/*notify*/False);
+			}
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_creator_set_create_enabled.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_creator_set_create_enabled */
 
 int Element_creator_get_element_dimension(
 	struct Element_creator *element_creator)
@@ -933,25 +1342,33 @@ Sets the <element_dimension> of elements to be created by <element_creator>.
 	int return_code;
 
 	ENTER(Element_creator_set_element_dimension);
-	if (element_creator&&(0<element_dimension)&&(element_dimension<=3))
+	if (element_creator)
 	{
-		return_code=1;
-		if (element_creator->element_dimension != element_dimension)
+		if ((0<element_dimension)&&(element_dimension<=3))
 		{
-			element_creator->element_dimension=element_dimension;
-			if (element_creator->element)
+			return_code=1;
+			if (element_creator->element_dimension != element_dimension)
 			{
-				display_message(ERROR_MESSAGE,
-					"Element_creator_set_element_dimension.  "
-					"Aborting current element creation");
-				/* lose the element currently being created, if any */
-				DEACCESS(FE_element)(&(element_creator->element));
+				element_creator->element_dimension=element_dimension;
+				if (element_creator->element)
+				{
+					display_message(WARNING_MESSAGE,
+						"Element creator changing element dimension:  "
+						"Ending current element creation");
+					DEACCESS(FE_element)(&(element_creator->element));
+				}
+				/* lose the current template element and node, if any */
+				REACCESS(FE_element)(&(element_creator->template_element),
+					(struct FE_element *)NULL);
+				REACCESS(FE_node)(&(element_creator->template_node),
+					(struct FE_node *)NULL);
 			}
-			/* lose the current template element and node, if any */
-			REACCESS(FE_element)(&(element_creator->template_element),
-				(struct FE_element *)NULL);
-			REACCESS(FE_node)(&(element_creator->template_node),
-				(struct FE_node *)NULL);
+			Element_creator_refresh_element_dimension_text(element_creator);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Dimension must be from 1 to 3");
+			return_code=0;
 		}
 	}
 	else
@@ -965,55 +1382,50 @@ Sets the <element_dimension> of elements to be created by <element_creator>.
 	return (return_code);
 } /* Element_creator_set_element_dimension */
 
-int Element_creator_get_groups(struct Element_creator *element_creator,
-	struct GROUP(FE_element) **element_group,struct GROUP(FE_node) **node_group)
+struct GROUP(FE_element) *Element_creator_get_element_group(
+	struct Element_creator *element_creator)
 /*******************************************************************************
-LAST MODIFIED : 25 March 1999
+LAST MODIFIED : 26 June 2000
 
 DESCRIPTION :
-Returns the current <element_group> and <node_group> where elements and nodes
-created by the <element_creator> are placed.
+Returns the group where elements created by the <element_creator> are put.
 ???RC Eventually this will get the Region.
 ==============================================================================*/
 {
-	int return_code;
+	struct GROUP(FE_element) *element_group;
 
-	ENTER(Element_creator_get_groups);
-	if (element_creator&&element_group&&node_group)
+	ENTER(Element_creator_get_element_group);
+	if (element_creator)
 	{
-		*element_group=element_creator->element_group;
-		*node_group=element_creator->node_group;
-		return_code=1;
+		element_group=element_creator->element_group;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Element_creator_get_groups.  Invalid argument(s)");
-		return_code=0;
+			"Element_creator_get_element_group.  Invalid argument(s)");
+		element_group=(struct GROUP(FE_element) *)NULL;
 	}
 	LEAVE;
 
-	return (return_code);
-} /* Element_creator_get_groups */
+	return (element_group);
+} /* Element_creator_get_element_group */
 
-int Element_creator_set_groups(struct Element_creator *element_creator,
-	struct GROUP(FE_element) *element_group,struct GROUP(FE_node) *node_group)
+int Element_creator_set_element_group(struct Element_creator *element_creator,
+	struct GROUP(FE_element) *element_group)
 /*******************************************************************************
-LAST MODIFIED : 17 May 2000
+LAST MODIFIED : 26 June 2000
 
 DESCRIPTION :
-Sets the <element_group> and <node_group> where elements and nodes created by
-<element_creator> are placed. Either or both groups may be omitted, however,
-it pays to supply a node_group and element_group of the same name with a
-corresponding GT_element_group displaying node_points, lines and possibly
-surfaces - that way the user will automatically see the new objects. Also, it
-enables the user to export the nodes/elements as a group.
+Sets the <element_group> where elements created by <element_creator> are placed.
+The <element_creator> will assume its nodes are to be in the node group of the
+same name, which enables the nodes and elements to be exported as a group.
 ???RC Eventually this will set the Region.
 ==============================================================================*/
 {
+	char *group_name;
 	int return_code;
 
-	ENTER(Element_creator_set_groups);
+	ENTER(Element_creator_set_element_group);
 	if (element_creator)
 	{
 		return_code=1;
@@ -1021,26 +1433,43 @@ enables the user to export the nodes/elements as a group.
 		{
 			if (element_creator->element)
 			{
-				display_message(ERROR_MESSAGE,
-					"Element_creator_set_groups.  Aborting current element creation");
-				/* lose the element currently being created, if any */
+				display_message(WARNING_MESSAGE,
+					"Element creator changing group:  Ending current element creation");
 				DEACCESS(FE_element)(&(element_creator->element));
 			}
-			REACCESS(GROUP(FE_element))(&(element_creator->element_group),
-				element_group);
-			REACCESS(GROUP(FE_node))(&(element_creator->node_group),node_group);
+			element_creator->element_group=element_group;
+			if (element_creator->element_group&&GET_NAME(GROUP(FE_element))(
+				element_creator->element_group,&group_name))
+			{
+				element_creator->node_group=
+					FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
+						group_name,element_creator->node_group_manager);
+				DEALLOCATE(group_name);
+			}
+			else
+			{
+				element_creator->node_group=(struct GROUP(FE_node) *)NULL;
+			}
+			if (CHOOSE_OBJECT_GET_OBJECT(GROUP(FE_element))(
+				element_creator->element_group_widget) !=
+				element_creator->element_group)
+			{
+				CHOOSE_OBJECT_SET_OBJECT(GROUP(FE_element))(
+					element_creator->element_group_widget,
+					element_creator->element_group);
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Element_creator_set_groups.  Invalid argument(s)");
+			"Element_creator_set_element_group.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Element_creator_set_groups */
+} /* Element_creator_set_element_group */
 
 int Element_creator_bring_window_to_front(
 	struct Element_creator *element_creator)

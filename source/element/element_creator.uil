@@ -1,0 +1,221 @@
+!*******************************************************************************
+! FILE : element_creator.uil
+!
+! LAST MODIFIED : 26 June 2000
+!
+! DESCRIPTION :
+! Controls the elements being created.
+!===============================================================================
+module element_creator_module
+	version = 'v1.0'
+
+procedure
+	elem_cre_id_create_btn;
+	elem_cre_id_element_group_form;
+	elem_cre_id_dimension_text;
+	elem_cre_id_coord_field_form;
+	elem_cre_id_node_list;
+
+	elem_cre_create_btn_CB;
+	elem_cre_dimension_text_CB;
+
+identifier
+	!Pointer to data specific to this instance of the elem_cre widget
+	elem_cre_structure;
+	!The gap between widgets
+	widget_spacing;
+	!fonts here
+	normal_font;
+	button_font;
+	list_font;
+	heading_font;
+
+!******************************************************************************
+object
+	element_creator: XmForm
+	{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		controls
+			{
+			XmRowColumn elem_cre_controls;
+			XmList elem_cre_node_list;
+			};
+		};
+!*******************************************************************************
+	elem_cre_controls: XmRowColumn
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmVERTICAL;
+!			XmNnumColumns = 1;
+			XmNpacking = XmPACK_TIGHT;
+			};
+		controls
+			{
+  		XmToggleButtonGadget elem_cre_create_btn;
+			XmRowColumn elem_cre_element_group_entry;
+			XmRowColumn elem_cre_dimension_entry;
+			XmRowColumn elem_cre_coord_field_entry;
+			};
+		};
+!*******************************************************************************
+  elem_cre_create_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Create elements");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure elem_cre_id_create_btn(elem_cre_structure);
+      XmNvalueChangedCallback = procedure
+				elem_cre_create_btn_CB(elem_cre_structure);
+      };
+    };
+!*******************************************************************************
+  elem_cre_element_group_entry: XmRowColumn
+    {
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmLabelGadget elem_cre_element_group_label;
+      XmForm elem_cre_element_group_form;
+      };
+    };
+  elem_cre_element_group_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Put in group:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+	elem_cre_element_group_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				elem_cre_id_element_group_form(elem_cre_structure);
+			};
+		};
+!*******************************************************************************
+  elem_cre_dimension_entry: XmRowColumn
+    {
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmLabelGadget elem_cre_dimension_label;
+      XmTextField elem_cre_dimension_text;
+      };
+    };
+  elem_cre_dimension_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Dimension:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+	elem_cre_dimension_text: XmTextField
+		{
+    arguments
+      {
+      XmNvalue = "";
+!      XmNwidth = 80;
+      XmNcolumns = 12;
+      XmNfontList = normal_font;
+      };
+    callbacks
+      {
+			MrmNcreateCallback = procedure
+				elem_cre_id_dimension_text(elem_cre_structure);
+      XmNactivateCallback = procedure
+				elem_cre_dimension_text_CB(elem_cre_structure);
+      XmNlosingFocusCallback = procedure
+				elem_cre_dimension_text_CB(elem_cre_structure);
+			};
+		};
+!*******************************************************************************
+  elem_cre_coord_field_entry: XmRowColumn
+    {
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmLabelGadget elem_cre_coord_field_label;
+      XmForm elem_cre_coord_field_form;
+      };
+    };
+  elem_cre_coord_field_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Coordinate field:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+	elem_cre_coord_field_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				elem_cre_id_coord_field_form(elem_cre_structure);
+			};
+		};
+!*******************************************************************************
+	elem_cre_node_list: XmList
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = elem_cre_controls;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+    callbacks
+      {
+			MrmNcreateCallback = procedure
+				elem_cre_id_node_list(elem_cre_structure);
+			};
+		};
+!*******************************************************************************
+end module;
