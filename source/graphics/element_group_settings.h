@@ -332,6 +332,22 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 PROTOTYPE_LIST_FUNCTIONS(GT_element_settings);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(GT_element_settings,position,int);
 
+int GET_NAME(GT_element_settings)(struct GT_element_settings *object,
+	char **name_ptr);
+/*****************************************************************************
+LAST MODIFIED : 5 July 1999
+
+DESCRIPTION :
+============================================================================*/
+
+int GT_element_settings_set_name(struct GT_element_settings *settings, char *name);
+/*******************************************************************************
+LAST MODIFIED : 5 July 1999
+
+DESCRIPTION :
+Sets the <name> used by <settings>.
+==============================================================================*/
+
 struct Computed_field *GT_element_settings_get_coordinate_field(
 	struct GT_element_settings *settings);
 /*******************************************************************************

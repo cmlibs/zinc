@@ -1606,6 +1606,10 @@ Up button press: decrease position of current_settings by 1.
 				gelem_editor->current_settings, position - 1);
 			DEACCESS(GT_element_settings)(&settings);
 			Graphical_element_editor_update_settings_list(gelem_editor);
+			/* By default the settings name is the position, so it needs to be updated
+			 even though the settings hasn't actually changed */
+			settings_editor_set_settings(gelem_editor->settings_widget,
+				gelem_editor->current_settings);
 			/* inform the client of the change */
 			graphical_element_editor_update(gelem_editor);
 		}
@@ -1650,6 +1654,10 @@ Down button press: increase position of current_settings by 1.
 				gelem_editor->current_settings, position + 1);
 			DEACCESS(GT_element_settings)(&settings);
 			Graphical_element_editor_update_settings_list(gelem_editor);
+			/* By default the settings name is the position, so it needs to be updated
+			 even though the settings hasn't actually changed */
+			settings_editor_set_settings(gelem_editor->settings_widget,
+				gelem_editor->current_settings);
 			/* inform the client of the change */
 			graphical_element_editor_update(gelem_editor);
 		}

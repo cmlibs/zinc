@@ -66,7 +66,7 @@ Contains all the information carried by the graphical element editor widget.
 	Widget *widget_address,widget,widget_parent;
 	/* geometry widgets */
 	Widget main_scroll, main_form;
-	Widget coordinate_button,coordinate_field_form,coordinate_field_widget,
+	Widget name_text,coordinate_button,coordinate_field_form,coordinate_field_widget,
 		use_element_type_entry,use_element_type_form,use_element_type_widget,
 		discretization_entry,discretization_text,
 		exterior_face_entry,exterior_button,face_button,face_option,face_menu,
@@ -259,6 +259,8 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,main_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,name_text)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,coordinate_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,coordinate_field_form)
@@ -437,6 +439,60 @@ Callback for the settings_editor dialog - tidies up all details - mem etc
 	}
 	LEAVE;
 } /* settings_editor_destroy_CB */
+
+static void settings_editor_name_text_CB(
+	Widget widget,XtPointer client_data,unsigned long *reason)
+/*******************************************************************************
+LAST MODIFIED : 22 April 2004
+
+DESCRIPTION :
+Called when entry is made into the name text field.
+==============================================================================*/
+{
+	char *name,new_name[200],*text_entry;
+	struct Settings_editor *settings_editor;
+
+	ENTER(settings_editor_constant_radius_text_CB);
+	USE_PARAMETER(reason);
+	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
+	{
+		/* must check if have current settings since we can get losingFocus
+			 callback after it is cleared */
+		if (settings_editor->current_settings)
+		{
+			GET_NAME(GT_element_settings)(settings_editor->current_settings,
+				&name);
+			/* Get the text string */
+			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
+			if (text_entry)
+			{
+				sscanf(text_entry,"%s",&new_name);
+				if (strcmp(name, new_name))
+				{
+					GT_element_settings_set_name(
+						settings_editor->current_settings, new_name);
+					/* inform the client of the change */
+					settings_editor_update(settings_editor);
+				}
+				XtFree(text_entry);
+				
+				XtVaSetValues(widget,XmNvalue,new_name,NULL);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"settings_editor_constant_radius_text_CB.  Missing text");
+			}
+			DEALLOCATE(name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"settings_editor_constant_radius_text_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* settings_editor_name_text_CB */
 
 static void settings_editor_exterior_button_CB(Widget widget,
 	XtPointer client_data,unsigned long *reason)
@@ -2869,6 +2925,8 @@ Creates a settings_editor widget.
 			DIALOG_IDENTIFY(settings_editor,main_scroll)},
 		{"seted_id_main_form",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,main_form)},
+		{"seted_id_name_text",(XtPointer)
+		   DIALOG_IDENTIFY(settings_editor,name_text)},
 		{"seted_id_coordinate_btn",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,coordinate_button)},
 		{"seted_id_coordinate_form",(XtPointer)
@@ -3017,6 +3075,8 @@ Creates a settings_editor widget.
 		   DIALOG_IDENTIFY(settings_editor,line_width_text)},
 		{"seted_coordinate_btn_CB",(XtPointer)
 			settings_editor_coordinate_button_CB},
+		{"seted_name_text_CB",(XtPointer)
+			settings_editor_name_text_CB},
 		{"seted_exterior_btn_CB",(XtPointer)
 			settings_editor_exterior_button_CB},
 		{"seted_face_btn_CB",(XtPointer)
@@ -3103,6 +3163,7 @@ Creates a settings_editor widget.
 				/* clear geometry settings widgets */
 				settings_editor->main_scroll=(Widget)NULL;
 				settings_editor->main_form=(Widget)NULL;
+				settings_editor->name_text=(Widget)NULL;
 				settings_editor->coordinate_button=(Widget)NULL;
 				settings_editor->coordinate_field_form=(Widget)NULL;
 				settings_editor->coordinate_field_widget=(Widget)NULL;
@@ -3181,6 +3242,8 @@ Creates a settings_editor widget.
 				/* clear appearance settings widgets */
 				settings_editor->material_form=(Widget)NULL;
 				settings_editor->material_widget=(Widget)NULL;
+				settings_editor->line_width_entry=(Widget)NULL;
+				settings_editor->line_width_text=(Widget)NULL;
 				settings_editor->texture_coord_field_entry=(Widget)NULL;
 				settings_editor->texture_coord_field_form=(Widget)NULL;
 				settings_editor->texture_coord_field_button=(Widget)NULL;
@@ -3675,7 +3738,7 @@ DESCRIPTION :
 Changes the currently chosen settings.
 ==============================================================================*/
 {
-	char temp_string[50];
+	char *name, temp_string[50];
 	double iso_value;
 	enum Graphics_select_mode select_mode;
 	enum GT_element_settings_type settings_type;
@@ -3724,6 +3787,11 @@ Changes the currently chosen settings.
 							settings_editor->current_settings,new_settings))
 						{
 							XtManageChild(settings_editor->widget);
+
+							GET_NAME(GT_element_settings)(new_settings, &name);
+							XtVaSetValues(settings_editor->name_text,
+								XmNvalue, name,NULL);
+							DEALLOCATE(name);
 
 							/* set values of geometry settings widgets */
 							if (coordinate_field=

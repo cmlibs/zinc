@@ -12,6 +12,9 @@ module settings_editor
 procedure
 ! ---------|---------|---------|- 31 characters max
   seted_destroy_CB;
+
+  seted_id_name_text;
+
 !Identify geometry widgets:
   seted_id_main_scroll;
   seted_id_main_form;
@@ -106,6 +109,7 @@ procedure
   seted_id_selected_mat_form;
 
 !Callbacks:
+  seted_name_text_CB;
   seted_coordinate_btn_CB;
   seted_exterior_btn_CB;
   seted_face_btn_CB;
@@ -180,6 +184,8 @@ object
     {
     controls
       {
+      XmRowColumn seted_name_entry;
+      XmSeparatorGadget seted_name_separator;
       XmRowColumn seted_geometry_rc;
       XmSeparatorGadget seted_separator;
       XmRowColumn seted_appearance_rc;
@@ -189,13 +195,70 @@ object
       MrmNcreateCallback = procedure seted_id_main_form(seted_structure);
       };
     };
+!*******************************************************************************
+  seted_name_entry: XmRowColumn
+    {
+    arguments
+      {
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+      };
+    controls
+      {
+      XmLabelGadget seted_name_label;
+      XmTextField seted_name_text;
+      };
+    };
+  seted_name_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Name:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = normal_font;
+      };
+    };
+  seted_name_text: XmTextField
+    {
+    arguments
+      {
+      XmNvalue = "";
+      XmNcolumns = 12;
+      XmNfontList = normal_font;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				seted_id_name_text(seted_structure);
+      XmNactivateCallback = procedure
+				seted_name_text_CB(seted_structure);
+      XmNlosingFocusCallback = procedure
+				seted_name_text_CB(seted_structure);
+      };
+    };
+!*******************************************************************************
+  seted_name_separator: XmSeparatorGadget
+    {
+    arguments
+      {
+      XmNleftAttachment = XmATTACH_FORM;
+      XmNrightAttachment = XmATTACH_FORM;
+      XmNtopAttachment = XmATTACH_WIDGET;
+      XmNtopWidget = seted_name_entry;
+      XmNbottomAttachment = XmATTACH_NONE;
+      };
+    };
   seted_geometry_rc: XmRowColumn
     {
     arguments
       {
       XmNleftAttachment = XmATTACH_FORM;
       XmNrightAttachment = XmATTACH_NONE;
-      XmNtopAttachment = XmATTACH_FORM;
+      XmNtopAttachment = XmATTACH_WIDGET;
+      XmNtopWidget = seted_name_separator;
       XmNbottomAttachment = XmATTACH_NONE;
       };
     controls
