@@ -4422,7 +4422,7 @@ DESCRIPTION :
 	if (track_ed)
 	{
 		return_code=1;
-		if ((control_mode<TRACK_MODE)||(control_mode>MAKE_GOOD_MODE))
+		if (control_mode>MAKE_GOOD_MODE)
 		{
 			control_mode=TRACK_MODE;
 		}

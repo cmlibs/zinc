@@ -1603,6 +1603,9 @@ DESCRIPTION :
 Called in response to pointer entering window.
 ==============================================================================*/
 {
+	USE_PARAMETER(event);
+	USE_PARAMETER(parameters);
+	USE_PARAMETER(number_of_parameters);
 	XInstallColormap(XtDisplay(widget),
 		(((ThreeDDrawingWidget)widget)->three_d_drawing).normal_buffer.colour_map);
 } /* threeDDrawingInstallColourmap */
@@ -1616,6 +1619,9 @@ DESCRIPTION :
 Called in response to pointer entering window.
 ==============================================================================*/
 {
+	USE_PARAMETER(event);
+	USE_PARAMETER(parameters);
+	USE_PARAMETER(number_of_parameters);
 	XUninstallColormap(XtDisplay(widget),
 		(((ThreeDDrawingWidget)widget)->three_d_drawing).normal_buffer.colour_map);
 } /* threeDDrawingInstallColourmap */
