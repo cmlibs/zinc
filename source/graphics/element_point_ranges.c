@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.c
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 12 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -526,7 +526,7 @@ Toggles the <element_point_ranges> in <element_point_ranges_list>.
 int set_Element_point_ranges(struct Parse_state *state,
 	void *element_point_ranges_address_void,void *element_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 12 May 2000
 
 DESCRIPTION :
 Modifier function to set an element_point_ranges. <element_point_ranges_address>
@@ -702,7 +702,7 @@ returned in this location, for the calling function to use or destroy.
 			else
 			{
 				display_message(INFORMATION_MESSAGE," element|face|line #"
-					" cell_centres|cell_corners etc. #xi1 #xi2.. #xiN "
+					" cell_centres|cell_corners #xi1 #xi2.. #xiN "
 					"[#|#..#[,#|#..#[,etc.]]]");
 				return_code=0;
 			}
