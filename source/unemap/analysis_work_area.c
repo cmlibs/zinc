@@ -914,6 +914,8 @@ analysis work area.
 					}
 					/* update the analysis window */
 					update_signals_drawing_area(analysis_window);
+					/* update the mapping_window_menu */
+					update_mapping_window_menu(mapping);
 				}
 				else
 				{

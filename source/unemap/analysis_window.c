@@ -4,8 +4,10 @@ FILE : analysis_window.c
 LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
-==============================================================================*/
-#define FOR_AJP 1
+===========================================================================*/
+/*
+#define USE_RIG_FOR_DRAW_ALL_SIGNALS 1
+*/
 
 #include <stddef.h>
 #include <math.h>
@@ -2287,9 +2289,9 @@ The callback for redrawing part of an analysis drawing area.
 									analysis->user_interface))
 								{
 									/* draw the signals */
-#if defined(FOR_AJP)
+#if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #undef UNEMAP_USE_NODES
-#endif /* defined(FOR_AJP)*/
+#endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
 #if defined (UNEMAP_USE_NODES)
 									/* use rig_node_group and draw_package */
 									draw_all_signals((struct Rig *)NULL,*(analysis->datum),
@@ -2309,9 +2311,9 @@ The callback for redrawing part of an analysis drawing area.
 										analysis->user_interface,(struct GROUP(FE_node) *)NULL,
 										(struct Draw_package *)NULL);
 #endif /* defined (UNEMAP_USE_NODES) */
-#if defined(FOR_AJP)
+#if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #define UNEMAP_USE_NODES 1
-#endif /* defined(FOR_AJP)*/
+#endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
 								}
 								else
 								{
@@ -2418,9 +2420,9 @@ The callback for resizing an analysis drawing area.
 							analysis->user_interface))
 						{
 							/* redraw the signals */
-#if defined(FOR_AJP)
+#if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #undef UNEMAP_USE_NODES
-#endif /* defined(FOR_AJP)*/
+#endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
 #if defined (UNEMAP_USE_NODES)
 							/* use rig_node_group and draw_package */
 							draw_all_signals((struct Rig *)NULL,*(analysis->datum),
@@ -2436,9 +2438,9 @@ The callback for resizing an analysis drawing area.
 								analysis->signal_drawing_information,analysis->user_interface,
 								(struct GROUP(FE_node) *)NULL,(struct Draw_package *)NULL);
 #endif /* defined (UNEMAP_USE_NODES) */
-#if defined(FOR_AJP)
+#if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #define UNEMAP_USE_NODES 1
-#endif /* defined(FOR_AJP)*/
+#endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
 							/* display the intersection of the old rectangle and the new
 								 rectangle */
 							if (attributes.width<width)
@@ -3893,9 +3895,9 @@ The callback for redrawing the analysis drawing area.
 		((analysis->signals).drawing_area))
 	{
 		signals= &(analysis->signals);
-#if defined(FOR_AJP)
+#if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #undef UNEMAP_USE_NODES
-#endif /* defined(FOR_AJP)*/
+#endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
 #if defined (UNEMAP_USE_NODES)
 		/* use rig_node_group and draw_package */
 		draw_all_signals((struct Rig *)NULL,*(analysis->datum),
@@ -3911,9 +3913,9 @@ The callback for redrawing the analysis drawing area.
 			analysis->signal_drawing_information,analysis->user_interface,
 			(struct GROUP(FE_node) *)NULL,(struct Draw_package *)NULL);
 #endif /* defined (UNEMAP_USE_NODES) */
-#if defined(FOR_AJP)
+#if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #define UNEMAP_USE_NODES 1
-#endif /* defined(FOR_AJP)*/
+#endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
 		XCopyArea(analysis->user_interface->display,signals->drawing->pixel_map,
 			XtWindow(signals->drawing_area),
 			(analysis->signal_drawing_information->graphics_context).copy,
@@ -4072,9 +4074,9 @@ The function for redrawing the analysis interval drawing area.
 	return (return_code);
 } /* update_interval_drawing_area */
 
-#if defined(FOR_AJP)
+#if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #undef UNEMAP_USE_NODES
-#endif /* defined(FOR_AJP)*/
+#endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
 int draw_all_signals(struct Rig *rig,int datum,int potential_time,
 	struct Signals_area *signals,enum Signal_layout layout,
 	float signal_aspect_ratio,int signal_overlap_spacing,
@@ -4506,9 +4508,9 @@ Should use GROUP NEXT operator (when it's ready!)
 	LEAVE;
 	return (return_code);
 } /* draw_all_signals */
-#if defined(FOR_AJP)
+#if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #define UNEMAP_USE_NODES 1
-#endif /* defined(FOR_AJP)*/
+#endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
 
 int update_analysis_window_menu(struct Analysis_window *analysis)
 /*******************************************************************************
