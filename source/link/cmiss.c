@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 23 January 2002
 
 DESCRIPTION :
 See cmiss.h for interface details.
@@ -2976,7 +2976,7 @@ does not wait for cm commands to complete, otherwise it does.
 
 int DESTROY(CMISS_connection)(struct CMISS_connection **connection_address)
 /*******************************************************************************
-LAST MODIFIED : 1 October 2001
+LAST MODIFIED : 23 January 2002
 
 DESCRIPTION :
 Frees the memory for the connection, sets <*node_address> to NULL.
@@ -2995,8 +2995,14 @@ Frees the memory for the connection, sets <*node_address> to NULL.
 		{
 			/* destroy the connection */
 			DEALLOCATE(connection->name);
+/*???DB.  Element transfer needs debugging */
+#if defined (NOT_DEBUG)
+/*???DB.  Temporary to disable data transfer */
+#if defined (NOT_TEMPORARY)
 			MANAGER_DEREGISTER(FE_element)(connection->element_manager_callback_id,
 				connection->element_manager);
+#endif /* defined (NOT_TEMPORARY) */
+#endif /* defined (NOT_DEBUG) */
 			MANAGER_DEREGISTER(FE_node)(connection->node_manager_callback_id,
 				connection->node_manager);
 			MANAGER_DEREGISTER(FE_node)(connection->data_manager_callback_id,
