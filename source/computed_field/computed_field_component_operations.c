@@ -2234,14 +2234,63 @@ DESCRIPTION :
 Inherit result from first source field.
 ==============================================================================*/
 
-#define Computed_field_scale_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
+static int Computed_field_scale_find_element_xi(struct Computed_field *field,
+	FE_value *values, int number_of_values, struct FE_element **element, 
+	FE_value *xi, struct GROUP(FE_element) *search_element_group) 
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 15 February 2002
 
 DESCRIPTION :
-Not implemented yet.
 ==============================================================================*/
+{
+	FE_value *source_values;
+	int i,return_code;
+
+	ENTER(Computed_field_scale_find_element_xi);
+	if (field && element && xi && values && (number_of_values == field->number_of_components))
+	{
+		return_code = 1;
+		/* reverse the scaling - unless any scale_factors are zero */
+		if (ALLOCATE(source_values,FE_value,field->number_of_components))
+		{
+			for (i=0;(i<field->number_of_components)&&return_code;i++)
+			{
+				if (0.0 != field->source_values[i])
+				{
+					source_values[i] = values[i] / field->source_values[i];
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_set_values_at_node.  "
+						"Cannot invert scale field %s with zero scale factor",
+						field->name);
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				return_code=Computed_field_find_element_xi(
+					field->source_fields[0],source_values,number_of_values,element,
+					xi,search_element_group);
+			}
+			DEALLOCATE(source_values);
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_scale_find_element_xi.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_scale_find_element_xi */
 
 static int list_Computed_field_scale(
 	struct Computed_field *field)
@@ -2536,6 +2585,12 @@ already) and allows its contents to be modified.
 					}
 					DESTROY(Option_table)(&option_table);
 				}
+			}
+			if (return_code && !source_field)
+			{
+				display_message(ERROR_MESSAGE,
+					"define_Computed_field_type_scale.  Must specify a source field before the scale_factors.");
+				return_code = 0;
 			}
 			/* parse the scale_factors */
 			if (return_code&&state->current_token)
@@ -4521,14 +4576,50 @@ DESCRIPTION :
 Inherit result from first source field.
 ==============================================================================*/
 
-#define Computed_field_offset_find_element_xi \
-   (Computed_field_find_element_xi_function)NULL
+static int Computed_field_offset_find_element_xi(struct Computed_field *field,
+	FE_value *values, int number_of_values, struct FE_element **element, 
+	FE_value *xi, struct GROUP(FE_element) *search_element_group)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 15 February 2002
 
 DESCRIPTION :
-Not implemented yet.
 ==============================================================================*/
+{
+	FE_value *source_values;
+	int i,return_code;
+
+	ENTER(Computed_field_offset_find_element_xi);
+	if (field && element && xi && values &&
+		(number_of_values == field->number_of_components))
+	{
+		return_code = 1;
+		/* reverse the offset */
+		if (ALLOCATE(source_values,FE_value,field->number_of_components))
+		{
+			for (i=0;i<field->number_of_components;i++)
+			{
+				source_values[i] = values[i] - field->source_values[i];
+			}
+			return_code=Computed_field_find_element_xi(
+				field->source_fields[0],source_values,number_of_values,element,
+				xi,search_element_group);
+			DEALLOCATE(source_values);
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_offset_find_element_xi.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_offset_find_element_xi */
 
 static int list_Computed_field_offset(
 	struct Computed_field *field)
