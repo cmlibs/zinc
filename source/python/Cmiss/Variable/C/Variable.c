@@ -1,4 +1,5 @@
 #include <Python.h>
+#include "api/cmiss_variable.h"
 #include "computed_variable/computed_variable.h"
 
 staticforward PyTypeObject CmissVariableType;
@@ -35,12 +36,12 @@ CmissVariable_get_variable_cpointer(PyObject* self, PyObject* args)
 static PyObject*
 CmissVariable_evaluate(PyObject* self, PyObject* args)
 {
+	Cmiss_value_id new_value, value_ptr;
+	Cmiss_variable_id cmiss_variable_ptr, variable_ptr;
 	CmissVariableObject *variable_in_list;
 	int i, number_of_value_variables;
 	PyObject *value, *value_cpointer, *value_module, *value_C_module, *value_variable_list,
 		*value_C_object, *variable, *variable_cpointer, *return_code;
-	struct Cmiss_value *new_value, *value_ptr;
-	struct Cmiss_variable *cmiss_variable_ptr, *variable_ptr;
 	struct Cmiss_variable_value *variable_value;
 	struct LIST(Cmiss_variable_value) *values;
 
@@ -54,7 +55,7 @@ CmissVariable_evaluate(PyObject* self, PyObject* args)
 	}
 
 
-	if (!PyArg_ParseTuple(args,"OO:evaluate", &self, &value_variable_list)) 
+	if (!PyArg_ParseTuple(args,"O:evaluate", &value_variable_list)) 
 		return NULL;
 
 	if (!((variable_cpointer = PyObject_CallMethod(self, "get_variable_cpointer", (char *)NULL)) &&
@@ -165,6 +166,178 @@ CmissVariable_evaluate(PyObject* self, PyObject* args)
 				}
 			}
 		}
+		else
+		{
+			PyErr_SetString(PyExc_AttributeError,
+				"Unable to evaluate variable.");
+		}
+	}
+	else
+	{
+		PyErr_SetString(PyExc_AttributeError, "Must be an even number of objects in Value Variable list.");
+	}
+
+	return(return_code);
+}
+
+static PyObject*
+CmissVariable_evaluate_derivative(PyObject* self, PyObject* args)
+{
+	Cmiss_value_id new_value, value_ptr;
+	Cmiss_variable_id cmiss_variable_ptr, *independent_variables, variable_ptr;
+	CmissVariableObject *variable_in_list;
+	int i, number_of_value_variables, order;
+	PyObject *independent_variables_array, *value, *value_cpointer, *value_module, 
+		*value_C_module, *value_variable_list, *value_C_object, *variable, 
+		*variable_cpointer, *return_code;
+	struct Cmiss_variable_value *variable_value;
+	struct LIST(Cmiss_variable_value) *values;
+
+	new_value = (struct Cmiss_value *)NULL;
+	return_code = (PyObject *)NULL;
+
+	if (!(value_module = PyImport_ImportModule("Cmiss.Value.Value")))
+	{
+		PyErr_SetString(PyExc_AttributeError, "Unable to import Cmiss.Value.Value module");
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args,"OO:evaluate_derivative", &independent_variables_array, &value_variable_list)) 
+		return NULL;
+
+	if (!((variable_cpointer = PyObject_CallMethod(self, "get_variable_cpointer", (char *)NULL)) &&
+			 PyCObject_Check(variable_cpointer)))
+	{
+		PyErr_SetString(PyExc_AttributeError, "Unable to extract variable pointer from main variable.");
+		return NULL;
+	}
+	cmiss_variable_ptr = PyCObject_AsVoidPtr(variable_cpointer);
+
+	if (!PyList_Check(independent_variables_array))
+	{
+		PyErr_SetString(PyExc_AttributeError, "First argument must be a list");
+		return NULL;
+	}
+	
+	if (!PyList_Check(value_variable_list))
+	{
+		PyErr_SetString(PyExc_AttributeError, "Second argument must be a list");
+		return NULL;
+	}
+	
+	order = PyList_Size(independent_variables_array);
+	number_of_value_variables = PyList_Size(value_variable_list);
+	if (number_of_value_variables && !(number_of_value_variables % 2))
+	{
+		if (independent_variables=(Cmiss_variable_id *)malloc(order*
+				 sizeof(Cmiss_variable_id)))
+		{
+			i=0;
+			while ((i<order)&&(variable = PySequence_GetItem(independent_variables_array, i))
+				&& (variable_cpointer = PyObject_CallMethod(variable, "get_variable_cpointer", (char *)NULL)) &&
+				PyCObject_Check(variable_cpointer))
+			{
+				independent_variables[i] = PyCObject_AsVoidPtr(variable_cpointer);
+				i++;
+			}
+			if (i == order)
+			{
+				if (values=CREATE_LIST(Cmiss_variable_value)())
+				{
+					i=0;
+					while ((i<number_of_value_variables)&&values)
+					{
+						variable = PySequence_GetItem(value_variable_list, i);
+						value = PySequence_GetItem(value_variable_list, i + 1);
+
+						if (!((variable_cpointer = PyObject_CallMethod(variable, "get_variable_cpointer", (char *)NULL)) &&
+								 PyCObject_Check(variable_cpointer)))
+						{
+							PyErr_SetString(PyExc_AttributeError, "Unable to extract variable pointer from variable value pair.");
+							return NULL;
+						}
+						variable_ptr = PyCObject_AsVoidPtr(variable_cpointer);
+
+						if (!((value_cpointer = PyObject_CallMethod(value, "get_value_cpointer", (char *)NULL)) &&
+								 PyCObject_Check(value_cpointer)))
+						{
+							PyErr_SetString(PyExc_AttributeError, "Unable to extract value pointer from value.");
+							return NULL;
+						}
+						value_ptr = PyCObject_AsVoidPtr(value_cpointer);
+			
+						if (variable_value=CREATE(Cmiss_variable_value)(
+								 variable_ptr, value_ptr))
+						{
+							if (ADD_OBJECT_TO_LIST(Cmiss_variable_value)(variable_value,values))
+							{
+								i += 2;
+							}
+							else
+							{
+								DESTROY(Cmiss_variable_value)(&variable_value);
+								DESTROY_LIST(Cmiss_variable_value)(&values);
+							}
+						}
+						else
+						{
+							DESTROY_LIST(Cmiss_variable_value)(&values);
+						}
+					}
+					if (new_value = CREATE(Cmiss_value)())
+					{
+						ACCESS(Cmiss_value)(new_value);
+						if (!Cmiss_variable_evaluate_derivative(cmiss_variable_ptr,
+							order,independent_variables,values,new_value))
+						{
+							DEACCESS(Cmiss_value)(&new_value);
+						}
+					}
+					DESTROY_LIST(Cmiss_variable_value)(&values);
+				}
+				if (new_value)
+				{
+					char *type_id_string;
+				
+					if (type_id_string=Cmiss_value_get_type_id_string(new_value))
+					{
+						/* Call the constructor of the class that we want to cast the pointer into */
+						if ((value_module = PyImport_ImportModule("Cmiss.Value")) &&
+							(value_C_module = PyImport_ImportModule("Cmiss.Value.C.Value")))
+						{
+							/* Wrap the Cmiss_value in a python C api object */
+							if (value_C_object = PyObject_CallMethod(value_C_module, "wrap", "O",
+									 PyCObject_FromVoidPtr(new_value, NULL)))
+							{
+								/* Pass the C api object to the python object constructor of the correct type */
+								if (!(return_code  = PyObject_CallMethod(value_module, type_id_string, "O",
+											value_C_object)))
+								{
+									/* 						PyErr_Format(PyExc_AttributeError, */
+									/* 							"Unable to create python Cmiss.Value of the required type: %s", */
+									/* 							type_id_string); */
+								}
+							}
+						}
+						else
+						{
+							PyErr_SetString(PyExc_AttributeError,
+								"Unable to import Cmiss.Value module");
+						}
+					}
+				}
+				else
+				{
+					PyErr_SetString(PyExc_AttributeError,
+						"Unable to evaluate variable.");
+				}
+			}
+			else
+			{
+				PyErr_SetString(PyExc_AttributeError,
+					"Unable to extract pointer from independent variable array.");
+			}
+		}
 	}
 	else
 	{
@@ -176,7 +349,10 @@ CmissVariable_evaluate(PyObject* self, PyObject* args)
 
 static struct PyMethodDef CmissVariable_methods[] =
 	{
-		{"get_variable_cpointer", CmissVariable_get_variable_cpointer, 1},
+		{"get_variable_cpointer", CmissVariable_get_variable_cpointer, METH_VARARGS},
+		{"evaluate", CmissVariable_evaluate, METH_VARARGS, "Evaluate variable into a value."},
+		{"evaluate_derivative", CmissVariable_evaluate_derivative, METH_VARARGS,
+		 "Evaluate a variable derivative into a value."},
 		{NULL, NULL, 0}
 	};
 
@@ -307,8 +483,6 @@ static PyTypeObject CmissVariableType = {
 };
 
 static PyMethodDef CmissVariableType_methods[] = {
-	 {"evaluate", CmissVariable_evaluate, METH_VARARGS,
-     "Create a new Cmiss Variable object."},
     {"new", CmissVariable_new, METH_VARARGS,
      "Create a new Cmiss Variable object."},
     {"check", CmissVariable_check, METH_VARARGS,

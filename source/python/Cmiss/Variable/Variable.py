@@ -4,8 +4,11 @@ class Variable:
 
     _variable = None;
 
-    def evaluate(self, variable_value_list):
-        return Cmiss.Variable.C.Variable.evaluate(self._variable, variable_value_list);
+    def evaluate(self, *args):
+        return apply(self._variable.evaluate, args);
+    
+    def evaluate_derivative(self, *args):
+        return apply(self._variable.evaluate_derivative, args);
     
     def get_variable_cpointer(self):
         return self._variable.get_variable_cpointer();

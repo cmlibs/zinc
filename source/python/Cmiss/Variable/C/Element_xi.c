@@ -16,7 +16,7 @@ CmissVariableElementxi_new(PyObject* self, PyObject* args)
 	}
 
 	dimension = 0;
-	if (!PyArg_ParseTuple(args,"s|d:new", &name, &dimension)) 
+	if (!PyArg_ParseTuple(args,"s|i:new", &name, &dimension)) 
 		return NULL;
 
 	if (variable = CREATE(Cmiss_variable_element_xi)(name, dimension))

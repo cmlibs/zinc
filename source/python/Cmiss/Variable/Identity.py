@@ -1,9 +1,9 @@
 from Cmiss.Variable.Variable import Variable;
-import Cmiss.Variable.C.Element_xi;
+import Cmiss.Variable.C.Identity;
 import Cmiss.Variable
 
-class Element_xi(Variable):
+class Identity(Variable):
     def __init__(self, *args):
-        variable = apply(Cmiss.Variable.C.Element_xi.new, args);
+        variable = apply(Cmiss.Variable.C.Identity.new, args);
         Variable.__init__(self, variable);
 
