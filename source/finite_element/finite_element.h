@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -3415,6 +3415,24 @@ Returns true if the <element_parent> refers to the given <face_number> of the
 parent element AND the parent element is also in the <element_group>.
 Conditional function for determining if a 1-D or 2-D element is on a particular
 face of a 3-D element in the given element_group. Recursive to handle 1-D case.
+==============================================================================*/
+
+int FE_element_has_top_level_element(struct FE_element *element,
+	void *top_level_element_void);
+/*******************************************************************************
+LAST MODIFIED : 8 June 2000
+
+DESCRIPTION :
+Returns true if <top_level_element> is indeed a top_level parent of <element>.
+==============================================================================*/
+
+int FE_element_is_top_level_parent_of_element(
+	struct FE_element *top_level_element,void *element_void);
+/*******************************************************************************
+LAST MODIFIED : 8 June 2000
+
+DESCRIPTION :
+Returns true if <top_level_element> is a top_level parent of <element>.
 ==============================================================================*/
 
 struct FE_element *FE_element_get_top_level_element_conversion(

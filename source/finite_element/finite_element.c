@@ -30965,6 +30965,84 @@ If the element group is omitted, no check is made on membership in it.
 	return (return_code);
 } /* FE_element_parent_face_of_element_in_group */
 
+int FE_element_has_top_level_element(struct FE_element *element,
+	void *top_level_element_void)
+/*******************************************************************************
+LAST MODIFIED : 8 June 2000
+
+DESCRIPTION :
+Returns true if <top_level_element> is indeed a top_level parent of <element>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element *top_level_element;
+
+	ENTER(FE_element_has_top_level_element);
+	if (element&&(top_level_element=(struct FE_element *)top_level_element_void)&&
+		(CM_ELEMENT==top_level_element->cm.type))
+	{
+		if ((element==top_level_element)||
+			FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+				FE_element_parent_element_matches_recursive,
+				top_level_element_void,element->parent_list))
+		{
+			return_code=1;
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_has_top_level_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_has_top_level_element */
+
+int FE_element_is_top_level_parent_of_element(
+	struct FE_element *top_level_element,void *element_void)
+/*******************************************************************************
+LAST MODIFIED : 8 June 2000
+
+DESCRIPTION :
+Returns true if <top_level_element> is a top_level parent of <element>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element *element;
+
+	ENTER(FE_element_is_top_level_parent_of_element);
+	if (top_level_element&&(element=(struct FE_element *)element_void))
+	{
+		if ((CM_ELEMENT==top_level_element->cm.type)&&
+			((element==top_level_element)||
+				FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+					FE_element_parent_element_matches_recursive,
+					(void *)top_level_element,element->parent_list)))
+		{
+			return_code=1;
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_is_top_level_parent_of_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_is_top_level_parent_of_element */
+
 struct FE_element *FE_element_get_top_level_element_conversion(
 	struct FE_element *element,struct FE_element *check_top_level_element,
 	struct GROUP(FE_element) *element_group,int face_number,
