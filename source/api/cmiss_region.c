@@ -164,11 +164,11 @@ DESCRIPTION :
 Returns element with <name> in sub_region <path> of <region> if it exists.
 ==============================================================================*/
 {
+	int name_length;
 	struct CM_element_information identifier;
 	struct Cmiss_element *return_element;
 	struct Cmiss_region *sub_region;
 	struct FE_region *fe_region;
-	unsigned int name_length;
 
 	ENTER(Cmiss_region_get_element);
 	return_element = (struct Cmiss_element *)NULL;
@@ -179,7 +179,7 @@ Returns element with <name> in sub_region <path> of <region> if it exists.
 		{
 			identifier.type = CM_ELEMENT;
 			if ((1==sscanf(name," %d %n",&(identifier.number),&name_length))&&
-				(name_length==strlen(name)))
+				((unsigned int)name_length==strlen(name)))
 			{
 				return_element = FE_region_get_FE_element_from_identifier(fe_region,
 					&identifier);
