@@ -1875,6 +1875,13 @@ Main program for the CMISS Graphical User Interface
 				if(!no_display)
 				{
 					DESTROY(Command_window)(&command_data.command_window);
+					/* reset up messages */
+					set_display_message_function(ERROR_MESSAGE,
+					  (Display_message_function *)NULL, NULL);
+					set_display_message_function(INFORMATION_MESSAGE,
+					  (Display_message_function *)NULL, NULL);
+					set_display_message_function(WARNING_MESSAGE,
+					  (Display_message_function *)NULL, NULL);
 					/* close the user interface */
 					close_user_interface(&user_interface);
 					DESTROY(Machine_information)(&user_interface.local_machine_info);
@@ -1905,6 +1912,14 @@ Main program for the CMISS Graphical User Interface
 
 				DESTROY(MANAGER(Graphics_window))(
 					&command_data.graphics_window_manager);
+
+				DESTROY(Computed_field_package)(&command_data.computed_field_package);
+
+				if (computed_field_finite_element_package)
+				{
+					Computed_field_deregister_types_finite_element(
+						computed_field_finite_element_package);
+				}
 
 				if (command_data.element_creator)
 				{
@@ -1949,13 +1964,6 @@ Main program for the CMISS Graphical User Interface
 				DESTROY(MANAGER(Interactive_streamline))
 					(&command_data.interactive_streamline_manager);
 
-				DESTROY(Computed_field_package)(&command_data.computed_field_package);
-
-				if (computed_field_finite_element_package)
-				{
-					Computed_field_deregister_types_finite_element(
-						computed_field_finite_element_package);
-				}
 				DESTROY(MANAGER(FE_field))(&command_data.fe_field_manager);
 
 				DESTROY(MANAGER(Control_curve))(&command_data.control_curve_manager);
