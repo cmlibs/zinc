@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 27 May 2003
+LAST MODIFIED : 27 October 2004
 
 DESCRIPTION :
 Functions for importing finite element data from a file into the graphical
@@ -2115,16 +2115,13 @@ Note the returned shape will be NULL if the dimension is 0, denoting nodes.
 } /* read_FE_element_shape */
 
 static struct FE_basis *read_FE_basis(struct IO_stream *input_file,
-	struct FE_region *fe_region, int number_of_xi_coordinates, int *basis_type)
+	struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2002
+LAST MODIFIED : 5 November 2004
 
 DESCRIPTION :
 Reads a basis description from an <input_file> or the socket (if <input_file> is
 NULL).  If the basis does not exist, it is created.  The basis is returned.
-<basis_type> should be allocated outside the function to the following size:
-1 + (number_of_xi_coordinates*(1 + number_of_xi_coordinates))/2
-and on exit will contain the a copy of the type for the basis.
 Some examples of basis descriptions in an input file are:
 1. c.Hermite*c.Hermite*l.Lagrange  This has cubic variation in xi1 and xi2 and
 	linear variation in xi3.
@@ -2135,20 +2132,17 @@ Some examples of basis descriptions in an input file are:
 ==============================================================================*/
 {
 	char *basis_description_string,*end_basis_name,*location,*start_basis_name;
-	int component,i,j,*first_simplex,no_error,number_of_polygon_vertices,
-		previous_component,*temp_basis_type,*xi_basis_type,xi_number;
+	int *basis_type;
 	struct FE_basis *basis;
 
 	ENTER(read_FE_basis);
-	basis = (struct FE_basis *)NULL;
-	if (input_file && fe_region && (0 < number_of_xi_coordinates) && basis_type)
+	basis=(struct FE_basis *)NULL;
+	if (input_file&&fe_region)
 	{
 		/* file input */
 		/* read the basis type */
 		if (IO_stream_read_string(input_file,"[^,]",&basis_description_string))
 		{
-			/* decipher the basis description */
-			xi_number=0;
 			start_basis_name=basis_description_string;
 			/* skip leading blanks */
 			while (' '== *start_basis_name)
@@ -2162,467 +2156,25 @@ Some examples of basis descriptions in an input file are:
 				end_basis_name--;
 			}
 			end_basis_name[1]='\0';
-			xi_basis_type=basis_type;
-			*xi_basis_type=number_of_xi_coordinates;
-			xi_basis_type++;
-			no_error=1;
-			while (no_error&&(xi_number<number_of_xi_coordinates))
+			if (basis_type=FE_basis_string_to_type_array(basis_description_string))
 			{
-				xi_number++;
-				/* determine the interpolation in the xi direction */
-				if (xi_number<number_of_xi_coordinates)
-				{
-					if (end_basis_name=strchr(start_basis_name,'*'))
-					{
-						*end_basis_name='\0';
-					}
-					else
-					{
-					location = IO_stream_get_location_string(input_file);
-						display_message(ERROR_MESSAGE,
-							"Invalid basis description.  %s",
-							location);
-						no_error=0;
-					}
-				}
-				if (no_error)
-				{
-					if ((0==strncmp(start_basis_name,"l.simplex",9))||
-						(0==strncmp(start_basis_name,"q.simplex",9)))
-					{
-						/*???debug */
-						/*printf("simplex\n");*/
-						if (0==strncmp(start_basis_name,"l.simplex",9))
-						{
-							*xi_basis_type=LINEAR_SIMPLEX;
-						}
-						else
-						{
-							*xi_basis_type=QUADRATIC_SIMPLEX;
-						}
-						/*???debug */
-						/*printf("%p %d %d\n",xi_basis_type,*xi_basis_type,LINEAR_SIMPLEX);*/
-						start_basis_name += 9;
-						/* skip blanks */
-						while (' '== *start_basis_name)
-						{
-							start_basis_name++;
-						}
-						/* check for links to other simplex components */
-						if ('('== *start_basis_name)
-						{
-							/*???debug */
-							/*printf("first simplex component\n");*/
-							xi_basis_type++;
-							/* assign links to other simplex components */
-							previous_component=xi_number+1;
-							if ((1==sscanf(start_basis_name,"(%d %n",&component,&i))&&
-								(previous_component<=component)&&
-								(component<=number_of_xi_coordinates))
-							{
-								do
-								{
-									start_basis_name += i;
-									while (previous_component<component)
-									{
-										*xi_basis_type=NO_RELATION;
-										xi_basis_type++;
-										previous_component++;
-									}
-									*xi_basis_type=1;
-									xi_basis_type++;
-									previous_component++;
-								} while ((')'!=start_basis_name[0])&&
-									(1==sscanf(start_basis_name,"%*[; ]%d %n",&component,&i))&&
-									(previous_component<=component)&&
-									(component<=number_of_xi_coordinates));
-								if (')'==start_basis_name[0])
-								{
-									/* fill rest of basis_type row with NO_RELATION */
-									while (previous_component <= number_of_xi_coordinates)
-									{
-										*xi_basis_type=NO_RELATION;
-										xi_basis_type++;
-										previous_component++;
-									}
-								}
-								else
-								{
-									/* have no links to succeeding xi directions */
-									location = IO_stream_get_location_string(input_file);
-									display_message(ERROR_MESSAGE,
-										"Invalid simplex component of basis.  %s",
-										location);
-									DEALLOCATE(location);
-									no_error=0;
-								}
-							}
-							else
-							{
-								/* have no links to succeeding xi directions */
-								location = IO_stream_get_location_string(input_file);
-								display_message(ERROR_MESSAGE,
-									"Invalid simplex component of basis.  %s",
-									location);
-								DEALLOCATE(location);
-								no_error=0;
-							}
-						}
-						else
-						{
-							/*???debug */
-							/*printf("not first simplex component\n");*/
-							/* check that links have been assigned */
-							temp_basis_type=xi_basis_type;
-							i=xi_number-1;
-							j=number_of_xi_coordinates-xi_number;
-							first_simplex=(int *)NULL;
-							while (no_error&&(i>0))
-							{
-								j++;
-								temp_basis_type -= j;
-								if (NO_RELATION!= *temp_basis_type)
-								{
-									/*???debug */
-									/*printf("%p %p\n",xi_basis_type,(temp_basis_type-(xi_number-i)));
-										printf("%d %d\n",*xi_basis_type,*(temp_basis_type-(xi_number-i)));*/
-									if (*xi_basis_type== *(temp_basis_type-(xi_number-i)))
-									{
-										first_simplex=temp_basis_type;
-									}
-									else
-									{
-										no_error=0;
-									}
-								}
-								i--;
-							}
-							/*???debug */
-							/*printf("%d %p\n",no_error,first_simplex);*/
-							if (no_error&&first_simplex)
-							{
-								xi_basis_type++;
-								first_simplex++;
-								i=xi_number;
-								while (i<number_of_xi_coordinates)
-								{
-									*xi_basis_type= *first_simplex;
-									xi_basis_type++;
-									first_simplex++;
-									i++;
-								}
-							}
-							else
-							{
-								no_error=0;
-							}
-						}
-					}
-					else
-					{
-						if (0==strncmp(start_basis_name,"polygon",7))
-						{
-							*xi_basis_type=POLYGON;
-							start_basis_name += 7;
-							/* skip blanks */
-							while (' '== *start_basis_name)
-							{
-								start_basis_name++;
-							}
-							/* check for link to other polygon component */
-							if ('('== *start_basis_name)
-							{
-								/* assign link to other polygon component */
-								if ((2==sscanf(start_basis_name,"(%d ;%d )%n",
-									&number_of_polygon_vertices,&component,&i))&&
-									(3<=number_of_polygon_vertices)&&
-									(xi_number<component)&&
-									(component<=number_of_xi_coordinates)&&
-									('\0'== start_basis_name[i]))
-								{
-									/* assign link */
-									xi_basis_type++;
-									i=xi_number+1;
-									while (i<component)
-									{
-										*xi_basis_type=NO_RELATION;
-										xi_basis_type++;
-										i++;
-									}
-									*xi_basis_type=number_of_polygon_vertices;
-									xi_basis_type++;
-									while (i<number_of_xi_coordinates)
-									{
-										*xi_basis_type=NO_RELATION;
-										xi_basis_type++;
-										i++;
-									}
-								}
-								else
-								{
-									/* have no links to succeeding xi directions */
-									location = IO_stream_get_location_string(input_file);
-									display_message(ERROR_MESSAGE,
-										"Invalid polygon component of basis.  %s",
-										location);
-									DEALLOCATE(location);
-									no_error=0;
-								}
-							}
-							else
-							{
-								/* check that link has been assigned */
-								temp_basis_type=xi_basis_type;
-								i=xi_number-1;
-								j=number_of_xi_coordinates-xi_number;
-								number_of_polygon_vertices=0;
-								while (no_error&&(i>0))
-								{
-									j++;
-									temp_basis_type -= j;
-									if (NO_RELATION!= *temp_basis_type)
-									{
-										if (0<number_of_polygon_vertices)
-										{
-											no_error=0;
-										}
-										else
-										{
-											if ((number_of_polygon_vertices= *temp_basis_type)<3)
-											{
-												no_error=0;
-											}
-										}
-									}
-									i--;
-								}
-								if (no_error&&(3<=number_of_polygon_vertices))
-								{
-									xi_basis_type++;
-									i=xi_number;
-									while (i<number_of_xi_coordinates)
-									{
-										*xi_basis_type=NO_RELATION;
-										xi_basis_type++;
-										i++;
-									}
-								}
-								else
-								{
-									no_error=0;
-								}
-							}
-						}
-						else
-						{
-							if (0==strncmp(start_basis_name,"l.Lagrange",10))
-							{
-								*xi_basis_type=LINEAR_LAGRANGE;
-								start_basis_name += 10;
-							}
-							else
-							{
-								if (0==strncmp(start_basis_name,"q.Lagrange",10))
-								{
-									*xi_basis_type=QUADRATIC_LAGRANGE;
-									start_basis_name += 10;
-								}
-								else
-								{
-									if (0==strncmp(start_basis_name,"c.Lagrange",10))
-									{
-										*xi_basis_type=CUBIC_LAGRANGE;
-										start_basis_name += 10;
-									}
-									else
-									{
-										if (0==strncmp(start_basis_name,"c.Hermite",9))
-										{
-											*xi_basis_type=CUBIC_HERMITE;
-											start_basis_name += 9;
-										}
-										else
-										{
-											if (0==strncmp(start_basis_name,"LagrangeHermite",15))
-											{
-												*xi_basis_type=LAGRANGE_HERMITE;
-												start_basis_name += 15;
-											}
-											else
-											{
-												if (0==strncmp(start_basis_name,"HermiteLagrange",15))
-												{
-													*xi_basis_type=HERMITE_LAGRANGE;
-													start_basis_name += 15;
-												}
-												else
-												{
-													location = IO_stream_get_location_string(input_file);
-													display_message(ERROR_MESSAGE,
-														"Invalid basis type.  %s",
-														location);
-													DEALLOCATE(location);
-													no_error=0;
-												}
-											}
-										}
-									}
-								}
-							}
-							if (no_error)
-							{
-								/* skip blanks */
-								while (' '== *start_basis_name)
-								{
-									start_basis_name++;
-								}
-								/* check for simplex elements */
-								if ('('== *start_basis_name)
-								{
-									/* assign links to succeeding simplex xi directions */
-									temp_basis_type=xi_basis_type;
-									i=xi_number;
-									while (no_error&&(i<number_of_xi_coordinates)&&
-										(')'!= *start_basis_name))
-									{
-										temp_basis_type++;
-										if (';'== *start_basis_name)
-										{
-											*temp_basis_type=NO_RELATION;
-											start_basis_name++;
-										}
-										else
-										{
-											if (0==strncmp(start_basis_name,"l.Lagrange",10))
-											{
-												*temp_basis_type=LINEAR_LAGRANGE;
-												start_basis_name += 10;
-											}
-											else
-											{
-												if (0==strncmp(start_basis_name,"q.Lagrange",10))
-												{
-													*temp_basis_type=QUADRATIC_LAGRANGE;
-													start_basis_name += 10;
-												}
-												else
-												{
-													if (0==strncmp(start_basis_name,"c.Lagrange",10))
-													{
-														*temp_basis_type=CUBIC_LAGRANGE;
-														start_basis_name += 10;
-													}
-													else
-													{
-														if (0==strncmp(start_basis_name,"c.Hermite",9))
-														{
-															*temp_basis_type=CUBIC_HERMITE;
-															start_basis_name += 9;
-														}
-														else
-														{
-															if (0==strncmp(start_basis_name,
-																"LagrangeHermite",15))
-															{
-																*temp_basis_type=LAGRANGE_HERMITE;
-																start_basis_name += 15;
-															}
-															else
-															{
-																if (0==strncmp(start_basis_name,
-																	"HermiteLagrange",15))
-																{
-																	*temp_basis_type=HERMITE_LAGRANGE;
-																	start_basis_name += 15;
-																}
-																else
-																{
-																	location = IO_stream_get_location_string(input_file);
-																	display_message(ERROR_MESSAGE,
-																		"Invalid basis type.  %s",
-																		location);
-																	DEALLOCATE(location);
-																	no_error=0;
-																}
-															}
-														}
-													}
-												}
-											}
-											if (';'== *start_basis_name)
-											{
-												start_basis_name++;
-											}
-										}
-										i++;
-									}
-									if (no_error)
-									{
-										while (i<number_of_xi_coordinates)
-										{
-											temp_basis_type++;
-											*temp_basis_type=NO_RELATION;
-											i++;
-										}
-									}
-								}
-								else
-								{
-									if ('\0'== *start_basis_name)
-									{
-										/* have no links to succeeding xi directions */
-										temp_basis_type=xi_basis_type;
-										for (i=xi_number;i<number_of_xi_coordinates;i++)
-										{
-											temp_basis_type++;
-											*temp_basis_type=NO_RELATION;
-										}
-									}
-									else
-									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE,
-											"Invalid basis type.  %s",
-											location);
-										DEALLOCATE(location);
-										no_error=0;
-									}
-								}
-								if (no_error&&(xi_number<number_of_xi_coordinates))
-								{
-									xi_basis_type += number_of_xi_coordinates-xi_number+1;
-								}
-							}
-						}
-					}
-					start_basis_name=end_basis_name+1;
-				}
+				basis=FE_region_get_FE_basis_matching_basis_type(fe_region,basis_type);
 			}
-			DEALLOCATE(basis_description_string);
-			if (!no_error)
+			else
 			{
-				location = IO_stream_get_location_string(input_file);
-				display_message(ERROR_MESSAGE,"Invalid basis description.  %s",
-					location);
+				location=IO_stream_get_location_string(input_file);
+				display_message(ERROR_MESSAGE,
+					"Error convering basis description to type array.  %s",location);
 				DEALLOCATE(location);
 			}
 		}
 		else
 		{
-			location = IO_stream_get_location_string(input_file);
+			location=IO_stream_get_location_string(input_file);
 			display_message(ERROR_MESSAGE,
 				"Error reading basis description from file.  %s",
 				location);
 			DEALLOCATE(location);
-			no_error=0;
-		}
-		if (no_error)
-		{
-			basis = FE_region_get_FE_basis_matching_basis_type(fe_region, basis_type);
-		}
-		else
-		{
-			basis = (struct FE_basis *)NULL;
 		}
 	}
 	else
@@ -2637,7 +2189,7 @@ Some examples of basis descriptions in an input file are:
 static int read_FE_element_field(struct IO_stream *input_file, struct FE_region *fe_region,
 	struct FE_element *element, struct FE_field **field_address)
 /*******************************************************************************
-LAST MODIFIED : 27 March 2003
+LAST MODIFIED : 27 October 2004
 
 DESCRIPTION :
 Reads an element field from an <input_file>, adding it to the fields defined at
@@ -2648,7 +2200,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 		*modify_function_name, *rest_of_line, test_string[5];
 	enum FE_field_type fe_field_type;
 	FE_element_field_component_modify modify;
-	int *basis_index, *basis_type, component_number, dimension, i, index, j,
+	int component_number, dimension, i, index, j,
 		node_index, number_of_components, number_of_nodes, number_of_values,
 		number_in_xi, return_code;
 	struct FE_basis *basis;
@@ -2682,8 +2234,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 					components[i] = (struct FE_element_field_component *)NULL;
 				}
 			}
-			ALLOCATE(basis_type, int, 1 + (dimension*(1 + dimension))/2);
-			if (components && basis_type)
+			if (components)
 			{
 				/* read the components */
 				component_number = 0;
@@ -2717,8 +2268,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 						{
 							IO_stream_scan(input_file, ". ");
 							/* read the basis */
-							if (basis =
-								read_FE_basis(input_file, fe_region, dimension, basis_type))
+							if (basis = read_FE_basis(input_file, fe_region))
 							{
 								IO_stream_scan(input_file, ", ");
 								/* read the modify function name */
@@ -2926,32 +2476,24 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 													}
 													if (return_code)
 													{
+														enum FE_basis_type basis_type;
+														int next_xi_number,xi_link_number,xi_number;
+
 														/* only allow linear bases */
-														basis_index = basis_type;
-														i = *basis_index;
-														while (return_code && (i > 0))
+														xi_number=0;
+														while (return_code&&(xi_number<dimension))
 														{
-															basis_index++;
-															if (LINEAR_LAGRANGE == *basis_index)
+															if (FE_basis_get_xi_basis_type(basis,xi_number,
+																&basis_type)&&(LINEAR_LAGRANGE==basis_type)&&
+																FE_basis_get_next_linked_xi_number(basis,
+																xi_number,&next_xi_number,&xi_link_number)&&
+																(0==next_xi_number)&&(0==xi_link_number))
 															{
-																i--;
-																j = i;
-																while (return_code && (j > 0))
-																{
-																	basis_index++;
-																	if (0 == *basis_index)
-																	{
-																		j--;
-																	}
-																	else
-																	{
-																		return_code = 0;
-																	}
-																}
+																xi_number++;
 															}
 															else
 															{
-																return_code = 0;
+																return_code=0;
 															}
 														}
 														if (return_code)
@@ -3143,7 +2685,6 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 				}
 				DEALLOCATE(components);
 			}
-			DEALLOCATE(basis_type);
 			DEACCESS(FE_field)(&field);
 		}
 		else
@@ -3171,7 +2712,7 @@ static struct FE_element *read_FE_element_field_info(
 	struct FE_element_shape *element_shape,
 	struct FE_field_order_info **field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 27 February 2003
+LAST MODIFIED : 5 November 2004
 
 DESCRIPTION :
 Creates an element with <element_shape> and the field information read in from
@@ -3188,7 +2729,7 @@ from a previous call to this function.
 ==============================================================================*/
 {
 	char *location;
-	int *basis_type, dimension, i, number_of_fields, number_of_nodes,
+	int dimension,i,number_of_fields,number_of_nodes,
 		number_of_scale_factor_sets, *numbers_in_scale_factor_sets, return_code;
 	struct CM_element_information element_identifier;
 	struct FE_element *element;
@@ -3227,20 +2768,18 @@ from a previous call to this function.
 			{
 				scale_factor_set_identifiers = (void **)NULL;
 				numbers_in_scale_factor_sets = (int *)NULL;
-				basis_type = (int *)NULL;
 				/* note can have no scale factor sets */
 				if ((0 == number_of_scale_factor_sets) || (
 					ALLOCATE(scale_factor_set_identifiers, void *,
 						number_of_scale_factor_sets) &&
 					ALLOCATE(numbers_in_scale_factor_sets, int,
-						number_of_scale_factor_sets) &&
-					ALLOCATE(basis_type, int, 1 + (dimension*(1 + dimension))/2)))
+						number_of_scale_factor_sets)))
 				{
 					/* read in the scale factor set information */
 					for (i = 0; (i < number_of_scale_factor_sets) && return_code; i++)
 					{
 						if (scale_factor_set_identifiers[i] = (void *)read_FE_basis(
-							input_file, fe_region, dimension, basis_type))
+							input_file,fe_region))
 						{
 							if (!((1 == IO_stream_scan(input_file, ", #Scale factors=%d ",
 								&(numbers_in_scale_factor_sets[i]))) &&
@@ -3336,10 +2875,6 @@ from a previous call to this function.
 						"read_FE_element_field_info.  Not enough memory");
 					DEALLOCATE(location);
 					return_code=0;
-				}
-				if (basis_type)
-				{
-					DEALLOCATE(basis_type);
 				}
 				if (numbers_in_scale_factor_sets)
 				{
