@@ -301,6 +301,8 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 			if (node_elements=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)
 				(node_number,node_element_list))
 			{
+				/* This list includes the element itself so we are safe but probably
+					overallocating the array */
 				number_of_elements = Index_multi_range_get_total_number_in_ranges(
 					node_elements);
 				if (ALLOCATE(*adjacent_elements, struct FE_element *,
@@ -338,6 +340,11 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 							}
 						}
 						*number_of_adjacent_elements = i;
+					}
+					if (i == 0)
+					{
+						/* Don't keep the array if there are no elements */
+						DEALLOCATE(*adjacent_elements);
 					}
 				}
 				else
