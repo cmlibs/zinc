@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_region.c
 
-LAST MODIFIED : 13 August 2003
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_regions.
@@ -69,7 +69,6 @@ int Cmiss_region_read_file(struct Cmiss_region *region, char *file_name)
 LAST MODIFIED : 13 August 2002
 
 DESCRIPTION :
-Returns the sub_region specified by the string <path> in <region>.
 ==============================================================================*/
 {
 	int return_code;
@@ -131,55 +130,25 @@ Returns the sub_region specified by the string <path> in <region>.
 	return (return_region);
 } /* Cmiss_region_get_sub_region */
 
-struct Cmiss_FE_field *Cmiss_region_get_field(struct Cmiss_region *region,
-	char *path, char *name)
-/*******************************************************************************
-LAST MODIFIED : 13 August 2002
-
-DESCRIPTION :
-Returns field with <name> in sub_region <path> of <region> if it exists.
-==============================================================================*/
-{
-	struct Cmiss_FE_field *return_field;
-	struct Cmiss_region *sub_region;
-	struct FE_region *fe_region;
-
-	ENTER(Cmiss_region_get_field);
-	return_field = (struct Cmiss_FE_field *)NULL;
-	if (region && path && name)
-	{		
-		if (Cmiss_region_get_region_from_path(region, path, &sub_region) &&
-			sub_region && (fe_region = Cmiss_region_get_FE_region(sub_region)))
-		{
-			return_field = FE_region_get_FE_field_from_name(fe_region,name);
-		}
-	}
-	LEAVE;
-
-	return (return_field);
-} /* Cmiss_region_get_field */
-
 struct Cmiss_element *Cmiss_region_get_element(struct Cmiss_region *region,
-	char *path, char *name)
+	char *name)
 /*******************************************************************************
-LAST MODIFIED : 13 August 2002
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
-Returns element with <name> in sub_region <path> of <region> if it exists.
+Returns element with <name> in <region> if it exists.
 ==============================================================================*/
 {
 	int name_length;
 	struct CM_element_information identifier;
 	struct Cmiss_element *return_element;
-	struct Cmiss_region *sub_region;
 	struct FE_region *fe_region;
 
 	ENTER(Cmiss_region_get_element);
 	return_element = (struct Cmiss_element *)NULL;
-	if (region && path && name)
+	if (region&&name)
 	{
-		if (Cmiss_region_get_region_from_path(region, path, &sub_region) &&
-			sub_region && (fe_region = Cmiss_region_get_FE_region(sub_region)))
+		if (fe_region=Cmiss_region_get_FE_region(region))
 		{
 			identifier.type = CM_ELEMENT;
 			if ((1==sscanf(name," %d %n",&(identifier.number),&name_length))&&
@@ -196,25 +165,23 @@ Returns element with <name> in sub_region <path> of <region> if it exists.
 } /* Cmiss_region_get_element */
 
 struct Cmiss_node *Cmiss_region_get_node(struct Cmiss_region *region,
-	char *path, char *name)
+	char *name)
 /*******************************************************************************
-LAST MODIFIED : 19 August 2002
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
-Returns element with <name> in sub_region <path> of <region> if it exists.
+Returns element with <name> in <region> if it exists.
 ==============================================================================*/
 {
 	int name_length, node_number;
 	struct Cmiss_node *return_node;
-	struct Cmiss_region *sub_region;
 	struct FE_region *fe_region;
 
 	ENTER(Cmiss_region_get_node);
 	return_node = (struct Cmiss_node *)NULL;
-	if (region && path && name)
+	if (region&&name)
 	{
-		if (Cmiss_region_get_region_from_path(region, path, &sub_region) &&
-			sub_region && (fe_region = Cmiss_region_get_FE_region(sub_region)))
+		if (fe_region = Cmiss_region_get_FE_region(region))
 		{
 			if ((1==sscanf(name," %d %n",&node_number,&name_length))&&
 				((unsigned int)name_length==strlen(name)))
@@ -229,25 +196,22 @@ Returns element with <name> in sub_region <path> of <region> if it exists.
 	return (return_node);
 } /* Cmiss_region_get_node */
 
-int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region *region,
-	char *path)
+int Cmiss_region_get_number_of_nodes_in_region(struct Cmiss_region *region)
 /*******************************************************************************
-LAST MODIFIED : 1 April 2004
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
-Returns element with <name> in sub_region <path> of <region> if it exists.
+Returns element with <name> in <region> if it exists.
 ==============================================================================*/
 {
 	int number_of_nodes;
-	struct Cmiss_region *sub_region;
 	struct FE_region *fe_region;
 
 	ENTER(Cmiss_region_get_number_of_nodes_in_region);
 	number_of_nodes = 0;
-	if (region && path)
+	if (region)
 	{
-		if (Cmiss_region_get_region_from_path(region, path, &sub_region) &&
-			sub_region && (fe_region = Cmiss_region_get_FE_region(sub_region)))
+		if (fe_region = Cmiss_region_get_FE_region(region))
 		{
 			number_of_nodes = FE_region_get_number_of_FE_nodes(fe_region);
 		}
@@ -258,26 +222,25 @@ Returns element with <name> in sub_region <path> of <region> if it exists.
 } /* Cmiss_region_get_node */
 
 int Cmiss_region_for_each_node_in_region(struct Cmiss_region *region,
-	char *path, Cmiss_node_iterator_function iterator_function, void *user_data)
+	Cmiss_node_iterator_function iterator_function, void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 31 March 2004
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
-Iterates over each node in the subregion specified by <region> and <path>.
+Iterates over each node in <region>.
 ==============================================================================*/
 {
 	int return_code;
-	struct Cmiss_region *sub_region;
 	struct FE_region *fe_region;
 
 	ENTER(Cmiss_region_for_each_node_in_region);
 	return_code = 0;
-	if (region && path && iterator_function)
+	if (region&&iterator_function)
 	{
-		if (Cmiss_region_get_region_from_path(region, path, &sub_region) &&
-			sub_region && (fe_region = Cmiss_region_get_FE_region(sub_region)))
+		if (fe_region=Cmiss_region_get_FE_region(region))
 		{
-			return_code = FE_region_for_each_FE_node(fe_region, iterator_function, user_data);
+			return_code=FE_region_for_each_FE_node(fe_region,iterator_function,
+				user_data);
 		}
 	}
 	LEAVE;
