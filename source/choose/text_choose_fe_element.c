@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : text_choose_fe_element.c
 
-LAST MODIFIED : 18 August 1998
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Control for choosing an element by typing its identifier in a text box, based
@@ -17,7 +17,7 @@ on the text_choose_object macro.
 Module types
 ------------
 */
-FULL_DECLARE_TEXT_CHOOSE_OBJECT_STRUCT_TYPE(FE_element);
+FULL_DECLARE_TEXT_CHOOSE_OBJECT_TYPE(FE_element);
 
 /*
 Module functions

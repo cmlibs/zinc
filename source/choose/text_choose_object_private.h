@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : text_choose_object_private.h
 
-LAST MODIFIED : 28 June 1999
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Macros for implementing an option menu dialog control for choosing an object
@@ -14,13 +14,10 @@ Calls the client-specified callback routine if a different object is chosen.
 #include <stdio.h>
 #if defined (MOTIF)
 #include <Xm/Xm.h>
-#include <Xm/PushBG.h>
-#include <Xm/RowColumn.h>
+#include <Xm/TextF.h>
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "choose/text_choose_object.h"
-#include "choose/text_choose_object.uidh"
-#include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -29,16 +26,16 @@ Module variables
 ----------------
 */
 #if defined (FULL_NAMES)
-#define TEXT_CHOOSE_OBJECT_STRUCT_( object_type ) \
-	text_choose_object_struct_ ## object_type
+#define TEXT_CHOOSE_OBJECT_( object_type ) \
+	text_choose_object_ ## object_type
 #else
-#define TEXT_CHOOSE_OBJECT_STRUCT_( object_type ) costru ## object_type
+#define TEXT_CHOOSE_OBJECT_( object_type ) tcot ## object_type
 #endif
-#define TEXT_CHOOSE_OBJECT_STRUCT( object_type ) \
-	TEXT_CHOOSE_OBJECT_STRUCT_(object_type)
+#define TEXT_CHOOSE_OBJECT( object_type ) \
+	TEXT_CHOOSE_OBJECT_(object_type)
 
-#define FULL_DECLARE_TEXT_CHOOSE_OBJECT_STRUCT_TYPE( object_type ) \
-struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) \
+#define FULL_DECLARE_TEXT_CHOOSE_OBJECT_TYPE( object_type ) \
+struct TEXT_CHOOSE_OBJECT(object_type) \
 /***************************************************************************** \
 LAST MODIFIED : 18 August 1998 \
 \
@@ -55,37 +52,25 @@ Contains information required by the text_choose_object control dialog. \
 		struct MANAGER(object_type) *); \
 	Widget widget_parent,widget; \
 	struct Callback_data update_callback; \
-} /* struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) */
-
-#if defined (MOTIF)
-static int text_choose_object_hierarchy_open=0;
-static MrmHierarchy text_choose_object_hierarchy;
-#endif /* defined (MOTIF) */
+} /* struct TEXT_CHOOSE_OBJECT(object_type) */
 
 /*
 Module functions
 ----------------
 */
-#if defined (FULL_NAMES)
-#define TEXT_CHOOSE_OBJECT_DIALOG_NAME_( object_type ) \
-	text_choose_object_ ## object_type
-#else
-#define TEXT_CHOOSE_OBJECT_DIALOG_NAME_( object_type ) co_ ## object_type
-#endif
-#define TEXT_CHOOSE_OBJECT_DIALOG_NAME( object_type ) \
-	TEXT_CHOOSE_OBJECT_DIALOG_NAME_( object_type )
 
 #if defined (FULL_NAMES)
 #define TEXT_CHOOSE_OBJECT_UPDATE_( object_type ) \
 	text_choose_object_update_ ## object_type
 #else
-#define TEXT_CHOOSE_OBJECT_UPDATE_( object_type ) cou ## object_type
+#define TEXT_CHOOSE_OBJECT_UPDATE_( object_type ) tcou ## object_type
 #endif
-#define TEXT_CHOOSE_OBJECT_UPDATE( object_type ) TEXT_CHOOSE_OBJECT_UPDATE_(object_type)
+#define TEXT_CHOOSE_OBJECT_UPDATE( object_type ) \
+	TEXT_CHOOSE_OBJECT_UPDATE_(object_type)
 
 #define DECLARE_TEXT_CHOOSE_OBJECT_UPDATE_FUNCTION( object_type ) \
 static int TEXT_CHOOSE_OBJECT_UPDATE(object_type)( \
-	struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *text_chooser) \
+	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object) \
 /***************************************************************************** \
 LAST MODIFIED : 18 August 1998 \
 \
@@ -95,43 +80,22 @@ Avoids sending repeated updates if the object address has not changed. \
 ============================================================================*/ \
 { \
 	int return_code; \
-/*	char *temp_name; */ \
 \
 	ENTER(TEXT_CHOOSE_OBJECT_UPDATE(object_type)); \
-	if (text_chooser) \
+	if (text_choose_object) \
 	{ \
-		if (text_chooser->current_object != \
-			text_chooser->last_updated_object) \
+		if (text_choose_object->current_object != \
+			text_choose_object->last_updated_object) \
 		{ \
-/* \
-			printf("text_choose_object_update(" #object_type "): "); \
-			if (text_chooser->current_object) \
-			{ \
-				if (GET_NAME(object_type)( \
-					text_chooser->current_object,&temp_name)) \
-				{ \
-					printf("%s\n",temp_name); \
-					DEALLOCATE(temp_name); \
-				} \
-				else \
-				{ \
-					printf("NULL\n"); \
-				} \
-			} \
-			else \
-			{ \
-				printf("NULL\n"); \
-			} \
-*/ \
-			if (text_chooser->update_callback.procedure) \
+			if (text_choose_object->update_callback.procedure) \
 			{ \
 				/* now call the procedure with the user data and the position data */ \
-				(text_chooser->update_callback.procedure)( \
-					text_chooser->widget,text_chooser->update_callback.data, \
-					text_chooser->current_object); \
+				(text_choose_object->update_callback.procedure)( \
+					text_choose_object->widget,text_choose_object->update_callback.data, \
+					text_choose_object->current_object); \
 			} \
-			text_chooser->last_updated_object= \
-				text_chooser->current_object; \
+			text_choose_object->last_updated_object= \
+				text_choose_object->current_object; \
 		} \
 		return_code=1; \
 	} \
@@ -150,7 +114,7 @@ Avoids sending repeated updates if the object address has not changed. \
 #define TEXT_CHOOSE_OBJECT_DESTROY_CB_( object_type ) \
 	text_choose_object_destroy_cb_ ## object_type
 #else
-#define TEXT_CHOOSE_OBJECT_DESTROY_CB_( object_type ) codc ## object_type
+#define TEXT_CHOOSE_OBJECT_DESTROY_CB_( object_type ) tcodc ## object_type
 #endif
 #define TEXT_CHOOSE_OBJECT_DESTROY_CB( object_type ) \
 	TEXT_CHOOSE_OBJECT_DESTROY_CB_(object_type)
@@ -165,19 +129,19 @@ DESCRIPTION : \
 Callback for the text_choose_object dialog - tidies up all memory allocation. \
 ============================================================================*/ \
 { \
-	struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *text_chooser; \
+	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
 \
 	ENTER(TEXT_CHOOSE_OBJECT_DESTROY_CB(object_type)); \
 	USE_PARAMETER(call_data); \
-	if (widget&&(text_chooser= \
-		(struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *)client_data)) \
+	if (widget&&(text_choose_object= \
+		(struct TEXT_CHOOSE_OBJECT(object_type) *)client_data)) \
 	{ \
-		if (text_chooser->manager_callback_id) \
+		if (text_choose_object->manager_callback_id) \
 		{ \
-			MANAGER_DEREGISTER(object_type)(text_chooser->manager_callback_id, \
-				text_chooser->object_manager); \
+			MANAGER_DEREGISTER(object_type)(text_choose_object->manager_callback_id, \
+				text_choose_object->object_manager); \
 		} \
-		DEALLOCATE(text_chooser); \
+		DEALLOCATE(text_choose_object); \
 	} \
 	else \
 	{ \
@@ -198,7 +162,7 @@ Callback for the text_choose_object dialog - tidies up all memory allocation. \
 
 #define DECLARE_TEXT_CHOOSE_OBJECT_SELECT_OBJECT_FUNCTION( object_type ) \
 static int TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)( \
-	struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *text_chooser, \
+	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object, \
 	struct object_type *new_object) \
 /***************************************************************************** \
 LAST MODIFIED : 10 September 1999 \
@@ -214,12 +178,12 @@ update in case it has changed, and writes the new object string in the widget. \
 \
 	ENTER(TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)); \
 	/* check arguments */ \
-	if (text_chooser) \
+	if (text_choose_object) \
 	{ \
-		if (new_object&& \
-			(!IS_MANAGED(object_type)(new_object,text_chooser->object_manager)|| \
-			(text_chooser->conditional_function && \
-			!(text_chooser->conditional_function(new_object,(void *)NULL))))) \
+		if (new_object&&(!IS_MANAGED(object_type)(new_object, \
+			text_choose_object->object_manager)|| \
+			(text_choose_object->conditional_function && \
+			!(text_choose_object->conditional_function(new_object,(void *)NULL))))) \
 		{ \
 			display_message(ERROR_MESSAGE, \
 				"TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type).  Invalid object"); \
@@ -227,33 +191,35 @@ update in case it has changed, and writes the new object string in the widget. \
 		} \
 		if (new_object) \
 		{ \
-			text_chooser->current_object=new_object; \
+			text_choose_object->current_object=new_object; \
 		} \
 		else \
 		{ \
-			if (!text_chooser->current_object) \
+			if (!text_choose_object->current_object) \
 			{ \
-				text_chooser->current_object=FIRST_OBJECT_IN_MANAGER_THAT(object_type)(\
-					text_chooser->conditional_function,(void *)NULL, \
-					text_chooser->object_manager); \
+				text_choose_object->current_object= \
+					FIRST_OBJECT_IN_MANAGER_THAT(object_type)(\
+						text_choose_object->conditional_function,(void *)NULL, \
+						text_choose_object->object_manager); \
 			} \
 		} \
 		/* write out the current_object */ \
-		if (text_chooser->current_object) \
+		if (text_choose_object->current_object) \
 		{ \
-			if (text_chooser->object_to_string(text_chooser->current_object, \
-				&object_name)) \
+			if (text_choose_object->object_to_string( \
+				text_choose_object->current_object,&object_name)) \
 			{ \
-				XtVaSetValues(text_chooser->widget,XmNvalue,object_name,NULL); \
+				XtVaSetValues(text_choose_object->widget,XmNvalue,object_name,NULL); \
 				DEALLOCATE(object_name); \
 			} \
 		} \
 		else \
 		{ \
-			XtVaSetValues(text_chooser->widget,XmNvalue,null_object_name,NULL); \
+			XtVaSetValues(text_choose_object->widget, \
+				XmNvalue,null_object_name,NULL); \
 		} \
 		/* inform the client of and change */ \
-		TEXT_CHOOSE_OBJECT_UPDATE(object_type)(text_chooser); \
+		TEXT_CHOOSE_OBJECT_UPDATE(object_type)(text_choose_object); \
 		return_code=1; \
 	} \
 	else \
@@ -272,7 +238,7 @@ update in case it has changed, and writes the new object string in the widget. \
 #define TEXT_CHOOSE_OBJECT_CB_( object_type ) \
 	text_choose_object_cb_ ## object_type
 #else
-#define TEXT_CHOOSE_OBJECT_CB_( object_type ) comc ## object_type
+#define TEXT_CHOOSE_OBJECT_CB_( object_type ) tcocb ## object_type
 #endif
 #define TEXT_CHOOSE_OBJECT_CB( object_type ) \
 	TEXT_CHOOSE_OBJECT_CB_(object_type)
@@ -288,18 +254,18 @@ Callback for the text field - change of object. \
 ============================================================================*/ \
 { \
 	char *object_name; \
-	struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *text_chooser; \
+	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
 \
 	ENTER(TEXT_CHOOSE_OBJECT_CB(object_type)); \
 	USE_PARAMETER(call_data); \
-	if (widget&&(text_chooser= \
-		(struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *)client_data)) \
+	if (widget&&(text_choose_object= \
+		(struct TEXT_CHOOSE_OBJECT(object_type) *)client_data)) \
 	{ \
 		/* Get the object name string */ \
 		XtVaGetValues(widget,XmNvalue,&object_name,NULL); \
-		TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_chooser, \
-			text_chooser->string_to_object(object_name, \
-				text_chooser->object_manager)); \
+		TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
+			text_choose_object->string_to_object(object_name, \
+				text_choose_object->object_manager)); \
 		if (object_name) \
 		{ \
 			XtFree(object_name); \
@@ -317,7 +283,8 @@ Callback for the text field - change of object. \
 #define TEXT_CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE_( object_type ) \
 	text_choose_object_global_object_change_ ## object_type
 #else
-#define TEXT_CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE_( object_type ) cogoc ## object_type
+#define TEXT_CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE_( object_type ) \
+	tcogoc ## object_type
 #endif
 #define TEXT_CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE( object_type ) \
 	TEXT_CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE_(object_type)
@@ -332,47 +299,48 @@ DESCRIPTION : \
 Updates the chosen object and text field in response to manager messages. \
 ============================================================================*/ \
 { \
-	struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *text_chooser; \
+	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
 \
 	ENTER(TEXT_CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE(object_type)); \
-	if (message&&(text_chooser= \
-		(struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *)data)) \
+	if (message&&(text_choose_object= \
+		(struct TEXT_CHOOSE_OBJECT(object_type) *)data)) \
 	{ \
 		switch (message->change) \
 		{ \
 			case MANAGER_CHANGE_ALL(object_type): \
 			{ \
-				if ((text_chooser->current_object)&&!IS_MANAGED(object_type)( \
-					text_chooser->current_object,text_chooser->object_manager)) \
+				if ((text_choose_object->current_object)&&!IS_MANAGED(object_type)( \
+					text_choose_object->current_object, \
+					text_choose_object->object_manager)) \
 				{ \
-					text_chooser->current_object=(struct object_type *)NULL; \
+					text_choose_object->current_object=(struct object_type *)NULL; \
 				} \
-				TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_chooser, \
-					text_chooser->current_object); \
+				TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
+					text_choose_object->current_object); \
 			} break; \
 			case MANAGER_CHANGE_DELETE(object_type): \
 			{ \
-				if (message->object_changed==text_chooser->current_object) \
+				if (message->object_changed==text_choose_object->current_object) \
 				{ \
-					TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_chooser, \
+					TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
 						(struct object_type *)NULL); \
 				} \
 			} break; \
 			case MANAGER_CHANGE_ADD(object_type): \
 			{ \
-				if (!text_chooser->current_object) \
+				if (!text_choose_object->current_object) \
 				{ \
-					TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_chooser, \
+					TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
 						(struct object_type *)NULL); \
 				} \
 			} break; \
 			case MANAGER_CHANGE_IDENTIFIER(object_type): \
 			case MANAGER_CHANGE_OBJECT(object_type): \
 			{ \
-				if (message->object_changed==text_chooser->current_object) \
+				if (message->object_changed==text_choose_object->current_object) \
 				{ \
-					TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_chooser, \
-						text_chooser->current_object); \
+					TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
+						text_choose_object->current_object); \
 				} \
 			} break; \
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type): \
@@ -397,118 +365,82 @@ Global functions
 #define DECLARE_CREATE_TEXT_CHOOSE_OBJECT_WIDGET_FUNCTION( object_type ) \
 PROTOTYPE_CREATE_TEXT_CHOOSE_OBJECT_WIDGET_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 18 August 1998 \
+LAST MODIFIED : 9 February 2000 \
 \
 DESCRIPTION : \
 Creates an option menu from which an object from the manager may be chosen. \
 ============================================================================*/ \
 { \
-	MrmType text_choose_object_dialog_class; \
-	struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *text_chooser; \
-	static MrmRegisterArg callback_list[]= \
-	{ \
-		{"text_choose_object_destroy_CB",(XtPointer) \
-			TEXT_CHOOSE_OBJECT_DESTROY_CB(object_type)}, \
-		{"text_choose_object_CB",(XtPointer) \
-			TEXT_CHOOSE_OBJECT_CB(object_type)} \
-	}; \
-	static MrmRegisterArg identifier_list[]= \
-	{ \
-		{"Text_choose_object_structure",(XtPointer)NULL} \
-	}; \
+	Arg args[6]; \
+	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
 	Widget return_widget; \
 \
 	ENTER(CREATE_TEXT_CHOOSE_OBJECT_WIDGET(object_type)); \
 	return_widget=(Widget)NULL; \
-	/* check arguments */ \
 	if (parent&&object_manager&&object_to_string&&string_to_object) \
 	{ \
-		if (MrmOpenHierarchy_base64_string(text_choose_object_uidh, \
-			&text_choose_object_hierarchy,&text_choose_object_hierarchy_open)) \
+		if (ALLOCATE(text_choose_object, \
+			struct TEXT_CHOOSE_OBJECT(object_type),1)) \
 		{ \
-			/* allocate memory */ \
-			if (ALLOCATE(text_chooser, \
-				struct TEXT_CHOOSE_OBJECT_STRUCT(object_type),1)) \
+			/* initialise the structure */ \
+			text_choose_object->object_manager=object_manager; \
+			text_choose_object->manager_callback_id=(void *)NULL; \
+			text_choose_object->conditional_function=conditional_function; \
+			text_choose_object->object_to_string=object_to_string; \
+			text_choose_object->string_to_object=string_to_object; \
+			text_choose_object->widget_parent=parent; \
+			text_choose_object->widget=(Widget)NULL; \
+			text_choose_object->update_callback.procedure= \
+				(Callback_procedure *)NULL; \
+			text_choose_object->update_callback.data=(void *)NULL; \
+			text_choose_object->current_object=(struct object_type *)NULL; \
+			text_choose_object->last_updated_object=(struct object_type *)NULL; \
+			XtSetArg(args[0],XmNleftAttachment,XmATTACH_FORM); \
+			XtSetArg(args[1],XmNrightAttachment,XmATTACH_FORM); \
+			XtSetArg(args[2],XmNtopAttachment,XmATTACH_FORM); \
+			XtSetArg(args[3],XmNbottomAttachment,XmATTACH_FORM); \
+			XtSetArg(args[4],XmNuserData,(XtPointer)text_choose_object); \
+			XtSetArg(args[5],XmNcolumns,(XtPointer)8); \
+			if (text_choose_object->widget= \
+				XmCreateTextField(parent,"text_choose_object",args,6))\
 			{ \
-				/* initialise the structure */ \
-				text_chooser->object_manager=object_manager; \
-				text_chooser->manager_callback_id=(void *)NULL; \
-				text_chooser->conditional_function=conditional_function; \
-				text_chooser->object_to_string=object_to_string; \
-				text_chooser->string_to_object=string_to_object; \
-				text_chooser->widget_parent=parent; \
-				text_chooser->widget=(Widget)NULL; \
-				text_chooser->update_callback.procedure=(Callback_procedure *)NULL; \
-				text_chooser->update_callback.data=(void *)NULL; \
-				text_chooser->current_object=(struct object_type *)NULL; \
-				text_chooser->last_updated_object=(struct object_type *)NULL; \
-				/* register the callbacks */ \
-				if (MrmSUCCESS==MrmRegisterNamesInHierarchy( \
-					text_choose_object_hierarchy, \
-					callback_list,XtNumber(callback_list))) \
-				{ \
-					/* assign and register the identifiers */ \
-					identifier_list[0].value=(XtPointer)text_chooser; \
-					if (MrmSUCCESS==MrmRegisterNamesInHierarchy( \
-						text_choose_object_hierarchy, \
-						identifier_list,XtNumber(identifier_list))) \
-					{ \
-						/* fetch text_choose_object control widget */ \
-						if (MrmSUCCESS==MrmFetchWidget(text_choose_object_hierarchy, \
-							"text_choose_object",text_chooser->widget_parent, \
-							&(text_chooser->widget),&text_choose_object_dialog_class)) \
-						{ \
-							/* register for any object changes */ \
-							text_chooser->manager_callback_id=MANAGER_REGISTER(object_type)( \
-								TEXT_CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE(object_type), \
-								(void *)text_chooser,text_chooser->object_manager); \
-							TEXT_CHOOSE_OBJECT_SET_OBJECT(object_type)( \
-								text_chooser->widget,current_object); \
-							XtManageChild(text_chooser->widget); \
-							return_widget=text_chooser->widget; \
-						} \
-						else \
-						{ \
-							display_message(ERROR_MESSAGE, \
-								"CREATE_TEXT_CHOOSE_OBJECT_WIDGET(" #object_type \
-								").  Could not fetch text_choose_object dialog"); \
-							DEALLOCATE(text_chooser); \
-						} \
-					} \
-					else \
-					{ \
-						display_message(ERROR_MESSAGE, \
-							"CREATE_TEXT_CHOOSE_OBJECT_WIDGET(" #object_type \
-							").  Could not register identifiers"); \
-						DEALLOCATE(text_chooser); \
-					} \
-				} \
-				else \
-				{ \
-					display_message(ERROR_MESSAGE, \
-						"CREATE_TEXT_CHOOSE_OBJECT_WIDGET(" #object_type \
-						").  Could not register callbacks"); \
-					DEALLOCATE(text_chooser); \
-				} \
+				/* add callbacks for chooser widget */ \
+				XtAddCallback(text_choose_object->widget,XmNdestroyCallback, \
+					TEXT_CHOOSE_OBJECT_DESTROY_CB(object_type), \
+					(XtPointer)text_choose_object); \
+				XtAddCallback(text_choose_object->widget,XmNlosingFocusCallback, \
+					TEXT_CHOOSE_OBJECT_CB(object_type),(XtPointer)text_choose_object); \
+				XtAddCallback(text_choose_object->widget,XmNactivateCallback, \
+					TEXT_CHOOSE_OBJECT_CB(object_type),(XtPointer)text_choose_object); \
+				/* register for any object changes */ \
+				text_choose_object->manager_callback_id=MANAGER_REGISTER(object_type)( \
+					TEXT_CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE(object_type), \
+					(void *)text_choose_object,text_choose_object->object_manager); \
+				TEXT_CHOOSE_OBJECT_SET_OBJECT(object_type)( \
+					text_choose_object->widget,current_object); \
+				XtManageChild(text_choose_object->widget); \
+				return_widget=text_choose_object->widget; \
 			} \
 			else \
 			{ \
 				display_message(ERROR_MESSAGE, \
 					"CREATE_TEXT_CHOOSE_OBJECT_WIDGET(" #object_type \
-					").  Could not allocate control window structure"); \
+					").  Could not create text field widget"); \
+				DEALLOCATE(text_choose_object); \
 			} \
 		} \
 		else \
 		{ \
 			display_message(ERROR_MESSAGE, \
 				"CREATE_TEXT_CHOOSE_OBJECT_WIDGET(" #object_type \
-				").  Could not open hierarchy"); \
+				").  Could not allocate structure"); \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"CREATE_TEXT_CHOOSE_OBJECT_WIDGET(" #object_type ").  Invalid argument(s)"); \
+			"CREATE_TEXT_CHOOSE_OBJECT_WIDGET(" #object_type \
+			").  Invalid argument(s)"); \
 	} \
 	LEAVE; \
 \
@@ -525,7 +457,7 @@ Changes the callback item of the text_choose_object_widget. \
 ============================================================================*/ \
 { \
 	int return_code; \
-	struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *text_chooser; \
+	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
 \
 	ENTER(TEXT_CHOOSE_OBJECT_SET_CALLBACK(object_type)); \
 	/* check arguments */ \
@@ -533,12 +465,12 @@ Changes the callback item of the text_choose_object_widget. \
 	{ \
 		/* Get the pointer to the data for the text_choose_object dialog */ \
 		XtVaGetValues(text_choose_object_widget,XmNuserData, \
-			&text_chooser,NULL); \
-		if (text_chooser) \
+			&text_choose_object,NULL); \
+		if (text_choose_object) \
 		{ \
-			text_chooser->update_callback.procedure= \
+			text_choose_object->update_callback.procedure= \
 				new_callback->procedure; \
-			text_chooser->update_callback.data=new_callback->data; \
+			text_choose_object->update_callback.data=new_callback->data; \
 			return_code=1; \
 		} \
 		else \
@@ -570,21 +502,21 @@ Changes the chosen object in the text_choose_object_widget. \
 ============================================================================*/ \
 { \
 	int return_code; \
-	struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *text_chooser; \
+	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
 \
 	ENTER(TEXT_CHOOSE_OBJECT_SET_OBJECT(object_type)); \
 	if (text_choose_object_widget) \
 	{ \
 		/* Get the pointer to the data for the text_choose_object dialog */ \
 		XtVaGetValues(text_choose_object_widget,XmNuserData, \
-			&text_chooser,NULL); \
-		if (text_chooser) \
+			&text_choose_object,NULL); \
+		if (text_choose_object) \
 		{ \
 			/* set the last_updated_object to the new_object since it is what the \
 				 rest of the application now thinks is the chosen object. */ \
-			text_chooser->last_updated_object=new_object; \
+			text_choose_object->last_updated_object=new_object; \
 			return_code=TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)( \
-				text_chooser,new_object); \
+				text_choose_object,new_object); \
 		} \
 		else \
 		{ \
@@ -614,7 +546,7 @@ Returns a pointer to the callback item of the text_choose_object_widget. \
 ============================================================================*/ \
 { \
 	struct Callback_data *return_address; \
-	struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *text_chooser; \
+	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
 \
 	ENTER(TEXT_CHOOSE_OBJECT_GET_CALLBACK(object_type)); \
 	/* check arguments */ \
@@ -622,10 +554,10 @@ Returns a pointer to the callback item of the text_choose_object_widget. \
 	{ \
 		/* Get the pointer to the data for the text_choose_object dialog */ \
 		XtVaGetValues(text_choose_object_widget,XmNuserData, \
-			&text_chooser,NULL); \
-		if (text_chooser) \
+			&text_choose_object,NULL); \
+		if (text_choose_object) \
 		{ \
-			return_address=&(text_chooser->update_callback); \
+			return_address=&(text_choose_object->update_callback); \
 		} \
 		else \
 		{ \
@@ -656,7 +588,7 @@ Returns the currently chosen object in the text_choose_object_widget. \
 ============================================================================*/ \
 { \
 	struct object_type *return_address; \
-	struct TEXT_CHOOSE_OBJECT_STRUCT(object_type) *text_chooser; \
+	struct TEXT_CHOOSE_OBJECT(object_type) *text_choose_object; \
 \
 	ENTER(TEXT_CHOOSE_OBJECT_GET_OBJECT(object_type)); \
 	/* check arguments */ \
@@ -664,10 +596,10 @@ Returns the currently chosen object in the text_choose_object_widget. \
 	{ \
 		/* Get the pointer to the data for the text_choose_object dialog */ \
 		XtVaGetValues(text_choose_object_widget,XmNuserData, \
-			&text_chooser,NULL); \
-		if (text_chooser) \
+			&text_choose_object,NULL); \
+		if (text_choose_object) \
 		{ \
-			return_address=text_chooser->current_object; \
+			return_address=text_choose_object->current_object; \
 		} \
 		else \
 		{ \
