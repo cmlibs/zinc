@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 23 May 2002
+XCOMM LAST MODIFIED : 3 June 2002
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -588,15 +588,11 @@ IMAGEMAGICK_PATH = $(CMGUI_DEV_ROOT)/image_utils
 #if defined (IRIX) /* switch OperatingSystem */
 IMAGEMAGICK_SWITCH = -DIMAGEMAGICK
 #if defined (O64)
-IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include64/
-IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib64/libMagick.a $(IMAGEMAGICK_PATH)/lib64/libtiff.a $(IMAGEMAGICK_PATH)/lib64/libjpeg.a $(IMAGEMAGICK_PATH)/lib64/libpng.a $(IMAGEMAGICK_PATH)/lib64/libz.a
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includeirix-64/
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/libirix-64/libMagick.a $(IMAGEMAGICK_PATH)/libirix-64/libtiff.a $(IMAGEMAGICK_PATH)/libirix-64/libjpeg.a $(IMAGEMAGICK_PATH)/libirix-64/libpng.a $(IMAGEMAGICK_PATH)/libirix-64/libz.a
 #else /* defined (O64) */
-IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include32/
-#if defined (OPTIMISED)
-IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib32/libMagick.a $(IMAGEMAGICK_PATH)/lib32/libtiff.a $(IMAGEMAGICK_PATH)/lib32/libjpeg.a $(IMAGEMAGICK_PATH)/lib32/libpng.a $(IMAGEMAGICK_PATH)/lib32/libz.a
-#else /* defined (OPTIMISED) */
-IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib32/libMagick.a $(IMAGEMAGICK_PATH)/lib32/libtiff.a $(IMAGEMAGICK_PATH)/lib32/libjpeg.a $(IMAGEMAGICK_PATH)/lib32/libpng.a $(IMAGEMAGICK_PATH)/lib32/libz.a
-#endif /* defined (OPTIMISED) */
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includeirix-n32/
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/libirix-n32/libMagick.a $(IMAGEMAGICK_PATH)/libirix-n32/libtiff.a $(IMAGEMAGICK_PATH)/libirix-n32/libjpeg.a $(IMAGEMAGICK_PATH)/libirix-n32/libpng.a $(IMAGEMAGICK_PATH)/libirix-n32/libz.a
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includelinux/
