@@ -20,7 +20,7 @@ when building Cell with CELL_DISTRIBUTED defined.
 #include "choose/choose_computed_field.h"
 #include "choose/text_choose_fe_element.h"
 #include "computed_field/computed_field_finite_element.h"
-#include "finite_element/finite_element_to_graphics_object.h"
+#include "finite_element/finite_element_discretization.h"
 
 /*
 Module types

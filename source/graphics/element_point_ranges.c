@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.c
 
-LAST MODIFIED : 23 April 2001
+LAST MODIFIED : 21 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -10,7 +10,7 @@ DESCRIPTION :
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
-#include "finite_element/finite_element_to_graphics_object.h"
+#include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "graphics/element_point_ranges.h"
