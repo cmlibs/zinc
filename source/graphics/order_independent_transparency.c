@@ -741,8 +741,8 @@ Draw a textured quad for each layer and blend them all together correctly.
 						GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 					glEnable(GL_BLEND);
 				} break;
-			}
 #endif /* defined GL_VERSION_1_4 */
+			}
 			if (data->using_stencil_overlay)
 			{
 				/* disable stencil buffer to get the overlay back*/
