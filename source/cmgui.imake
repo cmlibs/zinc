@@ -878,7 +878,7 @@ depend :
 transfer :
 	tar -cvf - \
 	readme.* *.make *.imake *.c version.ObjSuffix.h Cmgui \
-	$(UTILITIES_PATH)/uid2uidh $(UTILITIES_PATH)/uid2uidhlinux \
+	$(UTILITIES_PATH)/uid2uidh $(UTILITIES_PATH)/uid2uidh_linux \
 	*.mms *.sed *.com *.opt *.ico \
 	application/WildC application/WildH application/WildUil \
 	choose/WildC choose/WildH choose/WildUil \
@@ -907,7 +907,7 @@ transfer :
 	transformation/WildC transformation/WildH transformation/WildUil \
 	unemap/drawing_2d.c unemap/drawing_2d.h \
 	user_interface/WildC user_interface/WildH user_interface/WildUil \
-	$(UTILITIES_PATH)/WildC $(UTILITIES_PATH)/WildH $(UTILITIES_PATH)/WildUil \
+	utilities/WildC utilities/WildH utilities/WildUil \
 	view/WildC view/WildH view/WildUil \
 	| gzip > cmgui_tar1.gz
 	tar -cvf - \
