@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 1 June 2004
+LAST MODIFIED : 9 September 2004
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -11594,7 +11594,7 @@ static int FE_element_shape_xi_increment(struct FE_element_shape *shape,
 	FE_value *xi,FE_value *increment, FE_value *step_size,
 	int *face_number_address, FE_value *xi_face)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2004
+LAST MODIFIED : 9 September 2004
 
 DESCRIPTION :
 Adds the <increment> to <xi>.  If this moves <xi> outside of the shape, then
@@ -11646,9 +11646,9 @@ on the boundary of the shape.
 				/* Don't terminate if the LU_decompose fails as the matrix is 
 					probably singular, just implying that we are travelling parallel
 					to the face */
-				if ((return_code=LU_decompose(dimension,face_matrix,pivot_index,
-					&determinant))&&(return_code=LU_backsubstitute(dimension,face_matrix,
-					pivot_index,face_rhs)))
+				if (LU_decompose(dimension,face_matrix,pivot_index,
+					&determinant)&&LU_backsubstitute(dimension,face_matrix,
+					pivot_index,face_rhs))
 				{
 					step_size_local=face_rhs[0];
 					if ((step_size_local > -SMALL_STEP) && (step_size_local < SMALL_STEP))
@@ -45345,8 +45345,9 @@ An iterator function that returns true if the element referred to in the parent
 	return (return_code);
 } /* FE_element_parent_not_equal_to_element */
 
-int FE_element_xi_increment_within_element(struct FE_element *element, FE_value *xi,
-	FE_value *increment, FE_value *fraction, int *face_number, FE_value *xi_face)
+int FE_element_xi_increment_within_element(struct FE_element *element,
+	FE_value *xi,FE_value *increment,FE_value *fraction,int *face_number,
+	FE_value *xi_face)
 /*******************************************************************************
 LAST MODIFIED : 20 January 2004
 
