@@ -1026,6 +1026,7 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 				{
 					DEACCESS(Any_object)(&scene_object->represented_object);
 				}
+				DEALLOCATE(*scene_object_ptr);
 			}
 			else
 			{
