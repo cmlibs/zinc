@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 12 March 2002
+LAST MODIFIED : 15 April 2002
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -2662,7 +2662,7 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	struct FE_element *top_level_element,enum Render_type render_type,
 	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 15 April 2002
 
 DESCRIPTION :
 Creates a <GT_surface> from the <coordinate_field> for the 2-D finite <element>
@@ -3144,6 +3144,7 @@ normals are used.
 								sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
 									coordinate_3*coordinate_3);
 							(*texture_coordinate)[1]=0.;
+							(*texture_coordinate)[2]=0.;
 							point_s++;
 							texture_coordinate_s++;
 						}
@@ -3160,6 +3161,7 @@ normals are used.
 							(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
 								sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
 									coordinate_3*coordinate_3);
+							(*texture_coordinate)[2]=0.;
 							point_t++;
 							texture_coordinate_t++;
 							for (j=i-1;j>0;j--)
@@ -3178,6 +3180,7 @@ normals are used.
 								(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
 									sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
 										coordinate_3*coordinate_3);
+								(*texture_coordinate)[2]=0.;
 								point_s++;
 								texture_coordinate_s++;
 							}
@@ -3198,6 +3201,7 @@ normals are used.
 								sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
 									coordinate_3*coordinate_3);
 							(*texture_coordinate)[1]=0.;
+							(*texture_coordinate)[2]=0.;
 							point_s++;
 							texture_coordinate_s++;
 						}
@@ -3214,6 +3218,7 @@ normals are used.
 							(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
 								sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
 									coordinate_3*coordinate_3);
+							(*texture_coordinate)[2]=0.;
 							point_t++;
 							texture_coordinate_t++;
 							for (j=number_of_points_in_xi1-1;j>0;j--)
@@ -3232,6 +3237,7 @@ normals are used.
 								(*texture_coordinate)[1]=(*texture_coordinate_t)[1]+
 									sqrt(coordinate_1*coordinate_1+coordinate_2*coordinate_2+
 										coordinate_3*coordinate_3);
+								(*texture_coordinate)[2]=0.;
 								point_s++;
 								texture_coordinate_s++;
 								point_t++;
