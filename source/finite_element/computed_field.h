@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 29 June 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -289,10 +289,19 @@ any other fields, this function is recursively called for them.
 int Computed_field_is_defined_at_node_conditional(struct Computed_field *field,
 	void *node_void);
 /*******************************************************************************
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
-Manager conditional function version of Computed_field_is_defined_at_node.
+Computed_field conditional function version of
+Computed_field_is_defined_at_node.
+==============================================================================*/
+
+int FE_node_has_Computed_field_defined(struct FE_node *node,void *field_void);
+/*******************************************************************************
+LAST MODIFIED : 28 June 2000
+
+DESCRIPTION :
+FE_node conditional function version of Computed_field_is_defined_at_node.
 ==============================================================================*/
 
 int Computed_field_depends_on_Computed_field(struct Computed_field *field,

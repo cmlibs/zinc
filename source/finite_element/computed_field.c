@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -771,6 +771,7 @@ wrapper for <fe_field>.
 			"Computed_field_is_read_only_with_fe_field.  Invalid argument(s)");
 		return_code=0;
 	}
+	LEAVE;
 
 	return (return_code);
 } /* Computed_field_is_read_only_with_fe_field */
@@ -1779,10 +1780,11 @@ any other fields, this function is recursively called for them.
 int Computed_field_is_defined_at_node_conditional(struct Computed_field *field,
 	void *node_void)
 /*******************************************************************************
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
-Manager conditional function version of Computed_field_is_defined_at_node.
+Computed_field conditional function version of
+Computed_field_is_defined_at_node.
 ==============================================================================*/
 {
 	int return_code;
@@ -1790,6 +1792,24 @@ Manager conditional function version of Computed_field_is_defined_at_node.
 	ENTER(Computed_field_is_defined_at_node_conditional);
 	return_code=
 		Computed_field_is_defined_at_node(field,(struct FE_node *)node_void);
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_defined_at_node_conditional */
+
+int FE_node_has_Computed_field_defined(struct FE_node *node,void *field_void)
+/*******************************************************************************
+LAST MODIFIED : 28 June 2000
+
+DESCRIPTION :
+FE_node conditional function version of Computed_field_is_defined_at_node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_defined_at_node_conditional);
+	return_code=
+		Computed_field_is_defined_at_node((struct Computed_field *)field_void,node);
 	LEAVE;
 
 	return (return_code);
