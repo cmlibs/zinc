@@ -1688,20 +1688,22 @@ static struct GROUP(FE_element) *make_fit_elements(char *group_name,
 	struct MANAGER(GROUP(FE_element))	*element_group_manager,
 	struct MANAGER(FE_basis) *basis_manager,
 	struct MANAGER(FE_element) *element_manager,enum Region_type region_type,
-	int number_of_rows,int number_of_columns,struct Region *region)
+	int number_of_rows,int number_of_columns,FE_value *x_mesh,FE_value *y_mesh,
+	struct Region *region)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 1 February 2001
 
 DESCRIPTION :
-???RC description? where is it?
+Make the elements for the 3d map surface.
 ==============================================================================*/
 {
 	int addition,count,base_scale_factor_offset,dest_index,i,index,j,k,l,m,
-		number_of_fields,number_of_grid_nodes,number_of_nodes,
+		mesh_col,mesh_row,number_of_fields,number_of_grid_nodes,number_of_nodes,
 		number_of_scale_factor_sets,*numbers_in_scale_factor_sets,
 		return_code,source_index,number_of_components,number_of_derivatives,
 		*temp_numbers_in_scale_factor_sets;
 	FE_element_field_component_modify modify;
+	FE_value height,width;
 	struct CM_element_information element_identifier;
 	struct FE_basis *basis,*linear_lagrange_basis,*cubic_hermite_basis;
 	struct FE_element *element,*template_element;
@@ -2126,105 +2128,46 @@ DESCRIPTION :
 							set_FE_element_node(element,3,
 								element_nodes[index+number_of_columns+2]))
 						{
-							/* set scale factors */
-#if defined (NEW_CODE)
-/*???DB. Testing */
-#define MAJOR_R 200
-#define MINOR_R 100
-{
-	FE_value cos_t,ds_dt,dt_dxi1,r,t1,t2,t3,t4,sin_t,theta,x,y;
-
-							switch (region_type)
-							{
-								case TORSO:
-								{
-									calculate_FE_field(field,0,element_nodes[index],
-										(struct FE_element *)NULL,(FE_value *)NULL,&r);
-									calculate_FE_field(field,1,element_nodes[index],
-										(struct FE_element *)NULL,(FE_value *)NULL,&theta);
-									x=r*cos(theta);
-									y=r*sin(theta);
-									t1=atan2(y/MAJOR_R,x/MINOR_R);
-									calculate_FE_field(field,0,element_nodes[index+1],
-										(struct FE_element *)NULL,(FE_value *)NULL,&r);
-									calculate_FE_field(field,1,element_nodes[index+1],
-										(struct FE_element *)NULL,(FE_value *)NULL,&theta);
-									x=r*cos(theta);
-									y=r*sin(theta);
-									t2=atan2(y/MAJOR_R,x/MINOR_R);
-									calculate_FE_field(field,0,
-										element_nodes[index+number_of_columns+1],
-										(struct FE_element *)NULL,(FE_value *)NULL,&r);
-									calculate_FE_field(field,1,
-										element_nodes[index+number_of_columns+1],
-										(struct FE_element *)NULL,(FE_value *)NULL,&theta);
-									x=r*cos(theta);
-									y=r*sin(theta);
-									t3=atan2(y/MAJOR_R,x/MINOR_R);
-									calculate_FE_field(field,0,
-										element_nodes[index+number_of_columns+2],
-										(struct FE_element *)NULL,(FE_value *)NULL,&r);
-									calculate_FE_field(field,1,
-										element_nodes[index+number_of_columns+2],
-										(struct FE_element *)NULL,(FE_value *)NULL,&theta);
-									x=r*cos(theta);
-									y=r*sin(theta);
-									t4=atan2(y/MAJOR_R,x/MINOR_R);
-									/*???debug */
-									printf("set scale factors for %d\n",
-										element_identifier.number);
-									printf("  t's.  %g %g %g %g\n",t1,t2,t3,t4);
-									printf("  scale factors. ");
-									cos_t=cos(t1);
-									sin_t=sin(t1);
-									ds_dt=sqrt(MAJOR_R*MAJOR_R*sin_t*sin_t+
-										MINOR_R*MINOR_R*cos_t*cos_t);
-									if (t2<t1)
-									{
-										dt_dxi1=8*atan(1)+t2-t1;
-									}
-									else
-									{
-										dt_dxi1=t2-t1;
-									}
-									set_FE_element_scale_factor(element,1,ds_dt*dt_dxi1);
-									/*???debug */
-									printf(" %g",ds_dt*dt_dxi1);
-									cos_t=cos(t2);
-									sin_t=sin(t2);
-									ds_dt=sqrt(MAJOR_R*MAJOR_R*sin_t*sin_t+
-										MINOR_R*MINOR_R*cos_t*cos_t);
-									set_FE_element_scale_factor(element,5,ds_dt*dt_dxi1);
-									/*???debug */
-									printf(" %g",ds_dt*dt_dxi1);
-									cos_t=cos(t3);
-									sin_t=sin(t3);
-									ds_dt=sqrt(MAJOR_R*MAJOR_R*sin_t*sin_t+
-										MINOR_R*MINOR_R*cos_t*cos_t);
-									if (t4<t3)
-									{
-										dt_dxi1=8*atan(1)+t4-t3;
-									}
-									else
-									{
-										dt_dxi1=t4-t3;
-									}
-									set_FE_element_scale_factor(element,9,ds_dt*dt_dxi1);
-									/*???debug */
-									printf(" %g",ds_dt*dt_dxi1);
-									cos_t=cos(t4);
-									sin_t=sin(t4);
-									ds_dt=sqrt(MAJOR_R*MAJOR_R*sin_t*sin_t+
-										MINOR_R*MINOR_R*cos_t*cos_t);
-									set_FE_element_scale_factor(element,13,ds_dt*dt_dxi1);
-									/*???debug */
-									printf(" %g",ds_dt*dt_dxi1);
-									printf("\n");
-								} break;
-							}
-}
-/*???DB.  Testing.  End */
-#endif /* defined (NEW_CODE) */
+							/* set scale factors for fit field at element nodes*/
+							/* the fit field (should really search by name in manager) */
+							field=get_FE_field_order_info_field(field_order_info,1);
+							/* see draw_map_2d for derivation of width,height*/
+							mesh_row=number_of_rows-i;/*reversed so runs from max down to 1*/
+							mesh_col=j+1;
+							width=x_mesh[mesh_col]-x_mesh[mesh_col-1];
+							height=y_mesh[mesh_row]-y_mesh[mesh_row-1];							
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index], 
+								field,	0/*component_number*/,FE_NODAL_VALUE,1.0);
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index], 
+								field,	0/*component_number*/,FE_NODAL_D_DS1,width);	
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index], 
+								field,	0/*component_number*/,FE_NODAL_D_DS2,height);
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index], 
+								field,	0/*component_number*/,FE_NODAL_D2_DS1DS2,width*height);
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index+1], 
+								field,	0/*component_number*/,FE_NODAL_VALUE,1.0);
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index+1], 
+								field,	0/*component_number*/,FE_NODAL_D_DS1,width);	
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index+1], 
+								field,	0/*component_number*/,FE_NODAL_D_DS2,height);
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index+1], 
+								field,	0/*component_number*/,FE_NODAL_D2_DS1DS2,width*height);
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index+number_of_columns+1], 
+								field,	0/*component_number*/,FE_NODAL_VALUE,1.0);
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index+number_of_columns+1], 
+								field,	0/*component_number*/,FE_NODAL_D_DS1,width);	
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index+number_of_columns+1], 
+								field,	0/*component_number*/,FE_NODAL_D_DS2,height);
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index+number_of_columns+1], 
+								field,	0/*component_number*/,FE_NODAL_D2_DS1DS2,width*height);	
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index+number_of_columns+2], 
+								field,	0/*component_number*/,FE_NODAL_VALUE,1.0);
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index+number_of_columns+2], 
+								field,	0/*component_number*/,FE_NODAL_D_DS1,width);	
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index+number_of_columns+2], 
+								field,	0/*component_number*/,FE_NODAL_D_DS2,height);
+							FE_element_set_scale_factor_for_nodal_value(element,element_nodes[index+number_of_columns+2], 
+								field,	0/*component_number*/,FE_NODAL_D2_DS1DS2,width*height);							
 							/* add element to manager*/
 							if (ADD_OBJECT_TO_MANAGER(FE_element)(element,element_manager))
 							{
@@ -3254,7 +3197,8 @@ do similar with the mapped torso node group
 					get_unemap_package_basis_manager(package),
 					get_unemap_package_element_manager(package),
 					function->region_type,function->number_of_rows,
-					function->number_of_columns,region);
+					function->number_of_columns,
+					function->x_mesh,function->y_mesh,region);
 				/* if have loaded  a default_torso and if the region is a torso*/
 				if((get_unemap_package_default_torso_name(package))&&(region->type==TORSO))
 				{		
@@ -4950,7 +4894,7 @@ and merging the template element with the elements in <torso_group>.
 ==============================================================================*/
 {
 	int number_of_nodes,number_of_derivatives,number_of_scale_factor_sets,
-		*numbers_in_scale_factor_sets,i,k,l,m,return_code;
+		*numbers_in_scale_factor_sets,k,l,m,return_code;
 	int cubic_hermite_basis_type[4]=
 	{
 		2,CUBIC_HERMITE,0,CUBIC_HERMITE
@@ -5045,11 +4989,7 @@ and merging the template element with the elements in <torso_group>.
 								{								
 									if (define_FE_field_at_element(template_element,
 										potential_field,components))
-									{										
-										for(i=0;i<16;i++)
-										{
-											set_FE_element_scale_factor(template_element,i,1.0);
-										}
+									{	
 										/* add potential field to element */
 										merge_fit_field_template_element_data.template_element=
 											template_element;
@@ -5295,7 +5235,7 @@ Therefore must deaccess the returned element outside this function
 ==============================================================================*/
 {
 	int number_of_nodes,*numbers_in_scale_factor_sets,
-		number_of_scale_factor_sets,m,k,i,p,success;
+		number_of_scale_factor_sets,m,k,p,success;
 	int basis_type[4]=
 	{
 		2,LINEAR_SIMPLEX,1,LINEAR_SIMPLEX
@@ -5380,7 +5320,7 @@ Therefore must deaccess the returned element outside this function
 									{																		
 										(*standard_node_map)->nodal_value_indices[0]=0;
 										(*standard_node_map)->scale_factor_indices[0]=m;
-										/* scale_factors set in  set_FE_element_scale_factor below */									
+										/* scale_factors set when actual element created from template */									
 										m++;										
 									}
 									else
@@ -5420,7 +5360,7 @@ Therefore must deaccess the returned element outside this function
 										{																			
 											(*standard_node_map)->nodal_value_indices[0]=0;
 											(*standard_node_map)->scale_factor_indices[0]=m;
-											/* scale_factors set in  set_FE_element_scale_factor below */
+											/* scale_factors set when actual element created from template */	
 											m++;										
 										}
 										else
@@ -5442,15 +5382,8 @@ Therefore must deaccess the returned element outside this function
 							}				
 							if (success)
 							{								
-								if (define_FE_field_at_element(template_element,data_field,data_components)&&
-									define_FE_field_at_element(template_element,coordinate_field,coord_components))
-								{										
-									for(i=0;i<3;i++)
-									{
-										set_FE_element_scale_factor(template_element,i,1.0);
-									}																		
-								}
-								else
+								if (!(define_FE_field_at_element(template_element,data_field,data_components)&&
+									define_FE_field_at_element(template_element,coordinate_field,coord_components)))
 								{
 									display_message(ERROR_MESSAGE,
 										"make_delauney_template_element.  Could not define field");
@@ -5683,6 +5616,13 @@ Stores node and element groups in region <map_3d_package>
 											set_FE_element_node(element,1,triangle_nodes[1])&&
 											set_FE_element_node(element,2,triangle_nodes[2]))
 										{
+											/*set the scale factors */
+											FE_element_set_scale_factor_for_nodal_value(element,triangle_nodes[0], 
+												delauney_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);
+											FE_element_set_scale_factor_for_nodal_value(element,triangle_nodes[1], 
+												delauney_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);	
+											FE_element_set_scale_factor_for_nodal_value(element,triangle_nodes[2], 
+												delauney_signal_field,0/*component_number*/,FE_NODAL_VALUE,1.0);
 											/* add element to manager*/
 											if (ADD_OBJECT_TO_MANAGER(FE_element)(element,element_manager))
 											{
@@ -7323,6 +7263,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 	return(return_code);
 }/*draw_map  */
 
+/* #define one of these but not both. Or none, the usual case. */
 /*
 #define GOURAUD_FROM_MESH 1
 #define GOURAUD_FROM_PIXEL_VALUE 1
@@ -7470,7 +7411,6 @@ comparison with 3D maps.
 #if defined(GOURAUD_FROM_MESH)
 	float top_x,bot_x,left_y,right_y;
 #endif /* defined(GOURAUD_FROM_MESH) */
-
 	ENTER(draw_map_2d);
 	return_code=1;
 	/* check arguments */
@@ -8646,7 +8586,7 @@ comparison with 3D maps.
 																				row++;
 																			}
 																			if ((row>0)&&(v<=y_mesh[row]))
-																			{
+																			{																				
 																				/* calculate basis function values */
 																				width=x_mesh[column]-x_mesh[column-1];
 																				h11_u=h12_u=u-x_mesh[column-1];
@@ -8730,7 +8670,6 @@ comparison with 3D maps.
 																					d2fdxdy[i_jm1]*d2fdxdy_i_jm1+
 																					d2fdxdy[i_j]*d2fdxdy_i_j+
 																					d2fdxdy[im1_j]*d2fdxdy_im1_j;
-																					
 #endif /* defined(GOURAUD_FROM_MESH) */
 																				if (max_f<min_f)
 																				{
@@ -8867,15 +8806,15 @@ comparison with 3D maps.
 															}
 															/* dots at Gouraud corners.Have to loop again now have f_min,f_ max */
 															index=0;															
-															for(col=0;col<number_of_mesh_rows*discretisation+1;col++)
+															for(rw=0;rw<number_of_mesh_rows*discretisation+1;rw++)
 															{																
-																for(rw=0;rw<number_of_mesh_columns*discretisation+1;rw++)
+																for(col=0;col<number_of_mesh_columns*discretisation+1;col++)
 																{																		
-																	index=(fl_q_col_width*rw)+
-																		(int)(fl_q_row_height*col)*(act_width+1);
-																	new_pixel_value[index]=max_f;																	
+																	index=(fl_q_col_width*col)+
+																		(int)(fl_q_row_height*rw)*(act_width+1);										
+																	new_pixel_value[index]=max_f;
 																}																	
-															}		
+															}																	
 															/* this copies new_pixel values to the correct place in pixel_value*/
 															for(j=0;j<drawing_height;j++)
 															{
