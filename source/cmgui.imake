@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 26 July 2000
+XCOMM LAST MODIFIED : 29 July 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -622,9 +622,9 @@ LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lm
 LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm
 #endif /* defined (OLD_CODE) */
 #if defined (IRIX) /* switch OperatingSystem */
-LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm
+LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lpthread
 #elif defined(LINUX) /* switch OperatingSystem */
-LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread
 #endif /* switch OperatingSystem */
 
 START_ALL_DEFINES =
