@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 15 September 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -12,7 +12,7 @@ Scene input.
 #include <Xm/MwmUtil.h>
 #include <Xm/Xm.h>
 #include <Xm/ToggleBG.h>
-#include "choose/choose_fe_field.h"
+#include "choose/choose_computed_field.h"
 #include "choose/choose_node_group.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -46,7 +46,7 @@ Module types
 
 struct Node_tool
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
 Object storing all the parameters for converting scene input messages into
@@ -55,7 +55,6 @@ changes in node position and derivatives etc.
 {
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct Interactive_tool *interactive_tool;
-	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(FE_node) *node_manager;
 	/* flag indicating that the above manager is actually the data manager */
 	int use_data;
@@ -73,11 +72,13 @@ changes in node position and derivatives etc.
 	int select_enabled;
 	/* indicates whether selected nodes can be edited */
 	int edit_enabled;
+	/* indicates whether new fields can be defined at nodes */
+	int define_enabled;
 	/* indicates whether new nodes will can be created */
 	int create_enabled;
 	enum Node_tool_edit_mode edit_mode;
 	struct GROUP(FE_node) *node_group;
-	struct FE_field *coordinate_field;
+	struct Computed_field *coordinate_field;
 	struct FE_node *template_node;
 	/* information about picked nodes the editor knows about */
 	struct Scene_picked_object *scene_picked_object;
@@ -90,14 +91,14 @@ changes in node position and derivatives etc.
 	struct GT_object *rubber_band;
 
 	Widget coordinate_field_form,coordinate_field_widget,create_button,
-		edit_button,motion_update_button,node_group_form,node_group_widget,
-		select_button;
+		define_button,edit_button,motion_update_button,node_group_form,
+		node_group_widget,select_button;
 	Widget widget,window_shell;
 }; /* struct Node_tool */
 
 struct FE_node_edit_information
 /*******************************************************************************
-LAST MODIFIED : 27 April 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
 Describes how to move a node in space. The node will move on the plane normal
@@ -113,7 +114,7 @@ to its position between these two planes.
 		 interaction volumes */
 	struct Interaction_volume *final_interaction_volume,
 		*initial_interaction_volume;
-	/* the coordinate field to change in the translation */
+	/* the field to translate */
 	struct Computed_field *coordinate_field;
 	/* The same field wrapped to get RC coordinates */
 	struct Computed_field *rc_coordinate_field;
@@ -141,18 +142,20 @@ Module functions
 
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,coordinate_field_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,create_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,define_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,edit_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,motion_update_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,node_group_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,select_button)
 
-static int Node_tool_create_template_node(struct Node_tool *node_tool)
+static int Node_tool_define_field_at_node(struct Node_tool *node_tool,
+	struct FE_node *node)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
-Ensures there is a template node defined with the coordinate_field in the
-<node_tool> for creating new nodes as copies of.
+Defines the appropriate FE_field upon which the <coordinate_field> depends in
+<node>. The field is defined with no versions or derivatives.
 ==============================================================================*/
 {
 	enum FE_nodal_value_type *components_nodal_value_types[3]=
@@ -163,32 +166,98 @@ Ensures there is a template node defined with the coordinate_field in the
 	};
 	int components_number_of_derivatives[3]={0,0,0},
 		components_number_of_versions[3]={1,1,1},return_code;
+	struct FE_field *fe_field;
+	struct LIST(FE_field) *fe_field_list;
+
+	ENTER(Node_tool_define_field_at_node);
+	if (node_tool&&node)
+	{
+		if (node_tool->coordinate_field && (fe_field_list=
+			Computed_field_get_defining_FE_field_list(node_tool->coordinate_field,
+				Computed_field_package_get_computed_field_manager(
+					node_tool->computed_field_package))))
+		{
+			if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list))&&
+				(fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
+					(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
+					fe_field_list)) &&
+				(3 >= get_FE_field_number_of_components(fe_field)) &&
+				(FE_VALUE_VALUE == get_FE_field_value_type(fe_field)))
+			{
+				if (define_FE_field_at_node(node,fe_field,
+					components_number_of_derivatives,components_number_of_versions,
+					components_nodal_value_types))
+				{
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Node_tool_define_field_at_node.  Failed");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Node_tool_define_field_at_node.  Invalid field");
+				return_code=0;
+			}
+			DESTROY(LIST(FE_field))(&fe_field_list);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Node_tool_define_field_at_node.  No field to define");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_define_field_at_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_define_field_at_node */
+
+static int Node_tool_create_template_node(struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 12 September 2000
+
+DESCRIPTION :
+Ensures there is a template node defined with the coordinate_field in the
+<node_tool> for creating new nodes as copies of.
+==============================================================================*/
+{
+	int return_code;
 
 	ENTER(Node_tool_create_template_node);
 	if (node_tool)
 	{
-		if (node_tool->coordinate_field)
+		if (!node_tool->template_node)
 		{
-			if (node_tool->node_group)
+			if (node_tool->coordinate_field)
 			{
-				return_code=1;
-				if (!node_tool->template_node)
+				if (node_tool->node_group)
 				{
 					if (node_tool->template_node=CREATE(FE_node)(
 						/*node_number*/0,(struct FE_node *)NULL))
 					{
-						/* template_node is accessed by node_tool but not managed */
-						ACCESS(FE_node)(node_tool->template_node);
-						if (!define_FE_field_at_node(
-							node_tool->template_node,
-							node_tool->coordinate_field,
-							components_number_of_derivatives,
-							components_number_of_versions,
-							components_nodal_value_types))
+						if (Node_tool_define_field_at_node(node_tool,
+							node_tool->template_node))
 						{
-							display_message(ERROR_MESSAGE,"Node_tool_create_template_node.  "
+							ACCESS(FE_node)(node_tool->template_node);
+							return_code=1;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Node_tool_create_template_node.  "
 								"Could not define coordinate field in template_node");
-							DEACCESS(FE_node)(&(node_tool->template_node));
+							DESTROY(FE_node)(&(node_tool->template_node));
 							return_code=0;
 						}
 					}
@@ -199,19 +268,24 @@ Ensures there is a template node defined with the coordinate_field in the
 						return_code=0;
 					}
 				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Node_tool_create_template_node.  Must specify a node group first");
+					return_code=0;
+				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Node_tool_create_template_node.  Must specify a node group first");
+					"Node_tool_create_template_node.  No field to define");
 				return_code=0;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Node_tool_create_template_node.  No coordinate_field specified");
-			return_code=0;
+			/* already have a template node */
+			return_code=1;
 		}
 	}
 	else
@@ -438,7 +512,7 @@ applied to multiple nodes.
 
 static int FE_node_edit_position(struct FE_node *node,void *edit_info_void)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 15 September 2000
 
 DESCRIPTION :
 Translates the <rc_coordinate_field> of <node> according to the delta change
@@ -465,8 +539,9 @@ stored in the <edit_info>.
 			coordinates[0]=0.0;
 			coordinates[1]=0.0;
 			coordinates[2]=0.0;
-			if (Computed_field_evaluate_at_node(edit_info->coordinate_field,
-				node,coordinates))
+			if (Computed_field_is_defined_at_node(edit_info->coordinate_field,node)&&
+				Computed_field_evaluate_at_node(edit_info->coordinate_field,
+					node,coordinates))
 			{
 				if (return_code)
 				{
@@ -802,10 +877,84 @@ stored in the <edit_info>.
 	return (return_code);
 } /* FE_node_edit_vector */
 
-static struct FE_node *Node_tool_create_node(struct Node_tool *node_tool,
-	struct Scene *scene,struct Interaction_volume *interaction_volume)
+static int Node_tool_define_field_at_node_at_interaction_volume(
+	struct Node_tool *node_tool,struct FE_node *node,
+	struct Interaction_volume *interaction_volume)
 /*******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 12 September 2000
+
+DESCRIPTION :
+Defines the coordinate_field at the node from the central position in the
+<interaction_volume>.
+==============================================================================*/
+{
+	double d,LU_transformation_matrix[16],node_coordinates[3];
+	FE_value coordinates[3];
+	int i,LU_indx[4],transformation_required,return_code;
+	struct Computed_field *coordinate_field,*rc_coordinate_field;
+
+	ENTER(Node_tool_define_field_at_node_at_interaction_volume);
+	if (node_tool&&node&&interaction_volume)
+	{
+		coordinate_field=node_tool->coordinate_field;
+		if (rc_coordinate_field=
+			Computed_field_begin_wrap_coordinate_field(coordinate_field))
+		{
+			/* get new node coordinates from interaction_volume */
+			Interaction_volume_get_placement_point(interaction_volume,
+				node_coordinates);
+			for (i=0;i<3;i++)
+			{
+				coordinates[i]=(FE_value)node_coordinates[i];
+			}
+			if (Scene_picked_object_get_total_transformation_matrix(
+				node_tool->scene_picked_object,&transformation_required,
+				LU_transformation_matrix)&&transformation_required&&
+				LU_decompose(4,LU_transformation_matrix,LU_indx,&d))
+			{
+				world_to_model_coordinates(coordinates,
+					LU_transformation_matrix,LU_indx);
+			}
+			if (Node_tool_define_field_at_node(node_tool,node)&&
+				Computed_field_set_values_at_node(rc_coordinate_field,
+					node,coordinates))
+			{
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Node_tool_define_field_at_interaction_volume.  Failed");
+				return_code=0;
+			}
+			Computed_field_clear_cache(rc_coordinate_field);
+			Computed_field_end_wrap(&rc_coordinate_field);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Node_tool_define_field_at_node_at_interaction_volume.  "
+				"Could not wrap coordinate field");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_define_field_at_node_at_interaction_volume.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_define_field_at_node_at_interaction_volume */
+
+static struct FE_node *Node_tool_create_node_at_interaction_volume(
+	struct Node_tool *node_tool,struct Scene *scene,
+	struct Interaction_volume *interaction_volume)
+/*******************************************************************************
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
 Returns a new node in the position indicated by <interaction_volume>, in the
@@ -826,7 +975,7 @@ the new node.
 	LIST_CONDITIONAL_FUNCTION(Scene_object) *scene_object_conditional_function;
 	struct Scene_picked_object *scene_picked_object;
 
-	ENTER(Node_tool_create_node);
+	ENTER(Node_tool_create_node_at_interaction_volume);
 	node=(struct FE_node *)NULL;
 	scene_picked_object=(struct Scene_picked_object *)NULL;
 	gt_element_group=(struct GT_element_group *)NULL;
@@ -835,6 +984,7 @@ the new node.
 	{
 		if (Node_tool_create_template_node(node_tool))
 		{
+			coordinate_field=node_tool->coordinate_field;
 			if (node_tool->use_data)
 			{
 				scene_object_conditional_function=Scene_object_has_data_group;
@@ -849,22 +999,9 @@ the new node.
 				scene_object_conditional_function,(void *)node_tool->node_group)))
 			{
 				gt_element_group=Scene_object_get_graphical_element_group(scene_object);
-				if (gt_element_settings=first_settings_in_GT_element_group_that(
+				gt_element_settings=first_settings_in_GT_element_group_that(
 					gt_element_group,GT_element_settings_type_matches,
-					(void *)gt_element_settings_type))
-				{
-					coordinate_field=
-						GT_element_settings_get_coordinate_field(gt_element_settings);
-				}
-				else
-				{
-					coordinate_field=(struct Computed_field *)NULL;
-				}
-				if (!coordinate_field)
-				{
-					coordinate_field=
-						GT_element_group_get_default_coordinate_field(gt_element_group);
-				}
+					(void *)gt_element_settings_type);
 				/* return a scene_object with the correct transformation */
 				if (scene_picked_object=CREATE(Scene_picked_object)(/*hit_no*/0))
 				{
@@ -876,11 +1013,6 @@ the new node.
 			}
 			else
 			{
-				coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_is_read_only_with_fe_field,
-					(void *)node_tool->coordinate_field,
-					Computed_field_package_get_computed_field_manager(
-						node_tool->computed_field_package));
 				scene_picked_object=(struct Scene_picked_object *)NULL;
 			}
 			if (rc_coordinate_field=
@@ -910,7 +1042,8 @@ the new node.
 					ADD_OBJECT_TO_GROUP(FE_node)(node,node_tool->node_group)))
 				{
 					display_message(ERROR_MESSAGE,
-						"Node_tool_create_node.  Could not create node");
+						"Node_tool_create_node_at_interaction_volume.  "
+						"Could not create node");
 					if (IS_MANAGED(FE_node)(node,node_tool->node_manager))
 					{
 						REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,
@@ -928,13 +1061,15 @@ the new node.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Node_tool_create_node.  Could not create template node");
+				"Node_tool_create_node_at_interaction_volume.  "
+				"Could not create template node");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_create_node.  Invalid argument(s)");
+			"Node_tool_create_node_at_interaction_volume.  "
+			"Invalid argument(s)");
 	}
 	if (node_tool)
 	{
@@ -957,7 +1092,7 @@ the new node.
 	LEAVE;
 
 	return (node);
-} /* Node_tool_create_node */
+} /* Node_tool_create_node_at_interaction_volume */
 
 static void Node_tool_close_CB(Widget widget,void *node_tool_void,
 	void *call_data)
@@ -1015,6 +1150,33 @@ response to interactive events.
 	}
 	LEAVE;
 } /* Node_tool_create_button_CB */
+
+static void Node_tool_define_button_CB(Widget widget,
+	void *node_tool_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2000
+
+DESCRIPTION :
+Callback from toggle button controlling whether fields are defined at nodes in
+response to interactive events.
+==============================================================================*/
+{
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_define_button_CB);
+	USE_PARAMETER(call_data);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		Node_tool_set_define_enabled(node_tool,
+			XmToggleButtonGadgetGetState(widget));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_define_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_define_button_CB */
 
 static void Node_tool_edit_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
@@ -1127,21 +1289,20 @@ Callback for change of node group to put the new nodes in.
 static void Node_tool_update_coordinate_field(Widget widget,
 	void *node_tool_void,void *coordinate_field_void)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
-Callback for change of coordinate field.
+Callback for change of coordinate_field.
 ==============================================================================*/
 {
-	struct FE_field *coordinate_field;
 	struct Node_tool *node_tool;
 
 	ENTER(Node_tool_update_coordinate_field);
 	USE_PARAMETER(widget);
 	if (node_tool=(struct Node_tool *)node_tool_void)
 	{
-		coordinate_field=(struct FE_field *)coordinate_field_void;
-		Node_tool_set_coordinate_field(node_tool,coordinate_field);
+		Node_tool_set_coordinate_field(node_tool,
+			(struct Computed_field *)coordinate_field_void);
 	}
 	else
 	{
@@ -1186,10 +1347,63 @@ Attempts to destroy all the nodes currently in the global selection.
 	LEAVE;
 } /* Node_tool_destroy_selected_CB */
 
+static void Node_tool_undefine_selected_CB(Widget widget,
+	void *node_tool_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 15 September 2000
+
+DESCRIPTION :
+Attempts to undefine all the nodes currently in the global selection.
+==============================================================================*/
+{
+	struct FE_field *fe_field;
+	struct LIST(FE_field) *fe_field_list;
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_undefine_selected_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (node_tool=(struct Node_tool *)node_tool_void)
+	{
+		if (node_tool->coordinate_field && (fe_field_list=
+			Computed_field_get_defining_FE_field_list(node_tool->coordinate_field,
+				Computed_field_package_get_computed_field_manager(
+					node_tool->computed_field_package))))
+		{
+			if ((1==NUMBER_IN_LIST(FE_field)(fe_field_list))&&
+				(fe_field=FIRST_OBJECT_IN_LIST_THAT(FE_field)(
+					(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
+					fe_field_list)))
+			{
+				undefine_field_at_listed_nodes(
+					FE_node_selection_get_node_list(node_tool->node_selection),
+					fe_field,node_tool->node_manager,node_tool->element_manager);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Node_tool_undefine_selected_CB.  Invalid field");
+			}
+			DESTROY(LIST(FE_field))(&fe_field_list);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Node_tool_undefine_selected_CB.  No field to undefine");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_undefine_selected_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_undefine_selected_CB */
+
 static void Node_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *node_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -1248,17 +1462,27 @@ release.
 								node_tool->picked_node_was_unselected=
 									!FE_node_selection_is_node_selected(node_tool->node_selection,
 										picked_node);
-								REACCESS(Scene_picked_object)(&(node_tool->scene_picked_object),
-									scene_picked_object);
+								REACCESS(Scene_picked_object)(
+									&(node_tool->scene_picked_object),scene_picked_object);
 								REACCESS(GT_element_group)(&(node_tool->gt_element_group),
 									gt_element_group);
-								REACCESS(GT_element_settings)(&(node_tool->gt_element_settings),
-									gt_element_settings);
+								REACCESS(GT_element_settings)(
+									&(node_tool->gt_element_settings),gt_element_settings);
+								if (node_tool->define_enabled)
+								{
+									if (!Computed_field_is_defined_at_node(
+										node_tool->coordinate_field,picked_node))
+									{
+										Node_tool_define_field_at_node_at_interaction_volume(
+											node_tool,picked_node,interaction_volume);
+									}
+								}
 							}
 							else
 							{
 								if (node_tool->create_enabled&&(picked_node=
-									Node_tool_create_node(node_tool,scene,interaction_volume)))
+									Node_tool_create_node_at_interaction_volume(node_tool,
+										scene,interaction_volume)))
 								{
 									node_tool->picked_node_was_unselected=1;
 								}
@@ -1268,8 +1492,10 @@ release.
 								}
 							}
 							REACCESS(FE_node)(&(node_tool->last_picked_node),picked_node);
-							if (clear_selection=((!shift_pressed)&&((!picked_node)||
-								(node_tool->picked_node_was_unselected))))
+							if (clear_selection = !shift_pressed)
+#if defined (OLD_CODE)
+								&&((!picked_node)||(node_tool->picked_node_was_unselected))))
+#endif /*defined (OLD_CODE) */
 							{
 								FE_node_selection_begin_cache(node_tool->node_selection);
 								FE_node_selection_clear(node_tool->node_selection);
@@ -1329,15 +1555,21 @@ release.
 									edit_info.node_group=GT_element_group_get_node_group(
 										node_tool->gt_element_group);
 								}
-								/* get coordinate field in RC coordinates */
-								if (!(coordinate_field=GT_element_settings_get_coordinate_field(
-									node_tool->gt_element_settings)))
+								/* get coordinate field to edit */
+								if (node_tool->define_enabled)
+								{
+									coordinate_field=node_tool->coordinate_field;
+								}
+								else if (!(coordinate_field=
+									GT_element_settings_get_coordinate_field(
+										node_tool->gt_element_settings)))
 								{
 									coordinate_field=
 										GT_element_group_get_default_coordinate_field(
 											node_tool->gt_element_group);
 								}
 								edit_info.coordinate_field=coordinate_field;
+								/* get coordinate_field in RC coordinates */
 								edit_info.rc_coordinate_field=
 									Computed_field_begin_wrap_coordinate_field(coordinate_field);
 								edit_info.orientation_scale_field=(struct Computed_field *)NULL;
@@ -1626,7 +1858,6 @@ Global functions
 
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(FE_node) *node_manager,int use_data,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_element) *element_manager,
@@ -1635,7 +1866,7 @@ struct Node_tool *CREATE(Node_tool)(
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 15 September 2000
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
@@ -1657,6 +1888,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			DIALOG_IDENTIFY(node_tool,edit_button)},
 		{"node_tool_id_motion_update_btn",(XtPointer)
 			DIALOG_IDENTIFY(node_tool,motion_update_button)},
+		{"node_tool_id_define_btn",(XtPointer)
+			DIALOG_IDENTIFY(node_tool,define_button)},
 		{"node_tool_id_create_btn",(XtPointer)
 			DIALOG_IDENTIFY(node_tool,create_button)},
 		{"node_tool_id_node_group_form",(XtPointer)
@@ -1669,23 +1902,30 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 		 (XtPointer)Node_tool_edit_button_CB},
 		{"node_tool_motion_update_btn_CB",
 		 (XtPointer)Node_tool_motion_update_button_CB},
+		{"node_tool_define_btn_CB",
+		 (XtPointer)Node_tool_define_button_CB},
 		{"node_tool_create_btn_CB",
 		 (XtPointer)Node_tool_create_button_CB},
 		{"node_tool_destroy_selected_CB",
-		 (XtPointer)Node_tool_destroy_selected_CB}
+		 (XtPointer)Node_tool_destroy_selected_CB},
+		{"node_tool_undefine_selected_CB",
+		 (XtPointer)Node_tool_undefine_selected_CB}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
 		{"node_tool_structure",(XtPointer)NULL}
 	};
 	struct Callback_data callback;
+	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Node_tool *node_tool;
 
 	ENTER(CREATE(Node_tool));
 	node_tool=(struct Node_tool *)NULL;
-	if (interactive_tool_manager&&fe_field_manager&&node_manager&&
+	if (interactive_tool_manager&&node_manager&&
 		node_group_manager&&(element_manager||use_data)&&node_selection&&
-		computed_field_package&&rubber_band_material&&user_interface)
+		computed_field_package&&(computed_field_manager=
+			Computed_field_package_get_computed_field_manager(computed_field_package))
+		&&rubber_band_material&&user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(node_tool_uidh,
 			&node_tool_hierarchy,&node_tool_hierarchy_open))
@@ -1693,7 +1933,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			if (ALLOCATE(node_tool,struct Node_tool,1))
 			{
 				node_tool->interactive_tool_manager=interactive_tool_manager;
-				node_tool->fe_field_manager=fe_field_manager;
 				node_tool->node_manager=node_manager;
 				node_tool->use_data=use_data;
 				node_tool->node_group_manager=node_group_manager;
@@ -1704,17 +1943,24 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 					ACCESS(Graphical_material)(rubber_band_material);
 				node_tool->user_interface=user_interface;
 				/* user-settable flags */
-				node_tool->motion_update_enabled=1;
 				node_tool->select_enabled=1;
 				node_tool->edit_enabled=0;
+				node_tool->motion_update_enabled=1;
+				node_tool->define_enabled=0;
 				node_tool->create_enabled=0;
 				node_tool->edit_mode=NODE_TOOL_EDIT_AUTOMATIC;
 				node_tool->node_group=FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_node))(
 					(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
 					(void *)NULL,node_group_manager);
-				node_tool->coordinate_field=(struct FE_field *)NULL;
-				FIRST_OBJECT_IN_MANAGER_THAT(FE_field)(FE_field_is_coordinate_field,
-					(void *)NULL,fe_field_manager);
+				if (!(node_tool->coordinate_field=
+					FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+						"default_coordinate",computed_field_manager)))
+				{
+					node_tool->coordinate_field=
+						FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+							Computed_field_has_up_to_3_numerical_components,(void *)NULL,
+							computed_field_manager);
+				}
 				node_tool->template_node=(struct FE_node *)NULL;
 				/* interactive_tool */
 				if (use_data)
@@ -1746,6 +1992,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				node_tool->coordinate_field_form=(Widget)NULL;
 				node_tool->coordinate_field_widget=(Widget)NULL;
 				node_tool->create_button=(Widget)NULL;
+				node_tool->define_button=(Widget)NULL;
 				node_tool->edit_button=(Widget)NULL;
 				node_tool->motion_update_button=(Widget)NULL;
 				node_tool->node_group_form=(Widget)NULL;
@@ -1789,6 +2036,22 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 								&(node_tool->widget),&node_tool_dialog_class))
 							{
 								init_widgets=1;
+								if (node_tool->coordinate_field_widget=
+									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
+										node_tool->coordinate_field_form,
+										node_tool->coordinate_field,computed_field_manager,
+										Computed_field_has_up_to_3_numerical_components,
+										(void *)NULL))
+								{
+									callback.data=(void *)node_tool;
+									callback.procedure=Node_tool_update_coordinate_field;
+									CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
+										node_tool->coordinate_field_widget,&callback);
+								}
+								else
+								{
+									init_widgets=0;
+								}
 								if (node_tool->node_group_widget=
 									CREATE_CHOOSE_OBJECT_WIDGET(GROUP(FE_node))(
 										node_tool->node_group_form,
@@ -1805,25 +2068,12 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 								{
 									init_widgets=0;
 								}
-								if (node_tool->coordinate_field_widget=
-									CREATE_CHOOSE_OBJECT_WIDGET(FE_field)(
-										node_tool->coordinate_field_form,
-										node_tool->coordinate_field,fe_field_manager,
-										FE_field_is_coordinate_field,(void *)NULL))
-								{
-									callback.data=(void *)node_tool;
-									callback.procedure=Node_tool_update_coordinate_field;
-									CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
-										node_tool->coordinate_field_widget,&callback);
-								}
-								else
-								{
-									init_widgets=0;
-								}
 								if (init_widgets)
 								{
 									XmToggleButtonGadgetSetState(node_tool->create_button,
 										/*state*/node_tool->create_enabled,/*notify*/False);
+									XmToggleButtonGadgetSetState(node_tool->define_button,
+										/*state*/node_tool->define_enabled,/*notify*/False);
 									XmToggleButtonGadgetSetState(node_tool->edit_button,
 										/*state*/node_tool->edit_enabled,/*notify*/False);
 									XmToggleButtonGadgetSetState(node_tool->motion_update_button,
@@ -1945,15 +2195,16 @@ structure itself.
 	return (return_code);
 } /* DESTROY(Node_tool) */
 
-struct FE_field *Node_tool_get_coordinate_field(struct Node_tool *node_tool)
+struct Computed_field *Node_tool_get_coordinate_field(
+	struct Node_tool *node_tool)
 /*******************************************************************************
-LAST MODIFIED : 17 May 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
-Returns the coordinate field of nodes created by <node_tool>.
+Returns the coordinate_field used by the <node_tool> when create/define are on.
 ==============================================================================*/
 {
-	struct FE_field *coordinate_field;
+	struct Computed_field *coordinate_field;
 
 	ENTER(Node_tool_get_coordinate_field);
 	if (node_tool)
@@ -1964,7 +2215,7 @@ Returns the coordinate field of nodes created by <node_tool>.
 	{
 		display_message(ERROR_MESSAGE,
 			"Node_tool_get_coordinate_field.  Invalid argument(s)");
-		coordinate_field=(struct FE_field *)NULL;
+		coordinate_field=(struct Computed_field *)NULL;
 	}
 	LEAVE;
 
@@ -1972,12 +2223,13 @@ Returns the coordinate field of nodes created by <node_tool>.
 } /* Node_tool_get_coordinate_field */
 
 int Node_tool_set_coordinate_field(struct Node_tool *node_tool,
-	struct FE_field *coordinate_field)
+	struct Computed_field *coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
-Sets the coordinate field of nodes created by <node_tool>.
+Sets the coordinate_field to be defined by the <node_tool> when create/define
+are on.
 ==============================================================================*/
 {
 	int return_code;
@@ -1988,27 +2240,12 @@ Sets the coordinate field of nodes created by <node_tool>.
 		return_code=1;
 		if (coordinate_field != node_tool->coordinate_field)
 		{
-			if (coordinate_field)
-			{
-				if ((3<get_FE_field_number_of_components(coordinate_field))||
-					(FE_VALUE_VALUE != get_FE_field_value_type(coordinate_field)))
-				{
-					display_message(ERROR_MESSAGE,
-						"Node_tool_set_coordinate_field.  "
-						"Invalid number of components or value type");
-					return_code=0;
-				}
-			}
-			if (return_code)
-			{
-				node_tool->coordinate_field=coordinate_field;
-				/* lose the current template node, if any */
-				REACCESS(FE_node)(&(node_tool->template_node),(struct FE_node *)NULL);
-				/* make sure the current field is shown on the widget */
-				CHOOSE_OBJECT_SET_OBJECT(FE_field)(
-					node_tool->coordinate_field_widget,
-					node_tool->coordinate_field);
-			}
+			node_tool->coordinate_field=coordinate_field;
+			/* lose the current template node, if any */
+			REACCESS(FE_node)(&(node_tool->template_node),(struct FE_node *)NULL);
+			/* make sure the current field is shown on the widget */
+			CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
+				node_tool->coordinate_field_widget,node_tool->coordinate_field);
 		}
 	}
 	else
@@ -2052,11 +2289,11 @@ on a mouse button press.
 int Node_tool_set_create_enabled(struct Node_tool *node_tool,
 	int create_enabled)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
 Sets flag controlling whether nodes can be created when none are selected
-on a mouse button press.
+on a mouse button press. Also ensures define is enabled if create is.
 ==============================================================================*/
 {
 	int button_state,return_code;
@@ -2071,11 +2308,13 @@ on a mouse button press.
 			{
 				/* make sure value of flag is exactly 1 */
 				create_enabled=1;
+				/* must also enable define */
+				Node_tool_set_define_enabled(node_tool,1);
 			}
 			else
 			{
 				display_message(WARNING_MESSAGE,
-					"Node_tool must have a group and coordinate field to create nodes");
+					"Node_tool must have a group and coordinate_field to create nodes");
 				create_enabled=0;
 				return_code=0;
 			}
@@ -2109,6 +2348,99 @@ on a mouse button press.
 
 	return (return_code);
 } /* Node_tool_set_create_enabled */
+
+int Node_tool_get_define_enabled(struct Node_tool *node_tool)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Returns flag controlling whether nodes can be defined when none are selected
+on a mouse button press.
+==============================================================================*/
+{
+	int define_enabled;
+
+	ENTER(Node_tool_get_define_enabled);
+	if (node_tool)
+	{
+		define_enabled=node_tool->define_enabled;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_get_define_enabled.  Invalid argument(s)");
+		define_enabled=0;
+	}
+	LEAVE;
+
+	return (define_enabled);
+} /* Node_tool_get_define_enabled */
+
+int Node_tool_set_define_enabled(struct Node_tool *node_tool,
+	int define_enabled)
+/*******************************************************************************
+LAST MODIFIED : 12 September 2000
+
+DESCRIPTION :
+Sets flag controlling whether the coordinate_field can be defined on any new
+or individually selected existing nodes.
+==============================================================================*/
+{
+	int button_state,return_code;
+
+	ENTER(Node_tool_set_define_enabled);
+	if (node_tool)
+	{
+		return_code=1;
+		if (define_enabled)
+		{
+			if (node_tool->coordinate_field)
+			{
+				/* make sure value of flag is exactly 1 */
+				define_enabled=1;
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"Cannot enable define in Node_tool without a field to define");
+				define_enabled=0;
+				return_code=0;
+			}
+		}
+		else
+		{
+			/* make sure create is off */
+			Node_tool_set_create_enabled(node_tool,0);
+		}
+		if (define_enabled != node_tool->define_enabled)
+		{
+			node_tool->define_enabled=define_enabled;
+			/* make sure button shows current state */
+			if (XmToggleButtonGadgetGetState(node_tool->define_button))
+			{
+				button_state=1;
+			}
+			else
+			{
+				button_state=0;
+			}
+			if (button_state != node_tool->define_enabled)
+			{
+				XmToggleButtonGadgetSetState(node_tool->define_button,
+					/*state*/node_tool->define_enabled,/*notify*/False);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_set_define_enabled.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_set_define_enabled */
 
 int Node_tool_get_edit_enabled(struct Node_tool *node_tool)
 /*******************************************************************************

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.h
 
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
 Functions for mouse controlled node selection and position and vector editing
@@ -45,7 +45,6 @@ Global functions
 
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(FE_node) *node_manager,int use_data,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_element) *element_manager,
@@ -54,7 +53,7 @@ struct Node_tool *CREATE(Node_tool)(
 	struct Graphical_material *rubber_band_material,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
@@ -73,21 +72,23 @@ Frees and deaccesses objects in the <node_tool> and deallocates the
 structure itself.
 ==============================================================================*/
 
-struct FE_field *Node_tool_get_coordinate_field(struct Node_tool *node_tool);
+struct Computed_field *Node_tool_get_coordinate_field(
+	struct Node_tool *node_tool);
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
-Sets the coordinate field of nodes created by <node_tool>.
+Returns the coordinate field used by the <node_tool> when create/define are on.
 ==============================================================================*/
 
 int Node_tool_set_coordinate_field(struct Node_tool *node_tool,
-	struct FE_field *coordinate_field);
+	struct Computed_field *coordinate_field);
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
-Sets the coordinate field of nodes created by <node_tool>.
+Sets the coordinate field to be defined by the <node_tool> when create/define
+are on.
 ==============================================================================*/
 
 int Node_tool_get_create_enabled(struct Node_tool *node_tool);
@@ -102,11 +103,30 @@ on a mouse button press.
 int Node_tool_set_create_enabled(struct Node_tool *node_tool,
 	int create_enabled);
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 11 September 2000
 
 DESCRIPTION :
-Sets flag controlling whether node edits are updated during motion_notify
-events, not just at the end of a mouse gesture.
+Sets flag controlling whether nodes can be created when none are selected
+on a mouse button press. Also ensures define is enabled if create is.
+==============================================================================*/
+
+int Node_tool_get_define_enabled(struct Node_tool *node_tool);
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Returns flag controlling whether nodes can be defined when none are selected
+on a mouse button press.
+==============================================================================*/
+
+int Node_tool_set_define_enabled(struct Node_tool *node_tool,
+	int define_enabled);
+/*******************************************************************************
+LAST MODIFIED : 12 September 2000
+
+DESCRIPTION :
+Sets flag controlling whether the coordinate field can be defined on any new
+or individually selected existing nodes.
 ==============================================================================*/
 
 int Node_tool_get_edit_enabled(struct Node_tool *node_tool);
