@@ -510,9 +510,9 @@ WORMHOLE_INC = -I${WORMHOLE_PATH}/source
 #endif /* switch OperatingSystem */
 
 #if defined (CMISS_ROOT_DEFINED)
-XML_PATH=$(CMISS_ROOT)/xml
+XML_PATH=$(CMISS_ROOT)/xml.save.20mar01
 #else /* defined (CMISS_ROOT_DEFINED) */
-XML_PATH=$(CMGUI_DEV_ROOT)/xml
+XML_PATH=$(CMGUI_DEV_ROOT)/xml.save.20mar01
 #endif /* defined (CMISS_ROOT_DEFINED) */
 #if defined (CELL)
 #if defined (IRIX) /* switch OperatingSystem */
