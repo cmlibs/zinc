@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : message.c
 
-LAST MODIFIED : 11 June 1999
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Declaration of functions for displaying messages.
@@ -83,7 +83,7 @@ a message of the specified <message_type>.
 
 int display_message(enum Message_type message_type,char *format, ... )
 /*******************************************************************************
-LAST MODIFIED : 11 June 1999
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 A function for displaying a message of the specified <message_type>.  The printf
@@ -95,11 +95,21 @@ form of arguments is used.
 
 	ENTER(display_message);
 	va_start(ap,format);
-	return_code=vsprintf(message_string,format,ap);
-	if (return_code>=MESSAGE_STRING_SIZE)
+	return_code=vsnprintf(message_string,MESSAGE_STRING_SIZE,format,ap);
+	if (return_code >= (MESSAGE_STRING_SIZE-1))
 	{
-		printf("Overflow of message_string.  Need MESSAGE_STRING_SIZE > %d",
-			return_code);
+		char error_string[100];
+		sprintf(error_string,"Overflow of message_string.  "
+			"Following is truncated to %d characters:",return_code);
+		if (display_error_message_function)
+		{
+			return_code=(*display_error_message_function)(error_string,
+				display_error_message_data);
+		}
+		else
+		{
+			return_code=printf("ERROR: %s\n",error_string);
+		}
 	}
 	switch (message_type)
 	{
