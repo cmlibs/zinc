@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material_editor.h
 
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 Widgets for editing a graphical material.
@@ -26,10 +26,11 @@ Global Functions
 */
 
 struct Material_editor *CREATE(Material_editor)(Widget parent,
-	struct MANAGER(Texture) *texture_manager,
-	struct Graphical_material *material, struct User_interface *user_interface);
+	struct MANAGER(Texture) *texture_manager, struct Graphical_material *material,
+	struct Graphics_buffer_package *graphics_buffer_package,
+	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 Creates a Material_editor.

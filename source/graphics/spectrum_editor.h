@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_editor.h
 
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -26,6 +26,7 @@ Global Functions
 
 struct Spectrum_editor *CREATE(Spectrum_editor)(
 	Widget parent, struct Spectrum *spectrum,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
@@ -33,7 +34,7 @@ struct Spectrum_editor *CREATE(Spectrum_editor)(
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct MANAGER(Texture) *texture_manager);
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 Creates a spectrum_editor widget.

@@ -15553,7 +15553,8 @@ struct Map_drawing_information *create_Map_drawing_information(
 	struct Graphical_material *graphical_material,
 	struct Computed_field_package *computed_field_package,
 	struct Light *light,
-	struct Light_model *light_model
+	struct Light_model *light_model,
+	struct Graphics_buffer_package *graphics_buffer_package
 #endif /* defined (UNEMAP_USE_3D) */
 	)
 /*******************************************************************************
@@ -15770,6 +15771,7 @@ visual=default_visual;
 			map_drawing_information->computed_field_package=(struct Computed_field_package *)NULL;
 			map_drawing_information->time_keeper = (struct Time_keeper *)NULL;
 			map_drawing_information->map_graphical_material=(struct Graphical_material *)NULL;
+			map_drawing_information->graphics_buffer_package=(struct Graphics_buffer_package *)NULL;
 			/* create an electrode material*/
 			if (map_drawing_information->electrode_graphical_material=
 				CREATE(Graphical_material)("electrode"))
@@ -15815,6 +15817,7 @@ visual=default_visual;
 			map_drawing_information->light_model_manager=light_model_manager;
 			map_drawing_information->spectrum_manager=spectrum_manager;
 			map_drawing_information->graphical_material_manager=graphical_material_manager;
+			map_drawing_information->graphics_buffer_package=graphics_buffer_package;
 			map_drawing_information->data_root_cmiss_region = data_root_cmiss_region;
 			map_drawing_information->glyph_list=glyph_list; /* like a manager, so don't access*/
 			set_map_drawing_information_map_graphical_material(map_drawing_information,
@@ -17836,6 +17839,32 @@ gets the User_interface of the <map_drawing_information>.
 	
 	return (user_interface);
 } /* get_map_drawing_information_user_interface */
+
+struct Graphics_buffer_package *get_map_drawing_information_graphics_buffer_package(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED :  6 May 2004
+
+DESCRIPTION :
+gets the graphics_buffer_package of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct Graphics_buffer_package *graphics_buffer_package;
+	ENTER(get_map_drawing_information_graphics_buffer_package);
+	if (map_drawing_information)
+	{
+		graphics_buffer_package=map_drawing_information->graphics_buffer_package;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_graphics_buffer_package."
+				" invalid arguments");
+		graphics_buffer_package = (struct Graphics_buffer_package *)NULL;
+	}
+	LEAVE;
+	
+	return (graphics_buffer_package);
+} /* get_map_drawing_information_graphics_buffer_package */
 
 int set_map_drawing_information_user_interface(
 	struct Map_drawing_information *map_drawing_information,

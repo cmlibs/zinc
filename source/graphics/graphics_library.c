@@ -29,9 +29,7 @@ Functions for interfacing with the graphics library.
 #include "general/debug.h"
 #define GRAPHICS_LIBRARY_C
 #include "graphics/graphics_library.h"
-#if defined (MOTIF)
-#include "three_d_drawing/ThreeDDraw.h"
-#endif /* defined (MOTIF) */
+#include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 

@@ -75,10 +75,6 @@ DESCRIPTION :
 	char *application_name,**argv,*class_name;
 	int *argc_address;
 #endif /* defined (WIN32_USER_INTERFACE) */
-#if defined (OPENGL_API)
-	/* If non-zero forces OpenGL to select a particular visual ID */
-	int specified_visual_id;
-#endif /* defined (OPENGL_API) */
 #if defined (MOTIF) /* switch (USER_INTERFACE) */
 	Cursor busy_cursor;
 	Display *display;
@@ -715,6 +711,8 @@ those processed by the event dispatcher.
 			/* Check the static pointer to ensure we are taking turns correctly */
 			if (!polling_user_interface)
 			{
+				/* g_main_set_poll_func(User_interface_gtk_gpoll_callback); */
+
 				polling_user_interface = user_interface;
 				/* The result of this pending isn't very valuable as we didn't
 					really poll for it anyway */
@@ -1676,10 +1674,6 @@ Open the <user_interface>.
 #endif /* ! defined (USE_GTK_MAIN_STEP) */
 #endif /* defined (GTK_USER_INTERFACE) */
 
-#if defined (OPENGL_API)
-		user_interface->specified_visual_id = 0;
-#endif /* defined (OPENGL_API) */
-
 		user_interface->event_dispatcher = event_dispatcher;
 		user_interface->shell_list = (struct Shell_list_item *)NULL;
 		user_interface->active_shell_stack = (struct Shell_stack_item *)NULL;
@@ -1693,6 +1687,7 @@ Open the <user_interface>.
 
 #if defined (MOTIF)
 		user_interface->no_cascade_pixmap=XmUNSPECIFIED_PIXMAP;
+		/* XtSetLanguageProc(NULL,NULL,NULL); */
 		/* initialize the Motif resource manager */
 		MrmInitialize();
 		/* initialize the X toolkit */
@@ -2347,64 +2342,6 @@ Returns the application shell widget
 	return (instance);
 } /* User_interface_get_instance */
 #endif /* defined (MOTIF) */
-
-#if defined (OPENGL_API)
-int User_interface_set_specified_visual_id(struct User_interface *user_interface,
-	int specified_visual_id)
-/*******************************************************************************
-LAST MODIFIED : 5 March 2002
-
-DESCRIPTION :
-Sets a particular Open GL visual to be used by the graphics.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(User_interface_set_specified_visual_id);
-	if (user_interface)
-	{
-		user_interface->specified_visual_id = specified_visual_id;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"User_interface_set_specified_visual_id.  "
-			"Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* User_interface_set_specified_visual_id */
-#endif /* defined (OPENGL_API) */
-
-#if defined (OPENGL_API)
-int User_interface_get_specified_visual_id(struct User_interface *user_interface)
-/*******************************************************************************
-LAST MODIFIED : 5 March 2002
-
-DESCRIPTION :
-Returns the particular Open GL visual if set to be used by the graphics.
-==============================================================================*/
-{
-	int specified_visual_id;
-
-	ENTER(User_interface_get_specified_visual_id);
-	if (user_interface)
-	{
-		specified_visual_id = user_interface->specified_visual_id;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"User_interface_get_specified_visual_id.  "
-			"Invalid argument");
-		specified_visual_id = 0;
-	}
-	LEAVE;
-
-	return (specified_visual_id);
-} /* User_interface_get_specified_visual_id */
-#endif /* defined (OPENGL_API) */
 
 #if defined (GTK_USER_INTERFACE)
 GtkWidget *User_interface_get_main_window(struct User_interface *user_interface)

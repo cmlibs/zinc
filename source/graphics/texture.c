@@ -34,10 +34,7 @@ return to direct rendering, as described with these routines.
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "general/object.h"
-#if defined (DM_BUFFERS)
-#include "three_d_drawing/ThreeDDraw.h"
-#include "three_d_drawing/dm_interface.h"
-#endif /* defined (DM_BUFFERS) */
+#include "three_d_drawing/graphics_buffer.h"
 #include "graphics/light.h"
 #include "graphics/graphics_library.h"
 #include "graphics/scene.h"
@@ -110,9 +107,7 @@ The properties of a graphical texture.
 	enum Texture_resize_filter_mode resize_filter_mode;
 
 	struct X3d_movie *movie;
-#if defined (DM_BUFFERS)
-	struct Dm_buffer *dmbuffer;
-#endif /* defined (DM_BUFFERS) */
+	struct Graphics_buffer *graphics_buffer;
 
 	struct MANAGER(Texture) *texture_manager;
 
@@ -1703,9 +1698,7 @@ of all textures.
 			texture->combine_alpha=0.;
 			texture->texture_manager = (struct MANAGER(Texture) *)NULL;
 			texture->movie = (struct X3d_movie *)NULL;
-#if defined (DM_BUFFERS)
-			texture->dmbuffer = (struct Dm_buffer *)NULL;
-#endif /* defined (DM_BUFFERS) */
+			texture->graphics_buffer = (struct Graphics_buffer *)NULL;
 #if defined (OPENGL_API)
 			texture->display_list=0;
 			texture->texture_id = 0;
@@ -1758,9 +1751,9 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 						case TEXTURE_PBUFFER:
 						case TEXTURE_DMBUFFER:
 						{
-							if(texture->dmbuffer)
+							if(texture->graphics_buffer)
 							{
-								X3d_movie_unbind_from_dmbuffer(texture->movie);
+								X3d_movie_unbind_from_graphics_buffer(texture->movie);
 							}
 						} break;
 						case TEXTURE_ABGR:
@@ -1777,13 +1770,11 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 					return_code=0;
 #endif /* defined (SGI_MOVIE_FILE) */
 				}
-#if defined (DM_BUFFERS)
-				if(texture->dmbuffer)
+				if(texture->graphics_buffer)
 				{
-					DEACCESS(Dm_buffer)(&(texture->dmbuffer));
+					DEACCESS(Graphics_buffer)(&(texture->graphics_buffer));
 					return_code=0;
 				}
-#endif /* defined (DM_BUFFERS) */
 #if defined (OPENGL_API)
 				if (texture->display_list)
 				{
@@ -1938,12 +1929,12 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 					{
 						DEALLOCATE(destination->image)
 					}
-					ACCESS(Dm_buffer)(source->dmbuffer);
-					if (destination->dmbuffer)
+					ACCESS(Graphics_buffer)(source->graphics_buffer);
+					if (destination->graphics_buffer)
 					{
-						DEACCESS(Dm_buffer)(&(destination->dmbuffer));
+						DEACCESS(Graphics_buffer)(&(destination->graphics_buffer));
 					}
-					destination->dmbuffer = source->dmbuffer;
+					destination->graphics_buffer = source->graphics_buffer;
 #else /* defined (SGI_DIGITAL_MEDIA) */
 					display_message(ERROR_MESSAGE,
 						"MANAGER_COPY_WITHOUT_IDENTIFIER(Texture,name)."
@@ -3149,9 +3140,9 @@ Gets the current X3d_movie from the texture.
 } /* Texture_get_movie */
 
 int Texture_set_movie(struct Texture *texture,struct X3d_movie *movie,
-	struct User_interface *user_interface, char *image_file_name)
+	struct Graphics_buffer_package *graphics_buffer_package, char *image_file_name)
 /*******************************************************************************
-LAST MODIFIED : 15 March 2002
+LAST MODIFIED : 27 May 2004
 
 DESCRIPTION :
 Puts the <image> in the texture. The image is left unchanged by this function.
@@ -3163,12 +3154,12 @@ texture, and must be given a value.
 #if defined (SGI_MOVIE_FILE)
 	char *temp_file_name;
 	unsigned char *texture_image;
-	enum Dm_buffer_type dm_buffer_type;
+	enum Graphics_buffer_type graphics_buffer_type;
 	enum Texture_storage_type storage;
 	int destination_row_width_bytes, dimension, i, image_height, image_width,
 		number_of_components;
 	long int texture_height,texture_width;
-	struct Dm_buffer *dmbuffer;
+	struct Graphics_buffer *graphics_buffer;
 #endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(Texture_set_movie);
@@ -3213,42 +3204,45 @@ texture, and must be given a value.
 #if defined (SGI_DIGITAL_MEDIA)
 		/* If dm_buffers are available then use them, 
 		 otherwise default to normal texture storage*/
-		if(texture->dmbuffer)
+		if(texture->graphics_buffer)
 		{
-			DEACCESS(Dm_buffer)(&(texture->dmbuffer));
+			DEACCESS(Graphics_buffer)(&(texture->graphics_buffer));
 		}
-		dmbuffer = CREATE(Dm_buffer)(texture_width, texture_height, /*depth_buffer_flag*/0,
-			/*shared_display_buffer*/1, user_interface);
-		if(dmbuffer && (ACCESS(Dm_buffer)(dmbuffer))
-			&& (DM_BUFFER_INVALID_TYPE != (dm_buffer_type = 
-			Dm_buffer_get_type(dmbuffer))))
+		graphics_buffer = create_Graphics_buffer_offscreen(
+			graphics_buffer_package, texture_width, texture_height, 
+			GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
+			/*minimum_colour_buffer_depth*/8, /*minimum_depth_buffer_depth*/0,
+			/*minimum_accumulation_buffer_depth*/0);
+		if(graphics_buffer && (ACCESS(Graphics_buffer)(graphics_buffer))
+			&& (GRAPHICS_BUFFER_INVALID_TYPE != (graphics_buffer_type = 
+			Graphics_buffer_get_type(graphics_buffer))))
 		{
-			texture->dmbuffer = dmbuffer;
+			texture->graphics_buffer = graphics_buffer;
 			texture->movie = movie;
 			DEALLOCATE(texture->image);
 			texture->image = (void *)NULL;
 
-			X3d_movie_bind_to_dmbuffer(movie, 
-				texture->dmbuffer);
+			X3d_movie_bind_to_graphics_buffer(movie, 
+				texture->graphics_buffer);
 
-			switch(dm_buffer_type)
+			switch(graphics_buffer_type)
 			{
-				case DM_BUFFER_DM_PBUFFER:
+				case GRAPHICS_BUFFER_GLX_DM_PBUFFER_TYPE:
 				{
 					texture->storage = TEXTURE_DMBUFFER;
 				} break;
-				case DM_BUFFER_GLX_PBUFFER:
+				case GRAPHICS_BUFFER_GLX_PBUFFER_TYPE:
 				{
 					texture->storage = TEXTURE_PBUFFER;
 				} break;
 			}
 
-			Dm_buffer_glx_make_current(texture->dmbuffer);
+			Graphics_buffer_make_current(texture->graphics_buffer);
 			glClearColor(0.0,0.0,0.0,1.0);
 			glClearDepth(1.0);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 			X3d_movie_render_to_glx(movie, 0, 15);
-			X3dThreeDDrawingRemakeCurrent();
+			/* X3dThreeDDrawingRemakeCurrent(); */
 
 			X3d_movie_add_callback(movie, Texture_movie_callback, (void *)texture);
 			X3d_movie_add_destroy_callback(movie,
@@ -3365,7 +3359,7 @@ texture, and must be given a value.
 #else /* defined (SGI_MOVIE_FILE) */
 	USE_PARAMETER(texture);
 	USE_PARAMETER(movie);
-	USE_PARAMETER(user_interface);
+	USE_PARAMETER(graphics_buffer_package);
 	USE_PARAMETER(image_file_name);
 	display_message(ERROR_MESSAGE,
 		"Texture_set_movie.  Movie textures not available");
@@ -4364,7 +4358,7 @@ Writes the properties of the <texture> to the command window.
 			display_message(INFORMATION_MESSAGE,"  compressed storage used in graphics : %u\n",
 				texture_size);
 		}
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+#endif /* defined (GL_ARB_texture_compression) */
 
 		/* write the colour */
 		display_message(INFORMATION_MESSAGE,
@@ -4552,7 +4546,7 @@ execute_Texture should just call direct_render_Texture.
 						{
 							/* If copied by reference we don't need to do anything */
 #if defined (DEBUG)
-							Dm_buffer_glx_make_read_current(texture->dmbuffer);
+							Graphics_buffer_make_read_current(texture->graphics_buffer);
 							glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
 							glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
 							glCopyTexImage2DEXT(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0,
@@ -4598,7 +4592,7 @@ execute_Texture should just call direct_render_Texture.
 #if defined (SGI_DIGITAL_MEDIA)
 							glPushAttrib(GL_PIXEL_MODE_BIT);
 							glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
-							Dm_buffer_glx_make_read_current(texture->dmbuffer);
+							Graphics_buffer_make_read_current(texture->graphics_buffer);
 							glPixelTransferf(GL_ALPHA_BIAS, 1.0);  /* This is required
 																					cause the OCTANE seems to return alpha of zero from render
 																					to buffer */
@@ -4616,7 +4610,6 @@ execute_Texture should just call direct_render_Texture.
 									256, 256,
 									GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
 							}
-							X3dThreeDDrawingRemakeCurrent();
 							glPopAttrib();
 #else /* defined (SGI_DIGITAL_MEDIA) */
 							display_message(ERROR_MESSAGE,
@@ -4676,21 +4669,17 @@ execute_Texture should just call direct_render_Texture.
 						glDeleteTextures(1, &(old_texture_id));
 					}
 					glBindTexture(texture_target, texture->texture_id);
-#if defined (DM_BUFFERS)
 					if(texture->storage==TEXTURE_DMBUFFER || 
 						texture->storage==TEXTURE_PBUFFER)
 					{
-						Dm_buffer_glx_make_read_current(texture->dmbuffer);				
+						Graphics_buffer_make_read_current(texture->graphics_buffer);				
 						direct_render_Texture(texture);
-						X3dThreeDDrawingRemakeCurrent();
+						/* X3dThreeDDrawingRemakeCurrent(); */
 					}
 					else
 					{
-#endif /* defined (DM_BUFFERS) */
 						direct_render_Texture(texture);
-#if defined (DM_BUFFERS)
 					}
-#endif /* defined (DM_BUFFERS) */
 					glNewList(texture->display_list,GL_COMPILE);
 					glBindTexture(texture_target, texture->texture_id);
 					/* As we have bound the texture we only need the 
@@ -4760,17 +4749,14 @@ direct_render_Texture.
 #if defined (OLD_CODE)
 			if (GL_TRUE != resident)
 			{
-#if defined (DM_BUFFERS)
 				/* Reload the texture */
 				if(texture->storage==TEXTURE_DMBUFFER || 
 					texture->storage==TEXTURE_PBUFFER)
 				{
-					Dm_buffer_glx_make_read_current(texture->dmbuffer);				
+					Graphics_buffer_make_read_current(texture->graphics_buffer);				
 					direct_render_Texture(texture);
-					X3dThreeDDrawingRemakeCurrent();
 				}
 				else
-#endif /* defined (DM_BUFFERS) */
 				{
 					direct_render_Texture(texture);
 				}

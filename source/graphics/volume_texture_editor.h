@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : volume_texture_editor.h
 
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -15,6 +15,7 @@ DESCRIPTION :
 #include "graphics/volume_texture.h"
 #include "graphics/volume_texture_editor_dialog.h"
 #include "graphics/graphics_object.h"
+#include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/user_interface.h"
 
 /*
@@ -23,11 +24,12 @@ Global types
 */
 struct Texture_window
 /*******************************************************************************
-LAST MODIFIED : 6 janurary 1998
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
 {
+	struct Graphics_buffer_package *graphics_buffer_package;
 	struct User_interface *user_interface;
 	struct MANAGER(Environment_map) *environment_map_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
@@ -43,7 +45,7 @@ DESCRIPTION :
 	/* top widget of the texture window */
 	Widget texture_window_widget;
 	/* 3d panel where materials and env maps are displayed */
-	Widget select_3d_widget;
+	struct Graphics_buffer *select_3d_buffer;
 	/* widget reference info */
 	Widget ximin_tf[3],        /* tf1,5,9 */
 		ximax_tf[3],    /* tf3,7,11 */
@@ -104,7 +106,8 @@ DESCRIPTION :
 	double mouse_xi1,mouse_xi2,mouse_xi3;
 	double mouse_x_rel,mouse_y_rel;
 	double mouse_scale;
-	Widget graphics_window,graphics_window_shell;
+	struct Graphics_buffer *graphics_buffer;
+	Widget graphics_window_shell;
 #if defined (OPENGL_API)
 	GLuint tw_axes;
 	GLuint tw_grid;
@@ -223,9 +226,10 @@ struct Texture_window *create_texture_edit_window(
 	struct MANAGER(Environment_map) *environment_map_manager,
 	struct MANAGER(Texture) *texture_manager,
 	struct Material_editor_dialog **material_editor_dialog_address,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 Create the structures and retrieve the texture window from the uil file.

@@ -11,7 +11,7 @@ Implements throw away operation on computed fields.
 
 int Computed_field_register_types_throw_away_weakest(
 	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *root_region, struct User_interface *user_interface);
+	struct Cmiss_region *root_region, struct Graphics_buffer_package *graphics_buffer_package);
 /*******************************************************************************
 LAST MODIFIED : 19 March 2004
 

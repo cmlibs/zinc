@@ -10,8 +10,9 @@ lookup of the element.
 #if !defined (COMPUTED_FIELD_FIND_XI_H)
 #define COMPUTED_FIELD_FIND_XI_H
 
-#include "user_interface/user_interface.h"
 #include "region/cmiss_region.h"
+
+struct Graphics_buffer_package;
 
 struct Computed_field_find_element_xi_cache;
 /*******************************************************************************
@@ -38,14 +39,14 @@ value searches just elements of that dimension.
 ==============================================================================*/
 
 int Computed_field_find_element_xi_special(struct Computed_field *field, 
-	struct Computed_field_find_element_xi_cache **cache_ptr, 
-	FE_value *values,int number_of_values, struct FE_element **element, 
+	struct Computed_field_find_element_xi_cache **cache_ptr,
+	FE_value *values, int number_of_values, struct FE_element **element, 
 	FE_value *xi, struct Cmiss_region *search_region,
 	int element_dimension,
-	struct User_interface *user_inteface,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	float *hint_minimums, float *hint_maximums, float *hint_resolution);
 /*******************************************************************************
-LAST MODIFIED : 28 February 2003
+LAST MODIFIED : 12 May 2004
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -53,8 +54,17 @@ This function implements the reverse of some certain computed_fields
 and xi which would evaluate to the given values.
 This implementation of find_element_xi has been separated out as it uses OpenGL
 to accelerate the element xi lookup.
+The <graphics_buffer_package> is required to connect to the OpenGL implementation.
+The <find_element_xi_data> is passed in just to avoid reimplementing the code
+from Computed_field_find_element_xi.
+<hint_minimums> and <hint_maximums> are used to indicate the range over which
+the values supplied will vary and <hint_resolution> indicates the resolution
+at which values will be sampled for element_xi, as this algorithm will generate
+an element lookup image using these parameters.
 An <element_dimension> of 0 searches in elements of all dimension, any other
 value searches just elements of that dimension.
+The return code indicates if the algorithm should be relied on or whether a
+sequential element_xi lookup should now be performed.
 ==============================================================================*/
 
 struct Computed_field_find_element_xi_cache 

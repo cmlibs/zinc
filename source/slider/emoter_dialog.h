@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : emoter_slider_dialog.h
+FILE : emoter_dialog.h
 
-LAST MODIFIED : 15 January 2003
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 This module creates a emoter_slider input device.  A node group slider is
@@ -40,6 +40,7 @@ DESCRIPTION :
 	struct MANAGER(Scene) *scene_manager;
 	struct Scene *viewer_scene;
 	struct Colour viewer_background_colour;
+	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
 	Widget parent, *control_curve_editor_dialog_address;

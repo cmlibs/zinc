@@ -6,9 +6,6 @@ LAST MODIFIED : 27 November 2001
 DESCRIPTION :
 ==============================================================================*/
 #include <dlfcn.h>
-#include <Xm/Xm.h>
-#include <X11/Xlib.h>
-#include <X11/IntrinsicP.h>
 #if defined (SGI_MOVIE_FILE)
 /*???SAB.  This is defined here because needed in a header file */
 	/*???DB.  Which header ?  Must be defined somewhere ? */
@@ -32,12 +29,9 @@ typedef struct USTMSCpair
 #include <dmedia/moviefile.h>
 /*#include <dmedia/movieplay.h>*/
 #endif /* defined (SGI_MOVIE_FILE) */
-#include "three_d_drawing/ThreeDDraw.h"
-#include "three_d_drawing/ThreeDDraP.h"
 #include "general/debug.h"
 #include "user_interface/user_interface.h"
-#define DM_BUFFER_PRIVATE_FUNCTIONS
-#include "three_d_drawing/dm_interface.h"
+#include "three_d_drawing/graphics_buffer.h"
 #include "command/parser.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "time/time.h"
@@ -70,7 +64,7 @@ struct X3d_movie
 	/* Store this format as we use it when adding the track */
 	MVfileformat format;
 #endif /* defined (SGI_MOVIE_FILE) */
-	struct Dm_buffer *dmbuffer;
+	struct Graphics_buffer *graphics_buffer;
 	XtInputId xt_input_id;
 	void *image_buffer;
 	int image_width;
@@ -108,9 +102,9 @@ DESCRIPTION :
 	if ((movie = (struct X3d_movie *)movie_void) && movie->movie_id)
 	{
 		frame_time = (int)(current_time * (double)movie->timebase);
-		if(movie->dmbuffer)
+		if(movie->graphics_buffer)
 		{
-			Dm_buffer_glx_make_current(movie->dmbuffer);
+			Graphics_buffer_make_current(movie->graphics_buffer);
 			X3d_movie_render_to_glx(movie, frame_time, movie->timebase);
 		}
 		if(movie->image_buffer)
@@ -177,7 +171,7 @@ Attempts to create a movie object.
 				movie->speed = 15.0;
 				movie->video_track_id = (MVid)NULL;
 				movie->format = (MVfileformat)NULL;
-				movie->dmbuffer = (struct Dm_buffer *)NULL;
+				movie->graphics_buffer = (struct Graphics_buffer *)NULL;
 				movie->image_buffer = NULL;
 				movie->image_width = 0;
 				movie->image_height = 0;
@@ -320,28 +314,28 @@ Attempts to create a movie object.
 	return (movie);
 } /* CREATE(X3d_movie) */
 
-int X3d_movie_bind_to_dmbuffer(struct X3d_movie *movie, 
-	struct Dm_buffer *buffer)
+int X3d_movie_bind_to_graphics_buffer(struct X3d_movie *movie, 
+	struct Graphics_buffer *buffer)
 /*******************************************************************************
 LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
-Sets the dmbuffer that is associated with this movie instance.
+Sets the graphics_buffer that is associated with this movie instance.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(X3d_movie_bind_to_dmbuffer);
+	ENTER(X3d_movie_bind_to_graphics_buffer);
 #if defined (SGI_MOVIE_FILE)
 	if (movie && buffer)
 	{
 		return_code = 1;
-		movie->dmbuffer = buffer;
+		movie->graphics_buffer = buffer;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"X3d_movie_bind_to_dmbuffer.  Missing movie or widget");
+			"X3d_movie_bind_to_graphics_buffer.  Missing movie or widget");
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
@@ -354,30 +348,30 @@ Sets the dmbuffer that is associated with this movie instance.
 	LEAVE;
 
 	return (return_code);
-} /* X3d_movie_bind_to_dmbuffer */
+} /* X3d_movie_bind_to_graphics_buffer */
 
-int X3d_movie_unbind_from_dmbuffer(struct X3d_movie *movie)
+int X3d_movie_unbind_from_graphics_buffer(struct X3d_movie *movie)
 /*******************************************************************************
 LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
-Disassociates the dmbuffer that is associated with this movie instance.
+Disassociates the graphics_buffer that is associated with this movie instance.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(X3d_movie_unbind_from_dmbuffer);
+	ENTER(X3d_movie_unbind_from_graphics_buffer);
 #if defined (SGI_MOVIE_FILE)
 	if (movie)
 	{
 		X3d_movie_stop(movie);
-		movie->dmbuffer = (struct Dm_buffer *)NULL;
+		movie->graphics_buffer = (struct Graphics_buffer *)NULL;
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"X3d_movie_unbind_from_dmbuffer.  Missing movie");
+			"X3d_movie_unbind_from_graphics_buffer.  Missing movie");
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
@@ -389,7 +383,7 @@ Disassociates the dmbuffer that is associated with this movie instance.
 	LEAVE;
 
 	return (return_code);
-} /* X3d_movie_unbind_from_dmbuffer */
+} /* X3d_movie_unbind_from_graphics_buffer */
 
 int X3d_movie_bind_to_image_buffer(struct X3d_movie *movie, void *image_data, 
 	int image_width, int image_height, int image_padding)

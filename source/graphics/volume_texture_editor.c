@@ -11,7 +11,6 @@ Creation & Callback code for Motif texture window
 #include <stdlib.h>
 #include <string.h>
 #include <Xm/Xm.h>
-#include <X11/Intrinsic.h>
 #include <Mrm/MrmAppl.h>
 #include <Mrm/MrmPublic.h>
 #include <Xm/MwmUtil.h>
@@ -37,7 +36,7 @@ Creation & Callback code for Motif texture window
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "io_devices/input_module.h"
-#include "three_d_drawing/ThreeDDraw.h"
+#include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "view/coord.h"
@@ -846,16 +845,17 @@ printf("Number of environment maps defined = %d\n",n_envmaps);
 	return (return_code);
 } /* display_env_map_3d */
 
-static void select_3d_draw(Widget w,XtPointer tag,XtPointer reason)
+static void select_3d_draw(struct Graphics_buffer *buffer,
+	void *dummy_void, void *texture_window_void)
 /*******************************************************************************
-LAST MODIFIED : 14 January 1998
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 Uses gl to draw a sphere with a lighting source.
 ==============================================================================*/
 {
 	struct Texture_window *texture_window=
-		(struct Texture_window *)tag;
+		(struct Texture_window *)texture_window_void;
 #if defined(OPENGL_API)
 	GLdouble params[4],left,right,bottom,top;
 #endif /* defined(OPENGL_API) */
@@ -864,8 +864,8 @@ Uses gl to draw a sphere with a lighting source.
 #endif /* defined (GL_API) */
 
 	ENTER(select_3d_draw);
-	USE_PARAMETER(w);
-	USE_PARAMETER(reason);
+	USE_PARAMETER(buffer);
+	USE_PARAMETER(dummy_void);
 	pick_index=0;
 	env_map_pick_index=0;
 #if defined (OPENGL_API)
@@ -955,10 +955,10 @@ printf("after for each\n");
 	LEAVE;
 } /* select_3d_draw */
 
-static void select_3d_init_CB(Widget widget,XtPointer tag,
-	XtPointer call_data)
+static void select_3d_init_CB(struct Graphics_buffer *buffer,
+	void *dummy_void, void *texture_window_void)
 /*******************************************************************************
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -971,14 +971,15 @@ DESCRIPTION :
 	struct Modify_light_model_data modify_light_model_data;
 	struct Parse_state *parse_state;
 #endif /* defined (USEMANAGER) */
-	struct Texture_window *texture_window=(struct Texture_window *)tag;
+	struct Texture_window *texture_window=
+		(struct Texture_window *)texture_window_void;
 
 	ENTER(select_3d_init_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
+	USE_PARAMETER(buffer);
+	USE_PARAMETER(dummy_void);
 /*???debug */
 printf("***** create light ******\n");
-	X3dThreeDDrawingMakeCurrent(texture_window->select_3d_widget);
+	Graphics_buffer_make_current(texture_window->select_3d_buffer);
 #if defined (OPENGL_API)
 	glDepthRange(0,1);
 	glEnable(GL_DEPTH_TEST);
@@ -1115,12 +1116,12 @@ printf("******* Material Index = %d *******\n",index);
 /*???debug */
 printf("current_material = %s \n",Graphical_material_name(texture_window->current_material));
 		}
-		X3dThreeDDrawingMakeCurrent(texture_window->select_3d_widget);
+		Graphics_buffer_make_current(texture_window->select_3d_buffer);
 		select_3d_draw(NULL,texture_window,NULL);
-		X3dThreeDDrawingSwapBuffers();
-		X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
+		Graphics_buffer_swap_buffers(texture_window->select_3d_buffer);
+		Graphics_buffer_make_current(texture_window->graphics_buffer);
 		graphics_loop((XtPointer)texture_window);
-		X3dThreeDDrawingSwapBuffers();
+		Graphics_buffer_swap_buffers(texture_window->graphics_buffer);
 	}
 	else
 	{
@@ -1129,67 +1130,34 @@ printf("current_material = %s \n",Graphical_material_name(texture_window->curren
 	LEAVE;
 } /* select_material */
 
-static void select_3d_input(Widget w,XtPointer user_data,XtPointer call_data)
+static void select_3d_input(struct Graphics_buffer *buffer,
+	struct Graphics_buffer_input *input, void *texture_window_void)
 /*******************************************************************************
-LAST MODIFIED : 30 August 1996
+LAST MODIFIED : 5 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	double norm_x,norm_y;
-	int x,y;
 	struct Texture_window *texture_window;
-	unsigned int border_width,depth,height,width;
-	Window win;
-	XButtonEvent *event;
-	X3dThreeDDrawCallbackStruct *callback;
+	unsigned int height,width;
 
 	ENTER(select_3d_input);
-	USE_PARAMETER(w);
-	if (texture_window=(struct Texture_window *)user_data)
+	USE_PARAMETER(buffer);
+	if (texture_window=(struct Texture_window *)texture_window_void)
 	{
-		if (callback=(X3dThreeDDrawCallbackStruct *)call_data)
+		
+		width = Graphics_buffer_get_width(texture_window->graphics_buffer);
+		height = Graphics_buffer_get_height(texture_window->graphics_buffer);
+
+		switch (input->type)
 		{
-			if (X3dCR_INPUT==callback->reason)
+			case GRAPHICS_BUFFER_BUTTON_PRESS:
 			{
-			/* find window coords */
-			XGetGeometry(User_interface_get_display(texture_window->user_interface),
-				callback->window,&win,&x,&y,&width,&height,&border_width,&depth);
-/*??? debug */
-printf("window size = %u, %u\n",width,height);
-				if ((callback->event)&&((ButtonPress==callback->event->type)||
-					(ButtonRelease==callback->event->type)))
-				{
-					event= &(callback->event->xbutton);
-					if (ButtonPress==callback->event->type)
-					{
-/*??? debug */
-printf("button press at %d %d\n",event->x,event->y);
-						norm_x=(double)event->x/(double)width;
-						norm_y=1.0-(double)event->y/(double)height;
-						select_material_3d(texture_window,norm_x,norm_y);
-					}
-/*??? debug */
-else
-{
-	printf("button release at %d %d\n",event->x,event->y);
-}
-printf("normalized mouse coords = %lf,%lf\n",(double)event->x/(double)width,
-	1.0-(double)event->y/(double)height);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"select_3d_input.  Invalid X event");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"select_3d_input.  Invalid reason");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"select_3d_input.  Missing call_data");
+				norm_x=(double)input->position_x/(double)width;
+				norm_y=1.0-(double)input->position_y/(double)height;
+				select_material_3d(texture_window,norm_x,norm_y);
+			} break;
 		}
 	}
 	else
@@ -1368,9 +1336,9 @@ printf("(%p) %lf %lf %lf %lf %lf %lf\n", texture_window,
 					TRANSFORMATION_EDITOR_DIALOG_DATA,new_coord);
 			}
 		}
-		X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
+		Graphics_buffer_make_current(texture_window->graphics_buffer);
 		graphics_loop((XtPointer)texture_window);
-		X3dThreeDDrawingSwapBuffers();
+		Graphics_buffer_swap_buffers(texture_window->();
 	}
 	else
 	{
@@ -1746,9 +1714,9 @@ printf("Group list selected\n");
 			XmStringGetLtoR(cbs->item,XmSTRING_DEFAULT_CHARSET,&name);
 			strcpy(texture_window->current_node_group, name);
 			printf("Current node group = %s\n", texture_window->current_node_group);
-			X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
+			Graphics_buffer_make_current(texture_window->graphics_buffer);
 			graphics_loop((XtPointer)texture_window);
-			X3dThreeDDrawingSwapBuffers();
+			Graphics_buffer_swap_buffers(texture_window->graphics_buffer);
 		}
 	}
 	LEAVE;
@@ -3091,9 +3059,9 @@ printf("Brushsize = %f, %f, %f\n",texture_window
 				if (texture_window->cop_mode_on)
 				{
 					texture_window->cop[0]=(double)atof(string_ptr);
-					X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
+					Graphics_buffer_make_current(texture_window->graphics_buffer);
 					graphics_loop((XtPointer)texture_window);
-					X3dThreeDDrawingSwapBuffers();
+					Graphics_buffer_swap_buffers(texture_window->graphics_buffer);
 				}
 				else
 				{
@@ -3106,9 +3074,9 @@ printf("Brushsize = %f, %f, %f\n",texture_window
 				if (texture_window->cop_mode_on)
 				{
 					texture_window->cop[1]=(double)atof(string_ptr);
-					X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
+					Graphics_buffer_make_current(texture_window->graphics_buffer);
 					graphics_loop((XtPointer)texture_window);
-					X3dThreeDDrawingSwapBuffers();
+					Graphics_buffer_swap_buffers(texture_window->graphics_buffer);
 				}
 				else
 				{
@@ -3121,9 +3089,9 @@ printf("Brushsize = %f, %f, %f\n",texture_window
 				if (texture_window->cop_mode_on)
 				{
 					texture_window->cop[2]=(double)atof(string_ptr);
-					X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
+					Graphics_buffer_make_current(texture_window->graphics_buffer);
 					graphics_loop((XtPointer)texture_window);
-					X3dThreeDDrawingSwapBuffers();
+					Graphics_buffer_swap_buffers(texture_window->graphics_buffer);
 				}
 				else
 				{
@@ -3395,9 +3363,9 @@ Updates data when scrollbar activated
 			} break;
 		}
 		/* temp call expose */
-		X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
+		Graphics_buffer_make_current(texture_window->graphics_buffer);
 		graphics_loop((XtPointer)texture_window);
-		X3dThreeDDrawingSwapBuffers();
+		Graphics_buffer_swap_buffers(texture_window->graphics_buffer);
 	}
 	else
 	{
@@ -4624,9 +4592,9 @@ DESCRIPTION :
 			texture_window->current_material);
 		printf("current_material = %s \n",
 			Graphical_material_name(texture_window->current_material));
-		X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
+		Graphics_buffer_make_current(texture_window->graphics_buffer);
 		graphics_loop((XtPointer)texture_window);
-		X3dThreeDDrawingSwapBuffers();
+		Graphics_buffer_swap_buffers(texture_window->graphics_buffer);
 	}
 
 	LEAVE;
@@ -4655,9 +4623,9 @@ DESCRIPTION :
 			current_material));	*/
 	printf("current environment map = %s \n",texture_window->current_env_map->name);
 
-	X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
+	Graphics_buffer_make_current(texture_window->graphics_buffer);
 	graphics_loop((XtPointer)texture_window);
-	X3dThreeDDrawingSwapBuffers();
+	Graphics_buffer_swap_buffers(texture_window->graphics_buffer);
 	}
 
 	LEAVE;
@@ -4881,12 +4849,12 @@ else
 {
 	printf("env_mode off\n");
 }
-		X3dThreeDDrawingMakeCurrent(texture_window->select_3d_widget);
-		select_3d_draw(texture_window->select_3d_widget,texture_window,NULL);
-		X3dThreeDDrawingSwapBuffers();
-		X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
+		Graphics_buffer_make_current(texture_window->select_3d_buffer);
+		select_3d_draw(texture_window->select_3d_buffer,NULL,texture_window);
+		Graphics_buffer_swap_buffers(texture_window->select_3d_buffer);
+		Graphics_buffer_make_current(texture_window->graphics_buffer);
 		graphics_loop((XtPointer)texture_window);
-		X3dThreeDDrawingSwapBuffers();
+		Graphics_buffer_swap_buffers(texture_window->graphics_buffer);
 	}
 	else
 	{
@@ -5109,9 +5077,10 @@ struct Texture_window *create_texture_edit_window(
 	struct MANAGER(Environment_map) *environment_map_manager,
 	struct MANAGER(Texture) *texture_manager,
 	struct Material_editor_dialog **material_editor_dialog_address,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 Create the structures and retrieve the texture window from the uil file.
@@ -5190,6 +5159,7 @@ Create the structures and retrieve the texture window from the uil file.
 			if (ALLOCATE(texture_window,struct Texture_window,1))
 			{
 				/* initialize fields to zero here */
+				texture_window->graphics_buffer_package=graphics_buffer_package;
 				texture_window->user_interface=user_interface;
 				texture_window->default_graphical_material=default_graphical_material;
 				texture_window->graphical_material_manager=graphical_material_manager;
@@ -5204,7 +5174,7 @@ Create the structures and retrieve the texture window from the uil file.
 				texture_window->texture_window_shell=(Widget)NULL;
 				texture_window->texture_window_widget=(Widget)NULL;
 				texture_window->prompt_text_field=(Widget)NULL;
-				texture_window->select_3d_widget=NULL;
+				texture_window->select_3d_buffer=(struct Graphics_buffer *)NULL;
 				texture_window->vt_3d_select_form=NULL;
 				texture_window->node_group_list=NULL;
 				for (i=0;i<4;i++)
@@ -5360,29 +5330,19 @@ printf("create_texture_edit_window  %p\n",texture_window->voltex);
 /*???debug */
 printf("texture_window initialized\n");
 								/* now bring up a 3d drawing widget */
-								if (texture_window->select_3d_widget=XtVaCreateWidget(
-									"a3d_widget",threeDDrawingWidgetClass,
-									texture_window->vt_3d_select_form,
-									/* XmNwidth,100,
-									XmNheight,100, */
-									XmNbottomAttachment,XmATTACH_FORM,
-									XmNleftAttachment,XmATTACH_FORM,
-									XmNrightAttachment,XmATTACH_FORM,
-									XmNtopAttachment,XmATTACH_FORM,
-									X3dNbufferingMode,X3dDOUBLE_BUFFERING,
-									X3dNbufferColourMode,X3dCOLOUR_RGB_MODE,
-									NULL))
+								if (texture_window->select_3d_buffer=create_Graphics_buffer_X3d(
+									graphics_buffer_package, texture_window->vt_3d_select_form, 
+									/*width*/100, /*height*/100,
+									GRAPHICS_BUFFER_DOUBLE_BUFFERING, GRAPHICS_BUFFER_ANY_STEREO_MODE,
+									/*minimum_colour_buffer_depth*/8, /*minimum_depth_buffer_depth*/8,
+									/*minimum_accumulation_buffer_depth*/0))
 								{
-									XtAddCallback(texture_window->select_3d_widget,
-										X3dNinitializeCallback,select_3d_init_CB,
-										texture_window);
-									XtAddCallback(texture_window->select_3d_widget,
-										X3dNexposeCallback,select_3d_draw,
-										texture_window);
-									XtAddCallback(texture_window->select_3d_widget,
-										X3dNinputCallback,select_3d_input,
-										texture_window);
-									XtManageChild(texture_window->select_3d_widget);
+									Graphics_buffer_add_initialise_callback(texture_window->select_3d_buffer,
+										select_3d_init_CB, (void *)texture_window);
+									Graphics_buffer_add_expose_callback(texture_window->select_3d_buffer,
+										select_3d_draw, (void *)texture_window);
+									Graphics_buffer_add_input_callback(texture_window->select_3d_buffer,
+										select_3d_input,(void *)texture_window);
 								}
 								else
 								{

@@ -1166,6 +1166,7 @@ struct System_window *CREATE(System_window)(Widget shell,
 	struct Computed_field_package *computed_field_package,
 	struct Light *light,
 	struct Light_model *light_model,
+	struct Graphics_buffer_package *graphics_buffer_package,
 #endif /* defined (UNEMAP_USE_3D) */
 	struct Time_keeper *time_keeper,
 	struct User_interface *user_interface)
@@ -1455,7 +1456,7 @@ as a standalone application.
 						interactive_tool_manager, scene_manager, light_model_manager,
 						light_manager, spectrum_manager, graphical_material_manager,
 						data_root_cmiss_region, glyph_list, graphical_material,
-						computed_field_package, light, light_model
+						computed_field_package, light, light_model, graphics_buffer_package
 #endif /* defined (UNEMAP_USE_3D) */
 						);
 #if defined (UNEMAP_USE_3D)

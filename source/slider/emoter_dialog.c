@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : emoter_dialog.c
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 This module creates a emoter_slider input device.  An emoter slider is
@@ -75,6 +75,7 @@ DESCRIPTION :
 	struct Cmiss_region *region;
 	struct Emoter_slider *active_slider, **sliders;
 	struct Execute_command *execute_command;
+	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
 	struct MANAGER(FE_basis) *basis_manager;
@@ -2163,7 +2164,7 @@ Creates a control curve which is read from file values.
 								{
 									Control_curve_add_element( emoter_curve, i );
 									time += 1.0;
-									Control_curve_set_parameter( emoter_curve,/*element_no*/i,
+									Control_curve_set_parameter(emoter_curve,/*element_no*/i,
 										/*local_node_no*/1,time);
 									read_weights( n_modes, file_data, shared->number_of_modes, shape_vector );
 									Control_curve_set_node_values( emoter_curve,
@@ -3117,13 +3118,13 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 								return_code = 1;
 							}
 							graphics_buffer = create_Graphics_buffer_X3d(
+								shared_data->graphics_buffer_package,
 								emoter_slider->animated_pixmap,
+								/*width*/50, /*height*/50,
 								GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_MONO,
  								/*minimum_colour_buffer_depth*/0,
  								/*minimum_depth_buffer_depth*/0,
-								/*minimum_accumulation_buffer_depth*/0,
-								User_interface_get_specified_visual_id(
-								shared_data->user_interface));
+								/*minimum_accumulation_buffer_depth*/0);
 							emoter_slider->scene_viewer = CREATE(Scene_viewer)(
 								graphics_buffer,
 								&(shared_data->viewer_background_colour),
@@ -5738,7 +5739,7 @@ Global functions
 int gfx_create_emoter(struct Parse_state *state,void *dummy_to_be_modified,
 	void *create_emoter_slider_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 Executes a GFX CREATE EMOTER command.  If there is a emoter dialog
@@ -5905,6 +5906,8 @@ in existence, then bring it to the front, otherwise create new one.
 								shared_emoter_slider_data->top_level
 									= create_emoter_slider_data->parent;
 								shared_emoter_slider_data->time = 1;
+								shared_emoter_slider_data->graphics_buffer_package
+									= create_emoter_slider_data->graphics_buffer_package;
 								shared_emoter_slider_data->user_interface
 									= create_emoter_slider_data->user_interface;
 								shared_emoter_slider_data->graphics_window_manager

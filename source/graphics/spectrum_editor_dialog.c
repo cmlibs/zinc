@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_editor_dialog.c
 
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 This module creates a spectrum_editor_dialog.
@@ -9,6 +9,7 @@ This module creates a spectrum_editor_dialog.
 ==============================================================================*/
 #include <stdio.h>
 #include <Xm/Protocols.h>
+#include "three_d_drawing/graphics_buffer.h"
 #include "choose/choose_scene.h"
 #include "general/debug.h"
 #include "general/manager.h"
@@ -343,9 +344,9 @@ Called when scene is changed.
 
 static struct Spectrum_editor_dialog *CREATE(Spectrum_editor_dialog)(
 	struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
-	Widget parent,
-	struct MANAGER(Spectrum) *spectrum_manager,
-	struct Spectrum *init_data, struct User_interface *user_interface,
+	Widget parent, struct MANAGER(Spectrum) *spectrum_manager,
+	struct Spectrum *init_data, struct Graphics_buffer_package *graphics_buffer_package,
+	struct User_interface *user_interface,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Light) *light_manager,
@@ -467,8 +468,8 @@ the spectrums contained in the global list.
 								if (!(spectrum_editor_dialog->spectrum_editor =
 									CREATE(Spectrum_editor)(
 										spectrum_editor_dialog->editor_form,
-										(struct Spectrum *)NULL,user_interface,
-										glyph_list,
+										(struct Spectrum *)NULL,graphics_buffer_package,
+										user_interface, glyph_list,
 										graphical_material_manager, light_manager,
 										spectrum_manager, texture_manager)))
 								{
@@ -730,14 +731,14 @@ Set the <spectrum> for the <spectrum_editor_dialog>.
 int bring_up_spectrum_editor_dialog(
 	struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
 	Widget parent, struct MANAGER(Spectrum) *spectrum_manager,
-	struct Spectrum *spectrum, struct User_interface *user_interface,
-	struct LIST(GT_object) *glyph_list,
+	struct Spectrum *spectrum, struct Graphics_buffer_package *graphics_buffer_package,
+	struct User_interface *user_interface, struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Light) *light_manager,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 If there is a spectrum_editor dialog in existence, then de-iconify it and
@@ -760,8 +761,8 @@ bring it to the front, otherwise create a new one.
 		else
 		{
 			if (CREATE(Spectrum_editor_dialog)(spectrum_editor_dialog_address,parent,
-				spectrum_manager, spectrum, user_interface,
-				glyph_list,
+				spectrum_manager, spectrum, graphics_buffer_package,
+				user_interface, glyph_list,
 				graphical_material_manager, light_manager,
 				texture_manager, scene_manager))
 			{

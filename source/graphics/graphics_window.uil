@@ -12,6 +12,7 @@ module Graphics_window
 procedure
 ! ---------|---------|---------|- 31 characters max
 	gwin_id_selection_list;
+	gwin_id_control_panel;
 	gwin_id_viewing_form;
 	gwin_id_viewing_area1;
 	gwin_id_viewing_area2;
@@ -55,8 +56,7 @@ object
 			};
 		controls
 			{
-			XmForm gwin_control_panel;
-!      XmPanedWindow gwin_work_area;
+			XmForm gwin_control_panel_space;
 			XmForm gwin_viewing_form;
 			};
 		callbacks
@@ -65,13 +65,38 @@ object
 			};
 		};
 !*******************************************************************************
+!The control panel is nested in this space form as the actual control panel
+!is unmanaged before the shell is managed so that it does not expand the height
+!of the shell.  This form keeps a width so that when the control panel is managed
+!back in it doesn't encroach on the viewing area space.
+	gwin_control_panel_space: XmForm
+		{
+		arguments
+			{
+			XmNwidth = 120;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			};
+		controls
+			{
+	      XmForm gwin_control_panel;
+			};
+		};
+!*******************************************************************************
 	gwin_control_panel: XmForm
 		{
 		arguments
 			{
+			XmNwidth = 120;
 			XmNmarginHeight = 0;
 			XmNmarginWidth = 0;
 			XmNborderWidth = 0;
+			XmNresizable = false;
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNbottomAttachment = XmATTACH_FORM;
@@ -90,29 +115,27 @@ object
 			XmForm gwin_interactive_tool_form;
 !			XmSeparatorGadget gwin_separator3;
 			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure gwin_id_control_panel(gwin_structure);
+			};
 		};
 !*******************************************************************************
 	gwin_viewing_form: XmForm
 		{
 		arguments
 			{
-!			XmNshadowThickness = 0;
-!			XmNborderColor = color('orange');
 			XmNborderWidth = 0;
-!      XmNwidth = 402;
-!      XmNheight = 402;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = 1;
 !			XmNleftOffset = graphics_window_border_width;
-			XmNleftWidget = gwin_control_panel;
+			XmNleftWidget = gwin_control_panel_space;
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNrightOffset = 1;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 1;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 1;
-!			XmNtopOffset = graphics_window_border_width;
-!      XmNallowResize = true;
 			XmNfractionBase = 2;
 			XmNhorizontalSpacing = 0;
 			XmNverticalSpacing = 0;
@@ -134,17 +157,20 @@ object
 		{
 		arguments
 			{
-!			XmNshadowThickness = 0;
-!			XmNborderColor = color('gray');
 			XmNborderWidth = 0;
 			XmNleftAttachment = XmATTACH_POSITION;
 			XmNleftPosition = 0;
+			XmNleftOffset = 1;
+!Build the initial window for one scene viewer
 			XmNrightAttachment = XmATTACH_POSITION;
-			XmNrightPosition = 1;
+			XmNrightPosition = 2;
+			XmNrightOffset = 1;
 			XmNbottomAttachment = XmATTACH_POSITION;
-			XmNbottomPosition = 1;
+			XmNbottomPosition = 2;
+			XmNbottomOffset = 1;
 			XmNtopAttachment = XmATTACH_POSITION;
 			XmNtopPosition = 0;
+			XmNtopOffset = 1;
 			XmNuserData = gwin_structure;
 			};
 		callbacks
@@ -157,17 +183,19 @@ object
 		{
 		arguments
 			{
-!			XmNshadowThickness = 0;
-!			XmNborderColor = color('gray');
 			XmNborderWidth = 0;
 			XmNleftAttachment = XmATTACH_POSITION;
 			XmNleftPosition = 1;
+			XmNleftOffset = 1;
 			XmNrightAttachment = XmATTACH_POSITION;
 			XmNrightPosition = 2;
+			XmNrightOffset = 1;
 			XmNbottomAttachment = XmATTACH_POSITION;
 			XmNbottomPosition = 1;
+			XmNbottomOffset = 1;
 			XmNtopAttachment = XmATTACH_POSITION;
 			XmNtopPosition = 0;
+			XmNtopOffset = 1;
 			XmNuserData = gwin_structure;
 			};
 		callbacks
@@ -180,17 +208,19 @@ object
 		{
 		arguments
 			{
-!			XmNshadowThickness = 0;
-!			XmNborderColor = color('gray');
 			XmNborderWidth = 0;
 			XmNleftAttachment = XmATTACH_POSITION;
 			XmNleftPosition = 0;
+			XmNleftOffset = 1;
 			XmNrightAttachment = XmATTACH_POSITION;
 			XmNrightPosition = 1;
+			XmNrightOffset = 1;
 			XmNbottomAttachment = XmATTACH_POSITION;
 			XmNbottomPosition = 2;
+			XmNbottomOffset = 1;
 			XmNtopAttachment = XmATTACH_POSITION;
 			XmNtopPosition = 1;
+			XmNtopOffset = 1;
 			XmNuserData = gwin_structure;
 			};
 		callbacks
@@ -203,17 +233,19 @@ object
 		{
 		arguments
 			{
-!			XmNshadowThickness = 0;
-!			XmNborderColor = color('gray');
 			XmNborderWidth = 0;
 			XmNleftAttachment = XmATTACH_POSITION;
 			XmNleftPosition = 1;
+			XmNleftOffset = 1;
 			XmNrightAttachment = XmATTACH_POSITION;
 			XmNrightPosition = 2;
+			XmNrightOffset = 1;
 			XmNbottomAttachment = XmATTACH_POSITION;
 			XmNbottomPosition = 2;
+			XmNbottomOffset = 1;
 			XmNtopAttachment = XmATTACH_POSITION;
 			XmNtopPosition = 1;
+			XmNtopOffset = 1;
 			XmNuserData = gwin_structure;
 			};
 		callbacks
@@ -268,7 +300,7 @@ object
 		arguments
 			{
 			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
 			XmNbottomAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopWidget = gwin_print_btn;
@@ -287,7 +319,7 @@ object
 		arguments
 			{
 			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
 			XmNbottomAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopWidget = gwin_time_edit_form;
@@ -338,7 +370,7 @@ object
 		arguments
 			{
 			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNtopAttachment = XmATTACH_FORM;
 			};
@@ -353,7 +385,7 @@ object
 		arguments
 			{
 			XmNleftAttachment = XmATTACH_FORM;
-			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
 			XmNbottomAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopWidget = gwin_layout_mode_entry;

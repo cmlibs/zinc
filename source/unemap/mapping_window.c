@@ -2158,13 +2158,13 @@ the mapping_area of the <mapping_window>.
 		map_drawing_information_make_map_scene(drawing_information,unemap_package);
 		if (!mapping_window->scene_viewer)
 		{
-			graphics_buffer = create_Graphics_buffer_X3d(mapping_window->map3d_viewing_form,
-				GRAPHICS_BUFFER_DOUBLE_BUFFERING, GRAPHICS_BUFFER_MONO,
+			graphics_buffer = create_Graphics_buffer_X3d(
+				get_map_drawing_information_graphics_buffer_package(drawing_information),
+				mapping_window->map3d_viewing_form, /*width*/400, /*height*/400,
+				GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
 				/*minimum_colour_buffer_depth*/0,
 				/*minimum_depth_buffer_depth*/0,
-				/*minimum_accumulation_buffer_depth*/0,
-				User_interface_get_specified_visual_id(
-				get_map_drawing_information_user_interface(drawing_information)));
+				/*minimum_accumulation_buffer_depth*/0);
 			mapping_window->scene_viewer=
 				/* map3d_viewing_form is a sub-form of mapping_area_3d */
 				CREATE(Scene_viewer)(graphics_buffer,

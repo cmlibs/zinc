@@ -156,7 +156,7 @@ ifeq ($(SYSNAME:IRIX%=),)
       # need to suppress for Boost mostly but also for STL
       CPP_STRICT_FLAGS = -diag_error 1000-9999 -diag_suppress 1110,1174,1209,1234,1375,1424,3201
       DIGITAL_MEDIA_NON_STRICT_FLAGS = -diag_warning 1429
-      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = three_d_drawing/dm_interface.c | three_d_drawing/movie_extensions.c
+      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = three_d_drawing/graphics_buffer.c | three_d_drawing/movie_extensions.c
    endif # DEBUG != true
    ifeq ($(MIPS),3)
       OPTIMISATION_FLAGS += -mips3
@@ -269,6 +269,7 @@ ifeq ($(SYSNAME),win32)
    UIL = uil
    # CC = gcc -c -mno-cygwin -fnative-struct */
    CC = gcc -c -mno-cygwin -mms-bitfields
+   # CC = gcc -c -mno-cygwin -mms-bitfields -D_LIB -D_MT -D_FILE_OFFSET_BITS=64
    CPP = gcc -c
    CPP_FLAGS =
    FORTRAN = f77 -c

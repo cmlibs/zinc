@@ -20,9 +20,7 @@ lookup of the element.
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
 #include "graphics/texture.h"
-#if defined (DM_BUFFERS)
-#include "three_d_drawing/dm_interface.h"
-#endif /* defined (DM_BUFFERS) */
+#include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
 
 struct Render_element_data
@@ -36,12 +34,10 @@ struct Render_element_data
 
 struct Computed_field_find_element_xi_cache
 {
-#if defined (DM_BUFFERS)
 	int bit_shift;
 	int minimum_element_number;
 	int maximum_element_number;
-	struct Dm_buffer *dmbuffer;
-#endif /* defined (DM_BUFFERS) */
+	struct Graphics_buffer *graphics_buffer;
 	int valid_values;
 	struct FE_element *element;
 	struct Cmiss_region *search_region;
@@ -73,167 +69,6 @@ matches the <field> in this structure or one of its source fields.
 	FE_value *found_derivatives;
 	float tolerance;
 }; /* Computed_field_iterative_find_element_xi_data */
-
-#if defined (OLD_CODE)
-int Computed_field_iterative_element_conditional(
-	struct FE_element *element, void *data_void)
-/*******************************************************************************
-LAST MODIFIED: 16 June 2000
-
-DESCRIPTION:
-Returns true if a valid element xi is found.
-==============================================================================*/
-{
-	FE_value determinant, *derivatives, *values;
-	int i, number_of_xi, return_code;
-	struct Computed_field_iterative_find_element_xi_data *data;
-
-	ENTER(Computed_field_iterative_element_conditional);
-
-	if (element &&
-		(data = (struct Computed_field_iterative_find_element_xi_data *)data_void))
-	{
-		number_of_xi = get_FE_element_dimension(element);
-		if (number_of_xi <= data->number_of_values)
-		{
-			return_code = 1;
-			if (data->found_number_of_xi != number_of_xi)
-			{
-				if (REALLOCATE(derivatives, data->found_derivatives, FE_value,
-					data->number_of_values * number_of_xi))
-				{
-					data->found_derivatives = derivatives;
-					data->found_number_of_xi = number_of_xi;
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Computed_field_iterative_element_conditional.  Unable to allocate derivative storage");
-					return_code = 0;
-				}
-			}
-			if (return_code)
-			{
-				values = data->found_values;
-				derivatives = data->found_derivatives;
-
-				/* Start at centre to find element xi */
-				for (i = 0 ; i < number_of_xi ; i++)
-				{
-					data->xi[i] = 0.5;
-				}
-				Computed_field_evaluate_in_element(data->field, element, data->xi,
-					/*time*/0, (struct FE_element *)NULL, values, derivatives);
-
-				/* Solve optimally for each number of xi */
-				switch (number_of_xi)
-				{
-					case 1:
-					{
-						data->xi[0] = (data->values[0] - values[0]) / derivatives[0] + 0.5;
-						if ((data->xi[0] >= -data->tolerance) && (data->xi[0] <= 1.0 + data->tolerance))
-						{
-							return_code = 1;
-						}
-						else
-						{
-							return_code = 0;
-						}
-						for (i = 1 ; return_code && (i < data->number_of_values); i++)
-						{
-							if (data->tolerance > fabs ((data->values[0] - values[0]) / derivatives[0]
-								+ 0.5 - data->xi[0]))
-							{
-								return_code = 0;
-							}
-						}
-					} break;
-					case 2:
-					{
-						determinant = derivatives[0] * derivatives[3] - derivatives[1] * derivatives[2];
-						if ((determinant > 1e-12) || (determinant < -1e-12))
-						{
-							data->xi[0] = (derivatives[3] * (data->values[0] - values[0]) -
-								derivatives[1] * (data->values[1] - values[1]))
-								/ determinant + 0.5;
-							if ((derivatives[1] > 1e-12) || (derivatives[1] < -1e-12))
-							{
-								data->xi[1] = (data->values[0] - values[0] - derivatives[0] * (data->xi[0] - 0.5))
-									/ derivatives[1] + 0.5;
-							}
-							else
-							{
-								data->xi[1] = (data->values[1] - values[1] - derivatives[2] * (data->xi[0] - 0.5))
-									/ derivatives[3] + 0.5;								
-							}
-						}
-						else
-						{
-							data->xi[0] = -1;
-							data->xi[1] = -1;
-						}
-						if (SIMPLEX_SHAPE== *(element->shape->type))
-						{
-							if ((data->xi[0] >= -data->tolerance) && (data->xi[1] >= -data->tolerance)
-								&& (data->xi[0] + data->xi[1] <= 1.0 + data->tolerance))
-							{
-								return_code = 1;
-							}
-							else
-							{
-								return_code = 0;
-							}
-							for (i = 2 ; return_code && (i < data->number_of_values); i++)
-							{
-								/* Check tolerance */
-							}
-						}
-						else
-						{
-							if ((data->xi[0] >= -data->tolerance) && (data->xi[0] <= 1.0 + data->tolerance)
-								&& (data->xi[1] >= -data->tolerance) && (data->xi[1] <= 1.0 + data->tolerance))
-							{
-								return_code = 1;
-							}
-							else
-							{
-								return_code = 0;
-							}
-							for (i = 2 ; return_code && (i < data->number_of_values); i++)
-							{
-								/* Check tolerance */
-							}
-						}
-					} break;
-					case 3:
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_iterative_element_conditional.  "
-							"3-D Elements not supported yet");
-						return_code = 0;
-					} break;
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_iterative_element_conditional.  Unable to solve undertermined system");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_iterative_element_conditional.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return(return_code);
-} /* Computed_field_iterative_element_conditional */
-#endif /* defined (OLD_CODE) */
 
 #define MAX_FIND_XI_ITERATIONS 10
 
@@ -641,7 +476,6 @@ ultimate parent finite_element field.
 	return (return_code);
 } /* Computed_field_perform_find_element_xi */
 
-#if defined (DM_BUFFERS)
 static int Expand_element_range(struct FE_element *element, void *data_void)
 /*******************************************************************************
 LAST MODIFIED : 26 June 2000
@@ -776,17 +610,16 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	
 	return (return_code);
 } /* Render_element_as_texture */
-#endif /* defined (DM_BUFFERS) */
 
 int Computed_field_find_element_xi_special(struct Computed_field *field, 
 	struct Computed_field_find_element_xi_cache **cache_ptr,
 	FE_value *values, int number_of_values, struct FE_element **element, 
 	FE_value *xi, struct Cmiss_region *search_region,
 	int element_dimension,
-	struct User_interface *user_interface,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	float *hint_minimums, float *hint_maximums, float *hint_resolution)
 /*******************************************************************************
-LAST MODIFIED : 16 April 2002
+LAST MODIFIED : 12 May 2004
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -794,7 +627,7 @@ This function implements the reverse of some certain computed_fields
 and xi which would evaluate to the given values.
 This implementation of find_element_xi has been separated out as it uses OpenGL
 to accelerate the element xi lookup.
-The <user_interface> is required to connect to the OpenGL implementation.
+The <graphics_buffer_package> is required to connect to the OpenGL implementation.
 The <find_element_xi_data> is passed in just to avoid reimplementing the code
 from Computed_field_find_element_xi.
 <hint_minimums> and <hint_maximums> are used to indicate the range over which
@@ -806,7 +639,6 @@ sequential element_xi lookup should now be performed.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (DM_BUFFERS)
 #define BLOCK_SIZE (20)
 #if defined (DEBUG)
 	int dummy[1024 * 1024];
@@ -821,28 +653,11 @@ sequential element_xi lookup should now be performed.
 	struct FE_region *fe_region;
 	struct Render_element_data data;
 	int gl_list, i, nx, ny, px, py, scaled_number;
-#endif /* defined (DM_BUFFERS) */
 
 	ENTER(Computed_field_find_element_xi_special);
 	USE_PARAMETER(number_of_values);
-#if !defined (DM_BUFFERS)
-	USE_PARAMETER(field);
-	USE_PARAMETER(cache_ptr);
-	USE_PARAMETER(values);
-	USE_PARAMETER(element);
-	USE_PARAMETER(element_dimension);
-	USE_PARAMETER(xi);
-	USE_PARAMETER(search_region);
-	USE_PARAMETER(user_interface);
-	USE_PARAMETER(hint_minimums);
-	USE_PARAMETER(hint_maximums);
-	USE_PARAMETER(hint_resolution);
-#endif /* !defined (DM_BUFFERS) */
 
 	return_code = 0;
-#if defined (DM_BUFFERS)
-	/* The Dm_buffers are not available with other widget systems at the
-		moment */
 	/* If the number of elements in the group is small then there probably isn't
 		any benefit to using this method */
 	/* This method is adversely affected when displaying on a remote machine as every
@@ -850,7 +665,7 @@ sequential element_xi lookup should now be performed.
 	if (hint_minimums && hint_maximums && hint_resolution && 
 		((2 == Computed_field_get_number_of_components(field)) ||
 		((3 == Computed_field_get_number_of_components(field)) &&
-		(hint_resolution[2] == 1.0f))) && user_interface && search_region &&
+		(hint_resolution[2] == 1.0f))) && graphics_buffer_package && search_region &&
 		/* At some point we may want to search in any FE_regions below the search_region */
 		(fe_region = Cmiss_region_get_FE_region(search_region))
 		/* This special case actually only works for 2D elements */
@@ -902,14 +717,17 @@ sequential element_xi lookup should now be performed.
 					{
 						hint_resolution[1] = 1024;
 					}
-					if (cache->dmbuffer = CREATE(Dm_buffer)(hint_resolution[0], hint_resolution[1],
-						/* depth_buffer */0, /*shared_display_buffer*/0, user_interface))
+					if (cache->graphics_buffer = create_Graphics_buffer_offscreen(
+						graphics_buffer_package, hint_resolution[0], hint_resolution[1],
+						GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
+						/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth*/0,
+						/*minimum_accumulation_buffer_depth*/0))
 					{
 						data.field = field;
 						data.bit_shift = cache->bit_shift;
 						data.minimum_element_number = cache->minimum_element_number;
 						data.maximum_element_number = cache->maximum_element_number;
-						Dm_buffer_glx_make_current(cache->dmbuffer);
+						Graphics_buffer_make_current(cache->graphics_buffer);
 						glClearColor(0.0, 0.0, 0.0, 0.0);
 						glClear(GL_COLOR_BUFFER_BIT);
 
@@ -989,9 +807,9 @@ sequential element_xi lookup should now be performed.
 						"CREATE(Computed_field_find_element_xi_special).  No elements in group.");
 				}
 			}
-			if (cache->dmbuffer)
+			if (cache->graphics_buffer)
 			{
-				Dm_buffer_glx_make_current(cache->dmbuffer);
+				Graphics_buffer_make_current(cache->graphics_buffer);
 				px = (int)((values[0] - hint_minimums[0]) * hint_resolution[0] /
 					(hint_maximums[0] - hint_minimums[0]));
 				py = (int)((values[1] - hint_minimums[1]) * hint_resolution[1] /
@@ -1170,7 +988,6 @@ sequential element_xi lookup should now be performed.
 			return_code = 0;
 		}
 	}
-#endif /* defined (DM_BUFFERS) */
 	LEAVE;
 
 	return (return_code);
@@ -1191,9 +1008,7 @@ Stores cache data for the find_xi routines.
 	
 	if (ALLOCATE(cache,struct Computed_field_find_element_xi_cache,1))
 	{
-#if defined (DM_BUFFERS)
-	  cache->dmbuffer = (struct Dm_buffer *)NULL;
-#endif /* defined (DM_BUFFERS) */
+	  cache->graphics_buffer = (struct Graphics_buffer *)NULL;
 	  cache->valid_values = 0;
 	  cache->number_of_values = 0;
 	  cache->values = (FE_value *)NULL;
@@ -1224,12 +1039,10 @@ Frees memory/deaccess cache at <*cache_address>.
 	ENTER(DESTROY(Computed_field_find_element_xi_cache));
 	if (cache_address&&*cache_address)
 	{
-#if defined (DM_BUFFERS)
-		if ((*cache_address)->dmbuffer)
+		if ((*cache_address)->graphics_buffer)
 		{
-			DESTROY(Dm_buffer)(&(*cache_address)->dmbuffer);
+			DESTROY(Graphics_buffer)(&(*cache_address)->graphics_buffer);
 		}
-#endif /* defined (DM_BUFFERS) */
 		if ((*cache_address)->values)
 		{
 			DEALLOCATE((*cache_address)->values);

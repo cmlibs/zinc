@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 3 May 2004
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -25,6 +25,7 @@ DESCRIPTION :
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"  
 #include "selection/node_selection.h"
+#include "three_d_drawing/graphics_buffer.h"
 #endif
 #include "unemap/drawing_2d.h"
 #include "unemap/rig.h"
@@ -242,6 +243,7 @@ from here.
 	struct Light_model *light_model;	
 	struct Scene *scene;	
 	struct Scene_viewer *scene_viewer;
+	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Graphical_material *map_graphical_material;
 	struct Graphical_material *electrode_graphical_material;
 	struct Time_keeper *time_keeper;	
@@ -508,7 +510,8 @@ struct Map_drawing_information *create_Map_drawing_information(
 	struct Graphical_material *graphical_material,
 	struct Computed_field_package *computed_field_package,
 	struct Light *light,
-	struct Light_model *light_model
+	struct Light_model *light_model,
+	struct Graphics_buffer_package *graphics_buffer_package
 #endif /* defined (UNEMAP_USE_NODES) */
        );
 /*******************************************************************************
@@ -683,8 +686,7 @@ DESCRIPTION :
 Sets the colour_electrodes_with_signal  for map_3d_package 
 ==============================================================================*/
 
-
-int get_map_3d_package_number_of_map_rows(	struct Map_3d_package *map_3d_package);
+int get_map_3d_package_number_of_map_rows(struct Map_3d_package *map_3d_package);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -1068,6 +1070,15 @@ LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Sets the User_interface of the <map_drawing_information>.
+==============================================================================*/
+
+struct Graphics_buffer_package *get_map_drawing_information_graphics_buffer_package(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 6 May 2004
+
+DESCRIPTION :
+gets the User_interface of the <map_drawing_information>.
 ==============================================================================*/
 
 struct Graphical_material *get_map_drawing_information_map_graphical_material(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_command.h
 
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 Functions and for executing unemap commands.
@@ -53,6 +53,7 @@ struct Unemap_command_data *CREATE(Unemap_command_data)(
 	struct MANAGER(FE_basis) *basis_manager,
 	struct Cmiss_region *root_cmiss_region,
 	struct Cmiss_region *data_root_cmiss_region,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_graphical_material,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,

@@ -351,6 +351,7 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 ==============================================================================*/
 
 struct X3d_movie;
+struct Graphics_buffer_package;
 
 struct X3d_movie *Texture_get_movie(struct Texture *texture);
 /*******************************************************************************
@@ -361,9 +362,9 @@ Gets the current X3d_movie from the texture.
 ==============================================================================*/
 
 int Texture_set_movie(struct Texture *texture,struct X3d_movie *movie,
-	struct User_interface *user_interface, char *image_file_name);
+	struct Graphics_buffer_package *graphics_buffer_package, char *image_file_name);
 /*******************************************************************************
-LAST MODIFIED : 9 September 1998
+LAST MODIFIED : 27 May 2004
 
 DESCRIPTION :
 Puts the <image> in the texture. The image is left unchanged by this function.

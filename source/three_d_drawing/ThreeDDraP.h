@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : ThreeDDraP.h
 
-LAST MODIFIED : 15 February 1995
+LAST MODIFIED : 03 May 2004
 
 DESCRIPTION :
 Private header file for the 3-D drawing widget.
@@ -15,26 +15,6 @@ Private header file for the 3-D drawing widget.
 /* public header file for 3-D drawing widget */
 #include "ThreeDDraw.h"
 /* header for 3-D graphics application programming interface */
-#if defined (OPENGL_API)
-#define GL_GLEXT_PROTOTYPES
-#define GLX_GLXEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glx.h>
-#endif
-#if defined (GL_API)
-#include <gl/gl.h>
-#if defined (SGI)
-#include <gl/glws.h>
-#endif
-#endif
-#if defined (PEXLIB_API)
-#if defined (IBM)
-#include <X11/PEX5/PEXlib.h>
-#endif
-#if defined (VAX)
-#include <PEXlib.h>
-#endif
-#endif
 
 /*
 Class types
@@ -77,49 +57,17 @@ Instance types
 */
 typedef struct
 /*******************************************************************************
-LAST MODIFIED : 3 January 1995
+LAST MODIFIED : 03 May 2004
 
 DESCRIPTION :
-GL has a number of output buffers - normal, overlay, underlay and popup.
-???DB.  Analogous for PEXlib ?
-???DB.  See GLXgetconfig and GlxDrawP.h for things that I've skipped ?
 ==============================================================================*/
 {
 	/* specify if the buffer is present for the widget */
 	Boolean present;
-	X3dBufferingMode buffering_mode;
-	X3dStereoBufferingMode stereo_buffering_mode;
-	X3dBufferColourMode colour_mode;
 	Colormap colour_map;
-	XVisualInfo *visual_information;
+	Visual *visual;
 	XtCallbackList expose_callback;
 	XtCallbackList initialize_callback;
-	unsigned int colour_buffer_depth;
-	unsigned int depth_buffer_depth;
-	unsigned int accumulation_buffer_depth;
-	unsigned int visual_id;
-#if defined (OPENGL_API)
-	/*???DB.  May be one for all buffers ? */
-	GLXContext rendering_context;
-#endif
-#if defined (GL_API)
-#if defined (IBM)
-	long int window;
-#endif
-#if defined (SGI)
-	GLXconfig *glx_config;
-#endif
-#endif
-#if defined (PEXLIB_API)
-#if defined (IBM)
-	PEXPipelineContext pipeline_context;
-	PEXRenderer renderer;
-#endif
-#if defined (VAX)
-	pexPipelineContext pipeline_context;
-	pexRenderer renderer;
-#endif
-#endif
 } X3dOutputBuffer;
 
 typedef struct
@@ -151,31 +99,4 @@ DESCRIPTION :
 	ThreeDDrawingPart three_d_drawing;
 } ThreeDDrawingRec;
 
-#if defined (OPENGL_API)
-void X3dThreeDDrawingAddReadContext(GLXDrawable read_drawable);
-/*******************************************************************************
-LAST MODIFIED : 10 September 1998
-
-DESCRIPTION :
-Makes the current ThreeDDrawing the current GL destination and the 
-supplied drawable the current GL source.
-==============================================================================*/
-
-GLXContext ThreeDDrawing_get_shareable_context(void);
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-Exports the shareable context for the digital media extensions.
-==============================================================================*/
-
-int ThreeDDrawing_get_glx_version(int *glx_major_version_number, 
-	int *glx_minor_version_number);
-/*******************************************************************************
-LAST MODIFIED : 12 December 2001
-
-DESCRIPTION :
-Exports the glx version numbers.
-==============================================================================*/
-#endif /* defined (OPENGL_API) */
 #endif

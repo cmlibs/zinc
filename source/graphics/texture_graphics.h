@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture_graphics.h
 
-LAST MODIFIED : 20 June 1996
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -205,30 +205,6 @@ LAST MODIFIED : 22 November 1994
 
 DESCRIPTION :
 Traverses volume_textures line lists and draws the segments
-==============================================================================*/
-
-void texture_graphics_initialize_callback(Widget widget,XtPointer user_data,
-	XtPointer call_data);
-/*******************************************************************************
-LAST MODIFIED : 13 March 1995
-
-DESCRIPTION :
-==============================================================================*/
-
-void texture_graphics_expose_callback(Widget widget,XtPointer user_data,
-	XtPointer call_data);
-/*******************************************************************************
-LAST MODIFIED : 13 March 1995
-
-DESCRIPTION :
-==============================================================================*/
-
-void texture_graphics_input_callback(Widget widget,XtPointer user_data,
-	XtPointer call_data);
-/*******************************************************************************
-LAST MODIFIED : 13 March 1995
-
-DESCRIPTION :
 ==============================================================================*/
 
 void delete_paint(struct Texture_window *texture_window);

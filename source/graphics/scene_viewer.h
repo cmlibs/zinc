@@ -1308,4 +1308,13 @@ LAST MODIFIED : 11 April 2003
 DESCRIPTION :
 Used by rendering functions to call the rest of the rendering callstack.
 ==============================================================================*/
+
+struct Graphics_buffer *Scene_viewer_get_graphics_buffer(
+	struct Scene_viewer *scene_viewer);
+/*******************************************************************************
+LAST MODIFIED : 12 May 2004
+
+DESCRIPTION :
+Gets the <graphics_buffer> used for 3D graphics in the scene_viewer.
+==============================================================================*/
 #endif /* !defined (SCENE_VIEWER_H) */

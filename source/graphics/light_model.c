@@ -1084,8 +1084,10 @@ Writes the properties of the <light_model> to the command window.
 		{
 			display_message(INFORMATION_MESSAGE,"  lighting disabled\n");
 		}
+#if defined (DEBUG)
 		display_message(INFORMATION_MESSAGE,"  access count = %d\n",
 			light_model->access_count);
+#endif /* defined (DEBUG) */
 		return_code=1;
 	}
 	else

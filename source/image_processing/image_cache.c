@@ -215,9 +215,9 @@ int Image_cache_update_from_fields(struct Image_cache *image,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
 	int element_dimension,
-	struct Cmiss_region *region, struct User_interface *user_interface)
+	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
-LAST MODIFIED : 2 December 2003
+LAST MODIFIED : 12 May 2004
 
 DESCRIPTION :
 Creates an Image_cache, <image> that represents the source field by evaluating the
@@ -274,7 +274,7 @@ value searches just elements of that dimension.
 					texture_coordinate_field, &texture_coordinate_field->find_element_xi_cache,
 					texture_coordinates,
 					number_of_texture_coordinate_components, &element, xi,
-					region, element_dimension, user_interface,
+					region, element_dimension, graphics_buffer_package,
 					image->minimums, image->maximums, sizes_floats) ||
 					Computed_field_find_element_xi(texture_coordinate_field,
 					texture_coordinates, number_of_texture_coordinate_components,

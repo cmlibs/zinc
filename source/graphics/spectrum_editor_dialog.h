@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_editor_dialog.h
 
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 Header description for spectrum_editor_dialog widget.
@@ -27,14 +27,14 @@ Global Functions
 int bring_up_spectrum_editor_dialog(
 	struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
 	Widget parent, struct MANAGER(Spectrum) *spectrum_manager,
-	struct Spectrum *spectrum, struct User_interface *user_interface,
-	struct LIST(GT_object) *glyph_list,
+	struct Spectrum *spectrum, struct Graphics_buffer_package *graphics_buffer_package,
+	struct User_interface *user_interface, struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Light) *light_manager,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Scene) *scene_manager);
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 If there is a spectrum_editor dialog in existence, then de-iconify it and

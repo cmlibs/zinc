@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture_graphics.c
 
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 Routines for GL texture display window
@@ -602,9 +602,9 @@ printf("Setting node (%d %d %d) Type = %d, Indices = %d:%d:%d:%d:%d:%d:%d:%d\n",
 	adjustxi(texture_window,2);
 	update_grid(texture_window);
 	/* draw_current_cell(texture_window);*/
-	X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
+	Graphics_buffer_make_current(texture_window->graphics_buffer);
 	graphics_loop((XtPointer)texture_window);
-	X3dThreeDDrawingSwapBuffers();
+	Graphics_buffer_swap_buffers(texture_window->graphics_buffer);
 } /* process_pick */
 
 static void draw_current_group(struct Texture_window *texture_window)
@@ -910,6 +910,270 @@ Draws a sphere with the specified <material>.
 	return (return_code);
 } /* display_env_map */
 #endif /* defined (OLD_CODE) */
+
+static void texture_graphics_initialize_callback(struct Graphics_buffer *buffer,
+	void *dummy_void, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 4 May 2004
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i;
+	struct Texture_window *texture_window;
+
+	ENTER(texture_graphics_initialize_callback);
+	USE_PARAMETER(dummy_void);
+	if (texture_window=(struct Texture_window *)user_data)
+	{
+/*???debug */
+printf("In texture_graphics_initialize_callback %p\n",texture_window);
+#if defined (OPENGL_API)
+		Graphics_buffer_make_current(buffer);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_DEPTH_TEST);
+		texture_window->tw_axes=glGenLists(1);
+		texture_window->tw_grid=glGenLists(1);
+		texture_window->tw_cube=glGenLists(1);
+		texture_window->tw_wire_cube=glGenLists(1);
+		texture_window->tw_mouseplane=glGenLists(1);
+		texture_window->tw_sphere=glGenLists(1);
+		texture_window->tw_wiresphere=glGenLists(1);
+		texture_window->tw_small_sphere=glGenLists(1);
+		texture_window->tw_env_map_sphere=glGenLists(1);
+		texture_window->tw_box=glGenLists(1);
+		texture_window->tw_3dtexture=glGenLists(1);
+		texture_window->tw_isosurface=glGenLists(1);
+		texture_window->tw_nodes=glGenLists(1);
+		texture_window->tw_lines=glGenLists(1);
+		texture_window->tw_curves=glGenLists(1);
+		texture_window->tw_blobs=glGenLists(1);
+		texture_window->tw_softs=glGenLists(1);
+		texture_window->tw_cop=glGenLists(1);
+		texture_window->tw_envsquare=glGenLists(1);
+		for (i=0;i<6;i++)
+		{
+			texture_window->tw_cube_tex[i]=glGenLists(1);
+		}
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+#endif /* defined (OPENGL_API) */
+#if defined (GL_API)
+#if defined (OLD_CODE)
+		prefsize(500,500);
+		texture_window->graphics_window=winopen("3D Texture");
+		winconstraints();
+		RGBmode();
+		doublebuffer();
+		lsetdepth(0, 0x7FFFFF);
+		gconfig();
+		qdevice(LEFTMOUSE);
+		qdevice(RIGHTMOUSE);
+		qdevice(MIDDLEMOUSE);
+#endif /* defined (OLD_CODE) */
+		blendfunction(BF_SA,BF_MSA);
+		zbuffer(TRUE);
+		texture_window->tw_axes=genobj();
+		texture_window->tw_grid=genobj();
+		texture_window->tw_cube=genobj();
+		texture_window->tw_wire_cube=genobj();
+		texture_window->tw_mouseplane=genobj();
+		texture_window->tw_sphere=genobj();
+		texture_window->tw_small_sphere=genobj();
+		texture_window->tw_env_map_sphere=genobj();
+		texture_window->tw_box=genobj();
+		texture_window->tw_3dtexture=genobj();
+		texture_window->tw_isosurface=genobj();
+		texture_window->tw_nodes=genobj();
+		texture_window->tw_lines=genobj();
+		texture_window->tw_curves=genobj();
+		texture_window->tw_blobs=genobj();
+		texture_window->tw_cop=genobj();
+		texture_window->tw_envsquare=genobj();
+		for (i=0;i<6;i++)
+		{
+			texture_window->tw_cube_tex[i]=genobj();
+		}
+#endif /* defined (GL_API) */
+		make_objects(texture_window);
+		update_grid(texture_window);
+#if defined (OPENGL_API)
+		/* init model_matrix */
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glGetFloatv(GL_MODELVIEW_MATRIX,texture_window->model_matrix);
+#endif /* defined (OPENGL_API) */
+#if defined (GL_API)
+		/* init model_matrix */
+		mmode(MVIEWING);
+		loadmatrix(idmat);
+		getmatrix(texture_window->model_matrix);
+#endif /* defined (GL_API) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"texture_graphics_initialize_callback.  Invalid argument");
+	}
+/*???debug */
+printf("leaving init_cb\n");
+	LEAVE;
+
+} /* texture_graphics_initialize_callback */
+
+static void texture_graphics_expose_callback(struct Graphics_buffer *buffer,
+	void *dummy_void, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 4 May 2004
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Texture_window *texture_window;
+
+	ENTER(texture_graphics_expose_callback);
+	USE_PARAMETER(buffer);
+	USE_PARAMETER(dummy_void);
+	texture_window=(struct Texture_window *)user_data;
+/*???debug */
+printf("In texture_graphics_expose_callback\n");
+	graphics_loop((XtPointer)texture_window);
+	LEAVE;
+} /* texture_graphics_expose_callback */
+
+static void volume_window_motion(struct Texture_window  *texture_window, 
+	double x, double y, int button)
+/*******************************************************************************
+LAST MODIFIED : 18 Feb 1997
+
+DESCRIPTION :
+moves cursor or model from mouse motion
+==============================================================================*/
+{
+#if defined(OPENGL_API)
+	Graphics_buffer_make_current(texture_window->graphics_buffer);
+	glMatrixMode(GL_MODELVIEW);
+
+	switch (button) {
+		case 1: /* tumble */
+			glLoadIdentity();
+			glRotated(100*x,0,1,0);
+			glRotated(-100*y,1,0,0);
+			glMultMatrixf(texture_window->model_matrix);
+			glGetFloatv(GL_MODELVIEW_MATRIX,texture_window->model_matrix);
+			break;
+		case 2:	/* translate */
+			glLoadIdentity();
+			glTranslated(10*x,0,0);
+			glTranslated(0,10*y,0);
+			glMultMatrixf(texture_window->model_matrix);
+			glGetFloatv(GL_MODELVIEW_MATRIX,texture_window->model_matrix);
+			break;
+		case 3:	/* dolly */
+				{
+					texture_window->fovy *= (1.0-0.5*(x+y));
+				}
+			break;
+		default:
+			break;
+		}
+
+
+	graphics_loop((XtPointer)texture_window);
+	Graphics_buffer_swap_buffers(texture_window->graphics_buffer);
+
+#endif
+
+}
+
+static void texture_graphics_input_callback(struct Graphics_buffer *buffer,
+	struct Graphics_buffer_input *input, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 6 January 1998
+
+DESCRIPTION :
+The callback for mouse or keyboard input in the drawing area.  Invokes the
+function in the <drawing_structure> with the <drawing_widget>, the data from the
+<drawing_structure> and the input event as arguments.
+==============================================================================*/
+{
+	static int current_button = 0;
+	static double cursor_x,cursor_y,motion_x,motion_y,old_motion_x,old_motion_y;
+	struct Texture_window  *texture_window;
+
+	ENTER(texture_graphics_input_callback);
+	/* checking arguments */
+	if (buffer&&(texture_window=(struct Texture_window *)user_data)&&
+		input)
+	{
+		int width, height;
+		int shift;
+		
+		width = Graphics_buffer_get_width(texture_window->graphics_buffer);
+		height = Graphics_buffer_get_height(texture_window->graphics_buffer);
+
+		switch (input->type)
+		{
+			case GRAPHICS_BUFFER_BUTTON_PRESS:
+			{
+				shift = 0;
+				if ((GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT & input->input_modifier))
+				{
+					shift = 1;
+					printf("Shift_key depressed\n");
+				}
+				current_button = input->button_number;
+				cursor_x = (double) input->position_x/(double) width;
+				cursor_y = (double) (height-input->position_y)/ (double) height;
+
+				if (texture_window->pick_mode)
+				{
+					process_pick(texture_window, current_button, input->position_x,
+						height-input->position_y, shift);
+				}
+				old_motion_x = cursor_x;
+				old_motion_y = cursor_y;
+			} break;
+			case GRAPHICS_BUFFER_BUTTON_RELEASE:
+			{
+				current_button = 0;
+#if defined (DEBUG)
+				printf("button %u release at %d %d\n",input->button_number,
+					input->position_x, input->position_y);
+#endif /* defined (DEBUG) */
+			} break;
+			case GRAPHICS_BUFFER_KEY_PRESS:
+			{
+			} break;
+			case GRAPHICS_BUFFER_MOTION_NOTIFY:
+			{
+				motion_x =  (double) input->position_x/(double) width;
+				motion_y =  (double) (height-input->position_y)/ (double) height;
+
+				/*printf("motion at %d %d [%lf, %lf]\n",motion_event->x,motion_event->y,
+				  motion_x-old_motion_x,motion_y-old_motion_y);*/
+				volume_window_motion(texture_window,motion_x-old_motion_x,motion_y-old_motion_y,
+					current_button);
+				old_motion_x = motion_x;
+				old_motion_y = motion_y;
+
+
+			} break;
+			default:
+			{
+				printf("texture_graphics_input_callback.  Invalid input event");
+			} break;
+		}
+	}
+	else
+	{
+		printf("texture_graphics_input_callback.  Invalid arguments");
+	}
+
+	LEAVE;
+
+} /* select_drawing_callback */
 
 /*
 Global functions
@@ -1395,7 +1659,7 @@ cpu_time6=((double)buffer.tms_utime)/100.0;
 
 void create_texture_graphics(struct Texture_window *texture_window)
 /*******************************************************************************
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1421,25 +1685,20 @@ printf("creating texture_graphics_window\n");
 		User_interface_get_application_shell(texture_window->user_interface),XmNtransient,FALSE,
 		/*???DB.  application_shell should be passed ? */
 		XtNallowShellResize,True,NULL))&&
-		(texture_window->graphics_window=XtVaCreateWidget(
-		"texture_window_graphics_window",threeDDrawingWidgetClass,
-		texture_window->graphics_window_shell,
-		XtNwidth,500,XtNheight,500,
-		X3dNbufferColourMode,X3dCOLOUR_RGB_MODE,
-		X3dNbufferingMode,X3dDOUBLE_BUFFERING,NULL)))
+		(texture_window->graphics_buffer=create_Graphics_buffer_X3d(
+			texture_window->graphics_buffer_package,
+			texture_window->graphics_window_shell, 500, 500,
+			GRAPHICS_BUFFER_DOUBLE_BUFFERING, GRAPHICS_BUFFER_ANY_STEREO_MODE,
+			/*minimum_colour_buffer_depth*/8, /*minimum_depth_buffer_depth*/8,
+			/*minimum_accumulation_buffer_depth*/0)))
 	{
-/*???debug */
-printf("adding callbacks to texture_graphics_window %p\n",
-	texture_window->graphics_window);
-		XtAddCallback(texture_window->graphics_window,X3dNinitializeCallback,
-			texture_graphics_initialize_callback,(XtPointer)texture_window);
-		XtAddCallback(texture_window->graphics_window,X3dNexposeCallback,
-			texture_graphics_expose_callback,(XtPointer)texture_window);
-		XtAddCallback(texture_window->graphics_window,X3dNinputCallback,
-			texture_graphics_input_callback,(XtPointer)texture_window);
-		XtManageChild(texture_window->graphics_window);
-		/*  printf("b4 realize widget\n"); */
-		XtRealizeWidget(texture_window->graphics_window_shell);
+		Graphics_buffer_add_initialise_callback(texture_window->graphics_buffer,
+			texture_graphics_initialize_callback, (void *)texture_window);
+		Graphics_buffer_add_expose_callback(texture_window->graphics_buffer,
+			texture_graphics_expose_callback, (void *)texture_window);
+		Graphics_buffer_add_input_callback(texture_window->graphics_buffer,
+			texture_graphics_input_callback,(void *)texture_window);
+		Graphics_buffer_awaken(texture_window->graphics_buffer);
 		XtPopup(texture_window->graphics_window_shell,XtGrabNone);
 #if defined (EXT_INPUT)
 		input_module_add_input_window(texture_window->graphics_window_shell,
@@ -3104,9 +3363,9 @@ printf("Material Index = %d",index);
 printf("current_material = %s \n",Graphical_material_name(texture_window->
 	current_material));
 		}
-		X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
+		Graphics_buffer_make_current(texture_window->graphics_buffer);
 		graphics_loop((XtPointer)texture_window);
-		X3dThreeDDrawingSwapBuffers();
+		Graphics_buffer_swap_buffers(texture_window->graphics_buffer);
 	}
 	else
 	{
@@ -4440,377 +4699,3 @@ printf("Deleting cell <%d, %d, %d>\n",index[0],index[1],index[2]);
 	}
 	LEAVE;
 } /* delete_paint */
-
-void texture_graphics_initialize_callback(Widget widget,XtPointer user_data,
-	XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 25 September 1996
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int i;
-	struct Texture_window *texture_window;
-
-	ENTER(texture_graphics_initialize_callback);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (texture_window=(struct Texture_window *)user_data)
-	{
-/*???debug */
-printf("In texture_graphics_initialize_callback %p\n",texture_window);
-#if defined (OPENGL_API)
-		X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_DEPTH_TEST);
-		texture_window->tw_axes=glGenLists(1);
-		texture_window->tw_grid=glGenLists(1);
-		texture_window->tw_cube=glGenLists(1);
-		texture_window->tw_wire_cube=glGenLists(1);
-		texture_window->tw_mouseplane=glGenLists(1);
-		texture_window->tw_sphere=glGenLists(1);
-		texture_window->tw_wiresphere=glGenLists(1);
-		texture_window->tw_small_sphere=glGenLists(1);
-		texture_window->tw_env_map_sphere=glGenLists(1);
-		texture_window->tw_box=glGenLists(1);
-		texture_window->tw_3dtexture=glGenLists(1);
-		texture_window->tw_isosurface=glGenLists(1);
-		texture_window->tw_nodes=glGenLists(1);
-		texture_window->tw_lines=glGenLists(1);
-		texture_window->tw_curves=glGenLists(1);
-		texture_window->tw_blobs=glGenLists(1);
-		texture_window->tw_softs=glGenLists(1);
-		texture_window->tw_cop=glGenLists(1);
-		texture_window->tw_envsquare=glGenLists(1);
-		for (i=0;i<6;i++)
-		{
-			texture_window->tw_cube_tex[i]=glGenLists(1);
-		}
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-#endif /* defined (OPENGL_API) */
-#if defined (GL_API)
-#if defined (OLD_CODE)
-		prefsize(500,500);
-		texture_window->graphics_window=winopen("3D Texture");
-		winconstraints();
-		RGBmode();
-		doublebuffer();
-		lsetdepth(0, 0x7FFFFF);
-		gconfig();
-		qdevice(LEFTMOUSE);
-		qdevice(RIGHTMOUSE);
-		qdevice(MIDDLEMOUSE);
-#endif /* defined (OLD_CODE) */
-		blendfunction(BF_SA,BF_MSA);
-		zbuffer(TRUE);
-		texture_window->tw_axes=genobj();
-		texture_window->tw_grid=genobj();
-		texture_window->tw_cube=genobj();
-		texture_window->tw_wire_cube=genobj();
-		texture_window->tw_mouseplane=genobj();
-		texture_window->tw_sphere=genobj();
-		texture_window->tw_small_sphere=genobj();
-		texture_window->tw_env_map_sphere=genobj();
-		texture_window->tw_box=genobj();
-		texture_window->tw_3dtexture=genobj();
-		texture_window->tw_isosurface=genobj();
-		texture_window->tw_nodes=genobj();
-		texture_window->tw_lines=genobj();
-		texture_window->tw_curves=genobj();
-		texture_window->tw_blobs=genobj();
-		texture_window->tw_cop=genobj();
-		texture_window->tw_envsquare=genobj();
-		for (i=0;i<6;i++)
-		{
-			texture_window->tw_cube_tex[i]=genobj();
-		}
-#endif /* defined (GL_API) */
-		make_objects(texture_window);
-		update_grid(texture_window);
-#if defined (OPENGL_API)
-		/* init model_matrix */
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glGetFloatv(GL_MODELVIEW_MATRIX,texture_window->model_matrix);
-#endif /* defined (OPENGL_API) */
-#if defined (GL_API)
-		/* init model_matrix */
-		mmode(MVIEWING);
-		loadmatrix(idmat);
-		getmatrix(texture_window->model_matrix);
-#endif /* defined (GL_API) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"texture_graphics_initialize_callback.  Invalid argument");
-	}
-/*???debug */
-printf("leaving init_cb\n");
-	LEAVE;
-
-} /* texture_graphics_initialize_callback */
-
-void texture_graphics_expose_callback(Widget widget,XtPointer user_data,
-	XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 30 August 1996
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Texture_window *texture_window;
-
-	ENTER(texture_graphics_expose_callback);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	texture_window=(struct Texture_window *)user_data;
-/*???debug */
-printf("In texture_graphics_expose_callback\n");
-	graphics_loop((XtPointer)texture_window);
-	LEAVE;
-} /* texture_graphics_expose_callback */
-
-#if defined (OLD_CODE)
-void texture_graphics_input_callback(Widget widget,XtPointer user_data,
-	XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 21 June 1996
-
-DESCRIPTION :
-==============================================================================*/
-{
-	double norm_x,norm_y;
-	int x,y;
-	struct Texture_window *texture_window;
-	unsigned int border_width,depth,height,width;
-	Window win;
-	XButtonEvent *event;
-	X3dThreeDDrawCallbackStruct *callback;
-
-	ENTER(texture_graphics_input_callback);
-	if (texture_window=(struct Texture_window *)user_data)
-	{
-/*???debug */
-printf("In texture_graphics_input_callback\n");
-		if (callback=(X3dThreeDDrawCallbackStruct *)call_data)
-		{
-			if (X3dCR_INPUT==callback->reason)
-			{
-				/* find window coords */
-				XGetGeometry(User_interface_get_display(texture_window->user_interface),callback->window,
-					&win,&x,&y,&width,&height,&border_width,&depth);
-/*???debug */
-printf("window size = %d, %d\n",width,height);
-				if ((callback->event)&&((ButtonPress==callback->event->type)||
-					(ButtonRelease==callback->event->type)))
-				{
-					event=&(callback->event->xbutton);
-					if (ButtonPress==callback->event->type)
-					{
-/*???debug */
-printf("button press at %d %d",event->x,event->y);
-						norm_x=(double)event->x/(double)width;
-						norm_y=1.0-(double)event->y/(double)height;
-						select_material(texture_window,norm_x,norm_y);
-					}
-/*???debug */
-else
-{
-	printf("button release at %d %d",event->x,event->y);
-}
-printf("normalized mouse coords = %lf,%lf",(double)event->x/(double)width,
-	1.0-(double)event->y/(double)height);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"texture_graphics_input_callback.  Invalid X event");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"texture_graphics_input_callback.  Invalid reason");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"texture_graphics_input_callback.  Missing call_data");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"texture_graphics_input_callback.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* texture_graphics_input_callback */
-#endif
-
-void volume_window_motion(struct Texture_window  *texture_window, double x, double y, int button)
-/*******************************************************************************
-LAST MODIFIED : 18 Feb 1997
-
-DESCRIPTION :
-moves cursor or model from mouse motion
-==============================================================================*/
-{
-#if defined(OPENGL_API)
-	X3dThreeDDrawingMakeCurrent(texture_window->graphics_window);
-	glMatrixMode(GL_MODELVIEW);
-
-	switch (button) {
-		case 1: /* tumble */
-			glLoadIdentity();
-			glRotated(100*x,0,1,0);
-			glRotated(-100*y,1,0,0);
-			glMultMatrixf(texture_window->model_matrix);
-			glGetFloatv(GL_MODELVIEW_MATRIX,texture_window->model_matrix);
-			break;
-		case 2:	/* translate */
-			glLoadIdentity();
-			glTranslated(10*x,0,0);
-			glTranslated(0,10*y,0);
-			glMultMatrixf(texture_window->model_matrix);
-			glGetFloatv(GL_MODELVIEW_MATRIX,texture_window->model_matrix);
-			break;
-		case 3:	/* dolly */
-				{
-					texture_window->fovy *= (1.0-0.5*(x+y));
-				}
-			break;
-		default:
-			break;
-		}
-
-
-	graphics_loop((XtPointer)texture_window);
-	X3dThreeDDrawingSwapBuffers();
-
-#endif
-
-}
-
-void texture_graphics_input_callback(Widget drawing_widget,
-	XtPointer user_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 6 January 1998
-
-DESCRIPTION :
-The callback for mouse or keyboard input in the drawing area.  Invokes the
-function in the <drawing_structure> with the <drawing_widget>, the data from the
-<drawing_structure> and the input event as arguments.
-==============================================================================*/
-{
-	static int current_button = 0;
-	static double cursor_x,cursor_y,motion_x,motion_y,old_motion_x,old_motion_y;
-	struct Texture_window  *texture_window;
-	X3dThreeDDrawCallbackStruct *select_callback_data;
-
-	ENTER(texture_graphics_input_callback);
-	/* checking arguments */
-	if (drawing_widget&&(texture_window=(struct Texture_window *)user_data)&&
-		(select_callback_data=(X3dThreeDDrawCallbackStruct *)call_data)&&
-		(X3dCR_INPUT==select_callback_data->reason))
-	{
-/*???debug */
-
-	int event_type;
-	XButtonEvent *button_event;
-	XEvent *event;
-	XKeyEvent *key_event;
-	XMotionEvent *motion_event;
-	Dimension width, height;
-	int shift;
-
-	XtVaGetValues(drawing_widget, XtNheight, &height, XtNwidth, &width, NULL);
-
-	if (event=select_callback_data->event)
-	{
-		event_type=event->type;
-
-		switch (event_type)
-		{
-			case ButtonPress: case ButtonRelease:
-			{
-				button_event=&(event->xbutton);
-				if (ButtonPress==event_type)
-				{
-					shift = 0;
-					if ((button_event->state & ShiftMask))
-					{
-						shift = 1;
-						printf("Shift_key depressed\n");
-					}
-					current_button = button_event->button;
-					cursor_x = (double) button_event->x/(double) width;
-					cursor_y = (double) (height-button_event->y)/ (double) height;
-
-					printf("button %u press at %d %d [%.3lf %.3lf]\n",button_event->button,
-						button_event->x,button_event->y,cursor_x,height-cursor_y);
-					if (texture_window->pick_mode)
-					{
-						process_pick(texture_window, current_button, button_event->x,
-							height-button_event->y, shift);
-					}
-					old_motion_x = cursor_x;
-					old_motion_y = cursor_y;
-				}
-				else
-				{
-					current_button = 0;
-					printf("button %u release at %d %d\n",button_event->button,
-						button_event->x,button_event->y);
-
-				}
-			} break;
-			case KeyPress: case KeyRelease:
-			{
-				key_event= &(event->xkey);
-				if (KeyPress==event_type)
-				{
-					printf("key %u press at %d %d\n",key_event->keycode,key_event->x,
-						key_event->y);
-				}
-				else
-				{
-					printf("key %u release at %d %d\n",key_event->keycode,key_event->x,
-						key_event->y);
-				}
-			} break;
-			case MotionNotify:
-			{
-				motion_event= &(event->xmotion);
-				motion_x =  (double) motion_event->x/(double) width;
-				motion_y =  (double) (height-motion_event->y)/ (double) height;
-
-
-
-				/*printf("motion at %d %d [%lf, %lf]\n",motion_event->x,motion_event->y,
-					motion_x-old_motion_x,motion_y-old_motion_y);*/
-				volume_window_motion(texture_window,motion_x-old_motion_x,motion_y-old_motion_y,
-					current_button);
-				old_motion_x = motion_x;
-				old_motion_y = motion_y;
-
-
-			} break;
-			default:
-			{
-				printf("input_callback.  Invalid X event");
-			} break;
-		}
-	}
-	else
-	{
-		printf("input_callback.  Missing X event");
-	}
-
-	}
-	LEAVE;
-
-} /* select_drawing_callback */

@@ -33,7 +33,7 @@ A container for objects required to define fields in this module.
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *root_region;
-	struct User_interface *user_interface;
+	struct Graphics_buffer_package *graphics_buffer_package;
 };
 
 
@@ -46,7 +46,7 @@ struct Computed_field_image_mask_type_specific_data
 	float cached_time;
 	int element_dimension;
 	struct Cmiss_region *region;
-	struct User_interface *user_interface;
+	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Image_cache *image;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	void *computed_field_manager_callback_id;
@@ -213,7 +213,7 @@ Copy the type specific data used by this type.
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
 			destination->element_dimension = source->element_dimension;
-			destination->user_interface = source->user_interface;
+			destination->graphics_buffer_package = source->graphics_buffer_package;
 			destination->computed_field_manager = source->computed_field_manager;
 			destination->computed_field_manager_callback_id =
 				MANAGER_REGISTER(Computed_field)(
@@ -493,7 +493,7 @@ Evaluate the fields cache at the node.
 		{
 			return_code = Image_cache_update_from_fields(data->image, field->source_fields[0],
 				field->source_fields[1], data->element_dimension, data->region,
-				data->user_interface);
+				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
 			return_code = Image_cache_image_mask(data->image,
 			                  data->left_bottom, data->mask_width_height);
@@ -542,7 +542,7 @@ Evaluate the fields cache at the node.
 		{
 			return_code = Image_cache_update_from_fields(data->image, field->source_fields[0],
 				field->source_fields[1], data->element_dimension, data->region,
-				data->user_interface);
+				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
 			return_code = Image_cache_image_mask(data->image,
 			                  data->left_bottom, data->mask_width_height);
@@ -738,7 +738,7 @@ int Computed_field_set_type_image_mask(struct Computed_field *field,
 	int dimension, int *left_bottom, int *mask_width_height,
 	int *sizes, FE_value *minimums, FE_value *maximums,
 	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
-	struct Cmiss_region *region, struct User_interface *user_interface)
+	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
 LAST MODIFIED : 17 December 2003
 
@@ -760,7 +760,7 @@ although its cache may be lost.
 	if (field && source_field && texture_coordinate_field &&
 		(depth = source_field->number_of_components) &&
 		(dimension <= texture_coordinate_field->number_of_components) &&
-		region && user_interface)
+		region && graphics_buffer_package)
 	{
 		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
@@ -793,7 +793,7 @@ although its cache may be lost.
 			}
 			data->element_dimension = element_dimension;
 			data->region = ACCESS(Cmiss_region)(region);
-			data->user_interface = user_interface;
+			data->graphics_buffer_package = graphics_buffer_package;
 			data->computed_field_manager = computed_field_manager;
 			data->computed_field_manager_callback_id =
 				MANAGER_REGISTER(Computed_field)(
@@ -1068,7 +1068,7 @@ already) and allows its contents to be modified.
 					sizes, minimums, maximums, element_dimension,
 					computed_field_image_mask_package->computed_field_manager,
 					computed_field_image_mask_package->root_region,
-					computed_field_image_mask_package->user_interface);
+					computed_field_image_mask_package->graphics_buffer_package);
 			}
 			if (!return_code)
 			{
@@ -1124,7 +1124,7 @@ already) and allows its contents to be modified.
 
 int Computed_field_register_types_image_mask(
 	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *root_region, struct User_interface *user_interface)
+	struct Cmiss_region *root_region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
 LAST MODIFIED : 12 December 2003
 
@@ -1142,7 +1142,7 @@ DESCRIPTION :
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
 		computed_field_image_mask_package.root_region = root_region;
-		computed_field_image_mask_package.user_interface = user_interface;
+		computed_field_image_mask_package.graphics_buffer_package = graphics_buffer_package;
 		return_code = Computed_field_package_add_type(computed_field_package,
 			            computed_field_image_mask_type_string,
 			            define_Computed_field_type_image_mask,

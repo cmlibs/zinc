@@ -1717,8 +1717,10 @@ Writes the properties of the <light> to the command window.
 			display_message(INFORMATION_MESSAGE,
 				"  spot exponent = %g\n", light->spot_exponent);
 		}
+#if defined (DEBUG)
 		display_message(INFORMATION_MESSAGE,"  access count = %d\n",
 			light->access_count);
+#endif /* defined (DEBUG) */
 		return_code = 1;
 	}
 	else

@@ -39,9 +39,10 @@ int bring_up_material_editor_dialog(
 	struct Material_editor_dialog **material_editor_dialog_address,
 	Widget parent, struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Texture) *texture_manager,struct Graphical_material *material,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 If there is a material_editor dialog in existence, then bring it to the front,

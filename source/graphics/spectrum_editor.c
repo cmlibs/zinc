@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_editor.c
 
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 Initially pillaged from graphics/graphical_element_editor.c
@@ -21,7 +21,7 @@ Provides the widgets to manipulate spectrum settings.
 #include "graphics/spectrum_editor.uidh"
 #include "graphics/spectrum_editor_settings.h"
 #include "graphics/spectrum_settings.h"
-#include "three_d_drawing/ThreeDDraw.h"
+#include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -897,6 +897,7 @@ Global functions
 
 struct Spectrum_editor *CREATE(Spectrum_editor)(
 	Widget parent, struct Spectrum *spectrum,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
@@ -904,7 +905,7 @@ struct Spectrum_editor *CREATE(Spectrum_editor)(
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct MANAGER(Texture) *texture_manager)
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 Creates a spectrum_editor widget.
@@ -1188,13 +1189,12 @@ Creates a spectrum_editor widget.
 										viewer_light_model = CREATE(Light_model)("spectrum_editor_light_model");
 										Light_model_set_ambient(viewer_light_model, &ambient_colour);
 										if (graphics_buffer = create_Graphics_buffer_X3d(
-											spectrum_editor->viewer_form,
-											GRAPHICS_BUFFER_DOUBLE_BUFFERING, GRAPHICS_BUFFER_MONO,
-											/*minimum_colour_buffer_depth*/0,
-											/*minimum_depth_buffer_depth*/0,
-											/*minimum_accumulation_buffer_depth*/0,
-											User_interface_get_specified_visual_id(
-											user_interface)))
+											graphics_buffer_package, spectrum_editor->viewer_form,
+											/*width*/400, /*height*/100,
+											GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
+											/*minimum_colour_buffer_depth*/8,
+											/*minimum_depth_buffer_depth*/8,
+											/*minimum_accumulation_buffer_depth*/0))
 										{
 											spectrum_editor->spectrum_editor_scene_viewer = 
 												CREATE(Scene_viewer)(graphics_buffer,

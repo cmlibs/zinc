@@ -193,7 +193,7 @@ Functions for executing cmiss commands.
 #if defined (MOTIF)
 #include "slider/emoter_dialog.h"
 #include "three_d_drawing/movie_extensions.h"
-#include "three_d_drawing/ThreeDDraw.h"
+#include "three_d_drawing/graphics_buffer.h"
 #include "time/time_editor_dialog.h"
 #endif /* defined (MOTIF) */
 #include "time/time_keeper.h"
@@ -267,6 +267,7 @@ DESCRIPTION :
 	struct MANAGER(FE_basis) *basis_manager;
 	struct LIST(FE_element_shape) *element_shape_list;
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+	struct Graphics_buffer_package *graphics_buffer_package;
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
@@ -2516,7 +2517,7 @@ editor at a time.  This implementation may be changed later.
 					User_interface_get_application_shell(command_data->user_interface),
 					Material_package_get_material_manager(command_data->material_package),
 					command_data->texture_manager,(struct Graphical_material *)NULL,
-					command_data->user_interface);
+					command_data->graphics_buffer_package,command_data->user_interface);
 			}
 			else
 			{
@@ -5513,9 +5514,9 @@ static int set_Texture_image_from_field(struct Texture *texture,
 	int element_dimension,
 	enum Texture_storage_type storage,
 	int image_width, int image_height, int image_depth,
-	struct User_interface *user_interface)
+	struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
-LAST MODIFIED : 28 February 2003
+LAST MODIFIED : 12 May 2004
 
 DESCRIPTION :
 Creates the image in the format given by sampling the <field> according to the
@@ -5612,8 +5613,8 @@ value searches just elements of that dimension.
 								texture_coordinate_field, &cache, values,
 								tex_number_of_components, &element, xi,
 								region, element_dimension,
-								user_interface, hint_minimums, hint_maximums,
-								hint_resolution) ||
+								graphics_buffer_package,
+								hint_minimums, hint_maximums, hint_resolution) ||
 								Computed_field_find_element_xi(texture_coordinate_field,
 									values, tex_number_of_components, &element, xi,
 									element_dimension, region, propagate_field))
@@ -6598,7 +6599,7 @@ Modifies the properties of a texture.
 								the correct texture based on movie events */
 							Texture_set_movie(texture,
 								Movie_graphics_get_X3d_movie(movie),
-								command_data->user_interface, "movie");
+								command_data->graphics_buffer_package, "movie");
 						}
 #endif /* defined (SGI_MOVIE_FILE) */
 
@@ -6626,7 +6627,7 @@ Modifies the properties of a texture.
 								evaluate_data.element_dimension,
 								specify_format, specify_width, 
 								specify_height, specify_depth,
-								command_data->user_interface);
+								command_data->graphics_buffer_package);
 						}
 #if defined (GL_API)
 						texture->index= -(texture->index);
@@ -7263,10 +7264,12 @@ Executes a GFX CREATE VOLUME_EDITOR command.
 		{
 			if (command_data=(struct Cmiss_command_data *)command_data_void)
 			{
-				create_texture_edit_window(Material_package_get_default_material(command_data->material_package),
+				create_texture_edit_window(
+					Material_package_get_default_material(command_data->material_package),
 					Material_package_get_material_manager(command_data->material_package),
 					command_data->environment_map_manager,command_data->texture_manager,
-					&(command_data->material_editor_dialog),
+					&(command_data->material_editor_dialog), 
+					command_data->graphics_buffer_package,
 					command_data->user_interface);
 				return_code=1;
 			}
@@ -7814,7 +7817,7 @@ Executes a GFX CREATE WINDOW command.
 	enum Graphics_window_buffering_mode buffer_mode;
 	enum Graphics_window_stereo_mode stereo_mode;
 	int minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-		minimum_accumulation_buffer_depth, return_code, specified_visual_id;
+		minimum_accumulation_buffer_depth, return_code;
 	struct Cmiss_command_data *command_data;
 	struct Graphics_window *window;
 	struct Option_table *buffer_option_table, *option_table, *stereo_option_table
@@ -7830,19 +7833,10 @@ Executes a GFX CREATE WINDOW command.
 			name=Graphics_window_manager_get_new_name(
 				command_data->graphics_window_manager);
 			buffer_mode = GRAPHICS_WINDOW_DOUBLE_BUFFERING;
-			stereo_mode = GRAPHICS_WINDOW_MONO;
+			stereo_mode = GRAPHICS_WINDOW_ANY_STEREO_MODE;
 			minimum_depth_buffer_depth=8;
 			minimum_accumulation_buffer_depth=8;
-			minimum_colour_buffer_depth = 0;
-			if (command_data->user_interface)
-			{
-				specified_visual_id = User_interface_get_specified_visual_id(
-					command_data->user_interface);
-			}
-			else
-			{
-				specified_visual_id = 0;
-			}
+			minimum_colour_buffer_depth = 8;
 			if (state->current_token)
 			{
 				/* change defaults */
@@ -7883,9 +7877,6 @@ Executes a GFX CREATE WINDOW command.
 					&minimum_depth_buffer_depth, NULL, set_int_non_negative);
 				/* name */
 				Option_table_add_entry(option_table,"name",&name,(void *)1,set_name);
-				/* specified_visual_id */
-				Option_table_add_entry(option_table, "specified_visual_id",
-					&specified_visual_id, NULL, set_int_non_negative);
 				/* default */
 				Option_table_add_entry(option_table,(char *)NULL,&name,(void *)NULL,
 					set_name);
@@ -7916,7 +7907,7 @@ Executes a GFX CREATE WINDOW command.
 					{
 						buffer_mode = GRAPHICS_WINDOW_SINGLE_BUFFERING;
 					}
-					else
+					else if (double_buffer_flag)
 					{
 						buffer_mode = GRAPHICS_WINDOW_DOUBLE_BUFFERING;
 					}
@@ -7928,7 +7919,7 @@ Executes a GFX CREATE WINDOW command.
 					{
 						stereo_mode = GRAPHICS_WINDOW_STEREO;
 					}
-					else
+					else if (mono_buffer_flag)
 					{
 						stereo_mode = GRAPHICS_WINDOW_MONO;
 					}
@@ -7954,7 +7945,8 @@ Executes a GFX CREATE WINDOW command.
 					{
 					   if (window=CREATE(Graphics_window)(name,buffer_mode,stereo_mode,
 							minimum_colour_buffer_depth, minimum_depth_buffer_depth,
-							minimum_accumulation_buffer_depth, specified_visual_id,
+							minimum_accumulation_buffer_depth,
+							command_data->graphics_buffer_package,
 							&(command_data->background_colour),
 							command_data->light_manager,command_data->default_light,
 							command_data->light_model_manager,command_data->default_light_model,
@@ -8494,7 +8486,7 @@ Executes a DETACH command.
 static int execute_command_gfx_create(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 17 May 2003
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 Executes a GFX CREATE command.
@@ -8558,6 +8550,8 @@ Executes a GFX CREATE command.
 					command_data->basis_manager;
 				create_emoter_slider_data.graphics_window_manager=
 					command_data->graphics_window_manager;
+				create_emoter_slider_data.graphics_buffer_package=
+					command_data->graphics_buffer_package;
 				create_emoter_slider_data.control_curve_manager=
 					command_data->control_curve_manager;
 				create_emoter_slider_data.scene_manager=command_data->scene_manager;
@@ -10497,7 +10491,8 @@ Invokes the graphical spectrum group editor.
 			return_code = bring_up_spectrum_editor_dialog(
 				&(command_data->spectrum_editor_dialog),
 				User_interface_get_application_shell(command_data->user_interface),
-				command_data->spectrum_manager, spectrum,command_data->user_interface,
+				command_data->spectrum_manager, spectrum,
+				command_data->graphics_buffer_package, command_data->user_interface,
 				command_data->glyph_list,
 				Material_package_get_material_manager(command_data->material_package), command_data->light_manager,
 				command_data->texture_manager, command_data->scene_manager);
@@ -23639,6 +23634,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->default_spectrum=(struct Spectrum *)NULL;
 		command_data->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+		command_data->graphics_buffer_package=(struct Graphics_buffer_package *)NULL;
 		command_data->graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 		command_data->root_region = (struct Cmiss_region *)NULL;
@@ -24032,6 +24028,13 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 		}
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+		if (command_data->user_interface)
+		{
+			command_data->graphics_buffer_package = CREATE(Graphics_buffer_package)(
+				command_data->user_interface);
+			Graphics_buffer_package_set_override_visual_id(
+					command_data->graphics_buffer_package, visual_id);
+		}
 		/* graphics window manager.  Note there is no default window. */
 		command_data->graphics_window_manager=CREATE(MANAGER(Graphics_window))();
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
@@ -24199,73 +24202,73 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					but they cannot use the find_element_xi_special 2D acceleration */
 				Computed_field_register_types_adaptive_adjust_contrast(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_adjust_contrast(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_canny_filter(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_color_based_segment(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_dilate_filter(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_erode_filter(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_gaussian_filter(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_haar_wavelet_decomp(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_haar_wavelet_reconstruct(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_histogram_based_threshold(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_histogram_equalize(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_image_contour(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_image_enhancement(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_image_mask(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_image_mean_value(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_image_threshold(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_iteration_threshold(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_local_std(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_median_filter(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_sobel_filter(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_throw_away_weakest(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_wavelet_decomp(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_wavelet_reconstruct(
 					command_data->computed_field_package,
-					command_data->root_region, command_data->user_interface);
+					command_data->root_region, command_data->graphics_buffer_package);
 			}
 		}
 
@@ -24334,13 +24337,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 
 		if (command_data->user_interface)
 		{
-#if defined (MOTIF)
-			if (visual_id)
-			{
-				User_interface_set_specified_visual_id(
-					command_data->user_interface, visual_id);
-			}
-#endif /* defined (MOTIF) */
 			/* set up image library */
 #if defined (UNIX) /* switch (Operating_System) */
 			Open_image_environment(*argv);
@@ -24416,6 +24412,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->basis_manager,
 				command_data->root_region,
 				command_data->data_root_region,
+				command_data->graphics_buffer_package,
 				Material_package_get_material_manager(command_data->material_package),
 				Material_package_get_default_material(command_data->material_package),
 				command_data->interactive_tool_manager,
@@ -24788,6 +24785,11 @@ Clean up the command_data, deallocating all the associated memory and resources.
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 		DESTROY(MANAGER(Graphics_window))(
 			&command_data->graphics_window_manager);
+		/* Must destroy the graphics_buffer_package after the windows which use it */
+		if (command_data->graphics_buffer_package)
+		{
+			DESTROY(Graphics_buffer_package)(&command_data->graphics_buffer_package);
+		}
 #endif /* defined (MOTIF)|| defined (GTK_USER_INTERFACE) */
 
 		if (command_data->computed_field_finite_element_package)

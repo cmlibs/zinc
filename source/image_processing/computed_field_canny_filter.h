@@ -11,7 +11,7 @@ Implements image canny edge extraction on computed fields.
 
 int Computed_field_register_types_canny_filter(
 	struct Computed_field_package *computed_field_package,
-	struct Cmiss_region *root_region, struct User_interface *user_interface);
+	struct Cmiss_region *root_region, struct Graphics_buffer_package *graphics_buffer_package);
 /*******************************************************************************
 LAST MODIFIED : 18 March 2004
 

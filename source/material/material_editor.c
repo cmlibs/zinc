@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material_editor.c
 
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 Widgets for editing a graphical material.
@@ -10,8 +10,7 @@ Widgets for editing a graphical material.
 #define PI 3.1415927
 #define PI_180 (PI/180.0)
 #include <stdio.h>
-#include <X11/Intrinsic.h>
-#include <X11/StringDefs.h>
+#include "three_d_drawing/graphics_buffer.h"
 #include "choose/choose_texture.h"
 #include "colour/colour_editor.h"
 #include "colour/edit_var.h"
@@ -21,7 +20,6 @@ Widgets for editing a graphical material.
 #include "graphics/material.h"
 #include "material/material_editor.h"
 #include "material/material_editor.uidh"
-#include "three_d_drawing/ThreeDDraw.h"
 #include "user_interface/message.h"
 
 /*
@@ -60,11 +58,12 @@ deaccess it.
 	/* edit_material is always a local copy of what is passed to the editor */
 	struct Graphical_material *edit_material;
 	struct Callback_data update_callback;
+	struct Graphics_buffer *graphics_buffer;
 	struct MANAGER(Texture) *texture_manager;
 	Widget alpha_form,alpha_widget,ambient_form,ambient_widget,diffuse_form,
 		diffuse_widget,emission_form,emission_widget,shininess_form,
 		shininess_widget,specular_form,specular_widget,texture_button,texture_form,
-		texture_widget,widget_parent,widget,a3d_form,a3d_widget;
+		texture_widget,widget_parent,widget,a3d_form;
 #if defined (MATERIAL_EDITOR_NAME)
 	Widget name;
 #endif
@@ -135,7 +134,7 @@ Uses gl to draw a sphere with a lighting source.
 #define sphere_panel_size 1000
 #define sphere_panel_dist 5
 #define sphere_view_spacing 1.2
-	int i,j,return_code;
+	int height,i,j,return_code,width;
 #if defined (OPENGL_API)
 	float texture_depth, texture_height, texture_width;
 	GLdouble angle,aspect,coordinates[3],cos_angle,horiz_factor,horiz_offset,
@@ -157,6 +156,9 @@ Uses gl to draw a sphere with a lighting source.
 			 in turn, requires any textures it uses to be compiled */
 		compile_Graphical_material(material_editor->edit_material,NULL);
 #if defined (OPENGL_API)
+		width = Graphics_buffer_get_width(material_editor->graphics_buffer);
+		height = Graphics_buffer_get_height(material_editor->graphics_buffer);
+		glViewport(0, 0, width, height);
 		glGetDoublev(GL_VIEWPORT,viewport_size);
 		glClearColor(0.0,0.0,0.0,0.0);
 		glClearDepth(1.0);
@@ -317,9 +319,9 @@ Updates the picture with the changed material.
 	ENTER(material_editor_update_picture);
 	if (material_editor)
 	{
-		X3dThreeDDrawingMakeCurrent(material_editor->a3d_widget);
+		Graphics_buffer_make_current(material_editor->graphics_buffer);
 		return_code=material_editor_draw_sphere(material_editor);
-		X3dThreeDDrawingSwapBuffers();
+		Graphics_buffer_swap_buffers(material_editor->graphics_buffer);
 	}
 	else
 	{
@@ -332,10 +334,10 @@ Updates the picture with the changed material.
 	return (return_code);
 } /* material_editor_update_picture */
 
-static void material_editor_expose_picture_callback(Widget widget,
-	XtPointer material_editor_void,XtPointer reason)
+static void material_editor_expose_picture_callback(struct Graphics_buffer *graphics_buffer,
+	void *dummy_void, void *material_editor_void)
 /*******************************************************************************
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 5 May 2004
 
 DESCRIPTION :
 Forces a redraw of the picture representing the material.
@@ -344,8 +346,8 @@ Forces a redraw of the picture representing the material.
 	struct Material_editor *material_editor;
 
 	ENTER(material_editor_expose_picture_callback);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(reason);
+	USE_PARAMETER(graphics_buffer);
+	USE_PARAMETER(dummy_void);
 	if (material_editor=(struct Material_editor *)material_editor_void)
 	{
 		material_editor_update_picture(material_editor);
@@ -358,34 +360,29 @@ Forces a redraw of the picture representing the material.
 	LEAVE;
 } /* material_editor_expose_picture_callback */
 
-static void material_editor_change_background(Widget widget,
-	XtPointer material_editor_void,XtPointer reason)
+static void material_editor_change_background(struct Graphics_buffer *graphics_buffer,
+	struct Graphics_buffer_input *input, void *material_editor_void)
 /*******************************************************************************
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 5 May 2004
 
 DESCRIPTION :
 Increments the background pattern.
 ==============================================================================*/
 {
 	struct Material_editor *material_editor;
-	X3dThreeDDrawCallbackStruct *callback;
 
 	ENTER(material_editor_change_background);
-	USE_PARAMETER(widget);
-	if ((material_editor=(struct Material_editor *)material_editor_void)&&
-		(callback=(X3dThreeDDrawCallbackStruct *)reason))
+	USE_PARAMETER(graphics_buffer);
+	if (material_editor=(struct Material_editor *)material_editor_void)
 	{
-		if (X3dCR_INPUT==callback->reason)
+		if (GRAPHICS_BUFFER_BUTTON_PRESS == input->type)
 		{
-			if ((callback->event)&&(ButtonPress==callback->event->type))
+			(material_editor->background)++;
+			if (material_editor->background>2)
 			{
-				(material_editor->background)++;
-				if (material_editor->background>2)
-				{
-					material_editor->background=0;
-				}
-				material_editor_update_picture(material_editor);
+				material_editor->background=0;
 			}
+			material_editor_update_picture(material_editor);
 		}
 	}
 	else
@@ -755,10 +752,11 @@ Global functions
 */
 
 struct Material_editor *CREATE(Material_editor)(Widget parent,
-	struct MANAGER(Texture) *texture_manager,
-	struct Graphical_material *material, struct User_interface *user_interface)
+	struct MANAGER(Texture) *texture_manager, struct Graphical_material *material,
+	struct Graphics_buffer_package *graphics_buffer_package,
+	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 Creates a Material_editor.
@@ -835,7 +833,7 @@ Creates a Material_editor.
 				material_editor->texture_form=(Widget)NULL;
 				material_editor->texture_widget=(Widget)NULL;
 				material_editor->a3d_form=(Widget)NULL;
-				material_editor->a3d_widget=(Widget)NULL;
+				material_editor->graphics_buffer = (struct Graphics_buffer *)NULL;
 				material_editor->edit_material=(struct Graphical_material *)NULL;
 				material_editor->update_callback.procedure=
 					(Callback_procedure *)NULL;
@@ -917,22 +915,12 @@ Creates a Material_editor.
 								init_widgets=0;
 							}
 							/* now bring up a 3d drawing widget */
-							if (material_editor->a3d_widget=XtVaCreateWidget(
-								"a3d_widget",threeDDrawingWidgetClass,
-								material_editor->a3d_form,
-								XmNwidth,100,
-								XmNheight,100,
-								XmNbottomAttachment,XmATTACH_FORM,
-								XmNleftAttachment,XmATTACH_FORM,
-								XmNrightAttachment,XmATTACH_FORM,
-								XmNtopAttachment,XmATTACH_FORM,
-								X3dNbufferingMode,X3dDOUBLE_BUFFERING,
-								X3dNbufferColourMode,X3dCOLOUR_RGB_MODE,
-								NULL))
-							{
-								XtManageChild(material_editor->a3d_widget);
-							}
-							else
+							if (!(material_editor->graphics_buffer=
+								create_Graphics_buffer_X3d(graphics_buffer_package,
+								material_editor->a3d_form, /*width*/100, /*height*/100,
+								GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_ANY_STEREO_MODE,
+								/*minimum_colour_buffer_depth*/8, /*minimum_depth_buffer_depth*/8,
+								/*minimum_accumulation_buffer_depth*/0)))
 							{
 								display_message(ERROR_MESSAGE,
 								"CREATE(Material_editor).  Could not create 3d widget.");
@@ -940,15 +928,13 @@ Creates a Material_editor.
 							}
 							if (init_widgets)
 							{
+								Graphics_buffer_awaken(material_editor->graphics_buffer);
 								material_editor_set_material(material_editor, material);
-								/*???RC should do following in ~set_material */
 								/* add a callback to the 3d widget */
-								XtAddCallback(material_editor->a3d_widget,
-									X3dNexposeCallback,material_editor_expose_picture_callback,
-									material_editor);
-								XtAddCallback(material_editor->a3d_widget,
-									X3dNinputCallback,material_editor_change_background,
-									material_editor);
+								Graphics_buffer_add_expose_callback(material_editor->graphics_buffer,
+									material_editor_expose_picture_callback, (void *)material_editor);
+								Graphics_buffer_add_input_callback(material_editor->graphics_buffer,
+									material_editor_change_background, (void *)material_editor);
 								/* set callbacks for colour and edit_var editors: */
 								callback.data=material_editor;
 								callback.procedure=material_editor_update_ambient;
@@ -1044,6 +1030,10 @@ Destroys the <*material_editor_address> and sets
 		if (material_editor->edit_material)
 		{
 			DESTROY(Graphical_material)(&(material_editor->edit_material));
+		}
+		if (material_editor->graphics_buffer)
+		{
+			DESTROY(Graphics_buffer)(&(material_editor->graphics_buffer));
 		}
 		XtDestroyWidget(material_editor->widget);
 		DEALLOCATE(*material_editor_address);
@@ -1236,11 +1226,14 @@ Sets the <material> to be edited by the <material_editor>.
 					XmNset,texture_set,NULL);
 				XtSetSensitive(material_editor->texture_widget,texture_set);
 				/* need to check window is there the first time else error occurs */
-				if (XtWindow(material_editor->a3d_widget))
+				if (Graphics_buffer_is_visible(material_editor->graphics_buffer))
 				{
 					material_editor_update_picture(material_editor);
 				}
-				XtManageChild(material_editor->widget);
+				else
+				{
+					XtManageChild(material_editor->widget);
+				}
 			}
 			else
 			{

@@ -65,6 +65,7 @@ struct System_window *CREATE(System_window)(Widget shell,
 	struct Computed_field_package *computed_field_package,
 	struct Light *light,
 	struct Light_model *light_model,
+	struct Graphics_buffer_package *graphics_buffer_package,
 #endif /* defined (UNEMAP_USE_3D) */
 	struct Time_keeper *time_keeper,
 	struct User_interface *user_interface);

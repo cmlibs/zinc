@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie_extensions.h
 
-LAST MODIFIED : 25 July 1998
+LAST MODIFIED : 27 May 2004
 
 DESCRIPTION :
 
@@ -13,7 +13,8 @@ HISTORY :
 #include "command/parser.h"
 #include "general/object.h"
 
-struct Dm_buffer; /* Instead I could #include dm_interface.h but that is yucky */
+struct Graphics_buffer; /* Instead I could #include graphics_buffer.h but that introduces
+								 unnecessary dependencies */
 struct X3d_movie;
 
 enum X3d_movie_create_option
@@ -49,18 +50,18 @@ POSSIBLE DEVELOPMENTS :
 Different file and compression formats.
 ==============================================================================*/
 
-int X3d_movie_bind_to_dmbuffer(struct X3d_movie *movie, 
-	struct Dm_buffer *buffer);
+int X3d_movie_bind_to_graphics_buffer(struct X3d_movie *movie, 
+	struct Graphics_buffer *buffer);
 /*******************************************************************************
-LAST MODIFIED : 7 September 1998
+LAST MODIFIED : 27 May 2004
 
 DESCRIPTION :
 Sets the dmbuffer that is associated with this movie instance.
 ==============================================================================*/
 
-int X3d_movie_unbind_from_dmbuffer(struct X3d_movie *movie);
+int X3d_movie_unbind_from_graphics_buffer(struct X3d_movie *movie);
 /*******************************************************************************
-LAST MODIFIED : 17 September 1998
+LAST MODIFIED : 27 May 2004
 
 DESCRIPTION :
 Disassociates the dmbuffer that is associated with this movie instance.

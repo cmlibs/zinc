@@ -111,7 +111,8 @@ struct Graphics_window *CREATE(Graphics_window)(char *name,
 	enum Graphics_window_buffering_mode buffering_mode,
 	enum Graphics_window_stereo_mode stereo_mode, 
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth, int specified_visual_id,
+	int minimum_accumulation_buffer_depth,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,
 	struct Light *default_light,
@@ -122,7 +123,7 @@ struct Graphics_window *CREATE(Graphics_window)(char *name,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 19 September 2002
+LAST MODIFIED : 5 May 2004
 
 DESCRIPTION:
 Creates a Graphics_window object, window shell and widgets. Returns a pointer
@@ -136,9 +137,6 @@ If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or
 out the possible visuals selected for graphics_buffers.  If they are zero then 
 the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
 chosen.
-If <specified_visual_id> is nonzero then this overrides all other visual
-selection mechanisms and this visual will be used if possible or the create will
-fail.
 ==============================================================================*/
 
 int DESTROY(Graphics_window)(struct Graphics_window **graphics_window_address);

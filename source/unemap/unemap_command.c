@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_command.c
 
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 Functions and for executing unemap commands.
@@ -46,6 +46,7 @@ Data required for Unemap commands.
 	struct MANAGER(FE_basis) *basis_manager;
 	struct Cmiss_region *root_cmiss_region;
 	struct Cmiss_region *data_root_cmiss_region;
+	struct Graphics_buffer_package *graphics_buffer_package;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct Graphical_material *default_graphical_material;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
@@ -214,6 +215,7 @@ Executes a UNEMAP OPEN command.
 						unemap_command_data->computed_field_package,
 						unemap_command_data->default_light,
 						unemap_command_data->default_light_model,
+						unemap_command_data->graphics_buffer_package,
 #endif /* defined (UNEMAP_USE_3D) */
 						unemap_command_data->default_time_keeper,
 						unemap_command_data->user_interface))
@@ -298,6 +300,7 @@ struct Unemap_command_data *CREATE(Unemap_command_data)(
 	struct MANAGER(FE_basis) *basis_manager,
 	struct Cmiss_region *root_cmiss_region,
 	struct Cmiss_region *data_root_cmiss_region,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_graphical_material,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
@@ -320,7 +323,7 @@ struct Unemap_command_data *CREATE(Unemap_command_data)(
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION :
 Creates a Unemap_command_data structure containing pointers to the passed
@@ -378,6 +381,8 @@ will be destroyed with it.
 			unemap_command_data->root_cmiss_region = ACCESS(Cmiss_region)(root_cmiss_region);
 			unemap_command_data->data_root_cmiss_region =
 				ACCESS(Cmiss_region)(data_root_cmiss_region);
+			unemap_command_data->graphics_buffer_package =
+				graphics_buffer_package;
 			unemap_command_data->graphical_material_manager =
 				graphical_material_manager;
 			unemap_command_data->default_graphical_material =

@@ -7095,14 +7095,9 @@ scene viewer on screen.
 ==============================================================================*/
 {
 	int number_of_components, return_code;
-#if defined (DM_BUFFERS)
-	struct Dm_buffer *dmbuffer;
-#endif /* defined (DM_BUFFERS) */
+	struct Graphics_buffer *offscreen_buffer;
 
 	ENTER(Scene_viewer_get_frame_pixels);
-#if !defined (DM_BUFFERS)
-	USE_PARAMETER(force_onscreen);
-#endif /* !defined (DM_BUFFERS) */
 	if (scene_viewer && width && height)
 	{
 		if ((!*width) || (!*height))
@@ -7111,17 +7106,17 @@ scene viewer on screen.
 			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
 			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		}
-#if defined (DM_BUFFERS)
-		/* Update the window or offscreen area if possible */
-		if ((!force_onscreen) && (dmbuffer = CREATE(Dm_buffer)(*width, *height, 
-			/*depth_buffer_flag*/1, /*shared_display_buffer_flag*/1,
-			scene_viewer->user_interface)))
+		/* If working offscreen try and allocate as large an area as possible */
+		if (!force_onscreen && (offscreen_buffer = create_Graphics_buffer_offscreen_from_buffer(
+			*width, *height, Scene_viewer_get_graphics_buffer(
+			scene_viewer))))
 		{
-			Dm_buffer_glx_make_current(dmbuffer);
+			Graphics_buffer_make_current(offscreen_buffer);
 			Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
 				/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
 				preferred_antialias, preferred_transparency_layers,
 				/*drawing_offscreen*/1);
+			Graphics_buffer_swap_buffers(offscreen_buffer);
 			number_of_components =
 				Texture_storage_type_get_number_of_components(storage);
 			if (ALLOCATE(*frame_data, unsigned char,
@@ -7139,11 +7134,10 @@ scene viewer on screen.
 					"Scene_viewer_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
-			DESTROY(Dm_buffer)(&dmbuffer);
+			DESTROY(Graphics_buffer)(&offscreen_buffer);
 		}
 		else
 		{
-#endif /* defined (DM_BUFFERS) */
 			/* Always use the window size if grabbing from screen */
 			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
 			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
@@ -7168,9 +7162,7 @@ scene viewer on screen.
 					"Scene_viewer_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
-#if defined (DM_BUFFERS)
 		}
-#endif /* defined (DM_BUFFERS) */
 	}
 	else
 	{
@@ -8025,3 +8017,30 @@ NOTE: Calling function must not deallocate returned string.
 
 	return (return_string);
 } /* Scene_viewer_viewport_mode_string */
+
+struct Graphics_buffer *Scene_viewer_get_graphics_buffer(
+	struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 12 May 2004
+
+DESCRIPTION :
+Gets the <graphics_buffer> used for 3D graphics in the scene_viewer.
+==============================================================================*/
+{
+	struct Graphics_buffer *graphics_buffer;
+
+	ENTER(Scene_viewer_get_graphics_buffer);
+	if (scene_viewer)
+	{
+		graphics_buffer = scene_viewer->graphics_buffer;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_graphics_buffer.  Missing scene_viewer");
+		graphics_buffer = (struct Graphics_buffer *)NULL;
+	}
+	LEAVE;
+
+	return (graphics_buffer);
+} /* Scene_viewer_get_graphics_buffer */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material_editor_dialog.c
 
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 This module creates a free material_editor_dialog input device, using two dof3,
@@ -10,6 +10,7 @@ coordinate system, and the returned value is a global one.
 ==============================================================================*/
 #include <stdio.h>
 #include <Xm/Protocols.h>
+#include "three_d_drawing/graphics_buffer.h"
 #include "general/debug.h"
 #include "graphics/material.h"
 #include "material/material_editor.h"
@@ -257,9 +258,10 @@ static struct Material_editor_dialog *CREATE(Material_editor_dialog)(
 	Widget parent,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Texture) *texture_manager,struct Graphical_material *init_data,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 Creates a dialog widget that allows the user to edit the properties of any of
@@ -366,7 +368,8 @@ the materials contained in the global list.
 								if (!(material_editor_dialog->material_editor =
 									CREATE(Material_editor)(
 										material_editor_dialog->editor_form, texture_manager,
-										(struct Graphical_material *)NULL, user_interface)))
+										(struct Graphical_material *)NULL, graphics_buffer_package,
+										user_interface)))
 								{
 									display_message(ERROR_MESSAGE,
 						"CREATE(Material_editor_dialog).  Could not create editor widget.");
@@ -647,9 +650,10 @@ int bring_up_material_editor_dialog(
 	struct Material_editor_dialog **material_editor_dialog_address,
 	Widget parent, struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Texture) *texture_manager,struct Graphical_material *material,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 4 May 2004
 
 DESCRIPTION :
 If there is a material_editor dialog in existence, then bring it to the front,
@@ -672,7 +676,8 @@ else create a new one.
 		else
 		{
 			if (CREATE(Material_editor_dialog)(material_editor_dialog_address, parent,
-				graphical_material_manager, texture_manager, material, user_interface))
+				graphical_material_manager, texture_manager, material, 
+				graphics_buffer_package, user_interface))
 			{
 				return_code = 1;
 			}

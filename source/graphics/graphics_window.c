@@ -83,9 +83,10 @@ Contains information for a graphics window.
 	char *name;
 	/* need to keep graphics window manager so window can be destroyed by self */
 	struct MANAGER(Graphics_window) *graphics_window_manager;
+	struct Graphics_buffer_package *graphics_buffer_package;
 #if defined (MOTIF)
 	/* widgets on the Graphics_window */
-	Widget viewing_form,viewing_area1,viewing_area2,viewing_area3,viewing_area4,
+	Widget control_panel,viewing_form,viewing_area1,viewing_area2,viewing_area3,viewing_area4,
 		view_all_button,print_button,time_edit_form,time_edit_widget,
 		perspective_button,layout_mode_form,layout_mode_widget,
 		orthographic_form,ortho_up_option,
@@ -136,6 +137,8 @@ Contains information for a graphics window.
 	struct Scene *scene;
 	/* graphics window does not need to keep managers now that changes handled
 		 by scene_viewer */
+	struct Light *default_light;
+	struct Light_model *default_light_model;
 	struct MANAGER(Light) *light_manager;
 	struct MANAGER(Light_model) *light_model_manager;
 	struct MANAGER(Scene) *scene_manager;
@@ -181,6 +184,8 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphics_window, \
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphics_window)
 
 #if defined (MOTIF)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
+        Graphics_window,control_panel)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
         Graphics_window,viewing_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
@@ -2482,7 +2487,8 @@ struct Graphics_window *CREATE(Graphics_window)(char *name,
 	enum Graphics_window_buffering_mode buffering_mode,
 	enum Graphics_window_stereo_mode stereo_mode,
 	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
-	int minimum_accumulation_buffer_depth, int specified_visual_id,
+	int minimum_accumulation_buffer_depth,
+	struct Graphics_buffer_package *graphics_buffer_package,
 	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,
 	struct Light *default_light,
@@ -2493,7 +2499,7 @@ struct Graphics_window *CREATE(Graphics_window)(char *name,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 19 September 2002
+LAST MODIFIED : 6 May 2004
 
 DESCRIPTION:
 Creates a Graphics_window object, window shell and widgets. Returns a pointer
@@ -2504,8 +2510,6 @@ Each window has a unique <name> that can be used to identify it, and which
 will be printed on the windows title bar.
 A stereo buffering mode will automatically be chosen when the visual supports
 it.
-A nonzero <specified_visual_id> overrides all other visual selection mechanisms
-and either uses that visual or fails.
 ==============================================================================*/
 {
 #if defined (MOTIF)
@@ -2525,6 +2529,8 @@ and either uses that visual or fails.
 	MrmType graphics_window_dialog_class;
 	static MrmRegisterArg callbacks[] =
 	{
+		{"gwin_id_control_panel",(XtPointer)
+			DIALOG_IDENTIFY(graphics_window,control_panel)},
 		{"gwin_id_viewing_form",(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,viewing_form)},
 		{"gwin_id_viewing_area1",(XtPointer)
@@ -2574,10 +2580,7 @@ and either uses that visual or fails.
 	struct Callback_data callback;
 #endif /* defined (MOTIF) */
 	struct Graphics_buffer *graphics_buffer;
-	struct Graphics_window *graphics_window=NULL;
-#if defined (MOTIF)
-	Widget viewing_area[4];
-#endif /* defined (MOTIF) */
+	struct Graphics_window *window=NULL;
 
 	ENTER(create_graphics_window);
 	if (name&&((GRAPHICS_WINDOW_ANY_BUFFERING_MODE==buffering_mode)||
@@ -2591,51 +2594,54 @@ and either uses that visual or fails.
 		user_interface)
 	{
 		/* Try to allocate space for the window structure */
-		if (ALLOCATE(graphics_window,struct Graphics_window,1)&&
-			ALLOCATE(graphics_window->name,char,strlen(name)+1))
+		if (ALLOCATE(window,struct Graphics_window,1)&&
+			ALLOCATE(window->name,char,strlen(name)+1))
 		{
-			strcpy(graphics_window->name,name);
+			strcpy(window->name,name);
 			/* initialize the fields of the window structure */
-			graphics_window->access_count=0;
-			graphics_window->eye_spacing=0.25;
-			graphics_window->std_view_angle=40.0;
+			window->access_count=0;
+			window->eye_spacing=0.25;
+			window->std_view_angle=40.0;
 			/*???RC should be read in from defaults file */
-			graphics_window->graphics_window_manager=
+			window->graphics_window_manager=
 				(struct MANAGER(Graphics_window) *)NULL;
-			graphics_window->light_manager=light_manager;
-			graphics_window->light_model_manager=light_model_manager;
-			graphics_window->scene_manager=scene_manager;
-			graphics_window->texture_manager=texture_manager;
-			graphics_window->scene=ACCESS(Scene)(scene);
-			graphics_window->time_keeper = ACCESS(Time_keeper)(Scene_get_default_time_keeper(scene));
-			graphics_window->interactive_tool_manager=interactive_tool_manager;
-			graphics_window->interactive_tool=
+			window->graphics_buffer_package = graphics_buffer_package;
+			window->light_manager=light_manager;
+			window->light_model_manager=light_model_manager;
+			window->default_light=ACCESS(Light)(default_light);
+			window->default_light_model=ACCESS(Light_model)(default_light_model);
+			window->scene_manager=scene_manager;
+			window->texture_manager=texture_manager;
+			window->scene=ACCESS(Scene)(scene);
+			window->time_keeper = ACCESS(Time_keeper)(Scene_get_default_time_keeper(scene));
+			window->interactive_tool_manager=interactive_tool_manager;
+			window->interactive_tool=
 				FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
-					"transform_tool",graphics_window->interactive_tool_manager);
-			graphics_window->user_interface=user_interface;
-			graphics_window->default_viewing_height=512;
-			graphics_window->default_viewing_width=512;
-			graphics_window->default_translate_rate=1.0;
-			graphics_window->default_tumble_rate=1.5;
-			graphics_window->default_zoom_rate=1.0;
-			graphics_window->layout_mode=GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC;
-			graphics_window->number_of_scene_viewers = 0;
-			graphics_window->number_of_panes=0;
-			graphics_window->scene_viewer_array = (struct Scene_viewer **)NULL;
-			graphics_window->current_pane=0;
-			graphics_window->antialias_mode=0;
-			graphics_window->perturb_lines=0;
-			graphics_window->blending_mode=SCENE_VIEWER_BLEND_NORMAL;
+					"transform_tool",window->interactive_tool_manager);
+			window->user_interface=user_interface;
+			window->default_viewing_height=512;
+			window->default_viewing_width=512;
+			window->default_translate_rate=1.0;
+			window->default_tumble_rate=1.5;
+			window->default_zoom_rate=1.0;
+			window->layout_mode=GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC;
+			window->number_of_scene_viewers = 0;
+			window->number_of_panes=0;
+			window->scene_viewer_array = (struct Scene_viewer **)NULL;
+			window->current_pane=0;
+			window->antialias_mode=0;
+			window->perturb_lines=0;
+			window->blending_mode=SCENE_VIEWER_BLEND_NORMAL;
 			/* the input_mode set here is changed below */
-			graphics_window->input_mode=SCENE_VIEWER_NO_INPUT;
+			window->input_mode=SCENE_VIEWER_NO_INPUT;
 			/* read default settings from Cmgui defaults file */
-			Graphics_window_read_defaults(graphics_window);
+			Graphics_window_read_defaults(window);
 			if (ALLOCATE(window_title,char,50+strlen(name)))
 			{
 				sprintf(window_title,"CMGUI Graphics window %s",name);
 			}
-			graphics_window->ortho_up_axis=0;
-			graphics_window->ortho_front_axis=0;
+			window->ortho_up_axis=0;
+			window->ortho_front_axis=0;
 			switch (buffering_mode)
 			{
 				case GRAPHICS_WINDOW_ANY_BUFFERING_MODE:
@@ -2686,31 +2692,32 @@ and either uses that visual or fails.
 			}
 #if defined (MOTIF)
 			/* clear widgets yet to be read in and created */
-			graphics_window->window_shell=(Widget)NULL;
-			graphics_window->main_window=(Widget)NULL;
-			graphics_window->viewing_form=(Widget)NULL;
-			graphics_window->viewing_area1=(Widget)NULL;
-			graphics_window->viewing_area2=(Widget)NULL;
-			graphics_window->viewing_area3=(Widget)NULL;
-			graphics_window->viewing_area4=(Widget)NULL;
-			graphics_window->view_all_button=(Widget)NULL;
-			graphics_window->print_button=(Widget)NULL;
-			graphics_window->time_edit_form=(Widget)NULL;
-			graphics_window->time_edit_widget=(Widget)NULL;
-			graphics_window->perspective_button=(Widget)NULL;
-			graphics_window->layout_mode_form=(Widget)NULL;
-			graphics_window->layout_mode_widget=(Widget)NULL;
-			graphics_window->orthographic_form=(Widget)NULL;
-			graphics_window->ortho_up_option=(Widget)NULL;
-			graphics_window->ortho_up_menu=(Widget)NULL;
-			graphics_window->ortho_front_button=(Widget)NULL;
-			graphics_window->interactive_toolbar_form=(Widget)NULL;
-			graphics_window->interactive_toolbar_widget=(Widget)NULL;
+			window->window_shell=(Widget)NULL;
+			window->main_window=(Widget)NULL;
+			window->control_panel=(Widget)NULL;
+			window->viewing_form=(Widget)NULL;
+			window->viewing_area1=(Widget)NULL;
+			window->viewing_area2=(Widget)NULL;
+			window->viewing_area3=(Widget)NULL;
+			window->viewing_area4=(Widget)NULL;
+			window->view_all_button=(Widget)NULL;
+			window->print_button=(Widget)NULL;
+			window->time_edit_form=(Widget)NULL;
+			window->time_edit_widget=(Widget)NULL;
+			window->perspective_button=(Widget)NULL;
+			window->layout_mode_form=(Widget)NULL;
+			window->layout_mode_widget=(Widget)NULL;
+			window->orthographic_form=(Widget)NULL;
+			window->ortho_up_option=(Widget)NULL;
+			window->ortho_up_menu=(Widget)NULL;
+			window->ortho_front_button=(Widget)NULL;
+			window->interactive_toolbar_form=(Widget)NULL;
+			window->interactive_toolbar_widget=(Widget)NULL;
 			if (MrmOpenHierarchy_base64_string(graphics_window_uidh,
 					 &graphics_window_hierarchy,&graphics_window_hierarchy_open))
 			{
 				/* create a shell for the window */
-				if (graphics_window->window_shell=XtVaCreatePopupShell(
+				if (window->window_shell=XtVaCreatePopupShell(
 						 "graphics_shell",xmDialogShellWidgetClass,
 						 User_interface_get_application_shell(user_interface),
 						 XmNdeleteResponse,XmDO_NOTHING,
@@ -2724,40 +2731,40 @@ and either uses that visual or fails.
 						 NULL))
 				{
 					/* Register the shell with the busy signal list */
-					create_Shell_list_item(&(graphics_window->window_shell),
+					create_Shell_list_item(&(window->window_shell),
 						user_interface);
 					/* Set up window manager callback for close window message */
 					WM_DELETE_WINDOW=XmInternAtom(
-						XtDisplay(graphics_window->window_shell),"WM_DELETE_WINDOW",False);
-					XmAddWMProtocolCallback(graphics_window->window_shell,
-						WM_DELETE_WINDOW,Graphics_window_close_CB,graphics_window);
+						XtDisplay(window->window_shell),"WM_DELETE_WINDOW",False);
+					XmAddWMProtocolCallback(window->window_shell,
+						WM_DELETE_WINDOW,Graphics_window_close_CB,window);
 					/* register callbacks */
 					if (MrmSUCCESS!=MrmRegisterNamesInHierarchy(graphics_window_hierarchy,
 							 callbacks,XtNumber(callbacks)))
 					{
-						destroy_Shell_list_item_from_shell(&(graphics_window->window_shell),
-							graphics_window->user_interface);
-						XtDestroyWidget(graphics_window->window_shell);
-						DEACCESS(Scene)(&(graphics_window->scene));
-						DEALLOCATE(graphics_window->name);
-						DEALLOCATE(graphics_window);
+						destroy_Shell_list_item_from_shell(&(window->window_shell),
+							window->user_interface);
+						XtDestroyWidget(window->window_shell);
+						DEACCESS(Scene)(&(window->scene));
+						DEALLOCATE(window->name);
+						DEALLOCATE(window);
 						display_message(ERROR_MESSAGE,
 							"CREATE(graphics_window).  Could not register the callbacks");
 					}
 					else
 					{
 						/* register identifiers */
-						identifiers[0].value=(XtPointer)graphics_window;
+						identifiers[0].value=(XtPointer)window;
 						if (MrmSUCCESS != MrmRegisterNamesInHierarchy(
 								 graphics_window_hierarchy,identifiers,XtNumber(identifiers)))
 						{
 							destroy_Shell_list_item_from_shell(
-								&(graphics_window->window_shell),
-								graphics_window->user_interface);
-							XtDestroyWidget(graphics_window->window_shell);
-							DEACCESS(Scene)(&(graphics_window->scene));
-							DEALLOCATE(graphics_window->name);
-							DEALLOCATE(graphics_window);
+								&(window->window_shell),
+								window->user_interface);
+							XtDestroyWidget(window->window_shell);
+							DEACCESS(Scene)(&(window->scene));
+							DEALLOCATE(window->name);
+							DEALLOCATE(window);
 							display_message(ERROR_MESSAGE,
 								"CREATE(graphics_window).  Could not register the identifiers");
 						}
@@ -2765,16 +2772,16 @@ and either uses that visual or fails.
 						{
 							/* Get the graphics window from the uid file */
 							if (MrmSUCCESS != MrmFetchWidget(graphics_window_hierarchy,
-									 "graphics_window",graphics_window->window_shell,
-									 &graphics_window->main_window,&graphics_window_dialog_class))
+									 "graphics_window",window->window_shell,
+									 &window->main_window,&graphics_window_dialog_class))
 							{
 								destroy_Shell_list_item_from_shell(
-									&(graphics_window->window_shell),
-									graphics_window->user_interface);
-								XtDestroyWidget(graphics_window->window_shell);
-								DEACCESS(Scene)(&(graphics_window->scene));
-								DEALLOCATE(graphics_window->name);
-								DEALLOCATE(graphics_window);
+									&(window->window_shell),
+									window->user_interface);
+								XtDestroyWidget(window->window_shell);
+								DEACCESS(Scene)(&(window->scene));
+								DEALLOCATE(window->name);
+								DEALLOCATE(window);
 								display_message(ERROR_MESSAGE,
 									"CREATE(graphics_window).  Could not retrieve the 3D window");
 							}
@@ -2782,14 +2789,14 @@ and either uses that visual or fails.
 							{
 								init_widgets=1;
 								/* create the subwidgets with default values */
-								if (graphics_window->interactive_toolbar_widget=
+								if (window->interactive_toolbar_widget=
 									create_interactive_toolbar_widget(
-										graphics_window->interactive_toolbar_form,
+										window->interactive_toolbar_form,
 										interactive_tool_manager,INTERACTIVE_TOOLBAR_VERTICAL))
 								{
 									FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
 										add_interactive_tool_to_interactive_toolbar_widget,
-										(void *)graphics_window->interactive_toolbar_widget,
+										(void *)window->interactive_toolbar_widget,
 										interactive_tool_manager);
 								}
 								else
@@ -2797,25 +2804,25 @@ and either uses that visual or fails.
 									init_widgets=0;
 								}
 								/* create the time editing widget */
-								if (!(graphics_window->time_edit_widget=create_edit_var_widget(
-											graphics_window->time_edit_form,"Time",0.0,0.0,1.0)))
+								if (!(window->time_edit_widget=create_edit_var_widget(
+											window->time_edit_form,"Time",0.0,0.0,1.0)))
 								{
 									init_widgets=0;
 								}
 								valid_strings=Graphics_window_layout_mode_get_valid_strings(
 									&number_of_valid_strings);
-								if (graphics_window->layout_mode_widget=
+								if (window->layout_mode_widget=
 									create_choose_enumerator_widget(
-										graphics_window->layout_mode_form,
+										window->layout_mode_form,
 										number_of_valid_strings,valid_strings,
 										Graphics_window_layout_mode_string(
-											graphics_window->layout_mode), user_interface))
+											window->layout_mode), user_interface))
 								{
 									/* get callbacks for change of layout mode */
-									callback.data=(void *)graphics_window;
+									callback.data=(void *)window;
 									callback.procedure=Graphics_window_layout_mode_CB;
 									choose_enumerator_set_callback(
-										graphics_window->layout_mode_widget,&callback);
+										window->layout_mode_widget,&callback);
 								}
 								else
 								{
@@ -2826,177 +2833,161 @@ and either uses that visual or fails.
 								if (!init_widgets)
 								{
 									destroy_Shell_list_item_from_shell(
-										&(graphics_window->window_shell),
-										graphics_window->user_interface);
-									XtDestroyWidget(graphics_window->window_shell);
-									DEACCESS(Scene)(&(graphics_window->scene));
-									DEALLOCATE(graphics_window->name);
-									DEALLOCATE(graphics_window);
+										&(window->window_shell),
+										window->user_interface);
+									XtDestroyWidget(window->window_shell);
+									DEACCESS(Scene)(&(window->scene));
+									DEALLOCATE(window->name);
+									DEALLOCATE(window);
 									display_message(ERROR_MESSAGE,
 										"CREATE(graphics_window).  Could not create subwidgets");
 								}
 								else
 								{
-									install_accelerators(graphics_window->window_shell,
-										graphics_window->window_shell);
+									install_accelerators(window->window_shell,
+										window->window_shell);
 									/* turn on callbacks */
 									callback.procedure=Graphics_window_time_edit_CB;
-									callback.data=graphics_window;
-									edit_var_set_callback(graphics_window->time_edit_widget,
+									callback.data=window;
+									edit_var_set_callback(window->time_edit_widget,
 										&callback);
 									callback.procedure=Graphics_window_update_interactive_tool;
 									interactive_toolbar_widget_set_callback(
-										graphics_window->interactive_toolbar_widget,&callback);
-									/* create four Scene_viewers */
-									graphics_window->number_of_scene_viewers = 4;
-									if (ALLOCATE(graphics_window->scene_viewer_array,
+										window->interactive_toolbar_widget,&callback);
+									/* create first Scene_viewer */
+									window->number_of_scene_viewers = 1;
+									if (ALLOCATE(window->scene_viewer_array,
 										struct Scene_viewer *,
-										graphics_window->number_of_scene_viewers))
+										window->number_of_scene_viewers))
 									{
-										viewing_area[0]=graphics_window->viewing_area1;
-										viewing_area[1]=graphics_window->viewing_area2;
-										viewing_area[2]=graphics_window->viewing_area3;
-										viewing_area[3]=graphics_window->viewing_area4;
 										return_code=1;
-										for (pane_no=0;return_code&&
-											(pane_no<graphics_window->number_of_scene_viewers);
-											pane_no++)
+										pane_no = 0;
+										if (graphics_buffer = create_Graphics_buffer_X3d(
+											graphics_buffer_package,
+											window->viewing_area1,
+											window->default_viewing_width,
+											window->default_viewing_height,
+											graphics_buffer_buffering_mode,
+											graphics_buffer_stereo_mode,
+											minimum_colour_buffer_depth,
+											minimum_depth_buffer_depth,
+											minimum_accumulation_buffer_depth))
 										{
-											if (graphics_buffer = create_Graphics_buffer_X3d(
-												viewing_area[pane_no],
-												graphics_buffer_buffering_mode,
-												graphics_buffer_stereo_mode,
-												minimum_colour_buffer_depth,
-												minimum_depth_buffer_depth,
-												minimum_accumulation_buffer_depth,
-												specified_visual_id))
-											{
-												if (graphics_window->scene_viewer_array[pane_no]=
-													CREATE(Scene_viewer)(graphics_buffer,
+											if (window->scene_viewer_array[pane_no]=
+												CREATE(Scene_viewer)(graphics_buffer,
 													background_colour,light_manager,default_light,
 													light_model_manager,default_light_model,
-													scene_manager,graphics_window->scene,
-													texture_manager,graphics_window->user_interface))
-												{
-													Scene_viewer_set_interactive_tool(
-														graphics_window->scene_viewer_array[pane_no],
-														graphics_window->interactive_tool);
-													/* get scene_viewer transform callbacks to allow
-														synchronising of views in multiple panes */
-													Scene_viewer_add_sync_callback(
-														graphics_window->scene_viewer_array[pane_no],
-														Graphics_window_Scene_viewer_view_changed,
-														graphics_window);
-													Scene_viewer_set_transform_rate(
-														graphics_window->scene_viewer_array[pane_no],2.0,1.5,2.0);
-												}
-												else
-												{
-													while (0<pane_no)
-													{
-														pane_no--;
-														DESTROY(Scene_viewer)(
-															&(graphics_window->scene_viewer_array[pane_no]));
-													}
-													return_code=0;
-												}
+													scene_manager,window->scene,
+													texture_manager,window->user_interface))
+											{
+												Scene_viewer_set_interactive_tool(
+													window->scene_viewer_array[pane_no],
+													window->interactive_tool);
+												/* get scene_viewer transform callbacks to allow
+													synchronising of views in multiple panes */
+												Scene_viewer_add_sync_callback(
+													window->scene_viewer_array[pane_no],
+													Graphics_window_Scene_viewer_view_changed,
+													window);
+												Scene_viewer_set_transform_rate(
+													window->scene_viewer_array[pane_no],
+													window->default_translate_rate,
+													window->default_tumble_rate,
+													window->default_zoom_rate);
 											}
 											else
 											{
-												return_code = 0;
+												return_code=0;
 											}
+										}
+										else
+										{
+											return_code = 0;
 										}
 										if (!return_code)
 										{
 											destroy_Shell_list_item_from_shell(
-												&(graphics_window->window_shell),
-												graphics_window->user_interface);
-											XtDestroyWidget(graphics_window->window_shell);
-											DEACCESS(Scene)(&(graphics_window->scene));
-											DEALLOCATE(graphics_window->scene_viewer_array);
-											DEALLOCATE(graphics_window->name);
-											DEALLOCATE(graphics_window);
+												&(window->window_shell),
+												window->user_interface);
+											XtDestroyWidget(window->window_shell);
+											DEACCESS(Scene)(&(window->scene));
+											DEALLOCATE(window->scene_viewer_array);
+											DEALLOCATE(window->name);
+											DEALLOCATE(window);
 											display_message(ERROR_MESSAGE,"CREATE(graphics_window).  "
 												"Could not create Scene_viewer");
 										}
 										else
 										{
-											for (pane_no=0;(pane_no<
-												graphics_window->number_of_scene_viewers);pane_no++)
-											{
-												Scene_viewer_set_transform_rate(
-													graphics_window->scene_viewer_array[pane_no],
-													graphics_window->default_translate_rate,
-													graphics_window->default_tumble_rate,
-													graphics_window->default_zoom_rate);
-											}
 											Graphics_window_set_interactive_tool(
-												graphics_window, graphics_window->interactive_tool);
+												window, window->interactive_tool);
 											/* set and update the orthographic axes */
-											ortho_up_axis=graphics_window->ortho_up_axis;
-											ortho_front_axis=graphics_window->ortho_front_axis;
-											graphics_window->ortho_up_axis=0;
-											graphics_window->ortho_front_axis=0;
-											Graphics_window_set_orthographic_axes(graphics_window,
+											ortho_up_axis=window->ortho_up_axis;
+											ortho_front_axis=window->ortho_front_axis;
+											window->ortho_up_axis=0;
+											window->ortho_front_axis=0;
+											Graphics_window_set_orthographic_axes(window,
 												ortho_up_axis,ortho_front_axis);
 											/* The time_slider receives messages from the
 												default_time_keeper of the scene */
-											Time_keeper_add_callback(graphics_window->time_keeper,
+											Time_keeper_add_callback(window->time_keeper,
 												Graphics_window_time_keeper_callback,
-												(void *)graphics_window,
+												(void *)window,
 												(enum Time_keeper_event) (TIME_KEEPER_NEW_TIME | 
 													TIME_KEEPER_NEW_MINIMUM | TIME_KEEPER_NEW_MAXIMUM ));
-											time_value = Time_keeper_get_minimum(graphics_window->time_keeper);
-											edit_var_set_data(graphics_window->time_edit_widget,
+											time_value = Time_keeper_get_minimum(window->time_keeper);
+											edit_var_set_data(window->time_edit_widget,
 												EDIT_VAR_LOW_LIMIT, time_value );
-											time_value = Time_keeper_get_maximum(graphics_window->time_keeper);
-											edit_var_set_data(graphics_window->time_edit_widget,
+											time_value = Time_keeper_get_maximum(window->time_keeper);
+											edit_var_set_data(window->time_edit_widget,
 												EDIT_VAR_HIGH_LIMIT, time_value );
-											/* initial view is of all of the current scene */
-											Graphics_window_view_all(graphics_window);
-											/* deferred from above for OpenGL */
-											XtManageChild(graphics_window->main_window);
-											/*XtRealizeWidget(graphics_window->window_shell);*/
-											XtPopup(graphics_window->window_shell,XtGrabNone);
 											/* make sure the first scene_viewer shows the front view */
 											if (Scene_viewer_get_lookat_parameters(
-													 graphics_window->scene_viewer_array[0],
+													 window->scene_viewer_array[0],
 													 &(eye[0]),&(eye[1]),&(eye[2]),
 													 &(lookat[0]),&(lookat[1]),&(lookat[2]),
 													 &(up[0]),&(up[1]),&(up[2]))&&
 												axis_number_to_axis_vector(
-													graphics_window->ortho_up_axis,up)&&
+													window->ortho_up_axis,up)&&
 												axis_number_to_axis_vector(
-													graphics_window->ortho_front_axis,front))
+													window->ortho_front_axis,front))
 											{
 												view[0]=eye[0]-lookat[0];
 												view[1]=eye[1]-lookat[1];
 												view[2]=eye[2]-lookat[2];
 												eye_distance=normalize3(view);
 												Scene_viewer_set_lookat_parameters(
-													graphics_window->scene_viewer_array[0],
+													window->scene_viewer_array[0],
 													lookat[0]+eye_distance*front[0],
 													lookat[1]+eye_distance*front[1],
 													lookat[2]+eye_distance*front[2],
 													lookat[0],lookat[1],lookat[2],up[0],up[1],up[2]);
-												/*Scene_viewer_redraw_now(graphics_window->scene_viewer_array[0]);*/
 											}
-											/* set the initial layout */
-											Graphics_window_set_layout_mode(graphics_window,
+											Graphics_window_view_all(window);
+											Graphics_window_set_layout_mode(window,
 												GRAPHICS_WINDOW_LAYOUT_SIMPLE);
-											/* give the window its default size */
-											Graphics_window_set_viewing_area_size(graphics_window,
-												graphics_window->default_viewing_width,
-												graphics_window->default_viewing_height);
+
+											/* Remove the control panel so that it doesn't make the 
+												shell taller than we want the graphics window to be */
+											XtUnmanageChild(window->control_panel);
+
+											/* deferred from above for OpenGL */
+											XtManageChild(window->main_window);
+											/*XtRealizeWidget(window->window_shell);*/
+											XtPopup(window->window_shell,XtGrabNone);
+
+											/* Put the control panel back in */
+											XtManageChild(window->control_panel);
+
 										}
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,
 											"CREATE(graphics_window).  Could not allocate memory for scene viewer array.");
-										DEACCESS(Scene)(&(graphics_window->scene));
-										DEALLOCATE(graphics_window->name);
-										DEALLOCATE(graphics_window);		
+										DEACCESS(Scene)(&(window->scene));
+										DEALLOCATE(window->name);
+										DEALLOCATE(window);		
 									}
 								}
 							}
@@ -3005,9 +2996,9 @@ and either uses that visual or fails.
 				}
 				else
 				{
-					DEACCESS(Scene)(&(graphics_window->scene));
-					DEALLOCATE(graphics_window->name);
-					DEALLOCATE(graphics_window);
+					DEACCESS(Scene)(&(window->scene));
+					DEALLOCATE(window->name);
+					DEALLOCATE(window);
 					display_message(ERROR_MESSAGE,
 						"CREATE(graphics_window).  Could not create a shell");
 				}
@@ -3020,44 +3011,44 @@ and either uses that visual or fails.
 			{
 				display_message(ERROR_MESSAGE,
 					"CREATE(graphics_window).  Could not open hierarchy");
-				graphics_window=(struct Graphics_window *)NULL;
+				window=(struct Graphics_window *)NULL;
 			}
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
-			if (graphics_window->shell_window = gtk_window_new(GTK_WINDOW_TOPLEVEL))
+			if (window->shell_window = gtk_window_new(GTK_WINDOW_TOPLEVEL))
 			{
-				gtk_window_set_title(GTK_WINDOW(graphics_window->shell_window),
+				gtk_window_set_title(GTK_WINDOW(window->shell_window),
 					window_title);
 				if (graphics_buffer = create_Graphics_buffer_gtkgl(
-					GTK_CONTAINER(graphics_window->shell_window),
+					GTK_CONTAINER(window->shell_window),
 					graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
 					minimum_colour_buffer_depth, minimum_depth_buffer_depth,
 					minimum_accumulation_buffer_depth, specified_visual_id))
 				{
 					/* create one Scene_viewers */
-					graphics_window->number_of_scene_viewers = 1;
-					if (ALLOCATE(graphics_window->scene_viewer_array,
+					window->number_of_scene_viewers = 1;
+					if (ALLOCATE(window->scene_viewer_array,
 						struct Scene_viewer *,
-						graphics_window->number_of_scene_viewers))
+						window->number_of_scene_viewers))
 					{
 						pane_no = 0;
-						if (graphics_window->scene_viewer_array[pane_no] = 
+						if (window->scene_viewer_array[pane_no] = 
 							 CREATE(Scene_viewer)(graphics_buffer,
 							 background_colour, light_manager,default_light,
 							 light_model_manager,default_light_model,
-							 scene_manager, graphics_window->scene,
+							 scene_manager, window->scene,
 							 texture_manager, user_interface))
 						{
 							Scene_viewer_set_interactive_tool(
-								graphics_window->scene_viewer_array[pane_no],
-								graphics_window->interactive_tool);
+								window->scene_viewer_array[pane_no],
+								window->interactive_tool);
 							/* get scene_viewer transform callbacks to allow
 								synchronising of views in multiple panes */
 							Scene_viewer_add_sync_callback(
-								graphics_window->scene_viewer_array[pane_no],
+								window->scene_viewer_array[pane_no],
 								Graphics_window_Scene_viewer_view_changed,
 								graphics_window);
 							Scene_viewer_set_transform_rate(
-								graphics_window->scene_viewer_array[pane_no],2.0,1.5,2.0);
+								window->scene_viewer_array[pane_no],2.0,1.5,2.0);
 
 
 							/* set the initial layout */
@@ -3065,12 +3056,12 @@ and either uses that visual or fails.
 								GRAPHICS_WINDOW_LAYOUT_SIMPLE);
 							/* give the window its default size */
 							Graphics_window_set_viewing_area_size(graphics_window,
-								graphics_window->default_viewing_width,
-								graphics_window->default_viewing_height);
+								window->default_viewing_width,
+								window->default_viewing_height);
 							/* initial view is of all of the current scene */
 							Graphics_window_view_all(graphics_window);
 
-							gtk_widget_show_all(graphics_window->shell_window);
+							gtk_widget_show_all(window->shell_window);
 							return_code = 1;
 						}
 						else
@@ -3118,11 +3109,11 @@ and either uses that visual or fails.
 	{
 		display_message(ERROR_MESSAGE,
 			"CREATE(graphics_window).  Invalid argument(s)");
-		graphics_window=(struct Graphics_window *)NULL;
+		window=(struct Graphics_window *)NULL;
 	}
 	LEAVE;
 
-	return (graphics_window);
+	return (window);
 } /* CREATE(graphics_window) */
 
 int DESTROY(Graphics_window)(struct Graphics_window **graphics_window_address)
@@ -3138,37 +3129,45 @@ Graphics_window_destroy_CB.
 ==============================================================================*/
 {
 	int return_code,pane_no;
-	struct Graphics_window *graphics_window;
+	struct Graphics_window *window;
 
 	ENTER(DESTROY(graphics_window));
-	if (graphics_window_address&&(graphics_window= *graphics_window_address))
+	if (graphics_window_address&&(window= *graphics_window_address))
 	{
-		if (graphics_window->scene_viewer_array)
+		if (window->scene_viewer_array)
 		{
 			/* close the Scene_viewer(s) */
-			for (pane_no=0;pane_no<graphics_window->number_of_scene_viewers;pane_no++)
+			for (pane_no=0;pane_no<window->number_of_scene_viewers;pane_no++)
 			{
-				DESTROY(Scene_viewer)(&(graphics_window->scene_viewer_array[pane_no]));
+				DESTROY(Scene_viewer)(&(window->scene_viewer_array[pane_no]));
 			}
-			DEALLOCATE(graphics_window->scene_viewer_array);
+			DEALLOCATE(window->scene_viewer_array);
+		}
+		if (window->default_light)
+		{
+			DEACCESS(Light)(&window->default_light);
+		}
+		if (window->default_light_model)
+		{
+			DEACCESS(Light_model)(&window->default_light_model);
 		}
 #if defined (MOTIF)
-		destroy_Shell_list_item_from_shell(&(graphics_window->window_shell),
-			graphics_window->user_interface);
+		destroy_Shell_list_item_from_shell(&(window->window_shell),
+			window->user_interface);
 		/* destroy the graphics window widget */
-		XtDestroyWidget(graphics_window->window_shell);
+		XtDestroyWidget(window->window_shell);
 #endif /* defined (MOTIF) */
 		/* no longer accessing scene */
-		DEACCESS(Scene)(&(graphics_window->scene));
-		if(graphics_window->time_keeper)
+		DEACCESS(Scene)(&(window->scene));
+		if(window->time_keeper)
 		{
 #if defined (MOTIF)
-			Time_keeper_remove_callback(graphics_window->time_keeper,
-				Graphics_window_time_keeper_callback, (void *)graphics_window);
+			Time_keeper_remove_callback(window->time_keeper,
+				Graphics_window_time_keeper_callback, (void *)window);
 #endif /* defined (MOTIF) */
-			DEACCESS(Time_keeper)(&(graphics_window->time_keeper));
+			DEACCESS(Time_keeper)(&(window->time_keeper));
 		}
-		DEALLOCATE(graphics_window->name);
+		DEALLOCATE(window->name);
 		DEALLOCATE(*graphics_window_address);
 		return_code=1;
 	}
@@ -3581,9 +3580,14 @@ DESCRIPTION :
 Sets the layout mode in effect on the <window>.
 ==============================================================================*/
 {
-	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
+	double bottom,clip_factor,eye[3],eye_distance,far_plane,front[3],left,
+		lookat[3],near_plane,radius,right,top,up[3],view[3];
 	enum Scene_viewer_projection_mode projection_mode;
 	int new_layout,new_number_of_panes,pane_no,return_code;
+	struct Colour background_colour;
+	struct Graphics_buffer *graphics_buffer;
+	struct Scene_viewer *first_scene_viewer;
+	Widget viewing_area;
 
 	ENTER(Graphics_window_set_layout_mode);
 	if (window)
@@ -3591,7 +3595,95 @@ Sets the layout mode in effect on the <window>.
 		return_code=1;
 		new_number_of_panes =
 			Graphics_window_layout_mode_get_number_of_panes(layout_mode);
-		if (new_number_of_panes <= window->number_of_scene_viewers)
+		if (new_number_of_panes > window->number_of_scene_viewers)
+		{
+			first_scene_viewer = window->scene_viewer_array[0];
+			Scene_viewer_get_lookat_parameters(first_scene_viewer,
+				&(eye[0]),&(eye[1]),&(eye[2]),
+				&(lookat[0]),&(lookat[1]),&(lookat[2]),&(up[0]),&(up[1]),&(up[2]))&&
+			Scene_viewer_get_viewing_volume(first_scene_viewer,
+				&left, &right, &bottom, &top, &near_plane, &far_plane);
+			radius = 0.5*(right - left);
+			
+			if (REALLOCATE(window->scene_viewer_array,
+					window->scene_viewer_array, struct Scene_viewer *,
+					new_number_of_panes))
+			{
+				for (pane_no = window->number_of_scene_viewers ;
+					  return_code && (pane_no < new_number_of_panes) ; pane_no++)
+				{
+					switch (pane_no)
+					{
+						/* First viewing area is pane_no 0 */
+						case 1:
+						{
+							viewing_area = window->viewing_area2;
+						} break;
+						case 2:
+						{
+							viewing_area = window->viewing_area3;
+						} break;
+						case 3:
+						{
+							viewing_area = window->viewing_area4;
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE, "Graphics_window_set_layout_mode.  "
+								"Invalid pane to create");
+							return_code = 0;
+						} break;
+					}
+					if (graphics_buffer = create_Graphics_buffer_X3d_from_buffer(
+							 viewing_area, /*width*/100, /*height*/100,
+							 Scene_viewer_get_graphics_buffer(first_scene_viewer)))
+					{
+						Scene_viewer_get_background_colour(first_scene_viewer,&background_colour);
+						if (window->scene_viewer_array[pane_no]=
+							CREATE(Scene_viewer)(graphics_buffer,&background_colour,
+								window->light_manager,window->default_light,
+								window->light_model_manager,window->default_light_model,
+								window->scene_manager,window->scene,
+								window->texture_manager,window->user_interface))
+						{
+							Scene_viewer_set_interactive_tool(
+								window->scene_viewer_array[pane_no],
+								window->interactive_tool);
+							/* get scene_viewer transform callbacks to allow
+								synchronising of views in multiple panes */
+							Scene_viewer_add_sync_callback(
+								window->scene_viewer_array[pane_no],
+								Graphics_window_Scene_viewer_view_changed,
+								window);
+							Scene_viewer_set_transform_rate(
+								window->scene_viewer_array[pane_no],
+								window->default_translate_rate,
+								window->default_tumble_rate,
+								window->default_zoom_rate);
+							clip_factor = 10.0;
+							Scene_viewer_set_view_simple(
+								window->scene_viewer_array[pane_no], 
+								lookat[0], lookat[1], lookat[2],
+								radius, window->std_view_angle, clip_factor*radius);
+						}
+						else
+						{
+							return_code=0;
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				window->number_of_scene_viewers = new_number_of_panes;
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		if (return_code)
 		{
 			if (new_layout=(layout_mode != window->layout_mode))
 			{
@@ -3653,7 +3745,6 @@ Sets the layout mode in effect on the <window>.
 						window->default_translate_rate,window->default_tumble_rate,
 						window->default_zoom_rate);
 #if defined (MOTIF)
-					/*???RC temporary*/
 					XtVaSetValues(window->viewing_area1,
 						XmNrightPosition,2,XmNbottomPosition,2,NULL);
 					/* grey-out orthographic view controls */
@@ -3675,7 +3766,6 @@ Sets the layout mode in effect on the <window>.
 					XtUnmanageChild(window->viewing_area2);
 					XtUnmanageChild(window->viewing_area3);
 					XtUnmanageChild(window->viewing_area4);
-					/*???RC temporary*/
 					XtVaSetValues(window->viewing_area1,
 						XmNrightPosition,2,XmNbottomPosition,2,NULL);
 					/* un-grey orthographic view controls */
@@ -4223,7 +4313,6 @@ separated by 2 pixel borders within the viewing area.
 {
 #if defined (MOTIF)
 	Dimension old_viewing_height,old_viewing_width,shell_height,shell_width;
-	int pane_no;
 #endif /* defined (MOTIF) */
 	int return_code;
 
@@ -4240,17 +4329,14 @@ separated by 2 pixel borders within the viewing area.
 		XtVaGetValues(window->main_window,
 			XmNwidth,&shell_width,
 			XmNheight,&shell_height,NULL);
-		shell_width += (viewing_width-old_viewing_width);
-		shell_height += (viewing_height-old_viewing_height);
-		XtVaSetValues(window->window_shell,
-			XmNwidth,shell_width,
-			XmNheight,shell_height,NULL);
-		/*XtVaSetValues(window->viewing_form,
-			XmNheight,viewing_height,
-			XmNwidth,viewing_width,NULL);*/
-		for (pane_no=0;pane_no<window->number_of_scene_viewers;pane_no++)
+		if ((viewing_width != old_viewing_width) ||
+			(viewing_height != old_viewing_height))
 		{
-			Scene_viewer_set_border_width(window->scene_viewer_array[pane_no],1);
+			shell_width += (viewing_width-old_viewing_width);
+			shell_height += (viewing_height-old_viewing_height);
+			XtVaSetValues(window->window_shell,
+				XmNwidth,shell_width,
+				XmNheight,shell_height,NULL);
 		}
 #elif defined (GTK_USER_INTERFACE)
 #if GTK_MAJOR_VERSION >= 2
@@ -4432,7 +4518,6 @@ graphics window on screen.
 ==============================================================================*/
 {
 	int frame_width, frame_height, number_of_components, return_code;
-#if defined (DM_BUFFERS)
 	double bottom, fraction_across, fraction_down, left,
 		NDC_left, NDC_top, NDC_width, NDC_height,
 		original_NDC_left, original_NDC_top, original_NDC_width, original_NDC_height,
@@ -4445,7 +4530,7 @@ graphics window on screen.
 		pane_i, pane_j, pane_width, pane_height, panes_across, panes_down,
 		patch_width, patch_height,
 		tile_height, tile_width, tiles_across, tiles_down;
-	struct Dm_buffer *dmbuffer;
+	struct Graphics_buffer *offscreen_buffer;
 	struct Scene_viewer *scene_viewer;
 #if defined (SGI)
 /* The Octane can only handle 1024 */
@@ -4453,12 +4538,8 @@ graphics window on screen.
 #else
 #define PBUFFER_MAX (2048)
 #endif /* defined (SGI) */
-#endif /* defined (DM_BUFFERS) */
 
 	ENTER(Graphics_window_get_frame_pixels);
-#if !defined (DM_BUFFERS)
-	USE_PARAMETER(force_onscreen);
-#endif /* !defined (DM_BUFFERS) */
 	if (window && width && height)
 	{
 		if ((*width) && (*height))
@@ -4474,11 +4555,10 @@ graphics window on screen.
 			*width = frame_width;
 			*height = frame_height;
 		}
-#if defined (DM_BUFFERS)
 		/* If working offscreen try and allocate as large an area as possible */
 		if (!force_onscreen)
 		{
-			dmbuffer = (struct Dm_buffer *)NULL;
+			offscreen_buffer = (struct Graphics_buffer *)NULL;
 #define PANE_BORDER (2)
 			switch (window->layout_mode)
 			{
@@ -4543,9 +4623,9 @@ graphics window on screen.
 				fraction_down = (double)pane_height / (double)tile_height;
 				tiles_down = (int)ceil(fraction_down);
 			}
-			if (!(dmbuffer = CREATE(Dm_buffer)(tile_width, tile_height, 
-				/*depth_buffer_flag*/1, /*shared_display_buffer_flag*/1,
-				window->user_interface)))
+			if (!(offscreen_buffer = create_Graphics_buffer_offscreen_from_buffer(
+				  tile_width, tile_height, Scene_viewer_get_graphics_buffer(
+				  Graphics_window_get_Scene_viewer(window,/*pane*/0)))))
 			{
 				force_onscreen = 1;
 			}
@@ -4558,7 +4638,7 @@ graphics window on screen.
 				number_of_components * (frame_width) * (frame_height)))
 			{
 				return_code = 1;
-				Dm_buffer_glx_make_current(dmbuffer);
+				Graphics_buffer_make_current(offscreen_buffer);
 #if defined (OPENGL_API)
 				if (number_of_panes > 1)
 				{
@@ -4629,7 +4709,7 @@ graphics window on screen.
 							if (return_code)
 							{
 								/* Swap buffers if it is double buffered */
-								Dm_buffer_swap_buffers(dmbuffer);
+								Graphics_buffer_swap_buffers(offscreen_buffer);
 								if (i < tiles_across - 1)
 								{
 									patch_width = tile_width;
@@ -4677,11 +4757,10 @@ graphics window on screen.
 					"Graphics_window_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
-			DESTROY(Dm_buffer)(&dmbuffer);
+			DESTROY(Graphics_buffer)(&offscreen_buffer);
 		}
 		else
 		{
-#endif /* defined (DM_BUFFERS) */
 #if defined (MOTIF)
 			/* bring the graphics window to the front so image is not obscured */
 			XRaiseWindow(XtDisplay(window->window_shell),
@@ -4750,9 +4829,7 @@ graphics window on screen.
 					"Graphics_window_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
-#if defined (DM_BUFFERS)
 		}
-#endif /* defined (DM_BUFFERS) */
 	}
 	else
 	{

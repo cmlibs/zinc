@@ -229,27 +229,6 @@ Returns the application shell widget
 ==============================================================================*/
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 
-#if defined (OPENGL_API)
-int User_interface_set_specified_visual_id(struct User_interface *user_interface,
-	int specified_visual_id);
-/*******************************************************************************
-LAST MODIFIED : 5 March 2002
-
-DESCRIPTION :
-Sets a particular Open GL visual to be used by the graphics.
-==============================================================================*/
-#endif /* defined (OPENGL_API) */
-
-#if defined (OPENGL_API)
-int User_interface_get_specified_visual_id(struct User_interface *user_interface);
-/*******************************************************************************
-LAST MODIFIED : 5 March 2002
-
-DESCRIPTION :
-Returns the particular Open GL visual if set to be used by the graphics.
-==============================================================================*/
-#endif /* defined (OPENGL_API) */
-
 #if defined (MOTIF)
 XFontStruct *User_interface_get_normal_font(struct User_interface *user_interface);
 /*******************************************************************************
