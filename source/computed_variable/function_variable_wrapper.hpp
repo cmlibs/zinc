@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_wrapper.hpp
 //
-// LAST MODIFIED : 7 July 2004
+// LAST MODIFIED : 18 August 2004
 //
 // DESCRIPTION :
 // A variable that is a wrapper for another variable eg. the input/output
@@ -19,13 +19,16 @@ typedef boost::intrusive_ptr<Function_variable_wrapper>
 
 class Function_variable_wrapper : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 7 July 2004
+// LAST MODIFIED : 18 August 2004
 //
 // DESCRIPTION :
 // An identifier for another variable.
 //==============================================================================
 {
 	friend class Function_variable_iterator_representation_atomic_wrapper;
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		// constructors
 		Function_variable_wrapper(const Function_handle& wrapping_function,
@@ -35,6 +38,10 @@ class Function_variable_wrapper : public Function_variable
 	// inherited
 	public:
 		virtual Function_variable_handle clone() const;
+		virtual Function_variable_value_handle value();
+		virtual bool set_value(Function_handle value);
+		virtual bool rset_value(Function_handle value);
+		virtual Function_handle get_value();
 		virtual string_handle get_string_representation();
 		virtual Function_variable_iterator begin_atomic() const;
 		virtual Function_variable_iterator end_atomic() const;
@@ -43,17 +50,18 @@ class Function_variable_wrapper : public Function_variable
 		virtual std::reverse_iterator<Function_variable_iterator> rend_atomic()
 			const;
 		virtual Function_size_type number_differentiable();
+		virtual Function_variable_handle operator-(const Function_variable&) const;
 	// additional
 	public:
 		// get the wrapped variable
-		virtual Function_variable_handle get_wrapped();
+		virtual Function_variable_handle get_wrapped() const;
 	private:
 		virtual bool equality_atomic(const Function_variable_handle&) const;
 	protected:
 		// copy constructor
 		Function_variable_wrapper(const Function_variable_wrapper&);
 	protected:
-		Function_variable_handle wrapped_variable;
+		Function_variable_handle working_variable;
 };
 
 #endif /* !defined (__FUNCTION_VARIABLE_WRAPPER_HPP__) */
