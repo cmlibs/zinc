@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_finite_element.cpp
 //
-// LAST MODIFIED : 13 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 // Finite element types - element/xi and finite element field.
@@ -37,7 +37,7 @@ extern "C"
 
 class Variable_input_element_xi : public Variable_input
 //******************************************************************************
-// LAST MODIFIED : 10 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -103,36 +103,38 @@ class Variable_input_element_xi : public Variable_input
 			return (result);
 		};
 		virtual bool operator==(const Variable_input& input)
-		try
 		{
-			const Variable_input_element_xi& input_element_xi=
-				dynamic_cast<const Variable_input_element_xi&>(input);
-			bool result;
-
-			result=false;
-			if ((input_element_xi.variable_element_xi==variable_element_xi)&&
-				(input_element_xi.variable_finite_element==variable_finite_element)&&
-				(input_element_xi.element==element)&&(input_element_xi.xi==xi)&&
-				(input_element_xi.indices.size()==indices.size()))
+			try
 			{
-				int i=indices.size();
+				const Variable_input_element_xi& input_element_xi=
+					dynamic_cast<const Variable_input_element_xi&>(input);
+				bool result;
 
-				result=true;
-				while (result&&(i>0))
+				result=false;
+				if ((input_element_xi.variable_element_xi==variable_element_xi)&&
+					(input_element_xi.variable_finite_element==variable_finite_element)&&
+					(input_element_xi.element==element)&&(input_element_xi.xi==xi)&&
+					(input_element_xi.indices.size()==indices.size()))
 				{
-					i--;
-					if (!(indices[i]==input_element_xi.indices[i]))
+					int i=indices.size();
+
+					result=true;
+					while (result&&(i>0))
 					{
-						result=false;
+						i--;
+						if (!(indices[i]==input_element_xi.indices[i]))
+						{
+							result=false;
+						}
 					}
 				}
-			}
 
-			return (result);
-		}
-		catch (std::bad_cast)
-		{
-			return (false);
+				return (result);
+			}
+			catch (std::bad_cast)
+			{
+				return (false);
+			};
 		};
 	private:
 		bool element,xi;
@@ -280,7 +282,7 @@ the <node>.
 
 class Variable_input_nodal_values : public Variable_input
 //******************************************************************************
-// LAST MODIFIED : 13 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -370,20 +372,23 @@ class Variable_input_nodal_values : public Variable_input
 			return (result);
 		};
 		virtual bool operator==(const Variable_input& input)
-		try
 		{
-			const Variable_input_nodal_values& input_nodal_values=
-				dynamic_cast<const Variable_input_nodal_values&>(input);
+			try
+			{
+				const Variable_input_nodal_values& input_nodal_values=
+					dynamic_cast<const Variable_input_nodal_values&>(input);
 
-			return (
-				(input_nodal_values.variable_finite_element==variable_finite_element)&&
-				(input_nodal_values.value_type==value_type)&&
-				(input_nodal_values.version==version)&&
-				(input_nodal_values.node==node));
-		}
-		catch (std::bad_cast)
-		{
-			return (false);
+				return (
+					(input_nodal_values.variable_finite_element==
+					variable_finite_element)&&
+					(input_nodal_values.value_type==value_type)&&
+					(input_nodal_values.version==version)&&
+					(input_nodal_values.node==node));
+			}
+			catch (std::bad_cast)
+			{
+				return (false);
+			};
 		};
 	private:
 		enum FE_nodal_value_type value_type;

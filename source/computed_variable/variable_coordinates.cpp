@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_coordinates.cpp
 //
-// LAST MODIFIED : 21 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 // Implements variables which transform between coordinate systems.
@@ -33,7 +33,7 @@ template<class Assertion,class Exception>inline void Assert(
 class Variable_input_prolate_spheroidal_to_rectangular_cartesian :
 	public Variable_input
 //******************************************************************************
-// LAST MODIFIED : 20 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -73,24 +73,26 @@ class Variable_input_prolate_spheroidal_to_rectangular_cartesian :
 			return (result);
 		};
 		virtual bool operator==(const Variable_input& input)
-		try
 		{
-			const Variable_input_prolate_spheroidal_to_rectangular_cartesian&
-				input_prolate_spheroidal_to_rectangular_cartesian=dynamic_cast<
-				const Variable_input_prolate_spheroidal_to_rectangular_cartesian&>(
-				input);
+			try
+			{
+				const Variable_input_prolate_spheroidal_to_rectangular_cartesian&
+					input_prolate_spheroidal_to_rectangular_cartesian=dynamic_cast<
+					const Variable_input_prolate_spheroidal_to_rectangular_cartesian&>(
+					input);
 
-			return ((variable_prolate_spheroidal_to_rectangular_cartesian==
-				input_prolate_spheroidal_to_rectangular_cartesian.
-				variable_prolate_spheroidal_to_rectangular_cartesian)&&
-				(lambda==input_prolate_spheroidal_to_rectangular_cartesian.lambda)&&
-				(mu==input_prolate_spheroidal_to_rectangular_cartesian.mu)&&
-				(theta==input_prolate_spheroidal_to_rectangular_cartesian.theta)&&
-				(focus==input_prolate_spheroidal_to_rectangular_cartesian.focus));
-		}
-		catch (std::bad_cast)
-		{
-			return (false);
+				return ((variable_prolate_spheroidal_to_rectangular_cartesian==
+					input_prolate_spheroidal_to_rectangular_cartesian.
+					variable_prolate_spheroidal_to_rectangular_cartesian)&&
+					(lambda==input_prolate_spheroidal_to_rectangular_cartesian.lambda)&&
+					(mu==input_prolate_spheroidal_to_rectangular_cartesian.mu)&&
+					(theta==input_prolate_spheroidal_to_rectangular_cartesian.theta)&&
+					(focus==input_prolate_spheroidal_to_rectangular_cartesian.focus));
+			}
+			catch (std::bad_cast)
+			{
+				return (false);
+			};
 		};
 	private:
 		bool focus,lambda,mu,theta;
