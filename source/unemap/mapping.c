@@ -6249,7 +6249,7 @@ NULL if not successful.
 		/* allocate memory */
 		if (ALLOCATE(map,struct Map,1)&&ALLOCATE(map->frames,struct Map_frame,1))
 		{
-			/* assign fields */
+			/* assign fields */		
 			map->analysis_mode=analysis_mode;
 			map->first_eimaging_event=eimaging_event_list;
 			map->type=map_type;
@@ -6520,8 +6520,8 @@ Updates the colour map being used for map.
 			{
 				MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
 					(spectrum_copy,spectrum);	
-				/* must now remove the fix_minimum, fix_maximum from spectrum */					
-				Spectrum_clear_all_fixed_flags(spectrum_copy);					
+				/* must now remove the fix_minimum, fix_maximum from spectrum */ 
+				Spectrum_clear_all_fixed_flags(spectrum_copy);			
 				Spectrum_set_minimum_and_maximum(spectrum_copy,0.0,6.0);											
 			} 
 			for (i=0;i<=start_cell;i++)
@@ -7359,10 +7359,8 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 ==============================================================================*/
 {
 	int return_code;
-	struct Map_drawing_information *drawing_information;
 
 	ENTER(draw_map);
-	drawing_information=(struct Map_drawing_information *)NULL;
 	if (map)
 	{
 #if defined (UNEMAP_USE_3D) 
@@ -7376,28 +7374,25 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 			update_colour_map_unemap(map,drawing);		
 		}
 		else
-		{	
-			/* 2d map for 2d projection */		
-			drawing_information=map->drawing_information;
-			drawing_information->map_width=drawing->width;
-			drawing_information->map_height=drawing->height;				
-			drawing_information->x_offset=0;
-			drawing_information->y_offset=0;
-			return_code=draw_map_2d(map,recalculate,drawing);		
-#if defined (NEW_CODE)
+		{				
+#if (!defined (NEW_CODE))
+			/* 2d map for 2d projection */	
+			/* draw one full size map*/
+			return_code=draw_map_2d(map,recalculate,drawing,drawing->width,
+				drawing->height,0/*x_offset*/,0/*y_offset*/);
+#else
 			/*works, but needs tidying,extending before ready for the big time*/
 			{
 				float old_map_frame_start_time;
-				int num_maps,rows,cols,count,x_step,y_step,i,j;				
-				struct Electrical_imaging_event *event;
-				struct Map_drawing_information *drawing_information;
+				int num_maps,rows,cols,count,x_step,y_step,i,j,map_width,map_height,
+					map_x_offset,map_y_offset;				
+				struct Electrical_imaging_event *event;	
 				struct Signal *signal;
 				struct Signal_buffer *buffer;
 				int *times,*old_map_potential_time;
 				struct Rig *rig;
 				struct Device *device;			
-
-				drawing_information=map->drawing_information;
+		
 				if((event=*map->first_eimaging_event)&&
 					(ELECTRICAL_IMAGING==*map->analysis_mode)&&(*(map->type)==POTENTIAL))
 				{					
@@ -7408,10 +7403,10 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 					times=buffer->times;
 					get_number_of_maps_x_step_y_step_rows_cols(map,drawing,&num_maps,
 						&x_step,&y_step,&rows,&cols);	 
-					drawing_information->map_width=drawing->width/rows;
-					drawing_information->map_height=drawing->height/cols;				
-					drawing_information->x_offset=0;
-					drawing_information->y_offset=0;
+					map_width=drawing->width/rows;
+					map_height=drawing->height/cols;				
+					map_x_offset=0;
+					map_y_offset=0;
 					count=0;
 					i=1;
 					j=1;
@@ -7424,21 +7419,22 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 						map->potential_time=&event->time;					
 						map->frame_start_time=(int)((float)((times)[event->time])
 								*1000./buffer->frequency+0.5);
-						return_code=draw_map_2d(map,recalculate,drawing);
+						return_code=draw_map_2d(map,recalculate,drawing,map_width,map_height,
+							map_x_offset,map_y_offset);				
 						/* remove offset on the electrodes */
 						for(i=0;i<map->number_of_electrodes;i++)
 						{
-							map->electrode_x[i]-=drawing_information->x_offset;
-							map->electrode_y[i]-=drawing_information->y_offset;
+							map->electrode_x[i]-=map_x_offset;
+							map->electrode_y[i]-=map_y_offset;
 						}						
-						drawing_information->x_offset+=x_step;						
+						map_x_offset+=x_step;						
 						count++;
 						j++;
 						if(j>rows)
 						{
 							j=1;
-							drawing_information->x_offset=0;
-							drawing_information->y_offset+=y_step;
+							map_x_offset=0;
+							map_y_offset+=y_step;
 						}	
 						event=event->next;					
 					}	
@@ -7448,23 +7444,20 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 				}
 				else
 				{	
-					drawing_information->map_width=drawing->width;
-					drawing_information->map_height=drawing->height;				
-					drawing_information->x_offset=0;
-					drawing_information->y_offset=0;
-					return_code=draw_map_2d(map,recalculate,drawing);		
+					map_width=drawing->width;
+					map_height=drawing->height;				
+					map_x_offset=0;
+					map_y_offset=0;
+					return_code=draw_map_2d(map,recalculate,drawing,map_width,map_height,
+						map_x_offset,map_y_offset);		
 				}
-			}
-#endif /* NEW_CODE*/
+			}		
+#endif 
 		}	/*defined( UNEMAP_USE_3D) */
 #else
-		/* 2d map */
-		drawing_information=map->drawing_information;
-		drawing_information->map_width=drawing->width;
-		drawing_information->map_height=drawing->height;				
-		drawing_information->x_offset=0;
-		drawing_information->y_offset=0;
-		return_code=draw_map_2d(map,recalculate,drawing);
+		/* 2d map */	
+		return_code=draw_map_2d(map,recalculate,drawing,drawing->width,
+				drawing->height,0/*x_offset*/,0/*y_offset*/);
 #endif /*defined( UNEMAP_USE_3D) */	
 	}
 	else
@@ -7478,18 +7471,2913 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 	return (return_code);
 } /* draw_map  */
 
+static int confine_text_to_map(int *x_string,int *y_string,XCharStruct *bounds,
+	int ascent,int descent,int map_x_offset,int map_y_offset,int map_width,
+	int map_height)
+/*******************************************************************************
+LAST MODIFIED : 16 July 2001
+
+DESCRIPTION :
+Limits the string position given by <x_string> <y_string>, <bounds> <ascent>,
+<descent> to the map given by <map_x_offset> <map_y_offset> <map_width> 
+< map_height>
+*******************************************************************************/
+{	
+	int return_code;
+
+	ENTER(confine_text_to_map);
+	if(x_string&&y_string&&bounds)
+	{
+		return_code=1;
+		if (*x_string-(*bounds).lbearing<(0+map_x_offset))
+		{
+			*x_string=(*bounds).lbearing+map_x_offset;
+		}
+		else
+		{
+			if (*x_string+(*bounds).rbearing>(map_width+map_x_offset))
+			{
+				*x_string=(map_width+map_x_offset)-(*bounds).rbearing;
+			}
+		}
+		if (*y_string-ascent<(0+map_y_offset))
+		{
+			*y_string=ascent+map_y_offset;
+		}
+		else
+		{
+			if (*y_string+descent>(map_height+map_y_offset))
+			{
+				*y_string=(map_height+map_y_offset)-descent;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"confine_text_to_map. invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* confine_text_to_map */
+
+static int write_map_title(struct Map *map, int map_width,int map_height, 
+	int map_x_offset,int map_y_offset,struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED : 16 July 2001
+
+DESCRIPTION :
+Write the title,using the map->potential_time
+*******************************************************************************/
+{
+	char title[12];
+	float title_x,title_y,title_value;
+	int ascent,descent,direction,return_code,title_length,x_string,y_string;
+	struct Map_drawing_information *drawing_information;
+	struct Signal_buffer *buffer;
+	struct Signal *signal;
+	struct Device *device;
+	Display *display;
+	XCharStruct bounds;
+	XFontStruct *font;
+
+	ENTER(write_map_title);	
+	buffer=(struct Signal_buffer *)NULL;
+	signal=(struct Signal *)NULL;
+	device=(struct Device *)NULL;
+	font=(XFontStruct *)NULL;
+	drawing_information=(struct Map_drawing_information *)NULL;
+	display=(Display *)NULL;
+	if(drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+		&&map&&(map->electrodes)&&(device=*map->electrodes)&&(signal=device->signal)&&
+		(buffer=signal->buffer)&&(drawing_information=map->drawing_information))
+	{
+		return_code=1;
+		font=drawing_information->font;
+		/* write the title,using the map->potential_time */							
+		title_x=map_width/2+map_x_offset;
+		title_y=0;
+		title_value=(float)((buffer->times)[*map->potential_time])*1000./
+			(buffer->frequency);
+		sprintf(title,"%.4g",title_value);
+		title_length=strlen(title);
+		XTextExtents(font,title,title_length,&direction,&ascent,&descent,
+			&bounds);
+		x_string= (title_x)+(bounds.lbearing-bounds.rbearing+1)/2;
+		y_string= (title_y)-descent-1;
+		confine_text_to_map(&x_string,&y_string,&bounds,ascent,descent,map_x_offset,
+			map_y_offset,map_width,map_height);
+		XPSDrawString(display,drawing->pixel_map,
+			(drawing_information->graphics_context).
+			highlighted_colour,
+#if defined (NO_ALIGNMENT)
+			x_string,y_string,title,title_length);
+#else
+		(title_x),(title_y),name,title_length);
+#endif 
+  }
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"write_map_title invalid arguments");
+		return_code=0;
+	}
+  LEAVE;
+	return(return_code);
+}/* write_map_title */
+
+static int set_electrode_2d_name_and_colour(struct Map *map,struct Drawing_2d *drawing,
+  GC *graphics_context,struct Device *electrode,char *name,float electrode_value,
+  char *electrode_drawn,float range_f)
+/*******************************************************************************
+LAST MODIFIED : 16 July 2001
+
+DESCRIPTION :  Set the colour (in <graphics_context>) and <name> of the electrode.
+Name must already have been allocated. It's only a short string, so pass it
+a static string of length 11.
+*******************************************************************************/
+{
+  enum Map_type map_type;
+  float f_value,max_f,min_f;
+  int number_of_spectrum_colours,return_code;
+  Display *display;
+  Pixel *spectrum_pixels;
+  struct Map_drawing_information *drawing_information;
+	
+  ENTER(set_electrode_2d_name_and_colour);
+  spectrum_pixels=(Pixel *)NULL;
+  if(map&&(drawing_information=map->drawing_information)&&graphics_context&&
+	  electrode&&electrode_drawn&&(display=drawing->user_interface->display))
+  {
+    return_code=1;
+    number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
+    spectrum_pixels=drawing_information->spectrum_colours;
+		min_f=map->minimum_value;
+		max_f=map->maximum_value;
+		if (map->type)
+		{
+			map_type= *(map->type);
+		}
+		else
+		{
+			map_type=NO_MAP_FIELD;
+		}		
+		switch (map->electrodes_option)
+		{								
+			case HIDE_ELECTRODES:									
+			{
+				if (electrode->highlight)
+				{
+					*graphics_context=(drawing_information->graphics_context).
+						highlighted_colour;
+				}
+				else
+				{
+					*graphics_context=(drawing_information->graphics_context).
+						unhighlighted_colour;
+				};
+			}break;										
+			case SHOW_ELECTRODE_NAMES:
+			case SHOW_CHANNEL_NUMBERS:
+			{	
+				/* they're not now always drawn */
+				if (SHOW_ELECTRODE_NAMES==map->electrodes_option)
+				{
+					sprintf(name,"%s",electrode->description->name);			
+				}
+				else
+				{
+					sprintf(name,"%d",electrode->channel->number);
+				}
+			} break;								
+			case SHOW_ELECTRODE_VALUES:
+			{											
+				f_value= electrode_value;
+				/* if not animation */
+				if (map->activation_front<0)
+				{
+					if (NO_MAP_FIELD==map_type)
+					{
+						name=(char *)NULL;
+					}
+					else
+					{
+						sprintf(name,"%.4g",f_value);						
+					}
+				}
+			}break;								
+			default:
+			{
+				*electrode_drawn=0;
+				name=(char *)NULL;
+			} break;
+		} /* switch (map->electrodes_option) */
+		/* colour with data values*/
+		if (map->colour_electrodes_with_signal)
+		{
+			/* electrode_drawn and electrode_value already calculated */
+			f_value= electrode_value;
+			switch (map_type)
+			{
+				case MULTIPLE_ACTIVATION:
+				{
+					if ((f_value<min_f)||(f_value>max_f))
+					{
+						*electrode_drawn=0;
+					}
+				} break;
+			}
+			if (*electrode_drawn)
+			{
+				/* if not animation */
+				if (map->activation_front<0)
+				{
+					if (electrode->highlight)
+					{
+						*graphics_context=(drawing_information->graphics_context).
+						highlighted_colour;
+					}
+					else
+					{
+						if ((HIDE_COLOUR==map->colour_option)&&
+							(SHOW_CONTOURS==map->contours_option))
+						{
+							*graphics_context=(drawing_information->graphics_context).
+								unhighlighted_colour;
+						}
+						else
+						{
+							*graphics_context=(drawing_information->graphics_context).spectrum;
+							if (f_value<=min_f)
+							{
+								XSetForeground(display,*graphics_context,spectrum_pixels[0]);
+							}
+							else
+							{
+								if (f_value>=max_f)
+								{
+									XSetForeground(display,*graphics_context,spectrum_pixels
+										[number_of_spectrum_colours-1]);
+								}
+								else
+								{
+									XSetForeground(display,*graphics_context,spectrum_pixels[(int)
+										((f_value-min_f)*(float)(number_of_spectrum_colours-1)/
+										range_f)]);
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					name=(char *)NULL;
+					*graphics_context=(drawing_information->graphics_context).spectrum;
+					if (f_value<=min_f)
+					{
+						XSetForeground(display,*graphics_context,spectrum_pixels[0]);
+					}
+					else
+					{
+						if (f_value>=max_f)
+						{
+							XSetForeground(display,*graphics_context,spectrum_pixels
+							[number_of_spectrum_colours-1]);
+						}
+						else
+						{
+							XSetForeground(display,*graphics_context,spectrum_pixels[(int)
+								((f_value-min_f)*(float)(number_of_spectrum_colours-1)/range_f)]);
+						}
+					}
+				}
+			}
+		} /* if (map->colour_electrodes_with_signal) */
+		else
+		{												
+			if (electrode->highlight)
+			{
+				*graphics_context=(drawing_information->graphics_context).highlighted_colour;
+			}
+			else
+			{
+				*graphics_context=(drawing_information->graphics_context).unhighlighted_colour;
+			}
+		}
+	}
+	else
+  {
+    display_message(ERROR_MESSAGE,"set_electrode_2d_name_and_colour");
+    return_code=0;
+  }
+	LEAVE;
+	return(return_code);
+}/* set_electrode_2d_name_and_colour */
+
+static int draw_2d_electrode(struct Map *map,struct Drawing_2d *drawing,int screen_x,
+  int screen_y,GC *graphics_context,char *name,struct Device *electrode,
+  int map_x_offset,int map_y_offset,int map_width,int map_height)
+/*******************************************************************************
+LAST MODIFIED : 16 July 2001
+
+DESCRIPTION :  Draw the electrode in 2D, and write it's name.
+*******************************************************************************/
+{
+  Display *display;
+  enum Electrodes_marker_type electrodes_marker_type;
+  int ascent,descent,direction,marker_size,name_length,return_code,x_string,
+		y_string;
+  struct Map_drawing_information *drawing_information;
+  XFontStruct *font;
+	XCharStruct bounds;
+
+  ENTER(draw_2d_electrode);
+  display=(Display *)NULL;
+  drawing_information=(struct Map_drawing_information *)NULL;
+  if(drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+		 &&(drawing->pixel_map)&&electrode&&(drawing_information=map->drawing_information))
+  { 
+		return_code=1;
+		font=drawing_information->font;	
+		electrodes_marker_type=map->electrodes_marker_type;
+    marker_size=map->electrodes_marker_size;
+	  if (marker_size<1)
+    {
+	    marker_size=1;
+    }									
+	  switch (electrodes_marker_type)
+		{
+			case CIRCLE_ELECTRODE_MARKER:
+			{
+				/* draw circle */
+				XPSFillArc(display,drawing->pixel_map,*graphics_context,
+					screen_x-marker_size,screen_y-marker_size,
+					2*marker_size+1,2*marker_size+1,(int)0,(int)(360*64));
+			} break;
+			case PLUS_ELECTRODE_MARKER:
+			{
+				/* draw plus */
+				XPSDrawLine(display,drawing->pixel_map,*graphics_context,
+					screen_x-marker_size,screen_y,screen_x+marker_size,
+					screen_y);
+				XPSDrawLine(display,drawing->pixel_map,*graphics_context,
+					screen_x,screen_y-marker_size,screen_x,
+					screen_y+marker_size);
+			} break;
+			case SQUARE_ELECTRODE_MARKER:
+			{
+				/* draw square */
+				XPSFillRectangle(display,drawing->pixel_map,
+					*graphics_context,screen_x-marker_size,
+					screen_y-marker_size,2*marker_size+1,2*marker_size+1);
+			} break;		
+			case HIDE_ELECTRODE_MARKER:
+			{
+				/* do nothing */
+				;
+			} break;											
+		}
+		if (name)
+		{
+			/* write name */
+			name_length=strlen(name);
+#if defined (NO_ALIGNMENT)
+			XTextExtents(font,name,name_length,&direction,&ascent,
+				&descent,&bounds);
+			x_string= (screen_x)+(bounds.lbearing-bounds.rbearing+1)/2;
+			y_string= (screen_y)-descent-1;
+			/* make sure that the string doesn't extend outside the
+				 window */
+			confine_text_to_map(&x_string,&y_string,&bounds,ascent,
+				descent,map_x_offset,map_y_offset,map_width,map_height);
+#endif
+			if (electrode->highlight)
+			{
+				XPSDrawString(display,drawing->pixel_map,
+					(drawing_information->graphics_context).
+					highlighted_colour,
+#if defined (NO_ALIGNMENT)
+					x_string,y_string,name,name_length);
+#else
+				(screen_x),(screen_y)-marker_size,name,name_length);
+#endif
+		  }
+		  else
+			{
+				XPSDrawString(display,drawing->pixel_map,
+					(drawing_information->graphics_context).
+					node_marker_colour,
+#if defined (NO_ALIGNMENT)
+					x_string,y_string,name,name_length);
+#else
+				(screen_x),(screen_y)-marker_size,name,name_length);
+#endif
+	    }								
+    }
+  }
+  else
+  {	
+    display_message(ERROR_MESSAGE,"draw_2d_electrode invalid arguments");
+    return_code=0;
+  }
+  LEAVE;
+  return(return_code);
+}/* draw_2d_electrode */
+
+static int draw_2d_extrema(struct Map *map,struct Drawing_2d *drawing,
+  int map_x_offset,int map_y_offset,int map_width,int map_height,
+  int *draw_region_number)
+/*******************************************************************************
+LAST MODIFIED : 16 July 2001
+
+DESCRIPTION :
+draw the extrema
+*******************************************************************************/
+{
+  Display *display;
+  char *name,value_string[11];  
+  GC graphics_context;
+  int ascent,descent,frame_number,direction,name_length,
+		number_of_frames,number_of_regions,region_number,return_code,temp_region_number,
+		x_string,y_string;
+  struct Map_drawing_information *drawing_information;
+  struct Map_frame *frame=(struct Map_frame *)NULL;
+  struct Region *current_region;
+  struct Region_list_item *region_item;
+  struct Rig *rig;
+  XFontStruct *font;
+	XCharStruct bounds;
+
+  ENTER(draw_2d_extrema);
+  name=(char *)NULL;
+  display=(Display *)NULL;
+  region_item=(struct Region_list_item *)NULL;
+  drawing_information=(struct Map_drawing_information *)NULL;
+  if(map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
+		 &&(rig=*(map->rig_pointer))&&draw_region_number)
+  {
+   font=drawing_information->font;	
+   number_of_regions=rig->number_of_regions;
+   if ((0<(number_of_frames=map->number_of_frames))&&
+	  (0<=(frame_number=map->frame_number))&&
+	  (frame_number<number_of_frames)&&(frame=map->frames))
+   {
+     return_code=1;
+		 frame += frame_number;
+		 /* set the colour for the extrema */
+		 graphics_context=(drawing_information->graphics_context).spectrum,
+		 XSetForeground(display,graphics_context,drawing_information->landmark_colour);
+		 region_item=get_Rig_region_list(rig);
+		 for (temp_region_number=0;temp_region_number<number_of_regions;
+			 temp_region_number++)
+		 {
+			 region_number=draw_region_number[temp_region_number];
+			 if (0<=region_number)
+			 {
+				 current_region=get_Region_list_item_region(region_item);
+				 if (frame->maximum_region==current_region)
+				 {
+					 /* draw plus */
+					 XPSFillRectangle(display,drawing->pixel_map,graphics_context,
+						 (frame->maximum_x-5)+map_x_offset,(frame->maximum_y-1)+map_y_offset,
+						 11,3);
+					 XPSFillRectangle(display,drawing->pixel_map,graphics_context,
+						 (frame->maximum_x-1)+map_x_offset,(frame->maximum_y-5)+map_y_offset,
+						 3,11);
+					 /* if not animation */
+					 if (map->activation_front<0)
+					 {
+						 /* write value */
+						 sprintf(value_string,"%.4g",frame->maximum);
+						 name=value_string;
+						 name_length=strlen(value_string);
+						 x_string=frame->maximum_x;
+#if defined (NO_ALIGNMENT)
+						 XTextExtents(font,name,name_length,&direction,&ascent,&descent,&bounds);
+						 x_string += (bounds.lbearing-bounds.rbearing+1)/2+map_x_offset;
+#else /* defined (NO_ALIGNMENT) */
+						 SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+						 if ((frame->maximum_y+map_y_offset)>(map_height/2 +map_y_offset))
+						 {
+							 y_string=frame->maximum_y-6 +map_y_offset;
+#if defined (NO_ALIGNMENT)
+							 y_string -= descent+1;
+#else /* defined (NO_ALIGNMENT) */
+							 SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+						 }
+						 else
+						 {
+							 y_string=frame->maximum_y+6 +map_y_offset;
+#if defined (NO_ALIGNMENT)
+							 y_string += ascent+1;
+#else /* defined (NO_ALIGNMENT) */
+							 SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+						 }
+#if defined (NO_ALIGNMENT)
+/* make sure that the string doesn't extend outside the
+	 window */
+						 confine_text_to_map(&x_string,&y_string,&bounds,ascent,
+							 descent,map_x_offset,map_y_offset,map_width,map_height);
+#endif /* defined (NO_ALIGNMENT) */
+						 XPSDrawString(display,drawing->pixel_map,graphics_context,x_string,
+							 y_string,name,name_length);
+					 }
+				 }
+				 if (frame->minimum_region==current_region)
+				 {
+					 /* draw minus */
+					 XPSFillRectangle(display,drawing->pixel_map,graphics_context,
+						 (frame->minimum_x-5)+map_x_offset,(frame->minimum_y-1)+map_y_offset,
+						 11,3);
+					 /* if not animation */
+					 if (map->activation_front<0)
+					 {
+						 /* write value */
+						 sprintf(value_string,"%.4g",frame->minimum);
+						 name=value_string;
+						 name_length=strlen(value_string);
+						 x_string=frame->minimum_x;
+#if defined (NO_ALIGNMENT)
+						 XTextExtents(font,name,name_length,&direction,&ascent,&descent,
+							 &bounds);
+						 x_string += (bounds.lbearing-bounds.rbearing+1)/2+map_x_offset;
+#else /* defined (NO_ALIGNMENT) */
+						 SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+						 if (frame->minimum_y+map_y_offset>map_height/2+map_y_offset)
+						 {
+							 y_string=frame->minimum_y-6 +map_y_offset;
+#if defined (NO_ALIGNMENT)
+							 y_string -= descent+1;
+#else /* defined (NO_ALIGNMENT) */
+							 SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+						 }
+						 else
+						 {
+							 y_string=frame->minimum_y+6 +map_y_offset;
+#if defined (NO_ALIGNMENT)
+							 y_string += ascent+1;
+#else /* defined (NO_ALIGNMENT) */
+							 SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+						 }
+#if defined (NO_ALIGNMENT)
+						 /* make sure that the string doesn't extend outside the window */
+						 confine_text_to_map(&x_string,&y_string,&bounds,ascent,
+							 descent,map_x_offset,map_y_offset,map_width,map_height);
+#endif /* defined (NO_ALIGNMENT) */
+						 XPSDrawString(display,drawing->pixel_map,graphics_context,x_string,
+							 y_string,name,name_length);
+					 }
+				 }
+			 }
+			 region_item=get_Region_list_item_next(region_item);
+		 }
+	 }
+	 else
+	 {
+		 display_message(ERROR_MESSAGE,"draw_map_extrema.  Invalid frames");
+	 }
+	}
+  else
+  {	
+    display_message(ERROR_MESSAGE,"draw_2d_extrema invalid arguments");
+    return_code=0;
+  }
+  LEAVE;
+  return(return_code);
+}/* draw_2d_extrema */
+
+static int draw_2d_landmarks(struct Map *map,struct Drawing_2d *drawing,
+	int map_x_offset, int map_y_offset,int *draw_region_number,int *start_x,
+	int *start_y,float *max_x,float *max_y,float *min_x,float *min_y,
+	float *stretch_x,float *stretch_y)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2001
+
+DESCRIPTION :
+draw the landmarks
+*******************************************************************************/
+{
+  Display *display;
+  GC graphics_context;
+	float lambda,*landmark_point,mu,theta,x_screen,y_screen;
+  int i,number_of_regions,region_number,return_code,temp_region_number,x_pixel,
+		y_pixel;
+  struct Map_drawing_information *drawing_information;
+  struct Region *current_region;
+  struct Region_list_item *region_item;
+  struct Rig *rig; 
+
+  ENTER(draw_2d_landmarks);
+  display=(Display *)NULL;	
+	landmark_point=(float *)NULL;
+  region_item=(struct Region_list_item *)NULL;
+  drawing_information=(struct Map_drawing_information *)NULL;
+  if(map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
+		 &&(rig=*(map->rig_pointer))&&draw_region_number&&start_x&&start_y&&min_x&&min_y&&
+		 stretch_x&&stretch_y&&max_x&&max_y)
+  {	
+		return_code=1;
+		number_of_regions=rig->number_of_regions;
+		/* set the colour for the landmarks */
+		graphics_context=(drawing_information->graphics_context).spectrum,
+			XSetForeground(display,graphics_context,
+				drawing_information->landmark_colour);
+		region_item=get_Rig_region_list(rig);
+		for (temp_region_number=0;temp_region_number<number_of_regions;
+				 temp_region_number++)
+		{
+			region_number=draw_region_number[temp_region_number];
+			if (0<=region_number)
+			{
+				current_region=get_Region_list_item_region(region_item);
+				switch (current_region->type)
+				{
+					case SOCK:
+					{
+						landmark_point=landmark_points;
+						for (i=NUMBER_OF_LANDMARK_POINTS;i>0;i--)
+						{
+							cartesian_to_prolate_spheroidal(landmark_point[0],
+								landmark_point[1],landmark_point[2],LANDMARK_FOCUS,
+								&lambda,&mu,&theta,(float *)NULL);
+							switch (map->projection_type)
+							{
+								case HAMMER_PROJECTION:
+								{
+									Hammer_projection(mu,theta,&x_screen,&y_screen,
+										(float *)NULL);
+								} break;
+								case POLAR_PROJECTION:
+								{
+									polar_projection(mu,theta,&x_screen,&y_screen,
+										(float *)NULL);
+								} break;
+							}
+							x_pixel=start_x[region_number]+
+								(int)((x_screen-min_x[region_number])*
+									stretch_x[region_number]);
+							y_pixel=start_y[region_number]-
+								(int)((y_screen-min_y[region_number])*
+									stretch_y[region_number]);
+							/* draw asterisk */
+							XPSDrawLine(display,drawing->pixel_map,graphics_context,
+								x_pixel-2+map_x_offset,y_pixel+map_y_offset,
+								x_pixel+2+map_x_offset,y_pixel+map_y_offset);
+							XPSDrawLine(display,drawing->pixel_map,graphics_context,
+								x_pixel+map_x_offset,y_pixel-2+map_y_offset,
+								x_pixel+map_x_offset,y_pixel+2+map_y_offset);
+							XPSDrawLine(display,drawing->pixel_map,graphics_context,
+								x_pixel-2+map_x_offset,y_pixel-2+map_y_offset,
+								x_pixel+map_x_offset+2,y_pixel+2+map_y_offset);
+							XPSDrawLine(display,drawing->pixel_map,graphics_context,
+								x_pixel+2+map_x_offset,y_pixel+2+map_y_offset,
+								x_pixel+map_x_offset-2,y_pixel-2+map_y_offset);
+							landmark_point += 3;
+						}
+					} break;
+					case TORSO:
+					{
+						/* draw boundary between front and back */
+						x_pixel=start_x[region_number]+
+							(int)((max_x[region_number]-min_x[region_number])*0.5*
+								stretch_x[region_number]);
+						XPSDrawLine(display,drawing->pixel_map,graphics_context,
+							x_pixel+map_x_offset,
+							start_y[region_number]+map_y_offset,
+							x_pixel+map_x_offset,
+							start_y[region_number]-(int)((max_y[region_number]-
+								min_y[region_number])*stretch_y[region_number])+map_y_offset);
+						x_pixel=start_x[region_number];
+						XPSDrawLine(display,drawing->pixel_map,graphics_context,
+							x_pixel+map_x_offset,
+							start_y[region_number]+map_y_offset,
+							x_pixel+map_x_offset,
+							start_y[region_number]-(int)((max_y[region_number]-
+								min_y[region_number])*stretch_y[region_number])+map_y_offset);
+						/* draw shoulders */
+						y_pixel=start_y[region_number]-
+							(int)((max_y[region_number]-min_y[region_number])*
+								stretch_y[region_number]);
+						XPSDrawLine(display,drawing->pixel_map,graphics_context,
+							start_x[region_number]+map_x_offset,
+							y_pixel+map_y_offset,
+							start_x[region_number]+(int)((max_x[region_number]-
+								min_x[region_number])*0.1875*stretch_x[region_number])+map_x_offset,
+							y_pixel-5+map_y_offset);
+						XPSDrawLine(display,drawing->pixel_map,graphics_context,
+							start_x[region_number]+(int)((max_x[region_number]-
+								min_x[region_number])*0.5*stretch_x[region_number])+map_x_offset,
+							y_pixel+map_y_offset,
+							start_x[region_number]+(int)((max_x[region_number]-
+								min_x[region_number])*0.3125*stretch_x[region_number])+map_x_offset,
+							y_pixel-5+map_y_offset);
+					} break;
+				}
+			}
+			region_item=get_Region_list_item_next(region_item);
+		}
+	}
+  else
+  {	
+    display_message(ERROR_MESSAGE,"draw_2d_landmarks invalid arguments");
+    return_code=0;
+  }
+  LEAVE;
+  return(return_code);
+}/* draw_2d_landmarks */
+
+static int draw_2d_fibres(struct Map *map,struct Drawing_2d *drawing,
+	int map_x_offset,int map_y_offset,int *draw_region_number,int *start_x,
+	int *start_y,float *min_x,float *min_y,float *stretch_x,
+	float *stretch_y,int number_of_rows,int number_of_columns,int map_width,
+	int map_height,int screen_region_width, int screen_region_height)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2001
+
+DESCRIPTION :
+Draw the fibres
+*******************************************************************************/
+{
+	char valid_mu_and_theta;
+  Display *display;
+  GC graphics_context;
+	float a,b,c,cos_mu_hat,cos_theta_hat,d,det,dxdmu,dxdtheta,dydmu,dydtheta,
+		error_mu,error_theta,fibre_angle,fibre_angle_1,fibre_angle_2,fibre_angle_3,
+		fibre_angle_4,fibre_x,fibre_y,fibre_length,mu,mu_1,mu_2,mu_3,mu_4,pi,
+		pi_over_2,sin_mu_hat,sin_theta_hat,theta,theta_1,theta_2,theta_3,theta_4,
+		two_pi,xi_1,xi_2,x_screen,x_screen_left,x_screen_step,y_screen,y_screen_top,
+		y_screen_step;
+  int fibre_iteration,fibre_spacing,i,j,k,l,number_of_regions,pixel_left,
+		pixel_top,region_number,return_code,
+		temp_region_number,x_pixel,y_pixel;	
+	struct Fibre_node *local_fibre_node_1,*local_fibre_node_2,*local_fibre_node_3,
+		*local_fibre_node_4;
+  struct Map_drawing_information *drawing_information;
+  struct Region *current_region;
+  struct Region_list_item *region_item;
+  struct Rig *rig; 
+
+  ENTER(draw_2d_fibres);
+	local_fibre_node_1=(struct Fibre_node *)NULL;
+	local_fibre_node_2=(struct Fibre_node *)NULL;
+	local_fibre_node_3=(struct Fibre_node *)NULL;
+	local_fibre_node_4=(struct Fibre_node *)NULL;	
+  display=(Display *)NULL;	
+  region_item=(struct Region_list_item *)NULL;
+  drawing_information=(struct Map_drawing_information *)NULL;
+  if(map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
+		 &&(rig=*(map->rig_pointer))&&draw_region_number&&start_x&&start_y&&min_x&&min_y&&
+		 stretch_x&&stretch_y)
+  {	
+		pi_over_2=2*atan(1);
+		pi=2*pi_over_2;
+		two_pi=2*pi;
+		number_of_regions=rig->number_of_regions;
+		return_code=1;
+		/* set the colour for the fibres */
+		graphics_context=(drawing_information->graphics_context).spectrum,
+			XSetForeground(display,graphics_context,
+				drawing_information->fibre_colour);
+		/* determine the fibre spacing */
+		switch (map->fibres_option)
+		{
+			case SHOW_FIBRES_FINE:
+			{
+				fibre_spacing=10;
+			} break;
+			case SHOW_FIBRES_MEDIUM:
+			{
+				fibre_spacing=20;
+			} break;
+			case SHOW_FIBRES_COARSE:
+			{
+				fibre_spacing=30;
+			} break;
+		}
+		/* for each region */
+		region_item=get_Rig_region_list(rig);
+		for (temp_region_number=0;temp_region_number<number_of_regions;
+				 temp_region_number++)
+		{
+			region_number=draw_region_number[temp_region_number];
+			if (0<=region_number)
+			{
+				current_region=get_Region_list_item_region(region_item);
+				if ((SOCK==current_region->type)&&
+					(0!=stretch_x[region_number])&&
+					(0!=stretch_y[region_number]))
+				{
+					/* draw fibres */
+					pixel_left=((region_number/number_of_rows)*
+						map_width)/number_of_columns+fibre_spacing/2;
+					pixel_top=((region_number%number_of_rows)*
+						map_height)/number_of_rows+fibre_spacing/2;
+					x_screen_step=(float)fibre_spacing/stretch_x[region_number];
+					y_screen_step=
+						-(float)fibre_spacing/stretch_y[region_number];
+					x_screen_left=min_x[region_number]+
+						(pixel_left-start_x[region_number])/
+						stretch_x[region_number];
+					y_screen_top=min_y[region_number]-
+						(pixel_top-start_y[region_number])/
+						stretch_y[region_number];
+					y_screen=y_screen_top;
+					y_pixel=pixel_top;
+					for (j=screen_region_height/fibre_spacing;j>0;j--)
+					{
+						x_screen=x_screen_left;
+						x_pixel=pixel_left;
+						for (i=screen_region_width/fibre_spacing;i>0;i--)
+						{
+							/* calculate the element coordinates and the Jacobian
+								 for the transformation from element coordinates to
+								 physical coordinates */
+							switch (map->projection_type)
+							{
+								case HAMMER_PROJECTION:
+								{
+									/*???avoid singularity ? */
+									if ((x_screen!=0)||
+										((y_screen!=1)&&(y_screen!= -1)))
+									{
+										a=x_screen*x_screen;
+										b=y_screen*y_screen;
+										c=2-a-b;
+										if (c>1)
+										{
+											sin_mu_hat=y_screen*sqrt(c);
+											if (sin_mu_hat>=1)
+											{
+												mu=pi;
+												sin_mu_hat=1;
+												cos_mu_hat=0;
+											}
+											else
+											{
+												if (sin_mu_hat<= -1)
+												{
+													mu=0;
+													sin_mu_hat= -1;
+													cos_mu_hat=0;
+												}
+												else
+												{
+													mu=pi_over_2+asin(sin_mu_hat);
+													cos_mu_hat=sqrt(1-sin_mu_hat*sin_mu_hat);
+												}
+											}
+											sin_theta_hat=sqrt((a*c)/(1-b*c));
+											if (x_screen>0)
+											{
+												if (sin_theta_hat>=1)
+												{
+													theta=0;
+													sin_theta_hat= -1;
+													cos_theta_hat=0;
+												}
+												else
+												{
+													theta=pi-2*asin(sin_theta_hat);
+													cos_theta_hat=
+														sqrt(1-sin_theta_hat*sin_theta_hat);
+													sin_theta_hat= -sin_theta_hat;
+												}
+											}
+											else
+											{
+												if (sin_theta_hat>=1)
+												{
+													theta=two_pi;
+													sin_theta_hat=1;
+													cos_theta_hat=0;
+												}
+												else
+												{
+													theta=pi+2*asin(sin_theta_hat);
+													cos_theta_hat=
+														sqrt(1-sin_theta_hat*sin_theta_hat);
+												}
+											}
+											a=cos_theta_hat*cos_mu_hat;
+											b=1/(1+a);
+											a += 2;
+											b /= sqrt(b)*2;
+											dxdmu=a*b*sin_mu_hat*sin_theta_hat;
+											dydmu=b*(cos_theta_hat+a*cos_mu_hat);
+											b /= 2;
+											dxdtheta=
+												-b*cos_mu_hat*(cos_mu_hat+a*cos_theta_hat);
+											dydtheta= b*sin_theta_hat*sin_mu_hat*cos_mu_hat;
+											valid_mu_and_theta=1;
+										}
+										else
+										{
+											valid_mu_and_theta=0;
+										}
+									}
+									else
+									{
+										valid_mu_and_theta=0;
+									}
+								} break;
+								case POLAR_PROJECTION:
+								{
+									mu=sqrt(x_screen*x_screen+
+										y_screen*y_screen);
+									if (mu>0)
+									{
+										if (x_screen>0)
+										{
+											if (y_screen>0)
+											{
+												theta=asin(y_screen/mu);
+											}
+											else
+											{
+												theta=two_pi+asin(y_screen/mu);
+											}
+										}
+										else
+										{
+											theta=pi-asin(y_screen/mu);
+										}
+										dxdtheta= -y_screen;
+										dxdmu=x_screen/mu;
+										dydtheta=x_screen;
+										dydmu=y_screen/mu;
+									}
+									else
+									{
+										theta=0;
+										dxdtheta=0;
+										dxdmu=0;
+										dydtheta=0;
+										dydmu=0;
+									}
+									valid_mu_and_theta=1;
+								} break;
+								default:
+								{
+									valid_mu_and_theta=0;
+								} break;
+							}
+							if (valid_mu_and_theta)
+							{
+								/* calculate the angle between the fibre direction and
+									 the positive theta direction */
+								/*???DB.  Eventually this will form part of the
+									"cardiac database" */
+								/* the fibre direction has been fitted with a
+									 bilinear*/
+								/* determine which element the point is in */							
+								local_fibre_node_1=global_fibre_nodes+
+									(NUMBER_OF_FIBRE_COLUMNS-1);
+								local_fibre_node_2=global_fibre_nodes;
+								local_fibre_node_3=local_fibre_node_1+
+									NUMBER_OF_FIBRE_COLUMNS;
+								local_fibre_node_4=local_fibre_node_2+
+									NUMBER_OF_FIBRE_COLUMNS;
+								k=NUMBER_OF_FIBRE_ROWS;
+								xi_1= -1;
+								xi_2= -1;
+								while ((k>0)&&
+									((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1)))
+								{
+									l=NUMBER_OF_FIBRE_COLUMNS;
+									while ((l>0)&&
+										((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1)))
+									{
+										/* calculate the element coordinates */
+										/*???DB.  Is there a better way of doing this ? */
+										mu_1=local_fibre_node_1->mu;
+										mu_2=local_fibre_node_2->mu;
+										mu_3=local_fibre_node_3->mu;
+										mu_4=local_fibre_node_4->mu;
+										if (((mu_1<mu)||(mu_2<mu)||(mu_3<mu)||(mu_4<mu))&&
+											((mu_1>mu)||(mu_2>mu)||(mu_3>mu)||(mu_4>mu)))
+										{
+											theta_1=local_fibre_node_1->theta;
+											theta_2=local_fibre_node_2->theta;
+											theta_3=local_fibre_node_3->theta;
+											theta_4=local_fibre_node_4->theta;
+																/* make sure that theta is increasing in xi1 */
+											if (theta_1>theta_2)
+											{
+												if (theta>theta_1)
+												{
+													theta_2 += two_pi;
+												}
+												else
+												{
+													theta_1 -= two_pi;
+												}
+											}
+											if (theta_3>theta_4)
+											{
+												if (theta>theta_3)
+												{
+													theta_4 += two_pi;
+												}
+												else
+												{
+													theta_3 -= two_pi;
+												}
+											}
+											if (theta_1+pi<theta_3)
+											{
+												if (theta>theta_3)
+												{
+													theta_1 += two_pi;
+													theta_2 += two_pi;
+												}
+												else
+												{
+													theta_3 -= two_pi;
+													theta_4 -= two_pi;
+												}
+											}
+											else
+											{
+												if (theta_1-pi>theta_3)
+												{
+													if (theta>theta_1)
+													{
+														theta_3 += two_pi;
+														theta_4 += two_pi;
+													}
+													else
+													{
+														theta_1 -= two_pi;
+														theta_2 -= two_pi;
+													}
+												}
+											}
+											if (((theta_1<theta)||(theta_2<theta)||
+												(theta_3<theta)||(theta_4<theta))&&
+												((theta_1>theta)||(theta_2>theta)||
+													(theta_3>theta)||(theta_4>theta)))
+											{
+												mu_4 += mu_1-mu_2-mu_3;
+												mu_3 -= mu_1;
+												mu_2 -= mu_1;
+												mu_1 -= mu;
+												theta_4 += theta_1-theta_2-theta_3;
+												theta_3 -= theta_1;
+												theta_2 -= theta_1;
+												theta_1 -= theta;
+												xi_1=0.5;
+												xi_2=0.5;
+												fibre_iteration=0;
+												do
+												{
+													a=mu_2+mu_4*xi_2;
+													b=mu_3+mu_4*xi_1;
+													error_mu=mu_1+mu_2*xi_1+b*xi_2;
+													c=theta_2+theta_4*xi_2;
+													d=theta_3+theta_4*xi_1;
+													error_theta=theta_1+theta_2*xi_1+d*xi_2;
+													if (0!=(det=a*d-b*c))
+													{
+														xi_1 -= (d*error_mu-b*error_theta)/det;
+														xi_2 -= (a*error_theta-c*error_mu)/det;
+													}
+													fibre_iteration++;
+												} while ((0!=det)&&(error_theta*error_theta+
+													error_mu*error_mu>FIBRE_TOLERANCE)&&
+													(fibre_iteration<FIBRE_MAXIMUM_ITERATIONS));
+												if (error_theta*error_theta+error_mu*error_mu>
+													FIBRE_TOLERANCE)
+												{
+													xi_2= -1;
+												}
+											}
+										}
+										if ((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1))
+										{
+											local_fibre_node_1=local_fibre_node_2;
+											local_fibre_node_2++;
+											local_fibre_node_3=local_fibre_node_4;
+											local_fibre_node_4++;
+											l--;
+										}
+									}
+									if ((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1))
+									{
+										local_fibre_node_1=local_fibre_node_3;
+										local_fibre_node_3 += NUMBER_OF_FIBRE_COLUMNS;
+										k--;
+									}
+								}
+								if ((0<=xi_1)&&(xi_1<=1)&&(0<=xi_2)&&(xi_2<=1))
+								{
+									/* calculate the fibre angle */
+									fibre_angle_1=local_fibre_node_1->fibre_angle;
+									fibre_angle_2=local_fibre_node_2->fibre_angle;
+									fibre_angle_3=local_fibre_node_3->fibre_angle;
+									fibre_angle_4=local_fibre_node_4->fibre_angle;
+									fibre_angle=fibre_angle_1+
+										(fibre_angle_2-fibre_angle_1)*xi_1+
+										((fibre_angle_3-fibre_angle_1)+
+											(fibre_angle_4+fibre_angle_1-fibre_angle_2-
+												fibre_angle_3)*xi_1)*xi_2;
+									/* calculate the fibre vector in element
+										 coordinates*/
+									a=cos(fibre_angle);
+									c=sin(fibre_angle);
+									/* perform projection and screen scaling */
+									fibre_x=stretch_x[region_number]*
+										(dxdmu*c+dxdtheta*a);
+									fibre_y= -stretch_y[region_number]*
+										(dydmu*c+dydtheta*a);
+									if (0<(fibre_length=
+										fibre_x*fibre_x+fibre_y*fibre_y))
+									{
+										/* draw the fibre */
+										fibre_length=
+											(float)(fibre_spacing)/(2*sqrt(fibre_length));
+										fibre_x *= fibre_length;
+										fibre_y *= fibre_length;
+										XPSDrawLine(display,drawing->pixel_map,
+											graphics_context,
+											(x_pixel-(short)fibre_x)+map_x_offset,
+											(y_pixel-(short)fibre_y)+map_y_offset,
+											(x_pixel+(short)fibre_x)+map_x_offset,
+											(y_pixel+(short)fibre_y)+map_y_offset);
+									}
+									/*???debug */
+									/*printf("fibre_x=%g, fibre_y=%g\n\n",fibre_x,
+										fibre_y);*/
+								}
+							}
+							x_screen += x_screen_step;
+							x_pixel += fibre_spacing;
+						}
+						y_screen += y_screen_step;
+						y_pixel += fibre_spacing;
+					}
+				}
+			}
+			region_item=get_Region_list_item_next(region_item);
+		}
+	}
+  else
+  {	
+    display_message(ERROR_MESSAGE,"draw_2d_fibres invalid arguments");
+    return_code=0;
+  }
+  LEAVE;
+  return(return_code);
+}/* draw_2d_fibres */
+
+static int draw_2d_contour_values(struct Map *map,struct Drawing_2d *drawing,
+	int map_x_offset,int map_y_offset)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2001
+
+DESCRIPTION :
+Write the values of the contours.
+*******************************************************************************/
+{
+	char draw_contour_value,value_string[11];
+  Display *display;
+  GC graphics_context;
+	float a,contour_maximum,contour_minimum,maximum_value,minimum_value,
+		string_length;
+  int ascent,cell_range,cell_number,contour_areas_in_x,descent,direction,end,
+		frame_number,i,j,number_of_contours,number_of_contour_areas,
+		number_of_spectrum_colours,number_of_frames,pixel_left,pixel_top,return_code,
+		start,temp_int,x_offset,x_pixel,x_separation,y_offset,y_pixel,y_separation;
+	short int *contour_x,*contour_y;
+	struct Map_frame *frame;
+  struct Map_drawing_information *drawing_information;  
+	XCharStruct bounds;
+	XFontStruct *font;
+
+  ENTER(draw_2d_contour_values);	
+	contour_x=(short int *)NULL;
+	contour_y=(short int *)NULL;
+	font=(XFontStruct *)NULL;
+  display=(Display *)NULL;
+	frame=(struct Map_frame *)NULL;	
+  drawing_information=(struct Map_drawing_information *)NULL;
+  if(map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information))
+  {	
+		return_code=1;
+		font=drawing_information->font;
+		if ((0<(number_of_frames=map->number_of_frames))&&
+			(0<=(frame_number=map->frame_number))&&
+			(frame_number<number_of_frames)&&(frame=map->frames))
+		{
+			frame += frame_number;
+			if ((frame->contour_x)&&(frame->contour_y))
+			{
+				number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;		
+				number_of_contour_areas=map->number_of_contour_areas;
+				contour_areas_in_x=map->number_of_contour_areas_in_x;
+				minimum_value=map->minimum_value;
+				maximum_value=map->maximum_value;
+				contour_minimum=map->contour_minimum;
+				contour_maximum=map->contour_maximum;
+				graphics_context=(drawing_information->graphics_context).
+					contour_colour;
+				if (maximum_value==minimum_value)
+				{
+					start=0;
+					end=number_of_spectrum_colours;
+				}
+				else
+				{
+					start=(int)((contour_minimum-minimum_value)/
+						(maximum_value-minimum_value)*
+						(float)(number_of_spectrum_colours-1)+0.5);
+					end=(int)((contour_maximum-minimum_value)/
+						(maximum_value-minimum_value)*
+						(float)(number_of_spectrum_colours-1)+0.5);
+				}
+				cell_range=end-start;
+				number_of_contours=map->number_of_contours;
+				for (i=number_of_contours;i>0;)
+				{
+					i--;
+					cell_number=start+(int)((float)(i*cell_range)/
+						(float)(number_of_contours-1)+0.5);
+					a=(contour_maximum*(float)i+contour_minimum*
+						(float)(number_of_contours-i-1))/
+						(float)(number_of_contours-1);
+					if (fabs(a)<
+						0.00001*(fabs(contour_maximum)+fabs(contour_minimum)))
+					{
+						a=0;
+					}
+					sprintf(value_string,"%.4g",a);
+					string_length=strlen(value_string);
+					XTextExtents(font,value_string,string_length,&direction,
+						&ascent,&descent,&bounds);
+					x_offset=(bounds.lbearing-bounds.rbearing)/2;
+					y_offset=(bounds.ascent-bounds.descent)/2;
+					x_separation=(bounds.lbearing+bounds.rbearing);
+					y_separation=(bounds.ascent+bounds.descent);
+					contour_x=
+						(frame->contour_x)+(cell_number*number_of_contour_areas);
+					contour_y=
+						(frame->contour_y)+(cell_number*number_of_contour_areas);
+					for (j=0;j<number_of_contour_areas;j++)
+					{
+						if ((x_pixel= *contour_x)>=0)
+						{
+							y_pixel= *contour_y;
+							/* check that its not too close to previously drawn
+								 values */
+							draw_contour_value=1;
+							if (0<j%contour_areas_in_x)
+							{
+								if ((pixel_left= *(contour_x-1))>=0)
+								{
+									temp_int=y_pixel-(*(contour_y-1));
+									if (temp_int<0)
+									{
+										temp_int= -temp_int;
+									}
+									if ((x_pixel-pixel_left<=x_separation)&&
+										(temp_int<=y_separation))
+									{
+										draw_contour_value=0;
+									}
+								}
+								if (draw_contour_value&&(j>contour_areas_in_x)&&
+									((pixel_top=
+										*(contour_x-(contour_areas_in_x+1)))>=0))
+								{
+									if ((x_pixel-pixel_top<=x_separation)&&
+										(y_pixel-(*(contour_y-(contour_areas_in_x+1)))<=
+											y_separation))
+									{
+										draw_contour_value=0;
+									}
+								}
+							}
+							if (draw_contour_value&&(j>=contour_areas_in_x)&&
+								((pixel_top= *(contour_x-contour_areas_in_x))>=0))
+							{
+								temp_int=x_pixel-pixel_top;
+								if (temp_int<0)
+								{
+									temp_int= -temp_int;
+								}
+								if ((temp_int<=x_separation)&&
+									(y_pixel-(*(contour_y-contour_areas_in_x))<=
+										y_separation))
+								{
+									draw_contour_value=0;
+								}
+							}
+							if (draw_contour_value)
+							{
+								XPSDrawString(display,drawing->pixel_map,
+									graphics_context,x_pixel+x_offset+map_x_offset,y_pixel+
+									y_offset+map_y_offset,value_string,string_length);
+							}
+						}
+						contour_x++;
+						contour_y++;
+					}
+				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"draw_2d_contour_values.  Invalid frames");
+		}
+	}
+  else
+  {	
+    display_message(ERROR_MESSAGE,"draw_2d_contour_values invalid arguments");
+    return_code=0;
+  }
+  LEAVE;
+  return(return_code);
+}/* draw_2d_contour_values */
+
+static int draw_2d_constant_thickness_contours(struct Map *map,
+	struct Drawing_2d *drawing,struct Map_frame *frame,int map_x_offset,
+	int map_y_offset,int map_width,int map_height,float *pixel_value,
+	float *min_f,float *max_f,char draw_boundary)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2001
+
+DESCRIPTION :
+draw the constant thickness contours
+*******************************************************************************/
+{
+	char draw_contours;
+	Display *display;
+	GC graphics_context;
+	int boundary_type,end,i,j,k,number_of_contours,return_code,start,valid_i_j,
+		valid_i_jm1,valid_im1_j,valid_im1_jm1;
+	float a,b,background_pixel_value,boundary_pixel_value,contour_step,contour_maximum,
+		contour_minimum,f_i_j,f_i_jm1,f_im1_j,f_im1_jm1;
+	struct Map_drawing_information *drawing_information;
+
+	ENTER(draw_2d_constant_thickness_contours);
+	display=(Display *)NULL;
+	if(frame&&map&&drawing&&(drawing_information=map->drawing_information)&&
+		pixel_value)
+	{
+		return_code=1;
+		display=drawing->user_interface->display;
+		number_of_contours=map->number_of_contours;
+		contour_minimum=map->contour_minimum;
+		contour_maximum=map->contour_maximum;
+
+		busy_cursor_on((Widget)NULL,drawing_information->user_interface);
+		contour_step=(contour_maximum-contour_minimum)/
+			(float)(number_of_contours-1);
+		graphics_context=(drawing_information->graphics_context).contour_colour;
+		background_pixel_value=frame->minimum;
+		boundary_pixel_value=frame->maximum;
+		for (j=1+map_y_offset;j<map_height+map_y_offset;j++)
+		{
+			f_i_jm1= *pixel_value;
+			if ((background_pixel_value<=f_i_jm1)&&
+				(f_i_jm1<=boundary_pixel_value))
+			{
+				valid_i_jm1=1;
+			}
+			else
+			{
+				valid_i_jm1=0;
+			}
+			f_i_j=pixel_value[map_width];
+			if ((background_pixel_value<=f_i_j)&&
+				(f_i_j<=boundary_pixel_value))
+			{
+				valid_i_j=1;
+			}
+			else
+			{
+				valid_i_j=0;
+			}
+			pixel_value++;
+			for (i=1+map_x_offset;i<map_width+map_x_offset;i++)
+			{
+				valid_im1_jm1=valid_i_jm1;
+				f_im1_jm1=f_i_jm1;
+				valid_im1_j=valid_i_j;
+				f_im1_j=f_i_j;
+				f_i_jm1= *pixel_value;
+				if ((background_pixel_value<=f_i_jm1)&&
+					(f_i_jm1<=boundary_pixel_value))
+				{
+					valid_i_jm1=1;
+				}
+				else
+				{
+					valid_i_jm1=0;
+				}
+				f_i_j=pixel_value[map_width];
+				if ((background_pixel_value<=f_i_j)&&
+					(f_i_j<=boundary_pixel_value))
+				{
+					valid_i_j=1;
+				}
+				else
+				{
+					valid_i_j=0;
+				}
+				pixel_value++;
+				boundary_type=((valid_im1_jm1*2+valid_im1_j)*2+
+					valid_i_jm1)*2+valid_i_j;
+				if (draw_contours&&(15==boundary_type))
+				{
+					/* calculate contour using bilinear */
+					if (f_im1_jm1<f_i_j)
+					{
+						*min_f=f_im1_jm1;
+						*max_f=f_i_j;
+					}
+					else
+					{
+						*min_f=f_i_j;
+						*max_f=f_im1_jm1;
+					}
+					if (f_im1_j<*min_f)
+					{
+						*min_f=f_im1_j;
+					}
+					else
+					{
+						if (f_im1_j>*max_f)
+						{
+							*max_f=f_im1_j;
+						}
+					}
+					if (f_i_jm1<*min_f)
+					{
+						*min_f=f_i_jm1;
+					}
+					else
+					{
+						if (f_i_jm1>*max_f)
+						{
+							*max_f=f_i_jm1;
+						}
+					}
+					if ((*min_f<=contour_maximum)&&
+						(contour_minimum<=*max_f))
+					{
+						if (*min_f<=contour_minimum)
+						{
+							start=0;
+						}
+						else
+						{
+							start=1+(int)((*min_f-contour_minimum)/
+								contour_step);
+						}
+						if (contour_maximum<=*max_f)
+						{
+							end=number_of_contours;
+						}
+						else
+						{
+							end=(int)((*max_f-contour_minimum)/contour_step);
+						}
+						for (k=start;k<=end;k++)
+						{
+							a=contour_minimum+contour_step*(float)k;
+							if (fabs(a)<0.00001*(fabs(contour_maximum)+
+								fabs(contour_minimum)))
+							{
+								a=0;
+							}
+							/* dashed lines for -ve contours */
+							if ((a>=0)||((i+j)%5<2))
+							{
+								if (((f_im1_jm1<=a)&&(a<f_i_jm1))||
+									((f_im1_jm1>=a)&&(a>f_i_jm1)))
+								{
+									if (((f_im1_jm1<=a)&&(a<f_im1_j))||
+										((f_im1_jm1>=a)&&(a>f_im1_j)))
+									{
+										if ((((f_i_jm1<=a)&&(a<f_i_j))||
+											((f_i_jm1>=a)&&(a>f_i_j)))&&
+											(((f_im1_j<=a)&&(a<f_i_j))||
+												((f_im1_j>=a)&&(a>f_i_j))))
+										{
+											b=(a-f_im1_jm1)*
+												(f_im1_jm1+f_i_j-f_im1_j-f_i_jm1)+
+												(f_im1_j-f_im1_jm1)*
+												(f_i_jm1-f_im1_jm1);
+											if (b<0)
+											{
+												XPSDrawLineFloat(display,
+													drawing->pixel_map,graphics_context,
+													(float)i-(a-f_i_jm1)/
+													(f_im1_jm1-f_i_jm1),(float)(j-1),
+													(float)(i-1),(float)j-(a-f_im1_j)/
+													(f_im1_jm1-f_im1_j));
+												XPSDrawLineFloat(display,
+													drawing->pixel_map,graphics_context,
+													(float)i-(a-f_i_j)/(f_im1_j-f_i_j),
+													(float)j,
+													(float)i,
+													(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
+											}
+											else
+											{
+												if (b>0)
+												{
+													XPSDrawLineFloat(display,
+														drawing->pixel_map,
+														graphics_context,
+														(float)i-(a-f_i_jm1)/
+														(f_im1_jm1-f_i_jm1),(float)(j-1),
+														(float)i,(float)j-(a-f_i_j)/
+														(f_i_jm1-f_i_j));
+													XPSDrawLineFloat(display,
+														drawing->pixel_map,
+														graphics_context,
+														(float)i-(a-f_i_j)/
+														(f_im1_j-f_i_j),
+														(float)j,(float)(i-1),(float)j-
+														(a-f_im1_j)/(f_im1_jm1-f_im1_j));
+												}
+												else
+												{
+													XPSDrawLineFloat(display,
+														drawing->pixel_map,
+														graphics_context,
+														(float)(i-1),(float)j-(a-f_im1_j)/
+														(f_im1_jm1-f_im1_j),(float)i,
+														(float)j-(a-f_i_j)/
+														(f_i_jm1-f_i_j));																
+													XPSDrawLineFloat(display,
+														drawing->pixel_map,
+														graphics_context,
+														(float)i-(a-f_i_jm1)/
+														(f_im1_jm1-f_i_jm1),(float)(j-1),
+														(float)i-(a-f_i_j)/
+														(f_im1_j-f_i_j),(float)j);
+												}
+											}
+										}
+										else
+										{
+											XPSDrawLineFloat(display,
+												drawing->pixel_map,
+												graphics_context,(float)i-(a-f_i_jm1)/
+												(f_im1_jm1-f_i_jm1),(float)(j-1),
+												(float)(i-1),(float)j-(a-f_im1_j)/
+												(f_im1_jm1-f_im1_j));
+										}
+									}
+									else
+									{
+										if (((f_i_jm1<=a)&&(a<f_i_j))||
+											((f_i_jm1>=a)&&(a>f_i_j)))
+										{
+											XPSDrawLineFloat(display,
+												drawing->pixel_map,graphics_context,
+												(float)i-(a-f_i_jm1)/
+												(f_im1_jm1-f_i_jm1),(float)(j-1),
+												(float)i,
+												(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
+										}
+										else
+										{
+											if (((f_im1_j<=a)&&(a<f_i_j))||
+												((f_im1_j>=a)&&(a>f_i_j)))
+											{
+												XPSDrawLineFloat(display,
+													drawing->pixel_map,graphics_context,
+													(float)i-(a-f_i_jm1)/
+													(f_im1_jm1-f_i_jm1),(float)(j-1),
+													(float)i-(a-f_i_j)/
+													(f_im1_j-f_i_j),(float)j);
+											}
+										}
+									}
+								}
+								else
+								{
+									if (((f_im1_jm1<=a)&&(a<f_im1_j))||
+										((f_im1_jm1>=a)&&(a>f_im1_j)))
+									{
+										if (((f_i_jm1<=a)&&(a<f_i_j))||
+											((f_i_jm1>=a)&&(a>f_i_j)))
+										{
+											XPSDrawLineFloat(display,
+												drawing->pixel_map,graphics_context,
+												(float)(i-1),(float)j-(a-f_im1_j)/
+												(f_im1_jm1-f_im1_j),(float)i,
+												(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
+										}
+										else
+										{
+											if (((f_im1_j<=a)&&(a<f_i_j))||
+												((f_im1_j>=a)&&(a>f_i_j)))
+											{
+												XPSDrawLineFloat(display,
+													drawing->pixel_map,graphics_context,
+													(float)(i-1),(float)j-(a-f_im1_j)/
+													(f_im1_jm1-f_im1_j),(float)i-
+													(a-f_i_j)/(f_im1_j-f_i_j),(float)j);
+											}
+										}
+									}
+									else
+									{
+										if ((((f_i_jm1<=a)&&(a<f_i_j))||
+											((f_i_jm1>=a)&&(a>f_i_j)))&&
+											(((f_im1_j<=a)&&(a<f_i_j))||
+												((f_im1_j>=a)&&(a>f_i_j))))
+										{
+											XPSDrawLineFloat(display,
+												drawing->pixel_map,
+												graphics_context,(float)i-(a-f_i_j)/
+												(f_im1_j-f_i_j),(float)j,(float)i,
+												(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				if (draw_boundary&&(0<boundary_type)&&
+					(boundary_type<15))
+				{
+					switch (boundary_type)
+					{
+						case 1: case 8:
+						{
+							XPSDrawLine(display,drawing->pixel_map,
+								graphics_context,i-1,j,i,j-1);
+						} break;
+						case 2: case 4:
+						{
+							XPSDrawLine(display,drawing->pixel_map,
+								graphics_context,i-1,j-1,i,j);
+						} break;
+						case 3:
+						{
+							XPSDrawLine(display,drawing->pixel_map,
+								graphics_context,i-1,j-1,i-1,j);
+						} break;
+						case 5:
+						{
+							XPSDrawLine(display,drawing->pixel_map,
+								graphics_context,i-1,j-1,i,j-1);
+						} break;
+						case 10:
+						{
+							XPSDrawLine(display,drawing->pixel_map,
+								graphics_context,i-1,j,i,j);
+						} break;
+						case 12:
+						{
+							XPSDrawLine(display,drawing->pixel_map,
+								graphics_context,i,j-1,i,j);
+						} break;
+					}
+				}
+			}
+		}
+		busy_cursor_off((Widget)NULL,
+			drawing_information->user_interface);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_2d_constant_thickness_contours invalid arguments");
+    return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_2d_constant_thickness_contours */
+
+static int set_map_2d_no_interpolation_min_max(struct Map *map,
+	int *draw_region_number,int number_of_electrodes)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2001
+
+DESCRIPTION :
+Sets the (possibly multi frame) <map>'s minimum and maximum, 
+for the case map->interpolation_type==NO_INTERPOLATION.
+*******************************************************************************/
+{
+	float *electrode_value,f_approx,max_f,min_f;
+	int frame_number,number_of_frames,i,maximum_x,maximum_y,minimum_x,minimum_y,
+		number_of_regions,region_number,return_code,*screen_x,*screen_y,temp_region_number;
+	struct Device	**electrode;
+	struct Map_frame *frame;
+	struct Region *maximum_region,*minimum_region,*current_region;
+	struct Region_list_item *region_item;
+	struct Rig *rig;
+
+	ENTER(set_map_2d_no_interpolation_min_max);
+	frame=(struct Map_frame *)NULL;
+	region_item=(struct Region_list_item *)NULL;
+	rig=(struct Rig *)NULL;
+	electrode=(struct Device **)NULL;
+	screen_x=(int *)NULL;
+	screen_y=(int *)NULL;
+	electrode_value=(float *)NULL;
+	if(map)
+	{
+		return_code=1;
+		rig=*(map->rig_pointer);
+		number_of_regions=rig->number_of_regions;
+		/*???DB.  Put the frame loop on the inside ? */
+		/*???DB.  Electrode values are not changing with frame */
+		frame=map->frames;
+		frame_number=0;
+		number_of_frames=map->number_of_frames;
+		while ((frame_number<number_of_frames)&&return_code)
+		{
+			min_f=1;
+			max_f=0;
+			maximum_region=(struct Region *)NULL;
+			minimum_region=(struct Region *)NULL;
+			/* for each region */
+			region_item=get_Rig_region_list(rig);
+			for (temp_region_number=0;temp_region_number<number_of_regions;
+					 temp_region_number++)
+			{
+				region_number=draw_region_number[temp_region_number];
+				if (0<=region_number)
+				{
+					current_region=get_Region_list_item_region(region_item);
+					/* find maximum and minimum electrodes for region */
+					electrode=map->electrodes;
+					screen_x=map->electrode_x;
+					screen_y=map->electrode_y;
+					electrode_value=map->electrode_value;
+					for (i=number_of_electrodes;i>0;i--)
+					{
+						if (current_region==(*electrode)->description->region)
+						{
+							f_approx= *electrode_value;
+							if (max_f<min_f)
+							{
+								min_f=f_approx;
+								max_f=f_approx;
+								maximum_region=current_region;
+								minimum_region=current_region;
+								maximum_x= *screen_x;
+								maximum_y= *screen_y;
+								minimum_x=maximum_x;
+								minimum_y=minimum_y;
+							}
+							else
+							{
+								if (f_approx<min_f)
+								{
+									min_f=f_approx;
+									minimum_region=current_region;
+									minimum_x= *screen_x;
+									minimum_y= *screen_y;
+								}
+								else
+								{
+									if (f_approx>max_f)
+									{
+										max_f=f_approx;
+										maximum_region=current_region;
+										maximum_x= *screen_x;
+										maximum_y= *screen_y;
+									}
+								}
+							}
+						}
+						electrode++;
+						screen_x++;
+						screen_y++;
+						electrode_value++;
+					}
+				}
+				region_item=get_Region_list_item_next(region_item);
+			}
+			frame->maximum_region=maximum_region;
+			frame->minimum_region=minimum_region;
+			if (max_f<min_f)
+			{
+				frame->maximum=0;
+				frame->maximum_x= -1;
+				frame->maximum_y= -1;
+				frame->minimum=0;
+				frame->minimum_x= -1;
+				frame->minimum_y= -1;
+			}
+			else
+			{
+				frame->maximum=max_f;
+				frame->maximum_x=maximum_x;
+				frame->maximum_y=maximum_y;
+				frame->minimum=min_f;
+				frame->minimum_x=minimum_x;
+				frame->minimum_y=minimum_y;
+			}
+			frame_number++;
+			frame++;
+		}
+		/*???DB.  loop over frames */
+		if (!(map->fixed_range)||
+			(map->minimum_value>map->maximum_value))
+		{
+			frame=map->frames;
+			min_f=frame->minimum;
+			max_f=frame->maximum;
+			for (i=number_of_frames-1;i>0;i--)
+			{
+				frame++;
+				if (frame->minimum<=frame->maximum)
+				{
+					if (min_f<=max_f)
+					{
+						if (frame->minimum<min_f)
+						{
+							min_f=frame->minimum;
+						}
+						if (frame->maximum<max_f)
+						{
+							max_f=frame->maximum;
+						}
+					}
+					else
+					{
+						min_f=frame->minimum;
+						max_f=frame->maximum;
+					}
+				}
+			}
+			map->minimum_value=min_f;
+			map->maximum_value=max_f;
+			map->contour_minimum=min_f;
+			map->contour_maximum=max_f;
+		}
+	}			
+	else
+	{		
+		display_message(ERROR_MESSAGE,
+			"set_map_2d_no_interpolation_min_max invalid arguments");
+    return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_map_2d_no_interpolation_min_max */
+
+static int draw_2d_fill_in_image(struct Map *map,int map_height,int map_width,
+	int contour_x_spacing,int contour_y_spacing,Pixel *spectrum_pixels)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2001
+
+DESCRIPTION :
+Fill in the 2D map pixel image.
+*******************************************************************************/
+{
+	float background_pixel_value,boundary_pixel_value,f_approx,max_f,min_f,
+		*pixel_value,range_f;
+	int cell_number,contour_area,contour_areas_in_x,frame_number,next_contour_x,
+		number_of_contour_areas,number_of_frames,number_of_spectrum_colours,
+		return_code,x_pixel,y_pixel;
+	Pixel background_pixel,boundary_pixel;
+	short int *contour_x,*contour_y;
+	struct Map_drawing_information *drawing_information;
+	struct Map_frame *frame;
+	XImage *frame_image=(XImage *)NULL;
+
+	ENTER(draw_2d_fill_in_image);
+	frame=(struct Map_frame *)NULL;
+	pixel_value=(float *)NULL;
+	contour_x=(short int *)NULL;
+	contour_y=(short int *)NULL;
+	drawing_information=(struct Map_drawing_information *)NULL;
+	if(map&&(drawing_information=map->drawing_information))
+	{
+		return_code=1;		
+		background_pixel=drawing_information->background_drawing_colour;	
+		boundary_pixel=drawing_information->boundary_colour;
+		contour_areas_in_x=map->number_of_contour_areas_in_x;
+		number_of_contour_areas=map->number_of_contour_areas;
+		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
+		number_of_frames=map->number_of_frames;
+		/* fill in the image */
+		min_f=map->minimum_value;
+		max_f=map->maximum_value;
+		/* calculate range of values */
+		range_f=max_f-min_f;
+		if (range_f<=0)
+		{
+			range_f=1;
+		}
+		frame=map->frames;
+		frame_number=0;
+		while ((frame_number<number_of_frames)&&return_code)
+		{
+			background_pixel_value=frame->minimum;
+			boundary_pixel_value=frame->maximum;
+			pixel_value=frame->pixel_values;
+			frame_image=frame->image;
+			for (y_pixel=0;y_pixel<map_height;y_pixel++)
+			{
+				contour_area=
+					(y_pixel/contour_y_spacing)*contour_areas_in_x;
+				next_contour_x=contour_x_spacing-1;
+				contour_x=(frame->contour_x)+contour_area;
+				contour_y=(frame->contour_y)+contour_area;
+				for (x_pixel=0;x_pixel<map_width;x_pixel++)
+				{
+					f_approx= *pixel_value;
+					if (f_approx>=background_pixel_value)
+					{
+						if (f_approx<=boundary_pixel_value)
+						{
+							if (f_approx<min_f)
+							{
+								f_approx=min_f;
+							}
+							else
+							{
+								if (f_approx>max_f)
+								{
+									f_approx=max_f;
+								}
+							}
+							cell_number=(int)((f_approx-min_f)*
+								(float)(number_of_spectrum_colours-1)/
+								range_f+0.5);
+							XPutPixel(frame_image,x_pixel,y_pixel,
+								spectrum_pixels[cell_number]);
+							cell_number *= number_of_contour_areas;
+							contour_x[cell_number]=x_pixel;
+							contour_y[cell_number]=y_pixel;
+						}
+						else
+						{
+							XPutPixel(frame_image,x_pixel,y_pixel,
+								boundary_pixel);
+						}
+					}
+					else
+					{
+						XPutPixel(frame_image,x_pixel,y_pixel,
+							background_pixel);
+					}
+					pixel_value++;
+					if (x_pixel>=next_contour_x)
+					{
+						contour_x++;
+						contour_y++;
+						next_contour_x += contour_x_spacing;
+					}
+				}
+			}
+			frame_number++;
+			frame++;
+		}/* while ((frame_number<number_of_frames)&&return_code) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_2d_fill_in_image invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_2d_fill_in_image */
+
+static int draw_2d_perform_projection_update_ranges(struct Map *map,
+	struct Device_description *description,int *draw_region_number,float *x_item,
+	float *y_item,char *first,float *max_x,float *min_x,float *max_y,float *min_y)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2001
+
+DESCRIPTION :
+Perform projection and update ranges for 2d map
+*******************************************************************************/
+{
+	float a,b,c,lambda,mu,r,theta;
+	int region_number,return_code;
+	struct Position *position;
+
+	ENTER(draw_2d_perform_projection_update_ranges);
+	position=(struct Position *)NULL;
+	if(map&&description&&draw_region_number&&first&&max_x)
+	{
+		return_code=1;
+		/* perform projection and update ranges */
+		region_number=draw_region_number[description->region->number];
+		position= &(description->properties.electrode.position);
+		switch (description->region->type)
+		{
+			case SOCK:
+			{
+				linear_transformation(description->region->properties.sock.
+					linear_transformation,position->x,position->y,position->z,
+					&a,&b,&c);
+				cartesian_to_prolate_spheroidal(a,b,c,
+					description->region->properties.sock.focus,&lambda,&mu,
+					&theta,(float *)NULL);
+				switch (map->projection_type)
+				{
+					case HAMMER_PROJECTION:
+					{
+						Hammer_projection(mu,theta,x_item,y_item,(float *)NULL);
+						if (first[region_number])
+						{
+							first[region_number]=0;
+							max_x[region_number]=mu;
+						}
+						else
+						{
+							if (mu>max_x[region_number])
+							{
+								max_x[region_number]=mu;
+							}
+						}
+					} break;
+					case POLAR_PROJECTION:
+					{
+						polar_projection(mu,theta,x_item,y_item,(float *)NULL);
+						if (first[region_number])
+						{
+							first[region_number]=0;
+							max_x[region_number]=mu;
+						}
+						else
+						{
+							if (mu>max_x[region_number])
+							{
+								max_x[region_number]=mu;
+							}
+						}
+					} break;
+				}
+			} break;
+			case PATCH:
+			{
+				*x_item=position->x;
+				*y_item=position->y;
+				if (first[region_number])
+				{
+					first[region_number]=0;
+					min_x[region_number]= *x_item;
+					min_y[region_number]= *y_item;
+					max_x[region_number]= *x_item;
+					max_y[region_number]= *y_item;
+				}
+				else
+				{
+					if (*x_item<min_x[region_number])
+					{
+						min_x[region_number]= *x_item;
+					}
+					else
+					{
+						if (*x_item>max_x[region_number])
+						{
+							max_x[region_number]= *x_item;
+						}
+					}
+					if (*y_item<min_y[region_number])
+					{
+						min_y[region_number]= *y_item;
+					}
+					else
+					{
+						if (*y_item>max_y[region_number])
+						{
+							max_y[region_number]= *y_item;
+						}
+					}
+				}
+			} break;
+			case TORSO:
+			{
+				cartesian_to_cylindrical_polar(position->x,position->y,
+					position->z,&r,x_item,y_item,(float *)NULL);
+				if (first[region_number])
+				{
+					first[region_number]=0;
+					min_x[region_number]= *x_item;
+					min_y[region_number]= *y_item;
+					max_x[region_number]= *x_item;
+					max_y[region_number]= *y_item;
+				}
+				else
+				{
+					if (*x_item<min_x[region_number])
+					{
+						min_x[region_number]= *x_item;
+					}
+					else
+					{
+						if (*x_item>max_x[region_number])
+						{
+							max_x[region_number]= *x_item;
+						}
+					}
+					if (*y_item<min_y[region_number])
+					{
+						min_y[region_number]= *y_item;
+					}
+					else
+					{
+						if (*y_item>max_y[region_number])
+						{
+							max_y[region_number]= *y_item;
+						}
+					}
+				}
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_2d_perform_projection_update_ranges invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_2d_perform_projection_update_ranges */
+
+static int draw_2d_calculate_electrode_value(struct Map *map,
+	char *electrode_drawn,struct Device	**electrode,float *f_value)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2001
+
+DESCRIPTION :
+Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
+*******************************************************************************/
+{
+	char undecided_accepted;
+	double integral;
+	enum Map_type map_type;
+	float a,*float_value,frame_time,frame_time_freq,proportion;
+	int after,before,datum,end_search_interval,event_number,frame_number,
+		found,i,middle,number_of_frames,number_of_signals,return_code,
+		start_search_interval,*times;
+	short int	*short_int_value;
+	struct Event *event;
+	struct Signal *signal;
+	struct Signal_buffer *buffer;
+
+	ENTER(draw_2d_calculate_electrode_value);
+	signal=(struct Signal *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	event=(struct Event *)NULL;
+	times=(int *)NULL;
+	short_int_value=(short int *)NULL;
+	float_value=(float *)NULL;
+	if(electrode_drawn)
+	{
+		return_code=1;
+		number_of_frames=map->number_of_frames;
+		datum=*(map->datum);
+		map_type= *(map->type);
+		event_number= *(map->event_number);
+		undecided_accepted=map->undecided_accepted;
+		end_search_interval=*(map->end_search_interval);
+		start_search_interval=*(map->start_search_interval);
+		switch (map_type)
+		{
+			case NO_MAP_FIELD:
+				/* always draw all the electrodes if have no map */
+			{
+				*electrode_drawn=1;								
+			}break;
+			case SINGLE_ACTIVATION:
+			{
+				if ((signal=(*electrode)->signal)&&
+					((ACCEPTED==signal->status)||(undecided_accepted&&
+						(UNDECIDED==signal->status)))&&
+					(buffer=signal->buffer)&&(times=buffer->times))
+				{
+					event=signal->first_event;
+					while (event&&(event->number<event_number))
+					{
+						event=event->next;
+					}
+					if (event&&(event->number==event_number)&&
+						((ACCEPTED==event->status)||
+							(undecided_accepted&&(UNDECIDED==event->status))))
+					{
+						*f_value=(float)(times[event->time]-times[datum])*1000/
+							(signal->buffer->frequency);
+						*electrode_drawn=1;
+					}
+				}
+			} break;
+			case MULTIPLE_ACTIVATION:
+			{
+				if ((signal=(*electrode)->signal)&&
+					((ACCEPTED==signal->status)||(undecided_accepted&&
+						(UNDECIDED==signal->status)))&&
+					(buffer=signal->buffer)&&(times=buffer->times))
+				{
+					found=0;
+					event=signal->first_event;
+					while (event)
+					{
+						if ((ACCEPTED==event->status)||
+							(undecided_accepted&&(UNDECIDED==event->status)))
+						{
+							a=(float)(times[datum]-times[event->time])*1000/
+								(signal->buffer->frequency);
+							if (found)
+							{
+								if (((*f_value<0)&&(*f_value<a))||
+									((*f_value>=0)&&(0<=a)&&(a<*f_value)))
+								{
+									*f_value=a;
+								}
+							}
+							else
+							{
+								found=1;
+								*electrode_drawn=1;
+								*f_value=a;
+							}
+						}
+						event=event->next;
+					}
+				}
+			} break;
+			case INTEGRAL:
+			{
+				if ((signal=(*electrode)->signal)&&
+					(0<=start_search_interval)&&
+					(start_search_interval<=end_search_interval)&&
+					(end_search_interval<signal->buffer->
+						number_of_samples)&&
+					((signal->status==ACCEPTED)||(undecided_accepted&&
+						(signal->status==UNDECIDED))))
+				{
+					integral= -(double)((*electrode)->channel->offset)*
+						(double)(end_search_interval-
+							start_search_interval+1);
+					number_of_signals=signal->buffer->number_of_signals;
+					switch (signal->buffer->value_type)
+					{
+						case SHORT_INT_VALUE:
+						{
+							short_int_value=
+								(signal->buffer->signals.short_int_values)+
+								(start_search_interval*number_of_signals+
+									(signal->index));
+							for (i=end_search_interval-start_search_interval;
+									 i>=0;i--)
+							{
+								integral += (double)(*short_int_value);
+								short_int_value += number_of_signals;
+							}
+						} break;
+						case FLOAT_VALUE:
+						{
+							float_value=
+								(signal->buffer->signals.float_values)+
+								(start_search_interval*number_of_signals+
+									(signal->index));
+							for (i=end_search_interval-start_search_interval;
+									 i>=0;i--)
+							{
+								integral += (double)(*float_value);
+								float_value += number_of_signals;
+							}
+						} break;
+					}
+					integral *= (double)((*electrode)->channel->gain)/
+						(double)(signal->buffer->frequency);
+					*electrode_drawn=1;
+					*f_value=(float)integral;
+				}
+			} break;
+			case POTENTIAL:
+			{
+				if (NO_INTERPOLATION==map->interpolation_type)
+				{
+					if ((signal=(*electrode)->signal)&&
+						((ACCEPTED==signal->status)||(undecided_accepted&&
+							(UNDECIDED==signal->status)))&&
+						(buffer=signal->buffer)&&(times=buffer->times))
+					{
+						switch (buffer->value_type)
+						{
+							case SHORT_INT_VALUE:
+							{
+								*f_value=((float)((buffer->signals.
+									short_int_values)[(*(map->potential_time))*
+										(buffer->number_of_signals)+(signal->index)])-
+									((*electrode)->channel->offset))*
+									((*electrode)->channel->gain);
+							} break;
+							case FLOAT_VALUE:
+							{
+								*f_value=((buffer->signals.float_values)[
+									(*(map->potential_time))*
+									(buffer->number_of_signals)+(signal->index)]-
+									((*electrode)->channel->offset))*
+									((*electrode)->channel->gain);
+							} break;
+						}
+						*electrode_drawn=1;
+					}
+				}
+				else
+				{
+					if (1<number_of_frames)
+					{
+						frame_number=map->frame_number;
+						frame_time=((float)(number_of_frames-frame_number-1)*
+							(map->frame_start_time)+(float)frame_number*
+							(map->frame_end_time))/(float)(number_of_frames-1);
+					}
+					else
+					{
+						frame_time=map->frame_start_time;
+					}
+					if ((signal=(*electrode)->signal)&&
+						((ACCEPTED==signal->status)||(undecided_accepted&&
+							(UNDECIDED==signal->status)))&&
+						(buffer=signal->buffer)&&(times=buffer->times)&&
+						((float)(times[0])<=(frame_time_freq=frame_time*
+							(buffer->frequency)/1000))&&(frame_time_freq<=
+								(float)(times[(buffer->number_of_samples)-1])))
+					{
+						before=0;
+						after=(buffer->number_of_samples)-1;
+						while (before+1<after)
+						{
+							middle=(before+after)/2;
+							if (frame_time_freq<times[middle])
+							{
+								after=middle;
+							}
+							else
+							{
+								before=middle;
+							}
+						}
+						if (before==after)
+						{
+							proportion=0.5;
+						}
+						else
+						{
+							proportion=((float)(times[after])-frame_time_freq)/
+								(float)(times[after]-times[before]);
+						}
+						switch (buffer->value_type)
+						{
+							case SHORT_INT_VALUE:
+							{
+								*f_value=(proportion*(float)((buffer->signals.
+									short_int_values)[before*
+										(buffer->number_of_signals)+(signal->index)])+
+									(1-proportion)*(float)((buffer->signals.
+										short_int_values)[after*
+											(buffer->number_of_signals)+(signal->index)])-
+									((*electrode)->channel->offset))*
+									((*electrode)->channel->gain);
+							} break;
+							case FLOAT_VALUE:
+							{
+								*f_value=(proportion*(buffer->signals.float_values)[
+									before*(buffer->number_of_signals)+
+									(signal->index)]+(1-proportion)*
+									(buffer->signals.float_values)[after*
+										(buffer->number_of_signals)+(signal->index)]-
+									((*electrode)->channel->offset))*
+									((*electrode)->channel->gain);
+							} break;
+						}
+						*electrode_drawn=1;
+					}
+				}
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_2d_calculate_electrode_value arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_2d_calculate_electrode_value */
+
+static int draw_2d_calculate_u_and_v(struct Map *map,
+	struct Region *current_region,float x_screen,float y_screen,float pi_over_2,
+	float pi,float two_pi,float *u,float *v,char *valid_u_and_v)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2001
+
+DESCRIPTION :
+calculate the element coordinates for the 2d map.
+*******************************************************************************/
+{	
+	float a,b,c,d,mu,theta;
+	int return_code;
+
+	ENTER(draw_2d_calculate_u_and_v );
+	if(map&&current_region)
+	{		
+		return_code=1;																	
+		/* calculate the element coordinates */
+		switch (current_region->type)
+		{
+			case SOCK:
+			{
+				switch (map->projection_type)
+				{
+					case HAMMER_PROJECTION:
+					{
+						/*???avoid singularity ? */
+						if ((x_screen!=0)||
+							((y_screen!=1)&&(y_screen!= -1)))
+						{
+							a=x_screen*x_screen;
+							b=y_screen*y_screen;
+							c=2-a-b;
+							if (c>1)
+							{
+								d=y_screen*sqrt(c);
+								if (d>=1)
+								{
+									mu=pi;
+								}
+								else
+								{
+									if (d<= -1)
+									{
+										mu=0;
+									}
+									else
+									{
+										mu=pi_over_2+asin(d);
+									}
+								}
+								d=sqrt((a*c)/(1-b*c));
+								if (x_screen>0)
+								{
+									if (d>=1)
+									{
+										theta=two_pi;
+									}
+									else
+									{
+										theta=pi-2*asin(d);
+									}
+								}
+								else
+								{
+									if (d>=1)
+									{
+										theta=0;
+									}
+									else
+									{
+										theta=pi+2*asin(d);
+									}
+								}
+								*u=theta;
+								*v=mu;
+								*valid_u_and_v=1;
+							}
+							else
+							{
+								*valid_u_and_v=0;
+							}
+						}
+						else
+						{
+							*valid_u_and_v=0;
+						}
+					} break;
+					case POLAR_PROJECTION:
+					{
+						mu=sqrt(x_screen*x_screen+
+							y_screen*y_screen);
+						if (mu>0)
+						{
+							if (x_screen>0)
+							{
+								if (y_screen>0)
+								{
+									theta=asin(y_screen/mu);
+								}
+								else
+								{
+									theta=two_pi+
+										asin(y_screen/mu);
+								}
+							}
+							else
+							{
+								theta=pi-asin(y_screen/mu);
+							}
+						}
+						else
+						{
+							theta=0;
+						}
+						*u=theta;
+						*v=mu;
+						*valid_u_and_v=1;
+					} break;
+				}/* switch (map->projection_type) */
+			} break;
+			case PATCH:
+			{
+				*u=x_screen;
+				*v=y_screen;
+				*valid_u_and_v=1;
+			} break;
+			case TORSO:
+			{
+				/*???DB.  Need scaling in x ? */
+				*u=x_screen;
+				*v=y_screen;
+				*valid_u_and_v=1;
+			} break;
+		}/* switch (current_region->type) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_2d_calculate_u_and_v  arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_2d_calculate_u_and_v */
+
+static int draw_2d_calculate_f_approx(struct Interpolation_function *function,
+	float *f_approx,int column,int row,float u,float v)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2001
+
+DESCRIPTION :
+Set <f_approx> from <function>
+*******************************************************************************/
+{
+	float *d2fdxdy,*dfdy,*f,*dfdx,dfdx_i_j,dfdx_i_jm1,dfdx_im1_j,
+		dfdx_im1_jm1,dfdy_i_j,dfdy_i_jm1,dfdy_im1_j,dfdy_im1_jm1,d2fdxdy_i_j,
+		d2fdxdy_i_jm1,d2fdxdy_im1_j,d2fdxdy_im1_jm1,f_i_j,f_i_jm1,
+		f_im1_j,f_im1_jm1,height,h01_u,h01_v,h02_u,h02_v,
+		h11_u,h11_v,h12_u,h12_v,width,*x_mesh,*y_mesh;
+	int i_j,i_jm1,im1_j,im1_jm1,number_of_mesh_columns,
+		return_code;
+
+	ENTER(draw_2d_calculate_f_approx);
+	if(f_approx)
+	{
+		f=function->f;
+		dfdx=function->dfdx;
+		dfdy=function->dfdy;
+		d2fdxdy=function->d2fdxdy;
+		number_of_mesh_columns=function->number_of_columns;
+		y_mesh=function->y_mesh;
+		x_mesh=function->x_mesh;
+		/* calculate basis function values */
+		width=x_mesh[column]-x_mesh[column-1];
+		h11_u=h12_u=u-x_mesh[column-1];
+		u=h11_u/width;
+		h01_u=(2*u-3)*u*u+1;
+		h11_u *= (u-1)*(u-1);
+		h02_u=u*u*(3-2*u);
+		h12_u *= u*(u-1);
+		height=y_mesh[row]-y_mesh[row-1];
+		h11_v=h12_v=v-y_mesh[row-1];
+		v=h11_v/height;
+		h01_v=(2*v-3)*v*v+1;
+		h11_v *= (v-1)*(v-1);
+		h02_v=v*v*(3-2*v);
+		h12_v *= v*(v-1);
+		/* calculate the interpolation
+			 function coefficients */
+		f_im1_jm1=h01_u*h01_v;
+		f_im1_j=h02_u*h01_v;
+		f_i_j=h02_u*h02_v;
+		f_i_jm1=h01_u*h02_v;
+		dfdx_im1_jm1=h11_u*h01_v;
+		dfdx_im1_j=h12_u*h01_v;
+		dfdx_i_j=h12_u*h02_v;
+		dfdx_i_jm1=h11_u*h02_v;
+		dfdy_im1_jm1=h01_u*h11_v;
+		dfdy_im1_j=h02_u*h11_v;
+		dfdy_i_j=h02_u*h12_v;
+		dfdy_i_jm1=h01_u*h12_v;
+		d2fdxdy_im1_jm1=h11_u*h11_v;
+		d2fdxdy_im1_j=h12_u*h11_v;
+		d2fdxdy_i_j=h12_u*h12_v;
+		d2fdxdy_i_jm1=h11_u*h12_v;
+		/* calculate node numbers
+			 NB the local coordinates have the
+			 top right corner of the element as
+			 the origin.  This means that
+			 (i-1,j-1) is the bottom left corner
+			 (i,j-1) is the top left corner
+			 (i,j) is the top right corner
+			 (i-1,j) is the bottom right
+			 corner */
+		/* (i-1,j-1) node (bottom left
+			 corner) */
+		im1_jm1=(row-1)*(number_of_mesh_columns+1)+column-1;
+		/* (i,j-1) node (top left corner) */
+		i_jm1=row*(number_of_mesh_columns+1)+column-1;
+		/* (i,j) node (top right corner) */
+		i_j=row*(number_of_mesh_columns+1)+column;
+		/* (i-1,j) node (bottom right
+			 corner) */
+		im1_j=(row-1)*(number_of_mesh_columns+1)+column;
+#if defined(GOURAUD_FROM_MESH)
+		gouraud_from_mesh(&top_x,&bot_x,&left_y,
+			&right_y,f_approx,f,u,v,i_jm1,i_j,
+			im1_jm1,im1_j);
+#else
+		/* <THIS> is the Normal case*/
+		*f_approx=
+			f[im1_jm1]*f_im1_jm1+
+			f[i_jm1]*f_i_jm1+
+			f[i_j]*f_i_j+
+			f[im1_j]*f_im1_j+
+			dfdx[im1_jm1]*dfdx_im1_jm1+
+			dfdx[i_jm1]*dfdx_i_jm1+
+			dfdx[i_j]*dfdx_i_j+
+			dfdx[im1_j]*dfdx_im1_j+
+			dfdy[im1_jm1]*dfdy_im1_jm1+
+			dfdy[i_jm1]*dfdy_i_jm1+
+			dfdy[i_j]*dfdy_i_j+
+			dfdy[im1_j]*dfdy_im1_j+
+			d2fdxdy[im1_jm1]*d2fdxdy_im1_jm1+
+			d2fdxdy[i_jm1]*d2fdxdy_i_jm1+
+			d2fdxdy[i_j]*d2fdxdy_i_j+
+			d2fdxdy[im1_j]*d2fdxdy_im1_j;
+#endif /* defined(GOURAUD_FROM_MESH) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_2d_calculate_f_approx Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_2d_calculate_f_approx */
+
 /* #define one of these but not both. Or none, the usual case. */
 /*
 #define GOURAUD_FROM_MESH 1
 #define GOURAUD_FROM_PIXEL_VALUE 1
 */
-
-int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing)
+#if defined(GOURAUD_FROM_PIXEL_VALUE)
+static int set_just_map_pixel_value(float *just_map_pixel_value,int *num_pixels,
+	float f_approx,int x_pixel,int y_pixel,int *min_x_pixel,int *max_x_pixel,
+	int *min_y_pixel,int *max_y_pixel)
 /*******************************************************************************
-LAST MODIFIED : 12 July 2001
+LAST MODIFIED : 17 July 2001
 
 DESCRIPTION :
-This function draws the <map> in the <drawing>.  If <recalculate> is >0 then the
+Sets the value of the array  <just_map_pixel_value> at index <num_pixels>
+with <f_approx>. Increments <num_pixels> . Checks/sets  <min_x_pixel> 
+<max_x_pixel> <min_y_pixel> <max_y_pixel> vs <x_pixel> <y_pixel>.
+Used in calculation of GOURAUD_FROM_PIXEL_VALUE
+An experimental function. Only works for Torso maps?
+*******************************************************************************/
+{
+	int return_code;
+	ENTER(set_just_map_pixel_value);
+	if(just_map_pixel_value&&num_pixels&&min_x_pixel&&max_x_pixel&&min_y_pixel&&
+		max_y_pixel)
+	{
+		return_code=1;
+		/* record actual (minus border)
+			 drawing width via min and max */
+		/* fill in the
+			 pixels-without-border-array */
+		just_map_pixel_value[*num_pixels]=
+			f_approx;
+		(*num_pixels)++;
+		if (*min_x_pixel>x_pixel)
+		{
+			*min_x_pixel=x_pixel;
+		}
+		if (*min_y_pixel>y_pixel)
+		{
+			*min_y_pixel=y_pixel;
+		}
+		if (*max_x_pixel<x_pixel)
+		{
+			*max_x_pixel=x_pixel;
+		}
+		if (*max_y_pixel<y_pixel)
+		{
+			*max_y_pixel=y_pixel;
+		}
+	}
+	else
+	{ 
+		display_message(ERROR_MESSAGE,"set_just_map_pixel_value invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_just_map_pixel_value*/
+
+static int gouraud_from_pixel_value(struct Map *map,float *just_map_pixel_value,
+	int min_x_pixel,int max_x_pixel,int min_y_pixel,int max_y_pixel,
+	int number_of_mesh_columns,int number_of_mesh_rows,int num_pixels,
+	float *min_f,float *max_f,int map_height,int map_width,float *pixel_value)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2001
+
+DESCRIPTION :
+Used in calculation of GOURAUD_FROM_PIXEL_VALUE
+An experimental function. Only works for Torso maps?
+*******************************************************************************/
+{
+	int return_code;	
+	int Ax,Ay,Bx,By,Cx,Cy,Dx,Dy,Ai,Bi,Ci,Di,act_height,act_width,col,
+		discretisation,i,index,j,new_i,new_j,new_pixel_index,pixel_index,px,py,rw;
+	float c,fl_act_height,fl_act_width,fl_q_col_width,fl_q_row_height,left_y,right_y,
+		*new_pixel_value,pu,pv;
+	ENTER(gouraud_from_pixel_value);
+	if(map&&just_map_pixel_value&&min_f&&max_f&&pixel_value)
+	{
+		return_code=1;
+		/* Gouraud shading from pixel_value (f_approx) values */
+		act_width=max_x_pixel-min_x_pixel;
+		act_height=max_y_pixel-min_y_pixel;
+		/*use electrodes_marker_size so can change easily, without adding another widget*/
+		discretisation=map->electrodes_marker_size;	
+		fl_act_width=act_width;
+		fl_act_height=act_height;
+		fl_q_col_width=(float)(fl_act_width/(float)(number_of_mesh_columns))/
+			(float)(discretisation);
+		fl_q_row_height=(float)(fl_act_height/(float)(number_of_mesh_rows))/
+			(float)(discretisation);
+		/* now need to do gouraud shading, from just_map_pixel_value to new_pixel_value */
+		if (!(ALLOCATE(new_pixel_value,float,num_pixels)))
+		{	
+			display_message(ERROR_MESSAGE,
+				"draw_map_2d. ALLOCATE new_pixel_value failed");
+		}
+		/* reset the min and max */
+		*min_f=100;
+		*max_f=-100;
+		for(py=0;py<act_height+1;py++)
+		{
+			for(px=0;px<act_width+1;px++)
+			{
+				index=py*(act_width+1)+px;
+				rw=(float)(px)/fl_q_col_width;
+				if (rw==number_of_mesh_columns*discretisation) 
+				{
+					rw-=1;
+				}
+				col=(float)(py)/fl_q_row_height;
+				if (c==number_of_mesh_rows*discretisation) 
+				{
+					col-=1;
+				}
+				/* A,B,C,D are corners of Gouraud rectangle */															
+				Ax=fl_q_col_width*rw;
+				Ay=(col+1)*fl_q_row_height;
+				Ai=Ay*(act_width+1)+Ax;	
+				Bx=fl_q_col_width*rw;
+				By=col*fl_q_row_height;
+				Bi=By*(act_width+1)+Bx;	
+				Cx=fl_q_col_width*(rw+1);
+				Cy=col*fl_q_row_height;
+				Ci=Cy*(act_width+1)+Cx;	
+				Dx=fl_q_col_width*(rw+1);
+				Dy=(col+1)*fl_q_row_height;
+				Di=Dy*(act_width+1)+Dx;	
+				pu=((float)px-(float)Bx)/((float)Cx-(float)Bx);
+				pv=((float)py-(float)By)/((float)Ay-(float)By);
+				/* do this, or below. Result is same.
+					 top_x=just_map_pixel_value[Bi]-(just_map_pixel_value[Bi]-
+					   just_map_pixel_value[Ci])*pu;
+					 bot_x=just_map_pixel_value[Ai]-(just_map_pixel_value[Ai]-
+					  just_map_pixel_value[Di])*pu;
+					 new_pixel_value[index]=(1-pv)*top_x+(pv)*bot_x;
+				*/
+				/* calc Gouraud value */
+				left_y=just_map_pixel_value[Bi]-(just_map_pixel_value[Bi]-
+						just_map_pixel_value[Ai])*(pv);
+				right_y=just_map_pixel_value[Ci]-(just_map_pixel_value[Ci]-
+						just_map_pixel_value[Di])*(pv);	
+				new_pixel_value[index]=(1-pu)*left_y+(pu)*right_y;
+				/* recalc min,max*/
+				if (new_pixel_value[index]>*max_f ) 
+				{
+					*max_f=new_pixel_value[index];
+				}
+				if (new_pixel_value[index]<*min_f )
+				{
+					*min_f=new_pixel_value[index];
+				}
+			}
+		}
+		/* dots at Gouraud corners. Have to loop again now have f_min,f_ max */
+		index=0;															
+		for(rw=0;rw<number_of_mesh_rows*discretisation+1;rw++)
+		{																
+			for(col=0;col<number_of_mesh_columns*discretisation+1;col++)
+			{																		
+				index=(fl_q_col_width*col)+(int)(fl_q_row_height*rw)*(act_width+1);
+				new_pixel_value[index]=*max_f;
+			}
+		}
+		/* this copies new_pixel values to the correct place in pixel_value*/
+		for(j=0;j<map_height;j++)
+		{
+			for(i=0;i<map_width;i++)
+			{
+				pixel_index=j*map_width+i;
+				if ((j>=min_y_pixel)&&(j<=(min_y_pixel+act_height))&&(i>=min_x_pixel)&&
+					(i<=(min_x_pixel+act_width)))
+				{
+					new_i=i-min_x_pixel;
+					new_j=j-min_y_pixel;
+					new_pixel_index=new_j*act_width+new_i+new_j;
+					pixel_value[pixel_index]=new_pixel_value[new_pixel_index];
+				}
+			}															
+		}
+	}
+	else
+	{ 
+		display_message(ERROR_MESSAGE,"gouraud_from_pixel_value invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* gouraud_from_pixel_value*/
+#endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
+
+#if defined(GOURAUD_FROM_MESH)
+static int gouraud_from_mesh(float *top_x,float *bot_x,float *left_y,
+	float *right_y,float *f_approx,float *f,float u,float v,int i_jm1,int i_j,
+	int im1_jm1,int im1_j)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2001
+
+DESCRIPTION :
+Used in calculation of GOURAUD_FROM_MESH
+An experimental function. Only works for Torso maps?
+*******************************************************************************/
+{
+	int return_code;
+	ENTER(gouraud_from_mesh);
+	if(top_x&&bot_x&&left_y&&right_y&&f_approx&&f)
+	{
+		return_code=1;
+		/* this does Gourand shading, using the mesh row and column corners */
+		*top_x=f[i_jm1]-(f[i_jm1]-f[i_j])*u;
+		*bot_x=f[im1_jm1]-(f[im1_jm1]-f[im1_j])*u;
+		*left_y=f[i_jm1]-(f[i_jm1]-f[im1_jm1])*(1-v);
+		*right_y=f[i_j]-(f[i_j]-f[im1_j])*(1-v);
+		/* or f_approx=(1-u)*left_y+(u)*
+			 right_y;*/
+		/* (left_y,right_y redundant)*/
+		*f_approx=(v)*(*top_x)+(1-v)*(*bot_x);
+	}
+	else
+	{ 
+		display_message(ERROR_MESSAGE,"gouraud_from_mesh invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* gouraud_from_mesh*/
+#endif /* defined(GOURAUD_FROM_MESH) */
+
+int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing,
+		int map_width,int map_height, int map_x_offset,int map_y_offset)
+/*******************************************************************************
+LAST MODIFIED : 13 July 2001
+
+DESCRIPTION :
+This function draws the <map> in the <drawing>, with <map_width>, <map_height> 
+at <map_x_offset> <map_y_offset>. <map_width>, <map_height> <map_x_offset> 
+<map_y_offset> must be inside drawing->width,drawing->height. (This is checked)
+ If <recalculate> is >0 then the
 colours for the pixels are recalculated.  If <recalculate> is >1 then the
 interpolation functions are also recalculated.  If <recalculate> is >2 then the
 <map> is resized to match the <drawing>.
@@ -7503,41 +10391,22 @@ GOURAUD_FROM_MESH or GOURAUD_FROM_PIXEL_VALUE. A test thing really, for
 comparison with 3D maps.
 ==============================================================================*/
 {
-	char draw_boundary,draw_contours,draw_contour_value,undecided_accepted,
-		valid_mu_and_theta,valid_u_and_v,value_string[11];
+	char draw_boundary,draw_contours,undecided_accepted,
+		valid_u_and_v;
 	char *background_map_boundary=(char *)NULL;
 	char *background_map_boundary_base=(char *)NULL;
 	char *electrode_drawn=(char *)NULL;
 	char *first=(char *)NULL;
-	char *name=(char *)NULL;
-	char *temp_char=(char *)NULL;
-	char title[12];
-	double integral;
+	char name[11];
+	char *temp_char=(char *)NULL;	
 	Display *display=(Display *)NULL;
 	enum Map_type map_type;
-	float a,b,background_pixel_value,boundary_pixel_value,c,contour_maximum,
-		contour_minimum,contour_step,cos_mu_hat,cos_theta_hat,d,det,dfdx_i_j,
-		dfdx_i_jm1,dfdx_im1_j,dfdx_im1_jm1,dfdy_i_j,dfdy_i_jm1,dfdy_im1_j,
-		dfdy_im1_jm1,
-		dxdmu,dxdtheta,dydmu,dydtheta,d2fdxdy_i_j,d2fdxdy_i_jm1,d2fdxdy_im1_j,
-		d2fdxdy_im1_jm1,error_mu,error_theta,f_approx,fibre_angle,
-		fibre_angle_1,fibre_angle_2,fibre_angle_3,fibre_angle_4,fibre_length,
-		fibre_x,fibre_y,f_i_j,f_i_jm1,f_im1_j,f_im1_jm1,frame_time,frame_time_freq,
-		f_value,height,h01_u,h01_v,h02_u,h02_v,h11_u,h11_v,h12_u,h12_v,lambda,
-		max_f,maximum_value,min_f,minimum_value,mu,mu_1,mu_2,mu_3,mu_4,pi,
-		pi_over_2,pixel_aspect_ratio,proportion,r,range_f,sin_mu_hat,sin_theta_hat,
-		theta,theta_1,theta_2,theta_3,theta_4,title_x,title_y,two_pi,u,v,width,
-		xi_1,xi_2,x_screen,x_screen_left,x_screen_step,y_screen,y_screen_top,
-		y_screen_step;
-	float *d2fdxdy=(float *)NULL;
-	float *dfdx=(float *)NULL;
-	float *dfdy=(float *)NULL;
+	float a,background_pixel_value,boundary_pixel_value,f_approx,frame_time,f_value,
+		max_f,min_f,pi,pi_over_2,pixel_aspect_ratio,range_f,two_pi,u,v,x_screen,
+		x_screen_left,x_screen_step,y_screen,y_screen_top,y_screen_step;
 	float *electrode_value=(float *)NULL;
-	float *f=(float *)NULL;
-	float *float_value=(float *)NULL;
 	float *max_x=(float *)NULL;
 	float *max_y =(float *)NULL;		
-	float *landmark_point=(float *)NULL;
 	float *min_x,*min_y=(float *)NULL;
 	float *pixel_value=(float *)NULL;
 	float *stretch_y=(float *)NULL;
@@ -7549,49 +10418,27 @@ comparison with 3D maps.
 	float *y_item=(float *)NULL;
 	float *y_mesh=(float *)NULL;
 	GC graphics_context;
-	int after,ascent,before,bit_map_pad,bit_map_unit,boundary_type,cell_number,
-		cell_range,column,contour_area,contour_areas_in_x,contour_areas_in_y,
-		contour_x_spacing,contour_y_spacing,datum,descent,direction,drawing_height,
-		drawing_width,*draw_region_number,end,end_search_interval,event_number,
-		fibre_iteration,fibre_spacing,found,frame_number,i,i_j,i_jm1,im1_j,im1_jm1,
-		j,k,l,marker_size,maximum_x,maximum_y,middle,minimum_x,minimum_y,
-		name_length,next_contour_x,number_of_devices,number_of_columns,
-		number_of_contour_areas,number_of_contours,number_of_drawn_regions,
-		number_of_electrodes,number_of_frames,number_of_mesh_columns,
-		number_of_mesh_rows,number_of_regions,number_of_rows,number_of_signals,
+	int ascent,bit_map_pad,bit_map_unit,column,contour_areas_in_x,
+		contour_areas_in_y,contour_x_spacing,contour_y_spacing,descent,direction,
+		*draw_region_number,frame_number,i,j,maximum_x,maximum_y,minimum_x,minimum_y,
+		number_of_devices,number_of_columns,number_of_contour_areas,
+		number_of_drawn_regions,number_of_electrodes,number_of_mesh_rows,
+		number_of_frames,number_of_mesh_columns,number_of_regions,number_of_rows,
 		number_of_spectrum_colours,pixel_left,pixel_top,region_number,return_code,
-		row,scan_line_bytes,screen_region_height,screen_region_width,start,
-		start_search_interval,string_length,temp_int,temp_region_number,valid_i_j,
-		valid_i_jm1,valid_im1_j,valid_im1_jm1,x_border,x_name_border,x_offset,
-		x_pixel,x_separation,
-#if defined (NO_ALIGNMENT)
-		x_string,
-#endif /* defined (NO_ALIGNMENT) */
-		y_border,y_name_border,y_offset,
-		y_pixel,y_separation
-#if defined (NO_ALIGNMENT)
-		,y_string
-#endif /* defined (NO_ALIGNMENT) */
-		,x_off,y_off;
+		row,scan_line_bytes,screen_region_height,screen_region_width,
+		temp_region_number,x_border,x_name_border,x_pixel,y_border,y_name_border,
+		y_pixel;
 	int *screen_x=(int *)NULL;
 	int *screen_y=(int *)NULL;
 	int *start_x=(int *)NULL;
 	int *start_y=(int *)NULL;
-	int *times=(int *)NULL;
-	Pixel background_pixel,boundary_pixel;
 	Pixel *spectrum_pixels=(Pixel *)NULL;
 	short int *contour_x=(short int *)NULL;
 	short int	*contour_y=(short int *)NULL;
-	short int	*short_int_value=(short int *)NULL;
 	struct Device **device=(struct Device **)NULL;
 	struct Device	**electrode=(struct Device **)NULL;
 	struct Device_description *description=
-		(struct Device_description *)NULL;
-	struct Event *event=(struct Event *)NULL;
-	struct Fibre_node *local_fibre_node_1=(struct Fibre_node *)NULL;
-	struct Fibre_node *local_fibre_node_2=(struct Fibre_node *)NULL;
-	struct Fibre_node *local_fibre_node_3=(struct Fibre_node *)NULL;
-	struct Fibre_node *local_fibre_node_4=(struct Fibre_node *)NULL;
+		(struct Device_description *)NULL;	
 	struct Interpolation_function *function=
 		(struct Interpolation_function *)NULL;
 	struct Map_drawing_information *drawing_information=
@@ -7603,20 +10450,13 @@ comparison with 3D maps.
 	struct Region *region=(struct Region *)NULL;
 	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
 	struct Rig *rig=(struct Rig *)NULL;
-	struct Signal *signal=(struct Signal *)NULL;
-	struct Signal_buffer *buffer=(struct Signal_buffer *)NULL;
-	struct Position *position=(struct Position *)NULL;
 	XCharStruct bounds;
 	XFontStruct *font=(XFontStruct *)NULL;
 	XImage *frame_image=(XImage *)NULL;
 
 #if defined(GOURAUD_FROM_PIXEL_VALUE) 
-	int Ax,Ay,Bx,By,Cx,Cy,Dx,Dy,Ai,Bi,Ci,Di,act_height,act_width,col,
-		discretisation,index,mesh_col_width,new_i,new_j,new_pixel_index,
-		num_pixels,min_x_pixel,min_y_pixel,max_x_pixel,max_y_pixel,mesh_row_height,
-		pixel_index,px,py,rw;
-	float fl_act_height,fl_act_width,fl_q_col_width,fl_q_row_height,
-		*just_map_pixel_value,left_y,right_y,*new_pixel_value,pu,pv;
+	int num_pixels,min_x_pixel,min_y_pixel,max_x_pixel,max_y_pixel;
+	float *just_map_pixel_value,*new_pixel_value;
 	min_x_pixel=10000;
 	min_y_pixel=10000;
 	max_x_pixel=0;max_y_pixel=0;
@@ -7636,25 +10476,15 @@ comparison with 3D maps.
 		(0<(number_of_frames=map->number_of_frames))&&(0<=map->frame_number)&&
 		(map->frame_number<number_of_frames)&&(map->frames)&&
 		(drawing_information->user_interface)&&
-		(drawing_information->user_interface=drawing->user_interface))
+		(drawing_information->user_interface=drawing->user_interface)&&
+		(map_width+map_x_offset<=drawing->width)&&
+		(map_height+map_y_offset<=drawing->height))
 		/*???DB.  Am I going overboard with getting rid of globals ?  Should display
 			be a global ? */
 	{
 		display=drawing->user_interface->display;
 		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
-		number_of_contours=map->number_of_contours;
-		drawing_width=drawing->width;
-		drawing_height=drawing->height;
-
-		/*!!jw*/ 		
-		drawing_width=drawing_information->map_width;
-		drawing_height=drawing_information->map_height;		
-		x_off=drawing_information->x_offset;
-		y_off=drawing_information->y_offset;									
-																					
-		background_pixel=drawing_information->background_drawing_colour;
 		spectrum_pixels=drawing_information->spectrum_colours;
-		boundary_pixel=drawing_information->boundary_colour;
 		font=drawing_information->font;
 		if (map->type)
 		{
@@ -7674,31 +10504,19 @@ comparison with 3D maps.
 			case SINGLE_ACTIVATION:
 			{
 				undecided_accepted=map->undecided_accepted;
-				if (map->event_number)
-				{
-					event_number= *(map->event_number);
-				}
-				else
+				if (!map->event_number)
 				{
 					display_message(ERROR_MESSAGE,"draw_map_2d.  Missing event_number");
-				}
-				if (map->datum)
-				{
-					datum= *(map->datum);
-				}
-				else
+				}			
+				if (!map->datum)
 				{
 					display_message(ERROR_MESSAGE,"draw_map_2d.  Missing datum");
-				}
+				}			
 			} break;
 			case MULTIPLE_ACTIVATION:
 			{
 				undecided_accepted=map->undecided_accepted;
-				if (map->datum)
-				{
-					datum= *(map->datum);
-				}
-				else
+				if (!map->datum)
 				{
 					display_message(ERROR_MESSAGE,"draw_map_2d.  Missing datum");
 				}
@@ -7706,30 +10524,23 @@ comparison with 3D maps.
 			case INTEGRAL:
 			{
 				undecided_accepted=map->undecided_accepted;
-				if (map->start_search_interval)
-				{
-					start_search_interval= *(map->start_search_interval);
-				}
-				else
+				if (!map->start_search_interval)
 				{
 					display_message(ERROR_MESSAGE,
 						"draw_map_2d.  Missing start_search_interval");
-				}
-				if (map->end_search_interval)
-				{
-					end_search_interval= *(map->end_search_interval);
-				}
-				else
+				}			
+				if (!map->end_search_interval)
 				{
 					display_message(ERROR_MESSAGE,
-						"draw_map_2d.  Missing end_search_interval");
+						"draw_map_2d.  Missing end_search_interval");	
 				}
+			
 			} break;
 			case POTENTIAL:
 			{
 				undecided_accepted=map->undecided_accepted;
 			} break;
-		}
+		}/* switch (map_type) */
 		if (map->rig_pointer)
 		{
 			if ((rig= *(map->rig_pointer))&&
@@ -7771,7 +10582,7 @@ comparison with 3D maps.
 					{
 						draw_region_number[i]= -1;
 					}
-				}
+				}/* for (i=0;i<number_of_regions;i++) */
 				map->number_of_electrodes=number_of_electrodes;
 				if (number_of_electrodes>0)
 				{
@@ -7843,361 +10654,23 @@ comparison with 3D maps.
 									}
 								}
 								/* perform projection and update ranges */
-								region_number=draw_region_number[description->region->number];
-								position= &(description->properties.electrode.position);
-								switch (description->region->type)
-								{
-									case SOCK:
-									{
-										linear_transformation(description->region->properties.sock.
-											linear_transformation,position->x,position->y,position->z,
-											&a,&b,&c);
-										cartesian_to_prolate_spheroidal(a,b,c,
-											description->region->properties.sock.focus,&lambda,&mu,
-											&theta,(float *)NULL);
-										switch (map->projection_type)
-										{
-											case HAMMER_PROJECTION:
-											{
-												Hammer_projection(mu,theta,x_item,y_item,(float *)NULL);
-												if (first[region_number])
-												{
-													first[region_number]=0;
-													max_x[region_number]=mu;
-												}
-												else
-												{
-													if (mu>max_x[region_number])
-													{
-														max_x[region_number]=mu;
-													}
-												}
-											} break;
-											case POLAR_PROJECTION:
-											{
-												polar_projection(mu,theta,x_item,y_item,(float *)NULL);
-												if (first[region_number])
-												{
-													first[region_number]=0;
-													max_x[region_number]=mu;
-												}
-												else
-												{
-													if (mu>max_x[region_number])
-													{
-														max_x[region_number]=mu;
-													}
-												}
-											} break;
-										}
-									} break;
-									case PATCH:
-									{
-										*x_item=position->x;
-										*y_item=position->y;
-										if (first[region_number])
-										{
-											first[region_number]=0;
-											min_x[region_number]= *x_item;
-											min_y[region_number]= *y_item;
-											max_x[region_number]= *x_item;
-											max_y[region_number]= *y_item;
-										}
-										else
-										{
-											if (*x_item<min_x[region_number])
-											{
-												min_x[region_number]= *x_item;
-											}
-											else
-											{
-												if (*x_item>max_x[region_number])
-												{
-													max_x[region_number]= *x_item;
-												}
-											}
-											if (*y_item<min_y[region_number])
-											{
-												min_y[region_number]= *y_item;
-											}
-											else
-											{
-												if (*y_item>max_y[region_number])
-												{
-													max_y[region_number]= *y_item;
-												}
-											}
-										}
-									} break;
-									case TORSO:
-									{
-										cartesian_to_cylindrical_polar(position->x,position->y,
-											position->z,&r,x_item,y_item,(float *)NULL);
-										if (first[region_number])
-										{
-											first[region_number]=0;
-											min_x[region_number]= *x_item;
-											min_y[region_number]= *y_item;
-											max_x[region_number]= *x_item;
-											max_y[region_number]= *y_item;
-										}
-										else
-										{
-											if (*x_item<min_x[region_number])
-											{
-												min_x[region_number]= *x_item;
-											}
-											else
-											{
-												if (*x_item>max_x[region_number])
-												{
-													max_x[region_number]= *x_item;
-												}
-											}
-											if (*y_item<min_y[region_number])
-											{
-												min_y[region_number]= *y_item;
-											}
-											else
-											{
-												if (*y_item>max_y[region_number])
-												{
-													max_y[region_number]= *y_item;
-												}
-											}
-										}
-									} break;
-								}
+								draw_2d_perform_projection_update_ranges(map,description,
+									draw_region_number,x_item,y_item,first,max_x,min_x,max_y,min_y);
 								/* calculate electrode value */
 								f_value=0;
 								*electrode_drawn=0;
-								switch (map_type)
-								{
-									case NO_MAP_FIELD:
-									/* always draw all the electrodes if have no map */
-									{
-										*electrode_drawn=1;								
-									}break;
-									case SINGLE_ACTIVATION:
-									{
-										if ((signal=(*electrode)->signal)&&
-											((ACCEPTED==signal->status)||(undecided_accepted&&
-												(UNDECIDED==signal->status)))&&
-											(buffer=signal->buffer)&&(times=buffer->times))
-										{
-											event=signal->first_event;
-											while (event&&(event->number<event_number))
-											{
-												event=event->next;
-											}
-											if (event&&(event->number==event_number)&&
-												((ACCEPTED==event->status)||
-													(undecided_accepted&&(UNDECIDED==event->status))))
-											{
-												f_value=(float)(times[event->time]-times[datum])*1000/
-													(signal->buffer->frequency);
-												*electrode_drawn=1;
-											}
-										}
-									} break;
-									case MULTIPLE_ACTIVATION:
-									{
-										if ((signal=(*electrode)->signal)&&
-											((ACCEPTED==signal->status)||(undecided_accepted&&
-												(UNDECIDED==signal->status)))&&
-											(buffer=signal->buffer)&&(times=buffer->times))
-										{
-											found=0;
-											event=signal->first_event;
-											while (event)
-											{
-												if ((ACCEPTED==event->status)||
-													(undecided_accepted&&(UNDECIDED==event->status)))
-												{
-													a=(float)(times[datum]-times[event->time])*1000/
-														(signal->buffer->frequency);
-													if (found)
-													{
-														if (((f_value<0)&&(f_value<a))||
-															((f_value>=0)&&(0<=a)&&(a<f_value)))
-														{
-															f_value=a;
-														}
-													}
-													else
-													{
-														found=1;
-														*electrode_drawn=1;
-														f_value=a;
-													}
-												}
-												event=event->next;
-											}
-										}
-									} break;
-									case INTEGRAL:
-									{
-										if ((signal=(*electrode)->signal)&&
-											(0<=start_search_interval)&&
-											(start_search_interval<=end_search_interval)&&
-											(end_search_interval<signal->buffer->
-												number_of_samples)&&
-											((signal->status==ACCEPTED)||(undecided_accepted&&
-												(signal->status==UNDECIDED))))
-										{
-											integral= -(double)((*electrode)->channel->offset)*
-												(double)(end_search_interval-
-													start_search_interval+1);
-											number_of_signals=signal->buffer->number_of_signals;
-											switch (signal->buffer->value_type)
-											{
-												case SHORT_INT_VALUE:
-												{
-													short_int_value=
-														(signal->buffer->signals.short_int_values)+
-														(start_search_interval*number_of_signals+
-															(signal->index));
-													for (i=end_search_interval-start_search_interval;
-															 i>=0;i--)
-													{
-														integral += (double)(*short_int_value);
-														short_int_value += number_of_signals;
-													}
-												} break;
-												case FLOAT_VALUE:
-												{
-													float_value=
-														(signal->buffer->signals.float_values)+
-														(start_search_interval*number_of_signals+
-															(signal->index));
-													for (i=end_search_interval-start_search_interval;
-															 i>=0;i--)
-													{
-														integral += (double)(*float_value);
-														float_value += number_of_signals;
-													}
-												} break;
-											}
-											integral *= (double)((*electrode)->channel->gain)/
-												(double)(signal->buffer->frequency);
-											*electrode_drawn=1;
-											f_value=(float)integral;
-										}
-									} break;
-									case POTENTIAL:
-									{
-										if (NO_INTERPOLATION==map->interpolation_type)
-										{
-											if ((signal=(*electrode)->signal)&&
-												((ACCEPTED==signal->status)||(undecided_accepted&&
-													(UNDECIDED==signal->status)))&&
-												(buffer=signal->buffer)&&(times=buffer->times))
-											{
-												switch (buffer->value_type)
-												{
-													case SHORT_INT_VALUE:
-													{
-														f_value=((float)((buffer->signals.
-															short_int_values)[(*(map->potential_time))*
-																(buffer->number_of_signals)+(signal->index)])-
-															((*electrode)->channel->offset))*
-															((*electrode)->channel->gain);
-													} break;
-													case FLOAT_VALUE:
-													{
-														f_value=((buffer->signals.float_values)[
-															(*(map->potential_time))*
-															(buffer->number_of_signals)+(signal->index)]-
-															((*electrode)->channel->offset))*
-															((*electrode)->channel->gain);
-													} break;
-												}
-												*electrode_drawn=1;
-											}
-										}
-										else
-										{
-											if (1<number_of_frames)
-											{
-												frame_number=map->frame_number;
-												frame_time=((float)(number_of_frames-frame_number-1)*
-													(map->frame_start_time)+(float)frame_number*
-													(map->frame_end_time))/(float)(number_of_frames-1);
-											}
-											else
-											{
-												frame_time=map->frame_start_time;
-											}
-											if ((signal=(*electrode)->signal)&&
-												((ACCEPTED==signal->status)||(undecided_accepted&&
-													(UNDECIDED==signal->status)))&&
-												(buffer=signal->buffer)&&(times=buffer->times)&&
-												((float)(times[0])<=(frame_time_freq=frame_time*
-													(buffer->frequency)/1000))&&(frame_time_freq<=
-														(float)(times[(buffer->number_of_samples)-1])))
-											{
-												before=0;
-												after=(buffer->number_of_samples)-1;
-												while (before+1<after)
-												{
-													middle=(before+after)/2;
-													if (frame_time_freq<times[middle])
-													{
-														after=middle;
-													}
-													else
-													{
-														before=middle;
-													}
-												}
-												if (before==after)
-												{
-													proportion=0.5;
-												}
-												else
-												{
-													proportion=((float)(times[after])-frame_time_freq)/
-														(float)(times[after]-times[before]);
-												}
-												switch (buffer->value_type)
-												{
-													case SHORT_INT_VALUE:
-													{
-														f_value=(proportion*(float)((buffer->signals.
-															short_int_values)[before*
-																(buffer->number_of_signals)+(signal->index)])+
-															(1-proportion)*(float)((buffer->signals.
-																short_int_values)[after*
-																	(buffer->number_of_signals)+(signal->index)])-
-															((*electrode)->channel->offset))*
-															((*electrode)->channel->gain);
-													} break;
-													case FLOAT_VALUE:
-													{
-														f_value=(proportion*(buffer->signals.float_values)[
-															before*(buffer->number_of_signals)+
-															(signal->index)]+(1-proportion)*
-															(buffer->signals.float_values)[after*
-																(buffer->number_of_signals)+(signal->index)]-
-															((*electrode)->channel->offset))*
-															((*electrode)->channel->gain);
-													} break;
-												}
-												*electrode_drawn=1;
-											}
-										}
-									} break;
-								}
+								draw_2d_calculate_electrode_value(map,electrode_drawn,electrode,
+									&f_value);
 								*electrode_value=f_value;
 								electrode_value++;
 								electrode_drawn++;
 								electrode++;
 								x_item++;
 								y_item++;
-							}
+							}/* if ((ELECTRODE==(description=(*device)->description)->type)&& */
 							device++;
 							number_of_devices--;
-						}
+						}/* while (number_of_devices>0) */
 						/* divide the drawing area into regions */
 						region_item=get_Rig_region_list(rig);
 						for (temp_region_number=0;temp_region_number<number_of_regions;
@@ -8234,10 +10707,10 @@ comparison with 3D maps.
 										min_x[region_number]= -pi;
 										max_x[region_number]=pi;
 									} break;
-								}
-							}
+								}/* switch (region->type) */
+							}/* for (temp_region_number=0;temp_region_number<number_of_regions; */
 							region_item=get_Region_list_item_next(region_item);
-						}
+						}/* for (temp_region_number=0;temp_region_number<number_of_regions; */
 						number_of_columns=(int)(0.5+sqrt((double)number_of_drawn_regions));
 						if (number_of_columns<1)
 						{
@@ -8256,8 +10729,8 @@ comparison with 3D maps.
 							number_of_rows -= i/(number_of_columns-1);
 						}
 						/* make the regions fill the width and the height */
-						screen_region_width=(drawing_width)/number_of_columns;
-						screen_region_height=(drawing_height)/number_of_rows;
+						screen_region_width=(map_width)/number_of_columns;
+						screen_region_height=(map_height)/number_of_rows;
 						/* calculate the transformation from map coordinates to screen
 							 coordinates */
 						pixel_aspect_ratio=get_pixel_aspect_ratio(display);
@@ -8316,10 +10789,10 @@ comparison with 3D maps.
 										(2*y_border+ascent+descent+1)))/(max_y[i]-min_y[i]);
 								}
 							}
-							start_x[i] += ((i/number_of_rows)*drawing_width)/
+							start_x[i] += ((i/number_of_rows)*map_width)/
 								number_of_columns;
-							start_y[i] += ((i%number_of_rows)*drawing_height)/number_of_rows;
-						}
+							start_y[i] += ((i%number_of_rows)*map_height)/number_of_rows;
+						}/* for (i=0;i<number_of_drawn_regions;i++) */
 						/* calculate the electrode screen locations */
 						electrode=map->electrodes;
 						x_item=x;
@@ -8342,8 +10815,8 @@ comparison with 3D maps.
 							y_item++;
 							screen_x++;
 							screen_y++;
-						}
-						/*??? draw grid */
+						}/* for (i=number_of_electrodes;i>0;i--) */
+
 						/* construct a colour map image for colour map or contours or
 							 values */
 						/* draw colour map and contours first (background) */
@@ -8359,13 +10832,13 @@ comparison with 3D maps.
 									/* reallocate memory for frames */
 									contour_x_spacing=
 										drawing_information->pixels_between_contour_values;
-									contour_areas_in_x=drawing_width/contour_x_spacing;
+									contour_areas_in_x=map_width/contour_x_spacing;
 									if (contour_areas_in_x<1)
 									{
 										contour_areas_in_x=1;
 									}
-									contour_x_spacing=drawing_width/contour_areas_in_x;
-									if (contour_x_spacing*contour_areas_in_x<drawing_width)
+									contour_x_spacing=map_width/contour_areas_in_x;
+									if (contour_x_spacing*contour_areas_in_x<map_width)
 									{
 										if ((contour_x_spacing+1)*(contour_areas_in_x-1)<
 											(contour_x_spacing-1)*(contour_areas_in_x+1))
@@ -8379,13 +10852,13 @@ comparison with 3D maps.
 									}
 									contour_y_spacing=
 										drawing_information->pixels_between_contour_values;
-									contour_areas_in_y=drawing_height/contour_y_spacing;
+									contour_areas_in_y=map_height/contour_y_spacing;
 									if (contour_areas_in_y<1)
 									{
 										contour_areas_in_y=1;
 									}
-									contour_y_spacing=drawing_height/contour_areas_in_y;
-									if (contour_y_spacing*contour_areas_in_y<drawing_height)
+									contour_y_spacing=map_height/contour_areas_in_y;
+									if (contour_y_spacing*contour_areas_in_y<map_height)
 									{
 										if ((contour_y_spacing+1)*(contour_areas_in_y-1)<
 											(contour_y_spacing-1)*(contour_areas_in_y+1))
@@ -8405,7 +10878,7 @@ comparison with 3D maps.
 										/* each scan line occupies a multiple of this number of
 											 bits */
 										bit_map_pad=BitmapPad(display);
-										scan_line_bytes=(((drawing_width*bit_map_unit-1)/
+										scan_line_bytes=(((map_width*bit_map_unit-1)/
 											bit_map_pad+1)*bit_map_pad-1)/8+1;
 										frame_number=0;
 										while ((frame_number<number_of_frames)&&return_code)
@@ -8425,7 +10898,7 @@ comparison with 3D maps.
 												/* allocate memory for pixel values */
 												pixel_value=(float *)NULL;
 												if (REALLOCATE(pixel_value,frame->pixel_values,float,
-													drawing_width*drawing_height))
+													map_width*map_height))
 												{
 													frame->pixel_values=pixel_value;
 													/* allocate memory for image */
@@ -8437,11 +10910,11 @@ comparison with 3D maps.
 													}
 													temp_char=(char *)NULL;
 													if (ALLOCATE(temp_char,char,
-														drawing_height*scan_line_bytes)&&
+														map_height*scan_line_bytes)&&
 														(frame->image=XCreateImage(display,
 															XDefaultVisual(display,XDefaultScreen(display)),
-															drawing->depth,ZPixmap,0,temp_char,drawing_width,
-															drawing_height,bit_map_pad,scan_line_bytes)))
+															drawing->depth,ZPixmap,0,temp_char,map_width,
+															map_height,bit_map_pad,scan_line_bytes)))
 													{
 														/* initialize the contour areas */
 														for (i=number_of_contour_areas*
@@ -8554,7 +11027,7 @@ comparison with 3D maps.
 										{
 											/* allocate memory for drawing the map boundary */
 											if (ALLOCATE(background_map_boundary_base,char,
-												drawing_width*drawing_height))
+												map_width*map_height))
 											{
 												/*???DB.  Put the frame loop on the inside ? */
 												frame=map->frames;
@@ -8576,7 +11049,7 @@ comparison with 3D maps.
 													pixel_value=frame->pixel_values;
 													/* clear the image */
 													background_map_boundary=background_map_boundary_base;
-													for (i=drawing_width*drawing_height;i>0;i--)
+													for (i=map_width*map_height;i>0;i--)
 													{
 														*background_map_boundary=0;
 														background_map_boundary++;
@@ -8609,21 +11082,18 @@ comparison with 3D maps.
 																	map->finite_element_mesh_columns,
 																	map->membrane_smoothing,
 																	map->plate_bending_smoothing)))
-															{
-																f=function->f;
-																dfdx=function->dfdx;
-																dfdy=function->dfdy;
-																d2fdxdy=function->d2fdxdy;
-																number_of_mesh_rows=function->number_of_rows;
+															{																															
 																number_of_mesh_columns=
 																	function->number_of_columns;
+																number_of_mesh_rows=
+																	function->number_of_rows;
 																y_mesh=function->y_mesh;
 																x_mesh=function->x_mesh;
 																/* calculate pixel values */
 																pixel_left=((region_number/number_of_rows)*
-																	drawing_width)/number_of_columns;
+																	map_width)/number_of_columns;
 																pixel_top=((region_number%number_of_rows)*
-																	drawing_height)/number_of_rows;
+																	map_height)/number_of_rows;
 																x_screen_step=1/stretch_x[region_number];
 																y_screen_step= -1/stretch_y[region_number];
 																x_screen_left=min_x[region_number]+
@@ -8639,10 +11109,11 @@ comparison with 3D maps.
 																	pixel-array-without-border.  This will be a
 																	bit too big, but don't know exact size yet */
 																if (!(ALLOCATE(just_map_pixel_value,float,
-																	drawing_width*drawing_height)))
+																	map_width*map_height)))
 																{	
 																	display_message(ERROR_MESSAGE,
 																		"draw_map_2d. ALLOCATE just_map_pixel_value failed");
+																	return_code=0;
 																}														
 #endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
 																for (j=0;j<screen_region_height;j++)
@@ -8651,126 +11122,13 @@ comparison with 3D maps.
 																	x_pixel=pixel_left;
 																	for (i=0;i<screen_region_width;i++)
 																	{
+																		/* calculate the u and v  */
+																		draw_2d_calculate_u_and_v(map,
+																			current_region,x_screen,y_screen,pi_over_2,
+																			pi,two_pi,&u,&v,&valid_u_and_v);
 																		/* calculate the element coordinates */
-																		switch (current_region->type)
-																		{
-																			case SOCK:
-																			{
-																				switch (map->projection_type)
-																				{
-																					case HAMMER_PROJECTION:
-																					{
-																						/*???avoid singularity ? */
-																						if ((x_screen!=0)||
-																							((y_screen!=1)&&(y_screen!= -1)))
-																						{
-																							a=x_screen*x_screen;
-																							b=y_screen*y_screen;
-																							c=2-a-b;
-																							if (c>1)
-																							{
-																								d=y_screen*sqrt(c);
-																								if (d>=1)
-																								{
-																									mu=pi;
-																								}
-																								else
-																								{
-																									if (d<= -1)
-																									{
-																										mu=0;
-																									}
-																									else
-																									{
-																										mu=pi_over_2+asin(d);
-																									}
-																								}
-																								d=sqrt((a*c)/(1-b*c));
-																								if (x_screen>0)
-																								{
-																									if (d>=1)
-																									{
-																										theta=two_pi;
-																									}
-																									else
-																									{
-																										theta=pi-2*asin(d);
-																									}
-																								}
-																								else
-																								{
-																									if (d>=1)
-																									{
-																										theta=0;
-																									}
-																									else
-																									{
-																										theta=pi+2*asin(d);
-																									}
-																								}
-																								u=theta;
-																								v=mu;
-																								valid_u_and_v=1;
-																							}
-																							else
-																							{
-																								valid_u_and_v=0;
-																							}
-																						}
-																						else
-																						{
-																							valid_u_and_v=0;
-																						}
-																					} break;
-																					case POLAR_PROJECTION:
-																					{
-																						mu=sqrt(x_screen*x_screen+
-																							y_screen*y_screen);
-																						if (mu>0)
-																						{
-																							if (x_screen>0)
-																							{
-																								if (y_screen>0)
-																								{
-																									theta=asin(y_screen/mu);
-																								}
-																								else
-																								{
-																									theta=two_pi+
-																										asin(y_screen/mu);
-																								}
-																							}
-																							else
-																							{
-																								theta=pi-asin(y_screen/mu);
-																							}
-																						}
-																						else
-																						{
-																							theta=0;
-																						}
-																						u=theta;
-																						v=mu;
-																						valid_u_and_v=1;
-																					} break;
-																				}
-																			} break;
-																			case PATCH:
-																			{
-																				u=x_screen;
-																				v=y_screen;
-																				valid_u_and_v=1;
-																			} break;
-																			case TORSO:
-																			{
-																				/*???DB.  Need scaling in x ? */
-																				u=x_screen;
-																				v=y_screen;
-																				valid_u_and_v=1;
-																			} break;
-																		}
 																		if (valid_u_and_v)
-																		{
+																		{																		
 																			/* determine which element the point is
 																				 in */
 																			column=0;
@@ -8788,99 +11146,9 @@ comparison with 3D maps.
 																					row++;
 																				}
 																				if ((row>0)&&(v<=y_mesh[row]))
-																				{																				
-																					/* calculate basis function values */
-																					width=x_mesh[column]-x_mesh[column-1];
-																					h11_u=h12_u=u-x_mesh[column-1];
-																					u=h11_u/width;
-																					h01_u=(2*u-3)*u*u+1;
-																					h11_u *= (u-1)*(u-1);
-																					h02_u=u*u*(3-2*u);
-																					h12_u *= u*(u-1);
-																					height=y_mesh[row]-y_mesh[row-1];
-																					h11_v=h12_v=v-y_mesh[row-1];
-																					v=h11_v/height;
-																					h01_v=(2*v-3)*v*v+1;
-																					h11_v *= (v-1)*(v-1);
-																					h02_v=v*v*(3-2*v);
-																					h12_v *= v*(v-1);
-																					/* calculate the interpolation
-																						function coefficients */
-																					f_im1_jm1=h01_u*h01_v;
-																					f_im1_j=h02_u*h01_v;
-																					f_i_j=h02_u*h02_v;
-																					f_i_jm1=h01_u*h02_v;
-																					dfdx_im1_jm1=h11_u*h01_v;
-																					dfdx_im1_j=h12_u*h01_v;
-																					dfdx_i_j=h12_u*h02_v;
-																					dfdx_i_jm1=h11_u*h02_v;
-																					dfdy_im1_jm1=h01_u*h11_v;
-																					dfdy_im1_j=h02_u*h11_v;
-																					dfdy_i_j=h02_u*h12_v;
-																					dfdy_i_jm1=h01_u*h12_v;
-																					d2fdxdy_im1_jm1=h11_u*h11_v;
-																					d2fdxdy_im1_j=h12_u*h11_v;
-																					d2fdxdy_i_j=h12_u*h12_v;
-																					d2fdxdy_i_jm1=h11_u*h12_v;
-																					/* calculate node numbers
-																						 NB the local coordinates have the
-																						 top right corner of the element as
-																						 the origin.  This means that
-																						 (i-1,j-1) is the bottom left corner
-																						 (i,j-1) is the top left corner
-																						 (i,j) is the top right corner
-																						 (i-1,j) is the bottom right
-																						 corner */
-																					/* (i-1,j-1) node (bottom left
-																						 corner) */
-																					im1_jm1=
-																						(row-1)*(number_of_mesh_columns+1)+
-																						column-1;
-																					/* (i,j-1) node (top left corner) */
-																					i_jm1=row*(number_of_mesh_columns+1)+
-																						column-1;
-																					/* (i,j) node (top right corner) */
-																					i_j=
-																						row*(number_of_mesh_columns+1)+
-																						column;
-																					/* (i-1,j) node (bottom right
-																						corner) */
-																					im1_j=
-																						(row-1)*(number_of_mesh_columns+1)+
-																						column;
-#if defined(GOURAUD_FROM_MESH)
-/* this does Gourand shading, using the mesh row and column corners */
-																					top_x=f[i_jm1]-(f[i_jm1]-f[i_j])*u;
-																					bot_x=f[im1_jm1]-
-																						(f[im1_jm1]-f[im1_j])*u;
-																					left_y=f[i_jm1]-(f[i_jm1]-f[im1_jm1])*
-																						(1-v);
-																					right_y=f[i_j]-(f[i_j]-f[im1_j])*
-																						(1-v);
-																					/* or f_approx=(1-u)*left_y+(u)*
-																						right_y;*/
-																					/* (left_y,right_y redundant)*/
-																					f_approx=(v)*top_x+(1-v)*bot_x;
-#else
-/* <THIS> is the Normal case*/
-																					f_approx=
-																						f[im1_jm1]*f_im1_jm1+
-																						f[i_jm1]*f_i_jm1+
-																						f[i_j]*f_i_j+
-																						f[im1_j]*f_im1_j+
-																						dfdx[im1_jm1]*dfdx_im1_jm1+
-																						dfdx[i_jm1]*dfdx_i_jm1+
-																						dfdx[i_j]*dfdx_i_j+
-																						dfdx[im1_j]*dfdx_im1_j+
-																						dfdy[im1_jm1]*dfdy_im1_jm1+
-																						dfdy[i_jm1]*dfdy_i_jm1+
-																						dfdy[i_j]*dfdy_i_j+
-																						dfdy[im1_j]*dfdy_im1_j+
-																						d2fdxdy[im1_jm1]*d2fdxdy_im1_jm1+
-																						d2fdxdy[i_jm1]*d2fdxdy_i_jm1+
-																						d2fdxdy[i_j]*d2fdxdy_i_j+
-																						d2fdxdy[im1_j]*d2fdxdy_im1_j;
-#endif /* defined(GOURAUD_FROM_MESH) */
+																				{	
+																					draw_2d_calculate_f_approx(function,
+																						&f_approx,column,row,u,v);
 																					if (max_f<min_f)
 																					{
 																						min_f=f_approx;
@@ -8891,7 +11159,7 @@ comparison with 3D maps.
 																						maximum_y=j;
 																						minimum_x=i;
 																						minimum_y=j;
-																					}
+																					}/* if (max_f<min_f) */
 																					else
 																					{
 																						if (f_approx<min_f)
@@ -8911,182 +11179,40 @@ comparison with 3D maps.
 																								maximum_y=j;
 																							}
 																						}
-																					}
-																					pixel_value[y_pixel*drawing_width+
+																					}/* if (max_f<min_f) */
+																					pixel_value[y_pixel*map_width+
 																						x_pixel]=f_approx;
 																					background_map_boundary_base[
-																						y_pixel*drawing_width+x_pixel]=1;
-#if defined(GOURAUD_FROM_PIXEL_VALUE)
-																					/* record actual (minus border)
-																						drawing width via min and max */
-																					/* fill in the
-																						pixels-without-border-array */
-																					just_map_pixel_value[num_pixels]=
-																						f_approx;
-																					num_pixels++;
-																					if (min_x_pixel>x_pixel)
-																					{
-																						min_x_pixel=x_pixel;
-																					}
-																					if (min_y_pixel>y_pixel)
-																					{
-																						min_y_pixel=y_pixel;
-																					}
-																					if (max_x_pixel<x_pixel)
-																					{
-																						max_x_pixel=x_pixel;
-																					}
-																					if (max_y_pixel<y_pixel)
-																					{
-																						max_y_pixel=y_pixel;
-																					}
+																						y_pixel*map_width+x_pixel]=1;
+#if defined(GOURAUD_FROM_PIXEL_VALUE)																				
+																					set_just_map_pixel_value(
+																						just_map_pixel_value,&num_pixels,
+																						f_approx,x_pixel,y_pixel,&min_x_pixel,
+																						&max_x_pixel,&min_y_pixel,&max_y_pixel);
 #endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
-																				}
-																			}
-																		}
+																				}/* if ((row>0)&&(v<=y_mesh[row])) */
+																			}/* if ((column>0)&&(u<=x_mesh[column])) */
+																		}/* if (valid_u_and_v) */
 																		x_screen += x_screen_step;
 																		x_pixel++;																
-																	}
+																	}/* for (i=0;i<screen_region_width;i++) */
 																	y_screen += y_screen_step;
 																	y_pixel++;															
-																}
+																}/* for (j=0;j<screen_region_height;j++) */
 																destroy_Interpolation_function(&function);
 #if defined(GOURAUD_FROM_PIXEL_VALUE)
-																/* Gouraud shading from pixel_value (f_approx)
-																	values */
-																act_width=max_x_pixel-min_x_pixel;
-																act_height=max_y_pixel-min_y_pixel;
-																/* use electrodes_marker_size so can change
-																	easily, without */
-																/* adding another widget */
-																discretisation=map->electrodes_marker_size;
-																mesh_col_width=act_width/number_of_mesh_columns;
-																mesh_row_height=act_height/number_of_mesh_rows;
-																fl_act_width=act_width;
-																fl_act_height=act_height;
-																fl_q_col_width=(float)(fl_act_width/
-																	(float)(number_of_mesh_columns))/
-																	(float)(discretisation);
-																fl_q_row_height=(float)(fl_act_height/
-																	(float)(number_of_mesh_rows))/
-																	(float)(discretisation);
-																/* now need to do gouraud shading, from
-																	just_map_pixel_value to new_pixel_value */
-																if (!(ALLOCATE(new_pixel_value,float,
-																	num_pixels)))
-																{	
-																	display_message(ERROR_MESSAGE,
-																		"draw_map_2d. ALLOCATE new_pixel_value failed");
-																}
-																/* reset the min and max */
-																min_f=100;
-																max_f=-100;
-																for(py=0;py<act_height+1;py++)
-																{
-																	for(px=0;px<act_width+1;px++)
-																	{
-																		index=py*(act_width+1)+px;
-																		rw=(float)(px)/fl_q_col_width;
-																		if (rw==number_of_mesh_columns*
-																			discretisation) 
-																		{
-																			rw-=1;
-																		}
-																		col=(float)(py)/fl_q_row_height;
-																		if (c==number_of_mesh_rows*discretisation) 
-																		{
-																			col-=1;
-																		}
-																		/* A,B,C,D are corners of Gouraud
-																			rectangle */															
-																		Ax=fl_q_col_width*rw;
-																		Ay=(col+1)*fl_q_row_height;
-																		Ai=Ay*(act_width+1)+Ax;	
-																		Bx=fl_q_col_width*rw;
-																		By=col*fl_q_row_height;
-																		Bi=By*(act_width+1)+Bx;	
-																		Cx=fl_q_col_width*(rw+1);
-																		Cy=col*fl_q_row_height;
-																		Ci=Cy*(act_width+1)+Cx;	
-																		Dx=fl_q_col_width*(rw+1);
-																		Dy=(col+1)*fl_q_row_height;
-																		Di=Dy*(act_width+1)+Dx;	
-																		pu=((float)px-(float)Bx)/
-																			((float)Cx-(float)Bx);
-																		pv=((float)py-(float)By)/
-																			((float)Ay-(float)By);
-																		/* do this, or below. Result is same.
-																		top_x=just_map_pixel_value[Bi]-
-																			(just_map_pixel_value[Bi]-
-																			just_map_pixel_value[Ci])*pu;
-																			bot_x=just_map_pixel_value[Ai]-
-																			(just_map_pixel_value[Ai]-
-																			just_map_pixel_value[Di])*pu;
-																		new_pixel_value[index]=
-																			(1-pv)*top_x+(pv)*bot_x;
-																		*/
-																		/* calc Gouraud value */
-																		left_y=just_map_pixel_value[Bi]-
-																			(just_map_pixel_value[Bi]-
-																			just_map_pixel_value[Ai])*(pv);
-																		right_y=just_map_pixel_value[Ci]-
-																			(just_map_pixel_value[Ci]-
-																			just_map_pixel_value[Di])*(pv);	
-																		new_pixel_value[index]=
-																			(1-pu)*left_y+(pu)*right_y;
-																		/* recalc min,max*/
-																		if (new_pixel_value[index]>max_f ) 
-																		{
-																			max_f=new_pixel_value[index];
-																		}
-																		if (new_pixel_value[index]<min_f )
-																		{
-																			min_f=new_pixel_value[index];
-																		}
-																	}
-																}
-																/* dots at Gouraud corners.  Have to loop again
-																	now have f_min,f_ max */
-																index=0;															
-																for(rw=0;rw<number_of_mesh_rows*
-																	discretisation+1;rw++)
-																{																
-																	for(col=0;col<number_of_mesh_columns*
-																		discretisation+1;col++)
-																	{																		
-																		index=(fl_q_col_width*col)+
-																			(int)(fl_q_row_height*rw)*(act_width+1);
-																		new_pixel_value[index]=max_f;
-																	}
-																}
-																/* this copies new_pixel values to the correct
-																	place in pixel_value*/
-																for(j=0;j<drawing_height;j++)
-																{
-																	for(i=0;i<drawing_width;i++)
-																	{
-																		pixel_index=j*drawing_width+i;
-																		if ((j>=min_y_pixel)&&
-																			(j<=(min_y_pixel+act_height))&&
-																			(i>=min_x_pixel)&&
-																			(i<=(min_x_pixel+act_width)))
-																		{
-																			new_i=i-min_x_pixel;
-																			new_j=j-min_y_pixel;
-																			new_pixel_index=
-																				new_j*act_width+new_i+new_j;
-																			pixel_value[pixel_index]=
-																				new_pixel_value[new_pixel_index];
-																		}
-																	}															
-																}
+																gouraud_from_pixel_value(map,just_map_pixel_value,
+																	min_x_pixel,max_x_pixel,min_y_pixel,max_y_pixel,
+																	number_of_mesh_columns,number_of_mesh_rows,
+																	num_pixels,&min_f,&max_f,map_height,map_width,
+																	pixel_value);
 																DEALLOCATE(just_map_pixel_value);
 																DEALLOCATE(new_pixel_value);
 #endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
-															}
-														}
+															}/* if ((0!=stretch_x[region_number])&& */
+														}/* if (0<=region_number) */
 														region_item=get_Region_list_item_next(region_item);
-													}
+													}/* for (temp_region_number=0; */
 													frame->maximum_region=maximum_region;
 													frame->minimum_region=minimum_region;
 													if (max_f<min_f)
@@ -9099,7 +11225,7 @@ comparison with 3D maps.
 														frame->minimum_y= -1;
 														background_pixel_value= -1;
 														boundary_pixel_value=1;
-													}
+													}/* if (max_f<min_f) */
 													else
 													{
 														frame->maximum=max_f;
@@ -9116,19 +11242,20 @@ comparison with 3D maps.
 															display_message(ERROR_MESSAGE,
 																"draw_map_2d.  Problems with background/boundary");
 														}
-													}
+													}/* if (max_f<min_f) */
+
 													background_map_boundary=background_map_boundary_base;
-													for (i=drawing_height;i>0;i--)
+													for (i=map_height;i>0;i--)
 													{
-														for (j=drawing_width;j>0;j--)
+														for (j=map_width;j>0;j--)
 														{
 															if (0== *background_map_boundary)
 															{
-																if (((i<drawing_height)&&(1==
-																	*(background_map_boundary-drawing_width)))||
+																if (((i<map_height)&&(1==
+																	*(background_map_boundary-map_width)))||
 																	((i>1)&&(1==
-																		*(background_map_boundary+drawing_width)))||
-																	((j<drawing_width)&&(1==
+																		*(background_map_boundary+map_width)))||
+																	((j<map_width)&&(1==
 																		*(background_map_boundary-1)))||
 																	((j>1)&&(1== *(background_map_boundary+1))))
 																{
@@ -9142,10 +11269,10 @@ comparison with 3D maps.
 															background_map_boundary++;
 															pixel_value++;
 														}
-													}
+													}/* for (i=map_height;i>0;i--)*/
 													frame_number++;
 													frame++;
-												}
+												}/* while ((frame_number<number_of_frames)&&return_code) */
 												/*???DB.  loop over frames */
 												if (!(map->fixed_range)||
 													(map->minimum_value>map->maximum_value))
@@ -9180,97 +11307,34 @@ comparison with 3D maps.
 													map->maximum_value=max_f;
 													map->contour_minimum=min_f;
 													map->contour_maximum=max_f;
-												}
+												}/* if (!(map->fixed_range)|| */
 												DEALLOCATE(background_map_boundary_base);
-											}
+											}/* if (ALLOCATE(background_map_boundary_base,char, */
 											else
 											{
 												display_message(ERROR_MESSAGE,
 													"draw_map_2d.  Insufficient memory for background_map_boundary_base");
 											}
-										}
-										/* fill in the image */
-										min_f=map->minimum_value;
-										max_f=map->maximum_value;
-										/* calculate range of values */
-										range_f=max_f-min_f;
-										if (range_f<=0)
-										{
-											range_f=1;
-										}
-										frame=map->frames;
-										frame_number=0;
-										while ((frame_number<number_of_frames)&&return_code)
-										{
-											background_pixel_value=frame->minimum;
-											boundary_pixel_value=frame->maximum;
-											pixel_value=frame->pixel_values;
-											frame_image=frame->image;
-											for (y_pixel=0;y_pixel<drawing_height;y_pixel++)
-											{
-												contour_area=
-													(y_pixel/contour_y_spacing)*contour_areas_in_x;
-												next_contour_x=contour_x_spacing-1;
-												contour_x=(frame->contour_x)+contour_area;
-												contour_y=(frame->contour_y)+contour_area;
-												for (x_pixel=0;x_pixel<drawing_width;x_pixel++)
-												{
-													f_approx= *pixel_value;
-													if (f_approx>=background_pixel_value)
-													{
-														if (f_approx<=boundary_pixel_value)
-														{
-															if (f_approx<min_f)
-															{
-																f_approx=min_f;
-															}
-															else
-															{
-																if (f_approx>max_f)
-																{
-																	f_approx=max_f;
-																}
-															}
-															cell_number=(int)((f_approx-min_f)*
-																(float)(number_of_spectrum_colours-1)/
-																range_f+0.5);
-															XPutPixel(frame_image,x_pixel,y_pixel,
-																spectrum_pixels[cell_number]);
-															cell_number *= number_of_contour_areas;
-															contour_x[cell_number]=x_pixel;
-															contour_y[cell_number]=y_pixel;
-														}
-														else
-														{
-															XPutPixel(frame_image,x_pixel,y_pixel,
-																boundary_pixel);
-														}
-													}
-													else
-													{
-														XPutPixel(frame_image,x_pixel,y_pixel,
-															background_pixel);
-													}
-													pixel_value++;
-													if (x_pixel>=next_contour_x)
-													{
-														contour_x++;
-														contour_y++;
-														next_contour_x += contour_x_spacing;
-													}
-												}
-											}
-											frame_number++;
-											frame++;
-										}
-									}
+										}/*	if (recalculate>1) */								
+										draw_2d_fill_in_image(map,map_height,map_width,
+											contour_x_spacing,contour_y_spacing,spectrum_pixels);
+									} /* if (return_code) */
 									busy_cursor_off((Widget)NULL,
 										drawing_information->user_interface);
 								}
 								frame=(map->frames)+(map->frame_number);
 								if (frame_image=frame->image)
-								{								
+								{											
 									update_colour_map_unemap(map,drawing);									
+									/*!!jw this is a problem! for BLUE_WHITE_RED_SPECTRUM need to do*/
+									/* (something in) update_colour_map_unemap again, as */
+									/* fix_minimum, fix_maximum cause problems */
+									if (BLUE_WHITE_RED_SPECTRUM == Spectrum_get_simple_type(
+										drawing_information->spectrum))
+									{
+										update_colour_map_unemap(map,drawing);
+									}/*!!jw*/
+
 									if ((CONSTANT_THICKNESS==map->contour_thickness)&&
 										(pixel_value=frame->pixel_values))
 									{
@@ -9278,7 +11342,7 @@ comparison with 3D maps.
 										{																				
 											XPSPutImage(display,drawing->pixel_map,
 												(drawing_information->graphics_context).copy,
-												frame_image,0,0,x_off,y_off,drawing_width,drawing_height);
+												frame_image,0,0,map_x_offset,map_y_offset,map_width,map_height);
 											draw_boundary=0;
 										}
 										else
@@ -9291,14 +11355,13 @@ comparison with 3D maps.
 											{									
 												XPSPutImage(display,drawing->pixel_map,
 													(drawing_information->graphics_context).copy,
-													frame_image,0,0,x_off,y_off,drawing_width,drawing_height);
+													frame_image,0,0,map_x_offset,map_y_offset,map_width,map_height);
 												draw_boundary=0;
 											}
 										}
 										if ((SHOW_CONTOURS==map->contours_option)&&
-											((contour_minimum=map->contour_minimum)<
-												(contour_maximum=map->contour_maximum))&&
-											(1<(number_of_contours=map->number_of_contours)))
+											(map->contour_minimum<map->contour_maximum)&&
+											(1<map->number_of_contours))
 										{
 											draw_contours=1;
 										}
@@ -9308,1311 +11371,67 @@ comparison with 3D maps.
 										}
 										if (draw_contours||draw_boundary)
 										{
-											busy_cursor_on((Widget)NULL,
-												drawing_information->user_interface);
-											contour_step=(contour_maximum-contour_minimum)/
-												(float)(number_of_contours-1);
-											graphics_context=(drawing_information->graphics_context).
-												contour_colour;
-											background_pixel_value=frame->minimum;
-											boundary_pixel_value=frame->maximum;
-											for (j=1+y_off;j<drawing_height+y_off;j++)
-											{
-												f_i_jm1= *pixel_value;
-												if ((background_pixel_value<=f_i_jm1)&&
-													(f_i_jm1<=boundary_pixel_value))
-												{
-													valid_i_jm1=1;
-												}
-												else
-												{
-													valid_i_jm1=0;
-												}
-												f_i_j=pixel_value[drawing_width];
-												if ((background_pixel_value<=f_i_j)&&
-													(f_i_j<=boundary_pixel_value))
-												{
-													valid_i_j=1;
-												}
-												else
-												{
-													valid_i_j=0;
-												}
-												pixel_value++;
-												for (i=1+x_off;i<drawing_width+x_off;i++)
-												{
-													valid_im1_jm1=valid_i_jm1;
-													f_im1_jm1=f_i_jm1;
-													valid_im1_j=valid_i_j;
-													f_im1_j=f_i_j;
-													f_i_jm1= *pixel_value;
-													if ((background_pixel_value<=f_i_jm1)&&
-														(f_i_jm1<=boundary_pixel_value))
-													{
-														valid_i_jm1=1;
-													}
-													else
-													{
-														valid_i_jm1=0;
-													}
-													f_i_j=pixel_value[drawing_width];
-													if ((background_pixel_value<=f_i_j)&&
-														(f_i_j<=boundary_pixel_value))
-													{
-														valid_i_j=1;
-													}
-													else
-													{
-														valid_i_j=0;
-													}
-													pixel_value++;
-													boundary_type=((valid_im1_jm1*2+valid_im1_j)*2+
-														valid_i_jm1)*2+valid_i_j;
-													if (draw_contours&&(15==boundary_type))
-													{
-														/* calculate contour using bilinear */
-														if (f_im1_jm1<f_i_j)
-														{
-															min_f=f_im1_jm1;
-															max_f=f_i_j;
-														}
-														else
-														{
-															min_f=f_i_j;
-															max_f=f_im1_jm1;
-														}
-														if (f_im1_j<min_f)
-														{
-															min_f=f_im1_j;
-														}
-														else
-														{
-															if (f_im1_j>max_f)
-															{
-																max_f=f_im1_j;
-															}
-														}
-														if (f_i_jm1<min_f)
-														{
-															min_f=f_i_jm1;
-														}
-														else
-														{
-															if (f_i_jm1>max_f)
-															{
-																max_f=f_i_jm1;
-															}
-														}
-														if ((min_f<=contour_maximum)&&
-															(contour_minimum<=max_f))
-														{
-															if (min_f<=contour_minimum)
-															{
-																start=0;
-															}
-															else
-															{
-																start=1+(int)((min_f-contour_minimum)/
-																	contour_step);
-															}
-															if (contour_maximum<=max_f)
-															{
-																end=number_of_contours;
-															}
-															else
-															{
-																end=(int)((max_f-contour_minimum)/contour_step);
-															}
-															for (k=start;k<=end;k++)
-															{
-																a=contour_minimum+contour_step*(float)k;
-																if (fabs(a)<0.00001*(fabs(contour_maximum)+
-																	fabs(contour_minimum)))
-																{
-																	a=0;
-																}
-																/* dashed lines for -ve contours */
-																if ((a>=0)||((i+j)%5<2))
-																{
-																	if (((f_im1_jm1<=a)&&(a<f_i_jm1))||
-																		((f_im1_jm1>=a)&&(a>f_i_jm1)))
-																	{
-																		if (((f_im1_jm1<=a)&&(a<f_im1_j))||
-																			((f_im1_jm1>=a)&&(a>f_im1_j)))
-																		{
-																			if ((((f_i_jm1<=a)&&(a<f_i_j))||
-																				((f_i_jm1>=a)&&(a>f_i_j)))&&
-																				(((f_im1_j<=a)&&(a<f_i_j))||
-																					((f_im1_j>=a)&&(a>f_i_j))))
-																			{
-																				b=(a-f_im1_jm1)*
-																					(f_im1_jm1+f_i_j-f_im1_j-f_i_jm1)+
-																					(f_im1_j-f_im1_jm1)*
-																					(f_i_jm1-f_im1_jm1);
-																				if (b<0)
-																				{
-																					XPSDrawLineFloat(display,
-																						drawing->pixel_map,graphics_context,
-																						(float)i-(a-f_i_jm1)/
-																						(f_im1_jm1-f_i_jm1),(float)(j-1),
-																						(float)(i-1),(float)j-(a-f_im1_j)/
-																						(f_im1_jm1-f_im1_j));
-																					XPSDrawLineFloat(display,
-																						drawing->pixel_map,graphics_context,
-																						(float)i-(a-f_i_j)/(f_im1_j-f_i_j),
-																						(float)j,
-																						(float)i,
-																						(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
-																				}
-																				else
-																				{
-																					if (b>0)
-																					{
-																						XPSDrawLineFloat(display,
-																							drawing->pixel_map,
-																							graphics_context,
-																							(float)i-(a-f_i_jm1)/
-																							(f_im1_jm1-f_i_jm1),(float)(j-1),
-																							(float)i,(float)j-(a-f_i_j)/
-																							(f_i_jm1-f_i_j));
-																						XPSDrawLineFloat(display,
-																							drawing->pixel_map,
-																							graphics_context,
-																							(float)i-(a-f_i_j)/
-																							(f_im1_j-f_i_j),
-																							(float)j,(float)(i-1),(float)j-
-																							(a-f_im1_j)/(f_im1_jm1-f_im1_j));
-																					}
-																					else
-																					{
-																						XPSDrawLineFloat(display,
-																							drawing->pixel_map,
-																							graphics_context,
-																							(float)(i-1),(float)j-(a-f_im1_j)/
-																							(f_im1_jm1-f_im1_j),(float)i,
-																							(float)j-(a-f_i_j)/
-																							(f_i_jm1-f_i_j));																
-																						XPSDrawLineFloat(display,
-																							drawing->pixel_map,
-																							graphics_context,
-																							(float)i-(a-f_i_jm1)/
-																							(f_im1_jm1-f_i_jm1),(float)(j-1),
-																							(float)i-(a-f_i_j)/
-																							(f_im1_j-f_i_j),(float)j);
-																					}
-																				}
-																			}
-																			else
-																			{
-																				XPSDrawLineFloat(display,
-																					drawing->pixel_map,
-																					graphics_context,(float)i-(a-f_i_jm1)/
-																					(f_im1_jm1-f_i_jm1),(float)(j-1),
-																					(float)(i-1),(float)j-(a-f_im1_j)/
-																					(f_im1_jm1-f_im1_j));
-																			}
-																		}
-																		else
-																		{
-																			if (((f_i_jm1<=a)&&(a<f_i_j))||
-																				((f_i_jm1>=a)&&(a>f_i_j)))
-																			{
-																				XPSDrawLineFloat(display,
-																					drawing->pixel_map,graphics_context,
-																					(float)i-(a-f_i_jm1)/
-																					(f_im1_jm1-f_i_jm1),(float)(j-1),
-																					(float)i,
-																					(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
-																			}
-																			else
-																			{
-																				if (((f_im1_j<=a)&&(a<f_i_j))||
-																					((f_im1_j>=a)&&(a>f_i_j)))
-																				{
-																					XPSDrawLineFloat(display,
-																						drawing->pixel_map,graphics_context,
-																						(float)i-(a-f_i_jm1)/
-																						(f_im1_jm1-f_i_jm1),(float)(j-1),
-																						(float)i-(a-f_i_j)/
-																						(f_im1_j-f_i_j),(float)j);
-																				}
-																			}
-																		}
-																	}
-																	else
-																	{
-																		if (((f_im1_jm1<=a)&&(a<f_im1_j))||
-																			((f_im1_jm1>=a)&&(a>f_im1_j)))
-																		{
-																			if (((f_i_jm1<=a)&&(a<f_i_j))||
-																				((f_i_jm1>=a)&&(a>f_i_j)))
-																			{
-																				XPSDrawLineFloat(display,
-																					drawing->pixel_map,graphics_context,
-																					(float)(i-1),(float)j-(a-f_im1_j)/
-																					(f_im1_jm1-f_im1_j),(float)i,
-																					(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
-																			}
-																			else
-																			{
-																				if (((f_im1_j<=a)&&(a<f_i_j))||
-																					((f_im1_j>=a)&&(a>f_i_j)))
-																				{
-																					XPSDrawLineFloat(display,
-																						drawing->pixel_map,graphics_context,
-																						(float)(i-1),(float)j-(a-f_im1_j)/
-																						(f_im1_jm1-f_im1_j),(float)i-
-																						(a-f_i_j)/(f_im1_j-f_i_j),(float)j);
-																				}
-																			}
-																		}
-																		else
-																		{
-																			if ((((f_i_jm1<=a)&&(a<f_i_j))||
-																				((f_i_jm1>=a)&&(a>f_i_j)))&&
-																				(((f_im1_j<=a)&&(a<f_i_j))||
-																					((f_im1_j>=a)&&(a>f_i_j))))
-																			{
-																				XPSDrawLineFloat(display,
-																					drawing->pixel_map,
-																					graphics_context,(float)i-(a-f_i_j)/
-																					(f_im1_j-f_i_j),(float)j,(float)i,
-																					(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
-																			}
-																		}
-																	}
-																}
-															}
-														}
-													}
-													if (draw_boundary&&(0<boundary_type)&&
-														(boundary_type<15))
-													{
-														switch (boundary_type)
-														{
-															case 1: case 8:
-															{
-																XPSDrawLine(display,drawing->pixel_map,
-																	graphics_context,i-1,j,i,j-1);
-															} break;
-															case 2: case 4:
-															{
-																XPSDrawLine(display,drawing->pixel_map,
-																	graphics_context,i-1,j-1,i,j);
-															} break;
-															case 3:
-															{
-																XPSDrawLine(display,drawing->pixel_map,
-																	graphics_context,i-1,j-1,i-1,j);
-															} break;
-															case 5:
-															{
-																XPSDrawLine(display,drawing->pixel_map,
-																	graphics_context,i-1,j-1,i,j-1);
-															} break;
-															case 10:
-															{
-																XPSDrawLine(display,drawing->pixel_map,
-																	graphics_context,i-1,j,i,j);
-															} break;
-															case 12:
-															{
-																XPSDrawLine(display,drawing->pixel_map,
-																	graphics_context,i,j-1,i,j);
-															} break;
-														}
-													}
-												}
-											}
-											busy_cursor_off((Widget)NULL,
-												drawing_information->user_interface);
+											draw_2d_constant_thickness_contours(map,drawing,frame,
+												map_x_offset,map_y_offset,map_width,map_height,
+												pixel_value,&min_f,&max_f,draw_boundary);
 										}
-									}
+									}/* if ((CONSTANT_THICKNESS==map->contour_thickness)&&*/
 									else
 									{										
 											XPSPutImage(display,drawing->pixel_map,
 												(drawing_information->graphics_context).copy,
-												frame_image,0,0,x_off,y_off,drawing_width,drawing_height);
+												frame_image,0,0,map_x_offset,map_y_offset,map_width,map_height);
 									}
-								}
+								}/* if (frame_image=frame->image) */
 								else
 								{
 									display_message(ERROR_MESSAGE,"draw_map_2d.  Missing image");
 								}
 							}
-							else
+							else /* if (NO_INTERPOLATION!=map->interpolation_type) */
 							{
 								if (1<recalculate)
-								{
-									/*???DB.  Put the frame loop on the inside ? */
-									/*???DB.  Electrode values are not changing with frame */
-									frame=map->frames;
-									frame_number=0;
-									while ((frame_number<number_of_frames)&&return_code)
-									{
-										min_f=1;
-										max_f=0;
-										maximum_region=(struct Region *)NULL;
-										minimum_region=(struct Region *)NULL;
-										/* for each region */
-										region_item=get_Rig_region_list(rig);
-										for (temp_region_number=0;
-											temp_region_number<number_of_regions;temp_region_number++)
-										{
-											region_number=draw_region_number[temp_region_number];
-											if (0<=region_number)
-											{
-												current_region=get_Region_list_item_region(region_item);
-												/* find maximum and minimum electrodes for region */
-												electrode=map->electrodes;
-												screen_x=map->electrode_x;
-												screen_y=map->electrode_y;
-												electrode_value=map->electrode_value;
-												for (i=number_of_electrodes;i>0;i--)
-												{
-													if (current_region==(*electrode)->description->region)
-													{
-														f_approx= *electrode_value;
-														if (max_f<min_f)
-														{
-															min_f=f_approx;
-															max_f=f_approx;
-															maximum_region=current_region;
-															minimum_region=current_region;
-															maximum_x= *screen_x;
-															maximum_y= *screen_y;
-															minimum_x=maximum_x;
-															minimum_y=minimum_y;
-														}
-														else
-														{
-															if (f_approx<min_f)
-															{
-																min_f=f_approx;
-																minimum_region=current_region;
-																minimum_x= *screen_x;
-																minimum_y= *screen_y;
-															}
-															else
-															{
-																if (f_approx>max_f)
-																{
-																	max_f=f_approx;
-																	maximum_region=current_region;
-																	maximum_x= *screen_x;
-																	maximum_y= *screen_y;
-																}
-															}
-														}
-													}
-													electrode++;
-													screen_x++;
-													screen_y++;
-													electrode_value++;
-												}
-											}
-											region_item=get_Region_list_item_next(region_item);
-										}
-										frame->maximum_region=maximum_region;
-										frame->minimum_region=minimum_region;
-										if (max_f<min_f)
-										{
-											frame->maximum=0;
-											frame->maximum_x= -1;
-											frame->maximum_y= -1;
-											frame->minimum=0;
-											frame->minimum_x= -1;
-											frame->minimum_y= -1;
-										}
-										else
-										{
-											frame->maximum=max_f;
-											frame->maximum_x=maximum_x;
-											frame->maximum_y=maximum_y;
-											frame->minimum=min_f;
-											frame->minimum_x=minimum_x;
-											frame->minimum_y=minimum_y;
-										}
-										frame_number++;
-										frame++;
-									}
-									/*???DB.  loop over frames */
-									if (!(map->fixed_range)||
-										(map->minimum_value>map->maximum_value))
-									{
-										frame=map->frames;
-										min_f=frame->minimum;
-										max_f=frame->maximum;
-										for (i=number_of_frames-1;i>0;i--)
-										{
-											frame++;
-											if (frame->minimum<=frame->maximum)
-											{
-												if (min_f<=max_f)
-												{
-													if (frame->minimum<min_f)
-													{
-														min_f=frame->minimum;
-													}
-													if (frame->maximum<max_f)
-													{
-														max_f=frame->maximum;
-													}
-												}
-												else
-												{
-													min_f=frame->minimum;
-													max_f=frame->maximum;
-												}
-											}
-										}
-										map->minimum_value=min_f;
-										map->maximum_value=max_f;
-										map->contour_minimum=min_f;
-										map->contour_maximum=max_f;
-									}
+								{							
+									set_map_2d_no_interpolation_min_max(map,draw_region_number,
+										number_of_electrodes);
 								}								
 								update_colour_map_unemap(map,drawing);								
-							}
-						}
+							} /* if (NO_INTERPOLATION!=map->interpolation_type) */
+						}/* if (NO_MAP_FIELD!=map_type) */
 						/* write contour values */
 						if ((HIDE_COLOUR==map->colour_option)&&
 							(SHOW_CONTOURS==map->contours_option))
 						{
-							if ((0<(number_of_frames=map->number_of_frames))&&
-								(0<=(frame_number=map->frame_number))&&
-								(frame_number<number_of_frames)&&(frame=map->frames))
-							{
-								frame += frame_number;
-								if ((frame->contour_x)&&(frame->contour_y))
-								{
-									number_of_contour_areas=map->number_of_contour_areas;
-									contour_areas_in_x=map->number_of_contour_areas_in_x;
-									minimum_value=map->minimum_value;
-									maximum_value=map->maximum_value;
-									contour_minimum=map->contour_minimum;
-									contour_maximum=map->contour_maximum;
-									graphics_context=(drawing_information->graphics_context).
-										contour_colour;
-									if (maximum_value==minimum_value)
-									{
-										start=0;
-										end=number_of_spectrum_colours;
-									}
-									else
-									{
-										start=(int)((contour_minimum-minimum_value)/
-											(maximum_value-minimum_value)*
-											(float)(number_of_spectrum_colours-1)+0.5);
-										end=(int)((contour_maximum-minimum_value)/
-											(maximum_value-minimum_value)*
-											(float)(number_of_spectrum_colours-1)+0.5);
-									}
-									cell_range=end-start;
-									number_of_contours=map->number_of_contours;
-									for (i=number_of_contours;i>0;)
-									{
-										i--;
-										cell_number=start+(int)((float)(i*cell_range)/
-											(float)(number_of_contours-1)+0.5);
-										a=(contour_maximum*(float)i+contour_minimum*
-											(float)(number_of_contours-i-1))/
-											(float)(number_of_contours-1);
-										if (fabs(a)<
-											0.00001*(fabs(contour_maximum)+fabs(contour_minimum)))
-										{
-											a=0;
-										}
-										sprintf(value_string,"%.4g",a);
-										string_length=strlen(value_string);
-										XTextExtents(font,value_string,string_length,&direction,
-											&ascent,&descent,&bounds);
-										x_offset=(bounds.lbearing-bounds.rbearing)/2;
-										y_offset=(bounds.ascent-bounds.descent)/2;
-										x_separation=(bounds.lbearing+bounds.rbearing);
-										y_separation=(bounds.ascent+bounds.descent);
-										contour_x=
-											(frame->contour_x)+(cell_number*number_of_contour_areas);
-										contour_y=
-											(frame->contour_y)+(cell_number*number_of_contour_areas);
-										for (j=0;j<number_of_contour_areas;j++)
-										{
-											if ((x_pixel= *contour_x)>=0)
-											{
-												y_pixel= *contour_y;
-												/* check that its not too close to previously drawn
-													 values */
-												draw_contour_value=1;
-												if (0<j%contour_areas_in_x)
-												{
-													if ((pixel_left= *(contour_x-1))>=0)
-													{
-														temp_int=y_pixel-(*(contour_y-1));
-														if (temp_int<0)
-														{
-															temp_int= -temp_int;
-														}
-														if ((x_pixel-pixel_left<=x_separation)&&
-															(temp_int<=y_separation))
-														{
-															draw_contour_value=0;
-														}
-													}
-													if (draw_contour_value&&(j>contour_areas_in_x)&&
-														((pixel_top=
-															*(contour_x-(contour_areas_in_x+1)))>=0))
-													{
-														if ((x_pixel-pixel_top<=x_separation)&&
-															(y_pixel-(*(contour_y-(contour_areas_in_x+1)))<=
-																y_separation))
-														{
-															draw_contour_value=0;
-														}
-													}
-												}
-												if (draw_contour_value&&(j>=contour_areas_in_x)&&
-													((pixel_top= *(contour_x-contour_areas_in_x))>=0))
-												{
-													temp_int=x_pixel-pixel_top;
-													if (temp_int<0)
-													{
-														temp_int= -temp_int;
-													}
-													if ((temp_int<=x_separation)&&
-														(y_pixel-(*(contour_y-contour_areas_in_x))<=
-															y_separation))
-													{
-														draw_contour_value=0;
-													}
-												}
-												if (draw_contour_value)
-												{
-													XPSDrawString(display,drawing->pixel_map,
-														graphics_context,x_pixel+x_offset+x_off,y_pixel+y_offset+y_off,
-														value_string,string_length);
-												}
-											}
-											contour_x++;
-											contour_y++;
-										}
-									}
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"draw_map_2d.  Invalid frames");
-							}
+							draw_2d_contour_values(map,drawing,map_x_offset,map_y_offset);
 						}
 						/* draw the fibres */
 						if (HIDE_FIBRES!=map->fibres_option)
 						{
-							/* set the colour for the fibres */
-							graphics_context=(drawing_information->graphics_context).spectrum,
-								XSetForeground(display,graphics_context,
-									drawing_information->fibre_colour);
-							/* determine the fibre spacing */
-							switch (map->fibres_option)
-							{
-								case SHOW_FIBRES_FINE:
-								{
-									fibre_spacing=10;
-								} break;
-								case SHOW_FIBRES_MEDIUM:
-								{
-									fibre_spacing=20;
-								} break;
-								case SHOW_FIBRES_COARSE:
-								{
-									fibre_spacing=30;
-								} break;
-							}
-							/* for each region */
-							region_item=get_Rig_region_list(rig);
-							for (temp_region_number=0;temp_region_number<number_of_regions;
-								temp_region_number++)
-							{
-								region_number=draw_region_number[temp_region_number];
-								if (0<=region_number)
-								{
-									current_region=get_Region_list_item_region(region_item);
-									if ((SOCK==current_region->type)&&
-										(0!=stretch_x[region_number])&&
-										(0!=stretch_y[region_number]))
-									{
-										/* draw fibres */
-										pixel_left=((region_number/number_of_rows)*
-											drawing_width)/number_of_columns+fibre_spacing/2;
-										pixel_top=((region_number%number_of_rows)*
-											drawing_height)/number_of_rows+fibre_spacing/2;
-										x_screen_step=(float)fibre_spacing/stretch_x[region_number];
-										y_screen_step=
-											-(float)fibre_spacing/stretch_y[region_number];
-										x_screen_left=min_x[region_number]+
-											(pixel_left-start_x[region_number])/
-											stretch_x[region_number];
-										y_screen_top=min_y[region_number]-
-											(pixel_top-start_y[region_number])/
-											stretch_y[region_number];
-										y_screen=y_screen_top;
-										y_pixel=pixel_top;
-										for (j=screen_region_height/fibre_spacing;j>0;j--)
-										{
-											x_screen=x_screen_left;
-											x_pixel=pixel_left;
-											for (i=screen_region_width/fibre_spacing;i>0;i--)
-											{
-												/* calculate the element coordinates and the Jacobian
-													for the transformation from element coordinates to
-													physical coordinates */
-												switch (map->projection_type)
-												{
-													case HAMMER_PROJECTION:
-													{
-														/*???avoid singularity ? */
-														if ((x_screen!=0)||
-															((y_screen!=1)&&(y_screen!= -1)))
-														{
-															a=x_screen*x_screen;
-															b=y_screen*y_screen;
-															c=2-a-b;
-															if (c>1)
-															{
-																sin_mu_hat=y_screen*sqrt(c);
-																if (sin_mu_hat>=1)
-																{
-																	mu=pi;
-																	sin_mu_hat=1;
-																	cos_mu_hat=0;
-																}
-																else
-																{
-																	if (sin_mu_hat<= -1)
-																	{
-																		mu=0;
-																		sin_mu_hat= -1;
-																		cos_mu_hat=0;
-																	}
-																	else
-																	{
-																		mu=pi_over_2+asin(sin_mu_hat);
-																		cos_mu_hat=sqrt(1-sin_mu_hat*sin_mu_hat);
-																	}
-																}
-																sin_theta_hat=sqrt((a*c)/(1-b*c));
-																if (x_screen>0)
-																{
-																	if (sin_theta_hat>=1)
-																	{
-																		theta=0;
-																		sin_theta_hat= -1;
-																		cos_theta_hat=0;
-																	}
-																	else
-																	{
-																		theta=pi-2*asin(sin_theta_hat);
-																		cos_theta_hat=
-																			sqrt(1-sin_theta_hat*sin_theta_hat);
-																		sin_theta_hat= -sin_theta_hat;
-																	}
-																}
-																else
-																{
-																	if (sin_theta_hat>=1)
-																	{
-																		theta=two_pi;
-																		sin_theta_hat=1;
-																		cos_theta_hat=0;
-																	}
-																	else
-																	{
-																		theta=pi+2*asin(sin_theta_hat);
-																		cos_theta_hat=
-																			sqrt(1-sin_theta_hat*sin_theta_hat);
-																	}
-																}
-																a=cos_theta_hat*cos_mu_hat;
-																b=1/(1+a);
-																a += 2;
-																b /= sqrt(b)*2;
-																dxdmu=a*b*sin_mu_hat*sin_theta_hat;
-																dydmu=b*(cos_theta_hat+a*cos_mu_hat);
-																b /= 2;
-																dxdtheta=
-																	-b*cos_mu_hat*(cos_mu_hat+a*cos_theta_hat);
-																dydtheta= b*sin_theta_hat*sin_mu_hat*cos_mu_hat;
-																valid_mu_and_theta=1;
-															}
-															else
-															{
-																valid_mu_and_theta=0;
-															}
-														}
-														else
-														{
-															valid_mu_and_theta=0;
-														}
-													} break;
-													case POLAR_PROJECTION:
-													{
-														mu=sqrt(x_screen*x_screen+
-															y_screen*y_screen);
-														if (mu>0)
-														{
-															if (x_screen>0)
-															{
-																if (y_screen>0)
-																{
-																	theta=asin(y_screen/mu);
-																}
-																else
-																{
-																	theta=two_pi+asin(y_screen/mu);
-																}
-															}
-															else
-															{
-																theta=pi-asin(y_screen/mu);
-															}
-															dxdtheta= -y_screen;
-															dxdmu=x_screen/mu;
-															dydtheta=x_screen;
-															dydmu=y_screen/mu;
-														}
-														else
-														{
-															theta=0;
-															dxdtheta=0;
-															dxdmu=0;
-															dydtheta=0;
-															dydmu=0;
-														}
-														valid_mu_and_theta=1;
-													} break;
-													default:
-													{
-														valid_mu_and_theta=0;
-													} break;
-												}
-												if (valid_mu_and_theta)
-												{
-													/* calculate the angle between the fibre direction and
-														 the positive theta direction */
-													/*???DB.  Eventually this will form part of the
-														"cardiac database" */
-													/* the fibre direction has been fitted with a
-														bilinear*/
-													/* determine which element the point is in */
-													column=0;
-													local_fibre_node_1=global_fibre_nodes+
-														(NUMBER_OF_FIBRE_COLUMNS-1);
-													local_fibre_node_2=global_fibre_nodes;
-													local_fibre_node_3=local_fibre_node_1+
-														NUMBER_OF_FIBRE_COLUMNS;
-													local_fibre_node_4=local_fibre_node_2+
-														NUMBER_OF_FIBRE_COLUMNS;
-													k=NUMBER_OF_FIBRE_ROWS;
-													xi_1= -1;
-													xi_2= -1;
-													while ((k>0)&&
-														((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1)))
-													{
-														l=NUMBER_OF_FIBRE_COLUMNS;
-														while ((l>0)&&
-															((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1)))
-														{
-															/* calculate the element coordinates */
-															/*???DB.  Is there a better way of doing this ? */
-															mu_1=local_fibre_node_1->mu;
-															mu_2=local_fibre_node_2->mu;
-															mu_3=local_fibre_node_3->mu;
-															mu_4=local_fibre_node_4->mu;
-															if (((mu_1<mu)||(mu_2<mu)||(mu_3<mu)||(mu_4<mu))&&
-																((mu_1>mu)||(mu_2>mu)||(mu_3>mu)||(mu_4>mu)))
-															{
-																theta_1=local_fibre_node_1->theta;
-																theta_2=local_fibre_node_2->theta;
-																theta_3=local_fibre_node_3->theta;
-																theta_4=local_fibre_node_4->theta;
-																/* make sure that theta is increasing in xi1 */
-																if (theta_1>theta_2)
-																{
-																	if (theta>theta_1)
-																	{
-																		theta_2 += two_pi;
-																	}
-																	else
-																	{
-																		theta_1 -= two_pi;
-																	}
-																}
-																if (theta_3>theta_4)
-																{
-																	if (theta>theta_3)
-																	{
-																		theta_4 += two_pi;
-																	}
-																	else
-																	{
-																		theta_3 -= two_pi;
-																	}
-																}
-																if (theta_1+pi<theta_3)
-																{
-																	if (theta>theta_3)
-																	{
-																		theta_1 += two_pi;
-																		theta_2 += two_pi;
-																	}
-																	else
-																	{
-																		theta_3 -= two_pi;
-																		theta_4 -= two_pi;
-																	}
-																}
-																else
-																{
-																	if (theta_1-pi>theta_3)
-																	{
-																		if (theta>theta_1)
-																		{
-																			theta_3 += two_pi;
-																			theta_4 += two_pi;
-																		}
-																		else
-																		{
-																			theta_1 -= two_pi;
-																			theta_2 -= two_pi;
-																		}
-																	}
-																}
-																if (((theta_1<theta)||(theta_2<theta)||
-																	(theta_3<theta)||(theta_4<theta))&&
-																	((theta_1>theta)||(theta_2>theta)||
-																		(theta_3>theta)||(theta_4>theta)))
-																{
-																	mu_4 += mu_1-mu_2-mu_3;
-																	mu_3 -= mu_1;
-																	mu_2 -= mu_1;
-																	mu_1 -= mu;
-																	theta_4 += theta_1-theta_2-theta_3;
-																	theta_3 -= theta_1;
-																	theta_2 -= theta_1;
-																	theta_1 -= theta;
-																	xi_1=0.5;
-																	xi_2=0.5;
-																	fibre_iteration=0;
-																	do
-																	{
-																		a=mu_2+mu_4*xi_2;
-																		b=mu_3+mu_4*xi_1;
-																		error_mu=mu_1+mu_2*xi_1+b*xi_2;
-																		c=theta_2+theta_4*xi_2;
-																		d=theta_3+theta_4*xi_1;
-																		error_theta=theta_1+theta_2*xi_1+d*xi_2;
-																		if (0!=(det=a*d-b*c))
-																		{
-																			xi_1 -= (d*error_mu-b*error_theta)/det;
-																			xi_2 -= (a*error_theta-c*error_mu)/det;
-																		}
-																		fibre_iteration++;
-																	} while ((0!=det)&&(error_theta*error_theta+
-																		error_mu*error_mu>FIBRE_TOLERANCE)&&
-																		(fibre_iteration<FIBRE_MAXIMUM_ITERATIONS));
-																	if (error_theta*error_theta+error_mu*error_mu>
-																		FIBRE_TOLERANCE)
-																	{
-																		xi_2= -1;
-																	}
-																}
-															}
-															if ((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1))
-															{
-																local_fibre_node_1=local_fibre_node_2;
-																local_fibre_node_2++;
-																local_fibre_node_3=local_fibre_node_4;
-																local_fibre_node_4++;
-																l--;
-															}
-														}
-														if ((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1))
-														{
-															local_fibre_node_1=local_fibre_node_3;
-															local_fibre_node_3 += NUMBER_OF_FIBRE_COLUMNS;
-															k--;
-														}
-													}
-													if ((0<=xi_1)&&(xi_1<=1)&&(0<=xi_2)&&(xi_2<=1))
-													{
-														/* calculate the fibre angle */
-														fibre_angle_1=local_fibre_node_1->fibre_angle;
-														fibre_angle_2=local_fibre_node_2->fibre_angle;
-														fibre_angle_3=local_fibre_node_3->fibre_angle;
-														fibre_angle_4=local_fibre_node_4->fibre_angle;
-														fibre_angle=fibre_angle_1+
-															(fibre_angle_2-fibre_angle_1)*xi_1+
-															((fibre_angle_3-fibre_angle_1)+
-																(fibre_angle_4+fibre_angle_1-fibre_angle_2-
-																	fibre_angle_3)*xi_1)*xi_2;
-														/* calculate the fibre vector in element
-															coordinates*/
-														a=cos(fibre_angle);
-														c=sin(fibre_angle);
-														/* perform projection and screen scaling */
-														fibre_x=stretch_x[region_number]*
-															(dxdmu*c+dxdtheta*a);
-														fibre_y= -stretch_y[region_number]*
-															(dydmu*c+dydtheta*a);
-														if (0<(fibre_length=
-															fibre_x*fibre_x+fibre_y*fibre_y))
-														{
-															/* draw the fibre */
-															fibre_length=
-																(float)(fibre_spacing)/(2*sqrt(fibre_length));
-															fibre_x *= fibre_length;
-															fibre_y *= fibre_length;
-															XPSDrawLine(display,drawing->pixel_map,
-																graphics_context,
-																(x_pixel-(short)fibre_x)+x_off,
-																(y_pixel-(short)fibre_y)+y_off,
-																(x_pixel+(short)fibre_x)+x_off,
-																(y_pixel+(short)fibre_y)+y_off);
-														}
-														/*???debug */
-														/*printf("fibre_x=%g, fibre_y=%g\n\n",fibre_x,
-															fibre_y);*/
-													}
-												}
-												x_screen += x_screen_step;
-												x_pixel += fibre_spacing;
-											}
-											y_screen += y_screen_step;
-											y_pixel += fibre_spacing;
-										}
-									}
-								}
-								region_item=get_Region_list_item_next(region_item);
-							}
+							draw_2d_fibres(map,drawing,map_x_offset,map_y_offset,
+								draw_region_number,start_x,start_y,min_x,min_y,
+								stretch_x,stretch_y,number_of_rows,number_of_columns,map_width,
+								map_height,screen_region_width,screen_region_height);
 						}
 						/* draw the landmarks */
 						if (SHOW_LANDMARKS==map->landmarks_option)
 						{
-							/* set the colour for the landmarks */
-							graphics_context=(drawing_information->graphics_context).spectrum,
-								XSetForeground(display,graphics_context,
-									drawing_information->landmark_colour);
-							region_item=get_Rig_region_list(rig);
-							for (temp_region_number=0;temp_region_number<number_of_regions;
-								temp_region_number++)
-							{
-								region_number=draw_region_number[temp_region_number];
-								if (0<=region_number)
-								{
-									current_region=get_Region_list_item_region(region_item);
-									switch (current_region->type)
-									{
-										case SOCK:
-										{
-											landmark_point=landmark_points;
-											for (i=NUMBER_OF_LANDMARK_POINTS;i>0;i--)
-											{
-												cartesian_to_prolate_spheroidal(landmark_point[0],
-													landmark_point[1],landmark_point[2],LANDMARK_FOCUS,
-													&lambda,&mu,&theta,(float *)NULL);
-												switch (map->projection_type)
-												{
-													case HAMMER_PROJECTION:
-													{
-														Hammer_projection(mu,theta,&x_screen,&y_screen,
-															(float *)NULL);
-													} break;
-													case POLAR_PROJECTION:
-													{
-														polar_projection(mu,theta,&x_screen,&y_screen,
-															(float *)NULL);
-													} break;
-												}
-												x_pixel=start_x[region_number]+
-													(int)((x_screen-min_x[region_number])*
-														stretch_x[region_number]);
-												y_pixel=start_y[region_number]-
-													(int)((y_screen-min_y[region_number])*
-														stretch_y[region_number]);
-												/* draw asterisk */
-												XPSDrawLine(display,drawing->pixel_map,graphics_context,
-													x_pixel-2+x_off,y_pixel+y_off,
-													x_pixel+2+x_off,y_pixel+y_off);
-												XPSDrawLine(display,drawing->pixel_map,graphics_context,
-													x_pixel+x_off,y_pixel-2+y_off,
-													x_pixel+x_off,y_pixel+2+y_off);
-												XPSDrawLine(display,drawing->pixel_map,graphics_context,
-													x_pixel-2+x_off,y_pixel-2+y_off,
-													x_pixel+x_off+2,y_pixel+2+y_off);
-												XPSDrawLine(display,drawing->pixel_map,graphics_context,
-													x_pixel+2+x_off,y_pixel+2+y_off,
-													x_pixel+x_off-2,y_pixel-2+y_off);
-												landmark_point += 3;
-											}
-										} break;
-										case TORSO:
-										{
-											/* draw boundary between front and back */
-											x_pixel=start_x[region_number]+
-												(int)((max_x[region_number]-min_x[region_number])*0.5*
-												stretch_x[region_number]);
-											XPSDrawLine(display,drawing->pixel_map,graphics_context,
-												x_pixel+x_off,
-												start_y[region_number]+y_off,
-												x_pixel+x_off,
-												start_y[region_number]-(int)((max_y[region_number]-
-												min_y[region_number])*stretch_y[region_number])+y_off);
-											x_pixel=start_x[region_number];
-											XPSDrawLine(display,drawing->pixel_map,graphics_context,
-												x_pixel+x_off,
-												start_y[region_number]+y_off,
-												x_pixel+x_off,
-												start_y[region_number]-(int)((max_y[region_number]-
-												min_y[region_number])*stretch_y[region_number])+y_off);
-											/* draw shoulders */
-											y_pixel=start_y[region_number]-
-												(int)((max_y[region_number]-min_y[region_number])*
-												stretch_y[region_number]);
-											XPSDrawLine(display,drawing->pixel_map,graphics_context,
-												start_x[region_number]+x_off,
-												y_pixel+y_off,
-												start_x[region_number]+(int)((max_x[region_number]-
-													min_x[region_number])*0.1875*stretch_x[region_number])+x_off,
-												y_pixel-5+y_off);
-											XPSDrawLine(display,drawing->pixel_map,graphics_context,
-												start_x[region_number]+(int)((max_x[region_number]-
-												min_x[region_number])*0.5*stretch_x[region_number])+x_off,
-												y_pixel+y_off,
-												start_x[region_number]+(int)((max_x[region_number]-
-													min_x[region_number])*0.3125*stretch_x[region_number])+x_off,
-												y_pixel-5+y_off);
-										} break;
-									}
-								}
-								region_item=get_Region_list_item_next(region_item);
-							}
+							draw_2d_landmarks(map,drawing,map_x_offset,map_y_offset,
+								draw_region_number,start_x,start_y,max_x,max_y,min_x,
+								min_y,stretch_x,stretch_y);
 						}
 						/* draw the extrema */
 						if (SHOW_EXTREMA==map->extrema_option)
 						{
-							if ((0<(number_of_frames=map->number_of_frames))&&
-								(0<=(frame_number=map->frame_number))&&
-								(frame_number<number_of_frames)&&(frame=map->frames))
-							{
-								frame += frame_number;
-								/* set the colour for the extrema */
-								graphics_context=
-									(drawing_information->graphics_context).spectrum,
-									XSetForeground(display,graphics_context,
-										drawing_information->landmark_colour);
-								region_item=get_Rig_region_list(rig);
-								for (temp_region_number=0;temp_region_number<number_of_regions;
-									temp_region_number++)
-								{
-									region_number=draw_region_number[temp_region_number];
-									if (0<=region_number)
-									{
-										current_region=get_Region_list_item_region(region_item);
-										if (frame->maximum_region==current_region)
-										{
-											/* draw plus */
-											XPSFillRectangle(display,drawing->pixel_map,
-												graphics_context,(frame->maximum_x-5)+x_off,
-												(frame->maximum_y-1)+y_off,
-												11,3);
-											XPSFillRectangle(display,drawing->pixel_map,
-												graphics_context,(frame->maximum_x-1)+x_off,
-												(frame->maximum_y-5)+y_off,
-												3,11);
-											/* if not animation */
-											if (map->activation_front<0)
-											{
-												/* write value */
-												sprintf(value_string,"%.4g",frame->maximum);
-												name=value_string;
-												name_length=strlen(value_string);
-												x_string=frame->maximum_x;
-#if defined (NO_ALIGNMENT)
-												XTextExtents(font,name,name_length,&direction,&ascent,
-													&descent,&bounds);
-												x_string += (bounds.lbearing-bounds.rbearing+1)/2+x_off;
-#else /* defined (NO_ALIGNMENT) */
-												SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
-#endif /* defined (NO_ALIGNMENT) */
-												if ((frame->maximum_y+y_off)>(drawing_height/2 +y_off))
-												{
-													y_string=frame->maximum_y-6 +y_off;
-#if defined (NO_ALIGNMENT)
-													y_string -= descent+1;
-#else /* defined (NO_ALIGNMENT) */
-													SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
-#endif /* defined (NO_ALIGNMENT) */
-												}
-												else
-												{
-													y_string=frame->maximum_y+6 +y_off;
-#if defined (NO_ALIGNMENT)
-													y_string += ascent+1;
-#else /* defined (NO_ALIGNMENT) */
-													SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
-#endif /* defined (NO_ALIGNMENT) */
-												}
-#if defined (NO_ALIGNMENT)
-												/* make sure that the string doesn't extend outside the
-													 window */
-												if (x_string-bounds.lbearing<(0+x_off))
-												{
-													x_string=bounds.lbearing+x_off;
-												}
-												else
-												{
-													if (x_string+bounds.rbearing>(drawing_width+x_off))
-													{
-														x_string=(drawing_width+x_off)-bounds.rbearing;
-													}
-												}
-												if (y_string-ascent<(0+y_off))
-												{
-													y_string=ascent+y_off;
-												}
-												else
-												{
-													if (y_string+descent>(drawing_height+y_off))
-													{
-														y_string=(drawing_height+y_off)-descent;
-													}
-												}
-#endif /* defined (NO_ALIGNMENT) */
-												XPSDrawString(display,drawing->pixel_map,
-													graphics_context,x_string,y_string,name,name_length);
-											}
-										}
-										if (frame->minimum_region==current_region)
-										{
-											/* draw minus */
-											XPSFillRectangle(display,drawing->pixel_map,
-												graphics_context,
-												(frame->minimum_x-5)+x_off,
-												(frame->minimum_y-1)+y_off,11,3);
-											/* if not animation */
-											if (map->activation_front<0)
-											{
-												/* write value */
-												sprintf(value_string,"%.4g",frame->minimum);
-												name=value_string;
-												name_length=strlen(value_string);
-												x_string=frame->minimum_x;
-#if defined (NO_ALIGNMENT)
-												XTextExtents(font,name,name_length,&direction,&ascent,
-													&descent,&bounds);
-												x_string += (bounds.lbearing-bounds.rbearing+1)/2+x_off;
-#else /* defined (NO_ALIGNMENT) */
-												SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
-#endif /* defined (NO_ALIGNMENT) */
-												if (frame->minimum_y+y_off>drawing_height/2+y_off)
-												{
-													y_string=frame->minimum_y-6 +y_off;
-#if defined (NO_ALIGNMENT)
-													y_string -= descent+1;
-#else /* defined (NO_ALIGNMENT) */
-													SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
-#endif /* defined (NO_ALIGNMENT) */
-												}
-												else
-												{
-													y_string=frame->minimum_y+6 +y_off;
-#if defined (NO_ALIGNMENT)
-													y_string += ascent+1;
-#else /* defined (NO_ALIGNMENT) */
-													SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
-#endif /* defined (NO_ALIGNMENT) */
-												}
-#if defined (NO_ALIGNMENT)
-												/* make sure that the string doesn't extend outside the
-													 window */
-												if (x_string-bounds.lbearing<(0+x_off))
-												{
-													x_string=bounds.lbearing+x_off;
-												}
-												else
-												{
-													if (x_string+bounds.rbearing>(drawing_width+x_off))
-													{
-														x_string=(drawing_width+x_off)-bounds.rbearing;
-													}
-												}
-												if (y_string-ascent<(0+y_off))
-												{
-													y_string=ascent+y_off;
-												}
-												else
-												{
-													if (y_string+descent>(drawing_height+y_off))
-													{
-														y_string=(drawing_height+y_off)-descent;
-													}
-												}
-#endif /* defined (NO_ALIGNMENT) */
-												XPSDrawString(display,drawing->pixel_map,
-													graphics_context,x_string,y_string,name,name_length);
-											}
-										}
-									}
-									region_item=get_Region_list_item_next(region_item);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"draw_map_2d.  Invalid frames");
-							}
+							draw_2d_extrema(map,drawing,map_x_offset,map_y_offset,map_width,
+								map_height,draw_region_number);
 						}									
 						if(map_type==POTENTIAL)
-						{
-							/* write the title,using the frame start time */							
-							title_x=drawing_width/2+x_off;
-							title_y=0;
-							sprintf(title,"%.4g",map->frame_start_time);
-							name_length=strlen(title);
-							XTextExtents(font,title,name_length,&direction,&ascent,&descent,
-								&bounds);
-							x_string= (title_x)+(bounds.lbearing-bounds.rbearing+1)/2;
-							y_string= (title_y)-descent-1;
-							if (x_string-bounds.lbearing<(0+x_off))
-							{
-								x_string=bounds.lbearing+x_off;
-							}
-							else
-							{
-								if (x_string+bounds.rbearing>(drawing_width+x_off))
-								{
-									x_string=(drawing_width+x_off)-bounds.rbearing;
-								}
-							}
-							if (y_string-ascent<(0+y_off))
-							{
-								y_string=ascent+y_off;
-							}
-							else
-							{
-								if (y_string+descent>(drawing_height+y_off))
-								{
-									y_string=(drawing_height+y_off)-descent;
-								}
-							}
-							XPSDrawString(display,drawing->pixel_map,
-								(drawing_information->graphics_context).
-								highlighted_colour,
-#if defined (NO_ALIGNMENT)
-								x_string,y_string,title,name_length);
-#else
-							(title_x),(title_y),name,name_length);
-#endif								
+						{							
+							write_map_title(map,map_width,map_height,map_x_offset,
+								map_y_offset,drawing);
 					  }
-						/* for each electrode draw a 'plus' at its position and its name
-							 above */
+						/* for each electrode (possibly) draw a marker at its position and its name/ */
+						/* value/channel  above*/
 #if !defined (NO_ALIGNMENT)
 						SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
 						SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
@@ -10641,271 +11460,22 @@ comparison with 3D maps.
 						}
 						for (;number_of_electrodes>0;number_of_electrodes--)
 						{
-							switch (map->electrodes_option)
-							{								
-								case HIDE_ELECTRODES:									
-								{
-									if ((*electrode)->highlight)
-									{
-										graphics_context=(drawing_information->graphics_context).
-											highlighted_colour;
-									}
-									else
-									{
-										graphics_context=(drawing_information->graphics_context).
-											unhighlighted_colour;
-									};
-								}break;										
-								case SHOW_ELECTRODE_NAMES:
-								case SHOW_CHANNEL_NUMBERS:
-								{	
-									/* they're not now always drawn */
-#if defined (OLD_CODE)
-								
-									*electrode_drawn=1;
-#endif 
-									if (SHOW_ELECTRODE_NAMES==map->electrodes_option)
-									{
-										name=(*electrode)->description->name;
-									}
-									else
-									{
-										sprintf(value_string,"%d",(*electrode)->channel->number);
-										name=value_string;
-									}
-								} break;								
-								case SHOW_ELECTRODE_VALUES:
-								{											
-									f_value= *electrode_value;
-									/* if not animation */
-									if (map->activation_front<0)
-									{
-										if (NO_MAP_FIELD==map_type)
-										{
-											name=(char *)NULL;
-										}
-										else
-										{
-											sprintf(value_string,"%.4g",f_value);
-											name=value_string;
-										}
-									}
-								}break;								
-								default:
-								{
-									*electrode_drawn=0;
-									name=(char *)NULL;
-								} break;
-							} /* switch (map->electrodes_option) */
-							/* colour with data values*/
-							if (map->colour_electrodes_with_signal)
-							{
-								/* electrode_drawn and electrode_value already calculated */
-								f_value= *electrode_value;
-								switch (map_type)
-								{
-									case MULTIPLE_ACTIVATION:
-									{
-										if ((f_value<min_f)||(f_value>max_f))
-										{
-											*electrode_drawn=0;
-										}
-									} break;
-								}
-								if (*electrode_drawn)
-								{
-									/* if not animation */
-									if (map->activation_front<0)
-									{
-										if ((*electrode)->highlight)
-										{
-											graphics_context=(drawing_information->
-												graphics_context).highlighted_colour;
-										}
-										else
-										{
-											if ((HIDE_COLOUR==map->colour_option)&&
-												(SHOW_CONTOURS==map->contours_option))
-											{
-												graphics_context=(drawing_information->
-													graphics_context).unhighlighted_colour;
-											}
-											else
-											{
-												graphics_context=(drawing_information->
-													graphics_context).spectrum;
-												if (f_value<=min_f)
-												{
-													XSetForeground(display,graphics_context,
-														spectrum_pixels[0]);
-												}
-												else
-												{
-													if (f_value>=max_f)
-													{
-														XSetForeground(display,graphics_context,
-															spectrum_pixels[
-																number_of_spectrum_colours-1]);
-													}
-													else
-													{
-														XSetForeground(display,graphics_context,
-															spectrum_pixels[(int)((f_value-min_f)*
-																(float)(number_of_spectrum_colours-1)/
-																range_f)]);
-													}
-												}
-											}
-										}
-									}
-									else
-									{
-										name=(char *)NULL;
-										graphics_context=(drawing_information->
-											graphics_context).spectrum;
-										if (f_value<=min_f)
-										{
-											XSetForeground(display,graphics_context,
-												spectrum_pixels[0]);
-										}
-										else
-										{
-											if (f_value>=max_f)
-											{
-												XSetForeground(display,graphics_context,
-													spectrum_pixels[number_of_spectrum_colours-1]);
-											}
-											else
-											{
-												XSetForeground(display,graphics_context,
-													spectrum_pixels[(int)((f_value-min_f)*
-														(float)(number_of_spectrum_colours-1)/
-														range_f)]);
-											}
-										}
-									}
-								}
-							} /* if (map->colour_electrodes_with_signal) */
-							else
-							{												
-								if ((*electrode)->highlight)
-								{
-									graphics_context=(drawing_information->graphics_context).
-										highlighted_colour;
-								}
-								else
-								{
-									graphics_context=(drawing_information->graphics_context).
-										unhighlighted_colour;
-								}
-							}
+              set_electrode_2d_name_and_colour(map,drawing,&graphics_context,
+								*electrode,name,*electrode_value,electrode_drawn,range_f);
 							if (*electrode_drawn)
 							{									
-								*screen_x+=x_off;
-								*screen_y+=y_off;
-								marker_size=map->electrodes_marker_size;
-								if (marker_size<1)
-								{
-									marker_size=1;
-								}									
-								switch (map->electrodes_marker_type)
-								{
-									case CIRCLE_ELECTRODE_MARKER:
-									{
-										/* draw circle */
-										XPSFillArc(display,drawing->pixel_map,graphics_context,
-											*screen_x-marker_size,*screen_y-marker_size,
-											2*marker_size+1,2*marker_size+1,(int)0,(int)(360*64));
-									} break;
-									case PLUS_ELECTRODE_MARKER:
-									{
-										/* draw plus */
-										XPSDrawLine(display,drawing->pixel_map,graphics_context,
-											*screen_x-marker_size,*screen_y,*screen_x+marker_size,
-											*screen_y);
-										XPSDrawLine(display,drawing->pixel_map,graphics_context,
-											*screen_x,*screen_y-marker_size,*screen_x,
-											*screen_y+marker_size);
-									} break;
-									case SQUARE_ELECTRODE_MARKER:
-									{
-										/* draw square */
-										XPSFillRectangle(display,drawing->pixel_map,
-											graphics_context,*screen_x-marker_size,
-											*screen_y-marker_size,2*marker_size+1,2*marker_size+1);
-									} break;		
-									case HIDE_ELECTRODE_MARKER:
-									{
-										/* do nothing */
-										;
-									} break;											
-								}
-								if (name)
-								{
-									/* write name */
-									name_length=strlen(name);
-#if defined (NO_ALIGNMENT)
-									XTextExtents(font,name,name_length,&direction,&ascent,
-										&descent,&bounds);
-									x_string= (*screen_x)+(bounds.lbearing-bounds.rbearing+1)/2;
-									y_string= (*screen_y)-descent-1;
-									/* make sure that the string doesn't extend outside the
-										 window */
-									if (x_string-bounds.lbearing<(0+x_off))
-									{
-										x_string=bounds.lbearing+x_off;
-									}
-									else
-									{
-										if (x_string+bounds.rbearing>(drawing_width+x_off))
-										{
-											x_string=(drawing_width+x_off)-bounds.rbearing;
-										}
-									}
-									if (y_string-ascent<(0+y_off))
-									{
-										y_string=ascent+y_off;
-									}
-									else
-									{
-										if (y_string+descent>(drawing_height+y_off))
-										{
-											y_string=(drawing_height+y_off)-descent;
-										}
-									}
-#endif
-
-									if ((*electrode)->highlight)
-									{
-										XPSDrawString(display,drawing->pixel_map,
-											(drawing_information->graphics_context).
-											highlighted_colour,
-#if defined (NO_ALIGNMENT)
-											x_string,y_string,name,name_length);
-#else
-										(*screen_x),(*screen_y)-marker_size,name,name_length);
-#endif
-									}
-									else
-									{
-										XPSDrawString(display,drawing->pixel_map,
-											(drawing_information->graphics_context).
-											node_marker_colour,
-#if defined (NO_ALIGNMENT)
-											x_string,y_string,name,name_length);
-#else
-											(*screen_x),(*screen_y)-marker_size,name,name_length);
-#endif
-									}
-								}
+								*screen_x+=map_x_offset;
+								*screen_y+=map_y_offset;
+								draw_2d_electrode(map,drawing,*screen_x,*screen_y,&graphics_context,
+									name,*electrode,map_x_offset,map_y_offset,map_width,map_height);
 							}
 							electrode++;
 							screen_x++;
 							screen_y++;
 							electrode_drawn++;
 							electrode_value++;
-						}
-					}
+						}/* for (;number_of_electrodes>0;number_of_electrodes--) */
+					}/* if (x&&y&&electrode&&screen_x&&screen_y&&electrode_value&& */
 					else
 					{
 						DEALLOCATE(screen_x);
@@ -10928,11 +11498,11 @@ comparison with 3D maps.
 					DEALLOCATE(stretch_y);
 					DEALLOCATE(start_x);
 					DEALLOCATE(start_y);
-				}
+				}/* if (number_of_electrodes>0) */
 				DEALLOCATE(draw_region_number);
-			}
-		}
-	}
+			} /* if ((rig= *(map->rig_pointer))&& */
+		}/* if (map->rig_pointer) */
+	}/* if (map&&drawing&&(drawing_information=map->drawing_information)&& */
 	else
 	{
 		display_message(ERROR_MESSAGE,"draw_map_2d.  Invalid argument(s)");
@@ -11510,12 +12080,6 @@ DESCRIPTION :
 	{
 		if (ALLOCATE(map_drawing_information,struct Map_drawing_information,1))
 		{
-    /*!!jw these will be set up just before draw_map_2d is called */
-     map_drawing_information->map_width=0;
-     map_drawing_information->map_height=0;
-     map_drawing_information->x_offset=0;
-     map_drawing_information->y_offset=0;
-
 			display=user_interface->display;
 			screen_number=XDefaultScreen(display);
 			/* the drawable has to have the correct depth and screen */

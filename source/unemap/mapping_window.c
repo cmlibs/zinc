@@ -318,7 +318,7 @@ necessary.
 							{
 								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
 									BLUE_WHITE_RED_SPECTRUM);
-								map_settings_changed = 1;					
+								map_settings_changed = 1;
 							}
 						}
 						else if (option_widget==map_dialog->spectrum.type_option.log_blue_red)
@@ -1058,7 +1058,7 @@ necessary.
 					(ELECTRICAL_IMAGING==*map->analysis_mode))
 			{
 				recalculate=2;
-			}
+			}			
 			update_mapping_drawing_area(mapping,recalculate);
 			update_mapping_colour_or_auxili(mapping);
 			mapping_window_update_time_limits(mapping);

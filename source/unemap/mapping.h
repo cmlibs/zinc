@@ -224,10 +224,6 @@ from here.
 	Boolean maintain_aspect_ratio;
 	Colormap colour_map;
 	int read_only_colour_map;
-	/*for 1 map, map_width,map_height will be the same as Drawing_2d->width,height*/
-	/* and x_offset,y_offset will be 0. These must be set up before draw_map_2d */
-	/*is called, see draw_map */
-	int map_width,map_height,x_offset,y_offset;/*!!jw*/
 #endif /* defined (MOTIF) */
 	int number_of_spectrum_colours,pixels_between_contour_values;
 #if defined (MOTIF)
@@ -460,15 +456,27 @@ number of Electrical_imaging_events) and the x_step and y_step, (offsets in the
 drawing) and map_rows, map_cols, the number of map rows and columns.
 ==============================================================================*/
 
-int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing);
+int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing,
+		int map_width,int map_height, int map_x_offset,int map_y_offset);
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 13 July 2001
 
 DESCRIPTION :
-This function draws the <map> in the <drawing>.  If <recalculate> is >0 then the
+This function draws the <map> in the <drawing>, with <map_width>, <map_height> 
+at <map_x_offset> <map_y_offset>. <map_width>, <map_height> <map_x_offset> 
+<map_y_offset> must be inside drawing->width,drawing->height. (This is checked)
+ If <recalculate> is >0 then the
 colours for the pixels are recalculated.  If <recalculate> is >1 then the
 interpolation functions are also recalculated.  If <recalculate> is >2 then the
 <map> is resized to match the <drawing>.
+???Would like to develop a "PostScript driver" for X.  To get an idea of whats
+involved I'll put a PostScript switch into this routine so that it either draws
+to the drawing or writes to a postscript file.
+???DB.  Use XDrawSegments for contours ?
+
+??JW added options for Gouraund shading, selected using the defines
+GOURAUD_FROM_MESH or GOURAUD_FROM_PIXEL_VALUE. A test thing really, for
+comparison with 3D maps.
 ==============================================================================*/
 
 int draw_colour_or_auxiliary_area(struct Map *map,struct Drawing_2d *drawing);
