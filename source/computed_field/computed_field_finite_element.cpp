@@ -1450,7 +1450,7 @@ FE_field being made and/or modified.
 					&cm_field_type);
 
 				/* create FE_field */
-				Computed_field_get_coordinate_system(field);
+				coordinate_system = Computed_field_get_coordinate_system(field);
 				if (fe_field = FE_region_get_FE_field_with_properties(
 					computed_field_finite_element_package->fe_region,
 					field->name, GENERAL_FE_FIELD,
