@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : map_dialog.uil
 !
-!LAST MODIFIED : 1 November 2001
+!LAST MODIFIED : 27 November 2003
 !
 !DESCRIPTION :
 !The widgets/gadgets for the map dialog in the mapping work area.
@@ -70,7 +70,7 @@ procedure
 	id_map_dialog_animation_start_t;
 	identify_map_dialog_animation;
 	identify_map_dialog_ok_button;
-	update_map_from_dialog;
+	redraw_map_from_dialog;
 	update_dialog_elec_options;
 	identify_map_dialog_apply_butto;
 	identify_map_dialog_cancel_butt;
@@ -1706,7 +1706,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				update_map_from_dialog(mapping_window_structure);
+				redraw_map_from_dialog(mapping_window_structure);
 				};
 			};
 		};
@@ -1751,7 +1751,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				update_map_from_dialog(mapping_window_structure);
+				redraw_map_from_dialog(mapping_window_structure);
 				};
 			};
 		};

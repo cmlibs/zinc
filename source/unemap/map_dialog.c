@@ -1699,382 +1699,12 @@ Finds the id of the ok button in the map dialog.
 	LEAVE;
 } /* identify_map_dialog_ok_button */
 
-/*
-Global functions
-----------------
-*/
-struct Map_dialog *create_Map_dialog(struct Map_dialog **map_dialog_address,
-	struct Map **map,Widget activation,struct User_interface *user_interface)
+static int update_dialog_from_map(struct Map_dialog *map_dialog)
 /*******************************************************************************
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 27 November 2003
 
 DESCRIPTION :
-Allocates the memory for a map dialog.  Retrieves the necessary widgets and
-initializes the appropriate fields.
-==============================================================================*/
-{
-	Atom WM_DELETE_WINDOW;
-	MrmType map_dialog_class;
-	static MrmRegisterArg callback_list[]={
-		{"identify_map_dialog_range_type",
-			(XtPointer)identify_map_dialog_range_type},
-		{"identify_map_dialog_range_autom",
-			(XtPointer)identify_map_dialog_range_autom},
-		{"identify_map_dialog_range_fixed",
-			(XtPointer)identify_map_dialog_range_fixed},
-		{"identify_map_dialog_range_minim",
-			(XtPointer)identify_map_dialog_range_minim},
-		{"identify_map_dialog_range_maxim",
-			(XtPointer)identify_map_dialog_range_maxim},
-		{"identify_map_dialog_spectrum",
-			(XtPointer)identify_map_dialog_spectrum},
-		{"identify_map_dialog_spectrum_no",
-			(XtPointer)identify_map_dialog_spectrum_no},
-		{"identify_map_dialog_blue_red",
-			(XtPointer)identify_map_dialog_blue_red},
-		{"identify_map_dialog_bl_wh_rd",
-			(XtPointer)identify_map_dialog_bl_wh_rd},
-		{"identify_map_dialog_red_blue",
-			(XtPointer)identify_map_dialog_red_blue},
-		{"identify_map_dialog_log_blue_re",
-			(XtPointer)identify_map_dialog_log_blue_re},
-		{"identify_map_dialog_log_red_blu",
-			(XtPointer)identify_map_dialog_log_red_blu},
-		{"identify_map_dialog_interpolati",
-			(XtPointer)identify_map_dialog_interpolati},
-		{"identify_map_dialog_inter_bicub",
-			(XtPointer)identify_map_dialog_inter_bicub},
-		{"set_interpolation_bicubic",(XtPointer)set_interpolation_bicubic},
-		{"identify_map_dialog_inter_direc",
-			(XtPointer)identify_map_dialog_inter_direc},
-		{"set_interpolation_direct",(XtPointer)set_interpolation_direct},
-		{"identify_map_dialog_inter_none",
-			(XtPointer)identify_map_dialog_inter_none},
-		{"set_interpolation_none",(XtPointer)set_interpolation_none},
-		{"id_map_dialog_inter_mrows",(XtPointer)id_map_dialog_inter_mrows},
-		{"id_map_dialog_inter_mrows_text",
-			(XtPointer)id_map_dialog_inter_mrows_text},
-		{"id_map_dialog_inter_mcols",(XtPointer)id_map_dialog_inter_mcols},
-		{"id_map_dialog_inter_mcols_text",
-			(XtPointer)id_map_dialog_inter_mcols_text},
-		{"identify_map_dialog_contours",
-			(XtPointer)identify_map_dialog_contours},
-		{"identify_map_dialog_contours_op",
-			(XtPointer)identify_map_dialog_contours_op},
-		{"identify_map_dialog_contours_no",
-			(XtPointer)identify_map_dialog_contours_no},
-		{"identify_map_dialog_contours_co",
-			(XtPointer)identify_map_dialog_contours_co},
-		{"identify_map_dialog_contours_va",
-			(XtPointer)identify_map_dialog_contours_va},
-		{"identify_map_dialog_contours_do",
-			(XtPointer)identify_map_dialog_contours_do},
-		{"decrement_number_of_contours",(XtPointer)decrement_number_of_contours},
-		{"identify_map_dialog_contours_nu",
-			(XtPointer)identify_map_dialog_contours_nu},
-		{"identify_map_dialog_contours_up",
-			(XtPointer)identify_map_dialog_contours_up},
-		{"increment_number_of_contours",(XtPointer)increment_number_of_contours},
-		{"identify_map_dialog_elect_name",
-			(XtPointer)identify_map_dialog_elect_name},
-		{"identify_map_dialog_elect_value",
-			(XtPointer)identify_map_dialog_elect_value},
-		{"identify_map_dialog_elect_chann",
-			(XtPointer)identify_map_dialog_elect_chann},
-		{"identify_map_dialog_elect_hide",
-			(XtPointer)identify_map_dialog_elect_hide},
-		{"identify_map_dialog_elect_menu",
-			(XtPointer)identify_map_dialog_elect_menu},
-		{"identify_map_dialog_elect_circl",
-			(XtPointer)identify_map_dialog_elect_circl},
-		{"identify_map_dialog_elect_plus",
-			(XtPointer)identify_map_dialog_elect_plus},
-		{"identify_map_dialog_elect_squar",
-			(XtPointer)identify_map_dialog_elect_squar},
-		{"identify_map_dialog_elect_none",
-			(XtPointer)identify_map_dialog_elect_none},
-		{"identify_map_dialog_elect_marke",
-			(XtPointer)identify_map_dialog_elect_marke},
-		{"identify_map_dialog_elect_colou",
-			(XtPointer)identify_map_dialog_elect_colou},
-		{"identify_map_dialog_elect_size",
-			(XtPointer)identify_map_dialog_elect_size},
-		{"identify_map_dialog_landmarks_b",
-			(XtPointer)identify_map_dialog_landmarks_b},
-		{"identify_map_dialog_extrema_but",
-			(XtPointer)identify_map_dialog_extrema_but},
-		{"identify_map_dialog_aspect_rati",
-			(XtPointer)identify_map_dialog_aspect_rati},
-		{"identify_map_dialog_print_spect",
-			(XtPointer)identify_map_dialog_print_spect},
-		{"identify_map_dialog_fibre_hide",
-			(XtPointer)identify_map_dialog_fibre_hide},
-		{"identify_map_dialog_fibre_fine",
-			(XtPointer)identify_map_dialog_fibre_fine},
-		{"identify_map_dialog_fibre_mediu",
-			(XtPointer)identify_map_dialog_fibre_mediu},
-		{"identify_map_dialog_fibre_coars",
-			(XtPointer)identify_map_dialog_fibre_coars},
-		{"identify_map_dialog_fibre_menu",
-			(XtPointer)identify_map_dialog_fibre_menu},
-		{"identify_map_dialog_animation",(XtPointer)identify_map_dialog_animation},
-		{"id_map_dialog_animation_start_t",
-			(XtPointer)id_map_dialog_animation_start_t},
-		{"id_map_dialog_animation_end_tim",
-			(XtPointer)id_map_dialog_animation_end_tim},
-		{"id_map_dialog_animation_num_fra",
-			(XtPointer)id_map_dialog_animation_num_fra},
-		{"id_map_dialog_animation_frame_n",
-			(XtPointer)id_map_dialog_animation_frame_n},
-		{"identify_map_dialog_ok_button",(XtPointer)identify_map_dialog_ok_button},
-		{"identify_map_dialog_apply_butto",
-			(XtPointer)identify_map_dialog_apply_butto},
-		{"identify_map_dialog_cancel_butt",
-			(XtPointer)identify_map_dialog_cancel_butt},
-		{"close_map_dialog",(XtPointer)close_map_dialog}};
-	static MrmRegisterArg identifier_list[]=
-	{
-		{"map_dialog_structure",(XtPointer)NULL}
-	};
-	struct Map_dialog *map_dialog;
-	Widget parent;
-	XmFontList font_list;
-
-	ENTER(create_Map_dialog);
-	/* check arguments */
-	if (user_interface)
-	{
-		if (MrmOpenHierarchy_base64_string(map_dialog_uidh,
-			&map_dialog_hierarchy,&map_dialog_hierarchy_open))
-		{
-			if (ALLOCATE(map_dialog,struct Map_dialog,1))
-			{
-				map_dialog->user_interface=user_interface;
-				map_dialog->activation=activation;
-				map_dialog->dialog=(Widget)NULL;
-				map_dialog->shell=(Widget)NULL;
-				map_dialog->shell_list_item=(struct Shell_list_item *)NULL;
-				map_dialog->range.type_option_menu=(Widget)NULL;
-				map_dialog->range.type_option.automatic=(Widget)NULL;
-				map_dialog->range.type_option.fixed=(Widget)NULL;
-				map_dialog->range.minimum_value=(Widget)NULL;
-				map_dialog->range.maximum_value=(Widget)NULL;
-				map_dialog->spectrum.type_option_menu=(Widget)NULL;
-				map_dialog->spectrum.type_option.none=(Widget)NULL;
-				map_dialog->spectrum.type_option.blue_red=(Widget)NULL;
-				map_dialog->spectrum.type_option.blue_white_red=(Widget)NULL;
-				map_dialog->spectrum.type_option.red_blue=(Widget)NULL;
-				map_dialog->spectrum.type_option.log_blue_red=(Widget)NULL;
-				map_dialog->spectrum.type_option.log_red_blue=(Widget)NULL;
-				map_dialog->interpolation.option_menu=(Widget)NULL;
-				map_dialog->interpolation.option.bicubic=(Widget)NULL;
-				map_dialog->interpolation.option.direct=(Widget)NULL;
-				map_dialog->interpolation.option.none=(Widget)NULL;
-				map_dialog->interpolation.mesh_rows=(Widget)NULL;
-				map_dialog->interpolation.mesh_rows_text=(Widget)NULL;
-				map_dialog->interpolation.mesh_columns=(Widget)NULL;
-				map_dialog->interpolation.mesh_columns_text=(Widget)NULL;
-				map_dialog->contours.row_column=(Widget)NULL;
-				map_dialog->contours.type_option_menu=(Widget)NULL;
-				map_dialog->contours.type_option.none=(Widget)NULL;
-				map_dialog->contours.type_option.constant_thickness=(Widget)NULL;
-				map_dialog->contours.type_option.variable_thickness=(Widget)NULL;
-				map_dialog->contours.down_arrow=(Widget)NULL;
-				map_dialog->contours.number=(Widget)NULL;
-				map_dialog->contours.up_arrow=(Widget)NULL;
-				map_dialog->electrodes.label_menu=(Widget)NULL;
-				map_dialog->electrodes.label.name=(Widget)NULL;
-				map_dialog->electrodes.label.value=(Widget)NULL;
-				map_dialog->electrodes.label.channel=(Widget)NULL;
-				map_dialog->electrodes.label.hide=(Widget)NULL;
-				map_dialog->electrodes.marker_type_menu=(Widget)NULL;
-				map_dialog->electrodes.marker_type.circle=(Widget)NULL;
-				map_dialog->electrodes.marker_type.plus=(Widget)NULL;
-				map_dialog->electrodes.marker_type.square=(Widget)NULL;
-				map_dialog->electrodes.marker_type.none=(Widget)NULL;
-				map_dialog->electrodes.marker_colour_toggle=(Widget)NULL;
-				map_dialog->electrodes.marker_size_text=(Widget)NULL;
-				map_dialog->fibres_option_menu=(Widget)NULL;
-				map_dialog->fibres_option.hide=(Widget)NULL;
-				map_dialog->fibres_option.fine=(Widget)NULL;
-				map_dialog->fibres_option.medium=(Widget)NULL;
-				map_dialog->fibres_option.coarse=(Widget)NULL;
-				map_dialog->show_landmarks_toggle=(Widget)NULL;
-				map_dialog->show_extrema_toggle=(Widget)NULL;
-				map_dialog->maintain_aspect_ratio_toggle=(Widget)NULL;
-				map_dialog->print_spectrum_toggle=(Widget)NULL;
-				map_dialog->animation.row_column=(Widget)NULL;
-				map_dialog->animation.start_time_text=(Widget)NULL;
-				map_dialog->animation.end_time_text=(Widget)NULL;
-				map_dialog->animation.number_of_frames_text=(Widget)NULL;
-				map_dialog->animation.frame_number_text=(Widget)NULL;
-				map_dialog->ok_button=(Widget)NULL;
-				map_dialog->cancel_button=(Widget)NULL;
-				map_dialog->address=map_dialog_address;
-				map_dialog->map=map;
-				/* create the dialog shell */
-				if (!(parent=activation)||(True!=XtIsWidget(parent)))
-				{
-					parent=User_interface_get_application_shell(user_interface);
-				}
-				if (map_dialog->shell=XtVaCreatePopupShell(
-					"mapping_map_dialog_shell",
-					xmDialogShellWidgetClass,parent,
-					XmNdeleteResponse,XmDO_NOTHING,
-/*					XmNmwmDecorations,MWM_DECOR_ALL&(~MWM_DECOR_RESIZEH),
-					XmNmwmFunctions,MWM_FUNC_MOVE&MWM_FUNC_CLOSE,*/
-					XmNmwmDecorations,MWM_DECOR_ALL|MWM_DECOR_RESIZEH,
-					XmNmwmFunctions,MWM_FUNC_MOVE|MWM_FUNC_CLOSE,
-					XmNtitle,"Map settings",
-					NULL))
-				{
-					map_dialog->shell_list_item=
-						create_Shell_list_item(&(map_dialog->shell),user_interface);
-					/* Set up window manager callback for close window message */
-					WM_DELETE_WINDOW=XmInternAtom(
-						XtDisplay(map_dialog->shell),"WM_DELETE_WINDOW",False);
-					XmAddWMProtocolCallback(map_dialog->shell,
-						WM_DELETE_WINDOW,close_map_dialog,map_dialog);
-					/* add the destroy callback */
-					XtAddCallback(map_dialog->shell,XmNdestroyCallback,
-						destroy_map_dialog,(XtPointer)map_dialog);
-					/* register the other callbacks */
-					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(map_dialog_hierarchy,
-						callback_list,XtNumber(callback_list)))
-					{
-						/* assign and register the identifiers */
-						identifier_list[0].value=(XtPointer)map_dialog;
-						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(map_dialog_hierarchy,
-							identifier_list,XtNumber(identifier_list)))
-						{
-							/* fetch the dialog widget */
-							if (MrmSUCCESS==MrmFetchWidget(map_dialog_hierarchy,"map_dialog",
-								map_dialog->shell,&(map_dialog->dialog),&map_dialog_class))
-							{
-								/* set fonts for option menus */
-								if (((map_dialog->range).type_option_menu)&&
-									((map_dialog->range).type_option.automatic))
-								{
-									XtVaGetValues((map_dialog->range).type_option.automatic,
-										XmNfontList,&font_list,NULL);
-									XtVaSetValues(XmOptionLabelGadget((map_dialog->range).
-										type_option_menu),XmNfontList,font_list,NULL);
-								}
-								if (((map_dialog->spectrum).type_option_menu)&&
-									((map_dialog->spectrum).type_option.none))
-								{
-									XtVaGetValues((map_dialog->spectrum).type_option.none,
-										XmNfontList,&font_list,NULL);
-									XtVaSetValues(XmOptionLabelGadget((map_dialog->spectrum).
-										type_option_menu),XmNfontList,font_list,NULL);
-								}
-								if (((map_dialog->interpolation).option_menu)&&
-									((map_dialog->interpolation).option.none))
-								{
-									XtVaGetValues((map_dialog->interpolation).option.none,
-										XmNfontList,&font_list,NULL);
-									XtVaSetValues(XmOptionLabelGadget((map_dialog->interpolation).
-										option_menu),XmNfontList,font_list,NULL);
-								}
-								if (((map_dialog->contours).type_option_menu)&&
-									((map_dialog->contours).type_option.none))
-								{
-									XtVaGetValues((map_dialog->contours).type_option.none,
-										XmNfontList,&font_list,NULL);
-									XtVaSetValues(XmOptionLabelGadget((map_dialog->contours).
-										type_option_menu),XmNfontList,font_list,NULL);
-								}
-								if ((map_dialog->electrodes.label_menu)&&
-									(map_dialog->electrodes.label.hide))
-								{
-									XtVaGetValues(map_dialog->electrodes.label.hide,
-										XmNfontList,&font_list,NULL);
-									XtVaSetValues(XmOptionLabelGadget(map_dialog->
-										electrodes.label_menu),XmNfontList,font_list,NULL);
-								}
-								if ((map_dialog->electrodes.marker_type_menu)&&
-									(map_dialog->electrodes.marker_type.plus))
-								{
-									XtVaGetValues(map_dialog->electrodes.marker_type.plus,
-										XmNfontList,&font_list,NULL);
-									XtVaSetValues(XmOptionLabelGadget(map_dialog->
-										electrodes.marker_type_menu),XmNfontList,font_list,NULL);
-								}
-								if ((map_dialog->fibres_option_menu)&&
-									(map_dialog->fibres_option.hide))
-								{
-									XtVaGetValues(map_dialog->fibres_option.hide,
-										XmNfontList,&font_list,NULL);
-									XtVaSetValues(XmOptionLabelGadget(map_dialog->
-										fibres_option_menu),XmNfontList,font_list,NULL);
-								}
-								XtManageChild(map_dialog->dialog);
-								XtRealizeWidget(map_dialog->shell);
-								if (map_dialog_address)
-								{
-									*map_dialog_address=map_dialog;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"create_Map_dialog.  Could not fetch the dialog widget");
-								XtDestroyWidget(map_dialog->shell);
-								map_dialog=(struct Map_dialog *)NULL;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"create_Map_dialog.  Could not register identifiers");
-							XtDestroyWidget(map_dialog->shell);
-							map_dialog=(struct Map_dialog *)NULL;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"create_Map_dialog.  Could not register callbacks");
-						XtDestroyWidget(map_dialog->shell);
-						map_dialog=(struct Map_dialog *)NULL;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"create_Map_dialog.  Could not create dialog shell");
-					DEALLOCATE(map_dialog);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"create_Map_dialog.  Could not allocate memory for map dialog");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"create_Map_dialog.  Could not open hierarchy");
-			map_dialog=(struct Map_dialog *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"create_Map_dialog.  Missing user_interface");
-		map_dialog=(struct Map_dialog *)NULL;
-	}
-	LEAVE;
-
-	return (map_dialog);
-} /* create_Map_dialog */
-
-int open_map_dialog(struct Map_dialog *map_dialog)
-/*******************************************************************************
-LAST MODIFIED : 1 May 2002
-
-DESCRIPTION :
-Opens the <map_dialog>.
+Updates the dialog based on the map settings.
 ==============================================================================*/
 {
 	char value_string[20];
@@ -2084,8 +1714,8 @@ Opens the <map_dialog>.
 	struct Rig *rig;
 	Widget option_widget;
 
-	ENTER(open_map_dialog);
-	rig =(struct Rig *)NULL;
+	ENTER(update_dialog_from_map);
+	rig=(struct Rig *)NULL;
 	map=(struct Map *)NULL;
 	if (map_dialog)
 	{
@@ -2096,7 +1726,7 @@ Opens the <map_dialog>.
 			{
 				/* colour_electrodes_with_signal can be changed in the code
 					(draw_map_2d), as well from the GUI, so ensure in synce here.
-					cf update_map_from_dialog */
+					cf redraw_map_from_dialog */
 				XmToggleButtonGadgetSetState(
 					map_dialog->electrodes.marker_colour_toggle,True,False);
 			}
@@ -2145,7 +1775,7 @@ Opens the <map_dialog>.
 					{
 						option_widget=map_dialog->spectrum.type_option.none;
 						display_message(ERROR_MESSAGE,
-							"open_map_dialog.  Unknown spectrum");
+							"update_dialog_from_map.  Unknown spectrum");
 					} break;
 				}
 			}
@@ -2450,23 +2080,416 @@ Opens the <map_dialog>.
 				XtSetSensitive(map_dialog->animation.row_column,False);
 			}
 			/*???Set menu history for interpolation choice */
-			/* ghost the activation button */
-			XtSetSensitive(map_dialog->activation,False);
-			/* pop up the map dialog */
-			busy_cursor_on(map_dialog->shell,map_dialog->user_interface);
-			XtManageChild(map_dialog->dialog);
 			return_code=1;
 		}
 		else
 		{
 			return_code=0;
-			display_message(ERROR_MESSAGE,"open_map_dialog.  Missing map");
+			display_message(ERROR_MESSAGE,"update_dialog_from_map.  Missing map");
 		}
 	}
 	else
 	{
 		return_code=0;
-		display_message(ERROR_MESSAGE,"open_map_dialog.  Missing map_dialog");
+		display_message(ERROR_MESSAGE,
+			"update_dialog_from_map.  Missing map_dialog");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* update_dialog_from_map */
+
+/*
+Global functions
+----------------
+*/
+struct Map_dialog *create_Map_dialog(struct Map_dialog **map_dialog_address,
+	struct Map **map,Widget activation,struct User_interface *user_interface)
+/*******************************************************************************
+LAST MODIFIED : 27 November 2003
+
+DESCRIPTION :
+Allocates the memory for a map dialog.  Retrieves the necessary widgets and
+initializes the appropriate fields.
+==============================================================================*/
+{
+	Atom WM_DELETE_WINDOW;
+	MrmType map_dialog_class;
+	static MrmRegisterArg callback_list[]={
+		{"identify_map_dialog_range_type",
+			(XtPointer)identify_map_dialog_range_type},
+		{"identify_map_dialog_range_autom",
+			(XtPointer)identify_map_dialog_range_autom},
+		{"identify_map_dialog_range_fixed",
+			(XtPointer)identify_map_dialog_range_fixed},
+		{"identify_map_dialog_range_minim",
+			(XtPointer)identify_map_dialog_range_minim},
+		{"identify_map_dialog_range_maxim",
+			(XtPointer)identify_map_dialog_range_maxim},
+		{"identify_map_dialog_spectrum",
+			(XtPointer)identify_map_dialog_spectrum},
+		{"identify_map_dialog_spectrum_no",
+			(XtPointer)identify_map_dialog_spectrum_no},
+		{"identify_map_dialog_blue_red",
+			(XtPointer)identify_map_dialog_blue_red},
+		{"identify_map_dialog_bl_wh_rd",
+			(XtPointer)identify_map_dialog_bl_wh_rd},
+		{"identify_map_dialog_red_blue",
+			(XtPointer)identify_map_dialog_red_blue},
+		{"identify_map_dialog_log_blue_re",
+			(XtPointer)identify_map_dialog_log_blue_re},
+		{"identify_map_dialog_log_red_blu",
+			(XtPointer)identify_map_dialog_log_red_blu},
+		{"identify_map_dialog_interpolati",
+			(XtPointer)identify_map_dialog_interpolati},
+		{"identify_map_dialog_inter_bicub",
+			(XtPointer)identify_map_dialog_inter_bicub},
+		{"set_interpolation_bicubic",(XtPointer)set_interpolation_bicubic},
+		{"identify_map_dialog_inter_direc",
+			(XtPointer)identify_map_dialog_inter_direc},
+		{"set_interpolation_direct",(XtPointer)set_interpolation_direct},
+		{"identify_map_dialog_inter_none",
+			(XtPointer)identify_map_dialog_inter_none},
+		{"set_interpolation_none",(XtPointer)set_interpolation_none},
+		{"id_map_dialog_inter_mrows",(XtPointer)id_map_dialog_inter_mrows},
+		{"id_map_dialog_inter_mrows_text",
+			(XtPointer)id_map_dialog_inter_mrows_text},
+		{"id_map_dialog_inter_mcols",(XtPointer)id_map_dialog_inter_mcols},
+		{"id_map_dialog_inter_mcols_text",
+			(XtPointer)id_map_dialog_inter_mcols_text},
+		{"identify_map_dialog_contours",
+			(XtPointer)identify_map_dialog_contours},
+		{"identify_map_dialog_contours_op",
+			(XtPointer)identify_map_dialog_contours_op},
+		{"identify_map_dialog_contours_no",
+			(XtPointer)identify_map_dialog_contours_no},
+		{"identify_map_dialog_contours_co",
+			(XtPointer)identify_map_dialog_contours_co},
+		{"identify_map_dialog_contours_va",
+			(XtPointer)identify_map_dialog_contours_va},
+		{"identify_map_dialog_contours_do",
+			(XtPointer)identify_map_dialog_contours_do},
+		{"decrement_number_of_contours",(XtPointer)decrement_number_of_contours},
+		{"identify_map_dialog_contours_nu",
+			(XtPointer)identify_map_dialog_contours_nu},
+		{"identify_map_dialog_contours_up",
+			(XtPointer)identify_map_dialog_contours_up},
+		{"increment_number_of_contours",(XtPointer)increment_number_of_contours},
+		{"identify_map_dialog_elect_name",
+			(XtPointer)identify_map_dialog_elect_name},
+		{"identify_map_dialog_elect_value",
+			(XtPointer)identify_map_dialog_elect_value},
+		{"identify_map_dialog_elect_chann",
+			(XtPointer)identify_map_dialog_elect_chann},
+		{"identify_map_dialog_elect_hide",
+			(XtPointer)identify_map_dialog_elect_hide},
+		{"identify_map_dialog_elect_menu",
+			(XtPointer)identify_map_dialog_elect_menu},
+		{"identify_map_dialog_elect_circl",
+			(XtPointer)identify_map_dialog_elect_circl},
+		{"identify_map_dialog_elect_plus",
+			(XtPointer)identify_map_dialog_elect_plus},
+		{"identify_map_dialog_elect_squar",
+			(XtPointer)identify_map_dialog_elect_squar},
+		{"identify_map_dialog_elect_none",
+			(XtPointer)identify_map_dialog_elect_none},
+		{"identify_map_dialog_elect_marke",
+			(XtPointer)identify_map_dialog_elect_marke},
+		{"identify_map_dialog_elect_colou",
+			(XtPointer)identify_map_dialog_elect_colou},
+		{"identify_map_dialog_elect_size",
+			(XtPointer)identify_map_dialog_elect_size},
+		{"identify_map_dialog_landmarks_b",
+			(XtPointer)identify_map_dialog_landmarks_b},
+		{"identify_map_dialog_extrema_but",
+			(XtPointer)identify_map_dialog_extrema_but},
+		{"identify_map_dialog_aspect_rati",
+			(XtPointer)identify_map_dialog_aspect_rati},
+		{"identify_map_dialog_print_spect",
+			(XtPointer)identify_map_dialog_print_spect},
+		{"identify_map_dialog_fibre_hide",
+			(XtPointer)identify_map_dialog_fibre_hide},
+		{"identify_map_dialog_fibre_fine",
+			(XtPointer)identify_map_dialog_fibre_fine},
+		{"identify_map_dialog_fibre_mediu",
+			(XtPointer)identify_map_dialog_fibre_mediu},
+		{"identify_map_dialog_fibre_coars",
+			(XtPointer)identify_map_dialog_fibre_coars},
+		{"identify_map_dialog_fibre_menu",
+			(XtPointer)identify_map_dialog_fibre_menu},
+		{"identify_map_dialog_animation",(XtPointer)identify_map_dialog_animation},
+		{"id_map_dialog_animation_start_t",
+			(XtPointer)id_map_dialog_animation_start_t},
+		{"id_map_dialog_animation_end_tim",
+			(XtPointer)id_map_dialog_animation_end_tim},
+		{"id_map_dialog_animation_num_fra",
+			(XtPointer)id_map_dialog_animation_num_fra},
+		{"id_map_dialog_animation_frame_n",
+			(XtPointer)id_map_dialog_animation_frame_n},
+		{"identify_map_dialog_ok_button",(XtPointer)identify_map_dialog_ok_button},
+		{"identify_map_dialog_apply_butto",
+			(XtPointer)identify_map_dialog_apply_butto},
+		{"identify_map_dialog_cancel_butt",
+			(XtPointer)identify_map_dialog_cancel_butt},
+		{"close_map_dialog",(XtPointer)close_map_dialog}};
+	static MrmRegisterArg identifier_list[]=
+	{
+		{"map_dialog_structure",(XtPointer)NULL}
+	};
+	struct Map_dialog *map_dialog;
+	Widget parent;
+	XmFontList font_list;
+
+	ENTER(create_Map_dialog);
+	/* check arguments */
+	if (user_interface)
+	{
+		if (MrmOpenHierarchy_base64_string(map_dialog_uidh,
+			&map_dialog_hierarchy,&map_dialog_hierarchy_open))
+		{
+			if (ALLOCATE(map_dialog,struct Map_dialog,1))
+			{
+				map_dialog->user_interface=user_interface;
+				map_dialog->activation=activation;
+				map_dialog->dialog=(Widget)NULL;
+				map_dialog->shell=(Widget)NULL;
+				map_dialog->shell_list_item=(struct Shell_list_item *)NULL;
+				map_dialog->range.type_option_menu=(Widget)NULL;
+				map_dialog->range.type_option.automatic=(Widget)NULL;
+				map_dialog->range.type_option.fixed=(Widget)NULL;
+				map_dialog->range.minimum_value=(Widget)NULL;
+				map_dialog->range.maximum_value=(Widget)NULL;
+				map_dialog->spectrum.type_option_menu=(Widget)NULL;
+				map_dialog->spectrum.type_option.none=(Widget)NULL;
+				map_dialog->spectrum.type_option.blue_red=(Widget)NULL;
+				map_dialog->spectrum.type_option.blue_white_red=(Widget)NULL;
+				map_dialog->spectrum.type_option.red_blue=(Widget)NULL;
+				map_dialog->spectrum.type_option.log_blue_red=(Widget)NULL;
+				map_dialog->spectrum.type_option.log_red_blue=(Widget)NULL;
+				map_dialog->interpolation.option_menu=(Widget)NULL;
+				map_dialog->interpolation.option.bicubic=(Widget)NULL;
+				map_dialog->interpolation.option.direct=(Widget)NULL;
+				map_dialog->interpolation.option.none=(Widget)NULL;
+				map_dialog->interpolation.mesh_rows=(Widget)NULL;
+				map_dialog->interpolation.mesh_rows_text=(Widget)NULL;
+				map_dialog->interpolation.mesh_columns=(Widget)NULL;
+				map_dialog->interpolation.mesh_columns_text=(Widget)NULL;
+				map_dialog->contours.row_column=(Widget)NULL;
+				map_dialog->contours.type_option_menu=(Widget)NULL;
+				map_dialog->contours.type_option.none=(Widget)NULL;
+				map_dialog->contours.type_option.constant_thickness=(Widget)NULL;
+				map_dialog->contours.type_option.variable_thickness=(Widget)NULL;
+				map_dialog->contours.down_arrow=(Widget)NULL;
+				map_dialog->contours.number=(Widget)NULL;
+				map_dialog->contours.up_arrow=(Widget)NULL;
+				map_dialog->electrodes.label_menu=(Widget)NULL;
+				map_dialog->electrodes.label.name=(Widget)NULL;
+				map_dialog->electrodes.label.value=(Widget)NULL;
+				map_dialog->electrodes.label.channel=(Widget)NULL;
+				map_dialog->electrodes.label.hide=(Widget)NULL;
+				map_dialog->electrodes.marker_type_menu=(Widget)NULL;
+				map_dialog->electrodes.marker_type.circle=(Widget)NULL;
+				map_dialog->electrodes.marker_type.plus=(Widget)NULL;
+				map_dialog->electrodes.marker_type.square=(Widget)NULL;
+				map_dialog->electrodes.marker_type.none=(Widget)NULL;
+				map_dialog->electrodes.marker_colour_toggle=(Widget)NULL;
+				map_dialog->electrodes.marker_size_text=(Widget)NULL;
+				map_dialog->fibres_option_menu=(Widget)NULL;
+				map_dialog->fibres_option.hide=(Widget)NULL;
+				map_dialog->fibres_option.fine=(Widget)NULL;
+				map_dialog->fibres_option.medium=(Widget)NULL;
+				map_dialog->fibres_option.coarse=(Widget)NULL;
+				map_dialog->show_landmarks_toggle=(Widget)NULL;
+				map_dialog->show_extrema_toggle=(Widget)NULL;
+				map_dialog->maintain_aspect_ratio_toggle=(Widget)NULL;
+				map_dialog->print_spectrum_toggle=(Widget)NULL;
+				map_dialog->animation.row_column=(Widget)NULL;
+				map_dialog->animation.start_time_text=(Widget)NULL;
+				map_dialog->animation.end_time_text=(Widget)NULL;
+				map_dialog->animation.number_of_frames_text=(Widget)NULL;
+				map_dialog->animation.frame_number_text=(Widget)NULL;
+				map_dialog->ok_button=(Widget)NULL;
+				map_dialog->cancel_button=(Widget)NULL;
+				map_dialog->address=map_dialog_address;
+				map_dialog->map=map;
+				/* create the dialog shell */
+				if (!(parent=activation)||(True!=XtIsWidget(parent)))
+				{
+					parent=User_interface_get_application_shell(user_interface);
+				}
+				if (map_dialog->shell=XtVaCreatePopupShell(
+					"mapping_map_dialog_shell",
+					xmDialogShellWidgetClass,parent,
+					XmNdeleteResponse,XmDO_NOTHING,
+/*					XmNmwmDecorations,MWM_DECOR_ALL&(~MWM_DECOR_RESIZEH),
+					XmNmwmFunctions,MWM_FUNC_MOVE&MWM_FUNC_CLOSE,*/
+					XmNmwmDecorations,MWM_DECOR_ALL|MWM_DECOR_RESIZEH,
+					XmNmwmFunctions,MWM_FUNC_MOVE|MWM_FUNC_CLOSE,
+					XmNtitle,"Map settings",
+					NULL))
+				{
+					map_dialog->shell_list_item=
+						create_Shell_list_item(&(map_dialog->shell),user_interface);
+					/* Set up window manager callback for close window message */
+					WM_DELETE_WINDOW=XmInternAtom(
+						XtDisplay(map_dialog->shell),"WM_DELETE_WINDOW",False);
+					XmAddWMProtocolCallback(map_dialog->shell,
+						WM_DELETE_WINDOW,close_map_dialog,map_dialog);
+					/* add the destroy callback */
+					XtAddCallback(map_dialog->shell,XmNdestroyCallback,
+						destroy_map_dialog,(XtPointer)map_dialog);
+					/* register the other callbacks */
+					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(map_dialog_hierarchy,
+						callback_list,XtNumber(callback_list)))
+					{
+						/* assign and register the identifiers */
+						identifier_list[0].value=(XtPointer)map_dialog;
+						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(map_dialog_hierarchy,
+							identifier_list,XtNumber(identifier_list)))
+						{
+							/* fetch the dialog widget */
+							if (MrmSUCCESS==MrmFetchWidget(map_dialog_hierarchy,"map_dialog",
+								map_dialog->shell,&(map_dialog->dialog),&map_dialog_class))
+							{
+								/* set fonts for option menus */
+								if (((map_dialog->range).type_option_menu)&&
+									((map_dialog->range).type_option.automatic))
+								{
+									XtVaGetValues((map_dialog->range).type_option.automatic,
+										XmNfontList,&font_list,NULL);
+									XtVaSetValues(XmOptionLabelGadget((map_dialog->range).
+										type_option_menu),XmNfontList,font_list,NULL);
+								}
+								if (((map_dialog->spectrum).type_option_menu)&&
+									((map_dialog->spectrum).type_option.none))
+								{
+									XtVaGetValues((map_dialog->spectrum).type_option.none,
+										XmNfontList,&font_list,NULL);
+									XtVaSetValues(XmOptionLabelGadget((map_dialog->spectrum).
+										type_option_menu),XmNfontList,font_list,NULL);
+								}
+								if (((map_dialog->interpolation).option_menu)&&
+									((map_dialog->interpolation).option.none))
+								{
+									XtVaGetValues((map_dialog->interpolation).option.none,
+										XmNfontList,&font_list,NULL);
+									XtVaSetValues(XmOptionLabelGadget((map_dialog->interpolation).
+										option_menu),XmNfontList,font_list,NULL);
+								}
+								if (((map_dialog->contours).type_option_menu)&&
+									((map_dialog->contours).type_option.none))
+								{
+									XtVaGetValues((map_dialog->contours).type_option.none,
+										XmNfontList,&font_list,NULL);
+									XtVaSetValues(XmOptionLabelGadget((map_dialog->contours).
+										type_option_menu),XmNfontList,font_list,NULL);
+								}
+								if ((map_dialog->electrodes.label_menu)&&
+									(map_dialog->electrodes.label.hide))
+								{
+									XtVaGetValues(map_dialog->electrodes.label.hide,
+										XmNfontList,&font_list,NULL);
+									XtVaSetValues(XmOptionLabelGadget(map_dialog->
+										electrodes.label_menu),XmNfontList,font_list,NULL);
+								}
+								if ((map_dialog->electrodes.marker_type_menu)&&
+									(map_dialog->electrodes.marker_type.plus))
+								{
+									XtVaGetValues(map_dialog->electrodes.marker_type.plus,
+										XmNfontList,&font_list,NULL);
+									XtVaSetValues(XmOptionLabelGadget(map_dialog->
+										electrodes.marker_type_menu),XmNfontList,font_list,NULL);
+								}
+								if ((map_dialog->fibres_option_menu)&&
+									(map_dialog->fibres_option.hide))
+								{
+									XtVaGetValues(map_dialog->fibres_option.hide,
+										XmNfontList,&font_list,NULL);
+									XtVaSetValues(XmOptionLabelGadget(map_dialog->
+										fibres_option_menu),XmNfontList,font_list,NULL);
+								}
+								update_dialog_from_map(map_dialog);
+#if defined (OLD_CODE)
+								XtManageChild(map_dialog->dialog);
+#endif /* defined (OLD_CODE) */
+								XtRealizeWidget(map_dialog->shell);
+								if (map_dialog_address)
+								{
+									*map_dialog_address=map_dialog;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"create_Map_dialog.  Could not fetch the dialog widget");
+								XtDestroyWidget(map_dialog->shell);
+								map_dialog=(struct Map_dialog *)NULL;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"create_Map_dialog.  Could not register identifiers");
+							XtDestroyWidget(map_dialog->shell);
+							map_dialog=(struct Map_dialog *)NULL;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"create_Map_dialog.  Could not register callbacks");
+						XtDestroyWidget(map_dialog->shell);
+						map_dialog=(struct Map_dialog *)NULL;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"create_Map_dialog.  Could not create dialog shell");
+					DEALLOCATE(map_dialog);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"create_Map_dialog.  Could not allocate memory for map dialog");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"create_Map_dialog.  Could not open hierarchy");
+			map_dialog=(struct Map_dialog *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Map_dialog.  Missing user_interface");
+		map_dialog=(struct Map_dialog *)NULL;
+	}
+	LEAVE;
+
+	return (map_dialog);
+} /* create_Map_dialog */
+
+int open_map_dialog(struct Map_dialog *map_dialog)
+/*******************************************************************************
+LAST MODIFIED : 27 November 2002
+
+DESCRIPTION :
+Opens the <map_dialog>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(open_map_dialog);
+	if (return_code=update_dialog_from_map(map_dialog))
+	{
+		/* ghost the activation button */
+		XtSetSensitive(map_dialog->activation,False);
+		/* pop up the map dialog */
+		busy_cursor_on(map_dialog->shell,map_dialog->user_interface);
+		XtManageChild(map_dialog->dialog);
 	}
 	LEAVE;
 
