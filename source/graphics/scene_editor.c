@@ -2394,7 +2394,7 @@ De-iconifies and brings the scene editor to the front.
 		/* bring up the dialog */
 		XtPopup(scene_editor->window_shell,XtGrabNone);
 		XtVaSetValues(scene_editor->window_shell,XmNiconic,False,NULL);
-		return_code=0;
+		return_code=1;
 	}
 	else
 	{
