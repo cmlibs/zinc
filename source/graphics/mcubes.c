@@ -1061,7 +1061,7 @@ Add mc_triangle to mc_cell list and add new vertex if unique
 	{
 		i_min=i-1;
 	}
-	if (i < mc_iso_surface->dimension[0]+1);
+	if (i < mc_iso_surface->dimension[0]+1)
 	{
 		i_max=i+1;
 	}
