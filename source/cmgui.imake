@@ -40,7 +40,6 @@ BIN_PATH=$(CMGUI_ROOT)/bin
 SOURCE_PATH=$(CMGUI_ROOT)/source
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object
 #if defined (CMISS_ROOT_DEFINED)
 UTILITIES_PATH=$(CMISS_ROOT)/cmgui/utilities
 #else /* defined (CMISS_ROOT_DEFINED) */
@@ -74,7 +73,9 @@ XCOMM ???DB.  Temporary.  Need xml libraries for other than n32
 #define DependMake cmgui_sgilite.depend
 #define ObjSuffix olite
 OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/n32_lite
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_lite
 UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #else /* defined (LITEWEIGHT) */
 #if !defined (OPTIMISED)
 /* The normal debug and memory check versions keep the same extension
@@ -89,7 +90,9 @@ UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
 #define DependMake cmgui_sgi.depend
 #define ObjSuffix o
 OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/n32
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32
 UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #else /* !defined (MEMORY_CHECK) */
 #define CmguiTarget cmgui_memorycheck
 #define SpacesToTabsTarget utilities/spaces_to_tabs
@@ -99,7 +102,9 @@ UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
 #define DependMake cmgui_sgi_memorycheck.depend
 #define ObjSuffix o
 OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/n32
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32
 UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #endif /* !defined (MEMORY_CHECK) */
 #else /* !defined (OPTIMISED) */
 #define CmguiTarget cmgui_optimised
@@ -110,7 +115,9 @@ UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
 #define DependMake cmgui_sgioptimised.depend
 #define ObjSuffix oopt
 OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/n32_optimised
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_optimised
 UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #endif /* !defined (OPTIMISED) */
 #endif /* defined (LITEWEIGHT) */
 #else /* !defined (O64) */
@@ -125,7 +132,9 @@ UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
 #define DependMake cmgui_sgi64.depend
 #define ObjSuffix o64
 OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/64
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/64
 UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/64
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/64
 #endif /* !defined (O64) */
 
 #elif defined (LINUX) /* switch OperatingSystem */
@@ -143,12 +152,14 @@ XCOMM #define CELL
 #define DependMake cmgui_linux.depend
 #define ObjSuffix olinux
 OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/linux
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux
 UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/linux
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux
 #endif /* switch OperatingSystem */
 
 #if defined (IRIX) /* switch OperatingSystem */
 #if defined (CMISS_ROOT_DEFINED)
-VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
+VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH):$(PRODUCT_UIDH_PATH)
 #else /* defined (CMISS_ROOT) */
 VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH)
 #endif /* defined (CMISS_ROOT) */
@@ -814,6 +825,7 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/finite_element.c \
 	finite_element/finite_element_to_graphics_object.c \
 	finite_element/finite_element_to_streamlines.c \
+	finite_element/grid_field_calculator.c \
 	finite_element/import_finite_element.c
 GENERAL_SRCS = \
 	general/callback.c \
