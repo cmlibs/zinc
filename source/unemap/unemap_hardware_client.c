@@ -262,7 +262,7 @@ Locks the <mutex>.
 		{
 			display_message(ERROR_MESSAGE,
 				"lock_mutex.  WaitForSingleObject failed.  Error code %d",
-				WSAGetLastError());
+				GetLastError());
 			return_code=0;
 		}
 #endif /* defined (WIN32) */
@@ -8087,7 +8087,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 								display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
 									"CreateEvent failed for "
 									"calibration_socket_thread_stopped_event.  Error code %d",
-									WSAGetLastError());
+									GetLastError());
 								CloseHandle(crate->acquired_socket_thread_stopped_event);
 								crate->acquired_socket_thread_stopped_event=NULL;
 								CloseHandle(crate->scrolling_socket_thread_stopped_event);
@@ -8102,7 +8102,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 						{
 							display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
 								"CreateEvent failed for acquired_socket_thread_stopped_event.  "
-								"Error code %d",WSAGetLastError());
+								"Error code %d",GetLastError());
 							CloseHandle(crate->scrolling_socket_thread_stopped_event);
 							crate->scrolling_socket_thread_stopped_event=NULL;
 							CloseHandle(crate->acquired_socket_mutex);
@@ -8115,7 +8115,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 					{
 						display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
 							"CreateEvent failed for scrolling_socket_thread_stopped_event.  "
-							"Error code %d",WSAGetLastError());
+							"Error code %d",GetLastError());
 						CloseHandle(crate->acquired_socket_mutex);
 						crate->acquired_socket_mutex=NULL;
 						CloseHandle(crate->command_socket_mutex);
@@ -8126,7 +8126,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 				{
 					display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
 						"CreateMutex failed for acquired_socket_mutex.  Error code %d",
-						WSAGetLastError());
+						GetLastError());
 					CloseHandle(crate->command_socket_mutex);
 					crate->command_socket_mutex=NULL;
 				}
@@ -8135,7 +8135,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 			{
 				display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
 					"CreateMutex failed for command_socket_mutex.  Error code %d",
-					WSAGetLastError());
+					GetLastError());
 			}
 #endif /* defined (WIN32) */
 #if defined (UNIX)
@@ -8589,7 +8589,7 @@ Sets up the connections with the unemap crates.
 		{
 			display_message(ERROR_MESSAGE,"initialize_connection.  "
 				"CreateMutex failed for connection_mutex.  Error code %d",
-				WSAGetLastError());
+				GetLastError());
 		}
 #endif /* defined (WIN32) */
 #if defined (UNIX)

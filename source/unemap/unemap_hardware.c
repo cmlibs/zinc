@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 29 April 2002
+LAST MODIFIED : 23 May 2002
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -191,6 +191,52 @@ unemap.*.numberOfSamples: 100000
 				- locks up with unemap_14mar02.exe and
 					unemap_hardware_service_14mar02.exe
 1.2.18.4 Install NT SP3
+1.2.19 9 May 2002.  Is the problem because have fully populated system?
+			Removed all but 1 of the PXI6071Es
+1.2.19.1 unemap_ni crashed using NT on C:
+1.2.19.2 10 May 2002.  unemap_ni locked up using NT on D:
+1.2.20 11 May 2002.  Set NO_SCROLLING_CALLBACK.  unemap_ni OK with NT on C:
+1.2.21 12 May 2002.  Added and set NO_SCROLLING_BODY (scrolling_callback_NI is
+				then just a stub).  unemap_ni OK with NT on C:
+1.2.22 13 May 2002.  Added and set
+			SCROLLING_UPDATE_BUFFER_POSITION_AND_SIZE_ONLY.  unemap_ni OK with NT on
+			C: .  This contradicts 1.2.1 .  1.2.1 was done with the hardware service
+			(sockets), which may explain the change?
+1.2.23 Added and set NO_MODULE_SCROLLING_CALLBACK.  unemap_ni OK with NT on C:
+1.2.24 Started investigating cutting things out of scrolling_hardware_callback
+			in page_window.
+1.2.24.1 Added and set NO_SCROLLING_HARDWARE_CALLBACK_BODY.  unemap_ni OK with
+				NT on C:
+1.2.24.2 Added and set NO_SCROLLING_SIGNAL.  unemap_ni crashed using NT on C:
+1.2.24.3 Added and set NO_SCROLLING_WINDOW_UPDATE.  unemap_ni OK with NT on C:
+				The last section cut out was at the start involving GetDC and
+				GetClientRect - unemap_ni crashs is they are left in.  So it seems to
+				be the Windows calls (graphics or socket) in the callback that cause the
+				problem.
+1.2.25 Maybe NIDAQ is calling the callback again before its come back from the
+			first callback.  Added and set UNEMAP_THREAD_SAFE, which uses mutex's to
+			make the body of the callback be skipped if it is called before it
+			returns.  unemap_ni crashed using NT on C:  The NIDAQ documentation says
+			that the callback is called in the context of the process and is not
+			called again before the previous call returns
+1.2.26 Is it to do with the length of time the callback takes?  Tried changing
+			the scrolling rate, unemap_configure in start_experiment from 25Hz to 1Hz.
+			unemap_ni crashed using NT on C:  No
+???DB.  Check that GetDC is not adding some sort of lock that needs releasing
+???DB.  Previous problems solved by NI
+1 /* turn off the end of buffer interrupts */
+	status=AO_Change_Parameter((module_NI_CARDS[i]).device_number,
+		da_channel,ND_LINK_COMPLETE_INTERRUPTS,ND_OFF);
+2 "I hope that your trip to England is going well! OK, do you ever have one of
+	those moments where you just feel like a real moron because you missed the
+	answer because you were looking too hard?  Well, this is one of those
+	cases.  The solution is to call WFM_Group_Control for boards 2 and 3 BEFORE
+	you call it for board 1.  That way, the boards are ready and waiting for
+	the trigger signal when it gets sent from board one.  What was happening
+	was that board 1 WAS sending out the trigger signal, but it was doing in
+	before the other 2 were ready to receive it.  I tested this today, and it
+	works like a champ, no external routing.  Again, I am so sorry that I over
+	looked the obvious here." (from Jason Reid, 27 Nov 2000)
 
 NO_BATT_GOOD_WATCH - no thread watching BattGood
 
@@ -216,6 +262,12 @@ NO_BATT_GOOD_WATCH - no thread watching BattGood
 3.2 Just deconfigure and configure again if different?  DONE
 ==============================================================================*/
 
+/*#define NO_SCROLLING_BODY 1*/
+/*#define SCROLLING_UPDATE_BUFFER_POSITION_AND_SIZE_ONLY 1*/
+/*#define NO_MODULE_SCROLLING_CALLBACK 1*/
+
+/*#define UNEMAP_THREAD_SAFE*/
+
 #define SYNCHRONOUS_STIMULATION 1
 /*#define DA_INTERRUPTS_OFF 1*/
 #define USE_WFM_LOAD 1
@@ -233,6 +285,9 @@ NO_BATT_GOOD_WATCH - no thread watching BattGood
 #include <stdio.h>
 #include <math.h>
 #include <limits.h>
+#if defined (UNEMAP_THREAD_SAFE) && defined (UNIX)
+#include <pthread.h>
+#endif /* defined (UNEMAP_THREAD_SAFE) && defined (UNIX) */
 #if defined (WINDOWS)
 #if defined (NI_DAQ)
 #include "nidaq.h"
@@ -393,6 +448,17 @@ HWND module_scrolling_window=(HWND)NULL;
 int module_number_of_scrolling_channels=0,
 	*module_scrolling_channel_numbers=(int *)NULL,module_scrolling_refresh_period;
 int module_sampling_on=0,module_scrolling_on=1;
+#if defined (UNEMAP_THREAD_SAFE)
+#if defined (WIN32)
+HANDLE scrolling_callback_mutex=(HANDLE)NULL;
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+pthread_mutex_t *scrolling_callback_mutex=(pthread_mutex_t *)NULL,
+	scrolling_callback_mutex_storage;
+#endif /* defined (UNIX) */
+/*???debug */
+int scrolling_callback_mutex_locked_count=0;
+#endif /* defined (UNEMAP_THREAD_SAFE) */
 
 Unemap_calibration_end_callback *module_calibration_end_callback=
 	(Unemap_calibration_end_callback *)NULL;
@@ -432,6 +498,125 @@ struct NI_card *start_stimulation_card=(struct NI_card *)NULL;
 Module functions
 ----------------
 */
+static int lock_mutex(
+#if defined (WIN32)
+	HANDLE mutex
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+	pthread_mutex_t *mutex
+#endif /* defined (UNIX) */
+	)
+/*******************************************************************************
+LAST MODIFIED : 27 July 2000
+
+DESCRIPTION :
+Locks the <mutex>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(lock_mutex);
+	return_code=1;
+#if defined (UNEMAP_THREAD_SAFE)
+	if (mutex)
+	{
+#if defined (WIN32)
+		if (WAIT_FAILED==WaitForSingleObject(mutex,INFINITE))
+		{
+			display_message(ERROR_MESSAGE,
+				"lock_mutex.  WaitForSingleObject failed.  Error code %d",
+				GetLastError());
+			return_code=0;
+		}
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+		pthread_mutex_lock(mutex);
+#endif /* defined (UNIX) */
+	}
+#endif /* defined (UNEMAP_THREAD_SAFE) */
+	LEAVE;
+
+	return (return_code);
+} /* lock_mutex */
+
+static int try_lock_mutex(
+#if defined (WIN32)
+	HANDLE mutex
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+	pthread_mutex_t *mutex
+#endif /* defined (UNIX) */
+	)
+/*******************************************************************************
+LAST MODIFIED : 20 May 2002
+
+DESCRIPTION :
+Trys to lock the <mutex>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(try_lock_mutex);
+	return_code=0;
+#if defined (UNEMAP_THREAD_SAFE)
+	if (mutex)
+	{
+#if defined (WIN32)
+		if (WAIT_OBJECT_0==WaitForSingleObject(mutex,(DWORD)0))
+		{
+			return_code=1;
+		}
+		else
+		{
+			return_code=0;
+		}
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+		/*???DB.  To be done */
+		pthread_mutex_trylock(mutex);
+#endif /* defined (UNIX) */
+	}
+#endif /* defined (UNEMAP_THREAD_SAFE) */
+	LEAVE;
+
+	return (return_code);
+} /* try_lock_mutex */
+
+static int unlock_mutex(
+#if defined (WIN32)
+	HANDLE mutex
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+	pthread_mutex_t *mutex
+#endif /* defined (UNIX) */
+	)
+/*******************************************************************************
+LAST MODIFIED : 27 July 2000
+
+DESCRIPTION :
+Unlocks the <mutex>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(unlock_mutex);
+	return_code=1;
+#if defined (UNEMAP_THREAD_SAFE)
+	if (mutex)
+	{
+#if defined (WIN32)
+		ReleaseMutex(mutex);
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+		pthread_mutex_unlock(mutex);
+#endif /* defined (UNIX) */
+	}
+#endif /* defined (UNEMAP_THREAD_SAFE) */
+	LEAVE;
+
+	return (return_code);
+} /* unlock_mutex */
+
 static FILE *fopen_UNEMAP_HARDWARE(char *file_name,char *type)
 /*******************************************************************************
 LAST MODIFIED : 11 January 1999
@@ -3134,13 +3319,15 @@ DESCRIPTION :
 static void scrolling_callback_NI(HWND handle,UINT message,WPARAM wParam,
 	LPARAM lParam)
 /*******************************************************************************
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 13 May 2002
 
 DESCRIPTION :
 Always called so that <module_starting_sample_number> and
 <module_sample_buffer_size> can be kept up to date.
 ==============================================================================*/
 {
+#if !defined (NO_SCROLLING_BODY)
+#if !defined (SCROLLING_UPDATE_BUFFER_POSITION_AND_SIZE_ONLY)
 	int averaging_length,channel_number,*channel_numbers,*channel_numbers_2,i,j,k,
 		number_of_bytes;
 	i16 *hardware_buffer;
@@ -3150,8 +3337,15 @@ Always called so that <module_starting_sample_number> and
 	struct NI_card *ni_card;
 	unsigned char *byte_array;
 	unsigned long end1,end2,end3,offset,number_of_samples,sample_number;
+#else /* !defined (SCROLLING_UPDATE_BUFFER_POSITION_AND_SIZE_ONLY) */
+	unsigned long end1,end2,end3,number_of_samples,sample_number;
+#endif /* !defined (SCROLLING_UPDATE_BUFFER_POSITION_AND_SIZE_ONLY) */
 
 	ENTER(scrolling_callback_NI);
+#if defined (UNEMAP_THREAD_SAFE)
+	if (try_lock_mutex(scrolling_callback_mutex))
+	{
+#endif /* defined (UNEMAP_THREAD_SAFE) */
 	/* callback may come after the sampling has stopped or stopped and started
 		again, in which case <module_starting_sample_number> and
 		<module_sample_buffer_size> will have already been updated */
@@ -3194,6 +3388,7 @@ Always called so that <module_starting_sample_number> and
 		{
 			module_starting_sample_number=sample_number%number_of_samples;
 		}
+#if !defined (SCROLLING_UPDATE_BUFFER_POSITION_AND_SIZE_ONLY)
 		sample_number += number_of_samples-1;
 		sample_number %= number_of_samples;
 		if (module_scrolling_on&&(0<module_number_of_scrolling_channels)&&
@@ -3312,6 +3507,7 @@ Always called so that <module_starting_sample_number> and
 	}
 }
 #endif /* defined (DEBUG) */
+#if !defined (NO_MODULE_SCROLLING_CALLBACK)
 				if (module_scrolling_window)
 				{
 					if (module_scrolling_callback)
@@ -3351,10 +3547,24 @@ Always called so that <module_starting_sample_number> and
 						channel_numbers,(int)NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,
 						value_array,module_scrolling_callback_data);
 				}
+#else /* !defined (NO_MODULE_SCROLLING_CALLBACK) */
+				DEALLOCATE(value_array);
+				DEALLOCATE(channel_numbers);
+#endif /* !defined (NO_MODULE_SCROLLING_CALLBACK) */
 			}
 		}
+#endif /* !defined (SCROLLING_UPDATE_BUFFER_POSITION_AND_SIZE_ONLY) */
 	}
+#if defined (UNEMAP_THREAD_SAFE)
+		unlock_mutex(scrolling_callback_mutex);
+	}
+	else
+	{
+		scrolling_callback_mutex_locked_count++;
+	}
+#endif /* defined (UNEMAP_THREAD_SAFE) */
 	LEAVE;
+#endif /* !defined (NO_SCROLLING_BODY) */
 } /* scrolling_callback_NI */
 #endif /* defined (NI_DAQ) */
 #endif /* defined (WINDOWS) */
@@ -7094,7 +7304,7 @@ int unemap_configure(float sampling_frequency_slave,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 29 April 2002
+LAST MODIFIED : 21 May 2002
 
 DESCRIPTION :
 Configures the hardware for sampling at the specified
@@ -7160,6 +7370,9 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 	SIZE_T working_set_size;
 #endif /* defined (USE_VIRTUAL_LOCK) */
 #endif /* defined (WINDOWS) */
+#if defined (UNIX) && defined (UNEMAP_THREAD_SAFE)
+	int error_code;
+#endif /* defined (UNIX) && defined (UNEMAP_THREAD_SAFE) */
 #endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_configure);
@@ -7267,6 +7480,22 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 				module_sampling_low_count -= module_sampling_high_count;
 				if ((module_sampling_low_count>0)&&(module_sampling_high_count>0))
 				{
+#if defined (UNEMAP_THREAD_SAFE)
+#if defined (WINDOWS)
+					if (scrolling_callback_mutex=CreateMutex(
+						/*no security attributes*/NULL,/*do not initially own*/FALSE,
+						/*no name*/(LPCTSTR)NULL))
+					{
+#endif /* defined (WINDOWS) */
+#if defined (UNIX)
+					if (0==(error_code=pthread_mutex_init(
+						&(scrolling_callback_mutex_storage),
+						(pthread_mutexattr_t *)NULL)))
+					{
+						scrolling_callback_mutex=
+							&(scrolling_callback_mutex_storage);
+#endif /* defined (UNIX) */
+#endif /* defined (UNEMAP_THREAD_SAFE) */
 					if ((0<scrolling_refresh_frequency)&&(scrolling_callback
 #if defined (WINDOWS)
 						||scrolling_window
@@ -7913,6 +8142,21 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 						}
 					}
 #endif /* defined (OLD_CODE) */
+#if defined (UNEMAP_THREAD_SAFE)
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"unemap_configure.  "
+						"Could not create scrolling_callback_mutex.  Error code %d",
+#if defined (WINDOWS)
+						GetLastError()
+#endif /* defined (WINDOWS) */
+#if defined (UNIX)
+						error_code
+#endif /* defined (UNIX) */
+						);
+				}
+#endif /* defined (UNEMAP_THREAD_SAFE) */
 				}
 				else
 				{
@@ -7980,7 +8224,7 @@ Returns a non-zero if unemap is configured and zero otherwise.
 
 int unemap_deconfigure(void)
 /*******************************************************************************
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 21 May 2002
 
 DESCRIPTION :
 Stops acquisition and signal generation.  Frees buffers associated with the
@@ -8072,6 +8316,18 @@ hardware.
 			module_scrolling_callback=(Unemap_hardware_callback *)NULL;
 			module_scrolling_callback_data=(void *)NULL;
 			module_number_of_scrolling_channels=0;
+#if defined (UNEMAP_THREAD_SAFE)
+			/* free mutex's */
+			if (scrolling_callback_mutex)
+			{
+#if defined (WIN32)
+				CloseHandle(scrolling_callback_mutex);
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+				pthread_mutex_destroy(scrolling_callback_mutex);
+#endif /* defined (UNIX) */
+			}
+#endif /* defined (UNEMAP_THREAD_SAFE) */
 			DEALLOCATE(module_scrolling_channel_numbers);
 			DEALLOCATE(module_calibration_channels);
 			DEALLOCATE(module_calibration_offsets);
@@ -9794,10 +10050,17 @@ many samples were acquired.
 			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
-#if defined (DEBUG)
 	/*???debug */
-	display_message(INFORMATION_MESSAGE,"leave unemap_stop_sampling %d %lu\n",
-		return_code,module_sample_buffer_size);
+#if defined (UNEMAP_THREAD_SAFE)
+	display_message(INFORMATION_MESSAGE,"scrolling_callback_mutex_locked_count=%d\n",
+		scrolling_callback_mutex_locked_count);
+#endif /* defined (UNEMAP_THREAD_SAFE) */
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"leave unemap_stop_sampling %d %lu %lu\n",
+		return_code,module_sample_buffer_size,module_starting_sample_number);
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 
