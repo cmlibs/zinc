@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 15 October 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 
@@ -3486,7 +3486,7 @@ Motif wrapper for update_display_minimum.
 
 static void update_stimulating_settings(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 14 October 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 Updates the settings for the stimulating buttons.
@@ -3502,7 +3502,8 @@ Updates the settings for the stimulating buttons.
 #endif /* defined (WINDOWS) */
 
 	ENTER(update_stimulating_settings);
-	if (page_window&&(0<page_window->number_of_stimulators))
+	if (page_window&&(0<page_window->number_of_stimulators)&&
+		!(page_window->pacing_button))
 	{
     if (page_window->isolate_checkbox)
 		{
@@ -6315,7 +6316,7 @@ Motif wrapper for start_experiment and stop_experiment.
 
 static int set_current_electrode_stimulate(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 7 January 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 Sets the current electrode to stimulate.
@@ -6356,6 +6357,11 @@ Sets the current electrode to stimulate.
 						((page_window->stimulators)[i]).channel_numbers,int,
 						((page_window->stimulators)[i]).number_of_channels+1))
 					{
+						if ((0<((page_window->stimulators)[i]).number_of_channels)&&
+							(channel_number>stimulating_channel_numbers[j]))
+						{
+							j++;
+						}
 						((page_window->stimulators)[i]).channel_numbers=
 							stimulating_channel_numbers;
 						k=((page_window->stimulators)[i]).number_of_channels;
@@ -8426,7 +8432,7 @@ Called when the stimulator down arrow is pressed.
 static LRESULT CALLBACK Page_window_class_proc(HWND window,
 	UINT message_identifier,WPARAM first_message,LPARAM second_message)
 /*******************************************************************************
-LAST MODIFIED : 7 October 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 ???DB.  Should return 0 if it processes the message.
@@ -8455,7 +8461,7 @@ DESCRIPTION :
 		case WM_INITDIALOG:
 		{
 			BOOL win32_return_code;
-			int widget_spacing;
+			int restitution_time_pacing,widget_spacing;
 			RECT rectangle;
 			static char *class_name="Page_window_scrolling_area";
 			struct Page_window *page_window;
@@ -8464,6 +8470,8 @@ DESCRIPTION :
 			/*???DB.  Need to create drawing area */
 			if (page_window=(struct Page_window *)second_message)
 			{
+				/*???DB.  Got from Unemap under MOTIF */
+				restitution_time_pacing=0;
 				SetWindowLong(window,DLGWINDOWEXTRA,(LONG)page_window);
 				/* retrieve the control windows and do any setup required */
 				widget_spacing=page_window->user_interface->widget_spacing;
@@ -8685,7 +8693,7 @@ DESCRIPTION :
 					case UnEmap_2V2:
 					case UnEmap_2V1|UnEmap_2V2:
 					{
-						if (0<page_window->number_of_stimulators)
+						if ((0<page_window->number_of_stimulators)&&restitution_time_pacing)
 						{
 							EnableWindow(page_window->pacing_button,FALSE);
 							GetWindowRect(page_window->pacing_button,&rectangle);
@@ -8744,7 +8752,8 @@ DESCRIPTION :
 					case UnEmap_2V2:
 					case UnEmap_2V1|UnEmap_2V2:
 					{
-						if (0<page_window->number_of_stimulators)
+						if ((0<page_window->number_of_stimulators)&&
+							!restitution_time_pacing)
 						{
 							EnableWindow(page_window->start_all_stimulators_button,FALSE);
 							GetWindowRect(page_window->start_all_stimulators_button,
@@ -8785,7 +8794,8 @@ DESCRIPTION :
 					case UnEmap_2V2:
 					case UnEmap_2V1|UnEmap_2V2:
 					{
-						if (0<page_window->number_of_stimulators)
+						if ((0<page_window->number_of_stimulators)&&
+							!restitution_time_pacing)
 						{
 							EnableWindow(page_window->stimulate_checkbox,FALSE);
 							GetWindowRect(page_window->stimulate_checkbox,&rectangle);
@@ -8825,7 +8835,8 @@ DESCRIPTION :
 					case UnEmap_2V2:
 					case UnEmap_2V1|UnEmap_2V2:
 					{
-						if (0<page_window->number_of_stimulators)
+						if ((0<page_window->number_of_stimulators)&&
+							!restitution_time_pacing)
 						{
 							EnableWindow(page_window->stimulator_checkbox,FALSE);
 							GetWindowRect(page_window->stimulator_checkbox,&rectangle);
@@ -8866,7 +8877,8 @@ DESCRIPTION :
 					case UnEmap_2V2:
 					case UnEmap_2V1|UnEmap_2V2:
 					{
-						if (0<page_window->number_of_stimulators)
+						if ((0<page_window->number_of_stimulators)&&
+							!restitution_time_pacing)
 						{
 							EnableWindow(page_window->stop_all_stimulators_button,FALSE);
 							GetWindowRect(page_window->stop_all_stimulators_button,
@@ -9787,7 +9799,7 @@ struct Page_window *create_Page_window(struct Page_window **address,
 	struct Mapping_window **mapping_window_address,int pointer_sensitivity,
 	char *signal_file_extension_write,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 This function allocates the memory for a page window and sets the fields to the
@@ -10506,18 +10518,23 @@ the created page window.  If unsuccessful, NULL is returned.
 								{
 									if (0<page_window->number_of_stimulators)
 									{
-										XtSetSensitive(page_window->start_all_stimulators_button,
-											False);
-										XtSetSensitive(page_window->stop_all_stimulators_button,
-											False);
 										if (True==settings.restitution_time_pacing)
 										{
+											XtDestroyWidget(page_window->stop_all_stimulators_button);
+											page_window->stop_all_stimulators_button=(Widget)NULL;
+											XtDestroyWidget(page_window->
+												start_all_stimulators_button);
+											page_window->start_all_stimulators_button=(Widget)NULL;
 											XtSetSensitive(page_window->pacing_button,False);
 										}
 										else
 										{
 											XtDestroyWidget(page_window->pacing_button);
 											page_window->pacing_button=(Widget)NULL;
+											XtSetSensitive(page_window->start_all_stimulators_button,
+												False);
+											XtSetSensitive(page_window->stop_all_stimulators_button,
+												False);
 										}
 									}
 									else
@@ -10550,7 +10567,8 @@ the created page window.  If unsuccessful, NULL is returned.
 								case UnEmap_2V2:
 								case UnEmap_2V1|UnEmap_2V2:
 								{
-									if (0<page_window->number_of_stimulators)
+									if ((0<page_window->number_of_stimulators)&&
+										(True!=settings.restitution_time_pacing))
 									{
 										XtSetSensitive(page_window->stimulate_checkbox,False);
 										XtSetSensitive(page_window->stimulator_checkbox,False);
