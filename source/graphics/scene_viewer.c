@@ -23,6 +23,7 @@ November 97 Created from rendering part of Drawing.
 #include "three_d_drawing/movie_extensions.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
+#include "general/enumerator_private.h"
 #include "general/geometry.h"
 #include "general/image_utilities.h"
 #include "general/list.h"
@@ -192,6 +193,7 @@ DESCRIPTION :
 	void *pixel_data;
 	int antialias;
 	int perturb_lines;
+	enum Scene_viewer_blending_mode blending_mode;
 	/* set between fast changing operations since the first fast-change will
 		 copy from the front buffer to the back; subsequent changes will copy
 		 saved buffer from back to front. */
@@ -890,7 +892,7 @@ scene.
 
 		glPushMatrix();
 
-		glMultMatrixd(rendering_data->scene_viewer->projection_matrix);
+		glMultMatrixd(rendering_data->scene_viewer->window_projection_matrix);
 		
 		Scene_viewer_call_next_renderer(rendering_data);
 
@@ -1226,6 +1228,15 @@ DESCRIPTION :
 		{
 			scene_viewer->swap_buffers=0;
 		}
+
+		glFlush();
+
+		/* SAB  Reapply the projection matrix which was cleared by the 
+			last glPopMatrix (Apply projection is further down the stack) 
+			so that unproject gets the full transformation */
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glLoadMatrixd(scene_viewer->window_projection_matrix);
 
 	}
 	else
@@ -2101,9 +2112,17 @@ and then again with only semi transparent objects not changing the depth buffer.
 		{
 			order_independent_display(rendering_data, 
 				scene_viewer->order_independent_transparency_data,
-				scene_viewer->projection_matrix, scene_viewer->modelview_matrix);
+				scene_viewer->window_projection_matrix,
+				scene_viewer->modelview_matrix, scene_viewer->blending_mode);
 			
-			scene_viewer->swap_buffers = 1;
+			if (rendering_data->rendering_double_buffered)
+			{
+				scene_viewer->swap_buffers=1;
+			}
+			else
+			{
+				scene_viewer->swap_buffers=0;
+			}
 		}
 	}
 	else
@@ -2191,6 +2210,13 @@ access this function.
 				scene_viewer->transform_flag = 0;
 			}
 
+			/* work out if the rendering is double buffered. Do not just look at
+				the buffer_mode flag as it is overridden in cases such as printing
+				the window. */				
+			glGetBooleanv(GL_DOUBLEBUFFER,&double_buffer);
+			/* Make this visible to the rendering routines */
+			rendering_data.rendering_double_buffered = double_buffer;
+
 			build_Scene(scene_viewer->scene);
 			compile_Scene(scene_viewer->scene);
 
@@ -2216,10 +2242,13 @@ access this function.
 				Scene_viewer_calculate_transformation(scene_viewer,
 					rendering_data.viewport_width,rendering_data.viewport_height);
 
-				render_object = CREATE(Scene_viewer_render_object)(
-					Scene_viewer_handle_fastchanging);
-				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-					rendering_data.render_callstack);
+				if (rendering_data.rendering_double_buffered)
+				{
+					render_object = CREATE(Scene_viewer_render_object)(
+						Scene_viewer_handle_fastchanging);
+					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
+						rendering_data.render_callstack);
+				}
 
 				if (SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffering_mode)
 				{
@@ -2314,13 +2343,6 @@ access this function.
 
 				return_code=1;
 
-				/* work out if the rendering is double buffered. Do not just look at
-					the buffer_mode flag as it is overridden in cases such as printing
-					the window. */				
-				glGetBooleanv(GL_DOUBLEBUFFER,&double_buffer);
-				/* Make this visible to the rendering routines */
-				rendering_data.rendering_double_buffered = double_buffer;
-
 				if (scene_viewer->perturb_lines)
 				{
 					glPolygonOffset(1.5,0.000001);
@@ -2358,8 +2380,29 @@ access this function.
 				/* Get size of alpha [blending] buffer. */
 				/* glGetIntegerv(GL_ALPHA_BITS,&alpha_bits); */
 				/* turn on alpha */
-				glEnable(GL_BLEND);
-				glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+				switch(scene_viewer->blending_mode)
+				{
+					default:
+					case SCENE_VIEWER_BLEND_NORMAL:
+					{
+						glEnable(GL_BLEND);
+						glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+					} break;
+					case SCENE_VIEWER_BLEND_NONE:
+					{
+						glDisable(GL_BLEND);
+					} break;
+#if defined GL_VERSION_1_4
+					case SCENE_VIEWER_BLEND_TRUE_ALPHA:
+					{
+						/* This function is protected at runtime by testing in the set 
+							blending mode function */
+						glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+							GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+						glEnable(GL_BLEND);
+					} break;
+#endif /* defined GL_VERSION_1_4 */
+				}
 				glViewport((GLint)rendering_data.viewport_left,
 					(GLint)rendering_data.viewport_bottom,
 					(GLint)rendering_data.viewport_width,
@@ -3843,6 +3886,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->light_model=ACCESS(Light_model)(default_light_model);
 				scene_viewer->antialias=0;
 				scene_viewer->perturb_lines=0;
+				scene_viewer->blending_mode=SCENE_VIEWER_BLEND_NORMAL;
 				scene_viewer->transform_flag=0;
 				scene_viewer->first_fast_change=1;
 				scene_viewer->fast_changing=0;
@@ -6213,6 +6257,80 @@ Zero turns antialiasing off.
 	return (return_code);
 } /* Scene_viewer_set_antialias_mode */
 
+int Scene_viewer_get_blending_mode(struct Scene_viewer *scene_viewer,
+	enum Scene_viewer_blending_mode *blending_mode)
+/*******************************************************************************
+LAST MODIFIED : 16 April 2003
+
+DESCRIPTION :
+See Scene_viewer_set_blending_mode.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_get_blending_mode);
+	if (scene_viewer&&blending_mode)
+	{
+		*blending_mode=scene_viewer->blending_mode;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_blending_mode.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_get_blending_mode */
+
+int Scene_viewer_set_blending_mode(struct Scene_viewer *scene_viewer,
+	enum Scene_viewer_blending_mode blending_mode)
+/*******************************************************************************
+LAST MODIFIED : 16 April 2003
+
+DESCRIPTION :
+Sets the blending mode for the scene draw.
+SCENE_VIEWER_BLEND_NORMAL is src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA
+SCENE_VIEWER_BLEND_TRUE_ALPHA is src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA
+  for rgb and src=GL_ONE and dest=GL_ONE_MINUS_SRC_ALPHA for alpha.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_set_blending_mode);
+	if (scene_viewer &&
+		/* Check that this represents a valid mode */
+		(ENUMERATOR_STRING(Scene_viewer_blending_mode)(blending_mode)))
+	{
+		return_code = 1;
+		if (blending_mode == SCENE_VIEWER_BLEND_TRUE_ALPHA)
+		{
+			if (!query_gl_version(1, 4))
+			{
+				display_message(ERROR_MESSAGE, "Scene_viewer_set_blending_mode.  "
+					"Blend_true_alpha (glBlendFuncSeparate) is not available on this display.");
+				return_code=0;
+			}
+		}
+		if (return_code)
+		{
+			scene_viewer->blending_mode = blending_mode;
+			Scene_viewer_redraw(scene_viewer);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_set_blending_mode.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_set_blending_mode */
+
 int Scene_viewer_get_perturb_lines(struct Scene_viewer *scene_viewer,
 	int *perturb_lines)
 /*******************************************************************************
@@ -7482,6 +7600,44 @@ Removes the callback calling <function> with <user_data> from
 
 	return (return_code);
 } /* Scene_viewer_remove_destroy_callback */
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Scene_viewer_blending_mode)
+/*******************************************************************************
+LAST MODIFIED : 16 April 2003
+
+DESCRIPTION :
+Returns a string label for the <blending_mode>.
+NOTE: Calling function must not deallocate returned string.
+==============================================================================*/
+{
+	char *enumerator_string;
+
+	ENTER(ENUMERATOR_STRING(Scene_viewer_blending_mode));
+	switch (enumerator_value)
+	{
+		case SCENE_VIEWER_BLEND_NORMAL:
+		{
+			enumerator_string="blend_normal";
+		} break;
+		case SCENE_VIEWER_BLEND_NONE:
+		{
+			enumerator_string="blend_none";
+		} break;
+		case SCENE_VIEWER_BLEND_TRUE_ALPHA:
+		{
+			enumerator_string="blend_true_alpha";
+		} break;
+		default:
+		{
+			enumerator_string=(char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Scene_viewer_blending_mode) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Scene_viewer_blending_mode)
 
 char *Scene_viewer_buffering_mode_string(
 	enum Scene_viewer_buffering_mode buffering_mode)

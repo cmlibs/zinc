@@ -120,6 +120,7 @@ Contains information for a graphics window.
 	int antialias_mode;
 	int perturb_lines;
 	enum Scene_viewer_input_mode input_mode;
+	enum Scene_viewer_blending_mode blending_mode;
 	/*???DB.  Do these belong here ? */
 	/* time parameters for animation */
 	/* current time for frame */
@@ -1876,6 +1877,42 @@ Sets if the <graphics_window> perturbs lines or not, using <perturb_lines>
 	return (return_code);
 } /* Graphics_window_set_perturb_lines */
 
+int Graphics_window_set_blending_mode(struct Graphics_window *graphics_window,
+	enum Scene_viewer_blending_mode blending_mode)
+/*******************************************************************************
+LAST MODIFIED : 16 April 2003
+
+DESCRIPTION :
+Sets the <blending_mode> used by the <graphics_window>.
+==============================================================================*/
+{
+	int pane_no,return_code;
+
+	ENTER(Graphics_window_set_blending_mode);
+	if (graphics_window)
+	{
+		return_code=1;
+		for (pane_no=0;(pane_no<graphics_window->number_of_scene_viewers)&&return_code;
+			pane_no++)
+		{
+			return_code=Scene_viewer_set_blending_mode(
+				graphics_window->scene_viewer_array[pane_no],blending_mode);
+		}
+		if (return_code)
+		{
+			graphics_window->blending_mode=blending_mode;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_set_blending_mode.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* Graphics_window_set_blending_mode */
+
 static int modify_Graphics_window_set(struct Parse_state *state,
 	void *window_void,void *modify_graphics_window_data_void)
 /*******************************************************************************
@@ -1885,12 +1922,14 @@ DESCRIPTION :
 Parser commands for setting simple parameters applicable to the whole <window>.
 ==============================================================================*/
 {
-	char fast_transparency_flag,slow_transparency_flag,*tool_name,**tool_names;
+	char *blending_mode_string,fast_transparency_flag,slow_transparency_flag,
+		*tool_name,**tool_names,**valid_strings;
 	double std_view_angle;
+	enum Scene_viewer_blending_mode blending_mode;
 	enum Scene_viewer_transparency_mode transparency_mode;
 	int antialias_mode,current_pane,i,layered_transparency,number_of_tools,
-		order_independent_transparency,pane_no,perturb_lines,redraw,return_code,
-		transparency_layers;
+		number_of_valid_strings,order_independent_transparency,pane_no,
+		perturb_lines,redraw,return_code,transparency_layers;
 	struct Graphics_window *graphics_window;
 	struct Interactive_tool *interactive_tool;
 	struct Modify_graphics_window_data *modify_graphics_window_data;
@@ -1915,6 +1954,7 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 					interactive_tool=graphics_window->interactive_tool;
 					antialias_mode=graphics_window->antialias_mode;
 					perturb_lines=graphics_window->perturb_lines;
+					blending_mode=graphics_window->blending_mode;
 				}
 				else
 				{
@@ -1923,6 +1963,7 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 					interactive_tool=(struct Interactive_tool *)NULL;
 					antialias_mode=0;
 					perturb_lines=0;
+					blending_mode=SCENE_VIEWER_BLEND_NORMAL;
 				}
 				fast_transparency_flag=0;
 				slow_transparency_flag=0;
@@ -1937,6 +1978,16 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 				Option_table_add_entry(antialias_option_table,"no_antialias",
 					&antialias_mode,(void *)NULL,unset_int_switch);
 				Option_table_add_suboption_table(option_table,antialias_option_table);
+				/* blending mode */
+				blending_mode_string =
+					ENUMERATOR_STRING(Scene_viewer_blending_mode)(blending_mode);
+				valid_strings = ENUMERATOR_GET_VALID_STRINGS(Scene_viewer_blending_mode)(
+					&number_of_valid_strings,
+					(ENUMERATOR_CONDITIONAL_FUNCTION(Scene_viewer_blending_mode) *)NULL,
+					(void *)NULL);
+				Option_table_add_enumerator(option_table, number_of_valid_strings,
+					valid_strings, &blending_mode_string);
+				DEALLOCATE(valid_strings);
 				/* current_pane */
 				Option_table_add_entry(option_table,"current_pane",
 					&current_pane,(void *)NULL,set_int);
@@ -1977,12 +2028,17 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 							graphics_window->number_of_panes);
 						return_code = 0;
 					}
-					if (fast_transparency_flag&&slow_transparency_flag&&
-						 layered_transparency&&order_independent_transparency)
+					if ((fast_transparency_flag+slow_transparency_flag+
+						 (0 < layered_transparency)+(0 < order_independent_transparency)) > 1)
 					{
 						display_message(ERROR_MESSAGE,"Only one of "
 							"fast_transparency/slow_transparency/layered_transparency/order_independent_transparency");
 						return_code = 0;
+					}
+					if (blending_mode_string)
+					{
+						STRING_TO_ENUMERATOR(Scene_viewer_blending_mode)(
+							blending_mode_string, &blending_mode);
 					}
 					if (return_code && graphics_window)
 					{
@@ -2050,6 +2106,12 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 										transparency_layers);
 								}
 							}
+							redraw=1;
+						}
+						if (blending_mode != graphics_window->blending_mode)
+						{
+							Graphics_window_set_blending_mode(graphics_window,
+								blending_mode);
 							redraw=1;
 						}
 						if (redraw)
@@ -2644,6 +2706,7 @@ and either uses that visual or fails.
 			graphics_window->current_pane=0;
 			graphics_window->antialias_mode=0;
 			graphics_window->perturb_lines=0;
+			graphics_window->blending_mode=SCENE_VIEWER_BLEND_NORMAL;
 			/* the input_mode set here is changed below */
 			graphics_window->input_mode=SCENE_VIEWER_NO_INPUT;
 			/* read default settings from Cmgui defaults file */
@@ -5213,6 +5276,7 @@ Writes the properties of the <window> to the command window.
 		texture_height, texture_width, top,
 		up[3], view[3], view_angle, viewport_left, viewport_top,
 		viewport_pixels_per_unit_x, viewport_pixels_per_unit_y;
+	enum Scene_viewer_blending_mode blending_mode;
 	enum Scene_viewer_buffering_mode buffering_mode;
 	enum Scene_viewer_projection_mode projection_mode;
 	enum Scene_viewer_transparency_mode transparency_mode;
@@ -5424,7 +5488,8 @@ Writes the properties of the <window> to the command window.
 		display_message(INFORMATION_MESSAGE,
 			"  Transparency mode: %s\n",Scene_viewer_transparency_mode_string(
 				transparency_mode));
-		if (transparency_mode == SCENE_VIEWER_LAYERED_TRANSPARENCY)
+		if ((transparency_mode == SCENE_VIEWER_LAYERED_TRANSPARENCY) ||
+			(transparency_mode == SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY))
 		{
 			Scene_viewer_get_transparency_layers(scene_viewer, &transparency_layers);
 			display_message(INFORMATION_MESSAGE,"    transparency_layers: %d\n", 
@@ -5452,6 +5517,9 @@ Writes the properties of the <window> to the command window.
 		{
 			display_message(INFORMATION_MESSAGE,"  no anti-aliasing\n");
 		}
+		Scene_viewer_get_blending_mode(window->scene_viewer_array[0],&blending_mode);
+		display_message(INFORMATION_MESSAGE,"  blending_mode: %s\n",
+			ENUMERATOR_STRING(Scene_viewer_blending_mode)(blending_mode));
 		/* OpenGL information */
 		if (Scene_viewer_get_opengl_information(window->scene_viewer_array[0],
 			&opengl_version, &opengl_vendor, &opengl_extensions, &visual_id,
@@ -5496,6 +5564,7 @@ to the command window.
 		NDC_height,NDC_left,NDC_top,NDC_width,near,projection_matrix[16],right,
 		texture_height,texture_width,top,up[3],view_angle,viewport_left,
 		viewport_top,viewport_pixels_per_unit_x,viewport_pixels_per_unit_y;
+	enum Scene_viewer_blending_mode blending_mode;
 	enum Scene_viewer_buffering_mode buffering_mode;
 	enum Scene_viewer_projection_mode projection_mode;
 	enum Scene_viewer_transparency_mode transparency_mode;
@@ -5714,11 +5783,15 @@ to the command window.
 		Scene_viewer_get_transparency_mode(scene_viewer, &transparency_mode);
 		display_message(INFORMATION_MESSAGE," %s",
 			Scene_viewer_transparency_mode_string(transparency_mode));
-		if (transparency_mode == SCENE_VIEWER_LAYERED_TRANSPARENCY)
+		if ((transparency_mode == SCENE_VIEWER_LAYERED_TRANSPARENCY) ||
+			(transparency_mode == SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY))
 		{
 			Scene_viewer_get_transparency_layers(scene_viewer, &transparency_layers);
 			display_message(INFORMATION_MESSAGE," %d",transparency_layers);
 		}
+		Scene_viewer_get_blending_mode(window->scene_viewer_array[0],&blending_mode);
+		display_message(INFORMATION_MESSAGE," %s",
+			ENUMERATOR_STRING(Scene_viewer_blending_mode)(blending_mode));
 		display_message(INFORMATION_MESSAGE,";\n");
 		DEALLOCATE(prefix);
 		return_code=1;

@@ -38,7 +38,7 @@ int order_independent_reshape(
 	struct Scene_viewer_order_independent_transparency_data *data,
 	int width, int height, int layers, int using_stencil_overlay);
 /*******************************************************************************
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 16 April 2003
 
 DESCRIPTION :
 Initialises per rendering parts of this extension.
@@ -46,9 +46,10 @@ Initialises per rendering parts of this extension.
 
 void order_independent_display(struct Scene_viewer_rendering_data *rendering_data,
 	struct Scene_viewer_order_independent_transparency_data *data,
-	double *projection_matrix, double *modelview_matrix);
+	double *projection_matrix, double *modelview_matrix,
+	enum Scene_viewer_blending_mode blending_mode);
 /*******************************************************************************
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 16 April 2003
 
 DESCRIPTION :
 Actually preforms the rendering pass.

@@ -543,8 +543,6 @@ Draws one peeled layer of the scene.
 
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-	glPushMatrix();
-
 	glMatrixMode(GL_PROJECTION);
 
 	glPushMatrix();
@@ -665,8 +663,6 @@ Draws one peeled layer of the scene.
 
 	glDisable(GL_TEXTURE_SHADER_NV);
 
-	glPopMatrix();
-
 	if(layer < data->number_of_layers - 1)
 	{
 		/* copy the z buffer unless this is the last peeling pass */
@@ -685,9 +681,10 @@ Draws one peeled layer of the scene.
 } /* render_scene_from_camera_view */
  
 static void draw_sorted_transparency(
-	struct Scene_viewer_order_independent_transparency_data *data)
+	struct Scene_viewer_order_independent_transparency_data *data,
+	enum Scene_viewer_blending_mode blending_mode)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 16 April 2003
 
 DESCRIPTION :
 Draw a textured quad for each layer and blend them all together correctly.
@@ -725,8 +722,27 @@ Draw a textured quad for each layer and blend them all together correctly.
 		if ((data->number_of_layers-2) == i)
 		{
 			glCallList(data->rc_composite_display_list);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			glEnable(GL_BLEND);
+			switch(blending_mode)
+			{
+				default:
+				case SCENE_VIEWER_BLEND_NORMAL:
+				{
+					glEnable(GL_BLEND);
+					glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+				} break;
+				case SCENE_VIEWER_BLEND_NONE:
+				{
+					glDisable(GL_BLEND);
+				} break;
+#if defined GL_VERSION_1_4
+				case SCENE_VIEWER_BLEND_TRUE_ALPHA:
+				{
+					glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+						GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+					glEnable(GL_BLEND);
+				} break;
+			}
+#endif /* defined GL_VERSION_1_4 */
 			if (data->using_stencil_overlay)
 			{
 				/* disable stencil buffer to get the overlay back*/
@@ -755,9 +771,9 @@ Draw a textured quad for each layer and blend them all together correctly.
 
 	glDisable(GL_REGISTER_COMBINERS_NV);
 
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
 
 	LEAVE;
@@ -1024,7 +1040,8 @@ Initialises per rendering parts of this extension.
 
 void order_independent_display(struct Scene_viewer_rendering_data *rendering_data,
 	struct Scene_viewer_order_independent_transparency_data *data,
-	double *projection_matrix, double *modelview_matrix)
+	double *projection_matrix, double *modelview_matrix,
+	enum Scene_viewer_blending_mode blending_mode)
 /*******************************************************************************
 LAST MODIFIED : 14 April 2003
 
@@ -1039,7 +1056,7 @@ Actually preforms the rendering pass.
 	ENTER(order_independent_display);
 
 #if defined (ORDER_INDEPENDENT_CAPABLE)
-	glViewport(0, 0, data->viewport_width, data->viewport_height);
+	//	glViewport(0, 0, data->viewport_width, data->viewport_height);
 
 	/* Copy the image that is already drawn into the back layer */
 	glBindTexture(GL_TEXTURE_RECTANGLE_NV,
@@ -1047,6 +1064,8 @@ Actually preforms the rendering pass.
 	glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 0, 0,
 		data->viewport_width, data->viewport_height);
 
+	/* Always create the textures with this, use the blending mode
+		to composite the images together */
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
@@ -1059,14 +1078,15 @@ Actually preforms the rendering pass.
 		render_scene_from_camera_view(layer, rendering_data, data,
 			projection_matrix, modelview_matrix);
 	}
-	draw_sorted_transparency(data);
+	draw_sorted_transparency(data, blending_mode);
 
-	glCallList(data->rc_sum_display_list);
+	// glCallList(data->rc_sum_display_list);
 #else /* defined (ORDER_INDEPENDENT_CAPABLE) */
 	USE_PARAMETER(rendering_data);
 	USE_PARAMETER(data);
 	USE_PARAMETER(projection_matrix);
 	USE_PARAMETER(modelview_matrix);
+	USE_PARAMETER(blending_mode);
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
 
 	LEAVE;

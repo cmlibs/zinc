@@ -19,6 +19,7 @@ translating and zooming with mouse button press and motion events.
 
 #include "api/cmiss_scene_viewer.h"
 #include "general/callback.h"
+#include "general/enumerator.h"
 #include "general/image_utilities.h"
 #include "general/object.h"
 #include "graphics/colour.h"
@@ -97,6 +98,18 @@ DESCRIPTION :
 	SCENE_VIEWER_TRANSFORM
 };
 
+enum Scene_viewer_blending_mode
+/*******************************************************************************
+LAST MODIFIED : 16 April 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	SCENE_VIEWER_BLEND_NORMAL,
+	SCENE_VIEWER_BLEND_NONE,
+	SCENE_VIEWER_BLEND_TRUE_ALPHA
+};
+
 enum Scene_viewer_buffering_mode
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
@@ -128,7 +141,7 @@ enum Scene_viewer_stereo_mode
 LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
-Be sure to implement any new modes in Scene_viewer_buffering_mode_string.
+Be sure to implement any new modes in Scene_viewer_stereo_mode_string.
 ==============================================================================*/
 {
 	SCENE_VIEWER_MONO,
@@ -234,6 +247,27 @@ LAST MODIFIED : 15 October 1998
 DESCRIPTION :
 Sets the number of jitter samples used to antialias the scene_viewer.
 Zero turns antialiasing off.
+==============================================================================*/
+
+int Scene_viewer_get_blending_mode(struct Scene_viewer *scene_viewer,
+	enum Scene_viewer_blending_mode *blending_mode);
+/*******************************************************************************
+LAST MODIFIED : 16 April 2003
+
+DESCRIPTION :
+See Scene_viewer_set_blending_mode.
+==============================================================================*/
+
+int Scene_viewer_set_blending_mode(struct Scene_viewer *scene_viewer,
+	enum Scene_viewer_blending_mode blending_mode);
+/*******************************************************************************
+LAST MODIFIED : 16 April 2003
+
+DESCRIPTION :
+Sets the blending mode for the scene draw.
+SCENE_VIEWER_BLEND_NORMAL is src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA
+SCENE_VIEWER_BLEND_TRUE_ALPHA is src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA
+  for rgb and src=GL_ONE and dest=GL_ONE_MINUS_SRC_ALPHA for alpha.
 ==============================================================================*/
 
 int Scene_viewer_get_background_colour(struct Scene_viewer *scene_viewer,
@@ -1159,6 +1193,8 @@ DESCRIPTION :
 Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Scene_viewer_blending_mode);
 
 char *Scene_viewer_buffering_mode_string(
 	enum Scene_viewer_buffering_mode buffering_mode);
