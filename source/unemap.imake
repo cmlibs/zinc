@@ -850,6 +850,7 @@ UNEMAP_SRCS = \
 	unemap/acquisition_work_area.c \
 	unemap/analysis.c \
 	unemap/analysis_calculate.c \
+	unemap/analysis_drawing.c \
 	unemap/analysis_window.c \
 	unemap/analysis_work_area.c \
 	unemap/bard.c \
@@ -914,6 +915,7 @@ UNEMAP_SRCS = \
 	unemap/acquisition_work_area.c \
 	unemap/analysis.c \
 	unemap/analysis_calculate.c \
+	unemap/analysis_drawing.c \
 	unemap/analysis_window.c \
 	unemap/analysis_work_area.c \
 	unemap/bard.c \
@@ -1127,7 +1129,6 @@ CALCULATE_EVENTS_SRCS = \
 	general/matrix_vector.c \
 	general/myio.c \
 	general/mystring.c \
-	general/postscript.c \
 	unemap/analysis.c \
 	unemap/analysis_calculate.c \
 	unemap/interpolate.c \
@@ -1315,7 +1316,6 @@ RATIO_SIGNALS_SRCS = \
 	general/matrix_vector.c \
 	general/myio.c \
 	general/mystring.c \
-	general/postscript.c \
 	unemap/analysis.c \
 	unemap/analysis_calculate.c \
 	unemap/rig.c \
@@ -1327,6 +1327,7 @@ BuildNormalTarget(RatioSignalsTarget,$(UTILITIES_PATH),RATIO_SIGNALS_SRCS,RATIO_
 REGISTER_SRCS = \
 	unemap/utilities/register.c \
 	command/parser.c \
+	general/compare.c \
 	general/debug.c \
 	general/geometry.c \
 	general/matrix_vector.c \
@@ -1334,6 +1335,7 @@ REGISTER_SRCS = \
 	general/mystring.c \
 	unemap/unemap_hardware_client.c \
 	unemap/rig.c \
+	user_interface/event_dispatcher.c \
 	user_interface/message.c
 
 BuildNormalTarget(RegisterTarget,$(UTILITIES_PATH),REGISTER_SRCS,REGISTER_OBJSA,REGISTER_OBJSB,REGISTER_OBJS,$(LIB)) 
@@ -1363,9 +1365,11 @@ BuildNormalTarget(TestDelaunayTarget,$(UTILITIES_PATH),TEST_DELAUNAY_SRCS,TEST_D
 
 TEST_UNEMAP_HARDWARE_SRCS = \
 	unemap/utilities/test_unemap_hardware.c \
+	general/compare.c \
 	general/debug.c \
 	general/mystring.c \
 	unemap/unemap_hardware_client.c \
+	user_interface/event_dispatcher.c \
 	user_interface/message.c
 
 BuildNormalTarget(TestUnemapHardwareTarget,$(UTILITIES_PATH),TEST_UNEMAP_HARDWARE_SRCS,TEST_UNEMAP_HARDWARE_OBJSA,TEST_UNEMAP_HARDWARE_OBJSB,TEST_UNEMAP_HARDWARE_OBJS,$(LIB)) 
