@@ -20500,6 +20500,7 @@ otherwise the file of graphics objects is read.
 	return (return_code);
 } /* gfx_read_objects */
 
+#if defined (HAVE_XML2)
 static int gfx_read_region(struct Parse_state *state,
 	void *dummy, void *command_data_void)
 /*******************************************************************************
@@ -20596,6 +20597,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 
 	return (return_code);
 } /* gfx_read_region */
+#endif /* defined (HAVE_XML2) */
 
 static int gfx_read_wavefront_obj(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -20743,9 +20745,11 @@ Executes a GFX READ command.
 			/* objects */
 			Option_table_add_entry(option_table, "objects",
 				NULL, command_data_void, gfx_read_objects);
+#if defined (HAVE_XML2)
 			/* region */
 			Option_table_add_entry(option_table, "region",
 				NULL, command_data_void, gfx_read_region);
+#endif /* defined (HAVE_XML2) */
 			/* wavefront_obj */
 			Option_table_add_entry(option_table, "wavefront_obj",
 				NULL, command_data_void, gfx_read_wavefront_obj);

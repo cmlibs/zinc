@@ -6,6 +6,7 @@ LAST MODIFIED : 10 February 2003
 DESCRIPTION :
 The function for importing finite element data into CMISS.
 ==============================================================================*/
+#if defined (HAVE_XML2)
 #if defined (UNIX)
 #include <ctype.h>
 #endif /* defined (UNIX) */
@@ -17,9 +18,11 @@ The function for importing finite element data into CMISS.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
-#include "finite_element/read_fieldml.h"
 #include "finite_element/write_fieldml.h" /* SAB For temporary regions stuff */
 #include "general/debug.h"
+#include "general/list.h"
+#include "general/indexed_list_private.h"
+#include "general/list_private.h"
 #include "general/math.h"
 #include "general/multi_range.h"
 #include "general/myio.h"
@@ -34,9 +37,44 @@ Module types
 ------------
 */
 
+struct Fieldml_label_name
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *name;
+	enum FE_nodal_value_type nodal_value_type;
+	struct FE_field *field;
+	char *field_component_name;
+	struct LIST(Fieldml_label_name) *child_labels;
+	int access_count;
+};
+
+DECLARE_LIST_TYPES(Fieldml_label_name);
+/* We need to maintain the order, so we do not want an indexed list */
+FULL_DECLARE_LIST_TYPE(Fieldml_label_name);
+
+struct Fieldml_labels_template
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *name;
+	struct LIST(Fieldml_label_name) *labels;
+	int access_count;
+};
+
+DECLARE_LIST_TYPES(Fieldml_labels_template);
+/* We want a hash indexed by name so use the indexed list type */
+FULL_DECLARE_INDEXED_LIST_TYPE(Fieldml_labels_template);
+
 struct Fieldml_sax_data
 /*******************************************************************************
-LAST MODIFIED : 10 February 2003
+LAST MODIFIED : 17 February 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -48,16 +86,23 @@ DESCRIPTION :
 								 parsing again when we end */
 	struct Cmiss_region *root_region;
 	struct FE_region *root_fe_region;
+	struct LIST(Fieldml_labels_template) *label_templates;
 
+	struct Fieldml_labels_template *current_labels_template;
+	struct Fieldml_label_name *current_label_name;
+	struct LIST(Fieldml_label_name) *label_name_stack;
 	struct FE_node *current_node;
 	struct FE_field *current_field;
+	struct FE_field *current_field_ref;
 	char *current_field_component_name;
+
 };
 
 /*
 Module functions
 ----------------
 */
+
 /* Temporary delarations so that the code compiles before regions exist.
    Till end */
 struct Cmiss_region *CREATE(Cmiss_region)(void)
@@ -138,6 +183,14 @@ struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 	}
 	return (field);
 }
+struct FE_field *FE_region_get_FE_field_from_name(struct FE_region *fe_region,
+	char *field_name)
+{
+	struct FE_field *field;
+	field = FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,
+		name)(field_name,fe_region->fe_field_manager);
+	return(field);
+}
 struct FE_node *FE_region_create_FE_node(struct FE_region *fe_region,
 	int cm_node_identifier, struct FE_node *template_node)
 {
@@ -199,6 +252,236 @@ struct FE_node *FE_region_merge_FE_node(struct FE_region *fe_region,
 	return (node);
 }
 /* end Temporary delarations so that the code compiles before regions exist. */
+
+PROTOTYPE_LIST_FUNCTIONS(Fieldml_label_name);
+
+static struct Fieldml_label_name *CREATE(Fieldml_label_name)(char *name)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Fieldml_label_name *label_name;
+
+	ENTER(CREATE(Fieldml_label_name));
+	if (name)
+	{
+		if (ALLOCATE(label_name,struct Fieldml_label_name,1)&&
+			ALLOCATE(label_name->name,char,strlen(name)+1))
+		{
+			strcpy(label_name->name, name);
+			label_name->field = (struct FE_field *)NULL;
+			label_name->field_component_name = (char *)NULL;
+			label_name->nodal_value_type = FE_NODAL_UNKNOWN;
+			label_name->child_labels = (struct LIST(Fieldml_label_name) *)NULL;
+			label_name->access_count=0;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"CREATE(Fieldml_label_name).  Could not allocate memory for node field");
+			DEALLOCATE(label_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Fieldml_label_name).  Invalid argument(s)");
+		label_name=(struct Fieldml_label_name *)NULL;
+	}
+	LEAVE;
+
+	return (label_name);
+} /* CREATE(Fieldml_label_name) */
+
+static int DESTROY(Fieldml_label_name)(struct Fieldml_label_name **label_name_address)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+Frees the memory for the node field and sets <*label_name_address> to NULL.
+==============================================================================*/
+{
+	int return_code;
+	struct Fieldml_label_name *label_name;
+
+	ENTER(DESTROY(Fieldml_label_name));
+	if ((label_name_address)&&(label_name= *label_name_address))
+	{
+		if (0==label_name->access_count)
+		{
+			if (label_name->child_labels)
+			{
+				DESTROY(LIST(Fieldml_label_name))(&label_name->child_labels);
+			}
+			DEALLOCATE(label_name->name);
+			DEALLOCATE(*label_name_address);
+		}
+		else
+		{
+			*label_name_address=(struct Fieldml_label_name *)NULL;
+		}
+		return_code=1;
+	}
+	else
+	{
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Fieldml_label_name) */
+
+DECLARE_OBJECT_FUNCTIONS(Fieldml_label_name)
+DECLARE_LIST_FUNCTIONS(Fieldml_label_name)
+
+static int Last_Fieldml_label_name_in_list_iterator(
+   struct Fieldml_label_name *label_name, void *label_name_pointer_void)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Fieldml_label_name **label_name_pointer;
+	int return_code;
+
+	ENTER(Last_Fieldml_label_name_in_list_iterator);
+	if (label_name && (label_name_pointer =
+		(struct Fieldml_label_name **)label_name_pointer_void))
+	{
+		*label_name_pointer = label_name;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Last_Fieldml_label_name_in_list_iterator.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Last_Fieldml_label_name_in_list_iterator */
+
+static struct Fieldml_label_name *Last_Fieldml_label_name_in_list(
+   struct LIST(Fieldml_label_name) *label_name_list)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Fieldml_label_name *label_name;
+
+	ENTER(CREATE(Fieldml_label_name));
+	if (label_name_list)
+	{
+		label_name = (struct Fieldml_label_name *)NULL;
+		/* Iterate through the list and we will be left with the last one */
+		FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
+			Last_Fieldml_label_name_in_list_iterator, (void *)&label_name,
+			label_name_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Last_Fieldml_label_name_in_list.  Invalid argument(s)");
+		label_name=(struct Fieldml_label_name *)NULL;
+	}
+	LEAVE;
+
+	return (label_name);
+} /* Last_Fieldml_label_name_in_list */
+
+PROTOTYPE_LIST_FUNCTIONS(Fieldml_labels_template);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Fieldml_labels_template,name, \
+	char *);
+
+static struct Fieldml_labels_template *CREATE(Fieldml_labels_template)(char *name)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Fieldml_labels_template *label_template;
+
+	ENTER(CREATE(Fieldml_labels_template));
+	if (name)
+	{
+		if (ALLOCATE(label_template,struct Fieldml_labels_template,1)&&
+			ALLOCATE(label_template->name,char,strlen(name)+1))
+		{
+			strcpy(label_template->name, name);
+			label_template->labels = (struct LIST(Fieldml_label_name) *)NULL;
+			label_template->access_count=0;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"CREATE(Fieldml_labels_template).  Could not allocate memory for node field");
+			DEALLOCATE(label_template);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Fieldml_labels_template).  Invalid argument(s)");
+		label_template=(struct Fieldml_labels_template *)NULL;
+	}
+	LEAVE;
+
+	return (label_template);
+} /* CREATE(Fieldml_labels_template) */
+
+static int DESTROY(Fieldml_labels_template)(struct Fieldml_labels_template **label_template_address)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+Frees the memory for the node field and sets <*label_template_address> to NULL.
+==============================================================================*/
+{
+	int return_code;
+	struct Fieldml_labels_template *label_template;
+
+	ENTER(DESTROY(Fieldml_labels_template));
+	if ((label_template_address)&&(label_template= *label_template_address))
+	{
+		if (0==label_template->access_count)
+		{
+			if (label_template->labels)
+			{
+				DESTROY(LIST(Fieldml_label_name))(&label_template->labels);
+			}
+			DEALLOCATE(label_template->name);
+			DEALLOCATE(*label_template_address);
+		}
+		else
+		{
+			*label_template_address=(struct Fieldml_labels_template *)NULL;
+		}
+		return_code=1;
+	}
+	else
+	{
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Fieldml_labels_template) */
+
+DECLARE_OBJECT_FUNCTIONS(Fieldml_labels_template)
+
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Fieldml_labels_template,name,char *, \
+	strcmp)
+DECLARE_INDEXED_LIST_FUNCTIONS(Fieldml_labels_template)
+
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Fieldml_labels_template,name, \
+	char *,strcmp)
 
 void fieldml_start_fieldml(struct Fieldml_sax_data *fieldml_data,
 	char **attributes)
@@ -270,6 +553,297 @@ DESCRIPTION :
 	
 	LEAVE;
 } /* fieldml_end_fieldml */
+
+struct Fieldml_label_name *fieldml_create_label_name_in_heirachy(
+	char *name, struct Fieldml_sax_data *fieldml_data)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Fieldml_label_name *label;
+
+	ENTER(fieldml_create_label_name_in_heirachy);
+
+	if (name)
+	{
+		label = CREATE(Fieldml_label_name)(name);
+		if (fieldml_data->current_label_name)
+		{
+			/* This is a child of the current label name */
+			if (!(fieldml_data->current_label_name->child_labels))
+			{
+				fieldml_data->current_label_name->child_labels = 
+					CREATE(LIST(Fieldml_label_name))();
+			}
+			/* Add this label to the parent */
+			ADD_OBJECT_TO_LIST(Fieldml_label_name)(label, 
+				fieldml_data->current_label_name->child_labels);
+		}
+		else if (fieldml_data->current_labels_template)
+		{
+			/* This is at the top level of a template */
+			if (!(fieldml_data->current_labels_template->labels))
+			{
+				fieldml_data->current_labels_template->labels = 
+					CREATE(LIST(Fieldml_label_name))();
+			}
+			/* Add this label to the template */
+			ADD_OBJECT_TO_LIST(Fieldml_label_name)(label,
+				fieldml_data->current_labels_template->labels);	
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"fieldml_create_label_name_in_heirachy.  Not in a labels template.");		
+		}
+		/* Add this label to the stack */
+		ADD_OBJECT_TO_LIST(Fieldml_label_name)(label, fieldml_data->label_name_stack);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "fieldml_create_label_name_in_heirachy.  "
+			"Invalid arguments.");		
+		label = (struct Fieldml_label_name *)NULL;
+	}
+	
+	return (label);
+	LEAVE;
+} /* fieldml_create_label_name_in_heirachy */
+
+void fieldml_start_label_name(struct Fieldml_sax_data *fieldml_data,
+	char **attributes)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *attribute_name, *attribute_value, *label_name;
+	int i;
+
+	ENTER(fieldml_start_label_name);
+
+	label_name = (char *)NULL;
+	i = 0;
+	while (attributes[i])
+	{
+		attribute_name = (char *)attributes[i];
+		attribute_value = (char *)attributes[i + 1];
+		if (!strcmp(attribute_name, "name"))
+		{
+			label_name = attribute_value;
+		}
+		i += 2;
+	}
+	if (label_name)
+	{
+		fieldml_data->current_label_name = 
+			fieldml_create_label_name_in_heirachy(label_name, fieldml_data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"fieldml_start_label_name.  Unable to parse label template name.");		
+	}
+	
+	LEAVE;
+} /* fieldml_start_label_name */
+
+void fieldml_start_field_ref(struct Fieldml_sax_data *fieldml_data,
+	char **attributes)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *attribute_name, *attribute_value, *label_name;
+	int i;
+	struct FE_field *field;
+	
+	ENTER(fieldml_start_field_ref);
+
+	label_name = (char *)NULL;
+	i = 0;
+	while (attributes[i])
+	{
+		attribute_name = (char *)attributes[i];
+		attribute_value = (char *)attributes[i + 1];
+		if (!strcmp(attribute_name, "ref"))
+		{
+			label_name = attribute_value;
+		}
+		i += 2;
+	}
+	if (label_name)
+	{
+		if (field = FE_region_get_FE_field_from_name(fieldml_data->root_fe_region,
+			label_name))
+		{
+			fieldml_data->current_label_name = 
+				fieldml_create_label_name_in_heirachy(label_name, fieldml_data);
+			fieldml_data->current_label_name->field = field;
+			fieldml_data->current_field_ref = field;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "fieldml_start_field_ref.  "
+				"<field_ref> for a field %s that hasn't been declared.", label_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"fieldml_start_field_ref.  Unable to parse field_ref ref.");
+	}
+	
+	LEAVE;
+} /* fieldml_start_field_ref */
+
+void fieldml_start_component_ref(struct Fieldml_sax_data *fieldml_data,
+	char **attributes)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *attribute_name, *attribute_value, *label_name;
+	int i;
+
+	ENTER(fieldml_start_component_ref);
+
+	label_name = (char *)NULL;
+	i = 0;
+	while (attributes[i])
+	{
+		attribute_name = (char *)attributes[i];
+		attribute_value = (char *)attributes[i + 1];
+		if (!strcmp(attribute_name, "ref"))
+		{
+			label_name = attribute_value;
+		}
+		i += 2;
+	}
+	if (label_name)
+	{
+		fieldml_data->current_label_name = 
+			fieldml_create_label_name_in_heirachy(label_name, fieldml_data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"fieldml_start_component_ref.  Unable to parse component_ref ref.");
+	}
+	
+	LEAVE;
+} /* fieldml_start_component_ref */
+
+void fieldml_end_label_name(struct Fieldml_sax_data *fieldml_data)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+
+	ENTER(fieldml_end_label_name);
+
+	if (fieldml_data->current_label_name)
+	{
+		REMOVE_OBJECT_FROM_LIST(Fieldml_label_name)(fieldml_data->current_label_name,
+			fieldml_data->label_name_stack);
+		/* Go up the stack of label names, if it is empty then set to NULL */
+		fieldml_data->current_label_name = Last_Fieldml_label_name_in_list(
+			fieldml_data->label_name_stack);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"fieldml_end_label_name.  Not in a label name.");
+	}
+	
+	LEAVE;
+} /* fieldml_end_label_name */
+
+void fieldml_start_labels_template(struct Fieldml_sax_data *fieldml_data,
+	char **attributes)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *attribute_name, *attribute_value, *template_name;
+	int i;
+
+	ENTER(fieldml_start_labels_template);
+
+	if (!(fieldml_data->current_labels_template))
+	{
+		template_name = (char *)NULL;
+		i = 0;
+		while (attributes[i])
+		{
+			attribute_name = (char *)attributes[i];
+			attribute_value = (char *)attributes[i + 1];
+			if (!strcmp(attribute_name, "name"))
+			{
+				template_name = attribute_value;
+			}
+			i += 2;
+		}
+		if (template_name)
+		{
+			fieldml_data->current_labels_template =
+				CREATE(Fieldml_labels_template)(template_name);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"fieldml_start_labels_template.  Unable to parse label template name.");		
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"fieldml_start_labels_template.  Already working on a label template.");		
+	}
+	
+	LEAVE;
+} /* fieldml_start_labels_template */
+
+void fieldml_end_labels_template(struct Fieldml_sax_data *fieldml_data)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+
+	ENTER(fieldml_end_labels_template);
+
+	if (fieldml_data->current_labels_template)
+	{
+		if (!(ADD_OBJECT_TO_LIST(Fieldml_labels_template)(
+			fieldml_data->current_labels_template, fieldml_data->label_templates)))
+		{
+			display_message(ERROR_MESSAGE, "fieldml_end_labels_template.  "
+				"Unable to add template to list, possibly duplicate name.");		
+			DESTROY(Fieldml_labels_template)(&fieldml_data->current_labels_template);
+		}
+		fieldml_data->current_labels_template = (struct Fieldml_labels_template *)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"fieldml_end_labels_template.  Not working on a labels template.");		
+	}
+	
+	LEAVE;
+} /* fieldml_end_labels_template */
 
 void fieldml_start_field(struct Fieldml_sax_data *fieldml_data,
 	char **attributes)
@@ -593,6 +1167,50 @@ DESCRIPTION :
 			} break;
 		}
 	}
+	else if (fieldml_data->current_labels_template)
+	{
+		/* Fieldml label template */
+		switch (*name)
+		{
+			case 'c':
+			{
+				if (!strcmp(name, "component_ref"))
+				{
+					fieldml_start_component_ref(fieldml_data, attributes);
+				}
+				else
+				{
+					fieldml_data->unknown_depth = 1;
+				}
+			} break;
+			case 'f':
+			{
+				if (!strcmp(name, "field_ref"))
+				{
+					fieldml_start_field_ref(fieldml_data, attributes);
+				}
+				else
+				{
+					fieldml_data->unknown_depth = 1;
+				}
+			} break;
+			case 'l':
+			{
+				if (!strcmp(name, "label"))
+				{
+					fieldml_start_label_name(fieldml_data, attributes);
+				}
+				else
+				{
+					fieldml_data->unknown_depth = 1;
+				}
+			} break;
+			default:
+			{
+				fieldml_data->unknown_depth = 1;
+			} break;
+		}
+	}
 	else if (fieldml_data->current_node)
 	{
 		/* Fieldml node */
@@ -603,22 +1221,33 @@ DESCRIPTION :
 		/* Fieldml top level */
 		switch (*name)
 		{
-			case 'n':
+			case 'f':
 			{
-				if (!strcmp(name, "node"))
+				if (!strcmp(name, "field"))
 				{
-					fieldml_start_node(fieldml_data, attributes);
+					fieldml_start_field(fieldml_data, attributes);
 				}
 				else
 				{
 					fieldml_data->unknown_depth = 1;
 				}
 			} break;
-			case 'f':
+			case 'l':
 			{
-				if (!strcmp(name, "field"))
+				if (!strcmp(name, "labels_template"))
 				{
-					fieldml_start_field(fieldml_data, attributes);
+					fieldml_start_labels_template(fieldml_data, attributes);
+				}
+				else
+				{
+					fieldml_data->unknown_depth = 1;
+				}
+			} break;
+			case 'n':
+			{
+				if (!strcmp(name, "node"))
+				{
+					fieldml_start_node(fieldml_data, attributes);
 				}
 				else
 				{
@@ -666,6 +1295,58 @@ DESCRIPTION :
 				if (!strcmp(name, "field"))
 				{
 					fieldml_end_field(fieldml_data);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "fieldml_end_xml_element.  "
+						"Closing with an unknown element which wasn't opened.");
+				}
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE, "fieldml_end_xml_element.  "
+					"Closing with an unknown element which wasn't opened.");
+			} break;
+		}
+	}
+	else if (fieldml_data->current_labels_template)
+	{
+		/* Fieldml labels template */
+		switch (*name)
+		{
+			case 'c':
+			{
+				if (!strcmp(name, "component_ref"))
+				{
+					fieldml_end_label_name(fieldml_data);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "fieldml_end_xml_element.  "
+						"Closing with an unknown element which wasn't opened.");
+				}
+			} break;
+			case 'f':
+			{
+				if (!strcmp(name, "field_ref"))
+				{
+					fieldml_end_label_name(fieldml_data);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "fieldml_end_xml_element.  "
+						"Closing with an unknown element which wasn't opened.");
+				}
+			} break;
+			case 'l':
+			{
+				if (!strcmp(name, "label"))
+				{
+					fieldml_end_label_name(fieldml_data);
+				}
+				else if (!strcmp(name, "labels_template"))
+				{
+					fieldml_end_labels_template(fieldml_data);
 				}
 				else
 				{
@@ -952,9 +1633,13 @@ DESCRIPTION :
 		basis_manager, node_manager, element_manager, fe_field_manager);
 	Cmiss_region_attach_FE_region(fieldml_data.root_region,
 		fieldml_data.root_fe_region);
+	fieldml_data.label_templates = CREATE(LIST(Fieldml_labels_template))();
+	fieldml_data.label_name_stack = CREATE(LIST(Fieldml_label_name))();
 
+	fieldml_data.current_labels_template = (struct Fieldml_labels_template *)NULL;
 	fieldml_data.current_node = (struct FE_node *)NULL;
 	fieldml_data.current_field = (struct FE_field *)NULL;
+	fieldml_data.current_field_ref = (struct FE_field *)NULL;
 	fieldml_data.current_field_component_name = (char *)NULL;
 
    fieldml_handler.internalSubset = (internalSubsetSAXFunc)NULL;
@@ -993,6 +1678,15 @@ DESCRIPTION :
 		return_code = 0;
 	}
 
+	/* Regions can be merged */
+	/* Merge regions */
+
+	/* Clean up */
+	DESTROY(LIST(Fieldml_labels_template))(&fieldml_data.label_templates);
+	DESTROY(LIST(Fieldml_label_name))(&fieldml_data.label_name_stack);
+
+
 	LEAVE;
 	return(return_code);
 } /* parse_fieldml_file */
+#endif /* defined (HAVE_XML2) */
