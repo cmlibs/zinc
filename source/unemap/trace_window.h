@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.h
 
-LAST MODIFIED : 25 May 2001
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -62,6 +62,7 @@ DESCRIPTION :
 The type of wave used for inverse
 ==============================================================================*/
 {
+	NO_WAVE,
 	P_WAVE,
 	QRS_WAVE,
 	T_WAVE,
@@ -157,7 +158,7 @@ The area of the trace window where the enlarged signal is drawn.
 
 struct Inverse_area 
 /*******************************************************************************
-LAST MODIFIED : 12 February 2001
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 The inverse area of the trace window 
@@ -180,7 +181,8 @@ The inverse area of the trace window
 		Widget pqrs_button;
 		Widget pt_button;
 		Widget qrst_button;
-		Widget pqrst_button;	
+		Widget pqrst_button;
+		Widget none_button;	
 	} wave_choice;
 	Widget pot_act_choice_mode;
 	struct 
@@ -550,11 +552,25 @@ the Cardiac interval on the electrical imaging pane. P, T QRS, etc
 	GC graphics_context; /*colour*/
 	int peak_or_trough_time,start_time,end_time;		
 	struct Cardiac_interval *next,*previous;
-}; /* struct Event */
+}; /* struct Cardiac_interval */
+
+struct Electrical_imaging_event
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION :
+Events (times) on the cardiac_intervals_device signal.
+Used to generate maps.
+==============================================================================*/
+{
+	GC graphics_context; /*colour*/
+	int time;		
+	struct Electrical_imaging_event *next,*previous;
+}; /* Electrical_imaging_event */
 
 struct Trace_window
 /*******************************************************************************
-LAST MODIFIED : 25 May 2001
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 The trace window object.
@@ -565,6 +581,7 @@ The trace window object.
 	Widget activation,shell,window,paned_window;
 	enum Calculate_signal_mode calculate_signal_mode;
 	struct Cardiac_interval *first_interval;
+	struct Electrical_imaging_event *first_eimaging_event; 
 	enum Inverse_wave_mode inverse_wave_mode;
 	enum Inverse_electrodes_mode inverse_electrodes_mode;
 	enum Inverse_potential_activation_mode inverse_pot_act_mode;

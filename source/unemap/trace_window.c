@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 25 May 2001
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -59,8 +59,7 @@ Module functions
 ----------------
 */
 
-
-struct Cardiac_interval *create_Cardiac_interval(GC graphics_context,
+static struct Cardiac_interval *create_Cardiac_interval(GC graphics_context,
 	int peak_or_trough_time,int start_time,int end_time) 
 /*******************************************************************************
 LAST MODIFIED : 23 March 2001
@@ -88,7 +87,40 @@ DESCRIPTION : create a cardiac Interval
 	return (interval);
 } /* create_Cardiac_interval */
 
-static int add_Cardiac_interval_to_sorted_list(struct Cardiac_interval **first_list_interval,
+int print_Cardiac_interval_list(struct Cardiac_interval *first_list_interval)
+/*******************************************************************************
+LAST MODIFIED :  31 May 2001
+
+DESCRIPTION : Debugging function.
+==============================================================================*/
+{
+	int return_code;
+	struct Cardiac_interval *interval;
+
+	ENTER(print_Cardiac_interval_list);
+	interval=(struct Cardiac_interval *)NULL;
+	if(interval=first_list_interval)
+	{
+		return_code=1;		
+		while(interval)
+		{
+			printf("Cardiac interval: start_time = %d peak_or_trough_time = %d end_time= %d\n",
+				interval->start_time,interval->peak_or_trough_time,interval->end_time);
+			interval=interval->next;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"print_Cardiac_interval_list. no list");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* print_Cardiac_interval_list */
+
+static int add_Cardiac_interval_to_sorted_list(
+	struct Cardiac_interval **first_list_interval,
 	struct Cardiac_interval *new_interval)
 /*******************************************************************************
 LAST MODIFIED :  5 April 2001
@@ -177,10 +209,11 @@ inserting it so that the list is in order of interval->peak_or_trough_time
 	return(return_code);
 } /* add_Cardiac_interval_to_sorted_list */
 
-int add_Cardiac_interval_to_unsorted_list(struct Cardiac_interval **first_list_interval,
+int add_Cardiac_interval_to_unsorted_list(
+	struct Cardiac_interval **first_list_interval,
 	struct Cardiac_interval *new_interval)
 /*******************************************************************************
-LAST MODIFIED : 11 April 2001
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :adds <new_interval> to the end of the interval list 
 <first_list_interval>. See also add_Cardiac_interval_to_sorted_list
@@ -221,7 +254,7 @@ DESCRIPTION :adds <new_interval> to the end of the interval list
 	return(return_code);
 } /* add_Cardiac_interval_to_unsorted_list */
 
-int destroy_Cardiac_interval_list(struct Cardiac_interval **first_interval)
+static int destroy_Cardiac_interval_list(struct Cardiac_interval **first_interval)
 /*******************************************************************************
 LAST MODIFIED : 11 April 2001
 
@@ -237,17 +270,244 @@ This function frees the memory associated with the interval list starting at
 	return_code=1;
 	if (first_interval&&(interval= *first_interval))
 	{
-		do
+		while(interval)
 		{
 			next_interval=interval->next;
 			DEALLOCATE(interval);
-		} while (interval=next_interval);
+			interval=next_interval;
+		} 
 		*first_interval=(struct Cardiac_interval *)NULL;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* destroy_Cardiac_interval_list */
+
+static struct Electrical_imaging_event *create_Electrical_imaging_event(
+	GC graphics_context, int time) 
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION : create a Electrical_imaging_event at <time>
+==============================================================================*/
+{
+	struct Electrical_imaging_event *event;
+
+	ENTER(create_Electrical_imaging_event);
+	if (ALLOCATE(event,struct Electrical_imaging_event,1))
+	{
+		event->graphics_context=graphics_context;	
+		event->time=time;
+		event->previous=(struct Electrical_imaging_event *)NULL;
+		event->next=(struct Electrical_imaging_event *)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"create_Electrical_imaging_event.  Could not allocate memory");
+	}
+	LEAVE;
+	return (event);
+} /* create_Electrical_imaging_event */
+
+int print_Electrical_imaging_event_list(
+	struct Electrical_imaging_event *first_list_event)
+/*******************************************************************************
+LAST MODIFIED :  31 May 2001
+
+DESCRIPTION : Debugging function.
+==============================================================================*/
+{
+	int return_code;
+	struct Electrical_imaging_event *event;
+
+	ENTER(print_Electrical_imaging_event_list);
+	event=(struct Electrical_imaging_event *)NULL;
+	if(event=first_list_event)
+	{
+		return_code=1;	
+		while(event)
+		{
+			printf("Electrical_imaging_event time = %d\n",event->time);
+			event=event->next;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"print_Electrical_imaging_event_list. no list");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* print_Electrical_imaging_event_list */
+
+static int add_Electrical_imaging_event_to_sorted_list(
+	struct Electrical_imaging_event **first_list_event,
+	struct Electrical_imaging_event *new_event)
+/*******************************************************************************
+LAST MODIFIED :  31 May 2001
+
+DESCRIPTION : adds <new_event> to the event list <first_list_event>,
+inserting it so that the list is in order of event->time.
+If 2 events have the same time, they will both exist in the list, stored 
+consecutively. 
+==============================================================================*/
+{
+	int placed,return_code;
+	struct Electrical_imaging_event *event,*next_event;
+
+	ENTER(add_Electrical_imaging_event_to_sorted_list);
+	event=(struct Electrical_imaging_event *)NULL;
+	next_event=(struct Electrical_imaging_event *)NULL;
+	if(new_event)
+	{
+		return_code=1;
+		placed=0;
+		if(event=*first_list_event)
+		{	
+			/* find place to insert event */
+			/*at beginning of list?*/
+			if(new_event->time<event->time)
+			{	
+				new_event->previous=(struct Electrical_imaging_event *)NULL;
+				new_event->next=event;
+				event->previous=new_event;
+				*first_list_event=new_event;
+				placed=1;
+			}
+			else
+			{
+				/*in middle or at end of list?*/
+				do
+				{
+					if(new_event->time>=event->time)
+					{				
+						if(!event->next)
+						{
+							/* add the new one on the end of list */		
+							event->next=new_event;
+							new_event->previous=event;
+							new_event->next=(struct Electrical_imaging_event *)NULL;
+							placed=1;
+						}
+						else
+						{
+							next_event=event->next;
+							if(new_event->time<next_event->time)
+							{
+								/* insert in the middle of list */								
+								event->next=new_event;
+								new_event->previous=event;
+								new_event->next=next_event;
+								next_event->previous=new_event;
+								placed=1;
+							}
+						}
+					}				
+				}while((event=event->next)&&(!placed));
+			}
+		}
+		else
+		{	
+			/* first entry in the list */
+			*first_list_event=new_event;
+			new_event->previous=(struct Electrical_imaging_event *)NULL;
+			new_event->next=(struct Electrical_imaging_event *)NULL;
+			placed=1;
+		}
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"add_Electrical_imaging_event_to_sorted_list. invalid arguments");
+	}
+	if(!placed)
+	{
+		return_code=0;
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"add_Electrical_imaging_event_to_sorted_list. error adding to list");
+	}
+	LEAVE;
+	return(return_code);
+} /* add_Electrical_imaging_event_to_sorted_list */
+
+int add_Electrical_imaging_event_to_unsorted_list(
+	struct Electrical_imaging_event **first_list_event,
+	struct Electrical_imaging_event *new_event)
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION :adds <new_event> to the end of the event list 
+<first_list_event>. See also add_Electrical_imaging_event_to_sorted_list
+==============================================================================*/
+{
+	int return_code;
+	struct Electrical_imaging_event *event;
+
+	ENTER(add_Electrical_imaging_event_to_unsorted_list);
+	event=(struct Electrical_imaging_event *)NULL;
+	if(new_event)
+	{
+		return_code=1;
+		if(event=*first_list_event)
+		{
+			/* find last event*/
+			while(event->next)
+			{
+				event=event->next;
+			}							
+			/* add the new one on the end */		
+			event->next=new_event;
+			new_event->previous=event;
+		}
+		else
+		{	
+			/* first entry in the list */
+			*first_list_event=new_event;
+		}
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"add_Electrical_imaging_event_to_unsorted_list. invalid arguments");
+	}
+	LEAVE;
+	return(return_code);
+} /* add_Electrical_imaging_event_to_unsorted_list */
+
+static int destroy_Electrical_imaging_event_list(
+	struct Electrical_imaging_event **first_event)
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION :
+This function frees the memory associated with the event list starting at
+<**first_event> and sets <*first_event> to NULL.
+==============================================================================*/
+{
+	int return_code;
+	struct Electrical_imaging_event *event,*next_event;
+
+	ENTER(destroy_Electrical_imaging_event_list);
+	return_code=1;
+	if (first_event&&(event= *first_event))
+	{
+		while(event)
+		{
+			next_event=event->next;
+			DEALLOCATE(event);
+			event=next_event;
+		} 
+		*first_event=(struct Electrical_imaging_event *)NULL;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* destroy_Electrical_imaging_event_list */
 
 static void destroy_Trace_window(Widget widget,XtPointer trace_window,
 	XtPointer call_data)
@@ -272,6 +532,10 @@ frees the memory associated with the trace window.
 		if(trace->first_interval)
 		{
 			destroy_Cardiac_interval_list(&trace->first_interval);
+		}
+		if(trace->first_eimaging_event)
+		{
+			destroy_Electrical_imaging_event_list(&trace->first_eimaging_event);
 		}
 		/* set the pointer to the trace window to NULL */
 		if (trace->address)
@@ -1906,7 +2170,7 @@ Saves the id of the potential/activation  menu.
 static void id_electrodes_accepted_button(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Saves the id of the trace electrodes_accepted button
@@ -1931,7 +2195,7 @@ Saves the id of the trace electrodes_accepted button
 static void id_electrodes_unrejected_button(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Saves the id of the trace electrodes_unrejected button
@@ -1956,7 +2220,7 @@ Saves the id of the trace electrodes_unrejected button
 static void id_electrodes_all_button(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Saves the id of the trace electrodes_all button
@@ -2077,7 +2341,7 @@ Sets the inverse electrodes to all
 static void identify_p_wave_button(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Saves the id of the trace p_wave_button
@@ -2102,7 +2366,7 @@ Saves the id of the trace p_wave_button
 static void identify_qrs_wave_button(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Saves the id of the trace qrs_wave_button
@@ -2127,7 +2391,7 @@ Saves the id of the trace qrs_wave_button
 static void identify_t_wave_button(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Saves the id of the trace t_wave_button
@@ -2152,7 +2416,7 @@ Saves the id of the trace t_wave_button
 static void identify_pqrs_wave_button(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Saves the id of the trace pqrs_wave_button
@@ -2177,7 +2441,7 @@ Saves the id of the trace pqrs_wave_button
 static void identify_pt_wave_button(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Saves the id of the trace pt_wave_button
@@ -2202,7 +2466,7 @@ Saves the id of the trace pt_wave_button
 static void identify_qrst_wave_button(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Saves the id of the trace qrst_wave_button
@@ -2227,7 +2491,7 @@ Saves the id of the trace qrst_wave_button
 static void identify_pqrst_wave_button(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Saves the id of the trace pqrst_wave_button
@@ -2248,6 +2512,31 @@ Saves the id of the trace pqrst_wave_button
 	}
 	LEAVE;
 } /*identify_pqrst_wave_button */
+
+static void identify_none_wave_button(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2001
+
+DESCRIPTION :
+Saves the id of the trace none_wave_button
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_none_wave_button);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.inverse.wave_choice.none_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_none_wave_button. Missing trace_window");
+	}
+	LEAVE;
+} /*identify_none_wave_button */
 
 static void set_inverse_p_wave(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
@@ -2459,10 +2748,40 @@ Sets the inverse wave to pqrst_wave
 	LEAVE;
 } /* set_inverse_pqrst_wave */
 
+static void set_inverse_none_wave(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2001
+
+DESCRIPTION :
+Sets the inverse wave to none_wave
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(set_inverse_none_wave);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget_id);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		/* if not already in NO_WAVE  mode */
+		if (NO_WAVE!=trace->inverse_wave_mode)
+		{
+			trace->inverse_wave_mode=NO_WAVE;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_inverse_none_wave.  Missing trace_window");
+	}
+	LEAVE;
+} /* set_inverse_none_wave */
+
 static void identify_pot_button(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Saves the id of the trace pot_button
@@ -2487,7 +2806,7 @@ Saves the id of the trace pot_button
 static void identify_act_button(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Saves the id of the trace act_button
@@ -4747,7 +5066,7 @@ DESCRIPTION : draws a box showing the cardiac interval
 	return (return_code);
 } /* draw_cardiac_interval_box */
 
-static int draw_trace_markers(struct Trace_window *trace)
+static int draw_cardiac_interval_markers(struct Trace_window *trace)
 /*******************************************************************************
 LAST MODIFIED :  28 March 2001
 
@@ -4762,7 +5081,7 @@ DESCRIPTION : draws the markers on the trace window.
 	struct Signal_buffer *buffer;
 	struct Trace_window_area_1 *trace_area_1;
 	
-	ENTER(draw_trace_markers);
+	ENTER(draw_cardiac_interval_markers);
 	interval=(struct Cardiac_interval *)NULL;
 	highlight_device=(struct Device *)NULL;
 	buffer=(struct Signal_buffer *)NULL;
@@ -4793,12 +5112,121 @@ DESCRIPTION : draws the markers on the trace window.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"draw_trace_markers.  Missing argument(s)");
+			"draw_cardiac_interval_markers.  Missing argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	return(return_code);
-} /* draw_trace_markers */
+} /* draw_cardiac_interval_markers */
+
+static int draw_electrical_imaging_event_marker(
+	struct Electrical_imaging_event *event,
+	int end_analysis_interval, int start_analysis_interval,
+	int top,int height,int axes_left,int axes_width, 
+	Widget drawing_area,struct Drawing_2d *drawing,
+	struct Signal_drawing_information *signal_drawing_information,
+	struct Signal_buffer *buffer)
+/*******************************************************************************
+LAST MODIFIED :  1 June 2001
+
+DESCRIPTION : Draws the marker of the Electrical_imaging_event <event>
+==============================================================================*/
+{
+	char time_string[20];	
+	Display *display;
+	float x_scale;
+	GC graphics_context;
+	int event_time,return_code,time;
+
+	ENTER(draw_electrical_imaging_event_marker);
+	display=(Display *)NULL;
+	if (buffer&&event&&drawing_area&&drawing&&(drawing->user_interface)&&
+		(drawing->pixel_map)&&signal_drawing_information&&
+		(signal_drawing_information->user_interface==drawing->user_interface))
+	{
+	
+		x_scale=SCALE_FACTOR(end_analysis_interval-start_analysis_interval,
+			(axes_width)-1);
+		event_time=SCALE_X(event->time,start_analysis_interval,axes_left,
+			x_scale);				
+		time=(int)((float)((buffer->times)[event->time])*1000./
+			(buffer->frequency));
+		sprintf(time_string,"%d",time);		
+		/* draw the line */
+		display=signal_drawing_information->user_interface->display;		
+		graphics_context=event->graphics_context;		
+		XDrawLine(display,XtWindow(drawing_area),graphics_context,event_time,
+			top+1,event_time,top+height-1);
+		XDrawLine(display,drawing->pixel_map,graphics_context,event_time,
+			top+1,event_time,top+height-1);
+		/* write the peak or trough time */ 
+		return_code=write_marker_time(time_string,event_time,axes_left,
+			axes_width,top,signal_drawing_information->font,graphics_context,
+			display,drawing_area,drawing);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_electrical_imaging_event_marker.  Invalid drawing/drawing area");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* draw_electrical_imaging_event_marker */
+
+static int draw_electrical_imaging_event_markers(struct Trace_window *trace)
+/*******************************************************************************
+LAST MODIFIED :1 June 2001
+
+DESCRIPTION : draws the markers on the trace window.
+==============================================================================*/
+{
+	
+	int end_analysis_interval,return_code,start_analysis_interval;
+
+	struct Electrical_imaging_event *event;
+	struct Device *cardiac_interval_device;
+	struct Signal_buffer *buffer;
+	struct Trace_window_area_3 *trace_area_3;
+	
+	ENTER(draw_electrical_imaging_event_markers);
+	event=(struct Electrical_imaging_event *)NULL;
+	cardiac_interval_device=(struct Device *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	trace_area_3=(struct Trace_window_area_3 *)NULL;
+	if (trace)
+	{
+		return_code=1;
+		if ((event=trace->first_eimaging_event)&&
+			(cardiac_interval_device=trace->cardiac_interval_device)&&		
+			(buffer=get_Device_signal_buffer(cardiac_interval_device)))
+		{
+			start_analysis_interval=buffer->start;
+			end_analysis_interval=buffer->end;
+			trace_area_3= &(trace->area_3);			
+			/* draw all event markers */
+			while (event)
+			{
+				draw_electrical_imaging_event_marker(event,end_analysis_interval,
+					start_analysis_interval,trace_area_3->axes_top,
+					trace_area_3->axes_height,trace_area_3->axes_left,
+					trace_area_3->axes_width,trace_area_3->drawing_area,
+					trace_area_3->drawing,trace->signal_drawing_information,buffer);		
+				event=event->next;
+			}
+
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_electrical_imaging_event_markers.  Missing argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+} /* draw_electrical_imaging_event_markers */
 
 static int calculate_cardiac_interval_device(struct Trace_window *trace)
 /*******************************************************************************
@@ -4983,13 +5411,61 @@ calculated, it contains the entire signal.
 		return_code=0;
 	}
 	LEAVE;
+
+#if defined(NEW_CODE)
+	/* !!jw this is test code. It'll go elsewhere later, for now generate a */
+	/* Electrical_imaging_event for each cardiac interval's 3 times  */
+	if(return_code)
+	{
+		int offset;
+		struct Cardiac_interval *interval;
+		struct Electrical_imaging_event  *new_event;
+		GC graphics_context;
+
+		if(interval=trace->first_interval)
+		{
+			graphics_context=trace->first_interval->graphics_context;
+			/* destroy any existing electrical imaging events*/
+			if(trace->first_eimaging_event)
+			{
+				destroy_Electrical_imaging_event_list(&trace->first_eimaging_event);
+			}
+			offset = trace->first_interval->start_time;
+			while(interval)
+			{
+				/* peak_or_trough_time */
+				new_event=create_Electrical_imaging_event(graphics_context,
+					interval->peak_or_trough_time-offset);														
+				add_Electrical_imaging_event_to_sorted_list(&trace->first_eimaging_event,
+					new_event);
+				/* start_time */
+				new_event=create_Electrical_imaging_event(graphics_context,
+					interval->start_time-offset);
+				add_Electrical_imaging_event_to_sorted_list(&trace->first_eimaging_event,
+					new_event);
+				/* end_time */
+				new_event=create_Electrical_imaging_event(graphics_context,
+					interval->end_time-offset);
+				add_Electrical_imaging_event_to_sorted_list(&trace->first_eimaging_event,
+					new_event);
+				interval=interval->next;
+			}	
+			/*
+			print_Electrical_imaging_event_list(trace->first_eimaging_event);
+			*/
+		
+		}
+	}
+	/*!!jw */
+#endif /* defined(NEW_CODE) */
+
 	return(return_code);
 } /* calculate_cardiac_interval_device */
 
 static void calculate_calculate(Widget widget,XtPointer trace_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2001
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Calculate  intervals (P QRS T) for inverse.
@@ -5032,254 +5508,275 @@ previous intervals.
 	if (trace=(struct Trace_window *)trace_window)
 	{				
 		/* erase any existing intervals graphics */
-		draw_trace_markers(trace);	
+		draw_cardiac_interval_markers(trace);	
 		/* destroy any existing intervals */
 		if(trace->first_interval)
 		{
 			destroy_Cardiac_interval_list(&trace->first_interval);
 		}
-		intervals_buffer=create_Signal_buffer(FLOAT_VALUE,2,1,1);
-		intervals_signal=create_Signal(1,intervals_buffer,REJECTED,2);
-		number_of_signals=1;
-
-		/* get the current device */
-		if ((trace->highlight)&&(*(trace->highlight))&&
-			(device= **(trace->highlight))&&(device->signal)&&(device->signal->buffer))
-		{	
-			offset=device->signal->buffer->start;
-			/* use the processed_device for rms signal */
-			if(trace->calculate_signal_mode==RMS_SIGNAL)
-			{
-				if(trace->processed_device)
+		/*for NO_WAVE, all we do is destroy the existing intervals */
+		if(trace->inverse_wave_mode!=NO_WAVE)
+		{
+			intervals_buffer=create_Signal_buffer(FLOAT_VALUE,2,1,1);
+			intervals_signal=create_Signal(1,intervals_buffer,REJECTED,2);
+			number_of_signals=1;
+			/* get the current device */
+			if ((trace->highlight)&&(*(trace->highlight))&&
+				(device= **(trace->highlight))&&(device->signal)&&
+				(device->signal->buffer))
+			{	
+				offset=device->signal->buffer->start;
+				/* use the processed_device for rms signal */
+				if(trace->calculate_signal_mode==RMS_SIGNAL)
 				{
-					device= trace->processed_device;
-					success=1;
+					if(trace->processed_device)
+					{
+						device= trace->processed_device;
+						success=1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"calculate_calculate. no processed_device for RMS!");
+						success=0;
+					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"calculate_calculate. no processed_device for RMS!");
-					success=0;
+					success=1;
 				}
-			}
-			else
-			{
-				success=1;
-			}
-			/* concerned with buffer->start to buffer->end, the 'selected' part of the signal */
-			/* NOT all of it (though they are the same for the RMS signal) */
-			buffer_start=device->signal->buffer->start;
-			buffer_end=device->signal->buffer->end;
-			if(success&&extract_signal_information((struct FE_node *)NULL,
-				(struct Signal_drawing_package *)NULL,device,1,buffer_start,buffer_end,(int *)NULL,
-				&number_of_samples,&times,&values,(enum Event_signal_status **)NULL,
-				(char **)NULL,(int *)NULL,(float *)NULL,(float *)NULL)&&(0<number_of_samples))
-			{
-				success=0;
-				frequency=(float)number_of_samples/
-					(times[number_of_samples-1]-times[0]);				
-				if (intervals_buffer=reallocate_Signal_buffer(intervals_buffer,
-					FLOAT_VALUE,number_of_signals,number_of_samples,frequency))
+				/* concerned with buffer->start to buffer->end, the 'selected' part of*/
+				/*the signal NOT all of it ; they are the same for the RMS signal*/
+				buffer_start=device->signal->buffer->start;
+				buffer_end=device->signal->buffer->end;
+				if(success&&extract_signal_information((struct FE_node *)NULL,
+					(struct Signal_drawing_package *)NULL,device,1,buffer_start,buffer_end
+					,(int *)NULL,&number_of_samples,&times,&values,
+					(enum Event_signal_status **)NULL,(char **)NULL,(int *)NULL,
+					(float *)NULL,(float *)NULL)&&(0<number_of_samples))
 				{
-					/* copy in the current signal */
-					source_time=times;
-					dest_time=intervals_buffer->times;
-					/* just set the pointer, as it's only one signal */
-					((intervals_buffer->signals).float_values)=values;
-					for (j=number_of_samples;j>0;j--)
-					{									
-						*dest_time=(int)((*source_time)*frequency+0.5);
-						dest_time++;
-						source_time++;
-					}
-					/* baseline from the ends, so  buffer->start, buffer->end, will be close to 0*/
-					/* to but NOT guaranteed to zero cross */			
-					number_of_beats= 1;
-					average_width= *((trace->event_detection).average_width);
-					two_end_baseline(intervals_buffer,average_width,number_of_samples,
-						number_of_beats,buffer_start,buffer_end,(int *)NULL);															
-					/* now find the peaks/troughs*/
-					/* peaks/troughs P? QRS? T? This should be read from the menu  */
-					gc_index=0;
-					switch(trace->inverse_wave_mode)
+					success=0;
+					frequency=(float)number_of_samples/
+						(times[number_of_samples-1]-times[0]);				
+					if (intervals_buffer=reallocate_Signal_buffer(intervals_buffer,
+						FLOAT_VALUE,number_of_signals,number_of_samples,frequency))
 					{
-						case P_WAVE:
+						/* copy in the current signal */
+						source_time=times;
+						dest_time=intervals_buffer->times;
+						/* just set the pointer, as it's only one signal */
+						((intervals_buffer->signals).float_values)=values;
+						for (j=number_of_samples;j>0;j--)
+						{									
+							*dest_time=(int)((*source_time)*frequency+0.5);
+							dest_time++;
+							source_time++;
+						}
+						/* baseline from the ends, so  buffer->start, buffer->end, will be */
+						/* close to 0 to but NOT guaranteed to zero cross */			
+						number_of_beats= 1;
+						average_width= *((trace->event_detection).average_width);
+						two_end_baseline(intervals_buffer,average_width,number_of_samples,
+							number_of_beats,buffer_start,buffer_end,(int *)NULL);
+						/* now find the peaks/troughs*/					
+						gc_index=0;
+						switch(trace->inverse_wave_mode)
 						{
-							graphics_context[0]=
-								(trace->signal_drawing_information->graphics_context).pwave_colour;
-							number_of_intervals=1;
-						}break;
-						case QRS_WAVE:
-						{
-							graphics_context[0]=
-								(trace->signal_drawing_information->graphics_context).qrswave_colour;
-							number_of_intervals=1;
-						}break;
-						case T_WAVE:
-						{
-							graphics_context[0]=
-								(trace->signal_drawing_information->graphics_context).twave_colour;
-							number_of_intervals=1;
-						}break;						
-						case PQRS_WAVE:	
-						{
-							graphics_context[0]=
-								(trace->signal_drawing_information->graphics_context).pwave_colour;
-							graphics_context[1]=
-								(trace->signal_drawing_information->graphics_context).qrswave_colour;
-							number_of_intervals=2;
-						}break;
-						case PT_WAVE:
-						{
-							graphics_context[0]=
-								(trace->signal_drawing_information->graphics_context).pwave_colour;
-							graphics_context[1]=
-								(trace->signal_drawing_information->graphics_context).twave_colour;
-							number_of_intervals=2;
-						}break;
-						case QRST_WAVE:
-						{
-							graphics_context[0]=
-								(trace->signal_drawing_information->graphics_context).qrswave_colour;
-							graphics_context[1]=
-								(trace->signal_drawing_information->graphics_context).twave_colour;
-							number_of_intervals=2;
-						}break;
-						case PQRST_WAVE	:
-						{
-							number_of_intervals=3;
-							graphics_context[0]=
-								(trace->signal_drawing_information->graphics_context).pwave_colour;
-							graphics_context[1]=
-								(trace->signal_drawing_information->graphics_context).qrswave_colour;
-							graphics_context[2]=
-								(trace->signal_drawing_information->graphics_context).twave_colour;
-						}break;
-						/*colours to cycle through */				
-					};					
-					for(i=0;i<number_of_intervals;i++) 
-					{											
-						value=values;
-						time=times;																						
-						max=fabs(*value);
-#if defined (DEBUG)
-						max_time=*times;
-#endif
-						time_max=0;
-						success=0;				
-						for (j=0;j<number_of_samples;j++)
-						{	
-							excluded=0;
-							/*seach any existing intervals, to see if this point is excluded*/
-							if(interval=trace->first_interval)
+							case P_WAVE:
 							{
-								/* find last interval */
-								while(interval)
+								graphics_context[0]=
+									(trace->signal_drawing_information->graphics_context).
+									pwave_colour;
+								number_of_intervals=1;
+							}break;
+							case QRS_WAVE:
+							{
+								graphics_context[0]=
+									(trace->signal_drawing_information->graphics_context).
+									qrswave_colour;
+								number_of_intervals=1;
+							}break;
+							case T_WAVE:
+							{
+								graphics_context[0]=
+									(trace->signal_drawing_information->graphics_context).
+									twave_colour;
+								number_of_intervals=1;
+							}break;						
+							case PQRS_WAVE:	
+							{
+								graphics_context[0]=
+									(trace->signal_drawing_information->graphics_context).
+									pwave_colour;
+								graphics_context[1]=
+									(trace->signal_drawing_information->graphics_context).
+									qrswave_colour;
+								number_of_intervals=2;
+							}break;
+							case PT_WAVE:
+							{
+								graphics_context[0]=
+									(trace->signal_drawing_information->graphics_context).
+									pwave_colour;
+								graphics_context[1]=
+									(trace->signal_drawing_information->graphics_context).
+									twave_colour;
+								number_of_intervals=2;
+							}break;
+							case QRST_WAVE:
+							{
+								graphics_context[0]=
+									(trace->signal_drawing_information->graphics_context).
+									qrswave_colour;
+								graphics_context[1]=
+									(trace->signal_drawing_information->graphics_context).
+									twave_colour;
+								number_of_intervals=2;
+							}break;
+							case PQRST_WAVE:
+							{
+								number_of_intervals=3;
+								graphics_context[0]=
+									(trace->signal_drawing_information->graphics_context).
+									pwave_colour;
+								graphics_context[1]=
+									(trace->signal_drawing_information->graphics_context).
+									qrswave_colour;
+								graphics_context[2]=
+									(trace->signal_drawing_information->graphics_context).
+									twave_colour;
+							}break;
+							/*colours to cycle through */				
+						};					
+						for(i=0;i<number_of_intervals;i++) 
+						{											
+							value=values;
+							time=times;																						
+							max=fabs(*value);
+#if defined (DEBUG)
+							max_time=*times;
+#endif
+							time_max=0;
+							success=0;				
+							for (j=0;j<number_of_samples;j++)
+							{	
+								excluded=0;
+								/*seach any existing intervals,to see if this point is excluded*/
+								if(interval=trace->first_interval)
 								{
-									/* exclude the point if it's inside the interval*/
-									if((j>=interval->start_time)&&(j<=interval->end_time))
+									/* find last interval */
+									while(interval)
 									{
-										excluded=1;
-									}
-									interval=interval->next;
-								}							
-							}													
-							if((!excluded)&&(fabs(*value)>max))
-							{						
-								max=fabs(*value);					
-								time_max=j;
+										/* exclude the point if it's inside the interval*/
+										if((j>=interval->start_time)&&(j<=interval->end_time))
+										{
+											excluded=1;
+										}
+										interval=interval->next;
+									}							
+								}													
+								if((!excluded)&&(fabs(*value)>max))
+								{						
+									max=fabs(*value);					
+									time_max=j;
 #if defined (DEBUG)
-								max_time=*time;
+									max_time=*time;
 #endif
-								success=1;
-							}							
-							value++;
-							time++;
-						} /* for (j=0;j<number_of_samples;j++) */
-						if(success)
-							/* we found a max */
-						{
-#if defined (DEBUG)
-							printf("max= %f, time = %f %d\n",max,max_time,time_max);fflush(NULL); 
-#endif						
-							/* now find the zero crossings either side of this peak/trough */
-							/* find RH zero crossing, OR the RH end of the window */	
-							success=0;
-							j=time_max;
-							while((j<number_of_samples)&&(!success))
-							{
-								if((values[j]==0)||((values[j]>0)&&(values[j+1]<0))||
-									((values[j]<0)&&(values[j+1]>0))||(j==number_of_samples-1))
-								{
-#if defined (DEBUG)
-									printf("RH zero crossing  = %f, time = %f %d\n",values[j],times[j],j);fflush(NULL);
-#endif								
 									success=1;
-									end_time=j;
-								}								
-								j++;
-							} /* while((j<(number_of_samples-time_max))&&(!success)) */
-							/* find LH zero crossing OR the LH end of the window */	
+								}							
+								value++;
+								time++;
+							} /* for (j=0;j<number_of_samples;j++) */
 							if(success)
+								/* we found a max */
 							{
+#if defined (DEBUG)
+								printf("max= %f, time = %f %d\n",max,max_time,time_max);
+								fflush(NULL); 
+#endif						
+								/* now find the zero crossings either side of this peak/trough */
+								/* find RH zero crossing, OR the RH end of the window */	
 								success=0;
 								j=time_max;
-								while((j>=0)&&(!success))
+								while((j<number_of_samples)&&(!success))
 								{
-									if((values[j]==0)||((values[j]>0)&&(values[j-1]<0))||
-										((values[j]<0)&&(values[j-1]>0))||(j==0))
+									if((values[j]==0)||((values[j]>0)&&(values[j+1]<0))||
+										((values[j]<0)&&(values[j+1]>0))||(j==number_of_samples-1))
 									{
 #if defined (DEBUG)
-										printf("LH zero crossing  = %f, time = %f %d\n",values[j],times[j],j);
-										fflush(NULL);
+										printf("RH zero crossing  = %f, time = %f %d\n",values[j],
+											times[j],j);fflush(NULL);
 #endif								
 										success=1;
-										start_time=j;
-									}							
-									j--;
-								}/* while((j>0)&&(!success))*/ 
-							}
-							/* create new interval and add to list */
-							if(success)
+										end_time=j;
+									}								
+									j++;
+								} /* while((j<(number_of_samples-time_max))&&(!success)) */
+								/* find LH zero crossing OR the LH end of the window */	
+								if(success)
+								{
+									success=0;
+									j=time_max;
+									while((j>=0)&&(!success))
+									{
+										if((values[j]==0)||((values[j]>0)&&(values[j-1]<0))||
+											((values[j]<0)&&(values[j-1]>0))||(j==0))
+										{
+#if defined (DEBUG)
+											printf("LH zero crossing  = %f, time = %f %d\n",values[j],
+												times[j],j);
+											fflush(NULL);
+#endif								
+											success=1;
+											start_time=j;
+										}							
+										j--;
+									}/* while((j>0)&&(!success))*/ 
+								}
+								/* create new interval and add to list */
+								if(success)
+								{
+									new_interval=create_Cardiac_interval(graphics_context[gc_index]
+										,time_max,start_time,end_time);														
+									add_Cardiac_interval_to_sorted_list(&trace->first_interval,
+										new_interval);
+								}
+								/* cycle through the colours */
+								if(gc_index<(number_of_intervals-1))
+								{
+									gc_index++;
+								}
+								else
+								{
+									gc_index =0;
+								}
+							} /* if(success)*/
+						} /* for(i=0;i<3;i++) */
+						/* intervals are relative to the first entry of the buffer,so add */
+						/* buffer_start,the offset*/
+						if(interval=trace->first_interval)
+						{					
+							while (interval)
 							{
-								new_interval=create_Cardiac_interval(graphics_context[gc_index],
-									time_max,start_time,end_time);														
-								add_Cardiac_interval_to_sorted_list(&trace->first_interval,new_interval);
+								interval->peak_or_trough_time+=offset;
+								interval->start_time+=offset;
+								interval->end_time+=offset;
+								interval=interval->next;													
 							}
-							/* cycle through the colours */
-							if(gc_index<(number_of_intervals-1))
-							{
-								gc_index++;
-							}
-							else
-							{
-								gc_index =0;
-							}
-						} /* if(success)*/
-					} /* for(i=0;i<3;i++) */
-					/* intervals are relative to the first entry of the buffer,so add buffer_start,the offset*/
-					if(interval=trace->first_interval)
-					{					
-						while (interval)
-						{
-							interval->peak_or_trough_time+=offset;
-							interval->start_time+=offset;
-							interval->end_time+=offset;
-							interval=interval->next;													
 						}
-					}
-					/* we've changed the cardiac intervals, so change their device*/				
-					calculate_cardiac_interval_device(trace);					
-				}
-				/* don't deallocate values or do a destroy_Signal_buffer */
-				DEALLOCATE(times);
-				destroy_Signal(&intervals_signal);
-				/*update the window  */
-				draw_trace_markers(trace);
-				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-						(XtPointer)NULL);
-			}	/* if(extract_signal_information */
-		} /*if ((trace->highlight)&&( */
+					} /* if (intervals_buffer=reallocate_Signal_buffer */
+					/* don't deallocate values or do a destroy_Signal_buffer */
+					DEALLOCATE(times);
+					destroy_Signal(&intervals_signal);					
+				}	/* if(extract_signal_information */
+			} /*if ((trace->highlight)&&( */
+		}/* if(trace->inverse_wave_mode!=NO_WAVE) */
+		/* we've changed the cardiac intervals, so change their device*/
+		calculate_cardiac_interval_device(trace);
+		/*update the window  */
+		draw_cardiac_interval_markers(trace);
+		redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
+			(XtPointer)NULL);
 	}
 	else
 	{
@@ -7614,7 +8111,7 @@ static struct Trace_window *create_Trace_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 25 May 2001
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 This function allocates the memory for an trace window and sets the fields to
@@ -7695,8 +8192,12 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)set_inverse_t_wave},
 		{"identify_pqrs_wave_button",
 			(XtPointer)identify_pqrs_wave_button},
+		{"identify_none_wave_button",
+			(XtPointer)identify_none_wave_button},
 		{"set_inverse_pqrs_wave",
 			(XtPointer)set_inverse_pqrs_wave},
+		{"set_inverse_none_wave",
+			(XtPointer)set_inverse_none_wave},
 		{"identify_pt_wave_button",
 			(XtPointer)identify_pt_wave_button},
 		{"set_inverse_pt_wave",
@@ -8042,6 +8543,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_1.inverse.wave_choice.pt_button=(Widget)NULL;
 				trace->area_1.inverse.wave_choice.qrst_button=(Widget)NULL;
 				trace->area_1.inverse.wave_choice.pqrst_button=(Widget)NULL;
+				trace->area_1.inverse.wave_choice.none_button=(Widget)NULL;
 				trace->area_1.inverse.pot_act_choice_mode=(Widget)NULL;
 				trace->area_1.inverse.pot_act_choice.potential_button=(Widget)NULL;
 				trace->area_1.inverse.pot_act_choice.activation_button=(Widget)NULL;
@@ -8203,6 +8705,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				/*???debug */
 				trace->processed_device=(struct Device *)NULL;
 				trace->cardiac_interval_device=(struct Device *)NULL;
+				trace->first_eimaging_event=(struct Electrical_imaging_event*)NULL;
 				/* allocate memory for spectral analysis */
 				if (
 					(frequency_domain_buffer_1=create_Signal_buffer(FLOAT_VALUE,2,1,1))&&
@@ -10705,10 +11208,10 @@ static int alter_cardiac_interval_box(Window working_window,Display *display,
 	Pixmap pixel_map,GC marker_graphics_context,enum Trace_moving_status moving,
 	int marker,int previous_marker,int axes_top, int axes_bottom, int axes_height)
 /*******************************************************************************
-LAST MODIFIED : 5 April 2001
+LAST MODIFIED : 12 June 2001
 
 DESCRIPTION : Alter the start time or end time or peak_or_trough_time
- of a graphical cardiac interval box. Alters only graphics, not actual time.
+of a graphical cardiac interval box. 
 ==============================================================================*/
 {
 	int return_code;
@@ -10720,15 +11223,15 @@ DESCRIPTION : Alter the start time or end time or peak_or_trough_time
 		XDrawLine(display,pixel_map,marker_graphics_context,
 			previous_marker,axes_top+1,previous_marker,axes_bottom);
 		XDrawLine(display,working_window,marker_graphics_context,
-			previous_marker,axes_top+1,previous_marker,axes_bottom);
+			previous_marker,axes_top+1,previous_marker,axes_bottom);		
 		/* draw the new marker */
 		XDrawLine(display,pixel_map,marker_graphics_context,marker,
 			axes_top+1,marker,axes_bottom);
 		XDrawLine(display,working_window,marker_graphics_context,
-			marker,axes_top+1,marker,axes_bottom);
+			marker,axes_top+1,marker,axes_bottom);		
 		/* draw/erase the  change top and bottom parts */
 		if(moving==TRACE_MOVING_CARDIAC_END_TIME)
-		{											
+		{		
 			if(marker>previous_marker)
 			{		
 				XDrawLine(display,pixel_map,marker_graphics_context,
@@ -10740,9 +11243,8 @@ DESCRIPTION : Alter the start time or end time or peak_or_trough_time
 				XDrawLine(display,working_window,marker_graphics_context,
 					previous_marker+1,axes_top+axes_height,marker,axes_top+axes_height);
 			}
-			else
-			{
-				/*marker<previous_marker */
+			else if(marker<previous_marker)
+			{			
 				XDrawLine(display,pixel_map,marker_graphics_context,
 					previous_marker,axes_top,marker+1,axes_top);
 				XDrawLine(display,working_window,marker_graphics_context,
@@ -10754,7 +11256,7 @@ DESCRIPTION : Alter the start time or end time or peak_or_trough_time
 			}
 		}
 		if(moving==TRACE_MOVING_CARDIAC_START_TIME)
-		{											
+		{	
 			if(marker>previous_marker)
 			{		
 				XDrawLine(display,pixel_map,marker_graphics_context,
@@ -10766,19 +11268,18 @@ DESCRIPTION : Alter the start time or end time or peak_or_trough_time
 				XDrawLine(display,working_window,marker_graphics_context,
 					previous_marker,axes_top+axes_height,marker-1,axes_top+axes_height);
 			}
-			else
-			{
-				/*marker<previous_marker,*/
+			else if(marker<previous_marker)
+			{					
 				XDrawLine(display,pixel_map,marker_graphics_context,
 					previous_marker-1,axes_top,marker,axes_top);
 				XDrawLine(display,working_window,marker_graphics_context,
-					previous_marker-1,axes_top,marker,axes_top);												
+					previous_marker-1,axes_top,marker,axes_top);											 
 				XDrawLine(display,pixel_map,marker_graphics_context,
 					previous_marker-1,axes_top+axes_height,marker,axes_top+axes_height);
 				XDrawLine(display,working_window,marker_graphics_context,
 					previous_marker-1,axes_top+axes_height,marker,axes_top+axes_height);
 			}
-		}
+		}	
 	}
 	else
 	{	
@@ -10932,6 +11433,59 @@ interval->previous < interval < interval->next
 	return(return_code);
 }/* limit_cardiac_marker_box */
 
+static int reconcile_cardiac_interval_and_marker(int *marker,
+	struct Cardiac_interval *interval,float x_scale,
+	enum Trace_moving_status moving,int axes_left,int start_analysis_interval)
+/*******************************************************************************
+LAST MODIFIED : 12 June 2001
+
+DESCRIPTION : ensure that that the  <interval>'s 
+end_time/start_time/peak_or_trough_time matches the <marker>.
+Set <interval> to <marker> and then <marker> to <interval> to avoid 
+rounding error in SCALE_X(..1/x_scale...) followed by SCALE_X(..x_scale...)
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(reconcile_cardiac_interval_and_marker);
+	if(marker)
+	{
+		return_code=1;
+		switch(moving)
+		{
+			case TRACE_MOVING_CARDIAC_END_TIME:
+			{
+				interval->end_time=SCALE_X(*marker,axes_left,
+					start_analysis_interval,1/x_scale);
+				*marker=SCALE_X(interval->end_time,start_analysis_interval,
+					axes_left,x_scale);		
+			}break;
+			case TRACE_MOVING_CARDIAC_START_TIME:
+			{	
+				interval->start_time=SCALE_X(*marker,axes_left,
+					start_analysis_interval,1/x_scale);
+				*marker=SCALE_X(interval->start_time,start_analysis_interval,
+					axes_left,x_scale);
+			}break;	
+			case TRACE_MOVING_CARDIAC_PT_TIME:
+			{
+				interval->peak_or_trough_time=SCALE_X(*marker,axes_left,
+					start_analysis_interval,1/x_scale);
+				*marker=SCALE_X(interval->peak_or_trough_time,start_analysis_interval,
+					axes_left,x_scale);
+			}break;
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"reconcile_cardiac_interval_and_marker. Missing argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* reconcile_cardiac_interval_and_marker */
+
 static int move_cardiac_interval_markers(struct Trace_window_area_1 *trace_area_1,
 	int initial_marker, struct Cardiac_interval *interval,float x_scale,
 	struct Signal_drawing_information *signal_drawing_information,Display *display,
@@ -10982,6 +11536,7 @@ DESCRIPTION : Move the indviudal cardiac interval markers.
 			pixel_map=trace_area_1->drawing->pixel_map;
 			while (TRACE_MOVING_NONE!=moving)
 			{
+				
 				XNextEvent(display,&xevent);
 				switch (xevent.type)
 				{
@@ -11009,7 +11564,9 @@ DESCRIPTION : Move the indviudal cardiac interval markers.
 								{
 									marker=pointer_x;
 								}
-							}																													  
+							}	
+							reconcile_cardiac_interval_and_marker(&marker,interval,x_scale,
+								moving,axes_left,start_analysis_interval);
 							limit_cardiac_markers(&marker,moving,interval,axes_left,
 								start_analysis_interval,x_scale);
 							if (marker!=previous_marker)
@@ -11026,43 +11583,19 @@ DESCRIPTION : Move the indviudal cardiac interval markers.
 						XDrawLine(display,pixel_map,marker_graphics_context,marker,
 							axes_top+1,marker,axes_bottom);
 						XDrawLine(display,working_window,marker_graphics_context,
-							marker,axes_top+1,marker,axes_bottom);
-						/*calculate the new interval->*** and marker  */
-						/*CAN'T guarantee interval->*** to marker via SCALE_X(1/xscale) */
-						/* and  marker to interval->***  via SCALE_X(xscale) will match, */
-						/*due to rounding errors. So when leaving function, with */
-						/* moving=TRACE_MOVING_NONE redo marker=SCALE_X() */
-						switch (moving)
-						{																							
-							case TRACE_MOVING_CARDIAC_PT_TIME:
-							{															
-								interval->peak_or_trough_time=SCALE_X(marker,axes_left,
-									start_analysis_interval,1/x_scale);
-								marker=SCALE_X(interval->peak_or_trough_time,start_analysis_interval,
-									axes_left,x_scale);
-								/*write in the new time */
-								time=(int)((float)((times)[interval->peak_or_trough_time])*1000./frequency);
-								sprintf(time_string,"%d",time);
-								write_marker_time(time_string,marker,axes_left,
-									axes_width,axes_top,signal_drawing_information->font,
-									(signal_drawing_information->graphics_context).	potential_time_colour_text,
-									display,trace_area_1->drawing_area,trace_area_1->drawing);
-							} break;
-							case TRACE_MOVING_CARDIAC_START_TIME:
-							{
-								interval->start_time=SCALE_X(marker,axes_left,
-									start_analysis_interval,1/x_scale);
-								marker=SCALE_X(interval->start_time,start_analysis_interval,
-									axes_left,x_scale);
-							} break;	
-							case TRACE_MOVING_CARDIAC_END_TIME:
-							{
-								interval->end_time=SCALE_X(marker,axes_left,
-									start_analysis_interval,1/x_scale);
-								marker=SCALE_X(interval->end_time,start_analysis_interval,
-									axes_left,x_scale);
-							} break;											
-						}												
+							marker,axes_top+1,marker,axes_bottom);						
+						reconcile_cardiac_interval_and_marker(&marker,interval,x_scale,
+								moving,axes_left,start_analysis_interval);
+						if (moving==TRACE_MOVING_CARDIAC_PT_TIME)
+						{																					
+							/*write in the new time */
+							time=(int)((float)((times)[interval->peak_or_trough_time])*1000./frequency);
+							sprintf(time_string,"%d",time);
+							write_marker_time(time_string,marker,axes_left,
+								axes_width,axes_top,signal_drawing_information->font,
+								(signal_drawing_information->graphics_context).	potential_time_colour_text,
+								display,trace_area_1->drawing_area,trace_area_1->drawing);
+						} 																																
 						/* draw the new marker */
 						XDrawLine(display,pixel_map,marker_graphics_context,
 							marker,axes_top+1,marker,axes_bottom);
@@ -11142,7 +11675,7 @@ DESCRIPTION : move the entire cardiac interval box.
 			owner_events,
 			ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
 			pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
-		{														
+		{													
 			x_pos=x_pointer;
 			working_window=XtWindow(trace_area_1->drawing_area);		
 			while (TRACE_MOVING_NONE!=moving)
@@ -11188,7 +11721,7 @@ DESCRIPTION : move the entire cardiac interval box.
 								interval_time_prev=SCALE_X(previous_x_pos,axes_left,start_analysis_interval,1/x_scale);
 								interval_diff=interval_time-interval_time_prev;
 								limit_cardiac_marker_box(&interval_diff,moving,interval,
-									0,buffer->number_of_samples);
+									0,buffer->number_of_samples-1);
 								interval->start_time+=interval_diff;
 								interval->peak_or_trough_time+=interval_diff;
 								interval->end_time+=interval_diff;
@@ -11244,7 +11777,7 @@ int move_cardiac_interval(XmDrawingAreaCallbackStruct *callback,
 LAST MODIFIED : 11 April 2001
 
 DESCRIPTION : detect mouse or keyboard activity and move the cardiac intervals,
-either indivisually or the whole box.
+either individually or the whole box.
 ==============================================================================*/
 {		
 	char time_string[20];		
@@ -11758,7 +12291,7 @@ The callback for redrawing part of the drawing area in trace area 1.
 									trace_area_1->axes_top=axes_top;
 									trace_area_1->axes_width=axes_width;
 									trace_area_1->axes_height=axes_height;
-									draw_trace_markers(trace);
+									draw_cardiac_interval_markers(trace);
 								}																															
 							} break;							
 						}
@@ -11947,7 +12480,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 								end_analysis_interval=buffer->end;
 								if(device&&buffer&&trace->valid_processing)	
 								{																
-									/* draw the active signal */
+									/* draw the cardiac_interval_device signal */
 									draw_signal((struct FE_node *)NULL,
 										(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
 										&start_analysis_interval,&end_analysis_interval,0,0,
@@ -11959,7 +12492,8 @@ The callback for redrawing part of the drawing area in trace area 3.
 									trace_area_3->axes_top=axes_top;
 									trace_area_3->axes_width=axes_width;
 									trace_area_3->axes_height=axes_height;									
-								}			
+									draw_electrical_imaging_event_markers(trace);									
+								}								
 							} break;
 							case EVENT_DETECTION:
 							{
