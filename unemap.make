@@ -40,11 +40,11 @@ unemap-debug unemap-debug-memorycheck unemap-3d-debug unemap64-debug : DEBUG_OPT
 unemap-debug unemap-debug-memorycheck unemap-3d-debug unemap64-debug : DEBUG=true
 unemap64 unemap64-debug utilities64 : ABI_OPTION=ABI=$(ABI)
 unemap64 unemap64-debug utilities64 : ABI=64
-unemap-debug-memorycheck : MEMORYCHECK_OPTION=$(MEMORYCHECK)
+unemap-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
 unemap-debug-memorycheck : MEMORYCHECK=true
-unemap-nodes : USE_UNEMAP_NODES_OPTION=$(USE_UNEMAP_NODES)
+unemap-nodes : USE_UNEMAP_NODES_OPTION=USE_UNEMAP_NODES=$(USE_UNEMAP_NODES)
 unemap-nodes : USE_UNEMAP_NODES=true
-unemap-nodes unemap-3d : USE_UNEMAP_3D_OPTION=$(USE_UNEMAP_3D)
+unemap-nodes unemap-3d : USE_UNEMAP_3D_OPTION=USE_UNEMAP_3D=$(USE_UNEMAP_3D)
 unemap-nodes unemap-3d : USE_UNEMAP_3D=true
 
 utilities utilities64 : TARGET_OPTION=utilities
