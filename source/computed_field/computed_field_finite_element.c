@@ -123,6 +123,7 @@ static char computed_field_finite_element_type_string[]="finite_element";
 static char computed_field_default_coordinate_type_string[]=
 	"default_coordinate";
 static char computed_field_cmiss_number_type_string[]="cmiss_number";
+static char computed_field_access_count_type_string[]="access_count";
 static char computed_field_node_value_type_string[]="node_value";
 static char computed_field_node_array_value_at_time_type_string[]=
 	"node_array_value_at_time";
@@ -1518,6 +1519,7 @@ FE_field being made and/or modified.
 						DEALLOCATE(component_names[i]);
 					}
 				}
+				DEALLOCATE(component_names);
 			}
 		}
 		/* Always return 0 as this ensures the define_Computed_field function
@@ -2809,6 +2811,499 @@ Converts <field> into type COMPUTED_FIELD_CMISS_NUMBER.
 
 	return (return_code);
 } /* define_Computed_field_type_cmiss_number */
+
+static int Computed_field_access_count_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_access_count_clear_type_specific);
+	if (field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_access_count_clear_type_specific.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_access_count_clear_type_specific */
+
+static void *Computed_field_access_count_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	void *destination
+
+	ENTER(Computed_field_access_count_copy_type_specific);
+	if (field)
+	{
+		destination = (void *)1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_access_count_copy_type_specific.  "
+			"Invalid arguments.");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_access_count_copy_type_specific */
+
+#define Computed_field_access_count_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_access_count_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_component_operations_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_component_operations_type_specific_contents_match */
+
+#define Computed_field_access_count_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_access_count_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_access_count_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_access_count_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
+static int Computed_field_access_count_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_access_count_evaluate_cache_at_node);
+	if (field && node)
+	{
+		/* simply convert the node number into an FE_value */
+		field->values[0]=get_FE_node_access_count(node);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_access_count_evaluate_cache_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_access_count_evaluate_cache_at_node */
+
+static int Computed_field_access_count_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_access_count_evaluate_cache_in_element);
+	USE_PARAMETER(top_level_element);
+	USE_PARAMETER(calculate_derivatives);
+	if (field && element && xi)
+	{
+	  /* simply convert the element number into an FE_value */
+	  field->values[0]=(FE_value)element->access_count;
+	  /* no derivatives for this type */
+	  field->derivatives_valid=0;
+	  return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_access_count_evaluate_cache_in_element.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_access_count_evaluate_cache_in_element */
+
+static char *Computed_field_access_count_evaluate_as_string_at_node(
+	struct Computed_field *field, int component_number, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+{
+	char *return_string,tmp_string[50];
+	int error;
+
+	ENTER(Computed_field_access_count_evaluate_as_string_at_node);
+	return_string=(char *)NULL;
+	if (field&&node&&(component_number >= -1)&&
+		(component_number<field->number_of_components))
+	{
+		error=0;
+		/* put out the cmiss number as a string */
+		sprintf(tmp_string,"%d",get_FE_node_access_count(node));
+		append_string(&return_string,tmp_string,&error);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_access_count_evaluate_as_string_at_node.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Computed_field_access_count_evaluate_as_string_at_node */
+
+static char *Computed_field_access_count_evaluate_as_string_in_element(
+	struct Computed_field *field,int component_number,
+	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+{
+	char *return_string,tmp_string[50];
+
+	ENTER(Computed_field_access_count_evaluate_as_string_in_element);
+	USE_PARAMETER(top_level_element);
+	return_string=(char *)NULL;
+	if (field&&element&&xi&&(-1<=component_number)&&
+		(component_number < field->number_of_components))
+	{
+	  /* put out the cmiss number as a string */
+	  sprintf(tmp_string,"%d",element->access_count);
+	  return_string=duplicate_string(tmp_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_access_count_evaluate_as_string_in_element.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Computed_field_access_count_evaluate_as_string_in_element */
+
+#define Computed_field_access_count_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_access_count_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_access_count_get_native_discretization_in_element \
+	(Computed_field_get_native_discretization_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 16 August 2000
+
+DESCRIPTION :
+A property of the element = not grid-based.
+==============================================================================*/
+
+#define Computed_field_access_count_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_access_count(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_access_count);
+	if (field)
+	{
+		/* no extra parameters */
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_access_count.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_access_count */
+
+static int list_Computed_field_access_count_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(list_Computed_field_access_count_commands);
+	if (field)
+	{
+		/* no extra parameters */
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_access_count_commands.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_access_count_commands */
+
+int Computed_field_is_type_access_count(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_access_count);
+	if (field)
+	{
+		return_code = 
+		  (field->type_string == computed_field_access_count_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_access_count.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_access_count */
+
+int Computed_field_set_type_access_count(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_ACCESS_COUNT with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_set_type_access_count);
+	if (field)
+	{
+		return_code=1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		/* none */
+		/* 2. free current type-specific data */
+		Computed_field_clear_type(field);
+		/* 3. establish the new type */
+		field->type=COMPUTED_FIELD_NEW_TYPES;
+		field->type_string = computed_field_access_count_type_string;
+		field->number_of_components = 1;
+		field->type_specific_data = (void *)1;
+		
+		/* Set all the methods */
+		field->computed_field_clear_type_specific_function =
+			Computed_field_access_count_clear_type_specific;
+		field->computed_field_copy_type_specific_function =
+			Computed_field_access_count_copy_type_specific;
+		field->computed_field_clear_cache_type_specific_function =
+			Computed_field_access_count_clear_cache_type_specific;
+		field->computed_field_type_specific_contents_match_function =
+			Computed_field_access_count_type_specific_contents_match;
+		field->computed_field_is_defined_in_element_function =
+			Computed_field_access_count_is_defined_in_element;
+		field->computed_field_is_defined_at_node_function =
+			Computed_field_access_count_is_defined_at_node;
+		field->computed_field_has_numerical_components_function =
+			Computed_field_access_count_has_numerical_components;
+		field->computed_field_can_be_destroyed_function =
+			Computed_field_access_count_can_be_destroyed;
+		field->computed_field_evaluate_cache_at_node_function =
+			Computed_field_access_count_evaluate_cache_at_node;
+		field->computed_field_evaluate_cache_in_element_function =
+			Computed_field_access_count_evaluate_cache_in_element;
+		field->computed_field_evaluate_as_string_at_node_function =
+			Computed_field_access_count_evaluate_as_string_at_node;
+		field->computed_field_evaluate_as_string_in_element_function =
+			Computed_field_access_count_evaluate_as_string_in_element;
+		field->computed_field_set_values_at_node_function =
+			Computed_field_access_count_set_values_at_node;
+		field->computed_field_set_values_in_element_function =
+			Computed_field_access_count_set_values_in_element;
+		field->computed_field_get_native_discretization_in_element_function =
+			Computed_field_access_count_get_native_discretization_in_element;
+		field->computed_field_find_element_xi_function =
+			Computed_field_access_count_find_element_xi;
+		field->list_Computed_field_function = 
+			list_Computed_field_access_count;
+		field->list_Computed_field_commands_function = 
+			list_Computed_field_access_count_commands;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_access_count.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_access_count */
+
+static int define_Computed_field_type_access_count(struct Parse_state *state,
+	void *field_void,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_ACCESS_COUNT.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field;
+
+	ENTER(define_Computed_field_type_access_count);
+	USE_PARAMETER(dummy_void);
+	if (state&&(field=(struct Computed_field *)field_void))
+	{
+		if (!state->current_token)
+		{
+			return_code=Computed_field_set_type_access_count(field);
+		}
+		else
+		{
+			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
+			{
+				display_message(ERROR_MESSAGE,
+					"Unknown option <%s>",state->current_token);
+				display_parse_state_location(state);
+			}
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_access_count.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_access_count */
 
 static char computed_field_xi_coordinates_type_string[] = "xi_coordinates";
 
@@ -6092,6 +6587,10 @@ automatically wrapped in corresponding computed_fields.
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_cmiss_number_type_string,
 			define_Computed_field_type_cmiss_number,
+			&computed_field_finite_element_package);
+		Computed_field_package_add_type(computed_field_package,
+			computed_field_access_count_type_string,
+			define_Computed_field_type_access_count,
 			&computed_field_finite_element_package);
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_xi_coordinates_type_string,
