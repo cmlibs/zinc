@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 24 November 2003
+LAST MODIFIED : 3 February 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4520,12 +4520,14 @@ data field is.
 			/* Get the map "fit" field, to use for the surface */
 			if (map->interpolation_type==DIRECT_INTERPOLATION)
 			{
-				if (!(data_field=get_unemap_package_scaled_offset_signal_value_at_time_field(
-							unemap_package)))
+				if (!(data_field=
+					get_unemap_package_scaled_offset_signal_value_at_time_field(
+					unemap_package)))
 				{
 					map_define_scaled_offset_signal_at_time(unemap_package);
-				data_field = get_unemap_package_scaled_offset_signal_value_at_time_field(
-					unemap_package);
+					data_field=
+						get_unemap_package_scaled_offset_signal_value_at_time_field(
+						unemap_package);
 				}
 			}
 			/*BICUBIC_INTERPOLATION */
@@ -12768,7 +12770,7 @@ static int draw_2d_construct_2d_gouraud_image_map(struct Map *map,
 	int *minimum_x,int *minimum_y,int *maximum_x,int *maximum_y,float *max_f,
 	float *min_f,char *background_map_boundary_base)
 /*******************************************************************************
-LAST MODIFIED 26 February 2002
+LAST MODIFIED : 3 February 2004
 
 DESCRIPTION :
 Construct a colour map image for colour map or contours or  values  in the
@@ -12801,8 +12803,9 @@ cf construct_rgb_triple_gouraud_map which works with rgb triples, not floats
 	pixel_value=(float *)NULL;
 	frame=(struct Map_frame *)NULL;
 	if (map&&sub_map&&the_region&&maximum_region&&minimum_region&&minimum_x&&
-		minimum_y&&maximum_x&&maximum_y&&max_f&&min_f&&background_map_boundary_base&&
-		(the_region->type==TORSO))
+		minimum_y&&maximum_x&&maximum_y&&max_f&&min_f&&
+		background_map_boundary_base&&
+		((TORSO==the_region->type)||(PATCH==the_region->type)))
 	{
 		/*if necessary, do triangulation */
 		if (get_map_drawing_information_electrodes_accepted_or_rejected
@@ -12878,28 +12881,36 @@ cf construct_rgb_triple_gouraud_map which works with rgb triples, not floats
 							maximum_y,vertex_x[i],vertex_y[i]);
 						k++;
 					}/* for(i=0;i<3;i++)*/
-					/*wide  triangles have wrapped around the back and in cp coords, crossed*/
-					/*PI/-PI. Extend these wrapped triangles in rc x, so that they'll be drawn */
-					/*at the edge of the map, not behind it.*/
-					tri_width=abs(tri_max_x-tri_min_x);
-					if (tri_width>(map_width/2))
+#if defined (EXTEND_DIRECT_TO_PATCH)
+/*???DB.  Need Delaunay for plane (currently have sphere and cylinder) */
+#else /* defined (EXTEND_DIRECT_TO_PATCH) */
+					if (TORSO==the_region->type)
+#endif /* defined (EXTEND_DIRECT_TO_PATCH) */
 					{
-						for(i=0;i<3;i++)
+						/* wide  triangles have wrapped around the back and in cp coords,
+							crossed PI/-PI. Extend these wrapped triangles in rc x, so that
+							they'll be drawn at the edge of the map, not behind it */
+						tri_width=abs(tri_max_x-tri_min_x);
+						if (tri_width>(map_width/2))
 						{
-							if (vertex_x[i]<(map_width/2))
+							for(i=0;i<3;i++)
 							{
-								vertex_x[i]+=map_width-2*x_offset;
+								if (vertex_x[i]<(map_width/2))
+								{
+									vertex_x[i]+=map_width-2*x_offset;
+								}
 							}
 						}
 					}
-					/*determine and cache the gradient and inverse of the y_length of the*/
-					/* triangle's edges*/
+					/* determine and cache the gradient and inverse of the y_length of the
+						triangle's edge s*/
 					for(i=0;i<3;i++)
 					{
 						start_vertex_num=i;
 						end_vertex_num=
 							get_triangle_line_end_vertex_num_from_start_num(start_vertex_num);
-						delta_y=(float)vertex_y[end_vertex_num]-(float)vertex_y[start_vertex_num];
+						delta_y=(float)vertex_y[end_vertex_num]-(float)vertex_y[
+							start_vertex_num];
 						if (vertex_x[start_vertex_num]==vertex_x[end_vertex_num])
 						{
 							/*infinite gradient. Put in a large number! Anyway, we check for*/
@@ -12922,8 +12933,8 @@ cf construct_rgb_triple_gouraud_map which works with rgb triples, not floats
 							inv_edge_y_length[i]=1.0/(delta_y);
 						}
 					}/* for(i=0;i<3;i++) */
-					/*for each constant y "scan line"*/
-					for(y=tri_min_y;y<=tri_max_y;y++)
+					/* for each constant y "scan line" */
+					for (y=tri_min_y;y<=tri_max_y;y++)
 					{
 						number_of_intersected_edges=0;
 						/*check and store which of the triangle's edges  are intersected*/
@@ -13106,7 +13117,7 @@ static int draw_2d_construct_image_map(struct Map *map,struct Sub_map *sub_map,
 	struct Drawing_2d *drawing,int recalculate,int screen_region_height,
 	int screen_region_width)
 /*******************************************************************************
-LAST MODIFIED : 19 November 2001
+LAST MODIFIED : 3 February 2004
 
 DESCRIPTION :
 Construct a colour map image for colour map or contours or  values  in the
@@ -13372,22 +13383,33 @@ Construct a colour map image for colour map or contours or  values  in the
 							{
 								the_region=get_Region_list_item_region(
 									region_item);
+#if defined (EXTEND_DIRECT_TO_PATCH)
+/*???DB.  Need Delaunay for plane (currently have sphere and cylinder) */
+								if (((map->projection_type==CYLINDRICAL_PROJECTION)&&
+									(map->interpolation_type==DIRECT_INTERPOLATION)&&
+									(*(map->type)==POTENTIAL)&&
+									the_region&&(the_region->type==TORSO))||
+									((map->interpolation_type==DIRECT_INTERPOLATION)&&the_region&&
+									(PATCH==the_region->type)))
+#else /* defined (EXTEND_DIRECT_TO_PATCH) */
 								if ((map->projection_type==CYLINDRICAL_PROJECTION)&&
 									(map->interpolation_type==DIRECT_INTERPOLATION)&&
 									(*(map->type)==POTENTIAL)&&
 									the_region&&(the_region->type==TORSO))
+#endif /* defined (EXTEND_DIRECT_TO_PATCH) */
 								{
-									draw_2d_construct_2d_gouraud_image_map(map,sub_map,region_number,
-										the_region,&maximum_region,&minimum_region,
+									draw_2d_construct_2d_gouraud_image_map(map,sub_map,
+										region_number,the_region,&maximum_region,&minimum_region,
 										&minimum_x,&minimum_y,&maximum_x,&maximum_y,&max_f,&min_f,
 										background_map_boundary_base);
 								}
 								else
 								{
-									draw_2d_construct_interpolated_image_map(map,sub_map,region_number,
-										the_region,&maximum_region,&minimum_region,
-										screen_region_height,screen_region_width,&minimum_x,&minimum_y,
-										&maximum_x,&maximum_y,&max_f,&min_f,background_map_boundary_base);
+									draw_2d_construct_interpolated_image_map(map,sub_map,
+										region_number,the_region,&maximum_region,&minimum_region,
+										screen_region_height,screen_region_width,&minimum_x,
+										&minimum_y,&maximum_x,&maximum_y,&max_f,&min_f,
+										background_map_boundary_base);
 								}
 							}/* if (0<=region_number) */
 							region_item=get_Region_list_item_next(region_item);
@@ -14100,7 +14122,7 @@ rig->current_region->type are compatible.
 static enum Interpolation_type ensure_interpolation_type_matches_region_type(
 	struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2001
+LAST MODIFIED : 3 February 2004
 
 DESCRIPTION:
 Ensures the map->interpolation_type and rig->current_region match.
@@ -14120,7 +14142,15 @@ Also calls ensure_map_projection_type_matches_region_type if they don't
 		if (map->interpolation_type==DIRECT_INTERPOLATION)
 		{
 			rig=*(map->rig_pointer);
-			if (!((rig->current_region)&&(rig->current_region->type==TORSO)))
+#if defined (EXTEND_DIRECT_TO_PATCH)
+/*???DB.  Need Delaunay for plane (currently have sphere and cylinder) */
+			if (!((rig->current_region)&&
+				((rig->current_region->type==TORSO)||
+				(PATCH==rig->current_region->type))))
+#else /* defined (EXTEND_DIRECT_TO_PATCH) */
+			if (!((rig->current_region)&&
+				(rig->current_region->type==TORSO)))
+#endif /* defined (EXTEND_DIRECT_TO_PATCH) */
 			{
 				map->interpolation_type=BICUBIC_INTERPOLATION;
 				ensure_map_projection_type_matches_region_type(map);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.c
 
-LAST MODIFIED : 1 May 2002
+LAST MODIFIED : 3 February 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1701,7 +1701,7 @@ Finds the id of the ok button in the map dialog.
 
 static int update_dialog_from_map(struct Map_dialog *map_dialog)
 /*******************************************************************************
-LAST MODIFIED : 27 November 2003
+LAST MODIFIED : 3 February 2004
 
 DESCRIPTION :
 Updates the dialog based on the map settings.
@@ -1786,10 +1786,20 @@ Updates the dialog based on the map settings.
 			XtVaSetValues(map_dialog->spectrum.type_option_menu,
 				XmNmenuHistory,option_widget,
 				NULL);
+#if defined (EXTEND_DIRECT_TO_PATCH)
+/*???DB.  Need Delaunay for plane (currently have sphere and cylinder) */
+			/* can only have DIRECT_INTERPOLATION for TORSO,POTENTIAL */
+			/*   or PATCH */
+			if ((map->rig_pointer)&&(rig=*(map->rig_pointer))&&(rig->current_region)&&
+				(((TORSO==rig->current_region->type)&&
+				((POTENTIAL== *(map->type))||(NO_MAP_FIELD== *(map->type))))||
+				(PATCH==rig->current_region->type)))
+#else /* defined (EXTEND_DIRECT_TO_PATCH) */
 			/* can only have DIRECT_INTERPOLATION for TORSO,POTENTIAL */
 			if ((map->rig_pointer)&&(rig=*(map->rig_pointer))&&(rig->current_region)&&
 				(TORSO==rig->current_region->type)&&
 				((POTENTIAL== *(map->type))||(NO_MAP_FIELD== *(map->type))))
+#endif /* defined (EXTEND_DIRECT_TO_PATCH) */
 			{
 				XtSetSensitive(map_dialog->interpolation.option.direct,True);
 			}
