@@ -360,7 +360,7 @@ Perform a automatic thresholding operation on the image cache.
 	FE_value *histogram, *sigB;
 	int YVal;
 	FE_value sigT, muT, minl, maxl;
-	FE_value w0, w1, mu, mu0, mu1, min_sigB, max_sigB;
+	FE_value w0, w1, mu, mu0, mu1, max_sigB;
 	int T;
 
 	ENTER(Image_cache_histogram_based_threshold);
@@ -454,7 +454,7 @@ Perform a automatic thresholding operation on the image cache.
 			{
 			       sigB[j] /= max_sigB;
 			} */
-			min_sigB = 1.0;
+			/* min_sigB = 1.0; */
 			/* for (j = 0; j < number_of_bins; j++ )
 			{
 			       min_sigB = my_Min(min_sigB, sigB[j]);
@@ -709,7 +709,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 	ENTER(Computed_field_histogram_based_threshold_get_command_string);
 	command_string = (char *)NULL;
-	if (field)
+	if (field && (field->type_string==computed_field_histogram_based_threshold_type_string)
+		&& (data = (struct Computed_field_histogram_based_threshold_type_specific_data *)
+		field->type_specific_data))
 	{
 		error = 0;
 		append_string(&command_string,
