@@ -3270,7 +3270,7 @@ the CMISS_connection being valid after a call to this routine.
 							if (output_string=wh_output_get_unknown_string(
 								connection->command_output))
 							{
-								display_message(INFORMATION_MESSAGE,"%s\n",output_string);
+								display_message(INFORMATION_MESSAGE,"%s",output_string);
 								DEALLOCATE(output_string);
 							}
 							else
