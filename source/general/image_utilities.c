@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.c
 
-LAST MODIFIED : 10 April 2001
+LAST MODIFIED : 3 May 2001
 
 DESCRIPTION :
 Utilities for handling images.
@@ -822,7 +822,7 @@ Returns true if CMGUI can write the specified <image_file_format>.
 int Image_file_format_from_file_name(char *file_name,
 	enum Image_file_format *image_file_format_address)
 /*******************************************************************************
-LAST MODIFIED : 8 September 2000
+LAST MODIFIED : 3 May 2001
 
 DESCRIPTION :
 Returns the <Image_file_format> determined from the file_extension in
@@ -842,8 +842,7 @@ Returns the <Image_file_format> determined from the file_extension in
 			image_file_format = (enum Image_file_format)0;
 			while ((other_file_extension =
 				Image_file_format_extension(image_file_format)) &&
-				(!fuzzy_string_compare_same_length(file_extension,
-					other_file_extension)))
+				(!fuzzy_string_compare(other_file_extension, file_extension)))
 			{
 				image_file_format++;
 			}
