@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable.cpp
 //
-// LAST MODIFIED : 25 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 //
@@ -466,7 +466,7 @@ class Calculate_composite_independent_variable_step
 
 class Variable_input_composite_evaluate_derivative_functor
 //******************************************************************************
-// LAST MODIFIED : 25 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 // A unary functor (Functor) for ???DB
