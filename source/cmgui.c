@@ -1453,6 +1453,12 @@ Main program for the CMISS Graphical User Interface
 							/* skip the display name */
 							i++;
 						} break;
+						case 'v':
+						{
+							/* read in the specified visual */
+							i++;
+							user_interface.specified_visual_id = atoi(argv[i]);
+						} break;
 						case 'e':
 						{
 							switch (arg[2])
@@ -2167,6 +2173,8 @@ Main program for the CMISS Graphical User Interface
 			"    <-mycm>                                 start mycm on entry\n");
 		display_message(INFORMATION_MESSAGE,
 			"    <-random NUMBER>                        random number seed (else random)\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-visual NUMBER>                        specify a particular OpenGl visual id\n");
 		display_message(INFORMATION_MESSAGE,
 			"    <COMMAND_FILE_NAME>                     execute the command file\n");
 		return_code=0;

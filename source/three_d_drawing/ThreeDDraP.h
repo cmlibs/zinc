@@ -91,6 +91,7 @@ GL has a number of output buffers - normal, overlay, underlay and popup.
 	XVisualInfo *visual_information;
 	XtCallbackList expose_callback;
 	XtCallbackList initialize_callback;
+	int visual_id;
 #if defined (OPENGL_API)
 	/*???DB.  May be one for all buffers ? */
 	GLXContext rendering_context;

@@ -134,6 +134,15 @@ Resources for the 3-D drawing widget.
 		"X3dSINGLE_BUFFERING"
 	},
 	{
+		X3dNvisualId,
+		X3dCVisualId,
+		XtRInt,
+		sizeof(int),
+		XtOffsetOf(ThreeDDrawingRec,three_d_drawing.normal_buffer.visual_id),
+		XtRInt,
+		0
+	},
+	{
 		X3dNexposeCallback,
 		X3dCExposeCallback,
 		XtRCallback,
@@ -223,6 +232,7 @@ widget.
 	PEXRendererAttributes renderer_attributes;
 #endif
 
+	window = (Window)NULL;
 	if (drawing_widget=(ThreeDDrawingWidget)widget)
 	{
 		/* if the widget doesn't already have a window */
@@ -519,15 +529,23 @@ widget.
 			}
 #endif
 #endif
-			/* set up the callback data */
-			call_data.reason=X3dCR_INITIALIZE;
-			call_data.event=(XEvent *)NULL;
-			call_data.window=XtWindow(widget);
+#if defined (OPENGL_API)
+			/* Stop this from crashing if the visual wasn't found. */
+			if (window)
+			{
+#endif /* defined (OPENGL_API) */
+				/* set up the callback data */
+				call_data.reason=X3dCR_INITIALIZE;
+				call_data.event=(XEvent *)NULL;
+				call_data.window=XtWindow(widget);
 				/*???DB.  May need something different for multiple buffers or if want
-					to pass GL window id */
-			XtCallCallbackList(widget,(((ThreeDDrawingWidget)widget)->
-				three_d_drawing).normal_buffer.initialize_callback,
-				(XtPointer)&call_data);
+				  to pass GL window id */
+				XtCallCallbackList(widget,(((ThreeDDrawingWidget)widget)->
+					three_d_drawing).normal_buffer.initialize_callback,
+					(XtPointer)&call_data);
+#if defined (OPENGL_API)
+			}
+#endif /* defined (OPENGL_API) */
 		}
 	}
 	else
@@ -800,40 +818,13 @@ because the initialize method is downward chained.
 						/* choose the visual with the best colour mode */
 						best_visual_info=(XVisualInfo *)NULL;
 						best_buffer_size=0;
-						for (i=0;i<number_of_valid_visual_infos;i++)
+						/* if the widget has been told a required visual use that */
+						if ((request->three_d_drawing).normal_buffer.visual_id)
 						{
-							glXGetConfig(display,valid_visual_info_list[i],GLX_RGBA,&value);
-							if ((value&&(X3dCOLOUR_RGB_MODE==
-								(request->three_d_drawing).normal_buffer.colour_mode))||
-								(!value&&(X3dCOLOUR_INDEX_MODE==
-									(request->three_d_drawing).normal_buffer.colour_mode)))
+							for (i=0;i<number_of_valid_visual_infos;i++)
 							{
-								if (best_visual_info)
-								{
-									glXGetConfig(display,valid_visual_info_list[i],
-										GLX_BUFFER_SIZE,&value);
-									if (value>best_buffer_size)
-									{
-										best_visual_info=valid_visual_info_list[i];
-										best_buffer_size=value;
-										glXGetConfig(display,best_visual_info,GLX_DEPTH_SIZE,
-											&best_depth_size);
-									}
-									else
-									{
-										if (value==best_buffer_size)
-										{
-											glXGetConfig(display,valid_visual_info_list[i],
-												GLX_DEPTH_SIZE, &value);
-											if (value>best_depth_size)
-											{
-												best_visual_info=valid_visual_info_list[i];
-												best_depth_size=value;
-											}
-										}
-									}
-								}
-								else
+								if (valid_visual_info_list[i]->visualid == 
+ 									(request->three_d_drawing).normal_buffer.visual_id)
 								{
 									best_visual_info=valid_visual_info_list[i];
 									glXGetConfig(display, best_visual_info,
@@ -841,11 +832,72 @@ because the initialize method is downward chained.
 									glXGetConfig(display, best_visual_info,
 										GLX_DEPTH_SIZE, &best_depth_size);
 								}
+							}							
+						}
+						else
+						{	
+							for (i=0;i<number_of_valid_visual_infos;i++)
+							{
+#if defined (DEBUG)
+								{
+									printf("Selecting visual, id %d\n",
+										valid_visual_info_list[i]->visualid);
+									glXGetConfig(display,valid_visual_info_list[i],GLX_RGBA,&value);
+									printf("RGB %d\n", value);
+									glXGetConfig(display,valid_visual_info_list[i],
+										GLX_BUFFER_SIZE,&value);
+									printf("buffer %d\n", value);
+									glXGetConfig(display,valid_visual_info_list[i],
+										GLX_DEPTH_SIZE, &value);
+									printf("depth %d\n\n", value);
+								}
+#endif /* defined (DEBUG) */
+
+								glXGetConfig(display,valid_visual_info_list[i],GLX_RGBA,&value);
+								if ((value&&(X3dCOLOUR_RGB_MODE==
+										  (request->three_d_drawing).normal_buffer.colour_mode))||
+									(!value&&(X3dCOLOUR_INDEX_MODE==
+										(request->three_d_drawing).normal_buffer.colour_mode)))
+								{
+									if (best_visual_info)
+									{
+										glXGetConfig(display,valid_visual_info_list[i],
+											GLX_BUFFER_SIZE,&value);
+										if (value>best_buffer_size)
+										{
+											best_visual_info=valid_visual_info_list[i];
+											best_buffer_size=value;
+											glXGetConfig(display,best_visual_info,GLX_DEPTH_SIZE,
+												&best_depth_size);
+										}
+										else
+										{
+											if (value==best_buffer_size)
+											{
+												glXGetConfig(display,valid_visual_info_list[i],
+													GLX_DEPTH_SIZE, &value);
+												if (value>best_depth_size)
+												{
+													best_visual_info=valid_visual_info_list[i];
+													best_depth_size=value;
+												}
+											}
+										}
+									}
+									else
+									{
+										best_visual_info=valid_visual_info_list[i];
+										glXGetConfig(display, best_visual_info,
+											GLX_BUFFER_SIZE, &best_buffer_size);
+										glXGetConfig(display, best_visual_info,
+											GLX_DEPTH_SIZE, &best_depth_size);
+									}
+								}
 							}
 						}
-						if ((new->three_d_drawing).normal_buffer.visual_information=
+						if (best_visual_info && ((new->three_d_drawing).normal_buffer.visual_information=
 							XGetVisualInfo(display,VisualAllMask,best_visual_info,
-							&number_of_visual_infos))
+							  &number_of_visual_infos)))
 						{
 							/*???debug */
 							/* only want to print this once, unless using different visuals */
@@ -1655,6 +1707,43 @@ WidgetClass threeDDrawingWidgetClass=(WidgetClass)&threeDDrawingClassRec;
 Global functions
 ----------------
 */
+int X3dThreeDisInitialised(Widget widget)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2001
+
+DESCRIPTION :
+Returns true if the X3dThreeD <widget> is initialised correctly.  This enables 
+us to fail nicely if the Initialise routine was unable to complete properly, 
+i.e. it couldn't create a valid rendering context.
+==============================================================================*/
+{
+	int return_code;
+	ThreeDDrawingWidget drawing_widget;
+
+	return_code = 0;
+	if ((drawing_widget=(ThreeDDrawingWidget)widget)&&
+		(True==IsThreeDDrawing(widget)))
+	{
+#if defined (OPENGL_API)
+		if ((drawing_widget->three_d_drawing).normal_buffer.rendering_context)
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+#endif
+	}
+	else
+	{
+		printf("X3dThreeDDrawingMakeCurrent.  Missing or invalid widget\n");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* X3dThreeDisInitialised */
+
 void X3dThreeDDrawingMakeCurrent(Widget widget)
 /*******************************************************************************
 LAST MODIFIED : 30 April 1997

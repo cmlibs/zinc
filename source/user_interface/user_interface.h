@@ -50,6 +50,10 @@ application/window manager.
 ==============================================================================*/
 {
 	int continue_interface;
+#if defined (OPENGL_API)
+	/* If non-zero forces OpenGL to select a particular visual ID */
+	int specified_visual_id;
+#endif /* defined (OPENGL_API) */
 #if defined (MOTIF)
 	char *application_name,**argv,*class_name;
 	Cursor busy_cursor;

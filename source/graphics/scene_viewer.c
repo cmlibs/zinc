@@ -943,7 +943,9 @@ access this function.
 								glMatrixMode(GL_PROJECTION);
 								glLoadIdentity();
 								glDisable(GL_LIGHTING);
-								glColor3f(1,1,1);
+								glColor3f((scene_viewer->background_colour).red,
+								  (scene_viewer->background_colour).green,
+								  (scene_viewer->background_colour).blue);
 								Scene_viewer_render_background_texture(scene_viewer,
 									viewport_width,viewport_height);
 								glEnable(GL_LIGHTING);
@@ -3117,6 +3119,7 @@ performed in idle time so that multiple redraws are avoided.
 					threeDDrawingWidgetClass,parent,
 					X3dNbufferColourMode,X3dCOLOUR_RGB_MODE,
 					X3dNbufferingMode,x3d_buffering_mode,
+					X3dNvisualId,user_interface->specified_visual_id,
 					XmNleftAttachment,XmATTACH_FORM,
 					XmNrightAttachment,XmATTACH_FORM,
 					XmNbottomAttachment,XmATTACH_FORM,
@@ -3128,136 +3131,147 @@ performed in idle time so that multiple redraws are avoided.
 					XmNtopOffset,0,
 					NULL))
 				{
-					/* access the scene, since don't want it to disappear */
-					scene_viewer->scene=ACCESS(Scene)(scene);
-					scene_viewer->overlay_scene=(struct Scene *)NULL;
-					scene_viewer->input_mode=SCENE_VIEWER_TRANSFORM;
-					scene_viewer->temporary_transform_mode=0;
-					scene_viewer->parent=parent;
-					scene_viewer->user_interface=user_interface;
-					scene_viewer->idle_update_proc=(XtWorkProcId)NULL;
-					(scene_viewer->background_colour).red=background_colour->red;
-					(scene_viewer->background_colour).green=background_colour->green;
-					(scene_viewer->background_colour).blue=background_colour->blue;
-					scene_viewer->background_texture=(struct Texture *)NULL;
-					scene_viewer->drawing_widget=drawing_widget;
-					/* set viewing transformation eye pos, look at point and up-vector */
-					/* initially view the x,y plane */
-					scene_viewer->eyex=0.0;
-					scene_viewer->eyey=0.0;
-					scene_viewer->eyez=2.0;
-					scene_viewer->lookatx=0.0;
-					scene_viewer->lookaty=0.0;
-					scene_viewer->lookatz=0.0;
-					scene_viewer->upx=0.0;
-					scene_viewer->upy=1.0;
-					scene_viewer->upz=0.0;
-					/* Projection specified by viewing volume and perspective flag */
-					/* viewing volume initially a unit cube */
-					scene_viewer->left=-1.0;
-					scene_viewer->right=1.0;
-					scene_viewer->bottom=-1.0;
-					scene_viewer->top=1.0;
-					scene_viewer->near=0.1;
-					scene_viewer->far=1000.0;
-					scene_viewer->projection_mode=SCENE_VIEWER_PARALLEL;
-					scene_viewer->translate_rate=1.0;
-					scene_viewer->tumble_rate=1.5;
-					scene_viewer->zoom_rate=1.0;
-					scene_viewer->light_model=ACCESS(Light_model)(default_light_model);
-					scene_viewer->antialias=0;
-					scene_viewer->perturb_lines=0;
-					scene_viewer->transform_flag=0;
-					scene_viewer->first_fast_change=1;
-					scene_viewer->fast_changing=0;
-					scene_viewer->swap_buffers=0;
-					if (default_light)
+					if(X3dThreeDisInitialised(drawing_widget))
 					{
-						ADD_OBJECT_TO_LIST(Light)(default_light,
-							scene_viewer->list_of_lights);
-					}
-					/* managers and callback IDs for automatic updates */
-					scene_viewer->light_manager=light_manager;
-					scene_viewer->light_manager_callback_id=(void *)NULL;
-					scene_viewer->light_model_manager=light_model_manager;
-					scene_viewer->light_model_manager_callback_id=(void *)NULL;
-					scene_viewer->scene_manager=scene_manager;
-					scene_viewer->scene_manager_callback_id=(void *)NULL;
-					scene_viewer->texture_manager=texture_manager;
-					scene_viewer->texture_manager_callback_id=(void *)NULL;
-					/* no current interactive_tool */
-					scene_viewer->interactive_tool=(struct Interactive_tool *)NULL;
-					/* set projection matrices to identity */
-					for (i=0;i<16;i++)
-					{
-						if (0==(i % 5))
+						/* access the scene, since don't want it to disappear */
+						scene_viewer->scene=ACCESS(Scene)(scene);
+						scene_viewer->overlay_scene=(struct Scene *)NULL;
+						scene_viewer->input_mode=SCENE_VIEWER_TRANSFORM;
+						scene_viewer->temporary_transform_mode=0;
+						scene_viewer->parent=parent;
+						scene_viewer->user_interface=user_interface;
+						scene_viewer->idle_update_proc=(XtWorkProcId)NULL;
+						(scene_viewer->background_colour).red=background_colour->red;
+						(scene_viewer->background_colour).green=background_colour->green;
+						(scene_viewer->background_colour).blue=background_colour->blue;
+						scene_viewer->background_texture=(struct Texture *)NULL;
+						scene_viewer->drawing_widget=drawing_widget;
+						/* set viewing transformation eye pos, look at point and up-vector */
+						/* initially view the x,y plane */
+						scene_viewer->eyex=0.0;
+						scene_viewer->eyey=0.0;
+						scene_viewer->eyez=2.0;
+						scene_viewer->lookatx=0.0;
+						scene_viewer->lookaty=0.0;
+						scene_viewer->lookatz=0.0;
+						scene_viewer->upx=0.0;
+						scene_viewer->upy=1.0;
+						scene_viewer->upz=0.0;
+						/* Projection specified by viewing volume and perspective flag */
+						/* viewing volume initially a unit cube */
+						scene_viewer->left=-1.0;
+						scene_viewer->right=1.0;
+						scene_viewer->bottom=-1.0;
+						scene_viewer->top=1.0;
+						scene_viewer->near=0.1;
+						scene_viewer->far=1000.0;
+						scene_viewer->projection_mode=SCENE_VIEWER_PARALLEL;
+						scene_viewer->translate_rate=1.0;
+						scene_viewer->tumble_rate=1.5;
+						scene_viewer->zoom_rate=1.0;
+						scene_viewer->light_model=ACCESS(Light_model)(default_light_model);
+						scene_viewer->antialias=0;
+						scene_viewer->perturb_lines=0;
+						scene_viewer->transform_flag=0;
+						scene_viewer->first_fast_change=1;
+						scene_viewer->fast_changing=0;
+						scene_viewer->swap_buffers=0;
+						if (default_light)
 						{
-							scene_viewer->projection_matrix[i]=1.0;
-							scene_viewer->modelview_matrix[i]=1.0;
+							ADD_OBJECT_TO_LIST(Light)(default_light,
+								scene_viewer->list_of_lights);
 						}
+						/* managers and callback IDs for automatic updates */
+						scene_viewer->light_manager=light_manager;
+						scene_viewer->light_manager_callback_id=(void *)NULL;
+						scene_viewer->light_model_manager=light_model_manager;
+						scene_viewer->light_model_manager_callback_id=(void *)NULL;
+						scene_viewer->scene_manager=scene_manager;
+						scene_viewer->scene_manager_callback_id=(void *)NULL;
+						scene_viewer->texture_manager=texture_manager;
+						scene_viewer->texture_manager_callback_id=(void *)NULL;
+						/* no current interactive_tool */
+						scene_viewer->interactive_tool=(struct Interactive_tool *)NULL;
+						/* set projection matrices to identity */
+						for (i=0;i<16;i++)
+						{
+							if (0==(i % 5))
+							{
+								scene_viewer->projection_matrix[i]=1.0;
+								scene_viewer->modelview_matrix[i]=1.0;
+							}
+							else
+							{
+								scene_viewer->projection_matrix[i]=0.0;
+								scene_viewer->modelview_matrix[i]=0.0;
+							}
+						}
+						scene_viewer->NDC_width=scene_viewer->right-scene_viewer->left;
+						scene_viewer->NDC_height=scene_viewer->top-scene_viewer->bottom;
+						scene_viewer->NDC_top=scene_viewer->top;
+						scene_viewer->NDC_left=scene_viewer->left;
+						scene_viewer->viewport_mode=SCENE_VIEWER_RELATIVE_VIEWPORT;
+						scene_viewer->viewport_top=0.0;
+						scene_viewer->viewport_left=0.0;
+						scene_viewer->viewport_pixels_per_unit_x=1.0;
+						scene_viewer->viewport_pixels_per_unit_y=1.0;
+						scene_viewer->background_texture=(struct Texture *)NULL;
+						scene_viewer->bk_texture_top=0.0;
+						scene_viewer->bk_texture_left=0.0;
+						scene_viewer->bk_texture_width=0.0;
+						scene_viewer->bk_texture_height=0.0;
+						scene_viewer->drag_mode=SV_DRAG_NOTHING;
+						scene_viewer->previous_pointer_x = 0;
+						scene_viewer->previous_pointer_y = 0;
+						/* automatic tumble */
+						scene_viewer->tumble_axis[0] = 1.0;
+						scene_viewer->tumble_axis[1] = 0.0;
+						scene_viewer->tumble_axis[2] = 0.0;
+						scene_viewer->tumble_angle = 0;
+						scene_viewer->tumble_active = 0;
+						scene_viewer->tumble_callback_id = (XtIntervalId)NULL;
+						/* by default, use undistort stuff on textures */
+						scene_viewer->bk_texture_undistort_on=1;
+						scene_viewer->bk_texture_max_pixels_per_polygon=16.0;
+						scene_viewer->buffer_mode=buffer_mode;
+						scene_viewer->transparency_mode=SCENE_VIEWER_FAST_TRANSPARENCY;
+						scene_viewer->input_callback.procedure=(Callback_procedure *)NULL;
+						scene_viewer->input_callback.data=NULL;
+						scene_viewer->sync_callback_list=
+							CREATE(LIST(CALLBACK_ITEM(Scene_viewer_transform)))();
+						scene_viewer->transform_callback_list=
+							CREATE(LIST(CALLBACK_ITEM(Scene_viewer_transform)))();
+						scene_viewer->pixel_width=0;
+						scene_viewer->pixel_height=0;
+						scene_viewer->update_pixel_image=0;
+						if (SCENE_VIEWER_PIXEL_BUFFER==buffer_mode )
+						{
+							ALLOCATE(scene_viewer->pixel_data,char,1);
+						}
+						for (i = 0 ; i < 4 * MAX_CLIP_PLANES ; i++)
+						{
+							scene_viewer->clip_planes[i] = 0.0;
+						}
+						/* add callbacks to the drawing widget */
+						XtAddCallback(drawing_widget,X3dNinitializeCallback,
+							Scene_viewer_initialize_callback,scene_viewer);
+						XtAddCallback(drawing_widget,X3dNresizeCallback,
+							Scene_viewer_resize_callback,scene_viewer);
+						XtAddCallback(drawing_widget,X3dNexposeCallback,
+							Scene_viewer_expose_callback,scene_viewer);
+						XtAddCallback(drawing_widget,X3dNinputCallback,
+							Scene_viewer_input_callback,scene_viewer);
+						Scene_viewer_awaken(scene_viewer);
+						XtManageChild(drawing_widget);
+					}
 						else
-						{
-							scene_viewer->projection_matrix[i]=0.0;
-							scene_viewer->modelview_matrix[i]=0.0;
-						}
-					}
-					scene_viewer->NDC_width=scene_viewer->right-scene_viewer->left;
-					scene_viewer->NDC_height=scene_viewer->top-scene_viewer->bottom;
-					scene_viewer->NDC_top=scene_viewer->top;
-					scene_viewer->NDC_left=scene_viewer->left;
-					scene_viewer->viewport_mode=SCENE_VIEWER_RELATIVE_VIEWPORT;
-					scene_viewer->viewport_top=0.0;
-					scene_viewer->viewport_left=0.0;
-					scene_viewer->viewport_pixels_per_unit_x=1.0;
-					scene_viewer->viewport_pixels_per_unit_y=1.0;
-					scene_viewer->background_texture=(struct Texture *)NULL;
-					scene_viewer->bk_texture_top=0.0;
-					scene_viewer->bk_texture_left=0.0;
-					scene_viewer->bk_texture_width=0.0;
-					scene_viewer->bk_texture_height=0.0;
-					scene_viewer->drag_mode=SV_DRAG_NOTHING;
-					scene_viewer->previous_pointer_x = 0;
-					scene_viewer->previous_pointer_y = 0;
-					/* automatic tumble */
-					scene_viewer->tumble_axis[0] = 1.0;
-					scene_viewer->tumble_axis[1] = 0.0;
-					scene_viewer->tumble_axis[2] = 0.0;
-					scene_viewer->tumble_angle = 0;
-					scene_viewer->tumble_active = 0;
-					scene_viewer->tumble_callback_id = (XtIntervalId)NULL;
-					/* by default, use undistort stuff on textures */
-					scene_viewer->bk_texture_undistort_on=1;
-					scene_viewer->bk_texture_max_pixels_per_polygon=16.0;
-					scene_viewer->buffer_mode=buffer_mode;
-					scene_viewer->transparency_mode=SCENE_VIEWER_FAST_TRANSPARENCY;
-					scene_viewer->input_callback.procedure=(Callback_procedure *)NULL;
-					scene_viewer->input_callback.data=NULL;
-					scene_viewer->sync_callback_list=
-					  CREATE(LIST(CALLBACK_ITEM(Scene_viewer_transform)))();
-					scene_viewer->transform_callback_list=
-					  CREATE(LIST(CALLBACK_ITEM(Scene_viewer_transform)))();
-					scene_viewer->pixel_width=0;
-					scene_viewer->pixel_height=0;
-					scene_viewer->update_pixel_image=0;
-					if (SCENE_VIEWER_PIXEL_BUFFER==buffer_mode )
 					{
-						ALLOCATE(scene_viewer->pixel_data,char,1);
+						XtDestroyWidget(drawing_widget);
+						DESTROY(LIST(Light))(&(scene_viewer->list_of_lights));
+						DEALLOCATE(scene_viewer);
+						display_message(ERROR_MESSAGE,"CREATE(Scene_viewer).  "
+							"Could not initialise the scene_viewer widget");
 					}
-					for (i = 0 ; i < 4 * MAX_CLIP_PLANES ; i++)
-					{
-						scene_viewer->clip_planes[i] = 0.0;
-					}
-					/* add callbacks to the drawing widget */
-					XtAddCallback(drawing_widget,X3dNinitializeCallback,
-						Scene_viewer_initialize_callback,scene_viewer);
-					XtAddCallback(drawing_widget,X3dNresizeCallback,
-						Scene_viewer_resize_callback,scene_viewer);
-					XtAddCallback(drawing_widget,X3dNexposeCallback,
-						Scene_viewer_expose_callback,scene_viewer);
-					XtAddCallback(drawing_widget,X3dNinputCallback,
-						Scene_viewer_input_callback,scene_viewer);
-					Scene_viewer_awaken(scene_viewer);
-					XtManageChild(drawing_widget);
 				}
 				else
 				{

@@ -57,6 +57,8 @@ renderingContext   RenderingContext   PEXRenderer         NULL
 #define X3dNbufferingMode "bufferingMode"
 #define X3dCBufferingMode "BufferingMode"
 #define X3dRBufferingMode "X3dBufferingMode"
+#define X3dNvisualId "visualId"
+#define X3dCVisualId "VisualId"
 #define X3dNexposeCallback "exposeCallback"
 #define X3dCExposeCallback "ExposeCallback"
 #define X3dNinitializeCallback "initializeCallback"
@@ -93,6 +95,15 @@ Global macros
 Global functions
 ----------------
 */
+int X3dThreeDisInitialised(Widget widget);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2001
+
+DESCRIPTION :
+Returns true if the X3dThreeD <widget> is initialised correctly.  This enables 
+us to fail nicely if the Initialise routine was unable to complete properly, 
+i.e. it couldn't create a valid rendering context.
+==============================================================================*/
 
 void X3dThreeDDrawingMakeCurrent(Widget widget);
 /*******************************************************************************
