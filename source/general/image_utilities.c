@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.c
 
-LAST MODIFIED : 3 May 2001
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Utilities for handling images.
@@ -711,6 +711,10 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 	ENTER(ENUMERATOR_STRING(Image_file_format));
 	switch (enumerator_value)
 	{
+		case JPG_FILE_FORMAT:
+		{
+			enumerator_string = "jpg";
+		} break;
 		case POSTSCRIPT_FILE_FORMAT:
 		{
 			enumerator_string = "postscript";
@@ -741,7 +745,7 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Image_file_format)
 
 char *Image_file_format_extension(enum Image_file_format image_file_format)
 /*******************************************************************************
-LAST MODIFIED : 8 September 2000
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Returns the expected file extension stem for a given <image_file_format>. By
@@ -754,7 +758,11 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 
 	ENTER(Image_file_format_extension);
 	switch (image_file_format)
-	{
+	{	
+		case JPG_FILE_FORMAT:
+		{
+			file_format_extension = "jpg";
+		} break;
 		case POSTSCRIPT_FILE_FORMAT:
 		{
 			file_format_extension = "ps";

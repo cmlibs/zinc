@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 04 May 2001
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -402,11 +402,15 @@ DESCRIPTION :
 			{
 				XtSetSensitive(mapping->animate_button,True);
 				XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
+				XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
+				XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
 			}
 			else
 			{
 				XtSetSensitive(mapping->animate_button,False);
 				XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
+				XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
+				XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
 			}
 		}
 	}

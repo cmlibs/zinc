@@ -9214,8 +9214,8 @@ before this function is exited.
 	enum Calculate_signal_mode calculate_signal_mode;
 	enum Event_signal_status **status_ptr,*status;
 	enum Inverse_electrodes_mode electrodes_mode;
-	float *current_times,*current_values,processed_frequency,*processed_value,
-		*source_value,*start_value,*time_float,*value,*values;
+	float *current_times,*current_values,maximum_value,processed_frequency,
+		*processed_value,*source_value,*start_value,*time_float,*value,*values;
 	int buffer_offset,i,j,number_of_devices,num_valid_devices,
 		number_of_samples,number_of_signals,*processed_time,return_code;
 	struct Device *device,*processed_device,**the_device;
@@ -9372,18 +9372,33 @@ before this function is exited.
 								the_device++;
 							}					
 							if(num_valid_devices)
-							{						
-								processed_value=start_value;																
+							{														
+								processed_value=start_value;
+								maximum_value=sqrt(*processed_value/num_valid_devices);	
 								for (j=number_of_samples;j>0;j--)
 								{
 									*processed_value/=num_valid_devices;
 									*processed_value=sqrt(*processed_value);
+
+									if(*processed_value>maximum_value)
+									{
+										maximum_value=*processed_value;
+									}
+
 									processed_value += buffer_offset;					
 								}				
 							}	
-						}						
+							/* ensure the range of rms is 0 to max; min to max  looks confusing, as*/
+							/* rms is all positive. */
+							if(calculate_signal_mode==RMS_SIGNAL)
+							{			
+								processed_device->signal_display_minimum=0;
+								processed_device->signal_display_maximum=maximum_value;
+							}
+						}	/* if(trace->calculate_rms)	*/
 						if(calculate_signal_mode==RMS_AND_CURRENT_SIGNAL)
 						/* put current signal in the processed_device->signal */
+						/* (processed_device->signal->next is already the rms)*/
 						{								
 							buffer_offset=processed_buffer->number_of_signals;
 							value=current_values;
@@ -9411,11 +9426,11 @@ before this function is exited.
 						destroy_Signal(&signal_next);
 					}			
 					display_message(ERROR_MESSAGE,
-						"trace_process_device.  Could not reallocate processed buffer");
+						"process_eimaging.  Could not reallocate processed buffer");
 					trace->valid_processing=0;
 				}
 			} /* if ((trace->highlight)&&( */		
-		}/* if(trace->calculate_signal_mode==RMS_SIGNAL) */
+		}/* if(calculate_signal_mode!=CURRENT_SIGNAL) */
 		if(current_times)
 		{
 			DEALLOCATE(current_times);

@@ -52,7 +52,7 @@ The menu associated with the file button.
 #if defined (MOTIF)
 struct Mapping_print_menu
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 The menu associated with the print button.
@@ -61,8 +61,10 @@ The menu associated with the print button.
 	Widget postscript_button;
 	Widget rgb_button;
 	Widget tiff_button;
+	Widget jpg_button;
 	Widget animate_rgb_button;
 	Widget animate_tiff_button;
+	Widget animate_jpg_button;
 }; /* struct Mapping_print_menu */
 #endif /* defined (MOTIF) */
 

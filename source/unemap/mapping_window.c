@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -980,12 +980,14 @@ necessary.
 					XtSetSensitive(mapping->animate_button,True);
 					XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
 					XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
+					XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
 				}
 				else
 				{
 					XtSetSensitive(mapping->animate_button,False);
 					XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
 					XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
+					XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
 				}
 			}
 #else
@@ -1000,12 +1002,14 @@ necessary.
 			XtSetSensitive(mapping->animate_button,True);
 			XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
 			XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
+			XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
 		}
 		else
 		{
 			XtSetSensitive(mapping->animate_button,False);
 			XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
 			XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
+			XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
 		}
 #endif
 			map->frame_number=frame_number-1;
@@ -1027,6 +1031,7 @@ necessary.
 			XtSetSensitive(mapping->animate_button,True);
 			XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
 			XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
+			XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
 		}
 		if (MULTIPLE_ACTIVATION== *(map->type))
 		{
@@ -1035,12 +1040,14 @@ necessary.
 				XtSetSensitive(mapping->animate_button,False);
 				XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
 				XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
+				XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
 			}
 			else
 			{
 				XtSetSensitive(mapping->animate_button,True);
 				XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
 				XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
+				XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
 			}
 		}
 		if (map_settings_changed)
@@ -2392,6 +2399,31 @@ Finds the id of the mapping print tiff button.
 	LEAVE;
 } /* identify_mapping_print_tiff_but */
 
+static void identify_mapping_print_jpg_but(Widget *widget_id,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2001
+
+DESCRIPTION :
+Finds the id of the mapping print jpg button.
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(identify_mapping_print_jpg_but);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)client_data)
+	{
+		mapping->print_menu.jpg_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_mapping_print_jpg_but.  client_data missing");
+	}
+	LEAVE;
+} /* identify_mapping_print_jpg_but */
+
 static void id_mapping_print_animation_rgb(Widget *widget_id,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
@@ -2441,6 +2473,32 @@ Finds the id of the mapping print animation tiff button.
 	}
 	LEAVE;
 } /* id_mapping_print_animation_tiff */
+
+static void id_mapping_print_animation_jpg(Widget *widget_id,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2001
+
+DESCRIPTION :
+Finds the id of the mapping print animation jpg button.
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(id_mapping_print_animation_jpg);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)client_data)
+	{
+		mapping->print_menu.animate_jpg_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_mapping_print_animation_jpg.  client_data missing");
+	}
+	LEAVE;
+} /* id_mapping_print_animation_jpg */
+
 
 static void identify_mapping_projection_cho(Widget *widget_id,
 	XtPointer mapping_window,XtPointer call_data)
@@ -3655,7 +3713,7 @@ mapping_window.
 
 static int write_map_rgb_file(char *file_name,void *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 10 August 1998
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 This function writes the rgb for drawing the map associated with the
@@ -3680,19 +3738,19 @@ mapping_window.
 				sprintf(extended_filename, "sgi:%s", file_name);
 				return_code=write_image_file(extended_filename,/*components*/3,
 					/*bytes_per_component*/1,
-					mapping->map_drawing->height,mapping->map_drawing->width,0,image);
+					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
 				DEALLOCATE(extended_filename);
 			}
 			else
 			{
 				return_code=write_image_file(file_name,/*components*/3,
 					/*bytes_per_component*/1,
-					mapping->map_drawing->height,mapping->map_drawing->width,0,image);
+					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
 			}
 #else /* defined (IMAGEMAGICK) */
 			return_code=write_rgb_image_file(file_name,/*components*/3,
 				/*bytes_per_component*/1,
-				mapping->map_drawing->height,mapping->map_drawing->width,0,image);
+				mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
 #endif /* defined (IMAGEMAGICK) */
 			DEALLOCATE(image);
 		}
@@ -3716,7 +3774,7 @@ mapping_window.
 
 static int write_map_tiff_file(char *file_name,void *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 10 August 1998
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 This function writes the tiff for drawing the map associated with the
@@ -3741,20 +3799,20 @@ mapping_window.
 				sprintf(extended_filename, "tiff:%s", file_name);
 				return_code=write_image_file(extended_filename,/*components*/3,
 					/*bytes_per_component*/1,
-					mapping->map_drawing->height,mapping->map_drawing->width,0,image);
+					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
 				DEALLOCATE(extended_filename);
 			}
 			else
 			{
 				return_code=write_image_file(file_name,/*components*/3,
 					/*bytes_per_component*/1,
-					mapping->map_drawing->height,mapping->map_drawing->width,0,image);
+					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
 			}
 #else /* defined (IMAGEMAGICK) */
 			return_code=write_tiff_image_file(file_name,/*components*/3,
 				/*bytes_per_component*/1,
 				mapping->map_drawing->height,mapping->map_drawing->width,
-				0,TIFF_PACK_BITS_COMPRESSION,image);
+				/*row_padding*/0,TIFF_PACK_BITS_COMPRESSION,image);
 #endif /* defined (IMAGEMAGICK) */
 			DEALLOCATE(image);
 		}
@@ -3776,10 +3834,71 @@ mapping_window.
 	return (return_code);
 } /* write_map_tiff_file */
 
+static int write_map_jpg_file(char *file_name,void *mapping_window)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2001
+
+DESCRIPTION :
+This function writes the jpg for drawing the map associated with the
+mapping_window.
+==============================================================================*/
+{
+	int return_code;
+	struct Mapping_window *mapping;
+	unsigned long *image;
+
+	ENTER(write_map_jpg_file);
+	if (mapping=(struct Mapping_window *)mapping_window)
+	{
+		if (image=get_Drawing_2d_image(mapping->map_drawing))
+		{
+			/* write the file */
+#if defined (IMAGEMAGICK)
+			char *extended_filename;
+			if ((!strchr(file_name, ':'))&&
+				(ALLOCATE(extended_filename, char, strlen(file_name) + 6)))
+			{
+				sprintf(extended_filename, "jpg:%s", file_name);
+				return_code=write_image_file(extended_filename,/*components*/3,
+					/*bytes_per_component*/1,
+					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
+				DEALLOCATE(extended_filename);
+			}
+			else
+			{
+				return_code=write_image_file(file_name,/*components*/3,
+					/*bytes_per_component*/1,
+					mapping->map_drawing->height,mapping->map_drawing->width,/*row_padding*/0,image);
+			}
+#else /* defined (IMAGEMAGICK) */
+			display_message(ERROR_MESSAGE,
+				"write_map_jpg_file. Need to compile with IMAGEMAGICK for JPG");
+			return_code=0;
+#endif /* defined (IMAGEMAGICK) */
+			DEALLOCATE(image);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"write_map_jpg_file.  Could not get image");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"write_map_jpg_file.  Missing mapping_window or map");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* write_map_jpg_file */
+
 static int write_map_animation_files(char *file_name,void *mapping_window,
 	enum Image_file_format image_file_format)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 This function writes the rgb files for drawing the animation associated with the
@@ -3841,7 +3960,7 @@ mapping_window.
 						*(map->potential_time)= *(map->start_search_interval);
 					}
 					else
-					{
+					{					
 						number_of_frames=map->number_of_frames;
 						map->activation_front=map->frame_number;
 						map->frame_number=0;
@@ -3868,7 +3987,7 @@ mapping_window.
 				temp_char1=temp_file_name+strlen(temp_file_name);
 				temp_char2=(char *)NULL;
 			}
-			for (frame_number=0;frame_number<number_of_frames;frame_number++)
+			for (frame_number=0;frame_number<number_of_frames-1;frame_number++)
 			{
 				if (SINGLE_ACTIVATION== *(map->type))
 				{
@@ -3984,6 +4103,10 @@ mapping_window.
 					{
 						write_map_tiff_file(temp_file_name,mapping_window);
 					} break;
+					case JPG_FILE_FORMAT:
+					{
+						write_map_jpg_file(temp_file_name,mapping_window);
+					} break;
 				}
 			}
 			DEALLOCATE(temp_file_name);
@@ -4085,6 +4208,25 @@ the mapping_window.
 	return (return_code);
 } /* write_map_animation_tiff_file */
 
+static int write_map_animation_jpg_file(char *file_name,void *mapping_window)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2001
+
+DESCRIPTION :
+This function writes the jpg files for drawing the animation associated with
+the mapping_window.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(write_map_animation_jpg_file);
+	return_code=write_map_animation_files(file_name,mapping_window,
+		JPG_FILE_FORMAT);
+	LEAVE;
+
+	return (return_code);
+} /* write_map_animation_jpg_file */
+
 static struct Mapping_window *create_Mapping_window(
 	struct Mapping_window **address,char *open,
 	struct Mapping_window **current_address,Widget activation,Widget parent,
@@ -4149,10 +4291,14 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				(XtPointer)identify_mapping_print_rgb_butt},
 			{"identify_mapping_print_tiff_but",
 				(XtPointer)identify_mapping_print_tiff_but},
+			{"identify_mapping_print_jpg_but",
+				(XtPointer)identify_mapping_print_jpg_but},
 			{"id_mapping_print_animation_rgb",
 				(XtPointer)id_mapping_print_animation_rgb},
 			{"id_mapping_print_animation_tiff",
 				(XtPointer)id_mapping_print_animation_tiff},
+			{"id_mapping_print_animation_jpg",
+				(XtPointer)id_mapping_print_animation_jpg},
 			{"identify_mapping_region_choice",
 				(XtPointer)identify_mapping_region_choice},
 			{"identify_mapping_region_pull_do",
@@ -4212,8 +4358,10 @@ the created mapping window.  If unsuccessful, NULL is returned.
 			{"write_map_postscript_file_data",(XtPointer)NULL},
 			{"write_map_rgb_file_data",(XtPointer)NULL},
 			{"write_map_tiff_file_data",(XtPointer)NULL},
+			{"write_map_jpg_file_data",(XtPointer)NULL},
 			{"write_map_animate_rgb_file_data",(XtPointer)NULL},
 			{"write_map_animate_tiff_file_dat",(XtPointer)NULL},
+			{"write_map_animate_jpg_file_dat",(XtPointer)NULL},
 			{"mapping_rig",(XtPointer)NULL},
 			{"identifying_colour",(XtPointer)NULL}
 		};
@@ -4290,8 +4438,10 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				(mapping->print_menu).postscript_button=(Widget)NULL;
 				(mapping->print_menu).rgb_button=(Widget)NULL;
 				(mapping->print_menu).tiff_button=(Widget)NULL;
+				(mapping->print_menu).jpg_button=(Widget)NULL;
 				(mapping->print_menu).animate_rgb_button=(Widget)NULL;
 				(mapping->print_menu).animate_tiff_button=(Widget)NULL;
+				(mapping->print_menu).animate_jpg_button=(Widget)NULL;
 				mapping->close_button=(Widget)NULL;
 				mapping->mapping_area=(Widget)NULL;
 				mapping->mapping_area_2d=(Widget)NULL;
@@ -4331,14 +4481,19 @@ the created mapping window.  If unsuccessful, NULL is returned.
 						REGULAR,write_map_rgb_file,(void *)mapping,1,user_interface);
 					identifier_list[6].value=(XtPointer)create_File_open_data(".tif",
 						REGULAR,write_map_tiff_file,(void *)mapping,1,user_interface);
-					identifier_list[7].value=(XtPointer)create_File_open_data(".rgb",
+					identifier_list[7].value=(XtPointer)create_File_open_data(".jpg",
+						REGULAR,write_map_jpg_file,(void *)mapping,1,user_interface);
+					identifier_list[8].value=(XtPointer)create_File_open_data(".rgb",
 						REGULAR,write_map_animation_rgb_file,(void *)mapping,1,
 						user_interface);
-					identifier_list[8].value=(XtPointer)create_File_open_data(".tif",
+					identifier_list[9].value=(XtPointer)create_File_open_data(".tif",
 						REGULAR,write_map_animation_tiff_file,(void *)mapping,1,
 						user_interface);
-					identifier_list[9].value=(XtPointer)rig_pointer;
-					identifier_list[10].value=(XtPointer)identifying_colour;
+					identifier_list[10].value=(XtPointer)create_File_open_data(".jpg",
+						REGULAR,write_map_animation_jpg_file,(void *)mapping,1,
+						user_interface);
+					identifier_list[11].value=(XtPointer)rig_pointer;
+					identifier_list[12].value=(XtPointer)identifying_colour;
 					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(mapping_window_hierarchy,
 						identifier_list,XtNumber(identifier_list)))
 					{
@@ -4700,6 +4855,7 @@ properties.  Then the mapping window is opened.
 							/* ghost the print animation button */
 							XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
 							XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
+							XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
 						} break;
 						case ANALYSIS_ASSOCIATE:
 						{
@@ -4742,6 +4898,7 @@ properties.  Then the mapping window is opened.
 								/* ghost the print animation button */
 								XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
 								XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
+								XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
 							}
 						} break;
 						default:

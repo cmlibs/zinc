@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : drawing_2d.c
 
-LAST MODIFIED 12 May 2000
+LAST MODIFIED 23 May 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -210,7 +210,7 @@ the memory for <**drawing> and changes <*drawing> to NULL.
 
 unsigned long *get_Drawing_2d_image(struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 12 May 2000
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Allocates an image, suitable for passing to the image_utilities, and fills it
@@ -219,7 +219,7 @@ with the current contents of the <drawing>.
 {
 	XImage *pixel_image;
 	Display *display;
-	int column,row,row_padding;
+	int column,row;
 	Pixel pixel;
 	struct Colour_map_pixel *colour_map_entry;
 	struct LIST(Colour_map_pixel) *colour_map_list;
@@ -257,8 +257,7 @@ with the current contents of the <drawing>.
 				if (ALLOCATE(image,unsigned long,(((drawing->width)*3)/4+1)*(drawing->height)))
 				{
 					image_entry=(unsigned char *)image;
-					row=drawing->height;
-					row_padding=(4-((drawing->width)*3)%4)%4;
+					row=drawing->height;				
 					while (image&&(row>0))
 					{
 						row--;
@@ -300,9 +299,7 @@ with the current contents of the <drawing>.
 								image_entry++;
 							}
 							column++;
-						}
-						/* make sure that rows are long aligned */
-						image_entry += row_padding;
+						}					
 					}
 				}
 				else

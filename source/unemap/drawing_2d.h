@@ -94,7 +94,7 @@ the memory for <**drawing> and changes <*drawing> to NULL.
 
 unsigned long *get_Drawing_2d_image(struct Drawing_2d *drawing);
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Allocates an image, suitable for passing to the image_utilities, and fills it

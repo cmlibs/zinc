@@ -30,6 +30,7 @@ incremented by 1. This pattern is expected by the ENUMERATOR macros.
 Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 ==============================================================================*/
 {
+	JPG_FILE_FORMAT,
 	POSTSCRIPT_FILE_FORMAT,
 	RAW_FILE_FORMAT,
 	RGB_FILE_FORMAT,
