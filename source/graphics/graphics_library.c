@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : graphics_library.c
 
-LAST MODIFIED : 24 November 1998
+LAST MODIFIED : 5 December 2001
 
 DESCRIPTION :
 Functions for interfacing with the graphics library.
 ==============================================================================*/
 #if defined (OPENGL_API)
+#include <math.h>
 #include <string.h>
 #include <X11/Xlib.h>
 #include <GL/glu.h>
@@ -134,13 +135,144 @@ Sets up the default light, material and light model for the graphics library.
 	return (return_code);
 } /* initialize_graphics_library */
 
+int gtMatrix_is_identity(gtMatrix *matrix)
+/*******************************************************************************
+LAST MODIFIED : 28 November 2001
+
+DESCRIPTION :
+Returns true if <matrix> is the 4x4 identity
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(gtMatrix_is_identity);
+	if (matrix)
+	{
+		return_code = 
+			((*matrix)[0][0] == 1.0) &&
+			((*matrix)[0][1] == 0.0) &&
+			((*matrix)[0][2] == 0.0) &&
+			((*matrix)[0][3] == 0.0) &&
+			((*matrix)[1][0] == 0.0) &&
+			((*matrix)[1][1] == 1.0) &&
+			((*matrix)[1][2] == 0.0) &&
+			((*matrix)[1][3] == 0.0) &&
+			((*matrix)[2][0] == 0.0) &&
+			((*matrix)[2][1] == 0.0) &&
+			((*matrix)[2][2] == 1.0) &&
+			((*matrix)[2][3] == 0.0) &&
+			((*matrix)[3][0] == 0.0) &&
+			((*matrix)[3][1] == 0.0) &&
+			((*matrix)[3][2] == 0.0) &&
+			((*matrix)[3][3] == 1.0);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "gtMatrix_is_identity.  Missing matrix");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gtMatrix_is_identity */
+
+int gtMatrix_match(gtMatrix *matrix1, gtMatrix *matrix2)
+/*******************************************************************************
+LAST MODIFIED : 28 November 2001
+
+DESCRIPTION :
+Returns true if <matrix1> and <matrix2> are identical.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(gtMatrix_match);
+	if (matrix1 && matrix2)
+	{
+		return_code = 
+			((*matrix1)[0][0] == (*matrix2)[0][0]) &&
+			((*matrix1)[0][1] == (*matrix2)[0][1]) &&
+			((*matrix1)[0][2] == (*matrix2)[0][2]) &&
+			((*matrix1)[0][3] == (*matrix2)[0][3]) &&
+			((*matrix1)[1][0] == (*matrix2)[1][0]) &&
+			((*matrix1)[1][1] == (*matrix2)[1][1]) &&
+			((*matrix1)[1][2] == (*matrix2)[1][2]) &&
+			((*matrix1)[1][3] == (*matrix2)[1][3]) &&
+			((*matrix1)[2][0] == (*matrix2)[2][0]) &&
+			((*matrix1)[2][1] == (*matrix2)[2][1]) &&
+			((*matrix1)[2][2] == (*matrix2)[2][2]) &&
+			((*matrix1)[2][3] == (*matrix2)[2][3]) &&
+			((*matrix1)[3][0] == (*matrix2)[3][0]) &&
+			((*matrix1)[3][1] == (*matrix2)[3][1]) &&
+			((*matrix1)[3][2] == (*matrix2)[3][2]) &&
+			((*matrix1)[3][3] == (*matrix2)[3][3]);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "gtMatrix_match.  Missing matrices");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gtMatrix_match */
+
+int gtMatrix_match_with_tolerance(gtMatrix *matrix1, gtMatrix *matrix2,
+	float tolerance)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2001
+
+DESCRIPTION :
+Returns true if <matrix1> and <matrix2> have no components different by
+more than <tolerance> times the largest absolute value in either matrix.
+==============================================================================*/
+{
+	float abs_value, difference, max_abs_value, max_difference;
+	int i, j, return_code;
+
+	ENTER(gtMatrix_match_with_tolerance);
+	if (matrix1 && matrix2 && (0.0 <= tolerance) && (1.0 >= tolerance))
+	{
+		max_abs_value = 0.0;
+		max_difference = 0.0;
+		for (i = 0; i < 4; i++)
+		{
+			for (j = 0; j < 4; j++)
+			{
+				if ((abs_value = fabs((*matrix1)[i][j])) > max_abs_value)
+				{
+					max_abs_value = abs_value;
+				}
+				if ((abs_value = fabs((*matrix2)[i][j])) > max_abs_value)
+				{
+					max_abs_value = abs_value;
+				}
+				if ((difference = fabs((*matrix2)[i][j] - (*matrix1)[i][j])) >
+					max_difference)
+				{
+					max_difference = difference;
+				}
+			}
+		}
+		return_code = (max_difference <= (tolerance*max_abs_value));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gtMatrix_match_with_tolerance.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gtMatrix_match_with_tolerance */
+
 #if defined (OPENGL_API)
 /*
 *  File scope variables
 */
 static int fontOffset = 27000;
 										/* ^ Is there any way to make sure this doesn't clash? */
-
 
 void wrapperReadMatrix(GLenum matrixName,gtMatrix *theMatrix)
 /*******************************************************************************

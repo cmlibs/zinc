@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_library.h
 
-LAST MODIFIED : 14 November 1996
+LAST MODIFIED : 5 December 2001
 
 DESCRIPTION :
 Functions and structures for interfacing with the graphics library.
@@ -48,6 +48,7 @@ extern int graphics_library_open;
 Global functions
 ----------------
 */
+
 int open_graphics_library(void);
 /*******************************************************************************
 LAST MODIFIED : 23 March 1993
@@ -70,6 +71,32 @@ LAST MODIFIED : 14 November 1996
 
 DESCRIPTION :
 Sets up the default light, material and light model for the graphics library.
+==============================================================================*/
+
+int gtMatrix_is_identity(gtMatrix *matrix);
+/*******************************************************************************
+LAST MODIFIED : 28 November 2001
+
+DESCRIPTION :
+Returns true if <matrix> is the 4x4 identity
+==============================================================================*/
+
+int gtMatrix_match(gtMatrix *matrix1, gtMatrix *matrix2);
+/*******************************************************************************
+LAST MODIFIED : 28 November 2001
+
+DESCRIPTION :
+Returns true if <matrix1> and <matrix2> are identical.
+==============================================================================*/
+
+int gtMatrix_match_with_tolerance(gtMatrix *matrix1, gtMatrix *matrix2,
+	float tolerance);
+/*******************************************************************************
+LAST MODIFIED : 5 December 2001
+
+DESCRIPTION :
+Returns true if <matrix1> and <matrix2> have no components different by
+more than <tolerance> times the largest absolute value in either matrix.
 ==============================================================================*/
 
 #if defined (OPENGL_API)
