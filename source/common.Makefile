@@ -480,10 +480,10 @@ define BuildNormalTarget
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o $(1).tmp $(ALL_FLAGS) `cat object.list` $(4) ; \
+	$(LINK) -o $(1).tmp $(ALL_FLAGS) `cat object.list` $(4) && \
 	if [ -f $(2)/$(1) ]; then \
 		rm $(2)/$(1) ; \
-	fi ; \
+	fi && \
 	cp $(1).tmp $(2)/$(1) ;
 endef
 
@@ -502,7 +502,7 @@ define BuildStaticLibraryTarget
 	ar $(AR_FLAGS) cr $(1).tmp `cat object.list` && \
 	if [ -f $(2)/$(1) ]; then \
 		rm $(2)/$(1) ; \
-	fi ; \
+	fi && \
 	cp $(1).tmp $(2)/$(1) ;
 endef
 
