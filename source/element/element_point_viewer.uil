@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : element_point_viewer.uil
 !
-! LAST MODIFIED : 9 June 2000
+! LAST MODIFIED : 20 June 2000
 !
 ! DESCRIPTION :
 ! Dialog for selecting an element point, viewing and editing its fields and
@@ -22,15 +22,21 @@ procedure
 	elem_pt_v_id_grid_field_form;
 	elem_pt_v_id_grid_value_text;
 	elem_pt_v_id_viewer_form;
+	elem_pt_v_id_apply_options_btn;
+	elem_pt_v_id_apply_options;
+	elem_pt_v_id_match_grid_btn;
+	elem_pt_v_id_match_field_form;
 
 	elem_pt_v_disc_text_CB;
 	elem_pt_v_point_number_text_CB;
 	elem_pt_v_xi_text_CB;
 	elem_pt_v_grid_value_text_CB;
-	elem_pt_v_ok_CB;
+	elem_pt_v_apply_options_btn_CB;
+	elem_pt_v_match_grid_btn_CB;
 	elem_pt_v_apply_CB;
+	elem_pt_v_apply_all_CB;
 	elem_pt_v_revert_CB;
-	elem_pt_v_cancel_CB;
+	elem_pt_v_close_CB;
 
 identifier
 	!Pointer to data specific to this instance of the elem_pt_v widget
@@ -56,9 +62,126 @@ object
 			};
 		controls
 			{
+			XmForm elem_pt_v_apply_options_form;
+			XmSeparatorGadget elem_pt_v_apply_separator;
 			XmRowColumn elem_pt_v_select;
 			XmFrame elem_pt_v_viewer_frame;
 			XmRowColumn elem_pt_v_control;
+			};
+		};
+!*******************************************************************************
+	elem_pt_v_apply_options_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+  		XmToggleButtonGadget elem_pt_v_apply_options_btn;
+			XmRowColumn elem_pt_v_apply_options;
+			};
+		};
+  elem_pt_v_apply_options_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+      XmNlabelString = compound_string("Apply options");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				elem_pt_v_id_apply_options_btn(elem_pt_v_structure);
+      XmNvalueChangedCallback = procedure
+				elem_pt_v_apply_options_btn_CB(elem_pt_v_structure);
+      };
+    };
+	elem_pt_v_apply_options: XmRowColumn
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget =  elem_pt_v_apply_options_btn;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmVERTICAL;
+!			XmNnumColumns = 1;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+				XmSeparatorGadget{};
+				XmRowColumn	elem_pt_v_match_grid_entry;
+    	};
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				elem_pt_v_id_apply_options(elem_pt_v_structure);
+      };
+		};
+  elem_pt_v_match_grid_entry: XmRowColumn
+    {
+		arguments
+			{
+!			XmNmarginHeight = 0;
+!			XmNmarginWidth = 0;
+!			XmNspacing = 0;
+			XmNorientation = XmVERTICAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmToggleButtonGadget elem_pt_v_match_grid_btn;
+      XmForm elem_pt_v_match_field_form;
+      };
+    };
+  elem_pt_v_match_grid_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Set all points with matching:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				elem_pt_v_id_match_grid_btn(elem_pt_v_structure);
+      XmNvalueChangedCallback = procedure
+				elem_pt_v_match_grid_btn_CB(elem_pt_v_structure);
+      };
+    };
+	elem_pt_v_match_field_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				elem_pt_v_id_match_field_form(elem_pt_v_structure);
+			};
+		};
+!*******************************************************************************
+	elem_pt_v_apply_separator: XmSeparatorGadget
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = elem_pt_v_apply_options_form;
+			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		};
 !*******************************************************************************
@@ -68,7 +191,8 @@ object
 			{
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNrightAttachment = XmATTACH_FORM;
-			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = elem_pt_v_apply_separator;
 			XmNbottomAttachment = XmATTACH_NONE;
 			XmNmarginHeight = 0;
 			XmNmarginWidth = 0;
@@ -489,25 +613,14 @@ object
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNtopAttachment = XmATTACH_NONE;
 			XmNbottomAttachment = XmATTACH_FORM;
+			XmNentryAlignment = XmALIGNMENT_CENTER;
 			};
 		controls
 			{
-			XmPushButtonGadget elem_pt_v_control_ok;
 			XmPushButtonGadget elem_pt_v_control_apply;
+			XmPushButtonGadget elem_pt_v_control_apply_all;
 			XmPushButtonGadget elem_pt_v_control_revert;
-			XmPushButtonGadget elem_pt_v_control_cancel;
-			};
-		};
-	elem_pt_v_control_ok: XmPushButtonGadget
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("OK");
-			XmNfontList = button_font;
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedure elem_pt_v_ok_CB(elem_pt_v_structure);
+			XmPushButtonGadget elem_pt_v_control_close;
 			};
 		};
 	elem_pt_v_control_apply: XmPushButtonGadget
@@ -519,8 +632,20 @@ object
 			};
 		callbacks
 			{
+			XmNactivateCallback = procedure elem_pt_v_apply_CB(elem_pt_v_structure);
+			};
+		};
+	elem_pt_v_control_apply_all: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Apply All");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
 			XmNactivateCallback =
-				procedure elem_pt_v_apply_CB(elem_pt_v_structure);
+				procedure elem_pt_v_apply_all_CB(elem_pt_v_structure);
 			};
 		};
 	elem_pt_v_control_revert: XmPushButtonGadget
@@ -536,17 +661,17 @@ object
 				procedure elem_pt_v_revert_CB(elem_pt_v_structure);
 			};
 		};
-	elem_pt_v_control_cancel: XmPushButtonGadget
+	elem_pt_v_control_close: XmPushButtonGadget
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Cancel");
+			XmNlabelString = compound_string("Close");
 			XmNfontList = button_font;
 			};
 		callbacks
 			{
 			XmNactivateCallback =
-				procedure elem_pt_v_cancel_CB(elem_pt_v_structure);
+				procedure elem_pt_v_close_CB(elem_pt_v_structure);
 			};
 		};
 !*******************************************************************************

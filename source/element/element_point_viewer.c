@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -13,6 +13,7 @@ selected element point, or set it if entered in this dialog.
 #include <Xm/MwmUtil.h>
 #include <Xm/Xm.h>
 #include <Xm/TextF.h>
+#include <Xm/ToggleBG.h>
 #endif /* defined (MOTIF) */
 #include "choose/choose_enumerator.h"
 #include "choose/text_choose_fe_element.h"
@@ -38,7 +39,7 @@ static MrmHierarchy element_point_viewer_hierarchy;
 
 struct Element_point_viewer
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 20 June 2000
 
 DESCRIPTION :
 Contains all the information carried by the element_point_viewer widget.
@@ -62,6 +63,9 @@ Contains all the information carried by the element_point_viewer widget.
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	/* field components whose values have been modified stored in following */
 	struct LIST(Field_value_index_ranges) *modified_field_components;
+	/* apply will set same values to all grid points with this field the same,
+		 if non-NULL */
+	struct Computed_field *match_grid_field;
 	/* widgets */
 	Pixel editable_background_color,non_editable_background_color;
 	Widget element_form,element_widget,
@@ -69,7 +73,8 @@ Contains all the information carried by the element_point_viewer widget.
 		xi_discretization_mode_form,xi_discretization_mode_widget,
 		discretization_number_entry,discretization_text,point_number_text,xi_text,
 		grid_number_entry,grid_field_form,grid_field_widget,grid_value_text,
-		viewer_form,viewer_widget;
+		viewer_form,viewer_widget,apply_options_button,apply_options,
+		match_grid_button,match_grid_field_form,match_grid_field_widget;
 	Widget widget,window_shell;
 }; /* element_point_viewer_struct */
 
@@ -100,6 +105,14 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_viewer,Element_point_viewer, \
 	grid_value_text)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_viewer,Element_point_viewer, \
 	viewer_form)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_viewer,Element_point_viewer, \
+	apply_options_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_viewer,Element_point_viewer, \
+	apply_options)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_viewer,Element_point_viewer, \
+	match_grid_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(element_point_viewer,Element_point_viewer, \
+	match_grid_field_form)
 
 static int Element_point_viewer_get_grid(
 	struct Element_point_viewer *element_point_viewer)
@@ -190,7 +203,7 @@ Ensures xi is correct for the currently selected element point, if any.
 static int Element_point_viewer_set_viewer_element_point(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 14 June 2000
+LAST MODIFIED : 20 June 2000
 
 DESCRIPTION :
 Gets the current element_point, makes a copy of its element if not NULL,
@@ -234,6 +247,8 @@ and passes it to the element_point_viewer_widget.
 		}
 		/* pass identifier with copy_element to viewer widget */
 		temp_element_point_identifier.element=element_point_viewer->element_copy;
+		temp_element_point_identifier.top_level_element=
+			element_point_viewer->element_copy;
 		/* clear modified_components */
 		REMOVE_ALL_OBJECTS_FROM_LIST(Field_value_index_ranges)(
 			element_point_viewer->modified_field_components);
@@ -318,7 +333,7 @@ selection. Does nothing if no current element point.
 static int Element_point_viewer_refresh_elements(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 9 June 2000
+LAST MODIFIED : 20 June 2000
 
 DESCRIPTION :
 Updates the element shown in the chooser to match that for the current point.
@@ -333,10 +348,8 @@ Updates the element shown in the chooser to match that for the current point.
 		TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
 			element_point_viewer->element_widget,
 			element_point_viewer->element_point_identifier.element);
-		TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(FE_element)(
+		TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
 			element_point_viewer->top_level_element_widget,
-			FE_element_is_top_level_parent_of_element,
-			(void *)element_point_viewer->element_point_identifier.element,
 			element_point_viewer->element_point_identifier.top_level_element);
 	}
 	else
@@ -639,7 +652,7 @@ value otherwise N/A.
 static int Element_point_viewer_refresh_grid_value_text(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 20 June 2000
 
 DESCRIPTION :
 Updates the grid_value text field. If there is a current element point, writes
@@ -663,7 +676,8 @@ the field value, otherwise N/A.
 				(top_level_element=
 					element_point_viewer->element_point_identifier.top_level_element)&&
 				(grid_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-					element_point_viewer->grid_field_widget)))
+					element_point_viewer->grid_field_widget))&&
+				Computed_field_is_defined_in_element(grid_field,element))
 			{
 				if (field_value_string=Computed_field_evaluate_as_string_in_element(
 					grid_field,element,element_point_viewer->xi,top_level_element))
@@ -743,6 +757,56 @@ Fills the widgets for choosing the element point with the current values.
 	return (return_code);
 } /* Element_point_viewer_refresh_chooser_widgets */
 
+static int Element_point_viewer_refresh_match_grid_field(
+	struct Element_point_viewer *element_point_viewer)
+/*******************************************************************************
+LAST MODIFIED : 20 June 2000
+
+DESCRIPTION :
+Makes the button & chooser widgets reflect the current values of the
+match_grid_field.
+==============================================================================*/
+{
+	int field_set,return_code;
+ 
+	ENTER(Element_point_viewer_refresh_match_grid_field);
+	if (element_point_viewer)
+	{
+		return_code=1;
+		/* make sure the current field is shown, if any */
+		if (element_point_viewer->match_grid_field&&
+			(element_point_viewer->match_grid_field !=
+				CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+					element_point_viewer->match_grid_field_widget)))
+		{
+			if (!CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
+				element_point_viewer->match_grid_field_widget,
+				element_point_viewer->match_grid_field))
+			{
+				element_point_viewer->match_grid_field=
+					(struct Computed_field *)NULL;
+			}
+		}
+		/* give the button and chooser the correct appearance */
+		field_set=((struct Computed_field *)NULL !=
+			element_point_viewer->match_grid_field);
+		XmToggleButtonGadgetSetState(element_point_viewer->match_grid_button,
+			/*state*/field_set,/*notify*/False);
+		XtSetSensitive(element_point_viewer->match_grid_field_widget,
+			field_set);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_viewer_refresh_match_grid_field.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_point_viewer_refresh_match_grid_field */
+
 static void Element_point_viewer_element_point_ranges_selection_change(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Element_point_ranges_selection_changes *changes,
@@ -807,7 +871,7 @@ Callback for change in the global element_point selection.
 static void Element_point_viewer_update_element(Widget widget,
 	void *element_point_viewer_void,void *element_void)
 /*******************************************************************************
-LAST MODIFIED : 9 June 2000
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
 Callback for change of element.
@@ -815,40 +879,39 @@ Callback for change of element.
 {
 	FE_value element_to_top_level[9];
 	struct Element_point_viewer *element_point_viewer;
+	struct FE_element *element;
 
 	ENTER(Element_point_viewer_update_element);
 	USE_PARAMETER(widget);
 	if (element_point_viewer=
 		(struct Element_point_viewer *)element_point_viewer_void)
 	{
-		element_point_viewer->element_point_identifier.element=
-			(struct FE_element *)element_void;
-		if (element_point_viewer->element_point_identifier.element)
+		/* don't select elements until there is a top_level_element */
+		if (element_point_viewer->element_point_identifier.top_level_element&&
+			(element=(struct FE_element *)element_void))
 		{
-			/* get top_level_element, keeping existing one if possible */
-			element_point_viewer->element_point_identifier.top_level_element=
-				FE_element_get_top_level_element_conversion(
-					element_point_viewer->element_point_identifier.element,
-					element_point_viewer->element_point_identifier.top_level_element,
-					(struct GROUP(FE_element) *)NULL,/*face_number*/-1,
-					element_to_top_level);
-			TEXT_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(FE_element)(
-				element_point_viewer->top_level_element_widget,
-				FE_element_is_top_level_parent_of_element,
-				(void *)element_point_viewer->element_point_identifier.element,
-				element_point_viewer->element_point_identifier.top_level_element);
-			element_point_viewer->element_point_number=0;
-			if (XI_DISCRETIZATION_CELL_CORNERS==
-				element_point_viewer->element_point_identifier.xi_discretization_mode)
+			element_point_viewer->element_point_identifier.element=element;
+			if (element)
 			{
-				Element_point_viewer_get_grid(element_point_viewer);
+				/* get top_level_element, keeping existing one if possible */
+				element_point_viewer->element_point_identifier.top_level_element=
+					FE_element_get_top_level_element_conversion(
+						element_point_viewer->element_point_identifier.element,
+						element_point_viewer->element_point_identifier.top_level_element,
+						(struct GROUP(FE_element) *)NULL,/*face_number*/-1,
+						element_to_top_level);
+				TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+					element_point_viewer->top_level_element_widget,
+					element_point_viewer->element_point_identifier.top_level_element);
+				element_point_viewer->element_point_number=0;
+				if (XI_DISCRETIZATION_CELL_CORNERS==
+					element_point_viewer->element_point_identifier.xi_discretization_mode)
+				{
+					Element_point_viewer_get_grid(element_point_viewer);
+				}
+				Element_point_viewer_calculate_xi(element_point_viewer);
+				Element_point_viewer_select_current_point(element_point_viewer);
 			}
-			Element_point_viewer_calculate_xi(element_point_viewer);
-			Element_point_viewer_select_current_point(element_point_viewer);
-		}
-		else
-		{
-			Element_point_viewer_set_viewer_element_point(element_point_viewer);
 		}
 	}
 	else
@@ -862,27 +925,73 @@ Callback for change of element.
 static void Element_point_viewer_update_top_level_element(Widget widget,
 	void *element_point_viewer_void,void *top_level_element_void)
 /*******************************************************************************
-LAST MODIFIED : 9 June 2000
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
 Callback for change of top_level_element.
 ==============================================================================*/
 {
+	int i;
 	struct Element_point_viewer *element_point_viewer;
+	struct FE_element *top_level_element;
 
 	ENTER(Element_point_viewer_update_top_level_element);
 	USE_PARAMETER(widget);
 	if (element_point_viewer=
 		(struct Element_point_viewer *)element_point_viewer_void)
 	{
-		element_point_viewer->element_point_identifier.top_level_element=
-			(struct FE_element *)top_level_element_void;
-		if (element_point_viewer->element_point_identifier.element)
+		if (top_level_element=(struct FE_element *)top_level_element_void)
 		{
+			if (element_point_viewer->element_point_identifier.element)
+			{
+				if (top_level_element&&
+					FE_element_is_top_level_parent_of_element(top_level_element,
+						(void *)element_point_viewer->element_point_identifier.element))
+				{
+					element_point_viewer->element_point_identifier.top_level_element=
+						top_level_element;
+				}
+				else
+				{
+					element_point_viewer->element_point_identifier.top_level_element=
+						FIRST_OBJECT_IN_MANAGER_THAT(FE_element)(
+							FE_element_is_top_level_parent_of_element,
+							(void *)element_point_viewer->element_point_identifier.element,
+							element_point_viewer->element_manager);
+					TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+						element_point_viewer->top_level_element_widget,
+						element_point_viewer->element_point_identifier.top_level_element);
+				}
+			}
+			else
+			{
+				/* use the top_level_element for the element too */
+				element_point_viewer->element_point_identifier.element=
+					top_level_element;
+				TEXT_CHOOSE_OBJECT_SET_OBJECT(FE_element)(
+					element_point_viewer->element_widget,
+					element_point_viewer->element_point_identifier.element);
+				element_point_viewer->element_point_identifier.top_level_element=
+					top_level_element;
+				/* get the element point at the centre of top_level_element */
+				element_point_viewer->element_point_identifier.xi_discretization_mode=
+					XI_DISCRETIZATION_EXACT_XI;
+				for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+				{
+					element_point_viewer->element_point_identifier.number_in_xi[i]=1;
+					element_point_viewer->xi[i]=
+						element_point_viewer->element_point_identifier.exact_xi[i]=0.5;
+				}
+				element_point_viewer->element_point_number=0;
+				/* try to replace with a grid point, if possible */
+				Element_point_viewer_get_grid(element_point_viewer);
+			}
 			Element_point_viewer_select_current_point(element_point_viewer);
 		}
 		else
 		{
+			/* must be no element if no top_level_element */
+			element_point_viewer->element_point_identifier.element=top_level_element;
 			Element_point_viewer_set_viewer_element_point(element_point_viewer);
 		}
 	}
@@ -1281,11 +1390,423 @@ Called when entry is made into the grid_value_text field.
 	LEAVE;
 } /* Element_point_viewer_grid_value_text_CB */
 
+static void Element_point_viewer_apply_options_button_CB(Widget widget,
+	void *element_point_viewer_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 June 2000
+
+DESCRIPTION :
+Toggles visibility of apply options panel.
+==============================================================================*/
+{
+	struct Element_point_viewer *element_point_viewer;
+
+	ENTER(Element_point_viewer_apply_options_button_CB);
+	USE_PARAMETER(call_data);
+	if (widget&&(element_point_viewer=
+		(struct Element_point_viewer *)element_point_viewer_void))
+	{
+		if (XmToggleButtonGadgetGetState(widget))
+		{
+			XtManageChild(element_point_viewer->apply_options);
+		}
+		else
+		{
+			XtUnmanageChild(element_point_viewer->apply_options);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_viewer_apply_options_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_viewer_apply_options_button_CB */
+
+static void Element_point_viewer_match_grid_button_CB(Widget widget,
+	void *element_point_viewer_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 20 June 2000
+
+DESCRIPTION :
+Toggles the use of a match grid field when applying the changes made in the
+viewer. When set, this field applies the same modified values to all points
+with the same value of this field. Used chiefly to ensure that values set at
+grid points on common element boundaries are the same for the elements on either
+side.
+==============================================================================*/
+{
+	struct Element_point_viewer *element_point_viewer;
+
+	ENTER(Element_point_viewer_match_grid_button_CB);
+	USE_PARAMETER(call_data);
+	if (widget&&(element_point_viewer=
+		(struct Element_point_viewer *)element_point_viewer_void))
+	{
+		if (element_point_viewer->match_grid_field)
+		{
+			element_point_viewer->match_grid_field=(struct Computed_field *)NULL;
+		}
+		else
+		{
+			/* get grid field from widget */
+			element_point_viewer->match_grid_field=
+				CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+					element_point_viewer->match_grid_field_widget);
+		}
+		Element_point_viewer_refresh_match_grid_field(element_point_viewer);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_viewer_match_grid_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_viewer_match_grid_button_CB */
+
+static void Element_point_viewer_update_match_grid_field(Widget widget,
+	void *element_point_viewer_void,void *match_grid_field_void)
+/*******************************************************************************
+LAST MODIFIED : 20 June 2000
+
+DESCRIPTION :
+Callback for change of match grid field.
+==============================================================================*/
+{
+	struct Element_point_viewer *element_point_viewer;
+
+	ENTER(Element_point_viewer_update_match_grid_field);
+	USE_PARAMETER(widget);
+	if (element_point_viewer=
+		(struct Element_point_viewer *)element_point_viewer_void)
+	{
+		/* skip messages from chooser if grayed out */
+		if (element_point_viewer->match_grid_field)
+		{
+			element_point_viewer->match_grid_field=
+				(struct Computed_field *)match_grid_field_void;
+			Element_point_viewer_refresh_match_grid_field(element_point_viewer);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_viewer_update_match_grid_field.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_viewer_update_match_grid_field */
+
+static int Element_point_viewer_apply_changes(
+	struct Element_point_viewer *element_point_viewer,int apply_all)
+/*******************************************************************************
+LAST MODIFIED : 22 June 2000
+
+DESCRIPTION :
+Makes the element point change global. If <apply_all> then apply the changes to
+all element points in the global selection. Note that values can only be
+applied to element points that are grid_points - warnings will be given if
+attempts are made to apply changes at element points in other locations.
+Furthermore, if the <element_point_viewer>
+==============================================================================*/
+{
+	char *field_name;
+	int return_code;
+	struct Element_point_ranges_grid_to_multi_range_data grid_to_multi_range_data;
+	struct Element_point_ranges_identifier source_identifier;
+	struct Element_point_ranges_set_grid_values_data set_grid_values_data;
+	struct FE_element_grid_to_Element_point_ranges_list_data grid_to_list_data;
+	struct LIST(Element_point_ranges) *element_point_ranges_list;
+
+	ENTER(Element_point_viewer_apply_changes);
+	if (element_point_viewer&&
+		element_point_viewer->element_point_identifier.element&&
+		element_point_viewer->element_copy)
+	{
+		return_code=1;
+		/* only apply if new values have been entered for field components */
+		if (0<NUMBER_IN_LIST(Field_value_index_ranges)(
+			element_point_viewer->modified_field_components))
+		{
+			if (element_point_ranges_list=CREATE(LIST(Element_point_ranges))())
+			{
+				/* put current element point in list */
+				return_code=
+					Element_point_ranges_list_add_element_point(element_point_ranges_list,
+						&(element_point_viewer->element_point_identifier),
+						element_point_viewer->element_point_number);
+				/* if apply_all, add all other selected element points */
+				if (return_code&&apply_all)
+				{
+					FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+						Element_point_ranges_add_to_list,(void *)element_point_ranges_list,
+						Element_point_ranges_selection_get_element_point_ranges_list(
+							element_point_viewer->element_point_ranges_selection));
+				}
+				/* if match_grid_field, get range of its values for all points in
+					 element_point_ranges_list, then get list of all grid-points with
+					 those values. Usually this is the grid_point_number field, and this
+					 feature is used to overcome the fact that we store values for same-
+					 numbered grid-point more than once on common element boundaries */
+				if (return_code&&element_point_viewer->match_grid_field)
+				{
+					/* check field is wrapper for single component integer FE_field */
+					if (Computed_field_get_type_finite_element(
+						element_point_viewer->match_grid_field,
+						&(grid_to_multi_range_data.grid_fe_field))&&
+						(1==get_FE_field_number_of_components(
+							grid_to_multi_range_data.grid_fe_field))&&
+						(INT_VALUE==get_FE_field_value_type(
+							grid_to_multi_range_data.grid_fe_field)))
+					{
+						/* get multi-range of values of match_grid_field for points in
+							 element_point_ranges_list */
+						if (grid_to_multi_range_data.multi_range=CREATE(Multi_range)())
+						{
+							/* if following flag is cleared it means that some of the selected
+								 element points are not grid points */
+							grid_to_multi_range_data.all_points_native=1;
+							return_code=FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+								Element_point_ranges_grid_to_multi_range,
+								(void *)&grid_to_multi_range_data,element_point_ranges_list);
+							if (!grid_to_multi_range_data.all_points_native)
+							{
+								display_message(WARNING_MESSAGE,
+									"Values can not be set at element points not on grid");
+							}
+							if (return_code)
+							{
+								REMOVE_ALL_OBJECTS_FROM_LIST(Element_point_ranges)(
+									element_point_ranges_list);
+								/* select all grid points with grid_fe_field in multi-range */
+								grid_to_list_data.element_point_ranges_list=
+									element_point_ranges_list;
+								grid_to_list_data.grid_fe_field=
+									grid_to_multi_range_data.grid_fe_field;
+								grid_to_list_data.grid_value_ranges=
+									grid_to_multi_range_data.multi_range;
+								/* inefficient: go through every element in manager */
+								return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+									FE_element_grid_to_Element_point_ranges_list,
+									(void *)&grid_to_list_data,
+									element_point_viewer->element_manager);
+							}
+							DESTROY(Multi_range)(&(grid_to_multi_range_data.multi_range));
+						}
+						else
+						{
+							return_code=0;
+						}
+						if (!return_code)
+						{
+							GET_NAME(Computed_field)(
+								element_point_viewer->match_grid_field,&field_name);
+							display_message(WARNING_MESSAGE,
+								"Element_point_viewer_apply_changes.  Could not set same values"
+								"for points with same value of field %s",field_name);
+							DEALLOCATE(field_name);
+						}
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"Element_point_viewer_apply_changes.  "
+							"Invalid match_grid_field");
+						return_code=0;
+					}
+				}
+				if (return_code)
+				{
+					if (0<NUMBER_IN_LIST(Element_point_ranges)(element_point_ranges_list))
+					{
+						/* to modify, need the element point to take values from */
+						if (return_code=
+							COPY(Element_point_ranges_identifier)(&source_identifier,
+								&(element_point_viewer->element_point_identifier)))
+						{
+							source_identifier.element=element_point_viewer->element_copy;
+							/* note values taken from the local element_copy... */
+							set_grid_values_data.source_identifier=&source_identifier;
+							set_grid_values_data.source_element_point_number=
+								element_point_viewer->element_point_number;
+							/* need the components that have been modified ... */
+							set_grid_values_data.field_component_ranges_list=
+								element_point_viewer->modified_field_components;
+							/* ... and the manager to modify them in */
+							set_grid_values_data.element_manager=
+								element_point_viewer->element_manager;
+							/* if following flag is cleared it means that some of the selected
+								 element points are not grid points */
+							set_grid_values_data.all_points_native=1;
+							/* cache manager modifies when more than one being changed */
+							MANAGER_BEGIN_CACHE(FE_element)(
+								element_point_viewer->element_manager);
+							return_code=FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+								Element_point_ranges_set_grid_values,
+								(void *)&set_grid_values_data,element_point_ranges_list);
+							if (!set_grid_values_data.all_points_native)
+							{
+								display_message(WARNING_MESSAGE,
+									"Values could not be set at element points not on grid");
+							}
+							MANAGER_END_CACHE(FE_element)(
+								element_point_viewer->element_manager);
+						}
+						if (!return_code)
+						{
+							display_message(ERROR_MESSAGE,
+								"Element_point_viewer_apply_changes.  Could not set values");
+						}
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"Element_point_viewer_apply_changes.  "
+							"No grid points to apply changes to");
+						return_code=0;
+					}
+				}
+				DESTROY(LIST(Element_point_ranges))(&(element_point_ranges_list));
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"Element_point_viewer_apply_changes.  Could not make list");
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,
+			"Element_point_viewer_apply_changes.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_point_viewer_apply_changes */
+
+static void Element_point_viewer_apply_CB(Widget widget,
+	void *element_point_viewer_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 16 June 2000
+
+DESCRIPTION :
+Callback for Apply button. Applies changes to the element point in the editor.
+==============================================================================*/
+{
+	struct Element_point_viewer *element_point_viewer;
+
+	ENTER(Element_point_viewer_apply_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (element_point_viewer=
+		(struct Element_point_viewer *)element_point_viewer_void)
+	{
+		Element_point_viewer_apply_changes(element_point_viewer,/*apply_all*/0);
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,
+			"Element_point_viewer_apply_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_viewer_apply_CB */
+
+static void Element_point_viewer_apply_all_CB(Widget widget,
+	void *element_point_viewer_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 16 June 2000
+
+DESCRIPTION :
+Callback for Apply all button. Applies changes to the element point in the
+editor and all other selected element points.
+==============================================================================*/
+{
+	struct Element_point_viewer *element_point_viewer;
+
+	ENTER(Element_point_viewer_apply_all_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (element_point_viewer=
+		(struct Element_point_viewer *)element_point_viewer_void)
+	{
+		Element_point_viewer_apply_changes(element_point_viewer,/*apply_all*/1);
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,
+			"Element_point_viewer_apply_all_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_viewer_apply_all_CB */
+
+static void Element_point_viewer_revert_CB(Widget widget,
+	void *element_point_viewer_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 16 June 2000
+
+DESCRIPTION :
+Callback for Revert button. Sends global element point values back to the
+editor widget, undoing any modifications.
+==============================================================================*/
+{
+	struct Element_point_viewer *element_point_viewer;
+
+	ENTER(Element_point_viewer_revert_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (element_point_viewer=
+		(struct Element_point_viewer *)element_point_viewer_void)
+	{
+		Element_point_viewer_set_viewer_element_point(element_point_viewer);
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,
+			"Element_point_viewer_revert_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_viewer_revert_CB */
+
+static void Element_point_viewer_close_CB(Widget widget,
+	void *element_point_viewer_void,void *call_data)
+/*******************************************************************************
+LAST MODIFIED : 16 June 2000
+
+DESCRIPTION :
+Callback from the Close button.
+Also called when "close" is selected from the window menu, or it is double
+clicked. How this is made to occur is as follows. The dialog has its
+XmNdeleteResponse == XmDO_NOTHING, and a window manager protocol callback for
+WM_DELETE_WINDOW has been set up with XmAddWMProtocolCallback to call this
+function in response to the close command. See CREATE for more details.
+==============================================================================*/
+{
+	struct Element_point_viewer *element_point_viewer;
+
+	ENTER(Element_point_viewer_close_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (element_point_viewer=
+		(struct Element_point_viewer *)element_point_viewer_void)
+	{
+		DESTROY(Element_point_viewer)(
+			element_point_viewer->element_point_viewer_address);
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,
+			"Element_point_viewer_close_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_viewer_close_CB */
+
 static void Element_point_viewer_element_change(
 	struct MANAGER_MESSAGE(FE_element) *message,
 	void *element_point_viewer_void)
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 20 June 2000
 
 DESCRIPTION :
 Callback from the element manager for changes to elements. If the element
@@ -1310,6 +1831,8 @@ object cause updates.
 				if (!(message->object_changed) || (message->object_changed ==
 					element_point_viewer->element_point_identifier.element))
 				{
+					/* update grid_text in case number changed */
+					Element_point_viewer_refresh_grid_value_text(element_point_viewer);
 					Element_point_viewer_set_viewer_element_point(element_point_viewer);
 				}
 			} break;
@@ -1378,194 +1901,6 @@ currently being viewed is affected by the change, re-send to viewer.
 	LEAVE;
 } /* Element_point_viewer_node_change */
 
-static int Element_point_viewer_apply_changes(
-	struct Element_point_viewer *element_point_viewer)
-/*******************************************************************************
-LAST MODIFIED : 14 June 2000
-
-DESCRIPTION :
-Makes the element_point change global.
-==============================================================================*/
-{
-	int i,number_of_faces,return_code;
-	struct FE_element *element,*face_element;
-
-	ENTER(Element_point_viewer_apply_changes);
-	if (element_point_viewer)
-	{
-		if ((element=element_point_viewer->element_point_identifier.element) &&
-			element_point_viewer->element_copy)
-		{
-			/* get faces from global element and put in element_copy so not lost */
-			number_of_faces=element->shape->number_of_faces;
-			for (i=0;i<number_of_faces;i++)
-			{
-				if (get_FE_element_face(element,i,&face_element))
-				{
-					set_FE_element_face(element_point_viewer->element_copy,i,face_element);
-				}
-			}
-			if (MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
-				element_point_viewer->element_point_identifier.element,
-				element_point_viewer->element_copy,
-				element_point_viewer->element_manager))
-			{
-				/* redisplay the grid_value_text as field may have been changed */
-				Element_point_viewer_refresh_grid_value_text(element_point_viewer);
-				return_code=1;
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,
-					"Element_point_viewer_apply_changes.  Failed");
-				return_code=0;
-			}
-			/* clear the faces of element_copy as messes up exterior calculations
-				 for graphics created from them */
-			for (i=0;i<number_of_faces;i++)
-			{
-				set_FE_element_face(element_point_viewer->element_copy,i,
-					(struct FE_element *)NULL);
-			}
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(WARNING_MESSAGE,
-			"Element_point_viewer_apply_changes.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Element_point_viewer_apply_changes */
-
-static void Element_point_viewer_ok_CB(Widget widget,
-	void *element_point_viewer_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 24 May 2000
-
-DESCRIPTION :
-Callback for change of selected element_point from select widget; sets
-element_point in the element_point_viewer_widget.
-==============================================================================*/
-{
-	struct Element_point_viewer *element_point_viewer;
-
-	ENTER(Element_point_viewer_ok_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (element_point_viewer=
-		(struct Element_point_viewer *)element_point_viewer_void)
-	{
-		if (Element_point_viewer_apply_changes(element_point_viewer))
-		{
-			DESTROY(Element_point_viewer)(
-				element_point_viewer->element_point_viewer_address);
-		}
-	}
-	else
-	{
-		display_message(WARNING_MESSAGE,
-			"Element_point_viewer_ok_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_point_viewer_ok_CB */
-
-static void Element_point_viewer_apply_CB(Widget widget,
-	void *element_point_viewer_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 24 May 2000
-
-DESCRIPTION :
-Callback for change of selected element_point from select widget; sets element_point in the
-element_point_viewer_widget.
-==============================================================================*/
-{
-	struct Element_point_viewer *element_point_viewer;
-
-	ENTER(Element_point_viewer_apply_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (element_point_viewer=
-		(struct Element_point_viewer *)element_point_viewer_void)
-	{
-		Element_point_viewer_apply_changes(element_point_viewer);
-	}
-	else
-	{
-		display_message(WARNING_MESSAGE,
-			"Element_point_viewer_apply_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_point_viewer_apply_CB */
-
-static void Element_point_viewer_revert_CB(Widget widget,
-	void *element_point_viewer_void,
-	void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 24 May 2000
-
-DESCRIPTION :
-Callback for change of selected element_point from select widget; sets element_point in the
-element_point_viewer_widget.
-==============================================================================*/
-{
-	struct Element_point_viewer *element_point_viewer;
-
-	ENTER(Element_point_viewer_revert_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (element_point_viewer=
-		(struct Element_point_viewer *)element_point_viewer_void)
-	{
-		Element_point_viewer_set_viewer_element_point(element_point_viewer);
-	}
-	else
-	{
-		display_message(WARNING_MESSAGE,
-			"Element_point_viewer_revert_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_point_viewer_revert_CB */
-
-static void Element_point_viewer_cancel_CB(Widget widget,
-	void *element_point_viewer_void,void *call_data)
-/*******************************************************************************
-LAST MODIFIED : 24 May 2000
-
-DESCRIPTION :
-Callback from the Cancel button.
-Also called when "close" is selected from the window menu, or it is double
-clicked. How this is made to occur is as follows. The dialog has its
-XmNdeleteResponse == XmDO_NOTHING, and a window manager protocol callback for
-WM_DELETE_WINDOW has been set up with XmAddWMProtocolCallback to call this
-function in response to the close command. See CREATE for more details.
-==============================================================================*/
-{
-	struct Element_point_viewer *element_point_viewer;
-
-	ENTER(Element_point_viewer_cancel_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (element_point_viewer=
-		(struct Element_point_viewer *)element_point_viewer_void)
-	{
-		DESTROY(Element_point_viewer)(
-			element_point_viewer->element_point_viewer_address);
-	}
-	else
-	{
-		display_message(WARNING_MESSAGE,
-			"Element_point_viewer_cancel_CB.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Element_point_viewer_cancel_CB */
-
 /*
 Global functions
 ----------------
@@ -1580,7 +1915,7 @@ struct Element_point_viewer *CREATE(Element_point_viewer)(
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
 Creates a dialog for choosing element points and displaying and editing their
@@ -1590,9 +1925,8 @@ fields.
 	Atom WM_DELETE_WINDOW;
 	char **valid_strings;
 	Colormap cmap;
-	int i,init_widgets,number_of_faces,number_of_valid_strings,start,stop;
-	MANAGER_CONDITIONAL_FUNCTION(Computed_field)
-		*choose_field_conditional_function;
+	int i,init_widgets,number_of_faces,number_of_valid_strings,start,stop,
+		temp_element_point_number;
 	MrmType element_point_viewer_dialog_class;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Callback_data callback;
@@ -1625,6 +1959,14 @@ fields.
 			DIALOG_IDENTIFY(element_point_viewer,grid_value_text)},
 		{"elem_pt_v_id_viewer_form",(XtPointer)
 			DIALOG_IDENTIFY(element_point_viewer,viewer_form)},
+		{"elem_pt_v_id_apply_options_btn",(XtPointer)
+			DIALOG_IDENTIFY(element_point_viewer,apply_options_button)},
+		{"elem_pt_v_id_apply_options",(XtPointer)
+			DIALOG_IDENTIFY(element_point_viewer,apply_options)},
+		{"elem_pt_v_id_match_grid_btn",(XtPointer)
+			DIALOG_IDENTIFY(element_point_viewer,match_grid_button)},
+		{"elem_pt_v_id_match_field_form",(XtPointer)
+			DIALOG_IDENTIFY(element_point_viewer,match_grid_field_form)},
 		{"elem_pt_v_disc_text_CB",
 		 (XtPointer)Element_point_viewer_discretization_text_CB},
 		{"elem_pt_v_point_number_text_CB",
@@ -1633,10 +1975,14 @@ fields.
 		 (XtPointer)Element_point_viewer_xi_text_CB},
 		{"elem_pt_v_grid_value_text_CB",
 		 (XtPointer)Element_point_viewer_grid_value_text_CB},
-		{"elem_pt_v_ok_CB",(XtPointer)Element_point_viewer_ok_CB},
+		{"elem_pt_v_apply_options_btn_CB",(XtPointer)
+			Element_point_viewer_apply_options_button_CB},
+		{"elem_pt_v_match_grid_btn_CB",(XtPointer)
+			Element_point_viewer_match_grid_button_CB},
 		{"elem_pt_v_apply_CB",(XtPointer)Element_point_viewer_apply_CB},
+		{"elem_pt_v_apply_all_CB",(XtPointer)Element_point_viewer_apply_all_CB},
 		{"elem_pt_v_revert_CB",(XtPointer)Element_point_viewer_revert_CB},
-		{"elem_pt_v_cancel_CB",(XtPointer)Element_point_viewer_cancel_CB}
+		{"elem_pt_v_close_CB",(XtPointer)Element_point_viewer_close_CB}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
@@ -1683,6 +2029,9 @@ fields.
 						element_point_viewer->element_point_identifier.exact_xi[i]=0.5;
 				}
 				element_point_viewer->element_point_number=0;
+				element_point_viewer->match_grid_field=
+					FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+						"grid_point_number",computed_field_manager);
 				/* initialise widgets */
 				element_point_viewer->element_form=(Widget)NULL;
 				element_point_viewer->element_widget=(Widget)NULL;
@@ -1700,6 +2049,11 @@ fields.
 				element_point_viewer->grid_value_text=(Widget)NULL;
 				element_point_viewer->viewer_form=(Widget)NULL;
 				element_point_viewer->viewer_widget=(Widget)NULL;
+				element_point_viewer->apply_options_button=(Widget)NULL;
+				element_point_viewer->apply_options=(Widget)NULL;
+				element_point_viewer->match_grid_button=(Widget)NULL;
+				element_point_viewer->match_grid_field_form=(Widget)NULL;
+				element_point_viewer->match_grid_field_widget=(Widget)NULL;
 				element_point_viewer->widget=(Widget)NULL;
 				element_point_viewer->window_shell=(Widget)NULL;
 				/* initialise the structure */
@@ -1752,14 +2106,10 @@ fields.
 								(struct FE_element *)NULL);
 						}
 					}
-					choose_field_conditional_function=
-						Computed_field_is_scalar_integer_grid_in_element;
 				}
 				else
 				{
 					element_point_viewer->element_copy=(struct FE_element *)NULL;
-					choose_field_conditional_function=
-						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 				}
 				/* get callbacks from global element_point selection */
 				Element_point_ranges_selection_add_callback(
@@ -1784,7 +2134,7 @@ fields.
 						XmInternAtom(XtDisplay(element_point_viewer->window_shell),
 							"WM_DELETE_WINDOW",False);
 					XmAddWMProtocolCallback(element_point_viewer->window_shell,
-						WM_DELETE_WINDOW,Element_point_viewer_cancel_CB,
+						WM_DELETE_WINDOW,Element_point_viewer_close_CB,
 						element_point_viewer);
 					/* Register the shell with the busy signal list */
 					create_Shell_list_item(&(element_point_viewer->window_shell),
@@ -1818,6 +2168,8 @@ fields.
 									cmap,"gray",&color,&unused);
 								element_point_viewer->non_editable_background_color=color.pixel;
 
+								/* apply options are initially hidden */
+								XtUnmanageChild(element_point_viewer->apply_options);
 								XtManageChild(element_point_viewer->widget);
 								init_widgets=1;
 								if (!(element_point_viewer->element_widget=
@@ -1835,11 +2187,11 @@ fields.
 								if (!(element_point_viewer->top_level_element_widget=
 									CREATE_TEXT_CHOOSE_OBJECT_WIDGET(FE_element)(
 										element_point_viewer->top_level_element_form,
-										element_point_viewer->element_point_identifier.top_level_element,
-										element_manager,FE_element_is_top_level_parent_of_element,
-										(void *)(element_point_viewer->element_point_identifier.element),
-										FE_element_to_any_element_string,
-										any_element_string_to_FE_element)))
+										element_point_viewer->
+										element_point_identifier.top_level_element,
+										element_manager,FE_element_is_top_level,(void *)NULL,
+										FE_element_to_element_string,
+										element_string_to_FE_element)))
 								{
 									init_widgets=0;
 								}
@@ -1859,17 +2211,15 @@ fields.
 									FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 										"grid_point_number",computed_field_manager)))
 								{
-									
 									grid_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-										choose_field_conditional_function,
-										(void *)element_point_viewer->element_copy,
+										Computed_field_is_scalar_integer,(void *)NULL,
 										computed_field_manager);
 								}
 								if (!(element_point_viewer->grid_field_widget=
 									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 										element_point_viewer->grid_field_form,grid_field,
-										computed_field_manager,choose_field_conditional_function,
-										(void *)element_point_viewer->element_copy)))
+										computed_field_manager,Computed_field_is_scalar_integer,
+										(void *)NULL)))
 								{
 									init_widgets=0;
 								}
@@ -1877,7 +2227,17 @@ fields.
 								COPY(Element_point_ranges_identifier)(
 									&temp_element_point_identifier,
 									&(element_point_viewer->element_point_identifier));
+								temp_element_point_number=
+									element_point_viewer->element_point_number;
+								if (temp_element_point_identifier.element)
+								{
+									Element_point_make_top_level(&temp_element_point_identifier,
+										&temp_element_point_number);
+								}
+								/* pass identifier with copy_element to viewer widget */
 								temp_element_point_identifier.element=
+									element_point_viewer->element_copy;
+								temp_element_point_identifier.top_level_element=
 									element_point_viewer->element_copy;
 								if (!create_element_point_viewer_widget(
 									&(element_point_viewer->viewer_widget),
@@ -1885,7 +2245,16 @@ fields.
 									computed_field_package,
 									element_point_viewer->modified_field_components,
 									&temp_element_point_identifier,
-									element_point_viewer->element_point_number))
+									temp_element_point_number))
+								{
+									init_widgets=0;
+								}
+								if (!(element_point_viewer->match_grid_field_widget=
+									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
+										element_point_viewer->match_grid_field_form,
+										element_point_viewer->match_grid_field,
+										computed_field_manager,Computed_field_is_scalar_integer,
+										(void *)NULL)))
 								{
 									init_widgets=0;
 								}
@@ -1908,6 +2277,13 @@ fields.
 									TEXT_CHOOSE_OBJECT_SET_CALLBACK(FE_element)(
 										element_point_viewer->top_level_element_widget,&callback);
 									Element_point_viewer_refresh_chooser_widgets(
+										element_point_viewer);
+									callback.procedure=
+										Element_point_viewer_update_match_grid_field;
+									CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
+										element_point_viewer->match_grid_field_widget,
+										&callback);
+									Element_point_viewer_refresh_match_grid_field(
 										element_point_viewer);
 									element_point_viewer->element_manager_callback_id=
 										MANAGER_REGISTER(FE_element)(
