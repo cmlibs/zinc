@@ -877,6 +877,84 @@ stored in the <edit_info>.
 	return (return_code);
 } /* FE_node_edit_vector */
 
+static int Node_tool_define_field_at_node_from_picked_coordinates(
+	struct Node_tool *node_tool,struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 29 September 2000
+
+DESCRIPTION :
+Defines the coordinate_field at the node using the position of the picked
+object's coordinate field.
+==============================================================================*/
+{
+	FE_value coordinates[3];
+	int return_code;
+	struct Computed_field *coordinate_field, *picked_coordinate_field,
+		*rc_coordinate_field, *rc_picked_coordinate_field;
+
+	ENTER(Node_tool_define_field_at_node_at_interaction_volume);
+	if (node_tool&&node)
+	{
+		coordinate_field=node_tool->coordinate_field;
+		if (rc_coordinate_field=
+			Computed_field_begin_wrap_coordinate_field(coordinate_field))
+		{
+			if (!(picked_coordinate_field = GT_element_settings_get_coordinate_field(
+				node_tool->gt_element_settings)))
+			{
+				picked_coordinate_field = GT_element_group_get_default_coordinate_field(
+					node_tool->gt_element_group);
+			}
+			rc_picked_coordinate_field = Computed_field_begin_wrap_coordinate_field(
+				picked_coordinate_field);
+			if (Computed_field_evaluate_at_node(rc_picked_coordinate_field,
+				node,coordinates))
+			{
+				if (Node_tool_define_field_at_node(node_tool,node)&&
+					Computed_field_set_values_at_node(rc_coordinate_field,
+						node,coordinates))
+				{
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Node_tool_define_field_at_node_from_picked_coordinates.  Failed");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Node_tool_define_field_at_node_from_picked_coordinates.  "
+					"Unable to evaluate picked position.");
+				return_code=0;
+			}
+			Computed_field_clear_cache(rc_picked_coordinate_field);
+			Computed_field_end_wrap(&rc_picked_coordinate_field);
+			Computed_field_clear_cache(rc_coordinate_field);
+			Computed_field_end_wrap(&rc_coordinate_field);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Node_tool_define_field_at_node_from_picked_coordinates.  "
+				"Could not wrap coordinate field");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_define_field_at_node_from_picked_coordinates.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_tool_define_field_at_node_from_picked_coordinates */
+
 static int Node_tool_define_field_at_node_at_interaction_volume(
 	struct Node_tool *node_tool,struct FE_node *node,
 	struct Interaction_volume *interaction_volume)
@@ -1473,8 +1551,8 @@ release.
 									if (!Computed_field_is_defined_at_node(
 										node_tool->coordinate_field,picked_node))
 									{
-										Node_tool_define_field_at_node_at_interaction_volume(
-											node_tool,picked_node,interaction_volume);
+										Node_tool_define_field_at_node_from_picked_coordinates(
+											node_tool,picked_node);
 									}
 								}
 							}
