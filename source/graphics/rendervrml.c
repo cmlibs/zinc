@@ -246,7 +246,7 @@ Writes VRML that defines the texture
 	{
 		Texture_get_physical_size(texture,&width,&height);
 		fprintf(file,"texture  ImageTexture\n{\n");
-		fprintf(file,"  url %s\n",Texture_get_image_file_name(texture));
+		fprintf(file,"  url \"%s\"\n",Texture_get_image_file_name(texture));
 		fprintf(file,"} #ImageTexture\n");
 		fprintf(file,"textureTransform  TextureTransform\n{\n");
 		fprintf(file,"  translation 0 0\n" );
