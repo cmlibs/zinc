@@ -718,7 +718,6 @@ UNEMAP_SRCS = \
 	unemap/beekeeper.c \
 	unemap/cardiomapp.c \
 	unemap/delauney.c \
-	unemap/edf.c \
 	unemap/eimaging_time_dialog.c \
 	unemap/drawing_2d.c \
 	unemap/interpolate.c \
@@ -779,7 +778,6 @@ UNEMAP_SRCS = \
 	unemap/beekeeper.c \
 	unemap/cardiomapp.c \
 	unemap/delauney.c \
-	unemap/edf.c \
 	unemap/eimaging_time_dialog.c \
 	unemap/drawing_2d.c \
 	unemap/interpolate.c \
