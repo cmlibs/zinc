@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 6 April 2001
+LAST MODIFIED : 10 April 2001
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -885,7 +885,7 @@ ranges and sets the view parameters so that everything can be seen.
 static void Graphics_window_print_button_CB(Widget caller,
 	XtPointer *graphics_window_void,XmAnyCallbackStruct *caller_data)
 /*******************************************************************************
-LAST MODIFIED : 8 September 2000
+LAST MODIFIED : 10 April 2001
 
 DESCRIPTION :
 Callback for when the print_button is pressed.  Finds the x, y and z
@@ -899,19 +899,26 @@ ranges and sets the view parameters so that everything can be seen.
 	ENTER(Graphics_window_print_button_CB);
 	USE_PARAMETER(caller);
 	USE_PARAMETER(caller_data);
-	if (graphics_window=(struct Graphics_window *)graphics_window_void)
+	if (graphics_window = (struct Graphics_window *)graphics_window_void)
 	{
-		if (file_name=confirmation_get_write_filename((char *)NULL,
+		if (file_name = confirmation_get_write_filename((char *)NULL,
 			graphics_window->user_interface))
 		{
-			write_graphics_window_data.image_file_format=
-				Image_file_format_from_file_name(file_name);
-			write_graphics_window_data.image_orientation=PORTRAIT_ORIENTATION;
-			write_graphics_window_data.force_onscreen=0;
-			write_graphics_window_data.width = 0;
-			write_graphics_window_data.height = 0;
-			write_graphics_window_data.window = graphics_window;
-			write_Graphics_window_to_file(file_name,&write_graphics_window_data);
+			if (Image_file_format_from_file_name(file_name,
+				&write_graphics_window_data.image_file_format))
+			{
+				write_graphics_window_data.image_orientation = PORTRAIT_ORIENTATION;
+				write_graphics_window_data.force_onscreen = 0;
+				write_graphics_window_data.width = 0;
+				write_graphics_window_data.height = 0;
+				write_graphics_window_data.window = graphics_window;
+				write_Graphics_window_to_file(file_name, &write_graphics_window_data);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Print window:  Unknown image file format for file '%s'", file_name);
+			}
 		}
 	}
 	else
