@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_time.h
 
-LAST MODIFIED : 16 December 2002
+LAST MODIFIED : 19 September 2003
 
 DESCRIPTION :
 Implements computed fields that control the time behaviour.
@@ -10,9 +10,10 @@ Implements computed fields that control the time behaviour.
 #define COMPUTED_FIELD_TIME_H
 
 int Computed_field_register_types_time(
-	struct Computed_field_package *computed_field_package);
+	struct Computed_field_package *computed_field_package,
+	struct Time_keeper *time_keeper);
 /*******************************************************************************
-LAST MODIFIED : 16 December 2002
+LAST MODIFIED : 19 September 2003
 
 DESCRIPTION :
 ==============================================================================*/

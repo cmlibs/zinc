@@ -24130,8 +24130,6 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->computed_field_package);
 			Computed_field_register_types_matrix_operations(
 				command_data->computed_field_package);
-			Computed_field_register_types_time(
-				command_data->computed_field_package);
 			Computed_field_register_types_vector_operations(
 				command_data->computed_field_package);
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)
@@ -24239,6 +24237,11 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		if(command_data->default_scene)
 		{
 			Scene_enable_time_behaviour(command_data->default_scene,
+				command_data->default_time_keeper);
+		}
+		if (command_data->computed_field_package && command_data->default_time_keeper)
+		{
+			Computed_field_register_types_time(command_data->computed_field_package,
 				command_data->default_time_keeper);
 		}
 
