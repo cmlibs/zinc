@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 29 March 2000
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -732,10 +732,9 @@ Main program for unemap
 				application_main_loop is not infinite */
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_NODES )
-			DESTROY(FE_node_selection)(&(command_data.node_selection));
-			DESTROY(FE_element_selection)(&(command_data.element_selection));
-			DESTROY(Element_point_ranges_selection)(
-				&(command_data.element_point_ranges_selection));
+			DESTROY(FE_node_selection)(&node_selection);
+			DESTROY(FE_element_selection)(&element_selection);
+			DESTROY(Element_point_ranges_selection)(&element_point_ranges_selection);
 
 			DESTROY(Unemap_package)(&unemap_package);	
 			DESTROY(MANAGER(FE_field))(&fe_field_manager);
