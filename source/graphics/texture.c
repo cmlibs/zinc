@@ -841,6 +841,8 @@ Directly outputs the commands setting up the <texture>.
 			} break;
 			default:
 			{
+				/* make each row of the image start on a 4-byte boundary */
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 				Texture_get_type_and_format_from_storage_type(texture->storage,
 					texture->number_of_bytes_per_component, &type, &format);
 				number_of_components =
@@ -910,8 +912,6 @@ Directly outputs the commands setting up the <texture>.
 					}
 					if (return_code)
 					{
-						/* make each row of the image start on a 4-byte boundary */
-						glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 						switch (texture->dimension)
 						{
 							case 1:
@@ -4009,15 +4009,35 @@ execute_Texture should just call direct_render_Texture.
 							} break;
 							default:
 							{
-								/*???debug*/
-								printf("  default binding\n");
 								glBindTexture(texture_target, texture->texture_id);
 #if defined (EXT_subtexture)
 								Texture_get_type_and_format_from_storage_type(texture->storage,
 									&type, &format);
-								glTexSubImage2DEXT(texture_target, 0, 0, 0,
-									(GLint)(texture->width_texels), (GLint)(texture->height_texels),
-									format, type, (GLvoid *)(texture->image));
+								switch (texture->dimension)
+								{
+									case 1:
+									{
+										glTexSubImage1DEXT(texture_target, 0, 0, 0,
+											(GLint)(texture->width_texels),
+											(GLint)(texture->height_texels),
+											format, type, (GLvoid *)(texture->image));
+									} break;
+									case 2:
+									{
+										glTexSubImage2DEXT(texture_target, 0, 0, 0,
+											(GLint)(texture->width_texels),
+											(GLint)(texture->height_texels),
+											format, type, (GLvoid *)(texture->image));
+									} break;
+									case 3:
+									{
+										glTexSubImage3DEXT(texture_target, 0, 0, 0,
+											(GLint)(texture->width_texels),
+											(GLint)(texture->height_texels),
+											(GLint)(texture->depth_texels),
+											format, type, (GLvoid *)(texture->image));
+									} break;
+								}
 #else /* defined (EXT_subtexture) */
 								direct_render_Texture(texture);
 #endif /* defined (EXT_subtexture) */
