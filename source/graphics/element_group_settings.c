@@ -373,6 +373,10 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			{
 				DEACCESS(Computed_field)(&(settings->orientation_scale_field));
 			}
+			if (settings->label_field)
+			{
+				DEACCESS(Computed_field)(&(settings->label_field));
+			}
 			if (settings->volume_texture)
 			{
 				DEACCESS(VT_volume_texture)(&(settings->volume_texture));
@@ -397,6 +401,10 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			if (settings->material)
 			{
 				DEACCESS(Graphical_material)(&(settings->material));
+			}
+			if (settings->selected_material)
+			{
+				DEACCESS(Graphical_material)(&(settings->selected_material));
 			}
 			if (settings->data_field)
 			{
