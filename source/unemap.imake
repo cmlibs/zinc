@@ -464,8 +464,8 @@ COLOUR_SRCS = \
 CURVE_SRCS = \
 	curve/control_curve.c
 FINITE_ELEMENT_SRCS = \
-	finite_element/computed_field.c \
-	finite_element/computed_field_find_xi.c \
+	computed_field/computed_field.c \
+	computed_field/computed_field_find_xi.c \
 	finite_element/export_finite_element.c \
 	finite_element/field_value_index_ranges.c \
 	finite_element/finite_element_to_graphics_object.c \
