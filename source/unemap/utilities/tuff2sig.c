@@ -956,11 +956,11 @@ DESCRIPTION :
 												2000./(header_block.AmplifierSensitivity);
 											/*???DB.  From D_TUFF.CPP (line 1077), but Lan says that
 												range is too small for channels 33-64 */
-/*											if (((*device)->channel->gain<0.8)||
+											if (((*device)->channel->gain<0.8)||
 												(1.2<(*device)->channel->gain))
 											{
 												(*device)->channel->gain=1.;
-											}*/
+											}
 											(*device)->channel->offset=input_descriptor.CalOffset;
 											/*???debug */
 											printf("  %s.  %g %g\n",(*device)->description->name,
