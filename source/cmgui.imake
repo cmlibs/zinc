@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 27 November 2001
+XCOMM LAST MODIFIED : 3 December 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -934,8 +934,7 @@ THREE_D_DRAWING_SRCS = \
 	three_d_drawing/movie_extensions.c \
 	three_d_drawing/ThreeDDraw.c
 TRANSFORMATION_SRCS = \
-	transformation/transformation_editor.c \
-	transformation/transformation_editor_dialog.c 
+	transformation/transformation_editor.c
 TIME_SRCS = \
 	time/time.c \
 	time/time_keeper.c \

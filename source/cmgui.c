@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -674,7 +674,6 @@ Main program for the CMISS Graphical User Interface
 	command_data.data_viewer=(struct Node_viewer *)NULL;
 	command_data.node_viewer=(struct Node_viewer *)NULL;
 	command_data.element_point_viewer=(struct Element_point_viewer *)NULL;
-	command_data.transformation_editor_dialog=(Widget)NULL;
 	command_data.prompt_window=(struct Prompt_window *)NULL;
 	command_data.projection_window=(struct Projection_window *)NULL;
 	command_data.scene_editor = (struct Scene_editor *)NULL;
@@ -946,7 +945,7 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (OLD_CODE) */
 	/* FE_element manager */
 #if defined (OLD_CODE)
-		/*???DB.  In transistion */
+		/*???DB.  In transition */
 	all_FE_element=CREATE(LIST(FE_element))();
 #endif /* defined (OLD_CODE) */
 	rect_coord_system.type = RECTANGULAR_CARTESIAN;
