@@ -1186,6 +1186,8 @@ although its cache may be lost.
 				list_Computed_field_window_projection;
 			field->list_Computed_field_commands_function = 
 				list_Computed_field_window_projection_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
 		}
 		else
 		{
