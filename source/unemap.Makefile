@@ -577,7 +577,6 @@ SELECTION_SRCS = \
 	selection/element_selection.c \
 	selection/node_selection.c
 THREE_D_DRAWING_SRCS = \
-	three_d_drawing/dm_interface.c \
 	three_d_drawing/graphics_buffer.c \
 	three_d_drawing/movie_extensions.c \
 	three_d_drawing/ThreeDDraw.c
