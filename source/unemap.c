@@ -398,8 +398,8 @@ Main program for unemap
 	struct MANAGER(Computed_field) *computed_field_manager=
 		(struct MANAGER(Computed_field) *)NULL;
 	struct MANAGER(FE_basis) *fe_basis_manager=(struct MANAGER(FE_basis) *)NULL;
-	struct MANAGER(Graphical_material) *graphical_material_manager=
-		(struct MANAGER(Graphical_material) *)NULL;
+	struct Material_package *material_package =
+		(struct Material_package *)NULL;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager=
 		(struct MANAGER(Interactive_tool) *)NULL;
 	struct MANAGER(Light) *light_manager=(struct MANAGER(Light) *)NULL;
@@ -754,38 +754,21 @@ Main program for unemap
 			}
 		}
 		spectrum_manager=CREATE_MANAGER(Spectrum)();
-		if (graphical_material_manager=CREATE_MANAGER(Graphical_material)())
+		if (material_package=CREATE(Material_package)(texture_manager))
 		{
 			struct Colour colour;
 
-			if (default_graphical_material=
-				CREATE(Graphical_material)("default"))
-			{
-				/* ACCESS so can never be destroyed */
-				ACCESS(Graphical_material)(default_graphical_material);
-				if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(
-					default_graphical_material,graphical_material_manager))
-				{
-					DEACCESS(Graphical_material)(&(default_graphical_material));
-				}
-			}
+			default_graphical_material=Material_package_get_default_material(material_package);
+
 			/* create material "default_selected" to be bright red for highlighting
 				 selected graphics */
-			if (default_selected_material=CREATE(Graphical_material)(
-				"default_selected"))
+			if (default_selected_material=Material_package_get_default_selected_material(material_package))
 			{
 				colour.red=1.0;
 				colour.green=0.0;
 				colour.blue=0.0;
 				Graphical_material_set_ambient(default_selected_material,&colour);
 				Graphical_material_set_diffuse(default_selected_material,&colour);
-				/* ACCESS so can never be destroyed */
-				ACCESS(Graphical_material)(default_selected_material);
-				if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(
-					default_selected_material,graphical_material_manager))
-				{
-					DEACCESS(Graphical_material)(&default_selected_material);
-				}
 			}			
 			/* create material "electrode_selected" to be bright white for
 				 highlighting electrode graphics */
@@ -797,13 +780,7 @@ Main program for unemap
 				colour.blue=1.0;
 				Graphical_material_set_ambient(electrode_selected_material,&colour);
 				Graphical_material_set_diffuse(electrode_selected_material,&colour);
-				/* ACCESS so can never be destroyed */
-				ACCESS(Graphical_material)(electrode_selected_material);
-				if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(
-					electrode_selected_material,graphical_material_manager))
-				{
-					DEACCESS(Graphical_material)(&electrode_selected_material);
-				}
+				Material_package_manage_material(material_package, electrode_selected_material);
 			}						
 		}
 		if ((computed_field_package=CREATE(Computed_field_package)())&&
@@ -872,7 +849,7 @@ Main program for unemap
 			fe_basis_manager,root_cmiss_region,data_root_cmiss_region,
 			texture_manager,interactive_tool_manager,scene_manager,
 			light_model_manager,light_manager,spectrum_manager,
-			graphical_material_manager,glyph_list,
+			Material_package_get_material_manager(material_package),glyph_list,
 			default_graphical_material,computed_field_package,default_light,
 			default_light_model,
 #endif /* defined (UNEMAP_USE_3D) */
@@ -910,7 +887,7 @@ Main program for unemap
 				fe_basis_manager,
 				root_cmiss_region,
 				data_root_cmiss_region,
-				graphical_material_manager,
+				Material_package_get_material_manager(material_package),
 				default_graphical_material,
 				interactive_tool_manager,
 				light_manager,
@@ -1028,7 +1005,7 @@ Main program for unemap
 		DEACCESS(Graphical_material)(&default_graphical_material);			
 		DEACCESS(Graphical_material)(&default_selected_material);
 		DEACCESS(Graphical_material)(&electrode_selected_material);			
-		DESTROY(MANAGER(Graphical_material))(&graphical_material_manager);
+		DESTROY(Material_package)(&material_package);
 		DESTROY(MANAGER(Texture))(&texture_manager);
 		DEACCESS(Light_model)(&default_light_model);
 		DESTROY(MANAGER(Light_model))(&light_model_manager);
