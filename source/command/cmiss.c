@@ -22,6 +22,7 @@ Functions for executing cmiss commands.
 #include "cell/cell_interface.h"
 #include "cell/cell_window.h"
 #endif /* defined (CELL) */
+#include "comfile/comfile.h"
 #if defined (MOTIF)
 #include "comfile/comfile_window.h"
 #endif /* defined (MOTIF) */
@@ -26467,9 +26468,7 @@ Executes a READ command.
 {
 	int return_code;
 	struct Cmiss_command_data *command_data;
-#if defined (MOTIF)
 	struct Open_comfile_data open_comfile_data;
-#endif /* defined (MOTIF) */
 	struct Option_table *option_table;
 
 	ENTER(execute_command_read);
@@ -26482,7 +26481,6 @@ Executes a READ command.
 			if (state->current_token)
 			{
 				option_table = CREATE(Option_table)();
-#if defined (MOTIF)
 				/* comfile */
 				open_comfile_data.file_name=(char *)NULL;
 				open_comfile_data.example_flag=0;
@@ -26492,12 +26490,13 @@ Executes a READ command.
 				open_comfile_data.execute_command=command_data->execute_command;
 				open_comfile_data.set_command=command_data->set_command;
 				open_comfile_data.file_extension=".com";
+#if defined (MOTIF)
 				open_comfile_data.comfile_window_manager =
 					command_data->comfile_window_manager;
+#endif /* defined (MOTIF) */
 				open_comfile_data.user_interface=command_data->user_interface;
 				Option_table_add_entry(option_table, "comfile", NULL,
 					(void *)&open_comfile_data, open_comfile);
-#endif /* defined (MOTIF) */
 				return_code=Option_table_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}

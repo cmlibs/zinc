@@ -908,6 +908,8 @@ CHOOSE_INTERFACE_SRCS = \
 COLOUR_INTERFACE_SRCS = \
 	colour/colour_editor.c \
 	colour/edit_var.c 
+COMFILE_SRCS = \
+	comfile/comfile.c 
 COMFILE_INTERFACE_SRCS = \
 	comfile/comfile_window.c 
 COMMAND_SRCS = \
@@ -1131,6 +1133,7 @@ VIEW_INTERFACE_SRCS = \
 
 XCOMM DB.  makedepend has problems if too many files
 SRCS_1 = \
+	$(COMFILE_SRCS) \
 	$(COMMAND_SRCS) \
 	$(COMPUTED_FIELD_SRCS) \
 	$(CURVE_SRCS) \

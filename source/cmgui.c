@@ -1944,6 +1944,10 @@ Main program for the CMISS Graphical User Interface
 					DEALLOCATE(execute_string);
 				}
 
+#if defined (MOTIF)
+				coord_widget_finish();
+#endif /* defined (MOTIF) */
+
 				DESTROY(Execute_command)(&execute_command);
 				DESTROY(Execute_command)(&set_command);
 

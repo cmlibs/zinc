@@ -15,6 +15,7 @@ Definitions for the comfile window and structures.
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
+#include "user_interface/user_interface.h"
 
 /*
 Global types
@@ -34,21 +35,6 @@ The contents of this structure are private.
 DECLARE_LIST_TYPES(Comfile_window);
 
 DECLARE_MANAGER_TYPES(Comfile_window);
-
-struct Open_comfile_data
-/*******************************************************************************
-LAST MODIFIED : 18 April 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	char example_flag,*examples_directory,*example_symbol,*file_extension,
-		*file_name;
-	int execute_count;
-	struct Execute_command *execute_command,*set_command;
-	struct MANAGER(Comfile_window) *comfile_window_manager;
-	struct User_interface *user_interface;
-}; /* struct Open_comfile_data */
 
 /*
 Global functions
@@ -101,36 +87,4 @@ in the <comfile_window_manager>. Does so by appending a number in angle
 brackets.
 Up to the calling routine to deallocate the returned string.
 ==============================================================================*/
-
-int open_comfile(struct Parse_state *state,void *dummy_to_be_modified,
-	void *open_comfile_data_void);
-/*******************************************************************************
-LAST MODIFIED : 25 February 1997
-
-DESCRIPTION :
-Opens a comfile, and a window if it is to be executed.  If a comfile is not
-specified on the command line, a file selection box is presented to the user.
-==============================================================================*/
-
-#if defined (OLD_CODE)
-int open_comfile(struct Parse_state *state,
-	struct Execute_command *execute_command,
-	struct Modifier_entry *set_file_name_option_table,
-	struct User_interface *user_interface);
-/******************************************************************************
-LAST MODIFIED : 24 September 1996
-
-DESCRIPTION :
-Opens a comfile, and a window if it is to be executed.  If a comfile is not
-specified on the command line, a file selection box is presented to the user.
-=============================================================================*/
-
-int open_comfile_via_selection_box(char *file_name,void *execute_command_void);
-/*******************************************************************************
-LAST MODIFIED : 5 June 1996
-
-DESCRIPTION :
-Submits a command to open a comfile.
-==============================================================================*/
-#endif /* defined (OLD_CODE) */
 #endif /* !defined (COMFILE_WINDOW_H) */

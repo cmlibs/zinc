@@ -22,11 +22,6 @@ November 1997. Created from Scene description part of Drawing.
 ==============================================================================*/
 #include <stdio.h>
 #include <string.h>
-/*
-#include <math.h>
-#include <time.h>
-#include "view/coord.h"
-*/
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
