@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.cpp
 //
-// LAST MODIFIED : 23 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 // Finite element types - element, element/xi and finite element field.
@@ -71,7 +71,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_components>
 class Function_variable_matrix_components :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 9 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -110,7 +110,7 @@ class Function_variable_matrix_components :
 					} while ((i>0)&&(std::string(name)!=component_name));
 					if (std::string(name)==component_name)
 					{
-						row=i+1;
+						row_private=i+1;
 						value_private=Function_variable_value_handle(
 							new Function_variable_value_specific<Scalar>(
 							Function_variable_matrix_set_value_function<Scalar>));
@@ -143,13 +143,13 @@ class Function_variable_matrix_components :
 
 				out << *(function_finite_element->get_string_representation());
 				out << "[";
-				if (0==row)
+				if (0==row_private)
 				{
 					out << "*";
 				}
 				else
 				{
-					out << row;
+					out << row_private;
 				}
 				out << "]";
 				*return_string=out.str();
@@ -166,7 +166,7 @@ class Function_variable_matrix_components :
 				boost::dynamic_pointer_cast<Function_finite_element,Function>(
 				function())))
 			{
-				if (0==row)
+				if (0==row_private)
 				{
 					Function_size_type i,number_of_components=
 						function_finite_element->number_of_components();
@@ -187,7 +187,7 @@ class Function_variable_matrix_components :
 				{
 					Matrix result_matrix(1,1);
 
-					if ((function_finite_element->component_value)(row,
+					if ((function_finite_element->component_value)(row_private,
 						result_matrix(0,0)))
 					{
 						result=Function_handle(new Function_matrix<Scalar>(result_matrix));
@@ -236,11 +236,11 @@ class Function_variable_matrix_components :
 			Function_finite_element_handle function_finite_element;
 
 			result=false;
-			if (this&&(1==column)&&(function_finite_element=
+			if (this&&(1==column_private)&&(function_finite_element=
 				boost::dynamic_pointer_cast<Function_finite_element,Function>(
 				function())))
 			{
-				result=(function_finite_element->component_value)(row,value);
+				result=(function_finite_element->component_value)(row_private,value);
 			}
 
 			return (result);
@@ -3475,7 +3475,7 @@ bool Function_finite_element::component_value(Function_size_type number,
 Function_handle Function_finite_element::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -3492,8 +3492,8 @@ Function_handle Function_finite_element::evaluate(
 		xi_coordinates=(FE_value *)NULL;
 		if (equivalent(Function_handle(this),
 			atomic_variable_finite_element->function())&&
-			(0<atomic_variable_finite_element->row)&&field_private&&
-			(atomic_variable_finite_element->row<=number_of_components())&&
+			(0<atomic_variable_finite_element->row_private)&&field_private&&
+			(atomic_variable_finite_element->row_private<=number_of_components())&&
 			((node_private&&!element_private)||(!node_private&&element_private&&
 			(0<(element_dimension=get_FE_element_dimension(element_private)))&&
 			((Function_size_type)element_dimension==xi_private.size())&&
@@ -3502,7 +3502,8 @@ Function_handle Function_finite_element::evaluate(
 			FE_value fe_value;
 			int i,local_component_number;
 
-			local_component_number=(int)(atomic_variable_finite_element->row)-1;
+			local_component_number=
+				(int)(atomic_variable_finite_element->row_private)-1;
 			if (xi_coordinates)
 			{
 				for (i=0;i<element_dimension;i++)
@@ -4486,7 +4487,7 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 // ???DB.  Throw an exception for failure?
@@ -4524,8 +4525,8 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 		Function_variable_matrix_components,Function_variable>(atomic_variable))&&
 		equivalent(Function_handle(this),
 		atomic_variable_finite_element->function())&&
-		(0<atomic_variable_finite_element->row)&&field_private&&
-		(atomic_variable_finite_element->row<=number_of_components())&&
+		(0<atomic_variable_finite_element->row_private)&&field_private&&
+		(atomic_variable_finite_element->row_private<=number_of_components())&&
 		!node_private&&element_private&&(0<(local_number_of_xi=number_of_xi()))&&
 		((Function_size_type)local_number_of_xi==xi_private.size()))
 	{
@@ -4542,7 +4543,7 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 			atomic_independent_variables.end(),
 			Function_finite_element_check_derivative_functor(
 			Function_finite_element_handle(this),
-			atomic_variable_finite_element->row,zero_derivative,
+			atomic_variable_finite_element->row_private,zero_derivative,
 			nodal_values_variable,element_xi_variables.begin()));
 		if (zero_derivative)
 		{
@@ -4724,7 +4725,8 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 						int *component_monomial_info,local_component_number,
 							number_of_component_values;
 
-						local_component_number=(int)(atomic_variable_finite_element->row)-1;
+						local_component_number=
+							(int)(atomic_variable_finite_element->row_private)-1;
 						component_values=(FE_value *)NULL;
 						if (FE_element_field_values_get_component_values(
 							element_field_values,local_component_number,
@@ -5132,7 +5134,7 @@ bool Function_finite_element::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -5189,7 +5191,7 @@ bool Function_finite_element::set_value(
 			Function_variable_value>(atomic_value->value())))
 		{
 			result=value_scalar->set(components_private[
-				(atomic_variable_finite_element->row)-1],atomic_value);
+				(atomic_variable_finite_element->row_private)-1],atomic_value);
 		}
 	}
 	else if ((atomic_variable_nodal_values=boost::dynamic_pointer_cast<

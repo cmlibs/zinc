@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.cpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -99,7 +99,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_derivative_matrix>
 class Function_variable_matrix_derivative_matrix :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 // <column> and <row> start from one when referencing a matrix entry.  Zero
@@ -165,15 +165,15 @@ class Function_variable_matrix_derivative_matrix :
 						this->partial_independent_variables));
 					if (0==index)
 					{
-						if (this->row>matrix_reverse_iterator->size1())
+						if (this->row_private>matrix_reverse_iterator->size1())
 						{
-							this->row=0;
+							this->row_private=0;
 						}
-						if (this->column>matrix_reverse_iterator->size2())
+						if (this->column_private>matrix_reverse_iterator->size2())
 						{
-							this->column=0;
+							this->column_private=0;
 						}
-						if ((0!=this->row)&&(0!=this->column))
+						if ((0!=this->row_private)&&(0!=this->column_private))
 						{
 							value_private=Function_variable_value_handle(
 								new Function_variable_value_specific<Scalar>(
@@ -185,22 +185,22 @@ class Function_variable_matrix_derivative_matrix :
 						(this->partial_independent_variables).clear();
 						matrix_reverse_iterator=
 							(function_derivative_matrix->matrices).rend();
-						this->row=0;
-						this->column=0;
+						this->row_private=0;
+						this->column_private=0;
 					}
 				}
 				else
 				{
 					matrix_reverse_iterator=(function_derivative_matrix->matrices).rend();
-					this->row=0;
-					this->column=0;
+					this->row_private=0;
+					this->column_private=0;
 				}
 			}
 			else
 			{
 				(this->partial_independent_variables).clear();
-				this->row=0;
-				this->column=0;
+				this->row_private=0;
+				this->column_private=0;
 			}
 		};
 		// destructor
@@ -261,21 +261,21 @@ class Function_variable_matrix_derivative_matrix :
 						}
 					}
 					out << ")" << partial_independent_variables.size();
-					if ((0!=row)||(0!=column))
+					if ((0!=row_private)||(0!=column_private))
 					{
 						out << "[";
-						if (0!=row)
+						if (0!=row_private)
 						{
-							out << row;
+							out << row_private;
 						}
 						else
 						{
 							out << "*";
 						}
 						out << ",";
-						if (0!=column)
+						if (0!=column_private)
 						{
-							out << column;
+							out << column_private;
 						}
 						else
 						{
@@ -334,7 +334,7 @@ class Function_variable_matrix_derivative_matrix :
 			result=false;
 			if (this)
 			{
-				value=(*matrix_reverse_iterator)(row-1,column-1);
+				value=(*matrix_reverse_iterator)(row_private,column_private);
 				result=true;
 			}
 
@@ -352,8 +352,8 @@ class Function_variable_matrix_derivative_matrix :
 				Function_variable_matrix_derivative_matrix,Function_variable>(variable))
 			{
 				if (equivalent(function(),variable_derivative_matrix->function())&&
-					(row==variable_derivative_matrix->row)&&
-					(column==variable_derivative_matrix->column))
+					(row_private==variable_derivative_matrix->row_private)&&
+					(column_private==variable_derivative_matrix->column_private))
 				{
 					std::list<Function_variable_handle>::const_iterator
 						variable_iterator_1,variable_iterator_1_end,variable_iterator_2,
@@ -1296,7 +1296,7 @@ Function_handle Function_derivative_matrix::inverse()
 						{
 							for (j=0;j<number_of_rows;j++)
 							{
-								matrix_inverse(i,j)=(*matrix_inverse_handle)(i,j);
+								matrix_inverse(i,j)=(*matrix_inverse_handle)(i+1,j+1);
 							}
 						}
 					}
@@ -1779,7 +1779,7 @@ bool Function_derivative_matrix::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1803,8 +1803,8 @@ bool Function_derivative_matrix::set_value(
 		{
 			result=value_scalar->set(
 				(*(atomic_derivative_matrix_variable->matrix_reverse_iterator))(
-				(atomic_derivative_matrix_variable->row)-1,
-				(atomic_derivative_matrix_variable->column)-1),atomic_value);
+				(atomic_derivative_matrix_variable->row_private),
+				(atomic_derivative_matrix_variable->column_private)),atomic_value);
 		}
 	}
 

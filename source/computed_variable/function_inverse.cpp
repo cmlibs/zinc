@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_inverse.cpp
 //
-// LAST MODIFIED : 20 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -776,7 +776,7 @@ typedef boost::intrusive_ptr<Function_variable_value_tolerance>
 class Function_variable_value_tolerance :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -838,8 +838,8 @@ class Function_variable_value_tolerance :
 			Function_inverse_handle function_inverse;
 
 			result=false;
-			if ((1==row)&&(1==column)&&(function_inverse=boost::dynamic_pointer_cast<
-				Function_inverse,Function>(function())))
+			if ((1==row_private)&&(1==column_private)&&(function_inverse=
+				boost::dynamic_pointer_cast<Function_inverse,Function>(function())))
 			{
 				value=function_inverse->value_tolerance_value();
 				result=true;
@@ -865,7 +865,7 @@ typedef boost::intrusive_ptr<Function_variable_step_tolerance>
 
 class Function_variable_step_tolerance : public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -927,8 +927,8 @@ class Function_variable_step_tolerance : public Function_variable_matrix<Scalar>
 			Function_inverse_handle function_inverse;
 
 			result=false;
-			if ((1==row)&&(1==column)&&(function_inverse=boost::dynamic_pointer_cast<
-				Function_inverse,Function>(function())))
+			if ((1==row_private)&&(1==column_private)&&(function_inverse=
+				boost::dynamic_pointer_cast<Function_inverse,Function>(function())))
 			{
 				value=function_inverse->step_tolerance_value();
 				result=true;
@@ -955,7 +955,7 @@ typedef boost::intrusive_ptr<Function_variable_maximum_iterations>
 class Function_variable_maximum_iterations :
 	public Function_variable_matrix<Function_size_type>
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1021,8 +1021,8 @@ class Function_variable_maximum_iterations :
 			Function_inverse_handle function_inverse;
 
 			result=false;
-			if ((1==row)&&(1==column)&&(function_inverse=boost::dynamic_pointer_cast<
-				Function_inverse,Function>(function())))
+			if ((1==row_private)&&(1==column_private)&&(function_inverse=
+				boost::dynamic_pointer_cast<Function_inverse,Function>(function())))
 			{
 				value=function_inverse->maximum_iterations_value();
 				result=true;
@@ -1260,7 +1260,7 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1325,7 +1325,7 @@ bool Function_inverse::evaluate_derivative(Scalar& derivative,
 
 		if (derivative_matrix)
 		{
-			derivative=(*derivative_matrix)(0,0);
+			derivative=(*derivative_matrix)(1,1);
 			result=true;
 		}
 	}
