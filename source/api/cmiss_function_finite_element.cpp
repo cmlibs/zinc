@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function_finite_element.cpp
 
-LAST MODIFIED : 17 May 2004
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_function_element, Cmiss_function_element_xi
@@ -9,7 +9,11 @@ and Cmiss_function_finite_element objects.
 ==============================================================================*/
 
 #include <new>
+extern "C" {
+#include "finite_element/finite_element_region.h"
+}
 #include "api/cmiss_function_finite_element.h"
+#include "api/cmiss_region.h"
 #include "computed_variable/function_finite_element.hpp"
 
 /*
@@ -272,16 +276,31 @@ for success.
 	return (return_code);
 }
 
-Cmiss_function_id Cmiss_function_finite_element_create(Cmiss_FE_field_id field)
+Cmiss_function_id Cmiss_function_finite_element_create(Cmiss_region_id region,
+	char *field)
 /*******************************************************************************
-LAST MODIFIED : 4 May 2004
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
-Creates a Cmiss_function which represents the <field>.
+Creates a Cmiss_function which represents the <field> in <region>.
 ==============================================================================*/
 {
-	return (reinterpret_cast<Cmiss_function_id>(new Function_handle(
-		new Function_finite_element(field))));
+	Cmiss_function_id result;
+	struct FE_field *fe_field;
+	struct FE_region *fe_region;
+
+	result=0;
+	if (region&&field)
+	{
+		if ((fe_region=Cmiss_region_get_FE_region(region))&&
+			(fe_field=FE_region_get_FE_field_from_name(fe_region,field)))
+		{
+			result=reinterpret_cast<Cmiss_function_id>(new Function_handle(
+				new Function_finite_element(fe_field)));
+		}
+	}
+
+	return (result);
 }
 
 Cmiss_function_variable_id Cmiss_function_finite_element_component(
@@ -508,9 +527,9 @@ Returns a non-zero for success.
 }
 
 int Cmiss_function_finite_element_region(
-	Cmiss_function_id function_finite_element,Cmiss_FE_region_id *region_address)
+	Cmiss_function_id function_finite_element,Cmiss_region_id *region_address)
 /*******************************************************************************
-LAST MODIFIED : 4 May 2004
+LAST MODIFIED : 3 November 2004
 
 DESCRIPTION :
 Gets the <*region_address> of the <function_finite_element>.  Returns a non-zero
