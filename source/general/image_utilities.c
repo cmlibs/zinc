@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.c
 
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 9 April 2001
 
 DESCRIPTION :
 Utilities for handling images.
@@ -12,7 +12,11 @@ Utilities for handling images.
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <math.h>
+
+#if defined (BYTE_ORDER_CODE)
 #include <ctype.h> /*???DB.  Contains definition of __BYTE_ORDER for Linux */
+#endif /* defined (BYTE_ORDER_CODE) */
+
 #include "general/debug.h"
 #include "general/image_utilities.h"
 #include "general/indexed_list_private.h"
@@ -20,9 +24,11 @@ Utilities for handling images.
 #include "user_interface/user_interface.h"
 
 /* #define DEBUG 1 */
+#if defined (BYTE_ORDER_CODE)
 #if defined SGI
 #define __BYTE_ORDER 4321 
 #endif /* defined SGI */
+#endif /* defined (BYTE_ORDER_CODE) */
 /*
 Module constants
 ----------------
@@ -341,11 +347,13 @@ Performs the read and byte.
 	 unsigned integer types, the sizeof which differs between machines, hance we
 	 cannot simply cast it. */
 
-/*
+/* following work for 32-bit versions only */
 #define UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array) *((unsigned long int *)(byte_array))
 #define UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array) *((unsigned short int *)(byte_array))
-*/
 
+/* following clashes with the __BYTE_ORDER #define which assumes casting will
+	 be done. Casting fails on the 64-bit version */
+/*
 #define UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array) \
 	(((unsigned long int)(*(byte_array)) << 24) + \
 	 ((unsigned long int)(*(byte_array + 1)) << 16) + \
@@ -355,6 +363,7 @@ Performs the read and byte.
 #define UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array) \
 	(((unsigned short int)(*(byte_array)) << 8) + \
 	 ((unsigned short int)(*(byte_array + 1))))
+*/
 
 static int read_tiff_field(unsigned short int *tag, unsigned short int *type,
 	unsigned long int *count, unsigned char **field_values_address,
@@ -3381,7 +3390,6 @@ the second the denominator.
 				printf("           1 = least to most significant\n\n");
 #endif /* defined (DEBUG) */
 				/* check file number */
-				/*???debug*/printf("__BYTE_ORDER = %d\n",__BYTE_ORDER);
 				if (1==read_and_byte_swap(byte_array,2,1,least_to_most,
 					tiff_file))
 				{
