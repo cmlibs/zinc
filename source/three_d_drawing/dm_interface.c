@@ -106,20 +106,20 @@ supported on displays other than SGI will do.
 	static int visattrsRGB_with_depth[] =
 	{
 		GLX_RGBA,
-		GLX_RED_SIZE, 8,
-		GLX_GREEN_SIZE, 8,
-		GLX_BLUE_SIZE, 8,
-		GLX_ALPHA_SIZE, 8,
-		GLX_DEPTH_SIZE, 8,
+		GLX_RED_SIZE, 5,
+		GLX_GREEN_SIZE, 5,
+		GLX_BLUE_SIZE, 5,
+		GLX_ALPHA_SIZE, 1,
+		GLX_DEPTH_SIZE, 5,
 		None
 	};
 	static int visattrsRGB_no_depth[] =
 	{
 		GLX_RGBA,
-		GLX_RED_SIZE, 8,
-		GLX_GREEN_SIZE, 8,
-		GLX_BLUE_SIZE, 8,
-		GLX_ALPHA_SIZE, 8,
+		GLX_RED_SIZE, 5,
+		GLX_GREEN_SIZE, 5,
+		GLX_BLUE_SIZE, 5,
+		GLX_ALPHA_SIZE, 1,
 		None
 	};
 	int *visattrs;
