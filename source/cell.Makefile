@@ -196,13 +196,9 @@ ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
-   #For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES automatically
+#For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES automatically
    ifeq ($(SYSNAME),Linux)
-      ifneq ($(DYNAMIC_GL_LINUX),true)
-         GRAPHICS_LIB += -L/usr/local/lib
-      else # $(DYNAMIC_GL_LINUX) != true
-         GRAPHICS_LIB += -L/usr/X11R6/lib
-      endif # $(DYNAMIC_GL_LINUX) != true 
+      GRAPHICS_LIB += -L$(firstword $(wildcard /usr/local/Mesa-5.0/lib /usr/X11R6/lib))
    endif # $(SYSNAME) == Linux
    ifeq ($(SYSNAME),win32)
       GRAPHICS_LIB += -L/usr/X11R6/lib
@@ -230,12 +226,27 @@ USER_INTERFACE_LIB =
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
    ifneq ($(DYNAMIC_GL_LINUX),true)
       ifneq ($(SYSNAME:IRIX%=),)
+         ifneq ($(wildcard /usr/local/Mesa-5.0/include),)
+            USER_INTERFACE_INC += -I/usr/local/Mesa-5.0/include
+         endif
          USER_INTERFACE_INC += -I/usr/X11R6/include
       endif # SYSNAME != IRIX%=
       ifeq ($(SYSNAME),Linux)
-         USER_INTERFACE_LIB += -lMrm -lXmu -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
+         #Mandrake 8.2 static libs are incompatible, this works around it by
+         #comparing the size of the symbols and forcing Xmu to preload its
+         #version if they differ in size.  Older greps don't have -o option.
+         Xm_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXm.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
+         Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
+         ifneq ($(Xm_XeditRes),)
+            ifneq ($(Xmu_XeditRes),)
+               ifneq ($(word 5, $(Xm_XeditRes)), $(word 5, $(Xmu_XeditRes)))
+                  USER_INTERFACE_LIB += -u _XEditResCheckMessages -lXmu 
+               endif
+            endif
+         endif
+         USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
       else # SYSNAME == Linux
-         USER_INTERFACE_LIB += -lMrm -lXmu -lXm -lXt -lX11 -lXmu -lXext
+         USER_INTERFACE_LIB += -lMrm -lXm -lXt -lX11 -lXmu -lXext
          ifeq ($(SYSNAME:IRIX%=),)
             USER_INTERFACE_LIB += -lSgm
          endif # SYSNAME == IRIX%=
@@ -243,8 +254,25 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
   else # $(DYNAMIC_GL_LINUX) != true
       # Even though this is a dynamic executable I want to statically link as much
       # as possible so that the executable is as portable as possible
-      X_LIB = /usr/X11R6/lib
+	   ifneq ($(wildcard /usr/local/Mesa-5.0/include),)
+         USER_INTERFACE_INC += -I/usr/local/Mesa-5.0/include
+      endif
       USER_INTERFACE_INC += -I/usr/X11R6/include
+      X_LIB = /usr/X11R6/lib
+      ifeq ($(SYSNAME),Linux)
+         #Mandrake 8.2 static libs are incompatible, this works around it by
+         #comparing the size of the symbols and forcing Xmu to preload its
+         #version if they differ in size.  Older greps don't have -o option.
+         Xm_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXm.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
+         Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
+         ifneq ($(Xm_XeditRes),)
+            ifneq ($(Xmu_XeditRes),)
+               ifneq ($(word 5, $(Xm_XeditRes)), $(word 5, $(Xmu_XeditRes)))
+                  USER_INTERFACE_LIB += -u _XEditResCheckMessages $(X_LIB)/libXmu.a 
+               endif
+            endif
+         endif
+      endif # $(SYSNAME) == Linux
       USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
    endif # $(DYNAMIC_GL_LINUX) != true
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
