@@ -4324,8 +4324,9 @@ Writes the properties of the <texture> to the command window.
 		/* write the compression type */
 		display_message(INFORMATION_MESSAGE,"  compression type : %s\n",
 			ENUMERATOR_STRING(Texture_compression_mode)(texture->compression_mode));
-#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
-		if (TEXTURE_COMPRESSED_UNSPECIFIED == texture->compression_mode)
+#if defined (GL_ARB_texture_compression)
+		if (Graphics_library_check_extension(GL_ARB_texture_compression) &&
+			(TEXTURE_COMPRESSED_UNSPECIFIED == texture->compression_mode))
 		{
 			switch (texture->dimension)
 			{
@@ -4354,7 +4355,7 @@ Writes the properties of the <texture> to the command window.
 						return_code=0;
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
 					}
-#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+#endif /* defined (GL_ARB_texture_compression) */
 				} break;
 			}
 			/* get the compressed texture size */
