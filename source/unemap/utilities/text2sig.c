@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : text2sig.c
 
-LAST MODIFIED : 14 July 2002
+LAST MODIFIED : 12 September 2003
 
 DESCRIPTION :
 Reads in a text signal file.  Finds the end of the header as the last line
@@ -31,26 +31,37 @@ int main(int argc,char *argv[])
 	FILE *input_file,*signal_file;
 	float time_float,*value;
 	float end_time,frequency,start_time;
-	int arg_number,header_end,i,j,number_of_devices,number_of_samples,
-		number_of_signals,return_code,*time;
+	int arg_number,header_end,i,j,line_number,number_of_bad_sample_lines,
+		number_of_columns,number_of_devices,number_of_good_sample_lines,
+		number_of_sample_lines,number_of_signals,return_code,*time,
+		time_column_absent;
 	struct Device **device;
 	struct Rig *signal_rig;
 	struct Signal_buffer *buffer;
 
 	/* check arguments */
 	return_code=0;
-	if ((3==argc)||(4==argc))
+	if ((3==argc)||(4==argc)||(5==argc))
 	{
-		arg_number=0;
+		arg_number=1;
+		time_column_absent=0;
+		if (4<=argc)
+		{
+			if (1==sscanf(argv[arg_number],"%f",&frequency))
+			{
+				time_column_absent=1;
+				arg_number++;
+			}
+		}
 		/* open the signal text file */
-		arg_number++;
 		if (input_file=fopen(argv[arg_number],"r"))
 		{
+			arg_number++;
 			/* read the configuration file */
-			if (4==argc)
+			if (4==argc-time_column_absent)
 			{
-				arg_number++;
 				return_code=read_configuration_file(argv[arg_number],&signal_rig);
+				arg_number++;
 			}
 			else
 			{
@@ -61,35 +72,72 @@ int main(int argc,char *argv[])
 			{
 				/* find the end of the header and count the number of samples */
 				header_end=0;
-				number_of_samples=0;
+				number_of_good_sample_lines=0;
+				number_of_bad_sample_lines=0;
+				while ((EOF!=fscanf(input_file,"%*[ \t]"))&&
+					(EOF!=(return_code=fscanf(input_file,"%[^ \t\n]",device_name))))
+				{
+					if (1==return_code)
+					{
+						if ((1==return_code)&&(1==sscanf(device_name,"%f",&end_time)))
+						{
+							if (0==number_of_good_sample_lines)
+							{
+								start_time=end_time;
+							}
+							number_of_good_sample_lines++;
+						}
+						else
+						{
+							header_end +=
+								number_of_good_sample_lines+number_of_bad_sample_lines+1;
+							number_of_good_sample_lines=0;
+							number_of_bad_sample_lines=0;
+						}
+					}
+					else
+					{
+						number_of_bad_sample_lines++;
+					}
+					fscanf(input_file,"%*[^\n]");
+					fscanf(input_file,"%*c");
+				}
+#if defined (OLD_CODE)
 				while (EOF!=(return_code=fscanf(input_file,"%f",&end_time)))
 				{
 					if (1==return_code)
 					{
-						if (0==number_of_samples)
+						if (0==number_of_good_sample_lines)
 						{
 							start_time=end_time;
 						}
-						number_of_samples++;
+						number_of_good_sample_lines++;
 					}
 					else
 					{
-						header_end += number_of_samples+1;
-						number_of_samples=0;
+						header_end += number_of_good_sample_lines+1;
+						number_of_good_sample_lines=0;
 					}
 					fscanf(input_file,"%*[^\n] ");
 				}
-				if ((1<number_of_samples)&&(start_time<end_time))
+#endif /* defined (OLD_CODE) */
+				if (!time_column_absent)
 				{
-					frequency=(float)(number_of_samples-1)/(end_time-start_time);
-				}
-				else
-				{
-					frequency=1;
+					if ((1<number_of_good_sample_lines)&&(start_time<end_time))
+					{
+						frequency=(float)(number_of_good_sample_lines-1)/
+							(end_time-start_time);
+					}
+					else
+					{
+						frequency=1;
+					}
 				}
 				return_code=1;
+				number_of_sample_lines=number_of_good_sample_lines+
+					number_of_bad_sample_lines;
 				/*???debug */
-				printf("number_of_samples=%d\n",number_of_samples);
+				printf("number_of_sample_lines=%d\n",number_of_sample_lines);
 				printf("header_end=%d\n",header_end);
 				printf("frequency=%g\n",frequency);
 				/* count the number of signals */
@@ -99,16 +147,41 @@ int main(int argc,char *argv[])
 					fscanf(input_file,"%*[^\n] ");
 				}
 				number_of_signals=0;
-				/* skip "time" */
-				fscanf(input_file," %[^ \t\n]%c",device_name,&end_of_line);
+				if (time_column_absent)
+				{
+					end_of_line=' ';
+				}
+				else
+				{
+					/* skip "time" */
+					fscanf(input_file," %[^ \t\n]%c",device_name,&end_of_line);
+					if ('\n'!=end_of_line)
+					{
+						fscanf(input_file,"%*[ \t]");
+						end_of_line=(char)fgetc(input_file);
+						if ('\n'!=end_of_line)
+						{
+							ungetc((int)end_of_line,input_file);
+						}
+					}
+				}
 				while ('\n'!=end_of_line)
 				{
 					number_of_signals++;
 					fscanf(input_file," %[^ \t\n]%c",device_name,&end_of_line);
+					if ('\n'!=end_of_line)
+					{
+						fscanf(input_file,"%*[ \t]");
+						end_of_line=(char)fgetc(input_file);
+						if ('\n'!=end_of_line)
+						{
+							ungetc((int)end_of_line,input_file);
+						}
+					}
 				}
 				/*???debug */
 				printf("number_of_signals=%d\n",number_of_signals);
-				if (3==argc)
+				if (3==argc-time_column_absent)
 				{
 					/* create a rig with the required number of electrodes */
 					signal_rig=create_standard_Rig("text",PATCH,MONITORING_OFF,
@@ -119,19 +192,22 @@ int main(int argc,char *argv[])
 					number_of_devices=signal_rig->number_of_devices;
 					/* create the signal buffer */
 					if (buffer=create_Signal_buffer(FLOAT_VALUE,number_of_signals,
-						number_of_samples,frequency))
+						number_of_good_sample_lines,frequency))
 					{
 						/* assign the signals devices */
 						rewind(input_file);
 						return_code=1;
-						if (4==argc)
+						if (4==argc-time_column_absent)
 						{
 							for (i=header_end-1;i>0;i--)
 							{
 								fscanf(input_file,"%*[^\n] ");
 							}
-							/* skip "time" */
-							fscanf(input_file," %[^ \t\n]%c",device_name,&end_of_line);
+							if (!time_column_absent)
+							{
+								/* skip "time" column */
+								fscanf(input_file," %[^ \t\n]%c",device_name,&end_of_line);
+							}
 							i=0;
 							while (return_code&&(i<number_of_signals))
 							{
@@ -181,22 +257,84 @@ int main(int argc,char *argv[])
 						if (return_code)
 						{
 							/* read the signal values */
+							line_number=header_end+1;
+							number_of_bad_sample_lines=0;
+							number_of_good_sample_lines=0;
 							value=(buffer->signals).float_values;
 							time=buffer->times;
-							for (i=number_of_samples;i>0;i--)
+							for (i=number_of_sample_lines;i>0;i--)
 							{
-								fscanf(input_file,"%f",&time_float);
-								*time=(int)(time_float*frequency+0.5);
-								time++;
-								for (j=number_of_signals;j>0;j--)
+								number_of_columns=0;
+								/* time */
+								if (time_column_absent||
+									((2==fscanf(input_file," %[^ \t\n]%c",device_name,
+									&end_of_line))&&(1==sscanf(device_name,"%f",&time_float))))
 								{
-									fscanf(input_file,"%f",value);
-									value++;
+									if (time_column_absent)
+									{
+										*time=number_of_good_sample_lines;
+										fscanf(input_file,"%*[ \t]");
+										end_of_line=(char)fgetc(input_file);
+										if ('\n'!=end_of_line)
+										{
+											ungetc((int)end_of_line,input_file);
+										}
+									}
+									else
+									{
+										*time=(int)(time_float*frequency+0.5);
+									}
+									time++;
+									number_of_columns++;
+									if ('\n'!=end_of_line)
+									{
+										fscanf(input_file,"%*[ \t]");
+										end_of_line=(char)fgetc(input_file);
+										if ('\n'!=end_of_line)
+										{
+											ungetc((int)end_of_line,input_file);
+										}
+									}
+									while (('\n'!=end_of_line)&&(2==fscanf(input_file,
+										" %[^ \t\n]%c",device_name,&end_of_line))&&
+										(1==sscanf(device_name,"%f",value)))
+									{
+										value++;
+										number_of_columns++;
+										if ('\n'!=end_of_line)
+										{
+											fscanf(input_file,"%*[ \t]");
+											end_of_line=(char)fgetc(input_file);
+											if ('\n'!=end_of_line)
+											{
+												ungetc((int)end_of_line,input_file);
+											}
+										}
+									}
 								}
+								if (number_of_columns==number_of_signals+1)
+								{
+									number_of_good_sample_lines++;
+								}
+								else
+								{
+									number_of_bad_sample_lines++;
+									printf("Error in line %d\n",line_number);
+									if (0<number_of_columns)
+									{
+										time--;
+										value -= number_of_columns-1;
+									}
+								}
+								line_number++;
 							}
-							arg_number++;
+							buffer->number_of_samples=number_of_good_sample_lines;
+							buffer->end=number_of_good_sample_lines-1;
+							/*???debug */
+							printf("number_of_samples=%d\n",buffer->number_of_samples);
 							if (signal_file=fopen(argv[arg_number],"wb"))
 							{
+								arg_number++;
 								write_signal_file(signal_file,signal_rig);
 								fclose(signal_file);
 							}
@@ -207,98 +345,11 @@ int main(int argc,char *argv[])
 								return_code=0;
 							}
 						}
-#if defined (OLD_CODE)
-					/* read the signal file */
-					signal_rig=(struct Rig *)NULL;
-					arg_number++;
-					if ((signal_file=fopen(argv[arg_number],"rb"))&&
-						read_signal_file(signal_file,&signal_rig))
-					{
-						fclose(signal_file);
-						device=signal_rig->devices;
-						if (device&&(*device)&&((*device)->signal)&&
-							(buffer=(*device)->signal->buffer)&&((*device)->channel))
-						{
-							frequency=buffer->frequency;
-							time=buffer->times;
-							number_of_devices=signal_rig->number_of_devices;
-							number_of_signals=buffer->number_of_signals;
-							/* write heading */
-							fprintf(input_file,"time");
-							for (i=number_of_devices;i>0;i--)
-							{
-								fprintf(input_file,"\t%s",(*device)->description->name);
-								device++;
-							}
-							fprintf(input_file,"\n");
-							/* write times and signal values */
-							switch (buffer->value_type)
-							{
-								case FLOAT_VALUE:
-								{
-									float *value;
-
-									value=(buffer->signals).float_values;
-									for (i=buffer->number_of_samples;i>0;i--)
-									{
-										fprintf(input_file,"%g",((float)(*time))/frequency);
-										device=signal_rig->devices;
-										for (j=number_of_devices;j>0;j--)
-										{
-											offset=(*device)->channel->offset;
-											gain=(*device)->channel->gain;
-											fprintf(input_file,"\t%g",
-												gain*(value[(*device)->signal->index]-offset));
-											device++;
-										}
-										fprintf(input_file,"\n");
-										value += number_of_signals;
-										time++;
-									}
-								} break;
-								case SHORT_INT_VALUE:
-								{
-									short int *value;
-
-									value=(buffer->signals).short_int_values;
-									for (i=buffer->number_of_samples;i>0;i--)
-									{
-										fprintf(input_file,"%g",((float)(*time))/frequency);
-										device=signal_rig->devices;
-										for (j=number_of_devices;j>0;j--)
-										{
-											offset=(*device)->channel->offset;
-											gain=(*device)->channel->gain;
-											fprintf(input_file,"\t%g",
-												gain*((float)value[(*device)->signal->index]-offset));
-											device++;
-										}
-										fprintf(input_file,"\n");
-										value += number_of_signals;
-										time++;
-									}
-								} break;
-							}
-						}
-						else
-						{
-							printf("ERROR.  No devices");
-							return_code=0;
-						}
-						fclose(input_file);
-					}
-					else
-					{
-						printf("ERROR.  Could not read signal file.  %s\n",
-							argv[arg_number]);
-						return_code=0;
-					}
-#endif /* defined (OLD_CODE) */
 					}
 					else
 					{
 						printf("ERROR.  Could not create signal buffer.  %d %d %g\n",
-							number_of_signals,number_of_samples,frequency);
+							number_of_signals,number_of_good_sample_lines,frequency);
 						return_code=0;
 					}
 				}
@@ -323,8 +374,12 @@ int main(int argc,char *argv[])
 	}
 	else
 	{
-		printf("usage: text2sig in_text_file in_cnfg_file out_signal_file\n");
+		printf("usage: text2sig sampling_frequency in_text_file in_cnfg_file out_signal_file\n");
+		printf("  sampling_frequency is the value in Hz (optional)\n");
 		printf("  in_text_file is the name for the text signal file that is input\n");
+		printf("    If the sampling_frequency is present then all the columns in\n");
+		printf("    are assumed to be signals.  Otherwise, the first columns is\n");
+		printf("    assumed to be time\n");
 		printf("  in_cnfg_file is the name for the configuration file that is input (optional)\n");
 		printf("  out_signal_file is the name of the signal file is created\n");
 		return_code=0;
