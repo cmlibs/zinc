@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -16605,7 +16605,7 @@ movie is being created.
 static int execute_command_gfx_node_tool(struct Parse_state *state,
 	void *data_tool_flag,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
 Executes a GFX NODE_TOOL or GFX_DATA_TOOL command. If <data_tool_flag> is set,
@@ -16613,15 +16613,15 @@ then the <data_tool> is being modified, otherwise the <node_tool>.
 Which tool that is being modified is passed in <node_tool_void>.
 ==============================================================================*/
 {
-	int create_enabled,edit_enabled,motion_update_enabled,return_code,
-		select_enabled;
+	int create_enabled,define_enabled,edit_enabled,motion_update_enabled,
+		return_code,select_enabled;
 	struct Cmiss_command_data *command_data;
-	struct FE_field *coordinate_field;
+	struct Computed_field *coordinate_field;
 	struct Node_tool *node_tool;
 	struct GROUP(FE_node) *node_group;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct Option_table *option_table;
-	struct Set_FE_field_conditional_data set_coordinate_field_data;
+	struct Set_Computed_field_conditional_data set_coordinate_field_data;
 
 	ENTER(execute_command_gfx_node_tool);
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
@@ -16642,6 +16642,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		{
 			coordinate_field=Node_tool_get_coordinate_field(node_tool);
 			create_enabled=Node_tool_get_create_enabled(node_tool);
+			define_enabled=Node_tool_get_define_enabled(node_tool);
 			edit_enabled=Node_tool_get_edit_enabled(node_tool);
 			motion_update_enabled=Node_tool_get_motion_update_enabled(node_tool);
 			select_enabled=Node_tool_get_select_enabled(node_tool);
@@ -16649,8 +16650,9 @@ Which tool that is being modified is passed in <node_tool_void>.
 		}
 		else
 		{
-			coordinate_field=(struct FE_field *)NULL;
+			coordinate_field=(struct Computed_field *)NULL;
 			create_enabled=0;
+			define_enabled=0;
 			edit_enabled=0;
 			motion_update_enabled=0;
 			select_enabled=1;
@@ -16658,7 +16660,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		}
 		if (coordinate_field)
 		{
-			ACCESS(FE_field)(coordinate_field);
+			ACCESS(Computed_field)(coordinate_field);
 		}
 		if (node_group)
 		{
@@ -16667,13 +16669,18 @@ Which tool that is being modified is passed in <node_tool_void>.
 
 		option_table=CREATE(Option_table)();
 		/* coordinate_field */
-		set_coordinate_field_data.fe_field_manager=command_data->fe_field_manager;
-		set_coordinate_field_data.conditional_function=FE_field_is_coordinate_field;
+		set_coordinate_field_data.computed_field_manager=
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_coordinate_field_data.conditional_function=
+			Computed_field_has_up_to_3_numerical_components;
 		set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-		Option_table_add_entry(option_table,"coordinate_field",
-			&coordinate_field,&set_coordinate_field_data,set_FE_field_conditional);
+		Option_table_add_entry(option_table,"coordinate_field",&coordinate_field,
+			&set_coordinate_field_data,set_Computed_field_conditional);
 		/* create/no_create */
 		Option_table_add_switch(option_table,"create","no_create",&create_enabled);
+		/* define/no_define */
+		Option_table_add_switch(option_table,"define","no_define",&create_enabled);
 		/* edit/no_edit */
 		Option_table_add_switch(option_table,"edit","no_edit",&edit_enabled);
 		/* group */
@@ -16690,8 +16697,9 @@ Which tool that is being modified is passed in <node_tool_void>.
 			{
 				Node_tool_set_select_enabled(node_tool,select_enabled);
 				Node_tool_set_edit_enabled(node_tool,edit_enabled);
-				Node_tool_set_create_enabled(node_tool,create_enabled);
+				Node_tool_set_define_enabled(node_tool,define_enabled);
 				Node_tool_set_coordinate_field(node_tool,coordinate_field);
+				Node_tool_set_create_enabled(node_tool,create_enabled);
 				Node_tool_set_node_group(node_tool,node_group);
 				Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
 			}
@@ -16709,7 +16717,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		}
 		if (coordinate_field)
 		{
-			DEACCESS(FE_field)(&coordinate_field);
+			DEACCESS(Computed_field)(&coordinate_field);
 		}
 	}
 	else
