@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_product_implementation.cpp
 //
-// LAST MODIFIED : 8 September 2004
+// LAST MODIFIED : 1 October 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -25,7 +25,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_product :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 6 September 2004
+// LAST MODIFIED : 1 October 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -48,6 +48,103 @@ class Function_variable_matrix_product :
 		{
 			return (Function_variable_handle(
 				new Function_variable_matrix_product<Value_type>(*this)));
+		};
+		Function_handle evaluate()
+		{
+			Function_handle result(0);
+			boost::intrusive_ptr< Function_matrix_product<Value_type> >
+				function_matrix_product;
+
+			if (function_matrix_product=boost::dynamic_pointer_cast<
+				Function_matrix_product<Value_type>,Function>(function()))
+			{
+				Function_size_type number_of_columns,number_of_rows,number_in_sum;
+				boost::intrusive_ptr< Function_matrix<Value_type> > multiplicand,
+					multiplier;
+
+				if ((multiplier=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+					Function>(function_matrix_product->multiplier_private->evaluate()))&&
+					(multiplicand=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+					Function>(function_matrix_product->multiplicand_private->
+					evaluate()))&&
+					(row_private<=(number_of_rows=multiplier->number_of_rows()))&&
+					((number_in_sum=multiplier->number_of_columns())==
+					multiplicand->number_of_rows())&&
+					(column_private<=(number_of_columns=multiplicand->
+					number_of_columns())))
+				{
+					Function_size_type i,j,k;
+					Value_type sum;
+
+					function_matrix_product->values.resize(number_of_rows,
+						number_of_columns);
+					for (i=1;i<=number_of_rows;i++)
+					{
+						for (j=1;j<=number_of_columns;j++)
+						{
+							sum=0;
+							for (k=1;k<=number_in_sum;k++)
+							{
+								sum += (*multiplier)(i,k)*(*multiplicand)(k,j);
+							}
+							function_matrix_product->values(i-1,j-1)=sum;
+						}
+					}
+					if (0==row_private)
+					{
+						if (0==column_private)
+						{
+							result=Function_handle(new Function_matrix<Value_type>(
+								function_matrix_product->values));
+						}
+						else
+						{
+							ublas::matrix<Value_type,ublas::column_major>
+								result_matrix(number_of_rows,1);
+
+							for (i=0;i<number_of_rows;i++)
+							{
+								result_matrix(i,0)=(function_matrix_product->values)(
+									i,column_private-1);
+							}
+							result=Function_handle(new Function_matrix<Value_type>(
+								result_matrix));
+						}
+					}
+					else
+					{
+						if (0==column_private)
+						{
+							ublas::matrix<Value_type,ublas::column_major>
+								result_matrix(1,number_of_columns);
+
+							for (j=0;j<number_of_columns;j++)
+							{
+								result_matrix(0,j)=(function_matrix_product->values)(
+									row_private-1,j);
+							}
+							result=Function_handle(new Function_matrix<Value_type>(
+								result_matrix));
+						}
+						else
+						{
+							ublas::matrix<Value_type,ublas::column_major>
+								result_matrix(1,1);
+							
+							result_matrix(0,0)=(function_matrix_product->values)(
+								row_private-1,column_private-1);
+							result=Function_handle(new Function_matrix<Value_type>(
+								result_matrix));
+						}
+					}
+				}
+			}
+
+			return (result);
+		};
+		Function_handle evaluate_derivative(std::list<Function_variable_handle>&)
+		{
+			return (0);
 		};
 		//???DB.  Should operator() and get_entry do an evaluate?
 		boost::intrusive_ptr< Function_variable_matrix<Value_type> > operator()(
@@ -91,35 +188,13 @@ Function_matrix_product<Value_type>::Function_matrix_product(
 	const Function_variable_handle& multiplier,
 	const Function_variable_handle& multiplicand):Function_matrix<Value_type>(
 	Function_matrix_product<Value_type>::constructor_values),
-	multiplicand_private(0),multiplier_private(0)
+	multiplicand_private(multiplicand),multiplier_private(multiplier){}
 //******************************************************************************
-// LAST MODIFIED : 8 September 2004
+// LAST MODIFIED : 23 September 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
-{
-	boost::intrusive_ptr< Function_variable_matrix<Value_type> >
-		multiplicand_matrix,multiplier_matrix;
-
-	if ((multiplier_matrix=boost::dynamic_pointer_cast<
-		Function_variable_matrix<Value_type>,Function_variable>(multiplier))&&
-		(multiplicand_matrix=boost::dynamic_pointer_cast<
-		Function_variable_matrix<Value_type>,Function_variable>(multiplicand))&&
-		(multiplier_matrix->number_of_columns()==
-		(multiplicand_matrix->number_of_rows())))
-	{
-		multiplier_private=multiplier_matrix;
-		multiplicand_private=multiplicand_matrix;
-		values.resize(multiplier_matrix->number_of_rows(),
-			multiplicand_matrix->number_of_columns());
-	}
-	else
-	{
-		throw
-			Function_matrix_product<Value_type>::Invalid_multiplier_multiplicand();
-	}
-}
 
 EXPORT template<typename Value_type>
 Function_matrix_product<Value_type>::~Function_matrix_product()
@@ -252,7 +327,34 @@ EXPORT template<typename Value_type>
 Function_handle Function_matrix_product<Value_type>::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 7 September 2004
+// LAST MODIFIED : 1 October 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	boost::intrusive_ptr< Function_variable_matrix_product<Value_type> >
+		atomic_variable_matrix_product;
+	Function_handle result(0);
+
+	if ((atomic_variable_matrix_product=boost::dynamic_pointer_cast<
+		Function_variable_matrix_product<Value_type>,Function_variable>(
+		atomic_variable))&&equivalent(Function_handle(this),
+		atomic_variable_matrix_product->function())&&
+		(0<atomic_variable_matrix_product->row())&&
+		(0<atomic_variable_matrix_product->column()))
+	{
+		result=atomic_variable_matrix_product->evaluate();
+	}
+
+	return (result);
+}
+
+#if defined (OLD_CODE)
+EXPORT template<typename Value_type>
+Function_handle Function_matrix_product<Value_type>::evaluate(
+	Function_variable_handle atomic_variable)
+//******************************************************************************
+// LAST MODIFIED : 22 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -269,30 +371,49 @@ Function_handle Function_matrix_product<Value_type>::evaluate(
 		atomic_variable))&&(0<(row=atomic_variable_matrix_product->row()))&&
 		(0<(column=atomic_variable_matrix_product->column())))
 	{
-		bool valid;
-		boost::intrusive_ptr< Function_variable_matrix<Value_type> > temp_variable;
-		Function_size_type i,number_in_sum;
-		Value_type sum,value_1,value_2;
+		boost::intrusive_ptr< Function_matrix<Value_type> > multiplicand,multiplier;
+		Function_size_type number_of_columns,number_of_rows,number_in_sum;
 
-		number_in_sum=multiplier_private->number_of_columns();
-		i=1;
-		valid=true;
-		sum=0;
-		while (valid&&(i<=number_in_sum))
+		if ((multiplier=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+			Function>(multiplier_private->evaluate()))&&(multiplicand=
+			boost::dynamic_pointer_cast<Function_matrix<Value_type>,Function>(
+			multiplicand_private->evaluate()))&&
+			(row<=(number_of_rows=multiplier->number_of_rows()))&&
+			((number_in_sum=multiplier->number_of_columns())==
+			multiplicand->number_of_rows())&&
+			(column<=(number_of_columns=multiplicand->number_of_columns())))
 		{
-			if ((temp_variable=(*multiplier_private)(row,i))&&
-				(temp_variable->evaluate())&&(temp_variable->get_entry(value_1))&&
-				(temp_variable=(*multiplicand_private)(i,column))&&
-				(temp_variable->evaluate())&&(temp_variable->get_entry(value_2)))
-			{
-				sum += value_1*value_2;
-			}
-			i++;
-		}
-		if (valid)
-		{
+			Function_size_type copy_number_of_columns,copy_number_of_rows,i,j;
 			ublas::matrix<Value_type,ublas::column_major> result_matrix(1,1);
+			Value_type sum;
 
+			sum=0;
+			if ((number_of_rows!=(copy_number_of_rows=values.size1()))||
+				(number_of_columns!=(copy_number_of_columns=values.size2())))
+			{
+				ublas::matrix<Value_type,ublas::column_major> save_values=values;
+
+				if (number_of_rows<copy_number_of_rows)
+				{
+					copy_number_of_rows=number_of_rows;
+				}
+				if (number_of_columns<copy_number_of_columns)
+				{
+					copy_number_of_columns=number_of_columns;
+				}
+				values.resize(number_of_rows,number_of_columns);
+				for (i=0;i<number_of_rows;i++)
+				{
+					for (j=0;j<number_of_columns;j++)
+					{
+						values(i,j)=save_values(i,j);
+					}
+				}
+			}
+			for (i=1;i<=number_in_sum;i++)
+			{
+				sum += (*multiplier)(row,i)*(*multiplicand)(i,column);
+			}
 			values(row-1,column-1)=sum;
 			result_matrix(0,0)=sum;
 			result=Function_handle(new Function_matrix<Value_type>(result_matrix));
@@ -301,6 +422,7 @@ Function_handle Function_matrix_product<Value_type>::evaluate(
 
 	return (result);
 }
+#endif // defined (OLD_CODE)
 
 EXPORT template<typename Value_type>
 bool Function_matrix_product<Value_type>::evaluate_derivative(Scalar&,

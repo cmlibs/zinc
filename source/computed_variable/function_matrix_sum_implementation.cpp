@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_sum_implementation.cpp
 //
-// LAST MODIFIED : 8 September 2004
+// LAST MODIFIED : 1 October 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -24,7 +24,7 @@
 EXPORT template<typename Value_type>
 class Function_variable_matrix_sum : public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 3 September 2004
+// LAST MODIFIED : 1 October 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -47,6 +47,96 @@ class Function_variable_matrix_sum : public Function_variable_matrix<Value_type>
 		{
 			return (Function_variable_handle(
 				new Function_variable_matrix_sum<Value_type>(*this)));
+		};
+		Function_handle evaluate()
+		{
+			Function_handle result(0);
+			boost::intrusive_ptr< Function_matrix_sum<Value_type> >
+				function_matrix_sum;
+
+			if (function_matrix_sum=boost::dynamic_pointer_cast<
+				Function_matrix_sum<Value_type>,Function>(function()))
+			{
+				Function_size_type number_of_columns,number_of_rows;
+				boost::intrusive_ptr< Function_matrix<Value_type> > summand_1,summand_2;
+
+				if ((summand_1=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+					Function>(function_matrix_sum->summand_1_private->evaluate()))&&
+					(summand_2=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+					Function>(function_matrix_sum->summand_2_private->
+					evaluate()))&&
+					(row_private<=(number_of_rows=summand_1->number_of_rows()))&&
+					(number_of_rows==summand_2->number_of_rows())&&
+					(column_private<=(number_of_columns=summand_1->number_of_columns()))&&
+					(number_of_columns==summand_2->number_of_columns()))
+				{
+					Function_size_type i,j;
+
+					function_matrix_sum->values.resize(number_of_rows,
+						number_of_columns);
+					for (i=1;i<=number_of_rows;i++)
+					{
+						for (j=1;j<=number_of_columns;j++)
+						{
+							function_matrix_sum->values(i-1,j-1)=
+								(*summand_1)(i,j)+(*summand_2)(i,j);
+						}
+					}
+					if (0==row_private)
+					{
+						if (0==column_private)
+						{
+							result=Function_handle(new Function_matrix<Value_type>(
+								function_matrix_sum->values));
+						}
+						else
+						{
+							ublas::matrix<Value_type,ublas::column_major>
+								result_matrix(number_of_rows,1);
+
+							for (i=0;i<number_of_rows;i++)
+							{
+								result_matrix(i,0)=(function_matrix_sum->values)(
+									i,column_private-1);
+							}
+							result=Function_handle(new Function_matrix<Value_type>(
+								result_matrix));
+						}
+					}
+					else
+					{
+						if (0==column_private)
+						{
+							ublas::matrix<Value_type,ublas::column_major>
+								result_matrix(1,number_of_columns);
+
+							for (j=0;j<number_of_columns;j++)
+							{
+								result_matrix(0,j)=(function_matrix_sum->values)(
+									row_private-1,j);
+							}
+							result=Function_handle(new Function_matrix<Value_type>(
+								result_matrix));
+						}
+						else
+						{
+							ublas::matrix<Value_type,ublas::column_major>
+								result_matrix(1,1);
+							
+							result_matrix(0,0)=(function_matrix_sum->values)(
+								row_private-1,column_private-1);
+							result=Function_handle(new Function_matrix<Value_type>(
+								result_matrix));
+						}
+					}
+				}
+			}
+
+			return (result);
+		};
+		Function_handle evaluate_derivative(std::list<Function_variable_handle>&)
+		{
+			return (0);
 		};
 		//???DB.  Should operator() and get_entry do an evaluate?
 		boost::intrusive_ptr< Function_variable_matrix<Value_type> > operator()(
@@ -89,44 +179,14 @@ EXPORT template<typename Value_type>
 Function_matrix_sum<Value_type>::Function_matrix_sum(
 	const Function_variable_handle& summand_1,
 	const Function_variable_handle& summand_2):Function_matrix<Value_type>(
-	Function_matrix_sum<Value_type>::constructor_values),summand_1_private(0),
-	summand_2_private(0)
+	Function_matrix_sum<Value_type>::constructor_values),
+	summand_1_private(summand_1),summand_2_private(summand_2){}
 //******************************************************************************
-// LAST MODIFIED : 8 September 2004
+// LAST MODIFIED : 1 October 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
-{
-	boost::intrusive_ptr< Function_variable_matrix<Value_type> > matrix_1,
-		matrix_2;
-
-	if ((matrix_1=boost::dynamic_pointer_cast<
-		Function_variable_matrix<Value_type>,Function_variable>(summand_1))&&
-		(matrix_2=boost::dynamic_pointer_cast<Function_variable_matrix<Value_type>,
-		Function_variable>(summand_2)))
-	{
-		Function_size_type number_of_columns,number_of_rows;
-
-		number_of_rows=matrix_1->number_of_rows();
-		number_of_columns=matrix_1->number_of_columns();
-		if ((matrix_2->number_of_rows()==number_of_rows)&&
-			(matrix_2->number_of_columns()==number_of_columns))
-		{
-			summand_1_private=matrix_1;
-			summand_2_private=matrix_2;
-			values.resize(number_of_rows,number_of_columns);
-		}
-		else
-		{
-			throw Function_matrix_sum<Value_type>::Invalid_summand();
-		}
-	}
-	else
-	{
-		throw Function_matrix_sum<Value_type>::Invalid_summand();
-	}
-}
 
 EXPORT template<typename Value_type>
 Function_matrix_sum<Value_type>::~Function_matrix_sum()
@@ -257,6 +317,33 @@ EXPORT template<typename Value_type>
 Function_handle Function_matrix_sum<Value_type>::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
+// LAST MODIFIED : 1 October 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	boost::intrusive_ptr< Function_variable_matrix_sum<Value_type> >
+		atomic_variable_matrix_sum;
+	Function_handle result(0);
+
+	if ((atomic_variable_matrix_sum=boost::dynamic_pointer_cast<
+		Function_variable_matrix_sum<Value_type>,Function_variable>(
+		atomic_variable))&&equivalent(Function_handle(this),
+		atomic_variable_matrix_sum->function())&&
+		(0<atomic_variable_matrix_sum->row())&&
+		(0<atomic_variable_matrix_sum->column()))
+	{
+		result=atomic_variable_matrix_sum->evaluate();
+	}
+
+	return (result);
+}
+
+#if defined (OLD_CODE)
+EXPORT template<typename Value_type>
+Function_handle Function_matrix_sum<Value_type>::evaluate(
+	Function_variable_handle atomic_variable)
+//******************************************************************************
 // LAST MODIFIED : 6 September 2004
 //
 // DESCRIPTION :
@@ -291,6 +378,7 @@ Function_handle Function_matrix_sum<Value_type>::evaluate(
 
 	return (result);
 }
+#endif // defined (OLD_CODE)
 
 EXPORT template<typename Value_type>
 bool Function_matrix_sum<Value_type>::evaluate_derivative(Scalar&,

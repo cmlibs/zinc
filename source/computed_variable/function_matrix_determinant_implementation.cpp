@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_determinant_implementation.cpp
 //
-// LAST MODIFIED : 15 September 2004
+// LAST MODIFIED : 6 October 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -24,7 +24,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_determinant :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 14 September 2004
+// LAST MODIFIED : 6 October 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -42,6 +42,35 @@ class Function_variable_matrix_determinant :
 		{
 			return (Function_variable_handle(
 				new Function_variable_matrix_determinant<Value_type>(*this)));
+		};
+		Function_handle evaluate()
+		{
+			Function_handle result(0);
+			boost::intrusive_ptr< Function_matrix_determinant<Value_type> >
+				function_matrix_determinant;
+
+			if (function_matrix_determinant=boost::dynamic_pointer_cast<
+				Function_matrix_determinant<Value_type>,Function>(function()))
+			{
+				boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
+
+				if ((matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+					Function>(function_matrix_determinant->matrix_private->evaluate()))&&
+					(matrix->number_of_columns()==matrix->number_of_rows()))
+				{
+					if (matrix->determinant(function_matrix_determinant->values(0,0)))
+					{
+						result=Function_handle(new Function_matrix<Value_type>(
+							function_matrix_determinant->values));
+					}
+				}
+			}
+
+			return (result);
+		};
+		Function_handle evaluate_derivative(std::list<Function_variable_handle>&)
+		{
+			return (0);
 		};
 		//???DB.  Should operator() and get_entry do an evaluate?
 		boost::intrusive_ptr< Function_variable_matrix<Value_type> > operator()(
@@ -83,37 +112,15 @@ ublas::matrix<Value_type,ublas::column_major>
 EXPORT template<typename Value_type>
 Function_matrix_determinant<Value_type>::Function_matrix_determinant(
 	const Function_variable_handle& matrix):Function_matrix<Value_type>(
-	Function_matrix_determinant<Value_type>::constructor_values),matrix_private(0)
+	Function_matrix_determinant<Value_type>::constructor_values),
+	matrix_private(matrix)
 //******************************************************************************
-// LAST MODIFIED : 14 September 2004
+// LAST MODIFIED : 4 October 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
-{
-	boost::intrusive_ptr< Function_variable_matrix<Value_type> > matrix_local;
-
-	if (matrix_local=boost::dynamic_pointer_cast<
-		Function_variable_matrix<Value_type>,Function_variable>(matrix))
-	{
-		Function_size_type number_of_rows;
-
-		number_of_rows=matrix_local->number_of_rows();
-		if ((0<number_of_rows)&&(number_of_rows==matrix_local->number_of_columns()))
-		{
-			matrix_private=matrix_local;
-			values(0,0)=0;
-		}
-		else
-		{
-			throw Function_matrix_determinant<Value_type>::Invalid_matrix();
-		}
-	}
-	else
-	{
-		throw Function_matrix_determinant<Value_type>::Invalid_matrix();
-	}
-}
+{}
 
 EXPORT template<typename Value_type>
 Function_matrix_determinant<Value_type>::~Function_matrix_determinant()
@@ -226,6 +233,33 @@ EXPORT template<typename Value_type>
 Function_handle Function_matrix_determinant<Value_type>::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
+// LAST MODIFIED : 6 October 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+		atomic_variable_matrix_determinant;
+	Function_handle result(0);
+
+	if (atomic_variable&&
+		equivalent(Function_handle(this),(atomic_variable->function)())&&
+		(atomic_variable_matrix_determinant=boost::dynamic_pointer_cast<
+		Function_variable_matrix_determinant<Value_type>,Function_variable>(
+		atomic_variable))&&(1==atomic_variable_matrix_determinant->row())&&
+		(1==atomic_variable_matrix_determinant->column()))
+	{
+		result=atomic_variable_matrix_determinant->evaluate();
+	}
+
+	return (result);
+}
+
+#if defined (OLD_CODE)
+EXPORT template<typename Value_type>
+Function_handle Function_matrix_determinant<Value_type>::evaluate(
+	Function_variable_handle atomic_variable)
+//******************************************************************************
 // LAST MODIFIED : 15 September 2004
 //
 // DESCRIPTION :
@@ -256,6 +290,7 @@ Function_handle Function_matrix_determinant<Value_type>::evaluate(
 
 	return (result);
 }
+#endif // defined (OLD_CODE)
 
 EXPORT template<typename Value_type>
 bool Function_matrix_determinant<Value_type>::evaluate_derivative(Scalar&,

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_trace.hpp
 //
-// LAST MODIFIED : 10 September 2004
+// LAST MODIFIED : 1 October 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -13,10 +13,13 @@
 #include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable_matrix.hpp"
 
+template<typename Value_type>
+class Function_variable_matrix_trace;
+
 EXPORT template<typename Value_type>
 class Function_matrix_trace : public Function_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 10 September 2004
+// LAST MODIFIED : 1 October 2004
 //
 // DESCRIPTION :
 // Output is the trace of the matrix variable.  Input is the input of the matrix
@@ -26,6 +29,7 @@ class Function_matrix_trace : public Function_matrix<Value_type>
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
+	friend class Function_variable_matrix_trace<Value_type>;
 	public:
 		// for construction exception
 		class Invalid_matrix {};
@@ -54,7 +58,7 @@ class Function_matrix_trace : public Function_matrix<Value_type>
 		// equality
 		bool operator==(const Function&) const;
 	private:
-		boost::intrusive_ptr< Function_variable_matrix<Value_type> > matrix_private;
+		Function_variable_handle matrix_private;
 		static ublas::matrix<Value_type,ublas::column_major> constructor_values;
 };
 

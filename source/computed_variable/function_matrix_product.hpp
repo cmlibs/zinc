@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_product.hpp
 //
-// LAST MODIFIED : 8 September 2004
+// LAST MODIFIED : 30 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -13,10 +13,13 @@
 #include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable_matrix.hpp"
 
+template<typename Value_type>
+class Function_variable_matrix_product;
+
 EXPORT template<typename Value_type>
 class Function_matrix_product : public Function_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 8 September 2004
+// LAST MODIFIED : 30 September 2004
 //
 // DESCRIPTION :
 // Output is the product of two matrix variables.  Input is the union of the
@@ -26,6 +29,7 @@ class Function_matrix_product : public Function_matrix<Value_type>
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
+	friend class Function_variable_matrix_product<Value_type>;
 	public:
 		// for construction exception
 		class Invalid_multiplier_multiplicand {};
@@ -55,8 +59,7 @@ class Function_matrix_product : public Function_matrix<Value_type>
 		// equality
 		bool operator==(const Function&) const;
 	private:
-		boost::intrusive_ptr< Function_variable_matrix<Value_type> >
-			multiplicand_private,multiplier_private;
+		Function_variable_handle multiplicand_private,multiplier_private;
 		static ublas::matrix<Value_type,ublas::column_major> constructor_values;
 };
 
