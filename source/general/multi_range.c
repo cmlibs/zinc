@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : multi_range.c
 
-LAST MODIFIED : 1 September 2000
+LAST MODIFIED : 21 September 2000
 
 DESCRIPTION :
 Structure for storing and manipulating multiple, non-overlapping ranges of
@@ -940,6 +940,88 @@ Writes out the contents of the <multi_range>.
 
 	return (return_code);
 } /* Multi_range_print */
+
+int Multi_range_display_ranges(struct Multi_range *multi_range)
+/*******************************************************************************
+LAST MODIFIED : 21 September 2000
+
+DESCRIPTION :
+Writes the multi-range as a comma separated list to the command window,
+eg. 1,5,11..15. If the list is very long it is broken into lines of maximum
+length MAX_MULTI_RANGE_DISPLAY_COLUMNS.
+Writes <empty> if there is nothing in the multi-range.
+==============================================================================*/
+{
+#define MAX_MULTI_RANGE_DISPLAY_COLUMNS 80
+	char *ranges_string,*remaining_string;
+	int length_to_print,remaining_length,return_code;
+
+	ENTER(Multi_range_display_ranges);
+	if (multi_range)
+	{
+		return_code=1;
+		if (0<multi_range->number_of_ranges)
+		{
+			if (ranges_string=Multi_range_get_ranges_string(multi_range))
+			{
+				remaining_string = ranges_string;
+				remaining_length = strlen(remaining_string);
+				while ((0<remaining_length)&&return_code)
+				{
+					if (remaining_length < MAX_MULTI_RANGE_DISPLAY_COLUMNS)
+					{
+						display_message(INFORMATION_MESSAGE,remaining_string);
+						display_message(INFORMATION_MESSAGE,"\n");
+						remaining_length=0;
+					}
+					else
+					{
+						/* go back to last comma in string */
+						length_to_print = MAX_MULTI_RANGE_DISPLAY_COLUMNS;
+						while (length_to_print&&(remaining_string[length_to_print] != ','))
+						{
+							length_to_print--;
+						}
+						if (0<length_to_print)
+						{
+							/* null terminate string */
+							remaining_string[length_to_print] = '\0';
+							display_message(INFORMATION_MESSAGE,remaining_string);
+							display_message(INFORMATION_MESSAGE,",\n");
+							remaining_string += (length_to_print+1);
+							remaining_length -= (length_to_print+1);
+						}
+						else
+						{
+							return_code=0;
+						}
+					}
+				}
+				DEALLOCATE(ranges_string);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Multi_range_display_ranges.  Could not get ranges string");
+				return_code=0;
+			}
+		}
+		else
+		{
+			/* no ranges */
+			display_message(INFORMATION_MESSAGE,"<empty>\n");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Multi_range_display_ranges.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Multi_range_display_ranges */
 
 int Multi_range_test(void)
 /*******************************************************************************

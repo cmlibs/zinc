@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : multi_range.h
 
-LAST MODIFIED : 1 September 2000
+LAST MODIFIED : 21 September 2000
 
 DESCRIPTION :
 Structure for storing and manipulating multiple, non-overlapping ranges of
@@ -206,6 +206,17 @@ LAST MODIFIED : 12 March 1998
 
 DESCRIPTION :
 Writes out the contents of the <multi_range>.
+==============================================================================*/
+
+int Multi_range_display_ranges(struct Multi_range *multi_range);
+/*******************************************************************************
+LAST MODIFIED : 21 September 2000
+
+DESCRIPTION :
+Writes the multi-range as a comma separated list to the command window,
+eg. 1,5,11..15. If the list is very long it is broken into lines of maximum
+length MAX_MULTI_RANGE_DISPLAY_COLUMNS.
+Writes <empty> if there is nothing in the multi-range.
 ==============================================================================*/
 
 int Multi_range_test(void);
