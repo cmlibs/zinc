@@ -320,23 +320,23 @@ any x application - incl. for compatibility with win32.
 	ENTER(read_circle_discretization_defaults);
 	if (default_value&&maximum_value)
 	{
-		if (user_interface)
+		if (!resources_read)
 		{
-			if (!resources_read)
+			if (user_interface)
 			{
 				/* retrieve the settings */
 				XtVaGetApplicationResources(user_interface->application_shell,
 					&discretization,resources,XtNumber(resources),NULL);
 				resources_read=1;
 			}
-			*default_value=discretization.default_value;
-			*maximum_value=discretization.maximum_value;
+			else
+			{
+				discretization.default_value=6;
+				discretization.maximum_value=64;
+			}
 		}
-		else
-		{
-			*default_value=6;
-			*maximum_value=64;
-		}
+		*default_value=discretization.default_value;
+		*maximum_value=discretization.maximum_value;
 		return_code=1;
 	}
 	else
@@ -536,23 +536,25 @@ any x application - incl. for compatibility with win32.
 	ENTER(read_element_discretization_defaults);
 	if (default_value&&maximum_value)
 	{
-		if (user_interface)
+		if (!resources_read)
 		{
-			if (!resources_read)
+			/* Some functions call this without the user_interface, 
+			   we want those to use the values that may have already been read. */
+			if (user_interface)
 			{
 				/* retrieve the settings */
 				XtVaGetApplicationResources(user_interface->application_shell,
 					&discretization,resources,XtNumber(resources),NULL);
 				resources_read=1;
 			}
-			*default_value=discretization.default_value;
-			*maximum_value=discretization.maximum_value;
+			else
+			{
+				discretization.default_value=4;
+				discretization.maximum_value=50;
+			}
 		}
-		else
-		{
-			*default_value=4;
-			*maximum_value=50;
-		}
+		*default_value=discretization.default_value;
+		*maximum_value=discretization.maximum_value;
 		return_code=1;
 	}
 	else
