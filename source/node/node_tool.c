@@ -2090,9 +2090,7 @@ Fetches the appropriate icon for the interactive tool.
 	Pixmap pixmap;
 #endif /* defined (MOTIF) */
 	struct Cmgui_image *image;
-#if defined (MOTIF)
 	struct Node_tool *node_tool;
-#endif /* defined (MOTIF) */
 
 	ENTER(node_tool_get_icon);
 	if ((node_tool=(struct Node_tool *)node_tool_void))
@@ -2134,6 +2132,7 @@ Fetches the appropriate icon for the interactive tool.
 #else /* defined (MOTIF) */
 		USE_PARAMETER(foreground);
 		USE_PARAMETER(background);
+		USE_PARAMETER(node_tool);
 		display_message(WARNING_MESSAGE, "Node_tool_get_icon.  "
 			"Not implemented for this user interface.");
 #endif /* defined (MOTIF) */
