@@ -1,0 +1,131 @@
+!*******************************************************************************
+! FILE : node_tool.uil
+!
+! LAST MODIFIED : 8 May 2000
+!
+! DESCRIPTION :
+! Interactive tool icons.
+!===============================================================================
+module node_tool
+	version = 'v1.0'
+
+value
+	black  : color('black',  foreground);
+	blue   : color('blue',   foreground);
+	green  : color('green',  foreground);
+	red    : color('red',    foreground);
+	white  : color('white',  foreground);
+	yellow : color('yellow', foreground);
+	lightgray : color('lightgray', foreground);
+	darkgray  : color('darkgray', foreground);
+	interactive_tool_colour_table:
+		color_table(
+		black='o',
+		red='R',
+		yellow='Y',
+		green='G',
+		white='W',
+		lightgray='+',
+		darkgray='#',
+		foreground color='.',
+		background color=' ');
+
+	data_tool_icon: icon(color_table=interactive_tool_colour_table,
+			'                                ',
+			'                                ',
+			'   .   .                        ',
+			'    . .                         ',
+			'     .                .   .     ',
+			'    . .     .   .      . .      ',
+			'   .   .   .R. .R.      .       ',
+			'            .R R.      . .      ',
+			'             .        .   .     ',
+			'            .R .                ',
+			'           .R. ..               ',
+			'            .  ...              ',
+			'               ....             ',
+			'               .....     .   .  ',
+			'               ......     . .   ',
+			'               .......     .    ',
+			'     .   .     ........   . .   ',
+			'      . .      .....     .   .  ',
+			'       .       .. ..            ',
+			'      . .      .   ..           ',
+			'     .   .         ..           ',
+			'                    ..          ',
+			'                    ..          ',
+			'                                ',
+			'                  .             ',
+			'       ....       .             ',
+			'       .   . ..  ... ..         ',
+			'       .   .   .  .    .        ',
+			'       .   . ...  .  ...        ',
+			'       .   . . .  .  . .        ',
+			'       ....  .. . .  .. .       ',
+			'                                ');
+
+	node_tool_icon: icon(color_table=interactive_tool_colour_table,
+			'                                ',
+			'              ...               ',
+			'             .....              ',
+			'           .  ...  .            ',
+			'     ... .           . ...      ',
+			'     ...               ...      ',
+			'     ... .    ...    . ...      ',
+			'           . .RRR. .            ',
+			'      .      .R  .      .       ',
+			'             .R .               ',
+			'      .       . ..      .       ',
+			'                ...             ',
+			'      .         ....    .       ',
+			'                .....           ',
+			'     ...        ...... ...      ',
+			'     ...        ....... ..      ',
+			'     ... .      ........ .      ',
+			'           .  . .....           ',
+			'             .. .. ..           ',
+			'              . .   ..          ',
+			'                    ..          ',
+			'                     ..         ',
+			'                     ..         ',
+			'                                ',
+			'                     .          ',
+			'       .   .         .          ',
+			'       ..  .  ..   ...  .       ',
+			'       . . . .  . .  . . .      ',
+			'       . . . .  . .  . ...      ',
+			'       .  .. .  . .  . .        ',
+			'       .   .  ..   ...  ..      ',
+			'                                ');
+
+!*******************************************************************************
+object
+	data_tool_button: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = data_tool_icon;
+			XmNindicatorOn = false;
+			XmNhighlightThickness = 0;
+			XmNset = false;
+			XmNspacing = 0;
+			XmNshadowThickness = 2;
+			};
+		};
+	node_tool_button: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = node_tool_icon;
+			XmNindicatorOn = false;
+			XmNhighlightThickness = 0;
+			XmNset = false;
+			XmNspacing = 0;
+			XmNshadowThickness = 2;
+			};
+		};
+end module;
+!*******************************************************************************
+
