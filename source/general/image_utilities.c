@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.c
 
-LAST MODIFIED : 22 June 1999
+LAST MODIFIED : 31 August 2000
 
 DESCRIPTION :
 Utilities for handling images.
@@ -9,6 +9,8 @@ Utilities for handling images.
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <math.h>
 #include <ctype.h> /*???DB.  Contains definition of __BYTE_ORDER for Linux */
 #include "general/debug.h"
@@ -209,7 +211,7 @@ To take care of little/big endian.
 static int byte_swap_and_write(unsigned char *byte_array,int value_size,
 	int number_of_values,int least_to_most,FILE *output_file)
 /*******************************************************************************
-LAST MODIFIED : 16 April 2000
+LAST MODIFIED : 31 August 2000
 
 DESCRIPTION :
 Performs the byte swap and write, copying if necessary so that
@@ -219,16 +221,11 @@ the original values are not modified.
 {
 	int return_code;
 #if defined (__BYTE_ORDER)
-	char *temp_byte_array;
 	int i,j;
-	unsigned char *bottom_byte,byte,*element,*top_byte;
+	unsigned char *bottom_byte,byte,*element,*temp_byte_array,*top_byte;
 #endif /* defined (__BYTE_ORDER) */
 
 	ENTER(byte_swap_and_write);
-	USE_PARAMETER(byte_array);
-	USE_PARAMETER(value_size);
-	USE_PARAMETER(number_of_values);
-	USE_PARAMETER(least_to_most);
 	return_code=0;
 #if defined (__BYTE_ORDER)
 #if (1234==__BYTE_ORDER)
@@ -239,7 +236,7 @@ the original values are not modified.
 	{
 		/* we must copy the bytes before reordering so as not to mess up the 
 			original data */
-		if (ALLOCATE(temp_byte_array,char,value_size*number_of_values))
+		if (ALLOCATE(temp_byte_array,unsigned char,value_size*number_of_values))
 		{
 			memcpy(temp_byte_array,byte_array,value_size*number_of_values);
 			element=temp_byte_array;
@@ -257,8 +254,8 @@ the original values are not modified.
 				}
 				element += value_size;
 			}
-			return_code=fwrite(temp_byte_array,value_size,number_of_values,
-				output_file);
+			return_code =
+				fwrite(temp_byte_array,value_size,number_of_values,output_file);
 			DEALLOCATE(temp_byte_array);
 		}
 		else
@@ -273,6 +270,7 @@ the original values are not modified.
 		return_code=fwrite(byte_array,value_size,number_of_values,output_file);
 	}
 #else /* defined (__BYTE_ORDER) */
+	USE_PARAMETER(least_to_most);
 	return_code=fwrite(byte_array,value_size,number_of_values,output_file);
 #endif /* defined (__BYTE_ORDER) */
 	LEAVE;
@@ -283,7 +281,7 @@ the original values are not modified.
 static int read_and_byte_swap(unsigned char *byte_array,int value_size,
 	int number_of_values,int least_to_most,FILE *input_file)
 /*******************************************************************************
-LAST MODIFIED : 16 April 2000
+LAST MODIFIED : 31 August 2000
 
 DESCRIPTION :
 Performs the read and byte.
@@ -292,16 +290,11 @@ Performs the read and byte.
 {
 	int return_code;
 #if defined (__BYTE_ORDER)
-	char *temp_byte_array;
 	int i,j;
 	unsigned char *bottom_byte,byte,*element,*top_byte;
 #endif /* defined (__BYTE_ORDER) */
 
 	ENTER(read_and_byte_swap);
-	USE_PARAMETER(byte_array);
-	USE_PARAMETER(value_size);
-	USE_PARAMETER(number_of_values);
-	USE_PARAMETER(least_to_most);
 	return_code=0;
 #if defined (__BYTE_ORDER)
 #if (1234==__BYTE_ORDER)
@@ -335,6 +328,7 @@ Performs the read and byte.
 		return_code=fread(byte_array,value_size,number_of_values,input_file);
 	}
 #else /* defined (__BYTE_ORDER) */
+	USE_PARAMETER(least_to_most);
 	return_code=fread(byte_array,value_size,number_of_values,input_file);
 #endif /* defined (__BYTE_ORDER) */
 	LEAVE;
@@ -2672,7 +2666,7 @@ int read_tiff_image_file(char *file_name,int *number_of_components_address,
 	long int *height_address,long int *width_address,
 	long unsigned **image_address)
 /*******************************************************************************
-LAST MODIFIED : 16 April 2000
+LAST MODIFIED : 31 August 2000
 
 DESCRIPTION :
 Reads an image from a TIFF file.
@@ -4059,11 +4053,234 @@ present in some files */
 	return (return_code);
 } /* read_tiff_image_file */
 
+int read_yuv_image_file(char *file_name,int *number_of_components_address,
+	int *number_of_bytes_per_component,
+	long int *height_address,long int *width_address,
+	unsigned long **image_address)
+/*******************************************************************************
+LAST MODIFIED : 31 August 2000
+
+DESCRIPTION :
+Reads an image from a YUV file, returning it as an RGB image.
+YUV images are commonly used for video output since they store just 4 bytes for
+every 2 pixels in the order u y1 v y2. y1 and y2 effectively store the intensity
+for each pixel. u and v, combined with the appropriate y then give the RGB
+colour of the pixels, hence the colour resolution is somewhat reduced.
+Refer to the code for the conversion to RGB.
+YUV files have no header; the image dimensions are computed from the file size.
+Several standard video sizes are supported as described in the code. Support for
+other resolutions is given by allowing the file extension .yuv#### to specify
+the horizontal resolution; the vertical resolution is then computed from the
+file size.
+==============================================================================*/
+{
+#define limit(x) ((((x)>0xffffff)?0xff0000:(((x)<=0xffff)?0:(x)&0xff0000))>>16)
+	char *file_extension;
+	unsigned char *image,*image_ptr,*yuv;
+	FILE *image_file;
+	int b,bytes_read,g,j,num_yyuv,r,rest_of_line,return_code,row,row_size,
+		u,v,y1,y2;
+	long int file_size,height,width;
+	struct stat buf;
+
+	ENTER(read_yuv_image_file);
+	if (file_name&&number_of_components_address&&height_address&&width_address&&
+		image_address)
+	{
+		return_code=1;
+		if (image_file=fopen(file_name,"rb"))
+		{
+			/* use stat to get size of file to determine format from */
+			if ((0==stat(file_name,&buf))&&(0<(file_size=(long int)(buf.st_size))))
+			{
+				/* first check if the horizontal resolution is specified in the file
+					 extension .yuv####. Note at present limit width to be a multiple of
+					 4 so that final RGB is 4 byte aligned and there are an even number
+					 of pixels for the u y1 v y2 quad */
+				if ((file_extension=strrchr(file_name,'.'))&&
+					fuzzy_string_compare(".yuv",file_extension)&&
+					(0<(width=(long)atoi(file_extension+4)))&&
+					(0==(width % 4)))
+				{
+					/* set height to include all data, padding rest of last line */
+					height = (file_size + width*2 - 1) / (width*2);
+				}
+				else
+				{
+					/* otherwise compare the file size with some common video standards */
+					if ((1920*1080*2) == file_size)
+					{
+						/* North American HDTV standard, 2 interlaced fields; put fields
+							 side by side in double wide image */
+						width = 3840;
+						height = 540;
+					}
+					else if ((1920*540*2) == file_size)
+					{
+						/* North American HDTV standard, single field */
+						width = 1920;
+						height = 540;
+					}
+#if defined (SAVE_CODE)
+					/* save this for documentation reasons - not sure if we'll ever get
+						 files of this size, hence leave more automatic sizes available */
+					else if ((1920*1035*2) == file_size)
+					{
+						/* Japanese HDTV standard, 2 interlaced fields; put fields
+							 side by side in double wide image, pad 518th line on field 2 */
+						width = 3840;
+						height = 518;
+					}
+					else if (((1920*518*2) == file_size) || ((1920*517*2) == file_size))
+					{
+						/* Japanese HDTV standard, single field;
+							 pad 518th line on field 2 */
+						width = 1920;
+						height = 518;
+					}
+#endif /* defined (SAVE_CODE) */
+					else if ((720*486*2) == file_size)
+					{
+						/* CCIR-601 NSTC format, 2 interlaced fields; put fields
+							 side by side in double wide image */
+						width = 1440;
+						height = 243;
+					}
+					else if ((720*243*2) == file_size)
+					{
+						/* CCIR-601 NSTC format, single field */
+						width = 720;
+						height = 243;
+					}
+					else if ((720*576*2) == file_size)
+					{
+						/* CCIR-601 PAL format, 2 interlaced fields; put fields
+							 side by side in double wide image */
+						width = 1440;
+						height = 288;
+					}
+					else if ((720*288*2) == file_size)
+					{
+						/* CCIR-601 PAL format, single field */
+						width = 720;
+						height = 288;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"read_yuv_image_file.  "
+							"Could not determine image dimension from size of '%s' "
+							"Specify horizontal resolution in .yuv#### file extension",
+							file_name,file_size);
+						return_code=0;
+					}
+				}
+				if (return_code)
+				{
+					/* YUV format uses 2 bytes per pixel,
+						 final image will be 3 bytes per pixel RGB */
+					if (ALLOCATE(image,unsigned char,width*height*3))
+					{
+						/* convert image from top-to-bottom to bottom-to-top for
+							 OpenGL image/texture storage */
+						row_size=width*3;
+						for (row=1;(row <= height)&&return_code;row++)
+						{
+							image_ptr = image + (height-row)*row_size;
+							/* since yuv file has 2 bytes for every 3 in final rgb, read a
+								 scanline into last 2/3 of rgb scanline and convert across */
+							yuv = image_ptr + width;
+							if (0<(bytes_read=fread(yuv,/*value_size*/1,width*2,image_file)))
+							{
+								num_yyuv = bytes_read/4;
+								for (j=0;j<num_yyuv;j++)
+								{
+									u  = *yuv++ - 128;
+									y1 = *yuv++ - 16;
+									if (0>y1)
+									{
+										y1=0;
+									}
+									v  = *yuv++ - 128;
+									y2 = *yuv++ - 16;
+									if (0>y2)
+									{
+										y2=0;
+									}
+									r = 104635*v;
+									g = -25690*u - 53294*v;
+									b = 132278*u;
+									
+									y1 *= 76310;
+									y2 *= 76310;
+#if defined (SAVE_CODE)
+#define YUV_OFFSET 16.0
+#define YUV_RANGE  332.0
+									/* Paul Charette's "adjustment" of YUV so that minimal
+										 clipping occurs... this is down before the final
+										 clipping to 0..255 range, ie with R meaning r+y1 etc. */
+									R = (R + YUV_OFFSET)*(255.0/YUV_RANGE);
+									G = (G + YUV_OFFSET)*(255.0/YUV_RANGE);
+									B = (B + YUV_OFFSET)*(255.0/YUV_RANGE);
+#endif /* defined (SAVE_CODE) */
+									*image_ptr++ = limit(r+y1);
+									*image_ptr++ = limit(g+y1);
+									*image_ptr++ = limit(b+y1);
+									*image_ptr++ = limit(r+y2);
+									*image_ptr++ = limit(g+y2);
+									*image_ptr++ = limit(b+y2);
+								}
+								if (num_yyuv < (width/2))
+								{
+									rest_of_line=(width - num_yyuv*2)*3;
+									memset(image_ptr,0,rest_of_line);
+									image_ptr += rest_of_line;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"read_yuv_image_file.  "
+									"Unexpected end of file '%s'",file_name);
+								/*return_code=0;*/
+							}
+						}
+					}
+					*number_of_components_address = 3;
+					*number_of_bytes_per_component = 1;
+					*height_address = height;
+					*width_address = width;
+					*image_address = (unsigned long *)image;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"read_yuv_image_file.  Could not get size of file '%s'",file_name);
+				return_code=0;
+			}
+			fclose(image_file);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"read_yuv_image_file.  Could not open image file '%s'",file_name);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"read_yuv_image_file.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* read_yuv_image_file */
+
 int read_image_file(char *file_name,int *number_of_components,
 	int *number_of_bytes_per_component,
 	long int *height,long int *width, long unsigned **image)
 /*******************************************************************************
-LAST MODIFIED : 25 August 1999
+LAST MODIFIED : 30 August 2000
 
 DESCRIPTION :
 Detects the image type from the file extension (rgb/tiff) and then reads.
@@ -4074,9 +4291,7 @@ Detects the image type from the file extension (rgb/tiff) and then reads.
 
 	ENTER(read_image_file);
 	return_code=0;
-	/* check arguments */
-	if (file_name&&number_of_components&&height&&width&&
-		image)
+	if (file_name&&number_of_components&&height&&width&&image)
 	{
 		if (file_extension=strrchr(file_name,'.'))
 		{
@@ -4087,18 +4302,24 @@ Detects the image type from the file extension (rgb/tiff) and then reads.
 					number_of_bytes_per_component,
 					height,width,image);
 			}
+			else if (fuzzy_string_compare("tif",file_extension))
+			{
+				return_code=read_tiff_image_file(file_name,
+					number_of_components,number_of_bytes_per_component,
+					height,width,image);
+			}
+			/* note: yuv is followed by horizontal resolution, hence only compare
+				 file_extension to length 3 */
+			else if (fuzzy_string_compare("yuv",file_extension))
+			{
+				return_code=read_yuv_image_file(file_name,
+					number_of_components,number_of_bytes_per_component,
+					height,width,image);
+			}
 			else
 			{
-				if (fuzzy_string_compare(file_extension,"tif"))
-				{
-					return_code=read_tiff_image_file(file_name,
-						number_of_components,number_of_bytes_per_component,
-						height,width,image);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"Unknown image file extension");
-				}
+				display_message(ERROR_MESSAGE,"Unknown image file extension '%s'",
+					file_extension);
 			}
 		}
 		else
