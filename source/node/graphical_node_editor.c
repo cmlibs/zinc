@@ -1,34 +1,25 @@
 /*******************************************************************************
 FILE : graphical_node_editor.c
 
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
-Functions mouse controlled node editing to a Scene.
-???DB.  Need a DESTROY
-???DB.  Ignore outside clipping planes ?
+Functions for mouse controlled node position and vector editing based on
+Scene input.
 ==============================================================================*/
 #include <math.h>
 #include "command/command.h"
-#include "finite_element/finite_element_to_graphics_object.h"
+/*#include "finite_element/finite_element_to_graphics_object.h"*/
 #include "general/debug.h"
-#include "general/geometry.h"
+/*#include "general/geometry.h"*/
 #include "general/matrix_vector.h"
 #include "graphics/element_group_settings.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
 #include "node/graphical_node_editor.h"
-#include "three_d_drawing/ThreeDDraw.h"
 #include "user_interface/message.h"
-#include "user_interface/user_interface.h"
-
-/*
-Module constants
-----------------
-*/
-double edit_scale=0.5,pointer_tolerance=0.01;
-	/*???DB.  #define ?  setting ? */
+/*#include "user_interface/user_interface.h"*/
 
 /*
 Module types
@@ -203,7 +194,7 @@ error is reported.
 
 static int FE_node_calculate_delta_position(struct FE_node *node,void *edit_info_void)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 Calculates the delta change in the coordinates due to the ray supplied in the
@@ -313,6 +304,8 @@ applied to multiple nodes.
 		{
 			return_code=0;
 		}
+		/* always clear caches of evaluated fields */
+		Computed_field_clear_cache(edit_info->rc_coordinate_field);
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,"FE_node_calculate_delta_position.  Failed");
@@ -331,7 +324,7 @@ applied to multiple nodes.
 
 static int FE_node_edit_position(struct FE_node *node,void *edit_info_void)
 /*******************************************************************************
-LAST MODIFIED : 20 February 2000
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 Translates the <rc_coordinate_field> of <node> according to the delta change
@@ -351,7 +344,8 @@ stored in the <edit_info>.
 		return_code=1;
 		if (node != edit_info->last_picked_node)
 		{
-			/* the last_picked_node was already updated in FE_node_calculate_delta_position */
+			/* the last_picked_node was already updated in
+				 FE_node_calculate_delta_position */
 			/* clear coordinates in case less than 3 dimensions */
 			coordinates[0]=0.0;
 			coordinates[1]=0.0;
@@ -381,7 +375,7 @@ stored in the <edit_info>.
 				return_code=0;
 			}
 			/* always clear caches of evaluated fields */
-			Computed_field_clear_cache(edit_info->rc_coordinate_field);
+			Computed_field_clear_cache(edit_info->coordinate_field);
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,"FE_node_edit_position.  Failed");

@@ -1,11 +1,11 @@
 /*******************************************************************************
 FILE : graphical_node_editor.h
 
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
-Functions mouse controlled node editing to a Scene.
-???DB.  Includes ?
+Functions for mouse controlled node position and vector editing based on
+Scene input.
 ==============================================================================*/
 #if !defined (GRAPHICAL_NODE_EDITOR_H)
 #define GRAPHICAL_NODE_EDITOR_H
