@@ -4680,14 +4680,14 @@ current layout_mode, the function adjusts the view in all the panes tied to
 						/* 2 panes show views from eyes separated by eye_spacing, and
 							 looking at the same lookat point. Hence, can calculate the angle
 							 difference between the views using the eye_distance. */
-						angle=2.0*asin(window->eye_spacing/eye_distance);
+						angle=2.0*atan(0.5*window->eye_spacing/eye_distance);
 						switch (changed_pane)
 						{
 							case 0:
 							{
 								Scene_viewer_rotate_about_lookat_point(window->scene_viewer[1],
 									up,-angle);
-							Scene_viewer_redraw_now(window->scene_viewer[1]);
+								Scene_viewer_redraw_now(window->scene_viewer[1]);
 							} break;
 							case 1:
 							{
