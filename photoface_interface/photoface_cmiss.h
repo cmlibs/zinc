@@ -10,8 +10,6 @@ return code - zero is success, non-zero is failure.
 #if !defined (PHOTOFACE_CMISS_H)
 #define PHOTOFACE_CMISS_H
 
-#define LINUX_CMISS
-
 #if defined (WIN32) && defined (PHOTOFACE_CMISS_EXPORTS)
 #if defined (CMISSDLLEXPORT)
 #define CMISSDECLSPEC __declspec( dllexport )
@@ -21,6 +19,8 @@ return code - zero is success, non-zero is failure.
 #else /* defined (WIN32) && defined (PHOTOFACE_CMISS_EXPORTS) */
 #define CMISSDECLSPEC
 #endif /* defined (WIN32) && defined (PHOTOFACE_CMISS_EXPORTS) */
+
+#define ERROR_MESSAGE
 
 #if defined (__cplusplus)
 extern "C" {
@@ -45,6 +45,7 @@ Return codes for the interface functions.
 #define PF_READ_FILE_FAILURE_RC ((int)-6)
 #define PF_WRITE_FILE_FAILURE_RC ((int)-7)
 #define PF_OPEN_FILE_FAILURE_RC ((int)-8)
+#define PF_NULL_POINTER_RC ((int)-9)
 
 /*
 Global types
@@ -66,21 +67,35 @@ The image formats that the interface supports
 Global functions
 ----------------
 */
-#if defined (LINUX_CMISS)
-CMISSDECLSPEC int pf_specify_paths(char *photoface_main_windows_path,
-	char *photoface_main_linux_path);
+#if defined (ERROR_MESSAGE)
+	int pf_get_error_message(char **message);
 /*******************************************************************************
-LAST MODIFIED : 13 February 2001
+LAST MODIFIED : 19 October 2001
+
+DESCRIPTION :
+Allocates and returns the reason recorded for the last error returned by
+photoface_cmiss.
+The string should be freed when no longer required.
+==============================================================================*/
+#endif /* defined (ERROR_MESSAGE) */
+
+CMISSDECLSPEC int pf_specify_paths(char *photoface_local_path,
+	char *photoface_remote_path);
+/*******************************************************************************
+LAST MODIFIED : 19 October 2001
 
 DESCRIPTION :
 Specifies the main directory under which the model, working and cmiss directory
-are expected to be located under Windows and Linux.  The paths should end in a
-delimiting /.  This function will be obsolete once a windows only version of the
-Photoface cmiss library is built.
+are expected to be located.  The paths should end in a delimiting /.
+The local path specifies where the files are found on this local operating
+system (in a mixed OS system Windows) and the remote path specifies
+where the same directory is on the remote fitting machine (at time of writing,
+a linux machine).
+If the photoface_library and this interface are on the same machine then these
+two strings should still be set but they will be identical.
 
 If either path is NULL then the internal storage for that path is free'd.
 ==============================================================================*/
-#endif /* defined (LINUX_CMISS) */
 
 CMISSDECLSPEC int pf_setup(char *model_name,char *state,int *pf_job_id);
 /*******************************************************************************

@@ -27,32 +27,6 @@ struct Obj
 #define TEXTURE_WIDTH (512)
 #define TEXTURE_HEIGHT (512)
 
-#if defined (MANUAL_CMISS)
-static int display_message_function(char *message, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 13 February 2001
-
-DESCRIPTION :
-Runs a job through the photoface interface.
-==============================================================================*/
-{
-  printf("%s\n", message);
-}
-
-static int display_message_and_wait_function(char *message, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 13 February 2001
-
-DESCRIPTION :
-Runs a job through the photoface interface.
-==============================================================================*/
-{
-  printf("%s", message);
-	printf("Press return to continue\n");
-  scanf("%*c");
-}
-#endif /* defined (MANUAL_CMISS) */
-
 int main(int argc, char **argv)
 /*******************************************************************************
 LAST MODIFIED : 24 January 2001
@@ -591,7 +565,7 @@ Runs a job through the photoface interface.
     1, /* Neck_Right_Bottom */
     1, /* Neck_Right_Out_2 */
     1 /* Neck_Right_Out_1 */ };
-	char 		*image_array, *image_ptr, *texture_array,
+	char *error_message, *image_array, *image_ptr, *texture_array,
 		*hair_texture_array, *distorted_background_array;
 	char *eye_marker_names[] = {"eyeball_origin_left",
 										 "eyeball_origin_right"};
@@ -614,20 +588,52 @@ Runs a job through the photoface interface.
 	ALLOCATE(hair_texture_array, char, 3 * TEXTURE_WIDTH * TEXTURE_HEIGHT);
 	ALLOCATE(distorted_background_array, char, 3 * TEXTURE_WIDTH * TEXTURE_HEIGHT);
 
-	pf_specify_paths("/home/blackett/lifefx/photoface/", "/home/blackett/lifefx/photoface/");
+	if (PF_SUCCESS_RC == pf_specify_paths("/home/blackett/lifefx/photoface/", "/home/blackett/lifefx/photoface/"))
+	{
+		printf("Completed pf_specify_paths.\n");
+	}
+	else
+	{
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_specify_paths failed: %s\n", error_message);
+		DEALLOCATE(error_message);
+	}
 
-	pf_setup("rachelv_r05m", "", &pf_job_id);
-	
-	printf("Completed pf_setup\n");
+	if (PF_SUCCESS_RC == pf_setup("rachelv_r05m", "", &pf_job_id))
+	{
+		printf("Completed pf_setup.\n");
+	}
+	else
+	{
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_setup failed: %s\n", error_message);
+		DEALLOCATE(error_message);
+	}
 
-	pf_specify_markers(pf_job_id, number_of_markers, marker_names,
-		marker_2d_positions, marker_confidences);
-	printf("Completed pf_specify_markers.\n");
+	if (PF_SUCCESS_RC == pf_specify_markers(pf_job_id, number_of_markers, marker_names,
+			 marker_2d_positions, marker_confidences))
+	{
+		printf("Completed pf_specify_markers.\n");
+	}
+	else
+	{
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_specify_markers failed: %s\n", error_message);
+		DEALLOCATE(error_message);
+	}
 
-	pf_view_align(pf_job_id, &error);
-	printf("Completed pf_view_align.\n");
+	if (PF_SUCCESS_RC == pf_view_align(pf_job_id, &error))
+	{
+		printf("Completed pf_view_align.\n");
+	}
+	else
+	{
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_view_align failed: %s\n", error_message);
+		DEALLOCATE(error_message);
+	}
 
-	if (0 == pf_get_view(pf_job_id, eye_point, interest_point, up_vector, &view_angle))
+	if (PF_SUCCESS_RC == pf_get_view(pf_job_id, eye_point, interest_point, up_vector, &view_angle))
 	{
 		printf("Got view parameters.\n");
 		printf("   Eye point %f %f %f.\n", eye_point[0], eye_point[1], eye_point[2]);
@@ -638,25 +644,35 @@ Runs a job through the photoface interface.
 	}
 	else
 	{
-		fprintf(stderr, "ERROR: pf_get_view failed\n");
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_get_view failed: %s\n", error_message);
+		DEALLOCATE(error_message);
 	}
 
-	if (0 == pf_fit(pf_job_id, &error))
+	if (PF_SUCCESS_RC == pf_fit(pf_job_id, &error))
 	{
 		printf("Completed pf_fit.\n");
 	}
 	else
 	{
-		fprintf(stderr, "ERROR: pf_get_view failed\n");
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_get_view failed: %s\n", error_message);
+		DEALLOCATE(error_message);
 	}
 
-	if (0 == pf_get_head_model(pf_job_id, &(obj.number_of_vertices), &(obj.vertex_3d_locations),
+	if (PF_SUCCESS_RC == pf_get_head_model(pf_job_id, &(obj.number_of_vertices), &(obj.vertex_3d_locations),
 		&(obj.number_of_texture_vertices), &(obj.texture_vertex_3d_locations),
 		&(obj.number_of_triangles), &(obj.triangle_vertices),
 	  &(obj.triangle_texture_vertices)))
 	{
 		printf("Completed pf_get_head_model. vertices %d, %d, triangles %d\n",
 			obj.number_of_vertices, obj.number_of_texture_vertices, obj.number_of_triangles);
+	}
+	else
+	{
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_get_head_model failed: %s\n", error_message);
+		DEALLOCATE(error_message);
 	}
 
 	/* Put something into the image array */
@@ -674,9 +690,10 @@ Runs a job through the photoface interface.
 		}
 	}
 	
-	if (0 == pf_get_marker_fitted_positions(pf_job_id, number_of_markers, 
+	if (PF_SUCCESS_RC == pf_get_marker_fitted_positions(pf_job_id, number_of_markers, 
 		marker_names, marker_fitted_3d_positions))
 	{
+		printf("Completed pf_get_marker_fitted_positions.\n");
 		printf("Fitted positions:\n");
 		for (i = 0 ; i < number_of_markers ; i++)
 		{
@@ -687,12 +704,15 @@ Runs a job through the photoface interface.
 	}
 	else
 	{
-		fprintf(stderr, "ERROR: pf_get_marker_fitted_positions failed\n");
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_get_marker_fitted_positions failed: %s\n", error_message);
+		DEALLOCATE(error_message);
 	}
 
-	if (0 == pf_get_marker_fitted_positions(pf_job_id, 2, 
+	if (PF_SUCCESS_RC == pf_get_marker_fitted_positions(pf_job_id, 2, 
 		eye_marker_names, eyeball_fitted_3d_positions))
 	{
+		printf("Completed pf_get_marker_fitted_positions for eyeballs.\n");
 		printf("Eyeball Fitted positions:\n");
 		for (i = 0 ; i < 2 ; i++)
 		{
@@ -703,12 +723,16 @@ Runs a job through the photoface interface.
 	}
 	else
 	{
-		fprintf(stderr, "ERROR: pf_get_marker_fitted_positions failed for eyeballs\n");
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_get_marker_fitted_positions failed for eyeballs: %s\n",
+			error_message);
+		DEALLOCATE(error_message);
 	}
 
-	if (0 == pf_get_basis(pf_job_id, &number_of_modes, &number_of_vertices,
+	if (PF_SUCCESS_RC == pf_get_basis(pf_job_id, &number_of_modes, &number_of_vertices,
 		&vertex_3d_locations))
 	{
+		printf("Completed pf_get_basis.\n");
 		printf("Basis:  Modes %d, vertices %d\n", number_of_modes,
 			number_of_vertices);
 		printf("Basis[10][10]:  %f\n", vertex_3d_locations[10 * 
@@ -716,25 +740,36 @@ Runs a job through the photoface interface.
 	}
 	else
 	{
-		fprintf(stderr, "ERROR: pf_get_basis failed\n");
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_get_basis failed: %s\n", error_message);
+		DEALLOCATE(error_message);
 	}
 
-	if (0 != pf_specify_image(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, PF_RGB_IMAGE, image_array))
+	if (PF_SUCCESS_RC == pf_specify_image(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, PF_RGB_IMAGE, image_array))
 	{
-		fprintf(stderr, "ERROR: pf_specify_image failed\n");
+		printf("Completed pf_specify_image.\n");
+	}
+	else
+	{
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_specify_image failed: %s\n", error_message);
+		DEALLOCATE(error_message);
 	}
 
-	if (0 == pf_get_texture(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, PF_RGB_IMAGE, 
+	if (PF_SUCCESS_RC == pf_get_texture(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, PF_RGB_IMAGE, 
 			 texture_array))
 	{
-		printf ("Texture[30][30]: %d %d %d\n", texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30],
+		printf("Completed pf_get_texture.\n");
+		printf("Texture[30][30]: %d %d %d\n", texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30],
 			texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 1], texture_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 2]);
-		printf ("Texture[70][70]: %d %d %d\n", texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70],
+		printf("Texture[70][70]: %d %d %d\n", texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70],
 			texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 1], texture_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 2]);
 	}
 	else
 	{
-		fprintf(stderr, "ERROR: pf_get_texture failed\n");
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_get_texture failed: %s\n", error_message);
+		DEALLOCATE(error_message);
 	}
 
 	/* Put something into the image array */
@@ -752,7 +787,7 @@ Runs a job through the photoface interface.
 		}
 	}
 
-	if (0 == pf_get_hair_model(pf_job_id, &(hair_obj.number_of_vertices), &(hair_obj.vertex_3d_locations),
+	if (PF_SUCCESS_RC == pf_get_hair_model(pf_job_id, &(hair_obj.number_of_vertices), &(hair_obj.vertex_3d_locations),
 		&(hair_obj.number_of_texture_vertices), &(hair_obj.texture_vertex_3d_locations),
 		&(hair_obj.number_of_triangles), &(hair_obj.triangle_vertices),
 	  &(hair_obj.triangle_texture_vertices)))
@@ -762,35 +797,52 @@ Runs a job through the photoface interface.
 	}
 	else
 	{
-		fprintf(stderr, "ERROR: pf_get_hair_model failed\n");
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_get_hair_model failed: %s\n", error_message);
+		DEALLOCATE(error_message);
 	}
 
-	pf_specify_hair_mask(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, PF_RGB_IMAGE, image_array);
+	if (PF_SUCCESS_RC == pf_specify_hair_mask(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, PF_RGB_IMAGE, image_array))
+	{
+		printf("Completed pf_specify_hair_mask.\n");
+	}
+	else
+	{
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_specify_hair_mask failed: %s\n", error_message);
+		DEALLOCATE(error_message);
+	}		
 	
-	if (0 == pf_get_hair_texture(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, 
+	if (PF_SUCCESS_RC == pf_get_hair_texture(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, 
 			 PF_RGBA_IMAGE, hair_texture_array))
 	{
-		printf ("Hair Texture[30][30]: %d %d %d\n", hair_texture_array[4 * 30 * TEXTURE_WIDTH + 4 * 30],
+		printf("Completed pf_get_hair_texture.\n");
+		printf("Hair Texture[30][30]: %d %d %d\n", hair_texture_array[4 * 30 * TEXTURE_WIDTH + 4 * 30],
 			hair_texture_array[4 * 30 * TEXTURE_WIDTH + 4 * 30 + 1], hair_texture_array[4 * 30 * TEXTURE_WIDTH + 4 * 30 + 2]);
-		printf ("Hair Texture[70][70]: %d %d %d\n", hair_texture_array[4 * 70 * TEXTURE_WIDTH + 4 * 70],
+		printf("Hair Texture[70][70]: %d %d %d\n", hair_texture_array[4 * 70 * TEXTURE_WIDTH + 4 * 70],
 			hair_texture_array[4 * 70 * TEXTURE_WIDTH + 4 * 70 + 1], hair_texture_array[4 * 70 * TEXTURE_WIDTH + 4 * 70 + 2]);
 	}
 	else
 	{
-		fprintf(stderr, "ERROR: pf_get_hair_texture failed\n");
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_get_hair_texture failed: %s\n", error_message);
+		DEALLOCATE(error_message);
 	}
 
-	if (0 == pf_get_distorted_background(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, 
+	if (PF_SUCCESS_RC == pf_get_distorted_background(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, 
 			 PF_RGB_IMAGE, distorted_background_array))
 	{
-		printf ("Distorted Background[30][30]: %d %d %d\n", distorted_background_array[3 * 30 * TEXTURE_WIDTH + 3 * 30],
+		printf("Completed pf_get_distorted_background.\n");
+		printf("Distorted Background[30][30]: %d %d %d\n", distorted_background_array[3 * 30 * TEXTURE_WIDTH + 3 * 30],
 			distorted_background_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 1], distorted_background_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 2]);
-		printf ("Distorted Background[70][70]: %d %d %d\n", distorted_background_array[3 * 70 * TEXTURE_WIDTH + 3 * 70],
+		printf("Distorted Background[70][70]: %d %d %d\n", distorted_background_array[3 * 70 * TEXTURE_WIDTH + 3 * 70],
 			distorted_background_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 1], distorted_background_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 2]);
 	}
 	else
 	{
-		fprintf(stderr, "ERROR: pf_get_distorted_background failed\n");
+		pf_get_error_message(&error_message);
+		fprintf(stderr, "ERROR: pf_get_distorted_background failed: %s\n", error_message);
+		DEALLOCATE(error_message);
 	}
 
 	/* Write out the files */

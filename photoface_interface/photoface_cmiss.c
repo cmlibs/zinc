@@ -31,14 +31,6 @@ return code - zero is success, non-zero is failure.
 
 #define WITH_OMNISECURE
 
-/* SAB Debug used to debug file creation problems in Boston
-#define PHOTOFACE_WIN_DEBUG 1 */
-
-#if defined (PHOTOFACE_WIN_DEBUG)
-static FILE *debuglog_file = NULL;
-#endif
-
-
 /*
 Module types
 ------------
@@ -76,109 +68,75 @@ Module variables
 static char *photoface_remote_path = NULL,*photoface_local_path = NULL;
 struct Marker_struct *markers;
 
-#if defined (MANUAL_CMISS)
-static PF_display_message_function
-	*display_error_message_function=(PF_display_message_function *)NULL,
-	*display_information_message_function=(PF_display_message_function *)NULL,
-	*display_warning_message_function=(PF_display_message_function *)NULL;
-static void
-	*display_error_message_data=(void *)NULL,
-	*display_information_message_data=(void *)NULL,
-	*display_warning_message_data=(void *)NULL;
-
-#define MESSAGE_STRING_SIZE 10000
-static char message_string[MESSAGE_STRING_SIZE];
-#else /* defined (MANUAL_CMISS) */
 #define COMMAND_STRING_SIZE 10000
 static char command_string[COMMAND_STRING_SIZE];
-#endif /* defined (MANUAL_CMISS) */
+
+#if defined (ERROR_MESSAGE)
+#define ERROR_MESSAGE_SIZE 10000
+static char error_message[ERROR_MESSAGE_SIZE] = "";
+
+enum PF_message_type
+{
+	PF_INFORMATION_MESSAGE,
+	PF_WARNING_MESSAGE,
+	PF_ERROR_MESSAGE
+};
+#endif /* defined (ERROR_MESSAGE) */
 
 /*
 Module functions
 ----------------
 */
-#if defined (MANUAL_CMISS)
-static int display_message(enum PF_message_type message_type,char *format, ... )
+#if defined (ERROR_MESSAGE)
+static int set_error_message(enum PF_message_type message_type,char *format, ... )
 /*******************************************************************************
-LAST MODIFIED : 13 February 2001
+LAST MODIFIED : 19 October 2001
 
 DESCRIPTION :
-A function for displaying a message of the specified <message_type>.  The printf
+A function for setting an error message of the specified <message_type>.  The printf
 form of arguments is used.
 ==============================================================================*/
 {
-	int return_code;
+	int offset, return_code;
 	va_list ap;
 
-	ENTER(display_message);
+	ENTER(set_error_message);
 	va_start(ap,format);
-/*	return_code=vsnprintf(message_string,MESSAGE_STRING_SIZE,format,ap);*/
-	return_code=vsprintf(message_string,format,ap);
-	if (return_code >= (MESSAGE_STRING_SIZE-1))
-	{
-		char error_string[100];
-		sprintf(error_string,"Overflow of message_string.  "
-			"Following is truncated to %d characters:",return_code);
-		if (display_error_message_function)
-		{
-			return_code=(*display_error_message_function)(error_string,
-				display_error_message_data);
-		}
-		else
-		{
-			return_code=printf("ERROR: %s\n",error_string);
-		}
-	}
 	switch (message_type)
 	{
 		case PF_ERROR_MESSAGE:
 		{
-			if (display_error_message_function)
-			{
-				return_code=(*display_error_message_function)(message_string,
-					display_error_message_data);
-			}
-			else
-			{
-				return_code=printf("ERROR: %s\n",message_string);
-			}
+			strcpy (error_message, "ERROR: ");
 		} break;
 		case PF_INFORMATION_MESSAGE:
 		{
-			if (display_information_message_function)
-			{
-				return_code=(*display_information_message_function)(message_string,
-					display_information_message_data);
-			}
-			else
-			{
-				/* make sure we don't interpret % characters by printing the string */
-				return_code=printf("%s",message_string);
-			}
+			strcpy (error_message, "");
 		} break;
 		case PF_WARNING_MESSAGE:
 		{
-			if (display_warning_message_function)
-			{
-				return_code=(*display_warning_message_function)(message_string,
-					display_warning_message_data);
-			}
-			else
-			{
-				return_code=printf("WARNING: %s\n",message_string);
-			}
+			strcpy (error_message, "WARNING: ");
 		} break;
 		default:
 		{
-			return_code=printf("UNKNOWN: %s\n",message_string);
+			strcpy (error_message, "UNKNOWN: ");
 		} break;
+	}
+	offset = strlen(error_message);
+
+	return_code=vsnprintf(error_message+offset,ERROR_MESSAGE_SIZE-offset,format,ap);
+	/*	return_code=vsprintf(error_message,format,ap); */
+	if (return_code >= (ERROR_MESSAGE_SIZE-1-offset))
+	{
+		sprintf(error_message + ERROR_MESSAGE_SIZE - 50, 
+			":Overflow of error string.  Truncated.");
 	}
 	va_end(ap);
 	LEAVE;
 
 	return (return_code);
-} /* display_message */
-#else /* defined (MANUAL_CMISS) */
+} /* set_error_message */
+#endif /* ERROR_MESSAGE */
+
 static int linux_execute(char *format, ... )
 /*******************************************************************************
 LAST MODIFIED : 16 February 2001
@@ -237,7 +195,6 @@ used.
 
 	return (return_code);
 } /* linux_execute */
-#endif /* defined (MANUAL_CMISS) */
 
 static int read_line(FILE *file,char *buff,int buff_limit)
 /*******************************************************************************
@@ -263,10 +220,10 @@ Get the next line in the data file.
 			}
 			else if (ferror(file))
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE,"read_line.  Error encountered");
-#endif /* defined (MANUAL_CMISS) */
-				return_code= -2;
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE,"read_line.  File IO error encountered.");
+#endif /* defined (ERROR_MESSAGE) */
+				return_code = PF_READ_FILE_FAILURE_RC;
 			}
 		}
 	}
@@ -309,9 +266,9 @@ whitespace.
 	}
 	else
 	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,"reduce_fuzzy_string.  Invalid argument(s)");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+		set_error_message(PF_ERROR_MESSAGE,"reduce_fuzzy_string.  Invalid arguments.");
+#endif /* defined (ERROR_MESSAGE) */
 		return_code=0;
 	}
 	LEAVE;
@@ -376,9 +333,9 @@ reduced first string and starts with the characters in the first.
 			}
 			else
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE,"fuzzy_string_compare.  Error reducing");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE,"fuzzy_string_compare.  Error reducing");
+#endif /* defined (ERROR_MESSAGE) */
 				return_code=0;
 			}
 			DEALLOCATE(first_reduced);
@@ -387,18 +344,18 @@ reduced first string and starts with the characters in the first.
 		else
 		{
 			DEALLOCATE(first_reduced);
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE,
-				"fuzzy_string_compare.  Insufficient memory");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE,
+				"fuzzy_string_compare.  Unable to allocate memory.");
+#endif /* defined (ERROR_MESSAGE) */
 			return_code=0;
 		}
 	}
 	else
 	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,"fuzzy_string_compare.  Invalid arguments");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+		set_error_message(PF_ERROR_MESSAGE,"fuzzy_string_compare.  Invalid arguments.");
+#endif /* defined (ERROR_MESSAGE) */
 		return_code=0;
 	}
 	LEAVE;
@@ -440,10 +397,10 @@ same length.
 			}
 			else
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE,
-					"fuzzy_string_compare_same_length.  Error reducing");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE,
+					"fuzzy_string_compare_same_length.  Error reducing.");
+#endif /* defined (ERROR_MESSAGE) */
 				return_code=0;
 			}
 			DEALLOCATE(first_reduced);
@@ -452,19 +409,19 @@ same length.
 		else
 		{
 			DEALLOCATE(first_reduced);
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE,
-				"fuzzy_string_compare_same_length.  Insufficient memory");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE,
+				"fuzzy_string_compare_same_length.  Unable to allocate memory.");
+#endif /* defined (ERROR_MESSAGE) */
 			return_code=0;
 		}
 	}
 	else
 	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+		set_error_message(PF_ERROR_MESSAGE,
 			"fuzzy_string_compare_same_length.  Invalid arguments");
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 		return_code=0;
 	}
 	LEAVE;
@@ -501,22 +458,22 @@ Copy the <source> file to the <destination>
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE,
 				"copy_file.  Unable to open destination file %s",
 				destination_filename);
-#endif /* defined (MANUAL_CMISS) */
-			return_code= -2;
+#endif /* defined (ERROR_MESSAGE) */
+			return_code= PF_OPEN_FILE_FAILURE_RC;
 		}
 		fclose(source);
 	}
 	else
 	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+		set_error_message(PF_ERROR_MESSAGE,
 			"copy_file.  Unable to open source file %s",source_filename);
-#endif /* defined (MANUAL_CMISS) */
-		return_code= -1;
+#endif /* defined (ERROR_MESSAGE) */
+		return_code= PF_OPEN_FILE_FAILURE_RC;
 	}
 	LEAVE;
 
@@ -581,10 +538,10 @@ data.
 					else
 					{
 						DEALLOCATE(markers);
-#if defined (MANUAL_CMISS)
-						display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+						set_error_message(PF_ERROR_MESSAGE,
 							"Problem with reallocating marker storage");
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 					}
 				}
 			}
@@ -593,19 +550,19 @@ data.
 		else
 		{
 			DEALLOCATE(markers);
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE,"Unable to open marker file %s",
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE,"Unable to open marker file %s",
 				filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 		}
 	}
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 	else
 	{
-		display_message(PF_ERROR_MESSAGE,
+		set_error_message(PF_ERROR_MESSAGE,
 			"Unable to allocate memory for marker structure");
 	}
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 	LEAVE;
 
 	return (markers);
@@ -660,10 +617,10 @@ DESCRIPTION :
 	}
 	else
 	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE, "Unable to open file %s for writing",
+#if defined (ERROR_MESSAGE)
+		set_error_message(PF_ERROR_MESSAGE, "Unable to open file %s for writing",
 			filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 		return_code = -4;
 	}
 	LEAVE;
@@ -831,11 +788,11 @@ DESCRIPTION :
 							}
 							else
 							{
-#if defined (MANUAL_CMISS)
-								display_message(PF_ERROR_MESSAGE,
-									"Dis ain't no t-mesh baby - n_vertices = %d",
+#if defined (ERROR_MESSAGE)
+								set_error_message(PF_ERROR_MESSAGE,
+									"Only triangles are supported in the obj mesh: n_vertices %d",
 									n_face_vertices);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 								DEALLOCATE(obj);
 							}
 						}
@@ -878,39 +835,39 @@ DESCRIPTION :
 					}
 					else
 					{
-#if defined (MANUAL_CMISS)
-						display_message(PF_ERROR_MESSAGE,"Unable to allocate Obj fields");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+						set_error_message(PF_ERROR_MESSAGE,"Unable to allocate obj fields");
+#endif /* defined (ERROR_MESSAGE) */
 						DEALLOCATE(obj);
 					}
 				}
 			}
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 			else
 			{
-				display_message(PF_ERROR_MESSAGE, "Unable to allocate Obj structure");
+				set_error_message(PF_ERROR_MESSAGE, "Unable to allocate obj structure");
 			}
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 			fclose(objfile);
 		}
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 		else
 		{
-			display_message(PF_ERROR_MESSAGE, "Unable to open objfile %s",filename);
+			set_error_message(PF_ERROR_MESSAGE, "Unable to open objfile %s",filename);
 		}
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 		DEALLOCATE(v);
 		DEALLOCATE(vn);
 		DEALLOCATE(vt);
 		DEALLOCATE(t);
 	}
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 	else
 	{
-		display_message(PF_ERROR_MESSAGE,
-			"Unable to ALLOCATE temporary vertex arrays");
+		set_error_message(PF_ERROR_MESSAGE,
+			"Unable to allocate temporary vertex arrays");
 	}
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 	LEAVE;
 
 	return (obj);
@@ -973,7 +930,7 @@ Performs the read and byte.
 	return (return_code);
 } /* read_and_byte_swap */
 
-static int read_rgb_image_file(char *file_name,
+static int read_rgb_image_file(char *filename,
 	int *number_of_components_address, int *number_of_bytes_per_component,
 	long int *height_address,long int *width_address,
 	long unsigned **image_address)
@@ -1002,10 +959,10 @@ number_of_components=4, RGBA
 	return_code=0;
 	least_to_most = 0;
 	/* check arguments */
-	if (file_name&&number_of_components_address&&height_address&&width_address&&
+	if (filename&&number_of_components_address&&height_address&&width_address&&
 		image_address)
 	{
-		if (image_file=fopen(file_name,"rb"))
+		if (image_file=fopen(filename,"rb"))
 		{
 			if ((1==read_and_byte_swap((unsigned char *)&magic_number,2,1,
 				least_to_most,image_file))&&
@@ -1141,10 +1098,11 @@ number_of_components=4, RGBA
 													}
 													else
 													{
-#if defined (MANUAL_CMISS)
-														display_message(PF_ERROR_MESSAGE,
-													"read_rgb_image_file.  Error reading row component");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+														set_error_message(PF_ERROR_MESSAGE,
+													"read_rgb_image_file.  Error reading row component in %s.",
+															filename);
+#endif /* defined (ERROR_MESSAGE) */
 														return_code=0;
 													}
 												} break;
@@ -1195,19 +1153,21 @@ number_of_components=4, RGBA
 													}
 													else
 													{
-#if defined (MANUAL_CMISS)
-														display_message(PF_ERROR_MESSAGE,
-													"read_rgb_image_file.  Error reading row component");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+														set_error_message(PF_ERROR_MESSAGE,
+													"read_rgb_image_file.  Error reading row component in %s.",
+															filename);
+#endif /* defined (ERROR_MESSAGE) */
 														return_code=0;
 													}
 												} break;
 												default:
 												{
-#if defined (MANUAL_CMISS)
-													display_message(PF_ERROR_MESSAGE,
-											"read_rgb_image_file.  Unsupported bytes per component");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+													set_error_message(PF_ERROR_MESSAGE,
+											"read_rgb_image_file.  Unsupported bytes per component in %s.",
+														filename);
+#endif /* defined (ERROR_MESSAGE) */
 													return_code=0;
 												} break;
 											}
@@ -1219,28 +1179,31 @@ number_of_components=4, RGBA
 								}
 								else
 								{
-#if defined (MANUAL_CMISS)
-									display_message(PF_ERROR_MESSAGE,
-										"read_rgb_image_file.  Could not allocate row array");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+									set_error_message(PF_ERROR_MESSAGE,
+										"read_rgb_image_file.  Could not allocate row array for %s.",
+										filename);
+#endif /* defined (ERROR_MESSAGE) */
 									return_code=0;
 								}
 							}
 							else
 							{
-#if defined (MANUAL_CMISS)
-								display_message(PF_ERROR_MESSAGE,
-									"read_rgb_image_file.  Error reading row start/size");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+								set_error_message(PF_ERROR_MESSAGE,
+									"read_rgb_image_file.  Error reading row start/size in %s.",
+									filename);
+#endif /* defined (ERROR_MESSAGE) */
 								return_code=0;
 							}
 						}
 						else
 						{
-#if defined (MANUAL_CMISS)
-							display_message(PF_ERROR_MESSAGE,
-								"read_rgb_image_file.  Could not allocate image arrays");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+							set_error_message(PF_ERROR_MESSAGE,
+								"read_rgb_image_file.  Could not allocate image arrays for %s.",
+								filename);
+#endif /* defined (ERROR_MESSAGE) */
 							return_code=0;
 						}
 						DEALLOCATE(row_starts_char);
@@ -1290,10 +1253,11 @@ number_of_components=4, RGBA
 												} break;
 												default:
 												{
-#if defined (MANUAL_CMISS)
-													display_message(PF_ERROR_MESSAGE,
-											"read_rgb_image_file.  Unsupported bytes per component");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+													set_error_message(PF_ERROR_MESSAGE,
+											"read_rgb_image_file.  Unsupported bytes per component in %s.",
+														filename);
+#endif /* defined (ERROR_MESSAGE) */
 													return_code=0;
 												} break;
 											}
@@ -1301,10 +1265,11 @@ number_of_components=4, RGBA
 										}
 										else
 										{
-#if defined (MANUAL_CMISS)
-											display_message(PF_ERROR_MESSAGE,
-												"read_rgb_image_file.  Error reading row component");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+											set_error_message(PF_ERROR_MESSAGE,
+												"read_rgb_image_file.  Error reading row component in %s.",
+												filename);
+#endif /* defined (ERROR_MESSAGE) */
 											return_code=0;
 										}
 									}
@@ -1313,19 +1278,21 @@ number_of_components=4, RGBA
 							}
 							else
 							{
-#if defined (MANUAL_CMISS)
-								display_message(PF_ERROR_MESSAGE,
-									"read_rgb_image_file.  Error positioning file");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+								set_error_message(PF_ERROR_MESSAGE,
+									"read_rgb_image_file.  Error positioning file %s.",
+									filename);
+#endif /* defined (ERROR_MESSAGE) */
 								return_code=0;
 							}
 						}
 						else
 						{
-#if defined (MANUAL_CMISS)
-							display_message(PF_ERROR_MESSAGE,
-								"read_rgb_image_file.  Could not allocate image arrays");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+							set_error_message(PF_ERROR_MESSAGE,
+								"read_rgb_image_file.  Could not allocate image arrays for %s.",
+								filename);
+#endif /* defined (ERROR_MESSAGE) */
 							return_code=0;
 						}
 						DEALLOCATE(row);
@@ -1345,38 +1312,38 @@ number_of_components=4, RGBA
 				}
 				else
 				{
-#if defined (MANUAL_CMISS)
-					display_message(PF_ERROR_MESSAGE,
-						"read_rgb_image_file.  Invalid image size");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE,
+						"read_rgb_image_file.  Invalid image size in %s.", filename);
+#endif /* defined (ERROR_MESSAGE) */
 					return_code=0;
 				}
 			}
 			else
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE,
-					"read_rgb_image_file.  Error reading file information");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE,
+					"read_rgb_image_file.  Error reading file information in %s.", filename);
+#endif /* defined (ERROR_MESSAGE) */
 				return_code=0;
 			}
 			fclose(image_file);
 		}
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 		else
 		{
-			display_message(PF_ERROR_MESSAGE,
-				"read_rgb_image_file.  Could not open image file");
+			set_error_message(PF_ERROR_MESSAGE,
+				"read_rgb_image_file.  Could not open image file %s.", filename);
 		}
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 	}
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 	else
 	{
-		display_message(PF_ERROR_MESSAGE,
-			"read_rgb_image_file.  Invalid argument(s)");
+		set_error_message(PF_ERROR_MESSAGE,
+			"read_rgb_image_file.  Invalid arguments.");
 	}
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 	LEAVE;
 
 	return (return_code);
@@ -1401,13 +1368,13 @@ m, n and a parts as this is all that is stored in a version 2 file.
 
 	ENTER(read_basis_version1and2);
 	return_code=0;
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 	if (verbose)
 	{
-		display_message(PF_INFORMATION_MESSAGE,
+		set_error_message(PF_INFORMATION_MESSAGE,
 			"read_basis: reading in the basis file \"%s\"",filename);
 	}
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 	if (file = fopen(filename,"rb"))
 	{
 		fread(buff,MAGICSIZE,1,file);
@@ -1415,40 +1382,40 @@ m, n and a parts as this is all that is stored in a version 2 file.
 
 		if (strncmp(buff,magic1,MAGICSIZE) == 0)
 		{
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 			if (verbose)
 			{
-				display_message(PF_INFORMATION_MESSAGE,
+				set_error_message(PF_INFORMATION_MESSAGE,
 					"read_basis: magic number \"%s\"",buff);
 			}
-#endif /* defined (MANUAL_CMISS) */
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE, "read_basis_version1and2:"
-				"\"%s\" isn't an unsupported old basis file. Magic is \"%s\"",
+#endif /* defined (ERROR_MESSAGE) */
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "read_basis_version1and2:"
+				"\"%s\" is an unsupported old basis file. Magic is \"%s\".",
 				filename, buff);
-#endif /* defined (MANUAL_CMISS) */
-			return_code = -17;
+#endif /* defined (ERROR_MESSAGE) */
+			return_code = PF_READ_FILE_FAILURE_RC;
 			fclose(file);
 		}
 		else if (strncmp(buff,magic2,MAGICSIZE - 1) == 0)
 		{
 			buff[MAGICSIZE - 1] = '\0';
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 			if (verbose)
 			{
-				display_message(PF_INFORMATION_MESSAGE,
+				set_error_message(PF_INFORMATION_MESSAGE,
 					"read_basis: magic number \"%s\"",buff);
 			}
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 			/* Comment/title line */
 			fscanf(file, "%*[^\n]%*[\n]");
 			fscanf(file, "%d%d", m, n);
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 			if (verbose)
 			{
-				display_message(PF_INFORMATION_MESSAGE,"read_basis: dim %d %d",*m,*n);
+				set_error_message(PF_INFORMATION_MESSAGE,"read_basis: dim %d %d",*m,*n);
 			}
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 			if (ALLOCATE(*a,float,(*m)*(*n)))
 			{
 				for (i=0;i<*n;i++)
@@ -1458,34 +1425,34 @@ m, n and a parts as this is all that is stored in a version 2 file.
 						fscanf(file, "%f", *a + i * *m + j);
 					}
 				}
-				return_code = 0;
+				return_code = PF_SUCCESS_RC;
 			}
 			else
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE, "read_basis_version1and2:"
-					"Could not allocate array");
-#endif /* defined (MANUAL_CMISS) */
-				return_code= -2;
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE, "read_basis_version1and2:"
+					"Could not allocate array.");
+#endif /* defined (ERROR_MESSAGE) */
+				return_code = PF_ALLOCATE_FAILURE_RC;
 			}
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE, "read_basis_version1and2:"
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "read_basis_version1and2:"
 				"\"%s\" isn't a basis file. Magic is \"%s\"", filename, buff);
-#endif /* defined (MANUAL_CMISS) */
-			return_code = -16;
+#endif /* defined (ERROR_MESSAGE) */
+			return_code = PF_READ_FILE_FAILURE_RC;
 		}
 		fclose(file);
 	}
 	else
 	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE, "read_basis_version1and2:"
+#if defined (ERROR_MESSAGE)
+		set_error_message(PF_ERROR_MESSAGE, "read_basis_version1and2:"
 			"Unable to open basis file \"%s\"", filename);
-#endif /* defined (MANUAL_CMISS) */
-		return_code = -18;
+#endif /* defined (ERROR_MESSAGE) */
+		return_code = PF_OPEN_FILE_FAILURE_RC;
 	}
 	LEAVE;
 
@@ -1649,6 +1616,10 @@ successful.
 				}
 				else
 				{
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE, "create_Pf_job: "
+						"Unable to create working directory \"%s\".", working_path);
+#endif /* defined (ERROR_MESSAGE) */
 					return_code = PF_OPEN_FILE_FAILURE_RC;
 				}
 			}
@@ -1667,6 +1638,10 @@ successful.
 				}
 				else
 				{
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE, "create_PF_job: "
+						"Unable to create working directory \"%s\".", working_path);
+#endif /* defined (ERROR_MESSAGE) */
 					return_code = PF_OPEN_FILE_FAILURE_RC;
 				}
 			}
@@ -1683,21 +1658,14 @@ successful.
 				fprintf(pf_job_file, "%f\n", 0.0f);
 				fprintf(pf_job_file, "%f\n", 0.0f);
 				fclose(pf_job_file);
-#if defined (PHOTOFACE_WIN_DEBUG)
-				sprintf(working_path, "%sworking/windows%06d.log", 
-					photoface_local_path, pf_job_id);
-				debuglog_file = fopen(working_path, "w");
-				fprintf(debuglog_file,"Created pf_structure file \"%s\"\n", working_path);
-#endif /* defined (PHOTOFACE_WIN_DEBUG) */
-
 				*pf_job_id_address = pf_job_id;
 			}
 			else
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE, "save_state_Pf_job_and_unlock:"
-					"Unable to open structure data.");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE, "create_Pf_job:"
+					"Unable to open structure data file \"%s\".", working_path);
+#endif /* defined (ERROR_MESSAGE) */
 				return_code= PF_OPEN_FILE_FAILURE_RC;
 			}
 		}
@@ -1705,10 +1673,10 @@ successful.
 	}
 	else
 	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE, "delete_pf_job:"
+#if defined (ERROR_MESSAGE)
+		set_error_message(PF_ERROR_MESSAGE, "create_Pf_job:"
 			"Could not allocate working string.");
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 		return_code= PF_ALLOCATE_FAILURE_RC;
 	}
 
@@ -1763,6 +1731,10 @@ This routine cleans up the working directory and destroys the specified job.
 				}
 				else
 				{
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE, "delete_Pf_job: "
+						"Unable to lock working directory \"%s\".", working_path);
+#endif /* defined (ERROR_MESSAGE) */
 					return_code = PF_OPEN_FILE_FAILURE_RC;
 				}
 			}
@@ -1776,24 +1748,20 @@ This routine cleans up the working directory and destroys the specified job.
 				}
 				else
 				{
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE, "delete_Pf_job: "
+						"Unable to lock working directory \"%s\".", working_path);
+#endif /* defined (ERROR_MESSAGE) */
 					return_code = PF_OPEN_FILE_FAILURE_RC;
 				}
 			}
 #endif /* defined (WIN32) */
 			if (PF_SUCCESS_RC == return_code)
 			{
-#if defined (PHOTOFACE_WIN_DEBUG)
-				sprintf(working_path, "%sworking/windows%06d.log", 
-					photoface_local_path, pf_job_id);
-				fprintf(debuglog_file,"Closing\n");
-				fclose(debuglog_file);
-#endif /* defined (PHOTOFACE_WIN_DEBUG) */
-
 				sprintf(working_path, "%sworking/job%06d", photoface_local_path,
 					pf_job_id);
 				sprintf(working_path2, "%sworking/job%06dx", photoface_local_path,
 					pf_job_id);
-			
 				
 				if ((pf_cmiss_keep_working_dir=getenv("PF_CMISS_KEEP_WORKING_DIRECTORY")) &&
 					*pf_cmiss_keep_working_dir)
@@ -1843,10 +1811,10 @@ This routine cleans up the working directory and destroys the specified job.
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE, "delete_pf_job:"
-				"Working directory for specified job does not exist.");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "delete_pf_job:"
+				"Working directory \"%s\" does not exist.", working_path);
+#endif /* defined (ERROR_MESSAGE) */
 			return_code= PF_FIND_FILE_FAILURE_RC;
 		}
 		DEALLOCATE(working_path);
@@ -1854,10 +1822,10 @@ This routine cleans up the working directory and destroys the specified job.
 	}
 	else
 	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE, "delete_pf_job:"
+#if defined (ERROR_MESSAGE)
+		set_error_message(PF_ERROR_MESSAGE, "delete_pf_job:"
 			"Could not allocate working string.");
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 		return_code= PF_ALLOCATE_FAILURE_RC;
 	}
 
@@ -1919,6 +1887,10 @@ giving this process exclusive access.
 				}
 				else
 				{
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE, "delete_Pf_job: "
+						"Unable to lock working directory \"%s\".", working_path);
+#endif /* defined (ERROR_MESSAGE) */
 					return_code = PF_OPEN_FILE_FAILURE_RC;
 				}
 			}
@@ -1946,47 +1918,42 @@ giving this process exclusive access.
 						fscanf(pf_job_file, "%f", &(pf_job->ndc_texture_offset_x));
 						fscanf(pf_job_file, "%f", &(pf_job->ndc_texture_offset_y));
 						fclose(pf_job_file);
-#if defined (PHOTOFACE_WIN_DEBUG)
-				fprintf(debuglog_file,"Read from pf_structure file \"%s\"\n%f %f %f\n", working_path,
-						pf_job->ndc_texture_scaling, pf_job->ndc_texture_offset_x,
-						pf_job->ndc_texture_offset_y);
-#endif /* defined (PHOTOFACE_WIN_DEBUG) */
 					}
 					else
 					{
-#if defined (MANUAL_CMISS)
-						display_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
-							"Unable to open structure data.");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+						set_error_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
+							"Unable to open structure data \"%s\".", working_path);
+#endif /* defined (ERROR_MESSAGE) */
 						return_code= PF_OPEN_FILE_FAILURE_RC;
 					}					
 				}
 				else
 				{
-#if defined (MANUAL_CMISS)
-					display_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
-						"Could not allocate Pf_job structure");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
+						"Could not allocate Pf_job structure.");
+#endif /* defined (ERROR_MESSAGE) */
 					return_code= PF_ALLOCATE_FAILURE_RC;
 				}
 			}
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
-				"Working directory for specified job does not exist.");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
+				"Working directory \"%s\"for specified job does not exist.", working_path);
+#endif /* defined (ERROR_MESSAGE) */
 			return_code= PF_FIND_FILE_FAILURE_RC;
 		}
 		DEALLOCATE(working_path);
 	}
 	else
 	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
+#if defined (ERROR_MESSAGE)
+		set_error_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
 			"Could not allocate working string.");
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 		return_code= PF_ALLOCATE_FAILURE_RC;
 	}
 
@@ -2015,44 +1982,28 @@ the memory associated with it and unlocks the access to that job.
 	return_code = PF_SUCCESS_RC;
 	if (pf_job = *pf_job_address)
 	{
-#if defined (PHOTOFACE_WIN_DEBUG)
-		fprintf(debuglog_file,"Unlocking %x\n", pf_job);
-#endif /* defined (PHOTOFACE_WIN_DEBUG) */
 		if (ALLOCATE(working_path, char, strlen(pf_job->working_path) + 100))
 		{
 			/* Look for the correct working directory */
 			sprintf(working_path, "%s/%s", pf_job->working_path, PF_LOCK_DIRNAME);
-#if defined (PHOTOFACE_WIN_DEBUG)
-			fprintf(debuglog_file,"Directory %s\n", working_path);
-#endif /* defined (PHOTOFACE_WIN_DEBUG) */
 			if (0 == stat(working_path, &stat_buffer))
 			{
 				/* Save the data for the pf_job */
 				sprintf(working_path, "%s/%s", 
 					pf_job->working_path, PF_STRUCTURE_FILENAME);
-#if defined (PHOTOFACE_WIN_DEBUG)
-				fprintf(debuglog_file,"Before writing pf_structure file \"%s\"\n%f %f %f\n", working_path,
-						pf_job->ndc_texture_scaling, pf_job->ndc_texture_offset_x,
-						pf_job->ndc_texture_offset_y);
-#endif /* defined (PHOTOFACE_WIN_DEBUG) */
 				if (pf_job_file = fopen(working_path, "w"))
 				{
 					fprintf(pf_job_file, "%f\n", pf_job->ndc_texture_scaling);
 					fprintf(pf_job_file, "%f\n", pf_job->ndc_texture_offset_x);
 					fprintf(pf_job_file, "%f\n", pf_job->ndc_texture_offset_y);
 					fclose(pf_job_file);
-#if defined (PHOTOFACE_WIN_DEBUG)
-				fprintf(debuglog_file,"Rewrote pf_structure file \"%s\"\n%f %f %f\n", working_path,
-						pf_job->ndc_texture_scaling, pf_job->ndc_texture_offset_x,
-						pf_job->ndc_texture_offset_y);
-#endif /* defined (PHOTOFACE_WIN_DEBUG) */
 				}
 				else
 				{
-#if defined (MANUAL_CMISS)
-					display_message(PF_ERROR_MESSAGE, "save_state_Pf_job_and_unlock:"
-						"Unable to open structure data.");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE, "save_state_Pf_job_and_unlock:"
+						"Unable to open structure data \"%s\".", working_path);
+#endif /* defined (ERROR_MESSAGE) */
 					return_code= PF_OPEN_FILE_FAILURE_RC;
 				}
 #if defined (WITH_OMNISECURE)
@@ -2078,29 +2029,29 @@ the memory associated with it and unlocks the access to that job.
 			}
 			else
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
-					"Lock does not exist in correct place.");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
+					"Lock does not exist in correct place \"%s\".", working_path);
+#endif /* defined (ERROR_MESSAGE) */
 				return_code= PF_FIND_FILE_FAILURE_RC;
 			}
 			DEALLOCATE(working_path);
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE, "save_state_Pf_job_and_unlock:"
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "save_state_Pf_job_and_unlock:"
 				"Could not allocate working string.");
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 			return_code= PF_ALLOCATE_FAILURE_RC;
 		}
 	}
 	else
 	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE, "save_state_Pf_job_and_unlock:"
+#if defined (ERROR_MESSAGE)
+		set_error_message(PF_ERROR_MESSAGE, "save_state_Pf_job_and_unlock:"
 			"Invalid arguments.");
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 		return_code= PF_INVALID_ARGUMENTS_FAILURE_RC;
 	}
 
@@ -2113,65 +2064,50 @@ the memory associated with it and unlocks the access to that job.
 Global functions
 ----------------
 */
-#if defined (MANUAL_CMISS)
-int pf_set_display_message_function(enum PF_message_type message_type,
-	PF_display_message_function *display_message_function,void *data)
+#if defined (ERROR_MESSAGE)
+int pf_get_error_message(char **message)
 /*******************************************************************************
-LAST MODIFIED : 13 February 2001
+LAST MODIFIED : 19 October 2001
 
 DESCRIPTION :
-A function for setting the <display_message_function> to be used for displaying
-a message of the specified <message_type>.
+Allocates and returns the reason recorded for the last error returned by
+photoface_cmiss.
+The string should be freed when no longer required.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(set_display_message_function);
+	ENTER(pf_get_error_message);
+
 	/* in case forget to set return_code */
 	return_code=PF_GENERAL_FAILURE_RC;
-	switch (message_type)
+	if (ALLOCATE(*message, char, strlen(error_message + 1)))
 	{
-		case PF_ERROR_MESSAGE:
-		{
-			display_error_message_function=display_message_function;
-			display_error_message_data=data;
-			return_code=PF_SUCCESS_RC;
-		} break;
-		case PF_INFORMATION_MESSAGE:
-		{
-			display_information_message_function=display_message_function;
-			display_information_message_data=data;
-			return_code=PF_SUCCESS_RC;
-		} break;
-		case PF_WARNING_MESSAGE:
-		{
-			display_warning_message_function=display_message_function;
-			display_warning_message_data=data;
-			return_code=PF_SUCCESS_RC;
-		} break;
-		default:
-		{
-			display_message(PF_ERROR_MESSAGE,
-				"pf_set_display_message_function.  Unknown message_type");
-		} break;
+		strcpy(*message, error_message);
+	}
+	else
+	{
+		return_code = PF_ALLOCATE_FAILURE_RC;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* pf_set_display_message_function */
-#endif /* defined (MANUAL_CMISS) */
+} /* pf_get_error_message */
+#endif /* defined (ERROR_MESSAGE) */
 
-#if defined (LINUX_CMISS)
-int pf_specify_paths(char *photoface_main_windows_path,
-	char *photoface_main_linux_path)
+int pf_specify_paths(char *photoface_local_path_in, char *photoface_remote_path_in)
 /*******************************************************************************
-LAST MODIFIED : 13 February 2001
+LAST MODIFIED : 19 October 2001
 
 DESCRIPTION :
 Specifies the main directory under which the model, working and cmiss directory
-are expected to be located under Windows and Linux.  The path should end in a
-delimiting /.  This function will be obsolete once a windows only version of the
-Photoface cmiss library is built.
+are expected to be located.  The paths should end in a delimiting /.
+The local path specifies where the files are found on this local operating
+system (in a mixed OS system Windows) and the remote path specifies
+where the same directory is on the remote fitting machine (at time of writing,
+a linux machine).
+If the photoface_library and this interface are on the same machine then these
+two strings should still be set but they will be identical.
 
 If either path is NULL the internal storage for that path is free'd.
 ==============================================================================*/
@@ -2183,34 +2119,35 @@ If either path is NULL the internal storage for that path is free'd.
 	/* Deallocate the old paths */
 	DEALLOCATE(photoface_local_path);
 	DEALLOCATE(photoface_remote_path);
-	if (photoface_main_windows_path)
+	if (photoface_local_path_in)
 	{
 		if (ALLOCATE(photoface_local_path,char,
-			strlen(photoface_main_windows_path)+1))
+			strlen(photoface_local_path_in)+1))
 		{
-			strcpy(photoface_local_path, photoface_main_windows_path);
+			strcpy(photoface_local_path, photoface_local_path_in);
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE,
-				"Unable to allocate windows path string");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE,
+				"Unable to allocate local path string.");
+#endif /* defined (ERROR_MESSAGE) */
 			return_code = PF_ALLOCATE_FAILURE_RC;
 		}
 	}
-	if (photoface_main_linux_path)
+	if (photoface_remote_path_in)
 	{
 		if (ALLOCATE(photoface_remote_path,char,
-			strlen(photoface_main_linux_path)+1))
+			strlen(photoface_remote_path_in)+1))
 		{
-			strcpy(photoface_remote_path, photoface_main_linux_path);
+			strcpy(photoface_remote_path, photoface_remote_path_in);
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE,"Unable to allocate linux path string");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE,
+				"Unable to allocate remote path string.");
+#endif /* defined (ERROR_MESSAGE) */
 			return_code = PF_ALLOCATE_FAILURE_RC;
 		}
 	}
@@ -2218,7 +2155,6 @@ If either path is NULL the internal storage for that path is free'd.
 
 	return (return_code);
 } /* pf_specify_paths */
-#endif /* defined (LINUX_CMISS) */
 
 #if defined (WIN32)
 DWORD WINAPI start_cmgui_thread_function(LPVOID dummy)
@@ -2286,7 +2222,7 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 					force_model_name);
 				if (0 == stat(model_path, &stat_buffer))
 				{
-					if (ALLOCATE(working_path,char,2*strlen(photoface_local_path)+30))
+					if (ALLOCATE(working_path,char,2*strlen(photoface_local_path)+100))
 					{
 						if (0 == stat(pf_job->working_path, &stat_buffer))
 						{
@@ -2364,66 +2300,66 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 								}
 								else
 								{
-#if defined (MANUAL_CMISS)
-									display_message(PF_ERROR_MESSAGE,"Unable to open file %s",
+#if defined (ERROR_MESSAGE)
+									set_error_message(PF_ERROR_MESSAGE,"Unable to open file %s.",
 										working_path);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 									return_code = PF_OPEN_FILE_FAILURE_RC;
 								}
 
 							}
 							else
 							{
-#if defined (MANUAL_CMISS)
-								display_message(PF_ERROR_MESSAGE,
-									"Unable to find cmiss directory %s",working_path);
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+								set_error_message(PF_ERROR_MESSAGE,
+									"Unable to find cmiss directory %s.",working_path);
+#endif /* defined (ERROR_MESSAGE) */
 								return_code = PF_FIND_FILE_FAILURE_RC;
 							}
 						}
 						else
 						{
-#if defined (MANUAL_CMISS)
-							display_message(PF_ERROR_MESSAGE,
-								"Unable to find model directory %s",working_path);
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+							set_error_message(PF_ERROR_MESSAGE,
+								"Unable to find model directory %s.",working_path);
+#endif /* defined (ERROR_MESSAGE) */
 							return_code = PF_FIND_FILE_FAILURE_RC;
 						}
 						DEALLOCATE(working_path);
 					}
 					else
 					{
-#if defined (MANUAL_CMISS)
-						display_message(PF_ERROR_MESSAGE,
-							"Could not allocate required string");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+						set_error_message(PF_ERROR_MESSAGE,
+							"Could not allocate temporary string.");
+#endif /* defined (ERROR_MESSAGE) */
 						return_code = PF_ALLOCATE_FAILURE_RC;
 					}
 				}
 				else
 				{
-#if defined (MANUAL_CMISS)
-					display_message(PF_ERROR_MESSAGE,"Unable to find model directory %s",
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE,"Unable to find model directory %s.",
 						model_path);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 					return_code = PF_FIND_FILE_FAILURE_RC;
 				}
 				DEALLOCATE(model_path);
 			}
 			else
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE, "Unable to find photoface directory %s",
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE, "Unable to find photoface directory %s.",
 					photoface_local_path);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 				return_code = PF_FIND_FILE_FAILURE_RC;
 			}
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE,"Could not allocate required string");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE,"Could not allocate temporary string.");
+#endif /* defined (ERROR_MESSAGE) */
 			return_code = PF_ALLOCATE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
@@ -2449,16 +2385,9 @@ internal processes.
 
 	ENTER(pf_close);
 	return_code=PF_GENERAL_FAILURE_RC;
-#if defined (OLD_CODE)
-	/* This is only the end of this job, not all jobs. */
-#if defined (LINUX_CMISS)
-	/* deallocate the paths */
-	DEALLOCATE(photoface_local_path);
-	DEALLOCATE(photoface_remote_path);
-#endif /* defined (LINUX_CMISS) */
-#endif /* defined (OLD_CODE) */
 
-	/* free markers */
+	/* free markers, bad if we aren't working in a linear fashion, but if they
+		are needed then they will just get reloaded. */
 	if (markers)
 	{
 		name_address=markers->marker_names;
@@ -2484,13 +2413,6 @@ internal processes.
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
 		delete_Pf_job(pf_job_id);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 
 	LEAVE;
@@ -2556,11 +2478,11 @@ Please note that
 				}
 				if (j < markers->number_of_markers)
 				{
-#if defined (MANUAL_CMISS)
-					display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE,
 						"Marker name \"%s\" already defined for current model,"
 						" respecifying 3D position", marker_names[i]);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 					markers->marker_positions[3*j]=marker_3d_generic_positions[3 * i];
 					markers->marker_positions[3*j+1]=marker_3d_generic_positions[3 * i + 1];
 					markers->marker_positions[3*j+2]=marker_3d_generic_positions[3 * i + 2];
@@ -2592,10 +2514,10 @@ Please note that
 					}
 					else
 					{
-#if defined (MANUAL_CMISS)
-						display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+						set_error_message(PF_ERROR_MESSAGE,
 							"Problem with reallocating marker storage");
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 						return_code = PF_ALLOCATE_FAILURE_RC;
 					}
 				}
@@ -2603,19 +2525,13 @@ Please note that
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE, "Unable to read markers file");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (OLD_CODE)
+			/* Leave the error message from the read_marker_file routine */
+			set_error_message(PF_ERROR_MESSAGE, "Unable to read markers file");
+#endif /* defined (OLD_CODE) */
 			return_code = PF_READ_FILE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -2653,61 +2569,62 @@ Specify <number_of_markers> using
 	{
 		if (ALLOCATE(filename,char,strlen(photoface_local_path)+100))
 		{
-/*???debug*/
-{
-FILE *file;
-
-/* write out input markers so can reproduce in test case */
-sprintf(filename, "%s/pf_specify_markers.c", pf_job->working_path);
-if (file = fopen(filename, "w"))
-{
-fprintf(file,"  /* input supplied to pf_specify_markers */\n");
-fprintf(file,"  int number_of_markers = %d;\n",number_of_markers);
-fprintf(file,"  char *marker_names[] = {\n");
-for (i = 0 ; i < number_of_markers ; i++)
-{
-if (i < (number_of_markers - 1))
-{
-fprintf(file, "    \"%s\",\n", marker_names[i]);
-}
-else
-{
-fprintf(file, "    \"%s\"};\n", marker_names[i]);
-}
-}
-fprintf(file,"  float marker_2d_positions[] = {\n");
-for (i = 0 ; i < number_of_markers ; i++)
-{
-if (i < (number_of_markers - 1))
-{
-fprintf(file, "    %g, %g, /* %s */\n",
-marker_2d_positions[i*2], marker_2d_positions[i*2 + 1],
-marker_names[i]);
-}
-else
-{
-fprintf(file, "    %g, %g /* %s */ };\n",
-marker_2d_positions[i*2], marker_2d_positions[i*2 + 1],
-marker_names[i]);
-}
-}
-fprintf(file,"  float marker_confidences[] = {\n");
-for (i = 0 ; i < number_of_markers ; i++)
-{
-if (i < (number_of_markers - 1))
-{
-fprintf(file, "    %g, /* %s */\n", marker_confidences[i],
-marker_names[i]);
-}
-else
-{
-fprintf(file, "    %g /* %s */ };\n", marker_confidences[i],
-marker_names[i]);
-}
-}
-fclose(file);
-}
-}
+#if defined (WRITE_SPECIFY_MARKER_FILE)
+			{
+				FILE *file;
+				
+				/* write out input markers so can reproduce in test case */
+				sprintf(filename, "%s/pf_specify_markers.c", pf_job->working_path);
+				if (file = fopen(filename, "w"))
+				{
+					fprintf(file,"  /* input supplied to pf_specify_markers */\n");
+					fprintf(file,"  int number_of_markers = %d;\n",number_of_markers);
+					fprintf(file,"  char *marker_names[] = {\n");
+					for (i = 0 ; i < number_of_markers ; i++)
+					{
+						if (i < (number_of_markers - 1))
+						{
+							fprintf(file, "    \"%s\",\n", marker_names[i]);
+						}
+						else
+						{
+							fprintf(file, "    \"%s\"};\n", marker_names[i]);
+						}
+					}
+					fprintf(file,"  float marker_2d_positions[] = {\n");
+					for (i = 0 ; i < number_of_markers ; i++)
+					{
+						if (i < (number_of_markers - 1))
+						{
+							fprintf(file, "    %g, %g, /* %s */\n",
+								marker_2d_positions[i*2], marker_2d_positions[i*2 + 1],
+								marker_names[i]);
+						}
+						else
+						{
+							fprintf(file, "    %g, %g /* %s */ };\n",
+								marker_2d_positions[i*2], marker_2d_positions[i*2 + 1],
+								marker_names[i]);
+						}
+					}
+					fprintf(file,"  float marker_confidences[] = {\n");
+					for (i = 0 ; i < number_of_markers ; i++)
+					{
+						if (i < (number_of_markers - 1))
+						{
+							fprintf(file, "    %g, /* %s */\n", marker_confidences[i],
+								marker_names[i]);
+						}
+						else
+						{
+							fprintf(file, "    %g /* %s */ };\n", marker_confidences[i],
+								marker_names[i]);
+						}
+					}
+					fclose(file);
+				}
+			}
+#endif /* defined (WRITE_SPECIFY_MARKER_FILE) */
 			/* If we haven't already done so read the marker definition file */
 			if (!markers)
 			{
@@ -2744,14 +2661,14 @@ fclose(file);
 							marker_positions[3 * i + 1] = markers->marker_positions[3 * j + 1];
 							marker_positions[3 * i + 2] = markers->marker_positions[3 * j + 2];
 						}
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 						else
 						{
-							display_message(PF_ERROR_MESSAGE,
+							set_error_message(PF_ERROR_MESSAGE,
 								"Marker name \"%s\" not defined for current model,"
 								" ignoring 2D position", marker_names[i]);
 						}
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 					}
 					/* Write out the placed_2d_points.exnode that specifies the these 2D
 						positions for calculate_ptm and fit.pl in ndc coordinates */
@@ -2794,46 +2711,46 @@ fclose(file);
 								}
 								else
 								{
-#if defined (MANUAL_CMISS)
-									display_message(PF_ERROR_MESSAGE,"Unable to write file %s",
+#if defined (ERROR_MESSAGE)
+									set_error_message(PF_ERROR_MESSAGE,"Unable to write file %s",
 										filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 									return_code = PF_WRITE_FILE_FAILURE_RC;
 								}
 							}
 							else
 							{
-#if defined (MANUAL_CMISS)
-								display_message(PF_ERROR_MESSAGE,"Unable to write file %s",
+#if defined (ERROR_MESSAGE)
+								set_error_message(PF_ERROR_MESSAGE,"Unable to write file %s",
 									filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 								return_code = PF_WRITE_FILE_FAILURE_RC;
 							}
 						}
 						else
 						{
-#if defined (MANUAL_CMISS)
-							display_message(PF_ERROR_MESSAGE,"Unable to write file %s",
+#if defined (ERROR_MESSAGE)
+							set_error_message(PF_ERROR_MESSAGE,"Unable to write file %s",
 								filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 							return_code = PF_WRITE_FILE_FAILURE_RC;
 						}
 					}
 					else
 					{
-#if defined (MANUAL_CMISS)
-						display_message(PF_ERROR_MESSAGE, "Unable to write file %s",
+#if defined (ERROR_MESSAGE)
+						set_error_message(PF_ERROR_MESSAGE, "Unable to write file %s",
 							filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 						return_code = PF_WRITE_FILE_FAILURE_RC;
 					}
 				}
 				else
 				{
-#if defined (MANUAL_CMISS)
-					display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE,
 						"Unable to allocate marker indices array");
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 					return_code = PF_ALLOCATE_FAILURE_RC;
 				}
 				DEALLOCATE(marker_indices);
@@ -2842,28 +2759,22 @@ fclose(file);
 			}
 			else
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE,"Unable to read markers file");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (OLD_CODE)
+				/* Leave the error message from read_marker_file routine */
+				set_error_message(PF_ERROR_MESSAGE,"Unable to read markers file");
+#endif /* defined (OLD_CODE) */
 				return_code = PF_READ_FILE_FAILURE_RC;
 			}
 			DEALLOCATE(filename);
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE,"Unable to allocate filename string");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE,"Unable to allocate filename string");
+#endif /* defined (ERROR_MESSAGE) */
 			return_code = PF_ALLOCATE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -2949,14 +2860,14 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 								marker_positions[3 * i + 2] = markers->marker_positions[3 * j + 2];
 								call_cmiss = 1;
 							}
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 							else
 							{
-								display_message(PF_WARNING_MESSAGE,
+								set_error_message(PF_WARNING_MESSAGE,
 									"Marker name \"%s\" not defined for current model, ignoring",
 									marker_names[i]);
 							}
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 						}
 					}
 					if (load_eyeballs)
@@ -2988,10 +2899,10 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 						}
 						else
 						{
-#if defined (MANUAL_CMISS)
-							display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+							set_error_message(PF_ERROR_MESSAGE,
 								"Unable to open eye positions file %s",filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 							return_code = PF_OPEN_FILE_FAILURE_RC;
 						}
 					}
@@ -3032,10 +2943,10 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 										}
 										if (i >= number_of_markers)
 										{
-#if defined (MANUAL_CMISS)
-											display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+											set_error_message(PF_ERROR_MESSAGE,
 												"Unexpected marker positions in file %s",filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 											return_code = PF_READ_FILE_FAILURE_RC;
 										}
 										marker_fitted_3d_positions[3 * i] = marker_x;
@@ -3046,29 +2957,29 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 								}
 								if (i < number_of_markers)
 								{
-#if defined (MANUAL_CMISS)
-									display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+									set_error_message(PF_ERROR_MESSAGE,
 										"Insufficient marker positions in file %s",filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 									return_code = PF_READ_FILE_FAILURE_RC;
 								}
 								fclose(warped_file);
 							}
 							else
 							{
-#if defined (MANUAL_CMISS)
-								display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+								set_error_message(PF_ERROR_MESSAGE,
 									"Unable to open warped positions file %s",filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 								return_code = PF_OPEN_FILE_FAILURE_RC;
 							}
 						}
 						else
 						{
-#if defined (MANUAL_CMISS)
-							display_message(PF_ERROR_MESSAGE,
-								"Unable to write original positions");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+							set_error_message(PF_ERROR_MESSAGE,
+								"Unable to write original positions file %s",filename);
+#endif /* defined (ERROR_MESSAGE) */
 							return_code = PF_WRITE_FILE_FAILURE_RC;
 						}
 					}
@@ -3077,37 +2988,32 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 				}
 				else
 				{
-#if defined (MANUAL_CMISS)
-					display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE,
 						"Unable to allocate marker indices array");
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 					return_code = PF_ALLOCATE_FAILURE_RC;
 				}
 			}
 			else
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE,"Unable to read markers file");
-#endif /* defined (MANUAL_CMISS) */
+				/* Leave the read_marker_file function error */
+#if defined (OLD_CODE)
+				set_error_message(PF_ERROR_MESSAGE,"Unable to read markers file %s",
+					filename);
+#endif /* defined (OLD_CODE) */
 				return_code = PF_READ_FILE_FAILURE_RC;
 			}
 			DEALLOCATE(filename);
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE,"Unable to allocate filename string");
-#endif /* defined (MANUAL_CMISS) */
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE,"Unable to allocate filename string");
+#endif /* defined (ERROR_MESSAGE) */
 			return_code = PF_ALLOCATE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -3143,13 +3049,6 @@ an <error_measure>.
 		/* Load the projection into cmgui so that the fields are updated relative to
 			it */
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -3206,30 +3105,23 @@ Returns the current view as an <eye_point> (3 component vector), an
 				}
 			}
 			fclose(window_commands_file);
-#if defined (MANUAL_CMISS)
+#if defined (ERROR_MESSAGE)
 			if (return_code == PF_READ_FILE_FAILURE_RC)
 			{
-				display_message(PF_ERROR_MESSAGE,
-					"Unable to find the window projection command in %s",filename);
+				set_error_message(PF_ERROR_MESSAGE,
+					"Unable to find the window projection command in file %s",filename);
 			}
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE, "Unable to open file %s for reading",
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "Unable to open file %s for reading",
 				filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 			return_code= PF_OPEN_FILE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -3268,13 +3160,6 @@ Sets the current view as an <eye_point> (3 component vector), an
 			return_code=PF_SUCCESS_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -3316,13 +3201,6 @@ matrix, and returns an <error_measure>.
 
 		/* Place the eyes */
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -3375,16 +3253,13 @@ Returns the current transformed generic head as
 		}
 		else
 		{
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "Unable to open file %s for reading",
+				filename);
+#endif /* defined (ERROR_MESSAGE) */
 			return_code= PF_OPEN_FILE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -3424,24 +3299,12 @@ mode number slowest.
 
 		/* Read the fitted basis file and return all the values */
 		sprintf(filename, "%s/standin.basis", pf_job->working_path);
-		if (0 == (return_code = read_basis_version1and2(filename, number_of_vertices,
-			number_of_modes, vertex_3d_locations_or_offsets, 1)))
+		if (PF_SUCCESS_RC == (return_code = read_basis_version1and2(filename, number_of_vertices,
+						 number_of_modes, vertex_3d_locations_or_offsets, /*verbose*/0)))
 		{
 			*number_of_vertices /= 3; /* Each component is a separate number */
-			return_code=PF_SUCCESS_RC;
-		}
-		else
-		{
-			return_code=PF_OPEN_FILE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -3540,21 +3403,22 @@ Used to specify the image to be texture mapped onto the model.
 			}
 			else
 			{
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE, "Unable to open file %s for writing",
+					filename);
+#endif /* defined (ERROR_MESSAGE) */
 				return_code=PF_OPEN_FILE_FAILURE_RC;
 			}
 		}
 		else
 		{
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "Unable to open file %s for writing",
+				filename);
+#endif /* defined (ERROR_MESSAGE) */
 			return_code=PF_OPEN_FILE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -3624,40 +3488,33 @@ is filled in based on the current model.
 				}
 				else
 				{
-#if defined (MANUAL_CMISS)
-					display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE,
 						"File image dimensions are not what was expected in file %s",
 						filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 					return_code=PF_GENERAL_FAILURE_RC;
 				}
 			}
 			else
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE, "Unsupported image format in file %s",
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE, "Unsupported image format in file %s",
 					filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 				return_code=PF_GENERAL_FAILURE_RC;
 			}
 			DEALLOCATE(image);
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE, "Unable to read image from file %s",
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "Unable to read image from file %s",
 				filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 			return_code=PF_READ_FILE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -3710,16 +3567,13 @@ Returns the current transformed generic head as
 		}
 		else
 		{
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "Unable to open file %s for reading",
+				filename);
+#endif /* defined (ERROR_MESSAGE) */
 			return_code= PF_OPEN_FILE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -3791,16 +3645,13 @@ Used to specify the image to be texture mapped onto the model.
 		}
 		else
 		{
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "Unable to open file %s for writing",
+				filename);
+#endif /* defined (ERROR_MESSAGE) */
 			return_code=PF_OPEN_FILE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -3870,40 +3721,33 @@ is filled in based on the current model.
 				}
 				else
 				{
-#if defined (MANUAL_CMISS)
-					display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE,
 						"File image dimensions are not what was expected in file %s",
 						filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 					return_code=PF_GENERAL_FAILURE_RC;
 				}
 			}
 			else
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE, "Unsupported image format in file %s",
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE, "Unsupported image format in file %s",
 					filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 				return_code=PF_GENERAL_FAILURE_RC;
 			}
 			DEALLOCATE(image);
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE, "Unable to read image from file %s",
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "Unable to read image from file %s",
 				filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 			return_code=PF_READ_FILE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -3973,40 +3817,33 @@ is filled in based on the current model.
 				}
 				else
 				{
-#if defined (MANUAL_CMISS)
-					display_message(PF_ERROR_MESSAGE,
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE,
 						"File image dimensions are not what was expected in file %s",
 						filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 					return_code=PF_GENERAL_FAILURE_RC;
 				}
 			}
 			else
 			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE, "Unsupported image format in file %s",
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE, "Unsupported image format in file %s",
 					filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 				return_code=PF_GENERAL_FAILURE_RC;
 			}
 			DEALLOCATE(image);
 		}
 		else
 		{
-#if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE, "Unable to read image from file %s",
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE, "Unable to read image from file %s",
 				filename);
-#endif /* defined (MANUAL_CMISS) */
+#endif /* defined (ERROR_MESSAGE) */
 			return_code=PF_READ_FILE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,
-			"Problem locking job.");
-#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
