@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_object_private.h
 
-LAST MODIFIED : 21 October 1999
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 Macros for implementing an option menu dialog control for choosing an object
@@ -33,7 +33,7 @@ Module variables
 #define FULL_DECLARE_CHOOSE_OBJECT_TYPE( object_type ) \
 struct CHOOSE_OBJECT(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 18 April 2000 \
 \
 DESCRIPTION : \
 Contains information required by the choose_object control dialog. \
@@ -41,6 +41,7 @@ Contains information required by the choose_object control dialog. \
 { \
 	struct MANAGER(object_type) *object_manager; \
 	MANAGER_CONDITIONAL_FUNCTION(object_type) *conditional_function; \
+	void *conditional_function_user_data; \
 	void *manager_callback_id; \
 	struct Chooser *chooser; \
 	struct Callback_data update_callback; \
@@ -189,7 +190,7 @@ Callback for the choose_object dialog - tidies up all memory allocation. \
 #define DECLARE_CHOOSE_OBJECT_ADD_TO_LIST_DATA( object_type ) \
 struct CHOOSE_OBJECT_ADD_TO_LIST_DATA(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 18 April 2000 \
 \
 DESCRIPTION : \
 Data for adding objects to an allocated list. Handles conditional function. \
@@ -198,6 +199,7 @@ Data for adding objects to an allocated list. Handles conditional function. \
   char **item_names; \
 	int number_of_items; \
 	MANAGER_CONDITIONAL_FUNCTION(object_type) *conditional_function; \
+	void *conditional_function_user_data; \
   void **items; \
 } /* struct CHOOSE_OBJECT_ADD_TO_LIST_DATA(object_type) */
 
@@ -214,7 +216,7 @@ Data for adding objects to an allocated list. Handles conditional function. \
 static int CHOOSE_OBJECT_ADD_TO_LIST(object_type)( \
 	struct object_type *object,void *add_data_void) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 18 April 2000 \
 \
 DESCRIPTION : \
 Puts the <object> at the array position pointed to by <list_position>. \
@@ -228,8 +230,8 @@ Puts the <object> at the array position pointed to by <list_position>. \
 		object_type) *)add_data_void)&&add_data->items&&add_data->item_names) \
 	{ \
 		return_code=1; \
-		if (!(add_data->conditional_function)|| \
-			(add_data->conditional_function)(object,(void *)NULL)) \
+		if (!(add_data->conditional_function)||(add_data->conditional_function)( \
+			object,add_data->conditional_function_user_data)) \
 		{ \
 			if (GET_NAME(object_type)(object,add_data->item_names + \
 				add_data->number_of_items)) \
@@ -270,7 +272,7 @@ static int CHOOSE_OBJECT_GET_ITEMS(object_type)( \
 	struct CHOOSE_OBJECT(object_type) *choose_object, \
 	int *number_of_items,void ***items_address,char ***item_names_address) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 18 April 2000 \
 \
 DESCRIPTION : \
 Allocates and fills an array of all the choosable objects and their names. \
@@ -287,6 +289,8 @@ Allocates and fills an array of all the choosable objects and their names. \
 			NUMBER_IN_MANAGER(object_type)(choose_object->object_manager); \
 		add_to_list_data.conditional_function= \
 			choose_object->conditional_function; \
+		add_to_list_data.conditional_function_user_data= \
+			choose_object->conditional_function_user_data; \
 		add_to_list_data.number_of_items=0; \
 		add_to_list_data.items=(void **)NULL; \
 		add_to_list_data.item_names=(char **)NULL; \
@@ -376,7 +380,7 @@ annoying flickering on the screen. \
 				/* only update menu if no conditional function or included by it */ \
 				if (!(choose_object->conditional_function)|| \
 					(choose_object->conditional_function)(message->object_changed, \
-						(void *)NULL)) \
+						choose_object->conditional_function_user_data)) \
 				{ \
 					update_menu=1; \
 				} \
@@ -441,7 +445,7 @@ Global functions
 #define DECLARE_CREATE_CHOOSE_OBJECT_WIDGET_FUNCTION( object_type ) \
 PROTOTYPE_CREATE_CHOOSE_OBJECT_WIDGET_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 18 April 2000 \
 \
 DESCRIPTION : \
 Creates an option menu from which an object from the manager may be chosen. \
@@ -472,6 +476,8 @@ to be selectable. \
 			choose_object->update_callback.data=(void *)NULL; \
 			choose_object->object_manager=object_manager; \
 			choose_object->conditional_function=conditional_function; \
+			choose_object->conditional_function_user_data= \
+				conditional_function_user_data; \
 		  if (CHOOSE_OBJECT_GET_ITEMS(object_type)(choose_object, \
 				&number_of_items,&items,&item_names)) \
 			{ \
@@ -702,6 +708,75 @@ Changes the chosen object in the choose_object_widget. \
 	return (return_code); \
 } /* CHOOSE_OBJECT_SET_OBJECT(object_type) */
 
+#define DECLARE_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION( \
+	object_type ) \
+PROTOTYPE_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION(object_type) \
+/***************************************************************************** \
+LAST MODIFIED : 18 April 2000 \
+\
+DESCRIPTION : \
+Creates an option menu from which an object from the manager may be chosen. \
+The optional conditional function permits a subset of objects in the manager \
+to be selectable. \
+============================================================================*/ \
+{ \
+	char **item_names; \
+	int i,number_of_items,return_code; \
+	struct CHOOSE_OBJECT(object_type) *choose_object; \
+	void **items; \
+\
+	ENTER(CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(object_type)); \
+	if (choose_object_widget) \
+	{ \
+		/* Get the pointer to the data for the choose_object dialog */ \
+		XtVaGetValues(choose_object_widget,XmNuserData,&choose_object,NULL); \
+		if (choose_object) \
+		{ \
+			choose_object->conditional_function=conditional_function; \
+			choose_object->conditional_function_user_data= \
+				conditional_function_user_data; \
+		  if (CHOOSE_OBJECT_GET_ITEMS(object_type)(choose_object, \
+				&number_of_items,&items,&item_names)) \
+			{ \
+				return_code=Chooser_build_main_menu(choose_object->chooser, \
+					number_of_items,items,item_names,(void *)new_object); \
+				if (items) \
+				{ \
+					DEALLOCATE(items); \
+				} \
+				if (item_names) \
+				{  \
+					for (i=0;i<number_of_items;i++) \
+					{ \
+						DEALLOCATE(item_names[i]); \
+					} \
+					DEALLOCATE(item_names); \
+				} \
+			} \
+			else \
+			{ \
+				return_code=0; \
+			} \
+			if (!return_code) \
+			{ \
+				display_message(ERROR_MESSAGE, \
+					"CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(" #object_type \
+					").  Could not update menu"); \
+			} \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(" #object_type \
+			").  Missing widget"); \
+		return_code=0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(object_type) */
+
 #define DECLARE_CHOOSE_OBJECT_MODULE_FUNCTIONS( object_type ) \
 DECLARE_CHOOSE_OBJECT_UPDATE_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_DESTROY_CB_FUNCTION(object_type) \
@@ -716,6 +791,7 @@ DECLARE_CREATE_CHOOSE_OBJECT_WIDGET_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_GET_OBJECT_FUNCTION(object_type) \
-DECLARE_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type)
+DECLARE_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type) \
+DECLARE_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION(object_type)
 
 #endif /* !defined (CHOOSE_OBJECT_PRIVATE_H) */

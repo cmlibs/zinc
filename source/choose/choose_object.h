@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_object.h
 
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 Macros for implementing an option menu dialog control for choosing an object
@@ -37,9 +37,10 @@ Global Functions
 Widget CREATE_CHOOSE_OBJECT_WIDGET(object_type)(Widget parent, \
 	struct object_type *current_object, \
 	struct MANAGER(object_type) *object_manager, \
-	LIST_CONDITIONAL_FUNCTION(object_type) *conditional_function) \
+	LIST_CONDITIONAL_FUNCTION(object_type) *conditional_function, \
+	void *conditional_function_user_data) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 18 April 2000 \
 \
 DESCRIPTION : \
 Creates an option menu from which an object from the manager may be chosen. \
@@ -123,11 +124,36 @@ DESCRIPTION : \
 Changes the chosen object in the choose_object widget. \
 ============================================================================*/
 
+#if defined (FULL_NAMES)
+#define CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_( object_type ) \
+	choose_object_change_conditional_function_ ## object_type
+#else
+#define CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_( object_type ) \
+	coccf ## object_type
+#endif
+#define CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION( object_type ) \
+	CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_(object_type)
+
+#define PROTOTYPE_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION( \
+	object_type ) \
+int CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(object_type)( \
+	Widget choose_object_widget, \
+	LIST_CONDITIONAL_FUNCTION(object_type) *conditional_function, \
+	void *conditional_function_user_data,struct object_type *new_object) \
+/***************************************************************************** \
+LAST MODIFIED : 18 April 2000 \
+\
+DESCRIPTION : \
+Changes the conditional_function and user_data limiting the available \
+selection of objects. Also allows new_object to be set simultaneously. \
+============================================================================*/
+
 #define PROTOTYPE_CHOOSE_OBJECT_GLOBAL_FUNCTIONS( object_type) \
 PROTOTYPE_CREATE_CHOOSE_OBJECT_WIDGET_FUNCTION(object_type); \
 PROTOTYPE_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION(object_type); \
 PROTOTYPE_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION(object_type); \
 PROTOTYPE_CHOOSE_OBJECT_GET_OBJECT_FUNCTION(object_type); \
-PROTOTYPE_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type)
+PROTOTYPE_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type); \
+PROTOTYPE_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION(object_type)
 
 #endif /* !defined (CHOOSE_OBJECT_H) */
