@@ -32,12 +32,21 @@ while ( -f $typemap_file )
 	 $typemap_file = "../$typemap_file";
   }
 
+use Config;
+
 #
 # Problems with "Manifying" in a FAT32 filesystem because Cmiss::Value.3 is not
 #   a valid file name
 WriteMakefile(
     'NAME'    => 'Cmiss',
   #          
+  #Only install a subset of "released modules" at the moment
+	 'DIR'   =>  [ 'graphics_window', 'scene_viewer' ],
+
+  #Add the perl version into the site library
+    'INSTALLSITELIB'   =>  "\$(PREFIX)/lib",
+	 'INSTALLSITEARCH'   =>  "\$(PREFIX)/lib/$Config{version}/$Config{archname}",
+
     'VERSION_FROM'  => 'Cmiss.pm', # finds $VERSION
     'PREREQ_PM'    => {}, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
