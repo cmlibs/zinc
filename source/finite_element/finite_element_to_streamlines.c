@@ -1214,7 +1214,8 @@ printf("Move in world coordinates %f %f %f\n",translate[0],translate[1],
 								}
 								else if ((streamline->type == STREAM_RIBBON)||
 									(streamline->type == STREAM_EXTRUDED_RECTANGLE)||
-									(streamline->type == STREAM_EXTRUDED_ELLIPSE))
+									(streamline->type == STREAM_EXTRUDED_ELLIPSE)||
+									(streamline->type == STREAM_EXTRUDED_CIRCLE))
 								{
 									if (surface=create_GT_surface_streamribbon_FE_element(
 										streamline->element,
@@ -2117,7 +2118,8 @@ xi coordinates.  To be accurate the change in position must be small.
 			}
 			else if ((streamline->type == STREAM_RIBBON)||
 				(streamline->type == STREAM_EXTRUDED_RECTANGLE)||
-				(streamline->type == STREAM_EXTRUDED_ELLIPSE))
+				(streamline->type == STREAM_EXTRUDED_ELLIPSE)||
+				(streamline->type == STREAM_EXTRUDED_CIRCLE))
 			{
 				if (surface=create_GT_surface_streamribbon_FE_element(
 					streamline->element,streamline->xi,streamline->coordinate_field,
@@ -2455,7 +2457,6 @@ stream vector is tracked, and the travel_scalar is made negative.
 		stream_unit_vector,stream_vector,*stream_vectors;
 
 	ENTER(create_GT_surface_streamribbon_FE_element);
-	thickness = 0.2 * width;
 	if (element&&(element->shape)&&(3==element->shape->dimension)&&start_xi&&
 		coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
@@ -2465,6 +2466,14 @@ stream vector is tracked, and the travel_scalar is made negative.
 			(9==number_of_stream_vector_components))&&
 		(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field))
 	{
+		if (type == STREAM_EXTRUDED_CIRCLE)
+		{
+			thickness = width;
+		}
+		else
+		{
+			thickness = 0.2 * width;
+		}
 		/* track points and normals on streamline, and data if requested */
 		if (track_streamline_from_FE_element(&element,start_xi,
 			coordinate_field,stream_vector_field,reverse_track,length,
@@ -2480,6 +2489,7 @@ stream vector is tracked, and the travel_scalar is made negative.
 						surface_points_per_step = 8;
 					} break;
 					case STREAM_EXTRUDED_ELLIPSE:
+					case STREAM_EXTRUDED_CIRCLE:
 					{
 						surface_points_per_step = 20;
 					} break;
@@ -2581,6 +2591,7 @@ stream vector is tracked, and the travel_scalar is made negative.
 									}
 								} break;
 								case STREAM_EXTRUDED_ELLIPSE:
+								case STREAM_EXTRUDED_CIRCLE:
 								{
 									for (d = 0 ; d < surface_points_per_step ; d++)
 									{
@@ -3091,7 +3102,8 @@ Converts a 3-D element into an array of streamlines.
 			}
 			else if ((element_to_streamline_data->type == STREAM_RIBBON)||
 				(element_to_streamline_data->type == STREAM_EXTRUDED_RECTANGLE)||
-				(element_to_streamline_data->type == STREAM_EXTRUDED_ELLIPSE))
+				(element_to_streamline_data->type == STREAM_EXTRUDED_ELLIPSE)||
+				(element_to_streamline_data->type == STREAM_EXTRUDED_CIRCLE))
 			{
 				if (surface=create_GT_surface_streamribbon_FE_element(element,
 					initial_xi,element_to_streamline_data->coordinate_field,
@@ -3202,7 +3214,8 @@ Converts a 3-D element into an array of streamlines.
 			}
 			else if ((node_to_streamline_data->type == STREAM_RIBBON)||
 				(node_to_streamline_data->type == STREAM_EXTRUDED_RECTANGLE)||
-				(node_to_streamline_data->type == STREAM_EXTRUDED_ELLIPSE))
+				(node_to_streamline_data->type == STREAM_EXTRUDED_ELLIPSE)||
+				(node_to_streamline_data->type == STREAM_EXTRUDED_CIRCLE))
 			{
 				if (surface=create_GT_surface_streamribbon_FE_element(element,
 					initial_xi,node_to_streamline_data->coordinate_field,

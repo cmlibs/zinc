@@ -5050,7 +5050,8 @@ Converts a finite element into a graphics object with the supplied settings.
 						}
 						else if ((settings->streamline_type == STREAM_RIBBON)||
 							(settings->streamline_type == STREAM_EXTRUDED_RECTANGLE)||
-							(settings->streamline_type == STREAM_EXTRUDED_ELLIPSE))
+							(settings->streamline_type == STREAM_EXTRUDED_ELLIPSE)||
+							(settings->streamline_type == STREAM_EXTRUDED_CIRCLE))
 						{
 							if (surface = create_GT_surface_streamribbon_FE_element(element,
 								initial_xi, settings_to_object_data->rc_coordinate_field,

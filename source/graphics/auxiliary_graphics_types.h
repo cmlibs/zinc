@@ -81,7 +81,8 @@ for automatic creation of choose_enumerator widgets.
 	STREAM_EXTRUDED_ELLIPSE,
 	STREAM_LINE,
 	STREAM_EXTRUDED_RECTANGLE,
-	STREAM_RIBBON
+	STREAM_RIBBON,
+	STREAM_EXTRUDED_CIRCLE,
 };
 
 enum Streamline_data_type

@@ -725,6 +725,10 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_type)
 		{
 			enumerator_string = "ribbon";
 		} break;
+		case STREAM_EXTRUDED_CIRCLE:
+		{
+			enumerator_string = "cylinder";
+		} break;
 		default:
 		{
 			enumerator_string = (char *)NULL;
