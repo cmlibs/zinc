@@ -284,7 +284,7 @@ object
 			XmNbottomAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopWidget = gwin_view_all_btn;
-			XmNlabelString = compound_string("Print...");
+			XmNlabelString = compound_string("Save as...");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_CENTER;
 			};
