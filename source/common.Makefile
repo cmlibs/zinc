@@ -397,5 +397,5 @@ define BuildLibraryTarget
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
 	(ls $($(3)) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)  ; \
 	rm -f $(2)/$(1) ; \
-	ar $(AR_FLAGS) cr $(2)/$(1) $(OBJS)
+	ar $(AR_FLAGS) cr $(2)/$(1) `cat object.list`
 endef
