@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 6 October 2000
+XCOMM LAST MODIFIED : 19 November 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -37,6 +37,7 @@ PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities
 #define Bmsi2sigTarget unemap/bmsi2sig64
 #define Biosense2sigTarget unemap/biosense2sig64
 #define Biosense2vrmlTarget unemap/biosense2vrml64
+#define CalculateEventsTarget unemap/calculate_events64
 #define ChangeCalibrationTarget unemap/change_calibration64
 #define ChangeChannelsTarget unemap/change_channels64
 #define ChangeConfigurationTarget unemap/change_configuration64
@@ -55,6 +56,7 @@ PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities
 #define Sig2textTarget unemap/sig2text64
 #define TestDelauneyTarget unemap/test_delauney64
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware64
+#define Text2sigTarget unemap/text2sig64
 #define Tuff2sigTarget unemap/tuff2sig64
 #define UniqueChannelsTarget unemap/unique_channels64
 #define Uid2uidhTarget uid2uidh64
@@ -75,6 +77,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 #define Bmsi2sigTarget unemap/bmsi2sig_optimised
 #define Biosense2sigTarget unemap/biosense2sig_optimised
 #define Biosense2vrmlTarget unemap/biosense2vrml_optimised
+#define CalculateEventsTarget unemap/calculate_events_optimised
 #define ChangeCalibrationTarget unemap/change_calibration_optimised
 #define ChangeChannelsTarget unemap/change_channels_optimised
 #define ChangeConfigurationTarget unemap/change_configuration_optimised
@@ -93,6 +96,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 #define Sig2textTarget unemap/sig2text_optimised
 #define TestDelauneyTarget unemap/test_delauney_optimised
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_optimised
+#define Text2sigTarget unemap/text2sig_optimised
 #define Tuff2sigTarget unemap/tuff2sig_optimised
 #define UniqueChannelsTarget unemap/unique_channels_optimised
 #define Uid2uidhTarget uid2uidh
@@ -113,6 +117,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Bmsi2sigTarget unemap/bmsi2sig_nodes
 #define Biosense2sigTarget unemap/biosense2sig_nodes
 #define Biosense2vrmlTarget unemap/biosense2vrml_nodes
+#define CalculateEventsTarget unemap/calculate_events_nodes
 #define ChangeCalibrationTarget unemap/change_calibration_nodes
 #define ChangeChannelsTarget unemap/change_channels_nodes
 #define ChangeConfigurationTarget unemap/change_configuration_nodes
@@ -131,6 +136,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Sig2textTarget unemap/sig2text_nodes
 #define TestDelauneyTarget unemap/test_delauney_nodes
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_nodes
+#define Text2sigTarget unemap/text2sig_nodes
 #define Tuff2sigTarget unemap/tuff2sig_nodes
 #define UniqueChannelsTarget unemap/unique_channels_nodes
 #define Uid2uidhTarget uid2uidh
@@ -151,6 +157,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Bmsi2sigTarget unemap/bmsi2sig_3d
 #define Biosense2sigTarget unemap/biosense2sig_3d
 #define Biosense2vrmlTarget unemap/biosense2vrml_3d
+#define CalculateEventsTarget unemap/calculate_events_3d
 #define ChangeCalibrationTarget unemap/change_calibration_3d
 #define ChangeChannelsTarget unemap/change_channels_3d
 #define ChangeConfigurationTarget unemap/change_configuration_3d
@@ -169,6 +176,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Sig2textTarget unemap/sig2text_3d
 #define TestDelauneyTarget unemap/test_delauney_3d
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_3d
+#define Text2sigTarget unemap/text2sig_3d
 #define Tuff2sigTarget unemap/tuff2sig_3d
 #define UniqueChannelsTarget unemap/unique_channels_3d
 #define Uid2uidhTarget uid2uidh
@@ -190,6 +198,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Bmsi2sigTarget unemap/bmsi2sig32
 #define Biosense2sigTarget unemap/biosense2sig32
 #define Biosense2vrmlTarget unemap/biosense2vrml32
+#define CalculateEventsTarget unemap/calculate_events32
 #define ChangeCalibrationTarget unemap/change_calibration32
 #define ChangeChannelsTarget unemap/change_channels32
 #define ChangeConfigurationTarget unemap/change_configuration32
@@ -208,6 +217,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Sig2textTarget unemap/sig2text32
 #define TestDelauneyTarget unemap/test_delauney32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
+#define Text2sigTarget unemap/text2sig32
 #define Tuff2sigTarget unemap/tuff2sig32
 #define UniqueChannelsTarget unemap/unique_channels32
 #define Uid2uidhTarget uid2uidh
@@ -225,6 +235,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Bmsi2sigTarget unemap/bmsi2sig32
 #define Biosense2sigTarget unemap/biosense2sig32
 #define Biosense2vrmlTarget unemap/biosense2vrml32
+#define CalculateEventsTarget unemap/calculate_events32
 #define ChangeCalibrationTarget unemap/change_calibration32
 #define ChangeChannelsTarget unemap/change_channels32
 #define ChangeConfigurationTarget unemap/change_configuration32
@@ -243,6 +254,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Sig2textTarget unemap/sig2text32
 #define TestDelauneyTarget unemap/test_delauney32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
+#define Text2sigTarget unemap/text2sig32
 #define Tuff2sigTarget unemap/tuff2sig32
 #define UniqueChannelsTarget unemap/unique_channels32
 #define Uid2uidhTarget uid2uidh
@@ -269,6 +281,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Bmsi2sigTarget unemap/bmsi2sig_linux_nodes
 #define Biosense2sigTarget unemap/biosense2sig_linux_nodes
 #define Biosense2vrmlTarget unemap/biosense2vrml_linux_nodes
+#define CalculateEventsTarget unemap/calculate_events_linux_nodes
 #define ChangeCalibrationTarget unemap/change_calibration_linux_nodes
 #define ChangeChannelsTarget unemap/change_channels_linux_nodes
 #define ChangeConfigurationTarget unemap/change_configuration_linux_nodes
@@ -287,6 +300,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Sig2textTarget unemap/sig2text_linux_nodes
 #define TestDelauneyTarget unemap/test_delauney_linux_nodes
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_nodes
+#define Text2sigTarget unemap/text2sig_linux_nodes
 #define Tuff2sigTarget unemap/tuff2sig_linux_nodes
 #define UniqueChannelsTarget unemap/unique_channels_linux_nodes
 #define Uid2uidhTarget uid2uidh_linux
@@ -308,6 +322,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_nodes_g
 #define Bmsi2sigTarget unemap/bmsi2sig_linux_3d
 #define Biosense2sigTarget unemap/biosense2sig_linux_3d
 #define Biosense2vrmlTarget unemap/biosense2vrml_linux_3d
+#define CalculateEventsTarget unemap/calculate_events_linux_3d
 #define ChangeCalibrationTarget unemap/change_calibration_linux_3d
 #define ChangeChannelsTarget unemap/change_channels_linux_3d
 #define ChangeConfigurationTarget unemap/change_configuration_linux_3d
@@ -326,6 +341,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_nodes_g
 #define Sig2textTarget unemap/sig2text_linux_3d
 #define TestDelauneyTarget unemap/test_delauney_linux_3d
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_3d
+#define Text2sigTarget unemap/text2sig_linux_3d
 #define Tuff2sigTarget unemap/tuff2sig_linux_3d
 #define UniqueChannelsTarget unemap/unique_channels_linux_3d
 #define Uid2uidhTarget uid2uidh_linux
@@ -344,6 +360,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_g
 #define Bmsi2sigTarget unemap/bmsi2sig_linux
 #define Biosense2sigTarget unemap/biosense2sig_linux
 #define Biosense2vrmlTarget unemap/biosense2vrml_linux
+#define CalculateEventsTarget unemap/calculate_events_linux
 #define ChangeCalibrationTarget unemap/change_calibration_linux
 #define ChangeChannelsTarget unemap/change_channels_linux
 #define ChangeConfigurationTarget unemap/change_configuration_linux
@@ -362,6 +379,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_g
 #define Sig2textTarget unemap/sig2text_linux
 #define TestDelauneyTarget unemap/test_delauney_linux
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux
+#define Text2sigTarget unemap/text2sig_linux
 #define Tuff2sigTarget unemap/tuff2sig_linux
 #define UniqueChannelsTarget unemap/unique_channels_linux
 #define Uid2uidhTarget uid2uidh_linux
@@ -788,7 +806,7 @@ transfer :
 	tar -cvf - \
 	../unemap.make unemap.imake common.imake unemap.c version.h \
 	$(UTILITIES_PATH)/uid2uidh $(UTILITIES_PATH)/uid2uidh_linux \
-	unemap/WildC unemap/WildH unemap/WildUil \
+	unemap/WildC unemap/WildH unemap/WildUil unemap/WildRc \
 	unemap_hardware_service/WildC unemap_hardware_service/WildH \
 	unemap_hardware_service/WildUil \
 	unemap/utilities/WildC unemap/utilities/WildH unemap/utilities/WildUil \
@@ -863,12 +881,12 @@ general/debug_memory_check.ObjSuffix: general/debug.c general/debug.h
 #endif /* defined (MEMORY_CHECK) */
 
 utilities : AffineTarget Bmsi2sigTarget Biosense2sigTarget Biosense2vrmlTarget \
-ChangeCalibrationTarget ChangeChannelsTarget ChangeConfigurationTarget \
-ChangeEventsTarget ChangeFrequencyTarget CombineSignalsTarget \
-DifferenceSignalsTarget ExtractSignalTarget Img2sigTarget MakePlaqueTarget \
-OpticalSignalsTarget Plt2cnfgTarget Posdat2sigTarget RatioSignalsTarget \
-RegisterTarget Sig2textTarget TestDelauneyTarget TestUnemapHardwareTarget \
-Tuff2sigTarget UniqueChannelsTarget
+CalculateEventsTarget ChangeCalibrationTarget ChangeChannelsTarget \
+ChangeConfigurationTarget ChangeEventsTarget ChangeFrequencyTarget \
+CombineSignalsTarget DifferenceSignalsTarget ExtractSignalTarget Img2sigTarget \
+MakePlaqueTarget OpticalSignalsTarget Plt2cnfgTarget Posdat2sigTarget \
+RatioSignalsTarget RegisterTarget Sig2textTarget TestDelauneyTarget \
+TestUnemapHardwareTarget Text2sigTarget Tuff2sigTarget UniqueChannelsTarget
 
 AFFINE_SRCS = \
 	unemap/utilities/affine.c \
@@ -920,6 +938,23 @@ BIOSENSE2VRML_SRCS = \
 	user_interface/message.c
 
 BuildNormalTarget(Biosense2vrmlTarget,$(UTILITIES_PATH),BIOSENSE2VRML_SRCS,BIOSENSE2VRML_OBJSA,BIOSENSE2VRML_OBJSB,BIOSENSE2VRML_OBJS,-lm) 
+
+CALCULATE_EVENTS_SRCS = \
+	unemap/utilities/calculate_events.c \
+	command/parser.c \
+	general/debug.c \
+	general/geometry.c \
+	general/matrix_vector.c \
+	general/myio.c \
+	general/mystring.c \
+	general/postscript.c \
+	unemap/analysis.c \
+	unemap/interpolate.c \
+	unemap/rig.c \
+	unemap/rig_node.c \
+	user_interface/message.c
+
+BuildNormalTarget(CalculateEventsTarget,$(UTILITIES_PATH),CALCULATE_EVENTS_SRCS,CALCULATE_EVENTS_OBJSA,CALCULATE_EVENTS_OBJSB,CALCULATE_EVENTS_OBJS,$(LIB)) 
 
 CHANGE_CALIBRATION_SRCS = \
 	unemap/utilities/change_calibration.c \
@@ -1136,6 +1171,20 @@ TEST_UNEMAP_HARDWARE_SRCS = \
 	user_interface/message.c
 
 BuildNormalTarget(TestUnemapHardwareTarget,$(UTILITIES_PATH),TEST_UNEMAP_HARDWARE_SRCS,TEST_UNEMAP_HARDWARE_OBJSA,TEST_UNEMAP_HARDWARE_OBJSB,TEST_UNEMAP_HARDWARE_OBJS,$(LIB)) 
+
+TEXT2SIG_SRCS = \
+	unemap/utilities/text2sig.c \
+	command/parser.c \
+	general/debug.c \
+	general/geometry.c \
+	general/matrix_vector.c \
+	general/myio.c \
+	general/mystring.c \
+	unemap/rig.c \
+	unemap/rig_node.c \
+	user_interface/message.c
+
+BuildNormalTarget(Text2sigTarget,$(UTILITIES_PATH),TEXT2SIG_SRCS,TEXT2SIG_OBJSA,TEXT2SIG_OBJSB,TEXT2SIG_OBJS,$(LIB)) 
 
 TUFF2SIG_SRCS = \
 	unemap/utilities/tuff2sig.c \
