@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendervrml.c
 
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 16 January 2002
 
 DESCRIPTION :
 Renders gtObjects to VRML file
@@ -14,6 +14,7 @@ Renders gtObjects to VRML file
 #include "general/list.h"
 #include "general/list_private.h"
 #include "general/object.h"
+#include "general/mystring.h"
 #include "graphics/graphics_object.h"
 #if defined (OLD_CODE)
 #include "graphics/light.h"
@@ -563,7 +564,7 @@ int draw_glyph_set_vrml(FILE *vrml_file, int number_of_points,
 	struct Graphical_material *material, struct Spectrum *spectrum, float time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 16 January 2002
 
 DESCRIPTION :
 Defines an object for the <glyph> and then draws that at <number_of_points>
@@ -571,7 +572,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 <axis1_list>, <axis2_list> and <axis3_list>. 
 ==============================================================================*/
 {
-	char **label;
+	char **label, *label_token;
 	float a1, a2, a3, a_angle, a_magnitude, ax1, ax2, ax3, b1, b2, b3, b_angle,
 		bx1, bx2, bx3, c1, c2, c3, cx1, cx2, cx3, dp, f, f0, f1, j1, j2, j3,
 		c_magnitude, s1, s2, s3, x, y, z;
@@ -1180,7 +1181,19 @@ points  given by the positions in <point_list> and oriented and scaled by
 					}
 					fprintf(vrml_file,"  geometry Text {\n");
 					fprintf(vrml_file,"    string [\n");
-					fprintf(vrml_file,"      \"%s\"\n",*label);
+					if (label_token = duplicate_string(*label))
+					{
+						make_valid_token(&label_token);
+						if (('\"' == label_token[0]) || ('\'' == label_token[0]))
+						{
+							fprintf(vrml_file,"      %s\n", label_token);
+						}
+						else
+						{
+							fprintf(vrml_file,"      \"%s\"\n", label_token);
+						}
+						DEALLOCATE(label_token);
+					}
 					fprintf(vrml_file,"    ]\n");
 					fprintf(vrml_file,"  } #Text\n");
 					fprintf(vrml_file,"} #Shape\n");
