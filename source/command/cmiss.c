@@ -65,6 +65,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_histogram_normalize.h"
 #include "image_processing/computed_field_histogram_stretch.h"
 #include "image_processing/computed_field_image_contour.h"
+#include "image_processing/computed_field_image_correlation.h"
 #include "image_processing/computed_field_image_enhancement.h"
 #include "image_processing/computed_field_image_mask.h"
 #include "image_processing/computed_field_intensity_based_segment.h"
@@ -24276,6 +24277,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_image_contour(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_image_correlation(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_image_enhancement(
