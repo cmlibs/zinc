@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -1189,7 +1189,7 @@ Attempts to destroy all the nodes currently in the global selection.
 static void Node_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *node_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -1229,256 +1229,288 @@ release.
 			{
 				case INTERACTIVE_EVENT_BUTTON_PRESS:
 				{
-					if (scene_picked_object_list=
-						Scene_pick_objects(scene,interaction_volume))
+					/* interaction only works with first mouse button */
+					if (1==Interactive_event_get_button_number(event))
 					{
-						picked_node=(struct FE_node *)NULL;
-						if (node_tool->select_enabled)
+						if (scene_picked_object_list=
+							Scene_pick_objects(scene,interaction_volume))
 						{
-							picked_node=Scene_picked_object_list_get_nearest_node(
-								scene_picked_object_list,node_tool->use_data,
-								(struct GROUP(FE_node) *)NULL,&scene_picked_object,
-								&gt_element_group,&gt_element_settings);
-						}
-						if (picked_node)
-						{
-							node_tool->picked_node_was_unselected=
-								!FE_node_selection_is_node_selected(node_tool->node_selection,
-									picked_node);
-							REACCESS(Scene_picked_object)(&(node_tool->scene_picked_object),
-								scene_picked_object);
-							REACCESS(GT_element_group)(&(node_tool->gt_element_group),
-								gt_element_group);
-							REACCESS(GT_element_settings)(&(node_tool->gt_element_settings),
-								gt_element_settings);
-						}
-						else
-						{
-							if (node_tool->create_enabled&&(picked_node=
-								Node_tool_create_node(node_tool,scene,interaction_volume)))
+							picked_node=(struct FE_node *)NULL;
+							if (node_tool->select_enabled)
 							{
-								node_tool->picked_node_was_unselected=1;
+								picked_node=Scene_picked_object_list_get_nearest_node(
+									scene_picked_object_list,node_tool->use_data,
+									(struct GROUP(FE_node) *)NULL,&scene_picked_object,
+									&gt_element_group,&gt_element_settings);
+							}
+							if (picked_node)
+							{
+								node_tool->picked_node_was_unselected=
+									!FE_node_selection_is_node_selected(node_tool->node_selection,
+										picked_node);
+								REACCESS(Scene_picked_object)(&(node_tool->scene_picked_object),
+									scene_picked_object);
+								REACCESS(GT_element_group)(&(node_tool->gt_element_group),
+									gt_element_group);
+								REACCESS(GT_element_settings)(&(node_tool->gt_element_settings),
+									gt_element_settings);
 							}
 							else
 							{
-								node_tool->picked_node_was_unselected=0;
+								if (node_tool->create_enabled&&(picked_node=
+									Node_tool_create_node(node_tool,scene,interaction_volume)))
+								{
+									node_tool->picked_node_was_unselected=1;
+								}
+								else
+								{
+									node_tool->picked_node_was_unselected=0;
+								}
 							}
+							REACCESS(FE_node)(&(node_tool->last_picked_node),picked_node);
+							if (clear_selection=((!shift_pressed)&&((!picked_node)||
+								(node_tool->picked_node_was_unselected))))
+							{
+								FE_node_selection_begin_cache(node_tool->node_selection);
+								FE_node_selection_clear(node_tool->node_selection);
+							}
+							if (picked_node)
+							{
+								FE_node_selection_select_node(node_tool->node_selection,
+									picked_node);
+							}
+							if (clear_selection)
+							{
+								FE_node_selection_end_cache(node_tool->node_selection);
+							}
+							DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 						}
-						REACCESS(FE_node)(&(node_tool->last_picked_node),picked_node);
-						if (clear_selection=((!shift_pressed)&&((!picked_node)||
-							(node_tool->picked_node_was_unselected))))
-						{
-							FE_node_selection_begin_cache(node_tool->node_selection);
-							FE_node_selection_clear(node_tool->node_selection);
-						}
-						if (picked_node)
-						{
-							FE_node_selection_select_node(node_tool->node_selection,
-								picked_node);
-						}
-						if (clear_selection)
-						{
-							FE_node_selection_end_cache(node_tool->node_selection);
-						}
-						DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
+						REACCESS(Interaction_volume)(&(node_tool->last_interaction_volume),
+							interaction_volume);
 					}
 					node_tool->motion_detected=0;
 				} break;
 				case INTERACTIVE_EVENT_MOTION_NOTIFY:
 				case INTERACTIVE_EVENT_BUTTON_RELEASE:
 				{
-					if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
+					if (node_tool->last_interaction_volume&&
+						(INTERACTIVE_EVENT_MOTION_NOTIFY==event_type) ||
+						(1==Interactive_event_get_button_number(event)))
 					{
-						node_tool->motion_detected=1;
-					}
-					if (node_tool->last_picked_node)
-					{
-						if ((node_tool->edit_enabled)&&node_tool->motion_detected &&
-							(((INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)&&
-								node_tool->motion_update_enabled)||
-								((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
-									(!node_tool->motion_update_enabled))))
+						if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 						{
-							return_code=1;
-							/* establish edit_info */
-							edit_info.last_picked_node = (struct FE_node *)NULL;
-							edit_info.delta1=0.0;
-							edit_info.delta2=0.0;
-							edit_info.delta3=0.0;
-							edit_info.initial_interaction_volume=
-								node_tool->last_interaction_volume;
-							edit_info.final_interaction_volume=interaction_volume;
-							edit_info.node_manager=node_tool->node_manager;
-							if (node_tool->use_data)
+							node_tool->motion_detected=1;
+						}
+						if (node_tool->last_picked_node)
+						{
+							if ((node_tool->edit_enabled)&&node_tool->motion_detected &&
+								(((INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)&&
+									node_tool->motion_update_enabled)||
+									((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
+										(!node_tool->motion_update_enabled))))
 							{
-								edit_info.node_group=GT_element_group_get_data_group(
-									node_tool->gt_element_group);
-							}
-							else
-							{
-								edit_info.node_group=GT_element_group_get_node_group(
-									node_tool->gt_element_group);
-							}
-							/* get coordinate field in RC coordinates */
-							if (!(coordinate_field=GT_element_settings_get_coordinate_field(
-								node_tool->gt_element_settings)))
-							{
-								coordinate_field=
-									GT_element_group_get_default_coordinate_field(
+								return_code=1;
+								/* establish edit_info */
+								edit_info.last_picked_node = (struct FE_node *)NULL;
+								edit_info.delta1=0.0;
+								edit_info.delta2=0.0;
+								edit_info.delta3=0.0;
+								edit_info.initial_interaction_volume=
+									node_tool->last_interaction_volume;
+								edit_info.final_interaction_volume=interaction_volume;
+								edit_info.node_manager=node_tool->node_manager;
+								if (node_tool->use_data)
+								{
+									edit_info.node_group=GT_element_group_get_data_group(
 										node_tool->gt_element_group);
-							}
-							edit_info.coordinate_field=coordinate_field;
-							edit_info.rc_coordinate_field=
-								Computed_field_begin_wrap_coordinate_field(coordinate_field);
-							edit_info.orientation_scale_field=(struct Computed_field *)NULL;
-							edit_info.wrapper_orientation_scale_field=
-								(struct Computed_field *)NULL;
-							if (GT_element_settings_get_glyph_parameters(
-								node_tool->gt_element_settings,&glyph,
-								edit_info.glyph_centre,edit_info.glyph_size,
-								&edit_info.orientation_scale_field,
-								edit_info.glyph_scale_factors))
-							{
-								if (edit_info.orientation_scale_field)
-								{
-									edit_info.wrapper_orientation_scale_field=
-										Computed_field_begin_wrap_orientation_scale_field(
-											edit_info.orientation_scale_field,
-											edit_info.rc_coordinate_field);
 								}
-							}
-							else
-							{
-								return_code=0;
-							}
-							/* work out scene_object transformation information */
-							if (!(Scene_picked_object_get_total_transformation_matrix(
-								node_tool->scene_picked_object,
-								&(edit_info.transformation_required),
-								edit_info.transformation_matrix)&&
-								copy_matrix(4,4,edit_info.transformation_matrix,
-									edit_info.LU_transformation_matrix)&&
-								((!edit_info.transformation_required)||
-									LU_decompose(4,edit_info.LU_transformation_matrix,
-										edit_info.LU_indx,&d))))
-							{
-								return_code=0;
-							}
-							if (return_code)
-							{
-								if (node_list=FE_node_selection_get_node_list(
-									node_tool->node_selection))
+								else
 								{
-									/* cache manager so only one change message produced */
-									MANAGER_BEGIN_CACHE(FE_node)(node_tool->node_manager);
-									/* edit vectors if non-constant orientation_scale field */
-									if (((NODE_TOOL_EDIT_AUTOMATIC == node_tool->edit_mode) ||
-										(NODE_TOOL_EDIT_VECTOR == node_tool->edit_mode))&&
-										edit_info.wrapper_orientation_scale_field&&
-										(!(COMPUTED_FIELD_CONSTANT==Computed_field_get_type(
-											edit_info.orientation_scale_field))))
+									edit_info.node_group=GT_element_group_get_node_group(
+										node_tool->gt_element_group);
+								}
+								/* get coordinate field in RC coordinates */
+								if (!(coordinate_field=GT_element_settings_get_coordinate_field(
+									node_tool->gt_element_settings)))
+								{
+									coordinate_field=
+										GT_element_group_get_default_coordinate_field(
+											node_tool->gt_element_group);
+								}
+								edit_info.coordinate_field=coordinate_field;
+								edit_info.rc_coordinate_field=
+									Computed_field_begin_wrap_coordinate_field(coordinate_field);
+								edit_info.orientation_scale_field=(struct Computed_field *)NULL;
+								edit_info.wrapper_orientation_scale_field=
+									(struct Computed_field *)NULL;
+								if (GT_element_settings_get_glyph_parameters(
+									node_tool->gt_element_settings,&glyph,
+									edit_info.glyph_centre,edit_info.glyph_size,
+									&edit_info.orientation_scale_field,
+									edit_info.glyph_scale_factors))
+								{
+									if (edit_info.orientation_scale_field)
 									{
-										/* edit vector */
-										if (FE_node_calculate_delta_vector(
-											node_tool->last_picked_node,(void *)&edit_info))
-										{
-											FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_edit_vector,
-												(void *)&edit_info,node_list);
-										}
+										edit_info.wrapper_orientation_scale_field=
+											Computed_field_begin_wrap_orientation_scale_field(
+												edit_info.orientation_scale_field,
+												edit_info.rc_coordinate_field);
 									}
-									else
-									{
-										if (NODE_TOOL_EDIT_VECTOR != node_tool->edit_mode)
-										{
-											/* edit position */
-											if (FE_node_calculate_delta_position(
-												node_tool->last_picked_node,(void *)&edit_info))
-											{
-												FOR_EACH_OBJECT_IN_LIST(FE_node)(
-													FE_node_edit_position,(void *)&edit_info,node_list);
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"Cannot edit vector: invalid orientation_scale field");
-											return_code=0;
-										}
-									}
-									MANAGER_END_CACHE(FE_node)(node_tool->node_manager);
 								}
 								else
 								{
 									return_code=0;
 								}
-							}
-							if (edit_info.orientation_scale_field)
-							{
-								Computed_field_end_wrap(
-									&(edit_info.wrapper_orientation_scale_field));
-							}
-							Computed_field_end_wrap(&(edit_info.rc_coordinate_field));
-						}
-						else
-						{
-							/* unselect last_picked_node if not just added */
-							if ((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
-								shift_pressed&&(!(node_tool->picked_node_was_unselected))&&
-								(!(node_tool->edit_enabled && node_tool->motion_detected)))
-							{
-								FE_node_selection_unselect_node(node_tool->node_selection,
-									node_tool->last_picked_node);
-							}
-						}
-					}
-					else if (node_tool->motion_detected)
-					{
-						/* rubber band select - make bounding box out of initial and current
-							 interaction_volumes */
-						if (temp_interaction_volume=create_Interaction_volume_bounding_box(
-							node_tool->last_interaction_volume,interaction_volume))
-						{
-							if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
-							{
-								if (!node_tool->rubber_band)
+								/* work out scene_object transformation information */
+								if (!(Scene_picked_object_get_total_transformation_matrix(
+									node_tool->scene_picked_object,
+									&(edit_info.transformation_required),
+									edit_info.transformation_matrix)&&
+									copy_matrix(4,4,edit_info.transformation_matrix,
+										edit_info.LU_transformation_matrix)&&
+									((!edit_info.transformation_required)||
+										LU_decompose(4,edit_info.LU_transformation_matrix,
+											edit_info.LU_indx,&d))))
 								{
-									/* create rubber_band object and put in scene */
-									node_tool->rubber_band=CREATE(GT_object)(
-										"node_tool_rubber_band",g_POLYLINE,
-										node_tool->rubber_band_material);
-									ACCESS(GT_object)(node_tool->rubber_band);
-									Scene_add_graphics_object(scene,node_tool->rubber_band,
-										/*position*/0,"node_tool_rubber_band",
-										/*fast_changing*/1);
+									return_code=0;
 								}
-								Interaction_volume_make_polyline_extents(
-									temp_interaction_volume,node_tool->rubber_band);
+								if (return_code)
+								{
+									if (node_list=FE_node_selection_get_node_list(
+										node_tool->node_selection))
+									{
+										/* cache manager so only one change message produced */
+										MANAGER_BEGIN_CACHE(FE_node)(node_tool->node_manager);
+										/* edit vectors if non-constant orientation_scale field */
+										if (((NODE_TOOL_EDIT_AUTOMATIC == node_tool->edit_mode) ||
+											(NODE_TOOL_EDIT_VECTOR == node_tool->edit_mode))&&
+											edit_info.wrapper_orientation_scale_field&&
+											(!(COMPUTED_FIELD_CONSTANT==Computed_field_get_type(
+												edit_info.orientation_scale_field))))
+										{
+											/* edit vector */
+											if (FE_node_calculate_delta_vector(
+												node_tool->last_picked_node,(void *)&edit_info))
+											{
+												FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_edit_vector,
+													(void *)&edit_info,node_list);
+											}
+										}
+										else
+										{
+											if (NODE_TOOL_EDIT_VECTOR != node_tool->edit_mode)
+											{
+												/* edit position */
+												if (FE_node_calculate_delta_position(
+													node_tool->last_picked_node,(void *)&edit_info))
+												{
+													FOR_EACH_OBJECT_IN_LIST(FE_node)(
+														FE_node_edit_position,(void *)&edit_info,node_list);
+												}
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"Cannot edit vector: invalid orientation_scale field");
+												return_code=0;
+											}
+										}
+										MANAGER_END_CACHE(FE_node)(node_tool->node_manager);
+									}
+									else
+									{
+										return_code=0;
+									}
+								}
+								if (edit_info.orientation_scale_field)
+								{
+									Computed_field_end_wrap(
+										&(edit_info.wrapper_orientation_scale_field));
+								}
+								Computed_field_end_wrap(&(edit_info.rc_coordinate_field));
 							}
 							else
 							{
-								Scene_remove_graphics_object(scene,node_tool->rubber_band);
-								DEACCESS(GT_object)(&(node_tool->rubber_band));
-							}
-							if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
-							{
-								if (scene_picked_object_list=
-									Scene_pick_objects(scene,temp_interaction_volume))
+								/* unselect last_picked_node if not just added */
+								if ((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
+									shift_pressed&&(!(node_tool->picked_node_was_unselected))&&
+									(!(node_tool->edit_enabled && node_tool->motion_detected)))
 								{
-									if (node_list=Scene_picked_object_list_get_picked_nodes(
-										scene_picked_object_list,node_tool->use_data))
-									{
-										FE_node_selection_begin_cache(node_tool->node_selection);
-										FOR_EACH_OBJECT_IN_LIST(FE_node)(
-											FE_node_select_in_FE_node_selection,
-											(void *)(node_tool->node_selection),node_list);
-										FE_node_selection_end_cache(node_tool->node_selection);
-										DESTROY(LIST(FE_node))(&node_list);
-									}
-									DESTROY(LIST(Scene_picked_object))(
-										&(scene_picked_object_list));
+									FE_node_selection_unselect_node(node_tool->node_selection,
+										node_tool->last_picked_node);
 								}
-								DESTROY(Interaction_volume)(&temp_interaction_volume);
 							}
+						}
+						else if (node_tool->motion_detected)
+						{
+							/* rubber band select - make bounding box out of initial and current
+								 interaction_volumes */
+							if (temp_interaction_volume=create_Interaction_volume_bounding_box(
+								node_tool->last_interaction_volume,interaction_volume))
+							{
+								if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
+								{
+									if (!node_tool->rubber_band)
+									{
+										/* create rubber_band object and put in scene */
+										node_tool->rubber_band=CREATE(GT_object)(
+											"node_tool_rubber_band",g_POLYLINE,
+											node_tool->rubber_band_material);
+										ACCESS(GT_object)(node_tool->rubber_band);
+										Scene_add_graphics_object(scene,node_tool->rubber_band,
+											/*position*/0,"node_tool_rubber_band",
+											/*fast_changing*/1);
+									}
+									Interaction_volume_make_polyline_extents(
+										temp_interaction_volume,node_tool->rubber_band);
+								}
+								else
+								{
+									Scene_remove_graphics_object(scene,node_tool->rubber_band);
+									DEACCESS(GT_object)(&(node_tool->rubber_band));
+								}
+								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
+								{
+									if (scene_picked_object_list=
+										Scene_pick_objects(scene,temp_interaction_volume))
+									{
+										if (node_list=Scene_picked_object_list_get_picked_nodes(
+											scene_picked_object_list,node_tool->use_data))
+										{
+											FE_node_selection_begin_cache(node_tool->node_selection);
+											FOR_EACH_OBJECT_IN_LIST(FE_node)(
+												FE_node_select_in_FE_node_selection,
+												(void *)(node_tool->node_selection),node_list);
+											FE_node_selection_end_cache(node_tool->node_selection);
+											DESTROY(LIST(FE_node))(&node_list);
+										}
+										DESTROY(LIST(Scene_picked_object))(
+											&(scene_picked_object_list));
+									}
+									DESTROY(Interaction_volume)(&temp_interaction_volume);
+								}
+							}
+						}
+						if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
+						{
+							/* deaccess following as only kept for one input movement */
+							REACCESS(FE_node)(&(node_tool->last_picked_node),
+								(struct FE_node *)NULL);
+							REACCESS(Interaction_volume)(
+								&(node_tool->last_interaction_volume),
+								(struct Interaction_volume *)NULL);
+							REACCESS(Scene_picked_object)(&(node_tool->scene_picked_object),
+								(struct Scene_picked_object *)NULL);
+							REACCESS(GT_element_group)(&(node_tool->gt_element_group),
+								(struct GT_element_group *)NULL);
+							REACCESS(GT_element_settings)(&(node_tool->gt_element_settings),
+								(struct GT_element_settings *)NULL);
+						}
+						else if (node_tool->last_picked_node&&
+							node_tool->motion_update_enabled)
+						{
+							REACCESS(Interaction_volume)(
+								&(node_tool->last_interaction_volume),interaction_volume);
 						}
 					}
 				} break;
@@ -1489,25 +1521,6 @@ release.
 						"Unknown event type");
 				} break;
 			}
-		}
-		if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
-		{
-			/* deaccess following as only kept for one input movement */
-			REACCESS(FE_node)(&(node_tool->last_picked_node),(struct FE_node *)NULL);
-			REACCESS(Interaction_volume)(&(node_tool->last_interaction_volume),
-				(struct Interaction_volume *)NULL);
-			REACCESS(Scene_picked_object)(&(node_tool->scene_picked_object),
-				(struct Scene_picked_object *)NULL);
-			REACCESS(GT_element_group)(&(node_tool->gt_element_group),
-				(struct GT_element_group *)NULL);
-			REACCESS(GT_element_settings)(&(node_tool->gt_element_settings),
-				(struct GT_element_settings *)NULL);
-		}
-		else if ((INTERACTIVE_EVENT_BUTTON_PRESS==event_type)||
-			(node_tool->last_picked_node&&node_tool->motion_update_enabled))
-		{
-			REACCESS(Interaction_volume)(&(node_tool->last_interaction_volume),
-				interaction_volume);
 		}
 	}
 	else
