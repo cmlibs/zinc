@@ -57,7 +57,9 @@ DESCRIPTION :
 	FIELDML_LABEL_TYPE_NODE_INDEX,
 	FIELDML_LABEL_TYPE_ELEMENT_LOOKUP,
 	FIELDML_LABEL_TYPE_FIELD_LOOKUP,
-	FIELDML_LABEL_TYPE_COMPONENT_LOOKUP
+	FIELDML_LABEL_TYPE_COMPONENT_LOOKUP,
+	FIELDML_LABEL_TYPE_ASSIGN_LABELS,
+	FIELDML_LABEL_TYPE_NODE
 }; /* enum Fieldml_label_type */
 
 struct Fieldml_label_name
@@ -86,10 +88,13 @@ DESCRIPTION :
 
 	/* FIELDML_LABEL_TYPE_NODE_INDEX and FIELDML_LABEL_TYPE_ELEMENT_LOOKUP */
 	int local_index;
-	struct FE_node *current_node;
 	int current_node_number_of_derivatives;
 	int current_node_number_of_versions;
 	enum FE_nodal_value_type *current_node_derivative_types;
+
+	/* FIELDML_LABEL_TYPE_NODE_INDEX, FIELDML_LABEL_TYPE_ELEMENT_LOOKUP and
+	 FIELDML_LABEL_TYPE_NODE */
+	struct FE_node *current_node;
 
 	/* FIELDML_LABEL_TYPE_ELEMENT_LOOKUP */
 	void *scale_factor_list_identifier;
@@ -100,6 +105,9 @@ DESCRIPTION :
 	struct FE_element *element_template;
 	struct LIST(Fieldml_label_name) *element_template_node_index_list;	
 	struct LIST(Fieldml_label_name) *element_template_element_lookup_list;	
+
+	/* FIELDML_LABEL_TYPE_ASSIGN_LABELS */
+	char *character_buffer;
 
 	int access_count;
 };
@@ -127,6 +135,9 @@ DESCRIPTION :
 	struct LIST(Fieldml_label_name) *label_templates;
 	struct LIST(Fieldml_label_name) *basis_mappings;
 	struct LIST(Fieldml_label_name) *element_interpolations;
+	/* For storing templates of nodes to speed up creating equivalent nodes */
+	struct LIST(Fieldml_label_name) *node_label_templates;
+
 	char *character_buffer;
 	char *character_index;
 	int buffer_length;
@@ -135,7 +146,6 @@ DESCRIPTION :
 
 	struct Fieldml_label_name *current_label_name;
 
-	struct Fieldml_label_name *current_assign_labels;
 	struct LIST(Fieldml_label_name) *label_name_stack;
 	/* Only for defining a new field */
 	struct FE_field *current_field;
@@ -162,6 +172,10 @@ DESCRIPTION :
 	int number_of_faces;
 	int *face_numbers;
 
+	/* Flag to indicate that the node was created from a template and so
+		should already have all the fields correctly defined */
+	int fields_already_defined;
+
 	struct LIST(Fieldml_label_name) *current_value_list;
 
 	int number_of_scale_factor_lists;
@@ -178,6 +192,7 @@ DESCRIPTION :
 	
 	int current_scale_factor_list_offset;
 	int current_scale_factor_list_size;
+
 };
 
 /*
@@ -226,6 +241,7 @@ DESCRIPTION :
 				(struct LIST(Fieldml_label_name) *)NULL;
 			label_name->element_template_element_lookup_list = 
 				(struct LIST(Fieldml_label_name) *)NULL;
+			label_name->character_buffer = (char *)NULL;
 			label_name->access_count = 0;
 		}
 		else
@@ -287,6 +303,10 @@ Frees the memory for the node field and sets <*label_name_address> to NULL.
 			if (label_name->value)
 			{
 				DEALLOCATE(label_name->value);
+			}
+			if (label_name->character_buffer)
+			{
+				DEALLOCATE(label_name->character_buffer);
 			}
 			DEALLOCATE(label_name->name);
 			DEALLOCATE(*label_name_address);
@@ -385,6 +405,7 @@ DESCRIPTION :
 		number_of_values, return_code, version_number;
 	struct FE_field *field;
 	struct FE_node *node;
+   struct Fieldml_label_name *current_assign_labels;
 	struct Fieldml_sax_data *fieldml_data;
 	struct FE_import_time_index *time_index;
 
@@ -393,106 +414,154 @@ DESCRIPTION :
 	if (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void)
 	{
 		return_code = 1;
-		if (FIELDML_LABEL_TYPE_FIELD_REF == label->type)
+		if (FIELDML_LABEL_TYPE_ASSIGN_LABELS == label->type)
 		{
-			if (label->field)
+			fieldml_data->character_buffer = label->character_buffer;
+			fieldml_data->buffer_length = strlen(fieldml_data->character_buffer);
+			fieldml_data->character_index = label->character_buffer;
+			if (current_assign_labels = FIND_BY_IDENTIFIER_IN_LIST
+				(Fieldml_label_name,name)(label->name, fieldml_data->label_templates))
 			{
-				if (!(fieldml_data->current_field_ref))
-				{
-					fieldml_data->current_field_ref = label->field;
-					number_of_components = get_FE_field_number_of_components(label->field);
-					if (!label->node_field_creator)
-					{
-						fieldml_data->current_node_field_creator = 
-							CREATE(FE_node_field_creator)(number_of_components);
-					}
-					fieldml_data->current_component_number = 0;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
-						"Already referencing a field.");
-				}
+				Fieldml_label_name_process_label_in_node(current_assign_labels,
+					fieldml_data);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
-					"Label is field ref type but does not have a field.");
+					"Unable to find a labels template named %s.", label->name);
 			}
+			fieldml_data->character_index = (char *)NULL;
+			fieldml_data->character_buffer = (char *)NULL;
+			fieldml_data->buffer_length = 0;
 		}
-		else if (FIELDML_LABEL_TYPE_COMPONENT_REF == label->type)
+		else
 		{
-			fieldml_data->current_component_has_value_defined = 0;
-			fieldml_data->current_component_number_of_versions = 0;
-			if (fieldml_data->current_field_ref)
+			if (FIELDML_LABEL_TYPE_FIELD_REF == label->type)
 			{
-				if (component_name = get_FE_field_component_name(
-						 fieldml_data->current_field_ref,
-						 fieldml_data->current_component_number))
+				if (label->field)
 				{
-					if (!(strcmp(component_name, label->name)))
+					if (!(fieldml_data->current_field_ref))
 					{
-						/* This component is OK */
+						fieldml_data->current_field_ref = label->field;
+						number_of_components = get_FE_field_number_of_components(label->field);
+						if (!label->node_field_creator)
+						{
+							fieldml_data->current_node_field_creator = 
+								CREATE(FE_node_field_creator)(number_of_components);
+						}
+						fieldml_data->current_component_number = 0;
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
-							"Referenced component does not match the field.");
-					}
-					DEALLOCATE(component_name);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
-						"Unable to get component name.");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
-					"Not referencing a field when component encountered.");
-			}
-		}
-		else if (FIELDML_LABEL_TYPE_LABEL == label->type)
-		{
-			if (!strncmp("version", label->name, 7))
-			{
-				if (sscanf(label->name, "version_%d", &version_number))
-				{
-					if ((fieldml_data->current_component_number_of_versions + 1)
-						== version_number)
-					{
-						fieldml_data->current_component_number_of_versions++;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
-							"Unexpected label for version number.");
+							"Already referencing a field.");
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
-						"Unable to parse a version label.");
+						"Label is field ref type but does not have a field.");
 				}
 			}
-		}
-		if (!label->node_field_creator)
-		{
-			if (label->child_labels)
+			else if (FIELDML_LABEL_TYPE_COMPONENT_REF == label->type)
 			{
-				ADD_OBJECT_TO_LIST(Fieldml_label_name)(label, fieldml_data->label_name_stack);
-				return_code = FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(Fieldml_label_name_process_label_in_node,
-					fieldml_data_void, label->child_labels);
-				REMOVE_OBJECT_FROM_LIST(Fieldml_label_name)(label, fieldml_data->label_name_stack);
-			}
-			else
-			{
-				/* Try to find an equivalent cmgui type and then define that */
-				if (STRING_TO_ENUMERATOR(FE_nodal_value_type)(label->name,
-						 &derivative_type))
+				fieldml_data->current_component_has_value_defined = 0;
+				fieldml_data->current_component_number_of_versions = 0;
+				if (fieldml_data->current_field_ref)
 				{
-					if (derivative_type == FE_NODAL_VALUE)
+					if (component_name = get_FE_field_component_name(
+							 fieldml_data->current_field_ref,
+							 fieldml_data->current_component_number))
+					{
+						if (!(strcmp(component_name, label->name)))
+						{
+							/* This component is OK */
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
+								"Referenced component does not match the field.");
+						}
+						DEALLOCATE(component_name);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
+							"Unable to get component name.");
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
+						"Not referencing a field when component encountered.");
+				}
+			}
+			else if (FIELDML_LABEL_TYPE_LABEL == label->type)
+			{
+				if (!strncmp("version", label->name, 7))
+				{
+					if (sscanf(label->name, "version_%d", &version_number))
+					{
+						if ((fieldml_data->current_component_number_of_versions + 1)
+							== version_number)
+						{
+							fieldml_data->current_component_number_of_versions++;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
+								"Unexpected label for version number.");
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
+							"Unable to parse a version label.");
+					}
+				}
+			}
+			if (!label->node_field_creator)
+			{
+				if (label->child_labels)
+				{
+					ADD_OBJECT_TO_LIST(Fieldml_label_name)(label, fieldml_data->label_name_stack);
+					return_code = FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(Fieldml_label_name_process_label_in_node,
+						fieldml_data_void, label->child_labels);
+					REMOVE_OBJECT_FROM_LIST(Fieldml_label_name)(label, fieldml_data->label_name_stack);
+				}
+				else
+				{
+					/* Try to find an equivalent cmgui type and then define that */
+					if (STRING_TO_ENUMERATOR(FE_nodal_value_type)(label->name,
+							&derivative_type))
+					{
+						if (derivative_type == FE_NODAL_VALUE)
+						{
+							if (!fieldml_data->current_component_has_value_defined)
+							{
+								fieldml_data->current_component_has_value_defined = 1;
+							}
+							else
+							{
+								if (fieldml_data->current_component_number_of_versions < 2)
+								{
+									display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
+										"More than one nodal value in component.");
+									return_code = 0;
+								}
+							}
+						}
+						else
+						{
+							if (fieldml_data->current_component_number_of_versions < 2)
+							{
+								FE_node_field_creator_define_derivative(
+									fieldml_data->current_node_field_creator,
+									fieldml_data->current_component_number, derivative_type);
+							}
+						}
+					}
+					else
 					{
 						if (!fieldml_data->current_component_has_value_defined)
 						{
@@ -502,290 +571,268 @@ DESCRIPTION :
 						{
 							if (fieldml_data->current_component_number_of_versions < 2)
 							{
-								display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
-									"More than one nodal value in component.");
-								return_code = 0;
+								FE_node_field_creator_define_derivative(
+									fieldml_data->current_node_field_creator,
+									fieldml_data->current_component_number,
+									FE_NODAL_UNKNOWN);
 							}
-						}
-					}
-					else
-					{
-						if (fieldml_data->current_component_number_of_versions < 2)
-						{
-							FE_node_field_creator_define_derivative(
-								fieldml_data->current_node_field_creator,
-								fieldml_data->current_component_number, derivative_type);
-						}
+						}				
 					}
 				}
-				else
+			}
+			if (FIELDML_LABEL_TYPE_COMPONENT_REF == label->type)
+			{
+				if (fieldml_data->current_component_number_of_versions)
 				{
-					if (!fieldml_data->current_component_has_value_defined)
-					{
-						fieldml_data->current_component_has_value_defined = 1;
-					}
-					else
-					{
-						if (fieldml_data->current_component_number_of_versions < 2)
-						{
-							FE_node_field_creator_define_derivative(
-								fieldml_data->current_node_field_creator,
-								fieldml_data->current_component_number,
-								FE_NODAL_UNKNOWN);
-						}
-					}				
+					FE_node_field_creator_define_versions(
+						fieldml_data->current_node_field_creator,
+						fieldml_data->current_component_number,
+						fieldml_data->current_component_number_of_versions);
 				}
-			}
-		}
-		if (FIELDML_LABEL_TYPE_COMPONENT_REF == label->type)
-		{
-			if (fieldml_data->current_component_number_of_versions)
-			{
-				FE_node_field_creator_define_versions(
-					fieldml_data->current_node_field_creator,
-					fieldml_data->current_component_number,
-					fieldml_data->current_component_number_of_versions);
-			}
-			fieldml_data->current_component_number++;
-			if (!fieldml_data->current_component_has_value_defined)
-			{
-				display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
-					"No value defined for component %s.", label->name);
-				return_code = 0;
-			}
-		}
-		else if (FIELDML_LABEL_TYPE_FIELD_REF == label->type)
-		{
-			GET_NAME(FE_field)(label->field,&field_name);
-			number_of_components = get_FE_field_number_of_components(label->field);
-			if (label->node_field_creator)
-			{
-				if (fieldml_data->current_node)
-				{
-					/* Then define this field on the node */
-					define_FE_field_at_node(fieldml_data->current_node, label->field,
-						(struct FE_time_version *)NULL, 
-						label->node_field_creator);
-				}
-			}
-			else
-			{
-				if (number_of_components == fieldml_data->current_component_number)
-				{
-					if (fieldml_data->current_node)
-					{
-						/* Then define this field on the node */
-						define_FE_field_at_node(fieldml_data->current_node, label->field,
-							(struct FE_time_version *)NULL, 
-							fieldml_data->current_node_field_creator);
-					}
-				}
-				else
+				fieldml_data->current_component_number++;
+				if (!fieldml_data->current_component_has_value_defined)
 				{
 					display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
-						"Not all components of field %s were referenced.", label->name);
+						"No value defined for component %s.", label->name);
 					return_code = 0;
 				}
-				if (fieldml_data->current_node_field_creator)
-				{
-					label->node_field_creator = fieldml_data->current_node_field_creator;
-					/* We no longer require the child fields as they are compiled into
-						the node field creator */
-					DESTROY(LIST(Fieldml_label_name))(&label->child_labels);
-					fieldml_data->current_node_field_creator = 
-						(struct FE_node_field_creator *)NULL;
-				}
 			}
-			if (fieldml_data->current_node && fieldml_data->current_field_ref &&
-				fieldml_data->character_buffer && fieldml_data->buffer_length)
+			else if (FIELDML_LABEL_TYPE_FIELD_REF == label->type)
 			{
-				node = fieldml_data->current_node;
-				node_number = get_FE_node_identifier(node);
-				field = fieldml_data->current_field_ref;
-				time_index = (struct FE_import_time_index *)NULL;
-				number_of_values = 0;
-				for (j = 0 ; j < number_of_components ; j++)
+				GET_NAME(FE_field)(label->field,&field_name);
+				number_of_components = get_FE_field_number_of_components(label->field);
+				if (!fieldml_data->fields_already_defined)
 				{
-					number_of_values += get_FE_node_field_component_number_of_versions(
-						node,field,j)*
-						(1+get_FE_node_field_component_number_of_derivatives(node,
-							field,j));
-				}
-				value_type=get_FE_field_value_type(field);
-				if (0<number_of_values)
-				{
-					switch (value_type)
+					if (label->node_field_creator)
 					{
-						case ELEMENT_XI_VALUE:
+						if (fieldml_data->current_node)
 						{
-							FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-							struct FE_element *element;
-
-							if (number_of_values==number_of_components)
-							{
-								for (k=0;(k<number_of_values)&&return_code;k++)
-								{
-									USE_PARAMETER(element);
-									USE_PARAMETER(xi);
-									/* Not implemented yet */
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"Derivatives/versions not supported for element_xi.");
-								return_code=0;
-							}
-						} break;
-						case FE_VALUE_VALUE:
+							/* Then define this field on the node */
+							define_FE_field_at_node(fieldml_data->current_node, label->field,
+								(struct FE_time_version *)NULL, 
+								label->node_field_creator);
+						}
+					}
+					else
+					{
+						if (number_of_components == fieldml_data->current_component_number)
 						{
-							FE_value *values;
-
-							if (ALLOCATE(values,FE_value,number_of_values))
+							if (fieldml_data->current_node)
 							{
-								for (k=0;(k<number_of_values)&&return_code;k++)
+								/* Then define this field on the node */
+								define_FE_field_at_node(fieldml_data->current_node, label->field,
+									(struct FE_time_version *)NULL, 
+									fieldml_data->current_node_field_creator);
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "Fieldml_label_name_process_label.  "
+								"Not all components of field %s were referenced.", label->name);
+							return_code = 0;
+						}
+						if (fieldml_data->current_node_field_creator)
+						{
+							label->node_field_creator = fieldml_data->current_node_field_creator;
+							/* We no longer require the child fields as they are compiled into
+								the node field creator */
+							DESTROY(LIST(Fieldml_label_name))(&label->child_labels);
+							fieldml_data->current_node_field_creator = 
+								(struct FE_node_field_creator *)NULL;
+						}
+					}
+				}
+				if (fieldml_data->current_node && fieldml_data->current_field_ref &&
+					fieldml_data->character_buffer && fieldml_data->buffer_length)
+				{
+					node = fieldml_data->current_node;
+					node_number = get_FE_node_identifier(node);
+					field = fieldml_data->current_field_ref;
+					time_index = (struct FE_import_time_index *)NULL;
+					number_of_values = 0;
+					for (j = 0 ; j < number_of_components ; j++)
+					{
+						number_of_values += get_FE_node_field_component_number_of_versions(
+							node,field,j)*
+							(1+get_FE_node_field_component_number_of_derivatives(node,
+								field,j));
+					}
+					value_type=get_FE_field_value_type(field);
+					if (0<number_of_values)
+					{
+						switch (value_type)
+						{
+							case ELEMENT_XI_VALUE:
+							{
+								FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+								struct FE_element *element;
+
+								if (number_of_values==number_of_components)
 								{
-									if (1 == sscanf(fieldml_data->character_index,
-											 FE_VALUE_INPUT_STRING "%n",
-											 &(values[k]), &bytes_processed))
+									for (k=0;(k<number_of_values)&&return_code;k++)
 									{
-										fieldml_data->character_index += bytes_processed;
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Error reading nodal value from file.");
-										return_code=0;
-									}
-									if (!finite(values[k]))
-									{
-										display_message(ERROR_MESSAGE,
-											"Infinity or NAN read from node file.");
-										return_code=0;
+										USE_PARAMETER(element);
+										USE_PARAMETER(xi);
+										/* Not implemented yet */
 									}
 								}
-								if (return_code)
+								else
 								{
-									if (time_index)
+									display_message(ERROR_MESSAGE,
+										"Derivatives/versions not supported for element_xi.");
+									return_code=0;
+								}
+							} break;
+							case FE_VALUE_VALUE:
+							{
+								FE_value *values;
+
+								if (ALLOCATE(values,FE_value,number_of_values))
+								{
+									for (k=0;(k<number_of_values)&&return_code;k++)
 									{
-										if (return_code=set_FE_nodal_field_FE_values_at_time(
-												 field,node,values,&length,time_index->time))
+										if (1 == sscanf(fieldml_data->character_index,
+												FE_VALUE_INPUT_STRING "%n",
+												&(values[k]), &bytes_processed))
 										{
-											if (length != number_of_values)
-											{
-												display_message(ERROR_MESSAGE,
-													"node %d field '%s' took %d values from %d"
-													" expected.",node_number,field_name,
-													length,number_of_values);
-												return_code=0;
-											}
+											fieldml_data->character_index += bytes_processed;
 										}
-									}
-									else
-									{
-										if (return_code=set_FE_nodal_field_FE_value_values(
-												 field,node,values,&length))
-										{
-											if (length != number_of_values)
-											{
-												display_message(ERROR_MESSAGE,
-													"node %d field '%s' took %d values from %d"
-													" expected.",node_number,field_name,
-													length,number_of_values);
-												return_code=0;
-											}
-										}
-									}
-								}
-								DEALLOCATE(values);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"read_FE_node.  "
-									"Insufficient memory for FE_value_values");
-								return_code=0;
-							}
-						} break;
-						case INT_VALUE:
-						{
-							int *values;
-
-							if (ALLOCATE(values,int,number_of_values))
-							{
-								for (k=0;(k<number_of_values)&&return_code;k++)
-								{
-									if (1 == sscanf(fieldml_data->character_index,
-											 "%d%n",
-											 &(values[k]), &bytes_processed))
-									{
-										fieldml_data->character_index += bytes_processed;
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Error reading nodal value from file.");
-										return_code=0;
-									}
-								}
-								if (return_code)
-								{
-									if (return_code=set_FE_nodal_field_int_values(field,
-											 node,values,&length))
-									{
-										if (length != number_of_values)
+										else
 										{
 											display_message(ERROR_MESSAGE,
-												"node %d field '%s' took %d values from %d"
-												" expected.",node_number,field_name,
-												length,number_of_values);
+												"Error reading nodal value from file.");
+											return_code=0;
+										}
+										if (!finite(values[k]))
+										{
+											display_message(ERROR_MESSAGE,
+												"Infinity or NAN read from node file.");
 											return_code=0;
 										}
 									}
+									if (return_code)
+									{
+										if (time_index)
+										{
+											if (return_code=set_FE_nodal_field_FE_values_at_time(
+													 field,node,values,&length,time_index->time))
+											{
+												if (length != number_of_values)
+												{
+													display_message(ERROR_MESSAGE,
+														"node %d field '%s' took %d values from %d"
+														" expected.",node_number,field_name,
+														length,number_of_values);
+													return_code=0;
+												}
+											}
+										}
+										else
+										{
+											if (return_code=set_FE_nodal_field_FE_value_values(
+													 field,node,values,&length))
+											{
+												if (length != number_of_values)
+												{
+													display_message(ERROR_MESSAGE,
+														"node %d field '%s' took %d values from %d"
+														" expected.",node_number,field_name,
+														length,number_of_values);
+													return_code=0;
+												}
+											}
+										}
+									}
+									DEALLOCATE(values);
 								}
-								DEALLOCATE(values);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"read_FE_node.  Insufficient memory for int_values");
-								return_code=0;
-							}
-						} break;
-						case STRING_VALUE:
-						{
-							char *the_string;
-
-							if (number_of_values==number_of_components)
-							{
-								for (k=0;(k<number_of_values)&&return_code;k++)
+								else
 								{
-									USE_PARAMETER(the_string);
+									display_message(ERROR_MESSAGE,"read_FE_node.  "
+										"Insufficient memory for FE_value_values");
+									return_code=0;
 								}
-							}
-							else
+							} break;
+							case INT_VALUE:
 							{
-								display_message(ERROR_MESSAGE,
-									"Derivatives/versions not supported for string.");
+								int *values;
+
+								if (ALLOCATE(values,int,number_of_values))
+								{
+									for (k=0;(k<number_of_values)&&return_code;k++)
+									{
+										if (1 == sscanf(fieldml_data->character_index,
+												"%d%n",
+												&(values[k]), &bytes_processed))
+										{
+											fieldml_data->character_index += bytes_processed;
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"Error reading nodal value from file.");
+											return_code=0;
+										}
+									}
+									if (return_code)
+									{
+										if (return_code=set_FE_nodal_field_int_values(field,
+												node,values,&length))
+										{
+											if (length != number_of_values)
+											{
+												display_message(ERROR_MESSAGE,
+													"node %d field '%s' took %d values from %d"
+													" expected.",node_number,field_name,
+													length,number_of_values);
+												return_code=0;
+											}
+										}
+									}
+									DEALLOCATE(values);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"read_FE_node.  Insufficient memory for int_values");
+									return_code=0;
+								}
+							} break;
+							case STRING_VALUE:
+							{
+								char *the_string;
+
+								if (number_of_values==number_of_components)
+								{
+									for (k=0;(k<number_of_values)&&return_code;k++)
+									{
+										USE_PARAMETER(the_string);
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Derivatives/versions not supported for string.");
+									return_code=0;
+								}
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE,"Unsupported value_type %s.",
+									Value_type_string(value_type));
 								return_code=0;
-							}
-						} break;
-						default:
-						{
-							display_message(ERROR_MESSAGE,"Unsupported value_type %s.",
-								Value_type_string(value_type));
-							return_code=0;
-						} break;
+							} break;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"No nodal values for field '%s'.",field_name);
+						return_code=0;
 					}
 				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"No nodal values for field '%s'.",field_name);
-					return_code=0;
-				}
+				DEALLOCATE(field_name);
+				fieldml_data->current_field_ref = (struct FE_field *)NULL;
 			}
-			DEALLOCATE(field_name);
-			fieldml_data->current_field_ref = (struct FE_field *)NULL;
 		}
 	}
 	else
@@ -818,12 +865,16 @@ DESCRIPTION :
 		return_code = 1;
 		if (label->type == label_in_list->type)
 		{
-			if (FIELDML_LABEL_TYPE_LABEL_LOOKUP == label->type)
+			switch (label->type)
 			{
-				if (strcmp(label->name, label_in_list->name))
+				case FIELDML_LABEL_TYPE_LABEL_LOOKUP:
+				case FIELDML_LABEL_TYPE_ASSIGN_LABELS:
 				{
-					return_code = 0;
-				}
+					if (strcmp(label->name, label_in_list->name))
+					{
+						return_code = 0;
+					}
+				} break;
 			}
 			if (return_code)
 			{
@@ -1944,6 +1995,97 @@ DESCRIPTION :
 	return(return_code);
 } /* Fieldml_label_name_set_scale_factors_in_element */
 
+static int Fieldml_label_names_check_equivalent_label_in_list(
+   struct Fieldml_label_name *label, void *check_label_list_void)
+/*******************************************************************************
+LAST MODIFIED : 24 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(Fieldml_label_name) *check_label_list;
+
+	ENTER(Fieldml_label_names_define_equivalent_nodes);
+
+	if (label &&
+		(check_label_list = (struct LIST(Fieldml_label_name) *)check_label_list_void))
+	{
+		if (FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
+			Fieldml_label_references_same_value, label, check_label_list))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Fieldml_label_references_same_value.  "
+			"Missing label structures.");
+		return_code = 0;
+	}
+	
+	LEAVE;
+
+	return(return_code);
+} /* Fieldml_label_references_same_value */
+
+static int Fieldml_label_names_define_equivalent_nodes(
+   struct Fieldml_label_name *label_in_list, void *label_void)
+/*******************************************************************************
+LAST MODIFIED : 24 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int number_in_child_labels_one, number_in_child_labels_two, return_code;
+	struct Fieldml_label_name *label;
+
+	ENTER(Fieldml_label_names_define_equivalent_nodes);
+
+	if (label_in_list && (label = (struct Fieldml_label_name *)label_void))
+	{
+		return_code = 0;
+		if ((label->type == FIELDML_LABEL_TYPE_NODE) &&
+			(label_in_list->type == FIELDML_LABEL_TYPE_NODE))
+		{
+			number_in_child_labels_one = NUMBER_IN_LIST(Fieldml_label_name)
+				(label->child_labels);
+			number_in_child_labels_two = NUMBER_IN_LIST(Fieldml_label_name)
+				(label_in_list->child_labels);
+			if (number_in_child_labels_one == number_in_child_labels_two)
+			{
+				return_code = FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
+					Fieldml_label_names_check_equivalent_label_in_list,
+					label->child_labels, label_in_list->child_labels);	
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Fieldml_label_references_same_value.  "
+			"Missing label structures.");
+		return_code = 0;
+	}
+	
+	LEAVE;
+
+	return(return_code);
+} /* Fieldml_label_references_same_value */
+
 static void fieldml_start_fieldml(struct Fieldml_sax_data *fieldml_data,
 	char **attributes)
 /*******************************************************************************
@@ -2716,20 +2858,9 @@ DESCRIPTION :
 	}
 	if (template_name)
 	{
-		if (fieldml_data->current_assign_labels)
-		{
-			display_message(ERROR_MESSAGE, "fieldml_start_assign_labels.  "
-				"Already assigning a labels template.");
-		}
-		else
-		{
-			if (!(fieldml_data->current_assign_labels = FIND_BY_IDENTIFIER_IN_LIST
-				(Fieldml_label_name,name)(template_name, fieldml_data->label_templates)))
-			{
-				display_message(ERROR_MESSAGE, "fieldml_start_assign_labels.  "
-					"Unable to find a template name %s.", template_name);
-			}
-		}
+		fieldml_data->current_label_name = fieldml_create_label_name_in_hierarchy(
+			template_name, FIELDML_LABEL_TYPE_ASSIGN_LABELS,
+			fieldml_data->current_label_name, fieldml_data->label_name_stack);
 		fieldml_data->expecting_characters = 1;
 	}
 	else
@@ -2750,17 +2881,24 @@ DESCRIPTION :
 {
 	ENTER(fieldml_end_assign_labels);
 
-	if (fieldml_data->current_assign_labels)
+	if (fieldml_data->current_label_name->type == FIELDML_LABEL_TYPE_ASSIGN_LABELS)
 	{
-		/* Process the character data */
+		/* Copy the character data */
 		if (fieldml_data->character_buffer && fieldml_data->buffer_length)
 		{
-			fieldml_data->character_index = fieldml_data->character_buffer;
-			Fieldml_label_name_process_label_in_node(fieldml_data->current_assign_labels,
-				fieldml_data);
+			if (ALLOCATE(fieldml_data->current_label_name->character_buffer, char,
+				strlen(fieldml_data->character_buffer) + 1))
+			{
+				strcpy(fieldml_data->current_label_name->character_buffer,
+					fieldml_data->character_buffer);
+			}
 		}
-		fieldml_data->current_assign_labels = (struct Fieldml_label_name *)NULL;
 		fieldml_data->expecting_characters = 0;
+
+		REMOVE_OBJECT_FROM_LIST(Fieldml_label_name)(fieldml_data->current_label_name,
+			fieldml_data->label_name_stack);
+		fieldml_data->current_label_name = Last_Fieldml_label_name_in_list(
+			fieldml_data->label_name_stack);
 	}
 	else
 	{
@@ -3148,14 +3286,14 @@ LAST MODIFIED : 10 February 2003
 DESCRIPTION :
 ==============================================================================*/
 {
-	char *attribute_name, *attribute_value;
-	int i, node_number;
+	char *attribute_name, *attribute_value, *node_name;
+	int i;
 
 	ENTER(fieldml_start_node);
 
 	if (!(fieldml_data->current_node))
 	{
-		node_number = 0;
+		node_name = (char *)NULL;
 		i = 0;
 		if (attributes)
 		{
@@ -3165,15 +3303,16 @@ DESCRIPTION :
 				attribute_value = (char *)attributes[i + 1];
 				if (!strcmp(attribute_name, "name"))
 				{
-					sscanf(attribute_value, "%d", &node_number);
+					node_name = attribute_value;
 				}
 				i += 2;
 			}
 		}
-		if (node_number)
+		if (node_name)
 		{
-			fieldml_data->current_node = CREATE(FE_node)(
-			 	node_number, fieldml_data->current_fe_region, (struct FE_node *)NULL);
+			fieldml_data->current_label_name = fieldml_create_label_name_in_hierarchy(
+				node_name, FIELDML_LABEL_TYPE_NODE,
+				fieldml_data->current_label_name, fieldml_data->label_name_stack);
 		}
 		else
 		{
@@ -3197,14 +3336,66 @@ LAST MODIFIED : 10 February 2003
 DESCRIPTION :
 ==============================================================================*/
 {
+	int node_number;
+	struct Fieldml_label_name *equivalent_node_label;
 
 	ENTER(fieldml_end_node);
 
-	if (fieldml_data->current_node)
+	if (fieldml_data->current_label_name->type == FIELDML_LABEL_TYPE_NODE)
 	{
-		FE_region_merge_FE_node(fieldml_data->current_fe_region,
-			fieldml_data->current_node);
-		fieldml_data->current_node = (struct FE_node *)NULL;
+		node_number = 0;
+		sscanf(fieldml_data->current_label_name->name, "%d", &node_number);
+		if (node_number)
+		{
+			if (equivalent_node_label = FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
+				Fieldml_label_names_define_equivalent_nodes, 
+				(void *)fieldml_data->current_label_name,
+				fieldml_data->node_label_templates))
+			{
+				/* An equivalent node already exist so copy that one */
+				fieldml_data->current_node = CREATE(FE_node)(
+					node_number, (struct FE_region *)NULL, 
+					equivalent_node_label->current_node);
+				fieldml_data->fields_already_defined = 1;
+			}
+			else
+			{
+				fieldml_data->current_node = CREATE(FE_node)(
+					node_number, fieldml_data->current_fe_region, (struct FE_node *)NULL);
+			}
+			if (FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
+				Fieldml_label_name_process_label_in_node,
+				fieldml_data, fieldml_data->current_label_name->child_labels))
+			{
+				FE_region_merge_FE_node(fieldml_data->current_fe_region,
+					fieldml_data->current_node);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"fieldml_end_node.  Error defining node name %s.",
+					fieldml_data->current_label_name->name);		
+			}
+			if (!equivalent_node_label)
+			{
+				fieldml_data->current_label_name->current_node = fieldml_data->current_node;
+				ADD_OBJECT_TO_LIST(Fieldml_label_name)(fieldml_data->current_label_name,
+					fieldml_data->node_label_templates);	
+			}
+			fieldml_data->fields_already_defined = 0;
+			fieldml_data->current_node = (struct FE_node *)NULL;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"fieldml_end_node.  Unable to parse node name %s.",
+				fieldml_data->current_label_name->name);		
+		}
+
+		REMOVE_OBJECT_FROM_LIST(Fieldml_label_name)(fieldml_data->current_label_name,
+			fieldml_data->label_name_stack);
+		fieldml_data->current_label_name = Last_Fieldml_label_name_in_list(
+			fieldml_data->label_name_stack);
 	}
 	else
 	{
@@ -4566,6 +4757,17 @@ DESCRIPTION :
 		/* Fieldml label template */
 		switch (*name)
 		{
+			case 'a':
+			{
+				if (!strcmp(name, "assign_labels"))
+				{
+					fieldml_start_assign_labels(fieldml_data, attributes);
+				}
+				else
+				{
+					fieldml_data->unknown_depth = 1;
+				}
+			} break;
 			case 'c':
 			{
 				if (!strcmp(name, "coefficients"))
@@ -4661,61 +4863,6 @@ DESCRIPTION :
 				if (!strcmp(name, "product"))
 				{
 					fieldml_start_product(fieldml_data, attributes);
-				}
-				else
-				{
-					fieldml_data->unknown_depth = 1;
-				}
-			} break;
-			default:
-			{
-				fieldml_data->unknown_depth = 1;
-			} break;
-		}
-	}
-	else if (fieldml_data->current_node)
-	{
-		/* Fieldml node */
-		switch (*name)
-		{
-			case 'a':
-			{
-				if (!strcmp(name, "assign_labels"))
-				{
-					fieldml_start_assign_labels(fieldml_data, attributes);
-				}
-				else
-				{
-					fieldml_data->unknown_depth = 1;
-				}
-			} break;
-			case 'c':
-			{
-				if (!strcmp(name, "component_ref"))
-				{
-					fieldml_start_component_ref(fieldml_data, attributes);
-				}
-				else
-				{
-					fieldml_data->unknown_depth = 1;
-				}
-			} break;
-			case 'f':
-			{
-				if (!strcmp(name, "field_ref"))
-				{
-					fieldml_start_field_ref(fieldml_data, attributes);
-				}
-				else
-				{
-					fieldml_data->unknown_depth = 1;
-				}
-			} break;
-			case 'l':
-			{
-				if (!strcmp(name, "label"))
-				{
-					fieldml_start_label_name(fieldml_data, attributes);
 				}
 				else
 				{
@@ -4906,6 +5053,17 @@ DESCRIPTION :
 			/* Fieldml labels template */
 			switch (*name)
 			{
+				case 'a':
+				{
+					if (!strcmp(name, "assign_labels"))
+					{
+						fieldml_end_assign_labels(fieldml_data);
+					}
+					else
+					{
+						return_code = 0;
+					}
+				} break;
 				case 'c':
 				{
 					if (!strcmp(name, "coefficients"))
@@ -5006,7 +5164,11 @@ DESCRIPTION :
 				} break;
 				case 'n':
 				{
-					if (!strcmp(name, "node_index"))
+					if (!strcmp(name, "node"))
+					{
+						fieldml_end_node(fieldml_data);
+					}
+					else if (!strcmp(name, "node_index"))
 					{
 						fieldml_end_label_name(fieldml_data,
 							FIELDML_LABEL_TYPE_NODE_INDEX);
@@ -5027,39 +5189,6 @@ DESCRIPTION :
 					{
 						fieldml_end_label_name(fieldml_data,
 							FIELDML_LABEL_TYPE_PRODUCT);
-					}
-					else
-					{
-						return_code = 0;
-					}
-				} break;
-				default:
-				{
-					return_code = 0;
-				} break;
-			}
-		}
-		else if (fieldml_data->current_node)
-		{
-			/* Fieldml node */
-			switch (*name)
-			{
-				case 'a':
-				{
-					if (!strcmp(name, "assign_labels"))
-					{
-						fieldml_end_assign_labels(fieldml_data);
-					}
-					else
-					{
-						return_code = 0;
-					}
-				} break;
-				case 'n':
-				{
-					if (!strcmp(name, "node"))
-					{
-						fieldml_end_node(fieldml_data);
 					}
 					else
 					{
@@ -5221,6 +5350,7 @@ DESCRIPTION :
 		if (region && fe_region)
 		{
 			fieldml_data->current_fe_region = fe_region;
+			FE_region_begin_change(fieldml_data->current_fe_region);
 		}
 	}
 	else
@@ -5243,6 +5373,7 @@ DESCRIPTION :
 
 	ENTER(fieldml_end_group);
 
+	FE_region_end_change(fieldml_data->current_fe_region);
 	fieldml_data->current_fe_region = fieldml_data->root_fe_region;
 
 	LEAVE;
@@ -5614,16 +5745,20 @@ Cmiss_region.
 			CREATE(FE_region)((struct FE_region *)NULL, basis_manager, element_shape_list);
 		Cmiss_region_attach_FE_region(fieldml_data.root_region,
 			fieldml_data.root_fe_region);
+
+		Cmiss_region_begin_change(fieldml_data.root_region);
+		FE_region_begin_change(fieldml_data.root_fe_region);
+
 		fieldml_data.label_templates = CREATE(LIST(Fieldml_label_name))();
 		fieldml_data.label_name_stack = CREATE(LIST(Fieldml_label_name))();
 		fieldml_data.basis_mappings = CREATE(LIST(Fieldml_label_name))();
+		fieldml_data.node_label_templates = CREATE(LIST(Fieldml_label_name))();
 		fieldml_data.element_interpolations = CREATE(LIST(Fieldml_label_name))();
 		fieldml_data.character_buffer = (char *)NULL;
 		fieldml_data.buffer_length = 0;
 		fieldml_data.buffer_allocated_length = 0;
 		fieldml_data.expecting_characters = 0;
 	
-		fieldml_data.current_assign_labels = (struct Fieldml_label_name *)NULL;
 		fieldml_data.current_label_name = (struct Fieldml_label_name *)NULL;
 		fieldml_data.current_fe_region = fieldml_data.root_fe_region;
 		fieldml_data.current_field = (struct FE_field *)NULL;
@@ -5652,6 +5787,8 @@ Cmiss_region.
 
 		fieldml_data.number_of_faces = 0;
 		fieldml_data.face_numbers = (int *)NULL;
+
+		fieldml_data.fields_already_defined = 0;
 
 		fieldml_data.current_value_list = (struct LIST(Fieldml_label_name) *)NULL;
 
@@ -5684,8 +5821,15 @@ Cmiss_region.
 		fieldml_handler.error = fieldml_sax_error;
 		fieldml_handler.fatalError = fieldml_sax_fatalError;
 	
-		if (!specialXmlSAXParseFile(&fieldml_handler, &fieldml_data, filename) < 0)
+		if (0 == specialXmlSAXParseFile(&fieldml_handler, &fieldml_data, filename))
 		{
+			FE_region_end_change(fieldml_data.root_fe_region);
+			Cmiss_region_end_change(fieldml_data.root_region);
+		}
+		else
+		{
+			FE_region_end_change(fieldml_data.root_fe_region);
+			Cmiss_region_end_change(fieldml_data.root_region);
 			DESTROY(Cmiss_region)(&root_region);
 			root_region = (struct Cmiss_region *)NULL;
 		}
@@ -5695,6 +5839,7 @@ Cmiss_region.
 		DESTROY(LIST(Fieldml_label_name))(&fieldml_data.label_name_stack);
 		DESTROY(LIST(Fieldml_label_name))(&fieldml_data.basis_mappings);
 		DESTROY(LIST(Fieldml_label_name))(&fieldml_data.element_interpolations);
+		DESTROY(LIST(Fieldml_label_name))(&fieldml_data.node_label_templates);
 	}
 	else
 	{
