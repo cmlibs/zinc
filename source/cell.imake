@@ -458,6 +458,7 @@ COMPUTED_FIELD_SRCS =  \
 	computed_field/computed_field.c \
 	computed_field/computed_field_component_operations.c \
 	computed_field/computed_field_coordinate.c \
+	computed_field/computed_field_composite.c \
 	computed_field/computed_field_fibres.c \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_finite_element.c \
