@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function_matrix.cpp
 
-LAST MODIFIED : 6 August 2004
+LAST MODIFIED : 2 September 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_function matrix object.
@@ -11,10 +11,13 @@ The public interface to the Cmiss_function matrix object.
 #include "api/cmiss_function_matrix.h"
 #include "computed_variable/function_matrix.hpp"
 
-// module typedefs
-// ===============
+/*
+Module typedefs
+---------------
+*/
 
 typedef boost::intrusive_ptr< Function_matrix<Scalar> > Function_matrix_handle;
+
 
 /*
 Global functions
