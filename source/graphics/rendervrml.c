@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendervrml.c
 
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 1 December 2000
 
 DESCRIPTION :
 Renders gtObjects to VRML file
@@ -563,7 +563,7 @@ int draw_glyph_set_vrml(FILE *vrml_file, int number_of_points,
 	struct Graphical_material *material, struct Spectrum *spectrum, float time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 1 December 2000
 
 DESCRIPTION :
 Defines an object for the <glyph> and then draws that at <number_of_points>
@@ -1030,28 +1030,39 @@ points  given by the positions in <point_list> and oriented and scaled by
 									(material_copy, material);
 								spectrum_render_value_on_material(spectrum,material_copy,
 									number_of_data_components,data+i*number_of_data_components);
-								/*???RC temporary until we have a struct Glyph */
+								/*???RC temporary until we have a struct Glyph - actual glyph to use
+									is at glyph->nextobject when glyph is in mirror mode */
+								/* note no DEF/USE when coloured by a spectrum as will always be
+									 different every time it is rendered */
 								if (mirror_mode)
 								{
-									write_graphics_object_vrml(vrml_file,glyph->nextobject,time,
-										(struct LIST(VRML_prototype) *)NULL,/*object_is_glyph*/1,
-										material_copy,
-										/*gt_object_already_defined*/0);
+									write_graphics_object_vrml(vrml_file, glyph->nextobject, time,
+										(struct LIST(VRML_prototype) *)NULL, /*object_is_glyph*/1,
+										material_copy, /*gt_object_already_defined*/0);
 								}
 								else
 								{
-									write_graphics_object_vrml(vrml_file,glyph,time,
-										(struct LIST(VRML_prototype) *)NULL,/*object_is_glyph*/1,
-										material_copy,
-										/*gt_object_already_defined*/0);
+									write_graphics_object_vrml(vrml_file, glyph, time,
+										(struct LIST(VRML_prototype) *)NULL, /*object_is_glyph*/1,
+										material_copy, /*gt_object_already_defined*/0);
 								}
 							}
 							else
 							{
-								write_graphics_object_vrml(vrml_file,glyph,time,
-									vrml_prototype_list,/*object_is_glyph*/1,
-									material,
-									/*gt_object_already_defined*/0<i);
+								/*???RC temporary until we have a struct Glyph - actual glyph to use
+									is at glyph->nextobject when glyph is in mirror mode */
+								if (mirror_mode)
+								{
+									write_graphics_object_vrml(vrml_file, glyph->nextobject, time,
+										vrml_prototype_list, /*object_is_glyph*/1,
+										material, /*gt_object_already_defined*/0<i);
+								}
+								else
+								{
+									write_graphics_object_vrml(vrml_file, glyph, time,
+										vrml_prototype_list, /*object_is_glyph*/1,
+										material, /*gt_object_already_defined*/0<i);
+								}
 							}
 							fprintf(vrml_file,"    ]\n");
 							if ((0.0 != a_angle)&&(0.0 != b_angle))
@@ -1069,10 +1080,10 @@ points  given by the positions in <point_list> and oriented and scaled by
 					axis3++;
 					scale++;
 				}
-				if ((!vrml_prototype_list)&&(0<number_of_skew_glyph_axes))
+				if (0 < number_of_skew_glyph_axes)
 				{
-					display_message(WARNING_MESSAGE,"draw_glyph_set_vrml.  "
-						"%d glyphs not rendered because they have skewed axes",
+					display_message(WARNING_MESSAGE, "draw_glyph_set_vrml.  "
+						"%d glyph(s) not rendered because they have skewed axes",
 						number_of_skew_glyph_axes);
 				}
 				if (material_copy)
@@ -2314,6 +2325,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *dot_pointer, *prototype_name, *material_name;
+	fpos_t file_pointer, save_file_pointer;
 	int group, in_def, return_code;
 	struct GT_object *temp_gt_object;
 	struct VRML_prototype *vrml_prototype;
@@ -2357,6 +2369,8 @@ DESCRIPTION :
 				else
 				{
 					fprintf(vrml_file,"DEF %s\n", prototype_name);
+					/* save file pointer so we can see if anything was output */
+					fgetpos(vrml_file, &save_file_pointer);
 					in_def = 1;
 					ADD_OBJECT_TO_LIST(VRML_prototype)(vrml_prototype,vrml_prototype_list);
 				}
@@ -2393,10 +2407,17 @@ DESCRIPTION :
 				}
 				if (in_def)
 				{
+					/* check if anything was output; if not, add a dummy node */
+					fgetpos(vrml_file, &file_pointer);
+					if (file_pointer == save_file_pointer)
+					{
+						fprintf(vrml_file,"Group {\n");
+						fprintf(vrml_file,"# Dummy group node for empty object\n");
+						fprintf(vrml_file,"} #Group\n");
+					}
 					fprintf(vrml_file, "#END DEF %s\n", prototype_name);
 				}
 			}
-			
 		}
 		DEALLOCATE(prototype_name);
 		DEALLOCATE(material_name);
