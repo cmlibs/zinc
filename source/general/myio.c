@@ -15,7 +15,7 @@ Some additions/modifications to stdio.
 Global functions
 ----------------
 */
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 int fread_little_to_big_endian(char *char_ptr,unsigned sizeof_type,int count,
 	FILE* binary_file)
 /*******************************************************************************
@@ -103,7 +103,7 @@ fwrites the little endian form of <char_ptr>.
 
 	return (fwrite_result);
 } /* fwrite_big_to_little_endian */
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 
 int get_line_number(FILE *stream)
 /*******************************************************************************
@@ -117,24 +117,24 @@ Function for calculating the current line in a file.
 #if defined (OLD_CODE)
 	fpos_t location,temp_location;
 #endif
-  long location,temp_location;
+	long location,temp_location;
 
 	ENTER(get_line_number);
 	line_number=0;
 	if (stream)
 	{
-    /* DPN 21 June 2001 - Using fgetpos() like this is wrong!
-       Check 'man fgetpos' */
+		/* DPN 21 June 2001 - Using fgetpos() like this is wrong!
+			Check 'man fgetpos' */
 #if defined (OLD_CODE)
 		fgetpos(stream,&location);
 		rewind(stream);
 		fgetpos(stream,&temp_location);
 #endif
-    location = ftell(stream);
+		location = ftell(stream);
 		rewind(stream);
-    temp_location = ftell(stream);
-		while (temp_location<=location)
-    {
+		temp_location = ftell(stream);
+		while (temp_location<location)
+		{
 			do
 			{
 				c=fgetc(stream);
@@ -142,14 +142,14 @@ Function for calculating the current line in a file.
 #if defined (OLD_CODE)
 			fgetpos(stream,&temp_location);
 #endif
-      temp_location = ftell(stream);
+			temp_location = ftell(stream);
 			line_number++;
 		}
 #if defined (OLD_CODE)
 		fsetpos(stream,&location);
 #endif
-    /* Re-set the position in the stream to the original location */
-    fseek(stream,location,SEEK_SET);
+		/* Re-set the position in the stream to the original location */
+		fseek(stream,location,SEEK_SET);
 	}
 	LEAVE;
 
