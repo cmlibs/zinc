@@ -15,7 +15,8 @@ use Cmiss::Function_variable::Composite;
 $function_1=new Cmiss::Function::Matrix(n_columns=>2,values=>[1,5,-3,8,2,4]);
 $function_2=new Cmiss::Function::Matrix(n_columns=>3,values=>[9,-1,6,7,11,3]);
 $variable_1=new Cmiss::Function_variable::Composite($function_1->output(),$function_2->output());
-print "$function_1 $function_2 $variable_1\n";
+$function_1a=$variable_1->evaluate();
+print "$function_1 $function_2 $function_1a\n";
 print "\n";
 
 # check evaluating
@@ -34,6 +35,7 @@ print "\n";
 
 # check entry
 $variable_2=new Cmiss::Function_variable::Composite($function_1->row(2),$function_1->column(1),$function_1->entry(2,1));
-print "$function_1 $variable_2\n";
-$function_6=($function_1->output())->evaluate_derivative(independent=>[$variable_2]);
-print "$function_6\n";
+$function_6=$variable_2->evaluate();
+print "$function_1 $function_6\n";
+$function_7=($function_1->output())->evaluate_derivative(independent=>[$variable_2]);
+print "$function_7\n";

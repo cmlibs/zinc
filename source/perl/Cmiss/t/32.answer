@@ -1,0 +1,9 @@
+element=21
+element
+
+[1](element=21)
+composite(element)
+
+element=22
+[1](element=22)
+element=21

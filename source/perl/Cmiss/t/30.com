@@ -15,7 +15,8 @@ use Cmiss::Function_variable::Intersection;
 $function_1=new Cmiss::Function::Matrix(n_columns=>2,values=>[1,5,-3,8,2,4]);
 $function_2=new Cmiss::Function::Matrix(n_columns=>3,values=>[9,-1,6,7,11,3]);
 $variable_1=new Cmiss::Function_variable::Intersection($function_1->output(),$function_2->output());
-print "$function_1 $function_2 $variable_1\n";
+$function_2a=$variable_1->evaluate();
+print "$function_1 $function_2 $function_2a\n";
 print "\n";
 
 # check evaluating
