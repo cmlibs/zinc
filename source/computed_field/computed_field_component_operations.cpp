@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_component_operations.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -11,6 +11,7 @@ Implements a number of basic component wise operations on computed fields.
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_component_operations.h"
 
@@ -359,41 +360,55 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_multiply_components */
 
-static int list_Computed_field_multiply_components_commands(
+static char *Computed_field_multiply_components_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 
-	ENTER(list_Computed_field_multiply_components_commands);
+	ENTER(Computed_field_multiply_components_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" fields %s %s\n",field->source_fields[0]->name,
-			field->source_fields[1]->name);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_multiply_components_type_string, &error);
+		append_string(&command_string, " fields ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, " ", &error);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_multiply_components_commands.  "
-			"Invalid field");
-		return_code = 0;
+			"Computed_field_multiply_components_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_multiply_components_commands */
+	return (command_string);
+} /* Computed_field_multiply_components_get_command_string */
 
 int Computed_field_set_type_multiply_components(struct Computed_field *field,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 10 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_MULTIPLY_COMPONENTS with the supplied
@@ -463,8 +478,8 @@ although its cache may be lost.
 				Computed_field_multiply_components_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_multiply_components;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_multiply_components_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_multiply_components_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -967,35 +982,49 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_divide_components */
 
-static int list_Computed_field_divide_components_commands(
+static char *Computed_field_divide_components_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 
-	ENTER(list_Computed_field_divide_components_commands);
+	ENTER(Computed_field_divide_components_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" fields %s %s\n",field->source_fields[0]->name,
-			field->source_fields[1]->name);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_divide_components_type_string, &error);
+		append_string(&command_string, " fields ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, " ", &error);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_divide_components_commands.  "
-			"Invalid field");
-		return_code = 0;
+			"Computed_field_divide_components_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_divide_components_commands */
+	return (command_string);
+} /* Computed_field_divide_components_get_command_string */
 
 int Computed_field_set_type_divide_components(struct Computed_field *field,
 	struct Computed_field *source_field_one,
@@ -1071,8 +1100,8 @@ although its cache may be lost.
 				Computed_field_divide_components_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_divide_components;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_divide_components_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_divide_components_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -1577,36 +1606,51 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_add */
 
-static int list_Computed_field_add_commands(
-	struct Computed_field *field)
+static char *Computed_field_add_get_command_string(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name, temp_string[80];
+	int error;
 
-	ENTER(list_Computed_field_add_commands);
+	ENTER(Computed_field_add_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" fields %s %s scale_factors %g %g",
-			field->source_fields[0]->name,field->source_fields[1]->name,
-			field->source_values[0],field->source_values[1]);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_add_type_string, &error);
+		append_string(&command_string, " fields ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, " ", &error);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		sprintf(temp_string, " scale_factors %g %g",
+			field->source_values[0], field->source_values[1]);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_add_commands.  "
-			"Invalid field");
-		return_code = 0;
+			"Computed_field_add_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_add_commands */
+	return (command_string);
+} /* Computed_field_add_get_command_string */
 
 int Computed_field_set_type_add(struct Computed_field *field,
 	struct Computed_field *source_field_one, FE_value scale_factor1,
@@ -1689,8 +1733,8 @@ although its cache may be lost.
 				Computed_field_add_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_add;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_add_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_add_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -2323,38 +2367,48 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_scale */
 
-static int list_Computed_field_scale_commands(
+static char *Computed_field_scale_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int i, return_code;
+	char *command_string, *field_name, temp_string[40];
+	int error, i;
 
-	ENTER(list_Computed_field_scale_commands);
+	ENTER(Computed_field_scale_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE," field %s scale_factors",
-			field->source_fields[0]->name);
-		for (i=0;i<field->source_fields[0]->number_of_components;i++)
+		error = 0;
+		append_string(&command_string,
+			computed_field_scale_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
 		{
-			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
 		}
-		return_code = 1;
+		append_string(&command_string, " scale_factors", &error);
+		for (i = 0; i < field->number_of_source_values; i++)
+		{
+			sprintf(temp_string, " %g", field->source_values[i]);
+			append_string(&command_string, temp_string, &error);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_scale_commands.  "
-			"Invalid field");
-		return_code = 0;
+			"Computed_field_scale_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_scale_commands */
+	return (command_string);
+} /* Computed_field_scale_get_command_string */
 
 int Computed_field_set_type_scale(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *scale_factors)
@@ -2436,8 +2490,8 @@ although its cache may be lost.
 				Computed_field_scale_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_scale;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_scale_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_scale_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -3116,43 +3170,53 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_clamp_maximum */
 
-static int list_Computed_field_clamp_maximum_commands(
+static char *Computed_field_clamp_maximum_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int i, return_code;
+	char *command_string, *field_name, temp_string[40];
+	int error, i;
 
-	ENTER(list_Computed_field_clamp_maximum_commands);
+	ENTER(Computed_field_clamp_maximum_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE," field %s maximums",
-			field->source_fields[0]->name);
-		for (i=0;i<field->source_fields[0]->number_of_components;i++)
+		error = 0;
+		append_string(&command_string,
+			computed_field_clamp_maximum_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
 		{
-			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
 		}
-		return_code = 1;
+		append_string(&command_string, " maximums", &error);
+		for (i = 0; i < field->number_of_source_values; i++)
+		{
+			sprintf(temp_string, " %g", field->source_values[i]);
+			append_string(&command_string, temp_string, &error);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_clamp_maximum_commands.  "
-			"Invalid field");
-		return_code = 0;
+			"Computed_field_clamp_maximum_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_clamp_maximum_commands */
+	return (command_string);
+} /* Computed_field_clamp_maximum_get_command_string */
 
 int Computed_field_set_type_clamp_maximum(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *maximums)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 10 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CLAMP_MAXIMUM with the supplied
@@ -3231,8 +3295,8 @@ although its cache may be lost.
 				Computed_field_clamp_maximum_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_clamp_maximum;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_clamp_maximum_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_clamp_maximum_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -3911,38 +3975,47 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_clamp_minimum */
 
-static int list_Computed_field_clamp_minimum_commands(
+static char *Computed_field_clamp_minimum_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 10 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	int i, return_code;
+	char *command_string, *field_name, temp_string[40];
+	int error, i;
 
-	ENTER(list_Computed_field_clamp_minimum_commands);
+	ENTER(Computed_field_clamp_minimum_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE," field %s minimums",
-			field->source_fields[0]->name);
-		for (i=0;i<field->source_fields[0]->number_of_components;i++)
+		error = 0;
+		append_string(&command_string,
+			computed_field_clamp_minimum_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
 		{
-			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
 		}
-		return_code = 1;
+		append_string(&command_string, " minimums", &error);
+		for (i = 0; i < field->number_of_source_values; i++)
+		{
+			sprintf(temp_string, " %g", field->source_values[i]);
+			append_string(&command_string, temp_string, &error);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_clamp_minimum_commands.  "
-			"Invalid field");
-		return_code = 0;
+			"Computed_field_clamp_minimum_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_clamp_minimum_commands */
+	return (command_string);
+} /* Computed_field_clamp_minimum_get_command_string */
 
 int Computed_field_set_type_clamp_minimum(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *minimums)
@@ -4026,8 +4099,8 @@ although its cache may be lost.
 				Computed_field_clamp_minimum_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_clamp_minimum;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_clamp_minimum_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_clamp_minimum_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -4671,43 +4744,53 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_offset */
 
-static int list_Computed_field_offset_commands(
+static char *Computed_field_offset_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int i, return_code;
+	char *command_string, *field_name, temp_string[40];
+	int error, i;
 
-	ENTER(list_Computed_field_offset_commands);
+	ENTER(Computed_field_offset_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE," field %s offsets",
-			field->source_fields[0]->name);
-		for (i=0;i<field->source_fields[0]->number_of_components;i++)
+		error = 0;
+		append_string(&command_string,
+			computed_field_offset_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
 		{
-			display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
 		}
-		return_code = 1;
+		append_string(&command_string, " offsets", &error);
+		for (i = 0; i < field->number_of_source_values; i++)
+		{
+			sprintf(temp_string, " %g", field->source_values[i]);
+			append_string(&command_string, temp_string, &error);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_offset_commands.  "
-			"Invalid field");
-		return_code = 0;
+			"Computed_field_offset_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_offset_commands */
+	return (command_string);
+} /* Computed_field_offset_get_command_string */
 
 int Computed_field_set_type_offset(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *offsets)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 10 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_OFFSET which returns the values of the
@@ -4785,8 +4868,8 @@ although its cache may be lost.
 				Computed_field_offset_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_offset;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_offset_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_offset_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -5359,43 +5442,53 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_sum_components */
 
-static int list_Computed_field_sum_components_commands(
+static char *Computed_field_sum_components_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int i, return_code;
+	char *command_string, *field_name, temp_string[40];
+	int error, i;
 
-	ENTER(list_Computed_field_sum_components_commands);
+	ENTER(Computed_field_sum_components_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE," field %s weights",
-			field->source_fields[0]->name);
+		error = 0;
+		append_string(&command_string,
+			computed_field_sum_components_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " weights", &error);
 		for (i = 0; i < field->number_of_source_values; i++)
 		{
-			display_message(INFORMATION_MESSAGE, " %g", field->source_values[i]);
+			sprintf(temp_string, " %g", field->source_values[i]);
+			append_string(&command_string, temp_string, &error);
 		}
-		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_sum_components_commands.  "
-			"Invalid field");
-		return_code = 0;
+			"Computed_field_sum_components_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_sum_components_commands */
+	return (command_string);
+} /* Computed_field_sum_components_get_command_string */
 
 int Computed_field_set_type_sum_components(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *weights)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 10 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_SUM_COMPONENTS with the supplied which
@@ -5473,8 +5566,8 @@ although its cache may be lost.
 				Computed_field_sum_components_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_sum_components;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_sum_components_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_sum_components_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -6137,42 +6230,53 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_edit_mask */
 
-static int list_Computed_field_edit_mask_commands(
+static char *Computed_field_edit_mask_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int i, return_code;
+	char *command_string, *field_name, temp_string[40];
+	int error, i;
 
-	ENTER(list_Computed_field_edit_mask_commands);
+	ENTER(Computed_field_edit_mask_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE," field %s edit_mask",
-			field->source_fields[0]->name);
+		error = 0;
+		append_string(&command_string,
+			computed_field_edit_mask_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " edit_mask", &error);
 		for (i = 0; i < field->number_of_source_values; i++)
 		{
-			display_message(INFORMATION_MESSAGE, " %g", field->source_values[i]);
+			sprintf(temp_string, " %g", field->source_values[i]);
+			append_string(&command_string, temp_string, &error);
 		}
-		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_edit_mask_commands.  Invalid field");
-		return_code = 0;
+			"Computed_field_edit_mask_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_edit_mask_commands */
+	return (command_string);
+} /* Computed_field_edit_mask_get_command_string */
 
 int Computed_field_set_type_edit_mask(struct Computed_field *field,
 	struct Computed_field *source_field, FE_value *edit_mask)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 10 January 2002
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_EDIT_MASK, returning the <source_field>
@@ -6252,8 +6356,8 @@ although its cache may be lost.
 				Computed_field_edit_mask_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_edit_mask;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_edit_mask_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_edit_mask_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}

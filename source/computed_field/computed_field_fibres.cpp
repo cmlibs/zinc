@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_fibres.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 Implements a number of basic continuum mechanics fibres operations on
@@ -14,6 +14,7 @@ computed fields.
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 
 struct Computed_field_fibres_package 
@@ -507,33 +508,49 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_fibre_axes */
 
-static int list_Computed_field_fibre_axes_commands(
+static char *Computed_field_fibre_axes_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 October 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 
-	ENTER(list_Computed_field_fibre_axes_commands);
+	ENTER(Computed_field_fibre_axes_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE," coordinate %s fibre %s",
-			field->source_fields[1]->name,field->source_fields[0]->name);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_fibre_axes_type_string, &error);
+		append_string(&command_string, " coordinate ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " fibre ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_fibre_axes_commands.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_fibre_axes_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_fibre_axes_commands */
+	return (command_string);
+} /* Computed_field_fibre_axes_get_command_string */
 
 int Computed_field_set_type_fibre_axes(struct Computed_field *field,
 	struct Computed_field *fibre_field,struct Computed_field *coordinate_field)
@@ -616,8 +633,8 @@ while the field is in use. Not sure if we want that restriction.
 				Computed_field_fibre_axes_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_fibre_axes;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_fibre_axes_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_fibre_axes_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 			return_code=1;

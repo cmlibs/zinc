@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_composite.c
 
-LAST MODIFIED : 19 December 2001
+LAST MODIFIED : 10 January 2002
 
 DESCRIPTION :
 Implements a "composite" computed_field which converts fields, field components
@@ -582,81 +582,78 @@ Not implemented yet.
 ==============================================================================*/
 
 static char *Computed_field_composite_get_source_string(
-	struct Computed_field *field)
+	struct Computed_field *field, int commands)
 /*******************************************************************************
-LAST MODIFIED : 20 October 2000
+LAST MODIFIED : 10 January 2002
 
 DESCRIPTION :
 Returns the field components and constants that make up the composite field in
 a single string. If all components of a field are used consecutively, just the
 field name is put in the final string, otherwise individual components appear.
+Field/component names are made into valid tokens for commands.
+If <commands> is set, field/components are made into valid tokens.
 ==============================================================================*/
 {
-	char *component_name, *field_name, *source_string, tmp_string[40];
-	int error, i, j, source_number_of_components, whole_field;
+	char *component_name, *source_string, tmp_string[40], *token;
+	int error, i, j, source_number_of_components, token_error, whole_field;
 	struct Computed_field *source_field;
 	struct Computed_field_composite_type_specific_data *data;
 
 	ENTER(Computed_field_composite_get_source_string);
-	source_string=(char *)NULL;
+	source_string = (char *)NULL;
 	if (field && (data = 
 		(struct Computed_field_composite_type_specific_data *)
 		field->type_specific_data))
 	{
-		error=0;
-		for (i=0;(i<field->number_of_components)&&!error;i++)
+		error = 0;
+		for (i = 0; (i < field->number_of_components) && !error; i++)
 		{
 			if (0 < i)
 			{
-				append_string(&source_string," ",&error);
+				append_string(&source_string, " ", &error);
 			}
 			if (0 <= data->source_field_numbers[i])
 			{
 				source_field = field->source_fields[data->source_field_numbers[i]];
 				/* source field component */
-				if (GET_NAME(Computed_field)(source_field,&field_name))
+				if (GET_NAME(Computed_field)(source_field, &token))
 				{
-					append_string(&source_string,field_name,&error);
+					token_error = 0;
 					source_number_of_components = source_field->number_of_components;
 					whole_field = 1;
-					for (j=0;whole_field&&(j<source_number_of_components);j++)
+					for (j = 0; whole_field && (j < source_number_of_components); j++)
 					{
-						whole_field = ((i+j) < field->number_of_components) &&
-							(j == data->source_value_numbers[i+j]);
+						whole_field = ((i + j) < field->number_of_components) &&
+							(j == data->source_value_numbers[i + j]);
 					}
 					if (whole_field)
 					{
-						i += source_number_of_components-1;
+						i += source_number_of_components - 1;
 					}
 					else
 					{
 						if (component_name = Computed_field_get_component_name(source_field,
 							data->source_value_numbers[i]))
 						{
-							append_string(&source_string,".",&error);
-							append_string(&source_string,component_name,&error);
+							append_string(&token, ".", &token_error);
+							append_string(&token, component_name, &token_error);
 							DEALLOCATE(component_name);
 						}
-						else
-						{
-							DEALLOCATE(source_string);
-							error=1;
-						}
 					}
-					DEALLOCATE(field_name);
-				}
-				else
-				{
-					DEALLOCATE(source_string);
-					error=1;
+					if (commands)
+					{
+						make_valid_token(&token);
+					}
+					append_string(&source_string, token, &error);
+					DEALLOCATE(token);
 				}
 			}
 			else
 			{
 				/* source value */
-				sprintf(tmp_string,"%g",
+				sprintf(tmp_string, "%g",
 					field->source_values[data->source_value_numbers[i]]);
-				append_string(&source_string,tmp_string,&error);
+				append_string(&source_string, tmp_string, &error);
 			}
 		}
 		if (error)
@@ -688,7 +685,8 @@ DESCRIPTION :
 	ENTER(List_Computed_field_composite);
 	if (field)
 	{
-		if (source_string=Computed_field_composite_get_source_string(field))
+		if (source_string =
+			Computed_field_composite_get_source_string(field, /*commands*/0))
 		{
 			display_message(INFORMATION_MESSAGE,"    source data : %s\n",
 				source_string);
@@ -712,42 +710,43 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_composite */
 
-static int list_Computed_field_composite_commands(
+static char *Computed_field_composite_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 20 October 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *source_string;
-	int return_code;
+	char *command_string, *source_string;
+	int error;
 
-	ENTER(list_Computed_field_composite_commands);
+	ENTER(Computed_field_composite_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		if (source_string=Computed_field_composite_get_source_string(field))
+		error = 0;
+		/* could restore constant/component types here too */
+		append_string(&command_string,
+			computed_field_composite_type_string, &error);
+		append_string(&command_string, " ", &error);
+		if (source_string = Computed_field_composite_get_source_string(field,
+			/*commands*/1))
 		{
-			display_message(INFORMATION_MESSAGE," %s",source_string);
+			append_string(&command_string, source_string, &error);
 			DEALLOCATE(source_string);
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"list_Computed_field_composite.  Failed");
-			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_composite_commands.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_composite_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_composite_commands */
+	return (command_string);
+} /* Computed_field_composite_get_command_string */
 
 int Computed_field_set_type_composite(struct Computed_field *field,
 	int number_of_components,
@@ -755,7 +754,7 @@ int Computed_field_set_type_composite(struct Computed_field *field,
 	int number_of_source_values,FE_value *source_values,
 	int *source_field_numbers,int *source_value_numbers)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 10 January 2002
 
 DESCRIPTION :
 Converts <field> into a composite field which returns a combination of field
@@ -969,8 +968,8 @@ although its cache may be lost.
 					Computed_field_composite_find_element_xi;
 				field->list_Computed_field_function = 
 					list_Computed_field_composite;
-				field->list_Computed_field_commands_function = 
-					list_Computed_field_composite_commands;
+				field->computed_field_get_command_string_function = 
+					Computed_field_composite_get_command_string;
 				field->computed_field_has_multiple_times_function =
 					Computed_field_default_has_multiple_times;
 			}
@@ -1343,7 +1342,8 @@ ACCESSed in the initial source_data.
 							source_data->number_of_source_values,source_data->source_values,
 							source_data->source_field_numbers,
 							source_data->source_value_numbers)&&
-							(source_string=Computed_field_composite_get_source_string(field)))
+							(source_string=Computed_field_composite_get_source_string(field,
+								/*commands*/1)))
 						{
 							display_message(INFORMATION_MESSAGE,"[%s]",source_string);
 							DEALLOCATE(source_string);
@@ -1551,11 +1551,42 @@ source_values.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_is_constant.  Missing field");
-		return_code=0;
+		return_code = 0;
 	}
 
 	return (return_code);
 } /* Computed_field_is_constant */
+
+int Computed_field_is_constant_scalar(struct Computed_field *field,
+	FE_value scalar)
+/*******************************************************************************
+LAST MODIFIED : 15 January 2002
+
+DESCRIPTION :
+Returns true if the field is of type composite but with no source_fields, only
+a single source value, equal to <scalar>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_constant_scalar);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_composite_type_string) &&
+			(0 == field->number_of_source_fields) &&
+			(1 == field->number_of_components) &&
+			(scalar == field->source_values[0]);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_constant_scalar.  Missing field");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_constant_scalar */
 
 static int define_Computed_field_type_constant(struct Parse_state *state,
 	void *field_void, void *computed_field_composite_package_void)

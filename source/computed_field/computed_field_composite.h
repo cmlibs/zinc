@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_composite.h
 
-LAST MODIFIED : 14 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 Implements a "composite" computed_field which converts fields, field components
@@ -33,6 +33,16 @@ LAST MODIFIED : 14 December 2001
 DESCRIPTION :
 Returns true if the field is of type composite but with no source_fields, only
 source_values.
+==============================================================================*/
+
+int Computed_field_is_constant_scalar(struct Computed_field *field,
+	FE_value scalar);
+/*******************************************************************************
+LAST MODIFIED : 15 January 2002
+
+DESCRIPTION :
+Returns true if the field is of type composite but with no source_fields, only
+a single source value, equal to <scalar>.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_manager_get_component_wrapper(

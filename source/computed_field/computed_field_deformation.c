@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_deformation.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 Implements a number of basic continuum mechanics deformation operations on
@@ -13,6 +13,7 @@ computed fields.
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 
 struct Computed_field_deformation_package 
@@ -478,35 +479,56 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_2d_strain */
 
-static int list_Computed_field_2d_strain_commands(
+static char *Computed_field_2d_strain_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 
-	ENTER(list_Computed_field_2d_strain_commands);
+	ENTER(Computed_field_2d_strain_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" deformed_coordinates %s undeformed_coordinates %s fibre_angle %s",
-			field->source_fields[0]->name, field->source_fields[1]->name,
-			field->source_fields[2]->name);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_2d_strain_type_string, &error);
+		append_string(&command_string, " deformed_coordinate ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " undeformed_coordinate ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " fibre_angle ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[2], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_2d_strain_commands.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_2d_strain_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_2d_strain_commands */
+	return (command_string);
+} /* Computed_field_2d_strain_get_command_string */
 
 int Computed_field_set_type_2d_strain(struct Computed_field *field,
 	struct Computed_field *deformed_coordinate_field,
@@ -588,8 +610,8 @@ The <coordinate_field>s must have no more than 3 components.
 				Computed_field_2d_strain_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_2d_strain;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_2d_strain_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_2d_strain_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 			return_code=1;

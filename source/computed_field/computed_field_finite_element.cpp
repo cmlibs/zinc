@@ -1231,41 +1231,45 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_finite_element */
 
-static int list_Computed_field_finite_element_commands(
+static char *Computed_field_finite_element_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *field_name;
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 	struct Computed_field_finite_element_type_specific_data *data;
-	
-	ENTER(list_Computed_field_finite_element_commands);
+
+	ENTER(Computed_field_finite_element_get_command_string);
+	command_string = (char *)NULL;
 	if (field && (data = 
 		(struct Computed_field_finite_element_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (return_code=GET_NAME(FE_field)(data->fe_field,&field_name))
+		error = 0;
+		append_string(&command_string,
+			computed_field_finite_element_type_string, &error);
+		append_string(&command_string, " fe_field ", &error);
+		if (GET_NAME(FE_field)(data->fe_field, &field_name))
 		{
-			display_message(INFORMATION_MESSAGE," fe_field %s",field_name);
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_finite_element_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_finite_element_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_finite_element_commands */
+	return (command_string);
+} /* Computed_field_finite_element_get_command_string */
 
 static int define_Computed_field_type_finite_element(struct Parse_state *state,
 	void *field_void,void *computed_field_finite_element_package_void)
@@ -1907,33 +1911,33 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_cmiss_number */
 
-static int list_Computed_field_cmiss_number_commands(
+static char *Computed_field_cmiss_number_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string;
 
-	ENTER(list_Computed_field_cmiss_number_commands);
+	ENTER(Computed_field_cmiss_number_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		/* no extra parameters */
-		return_code = 1;
+		/* no command options */
+		command_string = duplicate_string(computed_field_cmiss_number_type_string);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_cmiss_number_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_cmiss_number_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_cmiss_number_commands */
+	return (command_string);
+} /* Computed_field_cmiss_number_get_command_string */
 
 static int define_Computed_field_type_cmiss_number(struct Parse_state *state,
 	void *field_void,void *dummy_void)
@@ -2299,33 +2303,33 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_access_count */
 
-static int list_Computed_field_access_count_commands(
+static char *Computed_field_access_count_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string;
 
-	ENTER(list_Computed_field_access_count_commands);
+	ENTER(Computed_field_access_count_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		/* no extra parameters */
-		return_code = 1;
+		/* no command options */
+		command_string = duplicate_string(computed_field_access_count_type_string);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_access_count_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_access_count_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_access_count_commands */
+	return (command_string);
+} /* Computed_field_access_count_get_command_string */
 
 int Computed_field_is_type_access_count(struct Computed_field *field)
 /*******************************************************************************
@@ -2415,10 +2419,10 @@ although its cache may be lost.
 			Computed_field_access_count_find_element_xi;
 		field->list_Computed_field_function = 
 			list_Computed_field_access_count;
-		field->list_Computed_field_commands_function = 
-			list_Computed_field_access_count_commands;
-			field->Computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times_function;
+		field->computed_field_get_command_string_function = 
+			Computed_field_access_count_get_command_string;
+		field->Computed_field_has_multiple_times_function = 
+			Computed_field_default_has_multiple_times_function;
 	}
 	else
 	{
@@ -2801,33 +2805,34 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_xi_coordinates */
 
-static int list_Computed_field_xi_coordinates_commands(
+static char *Computed_field_xi_coordinates_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string;
 
-	ENTER(list_Computed_field_xi_coordinates_commands);
+	ENTER(Computed_field_xi_coordinates_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		/* no extra parameters */
-		return_code = 1;
+		/* no command options */
+		command_string =
+			duplicate_string(computed_field_xi_coordinates_type_string);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_xi_coordinates_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_xi_coordinates_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_xi_coordinates_commands */
+	return (command_string);
+} /* Computed_field_xi_coordinates_get_command_string */
 
 static int define_Computed_field_type_xi_coordinates(struct Parse_state *state,
 	void *field_void,void *dummy_void)
@@ -3462,44 +3467,50 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_node_value */
 
-static int list_Computed_field_node_value_commands(
+static char *Computed_field_node_value_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *field_name;
-	int return_code;
+	char *command_string, *field_name, temp_string[40];
+	int error;
 	struct Computed_field_node_value_type_specific_data *data;
 
-	ENTER(list_Computed_field_node_value_commands);
+	ENTER(Computed_field_node_value_get_command_string);
+	command_string = (char *)NULL;
 	if (field && (data = 
 		(struct Computed_field_node_value_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (return_code=GET_NAME(FE_field)(data->fe_field,&field_name))
+		error = 0;
+		append_string(&command_string,
+			computed_field_node_value_type_string, &error);
+		append_string(&command_string, " fe_field ", &error);
+		if (GET_NAME(FE_field)(data->fe_field, &field_name))
 		{
-			display_message(INFORMATION_MESSAGE," fe_field %s %s version %d",
-				field_name,
-				ENUMERATOR_STRING(FE_nodal_value_type)(data->nodal_value_type),
-				data->version_number+1);
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		return_code = 1;
+		append_string(&command_string, " ", &error);
+		append_string(&command_string,
+			ENUMERATOR_STRING(FE_nodal_value_type)(data->nodal_value_type), &error);
+		sprintf(temp_string, " version %d", data->version_number + 1);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_node_value_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_node_value_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_node_value_commands */
+	return (command_string);
+} /* Computed_field_node_value_get_command_string */
 
 static int Computed_field_set_type_node_value(struct Computed_field *field,
 	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
@@ -3591,8 +3602,8 @@ although its cache may be lost.
 				Computed_field_node_value_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_node_value;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_node_value_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_node_value_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -4345,44 +4356,58 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_node_array_value_at_time */
 
-static int list_Computed_field_node_array_value_at_time_commands(
+static char *Computed_field_node_array_value_at_time_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *field_name;
-	int return_code;
+	char *command_string, *field_name, temp_string[40];
+	int error;
 	struct Computed_field_node_array_value_at_time_type_specific_data *data;
 
-	ENTER(list_Computed_field_node_array_value_at_time_commands);
+	ENTER(Computed_field_node_array_value_at_time_get_command_string);
+	command_string = (char *)NULL;
 	if (field && (data = 
 		(struct Computed_field_node_array_value_at_time_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (return_code=GET_NAME(FE_field)(data->fe_field,&field_name))
+		error = 0;
+		append_string(&command_string,
+			computed_field_node_array_value_at_time_type_string, &error);
+		append_string(&command_string, " fe_field ", &error);
+		if (GET_NAME(FE_field)(data->fe_field, &field_name))
 		{
-			display_message(INFORMATION_MESSAGE," fe_field %s %s time %s version %d",
-				field_name,
-				ENUMERATOR_STRING(FE_nodal_value_type)(data->nodal_value_type),
-				field->source_fields[0]->name,data->version_number+1);
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		return_code = 1;
+		append_string(&command_string, " ", &error);
+		append_string(&command_string,
+			ENUMERATOR_STRING(FE_nodal_value_type)(data->nodal_value_type), &error);
+		append_string(&command_string, " time ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		sprintf(temp_string, " version %d", data->version_number + 1);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_node_array_value_at_time_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_node_array_value_at_time_get_command_string.  "
+			"Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_node_array_value_at_time_commands */
+	return (command_string);
+} /* Computed_field_node_array_value_at_time_get_command_string */
 
 static int Computed_field_get_type_node_array_value_at_time(struct Computed_field *field,
 	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
@@ -5146,42 +5171,52 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_embedded */
 
-static int list_Computed_field_embedded_commands(
+static char *Computed_field_embedded_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *field_name;
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 	struct Computed_field_embedded_type_specific_data *data;
 
-	ENTER(list_Computed_field_embedded_commands);
+	ENTER(Computed_field_embedded_get_command_string);
+	command_string = (char *)NULL;
 	if (field && (data = 
 		(struct Computed_field_embedded_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (return_code=GET_NAME(FE_field)(data->fe_field,&field_name))
+		error = 0;
+		append_string(&command_string,
+			computed_field_embedded_type_string, &error);
+		append_string(&command_string, " element_xi ", &error);
+		if (GET_NAME(FE_field)(data->fe_field, &field_name))
 		{
-			display_message(INFORMATION_MESSAGE," element_xi %s field %s",field_name,
-				field->source_fields[0]->name);
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		return_code = 1;
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_embedded_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_embedded_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_embedded_commands */
+	return (command_string);
+} /* Computed_field_embedded_get_command_string */
 
 static int Computed_field_set_type_embedded(struct Computed_field *field,
 	struct FE_field *fe_field,struct Computed_field *source_field)
@@ -5256,8 +5291,8 @@ although its cache may be lost.
 				Computed_field_embedded_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_embedded;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_embedded_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_embedded_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -5910,8 +5945,8 @@ although its cache may be lost.
 				Computed_field_finite_element_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_finite_element;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_finite_element_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_finite_element_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				 Computed_field_finite_element_has_multiple_times;
 		}
@@ -6155,10 +6190,10 @@ although its cache may be lost.
 			Computed_field_cmiss_number_find_element_xi;
 		field->list_Computed_field_function = 
 			list_Computed_field_cmiss_number;
-		field->list_Computed_field_commands_function = 
-			list_Computed_field_cmiss_number_commands;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+		field->computed_field_get_command_string_function = 
+			Computed_field_cmiss_number_get_command_string;
+		field->computed_field_has_multiple_times_function = 
+			Computed_field_default_has_multiple_times;
 	}
 	else
 	{
@@ -6570,8 +6605,8 @@ may be lost.
 				Computed_field_node_array_value_at_time_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_node_array_value_at_time;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_node_array_value_at_time_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_node_array_value_at_time_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -6663,8 +6698,8 @@ although its cache may be lost.
 			Computed_field_xi_coordinates_find_element_xi;
 		field->list_Computed_field_function = 
 			list_Computed_field_xi_coordinates;
-		field->list_Computed_field_commands_function = 
-			list_Computed_field_xi_coordinates_commands;
+		field->computed_field_get_command_string_function = 
+			Computed_field_xi_coordinates_get_command_string;
 		field->computed_field_has_multiple_times_function = 
 			Computed_field_default_has_multiple_times;
 	}

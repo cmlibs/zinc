@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_private.h
 
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 10 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -48,7 +48,7 @@ typedef int (*Computed_field_find_element_xi_function)(
 	struct FE_element **element, FE_value *xi,
 	struct GROUP(FE_element) *search_element_group);
 typedef int (*List_Computed_field_function)(struct Computed_field *field);
-typedef int (*List_Computed_field_commands_function)(
+typedef char* (*Computed_field_get_command_string_function)(
 	struct Computed_field *field);
 typedef int (*Computed_field_has_multiple_times_function)(struct Computed_field *field);
 
@@ -160,7 +160,8 @@ DESCRIPTION :
 	Computed_field_find_element_xi_function
 	   computed_field_find_element_xi_function;	
 	List_Computed_field_function list_Computed_field_function;
-	List_Computed_field_commands_function list_Computed_field_commands_function;
+	Computed_field_get_command_string_function
+		computed_field_get_command_string_function;
 	Computed_field_has_multiple_times_function 
 	   computed_field_has_multiple_times_function;
 

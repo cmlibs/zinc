@@ -1,20 +1,20 @@
 /*******************************************************************************
 FILE : computed_field_coordinate.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
 #include <stdio.h>
 #include <math.h>
-
-#include "general/debug.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
+#include "general/debug.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 
 int Computed_field_extract_rc(struct Computed_field *field,
@@ -669,34 +669,43 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_coordinate_transformation */
 
-static int list_Computed_field_coordinate_transformation_commands(
+static char *Computed_field_coordinate_transformation_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 
-	ENTER(list_Computed_field_coordinate_transformation_commands);
+	ENTER(Computed_field_coordinate_transformation_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" field %s",field->source_fields[0]->name);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_coordinate_transformation_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_coordinate_transformation_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_coordinate_transformation_get_command_string.  "
+			"Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_coordinate_transformation_commands */
+	return (command_string);
+} /* Computed_field_coordinate_transformation_get_command_string */
 
 int Computed_field_set_type_coordinate_transformation(struct Computed_field *field,
 	struct Computed_field *source_field)
@@ -767,8 +776,8 @@ although its cache may be lost.
 				Computed_field_coordinate_transformation_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_coordinate_transformation;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_coordinate_transformation_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_coordinate_transformation_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -1455,36 +1464,50 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_vector_coordinate_transformation */
 
-static int list_Computed_field_vector_coordinate_transformation_commands(
+static char *Computed_field_vector_coordinate_transformation_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 
-	ENTER(list_Computed_field_vector_coordinate_transformation_commands);
+	ENTER(Computed_field_vector_coordinate_transformation_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" vector %s",field->source_fields[0]->name);
-		display_message(INFORMATION_MESSAGE,
-			" coordinate %s",field->source_fields[1]->name);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_vector_coordinate_transformation_type_string, &error);
+		append_string(&command_string, " vector ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " coordinate ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_vector_coordinate_transformation_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_vector_coordinate_transformation_get_command_string.  "
+			"Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_vector_coordinate_transformation_commands */
+	return (command_string);
+} /* Computed_field_vector_coordinate_transformation_get_command_string */
 
 int Computed_field_set_type_vector_coordinate_transformation(struct Computed_field *field,
 	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
@@ -1576,8 +1599,8 @@ although its cache may be lost.
 				Computed_field_vector_coordinate_transformation_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_vector_coordinate_transformation;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_vector_coordinate_transformation_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_vector_coordinate_transformation_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}

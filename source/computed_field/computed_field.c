@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 10 January 2002
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -449,8 +449,8 @@ Calls Computed_field_clear_cache before clearing the type.
 			(Computed_field_find_element_xi_function)NULL;
 		field->list_Computed_field_function =
 			(List_Computed_field_function)NULL;
-		field->list_Computed_field_commands_function =
-			(List_Computed_field_commands_function)NULL;
+		field->computed_field_get_command_string_function =
+			(Computed_field_get_command_string_function)NULL;
 
 		field->type=COMPUTED_FIELD_INVALID;
 	}
@@ -599,8 +599,8 @@ COMPUTED_FIELD_INVALID with no components.
 				(Computed_field_find_element_xi_function)NULL;
 			field->list_Computed_field_function =
 				(List_Computed_field_function)NULL;
-			field->list_Computed_field_commands_function =
-				(List_Computed_field_commands_function)NULL;
+			field->computed_field_get_command_string_function =
+				(Computed_field_get_command_string_function)NULL;
 			field->computed_field_has_multiple_times_function =
 				(Computed_field_has_multiple_times_function)NULL;
 			
@@ -883,8 +883,8 @@ functions to check if read_only flag is set.
 							source->computed_field_find_element_xi_function;
 						destination->list_Computed_field_function =
 							source->list_Computed_field_function;
-						destination->list_Computed_field_commands_function =
-							source->list_Computed_field_commands_function;
+						destination->computed_field_get_command_string_function =
+							source->computed_field_get_command_string_function;
 						if (source->type_specific_data)
 						{
 							destination->type_specific_data = type_specific_data;
@@ -5339,13 +5339,23 @@ and should not itself be managed.
 						}
 						else
 						{
-							/* add the new field to the manager */
-							if (!ADD_OBJECT_TO_MANAGER(Computed_field)(
-								temp_field,
-								computed_field_package->computed_field_manager))
+							if (COMPUTED_FIELD_INVALID != temp_field->type)
+							{
+								/* add the new field to the manager */
+								if (!ADD_OBJECT_TO_MANAGER(Computed_field)(temp_field,
+									computed_field_package->computed_field_manager))
+								{
+									display_message(ERROR_MESSAGE,
+										"define_Computed_field.  Unable to add field to manager");
+									return_code = 0;
+								}
+							}
+							else
 							{
 								display_message(ERROR_MESSAGE,
-									"define_Computed_field.  Unable to add field to manager");
+									"gfx define field:  No field type specified");
+								display_parse_state_location(state);
+								return_code = 0;
 							}
 						}
 					}
@@ -5591,7 +5601,7 @@ Writes the properties of the <field> to the command window.
 int list_Computed_field_commands(struct Computed_field *field,
 	void *command_prefix_void)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 10 January 2002
 
 DESCRIPTION :
 Writes the commands needed to reproduce <field> to the command window. Note that
@@ -5600,7 +5610,7 @@ are created automatically by the program.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	char *command_prefix, *temp_string;
+	char *command_prefix, *command_string, *field_name, *temp_string;
 	int i,return_code;
 
 	ENTER(list_Computed_field_commands);
@@ -5609,30 +5619,43 @@ are created automatically by the program.
 		/* don't list fields if read-only = automatically created by cmgui */
 		if (!field->read_only)
 		{
-			display_message(INFORMATION_MESSAGE,"%s%s",command_prefix,field->name);
+			if (field_name = duplicate_string(field->name))
+			{
+				make_valid_token(&field_name);
+				display_message(INFORMATION_MESSAGE,"%s%s",command_prefix,field_name);
+				DEALLOCATE(field_name);
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE,"%s%s",command_prefix,field->name);
+			}
 			if (temp_string=Coordinate_system_string(&field->coordinate_system))
 			{
 				display_message(INFORMATION_MESSAGE," coordinate_system %s",
 					temp_string);
 				DEALLOCATE(temp_string);
 			}
-			display_message(INFORMATION_MESSAGE," %s",
-				Computed_field_type_to_string(field));
 			if (COMPUTED_FIELD_NEW_TYPES == field->type)
 			{
-				if (field->list_Computed_field_commands_function)
+				if (field->computed_field_get_command_string_function)
 				{
-					field->list_Computed_field_commands_function(field);
+					if (command_string =
+						field->computed_field_get_command_string_function(field))
+					{
+						display_message(INFORMATION_MESSAGE, " %s", command_string);
+						DEALLOCATE(command_string);
+					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"list_Computed_field_commands.  "
-						"Function not defined.");
-					return_code=0;
+					display_message(ERROR_MESSAGE, "list_Computed_field_commands.  "
+						"Command string function not defined");
 				}
 			}
 			else
 			{
+				display_message(INFORMATION_MESSAGE, " %s",
+					Computed_field_type_to_string(field));
 				switch (field->type)
 				{
 					case COMPUTED_FIELD_COMPOSE:
@@ -5680,11 +5703,10 @@ are created automatically by the program.
 					{
 						display_message(ERROR_MESSAGE,
 							"list_Computed_field.  Unknown field type");
-						return_code=0;
 					}
 				}
 			}
-			display_message(INFORMATION_MESSAGE,"\n");
+			display_message(INFORMATION_MESSAGE,";\n");
 		}
 		return_code=1;
 	}

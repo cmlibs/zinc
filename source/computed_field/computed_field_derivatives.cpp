@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_derivatives.c
 
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 Implements computed_fields for calculating various derivative quantities such
@@ -13,6 +13,7 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_derivatives.h"
 
@@ -414,39 +415,47 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_derivative */
 
-static int list_Computed_field_derivative_commands(
+static char *Computed_field_derivative_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name, temp_string[40];
+	int error;
 	struct Computed_field_derivatives_type_specific_data *data;
 
-	ENTER(list_Computed_field_derivative_commands);
+	ENTER(Computed_field_derivative_get_command_string);
+	command_string = (char *)NULL;
 	if (field && (data = 
 		(struct Computed_field_derivatives_type_specific_data *)
 		field->type_specific_data))
 	{
-		display_message(INFORMATION_MESSAGE,
-			" field %s",field->source_fields[0]->name);
-		display_message(INFORMATION_MESSAGE,
-			" xi %d\n",data->xi_index+1);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_derivative_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		sprintf(temp_string, " xi_index %d", data->xi_index + 1);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_derivative_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_derivative_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_derivative_commands */
+	return (command_string);
+} /* Computed_field_derivative_get_command_string */
 
 int Computed_field_set_type_derivative(struct Computed_field *field,
 	struct Computed_field *source_field, int xi_index)
@@ -520,8 +529,8 @@ although its cache may be lost.
 				Computed_field_derivative_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_derivative;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_derivative_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_derivative_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -1075,35 +1084,49 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_curl */
 
-static int list_Computed_field_curl_commands(
+static char *Computed_field_curl_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 
-	ENTER(list_Computed_field_curl_commands);
+	ENTER(Computed_field_curl_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" coordinate %s vector %s",field->source_fields[1]->name,
-			field->source_fields[0]->name);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_curl_type_string, &error);
+		append_string(&command_string, " coordinate ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " vector ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_curl_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_curl_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_curl_commands */
+	return (command_string);
+} /* Computed_field_curl_get_command_string */
 
 int Computed_field_set_type_curl(struct Computed_field *field,
 	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
@@ -1184,10 +1207,10 @@ element and the number of components in coordinate_field & vector_field differ.
 					Computed_field_curl_find_element_xi;
 				field->list_Computed_field_function = 
 					list_Computed_field_curl;
-				field->list_Computed_field_commands_function = 
-					list_Computed_field_curl_commands;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+				field->computed_field_get_command_string_function = 
+					Computed_field_curl_get_command_string;
+				field->computed_field_has_multiple_times_function = 
+					Computed_field_default_has_multiple_times;
 			}
 			else
 			{
@@ -1759,35 +1782,49 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_divergence */
 
-static int list_Computed_field_divergence_commands(
+static char *Computed_field_divergence_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 
-	ENTER(list_Computed_field_divergence_commands);
+	ENTER(Computed_field_divergence_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" coordinate %s vector %s",field->source_fields[1]->name,
-			field->source_fields[0]->name);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_divergence_type_string, &error);
+		append_string(&command_string, " coordinate ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " vector ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_divergence_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_divergence_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_divergence_commands */
+	return (command_string);
+} /* Computed_field_divergence_get_command_string */
 
 int Computed_field_set_type_divergence(struct Computed_field *field,
 	struct Computed_field *vector_field,struct Computed_field *coordinate_field)
@@ -1871,10 +1908,10 @@ element and the number of components in coordinate_field & vector_field differ.
 					Computed_field_divergence_find_element_xi;
 				field->list_Computed_field_function = 
 					list_Computed_field_divergence;
-				field->list_Computed_field_commands_function = 
-					list_Computed_field_divergence_commands;
-			field->computed_field_has_multiple_times_function = 
-				Computed_field_default_has_multiple_times;
+				field->computed_field_get_command_string_function = 
+					Computed_field_divergence_get_command_string;
+				field->computed_field_has_multiple_times_function = 
+					Computed_field_default_has_multiple_times;
 			}
 			else
 			{
@@ -2423,32 +2460,49 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_gradient */
 
-static int list_Computed_field_gradient_commands(struct Computed_field *field)
+static char *Computed_field_gradient_get_command_string(
+	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 1 November 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 
-	ENTER(list_Computed_field_gradient_commands);
+	ENTER(Computed_field_gradient_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE," coordinate %s field %s",
-			field->source_fields[1]->name,field->source_fields[0]->name);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_gradient_type_string, &error);
+		append_string(&command_string, " coordinate ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_gradient_commands.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_gradient_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_gradient_commands */
+	return (command_string);
+} /* Computed_field_gradient_get_command_string */
 
 int Computed_field_set_type_gradient(struct Computed_field *field,
 	struct Computed_field *source_field,struct Computed_field *coordinate_field)
@@ -2531,8 +2585,8 @@ although its cache may be lost.
 				Computed_field_gradient_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_gradient;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_gradient_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_gradient_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}

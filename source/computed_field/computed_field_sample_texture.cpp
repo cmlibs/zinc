@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_sample_texture.c
 
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -11,6 +11,7 @@ equivalent to the scene_viewer assigned to it.
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "graphics/texture.h"
 #include "graphics/scene_viewer.h"
 #include "user_interface/message.h"
@@ -452,46 +453,57 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_sample_texture */
 
-static int list_Computed_field_sample_texture_commands(
+static char *Computed_field_sample_texture_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *texture_name;
-	int return_code;
+	char *command_string, *field_name, temp_string[40], *texture_name;
+	int error;
 	struct Computed_field_sample_texture_type_specific_data *data;
 
-	ENTER(list_Computed_field_sample_texture_commands);
+	ENTER(Computed_field_sample_texture_get_command_string);
+	command_string = (char *)NULL;
 	if (field && (data = 
 		(struct Computed_field_sample_texture_type_specific_data *)
 		field->type_specific_data))
 	{
-		display_message(INFORMATION_MESSAGE,
-			" coordinates %s",field->source_fields[0]->name);
-		if (return_code=GET_NAME(Texture)(data->texture,&texture_name))
+		error = 0;
+		append_string(&command_string,
+			computed_field_sample_texture_type_string, &error);
+		append_string(&command_string, " coordinates ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
 		{
-			display_message(INFORMATION_MESSAGE,
-				" texture %s",texture_name);
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+
+		append_string(&command_string, " texture ", &error);
+		if (GET_NAME(Texture)(data->texture, &texture_name))
+		{
+			make_valid_token(&texture_name);
+			append_string(&command_string, texture_name, &error);
 			DEALLOCATE(texture_name);
 		}
-		display_message(INFORMATION_MESSAGE," minimum %f",data->minimum);
-		display_message(INFORMATION_MESSAGE," maximum %f",data->maximum);
-		return_code = 1;
+		sprintf(temp_string, " minimum %f", data->minimum);
+		append_string(&command_string, temp_string, &error);
+		sprintf(temp_string, " maximum %f", data->maximum);
+		append_string(&command_string, temp_string, &error);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_sample_texture_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_sample_texture_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_sample_texture_commands */
+	return (command_string);
+} /* Computed_field_sample_texture_get_command_string */
 
 int Computed_field_set_type_sample_texture(struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field, struct Texture *texture,
@@ -574,8 +586,8 @@ although its cache may be lost.
 					Computed_field_sample_texture_find_element_xi;
 				field->list_Computed_field_function = 
 					list_Computed_field_sample_texture;
-				field->list_Computed_field_commands_function = 
-					list_Computed_field_sample_texture_commands;
+				field->computed_field_get_command_string_function = 
+					Computed_field_sample_texture_get_command_string;
 				field->computed_field_has_multiple_times_function = 
 					Computed_field_default_has_multiple_times;
 			}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_vector_operations.c
 
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
@@ -12,6 +12,7 @@ Implements a number of basic vector operations on computed fields.
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_vector_operations.h"
 
@@ -370,34 +371,43 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_normalise */
 
-static int list_Computed_field_normalise_commands(
+static char *Computed_field_normalise_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 
-	ENTER(list_Computed_field_normalise_commands);
+	ENTER(Computed_field_normalise_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" field %s",field->source_fields[0]->name);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_normalise_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_normalise_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_normalise_get_command_string.  "
+			"Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_normalise_commands */
+	return (command_string);
+} /* Computed_field_normalise_get_command_string */
 
 int Computed_field_set_type_normalise(struct Computed_field *field,
 	struct Computed_field *source_field)
@@ -468,8 +478,8 @@ although its cache may be lost.
 				Computed_field_normalise_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_normalise;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_normalise_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_normalise_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -1105,40 +1115,48 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_cross_product */
 
-static int list_Computed_field_cross_product_commands(
+static char *Computed_field_cross_product_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int i, return_code;
+	char *command_string, *field_name, temp_string[40];
+	int error, i;
 
-	ENTER(list_Computed_field_cross_product_commands);
+	ENTER(Computed_field_cross_product_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" dimension %d",field->number_of_components);
-		display_message(INFORMATION_MESSAGE," fields");
+		error = 0;
+		append_string(&command_string,
+			computed_field_cross_product_type_string, &error);
+		sprintf(temp_string, " dimension %d", field->number_of_components);
+		append_string(&command_string, temp_string, &error);
+		append_string(&command_string, " fields", &error);
 		for (i = 0 ; i < field->number_of_components - 1 ; i++)
 		{
-			display_message(INFORMATION_MESSAGE," %s",
-				field->source_fields[i]->name);
+			if (GET_NAME(Computed_field)(field->source_fields[i], &field_name))
+			{
+				make_valid_token(&field_name);
+				append_string(&command_string, " ", &error);
+				append_string(&command_string, field_name, &error);
+				DEALLOCATE(field_name);
+			}
 		}
-		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_cross_product_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_cross_product_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_cross_product_commands */
+	return (command_string);
+} /* Computed_field_cross_product_get_command_string */
 
 int Computed_field_set_type_cross_product(struct Computed_field *field,
 	int dimension,	struct Computed_field **source_fields)
@@ -1223,8 +1241,8 @@ although its cache may be lost.
 				Computed_field_cross_product_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_cross_product;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_cross_product_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_cross_product_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -1838,35 +1856,50 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_dot_product */
 
-static int list_Computed_field_dot_product_commands(
+static char *Computed_field_dot_product_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 
-	ENTER(list_Computed_field_dot_product_commands);
+	ENTER(Computed_field_dot_product_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" fields %s %s",field->source_fields[0]->name,
-			field->source_fields[1]->name);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_dot_product_type_string, &error);
+		append_string(&command_string, " fields ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_dot_product_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_dot_product_get_command_string.  "
+			"Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_dot_product_commands */
+	return (command_string);
+} /* Computed_field_dot_product_get_command_string */
 
 int Computed_field_set_type_dot_product(struct Computed_field *field,
 	struct Computed_field *source_field_one,
@@ -1944,8 +1977,8 @@ although its cache may be lost.
 				Computed_field_dot_product_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_dot_product;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_dot_product_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_dot_product_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -2601,34 +2634,43 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_magnitude */
 
-static int list_Computed_field_magnitude_commands(
+static char *Computed_field_magnitude_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name;
+	int error;
 
-	ENTER(list_Computed_field_magnitude_commands);
+	ENTER(Computed_field_magnitude_get_command_string);
+	command_string = (char *)NULL;
 	if (field)
 	{
-		display_message(INFORMATION_MESSAGE,
-			" field %s",field->source_fields[0]->name);
-		return_code = 1;
+		error = 0;
+		append_string(&command_string,
+			computed_field_magnitude_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_magnitude_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_magnitude_get_command_string.  "
+			"Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_magnitude_commands */
+	return (command_string);
+} /* Computed_field_magnitude_get_command_string */
 
 int Computed_field_set_type_magnitude(struct Computed_field *field,
 	struct Computed_field *source_field)
@@ -2699,8 +2741,8 @@ although its cache may be lost.
 				Computed_field_magnitude_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_magnitude;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_magnitude_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_magnitude_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}

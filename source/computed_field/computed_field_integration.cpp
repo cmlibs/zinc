@@ -1,12 +1,12 @@
 /*******************************************************************************
 FILE : computed_field_integration.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
-Implements a computed field which integrates along elements, including travelling
-between adjacent elements, using the faces for 2D and 3D elements and the nodes
-for 1D elements.
+Implements a computed field which integrates along elements, including
+travelling between adjacent elements, using the faces for 2D and 3D elements
+and the nodes for 1D elements.
 ==============================================================================*/
 #include <math.h>
 #include <stdio.h>
@@ -18,6 +18,7 @@ for 1D elements.
 #include "finite_element/finite_element_adjacent_elements.h"
 #include "general/compare.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "general/indexed_list_private.h"
 #include "general/indexed_multi_range.h"
 #include "general/list_private.h"
@@ -633,6 +634,8 @@ Compares the user_data values with the offsets in the <mapping>
 } /* Computed_field_element_integration_mapping_has_values */
 
 static char computed_field_integration_type_string[] = "integration";
+static char computed_field_xi_texture_coordinates_type_string[] = 
+"xi_texture_coordinates";
 
 int Computed_field_is_type_integration(struct Computed_field *field)
 /*******************************************************************************
@@ -1204,41 +1207,68 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_integration */
 
-static int list_Computed_field_integration_commands(
+static char *Computed_field_integration_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 14 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	int return_code;
+	char *command_string, *field_name, temp_string[40];
+	int error, xi_texture_coordinates;
 	struct Computed_field_integration_type_specific_data *data;
 
-	ENTER(list_Computed_field_integration_commands);
+	ENTER(Computed_field_integration_get_command_string);
+	command_string = (char *)NULL;
 	if (field && (data = 
 		(struct Computed_field_integration_type_specific_data *)
 		field->type_specific_data))
 	{
-		display_message(INFORMATION_MESSAGE," seed_element %d",
-			data->seed_element->cm.number);
-		display_message(INFORMATION_MESSAGE," integrand %s",
-			field->source_fields[0]->name);
-		display_message(INFORMATION_MESSAGE," coordinate %s",
-			field->source_fields[1]->name);
-		return_code = 1;
+		error = 0;
+		if (xi_texture_coordinates = (
+			Computed_field_is_constant_scalar(field->source_fields[0], 1.0) &&
+			Computed_field_is_type_xi_coordinates(field->source_fields[1])))
+		{
+			append_string(&command_string,
+				computed_field_xi_texture_coordinates_type_string, &error);
+		}
+		else
+		{
+			append_string(&command_string,
+				computed_field_integration_type_string, &error);
+		}
+		sprintf(temp_string, " seed_element %d", data->seed_element->cm.number);
+		append_string(&command_string, temp_string, &error);
+		if (!xi_texture_coordinates)
+		{
+			append_string(&command_string, " integrand ", &error);
+			if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+			{
+				make_valid_token(&field_name);
+				append_string(&command_string, field_name, &error);
+				DEALLOCATE(field_name);
+			}
+			append_string(&command_string, " coordinate ", &error);
+			if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+			{
+				make_valid_token(&field_name);
+				append_string(&command_string, field_name, &error);
+				DEALLOCATE(field_name);
+			}
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_integration_commands.  "
-			"Invalid arguments.");
-		return_code = 0;
+			"Computed_field_integration_get_command_string.  "
+			"Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_integration_commands */
+	return (command_string);
+} /* Computed_field_integration_get_command_string */
 
 static int Computed_field_update_integration_scheme(struct Computed_field *field,
 	struct MANAGER(FE_element) *fe_element_manager,
@@ -1558,8 +1588,8 @@ although its cache may be lost.
 				Computed_field_integration_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_integration;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_integration_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_integration_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
@@ -1822,7 +1852,7 @@ int Computed_field_register_type_integration(
 	struct Computed_field_package *computed_field_package,
 	struct MANAGER(FE_element) *fe_element_manager)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1844,7 +1874,7 @@ DESCRIPTION :
 			define_Computed_field_type_integration,
 			&computed_field_integration_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
-			"xi_texture_coordinates", 
+			computed_field_xi_texture_coordinates_type_string, 
 			define_Computed_field_type_xi_texture_coordinates,
 			&computed_field_integration_package);
 	}

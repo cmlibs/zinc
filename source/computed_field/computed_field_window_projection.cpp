@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_window_projection.c
 
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -12,6 +12,7 @@ equivalent to the scene_viewer assigned to it.
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
+#include "general/mystring.h"
 #include "graphics/graphics_window.h"
 #include "graphics/scene_viewer.h"
 #include "user_interface/message.h"
@@ -1057,47 +1058,57 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_window_projection */
 
-static int list_Computed_field_window_projection_commands(
+static char *Computed_field_window_projection_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 October 2000
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *window_name;
-	int return_code;
+	char *command_string, *field_name, temp_string[40], *window_name;
+	int error;
 	struct Computed_field_window_projection_type_specific_data *data;
 
-	ENTER(list_Computed_field_window_projection_commands);
+	ENTER(Computed_field_window_projection_get_command_string);
+	command_string = (char *)NULL;
 	if (field && (data = 
 		(struct Computed_field_window_projection_type_specific_data *)
 		field->type_specific_data))
 	{
-		return_code = 1;
-		display_message(INFORMATION_MESSAGE," field %s",
-			field->source_fields[0]->name);
+		error = 0;
+		append_string(&command_string,
+			computed_field_window_projection_type_string, &error);
+		append_string(&command_string, " field ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		append_string(&command_string, " window ", &error);
 		if (GET_NAME(Graphics_window)(data->graphics_window, &window_name))
 		{
-			display_message(INFORMATION_MESSAGE," window %s",
-				window_name);
+			make_valid_token(&window_name);
+			append_string(&command_string, window_name, &error);
 			DEALLOCATE(window_name);
 		}
-		display_message(INFORMATION_MESSAGE," pane_number %d",
-			data->pane_number + 1);
-		display_message(INFORMATION_MESSAGE," %s",
-			Computed_field_window_projection_type_string(data->projection_type));
+		sprintf(temp_string, " pane_number %d ", data->pane_number + 1);
+		append_string(&command_string, temp_string, &error);
+		append_string(&command_string,
+			Computed_field_window_projection_type_string(data->projection_type),
+			&error);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_window_projection_commands.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_window_projection_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_window_projection_commands */
+	return (command_string);
+} /* Computed_field_window_projection_get_command_string */
 
 int Computed_field_set_type_window_projection(struct Computed_field *field,
 	struct Computed_field *source_field, struct Graphics_window *graphics_window,
@@ -1185,8 +1196,8 @@ although its cache may be lost.
 				Computed_field_window_projection_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_window_projection;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_window_projection_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_window_projection_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}

@@ -11,6 +11,7 @@ equivalent to the scene_viewer assigned to it.
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_set.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_control_curve.h"
 
@@ -475,40 +476,52 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_curve_lookup */
 
-static int list_Computed_field_curve_lookup_commands(
+static char *Computed_field_curve_lookup_get_command_string(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
-	char *curve_name;
-	int return_code;
+	char *command_string, *curve_name, *field_name;
+	int error;
 	struct Computed_field_curve_lookup_type_specific_data *data;
 
-	ENTER(list_Computed_field_curve_lookup_commands);
+	ENTER(Computed_field_curve_lookup_get_command_string);
+	command_string = (char *)NULL;
 	if (field && (data = 
 		(struct Computed_field_curve_lookup_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (return_code = GET_NAME(Control_curve)(data->curve, &curve_name))
+		error = 0;
+		append_string(&command_string,
+			computed_field_curve_lookup_type_string, &error);
+		append_string(&command_string, " curve ", &error);
+		if (GET_NAME(Control_curve)(data->curve, &curve_name))
 		{
-			display_message(INFORMATION_MESSAGE," curve %s source %s",
-				curve_name, field->source_fields[0]->name);
+			make_valid_token(&curve_name);
+			append_string(&command_string, curve_name, &error);
 			DEALLOCATE(curve_name);
+		}
+		append_string(&command_string, " source ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_curve_lookup_commands.  Invalid argument(s)");
-		return_code = 0;
+			"Computed_field_curve_lookup_get_command_string.  Invalid field");
 	}
 	LEAVE;
 
-	return (return_code);
-} /* list_Computed_field_curve_lookup_commands */
+	return (command_string);
+} /* Computed_field_curve_lookup_get_command_string */
 
 int Computed_field_set_type_curve_lookup(struct Computed_field *field,
 	struct Computed_field *source_field, struct Control_curve *curve,
@@ -597,8 +610,8 @@ in response to changes in the curve from the control curve manager.
 				Computed_field_curve_lookup_find_element_xi;
 			field->list_Computed_field_function = 
 				list_Computed_field_curve_lookup;
-			field->list_Computed_field_commands_function = 
-				list_Computed_field_curve_lookup_commands;
+			field->computed_field_get_command_string_function = 
+				Computed_field_curve_lookup_get_command_string;
 			field->computed_field_has_multiple_times_function = 
 				Computed_field_default_has_multiple_times;
 		}
