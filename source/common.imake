@@ -90,7 +90,7 @@ TARGET_TYPE_DEFINES =
 UIL = uil
 CC = gcc -c
 CPP = g++ -c
-FORTRAN = g77 -c
+FORTRAN = g77 -c -fno-second-underscore
 #if defined (DYNAMIC_GL_LINUX)
 LINK = gcc
 /* LINK = egcs -shared -L/usr/X11R6/lib -v */
