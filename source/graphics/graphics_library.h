@@ -38,6 +38,7 @@ Functions and structures for interfacing with the graphics library.
 #if defined (graPHIGS_API)
 #include "phigs.h"
 #endif
+#include "graphics/texture.h"
 
 struct User_interface;
 
@@ -47,23 +48,6 @@ Global types
 */
 
 typedef float gtMatrix[4][4];
-
-enum Texture_storage_type
-/*******************************************************************************
-LAST MODIFIED : 28 February 2002
-
-DESCRIPTION :
-==============================================================================*/
-{
-	TEXTURE_LUMINANCE,
-	TEXTURE_LUMINANCE_ALPHA,
-	TEXTURE_RGB,
-	TEXTURE_RGBA,
-	TEXTURE_ABGR,
-	/* The last two types are special and are not user-selectable */
-	TEXTURE_DMBUFFER,
-	TEXTURE_PBUFFER
-}; /* enum Texture_storage_type */
 
 /*
 Global variables

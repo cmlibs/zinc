@@ -14,6 +14,7 @@ Functions for reading graphics object data from a file.
 #include <string.h>
 #include "general/debug.h"
 #include "general/mystring.h"
+#include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
 #include "graphics/import_graphics_object.h"
 #include "graphics/userdef_objects.h"

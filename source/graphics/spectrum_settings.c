@@ -19,6 +19,7 @@ appearance of spectrums.
 #include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/colour.h"
+#include "graphics/graphics_library.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_settings.h"

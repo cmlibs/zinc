@@ -11,12 +11,10 @@ The data structures used for representing textures.
 
 #include <stdio.h>
 #include "general/enumerator.h"
-#include "general/image_utilities.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
 #include "graphics/colour.h"
-#include "graphics/graphics_library.h"
 
 /*
 Global types
@@ -72,6 +70,23 @@ Controls how a texture is downsampled to fit texture hardware.
 	TEXTURE_RESIZE_LINEAR_FILTER,  /* high quality, but slow */
 	TEXTURE_RESIZE_NEAREST_FILTER  /* fast but low quality */
 }; /* enum Texture_resize_filter_mode */
+
+enum Texture_storage_type
+/*******************************************************************************
+LAST MODIFIED : 28 February 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	TEXTURE_LUMINANCE,
+	TEXTURE_LUMINANCE_ALPHA,
+	TEXTURE_RGB,
+	TEXTURE_RGBA,
+	TEXTURE_ABGR,
+	/* The last two types are special and are not user-selectable */
+	TEXTURE_DMBUFFER,
+	TEXTURE_PBUFFER
+}; /* enum Texture_storage_type */
 
 enum Texture_wrap_mode
 /*******************************************************************************

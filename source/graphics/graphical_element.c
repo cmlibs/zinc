@@ -21,6 +21,7 @@ DESCRIPTION :
 #include "graphics/element_point_ranges.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
+#include "graphics/graphics_library.h"
 #include "graphics/makegtobj.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
