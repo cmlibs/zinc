@@ -5456,6 +5456,10 @@ Calls draw_map_3d or update_mapping_drawing_area_2d depending upon
 		if ((mapping->map)&&(THREED_PROJECTION==mapping->map->projection_type))
 		{
 			return_code=draw_map(mapping->map,recalculate,mapping->map_drawing);
+			/* Force the 3d windows to be refreshed */
+#if defined (MOTIF)
+			Scene_viewer_redraw_now(mapping->scene_viewer);
+#endif /* defined (MOTIF) */
 		}
 		else
 		{
