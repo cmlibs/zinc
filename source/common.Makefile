@@ -235,7 +235,7 @@ ifeq ($(SYSNAME),AIX)
    UIL = uil
    CC = xlc -c
    CPP = xlc -qnolm -c
-   CPP_FLAGS = -qrtti
+   CPP_FLAGS = -qrtti -qtempinc
    FORTRAN = f77 -c
    MAKEDEPEND = makedepend -f-
    CPREPROCESS = 
