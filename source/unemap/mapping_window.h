@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.h
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -71,7 +71,7 @@ The menu associated with the print button.
 
 struct Mapping_window
 /*******************************************************************************
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
 The mapping window object.
@@ -128,7 +128,7 @@ The mapping window object.
 	struct Mapping_window **address,**current_mapping_window_address;
 	char *open;
 	struct Time_object *potential_time_object;
-	struct Time_editor_dialog_struct *time_editor_dialog;
+	struct Time_editor_dialog *time_editor_dialog;
 #if defined (UNEMAP_USE_3D)
 #if defined (MOTIF)
 	Widget map3d_interactive_tool_form;	
@@ -140,7 +140,8 @@ The mapping window object.
 	/* Note: interactive_tool is NOT accessed by graphics_window; the chooser
 		 will update it if the current one is destroyed */
 	struct Interactive_tool *interactive_tool,*transform_tool;
-	/* used for getting updates from autoranging spectrums or the spectrum editor */
+	/* used for getting updates from autoranging spectrums or the spectrum
+		editor */
 	void *spectrum_manager_callback_id;
 #endif /* defined (UNEMAP_USE_3D) */
 	struct User_interface *user_interface;	

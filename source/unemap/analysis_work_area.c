@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 10 May 2002
+LAST MODIFIED : 16 May 2002
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -132,6 +132,7 @@ DESCRIPTION :
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "time/time.h"
+#include "time/time_editor_dialog.h"
 #include "time/time_keeper.h"
 #include "unemap/analysis.h"
 #include "unemap/analysis_window.h"
@@ -2201,7 +2202,7 @@ Called when the "Save interval" button is clicked.
 
 static int set_up_time_keeper_after_read(struct Analysis_work_area *analysis)
 /*******************************************************************************
-LAST MODIFIED : 6 May 2002
+LAST MODIFIED : 16 May 2002
 
 DESCRIPTION :
 After a signal (or EDF or similar) file is loaded, sets up the time_keeper
@@ -2237,6 +2238,12 @@ to be consistant with it.
 			(float)buffer->times[analysis->end_search_interval]/frequency);
 		Time_keeper_set_speed(Time_object_get_time_keeper(
 			analysis->potential_time_object),20.0/frequency);
+		if ((analysis->mapping_window)&&(0<frequency)&&
+			(analysis->mapping_window->time_editor_dialog))
+		{
+			time_editor_dialog_set_step(analysis->mapping_window->time_editor_dialog,
+				1/frequency);
+		}
 	}
 	else
 	{

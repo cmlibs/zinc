@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : time_editor.h
 
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -11,62 +11,84 @@ DESCRIPTION :
 #include "general/callback.h"
 
 /*
+Global Types
+------------
+*/
+struct Time_editor;
+
+/*
 Global Functions
 ----------------
 */
-
-Widget CREATE(Time_editor)(Widget *time_editor_widget,
-	Widget parent, struct Time_keeper *time_keeper,
+struct Time_editor *CREATE(Time_editor)(
+	struct Time_editor **time_editor_address,
+	Widget parent,struct Time_keeper *time_keeper,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 29 January 2002
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
-Creates a time_editor widget.
+Creates a <*time_editor_address>.
 ==============================================================================*/
 
-int DESTROY(Time_editor)(Widget *time_editor_widget);
+int DESTROY(Time_editor)(struct Time_editor **time_editor_address);
 /*******************************************************************************
-LAST MODIFIED : 29 January 2002
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
-Callback for the time_editor dialog - tidies up all details - mem etc
+Destroy the <*time_editor_address> and sets <*time_editor_address> to NULL.
 ==============================================================================*/
 
-int time_editor_get_callback(Widget time_editor_widget,
+int time_editor_get_callback(struct Time_editor *time_editor,
 	struct Callback_data *callback);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
-Returns the update_callback for the time editor widget.
+Get the update <callback> information for the <time_editor>.
 ==============================================================================*/
 
-int time_editor_set_callback(Widget time_editor_widget,
+int time_editor_set_callback(struct Time_editor *time_editor,
 	struct Callback_data *callback);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
-Changes the update_callback for the time editor widget.
+Set the update <callback> information for the <time_editor>.
 ==============================================================================*/
 
-struct Time_keeper *time_editor_get_time_keeper(
-	Widget time_editor_widget);
+int time_editor_get_time_keeper(struct Time_editor *time_editor,
+	struct Time_keeper **time_keeper);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
-Returns the address of the time being edited in the time_editor widget.
+Get the <*time_keeper_address> for the <time_editor>.
 Do not modify or DEALLOCATE the returned time_keeper.
 ==============================================================================*/
 
-int time_editor_set_time_keeper(Widget time_editor_widget,
+int time_editor_set_time_keeper(struct Time_editor *time_editor,
 	struct Time_keeper *time_keeper);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
-Changes the time_keeper in the time_editor widget.
+Set the <time_keeper> for the <time_editor>.
 ==============================================================================*/
-#endif
+
+int time_editor_get_step(struct Time_editor *time_editor,float *step);
+/*******************************************************************************
+LAST MODIFIED : 17 May 2002
+
+DESCRIPTION :
+Get the <*step> for the <time_editor>.
+==============================================================================*/
+
+int time_editor_set_step(struct Time_editor *time_editor,float step);
+/*******************************************************************************
+LAST MODIFIED : 17 May 2002
+
+DESCRIPTION :
+Set the <step> for the <time_editor>.
+==============================================================================*/
+#endif /* !defined (TIME_EDITOR_H) */

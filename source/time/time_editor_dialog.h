@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : time_editor_dialog.h
 
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
 Header description for time_editor_dialog widget.
@@ -16,69 +16,87 @@ Header description for time_editor_dialog widget.
 Global Types
 ------------
 */
-struct Time_editor_dialog_struct;
+struct Time_editor_dialog;
 
 /*
 Global Functions
 ----------------
 */
-int time_editor_dialog_get_callback(Widget time_editor_dialog_widget,
-	struct Callback_data *callback);
+int time_editor_dialog_get_callback(
+	struct Time_editor_dialog *time_editor_dialog,struct Callback_data *callback);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
-Returns the update_callback for the time editor_dialog widget.
+Get the update <callback> information for the <time_editor_dialog>.
 ==============================================================================*/
 
-int time_editor_dialog_set_callback(Widget time_editor_dialog_widget,
-	struct Callback_data *callback);
+int time_editor_dialog_set_callback(
+	struct Time_editor_dialog *time_editor_dialog,struct Callback_data *callback);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
-Changes the update_callback for the time editor_dialog widget.
+Set the update <callback> information for the <time_editor_dialog>.
 ==============================================================================*/
 
-struct Time_keeper *time_editor_dialog_get_time_keeper(
-	Widget time_editor_dialog_widget);
+int time_editor_dialog_get_time_keeper(
+	struct Time_editor_dialog *time_editor_dialog,
+	struct Time_keeper **time_keeper_address);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
-If <time_editor_dialog_widget> is not NULL, then get the data item from
-<time_editor_dialog widget>.  Otherwise, get the data item from
-<time_editor_dialog>.
+Get the <*time_keeper_address> for the <time_editor_dialog>.
 ==============================================================================*/
 
-int time_editor_dialog_set_time_keeper(Widget time_editor_dialog_widget,
+int time_editor_dialog_set_time_keeper(
+	struct Time_editor_dialog *time_editor_dialog,
 	struct Time_keeper *time_keeper);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
-If <time_editor_dialog_widget> is not NULL, then change the data item on
-<time_editor_dialog widget>.  Otherwise, change the data item on
-<time_editor_dialog>.
+Set the <time_keeper> for the <time_editor_dialog>.
+==============================================================================*/
+
+int time_editor_dialog_get_step(struct Time_editor_dialog *time_editor_dialog,
+	float *step);
+/*******************************************************************************
+LAST MODIFIED : 17 May 2002
+
+DESCRIPTION :
+Get the <*step> for the <time_editor_dialog>.
+==============================================================================*/
+
+int time_editor_dialog_set_step(struct Time_editor_dialog *time_editor_dialog,
+	float step);
+/*******************************************************************************
+LAST MODIFIED : 17 May 2002
+
+DESCRIPTION :
+Set the <step> for the <time_editor_dialog>.
 ==============================================================================*/
 
 int bring_up_time_editor_dialog(
-	struct Time_editor_dialog_struct **time_editor_dialog,
-	Widget parent, struct Time_keeper *time_keeper,
+	struct Time_editor_dialog **time_editor_dialog_address,
+	Widget parent,struct Time_keeper *time_keeper,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
-If there is a time_editor dialog in existence, then bring it to the front,
-else create a new one.
+If there is a <*time_editor_dialog_address> in existence, then bring it to the
+front, otherwise create a new one.
 ==============================================================================*/
 
-int  time_editor_dialog_destroy(
-	struct Time_editor_dialog_struct *time_editor_dialog);
+int DESTROY(Time_editor_dialog)(
+	struct Time_editor_dialog **time_editor_dialog_address);
 /*******************************************************************************
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 17 May 2002
 
-DESCRIPTION :Destroys the <time_editor_dialog> - tidies up all details - mem etc
+DESCRIPTION :
+Destroy the <*time_editor_dialog_address> and sets <*time_editor_dialog_address>
+to NULL.
 ==============================================================================*/
-#endif
+#endif /* !defined (TIME_EDITOR_DIALOG_H) */

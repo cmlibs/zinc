@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 6 May 2002
+LAST MODIFIED : 16 May 2002
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -440,7 +440,7 @@ If the <mapping> has a time keeper, stop it .
 
 int mapping_window_kill_time_keeper_editor(struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 14 December 2001
+LAST MODIFIED : 17 May 2002
 
 DESCRIPTION :
 If the <mapping> has a time keeper, stop it and destroy it's editor widget.
@@ -456,7 +456,7 @@ If the <mapping> has a time keeper, stop it and destroy it's editor widget.
 		{
 			/*stop the time keeper and get rid of the editor widget*/
 			mapping_window_stop_time_keeper(mapping);
-			time_editor_dialog_destroy(mapping->time_editor_dialog);
+			DESTROY(Time_editor_dialog)(&(mapping->time_editor_dialog));
 		}
 	}
 	else
@@ -546,25 +546,25 @@ necessary.
 			spectrum=drawing_information->spectrum;
 			if (option_widget==map_dialog->spectrum.type_option.blue_red)
 			{
-				spectrum_simple_type = BLUE_TO_RED_SPECTRUM;
+				spectrum_simple_type=BLUE_TO_RED_SPECTRUM;
 			}
 			else if (option_widget==map_dialog->spectrum.type_option.blue_white_red)
 			{
-				spectrum_simple_type = BLUE_WHITE_RED_SPECTRUM;
+				spectrum_simple_type=BLUE_WHITE_RED_SPECTRUM;
 			}
 			else if (option_widget==map_dialog->spectrum.type_option.log_blue_red)
 			{
-				spectrum_simple_type = LOG_BLUE_TO_RED_SPECTRUM;
+				spectrum_simple_type=LOG_BLUE_TO_RED_SPECTRUM;
 			}
 			else if (option_widget==map_dialog->spectrum.type_option.log_red_blue)
 			{
-				spectrum_simple_type = LOG_RED_TO_BLUE_SPECTRUM;
+				spectrum_simple_type=LOG_RED_TO_BLUE_SPECTRUM;
 			}
 			else
 			{
-				spectrum_simple_type = RED_TO_BLUE_SPECTRUM;
+				spectrum_simple_type=RED_TO_BLUE_SPECTRUM;
 			}
-			if (spectrum_simple_type != Spectrum_get_simple_type(spectrum))
+			if (spectrum_simple_type!=Spectrum_get_simple_type(spectrum))
 			{
 #if defined (UNEMAP_USE_3D)
 				if (spectrum_manager=get_map_drawing_information_spectrum_manager
@@ -582,7 +582,7 @@ necessary.
 #endif /* defined (UNEMAP_USE_3D) */
 							Spectrum_set_simple_type(spectrum_to_be_modified_copy,
 								spectrum_simple_type);
-							map_settings_changed = 1;
+							map_settings_changed=1;
 							recalculate=2;
 #if defined (UNEMAP_USE_3D)
 							MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
@@ -1640,8 +1640,8 @@ Starts the activation map animation.
 	struct Time_keeper *time_keeper;
 
 	ENTER(animate_activation_map);
-	mapping= (struct Mapping_window *)NULL;
-	map= (struct Map *)NULL;
+	mapping=(struct Mapping_window *)NULL;
+	map=(struct Map *)NULL;
 	time_keeper=(struct Time_keeper *)NULL;
 	buffer=(struct Signal_buffer *)NULL;
 	signal=(struct Signal *)NULL;
@@ -1671,7 +1671,7 @@ Starts the activation map animation.
 				{
 					case POTENTIAL:
 					{
-						map->activation_front= 0;
+						map->activation_front=0;
 						switch (map->interpolation_type)
 						{
 							case BICUBIC_INTERPOLATION:
@@ -1706,8 +1706,8 @@ Starts the activation map animation.
 				}
 				bring_up_time_editor_dialog(&mapping->time_editor_dialog,
 					mapping->user_interface->application_shell,
-					time_keeper, mapping->user_interface);
-				Time_keeper_play(time_keeper, TIME_KEEPER_PLAY_FORWARD);
+					time_keeper,mapping->user_interface);
+				Time_keeper_play(time_keeper,TIME_KEEPER_PLAY_FORWARD);
 			}
 		}
 		else
@@ -1981,7 +1981,7 @@ toolbar to match the selection.
 			mapping_window->interactive_toolbar_widget,interactive_tool))
 		{
 			mapping_window->interactive_tool=interactive_tool;
-			if (interactive_tool == mapping_window->transform_tool)
+			if (interactive_tool==mapping_window->transform_tool)
 			{
 				Scene_viewer_set_input_mode(mapping_window->scene_viewer,
 					SCENE_VIEWER_TRANSFORM);
@@ -2249,7 +2249,7 @@ new rig.
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(mapping->map))
 	{
 #if defined (UNEMAP_USE_3D)
-		unemap_package = mapping->map->unemap_package;
+		unemap_package=mapping->map->unemap_package;
 #endif /* defined (UNEMAP_USE_3D) */
 		/* destroy the existing configuration */
 		destroy_Rig(mapping->map->rig_pointer);
@@ -4079,7 +4079,7 @@ mapping_window.
 } /* write_map_postscript_file */
 
 static int write_map_file(char *file_name,
-	enum Image_file_format image_file_format, struct Mapping_window *mapping)
+	enum Image_file_format image_file_format,struct Mapping_window *mapping)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
 
@@ -4088,8 +4088,8 @@ This function writes the image map associated with the <mapping> window to
 <file_name> using the requested <image_file_format>.
 ==============================================================================*/
 {
-	int bytes_per_pixel, height, number_of_bytes_per_component,
-		number_of_components, return_code, width;
+	int bytes_per_pixel,height,number_of_bytes_per_component,
+		number_of_components,return_code,width;
 	unsigned long *image;
 	struct Cmgui_image *cmgui_image;
 	struct Cmgui_image_information *cmgui_image_information;
@@ -4097,23 +4097,23 @@ This function writes the image map associated with the <mapping> window to
 	ENTER(write_map_file);
 	if (file_name && mapping)
 	{
-		if (image = get_Drawing_2d_image(mapping->map_drawing))
+		if (image=get_Drawing_2d_image(mapping->map_drawing))
 		{
-			width = mapping->map_drawing->width;
-			height = mapping->map_drawing->height;
-			number_of_components = 3;
-			number_of_bytes_per_component = 1;
-			bytes_per_pixel = number_of_components*number_of_bytes_per_component;
-			if (cmgui_image = Cmgui_image_constitute(
-				width, height, number_of_components, number_of_bytes_per_component,
-				width*bytes_per_pixel, (unsigned char *)image))
+			width=mapping->map_drawing->width;
+			height=mapping->map_drawing->height;
+			number_of_components=3;
+			number_of_bytes_per_component=1;
+			bytes_per_pixel=number_of_components*number_of_bytes_per_component;
+			if (cmgui_image=Cmgui_image_constitute(width,height,number_of_components,
+				number_of_bytes_per_component,width*bytes_per_pixel,
+				(unsigned char *)image))
 			{
-				cmgui_image_information = CREATE(Cmgui_image_information)();
+				cmgui_image_information=CREATE(Cmgui_image_information)();
 				Cmgui_image_information_add_file_name(cmgui_image_information,
 					file_name);
 				Cmgui_image_information_set_image_file_format(cmgui_image_information,
 					image_file_format);
-				return_code=Cmgui_image_write(cmgui_image, cmgui_image_information);
+				return_code=Cmgui_image_write(cmgui_image,cmgui_image_information);
 				DESTROY(Cmgui_image_information)(&cmgui_image_information);
 				DESTROY(Cmgui_image)(&cmgui_image);
 			}
@@ -4121,28 +4121,28 @@ This function writes the image map associated with the <mapping> window to
 			{
 				display_message(ERROR_MESSAGE,
 					"write_map_file.  Could not constitute image");
-				return_code = 0;
+				return_code=0;
 			}
 			DEALLOCATE(image);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE, "write_map_file.  Could not get image");
-			return_code = 0;
+			display_message(ERROR_MESSAGE,"write_map_file.  Could not get image");
+			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"write_map_file.  Missing file_name or mapping_window");
-		return_code = 0;
+		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* write_map_file */
 
-static int write_map_rgb_file(char *file_name, void *mapping_window)
+static int write_map_rgb_file(char *file_name,void *mapping_window)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
 
@@ -4154,14 +4154,14 @@ mapping_window.
 	int return_code;
 
 	ENTER(write_map_rgb_file);
-	return_code = write_map_file(file_name, RGB_FILE_FORMAT,
+	return_code=write_map_file(file_name,RGB_FILE_FORMAT,
 		(struct Mapping_window *)mapping_window);
 	LEAVE;
 
 	return (return_code);
 } /* write_map_rgb_file */
 
-static int write_map_tiff_file(char *file_name, void *mapping_window)
+static int write_map_tiff_file(char *file_name,void *mapping_window)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
 
@@ -4173,14 +4173,14 @@ mapping_window.
 	int return_code;
 
 	ENTER(write_map_rgb_file);
-	return_code = write_map_file(file_name, TIFF_FILE_FORMAT,
+	return_code=write_map_file(file_name,TIFF_FILE_FORMAT,
 		(struct Mapping_window *)mapping_window);
 	LEAVE;
 
 	return (return_code);
 } /* write_map_tiff_file */
 
-static int write_map_jpg_file(char *file_name, void *mapping_window)
+static int write_map_jpg_file(char *file_name,void *mapping_window)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
 
@@ -4192,7 +4192,7 @@ mapping_window.
 	int return_code;
 
 	ENTER(write_map_rgb_file);
-	return_code = write_map_file(file_name, JPG_FILE_FORMAT,
+	return_code=write_map_file(file_name,JPG_FILE_FORMAT,
 		(struct Mapping_window *)mapping_window);
 	LEAVE;
 
@@ -4576,35 +4576,36 @@ LAST MODIFIED : 30 January 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	float minimum_value, maximum_value;
+	float minimum_value,maximum_value;
 	struct Mapping_window *mapping;
 	struct Spectrum *spectrum;
 
 	ENTER(mapping_window_spectrum_change);
-	if (message && (mapping = (struct Mapping_window *)mapping_void))
+	if (message&&(mapping=(struct Mapping_window *)mapping_void))
 	{
 		switch (message->change)
 		{
 			case MANAGER_CHANGE_OBJECT(Spectrum):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Spectrum):
 			{
-				spectrum = mapping->map->drawing_information->spectrum;
+				spectrum=mapping->map->drawing_information->spectrum;
 				if (IS_OBJECT_IN_LIST(Spectrum)(spectrum,
 					message->changed_object_list))
 				{
-					minimum_value = get_Spectrum_minimum(spectrum);
-					maximum_value = get_Spectrum_maximum(spectrum);
-					if ((minimum_value != mapping->map->minimum_value)
-						|| (maximum_value != mapping->map->maximum_value))
+					minimum_value=get_Spectrum_minimum(spectrum);
+					maximum_value=get_Spectrum_maximum(spectrum);
+					if ((minimum_value!=mapping->map->minimum_value)||
+						(maximum_value!=mapping->map->maximum_value))
 					{
-						mapping->map->minimum_value = minimum_value;
-						mapping->map->maximum_value = maximum_value;
-						mapping->map->contour_minimum = minimum_value;
-						mapping->map->contour_maximum = maximum_value;
+						mapping->map->minimum_value=minimum_value;
+						mapping->map->maximum_value=maximum_value;
+						mapping->map->contour_minimum=minimum_value;
+						mapping->map->contour_maximum=maximum_value;
 						if (mapping->colour_or_auxiliary_drawing)
 						{
 							/* clear the colour or auxiliary area */
-							XFillRectangle(mapping->map->drawing_information->user_interface->display,
+							XFillRectangle(
+								mapping->map->drawing_information->user_interface->display,
 								mapping->colour_or_auxiliary_drawing->pixel_map,
 								(mapping->map->drawing_information->graphics_context).background_drawing_colour,
 								0,0,mapping->colour_or_auxiliary_drawing->width,
@@ -4662,7 +4663,7 @@ LAST MODIFIED : 1 February 2002
 
 DESCRIPTION :
 This function allocates the memory for a mapping_window and sets the fields to
-the specified values (<address>, <map>).  It then retrieves a mapping window
+the specified values (<address>,<map>).  It then retrieves a mapping window
 widget with the specified <parent> and assigns the widget ids to the
 appropriate fields of the structure.  If successful it returns a pointer to the
 created mapping window and, if <address> is not NULL, makes <*address> point to
@@ -4873,7 +4874,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				mapping->interactive_toolbar_widget=(Widget)NULL;
 				mapping->map3d_viewing_form=(Widget)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
-				mapping->time_editor_dialog = (struct Time_editor_dialog_struct *)NULL;
+				mapping->time_editor_dialog=(struct Time_editor_dialog *)NULL;
 				mapping->map_drawing_area_2d=(Widget)NULL;
 				mapping->scene_viewer=(struct Scene_viewer *)NULL;
 				mapping->map_drawing=(struct Drawing_2d *)NULL;
@@ -6245,7 +6246,7 @@ DESCRIPTION :
 	ENTER(Mapping_window_set_potential_time_object);
 	if (mapping && potential_time_object)
 	{
-		if (mapping->potential_time_object != potential_time_object)
+		if (mapping->potential_time_object!=potential_time_object)
 		{
 			if (mapping->potential_time_object)
 			{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 9 May 2002
+LAST MODIFIED : 16 May 2002
 
 DESCRIPTION :
 
@@ -20,7 +20,8 @@ WINDOWS - win32 acquisition only version
 	created and it displayed/brought to the front/opened.
 
 TO DO:
-???DB.  6 May 2002.  Adding "background" and "ratio" operations for optrodes
+???DB.  16 May 2002.  Adding "background" and "ratio" operations for optrodes
+???DB.  On hold while more work is done on methods
 1 How do raw signals get transformed currently
 1.1 Offset and gain.  gain*(raw-offset)
 1.2 Linear combination.  Calculated each time required from raw signals.  Used
@@ -69,7 +70,18 @@ TO DO:
 				exponential?
 4.1.3 Calculate ratios of channel signals
 4.2 Implementation
+5 Investigating (see unemap/utilities/ratio_signals)
+5.1 Tried noise reduction based on rms.  Doesn't seem very effective
+5.2 Fitted exponential with offset.  Gives good fit and gives good signals
+		when removed
+5.3 Ratioing improves signals further
 ==============================================================================*/
+
+/*#define NO_SCROLLING_HARDWARE_CALLBACK_BODY*/
+
+/*#define NO_SCROLLING_SIGNAL*/
+
+/*#define NO_SCROLLING_WINDOW_UPDATE*/
 
 #define BACKGROUND_SAVING
 
@@ -1393,7 +1405,10 @@ Finds the id of the page test checkbox.
 
 #if defined (MOTIF)
 static int fill_left,fill_width;
-static XPoint scroll_line[2],signal_line[5],x_axis[2];
+static XPoint scroll_line[2],x_axis[2];
+#if !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY)
+static XPoint signal_line[5];
+#endif /* !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY) */
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 /*???DB.  Created in WM_CREATE of Page_window_scrolling_area_class_proc */
@@ -1603,6 +1618,7 @@ DESCRIPTION :
 ???DB.  Used to be in WM_USER.
 ==============================================================================*/
 {
+#if !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY)
 	float device_maximum,device_minimum,gain,offset,post_filter_gain,
 		pre_filter_gain,signal_value,temp_float[4];
 	int i,j,j_start,k,height,number_of_channels_device,
@@ -1619,14 +1635,17 @@ DESCRIPTION :
 	HWND window;
 	RECT drawing_rectangle;
 #endif /* defined (WINDOWS) */
+#endif /* !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY) */
 
 	ENTER(scrolling_hardware_callback);
+#if !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY)
 	if ((page_window=(struct Page_window *)page_window_void)&&
 		(page_window->display_device)&&
 		(page_window->number_of_scrolling_channels==number_of_channels)&&
 		signal_values&&(4==number_of_values_per_channel))
 	{
 		/* set up */
+#if !defined (NO_SCROLLING_WINDOW_UPDATE)
 #if defined (MOTIF)
 		display=page_window->user_interface->display;
 		drawable=XtWindow(page_window->scrolling_area);
@@ -1644,11 +1663,13 @@ DESCRIPTION :
 #endif /* defined (WINDOWS) */
 		height -= SCROLLING_BORDER_HEIGHT;
 		width -= SCROLLING_BORDER_WIDTH;
+#endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
 		signal_line[4].x=x_axis[0].x;
 		signal_line[3].x=(x_axis[0].x)+1;
 		signal_line[2].x=(x_axis[0].x)+2;
 		signal_line[1].x=(x_axis[0].x)+3;
 		signal_line[0].x=(x_axis[0].x)+4;
+#if !defined (NO_SCROLLING_WINDOW_UPDATE)
 #if defined (MOTIF)
 		XFillRectangle(display,drawable,
 			(page_window->graphics_context).background_drawing_colour,fill_left,0,
@@ -1668,6 +1689,8 @@ DESCRIPTION :
 		fill_rectangle.left += 4;
 		fill_rectangle.right += 4;
 #endif /* defined (WINDOWS) */
+#endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
+#if !defined (NO_SCROLLING_SIGNAL) && !defined (NO_SCROLLING_WINDOW_UPDATE)
 		j_start=0;
 		number_of_scrolling_devices=page_window->number_of_scrolling_devices;
 		height /= number_of_scrolling_devices;
@@ -1731,6 +1754,7 @@ DESCRIPTION :
 					(device_maximum-device_minimum));
 			}
 			(page_window->last_scrolling_value_device)[k]=signal_line[0].y;
+#if !defined (NO_SCROLLING_WINDOW_UPDATE)
 			if (x_axis[0].x>0)
 			{
 #if defined (MOTIF)
@@ -1753,7 +1777,9 @@ DESCRIPTION :
 				Polyline(device_context,signal_line,4);
 #endif /* defined (WINDOWS) */
 			}
+#endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
 		}
+#endif /* !defined (NO_SCROLLING_SIGNAL) && !defined (NO_SCROLLING_WINDOW_UPDATE) */
 		x_axis[0].x += 4;
 		x_axis[1].x += 4;
 		if (x_axis[1].x>width)
@@ -1772,6 +1798,7 @@ DESCRIPTION :
 		}
 		else
 		{
+#if !defined (NO_SCROLLING_WINDOW_UPDATE)
 #if defined (MOTIF)
 			XDrawLines(display,drawable,
 				(page_window->graphics_context).foreground_drawing_colour,scroll_line,2,
@@ -1780,10 +1807,16 @@ DESCRIPTION :
 #if defined (WINDOWS)
 			Polyline(device_context,scroll_line,2);
 #endif /* defined (WINDOWS) */
+#endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
 			scroll_line[0].x += 4;
 			scroll_line[1].x += 4;
 		}
 	}
+#else /* !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY) */
+	USE_PARAMETER(number_of_channels);
+	USE_PARAMETER(number_of_values_per_channel);
+	USE_PARAMETER(page_window_void);
+#endif /* !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY) */
 	if (channel_numbers)
 	{
 		DEALLOCATE(channel_numbers);
