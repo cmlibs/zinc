@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 24 August 2000
+XCOMM LAST MODIFIED : 26 September 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -704,6 +704,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_derivatives.c \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_finite_element.c \
+	computed_field/computed_field_matrix_operations.c \
 	computed_field/computed_field_sample_texture.c \
 	computed_field/computed_field_vector_operations.c \
 	computed_field/computed_field_window_projection.c

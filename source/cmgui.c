@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 12 September 2000
+LAST MODIFIED : 26 September 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -34,6 +34,7 @@ DESCRIPTION :
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_derivatives.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_matrix_operations.h"
 #include "computed_field/computed_field_sample_texture.h"
 #include "computed_field/computed_field_vector_operations.h"
 #include "computed_field/computed_field_window_projection.h"
@@ -1038,6 +1039,8 @@ Main program for the CMISS Graphical User Interface
 	if (command_data.computed_field_package)
 	{
 		Computed_field_register_types_derivatives(
+			command_data.computed_field_package);
+		Computed_field_register_types_matrix_operations(
 			command_data.computed_field_package);
 		Computed_field_register_types_vector_operations(
 			command_data.computed_field_package);
