@@ -874,8 +874,10 @@ MEMORY_CHECK_LIB = -lmalloc_ss -lfpe
 MEMORY_CHECK_LIB = 
 #endif /* defined (MEMORY_CHECK) */
 #if defined (MOTIF)
+USER_INTERFACE_INC = 
 USER_INTERFACE_LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu
 #else /* defined (MOTIF) */
+USER_INTERFACE_INC = 
 USER_INTERFACE_LIB =
 #endif /* defined (MOTIF) */
 LIB = $(USER_INTERFACE_LIB) $(MEMORY_CHECK_LIB) -lPW -lftn -lm -lC -lCio -lpthread 
@@ -886,8 +888,13 @@ X_LIB = /usr/X11R6/lib
 USER_INTERFACE_INC = -I/usr/X11R6/include
 USER_INTERFACE_LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if defined (USE_GTK2)
 USER_INTERFACE_INC = `pkg-config gtkgl-2.0 gtk+-2.0 --cflags` 
 USER_INTERFACE_LIB = -L/home/blackett/lib -lgtkgl-2.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 /home/blackett/lib/libGLU.a /usr/lib/libGL.so
+#else /* defined (USE_GTK2) */
+USER_INTERFACE_INC =  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
+USER_INTERFACE_LIB =  -lgtkgl -lgtk -lgdk -lGLU -lGL
+#endif /* defined (USE_GTK2) */
 #elif 1 /* switch (USER_INTERFACE) */
 USER_INTERFACE_INC = 
 USER_INTERFACE_LIB =
@@ -907,8 +914,10 @@ LIB = -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #elif defined(AIX) /* switch OperatingSystem */
 #if defined (MOTIF)
+USER_INTERFACE_INC = 
 USER_INTERFACE_LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext
 #else /* defined (MOTIF) */
+USER_INTERFACE_INC = 
 USER_INTERFACE_LIB =
 #endif /* defined (MOTIF) */
 LIB = -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
@@ -1270,6 +1279,7 @@ SRCS_2 = \
 SRCS_2 = \
 	$(API_INTERFACE_SRCS) \
 	$(COMMAND_INTERFACE_SRCS) \
+	$(COMPUTED_FIELD_INTERFACE_SRCS) \
 	graphics/graphics_window.c \
 	gtk/gtk_cmiss_scene_viewer.c
 #elif 1 /* SGI imake doesn't do else correctly *//* switch (USER_INTERFACE) */

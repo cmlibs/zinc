@@ -1002,6 +1002,7 @@ DESCRIPTION :
 					GDK_EXPOSURE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|
 					GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|
 					GDK_KEY_PRESS_MASK|GDK_KEY_RELEASE_MASK);
+#if GTK_MAJOR_VERSION >= 2
 				g_signal_connect(G_OBJECT(buffer->glarea), "realize",
 					G_CALLBACK(Graphics_buffer_gtkglarea_initialise_callback),
 					(gpointer)buffer);
@@ -1026,6 +1027,32 @@ DESCRIPTION :
 				g_signal_connect(G_OBJECT(buffer->glarea), "motion-notify-event",
 					G_CALLBACK(Graphics_buffer_gtkglarea_motion_notify_callback),
 					(gpointer)buffer);
+#else /* GTK_MAJOR_VERSION >= 2 */
+				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "realize",
+					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_initialise_callback),
+					(gpointer)buffer);
+				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "size-allocate",
+					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_resize_callback),
+					(gpointer)buffer);
+				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "expose-event",
+					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_expose_callback),
+					(gpointer)buffer);
+				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "button-press-event",
+					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_button_callback),
+					(gpointer)buffer);
+				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "button-release-event",
+					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_button_callback),
+					(gpointer)buffer);
+				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "key-press-event",
+					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_key_callback),
+					(gpointer)buffer);
+				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "key-release-event",
+					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_key_callback),
+					(gpointer)buffer);
+				gtk_signal_connect(GTK_OBJECT(buffer->glarea), "motion-notify-event",
+					GTK_SIGNAL_FUNC(Graphics_buffer_gtkglarea_motion_notify_callback),
+					(gpointer)buffer);
+#endif /* GTK_MAJOR_VERSION >= 2 */
 				gtk_container_add(parent, GTK_WIDGET(buffer->glarea));
 			}
 			else

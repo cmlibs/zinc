@@ -130,10 +130,13 @@ DESCRIPTION :
 	GtkWidget *history_view;
 	GtkWidget *output_view;
 	GtkWidget *shell;
+#if GTK_MAJOR_VERSION >= 2
 	GtkTextBuffer *history_buffer;
 	GtkTextBuffer *output_buffer;
 	GtkTextMark *history_end;
 	GtkTextMark *output_end;
+#else /* GTK_MAJOR_VERSION >= 2 */
+#endif /* GTK_MAJOR_VERSION >= 2 */
 #endif  /* switch (USER_INTERFACE) */
 	/* the information written to the command window can also be directed to a
 		file */
@@ -1237,10 +1240,12 @@ Called when a command is entered in the command entry area.
 ==============================================================================*/
 {
 	gboolean return_code;
+#if GTK_MAJOR_VERSION >= 2
 	gchar *selected_text;
 	gint buffer_x, buffer_y;
 	GtkTextIter end, start;
 	GtkTextView *history_view;
+#endif /* GTK_MAJOR_VERSION >= 2 */
 	struct Command_window *command_window;
 
 	ENTER(Command_window_gtk_button_press);
@@ -1251,6 +1256,7 @@ Called when a command is entered in the command entry area.
 		{
 			case GDK_BUTTON_PRESS:
 			{
+#if GTK_MAJOR_VERSION >= 2
 				/* Code from default triple click handler */
 				history_view = GTK_TEXT_VIEW(command_window->history_view);
 				gtk_text_view_window_to_buffer_coords(history_view,
@@ -1283,6 +1289,8 @@ Called when a command is entered in the command entry area.
 				g_free(selected_text);
 				gtk_editable_set_position(GTK_EDITABLE(command_window->entry), -1);
 
+#else /* GTK_MAJOR_VERSION >= 2 */
+#endif /* GTK_MAJOR_VERSION >= 2 */
 				return_code = TRUE;
 			} break;
 			case GDK_2BUTTON_PRESS:
@@ -1594,7 +1602,9 @@ Create the structures and retrieve the command window from the uil file.
 	static char *class_name="Command_window";
 	WNDCLASSEX class_information;
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if GTK_MAJOR_VERSION >= 2
 	GtkTextIter end_iterator;
+#endif /* GTK_MAJOR_VERSION >= 2 */
 	GtkWidget *history_scroll, *output_scroll, *vbox, *vpaned;
 #endif /* switch (USER_INTERFACE) */
 
@@ -1856,9 +1866,12 @@ Create the structures and retrieve the command window from the uil file.
 			command_window->entry = (GtkWidget *)NULL;
 			command_window->history_view = (GtkWidget *)NULL;
 			command_window->output_view = (GtkWidget *)NULL;
-			command_window->shell = (GtkWidget *)NULL;
+#if GTK_MAJOR_VERSION >= 2
 			command_window->history_buffer = (GtkTextBuffer *)NULL;
 			command_window->output_buffer = (GtkTextBuffer *)NULL;
+#else /* GTK_MAJOR_VERSION >= 2 */
+#endif /* GTK_MAJOR_VERSION >= 2 */
+			command_window->shell = (GtkWidget *)NULL;
 
 			if (ALLOCATE(command_window->command_prompt, char , 1))
 			{
@@ -1875,6 +1888,7 @@ Create the structures and retrieve the command window from the uil file.
 				
 					vbox = gtk_vbox_new(FALSE, 3);
 
+#if GTK_MAJOR_VERSION >= 2
 					command_window->history_view = gtk_text_view_new ();
 					command_window->history_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (command_window->history_view));
 					gtk_widget_set_name(command_window->history_view, "command_history");
@@ -1889,6 +1903,16 @@ Create the structures and retrieve the command window from the uil file.
 						(gpointer)command_window);
 					GTK_WIDGET_UNSET_FLAGS(command_window->history_view, GTK_CAN_FOCUS);
 					gtk_widget_show (command_window->history_view);
+#else /* GTK_MAJOR_VERSION >= 2 */
+					command_window->history_view = gtk_text_new (NULL, NULL);
+					gtk_widget_set_name(command_window->history_view, "command_history");
+					gtk_text_set_editable(GTK_TEXT(command_window->history_view), FALSE);
+					gtk_signal_connect (GTK_OBJECT(command_window->history_view),
+						"button-press-event", GTK_SIGNAL_FUNC(Command_window_gtk_button_press),
+						(gpointer)command_window);
+					GTK_WIDGET_UNSET_FLAGS(command_window->history_view, GTK_CAN_FOCUS);
+					gtk_widget_show (command_window->history_view);
+#endif /* GTK_MAJOR_VERSION >= 2 */
 
 					history_scroll = gtk_scrolled_window_new(NULL, NULL);
 					gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(history_scroll),
@@ -1900,8 +1924,13 @@ Create the structures and retrieve the command window from the uil file.
 					gtk_widget_show (history_scroll);
 
 					command_window->entry = gtk_entry_new();
+#if GTK_MAJOR_VERSION >= 2
 					g_signal_connect (GTK_ENTRY(command_window->entry), "activate",
 						G_CALLBACK(command_entered_gtk), (gpointer)command_window);
+#else /* GTK_MAJOR_VERSION >= 2 */
+					gtk_signal_connect(GTK_OBJECT(command_window->entry), "activate",
+						GTK_SIGNAL_FUNC(command_entered_gtk), (gpointer)command_window);
+#endif /* GTK_MAJOR_VERSION >= 2 */
 					gtk_widget_set_name(command_window->entry, "command_entry");
 					gtk_widget_show (command_window->entry);
 					gtk_box_pack_end (GTK_BOX (vbox), command_window->entry, FALSE, TRUE, 0);
@@ -1909,6 +1938,7 @@ Create the structures and retrieve the command window from the uil file.
 					gtk_widget_show (vbox);
 					gtk_paned_pack1 (GTK_PANED (vpaned), vbox, TRUE, TRUE);
 
+#if GTK_MAJOR_VERSION >= 2
 					command_window->output_view = gtk_text_view_new ();
 					command_window->output_buffer = gtk_text_view_get_buffer(
 						GTK_TEXT_VIEW(command_window->output_view));
@@ -1920,6 +1950,12 @@ Create the structures and retrieve the command window from the uil file.
 					command_window->output_end = gtk_text_buffer_create_mark(
 						command_window->output_buffer, "end", &end_iterator, FALSE);
 					gtk_widget_show (command_window->output_view);
+#else /* GTK_MAJOR_VERSION >= 2 */
+					command_window->output_view = gtk_text_new (NULL, NULL);
+					gtk_text_set_editable(GTK_TEXT(command_window->output_view), FALSE);
+					gtk_widget_set_name(command_window->output_view, "command_output");
+					gtk_widget_show (command_window->output_view);
+#endif /* GTK_MAJOR_VERSION >= 2 */
 
 					output_scroll = gtk_scrolled_window_new(NULL, NULL);
 					gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(output_scroll),
@@ -1932,10 +1968,18 @@ Create the structures and retrieve the command window from the uil file.
 					
 					gtk_widget_show (vpaned);
 
+#if GTK_MAJOR_VERSION >= 2
 					g_signal_connect (G_OBJECT(command_window->shell), "destroy",
 						G_CALLBACK(command_window_close_gtk), (gpointer)command_window);
 
 					gtk_window_resize(GTK_WINDOW(command_window->shell), 600, 500);
+#else /* GTK_MAJOR_VERSION >= 2 */
+					gtk_signal_connect(GTK_OBJECT(command_window->shell), "destroy",
+						GTK_SIGNAL_FUNC(command_window_close_gtk), (gpointer)command_window);
+
+					gtk_widget_set_usize(command_window->shell, 600, 500);
+#endif /* GTK_MAJOR_VERSION >= 2 */
+
 					gtk_widget_show (command_window->shell);
 				}
 				else
@@ -2017,13 +2061,22 @@ Adds the <command> to the bottom of the list for the <command_window>.
 	XmString new_command;
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+#if GTK_MAJOR_VERSION >= 2
 	GtkTextIter end_iterator;
+#else /* GTK_MAJOR_VERSION >= 2 */
+	guint text_length;
+#endif /* GTK_MAJOR_VERSION >= 2 */
 #endif /* defined (GTK_USER_INTERFACE) */
 
 
 	ENTER(add_to_command_list);
 /*???debug */
 /* printf("enter add_to_command_list\n  %s\n",command); */
+#if defined (GTK_USER_INTERFACE)
+#if GTK_MAJOR_VERSION < 2
+	USE_PARAMETER(command);
+#endif /* GTK_MAJOR_VERSION >= 2 */
+#endif /* defined (GTK_USER_INTERFACE) */
 	if (command_window)
 	{
 #if defined (MOTIF) /* switch (USER_INTERFACE) */
@@ -2049,6 +2102,7 @@ Adds the <command> to the bottom of the list for the <command_window>.
 		SendMessage(command_window->command_history, LB_ADDSTRING, 0, 
 			(LPARAM)command);
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if GTK_MAJOR_VERSION >= 2
 		gtk_text_buffer_get_end_iter(command_window->history_buffer,
 			&end_iterator);
 		gtk_text_buffer_insert(command_window->history_buffer,
@@ -2057,6 +2111,15 @@ Adds the <command> to the bottom of the list for the <command_window>.
 			&end_iterator, "\n", 1);
 		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(command_window->history_view),
 			command_window->history_end, 0.0, FALSE, 0.0, 0.0);
+#else /* GTK_MAJOR_VERSION >= 2 */
+		text_length = gtk_text_get_length(GTK_TEXT(command_window->history_view));
+		gtk_text_set_point(GTK_TEXT(command_window->history_view), text_length);
+		gtk_text_insert(GTK_TEXT(command_window->history_view), NULL, NULL, NULL,
+			command, -1);
+		gtk_text_insert(GTK_TEXT(command_window->history_view), NULL, NULL, NULL,
+			"\n", 1);
+		return_code = 1;
+#endif /* GTK_MAJOR_VERSION >= 2 */
 #endif /* switch (USER_INTERFACE) */
 		return_code=1;
 	}
@@ -2290,7 +2353,11 @@ Writes the <message> to the <command_window>.
 #define MAX_OUTPUT (10000)
 	int new_length, position;
 #elif defined (GTK_USER_INTERFACE)
+#if GTK_MAJOR_VERSION >= 2
 	GtkTextIter end_iterator;
+#else /* GTK_MAJOR_VERSION >= 2 */
+	guint text_length;
+#endif /* GTK_MAJOR_VERSION >= 2 */
 #endif /* switch (USER_INTERFACE) */
 	
 	ENTER(write_command_window);
@@ -2328,6 +2395,7 @@ Writes the <message> to the <command_window>.
 		SendMessage(command_window->command_output_pane, EM_REPLACESEL,
 			(WPARAM)FALSE, (LPARAM)message);
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#if GTK_MAJOR_VERSION >= 2
 		gtk_text_buffer_get_end_iter(command_window->output_buffer,
 			&end_iterator);
 		gtk_text_buffer_insert(command_window->output_buffer,
@@ -2337,6 +2405,13 @@ Writes the <message> to the <command_window>.
 		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(command_window->output_view),
 			command_window->output_end, 0.0, FALSE, 0.0, 0.0);
 		return_code = 1;
+#else /* GTK_MAJOR_VERSION >= 2 */
+		text_length = gtk_text_get_length(GTK_TEXT(command_window->output_view));
+		gtk_text_set_point(GTK_TEXT(command_window->output_view), text_length);
+		gtk_text_insert(GTK_TEXT(command_window->output_view), NULL, NULL, NULL,
+			message, -1);
+		return_code = 1;
+#endif /* GTK_MAJOR_VERSION >= 2 */
 #endif /* switch (USER_INTERFACE) */
 		if (command_window->out_file &&
 			(command_window->out_file_mode & OUTFILE_OUTPUT))

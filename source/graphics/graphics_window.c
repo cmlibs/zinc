@@ -4200,8 +4200,13 @@ separated by 2 pixel borders within the viewing area.
 		*viewing_height=((int)height-2);
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+#if GTK_MAJOR_VERSION >= 2
 		gtk_window_get_size(GTK_WINDOW(window->shell_window),
 			viewing_width, viewing_height);
+#else /* GTK_MAJOR_VERSION >= 2 */
+		*viewing_width = window->shell_window->allocation.width;
+		*viewing_height = window->shell_window->allocation.height;
+#endif /* GTK_MAJOR_VERSION >= 2 */
 #endif /* defined (GTK_USER_INTERFACE) */
 		return_code=1;
 	}
@@ -4260,8 +4265,12 @@ separated by 2 pixel borders within the viewing area.
 		}
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+#if GTK_MAJOR_VERSION >= 2
 		gtk_window_resize(GTK_WINDOW(window->shell_window),
 			viewing_width, viewing_height);
+#else /* GTK_MAJOR_VERSION >= 2 */
+			gtk_widget_set_usize(window->shell_window, viewing_width, viewing_height);
+#endif /* GTK_MAJOR_VERSION >= 2 */
 #endif /* defined (GTK_USER_INTERFACE) */
 
 		return_code=1;
