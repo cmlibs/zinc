@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : message.c
 
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 5 November 2000
 
 DESCRIPTION :
 Declaration of functions for displaying messages.
@@ -95,7 +95,8 @@ form of arguments is used.
 
 	ENTER(display_message);
 	va_start(ap,format);
-	return_code=vsnprintf(message_string,MESSAGE_STRING_SIZE,format,ap);
+/*	return_code=vsnprintf(message_string,MESSAGE_STRING_SIZE,format,ap);*/
+	return_code=vsprintf(message_string,format,ap);
 	if (return_code >= (MESSAGE_STRING_SIZE-1))
 	{
 		char error_string[100];
@@ -134,8 +135,7 @@ form of arguments is used.
 			}
 			else
 			{
-				/* Make sure we don't interpret % characters by printing
-					the string */
+				/* make sure we don't interpret % characters by printing the string */
 				return_code=printf("%s",message_string);
 			}
 		} break;

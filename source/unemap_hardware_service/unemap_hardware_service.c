@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 13 November 2000
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -614,7 +614,7 @@ static int process_message(const unsigned char operation_code,
 	const long message_size,const unsigned char big_endian,
 	unsigned char **out_buffer_address,long *out_buffer_size_address)
 /*******************************************************************************
-LAST MODIFIED : 16 July 2000
+LAST MODIFIED : 13 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1592,15 +1592,15 @@ DESCRIPTION :
 					AddToMessageLog(TEXT(error_string));
 				}
 			} break;
-			/*???DB.  Needs to be made multi-crate aware */
 			case UNEMAP_LOAD_CURRENT_STIMULATING_CODE:
 			{
+				float *current,*currents,currents_per_second;
 				int *channel_number,*channel_numbers,i,number_of_currents,
 					number_of_channels;
-				float *current,*currents,currents_per_second;
+				unsigned int number_of_cycles;
 
 				return_code=0;
-				size=2*sizeof(int)+sizeof(float);
+				size=2*sizeof(int)+sizeof(float)+sizeof(unsigned int);
 				if (size<=message_size)
 				{
 					retval=socket_recv(command_socket,buffer,size,0);
@@ -1617,6 +1617,9 @@ DESCRIPTION :
 						copy_byte_swapped((unsigned char *)&currents_per_second,
 							sizeof(currents_per_second),buffer+size,big_endian);
 						size += sizeof(currents_per_second);
+						copy_byte_swapped((unsigned char *)&number_of_cycles,
+							sizeof(number_of_cycles),buffer+size,big_endian);
+						size += sizeof(number_of_cycles);
 						size += number_of_channels*sizeof(int);
 						size += number_of_currents*sizeof(float);
 						if (size==message_size)
@@ -1705,7 +1708,7 @@ DESCRIPTION :
 							{
 								if (return_code=unemap_load_current_stimulating(
 									number_of_channels,channel_numbers,number_of_currents,
-									currents_per_second,currents))
+									currents_per_second,currents,number_of_cycles))
 								{
 									if (out_buffer)
 									{
@@ -1754,12 +1757,13 @@ DESCRIPTION :
 			} break;
 			case UNEMAP_LOAD_VOLTAGE_STIMULATING_CODE:
 			{
-				int *channel_number,*channel_numbers,i,number_of_channels,
-					number_of_voltages;
 				float *voltage,*voltages,voltages_per_second;
+				int *channel_number,*channel_numbers,i,number_of_voltages,
+					number_of_channels;
+				unsigned int number_of_cycles;
 
 				return_code=0;
-				size=2*sizeof(int)+sizeof(float);
+				size=2*sizeof(int)+sizeof(float)+sizeof(unsigned int);
 				if (size<=message_size)
 				{
 					retval=socket_recv(command_socket,buffer,size,0);
@@ -1776,6 +1780,9 @@ DESCRIPTION :
 						copy_byte_swapped((unsigned char *)&voltages_per_second,
 							sizeof(voltages_per_second),buffer+size,big_endian);
 						size += sizeof(voltages_per_second);
+						copy_byte_swapped((unsigned char *)&number_of_cycles,
+							sizeof(number_of_cycles),buffer+size,big_endian);
+						size += sizeof(number_of_cycles);
 						size += number_of_channels*sizeof(int);
 						size += number_of_voltages*sizeof(float);
 						if (size==message_size)
@@ -1864,8 +1871,13 @@ DESCRIPTION :
 							{
 								if (return_code=unemap_load_voltage_stimulating(
 									number_of_channels,channel_numbers,number_of_voltages,
-									voltages_per_second,voltages))
+									voltages_per_second,voltages,number_of_cycles))
 								{
+#if defined (DEBUG)
+									/*???debug */
+									sprintf(error_string,"out_buffer %p",out_buffer);
+									AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
 									if (out_buffer)
 									{
 										voltage=(float *)out_buffer;

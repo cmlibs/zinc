@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 29 July 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -5192,9 +5192,9 @@ For UNEMAP_2V1 and UNEMAP_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 
 static int crate_load_voltage_stimulating(struct Unemap_crate *crate,
 	int number_of_channels,int *channel_numbers,int number_of_voltages,
-	float voltages_per_second,float *voltages)
+	float voltages_per_second,float *voltages,unsigned int number_of_cycles)
 /*******************************************************************************
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5215,13 +5215,18 @@ stimulating signal is that in <voltages> at the specified number of
 The <voltages> are those desired (in volts).  The function sets <voltages> to
 the actual values used.
 
+If <number_of_cycles> is zero then the waveform is repeated until
+<crate_stop_stimulating>, otherwise the waveform is repeated the
+<number_of_cycles> times or until <crate_stop_stimulating>.
+
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
 ==============================================================================*/
 {
 	int return_code,retval;
 	long buffer_size,message_size;
-	unsigned char buffer[2+sizeof(long)+2*sizeof(int)+sizeof(float)];
+	unsigned char buffer[2+sizeof(long)+2*sizeof(int)+sizeof(float)+
+		sizeof(unsigned int)];
 
 	ENTER(crate_load_voltage_stimulating);
 	return_code=0;
@@ -5242,6 +5247,9 @@ Use <unemap_start_stimulating> to start the stimulating.
 			memcpy(buffer+buffer_size,&voltages_per_second,
 				sizeof(voltages_per_second));
 			buffer_size += sizeof(voltages_per_second);
+			memcpy(buffer+buffer_size,&number_of_cycles,
+				sizeof(number_of_cycles));
+			buffer_size += sizeof(number_of_cycles);
 			message_size=buffer_size-(2+(long)sizeof(message_size));
 			message_size += sizeof(int)*number_of_channels;
 			message_size += sizeof(float)*number_of_voltages;
@@ -5336,9 +5344,9 @@ Use <unemap_start_stimulating> to start the stimulating.
 
 static int crate_load_current_stimulating(struct Unemap_crate *crate,
 	int number_of_channels,int *channel_numbers,int number_of_currents,
-	float currents_per_second,float *currents)
+	float currents_per_second,float *currents,unsigned int number_of_cycles)
 /*******************************************************************************
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5356,6 +5364,10 @@ signal is constant at the <*currents>.  If <number_of_currents> is >1 then the
 stimulating signal is that in <currents> at the specified number of
 <currents_per_second>.
 
+If <number_of_cycles> is zero then the waveform is repeated until
+<crate_stop_stimulating>, otherwise the waveform is repeated the
+<number_of_cycles> times or until <crate_stop_stimulating>.
+
 The <currents> are those desired as a proportion of the maximum (dependent on
 the impedance being driven).  The function sets <currents> to the actual values
 used.
@@ -5363,7 +5375,8 @@ used.
 {
 	int return_code,retval;
 	long buffer_size,message_size;
-	unsigned char buffer[2+sizeof(long)+2*sizeof(int)+sizeof(float)];
+	unsigned char buffer[2+sizeof(long)+2*sizeof(int)+sizeof(float)+
+		sizeof(unsigned int)];
 
 	ENTER(crate_load_current_stimulating);
 	return_code=0;
@@ -5384,6 +5397,9 @@ used.
 			memcpy(buffer+buffer_size,&currents_per_second,
 				sizeof(currents_per_second));
 			buffer_size += sizeof(currents_per_second);
+			memcpy(buffer+buffer_size,&number_of_cycles,
+				sizeof(number_of_cycles));
+			buffer_size += sizeof(number_of_cycles);
 			message_size=buffer_size-(2+(long)sizeof(message_size));
 			message_size += sizeof(int)*number_of_channels;
 			message_size += sizeof(float)*number_of_currents;
@@ -7709,7 +7725,6 @@ Sets up the connections with the unemap crates.
 		/* only allow one attempt to open a closed connection */
 		if (allow_open_connection)
 		{
-			allow_open_connection=0;
 			number_of_servers=0;
 			if (hardware_directory=getenv("UNEMAP_HARDWARE"))
 			{
@@ -7804,73 +7819,71 @@ Sets up the connections with the unemap crates.
 					module_number_of_unemap_crates=0;
 					module_number_of_channels=0;
 					crate=module_unemap_crates;
+					return_code=1;
 					while (return_code&&(number_of_servers>0))
 					{
-						if (return_code)
-						{
 #if defined (WIN32)
-							crate->acquired_socket=(SOCKET)INVALID_SOCKET;
-							crate->acquired_socket_thread_stop_event=NULL;
-							crate->acquired_socket_mutex=(HANDLE)NULL;
-							crate->calibration_socket=(SOCKET)INVALID_SOCKET;
-							crate->calibration_socket_thread_stop_event=NULL;
-							crate->command_socket=(SOCKET)INVALID_SOCKET;
-							crate->command_socket_mutex=(HANDLE)NULL;
-							crate->scrolling_socket=(SOCKET)INVALID_SOCKET;
-							crate->scrolling_socket_thread_stop_event=NULL;
+						crate->acquired_socket=(SOCKET)INVALID_SOCKET;
+						crate->acquired_socket_thread_stop_event=NULL;
+						crate->acquired_socket_mutex=(HANDLE)NULL;
+						crate->calibration_socket=(SOCKET)INVALID_SOCKET;
+						crate->calibration_socket_thread_stop_event=NULL;
+						crate->command_socket=(SOCKET)INVALID_SOCKET;
+						crate->command_socket_mutex=(HANDLE)NULL;
+						crate->scrolling_socket=(SOCKET)INVALID_SOCKET;
+						crate->scrolling_socket_thread_stop_event=NULL;
 #endif /* defined (WIN32) */
 #if defined (UNIX)
-							crate->acquired_socket=(int)INVALID_SOCKET;
-							crate->acquired_socket_mutex=(pthread_mutex_t *)NULL;
-							crate->calibration_socket=(int)INVALID_SOCKET;
-							crate->command_socket=(int)INVALID_SOCKET;
-							crate->command_socket_mutex=(pthread_mutex_t *)NULL;
-							crate->scrolling_socket=(int)INVALID_SOCKET;
+						crate->acquired_socket=(int)INVALID_SOCKET;
+						crate->acquired_socket_mutex=(pthread_mutex_t *)NULL;
+						crate->calibration_socket=(int)INVALID_SOCKET;
+						crate->command_socket=(int)INVALID_SOCKET;
+						crate->command_socket_mutex=(pthread_mutex_t *)NULL;
+						crate->scrolling_socket=(int)INVALID_SOCKET;
 #endif /* defined (UNIX) */
 #if defined (MOTIF)
-							crate->acquired_socket_xid=0;
-							crate->calibration_socket_xid=0;
-							crate->scrolling_socket_xid=0;
+						crate->acquired_socket_xid=0;
+						crate->calibration_socket_xid=0;
+						crate->scrolling_socket_xid=0;
 #endif /* defined (MOTIF) */
-							/*???DB.  The port doesn't have to be unique, only the port and
-								machine being connected to */
-							port=DEFAULT_PORT;
-							crate->command_port=port;
-							port++;
-							crate->scrolling_port=port;
-							port++;
-							crate->calibration_port=port;
-							port++;
-							crate->acquired_port=port;
-							port++;
-							(crate->acquired).complete=0;
-							(crate->acquired).number_of_channels=0;
-							(crate->acquired).number_of_samples=0;
-							(crate->acquired).samples=(short *)NULL;
-							(crate->calibration).complete=0;
-							(crate->calibration).number_of_channels=0;
-							(crate->calibration).channel_numbers=(int *)NULL;
-							(crate->calibration).channel_offsets=(float *)NULL;
-							(crate->calibration).channel_gains=(float *)NULL;
-							(crate->scrolling).complete=0;
-							(crate->scrolling).number_of_channels=0;
-							(crate->scrolling).number_of_values_per_channel=0;
-							(crate->scrolling).channel_numbers=(int *)NULL;
-							(crate->scrolling).values=(short *)NULL;
-							crate->number_of_channels=0;
+						/*???DB.  The port doesn't have to be unique, only the port and
+							machine being connected to */
+						port=DEFAULT_PORT;
+						crate->command_port=port;
+						port++;
+						crate->scrolling_port=port;
+						port++;
+						crate->calibration_port=port;
+						port++;
+						crate->acquired_port=port;
+						port++;
+						(crate->acquired).complete=0;
+						(crate->acquired).number_of_channels=0;
+						(crate->acquired).number_of_samples=0;
+						(crate->acquired).samples=(short *)NULL;
+						(crate->calibration).complete=0;
+						(crate->calibration).number_of_channels=0;
+						(crate->calibration).channel_numbers=(int *)NULL;
+						(crate->calibration).channel_offsets=(float *)NULL;
+						(crate->calibration).channel_gains=(float *)NULL;
+						(crate->scrolling).complete=0;
+						(crate->scrolling).number_of_channels=0;
+						(crate->scrolling).number_of_values_per_channel=0;
+						(crate->scrolling).channel_numbers=(int *)NULL;
+						(crate->scrolling).values=(short *)NULL;
+						crate->number_of_channels=0;
 #if defined (CACHE_CLIENT_INFORMATION)
-							crate->number_of_stimulators=0;
-							crate->stimulator_card_indices=(int *)NULL;
-							crate->number_of_unemap_cards=0;
-							crate->unemap_cards=(struct Unemap_card *)NULL;
+						crate->number_of_stimulators=0;
+						crate->stimulator_card_indices=(int *)NULL;
+						crate->number_of_unemap_cards=0;
+						crate->unemap_cards=(struct Unemap_card *)NULL;
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
-							if (return_code=crate_initialize_connection(crate))
-							{
-								module_number_of_channels += crate->number_of_channels;
-								module_number_of_unemap_crates++;
-								number_of_servers--;
-								crate++;
-							}
+						if (return_code=crate_initialize_connection(crate))
+						{
+							module_number_of_channels += crate->number_of_channels;
+							module_number_of_unemap_crates++;
+							number_of_servers--;
+							crate++;
 						}
 					}
 					if (!return_code)
@@ -7887,6 +7900,11 @@ Sets up the connections with the unemap crates.
 				}
 #endif /* defined (WIN32) */
 			}
+			else
+			{
+				return_code=0;
+			}
+			allow_open_connection=0;
 		}
 	}
 	else
@@ -8483,11 +8501,13 @@ attached SCU.  All other SCUs output the synchronization signal.
 			}
 #endif /* defined (OLD_CODE) */
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_configure.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -8537,11 +8557,13 @@ Returns a non-zero if unemap is configured and zero otherwise.
 			return_code=0;
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_configured.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -8581,11 +8603,13 @@ hardware.
 		}
 		close_connection();
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_deconfigure.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 #if defined (CACHE_CLIENT_INFORMATION)
 	module_number_of_stimulators=0;
 	module_get_cache_information_failed=0;
@@ -8633,11 +8657,13 @@ Returns the unemap <hardware_version>.
 				*hardware_version=temp_hardware_version;
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_get_hardware_version.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -8678,11 +8704,13 @@ Shuts down NT running on the signal conditioning unit computer.
 			crate++;
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_shutdown.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -8725,11 +8753,13 @@ information is sent via the scrolling_callback (see unemap_configure).
 			}
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_set_scrolling_channel.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -8767,11 +8797,13 @@ scrolling_callback (see unemap_configure).
 			crate++;
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_clear_scrolling_channels.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -8817,11 +8849,13 @@ callbacks.  Allows sampling without scrolling.
 			crate++;
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_start_scrolling.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 #if defined (DEBUG)
 	/*???debug */
 	printf("leave unemap_start_scrolling\n");
@@ -8871,11 +8905,13 @@ callbacks.  Allows sampling without scrolling.
 			crate++;
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_stop_scrolling.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 #if defined (DEBUG)
 	/*???debug */
 	printf("leave unemap_stop_scrolling\n");
@@ -8927,11 +8963,13 @@ calibrated channels and the <calibration_end_callback_data>.
 			crate++;
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_calibrate.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -8971,11 +9009,13 @@ Starts the sampling.
 			}
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_start_sampling.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -9012,11 +9052,13 @@ many samples were acquired.
 			crate++;
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_stop_sampling.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -9088,11 +9130,13 @@ Returns a non-zero if unemap is sampling and zero otherwise.
 		}
 		unlock_mutex(module_unemap_crates->command_socket_mutex);
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_get_sampling.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -9171,11 +9215,13 @@ to a calibration signal.
 			}
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_set_isolate_record_mode.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 #if defined (DEBUG)
 	/*???debug */
 	printf("leave unemap_set_isolate_record_mode %d\n",return_code);
@@ -9247,11 +9293,13 @@ to a calibration signal.
 			}
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_set_isolate_record_mode.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 #if defined (DEBUG)
 	/*???debug */
 	printf("leave unemap_set_isolate_record_mode %d\n",return_code);
@@ -9304,11 +9352,13 @@ If the group is in isolate mode, then <*isolate> is set to 1.  Otherwise
 					isolate);
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_get_isolate_record_mode.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -9384,11 +9434,13 @@ unemap_get_antialiasing_filter.
 			}
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 	"unemap_set_antialiasing_filter_frequency.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -9450,11 +9502,13 @@ group.
 			}
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 "unemap_set_powerup_antialiasing_filter_frequency.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -9502,11 +9556,13 @@ then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
 					crate_channel_number,frequency);
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 	"unemap_get_antialiasing_filter_frequency.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -9541,11 +9597,13 @@ The total number of hardware channels is assigned to <*number_of_channels>.
 			*number_of_channels=module_number_of_channels;
 			return_code=1;
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_get_number_of_channels.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -9621,11 +9679,13 @@ maximum possible sample value is assigned to <*maximum_sample_value>.
 				*maximum_sample_value=temp_maximum_sample_value;
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_get_sample_range.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -9706,11 +9766,13 @@ The voltage range, allowing for gain, is returned via <*minimum_voltage> and
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_get_voltage_range.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -9788,11 +9850,13 @@ The voltage range, allowing for gain, is returned via <*minimum_voltage> and
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_get_voltage_range.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -10318,11 +10382,13 @@ The size of the rolling buffer, in number of samples per channel, is assigned to
 			return_code=crate_get_maximum_number_of_samples(module_unemap_crates,
 				number_of_samples);
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 			"unemap_get_maximum_number_of_samples.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -10357,11 +10423,13 @@ The sampling frequency is assigned to <*frequency>.
 				frequency */
 			return_code=crate_get_sampling_frequency(module_unemap_crates,frequency);
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_get_sampling_frequency.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -10448,11 +10516,13 @@ For UNEMAP_2V1 and UNEMAP_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 			unemap_start_sampling();
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_set_gain.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -10529,11 +10599,13 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_get_gain.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -10614,11 +10686,13 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_get_gain.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -10632,9 +10706,10 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 #endif /* defined (OLD_CODE) */
 
 int unemap_load_voltage_stimulating(int number_of_channels,int *channel_numbers,
-	int number_of_voltages,float voltages_per_second,float *voltages)
+	int number_of_voltages,float voltages_per_second,float *voltages,
+	unsigned int number_of_cycles)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -10655,6 +10730,10 @@ stimulating signal is that in <voltages> at the specified number of
 The <voltages> are those desired (in volts).  The function sets <voltages> to
 the actual values used.
 
+If <number_of_cycles> is zero then the waveform is repeated until
+<unemap_stop_stimulating>, otherwise the waveform is repeated the
+<number_of_cycles> times or until <unemap_stop_stimulating>.
+
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
 ==============================================================================*/
@@ -10664,6 +10743,10 @@ Use <unemap_start_stimulating> to start the stimulating.
 	struct Unemap_crate *crate;
 
 	ENTER(unemap_load_voltage_stimulating);
+#if defined (DEBUG)
+	/*???debug */
+	printf("enter unemap_load_voltage_stimulating\n");
+#endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
 	all_channels=0;
@@ -10711,7 +10794,7 @@ Use <unemap_start_stimulating> to start the stimulating.
 				for (i=module_number_of_unemap_crates;i>0;i--)
 				{
 					if (!crate_load_voltage_stimulating(crate,0,(int *)NULL,
-						number_of_voltages,voltages_per_second,voltages))
+						number_of_voltages,voltages_per_second,voltages,number_of_cycles))
 					{
 						return_code=0;
 					}
@@ -10742,7 +10825,8 @@ Use <unemap_start_stimulating> to start the stimulating.
 						{
 							if (!crate_load_voltage_stimulating(crate,
 								crate_number_of_channels,crate_channel_numbers,
-								number_of_voltages,voltages_per_second,voltages))
+								number_of_voltages,voltages_per_second,voltages,
+								number_of_cycles))
 							{
 								return_code=0;
 							}
@@ -10759,11 +10843,13 @@ Use <unemap_start_stimulating> to start the stimulating.
 				}
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_load_voltage_stimulating.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -10771,15 +10857,20 @@ Use <unemap_start_stimulating> to start the stimulating.
 "unemap_load_voltage_stimulating.  Invalid number_of_channels (%d) or channel_numbers (%p) or number_of_voltages (%d) or voltages (%p)",
 			number_of_channels,channel_numbers,number_of_voltages,voltages);
 	}
+#if defined (DEBUG)
+	/*???debug */
+	printf("leave unemap_load_voltage_stimulating\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
 } /* unemap_load_voltage_stimulating */
 
 int unemap_load_current_stimulating(int number_of_channels,int *channel_numbers,
-	int number_of_currents,float currents_per_second,float *currents)
+	int number_of_currents,float currents_per_second,float *currents,
+	unsigned int number_of_cycles)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -10800,6 +10891,10 @@ stimulating signal is that in <currents> at the specified number of
 The <currents> are those desired as a proportion of the maximum (dependent on
 the impedance being driven).  The function sets <currents> to the actual values
 used.
+
+If <number_of_cycles> is zero then the waveform is repeated until
+<unemap_stop_stimulating>, otherwise the waveform is repeated the
+<number_of_cycles> times or until <unemap_stop_stimulating>.
 
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
@@ -10857,7 +10952,7 @@ Use <unemap_start_stimulating> to start the stimulating.
 				for (i=module_number_of_unemap_crates;i>0;i--)
 				{
 					if (!crate_load_current_stimulating(crate,0,(int *)NULL,
-						number_of_currents,currents_per_second,currents))
+						number_of_currents,currents_per_second,currents,number_of_cycles))
 					{
 						return_code=0;
 					}
@@ -10888,7 +10983,8 @@ Use <unemap_start_stimulating> to start the stimulating.
 						{
 							if (!crate_load_current_stimulating(crate,
 								crate_number_of_channels,crate_channel_numbers,
-								number_of_currents,currents_per_second,currents))
+								number_of_currents,currents_per_second,currents,
+								number_of_cycles))
 							{
 								return_code=0;
 							}
@@ -10905,11 +11001,13 @@ Use <unemap_start_stimulating> to start the stimulating.
 				}
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_load_current_stimulating.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -10952,11 +11050,13 @@ yet started.
 			crate++;
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_start_voltage_stimulating.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -11028,11 +11128,13 @@ the actual values used.
 				}
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_start_voltage_stimulating.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -11111,11 +11213,13 @@ used.
 				}
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_start_current_stimulating.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -11182,11 +11286,13 @@ Stops stimulating for the channels in the group.
 			}
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_stop_stimulating.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -11244,11 +11350,13 @@ is 0, then all channels are set to <stimulating>.  Otherwise the function fails.
 			}
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_set_channel_stimulating.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -11291,11 +11399,13 @@ and 0 otherwise.  Otherwise the function fails.
 					stimulating);
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_get_channel_stimulating.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -11370,11 +11480,13 @@ the actual values used.
 				}
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_start_calibrating.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -11440,11 +11552,13 @@ Stops generating the calibration signal for the channels in the group.
 			}
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_stop_calibrating.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -11503,11 +11617,13 @@ on.
 			crate += step;
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_set_power.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -11560,11 +11676,13 @@ on.
 			}
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_set_power.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -11612,11 +11730,13 @@ If the hardware power is on then <*on> is set to 1, otherwise <*on> is set to 0.
 				return_code=0;
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_get_power.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -11627,10 +11747,11 @@ If the hardware power is on then <*on> is set to 1, otherwise <*on> is set to 0.
 	return (return_code);
 } /* unemap_get_power */
 
-int unemap_read_waveform_file(char *waveform_file_name,int *number_of_values,
-	float *values_per_second,float **values,int *constant_voltage)
+int unemap_read_waveform_file(FILE *in_file,char *waveform_file_name,
+	int *number_of_values,float *values_per_second,float **values,
+	int *constant_voltage)
 /*******************************************************************************
-LAST MODIFIED : 27 May 1999
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -11649,10 +11770,18 @@ proportions of the maximum current.
 	ENTER(read_waveform_file);
 	return_code=0;
 	/* check arguments */
-	if (waveform_file_name&&number_of_values&&values&&values_per_second&&
-		constant_voltage)
+	if (((in_file&&!waveform_file_name)||(!in_file&&waveform_file_name))&&
+		number_of_values&&values&&values_per_second&&constant_voltage)
 	{
-		if (waveform_file=fopen(waveform_file_name,"r"))
+		if (in_file)
+		{
+			waveform_file=in_file;
+		}
+		else
+		{
+			waveform_file=fopen(waveform_file_name,"r");
+		}
+		if (waveform_file)
 		{
 			fscanf(waveform_file,"Number of ");
 			if (1==fscanf(waveform_file,"voltages = %d ",
@@ -11742,7 +11871,10 @@ proportions of the maximum current.
 				display_message(ERROR_MESSAGE,
 					"Error reading number of values from %s",waveform_file_name);
 			}
-			fclose(waveform_file);
+			if (!in_file)
+			{
+				fclose(waveform_file);
+			}
 		}
 		else
 		{
@@ -11838,11 +11970,13 @@ The total number of hardware stimulators is assigned to
 					}
 				}
 			}
+#if defined (OLD_CODE)
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"unemap_get_number_of_stimulators.  Could not initialize_connection");
 			}
+#endif /* defined (OLD_CODE) */
 #if defined (CACHE_CLIENT_INFORMATION)
 		}
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
@@ -11904,11 +12038,13 @@ The total number of hardware stimulators is assigned to
 					*number_of_stimulators=total_number_of_stimulators;
 				}
 			}
+#if defined (OLD_CODE)
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"unemap_get_number_of_stimulators.  Could not initialize_connection");
 			}
+#endif /* defined (OLD_CODE) */
 #if defined (CACHE_CLIENT_INFORMATION)
 		}
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
@@ -11984,11 +12120,13 @@ Returns non-zero if <stimulator_number> can stimulate down <channel_number>.
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_channel_valid_for_stimulator.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -12052,11 +12190,13 @@ Returns non-zero if <stimulator_number> can stimulate down <channel_number>.
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_channel_valid_for_stimulator.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -12113,11 +12253,13 @@ Intended for diagnostic use only.
 					sampling_interval,settling_step_max);
 			}
 		}
+#if defined (OLD_CODE)
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"unemap_get_card_state.  Could not initialize_connection");
 		}
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -12246,11 +12388,13 @@ Intended for diagnostic use only.
 				register_number);
 		}
 	}
+#if defined (OLD_CODE)
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_toggle_shift_register.  Could not initialize_connection");
 	}
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);

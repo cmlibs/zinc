@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.h
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -479,9 +479,10 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 ==============================================================================*/
 
 int unemap_load_voltage_stimulating(int number_of_channels,int *channel_numbers,
-	int number_of_voltages,float voltages_per_second,float *voltages);
+	int number_of_voltages,float voltages_per_second,float *voltages,
+	unsigned int number_of_cycles);
 /*******************************************************************************
-LAST MODIFIED : 4 June 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -502,14 +503,19 @@ stimulating signal is that in <voltages> at the specified number of
 The <voltages> are those desired (in volts).  The function sets <voltages> to
 the actual values used.
 
+If <number_of_cycles> is zero then the waveform is repeated until
+<unemap_stop_stimulating>, otherwise the waveform is repeated the
+<number_of_cycles> times or until <unemap_stop_stimulating>.
+
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
 ==============================================================================*/
 
 int unemap_load_current_stimulating(int number_of_channels,int *channel_numbers,
-	int number_of_currents,float currents_per_second,float *currents);
+	int number_of_currents,float currents_per_second,float *currents,
+	unsigned int number_of_cycles);
 /*******************************************************************************
-LAST MODIFIED : 4 June 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -530,6 +536,10 @@ stimulating signal is that in <currents> at the specified number of
 The <currents> are those desired as a proportion of the maximum (dependent on
 the impedance being driven).  The function sets <currents> to the actual values
 used.
+
+If <number_of_cycles> is zero then the waveform is repeated until
+<unemap_stop_stimulating>, otherwise the waveform is repeated the
+<number_of_cycles> times or until <unemap_stop_stimulating>.
 
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
@@ -697,10 +707,11 @@ The function does not need the hardware to be configured.
 If the hardware power is on then <*on> is set to 1, otherwise <*on> is set to 0.
 ==============================================================================*/
 
-int unemap_read_waveform_file(char *waveform_file_name,int *number_of_values,
-	float *values_per_second,float **values,int *constant_voltage);
+int unemap_read_waveform_file(FILE *in_file,char *waveform_file_name,
+	int *number_of_values,float *values_per_second,float **values,
+	int *constant_voltage);
 /*******************************************************************************
-LAST MODIFIED : 19 May 1999
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : test_unemap_hardware.c
 
-LAST MODIFIED : 21 July 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 For testing the unemap hardware software (client, server, standalone).
@@ -477,18 +477,21 @@ static void process_keyboard(
 					char file_name[121];
 					float *values,values_per_second;
 					int channel_number,constant_voltage,number_of_values;
+					unsigned int number_of_cycles;
 
 					printf("channel_number ? ");
 					scanf(" %d",&channel_number);
 					printf("Waveform file ? ");
 					scanf(" %s",file_name);
-					if (unemap_read_waveform_file(file_name,&number_of_values,
-						&values_per_second,&values,&constant_voltage))
+					printf("number_of_cycles ? ");
+					scanf(" %u",&number_of_cycles);
+					if (unemap_read_waveform_file((FILE *)NULL,file_name,
+						&number_of_values,&values_per_second,&values,&constant_voltage))
 					{
 						if (!constant_voltage)
 						{
 							return_code=unemap_load_current_stimulating(1,&channel_number,
-								number_of_values,values_per_second,values);
+								number_of_values,values_per_second,values,number_of_cycles);
 							printf("return_code=%d\n",return_code);
 						}
 						else
@@ -507,18 +510,21 @@ static void process_keyboard(
 					char file_name[121];
 					float *values,values_per_second;
 					int channel_number,constant_voltage,number_of_values;
+					unsigned int number_of_cycles;
 
 					printf("channel_number ? ");
 					scanf(" %d",&channel_number);
 					printf("Waveform file ? ");
 					scanf(" %s",file_name);
-					if (unemap_read_waveform_file(file_name,&number_of_values,
-						&values_per_second,&values,&constant_voltage))
+					printf("number_of_cycles ? ");
+					scanf(" %u",&number_of_cycles);
+					if (unemap_read_waveform_file((FILE *)NULL,file_name,
+						&number_of_values,&values_per_second,&values,&constant_voltage))
 					{
 						if (constant_voltage)
 						{
 							return_code=unemap_load_voltage_stimulating(1,&channel_number,
-								number_of_values,values_per_second,values);
+								number_of_values,values_per_second,values,number_of_cycles);
 							printf("return_code=%d\n",return_code);
 						}
 						else
@@ -626,8 +632,8 @@ static void process_keyboard(
 					scanf(" %d",&channel_number);
 					printf("Waveform file ? ");
 					scanf(" %s",file_name);
-					if (unemap_read_waveform_file(file_name,&number_of_values,
-						&values_per_second,&values,&constant_voltage))
+					if (unemap_read_waveform_file((FILE *)NULL,file_name,
+						&number_of_values,&values_per_second,&values,&constant_voltage))
 					{
 						if (constant_voltage)
 						{
@@ -657,8 +663,8 @@ static void process_keyboard(
 					scanf(" %d",&channel_number);
 					printf("Waveform file ? ");
 					scanf(" %s",file_name);
-					if (unemap_read_waveform_file(file_name,&number_of_values,
-						&values_per_second,&values,&constant_voltage))
+					if (unemap_read_waveform_file((FILE *)NULL,file_name,
+						&number_of_values,&values_per_second,&values,&constant_voltage))
 					{
 						if (!constant_voltage)
 						{
@@ -704,8 +710,8 @@ static void process_keyboard(
 					scanf(" %d",&channel_number);
 					printf("Waveform file ? ");
 					scanf(" %s",file_name);
-					if (unemap_read_waveform_file(file_name,&number_of_values,
-						&values_per_second,&values,&constant_voltage))
+					if (unemap_read_waveform_file((FILE *)NULL,file_name,
+						&number_of_values,&values_per_second,&values,&constant_voltage))
 					{
 						if (constant_voltage)
 						{

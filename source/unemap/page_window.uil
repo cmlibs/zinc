@@ -1,65 +1,92 @@
 !*******************************************************************************
 ! FILE : page_window.uil
 !
-! LAST MODIFIED : 27 September 1999
+! LAST MODIFIED : 6 November 2000
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for a page window in the acquisition work area.
+!
+! ???DB.  Reorganization to allow
+! 1 Starting and stopping stimulation on multiple cards at the same time
+! 2 Setting gain and range on all channels at the same time
+! 3 Multiple scrolling channels
+! 4 Set up selection connection to mapping window
+!
+! System control
+!   experiment
+!   isolate
+!   sample
+!   save
+!   calibrate
+!   test
+!   low pass
+!   close
+! All devices
+!   auto range/gain
+!   start/stop all stimulators
+! Current device (tied to/selectable from mapping window)
+!   name
+!   stimulate checkbox (not selectable and not checked if not electrode)
+!   associated stimulator on/off checkbox (not selectable if not stimulate
+!     checked)
+!   gain text field (not selectable if stimulate checked)
+!   minimum text field (not selectable if stimulate checked)
+!   maximum text field (not selectable if stimulate checked)
+!   display checkbox (not selectable if stimulate checked?)
+! Scrolling display for current device
+! Scrolling display for other selected devices (specify initial in Unemap?)
 !===============================================================================
 module page
 	names = case_sensitive
 
 procedure
 	decrement_electrode;
-	decrement_stimulate;
-	decrement_stimulator;
 	destroy_Page_window_callback;
-	expose_page_drawing_area;
+	electrode_stimulate_record_call;
+	expose_page_scrolling_area;
+	identify_page_auto_range_button;
 	identify_page_calibrate_button;
 	identify_page_close_button;
-	identify_page_drawing_area;
 	identify_page_electrode_form;
 	identify_page_electrode_value;
 	identify_page_experiment_checkb;
+	identify_page_full_range_button;
 	identify_page_gain_form;
 	identify_page_gain_value;
+	identify_page_isolate_checkbox;
 	identify_page_low_pass_form;
 	identify_page_low_pass_value;
 	identify_page_maximum_form;
 	identify_page_maximum_value;
 	identify_page_minimum_form;
 	identify_page_minimum_value;
-	identify_page_isolate_checkbox;
-	identify_page_reset_scale_butto;
 	identify_page_sample_checkbox;
 	identify_page_save_button;
-	identify_page_scale_button;
-	identify_page_stimulate_arrows;
-	identify_page_stimulate_form;
+	identify_page_scrolling_area;
+	identify_page_scrolling_checkbo;
+	identify_page_start_all_stimula;
 	identify_page_stimulate_checkbo;
-	identify_page_stimulate_value;
-	identify_page_stimulator_form;
-	identify_page_stimulator_label;
+	identify_page_stimulator_checkb;
+	identify_page_stop_all_stimulat;
 	identify_page_test_checkbox;
 	increment_electrode;
-	increment_stimulate;
-	increment_stimulator;
-	page_reset_scale;
-	page_scale;
-	resize_page_drawing_area;
-	save_data;
+	page_auto_range;
+	page_full_range;
+	page_save_data;
+	page_start_all_stimulators;
+	page_stop_all_stimulators;
+	resize_page_scrolling_area;
 	start_calibrating;
 	start_stop_experiment_callback;
 	start_stop_isolating_callback;
 	start_stop_sampling_callback;
-	start_stop_stimulating_callback;
 	start_stop_testing_callback;
+	stimulator_start_stop_callback;
 	update_display_device_callback;
 	update_display_gain_callback;
 	update_display_maximum_callback;
 	update_display_minimum_callback;
 	update_filter_callback;
-	update_stimulate_device_callbac;
 
 identifier
 	identifying_colour;
@@ -87,7 +114,7 @@ object
 		controls
 			{
 			XmForm page_menu;
-			XmDrawingArea page_drawing_area;
+			XmDrawingArea scrolling_area;
 			};
 		callbacks
 			{
@@ -98,39 +125,6 @@ object
 			XmNdestroyCallback = procedures
 				{
 				destroy_Page_window_callback(page_window_structure);
-				};
-			};
-		};
-!The area within the page window for drawing the signals as they come in
-	page_drawing_area: XmDrawingArea 
-		{
-		arguments
-			{
-			XmNborderWidth = 1;
-			XmNresizePolicy = XmRESIZE_NONE;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = widget_spacing;
-			XmNtopOffset = widget_spacing;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = widget_spacing;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = widget_spacing;
-			XmNtopWidget = XmForm page_menu;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_page_drawing_area(page_window_structure);
-				};
-			XmNexposeCallback = procedures
-				{
-				expose_page_drawing_area(page_window_structure);
-				};
-			XmNresizeCallback = procedures
-				{
-				resize_page_drawing_area(page_window_structure);
 				};
 			};
 		};
@@ -146,14 +140,16 @@ object
 			XmNrightOffset = widget_spacing;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		controls
 			{
-			XmForm page_menu_1;
-			XmForm page_menu_2;
+			XmForm control_menu;
+			XmForm all_devices_menu;
+			XmForm current_device_menu;
 			};
 		};
-	page_menu_1: XmForm 
+	control_menu: XmForm 
 		{
 		arguments
 			{
@@ -164,6 +160,7 @@ object
 			XmNrightOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		controls
 			{
@@ -172,7 +169,6 @@ object
 			XmToggleButton page_sample_checkbox;
 			XmPushButtonGadget page_save_button;
 			XmPushButtonGadget page_calibrate_button;
-			XmForm page_stimulator;
 			XmToggleButton page_test_checkbox;
 			XmForm page_low_pass;
 			XmSeparator
@@ -193,31 +189,6 @@ object
 					};
 				};
 			XmPushButtonGadget page_close_button;
-			};
-		};
-	page_menu_2: XmForm 
-		{
-		arguments
-			{
-			XmNborderWidth = 0;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopOffset = widget_spacing;
-			XmNtopWidget = XmForm page_menu_1;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		controls
-			{
-			XmForm page_electrode;
-			XmForm page_gain;
-			XmPushButtonGadget page_scale_button;
-			XmPushButtonGadget page_reset_scale_button;
-			XmForm page_minimum;
-			XmForm page_maximum;
 			};
 		};
 !Clicking this button toggles power to the acquisition hardware between on and
@@ -344,8 +315,355 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				save_data(page_window_structure);
+				page_save_data(page_window_structure);
 				};
+			};
+		};
+!Clicking this button starts calibration
+	page_calibrate_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Calibrate");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget page_save_button;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_calibrate_button(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				start_calibrating(page_window_structure);
+				};
+			};
+		};
+!Clicking this button toggles in and out of test mode (electrodes connected to
+!  and displaying test signal)
+	page_test_checkbox: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Test");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmPushButtonGadget page_calibrate_button;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_test_checkbox(page_window_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				start_stop_testing_callback(page_window_structure);
+				};
+			};
+		};
+!Controls the anti-aliasing/low-pass filter
+	page_low_pass: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmToggleButton page_test_checkbox;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmLabelGadget page_low_pass_label;
+			XmTextField page_low_pass_value;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_low_pass_form(page_window_structure);
+				};
+			};
+		};
+	page_low_pass_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Low pass:");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	page_low_pass_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 4;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget page_low_pass_label;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_low_pass_value(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				update_filter_callback(page_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				update_filter_callback(page_window_structure);
+				};
+			};
+		};
+!Closes the page window
+	page_close_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Close");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_close_button(page_window_structure);
+				};
+			};
+		};
+!Menu for operations on all devices
+	all_devices_menu: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = XmForm control_menu;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmPushButtonGadget page_auto_range_button;
+			XmPushButtonGadget page_full_range_button;
+			XmPushButtonGadget page_start_all_stimulators_butt;
+			XmPushButtonGadget page_stop_all_stimulators_butto;
+			};
+		};
+!Clicking this button sets the gain and range of all devices based on the
+!  sampling in progress
+	page_auto_range_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Auto range");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_auto_range_button(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				page_auto_range(page_window_structure);
+				};
+			};
+		};
+!Clicking this button sets the gain to minimum and the range to full
+	page_full_range_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Full range");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget page_auto_range_button;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_full_range_button(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				page_full_range(page_window_structure);
+				};
+			};
+		};
+!Clicking this button starts all stimulators
+	page_start_all_stimulators_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Start all stimulators");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget page_full_range_button;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_start_all_stimula(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				page_start_all_stimulators(page_window_structure);
+				};
+			};
+		};
+!Clicking this button stops all stimulators
+	page_stop_all_stimulators_butto: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Stop all stimulators");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget page_start_all_stimulators_butt;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_stop_all_stimulat(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				page_stop_all_stimulators(page_window_structure);
+				};
+			};
+		};
+!Menu for operations on the current device
+	current_device_menu: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = XmForm all_devices_menu;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmForm page_electrode;
+			XmToggleButton page_scrolling_checkbox;
+			XmForm page_gain;
+			XmForm page_minimum;
+			XmForm page_maximum;
+			XmToggleButton page_stimulate_checkbox;
+			XmToggleButton page_stimulator_checkbox;
 			};
 		};
 !Controls which device is currently shown in the scrolling display
@@ -507,6 +825,32 @@ object
 				};
 			};
 		};
+!Controls whether or not the signal is in the scrolling area
+	page_scrolling_checkbox: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Scrolling");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmForm page_electrode;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_scrolling_checkbo(page_window_structure);
+				};
+			};
+		};
 !Controls the display gain
 	page_gain: XmForm 
 		{
@@ -515,7 +859,7 @@ object
 			XmNborderWidth = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmForm page_electrode;
+			XmNleftWidget = XmToggleButton page_scrolling_checkbox;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNrightOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;
@@ -584,72 +928,6 @@ object
 				};
 			};
 		};
-!Clicking this button rescales the scrolling display to fit all values since the
-!  last press of page_reset_scale_button
-	page_scale_button: XmPushButtonGadget
-		{
-		arguments
-			{
-			XmNlabelString = 
-			compound_string("Scale");
-			XmNfontList = button_font;
-			XmNshadowThickness = 0;
-			XmNhighlightThickness = 0;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmForm page_gain;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_page_scale_button(page_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				page_scale(page_window_structure);
-				};
-			};
-		};
-!Clicking this button causes the display minimum/maximum calculation to be
-! re-started
-	page_reset_scale_button: XmPushButtonGadget
-		{
-		arguments
-			{
-			XmNlabelString = 
-			compound_string("Reset scale");
-			XmNfontList = button_font;
-			XmNshadowThickness = 0;
-			XmNhighlightThickness = 0;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmPushButtonGadget page_scale_button;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_page_reset_scale_butto(page_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				page_reset_scale(page_window_structure);
-				};
-			};
-		};
 !Controls the display minimum
 	page_minimum: XmForm 
 		{
@@ -658,7 +936,7 @@ object
 			XmNborderWidth = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmPushButtonGadget page_reset_scale_button;
+			XmNleftWidget = XmForm page_gain;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNrightOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;
@@ -684,7 +962,7 @@ object
 		arguments
 			{
 			XmNlabelString =
-			compound_string("Minimum:");
+			compound_string("Min:");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_END;
 			XmNleftAttachment = XmATTACH_FORM;
@@ -761,7 +1039,7 @@ object
 		arguments
 			{
 			XmNlabelString =
-			compound_string("Maximum:");
+			compound_string("Max:");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_END;
 			XmNleftAttachment = XmATTACH_FORM;
@@ -804,212 +1082,18 @@ object
 				};
 			};
 		};
-!Clicking this button starts calibration
-	page_calibrate_button: XmPushButtonGadget
-		{
-		arguments
-			{
-			XmNlabelString = 
-			compound_string("Calibrate");
-			XmNfontList = button_font;
-			XmNshadowThickness = 0;
-			XmNhighlightThickness = 0;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmPushButtonGadget page_save_button;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_page_calibrate_button(page_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				start_calibrating(page_window_structure);
-				};
-			};
-		};
-!Controls stimulation
-	page_stimulator: XmForm 
-		{
-		arguments
-			{
-			XmNborderWidth = 0;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmPushButtonGadget page_calibrate_button;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		controls
-			{
-			XmLabelGadget page_stimulator_label;
-			XmForm page_stimulator_arrows;
-			XmForm page_stimulate;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_page_stimulator_form(page_window_structure);
-				};
-			};
-		};
-	page_stimulator_label: XmLabelGadget
-		{
-		arguments
-			{
-			XmNlabelString =
-			compound_string("Stimulator:");
-			XmNfontList = button_font;
-			XmNalignment = XmALIGNMENT_END;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_page_stimulator_label(page_window_structure);
-				};
-			};
-		};
-	page_stimulator_arrows: XmForm 
-		{
-		arguments
-			{
-			XmNborderWidth = 0;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = XmLabelGadget page_stimulator_label;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		controls
-			{
-			XmArrowButtonGadget page_stimulator_down_arrow;
-			XmSeparator
-				{
-				arguments
-					{
-					XmNseparatorType = XmNO_LINE;
-					XmNleftAttachment = XmATTACH_FORM;
-					XmNleftOffset = 0;
-					XmNrightAttachment = XmATTACH_FORM;
-					XmNrightOffset = 0;
-					XmNtopAttachment = XmATTACH_WIDGET;
-					XmNtopOffset = 0;
-					XmNtopWidget = XmArrowButtonGadget page_stimulator_up_arrow;
-					XmNbottomAttachment = XmATTACH_WIDGET;
-					XmNbottomOffset = 0;
-					XmNbottomWidget = XmArrowButtonGadget page_stimulator_down_arrow;
-					};
-				};
-			XmArrowButtonGadget page_stimulator_up_arrow;
-			};
-		};
-	page_stimulator_down_arrow: XmArrowButtonGadget
-		{
-		arguments
-			{
-			XmNarrowDirection = XmARROW_DOWN;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_NONE;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				decrement_stimulator(page_window_structure);
-				};
-			};
-		};
-	page_stimulator_up_arrow: XmArrowButtonGadget
-		{
-		arguments
-			{
-			XmNarrowDirection = XmARROW_UP;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				increment_stimulator(page_window_structure);
-				};
-			};
-		};
-	page_stimulate: XmForm 
-		{
-		arguments
-			{
-			XmNborderWidth = 0;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = XmForm page_stimulator_arrows;
-			XmNleftOffset = widget_spacing;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		controls
-			{
-			XmToggleButton page_stimulate_checkbox;
-			XmTextField page_stimulate_value;
-			XmForm page_stimulate_arrows;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_page_stimulate_form(page_window_structure);
-				};
-			};
-		};
+!Controls whether the electrode is stimulating or recording
 	page_stimulate_checkbox: XmToggleButton
 		{
 		arguments
 			{
 			XmNlabelString = 
-			compound_string("Stimulate:");
+			compound_string("Stimulate");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_END;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmForm page_maximum;
+			XmNleftOffset = widget_spacing;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
@@ -1024,146 +1108,23 @@ object
 				};
 			XmNvalueChangedCallback = procedures
 				{
-				start_stop_stimulating_callback(page_window_structure);
+				electrode_stimulate_record_call(page_window_structure);
 				};
 			};
 		};
-	page_stimulate_value: XmTextField
-		{
-		arguments
-			{
-			XmNcolumns = 4;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = XmToggleButton page_stimulate_checkbox;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_WIDGET;
-			XmNrightWidget = XmForm page_stimulate_arrows;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_page_stimulate_value(page_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				update_stimulate_device_callbac(page_window_structure);
-				};
-			XmNlosingFocusCallback = procedures
-				{
-				update_stimulate_device_callbac(page_window_structure);
-				};
-			};
-		};
-	page_stimulate_arrows: XmForm 
-		{
-		arguments
-			{
-			XmNborderWidth = 0;
-			XmNleftAttachment = XmATTACH_NONE;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		controls
-			{
-			XmArrowButtonGadget page_stimulate_down_arrow;
-			XmSeparator
-				{
-				arguments
-					{
-					XmNseparatorType = XmNO_LINE;
-					XmNleftAttachment = XmATTACH_FORM;
-					XmNleftOffset = 0;
-					XmNrightAttachment = XmATTACH_FORM;
-					XmNrightOffset = 0;
-					XmNtopAttachment = XmATTACH_WIDGET;
-					XmNtopOffset = 0;
-					XmNtopWidget = XmArrowButtonGadget page_stimulate_up_arrow;
-					XmNbottomAttachment = XmATTACH_WIDGET;
-					XmNbottomOffset = 0;
-					XmNbottomWidget = XmArrowButtonGadget page_stimulate_down_arrow;
-					};
-				};
-			XmArrowButtonGadget page_stimulate_up_arrow;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_page_stimulate_arrows(page_window_structure);
-				};
-			};
-		};
-	page_stimulate_down_arrow: XmArrowButtonGadget
-		{
-		arguments
-			{
-			XmNarrowDirection = XmARROW_DOWN;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_NONE;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				decrement_stimulate(page_window_structure);
-				};
-			};
-		};
-	page_stimulate_up_arrow: XmArrowButtonGadget
-		{
-		arguments
-			{
-			XmNarrowDirection = XmARROW_UP;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				increment_stimulate(page_window_structure);
-				};
-			};
-		};
-!Clicking this button toggles in and out of test mode (electrodes connected to
-!  and displaying test signal)
-	page_test_checkbox: XmToggleButton
+!Controls whether the stimulator is on or off
+	page_stimulator_checkbox: XmToggleButton
 		{
 		arguments
 			{
 			XmNlabelString = 
-			compound_string("Test");
+			compound_string("Stimulator  ");
 			XmNfontList = button_font;
-			XmNshadowThickness = 0;
-			XmNhighlightThickness = 0;
+			XmNalignment = XmALIGNMENT_END;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmForm page_stimulate;
+			XmNleftWidget = XmToggleButton page_stimulate_checkbox;
 			XmNrightAttachment = XmATTACH_NONE;
-			XmNrightOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
@@ -1173,117 +1134,425 @@ object
 			{
 			MrmNcreateCallback = procedures
 				{
-				identify_page_test_checkbox(page_window_structure);
+				identify_page_stimulator_checkb(page_window_structure);
 				};
 			XmNvalueChangedCallback = procedures
 				{
-				start_stop_testing_callback(page_window_structure);
+				stimulator_start_stop_callback(page_window_structure);
 				};
 			};
 		};
-!Controls the anti-aliasing/low-pass filter
-	page_low_pass: XmForm 
+!The area within the page window for scrolling signals
+	scrolling_area: XmDrawingArea 
 		{
 		arguments
 			{
-			XmNborderWidth = 0;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmToggleButton page_test_checkbox;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		controls
-			{
-			XmLabelGadget page_low_pass_label;
-			XmTextField page_low_pass_value;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_page_low_pass_form(page_window_structure);
-				};
-			};
-		};
-	page_low_pass_label: XmLabelGadget
-		{
-		arguments
-			{
-			XmNlabelString =
-			compound_string("Low pass:");
-			XmNfontList = button_font;
-			XmNalignment = XmALIGNMENT_END;
+			XmNborderWidth = 1;
+			XmNresizePolicy = XmRESIZE_NONE;
 			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNtopOffset = widget_spacing;
 			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		};
-	page_low_pass_value: XmTextField
-		{
-		arguments
-			{
-			XmNcolumns = 4;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = XmLabelGadget page_low_pass_label;
-			XmNleftOffset = 0;
+			XmNbottomOffset = widget_spacing;
 			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
+			XmNrightOffset = widget_spacing;
+			XmNtopWidget = XmForm page_menu;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				identify_page_low_pass_value(page_window_structure);
+				identify_page_scrolling_area(page_window_structure);
 				};
-			XmNactivateCallback = procedures
+			XmNexposeCallback = procedures
 				{
-				update_filter_callback(page_window_structure);
+				expose_page_scrolling_area(page_window_structure);
 				};
-			XmNlosingFocusCallback = procedures
+			XmNresizeCallback = procedures
 				{
-				update_filter_callback(page_window_structure);
+				resize_page_scrolling_area(page_window_structure);
 				};
 			};
 		};
-!Closes the page window
-	page_close_button: XmPushButtonGadget
-		{
-		arguments
-			{
-			XmNlabelString = 
-			compound_string("Close");
-			XmNfontList = button_font;
-			XmNshadowThickness = 0;
-			XmNhighlightThickness = 0;
-			XmNleftAttachment = XmATTACH_NONE;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_page_close_button(page_window_structure);
-				};
-			};
-		};
+!OLD_CODE
+!!Clicking this button rescales the scrolling display to fit all values since the
+!!  last press of page_reset_scale_button
+!	page_scale_button: XmPushButtonGadget
+!		{
+!		arguments
+!			{
+!			XmNlabelString = 
+!			compound_string("Scale");
+!			XmNfontList = button_font;
+!			XmNshadowThickness = 0;
+!			XmNhighlightThickness = 0;
+!			XmNleftAttachment = XmATTACH_WIDGET;
+!			XmNleftOffset = widget_spacing;
+!			XmNleftWidget = XmForm page_gain;
+!			XmNrightAttachment = XmATTACH_NONE;
+!			XmNrightOffset = 0;
+!			XmNtopAttachment = XmATTACH_FORM;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+!			};
+!		callbacks
+!			{
+!			MrmNcreateCallback = procedures
+!				{
+!				identify_page_scale_button(page_window_structure);
+!				};
+!			XmNactivateCallback = procedures
+!				{
+!				page_scale(page_window_structure);
+!				};
+!			};
+!		};
+!!Clicking this button causes the display minimum/maximum calculation to be
+!! re-started
+!	page_reset_scale_button: XmPushButtonGadget
+!		{
+!		arguments
+!			{
+!			XmNlabelString = 
+!			compound_string("Reset scale");
+!			XmNfontList = button_font;
+!			XmNshadowThickness = 0;
+!			XmNhighlightThickness = 0;
+!			XmNleftAttachment = XmATTACH_WIDGET;
+!			XmNleftOffset = widget_spacing;
+!			XmNleftWidget = XmPushButtonGadget page_scale_button;
+!			XmNrightAttachment = XmATTACH_NONE;
+!			XmNrightOffset = 0;
+!			XmNtopAttachment = XmATTACH_FORM;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+!			};
+!		callbacks
+!			{
+!			MrmNcreateCallback = procedures
+!				{
+!				identify_page_reset_scale_butto(page_window_structure);
+!				};
+!			XmNactivateCallback = procedures
+!				{
+!				page_reset_scale(page_window_structure);
+!				};
+!			};
+!		};
+!!Controls stimulation
+!	page_stimulator: XmForm 
+!		{
+!		arguments
+!			{
+!			XmNborderWidth = 0;
+!			XmNleftAttachment = XmATTACH_WIDGET;
+!			XmNleftOffset = widget_spacing;
+!			XmNleftWidget = XmPushButtonGadget page_calibrate_button;
+!			XmNrightAttachment = XmATTACH_NONE;
+!			XmNrightOffset = 0;
+!			XmNtopAttachment = XmATTACH_FORM;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+!			};
+!		controls
+!			{
+!			XmLabelGadget page_stimulator_label;
+!			XmForm page_stimulator_arrows;
+!			XmForm page_stimulate;
+!			};
+!		callbacks
+!			{
+!			MrmNcreateCallback = procedures
+!				{
+!				identify_page_stimulator_form(page_window_structure);
+!				};
+!			};
+!		};
+!	page_stimulator_label: XmLabelGadget
+!		{
+!		arguments
+!			{
+!			XmNlabelString =
+!			compound_string("Stimulator:");
+!			XmNfontList = button_font;
+!			XmNalignment = XmALIGNMENT_END;
+!			XmNleftAttachment = XmATTACH_FORM;
+!			XmNleftOffset = 0;
+!			XmNrightAttachment = XmATTACH_NONE;
+!			XmNtopAttachment = XmATTACH_FORM;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+!			};
+!		callbacks
+!			{
+!			MrmNcreateCallback = procedures
+!				{
+!				identify_page_stimulator_label(page_window_structure);
+!				};
+!			};
+!		};
+!	page_stimulator_arrows: XmForm 
+!		{
+!		arguments
+!			{
+!			XmNborderWidth = 0;
+!			XmNleftAttachment = XmATTACH_WIDGET;
+!			XmNleftWidget = XmLabelGadget page_stimulator_label;
+!			XmNleftOffset = 0;
+!			XmNrightAttachment = XmATTACH_NONE;
+!			XmNtopAttachment = XmATTACH_FORM;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+!			};
+!		controls
+!			{
+!			XmArrowButtonGadget page_stimulator_down_arrow;
+!			XmSeparator
+!				{
+!				arguments
+!					{
+!					XmNseparatorType = XmNO_LINE;
+!					XmNleftAttachment = XmATTACH_FORM;
+!					XmNleftOffset = 0;
+!					XmNrightAttachment = XmATTACH_FORM;
+!					XmNrightOffset = 0;
+!					XmNtopAttachment = XmATTACH_WIDGET;
+!					XmNtopOffset = 0;
+!					XmNtopWidget = XmArrowButtonGadget page_stimulator_up_arrow;
+!					XmNbottomAttachment = XmATTACH_WIDGET;
+!					XmNbottomOffset = 0;
+!					XmNbottomWidget = XmArrowButtonGadget page_stimulator_down_arrow;
+!					};
+!				};
+!			XmArrowButtonGadget page_stimulator_up_arrow;
+!			};
+!		};
+!	page_stimulator_down_arrow: XmArrowButtonGadget
+!		{
+!		arguments
+!			{
+!			XmNarrowDirection = XmARROW_DOWN;
+!			XmNleftAttachment = XmATTACH_FORM;
+!			XmNleftOffset = 0;
+!			XmNrightAttachment = XmATTACH_FORM;
+!			XmNrightOffset = 0;
+!			XmNtopAttachment = XmATTACH_NONE;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+!			};
+!		callbacks
+!			{
+!			XmNactivateCallback = procedures
+!				{
+!				decrement_stimulator(page_window_structure);
+!				};
+!			};
+!		};
+!	page_stimulator_up_arrow: XmArrowButtonGadget
+!		{
+!		arguments
+!			{
+!			XmNarrowDirection = XmARROW_UP;
+!			XmNleftAttachment = XmATTACH_FORM;
+!			XmNleftOffset = 0;
+!			XmNrightAttachment = XmATTACH_FORM;
+!			XmNrightOffset = 0;
+!			XmNtopAttachment = XmATTACH_FORM;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_NONE;
+!			XmNbottomOffset = 0;
+!			};
+!		callbacks
+!			{
+!			XmNactivateCallback = procedures
+!				{
+!				increment_stimulator(page_window_structure);
+!				};
+!			};
+!		};
+!	page_stimulate: XmForm 
+!		{
+!		arguments
+!			{
+!			XmNborderWidth = 0;
+!			XmNleftAttachment = XmATTACH_WIDGET;
+!			XmNleftWidget = XmForm page_stimulator_arrows;
+!			XmNleftOffset = widget_spacing;
+!			XmNrightAttachment = XmATTACH_FORM;
+!			XmNrightOffset = 0;
+!			XmNtopAttachment = XmATTACH_FORM;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+!			};
+!		controls
+!			{
+!			XmToggleButton page_stimulate_checkbox;
+!			XmTextField page_stimulate_value;
+!			XmForm page_stimulate_arrows;
+!			};
+!		callbacks
+!			{
+!			MrmNcreateCallback = procedures
+!				{
+!				identify_page_stimulate_form(page_window_structure);
+!				};
+!			};
+!		};
+!	page_stimulate_checkbox: XmToggleButton
+!		{
+!		arguments
+!			{
+!			XmNlabelString = 
+!			compound_string("Stimulate:");
+!			XmNfontList = button_font;
+!			XmNalignment = XmALIGNMENT_END;
+!			XmNleftAttachment = XmATTACH_FORM;
+!			XmNleftOffset = 0;
+!			XmNrightAttachment = XmATTACH_NONE;
+!			XmNtopAttachment = XmATTACH_FORM;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+!			};
+!		callbacks
+!			{
+!			MrmNcreateCallback = procedures
+!				{
+!				identify_page_stimulate_checkbo(page_window_structure);
+!				};
+!			XmNvalueChangedCallback = procedures
+!				{
+!				start_stop_stimulating_callback(page_window_structure);
+!				};
+!			};
+!		};
+!	page_stimulate_value: XmTextField
+!		{
+!		arguments
+!			{
+!			XmNcolumns = 4;
+!			XmNleftAttachment = XmATTACH_WIDGET;
+!			XmNleftWidget = XmToggleButton page_stimulate_checkbox;
+!			XmNleftOffset = 0;
+!			XmNrightAttachment = XmATTACH_WIDGET;
+!			XmNrightWidget = XmForm page_stimulate_arrows;
+!			XmNrightOffset = 0;
+!			XmNtopAttachment = XmATTACH_FORM;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+!			};
+!		callbacks
+!			{
+!			MrmNcreateCallback = procedures
+!				{
+!				identify_page_stimulate_value(page_window_structure);
+!				};
+!			XmNactivateCallback = procedures
+!				{
+!				update_stimulate_device_callbac(page_window_structure);
+!				};
+!			XmNlosingFocusCallback = procedures
+!				{
+!				update_stimulate_device_callbac(page_window_structure);
+!				};
+!			};
+!		};
+!	page_stimulate_arrows: XmForm 
+!		{
+!		arguments
+!			{
+!			XmNborderWidth = 0;
+!			XmNleftAttachment = XmATTACH_NONE;
+!			XmNleftOffset = 0;
+!			XmNrightAttachment = XmATTACH_FORM;
+!			XmNrightOffset = 0;
+!			XmNtopAttachment = XmATTACH_FORM;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+!			};
+!		controls
+!			{
+!			XmArrowButtonGadget page_stimulate_down_arrow;
+!			XmSeparator
+!				{
+!				arguments
+!					{
+!					XmNseparatorType = XmNO_LINE;
+!					XmNleftAttachment = XmATTACH_FORM;
+!					XmNleftOffset = 0;
+!					XmNrightAttachment = XmATTACH_FORM;
+!					XmNrightOffset = 0;
+!					XmNtopAttachment = XmATTACH_WIDGET;
+!					XmNtopOffset = 0;
+!					XmNtopWidget = XmArrowButtonGadget page_stimulate_up_arrow;
+!					XmNbottomAttachment = XmATTACH_WIDGET;
+!					XmNbottomOffset = 0;
+!					XmNbottomWidget = XmArrowButtonGadget page_stimulate_down_arrow;
+!					};
+!				};
+!			XmArrowButtonGadget page_stimulate_up_arrow;
+!			};
+!		callbacks
+!			{
+!			MrmNcreateCallback = procedures
+!				{
+!				identify_page_stimulate_arrows(page_window_structure);
+!				};
+!			};
+!		};
+!	page_stimulate_down_arrow: XmArrowButtonGadget
+!		{
+!		arguments
+!			{
+!			XmNarrowDirection = XmARROW_DOWN;
+!			XmNleftAttachment = XmATTACH_FORM;
+!			XmNleftOffset = 0;
+!			XmNrightAttachment = XmATTACH_FORM;
+!			XmNrightOffset = 0;
+!			XmNtopAttachment = XmATTACH_NONE;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+!			};
+!		callbacks
+!			{
+!			XmNactivateCallback = procedures
+!				{
+!				decrement_stimulate(page_window_structure);
+!				};
+!			};
+!		};
+!	page_stimulate_up_arrow: XmArrowButtonGadget
+!		{
+!		arguments
+!			{
+!			XmNarrowDirection = XmARROW_UP;
+!			XmNleftAttachment = XmATTACH_FORM;
+!			XmNleftOffset = 0;
+!			XmNrightAttachment = XmATTACH_FORM;
+!			XmNrightOffset = 0;
+!			XmNtopAttachment = XmATTACH_FORM;
+!			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_NONE;
+!			XmNbottomOffset = 0;
+!			};
+!		callbacks
+!			{
+!			XmNactivateCallback = procedures
+!				{
+!				increment_stimulate(page_window_structure);
+!				};
+!			};
+!		};
 
 end module;

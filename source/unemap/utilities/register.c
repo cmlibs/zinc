@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -1419,9 +1419,9 @@ static void process_keyboard(
 									channel_number_2=
 										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
 									if (unemap_load_voltage_stimulating(1,&channel_number_1,
-										(int)0,(float)0,(float *)NULL)&&
+										(int)0,(float)0,(float *)NULL,0)&&
 										unemap_load_voltage_stimulating(1,&channel_number_2,(int)0,
-										(float)0,(float *)NULL)&&unemap_start_stimulating())
+										(float)0,(float *)NULL,0)&&unemap_start_stimulating())
 #if defined (OLD_CODE)
 									if (unemap_start_voltage_stimulating(
 										(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,(int)0,
@@ -1940,13 +1940,13 @@ static void process_keyboard(
 											channel_number_3=
 												(tester_card_3-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
 											if (unemap_load_voltage_stimulating(1,&channel_number_1,
-												(int)0,(float)0,(float *)NULL)&&
+												(int)0,(float)0,(float *)NULL,0)&&
 												unemap_load_voltage_stimulating(1,&channel_number_3,
-												(int)0,(float)0,(float *)NULL)&&
+												(int)0,(float)0,(float *)NULL,0)&&
 												unemap_load_voltage_stimulating(1,&channel_number_2,
 												number_of_waveform_points,
 												/*points/s*/(float)number_of_waveform_points*
-												CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_1)&&
+												CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_1,0)&&
 												unemap_start_stimulating())
 #if defined (OLD_CODE)
 											if (unemap_start_voltage_stimulating(
@@ -2488,11 +2488,11 @@ static void process_keyboard(
 												if (unemap_load_voltage_stimulating(1,&channel_number_2,
 													number_of_waveform_points,
 													/*points/s*/(float)number_of_waveform_points*
-													CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_1)&&
+													CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_1,0)&&
 													unemap_load_voltage_stimulating(1,&channel_number_1,
-													(int)0,(float)0,(float *)NULL)&&
+													(int)0,(float)0,(float *)NULL,0)&&
 													unemap_load_voltage_stimulating(1,&channel_number_3,
-													(int)0,(float)0,(float *)NULL)&&
+													(int)0,(float)0,(float *)NULL,0)&&
 													unemap_start_stimulating())
 #if defined (NOT_DEBUG)
 #endif /* defined (NOT_DEBUG) */
@@ -2507,15 +2507,15 @@ static void process_keyboard(
 													unemap_load_voltage_stimulating(1,&channel_number_2,
 													number_of_waveform_points,
 													/*points/s*/(float)number_of_waveform_points*
-													CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_1)&&
+													CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_1,0)&&
 													unemap_load_voltage_stimulating(1,&channel_number_1,
 													2/*number_of_waveform_points/50*/,
 													(float)number_of_waveform_points*
-													CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_2)&&
+													CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_2,0)&&
 													unemap_load_voltage_stimulating(1,&channel_number_3,
 													2/*number_of_waveform_points/50*/,
 													(float)number_of_waveform_points*
-													CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_2)
+													CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_2,0)
 													&&unemap_start_stimulating()
 													)
 #endif /* defined (DEBUG) */
@@ -3062,9 +3062,10 @@ static void process_keyboard(
 									channel_number_2=
 										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
 									if (unemap_load_voltage_stimulating(1,&channel_number_1,
-										(int)0,(float)0,(float *)NULL)&&
+										(int)0,(float)0,(float *)NULL,0)&&
 										unemap_load_voltage_stimulating(1,&channel_number_2,
-										(int)0,(float)0,(float *)NULL)&&unemap_start_stimulating())
+										(int)0,(float)0,(float *)NULL,0)&&
+										unemap_start_stimulating())
 #if defined (OLD_CODE)
 									if (unemap_start_voltage_stimulating((tester_card_1-1)*
 										NUMBER_OF_CHANNELS_ON_NI_CARD+1,0,(float)0,(float *)NULL)&&
@@ -3116,9 +3117,9 @@ static void process_keyboard(
 										channel_number_2=
 											(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
 										if (unemap_load_voltage_stimulating(1,&channel_number_1,
-											(int)1,(float)0,&calibrate_amplitude_1)&&
+											(int)1,(float)0,&calibrate_amplitude_1,0)&&
 											unemap_load_voltage_stimulating(1,&channel_number_2,
-											(int)1,(float)0,&calibrate_amplitude_2)&&
+											(int)1,(float)0,&calibrate_amplitude_2,0)&&
 											unemap_start_stimulating())
 #if defined (OLD_CODE)
 										if (unemap_start_voltage_stimulating(
@@ -3507,10 +3508,10 @@ static void process_keyboard(
 										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
 									if (unemap_load_voltage_stimulating(1,&channel_number_1,
 										(int)500,/*points/s gives 200 Hz waveform frequency*/
-										(float)100000.,calibrate_voltage_1)&&
+										(float)100000.,calibrate_voltage_1,0)&&
 										unemap_load_voltage_stimulating(1,&channel_number_2,
 										(int)500,/*points/s gives 200 Hz waveform frequency*/
-										(float)100000.,calibrate_voltage_2)&&
+										(float)100000.,calibrate_voltage_2,0)&&
 										unemap_start_stimulating())
 #if defined (OLD_CODE)
 									if (unemap_start_voltage_stimulating(
@@ -3698,10 +3699,10 @@ static void process_keyboard(
 											(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
 										if (unemap_load_voltage_stimulating(1,&channel_number_1,
 											(int)400,/*points/s gives 250 Hz waveform frequency*/
-											(float)100000.,calibrate_voltage_1)&&
+											(float)100000.,calibrate_voltage_1,0)&&
 											unemap_load_voltage_stimulating(1,&channel_number_2,
 											(int)400,/*points/s gives 250 Hz waveform frequency*/
-											(float)100000.,calibrate_voltage_2)&&
+											(float)100000.,calibrate_voltage_2,0)&&
 											unemap_start_stimulating())
 #if defined (OLD_CODE)
 										if (unemap_start_voltage_stimulating(
@@ -3806,10 +3807,10 @@ static void process_keyboard(
 													(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
 												if (unemap_load_voltage_stimulating(1,&channel_number_1,
 													(int)250,/*points/s gives 400 Hz waveform frequency*/
-													(float)100000.,calibrate_voltage_1)&&
+													(float)100000.,calibrate_voltage_1,0)&&
 													unemap_load_voltage_stimulating(1,&channel_number_2,
 													(int)250,/*points/s gives 400 Hz waveform frequency*/
-													(float)100000.,calibrate_voltage_2)&&
+													(float)100000.,calibrate_voltage_2,0)&&
 													unemap_start_stimulating())
 #if defined (OLD_CODE)
 												if (unemap_start_voltage_stimulating(
@@ -4216,10 +4217,10 @@ static void process_keyboard(
 										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
 									if (unemap_load_voltage_stimulating(1,&channel_number_1,
 										(int)1000,/*points/s gives 100 Hz waveform frequency*/
-										(float)100000.,calibrate_voltage_1)&&
+										(float)100000.,calibrate_voltage_1,0)&&
 										unemap_load_voltage_stimulating(1,&channel_number_2,
 										(int)1000,/*points/s gives 100 Hz waveform frequency*/
-										(float)100000.,calibrate_voltage_2)&&
+										(float)100000.,calibrate_voltage_2,0)&&
 										unemap_start_stimulating())
 #if defined (OLD_CODE)
 									if (unemap_start_voltage_stimulating(
@@ -4830,10 +4831,10 @@ static void process_keyboard(
 										(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
 									if (unemap_load_voltage_stimulating(1,&channel_number_1,
 										(int)1000,/*points/s gives 100 Hz waveform frequency*/
-										(float)100000.,calibrate_voltage_1)&&
+										(float)100000.,calibrate_voltage_1,0)&&
 										unemap_load_voltage_stimulating(1,&channel_number_2,
 										(int)1000,/*points/s gives 100 Hz waveform frequency*/
-										(float)100000.,calibrate_voltage_2)&&
+										(float)100000.,calibrate_voltage_2,0)&&
 										unemap_start_stimulating())
 #if defined (OLD_CODE)
 									if (unemap_start_voltage_stimulating(
@@ -5346,14 +5347,14 @@ static void process_keyboard(
 								}
 							}
 						}
-						if (unemap_read_waveform_file("stimulate.wfm",&number_of_values,
-							&values_per_second,&values,&constant_voltage))
+						if (unemap_read_waveform_file((FILE *)NULL,"stimulate.wfm",
+							&number_of_values,&values_per_second,&values,&constant_voltage))
 						{
 							if (constant_voltage)
 							{
 								printf("Voltage stimulation\n");
 								if (unemap_load_voltage_stimulating(1,&channel_number,
-									number_of_values,values_per_second,values)&&
+									number_of_values,values_per_second,values,0)&&
 									unemap_start_stimulating())
 #if defined (OLD_CODE)
 								if (unemap_start_voltage_stimulating(channel_number,
@@ -5372,7 +5373,7 @@ static void process_keyboard(
 							{
 								printf("Current stimulation\n");
 								if (unemap_load_current_stimulating(1,&channel_number,
-									number_of_values,values_per_second,values)&&
+									number_of_values,values_per_second,values,0)&&
 									unemap_start_stimulating())
 #if defined (OLD_CODE)
 								if (unemap_start_current_stimulating(channel_number,
@@ -5454,8 +5455,8 @@ static void process_keyboard(
 					if (!calibrate_DA_on[(channel_number-1)%
 						NUMBER_OF_CHANNELS_ON_NI_CARD])
 					{
-						if (unemap_read_waveform_file("calibrate.wfm",&number_of_values,
-							&values_per_second,&values,&constant_voltage))
+						if (unemap_read_waveform_file((FILE *)NULL,"calibrate.wfm",
+							&number_of_values,&values_per_second,&values,&constant_voltage))
 						{
 							if (constant_voltage)
 							{

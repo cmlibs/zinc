@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 23 October 2000
+LAST MODIFIED : 13 November 2000
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -227,6 +227,7 @@ int module_slave=0;
 /* for allowing stimulation on different cards to start at the same time */
 f64 start_stimulation_da_frequency;
 i16 start_stimulation_da_channel;
+u32 start_stimulation_iterations;
 struct NI_card *start_stimulation_card=(struct NI_card *)NULL;
 #endif /* defined (NI_DAQ) */
 #endif /* defined (SYNCHRONOUS_STIMULATION) */
@@ -3292,9 +3293,9 @@ static int compare_float(const float *float_1,const float *float_2)
 #if defined (NI_DAQ)
 static int load_NI_DA(i16 da_channel,int number_of_channels,
 	int *channel_numbers,int number_of_voltages,float voltages_per_second,
-	float *voltages)
+	float *voltages,unsigned int number_of_cycles)
 /*******************************************************************************
-LAST MODIFIED : 23 October 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -3309,6 +3310,10 @@ the the signal in <voltages> at the specified number of <voltages_per_second>.
 
 The <voltages> are those desired (in volts).  The function sets <voltages> to
 the actual values used.
+
+If <number_of_cycles> is zero then the waveform is repeated until <stop_NI_DA>,
+otherwise the waveform is repeated the <number_of_cycles> times or until
+<stop_NI_DA>.
 ==============================================================================*/
 {
 	f64 da_frequency,*da_voltage_buffer;
@@ -3325,8 +3330,9 @@ the actual values used.
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"load_NI_DA %d %p %d %g %p\n",number_of_channels,
-			channel_numbers,number_of_voltages,voltages_per_second,voltages);
+		fprintf(unemap_debug,"load_NI_DA %d %p %d %g %p %u\n",number_of_channels,
+			channel_numbers,number_of_voltages,voltages_per_second,voltages,
+			number_of_cycles);
 		fclose(unemap_debug);
 	}
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
@@ -3532,29 +3538,6 @@ the actual values used.
 													}
 												}
 											}
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-	int j,maximum_da_points;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"  WFM_Load %d %d %p %lu\n",i,da_channel,da_buffer,
-			number_of_da_points);
-		maximum_da_points=10;
-		if ((int)number_of_da_points<maximum_da_points)
-		{
-			maximum_da_points=(int)number_of_da_points;
-		}
-		for (j=0;j<maximum_da_points;j++)
-		{
-			fprintf(unemap_debug,"  %d %d\n",j,da_buffer[j]);
-		}
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
 #if defined (SYNCHRONOUS_STIMULATION)
 											if (start_stimulation_card)
 											{
@@ -3564,9 +3547,12 @@ the actual values used.
 													ND_OUT_START_TRIGGER,ND_RTSI_1,ND_LOW_TO_HIGH);
 												if (0==status)
 												{
+													Timeout_Config((module_NI_CARDS[i]).device_number,
+														(i32)0);
 													status=WFM_Op((module_NI_CARDS[i]).device_number,
 														/*number of DA channels*/1,&da_channel,da_buffer,
-														number_of_da_points,/*continous*/(u32)0,
+														number_of_da_points,
+														/*iterations*/(u32)number_of_cycles,
 														/*frequency*/da_frequency);
 													if (0!=status)
 													{
@@ -3592,6 +3578,7 @@ the actual values used.
 													start_stimulation_card=module_NI_CARDS+i;
 													start_stimulation_da_channel=da_channel;
 													start_stimulation_da_frequency=da_frequency;
+													start_stimulation_iterations=(u32)number_of_cycles;
 												}
 												else
 												{
@@ -3611,14 +3598,17 @@ the actual values used.
 											{
 												if (1==number_of_voltages)
 												{
-													AO_Write((module_NI_CARDS[i]).device_number,da_channel,
-														da_buffer[0]);
+													AO_Write((module_NI_CARDS[i]).device_number,
+														da_channel,da_buffer[0]);
 												}
 												else
 												{
+													Timeout_Config((module_NI_CARDS[i]).device_number,
+														(i32)0);
 													status=WFM_Op((module_NI_CARDS[i]).device_number,
 														/*number of DA channels*/1,&da_channel,da_buffer,
-														number_of_da_points,/*continous*/(u32)0,
+														number_of_da_points,
+														/*iterations*/(u32)number_of_cycles,
 														/*frequency*/da_frequency);
 													if (0!=status)
 													{
@@ -3691,7 +3681,7 @@ the actual values used.
 #if defined (NI_DAQ)
 static int start_NI_DA(void)
 /*******************************************************************************
-LAST MODIFIED : 23 October 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -3708,42 +3698,32 @@ load_NI_DA) and have not yet started.
 
 	ENTER(start_NI_DA);
 	return_code=0;
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,"enter start_NI_DA %d %d %p %p\n",
+			module_configured,module_number_of_NI_CARDS,module_NI_CARDS,
+			start_stimulation_card);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
 	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
 #if defined (SYNCHRONOUS_STIMULATION)
 		if (start_stimulation_card)
 		{
+			Timeout_Config(start_stimulation_card->device_number,(i32)0);
 			status=WFM_Op(start_stimulation_card->device_number,
 				/*number of DA channels*/1,&start_stimulation_da_channel,
 				start_stimulation_card->da_buffer,
-				start_stimulation_card->da_buffer_size,/*continous*/(u32)0,
+				start_stimulation_card->da_buffer_size,
+				/*iterations*/start_stimulation_iterations,
 				/*frequency*/start_stimulation_da_frequency);
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"start_NI_DA.  1.  WFM_Group_Control(%d,START)=%d\n",
-			start_stimulation_card->device_number,status);
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"start_NI_DA %d\n",
-			(int)(start_stimulation_card-module_NI_CARDS));
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
 			start_stimulation_card=(struct NI_card *)NULL;
 			for (i=0;i<module_number_of_NI_CARDS;i++)
 			{
@@ -4275,7 +4255,7 @@ stage 4 is calculating the offset
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
 							if (return_code=load_NI_DA(CALIBRATE_CHANNEL,1,&channel_number,
 								number_of_waveform_points,(float)number_of_waveform_points*
-								CALIBRATE_FREQUENCY,calibrate_voltages))
+								CALIBRATE_FREQUENCY,calibrate_voltages,0))
 							{
 								*calibrate_amplitude=calibrate_voltages[0];
 								ni_card++;
@@ -4643,7 +4623,7 @@ stage 4 is calculating the offset
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
 							if (return_code=load_NI_DA(CALIBRATE_CHANNEL,1,&channel_number,
 								number_of_waveform_points,(float)number_of_waveform_points*
-								CALIBRATE_FREQUENCY,calibrate_voltages))
+								CALIBRATE_FREQUENCY,calibrate_voltages,0))
 							{
 								*calibrate_amplitude=calibrate_voltages[0];
 								card_number++;
@@ -4800,7 +4780,7 @@ stage 4 is calculating the offset
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
 								if (return_code=load_NI_DA(CALIBRATE_CHANNEL,1,&channel_number,
 									number_of_waveform_points,(float)number_of_waveform_points*
-									CALIBRATE_FREQUENCY,calibrate_voltages))
+									CALIBRATE_FREQUENCY,calibrate_voltages,0))
 								{
 									*calibrate_amplitude=calibrate_voltages[0];
 									card_number++;
@@ -6336,19 +6316,22 @@ stage 4 is calculating the offset
 #if defined (WINDOWS)
 DWORD WINAPI batt_good_thread_function(LPVOID stop_flag_address_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 13 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	DWORD return_code;
 	int *stop_flag_address;
+#if defined (NI_DAQ)
 	i16 state;
+#endif /* defined (NI_DAQ) */
 
 	ENTER(batt_good_thread_function);
 	return_code=0;
 	if (stop_flag_address=(int *)stop_flag_address_void)
 	{
+#if defined (NI_DAQ)
 		state=0;
 		do
 		{
@@ -6363,6 +6346,7 @@ DESCRIPTION :
 			}
 		} while (state&&module_NI_CARDS&&!(*stop_flag_address));
 		*stop_flag_address=1;
+#endif /* defined (NI_DAQ) */
 	}
 	LEAVE;
 
@@ -8523,11 +8507,11 @@ Otherwise the function fails.
 #endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_write_samples_acquired);
+#if defined (DEBUG)
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,
 		"enter unemap_write_samples_acquired %d %d\n",
 		module_starting_sample_number,module_sample_buffer_size);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #if defined (NI_DAQ)
 	/* check arguments */
@@ -8782,7 +8766,7 @@ Otherwise the function fails.
 
 int unemap_get_samples_acquired(int channel_number,short int *samples)
 /*******************************************************************************
-LAST MODIFIED : 2 April 2000
+LAST MODIFIED : 13 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -8809,6 +8793,7 @@ available physical memory and limits the buffer based on this.
 #endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_get_samples_acquired);
+	return_code=0;
 #if defined (DEBUG)
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,"enter unemap_get_samples_acquired\n");
@@ -9193,7 +9178,7 @@ available physical memory and limits the buffer based on this.
 int unemap_get_samples_acquired_background(int channel_number,
 	Acquired_data_callback *callback,void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 21 July 2000
+LAST MODIFIED : 13 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -9211,11 +9196,15 @@ For this version (hardware local), it retrieves the samples and calls the
 <callback> before returning.
 ==============================================================================*/
 {
-	int number_of_channels,number_of_samples,return_code;
+	int return_code;
+#if defined (NI_DAQ)
+	int number_of_channels,number_of_samples;
 	short *samples;
+#endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_get_samples_acquired_background);
 	return_code=0;
+#if defined (NI_DAQ)
 	/* check arguments */
 	if (callback&&(0<=channel_number)&&
 		(channel_number<=module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD))
@@ -9255,6 +9244,7 @@ For this version (hardware local), it retrieves the samples and calls the
 			"unemap_get_samples_acquired_background.  Invalid argument(s).  %p %d",
 			callback,channel_number);
 	}
+#endif /* defined (NI_DAQ) */
 	LEAVE;
 
 	return (return_code);
@@ -9664,9 +9654,10 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 } /* unemap_get_gain */
 
 int unemap_load_voltage_stimulating(int number_of_channels,int *channel_numbers,
-	int number_of_voltages,float voltages_per_second,float *voltages)
+	int number_of_voltages,float voltages_per_second,float *voltages,
+	unsigned int number_of_cycles)
 /*******************************************************************************
-LAST MODIFIED : 5 June 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -9687,6 +9678,10 @@ stimulating signal is that in <voltages> at the specified number of
 The <voltages> are those desired (in volts).  The function sets <voltages> to
 the actual values used.
 
+If <number_of_cycles> is zero then the waveform is repeated until
+<unemap_stop_stimulating>, otherwise the waveform is repeated the
+<number_of_cycles> times or until <unemap_stop_stimulating>.
+
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
 ==============================================================================*/
@@ -9704,9 +9699,9 @@ Use <unemap_start_stimulating> to start the stimulating.
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"unemap_load_voltage_stimulating %d %p %d %g %p\n",
+		fprintf(unemap_debug,"unemap_load_voltage_stimulating %d %p %d %g %p %u\n",
 			number_of_channels,channel_numbers,number_of_voltages,voltages_per_second,
-			voltages);
+			voltages,number_of_cycles);
 		fclose(unemap_debug);
 	}
 }
@@ -9775,7 +9770,8 @@ Use <unemap_start_stimulating> to start the stimulating.
 					}
 				}
 				return_code=load_NI_DA(STIMULATE_CHANNEL,number_of_channels,
-					channel_numbers,number_of_voltages,voltages_per_second,voltages);
+					channel_numbers,number_of_voltages,voltages_per_second,voltages,
+					number_of_cycles);
 				DEALLOCATE(load_card);
 			}
 			else
@@ -9808,9 +9804,10 @@ Use <unemap_start_stimulating> to start the stimulating.
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"unemap_load_voltage_stimulating %d %p %d %g %p %d\n",
+		fprintf(unemap_debug,
+			"unemap_load_voltage_stimulating %d %p %d %g %p %d %d\n",
 			number_of_channels,channel_numbers,number_of_voltages,voltages_per_second,
-			voltages,return_code);
+			voltages,number_of_cycles,return_code);
 		if ((0<number_of_channels)&&channel_numbers)
 		{
 			fprintf(unemap_debug,"  channels:");
@@ -9839,9 +9836,10 @@ Use <unemap_start_stimulating> to start the stimulating.
 } /* unemap_load_voltage_stimulating */
 
 int unemap_load_current_stimulating(int number_of_channels,int *channel_numbers,
-	int number_of_currents,float currents_per_second,float *currents)
+	int number_of_currents,float currents_per_second,float *currents,
+	unsigned int number_of_cycles)
 /*******************************************************************************
-LAST MODIFIED : 5 June 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -9862,6 +9860,10 @@ stimulating signal is that in <currents> at the specified number of
 The <currents> are those desired as a proportion of the maximum (dependent on
 the impedance being driven).  The function sets <currents> to the actual values
 used.
+
+If <number_of_cycles> is zero then the waveform is repeated until
+<unemap_stop_stimulating>, otherwise the waveform is repeated the
+<number_of_cycles> times or until <unemap_stop_stimulating>.
 
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
@@ -9955,7 +9957,8 @@ Use <unemap_start_stimulating> to start the stimulating.
 					}
 				}
 				return_code=load_NI_DA(STIMULATE_CHANNEL,number_of_channels,
-					channel_numbers,number_of_currents,currents_per_second,currents);
+					channel_numbers,number_of_currents,currents_per_second,currents,
+					number_of_cycles);
 				/* set the desired currents to the actual currents used */
 				for (i=0;i<number_of_currents;i++)
 				{
@@ -10527,7 +10530,7 @@ and 0 otherwise.  Otherwise the function fails.
 int unemap_start_calibrating(int channel_number,int number_of_voltages,
 	float voltages_per_second,float *voltages)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -10566,7 +10569,7 @@ the actual values used.
 	if (stop_NI_DA(CALIBRATE_CHANNEL,channel_number))
 	{
 		if (load_NI_DA(CALIBRATE_CHANNEL,number_of_channels,&channel_number,
-			number_of_voltages,voltages_per_second,voltages))
+			number_of_voltages,voltages_per_second,voltages,0))
 		{
 			if (start_NI_DA())
 			{
@@ -10884,10 +10887,11 @@ If the hardware power is on then <*on> is set to 1, otherwise <*on> is set to 0.
 	return (return_code);
 } /* unemap_get_power */
 
-int unemap_read_waveform_file(char *waveform_file_name,int *number_of_values,
-	float *values_per_second,float **values,int *constant_voltage)
+int unemap_read_waveform_file(FILE *in_file,char *waveform_file_name,
+	int *number_of_values,float *values_per_second,float **values,
+	int *constant_voltage)
 /*******************************************************************************
-LAST MODIFIED : 20 May 1999
+LAST MODIFIED : 12 November 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -10895,23 +10899,29 @@ The function does not need the hardware to be configured.
 A waveform suitable for stimulation is read from a file.  If
 <*constant_voltage>, then the <*values> are voltages otherwise the <*values> are
 proportions of the maximum current.
+???DB.  Same as in unemap_hardware.c .  Could read on remote machine ?
 ==============================================================================*/
 {
 	int return_code;
-#if defined (NI_DAQ)
 	FILE *waveform_file;
 	float *value;
 	int i;
-#endif /* defined (NI_DAQ) */
 
 	ENTER(read_waveform_file);
 	return_code=0;
-#if defined (NI_DAQ)
 	/* check arguments */
-	if (waveform_file_name&&number_of_values&&values&&values_per_second&&
-		constant_voltage)
+	if (((in_file&&!waveform_file_name)||(!in_file&&waveform_file_name))&&
+		number_of_values&&values&&values_per_second&&constant_voltage)
 	{
-		if (waveform_file=fopen(waveform_file_name,"r"))
+		if (in_file)
+		{
+			waveform_file=in_file;
+		}
+		else
+		{
+			waveform_file=fopen(waveform_file_name,"r");
+		}
+		if (waveform_file)
 		{
 			fscanf(waveform_file,"Number of ");
 			if (1==fscanf(waveform_file,"voltages = %d ",
@@ -11001,7 +11011,10 @@ proportions of the maximum current.
 				display_message(ERROR_MESSAGE,
 					"Error reading number of values from %s",waveform_file_name);
 			}
-			fclose(waveform_file);
+			if (!in_file)
+			{
+				fclose(waveform_file);
+			}
 		}
 		else
 		{
@@ -11013,7 +11026,6 @@ proportions of the maximum current.
 	{
 		display_message(ERROR_MESSAGE,"read_waveform_file.  Invalid argument(s)");
 	}
-#endif /* defined (NI_DAQ) */
 	LEAVE;
 
 	return (return_code);
