@@ -3452,6 +3452,9 @@ faces.
 					/* MACRO TEXTURES : spread over several elements */
 					/* round to nearest integer above if non integer (eg 1->1,1.2 ->2) */
 					n_xi[i]=(int)ceil(vtexture->ximax[i]);
+#if defined (OLD_CODE)
+					/* SAB 2003 I don't really want this to repeat when I subdivide an element 
+						so that the computation is spread out */
 					/* MICRO TEXTURES : repeated within one element */
 					/* if texture is to be repeated then calc # of repetitions for each
 						value */
@@ -3461,6 +3464,7 @@ faces.
 						xi_stepsize[i]=(double) (1.0/((double)n_xi_rep[i]));
 					}
 					else
+#endif /* defined (OLD_CODE) */
 					{
 						n_xi_rep[i]=1;
 						xi_stepsize[i]=1.0;
@@ -7764,7 +7768,7 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(Computed_field) *computed_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 12 March 2002
+LAST MODIFIED : 17 March 2002
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).
@@ -7772,9 +7776,9 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 {
 	FE_value scalar_value,xi[3];
 	struct GT_voltex *iso_surface_voltex;
-	int *detail_map,i,j,k,number_in_xi1,number_in_xi2,
+	int cell_limit,*detail_map,i,number_of_passes,number_in_xi1,number_in_xi2,
 		number_in_xi3,number_of_vertices,number_of_volume_texture_cells,
-		number_of_volume_texture_nodes,return_code,*shape_type;
+		number_of_volume_texture_nodes,pass,return_code,*shape_type,xi3_step;
 	struct MC_cell **mc_cell;
 	struct MC_iso_surface *mc_iso_surface;
 	struct VT_texture_cell *cell,*cell_block,**cell_list;
@@ -7789,277 +7793,314 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 		number_in_xi&&(0<number_in_xi[0])&&(0<number_in_xi[1])&&(0<number_in_xi[2])
 		&&scalar_field&&(1==Computed_field_get_number_of_components(scalar_field)))
 	{
-		/* create the volume texture */
-		if (volume_texture=CREATE(VT_volume_texture)((char *)NULL))
+		number_in_xi1=number_in_xi[0];
+		number_in_xi2=number_in_xi[1];
+		number_in_xi3=number_in_xi[2];
+		/* SAB 17 March 2003  To reduce the maximum amount of memory used in generating
+			these isosurfaces I am dividing up the xi3 direction if the number of cells is
+			greater than this limit.  A sensible value for this threshhold is dependent
+			on the memory commonly available in computers being used and so will need to be
+			increased in the future */
+		cell_limit = 100000;
+		/* If the number in xi is large we will divide it up into slices */
+		if (number_in_xi1 * number_in_xi2 * number_in_xi3 > cell_limit)
 		{
-			/* fill in the volume texture */
-			number_in_xi1=number_in_xi[0];
-			number_in_xi2=number_in_xi[1];
-			number_in_xi3=number_in_xi[2];
-			/* check for polygons */
-			/*???DB.  Only for linear polygons */
-			if ((element->shape)&&(shape_type=element->shape->type)&&
-				(3==element->shape->dimension))
+			xi3_step = number_in_xi3;
+			while ((xi3_step > 1) && 
+				(number_in_xi1 * number_in_xi2 * xi3_step > cell_limit))
 			{
-				/* make sure that polygon vertices land on grid points */
-				/*???DB.  For a polygon the "radial" component has to be second ? */
-				if (POLYGON_SHAPE==shape_type[0])
+				xi3_step /= 2;
+			}
+			number_of_passes = (number_in_xi3 + xi3_step - 1) / xi3_step;
+		}
+		else
+		{
+			number_of_passes = 1;
+			xi3_step = number_in_xi3;
+		}
+		for (pass = 0 ; pass < number_of_passes ; pass++)
+		{
+			if (number_of_passes > 1)
+			{
+				if (pass == (number_of_passes - 1))
 				{
-					number_of_vertices=shape_type[1];
-					if (0==number_of_vertices)
-					{
-						number_of_vertices=shape_type[2];
-					}
-#if defined (OLD_CODE)
-					number_in_xi1=1+(1+(number_in_xi1-2)/number_of_vertices)*
-						number_of_vertices;
-#endif /* defined (OLD_CODE) */
-					number_in_xi1=
-						(1+(number_in_xi1-1)/number_of_vertices)*number_of_vertices;
+					number_in_xi3 = number_in_xi[2] - (number_of_passes - 1) * xi3_step;
 				}
 				else
 				{
-					if (POLYGON_SHAPE==shape_type[3])
-					{
-						number_of_vertices=shape_type[4];
-#if defined (OLD_CODE)
-						number_in_xi2=1+(1+(number_in_xi2-2)/number_of_vertices)*
-							number_of_vertices;
-#endif /* defined (OLD_CODE) */
-						number_in_xi2=
-							(1+(number_in_xi2-1)/number_of_vertices)*number_of_vertices;
-					}
+					number_in_xi3 = xi3_step;
 				}
 			}
-			number_of_volume_texture_cells=
-				number_in_xi1*number_in_xi2*number_in_xi3;
-			number_of_volume_texture_nodes=
-				(number_in_xi1+1)*(number_in_xi2+1)*(number_in_xi3+1);
-			if (ALLOCATE(volume_texture->scalar_field->scalar,double,
-				number_of_volume_texture_nodes)&&
-				ALLOCATE(volume_texture->clip_field->scalar,double,
-					number_of_volume_texture_nodes)&&
-				ALLOCATE(volume_texture->clip_field2->scalar,double,
-					number_of_volume_texture_nodes)&&
-				ALLOCATE(volume_texture->coordinate_field->vector,double,
-					3*number_of_volume_texture_nodes)&&
-				ALLOCATE(mc_iso_surface,struct MC_iso_surface,1)&&
-				ALLOCATE(detail_map,int,(number_in_xi1+2)*(number_in_xi2+2)*
-					(number_in_xi3+2))&&
-				ALLOCATE(mc_cell,struct MC_cell *,(number_in_xi1+3)*
-					(number_in_xi2+3)*(number_in_xi3+3))&&
-				ALLOCATE(cell_list,struct VT_texture_cell *,
-					number_of_volume_texture_cells)&&
-				ALLOCATE(node_list,struct VT_texture_node *,
-					number_of_volume_texture_nodes) &&
-				ALLOCATE(cell_block,struct VT_texture_cell,
-					number_of_volume_texture_cells) &&
-				ALLOCATE(node_block,struct VT_texture_node,
-					number_of_volume_texture_nodes))
-				/*???DB.  Not freeing properly */
+			/* create the volume texture */
+			if (volume_texture=CREATE(VT_volume_texture)((char *)NULL))
 			{
-				/* set up iso-surface */
-				(mc_iso_surface->dimension)[0]=number_in_xi1;
-				(mc_iso_surface->dimension)[1]=number_in_xi2;
-				(mc_iso_surface->dimension)[2]=number_in_xi3;
-				mc_iso_surface->detail_map=detail_map;
-				mc_iso_surface->mc_cells=mc_cell;
-				for (i=(number_in_xi1+2)*(number_in_xi2+2)*(number_in_xi3+2);i>0;i--)
+				/* fill in the volume texture */
+				/* check for polygons */
+				/*???DB.  Only for linear polygons */
+				if ((element->shape)&&(shape_type=element->shape->type)&&
+					(3==element->shape->dimension))
 				{
-					*detail_map=0;
-					detail_map++;
-				}
-				for (i=(number_in_xi1+3)*(number_in_xi2+3)*(number_in_xi3+3);i>0;i--)
-				{
-					*mc_cell=(struct MC_cell *)NULL;
-					mc_cell++;
-				}
-				/* all vertices deformable */
-				mc_iso_surface->deform=(int *)NULL;
-				mc_iso_surface->compiled_triangle_list=(struct MC_triangle **)NULL;
-				mc_iso_surface->compiled_vertex_list=(struct MC_vertex **)NULL;
-				mc_iso_surface->n_scalar_fields=0;
-				mc_iso_surface->n_vertices=0;
-				mc_iso_surface->n_triangles=0;
-				(mc_iso_surface->active_block)[0]=1;
-				(mc_iso_surface->active_block)[1]=number_in_xi1;
-				(mc_iso_surface->active_block)[2]=1;
-				(mc_iso_surface->active_block)[3]=number_in_xi2;
-				(mc_iso_surface->active_block)[4]=1;
-				(mc_iso_surface->active_block)[5]=number_in_xi3;
-				volume_texture->mc_iso_surface=mc_iso_surface;
-				/* set the cell values */
-				i=0;
-				while (i<number_of_volume_texture_cells)
-				{
-					cell=cell_block+i;
-					cell_list[i]=cell;
-					(cell->cop)[0]=0.5;
-					(cell->cop)[1]=0.5;
-					(cell->cop)[2]=0.5;
-					cell->material=(struct Graphical_material *)NULL;
-					cell->scalar_value=1.0;
-					cell->env_map=(struct Environment_map *)NULL;
-					cell->detail=0;
-					cell->interpolation_fn=0;
-					i++;
-				}
-				if (i==number_of_volume_texture_cells)
-				{
-					/* set the node values */
-					i=0;
-					xi[0]=0;
-					xi[1]=0;
-					xi[2]=0;
-					return_code=1;
-					while (return_code&&(i<number_of_volume_texture_nodes))
+					/* make sure that polygon vertices land on grid points */
+					/*???DB.  For a polygon the "radial" component has to be second ? */
+					if (POLYGON_SHAPE==shape_type[0])
 					{
-						if (Computed_field_evaluate_in_element(scalar_field,
-							element,xi,time,/*top_level_element*/(struct FE_element *)NULL,
-							&scalar_value,(FE_value *)NULL))
+						number_of_vertices=shape_type[1];
+						if (0==number_of_vertices)
 						{
-							node=node_block+i;
-							node_list[i]=node;
-							(node->cop)[0]=0.5;
-							(node->cop)[1]=0.5;
-							(node->cop)[2]=0.5;
-							node->material=(struct Graphical_material *)NULL;
-							node->dominant_material=(struct Graphical_material *)NULL;
-							node->scalar_value=(double)scalar_value;
-							/*???RC no clipping function for now */
-							node->clipping_fn_value=(double)1.0;
-							i++;
-							if (0==(j=i%(number_in_xi1+1)))
-							{
-								xi[0]=0;
-								j=i/(number_in_xi1+1);
-								if (0==(k=j%(number_in_xi2+1)))
-								{
-									xi[1]=0;
-									k=j/(number_in_xi2+1);
-									xi[2]=(float)k/(float)number_in_xi3;
-								}
-								else
-								{
-									xi[1]=(float)k/(float)number_in_xi2;
-								}
-							}
-							else
-							{
-								xi[0]=(float)j/(float)number_in_xi1;
-							}
+							number_of_vertices=shape_type[2];
 						}
-						else
+#if defined (OLD_CODE)
+						number_in_xi1=1+(1+(number_in_xi1-2)/number_of_vertices)*
+							number_of_vertices;
+#endif /* defined (OLD_CODE) */
+						number_in_xi1=
+							(1+(number_in_xi1-1)/number_of_vertices)*number_of_vertices;
+					}
+					else
+					{
+						if (POLYGON_SHAPE==shape_type[3])
 						{
-							return_code=0;
+							number_of_vertices=shape_type[4];
+#if defined (OLD_CODE)
+							number_in_xi2=1+(1+(number_in_xi2-2)/number_of_vertices)*
+								number_of_vertices;
+#endif /* defined (OLD_CODE) */
+							number_in_xi2=
+								(1+(number_in_xi2-1)/number_of_vertices)*number_of_vertices;
 						}
 					}
-					/* clear Computed_field caches so elements not accessed */
-					Computed_field_clear_cache(scalar_field);
-					if (i==number_of_volume_texture_nodes)
+				}
+				number_of_volume_texture_cells=
+					number_in_xi1*number_in_xi2*number_in_xi3;
+				number_of_volume_texture_nodes=
+					(number_in_xi1+1)*(number_in_xi2+1)*(number_in_xi3+1);
+				if (ALLOCATE(volume_texture->scalar_field->scalar,double,
+						 number_of_volume_texture_nodes)&&
+					ALLOCATE(volume_texture->clip_field->scalar,double,
+						number_of_volume_texture_nodes)&&
+					ALLOCATE(volume_texture->clip_field2->scalar,double,
+						number_of_volume_texture_nodes)&&
+					ALLOCATE(volume_texture->coordinate_field->vector,double,
+						3*number_of_volume_texture_nodes)&&
+					ALLOCATE(mc_iso_surface,struct MC_iso_surface,1)&&
+					ALLOCATE(detail_map,int,(number_in_xi1+2)*(number_in_xi2+2)*
+						(number_in_xi3+2))&&
+					ALLOCATE(mc_cell,struct MC_cell *,(number_in_xi1+3)*
+						(number_in_xi2+3)*(number_in_xi3+3))&&
+					ALLOCATE(cell_list,struct VT_texture_cell *,
+						number_of_volume_texture_cells)&&
+					ALLOCATE(node_list,struct VT_texture_node *,
+						number_of_volume_texture_nodes) &&
+					ALLOCATE(cell_block,struct VT_texture_cell,
+						number_of_volume_texture_cells) &&
+					ALLOCATE(node_block,struct VT_texture_node,
+						number_of_volume_texture_nodes))
+					/*???DB.  Not freeing properly */
+				{
+					/* set up iso-surface */
+					(mc_iso_surface->dimension)[0]=number_in_xi1;
+					(mc_iso_surface->dimension)[1]=number_in_xi2;
+					(mc_iso_surface->dimension)[2]=number_in_xi3;
+					mc_iso_surface->detail_map=detail_map;
+					mc_iso_surface->mc_cells=mc_cell;
+					for (i=(number_in_xi1+2)*(number_in_xi2+2)*(number_in_xi3+2);i>0;i--)
 					{
-						volume_texture->texture_cell_list=cell_list;
-						volume_texture->global_texture_node_list=node_list;
-						volume_texture->isovalue=
-							iso_value;
-						volume_texture->hollow_isovalue=
-							0.75*(volume_texture->isovalue);
-						volume_texture->hollow_mode_on=0;
-						volume_texture->cutting_plane_on=0;
-						/* allow the clipping function to be defined nodally like
-							 the scalar field */
-						volume_texture->clipping_field_on=1;
-						volume_texture->cut_isovalue=0;
-						volume_texture->cutting_plane[0]=0;
-						volume_texture->cutting_plane[1]=0;
-						volume_texture->cutting_plane[2]=0;
-						volume_texture->cutting_plane[3]=0;
-						volume_texture->closed_surface=0;
-						volume_texture->decimation=0;
-						/* set the xi ranges */
-						(volume_texture->ximin)[0]=0;
-						(volume_texture->ximax)[0]=1;
-						(volume_texture->ximin)[1]=0;
-						(volume_texture->ximax)[1]=1;
-						(volume_texture->ximin)[2]=0;
-						(volume_texture->ximax)[2]=1;
-						/* set the discretization */
-						(volume_texture->dimension)[0]=number_in_xi1;
-						(volume_texture->dimension)[1]=number_in_xi2;
-						(volume_texture->dimension)[2]=number_in_xi3;
-						(volume_texture->scalar_field->dimension)[0]=number_in_xi1;
-						(volume_texture->scalar_field->dimension)[1]=number_in_xi2;
-						(volume_texture->scalar_field->dimension)[2]=number_in_xi3;
-						(volume_texture->clip_field->dimension)[0]=number_in_xi1;
-						(volume_texture->clip_field->dimension)[1]=number_in_xi2;
-						(volume_texture->clip_field->dimension)[2]=number_in_xi3;
-						(volume_texture->clip_field2->dimension)[0]=number_in_xi1;
-						(volume_texture->clip_field2->dimension)[1]=number_in_xi2;
-						(volume_texture->clip_field2->dimension)[2]=number_in_xi3;
-						(volume_texture->coordinate_field->dimension)[0]=
-							number_in_xi1;
-						(volume_texture->coordinate_field->dimension)[1]=
-							number_in_xi2;
-						(volume_texture->coordinate_field->dimension)[2]=
-							number_in_xi3;
-						volume_texture->calculate_nodal_values=0;
-						volume_texture->disable_volume_functions=0;
-						if (iso_surface_voltex=generate_clipped_GT_voltex_from_FE_element(
-							clipping,element,coordinate_field,data_field,
-							volume_texture,render_type,NULL,0,NULL,texture_coordinate_field,
-							time))
+						*detail_map=0;
+						detail_map++;
+					}
+					for (i=(number_in_xi1+3)*(number_in_xi2+3)*(number_in_xi3+3);i>0;i--)
+					{
+						*mc_cell=(struct MC_cell *)NULL;
+						mc_cell++;
+					}
+					/* all vertices deformable */
+					mc_iso_surface->deform=(int *)NULL;
+					mc_iso_surface->compiled_triangle_list=(struct MC_triangle **)NULL;
+					mc_iso_surface->compiled_vertex_list=(struct MC_vertex **)NULL;
+					mc_iso_surface->n_scalar_fields=0;
+					mc_iso_surface->n_vertices=0;
+					mc_iso_surface->n_triangles=0;
+					(mc_iso_surface->active_block)[0]=1;
+					(mc_iso_surface->active_block)[1]=number_in_xi1;
+					(mc_iso_surface->active_block)[2]=1;
+					(mc_iso_surface->active_block)[3]=number_in_xi2;
+					(mc_iso_surface->active_block)[4]=1;
+					(mc_iso_surface->active_block)[5]=number_in_xi3;
+					volume_texture->mc_iso_surface=mc_iso_surface;
+					/* set the cell values */
+					i=0;
+					while (i<number_of_volume_texture_cells)
+					{
+						cell=cell_block+i;
+						cell_list[i]=cell;
+						(cell->cop)[0]=0.5;
+						(cell->cop)[1]=0.5;
+						(cell->cop)[2]=0.5;
+						cell->material=(struct Graphical_material *)NULL;
+						cell->scalar_value=1.0;
+						cell->env_map=(struct Environment_map *)NULL;
+						cell->detail=0;
+						cell->interpolation_fn=0;
+						i++;
+					}
+					if (i==number_of_volume_texture_cells)
+					{
+						/* set the node values */
+						i=0;
+						xi[0]=0;
+						xi[1]=0;
+						return_code=1;
+						while (return_code&&(i<number_of_volume_texture_nodes))
 						{
-							if (return_code=GT_OBJECT_ADD(GT_voltex)(
-								graphics_object,
-								/*time*/0,iso_surface_voltex))
+							xi[0] = (float)(i % (number_in_xi1+1)) / (float)number_in_xi1; 
+							xi[1] = (float)((i / (number_in_xi1+1)) % (number_in_xi2+1)) / (float)number_in_xi2; 
+							/* We may start part way through, use number_in_xi2 as this is the total dimension */
+							xi[2] = (float)(((i / ((number_in_xi1+1) * (number_in_xi2+1))))
+								+ pass * xi3_step) / (float)number_in_xi[2];
+							if (Computed_field_evaluate_in_element(scalar_field,
+									 element,xi,time,/*top_level_element*/(struct FE_element *)NULL,
+									 &scalar_value,(FE_value *)NULL))
 							{
-								if (surface_data_density_field
-									&& surface_data_group
-									&& data_manager
-									&& fe_field_manager)
+								node=node_block+i;
+								node_list[i]=node;
+								(node->cop)[0]=0.5;
+								(node->cop)[1]=0.5;
+								(node->cop)[2]=0.5;
+								node->material=(struct Graphical_material *)NULL;
+								node->dominant_material=(struct Graphical_material *)NULL;
+								node->scalar_value=(double)scalar_value;
+								/*???RC no clipping function for now */
+								node->clipping_fn_value=(double)1.0;
+								i++;
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+						/* clear Computed_field caches so elements not accessed */
+						Computed_field_clear_cache(scalar_field);
+						if (i==number_of_volume_texture_nodes)
+						{
+							volume_texture->texture_cell_list=cell_list;
+							volume_texture->global_texture_node_list=node_list;
+							volume_texture->isovalue=
+								iso_value;
+							volume_texture->hollow_isovalue=
+								0.75*(volume_texture->isovalue);
+							volume_texture->hollow_mode_on=0;
+							volume_texture->cutting_plane_on=0;
+							/* allow the clipping function to be defined nodally like
+								the scalar field */
+							volume_texture->clipping_field_on=1;
+							volume_texture->cut_isovalue=0;
+							volume_texture->cutting_plane[0]=0;
+							volume_texture->cutting_plane[1]=0;
+							volume_texture->cutting_plane[2]=0;
+							volume_texture->cutting_plane[3]=0;
+							volume_texture->closed_surface=0;
+							volume_texture->decimation=0;
+							/* set the xi ranges */
+							(volume_texture->ximin)[0]=0;
+							(volume_texture->ximax)[0]=1;
+							(volume_texture->ximin)[1]=0;
+							(volume_texture->ximax)[1]=1;
+							(volume_texture->ximin)[2]=(float)(pass * xi3_step) / (float)number_in_xi[2];
+							(volume_texture->ximax)[2]=(float)((pass + 1) * xi3_step) / (float)number_in_xi[2];
+							if (volume_texture->ximax[2] > 1.0)
+							{
+								volume_texture->ximax[2] = 1.0;
+							}
+							/* set the discretization */
+							(volume_texture->dimension)[0]=number_in_xi1;
+							(volume_texture->dimension)[1]=number_in_xi2;
+							(volume_texture->dimension)[2]=number_in_xi3;
+							(volume_texture->scalar_field->dimension)[0]=number_in_xi1;
+							(volume_texture->scalar_field->dimension)[1]=number_in_xi2;
+							(volume_texture->scalar_field->dimension)[2]=number_in_xi3;
+							(volume_texture->clip_field->dimension)[0]=number_in_xi1;
+							(volume_texture->clip_field->dimension)[1]=number_in_xi2;
+							(volume_texture->clip_field->dimension)[2]=number_in_xi3;
+							(volume_texture->clip_field2->dimension)[0]=number_in_xi1;
+							(volume_texture->clip_field2->dimension)[1]=number_in_xi2;
+							(volume_texture->clip_field2->dimension)[2]=number_in_xi3;
+							(volume_texture->coordinate_field->dimension)[0]=
+								number_in_xi1;
+							(volume_texture->coordinate_field->dimension)[1]=
+								number_in_xi2;
+							(volume_texture->coordinate_field->dimension)[2]=
+								number_in_xi3;
+							volume_texture->calculate_nodal_values=0;
+							volume_texture->disable_volume_functions=0;
+							if (iso_surface_voltex=generate_clipped_GT_voltex_from_FE_element(
+									 clipping,element,coordinate_field,data_field,
+									 volume_texture,render_type,NULL,0,NULL,texture_coordinate_field,
+									 time))
+							{
+								if (return_code=GT_OBJECT_ADD(GT_voltex)(
+										 graphics_object,
+										 /*time*/0,iso_surface_voltex))
 								{
-									return_code = create_surface_data_points_from_GT_voltex(
-										iso_surface_voltex,
-										element, coordinate_field,
-										volume_texture,
-										data_manager,
-										surface_data_group,
-										computed_field_manager, 
-										fe_field_manager, fe_time,
-										surface_data_density_field,
-										surface_data_coordinate_field, time);
+									if (surface_data_density_field
+										&& surface_data_group
+										&& data_manager
+										&& fe_field_manager)
+									{
+										return_code = create_surface_data_points_from_GT_voltex(
+											iso_surface_voltex,
+											element, coordinate_field,
+											volume_texture,
+											data_manager,
+											surface_data_group,
+											computed_field_manager, 
+											fe_field_manager, fe_time,
+											surface_data_density_field,
+											surface_data_coordinate_field, time);
+									}
+									else
+									{
+										return_code=1;
+									}
 								}
 								else
 								{
-									return_code=1;
+									display_message(ERROR_MESSAGE,
+										"create_iso_surfaces_from_FE_element.  "
+										"Unable to add voltex to graphics object");
+									return_code=0;
+									DESTROY(GT_voltex)(&iso_surface_voltex);
 								}
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,
-									"create_iso_surfaces_from_FE_element.  "
-									"Unable to add voltex to graphics object");
-								return_code=0;
-								DESTROY(GT_voltex)(&iso_surface_voltex);
+								/* the element has been totally clipped */
+								return_code=1;
 							}
 						}
 						else
 						{
-							/* the element has been totally clipped */
-							return_code=1;
+							display_message(ERROR_MESSAGE,
+								"create_iso_surfaces_from_FE_element.  "
+								"Could not allocate memory for volume_texture nodes");
+							while (i>0)
+							{
+								i--;
+								DEALLOCATE(node_list[i]);
+							}
+							i=number_of_volume_texture_cells;
+							while (i>0)
+							{
+								i--;
+								DEALLOCATE(cell_list[i]);
+							}
+							return_code=0;
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
 							"create_iso_surfaces_from_FE_element.  "
-							"Could not allocate memory for volume_texture nodes");
-						while (i>0)
-						{
-							i--;
-							DEALLOCATE(node_list[i]);
-						}
-						i=number_of_volume_texture_cells;
+							"Could not allocate memory for volume_texture cells");
 						while (i>0)
 						{
 							i--;
@@ -8070,32 +8111,20 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"create_iso_surfaces_from_FE_element.  "
-						"Could not allocate memory for volume_texture cells");
-					while (i>0)
-					{
-						i--;
-						DEALLOCATE(cell_list[i]);
-					}
+					display_message(ERROR_MESSAGE,"create_iso_surfaces_from_FE_element.  "
+						"Could not allocate memory for volume_texture");
 					return_code=0;
 				}
+				DESTROY(VT_volume_texture)(&volume_texture);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"create_iso_surfaces_from_FE_element.  "
-					"Could not allocate memory for volume_texture");
+				display_message(ERROR_MESSAGE,
+					"create_iso_surfaces_from_FE_element.  "
+					"Could not create volume texture");
+				DESTROY(GT_object)(&(graphics_object));
 				return_code=0;
 			}
-			DESTROY(VT_volume_texture)(&volume_texture);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"create_iso_surfaces_from_FE_element.  "
-				"Could not create volume texture");
-			DESTROY(GT_object)(&(graphics_object));
-			return_code=0;
 		}
 	}
 	else
