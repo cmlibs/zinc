@@ -530,7 +530,7 @@ DESCRIPTION :
 				{
 					FE_region_begin_change(fe_region);
 					if (!FE_region_change_node_identifiers(fe_region,
-						node_offset, sort_by_field, time))
+						data_offset, sort_by_field, time))
 					{
 						return_code = 0;
 					}
