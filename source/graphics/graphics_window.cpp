@@ -4447,6 +4447,12 @@ graphics window on screen.
 		tile_height, tile_width, tiles_across, tiles_down;
 	struct Dm_buffer *dmbuffer;
 	struct Scene_viewer *scene_viewer;
+#if defined (SGI)
+/* The Octane can only handle 1024 */
+#define PBUFFER_MAX (1024)
+#else
+#define PBUFFER_MAX (2048)
+#endif /* defined (SGI) */
 #endif /* defined (DM_BUFFERS) */
 
 	ENTER(Graphics_window_get_frame_pixels);
@@ -4473,7 +4479,6 @@ graphics window on screen.
 		if (!force_onscreen)
 		{
 			dmbuffer = (struct Dm_buffer *)NULL;
-#define PBUFFER_MAX (2048)
 #define PANE_BORDER (2)
 			switch (window->layout_mode)
 			{
