@@ -358,7 +358,7 @@ Perform a local averaging operation on the image cache.
 ==============================================================================*/
 {
 	char *storage;
-	FE_value *data_index, *result_index, *kernel, local_mean;
+	FE_value *data_index, *result_index, *kernel, local_mean, *max_mean;
 	int filter_size, i, j, k, m, *offsets, return_code, kernel_size, storage_size;
 	int kernel_step, image_step;
 
@@ -368,8 +368,6 @@ Perform a local averaging operation on the image cache.
 	{
 		return_code = 1;
 		filter_size = 2 * radius + 1;
-
-
 		/* We only need the one kernel as it is just a reordering for the other dimensions */
 		kernel_size = 1;
 		for (i = 0 ; i < image->dimension ; i++)
@@ -384,13 +382,18 @@ Perform a local averaging operation on the image cache.
 		}
 		if (ALLOCATE(kernel, FE_value, kernel_size) &&
 			ALLOCATE(offsets, int, kernel_size) &&
-			ALLOCATE(storage, char, storage_size * sizeof(FE_value)))
+			ALLOCATE(storage, char, storage_size * sizeof(FE_value))&&
+			ALLOCATE(max_mean, FE_value, image->depth))
 		{
 			result_index = (FE_value *)storage;
 			for (i = 0 ; i < storage_size ; i++)
 			{
 				*result_index = 0.0;
 				result_index++;
+			}
+			for (k = 0; k <image->depth; k++)
+			{
+			        max_mean[k] = 0.0;
 			}
 			for (j = 0 ; j < kernel_size ; j++)
 			{
@@ -433,9 +436,25 @@ Perform a local averaging operation on the image cache.
 					}
 					local_mean /= (FE_value)kernel_size;
 					result_index[k] = local_mean;
+					max_mean[k] = my_Max(max_mean[k], result_index[k]);
 				}
 				data_index += image->depth;
 				result_index += image->depth;
+			}
+			for (i = (storage_size / image->depth) - 1; i >= 0; i--)
+			{
+			        result_index -= image->depth;
+				for (k = 0; k < image->depth; k++)
+				{
+				        if (max_mean[k] == 0.0)
+					{
+					        result_index[k] = 0.0;
+					}
+					else
+					{
+				                result_index[k] /= max_mean[k];
+					}
+				}
 			}
 
 			if (return_code)
@@ -451,7 +470,7 @@ Perform a local averaging operation on the image cache.
 
 			DEALLOCATE(kernel);
 			DEALLOCATE(offsets);
-
+			DEALLOCATE(max_mean);
 		}
 		else
 		{
