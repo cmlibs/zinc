@@ -4191,7 +4191,7 @@ from the surface of a volume texture.
 						area = sqrt ( area * (area - coordinate_1) *
 							(area - coordinate_2) * (area - coordinate_3));
 						expected_number = area * density_data[0];
-						random_number = (float)rand() / (float)0x7fffffff;
+						random_number = (float)rand() /  32767.0;
 										
 #if defined (DEBUG)
 						printf("create_surface_data_points_from_GT_voltex.\n\tarea %f expected %f random %f\n",
@@ -4206,8 +4206,8 @@ from the surface of a volume texture.
 						j = 0;
 						while(return_code && (cumulated_probability < random_number))
 						{
-							xi1 = (float)rand() / (float)0x7fffffff;
-							xi2 = (float)rand() / (float)0x7fffffff;
+							xi1 = (float)rand() / 32767.0;
+							xi2 = (float)rand() / 32767.0;
 							if(xi1 + xi2 > 1.0)
 							{
 								xi1 = 1.0 - xi1;
@@ -7319,6 +7319,12 @@ fields defined over it.
 				element_to_glyph_set_data->native_discretization_field,
 				top_level_number_in_xi,&top_level_element,number_in_xi))
 			{
+				if (element_to_glyph_set_data->xi_discretization_mode 
+					== XI_DISCRETIZATION_CELL_RANDOM)
+				{
+					/* Lets seed with the element number so it is consistent */
+					srand(element->cm.number);
+				}
 				if (xi_points=Xi_discretization_mode_get_xi_points(
 					element_to_glyph_set_data->xi_discretization_mode,
 					dimension,number_in_xi,element_to_glyph_set_data->exact_xi,
