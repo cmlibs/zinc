@@ -360,14 +360,23 @@ Perform a fuzzy_clustering extraction operation on the image cache.
 {
 	char *storage;
 	FE_value *data_index, *result_index, *clusters, *clusters_old, *membership, *dist, d;
-	int clusters_size, membership_size, i, c, j, k, return_code;
-	int storage_size;
-	FE_value flag, mu, class, stop;
+	int clusters_size, membership_size, i, c, j, k, m, return_code;
+	int class, storage_size;
+	FE_value flag, mu, stop, lmean1, lmean2, v1, v2;
+	FE_value sum_value, k_value, *kernel;
+	int image_step, kernel_step, *offsets, filter_size, kernel_size, radius;
 
 	ENTER(Image_cache_fuzzy_clustering);
 	if (image && (image->dimension > 0) && (image->depth > 0))
 	{
 		return_code = 1;
+		radius = 1;
+		filter_size = 2 * radius + 1;
+		kernel_size = 1;
+		for (i = 0 ; i < image->dimension ; i++)
+		{
+			kernel_size *= filter_size;
+		}
 		clusters_size = image->depth * number_of_classes;
 		membership_size = number_of_classes;
 		/* Allocate a new storage block for our data */
@@ -381,8 +390,36 @@ Perform a fuzzy_clustering extraction operation on the image cache.
 		         ALLOCATE(clusters, FE_value, clusters_size) &&
 			 ALLOCATE(clusters_old, FE_value, clusters_size) &&
 			 ALLOCATE(dist, FE_value, membership_size) &&
+			 ALLOCATE(offsets, int, kernel_size) &&
+			 ALLOCATE(kernel, FE_value, kernel_size) &&
 			 ALLOCATE(membership, FE_value, membership_size))
 		{
+		        for (j = 0; j < kernel_size; j++)
+			{
+			        offsets[j] = 0;
+				kernel[j]= 0.0;
+			}
+			sum_value = 0.0;
+			for(j = 0; j < kernel_size; j++)
+			{
+			        kernel_step = 1;
+				image_step = 1;
+				k_value = 0.0;
+				for(m = 0; m < image->dimension; m++)
+				{
+				        k = ((int)((FE_value)j/((FE_value)kernel_step))) % filter_size;
+					offsets[j] += (k - radius) * image_step * image->depth;
+					k_value += (k - radius) * (k - radius);
+					kernel_step *= filter_size;
+					image_step *= image->sizes[m];
+				}
+				kernel[j] = sqrt(k_value);
+				sum_value += kernel[j];
+			}
+			for (j = 0; j < kernel_size; j++)
+			{
+			        kernel[j] /= sum_value;
+			}
 		        stop = 100.0;
 		        result_index = (FE_value *)storage;
 			for (i = 0 ; i < storage_size ; i++)
@@ -414,10 +451,12 @@ Perform a fuzzy_clustering extraction operation on the image cache.
 					dist[i * number_of_classes + c] = sqrt(d);
 				}
 				data_index += image->depth;
+				result_index += image->depth;
 			}
 			for (i = storage_size/image->depth -1; i >= 0; i--)
 			{
 				data_index -= image->depth;
+				result_index -= image->depth;
 				flag = 0.0;
 			        for (c = 0; c < number_of_classes; c++)
 				{      
@@ -465,6 +504,7 @@ Perform a fuzzy_clustering extraction operation on the image cache.
 						clusters[c * image->depth + k] += membership[i * number_of_classes + c] * membership[i * number_of_classes + c] * *(data_index + k) * 255.0;
 					}
 					data_index += image->depth;
+					result_index += image->depth;
 				}
 				for (k = 0; k < image->depth; k++)
 				{
@@ -473,9 +513,10 @@ Perform a fuzzy_clustering extraction operation on the image cache.
 				for (i = storage_size/image->depth -1; i >= 0; i--)
 				{
 					data_index -= image->depth;
+					result_index -= image->depth;
 				}
 			}
-			while (stop > 0.1)
+			while (stop > 0.001)
 			{
 			        for (c = 0; c < number_of_classes; c++)
 				{
@@ -496,10 +537,12 @@ Perform a fuzzy_clustering extraction operation on the image cache.
 						dist[i * number_of_classes + c] = sqrt(d);
 					}
 					data_index += image->depth;
+					result_index += image->depth;
 				}
 				for (i = storage_size/image->depth -1; i >= 0; i--)
 				{
 				        data_index -= image->depth;
+					result_index -= image->depth;
 					flag = 0.0;
 			        	for (c = 0; c < number_of_classes; c++)
 					{      
@@ -512,10 +555,46 @@ Perform a fuzzy_clustering extraction operation on the image cache.
 					{
 					        for (c = 0; c < number_of_classes; c++)
 						{
+						        lmean1 = 0.0;
+							for (m = 0; m < kernel_size; m++)
+							{
+					        		if (result_index + offsets[m] < ((FE_value *)storage))
+								{
+						        		lmean1 += dist[(i + offsets[m]/image->depth + storage_size/image->depth) * number_of_classes + c];
+								}
+								else if (result_index + offsets[m] >= ((FE_value *)storage) + storage_size)
+								{
+						        		lmean1 += dist[(i + offsets[m]/image->depth - storage_size/image->depth) * number_of_classes + c];
+								}
+								else
+								{
+						        		lmean1 += dist[(i + offsets[m]/image->depth) * number_of_classes + c];
+								}
+									
+							}
+							v1 = dist[i * number_of_classes + c] * (1.0 - 0.5 * lmean1);
 						        mu = 0.0;
 							for (j = 0; j < number_of_classes; j++)
 							{
-							        mu += (dist[i * number_of_classes + c]/dist[i * number_of_classes + j]) * (dist[i * number_of_classes + c]/dist[i * number_of_classes + j]);
+							        lmean2 = 0.0;
+							        for (m = 0; m < kernel_size; m++)
+								{
+					        			if (result_index + offsets[m] < ((FE_value *)storage))
+									{
+						        			lmean2 += dist[(i + offsets[m]/image->depth + storage_size/image->depth) * number_of_classes + j];
+									}
+									else if (result_index + offsets[m] >= ((FE_value *)storage) + storage_size)
+									{
+						        			lmean2 += dist[(i + offsets[m]/image->depth - storage_size/image->depth) * number_of_classes + j];
+									}
+									else
+									{
+						        			lmean2 += dist[(i + offsets[m]/image->depth) * number_of_classes + j];
+									}
+									
+								}
+								v2 = dist[i * number_of_classes + j] * (1.0 - 0.5 * lmean2);
+							        mu += (v1/v2) * (v1/v2);
 							}
 							membership[i * number_of_classes + c] = 1.0/mu; 
 						}
@@ -547,6 +626,7 @@ Perform a fuzzy_clustering extraction operation on the image cache.
 						         clusters[c * image->depth + k] += membership[i * number_of_classes + c] * membership[i * number_of_classes + c] * *(data_index + k) * 255.0;
 						}
 						data_index += image->depth;
+						result_index += image->depth;
 					}
 					for (k = 0; k < image->depth; k++)
 					{
@@ -555,6 +635,7 @@ Perform a fuzzy_clustering extraction operation on the image cache.
 					for (i = storage_size/image->depth -1; i >= 0; i--)
 					{
 					        data_index -= image->depth;
+						result_index -= image->depth;
 					}
 				}
 				stop = 0.0;
@@ -580,13 +661,15 @@ Perform a fuzzy_clustering extraction operation on the image cache.
 				{
 				        if (membership[i * number_of_classes + c] == mu)
 					{
-					        class = (FE_value)c;
+					       /* class = (FE_value)c;*/
+					        class = c;
 						break;
 					}   
 				}
 				for (k = 0; k < image->depth; k++)
 				{
-				        result_index[k] = class / ((FE_value)number_of_classes -1.0);
+				        result_index[k] = clusters[class * image->depth + k]/255.0;
+					/* result_index[k] = (FE_value)class / ((FE_value)number_of_classes -1.0); */
 				}
 				result_index += image->depth;
 			}
@@ -603,6 +686,8 @@ Perform a fuzzy_clustering extraction operation on the image cache.
 			DEALLOCATE(clusters);
 			DEALLOCATE(clusters_old);
 			DEALLOCATE(dist);
+			DEALLOCATE(kernel);
+			DEALLOCATE(offsets);
 			DEALLOCATE(membership);
 
 		}
