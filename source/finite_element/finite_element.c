@@ -9559,10 +9559,11 @@ the field.
 int equivalent_FE_field_at_nodes(struct FE_field *field,struct FE_node *node_1,
 	struct FE_node *node_2)
 /*******************************************************************************
-LAST MODIFIED : 10 February 1999
+LAST MODIFIED : 10 October 2000
 
 DESCRIPTION :
 Returns non-zero if the <field> is defined in the same way at the two nodes.
+Note this will also return true if <field> is not defined at both nodes.
 ==============================================================================*/
 {
 	enum FE_nodal_value_type *nodal_value_type_1,*nodal_value_type_2;
@@ -9575,7 +9576,6 @@ Returns non-zero if the <field> is defined in the same way at the two nodes.
 	/* check arguments */
 	if (field&&node_1&&(node_1->fields)&&node_2&&(node_2->fields))
 	{
-	
 		node_field_1=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
 			node_1->fields->node_field_list);
 		
@@ -9624,6 +9624,11 @@ Returns non-zero if the <field> is defined in the same way at the two nodes.
 					i--;
 				}
 			}
+		}
+		else if ((!node_field_1) && (!node_field_2))
+		{
+			/* fields identically NOT defined */
+			return_code=1;
 		}
 	}
 	else
