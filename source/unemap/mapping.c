@@ -3534,6 +3534,7 @@ been embedded in the mapping Xwindow.
 			if (window=CREATE(Graphics_window)(name,SCENE_VIEWER_DOUBLE_BUFFER,
 				background_colour,light_manager,light,light_model_manager,
 				light_model,scene_manager,scene,texture_manager,
+				unemap_package->interactive_tool_manager,
 				user_interface))
 			{
 				set_unemap_package_window(unemap_package,window);
