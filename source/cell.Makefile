@@ -480,6 +480,7 @@ GRAPHICS_SRCS = \
 	graphics/graphics_object.c \
 	graphics/graphics_window.c \
 	graphics/import_graphics_object.c \
+	graphics/order_independent_transparency.c \
 	graphics/renderbinarywavefront.c \
 	graphics/rendergl.c \
 	graphics/rendervrml.c \
