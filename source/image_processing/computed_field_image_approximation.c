@@ -370,14 +370,14 @@ DESCRIPTION : Implement image approximation based on variational model.
 ==============================================================================*/
 {
 	char *storage;
-	FE_value *data_index, *result_index, *g_kernel, *w_kernel;
-	int i, j, k, return_code, kernel_size, storage_size;
-	int filter_size;
-	FE_value fx, sum, wx, gx;
-	int *offsets, out;
-	int image_step, kernel_step, radius, m, length;
-	FE_value *u, *v, *f, *p;
-	FE_value h, b, *q;
+	FE_value *data_index, *result_index, *w_kernel, *w1_kernel;
+	int i, j, k, return_code, kernel_size, kernel_size1,storage_size;
+	int filter_size, filter_size1;
+	FE_value fx, sum, wx, gx, dot;
+	int *offsets, *l_offsets, out;
+	int image_step, kernel_step, radius, radius1, m, length;
+	FE_value *u, *f;
+	FE_value h, b;
 	FE_value max = 0.0;
 
 	ENTER(Image_cache_image_approximation);
@@ -385,26 +385,28 @@ DESCRIPTION : Implement image approximation based on variational model.
 	{
 		return_code = 1;
 		radius = (int)(ceil(2.5 * sigma));
+		radius1 = 2;
 		filter_size = 1 + 2 * radius;
+		filter_size1 = 1 + 2 * radius1;
 
 		kernel_size = 1;
+		kernel_size1 = 1;
 		/* Allocate a new storage block for our data */
 		storage_size = image->depth;
 		for (i = 0 ; i < image->dimension ; i++)
 		{
 			storage_size *= image->sizes[i];
 			kernel_size *= filter_size;
+			kernel_size1 *= filter_size1;
 		}
-		length = storage_size / image->depth;
-		if (ALLOCATE(g_kernel, FE_value, kernel_size) &&
-		        ALLOCATE(w_kernel, FE_value, kernel_size) &&
+		length = storage_size/image->depth;
+		if (ALLOCATE(w_kernel, FE_value, kernel_size) &&
+		        ALLOCATE(w1_kernel, FE_value, kernel_size) &&
 			ALLOCATE(storage, char, storage_size * sizeof(FE_value)) &&
 			ALLOCATE(offsets, int, kernel_size) &&
+			ALLOCATE(l_offsets, int, kernel_size1) &&
 			ALLOCATE(u, FE_value, length) &&
-			ALLOCATE(v, FE_value, length) &&
-			ALLOCATE(f, FE_value, length) &&
-			ALLOCATE(p, FE_value, length) &&
-			ALLOCATE(q, FE_value, length))
+			ALLOCATE(f, FE_value, length))
 		{
 		        return_code = 1;
 			result_index = (FE_value *)storage;
@@ -418,6 +420,10 @@ DESCRIPTION : Implement image approximation based on variational model.
 			{
 				offsets[j] = 0;
 			}
+			for (j = 0 ; j < kernel_size1 ; j++)
+			{
+				l_offsets[j] = 0;
+			}
 			sum = 0.0;
 			for(j = 0; j < kernel_size; j++)
 			{
@@ -427,7 +433,7 @@ DESCRIPTION : Implement image approximation based on variational model.
 				for(m = 0; m < image->dimension; m++)
 				{
 				        k = (j/kernel_step) % filter_size;
-					offsets[j] += (k - radius) * image_step;
+					offsets[j] += (k - radius) * image_step * image->depth;
 					fx += (k - radius) * (k - radius);
 					kernel_step *= filter_size;
 					image_step *= image->sizes[m];
@@ -437,41 +443,42 @@ DESCRIPTION : Implement image approximation based on variational model.
 				gx = pow(2.7, -0.5 * fx/(sigma*sigma));
 				sum += gx;
 				w_kernel[j] = wx;
-				g_kernel[j] = gx;
+			}
+			for(j = 0; j < kernel_size1; j++)
+			{
+			        kernel_step = 1;
+				image_step = 1;
+				fx = 0.0;
+				for(m = 0; m < image->dimension; m++)
+				{
+				        k = (j/kernel_step) % filter_size1;
+					l_offsets[j] += (k - radius1) * image_step * image->depth;
+					kernel_step *= filter_size1;
+					image_step *= image->sizes[m];
+				}
 			}
 			for (j = 0; j < kernel_size; j++)
 			{
-			        g_kernel[j] /= sum;
 				w_kernel[j] /= sum;
+			}
+			for (j = 0; j < kernel_size; j++)
+			{
+			        dot = 0.0;
+				for (k = 0; k < kernel_size; k++)
+				{
+				        if ((j + offsets[k]) >= 0 && (j + offsets[k]) < kernel_size)
+					{
+					         dot += w_kernel[k] * w_kernel[j + offsets[k]];
+					}
+				} 
+				w1_kernel[j] = dot;
 			}
 
 			data_index = (FE_value *)image->data;
 			for (i = 0; i < storage_size / image->depth; i++)
 			{
-			        u[i] = v[i] = *data_index;
+			        u[i] = *data_index;
 				data_index += image->depth;
-			}
-			for (i = 0; i < storage_size / image->depth; i++)
-			{
-				for (j = 0; j < kernel_size; j++)
-				{
-				        if( (i + offsets[j]) < 0)
-					{
-						v[i] += g_kernel[j] * u[i + offsets[j] + length];
-					}
-					else if ((i + offsets[j]) >= length)
-					{
-					        v[i] += g_kernel[j] * u[i + offsets[j] - length];
-					}
-					else
-					{
-					        v[i] += g_kernel[j] * u[i + offsets[j]];
-					}
-				}
-			}
-			for (i = 0; i < storage_size / image->depth; i++)
-			{
-			        u[i] = v[i];
 			}
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
@@ -480,83 +487,75 @@ DESCRIPTION : Implement image approximation based on variational model.
 				for (i = 0; i < storage_size /image->depth; i++)
 				{
 					f[i] = u[i];
-					q[i] = 0.0;
-					p[i] = 0.0;
+					result_index += image->depth;
 				}
-				for (i = 0; i < storage_size / image->depth; i++)
+				for (i = storage_size / image->depth - 1; i >= 0; i--)
 				{
-					for (j = 0; j < kernel_size; j++)
-					{
-						if( (i + offsets[j]) < 0)
-						{
-							q[i] += g_kernel[j] * f[i + offsets[j] + length];
-						}
-						else if ((i + offsets[j]) >= length)
-						{
-							q[i] += g_kernel[j] * f[i + offsets[j] - length];
-						}
-						else
-						{
-							q[i] += g_kernel[j] * f[i + offsets[j]];
-						}
-					}
-				}
-				for (i = 0; i < storage_size / image->depth; i++)
-				{
-				        for (j = 0; j < kernel_size; j++)
-					{
-					        if( (i + offsets[j]) < 0)
-						{
-						        p[i] += w_kernel[j] * f[i + offsets[j] + length];
-						}
-						else if ((i + offsets[j]) >= length)
-						{
-						        p[i] += w_kernel[j] * f[i + offsets[j] - length];
-						}
-						else
-						{
-						        p[i] += w_kernel[j] * f[i + offsets[j]];
-						}
-					}
-				}
-				for (i = 0; i < storage_size / image->depth; i++)
-				{
+				        result_index -= image->depth;
 				        h = 0.0;
 					b = 0.0;
-				        for (j = 0; j < kernel_size; j++)
+				        h += 2.0 * f[i];
+					if(result_index + l_offsets[14] < ((FE_value *)storage))
 					{
-						if( (i + offsets[j]) < 0)
-						{
-							h += g_kernel[j] * q[i + offsets[j] + length];
-						}
-						else if ((i + offsets[j]) >= length)
-						{
-							h += g_kernel[j] * q[i + offsets[j] - length];
-						}
-						else
-						{
-							h += g_kernel[j] * q[i + offsets[j]];
-						}
+					        h += 0.0;
+					}
+					else if (result_index + l_offsets[14] >= ((FE_value *)storage) + storage_size)
+					{
+					        h += 0.0;
+					}
+					else
+					{
+						h += f[i + l_offsets[14]/image->depth];
+					}
+					if(result_index + l_offsets[22] < ((FE_value *)storage))
+					{
+					        h += 0.0;
+					}
+					else if (result_index + l_offsets[22] >= ((FE_value *)storage) + storage_size)
+					{
+					        h += 0.0;
+					}
+					else
+					{
+						h += f[i + l_offsets[22]/image->depth];
+					}
+					if(result_index + l_offsets[13] < ((FE_value *)storage))
+					{
+					        h += 0.0;
+					}
+					else if (result_index + l_offsets[13] >= ((FE_value *)storage) + storage_size)
+					{
+					        h += 0.0;
+					}
+					else
+					{
+						h -= 2.0 * f[i + l_offsets[13]/image->depth];
+					}
+					if(result_index + l_offsets[17] < ((FE_value *)storage))
+					{
+					        h += 0.0;
+					}
+					else if (result_index + l_offsets[17] >= ((FE_value *)storage) + storage_size)
+					{
+					        h += 0.0;
+					}
+					else
+					{
+						h -= 2.0 * f[i + l_offsets[17]/image->depth];
 					}
 					for (j = 0; j < kernel_size; j++)
 					{
-						if( (i + offsets[j]) < 0)
+						if(result_index + offsets[j] >= ((FE_value *)storage) && result_index + offsets[j] < ((FE_value *)storage) + storage_size)
 						{
-							b += w_kernel[j] * p[i + offsets[j] + length];
-						}
-						else if ((i + offsets[j]) >= length)
-						{
-							b += w_kernel[j] * p[i + offsets[j] - length];
+						        b += w1_kernel[j] * f[i + offsets[j]/image->depth];
 						}
 						else
 						{
-							b += w_kernel[j] * p[i + offsets[j]];
+						        b += 0.0;
 						}
 					}
-
-					u[i] +=  alpha * (v[i] - h) - belta * b;
+					u[i] += alpha * h - belta * b;	
 				}
-
 			}
 			for (i = 0; i < storage_size / image->depth; i++)
 			{
@@ -568,19 +567,20 @@ DESCRIPTION : Implement image approximation based on variational model.
 			}
 			for (i = 0; i < storage_size / image->depth; i++)
 			{
-
-				for (k = 0; k < image->depth; k++)
+			        if (max == 0.0)
 				{
-				        if (max == 0.0)
-					{
-					        result_index[k] = 0.0;
-					}
-					else
-					{
-					        result_index[k] = u[i]/max;
-					}
+				        for (k = 0; k < image->depth; k++)
+				        {
+				                result_index[k] = 0.0;
+				        }
 				}
-				data_index += image->depth;
+				else
+				{
+				        for (k = 0; k < image->depth; k++)
+				        {
+				                result_index[k] = u[i]/max;
+				        }
+				}
 				result_index += image->depth;
 			}
 			if (return_code)
@@ -593,13 +593,11 @@ DESCRIPTION : Implement image approximation based on variational model.
 			{
 				DEALLOCATE(storage);
 			}
-			DEALLOCATE(g_kernel);
 			DEALLOCATE(w_kernel);
 			DEALLOCATE(offsets);
-			DEALLOCATE(v);
+			DEALLOCATE(l_offsets);
 			DEALLOCATE(f);
-			DEALLOCATE(q);
-			DEALLOCATE(p);
+			DEALLOCATE(w1_kernel);
 			DEALLOCATE(u);
 		}
 		else
