@@ -65,6 +65,7 @@ Cmiss_value_matrix_get_type
 Cmiss_value_matrix_set_type
 Cmiss_region_get_region_from_path
 Cmiss_region_get_FE_region
+FE_region_get_basis_manager
 FE_region_get_FE_field_from_name
 FE_region_get_FE_node_from_identifier
 FE_region_get_FE_element_from_identifier
@@ -76,6 +77,11 @@ get_FE_field_component_name
 create_Cmiss_region
 access_Cmiss_region
 deaccess_Cmiss_region
+create_FE_region
+Cmiss_region_attach_FE_region
+Cmiss_regions_FE_regions_can_be_merged
+Cmiss_regions_merge_FE_regions
+read_exregion_file_of_name
 create_Cmiss_variable
 access_Cmiss_variable
 deaccess_Cmiss_variable
