@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : geometry.c
 
-LAST MODIFIED : 18 January 2000
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
 Functions for performing coordinate transformations.
@@ -935,7 +935,7 @@ function.
 int Coordinate_systems_match(struct Coordinate_system *coordinate_system1,
 	struct Coordinate_system *coordinate_system2)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
 Returns true if the two coordinate systems are the same - includes comparing
@@ -944,7 +944,7 @@ focus for prolate and oblate spheroidal systems.
 {
 	int return_code;
 
-	ENTER(Coordinate_system_string);
+	ENTER(Coordinate_systems_match);
 	return_code=0;
 	if (coordinate_system1&&coordinate_system2)
 	{
@@ -973,7 +973,7 @@ focus for prolate and oblate spheroidal systems.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Coordinate_system_string. Invalid argument");
+			"Coordinate_systems_match. Invalid argument");
 	}
 	LEAVE;
 
