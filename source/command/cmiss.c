@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 31 October 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -1101,24 +1101,23 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 	return (return_code);
 } /* gfx_create_element_creator */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_element_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Executes a GFX CREATE ELEMENT_POINTS command.
 ==============================================================================*/
 {
-	char exterior_flag,*graphics_object_name,*use_element_type_string,
-		**valid_strings,*xi_discretization_mode_string;
+	char exterior_flag, *graphics_object_name, *use_element_type_string,
+		**valid_strings, *xi_discretization_mode_string;
 	float time;
 	int face_number,number_of_components,number_of_valid_strings,return_code;
 	static char default_name[]="element_points";
 	struct Cmiss_command_data *command_data;
-	struct Computed_field *coordinate_field,*data_field,*label_field,
-		*orientation_scale_field;
+	struct Computed_field *coordinate_field, *data_field, *label_field,
+		*orientation_scale_field, *variable_scale_field;
 	struct Element_discretization discretization;
 	struct Element_to_glyph_set_data element_to_glyph_set_data;
 	struct FE_field *native_discretization_field;
@@ -1129,340 +1128,348 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 	struct Spectrum *spectrum;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data,set_label_field_data,set_orientation_scale_field_data;
+		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
+		set_variable_scale_field_data;
 	Triple exact_xi,glyph_centre,glyph_scale_factors,glyph_size;
 
 	ENTER(gfx_create_element_points);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state &&
+		(command_data=(struct Cmiss_command_data *)command_data_void)&&
+		(computed_field_manager=Computed_field_package_get_computed_field_manager(
+			command_data->computed_field_package)))
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package)))
+		/* initialise defaults */
+		if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
 		{
-			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
-			number_of_components=3;
-			exact_xi[0]=0.5;
-			exact_xi[1]=0.5;
-			exact_xi[2]=0.5;
-			glyph_centre[0]=0.0;
-			glyph_centre[1]=0.0;
-			glyph_centre[2]=0.0;
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			ACCESS(Computed_field)(coordinate_field);
-			data_field=(struct Computed_field *)NULL;
-			exterior_flag=0;
-			face_number=0;
-			element_group=(struct GROUP(FE_element) *)NULL;
-			if (glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-				command_data->glyph_list))
-			{
-				ACCESS(GT_object)(glyph);
-			}
-			label_field=(struct Computed_field *)NULL;
-			material=
-				ACCESS(Graphical_material)(command_data->default_graphical_material);
-			native_discretization_field=(struct FE_field *)NULL;
-			orientation_scale_field=(struct Computed_field *)NULL;
-			glyph_scale_factors[0]=1.0;
-			glyph_scale_factors[1]=1.0;
-			glyph_scale_factors[2]=1.0;
-			glyph_size[0]=1.0;
-			glyph_size[1]=1.0;
-			glyph_size[2]=1.0;
-			spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
-			time=0.0;
-			discretization.number_in_xi1=1;
-			discretization.number_in_xi2=1;
-			discretization.number_in_xi3=1;
+			strcpy(graphics_object_name,default_name);
+		}
+		else
+		{
+			graphics_object_name=(char *)NULL;
+		}
+		number_of_components=3;
+		exact_xi[0]=0.5;
+		exact_xi[1]=0.5;
+		exact_xi[2]=0.5;
+		glyph_centre[0]=0.0;
+		glyph_centre[1]=0.0;
+		glyph_centre[2]=0.0;
+		coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+			"default_coordinate",computed_field_manager);
+		ACCESS(Computed_field)(coordinate_field);
+		data_field=(struct Computed_field *)NULL;
+		exterior_flag=0;
+		face_number=0;
+		element_group=(struct GROUP(FE_element) *)NULL;
+		if (glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
+			command_data->glyph_list))
+		{
+			ACCESS(GT_object)(glyph);
+		}
+		label_field=(struct Computed_field *)NULL;
+		material=
+			ACCESS(Graphical_material)(command_data->default_graphical_material);
+		native_discretization_field=(struct FE_field *)NULL;
+		orientation_scale_field = (struct Computed_field *)NULL;
+		variable_scale_field = (struct Computed_field *)NULL;
+		glyph_scale_factors[0]=1.0;
+		glyph_scale_factors[1]=1.0;
+		glyph_scale_factors[2]=1.0;
+		glyph_size[0]=1.0;
+		glyph_size[1]=1.0;
+		glyph_size[2]=1.0;
+		spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
+		time=0.0;
+		discretization.number_in_xi1=1;
+		discretization.number_in_xi2=1;
+		discretization.number_in_xi3=1;
 
-			option_table=CREATE(Option_table)();
-			/* as */
-			Option_table_add_entry(option_table,"as",&graphics_object_name,
-				(void *)1,set_name);
-			/* cell_centres/cell_corners/cell_random */ 
-			xi_discretization_mode_string=
-				Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CENTRES);
-			valid_strings=
-				Xi_discretization_mode_get_valid_strings(&number_of_valid_strings);
-			Option_table_add_enumerator(option_table,number_of_valid_strings,
-				valid_strings,&xi_discretization_mode_string);
-			DEALLOCATE(valid_strings);
-			/* centre [of glyph] */
-			Option_table_add_entry(option_table,"centre",glyph_centre,
-				&(number_of_components),set_float_vector);
-			/* coordinate */
-			set_coordinate_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_coordinate_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
-				&set_coordinate_field_data,set_Computed_field_conditional);
-			/* data */
-			set_data_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_data_field_data.conditional_function=
-				Computed_field_has_numerical_components;
-			set_data_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"data",&data_field,
-				&set_data_field_data,set_Computed_field_conditional);
-			/* exterior */
-			Option_table_add_entry(option_table,"exterior",&exterior_flag,
-				NULL,set_char_flag);
-			/* face */
-			Option_table_add_entry(option_table,"face",&face_number,
-				NULL,set_exterior);
-			/* from [element_group] */
-			Option_table_add_entry(option_table,"from",&element_group,
-				command_data->element_group_manager,set_FE_element_group);
-			/* glyph */
-			Option_table_add_entry(option_table,"glyph",&glyph,
-				command_data->glyph_list,set_Graphics_object);
-			/* label */
-			set_label_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_label_field_data.conditional_function=
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-			set_label_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"label",&label_field,
-				&set_label_field_data,set_Computed_field_conditional);
-			/* material */
-			Option_table_add_entry(option_table,"material",&material,
-				command_data->graphical_material_manager,set_Graphical_material);
-			/* native_discretization */
-			Option_table_add_entry(option_table,"native_discretization",
-				&native_discretization_field,command_data->fe_field_manager,
-				set_FE_field);
-			/* orientation */
-			set_orientation_scale_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_orientation_scale_field_data.conditional_function=
-				Computed_field_is_orientation_scale_capable;
-			set_orientation_scale_field_data.conditional_function_user_data=
-				(void *)NULL;
-			Option_table_add_entry(option_table,"orientation",
-				&orientation_scale_field,&set_orientation_scale_field_data,
-				set_Computed_field_conditional);
-			/* scale_factors */
-			Option_table_add_entry(option_table,"scale_factors",
-				glyph_scale_factors,"*",set_special_float3);
-			/* size [of glyph] */
-			Option_table_add_entry(option_table,"size",
-				glyph_size,"*",set_special_float3);
-			/* spectrum */
-			Option_table_add_entry(option_table,"spectrum",
-				&spectrum,command_data->spectrum_manager,set_Spectrum);
-			/* time */
-			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
-			/* with */
-			Option_table_add_entry(option_table,"with",&discretization,
-				command_data->user_interface,set_Element_discretization);
-			/* use_elements/use_faces/use_lines */
-			use_element_type_string=Use_element_type_string(USE_ELEMENTS);
-			valid_strings=
-				Use_element_type_get_valid_strings(&number_of_valid_strings);
-			Option_table_add_enumerator(option_table,number_of_valid_strings,
-				valid_strings,&use_element_type_string);
-			DEALLOCATE(valid_strings);
-			/* xi */
-			Option_table_add_entry(option_table,"xi",
-				exact_xi,&number_of_components,set_float_vector);
-			if (return_code=Option_table_multi_parse(option_table,state))
+		option_table=CREATE(Option_table)();
+		/* as */
+		Option_table_add_entry(option_table,"as",&graphics_object_name,
+			(void *)1,set_name);
+		/* cell_centres/cell_corners/cell_random */ 
+		xi_discretization_mode_string=
+			Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CENTRES);
+		valid_strings=
+			Xi_discretization_mode_get_valid_strings(&number_of_valid_strings);
+		Option_table_add_enumerator(option_table,number_of_valid_strings,
+			valid_strings,&xi_discretization_mode_string);
+		DEALLOCATE(valid_strings);
+		/* centre [of glyph] */
+		Option_table_add_entry(option_table,"centre",glyph_centre,
+			&(number_of_components),set_float_vector);
+		/* coordinate */
+		set_coordinate_field_data.computed_field_manager=
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_coordinate_field_data.conditional_function=
+			Computed_field_has_up_to_3_numerical_components;
+		set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+			&set_coordinate_field_data,set_Computed_field_conditional);
+		/* data */
+		set_data_field_data.computed_field_manager=
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_data_field_data.conditional_function=
+			Computed_field_has_numerical_components;
+		set_data_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"data",&data_field,
+			&set_data_field_data,set_Computed_field_conditional);
+		/* exterior */
+		Option_table_add_entry(option_table,"exterior",&exterior_flag,
+			NULL,set_char_flag);
+		/* face */
+		Option_table_add_entry(option_table,"face",&face_number,
+			NULL,set_exterior);
+		/* from [element_group] */
+		Option_table_add_entry(option_table,"from",&element_group,
+			command_data->element_group_manager,set_FE_element_group);
+		/* glyph */
+		Option_table_add_entry(option_table,"glyph",&glyph,
+			command_data->glyph_list,set_Graphics_object);
+		/* label */
+		set_label_field_data.computed_field_manager=
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_label_field_data.conditional_function=
+			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+		set_label_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"label",&label_field,
+			&set_label_field_data,set_Computed_field_conditional);
+		/* material */
+		Option_table_add_entry(option_table,"material",&material,
+			command_data->graphical_material_manager,set_Graphical_material);
+		/* native_discretization */
+		Option_table_add_entry(option_table,"native_discretization",
+			&native_discretization_field,command_data->fe_field_manager,
+			set_FE_field);
+		/* orientation */
+		set_orientation_scale_field_data.computed_field_manager=
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_orientation_scale_field_data.conditional_function=
+			Computed_field_is_orientation_scale_capable;
+		set_orientation_scale_field_data.conditional_function_user_data=
+			(void *)NULL;
+		Option_table_add_entry(option_table,"orientation",
+			&orientation_scale_field,&set_orientation_scale_field_data,
+			set_Computed_field_conditional);
+		/* scale_factors */
+		Option_table_add_entry(option_table,"scale_factors",
+			glyph_scale_factors,"*",set_special_float3);
+		/* size [of glyph] */
+		Option_table_add_entry(option_table,"size",
+			glyph_size,"*",set_special_float3);
+		/* spectrum */
+		Option_table_add_entry(option_table,"spectrum",
+			&spectrum,command_data->spectrum_manager,set_Spectrum);
+		/* time */
+		Option_table_add_entry(option_table,"time",&time,NULL,set_float);
+		/* use_elements/use_faces/use_lines */
+		use_element_type_string=Use_element_type_string(USE_ELEMENTS);
+		valid_strings=
+			Use_element_type_get_valid_strings(&number_of_valid_strings);
+		Option_table_add_enumerator(option_table,number_of_valid_strings,
+			valid_strings,&use_element_type_string);
+		DEALLOCATE(valid_strings);
+		/* variable_scale */
+		set_variable_scale_field_data.computed_field_manager=
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_variable_scale_field_data.conditional_function=
+			Computed_field_has_up_to_3_numerical_components;
+		set_variable_scale_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"variable_scale", &variable_scale_field,
+			&set_variable_scale_field_data, set_Computed_field_conditional);
+		/* with */
+		Option_table_add_entry(option_table,"with",&discretization,
+			command_data->user_interface,set_Element_discretization);
+		/* xi */
+		Option_table_add_entry(option_table,"xi",
+			exact_xi,&number_of_components,set_float_vector);
+		if (return_code=Option_table_multi_parse(option_table,state))
+		{
+			face_number -= 2;
+			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+				graphics_object_name,command_data->graphics_object_list))
 			{
-				face_number -= 2;
-				if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-					graphics_object_name,command_data->graphics_object_list))
+				if (g_GLYPH_SET == graphics_object->object_type)
 				{
-					if (g_GLYPH_SET == graphics_object->object_type)
+					if (GT_object_has_time(graphics_object,time))
 					{
-						if (GT_object_has_time(graphics_object,time))
-						{
-							display_message(WARNING_MESSAGE,
-								"Overwriting time %g in graphics object '%s'",time,
-								graphics_object_name);
-							return_code=GT_object_delete_time(graphics_object,time);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Object of different type named '%s' already exists",
+						display_message(WARNING_MESSAGE,
+							"Overwriting time %g in graphics object '%s'",time,
 							graphics_object_name);
-						return_code=0;
+						return_code=GT_object_delete_time(graphics_object,time);
 					}
 				}
 				else
 				{
-					if ((graphics_object=CREATE(GT_object)(graphics_object_name,
-						g_GLYPH_SET,material))&&
-						ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-							command_data->graphics_object_list))
-					{
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_create_element_points.  Could not create graphics object");
-						DESTROY(GT_object)(&graphics_object);
-						return_code=0;
-					}
+					display_message(ERROR_MESSAGE,
+						"Object of different type named '%s' already exists",
+						graphics_object_name);
+					return_code=0;
+				}
+			}
+			else
+			{
+				if ((graphics_object=CREATE(GT_object)(graphics_object_name,
+					g_GLYPH_SET,material))&&
+					ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
+						command_data->graphics_object_list))
+				{
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_create_element_points.  Could not create graphics object");
+					DESTROY(GT_object)(&graphics_object);
+					return_code=0;
+				}
+			}
+			if (return_code)
+			{
+				element_to_glyph_set_data.time=time;
+				element_to_glyph_set_data.xi_discretization_mode=
+					Xi_discretization_mode_from_string(xi_discretization_mode_string);
+				element_to_glyph_set_data.coordinate_field=
+					Computed_field_begin_wrap_coordinate_field(coordinate_field);
+				if (orientation_scale_field)
+				{
+					element_to_glyph_set_data.orientation_scale_field=
+						Computed_field_begin_wrap_orientation_scale_field(
+							orientation_scale_field,
+							element_to_glyph_set_data.coordinate_field);
+				}
+				else
+				{
+					element_to_glyph_set_data.orientation_scale_field=
+						(struct Computed_field *)NULL;
+				}
+				element_to_glyph_set_data.use_element_type=
+					Use_element_type_from_string(use_element_type_string);
+				element_to_glyph_set_data.element_group=element_group;
+				element_to_glyph_set_data.exterior=exterior_flag;
+				element_to_glyph_set_data.face_number=face_number;
+				element_to_glyph_set_data.number_in_xi[0]=
+					discretization.number_in_xi1;
+				element_to_glyph_set_data.number_in_xi[1]=
+					discretization.number_in_xi2;
+				element_to_glyph_set_data.number_in_xi[2]=
+					discretization.number_in_xi3;
+				element_to_glyph_set_data.variable_scale_field = variable_scale_field;
+				element_to_glyph_set_data.data_field = data_field;
+				element_to_glyph_set_data.label_field = label_field;
+				element_to_glyph_set_data.native_discretization_field =
+					native_discretization_field;
+				element_to_glyph_set_data.glyph = glyph;
+				element_to_glyph_set_data.graphics_object=graphics_object;
+				element_to_glyph_set_data.exact_xi[0] = exact_xi[0];
+				element_to_glyph_set_data.exact_xi[1] = exact_xi[1];
+				element_to_glyph_set_data.exact_xi[2] = exact_xi[2];
+				element_to_glyph_set_data.base_size[0] = (FE_value)(glyph_size[0]);
+				element_to_glyph_set_data.base_size[1] = (FE_value)(glyph_size[1]);
+				element_to_glyph_set_data.base_size[2] = (FE_value)(glyph_size[2]);
+				element_to_glyph_set_data.centre[0] = (FE_value)(glyph_centre[0]);
+				element_to_glyph_set_data.centre[1] = (FE_value)(glyph_centre[1]);
+				element_to_glyph_set_data.centre[2] = (FE_value)(glyph_centre[2]);
+				element_to_glyph_set_data.scale_factors[0] =
+					(FE_value)(glyph_scale_factors[0]);
+				element_to_glyph_set_data.scale_factors[1] =
+					(FE_value)(glyph_scale_factors[1]);
+				element_to_glyph_set_data.scale_factors[2] =
+					(FE_value)(glyph_scale_factors[2]);
+				element_to_glyph_set_data.select_mode = GRAPHICS_NO_SELECT;
+				if (element_group)
+				{
+					return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+						element_to_glyph_set,(void *)&element_to_glyph_set_data,
+						element_group);
+				}
+				else
+				{
+					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+						element_to_glyph_set,(void *)&element_to_glyph_set_data,
+						command_data->element_manager);
 				}
 				if (return_code)
 				{
-					element_to_glyph_set_data.time=time;
-					element_to_glyph_set_data.xi_discretization_mode=
-						Xi_discretization_mode_from_string(xi_discretization_mode_string);
-					element_to_glyph_set_data.coordinate_field=
-						Computed_field_begin_wrap_coordinate_field(coordinate_field);
-					if (orientation_scale_field)
+					if (!GT_object_has_time(graphics_object,time))
 					{
-						element_to_glyph_set_data.orientation_scale_field=
-							Computed_field_begin_wrap_orientation_scale_field(
-								orientation_scale_field,
-								element_to_glyph_set_data.coordinate_field);
+						/* add a NULL glyph_set to make an empty time */
+						GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,
+							(struct GT_glyph_set *)NULL);
 					}
-					else
+					if (data_field)
 					{
-						element_to_glyph_set_data.orientation_scale_field=
-							(struct Computed_field *)NULL;
+						return_code=set_GT_object_Spectrum(graphics_object,spectrum);
 					}
-					element_to_glyph_set_data.use_element_type=
-						Use_element_type_from_string(use_element_type_string);
-					element_to_glyph_set_data.element_group=element_group;
-					element_to_glyph_set_data.exterior=exterior_flag;
-					element_to_glyph_set_data.face_number=face_number;
-					element_to_glyph_set_data.number_in_xi[0]=
-						discretization.number_in_xi1;
-					element_to_glyph_set_data.number_in_xi[1]=
-						discretization.number_in_xi2;
-					element_to_glyph_set_data.number_in_xi[2]=
-						discretization.number_in_xi3;
-					element_to_glyph_set_data.data_field=data_field;
-					element_to_glyph_set_data.label_field=label_field;
-					element_to_glyph_set_data.native_discretization_field=
-						native_discretization_field;
-					element_to_glyph_set_data.glyph=glyph;
-					element_to_glyph_set_data.graphics_object=graphics_object;
-					element_to_glyph_set_data.exact_xi[0]=exact_xi[0];
-					element_to_glyph_set_data.exact_xi[1]=exact_xi[1];
-					element_to_glyph_set_data.exact_xi[2]=exact_xi[2];
-					element_to_glyph_set_data.glyph_centre[0]=glyph_centre[0];
-					element_to_glyph_set_data.glyph_centre[1]=glyph_centre[1];
-					element_to_glyph_set_data.glyph_centre[2]=glyph_centre[2];
-					element_to_glyph_set_data.glyph_size[0]=glyph_size[0];
-					element_to_glyph_set_data.glyph_size[1]=glyph_size[1];
-					element_to_glyph_set_data.glyph_size[2]=glyph_size[2];
-					element_to_glyph_set_data.glyph_scale_factors[0]=
-						glyph_scale_factors[0];
-					element_to_glyph_set_data.glyph_scale_factors[1]=
-						glyph_scale_factors[1];
-					element_to_glyph_set_data.glyph_scale_factors[2]=
-						glyph_scale_factors[2];
-					element_to_glyph_set_data.select_mode=GRAPHICS_NO_SELECT;
-					if (element_group)
-					{
-						return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-							element_to_glyph_set,(void *)&element_to_glyph_set_data,
-							element_group);
-					}
-					else
-					{
-						return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							element_to_glyph_set,(void *)&element_to_glyph_set_data,
-							command_data->element_manager);
-					}
-					if (return_code)
-					{
-						if (!GT_object_has_time(graphics_object,time))
-						{
-							/* add a NULL glyph_set to make an empty time */
-							GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,
-								(struct GT_glyph_set *)NULL);
-						}
-						if (data_field)
-						{
-							return_code=set_GT_object_Spectrum(graphics_object,spectrum);
-						}
-					}
-					else
-					{
-						display_message(WARNING_MESSAGE,"No element_points created");
-						if (0==GT_object_get_number_of_times(graphics_object))
-						{
-							REMOVE_OBJECT_FROM_LIST(GT_object)(graphics_object,
-								command_data->graphics_object_list);
-						}
-					}
-					if (element_to_glyph_set_data.orientation_scale_field)
-					{
-						Computed_field_end_wrap(
-							&(element_to_glyph_set_data.orientation_scale_field));
-					}
-					Computed_field_end_wrap(
-						&(element_to_glyph_set_data.coordinate_field));
 				}
-			} /* parse error, help */
-			DESTROY(Option_table)(&option_table);
-			if (coordinate_field)
-			{
-				DEACCESS(Computed_field)(&coordinate_field);
+				else
+				{
+					display_message(WARNING_MESSAGE,"No element_points created");
+					if (0==GT_object_get_number_of_times(graphics_object))
+					{
+						REMOVE_OBJECT_FROM_LIST(GT_object)(graphics_object,
+							command_data->graphics_object_list);
+					}
+				}
+				if (element_to_glyph_set_data.orientation_scale_field)
+				{
+					Computed_field_end_wrap(
+						&(element_to_glyph_set_data.orientation_scale_field));
+				}
+				Computed_field_end_wrap(
+					&(element_to_glyph_set_data.coordinate_field));
 			}
-			if (data_field)
-			{
-				DEACCESS(Computed_field)(&data_field);
-			}
-			DEACCESS(Spectrum)(&spectrum);
-			DEACCESS(Graphical_material)(&material);
-			DEALLOCATE(graphics_object_name);
-			if (glyph)
-			{
-				DEACCESS(GT_object)(&glyph);
-			}
-			if (orientation_scale_field)
-			{
-				DEACCESS(Computed_field)(&orientation_scale_field);
-			}
-			if (native_discretization_field)
-			{
-				DEACCESS(FE_field)(&native_discretization_field);
-			}
-			if (element_group)
-			{
-				DEACCESS(GROUP(FE_element))(&element_group);
-			}
-		}
-		else
+		} /* parse error, help */
+		DESTROY(Option_table)(&option_table);
+		if (coordinate_field)
 		{
-			display_message(ERROR_MESSAGE,
-				"gfx_create_element_points.  Missing command_data");
-			return_code=0;
+			DEACCESS(Computed_field)(&coordinate_field);
+		}
+		if (data_field)
+		{
+			DEACCESS(Computed_field)(&data_field);
+		}
+		DEACCESS(Spectrum)(&spectrum);
+		DEACCESS(Graphical_material)(&material);
+		DEALLOCATE(graphics_object_name);
+		if (glyph)
+		{
+			DEACCESS(GT_object)(&glyph);
+		}
+		if (orientation_scale_field)
+		{
+			DEACCESS(Computed_field)(&orientation_scale_field);
+		}
+		if (variable_scale_field)
+		{
+			DEACCESS(Computed_field)(&variable_scale_field);
+		}
+		if (native_discretization_field)
+		{
+			DEACCESS(FE_field)(&native_discretization_field);
+		}
+		if (element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&element_group);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_create_element_points.  Missing state");
+		display_message(ERROR_MESSAGE,
+			"gfx_create_element_points.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* gfx_create_element_points */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_element_group(struct Parse_state *state,
@@ -4399,565 +4406,314 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 	return (return_code);
 } /* gfx_create_element_point_viewer */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_node_points(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *use_data,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
-Executes a GFX CREATE NODE_POINTS command.
+Executes a GFX CREATE NODE_POINTS or GFX CREATE DATA_POINTS command.
+If <use_data> is set, creating data points, otherwise creating node points.
 ==============================================================================*/
 {
-	static char default_name[]="node_glyphs";
 	char *graphics_object_name;
+	FE_value base_size[3], centre[3], scale_factors[3];
 	float time;
-	int number_of_components,return_code;
+	int number_of_components, return_code;
 	struct Cmiss_command_data *command_data;
-	struct Computed_field *coordinate_field,*data_field,*label_field,
-		*orientation_scale_field,*rc_coordinate_field,
+	struct Computed_field *coordinate_field, *data_field, *label_field,
+		*orientation_scale_field, *rc_coordinate_field, *variable_scale_field,
 		*wrapper_orientation_scale_field;
 	struct GROUP(FE_node) *node_group;
 	struct Graphical_material *material;
 	struct GT_glyph_set *glyph_set;
 	struct GT_object *glyph,*graphics_object;
 	struct MANAGER(Computed_field) *computed_field_manager;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct Option_table *option_table;
 	struct Spectrum *spectrum;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data,set_label_field_data,set_orientation_scale_field_data;
+		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
+		set_variable_scale_field_data;
 	Triple glyph_centre,glyph_scale_factors,glyph_size;
 
 	ENTER(gfx_create_node_points);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state &&
+		(command_data=(struct Cmiss_command_data *)command_data_void) &&
+		(computed_field_manager = Computed_field_package_get_computed_field_manager(
+			command_data->computed_field_package)))
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package)))
+		if (use_data)
 		{
-			/* initialise defaults */
-			/* default to point glyph for fastest possible display */
-			if (glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-				command_data->glyph_list))
-			{
-				ACCESS(GT_object)(glyph);
-			}
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
-			node_group=(struct GROUP(FE_node) *)NULL;
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			/* must access it now, because we deaccess it later */
-			ACCESS(Computed_field)(coordinate_field);
-			data_field=(struct Computed_field *)NULL;
-			/* must access it now, because we deaccess it later */
-			material=
-				ACCESS(Graphical_material)(command_data->default_graphical_material);
-			label_field=(struct Computed_field *)NULL;
-			orientation_scale_field=(struct Computed_field *)NULL;
-			spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
-			time=0.0;
-			/* final_size = size + scale_factors*magnitude */
-			glyph_scale_factors[0]=1.0;
-			glyph_scale_factors[1]=1.0;
-			glyph_scale_factors[2]=1.0;
-			glyph_size[0]=1.0;
-			glyph_size[1]=1.0;
-			glyph_size[2]=1.0;
-			number_of_components=3;
-			glyph_centre[0]=0.0;
-			glyph_centre[1]=0.0;
-			glyph_centre[2]=0.0;
+			node_manager = command_data->data_manager;
+			node_group_manager = command_data->data_group_manager;
+			graphics_object_name = duplicate_string("data_points");
+		}
+		else
+		{
+			node_manager = command_data->node_manager;
+			node_group_manager = command_data->node_group_manager;
+			graphics_object_name = duplicate_string("node_points");
+		}
+		/* initialise defaults */
+		/* default to point glyph for fastest possible display */
+		if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
+			command_data->glyph_list))
+		{
+			ACCESS(GT_object)(glyph);
+		}
+		node_group = (struct GROUP(FE_node) *)NULL;
+		coordinate_field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+			"default_coordinate", computed_field_manager);
+		/* must access it now, because we deaccess it later */
+		ACCESS(Computed_field)(coordinate_field);
+		data_field = (struct Computed_field *)NULL;
+		/* must access it now, because we deaccess it later */
+		material =
+			ACCESS(Graphical_material)(command_data->default_graphical_material);
+		label_field = (struct Computed_field *)NULL;
+		orientation_scale_field = (struct Computed_field *)NULL;
+		variable_scale_field = (struct Computed_field *)NULL;
+		spectrum = ACCESS(Spectrum)(command_data->default_spectrum);
+		time = 0.0;
+		/* final_size = size + scale_factors*magnitude */
+		glyph_scale_factors[0] = 1.0;
+		glyph_scale_factors[1] = 1.0;
+		glyph_scale_factors[2] = 1.0;
+		glyph_size[0] = 1.0;
+		glyph_size[1] = 1.0;
+		glyph_size[2] = 1.0;
+		number_of_components = 3;
+		glyph_centre[0] = 0.0;
+		glyph_centre[1] = 0.0;
+		glyph_centre[2] = 0.0;
 
-			option_table=CREATE(Option_table)();
-			/* as */
-			Option_table_add_entry(option_table,"as",&graphics_object_name,
-				(void *)1,set_name);
-			/* centre [of glyph] */
-			Option_table_add_entry(option_table,"centre",glyph_centre,
-				&(number_of_components),set_float_vector);
-			/* coordinate */
-			set_coordinate_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_coordinate_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
-				&set_coordinate_field_data,set_Computed_field_conditional);
-			/* data */
-			set_data_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_data_field_data.conditional_function=
-				Computed_field_has_numerical_components;
-			set_data_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"data",&data_field,
-				&set_data_field_data,set_Computed_field_conditional);
-			/* from [node_group] */
-			Option_table_add_entry(option_table,"from",&node_group,
-				command_data->node_group_manager,set_FE_node_group);
-			/* glyph */
-			Option_table_add_entry(option_table,"glyph",&glyph,
-				command_data->glyph_list,set_Graphics_object);
-			/* label */
-			set_label_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_label_field_data.conditional_function=
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-			set_label_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"label",&label_field,
-				&set_label_field_data,set_Computed_field_conditional);
-			/* material */
-			Option_table_add_entry(option_table,"material",&material,
-				command_data->graphical_material_manager,set_Graphical_material);
-			/* orientation */
-			set_orientation_scale_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_orientation_scale_field_data.conditional_function=
-				Computed_field_is_orientation_scale_capable;
-			set_orientation_scale_field_data.conditional_function_user_data=
-				(void *)NULL;
-			Option_table_add_entry(option_table,"orientation",
-				&orientation_scale_field,&set_orientation_scale_field_data,
-				set_Computed_field_conditional);
-			/* scale_factors */
-			Option_table_add_entry(option_table,"scale_factors",
-				glyph_scale_factors,"*",set_special_float3);
-			/* size [of glyph] */
-			Option_table_add_entry(option_table,"size",
-				glyph_size,"*",set_special_float3);
-			/* spectrum */
-			Option_table_add_entry(option_table,"spectrum",
-				&spectrum,command_data->spectrum_manager,set_Spectrum);
-			/* time */
-			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
-			if (return_code=Option_table_multi_parse(option_table,state))
+		option_table=CREATE(Option_table)();
+		/* as */
+		Option_table_add_entry(option_table,"as",&graphics_object_name,
+			(void *)1,set_name);
+		/* centre [of glyph] */
+		Option_table_add_entry(option_table,"centre",glyph_centre,
+			&(number_of_components),set_float_vector);
+		/* coordinate */
+		set_coordinate_field_data.computed_field_manager=
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_coordinate_field_data.conditional_function=
+			Computed_field_has_up_to_3_numerical_components;
+		set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+			&set_coordinate_field_data,set_Computed_field_conditional);
+		/* data */
+		set_data_field_data.computed_field_manager=
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_data_field_data.conditional_function=
+			Computed_field_has_numerical_components;
+		set_data_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"data",&data_field,
+			&set_data_field_data,set_Computed_field_conditional);
+		/* from [node_group] */
+		Option_table_add_entry(option_table,"from",&node_group,
+			node_group_manager,set_FE_node_group);
+		/* glyph */
+		Option_table_add_entry(option_table,"glyph",&glyph,
+			command_data->glyph_list,set_Graphics_object);
+		/* label */
+		set_label_field_data.computed_field_manager=
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_label_field_data.conditional_function=
+			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+		set_label_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"label",&label_field,
+			&set_label_field_data,set_Computed_field_conditional);
+		/* material */
+		Option_table_add_entry(option_table,"material",&material,
+			command_data->graphical_material_manager,set_Graphical_material);
+		/* orientation */
+		set_orientation_scale_field_data.computed_field_manager=
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_orientation_scale_field_data.conditional_function=
+			Computed_field_is_orientation_scale_capable;
+		set_orientation_scale_field_data.conditional_function_user_data=
+			(void *)NULL;
+		Option_table_add_entry(option_table,"orientation",
+			&orientation_scale_field,&set_orientation_scale_field_data,
+			set_Computed_field_conditional);
+		/* scale_factors */
+		Option_table_add_entry(option_table,"scale_factors",
+			glyph_scale_factors,"*",set_special_float3);
+		/* size [of glyph] */
+		Option_table_add_entry(option_table,"size",
+			glyph_size,"*",set_special_float3);
+		/* spectrum */
+		Option_table_add_entry(option_table,"spectrum",
+			&spectrum,command_data->spectrum_manager,set_Spectrum);
+		/* time */
+		Option_table_add_entry(option_table,"time",&time,NULL,set_float);
+		/* variable_scale */
+		set_variable_scale_field_data.computed_field_manager=
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_variable_scale_field_data.conditional_function=
+			Computed_field_has_up_to_3_numerical_components;
+		set_variable_scale_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"variable_scale",&variable_scale_field,
+			&set_variable_scale_field_data,set_Computed_field_conditional);
+		if (return_code=Option_table_multi_parse(option_table,state))
+		{
+			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+				graphics_object_name,command_data->graphics_object_list))
 			{
-				if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-					graphics_object_name,command_data->graphics_object_list))
+				if (g_GLYPH_SET==graphics_object->object_type)
 				{
-					if (g_GLYPH_SET==graphics_object->object_type)
+					if (GT_object_has_time(graphics_object,time))
 					{
-						if (GT_object_has_time(graphics_object,time))
-						{
-							display_message(WARNING_MESSAGE,
-								"Overwriting time %g in graphics object '%s'",time,
-								graphics_object_name);
-							return_code=GT_object_delete_time(graphics_object,time);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Object of different type named '%s' already exists",
+						display_message(WARNING_MESSAGE,
+							"Overwriting time %g in graphics object '%s'",time,
 							graphics_object_name);
-						return_code=0;
+						return_code=GT_object_delete_time(graphics_object,time);
 					}
 				}
 				else
 				{
-					if ((graphics_object=CREATE(GT_object)(graphics_object_name,
-						g_GLYPH_SET,material))&&
-						ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
+					display_message(ERROR_MESSAGE,
+						"Object of different type named '%s' already exists",
+						graphics_object_name);
+					return_code=0;
+				}
+			}
+			else
+			{
+				if ((graphics_object=CREATE(GT_object)(graphics_object_name,
+					g_GLYPH_SET,material))&&
+					ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
 						command_data->graphics_object_list))
+				{
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_create_node_points.  Could not create graphics object");
+					DESTROY(GT_object)(&graphics_object);
+					return_code=0;
+				}
+			}
+			if (return_code)
+			{
+				rc_coordinate_field=
+					Computed_field_begin_wrap_coordinate_field(coordinate_field);
+				if (orientation_scale_field)
+				{
+					wrapper_orientation_scale_field=
+						Computed_field_begin_wrap_orientation_scale_field(
+							orientation_scale_field,rc_coordinate_field);
+				}
+				else
+				{
+					wrapper_orientation_scale_field=(struct Computed_field *)NULL;
+				}
+				base_size[0] = (FE_value)glyph_size[0];
+				base_size[1] = (FE_value)glyph_size[1];
+				base_size[2] = (FE_value)glyph_size[2];
+				centre[0] = (FE_value)glyph_centre[0];
+				centre[1] = (FE_value)glyph_centre[1];
+				centre[2] = (FE_value)glyph_centre[2];
+				scale_factors[0] = (FE_value)glyph_scale_factors[0];
+				scale_factors[1] = (FE_value)glyph_scale_factors[1];
+				scale_factors[2] = (FE_value)glyph_scale_factors[2];
+				if (glyph_set = create_GT_glyph_set_from_FE_node_group(
+					node_group, node_manager, rc_coordinate_field,
+					glyph, base_size, centre, scale_factors,
+					wrapper_orientation_scale_field, variable_scale_field,
+					data_field, label_field, GRAPHICS_NO_SELECT,
+					(struct LIST(FE_node) *)NULL))
+				{
+					if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,glyph_set))
 					{
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_create_node_points.  Could not create graphics object");
-						DESTROY(GT_object)(&graphics_object);
+						DESTROY(GT_glyph_set)(&glyph_set);
 						return_code=0;
 					}
 				}
+				if (wrapper_orientation_scale_field)
+				{
+					Computed_field_end_wrap(&wrapper_orientation_scale_field);
+				}
+				Computed_field_end_wrap(&rc_coordinate_field);
 				if (return_code)
 				{
-					rc_coordinate_field=
-						Computed_field_begin_wrap_coordinate_field(coordinate_field);
-					if (orientation_scale_field)
+					if (!GT_object_has_time(graphics_object,time))
 					{
-						wrapper_orientation_scale_field=
-							Computed_field_begin_wrap_orientation_scale_field(
-								orientation_scale_field,rc_coordinate_field);
+						/* add a NULL glyph_set to make an empty time */
+						GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,
+							(struct GT_glyph_set *)NULL);
 					}
-					else
+					if (data_field)
 					{
-						wrapper_orientation_scale_field=(struct Computed_field *)NULL;
+						return_code=set_GT_object_Spectrum(graphics_object,spectrum);
 					}
-					if (glyph_set=create_GT_glyph_set_from_FE_node_group(
-						node_group,command_data->node_manager,rc_coordinate_field,
-						glyph,glyph_centre,glyph_size,wrapper_orientation_scale_field,
-						glyph_scale_factors,data_field,label_field,GRAPHICS_NO_SELECT,
-						(struct LIST(FE_node) *)NULL))
+				}
+				else
+				{
+					if (use_data)
 					{
-						if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,glyph_set))
-						{
-							DESTROY(GT_glyph_set)(&glyph_set);
-							return_code=0;
-						}
-					}
-					if (wrapper_orientation_scale_field)
-					{
-						Computed_field_end_wrap(&wrapper_orientation_scale_field);
-					}
-					Computed_field_end_wrap(&rc_coordinate_field);
-					if (return_code)
-					{
-						if (!GT_object_has_time(graphics_object,time))
-						{
-							/* add a NULL glyph_set to make an empty time */
-							GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,
-								(struct GT_glyph_set *)NULL);
-						}
-						if (data_field)
-						{
-							return_code=set_GT_object_Spectrum(graphics_object,spectrum);
-						}
+						display_message(WARNING_MESSAGE,"No data_glyphs created");
 					}
 					else
 					{
 						display_message(WARNING_MESSAGE,"No node_glyphs created");
-						if (0==GT_object_get_number_of_times(graphics_object))
-						{
-							REMOVE_OBJECT_FROM_LIST(GT_object)(graphics_object,
-								command_data->graphics_object_list);
-						}
 					}
-				} /* not duplicate name */
-			} /* parse error, help */
-			DESTROY(Option_table)(&option_table);
-			if (coordinate_field)
-			{
-				DEACCESS(Computed_field)(&coordinate_field);
-			}
-			if (data_field)
-			{
-				DEACCESS(Computed_field)(&data_field);
-			}
-			if (orientation_scale_field)
-			{
-				DEACCESS(Computed_field)(&orientation_scale_field);
-			}
-			DEACCESS(Spectrum)(&spectrum);
-			DEACCESS(Graphical_material)(&material);
-			DEALLOCATE(graphics_object_name);
-			if (glyph)
-			{
-				DEACCESS(GT_object)(&glyph);
-			}
-			if (node_group)
-			{
-				DEACCESS(GROUP(FE_node))(&node_group);
-			}
-		}
-		else
+					if (0==GT_object_get_number_of_times(graphics_object))
+					{
+						REMOVE_OBJECT_FROM_LIST(GT_object)(graphics_object,
+							command_data->graphics_object_list);
+					}
+				}
+			} /* not duplicate name */
+		} /* parse error, help */
+		DESTROY(Option_table)(&option_table);
+		if (coordinate_field)
 		{
-			display_message(ERROR_MESSAGE,
-				"gfx_create_node_points.  Missing command_data");
-			return_code=0;
+			DEACCESS(Computed_field)(&coordinate_field);
+		}
+		if (data_field)
+		{
+			DEACCESS(Computed_field)(&data_field);
+		}
+		if (orientation_scale_field)
+		{
+			DEACCESS(Computed_field)(&orientation_scale_field);
+		}
+		if (variable_scale_field)
+		{
+			DEACCESS(Computed_field)(&variable_scale_field);
+		}
+		DEACCESS(Spectrum)(&spectrum);
+		DEACCESS(Graphical_material)(&material);
+		DEALLOCATE(graphics_object_name);
+		if (glyph)
+		{
+			DEACCESS(GT_object)(&glyph);
+		}
+		if (node_group)
+		{
+			DEACCESS(GROUP(FE_node))(&node_group);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_create_node_points.  Missing state");
+		display_message(ERROR_MESSAGE,
+			"gfx_create_node_points.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* gfx_create_node_points */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static int gfx_create_data_points(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 28 August 2000
-
-DESCRIPTION :
-Executes a GFX CREATE DATA_POINTS command.
-==============================================================================*/
-{
-	static char default_name[]="data_glyphs";
-	char *graphics_object_name;
-	float time;
-	int number_of_components,return_code;
-	struct Cmiss_command_data *command_data;
-	struct Computed_field *coordinate_field,*data_field,*label_field,
-		*orientation_scale_field,*rc_coordinate_field,
-		*wrapper_orientation_scale_field;
-	struct GROUP(FE_node) *data_group;
-	struct Graphical_material *material;
-	struct GT_glyph_set *glyph_set;
-	struct GT_object *glyph,*graphics_object;
-	struct MANAGER(Computed_field) *computed_field_manager;
-	struct Option_table *option_table;
-	struct Spectrum *spectrum;
-	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data,set_label_field_data,set_orientation_scale_field_data;
-	Triple glyph_centre,glyph_scale_factors,glyph_size;
-
-	ENTER(gfx_create_data_points);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package)))
-		{
-			/* initialise defaults */
-			/* default to point glyph for fastest possible display */
-			if (glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-				command_data->glyph_list))
-			{
-				ACCESS(GT_object)(glyph);
-			}
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
-			data_group=(struct GROUP(FE_node) *)NULL;
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			/* must access it now, because we deaccess it later */
-			ACCESS(Computed_field)(coordinate_field);
-			data_field=(struct Computed_field *)NULL;
-			/* must access it now, because we deaccess it later */
-			material=
-				ACCESS(Graphical_material)(command_data->default_graphical_material);
-			label_field=(struct Computed_field *)NULL;
-			orientation_scale_field=(struct Computed_field *)NULL;
-			spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
-			time=0.0;
-			/* final_size = size + scale_factors*magnitude */
-			glyph_scale_factors[0]=1.0;
-			glyph_scale_factors[1]=1.0;
-			glyph_scale_factors[2]=1.0;
-			glyph_size[0]=1.0;
-			glyph_size[1]=1.0;
-			glyph_size[2]=1.0;
-			number_of_components=3;
-			glyph_centre[0]=0.0;
-			glyph_centre[1]=0.0;
-			glyph_centre[2]=0.0;
-
-			option_table=CREATE(Option_table)();
-			/* as */
-			Option_table_add_entry(option_table,"as",&graphics_object_name,
-				(void *)1,set_name);
-			/* centre [of glyph] */
-			Option_table_add_entry(option_table,"centre",glyph_centre,
-				&(number_of_components),set_float_vector);
-			/* coordinate */
-			set_coordinate_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_coordinate_field_data.conditional_function=
-				Computed_field_has_up_to_3_numerical_components;
-			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
-				&set_coordinate_field_data,set_Computed_field_conditional);
-			/* data */
-			set_data_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_data_field_data.conditional_function=
-				Computed_field_has_numerical_components;
-			set_data_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"data",&data_field,
-				&set_data_field_data,set_Computed_field_conditional);
-			/* from [data_group] */
-			Option_table_add_entry(option_table,"from",&data_group,
-				command_data->data_group_manager,set_FE_node_group);
-			/* glyph */
-			Option_table_add_entry(option_table,"glyph",&glyph,
-				command_data->glyph_list,set_Graphics_object);
-			/* label */
-			set_label_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_label_field_data.conditional_function=
-				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-			set_label_field_data.conditional_function_user_data=(void *)NULL;
-			Option_table_add_entry(option_table,"label",&label_field,
-				&set_label_field_data,set_Computed_field_conditional);
-			/* material */
-			Option_table_add_entry(option_table,"material",&material,
-				command_data->graphical_material_manager,set_Graphical_material);
-			/* orientation */
-			set_orientation_scale_field_data.computed_field_manager=
-				Computed_field_package_get_computed_field_manager(
-					command_data->computed_field_package);
-			set_orientation_scale_field_data.conditional_function=
-				Computed_field_is_orientation_scale_capable;
-			set_orientation_scale_field_data.conditional_function_user_data=
-				(void *)NULL;
-			Option_table_add_entry(option_table,"orientation",
-				&orientation_scale_field,&set_orientation_scale_field_data,
-				set_Computed_field_conditional);
-			/* scale_factors */
-			Option_table_add_entry(option_table,"scale_factors",
-				glyph_scale_factors,"*",set_special_float3);
-			/* size [of glyph] */
-			Option_table_add_entry(option_table,"size",
-				glyph_size,"*",set_special_float3);
-			/* spectrum */
-			Option_table_add_entry(option_table,"spectrum",
-				&spectrum,command_data->spectrum_manager,set_Spectrum);
-			/* time */
-			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
-			if (return_code=Option_table_multi_parse(option_table,state))
-			{
-				if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-					graphics_object_name,command_data->graphics_object_list))
-				{
-					if (g_GLYPH_SET==graphics_object->object_type)
-					{
-						if (GT_object_has_time(graphics_object,time))
-						{
-							display_message(WARNING_MESSAGE,
-								"Overwriting time %g in graphics object '%s'",time,
-								graphics_object_name);
-							return_code=GT_object_delete_time(graphics_object,time);
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Object of different type named '%s' already exists",
-							graphics_object_name);
-						return_code=0;
-					}
-				}
-				else
-				{
-					if ((graphics_object=CREATE(GT_object)(graphics_object_name,
-						g_GLYPH_SET,material))&&
-						ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
-						command_data->graphics_object_list))
-					{
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_create_data_points.  Could not create graphics object");
-						DESTROY(GT_object)(&graphics_object);
-						return_code=0;
-					}
-				}
-				if (return_code)
-				{
-					rc_coordinate_field=
-						Computed_field_begin_wrap_coordinate_field(coordinate_field);
-					if (orientation_scale_field)
-					{
-						wrapper_orientation_scale_field=
-							Computed_field_begin_wrap_orientation_scale_field(
-								orientation_scale_field,rc_coordinate_field);
-					}
-					else
-					{
-						wrapper_orientation_scale_field=(struct Computed_field *)NULL;
-					}
-					if (glyph_set=create_GT_glyph_set_from_FE_node_group(
-						data_group,command_data->data_manager,rc_coordinate_field,
-						glyph,glyph_centre,glyph_size,wrapper_orientation_scale_field,
-						glyph_scale_factors,data_field,label_field,GRAPHICS_NO_SELECT,
-						(struct LIST(FE_node) *)NULL))
-					{
-						if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,glyph_set))
-						{
-							DESTROY(GT_glyph_set)(&glyph_set);
-							return_code=0;
-						}
-					}
-					if (wrapper_orientation_scale_field)
-					{
-						Computed_field_end_wrap(&wrapper_orientation_scale_field);
-					}
-					Computed_field_end_wrap(&rc_coordinate_field);
-					if (return_code)
-					{
-						if (!GT_object_has_time(graphics_object,time))
-						{
-							/* add a NULL glyph_set to make an empty time */
-							GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,
-								(struct GT_glyph_set *)NULL);
-						}
-						if (data_field)
-						{
-							return_code=set_GT_object_Spectrum(graphics_object,spectrum);
-						}
-					}
-					else
-					{
-						display_message(WARNING_MESSAGE,"No data_glyphs created");
-						if (0==GT_object_get_number_of_times(graphics_object))
-						{
-							REMOVE_OBJECT_FROM_LIST(GT_object)(graphics_object,
-								command_data->graphics_object_list);
-						}
-					}
-				} /* not duplicate name */
-			} /* parse error, help */
-			DESTROY(Option_table)(&option_table);
-			if (coordinate_field)
-			{
-				DEACCESS(Computed_field)(&coordinate_field);
-			}
-			if (data_field)
-			{
-				DEACCESS(Computed_field)(&data_field);
-			}
-			if (orientation_scale_field)
-			{
-				DEACCESS(Computed_field)(&orientation_scale_field);
-			}
-			DEACCESS(Spectrum)(&spectrum);
-			DEACCESS(Graphical_material)(&material);
-			DEALLOCATE(graphics_object_name);
-			if (glyph)
-			{
-				DEACCESS(GT_object)(&glyph);
-			}
-			if (data_group)
-			{
-				DEACCESS(GROUP(FE_node))(&data_group);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_create_data_points.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_create_data_points.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_data_points */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_data_group(struct Parse_state *state,
@@ -9560,8 +9316,8 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_cylinders);
 				Option_table_add_entry(option_table,"data_viewer",NULL,
 					command_data_void,gfx_create_data_viewer);
-				Option_table_add_entry(option_table,"data_points",NULL,
-					command_data_void,gfx_create_data_points);
+				Option_table_add_entry(option_table,"data_points",/*use_data*/(void *)1,
+					command_data_void,gfx_create_node_points);
 				Option_table_add_entry(option_table,"data_sync",NULL,
 					command_data_void,gfx_create_data_sync);
 				Option_table_add_entry(option_table,"dgroup",NULL,
@@ -9618,7 +9374,7 @@ Executes a GFX CREATE command.
 					(void *)&create_node_group_slider_data,create_muscle_slider);
 				Option_table_add_entry(option_table,"ngroup",NULL,
 					command_data_void,gfx_create_node_group);
-				Option_table_add_entry(option_table,"node_points",NULL,
+				Option_table_add_entry(option_table,"node_points",/*use_data*/(void *)0,
 					command_data_void,gfx_create_node_points);
 				Option_table_add_entry(option_table,"node_viewer",NULL,
 					command_data_void,gfx_create_node_viewer);
@@ -12959,7 +12715,7 @@ LAST MODIFIED : 21 September 2000
 
 DESCRIPTION :
 Executes a GFX LIST NODES.
-If <used_data_flag> is set, use data_manager and data_selection, otherwise
+If <use_data> is set, use data_manager and data_selection, otherwise
 use node_manager and node_selection.
 ==============================================================================*/
 {
