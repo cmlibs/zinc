@@ -21,6 +21,7 @@ Scene input.
 #include "computed_field/computed_field_wrappers.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
+#include "general/mystring.h"
 #include "graphics/element_group_settings.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
@@ -58,7 +59,7 @@ Module types
 
 struct Node_tool
 /*******************************************************************************
-LAST MODIFIED : 4 July 2002
+LAST MODIFIED : 17 May 2003
 
 DESCRIPTION :
 Object storing all the parameters for converting scene input messages into
@@ -97,7 +98,6 @@ changes in node position and derivatives etc.
 		 a stream of nodes where the user swipes, rather than just 1 */
 	int streaming_create_enabled;
 	enum Node_tool_edit_mode edit_mode;
-	struct Cmiss_region_chooser *cmiss_region_chooser;
 	struct Computed_field *coordinate_field, *url_field;
 	struct FE_node *template_node;
 	/* information about picked nodes the editor knows about */
@@ -112,11 +112,15 @@ changes in node position and derivatives etc.
 
 #if defined (MOTIF)
 	Display *display;
+	struct Cmiss_region_chooser *cmiss_region_chooser;
 	Widget coordinate_field_form,coordinate_field_widget,create_button,
 		define_button,edit_button,motion_update_button,node_group_form,
 		node_group_widget,select_button,streaming_create_button,
 		url_field_button,url_field_form,url_field_widget;
 	Widget widget,window_shell;
+#else /* defined (MOTIF) */
+	/* without cmiss_region_chooser need somewhere to store the region path */
+	char *current_region_path;
 #endif /* defined (MOTIF) */
 }; /* struct Node_tool */
 
@@ -2136,7 +2140,7 @@ struct Node_tool *CREATE(Node_tool)(
 	struct Time_keeper *time_keeper,
 	struct Execute_command *execute_command)
 /*******************************************************************************
-LAST MODIFIED : 31 March 2003
+LAST MODIFIED : 17 May 2003
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
@@ -2439,6 +2443,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				display_message(ERROR_MESSAGE,
 					"CREATE(Node_tool).  Could not open hierarchy");
 			}
+#else /* defined (MOTIF) */
+			node_tool->current_region_path = (char *)NULL;
 #endif /* defined (MOTIF) */
 		}
 		else
@@ -2505,6 +2511,11 @@ structure itself.
 			destroy_Shell_list_item_from_shell(&(node_tool->window_shell),
 				node_tool->user_interface);
 			XtDestroyWidget(node_tool->window_shell);
+		}
+#else /* defined (MOTIF) */
+		if (node_tool->current_region_path)
+		{
+			DEALLOCATE(node_tool->current_region_path);
 		}
 #endif /* defined (MOTIF) */
 		DEALLOCATE(*node_tool_address);
@@ -3070,7 +3081,7 @@ events, not just at the end of a mouse gesture.
 int Node_tool_get_region_path(struct Node_tool *node_tool,
 	char **path_address)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2003
+LAST MODIFIED : 17 May 2003
 
 DESCRIPTION :
 Returns in <path_address> the path to the Cmiss_region where nodes created by
@@ -3083,8 +3094,21 @@ Up to the calling function to DEALLOCATE the returned path.
 	ENTER(Node_tool_get_region_path);
 	if (node_tool && path_address)
 	{
+#if defined (MOTIF)
 		return_code = Cmiss_region_chooser_get_path(node_tool->cmiss_region_chooser,
 			path_address);
+#else /* defined (MOTIF) */
+		if (node_tool->current_region_path)
+		{
+			*path_address = duplicate_string(node_tool->current_region_path);
+			return_code = 1;
+		}
+		else
+		{
+			*path_address = (char *)NULL;
+			return_code = 0;
+		}
+#endif /* defined (MOTIF) */
 	}
 	else
 	{
@@ -3100,7 +3124,7 @@ Up to the calling function to DEALLOCATE the returned path.
 int Node_tool_set_region_path(struct Node_tool *node_tool,
 	char *path)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2003
+LAST MODIFIED : 17 May 2003
 
 DESCRIPTION :
 Sets the <path> to the region/FE_region where nodes created by
@@ -3113,10 +3137,23 @@ Sets the <path> to the region/FE_region where nodes created by
 	ENTER(Node_tool_set_region_path);
 	if (node_tool && path)
 	{
+#if defined (MOTIF)
 		Cmiss_region_chooser_set_path(node_tool->cmiss_region_chooser, path);
 		region = (struct Cmiss_region *)NULL;
 		Cmiss_region_chooser_get_region(node_tool->cmiss_region_chooser, &region);
 		return_code = Node_tool_set_Cmiss_region(node_tool, region);
+#else /* defined (MOTIF) */
+		if (return_code = Cmiss_region_get_region_from_path(node_tool->root_region,
+			path, &region))
+		{
+			if (node_tool->current_region_path)
+			{
+				DEALLOCATE(node_tool->current_region_path);
+			}
+			node_tool->current_region_path = duplicate_string(path);
+			return_code = Node_tool_set_Cmiss_region(node_tool, region);
+		}
+#endif /* defined (MOTIF) */
 	}
 	else
 	{
