@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : makegtobj.c
 
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Call graphics routines in the API.
@@ -22,7 +22,7 @@ Call graphics routines in the API.
 
 int makegtobject(gtObject *object,float time,int draw_selected)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Convert graphical object into API object.
@@ -32,6 +32,9 @@ un-selected graphics are drawn.
 {
 	float proportion,*times;
 	int itime,name_selected,return_code,strip,wireframe_flag;
+#if defined (OPENGL_API)
+	int lighting_off;
+#endif /* defined (OPENGL_API) */
 	struct Graphical_material *material;
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
 	struct GT_nurbs *nurbs;
@@ -144,7 +147,7 @@ un-selected graphics are drawn.
 										interpolate_glyph_set->data,
 										interpolate_glyph_set->names,
 										material,spectrum,
-										draw_selected,selected_name_ranges);
+										draw_selected,name_selected,selected_name_ranges);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 								}
 								glyph_set=glyph_set->ptrnext;
@@ -167,7 +170,7 @@ un-selected graphics are drawn.
 									glyph_set->labels,glyph_set->n_data_components,
 									glyph_set->data,glyph_set->names,
 									material,spectrum,
-									draw_selected,selected_name_ranges);
+									draw_selected,name_selected,selected_name_ranges);
 								glyph_set=glyph_set->ptrnext;
 							}
 						}
@@ -303,17 +306,24 @@ un-selected graphics are drawn.
 						{
 							line_2=(object->gu.gt_polyline)[itime+1];
 						}
+#if defined (OPENGL_API)
+						/* push dummy name to make space for identifier for each
+							 polyline on picking name stack */
+						glPushName(0);
+						if (lighting_off=((g_PLAIN == line->polyline_type)||
+							(g_PLAIN_DISCONTINUOUS == line->polyline_type)))
+						{
+							/* disable lighting so rendered in flat diffuse colour */
+							/*???RC glPushAttrib and glPopAttrib are *very* slow */
+							glPushAttrib(GL_ENABLE_BIT);
+							glDisable(GL_LIGHTING);
+						}
+#endif /* defined (OPENGL_API) */
 						switch (line->polyline_type)
 						{
 							case g_PLAIN:
 							case g_NORMAL:
 							{
-#if defined (OPENGL_API)
-								/* disable lighting so rendered in flat diffuse colour */
-								/*???RC glPushAttrib and glPopAttrib are *very* slow */
-								glPushAttrib(GL_ENABLE_BIT);
-								glDisable(GL_LIGHTING);
-#endif /* defined (OPENGL_API) */
 								if (proportion>0)
 								{
 									while (line&&line_2)
@@ -328,6 +338,8 @@ un-selected graphics are drawn.
 											if (interpolate_line=morph_GT_polyline(proportion,line,
 												line_2))
 											{
+												/* put out name for picking - cast to GLuint */
+												glLoadName((GLuint)interpolate_line->object_name);
 												draw_polylineGL(interpolate_line->pointlist,
 													interpolate_line->normallist, interpolate_line->n_pts,
 													interpolate_line->n_data_components,
@@ -351,6 +363,8 @@ un-selected graphics are drawn.
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
+											/* put out name for picking - cast to GLuint */
+											glLoadName((GLuint)line->object_name);
 											draw_polylineGL(line->pointlist,line->normallist,
 												line->n_pts, line->n_data_components, line->data,
 												material,spectrum);
@@ -358,21 +372,11 @@ un-selected graphics are drawn.
 										line=line->ptrnext;
 									}
 								}
-#if defined (OPENGL_API)
-								/* restore previous lighting state */
-								glPopAttrib();
-#endif /* defined (OPENGL_API) */
 								return_code=1;
 							} break;
 							case g_PLAIN_DISCONTINUOUS:
 							case g_NORMAL_DISCONTINUOUS:
 							{
-#if defined (OPENGL_API)
-								/* disable lighting so rendered in flat diffuse colour */
-								/*???RC glPushAttrib and glPopAttrib are *very* slow */
-								glPushAttrib(GL_ENABLE_BIT);
-								glDisable(GL_LIGHTING);
-#endif /* defined (OPENGL_API) */
 								if (proportion>0)
 								{
 									while (line&&line_2)
@@ -387,6 +391,8 @@ un-selected graphics are drawn.
 											if (interpolate_line=morph_GT_polyline(proportion,line,
 												line_2))
 											{
+												/* put out name for picking - cast to GLuint */
+												glLoadName((GLuint)interpolate_line->object_name);
 												draw_dc_polylineGL(interpolate_line->pointlist,
 													interpolate_line->normallist, interpolate_line->n_pts,
 													interpolate_line->n_data_components,
@@ -410,6 +416,8 @@ un-selected graphics are drawn.
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
+											/* put out name for picking - cast to GLuint */
+											glLoadName((GLuint)line->object_name);
 											draw_dc_polylineGL(line->pointlist,line->normallist, 
 												line->n_pts,line->n_data_components,line->data,
 												material,spectrum);
@@ -417,10 +425,6 @@ un-selected graphics are drawn.
 										line=line->ptrnext;
 									}
 								}
-#if defined (OPENGL_API)
-								/* restore previous lighting state */
-								glPopAttrib();
-#endif /* defined (OPENGL_API) */
 								return_code=1;
 							} break;
 							default:
@@ -430,6 +434,15 @@ un-selected graphics are drawn.
 								return_code=0;
 							} break;
 						}
+#if defined (OPENGL_API)
+						if (lighting_off)
+						{
+							/* restore previous lighting state */
+							glPopAttrib();
+						}
+						/* restore picking name stack to original size */
+						glPopName();
+#endif /* defined (OPENGL_API) */
 					}
 					else
 					{
@@ -440,14 +453,13 @@ un-selected graphics are drawn.
 				} break;
 				case g_SURFACE:
 				{
-#if defined (OLD_CODE)
-					/* save transformation attributes state */
-					/*???RC All our normals should already be unit vectors */
-					/*glPushAttrib(GL_TRANSFORM_BIT);
-						glEnable(GL_NORMALIZE);*/
-#endif /* defined (OLD_CODE) */
 					if (surface=(object->gu.gt_surface)[itime])
 					{
+#if defined (OPENGL_API)
+						/* push dummy name to make space for identifier for each
+							 polyline on picking name stack */
+						glPushName(0);
+#endif /* defined (OPENGL_API) */
 						if (proportion>0)
 						{
 							surface_2=(object->gu.gt_surface)[itime+1];
@@ -482,6 +494,8 @@ un-selected graphics are drawn.
 											if (interpolate_surface=morph_GT_surface(proportion,
 												surface,surface_2))
 											{
+												/* put out name for picking - cast to GLuint */
+												glLoadName((GLuint)interpolate_surface->object_name);
 												draw_surfaceGL(interpolate_surface->pointlist,
 													interpolate_surface->normallist,
 													interpolate_surface->texturelist,
@@ -509,6 +523,8 @@ un-selected graphics are drawn.
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
+											/* put out name for picking - cast to GLuint */
+											glLoadName((GLuint)surface->object_name);
 											draw_surfaceGL(surface->pointlist, surface->normallist,
 												surface->texturelist, surface->n_pts1,
 												surface->n_pts2, surface->polygon,
@@ -545,6 +561,8 @@ un-selected graphics are drawn.
 											if (interpolate_surface=morph_GT_surface(proportion,
 												surface,surface_2))
 											{
+												/* put out name for picking - cast to GLuint */
+												glLoadName((GLuint)interpolate_surface->object_name);
 												draw_dc_surfaceGL(interpolate_surface->pointlist,
 													interpolate_surface->normallist,
 													interpolate_surface->texturelist,
@@ -572,6 +590,8 @@ un-selected graphics are drawn.
 										if ((name_selected&&draw_selected)||
 											((!name_selected)&&(!draw_selected)))
 										{
+											/* put out name for picking - cast to GLuint */
+											glLoadName((GLuint)surface->object_name);
 											draw_dc_surfaceGL(surface->pointlist,surface->normallist,
 												surface->texturelist,surface->n_pts1,surface->n_pts2,
 												surface->polygon,strip, surface->n_data_components,
@@ -589,6 +609,10 @@ un-selected graphics are drawn.
 								return_code=0;
 							} break;
 						}
+#if defined (OPENGL_API)
+						/* restore picking name stack to original size */
+						glPopName();
+#endif /* defined (OPENGL_API) */
 					}
 					else
 					{
@@ -596,10 +620,6 @@ un-selected graphics are drawn.
 						display_message(ERROR_MESSAGE,"makegtobject.  Missing surface");
 						return_code=0;
 					}
-#if defined (OPENGL_API)
-					/* restore previous coloring state */
-					/*glPopAttrib();*/
-#endif /* defined (OPENGL_API) */
 				} break;
 				case g_NURBS:
 				{
