@@ -67,6 +67,7 @@ Clear the type specific data used by this type.
 			DEACCESS(Texture)(&(data->texture));
 		}
 		DEALLOCATE(field->type_specific_data);
+		return_code = 1;
 	}
 	else
 	{
