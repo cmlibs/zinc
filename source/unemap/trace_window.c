@@ -4598,6 +4598,7 @@ get the current signal for inverse
 	{	
 		trace->calculate_signal_mode=CURRENT_SIGNAL;
 		trace_update_signal_controls(trace);
+		trace->calculate_rms=1;
 		trace_change_signal(trace);
 	}
 	else
@@ -4606,6 +4607,59 @@ get the current signal for inverse
 	}
 	LEAVE;
 } /* calculate_current_signal */
+
+static void id_calculate_rms_curr_sig_butt(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :21 February 2001
+
+DESCRIPTION :
+Saves the id of the current_signal  button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_calculate_rms_curr_sig_butt);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.calculate.RMS_current_choice.rms_current_signal_button= *widget_id;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_calculate_rms_curr_sig_butt. Missing trace_window");
+	}
+	LEAVE;
+} /*id_calculate_rms_curr_sig_butt */
+
+static void calculate_rms_current_signal(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+get the current signal for inverse
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(calculate_rms_current_signal);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (trace=(struct Trace_window *)trace_window)
+	{	
+		trace->calculate_signal_mode=RMS_AND_CURRENT_SIGNAL;
+		trace_update_signal_controls(trace);
+		trace->calculate_rms=1;
+		trace_change_signal(trace);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"calculate_rms_current_signal. Missing trace_window");
+	}
+	LEAVE;
+} /* calculate_rms_current_signal */
 
 static void identify_trace_correlation_2_me(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
@@ -6814,6 +6868,10 @@ the created trace window.  If unsuccessful, NULL is returned.
 		 (XtPointer)id_calculate_curr_sig_butt},
 		{"calculate_current_signal",
 		 (XtPointer)calculate_current_signal},
+		{"id_calculate_rms_curr_sig_butt",
+		 (XtPointer)id_calculate_rms_curr_sig_butt},
+		{"calculate_rms_current_signal",
+		 (XtPointer)calculate_rms_current_signal},
 		{"id_trace_calculate_butt",
 		 (XtPointer)id_trace_calculate_butt},
 		{"calculate_calculate",
@@ -7047,6 +7105,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_1.calculate.RMS_current_choice.RMS_signal_button
 					=(Widget)NULL;
 				trace->area_1.calculate.RMS_current_choice.current_signal_button
+					=(Widget)NULL;
+				trace->area_1.calculate.RMS_current_choice.rms_current_signal_button
 					=(Widget)NULL;
 				trace->area_1.calculate.calculate_button=(Widget)NULL;
 				trace->area_1.calculate.cutoff_value=(Widget)NULL;
@@ -8323,7 +8383,7 @@ and location.
 
 static int process_eimaging(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 13 March 2001
+LAST MODIFIED : 14 March 2001
 
 DESCRIPTION :
 Calculates the processed device for electrical imaging.
@@ -8333,17 +8393,19 @@ before this function is exited.
 ==============================================================================*/
 {
 	char *name;
+	enum Calculate_signal_mode calculate_signal_mode;
 	enum Event_signal_status **status_ptr,*status;
 	enum Inverse_electrodes_mode electrodes_mode;
-	float processed_frequency,*processed_value,*source_value,*time_float,*times,
-		*values;
-	int buffer_offset,i,j,number_of_devices,num_valid_devices,number_of_samples,
-		*processed_time,return_code;
+	float processed_frequency,*processed_value,*source_value,*start_value,
+		*time_float,*times,*value,*values;
+	int buffer_offset,i,j,number_of_devices,num_valid_devices,
+		number_of_samples,number_of_signals,*processed_time,return_code;
 	struct Device *device,*processed_device,**the_device;
 	struct Device_description *description;
 	struct Rig *rig;
 	struct Region *current_region;
 	struct Signal_buffer *processed_buffer;
+	struct Signal *signal_next,*signal_next_new;
 
 	ENTER(process_eimaging);
 	values=(float *)NULL;
@@ -8351,111 +8413,176 @@ before this function is exited.
 	rig=(struct Rig *)NULL;
 	current_region=(struct Region *)NULL;
 	description=(struct Device_description *)NULL;
+	signal_next=(struct Signal *)NULL;
 	return_code=0;	
 	if(trace)
 	{		
+		calculate_signal_mode=trace->calculate_signal_mode;
 		electrodes_mode=trace->inverse_electrodes_mode;
-		if((trace->calculate_signal_mode==RMS_SIGNAL)&&(trace->calculate_rms))
-		/* nothing to do for CURRENT_SIGNAL case */
+		if(calculate_signal_mode!=CURRENT_SIGNAL)
+			/* nothing to do for CURRENT_SIGNAL case  */
 		{
-			/* get info from the highlighted signal */	
 			if ((trace->highlight)&&(*(trace->highlight))&&
-				(device= **(trace->highlight))
-				&&extract_signal_information((struct FE_node *)NULL,
-					(struct Signal_drawing_package *)NULL,device,1,
-					1,0,(int *)NULL,&number_of_samples,&times,&values,
-					(enum Event_signal_status **)NULL,&name,(int *)NULL,
-					(float *)NULL,(float *)NULL)&&(0<number_of_samples)&&
+				(device= **(trace->highlight))&&
 				(processed_device=trace->processed_device)&&
 				(processed_device->signal)&&(processed_device->channel)&&
 				(processed_buffer=processed_device->signal->buffer))
-			{			
-				if (processed_device->signal->next)
+			{				
+				if(calculate_signal_mode==RMS_SIGNAL)
 				{
 					destroy_Signal(&(processed_device->signal->next));
-				}				
-				/* realloc Signal_buffer for processed_device */
-				processed_frequency=(float)number_of_samples/
-					(times[number_of_samples-1]-times[0]);
-				if (processed_buffer=reallocate_Signal_buffer(processed_buffer,
-					FLOAT_VALUE,1,number_of_samples,processed_frequency))
-				{	
-					/* zero all the processed values, and copy the processed times*/				
-					time_float=times;				
-					processed_time=processed_buffer->times;
-					processed_value=((processed_buffer->signals).float_values)+
-						(trace->processed_device->signal->index);
-					buffer_offset=processed_buffer->number_of_signals;
-					processed_device->channel->offset=0;
-					processed_device->channel->gain=1;
-					processed_device->signal_display_maximum=0;
-					processed_device->signal_display_minimum=1;
-					for (j=number_of_samples;j>0;j--)
-					{
-						*processed_value= 0;
-						processed_value += buffer_offset;				
-						*processed_time=(int)((*time_float)*processed_frequency+0.5);
-						processed_time++;
-						time_float++;
-					}				
-					/* find all the relevant devices, to get RMS of them */
-					rig=*(trace->rig);
-					current_region=get_Rig_current_region(rig);
-					number_of_devices=rig->number_of_devices;
-					the_device=rig->devices;
-					num_valid_devices=0;
-					status_ptr=&status;	
-					/* might have no relevant signals */
-					trace->valid_processing=1;				
-					return_code=1;		
-					/* now need to get RMS and shove in processed signal*/
-					/* sum the square of the sample values */
-					for(i=0;i<number_of_devices;i++)
-					{
-						description=(*the_device)->description;
-						if((!current_region||(current_region==description->region))&&
-							(extract_signal_information((struct FE_node *)NULL,
-								(struct Signal_drawing_package *)NULL,*the_device,1,
-								1,0,(int *)NULL,&number_of_samples,&times,&values,							
-								status_ptr,&name,(int *)NULL,(float *)NULL,(float *)NULL)))					
-						{							
-							if(((*status==ACCEPTED)&&(electrodes_mode==ELECTRODES_ACCEPTED))||
-								(electrodes_mode==ELECTRODES_ALL)||
-								((*status!=REJECTED)&&(electrodes_mode==ELECTRODES_UNREJECTED)))
-							{	
-								processed_value=((processed_buffer->signals).float_values)+
-									(trace->processed_device->signal->index);						
-								source_value=values;
-								for (j=number_of_samples;j>0;j--)
-								{
-									*processed_value+= (*source_value)*(*source_value);
-									processed_value += buffer_offset;				
-									source_value++;	
-								}
-								num_valid_devices++;								
-							}
-						}					
-						the_device++;
-					}					
-					if(num_valid_devices)
-					{
-						/* get mean and  square root of the sample values */
-						processed_value=((processed_buffer->signals).float_values)+
-							(trace->processed_device->signal->index);										
-						for (j=number_of_samples;j>0;j--)
-						{
-							*processed_value/=num_valid_devices;
-							*processed_value=sqrt(*processed_value);
-							processed_value += buffer_offset;					
-						}				
-					}
 				}
 				else
 				{
+					/* calculate_signal_mode==RMS_CURRENT_SIGNAL*/
+					if (signal_next=processed_device->signal->next)
+					{
+						signal_next_new=(struct Signal *)NULL;
+					}
+					else
+					{
+						signal_next_new=create_Signal(1,processed_buffer,REJECTED,2);
+						signal_next=signal_next_new;
+					}				
+					processed_device->signal->next=signal_next;
+					signal_next->buffer=processed_buffer;
+				}	
+				/* get info from the highlighted signal */	
+				if(((signal_next)||(calculate_signal_mode==RMS_SIGNAL))&&
+					 extract_signal_information((struct FE_node *)NULL,
+					(struct Signal_drawing_package *)NULL,device,1,
+					1,0,(int *)NULL,&number_of_samples,&times,&values,
+					(enum Event_signal_status **)NULL,&name,(int *)NULL,
+					(float *)NULL,(float *)NULL)&&(0<number_of_samples))
+				{		
+					if(calculate_signal_mode==RMS_AND_CURRENT_SIGNAL)
+					{	
+						/* current signal and rms signal*/
+						number_of_signals=2;
+					}
+					else
+					{ /* rms signal*/
+						number_of_signals=1;
+					}									
+					/* realloc Signal_buffer for processed_device */				
+					processed_frequency=(float)number_of_samples/
+						(times[number_of_samples-1]-times[0]);				
+					if (processed_buffer=reallocate_Signal_buffer(processed_buffer,
+						FLOAT_VALUE,number_of_signals,number_of_samples,processed_frequency))
+					{											
+						time_float=times;				
+						processed_time=processed_buffer->times;					
+						buffer_offset=processed_buffer->number_of_signals;
+						processed_device->channel->offset=0;
+						processed_device->channel->gain=1;
+						processed_device->signal_display_maximum=0;
+						processed_device->signal_display_minimum=1;						
+						/* might have no relevant signals */
+						trace->valid_processing=1;				
+						return_code=1;
+						if(trace->calculate_rms)
+						{
+							if(calculate_signal_mode==RMS_AND_CURRENT_SIGNAL)
+								/* put the rms signal in the processed_device->signal->next*/
+							{							
+								start_value=((processed_buffer->signals).float_values)+
+									(trace->processed_device->signal->next->index);
+							}
+							else
+								/* RMS_SIGNAL put the rms signal in the processed_device->signal */
+							{
+								start_value=((processed_buffer->signals).float_values)+
+									(trace->processed_device->signal->index);
+							}	
+							/* zero all the processed values, and copy the processed times*/				
+							processed_value=start_value;								
+							for (j=number_of_samples;j>0;j--)
+							{
+								*processed_value= 0;
+								processed_value += buffer_offset;				
+								*processed_time=(int)((*time_float)*processed_frequency+0.5);
+								processed_time++;
+								time_float++;
+							}					
+							/* find all the relevant devices, to get RMS of them */
+							rig=*(trace->rig);
+							current_region=get_Rig_current_region(rig);
+							number_of_devices=rig->number_of_devices;
+							the_device=rig->devices;
+							num_valid_devices=0;
+							status_ptr=&status;									
+							/* now need to get RMS and shove in processed signal*/
+							/* sum the square of the sample values */						
+							for(i=0;i<number_of_devices;i++)
+							{
+								description=(*the_device)->description;
+								if((!current_region||(current_region==description->region))&&
+									(extract_signal_information((struct FE_node *)NULL,
+										(struct Signal_drawing_package *)NULL,*the_device,1,
+										1,0,(int *)NULL,&number_of_samples,&times,&values,							
+										status_ptr,&name,(int *)NULL,(float *)NULL,(float *)NULL)))					
+								{							
+									if(((*status==ACCEPTED)&&(electrodes_mode==ELECTRODES_ACCEPTED))||
+										(electrodes_mode==ELECTRODES_ALL)||
+										((*status!=REJECTED)&&(electrodes_mode==ELECTRODES_UNREJECTED)))
+									{										
+										processed_value=start_value;																						
+										source_value=values;
+										for (j=number_of_samples;j>0;j--)
+										{
+											*processed_value+= (*source_value)*(*source_value);
+											processed_value += buffer_offset;				
+											source_value++;	
+										}
+										num_valid_devices++;								
+									}
+								}					
+								the_device++;
+							}					
+							if(num_valid_devices)
+							{						
+								processed_value=start_value;																
+								for (j=number_of_samples;j>0;j--)
+								{
+									*processed_value/=num_valid_devices;
+									*processed_value=sqrt(*processed_value);
+									processed_value += buffer_offset;					
+								}				
+							}	
+						}						
+						if(calculate_signal_mode==RMS_AND_CURRENT_SIGNAL)
+						/* put current signal in the processed_device->signal */
+						{								
+							buffer_offset=processed_buffer->number_of_signals;
+							value=values;
+							processed_value=((processed_buffer->signals).float_values)+
+								(trace->processed_device->signal->index);
+							for (j=number_of_samples;j>0;j--)
+							{						
+								*processed_value= *value;
+								processed_value += buffer_offset;
+								value++;						
+							}
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"process_eimaging. reallocate_Signal_buffer failed");
+						return_code=0;
+					}
+				}					
+				else
+				{
+					if (signal_next)
+					{
+						destroy_Signal(&signal_next);
+					}
+					DEALLOCATE(name);
 					display_message(ERROR_MESSAGE,
-					"process_eimaging. reallocate_Signal_buffer failed");
-					return_code=0;
-				}				
+						"trace_process_device.  Could not reallocate processed buffer");
+					trace->valid_processing=0;
+				}
 			} /* if ((trace->highlight)&&( */		
 		}/* if(trace->calculate_signal_mode==RMS_SIGNAL) */
 	}
@@ -8468,7 +8595,7 @@ before this function is exited.
 	trace->calculate_rms=0; /*clear flag*/
 	LEAVE;
 	return(return_code);
-}/* process_eimaging */
+}
 
 /*
 Global functions
@@ -9900,7 +10027,7 @@ The callback for redrawing part of the drawing area in trace area 1.
 								}
 							} break;	
 							case ELECTRICAL_IMAGING:
-							{									
+							{								
 								if(trace->calculate_signal_mode==CURRENT_SIGNAL)								
 								{
 									device= **(trace->highlight);
@@ -9912,11 +10039,11 @@ The callback for redrawing part of the drawing area in trace area 1.
 									device=trace->processed_device;
 									valid_processing=trace->valid_processing;
 								}
-								buffer=get_Device_signal_buffer(device);
+								buffer=get_Device_signal_buffer(device);	
+								start_analysis_interval=buffer->start;
+								end_analysis_interval=buffer->end;
 								if(device&&buffer&&valid_processing)	
-								{							
-									start_analysis_interval=buffer->start;
-									end_analysis_interval=buffer->end;
+								{																
 									/* draw the active signal */
 									draw_signal((struct FE_node *)NULL,
 										(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
@@ -10709,6 +10836,11 @@ Change the signal interval displayed in the trace window.
 			{
 				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
 					(XtPointer)NULL);
+			} break;
+			case ELECTRICAL_IMAGING:	
+			{
+				trace->calculate_rms=1;				
+				trace_change_signal(trace);			
 			} break;
 			case CROSS_CORRELATION:
 			{
@@ -11743,6 +11875,7 @@ called when the analysis rig is changed.
 		/* update filtering */
 		(trace->filtering).low_pass_frequency= -1;
 		(trace->filtering).high_pass_frequency= -1;
+		trace->calculate_rms=1;
 		trace_change_signal(trace);
 	}
 	else

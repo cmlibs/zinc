@@ -145,6 +145,8 @@ procedure
 	calculate_rms_signal;
 	id_calculate_curr_sig_butt;
 	calculate_current_signal;
+	id_calculate_rms_curr_sig_butt;
+	calculate_rms_current_signal;
 	id_trace_calculate_butt;
 	calculate_calculate;
 	identify_trace_cutoff_value;
@@ -867,7 +869,8 @@ object
 				controls
 					{	
 					XmPushButtonGadget current_signal_button;	
-					XmPushButtonGadget rms_signal_button;										
+					XmPushButtonGadget rms_signal_button;
+					XmPushButtonGadget rms_curr_signal_button;
 					};
 				};
 			};
@@ -916,6 +919,26 @@ object
 			XmNactivateCallback = procedures
 				{
 				calculate_current_signal(trace_window_structure);
+				};
+			};
+		};
+	rms_curr_signal_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("RMS and Current signal");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_calculate_rms_curr_sig_butt(trace_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				calculate_rms_current_signal(trace_window_structure);
 				};
 			};
 		};

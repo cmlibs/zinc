@@ -85,14 +85,15 @@ The type  used for potential/activation
 
 enum Calculate_signal_mode
 /*******************************************************************************
-LAST MODIFIED :8 March 2001
+LAST MODIFIED :14 March 2001
 
 DESCRIPTION :
 The type of signal used for Calculate
 ==============================================================================*/
 {
 	CURRENT_SIGNAL,
-	RMS_SIGNAL	
+	RMS_SIGNAL,
+	RMS_AND_CURRENT_SIGNAL	
 }; /* enum Calculate_signal_mode */
 
 
@@ -211,7 +212,8 @@ The Calculate area of the trace window
 	struct 
 	{
 		Widget RMS_signal_button;
-		Widget current_signal_button;	
+		Widget current_signal_button;
+		Widget rms_current_signal_button;		
 	} RMS_current_choice;	
 	Widget calculate_button;
 	Widget cutoff_value;
