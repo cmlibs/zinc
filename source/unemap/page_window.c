@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 26 January 2002
+LAST MODIFIED : 26 May 2003
 
 DESCRIPTION :
 
@@ -5834,7 +5834,7 @@ Assumes that the calibration file is normalized.
 
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2002
+LAST MODIFIED : 26 May 2003
 
 DESCRIPTION :
 Called to start experiment on the <page_window>.
@@ -5849,6 +5849,7 @@ Called to start experiment on the <page_window>.
 	float channel_gain,channel_offset,post_filter_gain,pre_filter_gain;
 	int channel_number,device_number,*electrodes_in_row,i,index,j,
 		number_of_devices,number_of_rows,return_code;
+	short maximum_device_name_length;
 	long int maximum_signal_value,minimum_signal_value;
 	struct Channel *channel;
 	struct Device **device_address,*display_device;
@@ -6040,6 +6041,7 @@ Called to start experiment on the <page_window>.
 							DEALLOCATE(((page_window->stimulators)[j]).channel_numbers);
 							((page_window->stimulators)[j]).number_of_channels=0;
 						}
+						maximum_device_name_length=(short)4;
 						if ((0<(number_of_devices=(*(page_window->rig_address))->
 							number_of_devices))&&(device_address=
 							(*(page_window->rig_address))->devices))
@@ -6047,18 +6049,29 @@ Called to start experiment on the <page_window>.
 							channel_number=(int)((page_window->number_of_channels)+1);
 							for (i=0;i<number_of_devices;i++)
 							{
-								if ((*device_address)&&(channel=(*device_address)->channel)&&
-									(0<channel->number)&&(channel->number<channel_number)&&
-									((*device_address)->description)&&
+								if (((*device_address)->description)&&
 									((*device_address)->description->name))
 								{
-									display_device= *device_address;
-									device_number=i;
-									channel_number=channel->number;
+									if ((*device_address)&&(channel=(*device_address)->channel)&&
+										(0<channel->number)&&(channel->number<channel_number))
+									{
+										display_device= *device_address;
+										device_number=i;
+										channel_number=channel->number;
+									}
+									if (maximum_device_name_length<(short)strlen(
+										(*device_address)->description->name))
+									{
+										maximum_device_name_length=(short)strlen(
+											(*device_address)->description->name);
+									}
 								}
 								device_address++;
 							}
 						}
+						XtVaSetValues((page_window->electrode).value,
+							XmNcolumns,maximum_device_name_length,
+							NULL);
 						if (page_window->display_device=display_device)
 						{
 							page_window->display_device_number=device_number;

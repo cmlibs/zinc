@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : pacing_window.uil
 !
-!LAST MODIFIED : 26 January 2003
+!LAST MODIFIED : 25 May 2003
 !
 !DESCRIPTION :
 !The widgets/gadgets for the pacing window in the acquisition work area.
@@ -35,27 +35,51 @@ procedure
 	ch_pacing_basic_cycle_length_sl;
 	id_pacing_basic_cycle_length_pa;
 	ch_pacing_basic_cycle_length_pa;
-	id_pacing_number_of_s1_form;
-	id_pacing_number_of_s1_value;
-	ch_pacing_number_of_s1_value;
-	id_pacing_s2_delay_form;
-	id_pacing_s2_delay_value;
-	ch_pacing_s2_delay_value;
-	id_pacing_s2_delay_change_form;
-	id_pacing_s2_delay_change_value;
-	ch_pacing_s2_delay_change_value;
-	id_pacing_s2_delay_factor_form;
-	id_pacing_s2_delay_factor_value;
-	ch_pacing_s2_delay_factor_value;
+	id_pacing_si_form;
+	id_pacing_s_number_dec;
+	decrement_s_number;
+	id_pacing_s_number_label;
+	id_pacing_s_number_inc;
+	increment_s_number;
+	id_pacing_number_of_si_label;
+	id_pacing_number_of_si_dec;
+	decrement_number_of_si;
+	id_pacing_number_of_si_value;
+	id_pacing_number_of_si_inc;
+	increment_number_of_si;
+	id_pacing_si_length_value;
+	ch_pacing_si_length_value;
+	id_pacing_number_of_s_types_for;
+	id_pacing_number_of_s_types_lab;
+	id_pacing_number_of_s_types_dec;
+	decrement_number_of_s_types;
+	id_pacing_number_of_s_types_val;
+	id_pacing_number_of_s_types_inc;
+	increment_number_of_s_types;
+	id_pacing_sn_length_label;
+	id_pacing_sn_length_change_form;
+	id_pacing_sn_length_change_labe;
+	id_pacing_sn_length_change_valu;
+	ch_pacing_sn_length_change_valu;
+	id_pacing_sn_length_factor_form;
+	id_pacing_sn_length_factor_labe;
+	id_pacing_sn_length_factor_valu;
+	ch_pacing_sn_length_factor_valu;
+	id_pacing_sn_length_inc_dec_cho;
+	id_pacing_sn_length_increment_b;
+	pacing_set_sn_length_increment;
+	id_pacing_sn_length_decrement_b;
+	pacing_set_sn_length_decrement;
 	id_pacing_restitution_time_pace;
 	ch_pacing_restitution_time_pace;
-	id_pacing_restitution_time_yes;
-	ac_pacing_restitution_time_yes;
-	id_pacing_restitution_time_no;
-	ac_pacing_restitution_time_no;
-	id_pacing_s2_s1_pause_form;
-	id_pacing_s2_s1_pause_value;
-	ch_pacing_s2_s1_pause_value;
+	id_pacing_rest_time_inc_dec;
+	ch_pacing_rest_time_inc_dec;
+	id_pacing_restitution_time_rese;
+	ac_pacing_restitution_time_rese;
+	id_pacing_sn_s1_pause_form;
+	id_pacing_sn_s1_pause_label;
+	id_pacing_sn_s1_pause_value;
+	ch_pacing_sn_s1_pause_value;
 	id_pacing_decrement_threshold_f;
 	id_pacing_decrement_threshold_v;
 	ch_pacing_decrement_threshold_v;
@@ -534,7 +558,7 @@ object
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
 			XmNbottomOffset = 0;
 			};
 		controls
@@ -637,12 +661,12 @@ object
 			XmNlabelString = compound_string("Pace");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_BEGINNING;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmForm pacing_basic_cycle_length_form;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
 			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = XmForm pacing_basic_cycle_length_form;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
 			};
@@ -691,8 +715,9 @@ object
 		controls
 			{
 			XmLabel pacing_settings_label;
-			XmForm pacing_number_of_s1_form;
-			XmForm pacing_s2_delay_form;
+			XmForm pacing_number_of_s_types_form;
+			XmForm pacing_si_form;
+			XmForm pacing_sn_s1_pause_form;
 			};
 		};
 	pacing_settings_label: XmLabel
@@ -710,7 +735,7 @@ object
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		};
-	pacing_number_of_s1_form: XmForm
+	pacing_number_of_s_types_form: XmForm
 		{
 		arguments
 			{
@@ -727,22 +752,24 @@ object
 			};
 		controls
 			{
-			XmLabel pacing_number_of_s1_label;
-			XmTextField pacing_number_of_s1_value;
+			XmLabel pacing_number_of_s_types_label;
+			XmArrowButtonGadget pacing_number_of_s_types_dec;
+			XmLabel pacing_number_of_s_types_value;
+			XmArrowButtonGadget pacing_number_of_s_types_inc;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_number_of_s1_form(pacing_window_structure);
+				id_pacing_number_of_s_types_for(pacing_window_structure);
 				};
 			};
 		};
-	pacing_number_of_s1_label: XmLabel
+	pacing_number_of_s_types_label: XmLabel
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Number of S1 stimuli");
+			XmNlabelString = compound_string("Number of stimulus types");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_END;
 			XmNleftAttachment = XmATTACH_FORM;
@@ -753,16 +780,24 @@ object
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
 			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_number_of_s_types_lab(pacing_window_structure);
+				};
+			};
 		};
-	pacing_number_of_s1_value: XmTextField
+	pacing_number_of_s_types_dec: XmArrowButtonGadget
 		{
 		arguments
 			{
-			XmNcolumns = 8;
-			XmNfontList = button_font;
+			XmNarrowDirection = XmARROW_DOWN;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmLabel pacing_number_of_s1_label;
+			XmNleftWidget = XmLabel pacing_number_of_s_types_label;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
@@ -773,19 +808,66 @@ object
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_number_of_s1_value(pacing_window_structure);
+				id_pacing_number_of_s_types_dec(pacing_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{
-				ch_pacing_number_of_s1_value(pacing_window_structure);
-				};
-			XmNlosingFocusCallback = procedures
-				{
-				ch_pacing_number_of_s1_value(pacing_window_structure);
+				decrement_number_of_s_types(pacing_window_structure);
 				};
 			};
 		};
-	pacing_s2_delay_form: XmForm
+	pacing_number_of_s_types_value: XmLabel
+		{
+		arguments
+			{
+			XmNfontList = button_font;
+			XmNlabelString = compound_string("");
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmArrowButtonGadget pacing_number_of_s_types_dec;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_number_of_s_types_val(pacing_window_structure);
+				};
+			};
+		};
+	pacing_number_of_s_types_inc: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_UP;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmLabel pacing_number_of_s_types_value;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_number_of_s_types_inc(pacing_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				increment_number_of_s_types(pacing_window_structure);
+				};
+			};
+		};
+	pacing_si_form: XmForm
 		{
 		arguments
 			{
@@ -797,27 +879,293 @@ object
 			XmNrightOffset = widget_spacing;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopOffset = widget_spacing;
-			XmNtopWidget = XmForm pacing_number_of_s1_form;
+			XmNtopWidget = XmForm pacing_number_of_s_types_form;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		controls
 			{
-			XmLabel pacing_s2_delay_label;
-			XmTextField pacing_s2_delay_value;
+			XmArrowButtonGadget pacing_s_number_dec;
+			XmLabel pacing_s_number_label;
+			XmArrowButtonGadget pacing_s_number_inc;
+			XmLabel pacing_number_of_si_label;
+			XmArrowButtonGadget pacing_number_of_si_dec;
+			XmLabel pacing_number_of_si_value;
+			XmArrowButtonGadget pacing_number_of_si_inc;
+			XmLabel pacing_si_length_label;
+			XmTextField pacing_si_length_value;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_s2_delay_form(pacing_window_structure);
+				id_pacing_si_form(pacing_window_structure);
 				};
 			};
 		};
-	pacing_s2_delay_label: XmLabel
+	pacing_s_number_dec: XmArrowButtonGadget
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("S2 delay (ms)");
+			XmNarrowDirection = XmARROW_DOWN;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_s_number_dec(pacing_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				decrement_s_number(pacing_window_structure);
+				};
+			};
+		};
+	pacing_s_number_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("S");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmArrowButtonGadget pacing_s_number_dec;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_s_number_label(pacing_window_structure);
+				};
+			};
+		};
+	pacing_s_number_inc: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_UP;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmLabel pacing_s_number_label;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_s_number_inc(pacing_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				increment_s_number(pacing_window_structure);
+				};
+			};
+		};
+	pacing_number_of_si_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("number");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmArrowButtonGadget pacing_s_number_inc;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_number_of_si_label(pacing_window_structure);
+				};
+			};
+		};
+	pacing_number_of_si_dec: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_DOWN;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmLabel pacing_number_of_si_label;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_number_of_si_dec(pacing_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				decrement_number_of_si(pacing_window_structure);
+				};
+			};
+		};
+	pacing_number_of_si_value: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmArrowButtonGadget pacing_number_of_si_dec;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_number_of_si_value(pacing_window_structure);
+				};
+			};
+		};
+	pacing_number_of_si_inc: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_UP;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmLabel pacing_number_of_si_value;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_number_of_si_inc(pacing_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				increment_number_of_si(pacing_window_structure);
+				};
+			};
+		};
+	pacing_si_length_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("length (ms)");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmArrowButtonGadget pacing_number_of_si_inc;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	pacing_si_length_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmLabel pacing_si_length_label;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_si_length_value(pacing_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				ch_pacing_si_length_value(pacing_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				ch_pacing_si_length_value(pacing_window_structure);
+				};
+			};
+		};
+	pacing_sn_s1_pause_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = XmForm pacing_si_form;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		controls
+			{
+			XmLabel pacing_sn_s1_pause_label;
+			XmTextField pacing_sn_s1_pause_value;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_sn_s1_pause_form(pacing_window_structure);
+				};
+			};
+		};
+	pacing_sn_s1_pause_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Sn-S1 pause (ms)");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_END;
 			XmNleftAttachment = XmATTACH_FORM;
@@ -828,8 +1176,15 @@ object
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
 			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_sn_s1_pause_label(pacing_window_structure);
+				};
+			};
 		};
-	pacing_s2_delay_value: XmTextField
+	pacing_sn_s1_pause_value: XmTextField
 		{
 		arguments
 			{
@@ -837,7 +1192,7 @@ object
 			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmLabel pacing_s2_delay_label;
+			XmNleftWidget = XmLabel pacing_sn_s1_pause_label;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
@@ -848,15 +1203,15 @@ object
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_s2_delay_value(pacing_window_structure);
+				id_pacing_sn_s1_pause_value(pacing_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{
-				ch_pacing_s2_delay_value(pacing_window_structure);
+				ch_pacing_sn_s1_pause_value(pacing_window_structure);
 				};
 			XmNlosingFocusCallback = procedures
 				{
-				ch_pacing_s2_delay_value(pacing_window_structure);
+				ch_pacing_sn_s1_pause_value(pacing_window_structure);
 				};
 			};
 		};
@@ -893,9 +1248,10 @@ object
 		controls
 			{
 			XmLabel pacing_restitution_time_label;
-			XmForm pacing_s2_delay_change_form;
-			XmForm pacing_s2_delay_factor_form;
-			XmForm pacing_pace_yes_no_form;
+			XmLabel pacing_sn_length_label;
+			XmForm pacing_sn_length_change_form;
+			XmForm pacing_sn_length_factor_form;
+			XmForm pacing_pace_inc_dec_reset_form;
 			};
 		};
 	pacing_restitution_time_label: XmLabel
@@ -913,82 +1269,30 @@ object
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		};
-	pacing_s2_delay_change_form: XmForm
+	pacing_sn_length_label: XmLabel
 		{
 		arguments
 			{
-			XmNborderWidth = 0;
-			XmNallowOverlap = false;
+			XmNlabelString = compound_string("Sn length (ms) :");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNleftOffset = widget_spacing;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopOffset = widget_spacing;
 			XmNtopWidget = XmLabel pacing_restitution_time_label;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
-		controls
-			{
-			XmLabel pacing_s2_delay_change_label;
-			XmTextField pacing_s2_delay_change_value;
-			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_s2_delay_change_form(pacing_window_structure);
+				id_pacing_sn_length_label(pacing_window_structure);
 				};
 			};
 		};
-	pacing_s2_delay_change_label: XmLabel
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("S2 delay change (ms)");
-			XmNfontList = button_font;
-			XmNalignment = XmALIGNMENT_END;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		};
-	pacing_s2_delay_change_value: XmTextField
-		{
-		arguments
-			{
-			XmNcolumns = 8;
-			XmNfontList = button_font;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmLabel pacing_s2_delay_change_label;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_pacing_s2_delay_change_value(pacing_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				ch_pacing_s2_delay_change_value(pacing_window_structure);
-				};
-			XmNlosingFocusCallback = procedures
-				{
-				ch_pacing_s2_delay_change_value(pacing_window_structure);
-				};
-			};
-		};
-	pacing_s2_delay_factor_form: XmForm
+	pacing_sn_length_change_form: XmForm
 		{
 		arguments
 			{
@@ -1000,27 +1304,29 @@ object
 			XmNrightOffset = widget_spacing;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopOffset = widget_spacing;
-			XmNtopWidget = XmForm pacing_s2_delay_change_form;
+			XmNtopWidget = XmLabel pacing_sn_length_label;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		controls
 			{
-			XmLabel pacing_s2_delay_factor_label;
-			XmTextField pacing_s2_delay_factor_value;
+			XmLabel pacing_sn_length_change_label_1;
+			XmOptionMenu pacing_sn_length_inc_dec_choice;
+			XmLabel pacing_sn_length_change_label_2;
+			XmTextField pacing_sn_length_change_value;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_s2_delay_factor_form(pacing_window_structure);
+				id_pacing_sn_length_change_form(pacing_window_structure);
 				};
 			};
 		};
-	pacing_s2_delay_factor_label: XmLabel
+	pacing_sn_length_change_label_1: XmLabel
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("S2 delay change factor");
+			XmNlabelString = compound_string("Sn length");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_END;
 			XmNleftAttachment = XmATTACH_FORM;
@@ -1031,8 +1337,108 @@ object
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
 			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_sn_length_change_labe(pacing_window_structure);
+				};
+			};
 		};
-	pacing_s2_delay_factor_value: XmTextField
+	pacing_sn_length_inc_dec_choice: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("");
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = XmLabel pacing_sn_length_change_label_1;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("increment");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								id_pacing_sn_length_increment_b(pacing_window_structure);
+								};
+							XmNactivateCallback = procedures
+								{
+								pacing_set_sn_length_increment(pacing_window_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("decrement");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								id_pacing_sn_length_decrement_b(pacing_window_structure);
+								};
+							XmNactivateCallback = procedures
+								{
+								pacing_set_sn_length_decrement(pacing_window_structure);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_sn_length_inc_dec_cho(pacing_window_structure);
+				};
+			};
+		};
+	pacing_sn_length_change_label_2: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("(ms)");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmOptionMenu pacing_sn_length_inc_dec_choice;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	pacing_sn_length_change_value: XmTextField
 		{
 		arguments
 			{
@@ -1040,7 +1446,7 @@ object
 			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmLabel pacing_s2_delay_factor_label;
+			XmNleftWidget = XmLabel pacing_sn_length_change_label_2;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
@@ -1051,19 +1457,19 @@ object
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_s2_delay_factor_value(pacing_window_structure);
+				id_pacing_sn_length_change_valu(pacing_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{
-				ch_pacing_s2_delay_factor_value(pacing_window_structure);
+				ch_pacing_sn_length_change_valu(pacing_window_structure);
 				};
 			XmNlosingFocusCallback = procedures
 				{
-				ch_pacing_s2_delay_factor_value(pacing_window_structure);
+				ch_pacing_sn_length_change_valu(pacing_window_structure);
 				};
 			};
 		};
-	pacing_pace_yes_no_form: XmForm
+	pacing_sn_length_factor_form: XmForm
 		{
 		arguments
 			{
@@ -1075,15 +1481,97 @@ object
 			XmNrightOffset = widget_spacing;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopOffset = widget_spacing;
-			XmNtopWidget = XmForm pacing_s2_delay_factor_form;
+			XmNtopWidget = XmForm pacing_sn_length_change_form;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel pacing_sn_length_factor_label;
+			XmTextField pacing_sn_length_factor_value;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_sn_length_factor_form(pacing_window_structure);
+				};
+			};
+		};
+	pacing_sn_length_factor_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Sn length change factor");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_sn_length_factor_labe(pacing_window_structure);
+				};
+			};
+		};
+	pacing_sn_length_factor_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmLabel pacing_sn_length_factor_label;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_sn_length_factor_valu(pacing_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				ch_pacing_sn_length_factor_valu(pacing_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				ch_pacing_sn_length_factor_valu(pacing_window_structure);
+				};
+			};
+		};
+	pacing_pace_inc_dec_reset_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = XmForm pacing_sn_length_factor_form;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = widget_spacing;
 			};
 		controls
 			{
 			XmToggleButtonGadget pacing_restitution_time_pace;
-			XmPushButtonGadget pacing_restitution_time_yes;
-			XmPushButtonGadget pacing_restitution_time_no;
+			XmPushButtonGadget pacing_restitution_time_inc_dec;
+			XmPushButtonGadget pacing_restitution_time_reset;
 			};
 		};
 	pacing_restitution_time_pace: XmToggleButtonGadget
@@ -1113,11 +1601,11 @@ object
 				};
 			};
 		};
-	pacing_restitution_time_yes: XmPushButtonGadget
+	pacing_restitution_time_inc_dec: XmPushButtonGadget
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Yes");
+			XmNlabelString = compound_string("Inc/Dec");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_BEGINNING;
 			XmNleftAttachment = XmATTACH_WIDGET;
@@ -1133,24 +1621,24 @@ object
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_restitution_time_yes(pacing_window_structure);
+				id_pacing_rest_time_inc_dec(pacing_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{
-				ac_pacing_restitution_time_yes(pacing_window_structure);
+				ch_pacing_rest_time_inc_dec(pacing_window_structure);
 				};
 			};
 		};
-	pacing_restitution_time_no: XmPushButtonGadget
+	pacing_restitution_time_reset: XmPushButtonGadget
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("No");
+			XmNlabelString = compound_string("Reset");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_BEGINNING;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmPushButtonGadget pacing_restitution_time_yes;
+			XmNleftWidget = XmPushButtonGadget pacing_restitution_time_inc_dec;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
@@ -1161,11 +1649,11 @@ object
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_restitution_time_no(pacing_window_structure);
+				id_pacing_restitution_time_rese(pacing_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{
-				ac_pacing_restitution_time_no(pacing_window_structure);
+				ac_pacing_restitution_time_rese(pacing_window_structure);
 				};
 			};
 		};
@@ -1203,7 +1691,6 @@ object
 		controls
 			{
 			XmLabel pacing_restitution_curve_label;
-			XmForm pacing_s2_s1_pause_form;
 			XmForm pacing_decrement_threshold_form;
 			XmToggleButtonGadget pacing_restitution_curve_pace;
 			};
@@ -1223,81 +1710,6 @@ object
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		};
-	pacing_s2_s1_pause_form: XmForm
-		{
-		arguments
-			{
-			XmNborderWidth = 0;
-			XmNallowOverlap = false;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = widget_spacing;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = widget_spacing;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopOffset = widget_spacing;
-			XmNtopWidget = XmLabel pacing_restitution_curve_label;
-			XmNbottomAttachment = XmATTACH_NONE;
-			};
-		controls
-			{
-			XmLabel pacing_s2_s1_pause_label;
-			XmTextField pacing_s2_s1_pause_value;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_pacing_s2_s1_pause_form(pacing_window_structure);
-				};
-			};
-		};
-	pacing_s2_s1_pause_label: XmLabel
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("S2-S1 pause (ms)");
-			XmNfontList = button_font;
-			XmNalignment = XmALIGNMENT_END;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		};
-	pacing_s2_s1_pause_value: XmTextField
-		{
-		arguments
-			{
-			XmNcolumns = 8;
-			XmNfontList = button_font;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmLabel pacing_s2_s1_pause_label;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_pacing_s2_s1_pause_value(pacing_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				ch_pacing_s2_s1_pause_value(pacing_window_structure);
-				};
-			XmNlosingFocusCallback = procedures
-				{
-				ch_pacing_s2_s1_pause_value(pacing_window_structure);
-				};
-			};
-		};
 	pacing_decrement_threshold_form: XmForm
 		{
 		arguments
@@ -1310,7 +1722,7 @@ object
 			XmNrightOffset = widget_spacing;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopOffset = widget_spacing;
-			XmNtopWidget = XmForm pacing_s2_s1_pause_form;
+			XmNtopWidget = XmLabel pacing_restitution_curve_label;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		controls
