@@ -942,7 +942,7 @@ DESCRIPTION :
 	char objname[100];
 	struct Environment_map *environment_map;
 	struct File_read_graphics_object_from_obj_data *file_read_graphics_object_data;
-	struct Graphical_material *material, *object_material;
+	struct Graphical_material *material;
 	struct GT_voltex *voltex;
 	struct VT_volume_texture *vtexture;
 	struct VT_iso_vertex *vertex_list;
@@ -984,8 +984,6 @@ DESCRIPTION :
 						{
 							sprintf(objname, "%s", file_name);
 						}
-						object_material = FIRST_OBJECT_IN_MANAGER_THAT(Graphical_material)
-							(NULL, NULL, file_read_graphics_object_data->graphical_material_manager);
 						if(obj=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 							objname,file_read_graphics_object_data->object_list))
 						{
@@ -1010,7 +1008,8 @@ DESCRIPTION :
 						}
 						else
 						{
-							obj=CREATE(GT_object)(objname, g_VOLTEX, object_material);
+							obj=CREATE(GT_object)(objname, g_VOLTEX,
+								file_read_graphics_object_data->default_material);
 							if (obj)
 							{
 								ADD_OBJECT_TO_LIST(GT_object)(obj,

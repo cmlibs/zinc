@@ -20115,6 +20115,7 @@ otherwise the wavefront obj file is read.
 			DESTROY(Option_table)(&option_table);
 			if (return_code)
 			{
+				data.default_material=command_data->default_graphical_material;
 				data.object_list=command_data->graphics_object_list;
 				data.graphical_material_manager=
 					command_data->graphical_material_manager;

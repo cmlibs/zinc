@@ -40,6 +40,7 @@ Data needed by file_read_voltex_graphics_object_from_obj.
 	enum Render_type render_type;
 	float time;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
+	struct Graphical_material *default_material;
 	struct LIST(GT_object) *object_list;
 }; /* File_read_graphics_object_from_obj_data */
 
