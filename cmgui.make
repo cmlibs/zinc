@@ -95,7 +95,12 @@ OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(STATIC_LINK_OPTION) $(DEBU
 
 cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk cmgui-gtk-debug utilities:
 	cd source ; \
-	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
+   if [ "$(USER)" = "cmiss" ]; then \
+      export PATH=/product/cmiss/cross-compile/i386-glibc21-linux/bin:${PATH}; \
+      $(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ; \
+   else \
+      $(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ; \
+   fi
 
 #Recurse on these targets so we don't have to redefine in this file what cmgui-gtk-debug is etc.
 cmgui-lib :
