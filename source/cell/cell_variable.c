@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_variable.c
 
-LAST MODIFIED : 11 June 2001
+LAST MODIFIED : 21 June 2001
 
 DESCRIPTION :
 Routines for using the Cell_variable objects
@@ -318,7 +318,7 @@ Destroys a Cell_variable object.
 int Cell_variable_set_name(struct Cell_variable *cell_variable,
   char *name)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 21 June 2001
 
 DESCRIPTION :
 Sets the <name> of the <cell_variable> - copies the <name> so the calling
@@ -326,13 +326,20 @@ routine should deallocate it.
 ==============================================================================*/
 {
   int return_code = 0;
+  char *tmp_name;
   
   ENTER(Cell_variable_set_name);
   if (cell_variable && name)
   {
-    if (ALLOCATE(cell_variable->name,char,strlen(name)+1))
+    if (ALLOCATE(tmp_name,char,strlen(name)+1))
     {
-      strcpy(cell_variable->name,name);
+      strcpy(tmp_name,name);
+      if (cell_variable->name)
+      {
+        DEALLOCATE(cell_variable->name);
+      }
+      cell_variable->name = tmp_name;
+      return_code = 1;
     }
     else
     {
@@ -354,7 +361,7 @@ routine should deallocate it.
 int Cell_variable_set_display_name(struct Cell_variable *cell_variable,
   char *display_name)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 21 June 2001
 
 DESCRIPTION :
 Sets the <display_name> of the <cell_variable> - copies the <display_name> so
@@ -362,13 +369,19 @@ the calling routine should deallocate it.
 ==============================================================================*/
 {
   int return_code = 0;
+  char *tmp_display_name;
   
   ENTER(Cell_variable_set_display_name);
   if (cell_variable && display_name)
   {
-    if (ALLOCATE(cell_variable->display_name,char,strlen(display_name)+1))
+    if (ALLOCATE(tmp_display_name,char,strlen(display_name)+1))
     {
-      strcpy(cell_variable->display_name,display_name);
+      strcpy(tmp_display_name,display_name);
+      if (cell_variable->display_name)
+      {
+        DEALLOCATE(cell_variable->display_name);
+      }
+      cell_variable->display_name = tmp_display_name;
       return_code = 1;
     }
     else
@@ -391,7 +404,7 @@ the calling routine should deallocate it.
 int Cell_variable_set_value_type(struct Cell_variable *cell_variable,
   enum Cell_value_type value_type)
 /*******************************************************************************
-LAST MODIFIED : 20 October 2000
+LAST MODIFIED : 21 June 2001
 
 DESCRIPTION :
 Sets the value type of the <cell_variable> to be <value_type>.
@@ -402,8 +415,48 @@ Sets the value type of the <cell_variable> to be <value_type>.
   ENTER(Cell_variable_set_value_type);
   if (cell_variable && value_type)
   {
-    cell_variable->value_type = value_type;
-    return_code = 1;
+    if (cell_variable->value_type != value_type)
+    {
+      /* Only need to do anything if the value type changes, in which case the
+         value of the variable needs to be initialised to something sensible -
+         and any memory already allocated needs to be deallocated */
+      if ((cell_variable->value_type == CELL_STRING_VALUE) &&
+        (cell_variable->value.string_value))
+      {
+        DEALLOCATE(cell_variable->value.string_value);
+      }
+      switch (value_type)
+      {
+        case CELL_INTEGER_VALUE:
+        {
+          cell_variable->value.integer_value = -9999;
+          cell_variable->value_type = value_type;
+          cell_variable->changed = 1;
+          return_code = 1;
+        } break;
+        case CELL_REAL_VALUE:
+        {
+          cell_variable->value.real_value = -9999.99;
+          cell_variable->value_type = value_type;
+          cell_variable->changed = 1;
+          return_code = 1;
+        } break;
+        case CELL_STRING_VALUE:
+        {
+          cell_variable->value.string_value = (char *)NULL;
+          cell_variable->value_type = value_type;
+          cell_variable->changed = 1;
+          return_code = 1;
+        } break;
+        case CELL_UNKNOWN_VALUE:
+        default:
+        {
+          display_message(ERROR_MESSAGE,"Cell_variable_set_value_type.  "
+            "Invalid value type");
+          return_code = 0;
+        }
+      } /* switch (value_type) */
+    }
   }
   else
   {
