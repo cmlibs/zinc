@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 12 June 2000
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -933,7 +933,7 @@ the new node.
 static void Node_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *node_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -945,8 +945,7 @@ release.
 {
 	double d;
 	enum Interactive_event_type event_type;
-	int clear_selection,input_modifier,number_of_selected_nodes,return_code,
-		shift_pressed;
+	int clear_selection,input_modifier,return_code,shift_pressed;
 	struct Computed_field *coordinate_field;
 	struct FE_node *picked_node;
 	struct FE_node_edit_information edit_info;
@@ -1114,12 +1113,8 @@ release.
 								if (node_list=FE_node_selection_get_node_list(
 									node_tool->node_selection))
 								{
-									number_of_selected_nodes=NUMBER_IN_LIST(FE_node)(node_list);
-									if (1<number_of_selected_nodes)
-									{
-										/* cache manager so only one change message produced */
-										MANAGER_BEGIN_CACHE(FE_node)(node_tool->node_manager);
-									}
+									/* cache manager so only one change message produced */
+									MANAGER_BEGIN_CACHE(FE_node)(node_tool->node_manager);
 									/* edit vectors if non-constant orientation_scale field */
 									if (((NODE_TOOL_EDIT_AUTOMATIC == node_tool->edit_mode) ||
 										(NODE_TOOL_EDIT_VECTOR == node_tool->edit_mode))&&
@@ -1131,11 +1126,8 @@ release.
 										if (FE_node_calculate_delta_vector(
 											node_tool->last_picked_node,(void *)&edit_info))
 										{
-											if (1<number_of_selected_nodes)
-											{
-												FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_edit_vector,
-													(void *)&edit_info,node_list);
-											}
+											FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_edit_vector,
+												(void *)&edit_info,node_list);
 										}
 									}
 									else
@@ -1146,11 +1138,8 @@ release.
 											if (FE_node_calculate_delta_position(
 												node_tool->last_picked_node,(void *)&edit_info))
 											{
-												if (1<number_of_selected_nodes)
-												{
-													FOR_EACH_OBJECT_IN_LIST(FE_node)(
-														FE_node_edit_position,(void *)&edit_info,node_list);
-												}
+												FOR_EACH_OBJECT_IN_LIST(FE_node)(
+													FE_node_edit_position,(void *)&edit_info,node_list);
 											}
 										}
 										else
@@ -1160,10 +1149,7 @@ release.
 											return_code=0;
 										}
 									}
-									if (1<number_of_selected_nodes)
-									{
-										MANAGER_END_CACHE(FE_node)(node_tool->node_manager);
-									}
+									MANAGER_END_CACHE(FE_node)(node_tool->node_manager);
 								}
 								else
 								{
