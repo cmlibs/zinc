@@ -24458,7 +24458,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_steerable_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-				Computed_field_register_types_sterology_measures(
+				Computed_field_register_types_stereology_measures(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_throw_away_weakest(
