@@ -19,7 +19,6 @@ November 97 Created from rendering part of Drawing.
 ==============================================================================*/
 #include <stdio.h>
 #include <math.h>
-#include "three_d_drawing/dm_interface.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "general/callback_private.h"
 #include "general/debug.h"

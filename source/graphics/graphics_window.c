@@ -54,7 +54,6 @@ interest and set scene_viewer values directly.
 /* for writing bitmap to file: */
 #include "general/image_utilities.h"
 #include "three_d_drawing/graphics_buffer.h"
-#include "three_d_drawing/dm_interface.h"
 #include "time/time_keeper.h"
 #include "user_interface/confirmation.h"
 #include "user_interface/printer.h"
