@@ -256,8 +256,9 @@ DESCRIPTION :
 		(struct Computed_field_update_element_values_from_source_data *)data_void))
 	{
 		return_code = 1;
-		/* elements with information only - no faces or lines */
-		if (FE_element_has_FE_field_values(element))
+		/* trivial rejection to see if element has storage for any grid based field 
+			- no faces or lines */
+		if (FE_element_has_values_storage(element))
 		{
 			if (Computed_field_get_native_discretization_in_element(
 				data->destination_field, element,
