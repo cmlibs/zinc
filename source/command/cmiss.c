@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 6 July 2001
+LAST MODIFIED : 15 June 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -10855,22 +10855,254 @@ element groups are destroyed together.
 } /* gfx_destroy_element_group */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
+static struct LIST(FE_element) *
+	FE_element_list_from_all_selected_group_ranges(
+		enum CM_element_type cm_element_type,
+		struct MANAGER(FE_element) *element_manager, int all_flag,
+		struct FE_element_selection *element_selection, int selected_flag,
+		struct GROUP(FE_element) *element_group,
+		struct Multi_range *element_ranges)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2001
+
+DESCRIPTION :
+Creates and returns a element group that is the intersection of:
+- all elements in the <element_manager> if <all_flag> is set;
+- all elements in the <element_selection> if <selected_flag> is set;
+- all elements in the <element_group>, if supplied;
+- all elements in the given <element_ranges>, if any.
+Up to the calling function to destroy the returned element list.
+==============================================================================*/
+{
+	int ranges_flag, return_code;
+	struct CM_element_type_Multi_range_data element_type_ranges_data;
+	struct FE_element_list_conditional_data element_list_conditional_data;
+	struct LIST(FE_element) *element_list;
+
+	ENTER(FE_element_list_from_all_selected_group_ranges);
+	element_list = (struct LIST(FE_element) *)NULL;
+	if (element_manager && ((!selected_flag) || element_selection))
+	{
+		if (element_list = CREATE(LIST(FE_element))())
+		{
+			return_code = 1;
+			ranges_flag = element_ranges &&
+				(0 < Multi_range_get_number_of_ranges(element_ranges));
+			if (selected_flag)
+			{
+				/* add the selected elements of given type to element_list, and if
+					 element_ranges given, intersect with them */
+				element_list_conditional_data.element_list = element_list;
+				element_list_conditional_data.function = FE_element_has_CM_element_type;
+				element_list_conditional_data.user_data = (void *)cm_element_type;
+				if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+					ensure_FE_element_is_in_list_conditional,
+					(void *)&element_list_conditional_data,
+					FE_element_selection_get_element_list(element_selection)))
+				{
+					if (return_code && element_group)
+					{
+						return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+							FE_element_is_not_in_group, (void *)element_group, element_list);
+					}
+					if (ranges_flag)
+					{
+						element_type_ranges_data.cm_element_type = cm_element_type;
+						element_type_ranges_data.multi_range = element_ranges;
+						return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+							FE_element_of_CM_element_type_is_not_in_Multi_range,
+							(void *)&element_type_ranges_data, element_list);
+					}
+				}
+			}
+			else if (ranges_flag)
+			{
+				/* add elements of given type in element_ranges to element_list */
+				element_type_ranges_data.cm_element_type = cm_element_type;
+				element_type_ranges_data.multi_range = element_ranges;
+				element_list_conditional_data.element_list = element_list;
+				element_list_conditional_data.function =
+					FE_element_of_CM_element_type_is_in_Multi_range;
+				element_list_conditional_data.user_data =
+					(void *)&element_type_ranges_data;
+				if (element_group)
+				{
+					return_code = FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+						ensure_FE_element_is_in_list_conditional,
+						(void *)&element_list_conditional_data, element_group);
+				}
+				else
+				{
+					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+						ensure_FE_element_is_in_list_conditional,
+						(void *)&element_list_conditional_data, element_manager);
+				}
+			}
+			else if (element_group)
+			{
+				element_list_conditional_data.element_list = element_list;
+				element_list_conditional_data.function =
+					FE_element_has_CM_element_type;
+				element_list_conditional_data.user_data = (void *)cm_element_type;
+				/* add all elements of given type in element_group to element_list */
+				return_code = FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+					ensure_FE_element_is_in_list_conditional,
+					(void *)&element_list_conditional_data, element_group);
+			}
+			else if (all_flag)
+			{
+				/* add all elements to element_list */
+				element_list_conditional_data.element_list = element_list;
+				element_list_conditional_data.function =
+					FE_element_has_CM_element_type;
+				element_list_conditional_data.user_data = (void *)cm_element_type;
+				/* add all elements of given type to element_list */
+				return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+					ensure_FE_element_is_in_list_conditional,
+					(void *)&element_list_conditional_data, element_manager);
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_list_from_all_selected_group_ranges.  "
+					"Could not fill list");
+				DESTROY(LIST(FE_element))(&element_list);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_list_from_all_selected_group_ranges.  "
+				"Could not create list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_list_from_all_selected_group_ranges.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (element_list);
+} /* FE_element_list_from_all_selected_group_ranges */
+
+static struct LIST(FE_node) *
+	FE_node_list_from_all_selected_group_ranges(
+		struct MANAGER(FE_node) *node_manager, int all_flag,
+		struct FE_node_selection *node_selection, int selected_flag,
+		struct GROUP(FE_node) *node_group,
+		struct Multi_range *node_ranges)
+/*******************************************************************************
+LAST MODIFIED : 26 March 2001
+
+DESCRIPTION :
+Creates and returns a node group that is the intersection of:
+- all nodes in the <node_manager> if <all_flag> is set;
+- all nodes in the <node_selection> if <selected_flag> is set;
+- all nodes in the <node_group>, if supplied;
+- all nodes in the given <node_ranges>, if any.
+Up to the calling function to destroy the returned node list.
+==============================================================================*/
+{
+	int ranges_flag, return_code;
+	struct FE_node_list_conditional_data list_conditional_data;
+	struct LIST(FE_node) *node_list;
+
+	ENTER(FE_node_list_from_all_selected_group_ranges);
+	node_list = (struct LIST(FE_node) *)NULL;
+	if (node_manager && ((!selected_flag) || node_selection))
+	{
+		if (node_list = CREATE(LIST(FE_node))())
+		{
+			return_code = 1;
+			ranges_flag = node_ranges &&
+				(0 < Multi_range_get_number_of_ranges(node_ranges));
+			if (selected_flag)
+			{
+				/* add the selected nodes to node_list, and if node_ranges
+					 given, intersect with them */
+				if (return_code = COPY_LIST(FE_node)(node_list,
+					FE_node_selection_get_node_list(node_selection)))
+				{
+					if (return_code && node_group)
+					{
+						return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+							FE_node_is_not_in_group, (void *)node_group, node_list);
+					}
+					if (return_code && ranges_flag)
+					{
+						return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+							FE_node_is_not_in_Multi_range, (void *)node_ranges, node_list);
+					}
+				}
+			}
+			else if (ranges_flag)
+			{
+				/* add nodes with numbers in node_ranges to node_list */
+				list_conditional_data.node_list = node_list;
+				list_conditional_data.function = FE_node_is_in_Multi_range;
+				list_conditional_data.user_data = node_ranges;
+				if (node_group)
+				{
+					return_code = FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+						ensure_FE_node_is_in_list_conditional,
+						(void *)&list_conditional_data, node_group);
+				}
+				else
+				{
+					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
+						ensure_FE_node_is_in_list_conditional,
+						(void *)&list_conditional_data, node_manager);
+				}
+			}
+			else if (node_group)
+			{
+				return_code = FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+					ensure_FE_node_is_in_list, (void *)node_list, node_group);
+			}
+			else if (all_flag)
+			{
+				/* add all nodes to node_list */
+				return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
+					ensure_FE_node_is_in_list, (void *)node_list, node_manager);
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_node_list_from_all_selected_group_ranges.  Could not fill list");
+				DESTROY(LIST(FE_node))(&node_list);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_node_list_from_all_selected_group_ranges.  Could not create list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_list_from_all_selected_group_ranges.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (node_list);
+} /* FE_node_list_from_all_selected_group_ranges */
+
 static int gfx_destroy_elements(struct Parse_state *state,
 	void *cm_element_type_void, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 2 March 2000
+LAST MODIFIED : 15 June 2001
 
 DESCRIPTION :
 Executes a GFX DESTROY ELEMENTS command.
 ==============================================================================*/
 {
-	char all_flag,ranges_flag,selected_flag;
+	char all_flag, selected_flag;
 	enum CM_element_type cm_element_type;
-	struct CM_element_type_Multi_range_data element_type_ranges_data;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct FE_element_list_CM_element_type_data element_list_type_data;
-	struct FE_element_list_conditional_data list_conditional_data;
+	struct GROUP(FE_element) *element_group;
 	struct LIST(FE_element) *destroy_element_list;
 	struct Multi_range *element_ranges;
 	struct Option_table *option_table;
@@ -10882,11 +11114,15 @@ Executes a GFX DESTROY ELEMENTS command.
 		/* initialise defaults */
 		all_flag = 0;
 		selected_flag = 0;
+		element_group = (struct GROUP(FE_element) *)NULL;
 		element_ranges = CREATE(Multi_range)();
 
 		option_table = CREATE(Option_table)();
 		/* all */
 		Option_table_add_entry(option_table, "all", &all_flag, NULL, set_char_flag);
+		/* group */
+		Option_table_add_entry(option_table, "group", &element_group,
+			command_data->element_group_manager, set_FE_element_group);
 		/* selected */
 		Option_table_add_entry(option_table, "selected", &selected_flag, NULL,
 			set_char_flag);
@@ -10895,66 +11131,40 @@ Executes a GFX DESTROY ELEMENTS command.
 			NULL, set_Multi_range);
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
-			if (destroy_element_list = CREATE(LIST(FE_element))())
+			if (destroy_element_list = FE_element_list_from_all_selected_group_ranges(
+				cm_element_type, command_data->element_manager, all_flag,
+				command_data->element_selection, selected_flag,
+				element_group, element_ranges))
 			{
-				ranges_flag = (0<Multi_range_get_number_of_ranges(element_ranges));
-				element_list_type_data.cm_element_type = cm_element_type;
-				element_list_type_data.element_list = destroy_element_list;
-				element_type_ranges_data.cm_element_type = cm_element_type;
-				element_type_ranges_data.multi_range = element_ranges;
-				if (selected_flag)
+				if (0 < NUMBER_IN_LIST(FE_element)(destroy_element_list))
 				{
-					/* add selected elements of cm_element_type to destroy_element_list
-						 and intersect with element_ranges, if any */
-					return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
-						add_FE_element_of_CM_element_type_to_list,
-						(void *)&element_list_type_data,
-						FE_element_selection_get_element_list(
-							command_data->element_selection)) &&
-						((!ranges_flag) || REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-							FE_element_of_CM_element_type_is_not_in_Multi_range,
-							(void *)&element_type_ranges_data, destroy_element_list));
-				}
-				else if (ranges_flag)
-				{
-					/* add elements of cm_element_type with numbers in element_ranges to
-						 destroy_element_list */
-					list_conditional_data.element_list = destroy_element_list;
-					list_conditional_data.function =
-						FE_element_of_CM_element_type_is_in_Multi_range;
-					list_conditional_data.user_data = (void *)&element_type_ranges_data;
-					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-						ensure_FE_element_is_in_list_conditional,
-						(void *)&list_conditional_data, command_data->element_manager);
-				}
-				else if (all_flag)
-				{
-					/* add all elements of cm_element_type to destroy_element_list */
-					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-						add_FE_element_of_CM_element_type_to_list,
-						(void *)&element_list_type_data, command_data->element_manager);
-				}
-				if (return_code)
-				{
-					if (0 < NUMBER_IN_LIST(FE_element)(destroy_element_list))
-					{
-						return_code = destroy_listed_elements(destroy_element_list,
-							command_data->element_manager,
-							command_data->element_group_manager,
-							command_data->element_selection,
-							command_data->element_point_ranges_selection);
-					}
-					else
-					{
-						display_message(WARNING_MESSAGE,"gfx destroy %ss:  none specified",
-							CM_element_type_string(cm_element_type));
-						return_code = 0;
-					}
+					return_code = destroy_listed_elements(destroy_element_list,
+						command_data->element_manager,
+						command_data->element_group_manager,
+						command_data->element_selection,
+						command_data->element_point_ranges_selection);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"gfx_destroy_elements.  Could not fill destroy_element_list");
+					switch (cm_element_type)
+					{
+						case CM_ELEMENT:
+						{
+							display_message(INFORMATION_MESSAGE,
+								"gfx destroy elements:  No elements specified\n");
+						} break;
+						case CM_FACE:
+						{
+							display_message(INFORMATION_MESSAGE,
+								"gfx destroy faces:  No faces specified\n");
+						} break;
+						case CM_LINE:
+						{
+							display_message(INFORMATION_MESSAGE,
+								"gfx destroy lines:  No lines specified\n");
+						} break;
+					}
+					return_code = 0;
 				}
 				DESTROY(LIST(FE_element))(&destroy_element_list);
 			}
@@ -10966,6 +11176,10 @@ Executes a GFX DESTROY ELEMENTS command.
 			}
 		}
 		DESTROY(Option_table)(&option_table);
+		if (element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&element_group);
+		}
 		DESTROY(Multi_range)(&element_ranges);
 	}
 	else
@@ -11275,108 +11489,6 @@ element groups are destroyed together.
 	return (return_code);
 } /* gfx_destroy_node_group */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
-
-static struct LIST(FE_node) *FE_node_list_from_all_selected_group_ranges(
-	struct MANAGER(FE_node) *node_manager, int all_flag,
-	struct FE_node_selection *node_selection, int selected_flag,
-	struct GROUP(FE_node) *node_group,
-	struct Multi_range *node_ranges)
-/*******************************************************************************
-LAST MODIFIED : 26 March 2001
-
-DESCRIPTION :
-Creates and returns a node group that is the intersection of:
-- all nodes in the <node_manager> if <all_flag> is set;
-- all nodes in the <node_selection> if <selected_flag> is set;
-- all nodes in the <node_group>, if supplied;
-- all nodes in the given <node_ranges>, if any.
-Up to the calling function to destroy the returned node list.
-==============================================================================*/
-{
-	int ranges_flag, return_code;
-	struct FE_node_list_conditional_data list_conditional_data;
-	struct LIST(FE_node) *node_list;
-
-	ENTER(FE_node_list_from_all_selected_group_ranges);
-	node_list = (struct LIST(FE_node) *)NULL;
-	if (node_manager && ((!selected_flag) || node_selection))
-	{
-		if (node_list = CREATE(LIST(FE_node))())
-		{
-			return_code = 1;
-			ranges_flag = node_ranges &&
-				(0 < Multi_range_get_number_of_ranges(node_ranges));
-			if (selected_flag)
-			{
-				/* add the selected nodes to node_list, and if node_ranges
-					 given, intersect with them */
-				if (return_code = COPY_LIST(FE_node)(node_list,
-					FE_node_selection_get_node_list(node_selection)))
-				{
-					if (return_code && node_group)
-					{
-						return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-							FE_node_is_not_in_group, (void *)node_group, node_list);
-					}
-					if (return_code && ranges_flag)
-					{
-						return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-							FE_node_is_not_in_Multi_range, (void *)node_ranges, node_list);
-					}
-				}
-			}
-			else if (ranges_flag)
-			{
-				/* add nodes with numbers in node_ranges to node_list */
-				list_conditional_data.node_list = node_list;
-				list_conditional_data.function = FE_node_is_in_Multi_range;
-				list_conditional_data.user_data = node_ranges;
-				if (node_group)
-				{
-					return_code = FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-						ensure_FE_node_is_in_list_conditional,
-						(void *)&list_conditional_data, node_group);
-				}
-				else
-				{
-					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-						ensure_FE_node_is_in_list_conditional,
-						(void *)&list_conditional_data, node_manager);
-				}
-			}
-			else if (node_group)
-			{
-				return_code = FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-					ensure_FE_node_is_in_list, (void *)node_list, node_group);
-			}
-			else if (all_flag)
-			{
-				/* add all nodes to node_list */
-				return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-					ensure_FE_node_is_in_list, (void *)node_list, node_manager);
-			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_node_list_from_all_selected_group_ranges.  Could not fill list");
-				DESTROY(LIST(FE_node))(&node_list);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_node_list_from_all_selected_group_ranges.  Could not create list");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_list_from_all_selected_group_ranges.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (node_list);
-} /* FE_node_list_from_all_selected_group_ranges */
 
 static int gfx_destroy_nodes(struct Parse_state *state,
 	void *use_data,void *command_data_void)
@@ -13624,18 +13736,18 @@ Executes a GFX LIST FIELD.
 static int gfx_list_FE_element(struct Parse_state *state,
 	void *cm_element_type_void,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 15 June 2001
 
 DESCRIPTION :
 Executes a GFX LIST ELEMENT.
 ==============================================================================*/
 {
-	char all_flag, ranges_flag, selected_flag, verbose_flag;
+	char all_flag, selected_flag, verbose_flag;
 	enum CM_element_type cm_element_type;
-	int return_code;
-	struct Cmiss_command_data *command_data;
+	int return_code, start, stop;
 	struct CM_element_type_Multi_range_data element_type_ranges_data;
-	struct FE_element_list_conditional_data element_list_conditional_data;
+	struct Cmiss_command_data *command_data;
+	struct GROUP(FE_element) *element_group;
 	struct LIST(FE_element) *element_list;
 	struct Multi_range *element_ranges;
 	struct Option_table *option_table;
@@ -13650,11 +13762,15 @@ Executes a GFX LIST ELEMENT.
 		all_flag = 0;
 		selected_flag = 0;
 		verbose_flag = 0;
+		element_group = (struct GROUP(FE_element) *)NULL;
 		element_ranges = CREATE(Multi_range)();
 
 		option_table=CREATE(Option_table)();
 		/* all */
 		Option_table_add_entry(option_table, "all", &all_flag, NULL, set_char_flag);
+		/* group */
+		Option_table_add_entry(option_table, "group", &element_group,
+			command_data->element_group_manager, set_FE_element_group);
 		/* selected */
 		Option_table_add_entry(option_table, "selected", &selected_flag,
 			NULL, set_char_flag);
@@ -13666,64 +13782,23 @@ Executes a GFX LIST ELEMENT.
 			NULL, set_Multi_range);
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
-			if (element_list = CREATE(LIST(FE_element))())
+			if (element_list = FE_element_list_from_all_selected_group_ranges(
+				cm_element_type, command_data->element_manager, all_flag,
+				command_data->element_selection, selected_flag,
+				element_group, element_ranges))
 			{
-				element_type_ranges_data.cm_element_type = cm_element_type;
-				element_type_ranges_data.multi_range = element_ranges;
-				ranges_flag = (0 < Multi_range_get_number_of_ranges(element_ranges));
-				if (selected_flag)
-				{
-					/* add the selected elements of given type to element_list, and if
-						 element_ranges given, intersect with them */
-					element_list_conditional_data.element_list = element_list;
-					element_list_conditional_data.function =
-						FE_element_has_CM_element_type;
-					element_list_conditional_data.user_data = cm_element_type_void;
-					if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
-						ensure_FE_element_is_in_list_conditional,
-						(void *)&element_list_conditional_data,
-						FE_element_selection_get_element_list(
-							command_data->element_selection)))
-					{
-						if (ranges_flag)
-						{
-							return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-								FE_element_of_CM_element_type_is_not_in_Multi_range,
-								(void *)&element_type_ranges_data, element_list);
-						}
-					}
-				}
-				else if (ranges_flag)
-				{
-					/* add elements of given type in element_ranges to element_list */
-					element_list_conditional_data.element_list = element_list;
-					element_list_conditional_data.function =
-						FE_element_of_CM_element_type_is_in_Multi_range;
-					element_list_conditional_data.user_data =
-						(void *)&element_type_ranges_data;
-					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-						ensure_FE_element_is_in_list_conditional,
-						(void *)&element_list_conditional_data,
-						command_data->element_manager);
-				}
-				else if (all_flag)
-				{
-					element_list_conditional_data.element_list = element_list;
-					element_list_conditional_data.function =
-						FE_element_has_CM_element_type;
-					element_list_conditional_data.user_data = cm_element_type_void;
-					/* add all elements of given type to element_list */
-					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-						ensure_FE_element_is_in_list_conditional,
-						(void *)&element_list_conditional_data,
-						command_data->element_manager);
-				}
 				if (return_code)
 				{
 					if (0 < NUMBER_IN_LIST(FE_element)(element_list))
 					{
-						/* always write verbose details if just 1 element */
-						if (verbose_flag || (1 == NUMBER_IN_LIST(FE_element)(element_list)))
+						/* always write verbose details if single element asked for and
+							 neither all_flag nor selected_flag nor element_group set */
+						if (verbose_flag ||
+							((!all_flag) && (!selected_flag) && (!element_group) &&
+								(1 == Multi_range_get_number_of_ranges(element_ranges)) &&
+								(Multi_range_get_range(element_ranges, /*range_number*/0, 
+									&start, &stop)) &&
+								(start == stop)))
 						{
 							return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(list_FE_element,
 								(void *)NULL, element_list);
@@ -13748,6 +13823,8 @@ Executes a GFX LIST ELEMENT.
 								} break;
 							}
 							Multi_range_clear(element_ranges);
+							element_type_ranges_data.cm_element_type = cm_element_type;
+							element_type_ranges_data.multi_range = element_ranges;
 							if (FOR_EACH_OBJECT_IN_LIST(FE_element)(
 								FE_element_of_CM_element_type_add_number_to_Multi_range,
 								(void *)&element_type_ranges_data, element_list))
@@ -13768,34 +13845,20 @@ Executes a GFX LIST ELEMENT.
 						{
 							case CM_ELEMENT:
 							{
-								display_message(INFORMATION_MESSAGE,"No elements");
+								display_message(INFORMATION_MESSAGE,
+									"gfx list elements:  No elements specified\n");
 							} break;
 							case CM_FACE:
 							{
-								display_message(INFORMATION_MESSAGE,"No faces");
+								display_message(INFORMATION_MESSAGE,
+									"gfx list faces:  No faces specified\n");
 							} break;
 							case CM_LINE:
 							{
-								display_message(INFORMATION_MESSAGE,"No lines");
+								display_message(INFORMATION_MESSAGE,
+									"gfx list lines:  No lines specified\n");
 							} break;
 						}
-						if (selected_flag)
-						{
-							display_message(INFORMATION_MESSAGE," selected");
-							if (ranges_flag)
-							{
-								display_message(INFORMATION_MESSAGE," and in given ranges");
-							}
-						}
-						else if (ranges_flag)
-						{
-							display_message(INFORMATION_MESSAGE," in given ranges");
-						}
-						else if (!all_flag)
-						{
-							display_message(INFORMATION_MESSAGE," chosen");
-						}
-						display_message(INFORMATION_MESSAGE,"\n");
 					}
 				}
 				else
@@ -13813,13 +13876,16 @@ Executes a GFX LIST ELEMENT.
 			}
 		}
 		DESTROY(Option_table)(&option_table);
+		if (element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&element_group);
+		}
 		DESTROY(Multi_range)(&element_ranges);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"gfx_list_FE_element.  Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "gfx_list_FE_element.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -13829,7 +13895,7 @@ Executes a GFX LIST ELEMENT.
 static int gfx_list_FE_node(struct Parse_state *state,
 	void *use_data,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 26 March 2001
+LAST MODIFIED : 15 June 2001
 
 DESCRIPTION :
 Executes a GFX LIST NODES.
@@ -13838,7 +13904,7 @@ use node_manager and node_selection.
 ==============================================================================*/
 {
 	char all_flag, selected_flag, verbose_flag;
-	int return_code;
+	int return_code, start, stop;
 	struct Cmiss_command_data *command_data;
 	struct FE_node_selection *node_selection;
 	struct GROUP(FE_node) *node_group;
@@ -13893,8 +13959,14 @@ use node_manager and node_selection.
 			{
 				if (0 < NUMBER_IN_LIST(FE_node)(node_list))
 				{
-					/* always write verbose details if just 1 node */
-					if (verbose_flag || (1 == NUMBER_IN_LIST(FE_node)(node_list)))
+					/* always write verbose details if single node asked for and
+						 neither all_flag nor selected_flag nor node_group set */
+					if (verbose_flag ||
+						((!all_flag) && (!selected_flag) && (!node_group) &&
+							(1 == Multi_range_get_number_of_ranges(node_ranges)) &&
+							(Multi_range_get_range(node_ranges, /*range_number*/0, 
+								&start, &stop)) &&
+							(start == stop)))
 					{
 						return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,
 							(void *)1, node_list);
