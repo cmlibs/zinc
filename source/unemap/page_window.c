@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 27 January 2002
+LAST MODIFIED : 28 March 2002
 
 DESCRIPTION :
 
@@ -5740,7 +5740,7 @@ Assumes that the calibration file is normalized.
 
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2001
+LAST MODIFIED : 28 March 2002
 
 DESCRIPTION :
 Called to start experiment on the <page_window>.
@@ -5887,7 +5887,7 @@ Called to start experiment on the <page_window>.
 					}
 					if (!(*(page_window->rig_address)))
 					{
-						display_message(INFORMATION_MESSAGE,"Creating default rig");
+						display_message(INFORMATION_MESSAGE,"Creating default rig\n");
 						number_of_rows=((int)(page_window->number_of_channels)-1)/8+1;
 						if (ALLOCATE(electrodes_in_row,int,number_of_rows))
 						{

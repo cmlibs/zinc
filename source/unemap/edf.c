@@ -1,16 +1,16 @@
 /*******************************************************************************
 FILE : edf.c
 
-LAST MODIFIED :11 December 2001
+LAST MODIFIED : 28 March 2002
 
 DESCRIPTION :
 Functions for reading EDF (European Data Format) and BDF (Biosemi Data Format)
 data files, as output by the Biosemi rig.
 BDF files are similar EDF files, but with the following changes: 
--The data is stored as 24 bit integers rather than as 16 bit integers as in EDFs.
--The version information in the header record (the first 8 bytes) must contain
-255, then the string "BIOSEMI".
-
+- the data is stored as 24 bit integers rather than as 16 bit integers as in
+	EDFs.
+- The version information in the header record (the first 8 bytes) must contain
+	255, then the string "BIOSEMI".
 ==============================================================================*/
 #include "unemap/edf.h"
 
@@ -641,9 +641,9 @@ static int make_default_edf_rig(struct EDF_header_record *edf_header_record,
 #if defined (UNEMAP_USE_3D)
 	,struct Unemap_package *unemap_package
 #endif
-																)
+	)
 /*******************************************************************************
-LAST MODIFIED : 12 October 2001
+LAST MODIFIED : 28 March 2002
 
 DESCRIPTION :
 Make a default rig in <rig_pointer> based on the information in 
@@ -672,7 +672,7 @@ CNFG file.
 	{	
 		return_code=0;		
 		number_of_edf_signals=edf_header_record->number_of_signals;			
-		display_message(INFORMATION_MESSAGE,"Creating default rig");
+		display_message(INFORMATION_MESSAGE,"Creating default rig\n");
 		number_of_rows=((int)(number_of_edf_signals)-1)/8+1;
 		if (ALLOCATE(electrodes_in_row,int,number_of_rows))
 		{
