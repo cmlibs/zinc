@@ -819,7 +819,6 @@ access this function.
 						stencil_bits=0;
 					}
 					/*???RC. Is this the best place to set line width and point size? */
-					glRenderMode(GL_RENDER);
 					glLineWidth((GLfloat)global_line_width);
 					glPointSize((GLfloat)global_point_size);
 					/*???RC temporary: turn on point and line antialiasing */
@@ -1159,8 +1158,8 @@ access this function.
 							glFlush();
 						}
 					}
-					if (scene_viewer->fast_changing ||
-						Scene_has_fast_changing_objects(scene_viewer->scene))
+					if (!picking_on&&(scene_viewer->fast_changing ||
+						Scene_has_fast_changing_objects(scene_viewer->scene)))
 					{
 						scene_viewer->swap_buffers=0;
 						/* Set up projection */
@@ -1590,15 +1589,17 @@ world space.
 static int Scene_viewer_input_select_old(struct Scene_viewer *scene_viewer,
 	XEvent *event)
 /*******************************************************************************
-LAST MODIFIED : 18 May 1998
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Converts mouse button-press and motion events into viewing transformations in
 <scene_viewer>.
 ==============================================================================*/
 {
+	Dimension xwidth, xheight;
 	double near_x,near_y,near_z,far_x,far_y,far_z,view[3];
-	int return_code,pointer_x,pointer_y,scene_input_modifier;
+	int return_code,pointer_x,pointer_y,scene_input_modifier,
+		viewport_height,viewport_width;
 	XButtonEvent *button_event;
 #if defined (DEBUG)
 	XKeyEvent *key_event;
@@ -1611,6 +1612,12 @@ Converts mouse button-press and motion events into viewing transformations in
 	if (scene_viewer&&event)
 	{
 		return_code=1;
+		XtVaGetValues(scene_viewer->drawing_widget,
+			XmNwidth,&xwidth,XmNheight,&xheight,NULL);
+		viewport_width = (int)xwidth;
+		viewport_height = (int)xheight;
+		Scene_viewer_calculate_transformation(scene_viewer,
+			viewport_width,viewport_height);
 		/* get direction we are viewing along */
 		view[0]=scene_viewer->lookatx-scene_viewer->eyex;
 		view[1]=scene_viewer->lookaty-scene_viewer->eyey;
