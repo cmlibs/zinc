@@ -2809,9 +2809,9 @@ DESCRIPTION :
 
 	ENTER(Scene_viewer_initialise_callback);
 	USE_PARAMETER(dummy_void);
-	USE_PARAMETER(graphics_buffer);
 	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
 	{
+		Graphics_buffer_make_current(graphics_buffer);
 		/* initialise graphics library to load XFont */
 		return_code = initialize_graphics_library(scene_viewer->user_interface);
 	}

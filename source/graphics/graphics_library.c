@@ -14,7 +14,10 @@ Functions for interfacing with the graphics library.
 #include <X11/Xlib.h>
 #include <GL/glu.h>
 #include <GL/glx.h>
-#endif /* defined (MOTIF) */
+#elif defined (GTK_USER_INTERFACE)
+#include <gtk/gtk.h>
+#include <gtk/gtkgl.h>
+#endif /* defined (GTK_USER_INTERFACE) */
 #endif /* defined (OPENGL_API) */
 #include "general/debug.h"
 #include "graphics/graphics_library.h"
@@ -377,11 +380,7 @@ more than <tolerance> times the largest absolute value in either matrix.
 } /* gtMatrix_match_with_tolerance */
 
 #if defined (OPENGL_API)
-/*
-*  File scope variables
-*/
-static int fontOffset = 27000;
-										/* ^ Is there any way to make sure this doesn't clash? */
+static int fontOffset = 0;
 
 void wrapperReadMatrix(GLenum matrixName,gtMatrix *theMatrix)
 /*******************************************************************************
@@ -554,14 +553,22 @@ DESCRIPTION :
 #if defined (MOTIF)
 	glBitmap(0, 0, 0, 0, text_defaults.offsetX, text_defaults.offsetY, NULL);
 #endif /* defined (MOTIF) */
-	/* set the list base (i.e. the number that is added to each and every list
-		call made from now on) */
-	glListBase(fontOffset);
-	/* call a vector of lists, consisting of unsigned bytes (chars in C).  (Each
-		char in the string therefore invokes a list call that draws the character
-		that it represents to screen, and updates the current Raster Position state
-		variable in OpenGL to advance the "print cursor").  */
-	glCallLists(strlen(theText),GL_UNSIGNED_BYTE,(GLubyte *)theText);
+	if (fontOffset)
+	{
+		/* set the list base (i.e. the number that is added to each and every list
+			call made from now on) */
+		glListBase(fontOffset);
+		/* call a vector of lists, consisting of unsigned bytes (chars in C).  (Each
+			char in the string therefore invokes a list call that draws the character
+			that it represents to screen, and updates the current Raster Position state
+			variable in OpenGL to advance the "print cursor").  */
+		glCallLists(strlen(theText),GL_UNSIGNED_BYTE,(GLubyte *)theText);
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,"wrapperPrintText.  "
+			"No graphics font has been initialised.");
+	}
 	/* restore the list state varibles back to the way they were. (This undoes the
 		glListBase command, and put the list base back to its previous (and possibly
 		non-zero) value. We could have read it in ourselves, but the book appears to
@@ -579,7 +586,7 @@ DESCRIPTION :
 Graphics font name now read in from Cmgui XDefaults file.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (MOTIF)  /* switch (USER_INTERFACE) */
 #define XmNgraphicsFont "graphicsFont"
 #define XmCGraphicsFont "GraphicsFont"
 #define XmNgraphicsTextOffsetX "graphicsTextOffsetX"
@@ -616,7 +623,15 @@ Graphics font name now read in from Cmgui XDefaults file.
 			"0"
 		}
 	};
-#endif /* defined (MOTIF) */
+#elif defined (GTK_USER_INTERFACE)  /* switch (USER_INTERFACE) */
+#if GTK_MAJOR_VERSION >= 2
+	char font_string[] = "courier 12";
+	static gint font_height;
+	PangoFontDescription *font_desc;
+	PangoFont *font;
+	PangoFontMetrics *font_metrics;
+#endif /* GTK_MAJOR_VERSION >= 2 */
+#endif /* switch (USER_INTERFACE) */
 
 	ENTER(wrapperInitText);
 	if (user_interface)
@@ -626,11 +641,44 @@ Graphics font name now read in from Cmgui XDefaults file.
 #endif /* defined (MOTIF) */
 		text_defaults.offsetX = 0;
 		text_defaults.offsetY = 0;
-#if defined (MOTIF)
-		XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
-			&text_defaults,resources,XtNumber(resources),NULL);
-		glXUseXFont(text_defaults.graphics_font->fid,0,256,fontOffset);
-#endif /* defined (MOTIF) */
+
+		if (!fontOffset)
+		{
+			fontOffset = glGenLists (256);
+#if defined (MOTIF)  /* switch (USER_INTERFACE) */
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
+				&text_defaults,resources,XtNumber(resources),NULL);
+			glXUseXFont(text_defaults.graphics_font->fid,0,256,fontOffset);
+#elif defined (GTK_USER_INTERFACE)  /* switch (USER_INTERFACE) */
+#if GTK_MAJOR_VERSION >= 2
+			/*
+			 * Generate font display lists.
+			 */
+
+			font_desc = pango_font_description_from_string (font_string);
+
+			font = gdk_gl_font_use_pango_font (font_desc, 0, 128, fontOffset);
+			if (font == NULL)
+			{
+				display_message(WARNING_MESSAGE,"wrapperInitText.  "
+					"Text display is not implemented for Gtk prior to version 2.");
+			}
+
+			font_metrics = pango_font_get_metrics (font, NULL);
+
+			font_height = pango_font_metrics_get_ascent (font_metrics) +
+				pango_font_metrics_get_descent (font_metrics);
+			font_height = PANGO_PIXELS (font_height);
+
+			pango_font_description_free (font_desc);
+			pango_font_metrics_unref (font_metrics);
+#else /* GTK_MAJOR_VERSION >= 2 */
+		/* Not implemented */
+			display_message(WARNING_MESSAGE,"wrapperInitText.  "
+				"Text display is not implemented for Gtk prior to version 2.");
+#endif /* GTK_MAJOR_VERSION >= 2 */
+#endif /* switch (USER_INTERFACE) */
+		}
 	}
 	else
 	{
