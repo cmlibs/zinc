@@ -8521,23 +8521,29 @@ Change the search interval displayed in the trace window.
 
 int trace_update_signal_controls(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 Updates the selectability of the signal controls.
 ==============================================================================*/
 {
 	int device_number,event_number,i,return_code;
-	struct Device **device,**highlight;
+	struct Device **device;
+	struct Device	**highlight;
 	struct Event *event;
 	struct Region *current_region;
 	struct Rig *rig;
 
-	ENTER(trace_update_signal_controls);
+	ENTER(trace_update_signal_controls)	
+	device=(struct Device **)NULL;
+	highlight=(struct Device **)NULL;
+	event=(struct Event *)NULL;
+	current_region=(struct Region *)NULL;
+	rig=(struct Rig *)NULL;;
 	if (trace)
 	{
 		if ((trace->rig)&&(rig= *(trace->rig))&&(trace->highlight)&&
-			(highlight= *(trace->highlight)))
+			(highlight= *(trace->highlight))&&(current_region=rig->current_region))
 		{
 			switch (trace->analysis_mode)
 			{
