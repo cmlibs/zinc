@@ -492,6 +492,7 @@ Variable_handle Variable_composition::evaluate_derivative(
 			not_used=new bool[order+1];
 			column_numbers_g=new Variable_size_type[order+1];
 			index_f=new Variable_size_type[order+1];
+			index_g=new Variable_size_type[order+1];
 			mapping_g=new Variable_size_type[order+1];
 			mapping_result=new Variable_size_type[order+1];
 			numbers_of_independent_values=new Variable_size_type[order];
@@ -499,9 +500,9 @@ Variable_handle Variable_composition::evaluate_derivative(
 			order_g=new Variable_size_type[order+1];
 			sub_order_g=new Variable_size_type[order+1];
 			matrices_g=new std::list<Matrix>::iterator[order+1];
-			if (not_used&&column_numbers_g&&index_f&&mapping_g&&mapping_result&&
-				numbers_of_independent_values&&product_orders&&order_g&&sub_order_g&&
-				matrices_g)
+			if (not_used&&column_numbers_g&&index_f&&index_g&&mapping_g&&
+				mapping_result&&numbers_of_independent_values&&product_orders&&order_g&&
+				sub_order_g&&matrices_g)
 			{
 				for (i=0;i<order;i++)
 				{
@@ -877,6 +878,7 @@ Variable_handle Variable_composition::evaluate_derivative(
 			delete [] not_used;
 			delete [] column_numbers_g;
 			delete [] index_f;
+			delete [] index_g;
 			delete [] mapping_g;
 			delete [] mapping_result;
 			delete [] numbers_of_independent_values;
