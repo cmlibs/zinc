@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : command.h
 
-LAST MODIFIED : 5 October 2001
+LAST MODIFIED : 15 July 2002
 
 DESCRIPTION :
 Functions and types associated with commands.
@@ -51,13 +51,32 @@ LAST MODIFIED : 15 June 1993
 DESCRIPTION :
 ==============================================================================*/
 
-struct Execute_command *CREATE(Execute_command)(
-	Execute_command_function *execute_command_function,
-	void *command_function_data);
+struct Execute_command *CREATE(Execute_command)(void);
+/*******************************************************************************
+LAST MODIFIED : 15 July 2002
+
+DESCRIPTION :
+Creates a blank execute command. Must call Execute_command_set_command_function
+to set the function it calls, and the user data to be passed with it.
+==============================================================================*/
+
+int DESTROY(Execute_command)(struct Execute_command **execute_command_address);
 /*******************************************************************************
 LAST MODIFIED : 8 December 1999
 
 DESCRIPTION :
+==============================================================================*/
+
+int Execute_command_set_command_function(
+	struct Execute_command *execute_command,
+	Execute_command_function *execute_command_function,
+	void *command_function_data);
+/*******************************************************************************
+LAST MODIFIED : 15 July 2002
+
+DESCRIPTION :
+Sets the function called by <execute_command>, and the user data to be passed
+with it.
 ==============================================================================*/
 
 int Execute_command_execute_string(struct Execute_command *execute_command,
@@ -67,13 +86,6 @@ LAST MODIFIED : 8 December 1999
 
 DESCRIPTION :
 Executes the given string using the Execute_command stucture
-==============================================================================*/
-
-int DESTROY(Execute_command)(struct Execute_command **execute_command_address);
-/*******************************************************************************
-LAST MODIFIED : 8 December 1999
-
-DESCRIPTION :
 ==============================================================================*/
 
 int execute_comfile(char *file_name,struct Execute_command *execute_command);

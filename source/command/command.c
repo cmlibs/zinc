@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : command.c
 
-LAST MODIFIED : 5 October 2001
+LAST MODIFIED : 15 July 2002
 
 DESCRIPTION :
 Functions associated with commands.
@@ -36,10 +36,11 @@ DESCRIPTION :
 Global functions
 ----------------
 */
+
 #if defined (MOTIF)
-void callback_command(Widget widget,XtPointer string,XtPointer call_data)
+void callback_command(Widget widget, XtPointer string, XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1993
+LAST MODIFIED : 15 July 2002
 
 DESCRIPTION :
 Allows easy execution of command <string>s from menu buttons.
@@ -50,19 +51,11 @@ Allows easy execution of command <string>s from menu buttons.
 
 	ENTER(callback_command);
 	USE_PARAMETER(call_data);
-	if (widget&&(command_string=(char *)string))
+	if (widget && (command_string = (char *)string))
 	{
 		execute_command=(struct Execute_command *)NULL;
-		XtVaGetValues(widget,XmNuserData,(XtPointer)(&execute_command),NULL);
-		if (execute_command)
-		{
-			(*(execute_command->function))(command_string,execute_command->data);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"callback_command.  Missing execute_command: %s",command_string);
-		}
+		XtVaGetValues(widget, XmNuserData, (XtPointer)(&execute_command), NULL);
+		Execute_command_execute_string(execute_command, command_string);
 	}
 	else
 	{
@@ -74,7 +67,7 @@ Allows easy execution of command <string>s from menu buttons.
 
 int read_iod_file_via_selection_box(char *file_name,void *execute_command_void)
 /*******************************************************************************
-LAST MODIFIED : 5 June 1996
+LAST MODIFIED : 15 July 2002
 
 DESCRIPTION:
 Submits a command to open an iod file.
@@ -86,9 +79,8 @@ Submits a command to open an iod file.
 
 	ENTER(read_iod_file_via_selection_box);
 	/* check arguments */
-	if (file_name&&
-		(execute_command=(struct Execute_command *)execute_command_void)&&
-		(execute_command->function))
+	if (file_name &&
+		(execute_command=(struct Execute_command *)execute_command_void))
 	{
 		/* remove the file extension */
 		if (file_extension=strrchr(file_name,'.'))
@@ -104,8 +96,8 @@ Submits a command to open an iod file.
 			strcpy(command_string,"FEM read ");
 			strncpy(command_string+9,file_name,length);
 			strcpy(command_string+(9+length),";iod");
-			return_code=(*(execute_command->function))(command_string,
-				execute_command->data);
+			return_code =
+				Execute_command_execute_string(execute_command, command_string);
 			DEALLOCATE(command_string);
 		}
 		else
@@ -126,68 +118,33 @@ Submits a command to open an iod file.
 	return (return_code);
 } /* read_iod_file_via_selection_box */
 
-struct Execute_command *CREATE(Execute_command)(
-	Execute_command_function *execute_command_function,
-	void *command_function_data)
+struct Execute_command *CREATE(Execute_command)(void)
 /*******************************************************************************
-LAST MODIFIED : 5 October 2001
+LAST MODIFIED : 15 July 2002
 
 DESCRIPTION :
+Creates a blank execute command. Must call Execute_command_set_command_function
+to set the function it calls, and the user data to be passed with it.
 ==============================================================================*/
 {
 	struct Execute_command *execute_command;
 
 	ENTER(CREATE(Execute_command));
-	execute_command=(struct Execute_command *)NULL;
-	if (execute_command_function)
+	if (ALLOCATE(execute_command,struct Execute_command, 1))
 	{
-		if (ALLOCATE(execute_command,struct Execute_command, 1))
-		{
-			execute_command->function=execute_command_function;
-			execute_command->data=command_function_data;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"CREATE(Execute_command).  "
-				"Unable to allocate Execute_command structure");
-		}
+		execute_command->function = (Execute_command_function *)NULL;
+		execute_command->data = (void *)NULL;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Execute_command).  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"CREATE(Execute_command).  "
+			"Unable to allocate Execute_command structure");
+		execute_command = (struct Execute_command *)NULL;
 	}
 	LEAVE;
 
 	return (execute_command);
 } /* CREATE(Execute_command) */
-
-int Execute_command_execute_string(struct Execute_command *execute_command,
-	char *string)
-/*******************************************************************************
-LAST MODIFIED : 5 October 2001
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Execute_command_execute_string);
-	return_code=0;
-	if (execute_command&&string)
-	{
-		return_code=(*(execute_command->function))(string,execute_command->data);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Execute_command_execute_string.  Invalid argument(s).  %p %p",
-			execute_command,string);
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Execute_command_execute_string */
 
 int DESTROY(Execute_command)(struct Execute_command **execute_command_address)
 /*******************************************************************************
@@ -215,6 +172,89 @@ DESCRIPTION :
 
 	return (return_code);
 } /* DESTROY(Execute_command) */
+
+int Execute_command_set_command_function(
+	struct Execute_command *execute_command,
+	Execute_command_function *execute_command_function,
+	void *command_function_data)
+/*******************************************************************************
+LAST MODIFIED : 15 July 2002
+
+DESCRIPTION :
+Sets the function called by <execute_command>, and the user data to be passed
+with it.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Execute_command_set_command_function);
+	if (execute_command && execute_command_function)
+	{
+		execute_command->function = execute_command_function;
+		execute_command->data = command_function_data;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Execute_command_set_command_function.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Execute_command_set_command_function */
+
+int Execute_command_execute_string(struct Execute_command *execute_command,
+	char *command_string)
+/*******************************************************************************
+LAST MODIFIED : 15 July 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Execute_command_execute_string);
+	return_code = 0;
+	if (execute_command)
+	{
+		if (command_string)
+		{
+			if (execute_command->function)
+			{
+				return_code =
+					(*(execute_command->function))(command_string, execute_command->data);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Execute_command_execute_string.  "
+					"Missing function for executing '%s'",command_string);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Execute_command_execute_string.  Missing command string");
+		}
+	}
+	else
+	{
+		if (command_string)
+		{
+			display_message(ERROR_MESSAGE, "Execute_command_execute_string.  "
+				"Missing Execute command for '%s'",command_string);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Execute_command_execute_string.  Missing Execute command");
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Execute_command_execute_string */
 
 int execute_comfile(char *file_name,struct Execute_command *execute_command)
 /******************************************************************************
