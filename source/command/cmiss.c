@@ -23767,6 +23767,14 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			specify full name as this function does not run embedded by
 			a package directive */
 		interpreter_set_string("cmiss::example", ".", &status);
+
+		/* SAB Set the cmgui command data into the interpreter.  The Cmiss package
+			is then able to export this when it is called from inside cmgui or
+			when called directly from perl to load the appropriate libraries to
+			create a cmgui externally. */
+	 	interpreter_set_pointer("Cmiss::cmgui_command_data", "Cmiss::cmgui_command_data",
+			command_data, &status);
+
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 		if ((!command_list) && (!write_help))
@@ -24471,15 +24479,15 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				cmiss_execute_command(global_temp_string,
 					(void *)command_data);
 			}
-			if (execute_string)
-			{
-				cmiss_execute_command(execute_string,(void *)command_data);
-			}
 			if (user_settings.startup_comfile)
 			{
 				/* Can't get the startupComfile name without X at the moment */
 				cmgui_execute_comfile(user_settings.startup_comfile, NULL,
 					NULL, NULL, (char **)NULL, command_data->execute_command);
+			}
+			if (execute_string)
+			{
+				cmiss_execute_command(execute_string,(void *)command_data);
 			}
 			if (example_id||comfile_name)
 			{
