@@ -19140,8 +19140,9 @@ the derivatives will start at the first position of <jacobian>.
 										element_value_offset=element_value_offsets;
 										for (j=number_of_values;j>0;j--)
 										{
-											sum += (*basis_value)*
-												element_values_storage[size*(*element_value_offset)];
+											sum += (*basis_value)*(*((FE_value *)(
+												element_values_storage +
+												size*(*element_value_offset))));
 											element_value_offset++;
 											basis_value++;
 										}
