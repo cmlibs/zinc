@@ -588,11 +588,13 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	/*???debug */
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
 	printf("enter acquired_socket_callback_process.  %p\n",crate_void);
-#else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
-	printf("enter acquired_socket_callback.  %p\n",crate_void);
-#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (DEBUG)
 #endif /* defined (DEBUG) */
+#else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
+#if defined (DEBUG)
+	printf("enter acquired_socket_callback.  %p\n",crate_void);
+#endif /* defined (DEBUG) */
+#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (MOTIF)
 #if !defined (BACKGROUND_SAVING)
 	USE_PARAMETER(source);
@@ -720,11 +722,13 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	/*???debug */
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
 	printf("leave acquired_socket_callback_process\n");
-#else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
-	printf("leave acquired_socket_callback\n");
-#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (DEBUG)
 #endif /* defined (DEBUG) */
+#else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
+#if defined (DEBUG)
+	printf("leave acquired_socket_callback\n");
+#endif /* defined (DEBUG) */
+#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 	LEAVE;
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
 } /* acquired_socket_callback_process */
@@ -8015,9 +8019,9 @@ attached SCU.  All other SCUs output the synchronization signal.
 		master_number_of_samples_in_buffer;
 
 	ENTER(unemap_configure);
+#if defined (DEBUG)
 	/*???debug */
 	printf("enter unemap_configure.  %d\n",synchronization_card);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
@@ -8052,9 +8056,9 @@ attached SCU.  All other SCUs output the synchronization signal.
 					scrolling_callback,scrolling_callback_data,
 					scrolling_refresh_frequency,synchronization_card));
 			}
+#if defined (DEBUG)
 			/*???debug */
 			printf("  start completed %d\n",i);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 			if (i>0)
 			{
@@ -8087,9 +8091,9 @@ attached SCU.  All other SCUs output the synchronization signal.
 						(master_number_of_samples_in_buffer==
 						crate_number_of_samples_in_buffer));
 				}
+#if defined (DEBUG)
 				/*???debug */
 				printf("  end completed %d\n",i);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 				if (i>0)
 				{
@@ -8181,9 +8185,9 @@ attached SCU.  All other SCUs output the synchronization signal.
 			number_of_samples_in_buffer);
 		return_code=0;
 	}
+#if defined (DEBUG)
 	/*???debug */
 	printf("leave unemap_configure\n");
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 
@@ -8245,9 +8249,9 @@ hardware.
 	struct Unemap_crate *crate;
 
 	ENTER(unemap_deconfigure);
+#if defined (DEBUG)
 	/*???debug */
 	printf("enter unemap_deconfigure\n");
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	return_code=0;
 	/* unemap may have been started by another process, so can't just check that
@@ -8275,9 +8279,9 @@ hardware.
 	module_number_of_stimulators=0;
 	module_get_cache_information_failed=0;
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
+#if defined (DEBUG)
 	/*???debug */
 	printf("leave unemap_deconfigure\n");
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 
