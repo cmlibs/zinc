@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : computed_field_vector_operations.c
+FILE : computed_field_matrix_operations.c
 
-LAST MODIFIED : 27 September 2000
+LAST MODIFIED : 26 October 2000
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
@@ -49,7 +49,7 @@ Returns true if <field> has the appropriate static type string.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_matrix_multiply.  Missing field.");
+			"Computed_field_is_type_matrix_multiply.  Missing field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -78,7 +78,7 @@ Clear the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_matrix_multiply_clear_type_specific.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -112,14 +112,14 @@ Copy the type specific data used by this type.
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_matrix_multiply_copy_type_specific.  "
-				"Unable to allocate memory.");
+				"Unable to allocate memory");
 			destination = NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_matrix_multiply_copy_type_specific.  Invalid arguments.");
+			"Computed_field_matrix_multiply_copy_type_specific.  Invalid argument(s)");
 		destination = NULL;
 	}
 	LEAVE;
@@ -156,7 +156,7 @@ Compare the type specific data
 		(struct Computed_field_matrix_multiply_type_specific_data *)
 		other_computed_field->type_specific_data))
 	{
-		if (data->number_of_rows=other_data->number_of_rows)
+		if (data->number_of_rows == other_data->number_of_rows)
 		{
 			return_code = 1;
 		}
@@ -259,7 +259,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_matrix_multiply_evaluate_cache_at_node.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -342,7 +342,7 @@ Evaluate the fields cache in the element.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_matrix_multiply_evaluate_cache_in_element.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -428,7 +428,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_matrix_multiply.  Invalid arguments.");
+			"list_Computed_field_matrix_multiply.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -460,7 +460,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_matrix_multiply_commands.  Invalid arguments.");
+			"list_Computed_field_matrix_multiply_commands.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -697,7 +697,7 @@ already) and allows its contents to be modified.
 					}
 					else
 					{
-						/* ... only if the "number_of_rows" token is next */
+						/* if the "number_of_rows" token is next, read it */
 						if (fuzzy_string_compare(current_token,"number_of_rows"))
 						{
 							option_table = CREATE(Option_table)();
@@ -737,7 +737,8 @@ already) and allows its contents to be modified.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE, "Missing command options.");
+					display_message(ERROR_MESSAGE, "Missing command options");
+					return_code = 0;
 				}
 			}
 			for (i=0;i<2;i++)
@@ -797,7 +798,7 @@ Returns true if <field> has the appropriate static type string.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_is_type_projection.  Missing field.");
+			"Computed_field_is_type_projection.  Missing field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -828,7 +829,7 @@ Clear the type specific data used by this type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_projection_clear_type_specific.  Invalid arguments.");
+			"Computed_field_projection_clear_type_specific.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -868,7 +869,7 @@ Copy the type specific data used by this type.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_projection_copy_type_specific.  Not enough memory.");
+				"Computed_field_projection_copy_type_specific.  Not enough memory");
 			DEALLOCATE(destination);
 			destination = NULL;
 		}
@@ -876,7 +877,7 @@ Copy the type specific data used by this type.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_projection_copy_type_specific.  Invalid arguments.");
+			"Computed_field_projection_copy_type_specific.  Invalid argument(s)");
 		destination = NULL;
 	}
 	LEAVE;
@@ -1120,7 +1121,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_projection_evaluate_cache_at_node.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1157,7 +1158,7 @@ Evaluate the fields cache in the element.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_projection_evaluate_cache_in_element.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1250,7 +1251,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_projection.  Invalid arguments.");
+			"list_Computed_field_projection.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1289,7 +1290,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_projection_commands.  Invalid arguments.");
+			"list_Computed_field_projection_commands.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1644,10 +1645,702 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_projection */
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+struct Computed_field_transpose_type_specific_data
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	/* the number of rows in the source [matrix] field */
+	int source_number_of_rows;
+}; /* struct Computed_field_transpose_type_specific_data */
+
+static char computed_field_transpose_type_string[] = "transpose";
+
+int Computed_field_is_type_transpose(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Returns true if <field> has the appropriate static type string.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_transpose);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_transpose_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_transpose.  Missing field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_type_transpose */
+
+static int Computed_field_transpose_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_transpose_clear_type_specific);
+	if (field && field->type_specific_data)
+	{
+		DEALLOCATE(field->type_specific_data);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_transpose_clear_type_specific.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_transpose_clear_type_specific */
+
+static void *Computed_field_transpose_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	struct Computed_field_transpose_type_specific_data *destination,*source;
+
+	ENTER(Computed_field_transpose_copy_type_specific);
+	if (field && (source = 
+		(struct Computed_field_transpose_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (ALLOCATE(destination,
+			struct Computed_field_transpose_type_specific_data, 1))
+		{
+			destination->source_number_of_rows = source->source_number_of_rows;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_transpose_copy_type_specific.  "
+				"Unable to allocate memory");
+			destination = NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_transpose_copy_type_specific.  Invalid argument(s)");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_transpose_copy_type_specific */
+
+#define Computed_field_transpose_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_transpose_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_transpose_type_specific_data *data,
+		*other_data;
+
+	ENTER(Computed_field_transpose_type_specific_contents_match);
+	if (field && other_computed_field && (data = 
+		(struct Computed_field_transpose_type_specific_data *)
+		field->type_specific_data) && (other_data =
+		(struct Computed_field_transpose_type_specific_data *)
+		other_computed_field->type_specific_data))
+	{
+		if (data->source_number_of_rows == other_data->source_number_of_rows)
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_transpose_type_specific_contents_match */
+
+#define Computed_field_transpose_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_transpose_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_transpose_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_transpose_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
+static int Computed_field_transpose_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value *source_values;
+	int i, j, m, n, return_code;
+	struct Computed_field_transpose_type_specific_data *data;
+
+	ENTER(Computed_field_transpose_evaluate_cache_at_node);
+	if (field && node && (data =
+		(struct Computed_field_transpose_type_specific_data *)
+		field->type_specific_data) && (m = data->source_number_of_rows) &&
+		(n = (field->source_fields[0]->number_of_components / m)))
+	{
+		/* returns n row x m column transpose of m row x n column source field,
+			 where values always change along rows fastest */
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+		{
+			source_values = field->source_fields[0]->values;
+			for (i = 0; i < n; i++)
+			{
+				for (j = 0; j < m; j++)
+				{
+					field->values[i*m + j] = source_values[j*n + i];
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_transpose_evaluate_cache_at_node.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_transpose_evaluate_cache_at_node */
+
+static int Computed_field_transpose_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Evaluate the fields cache in the element.
+==============================================================================*/
+{
+	FE_value *destination_derivatives, *source_derivatives, *source_values;
+	int d, element_dimension, i, j, m, n, return_code;
+	struct Computed_field_transpose_type_specific_data *data;
+
+	ENTER(Computed_field_transpose_evaluate_cache_in_element);
+	if (field && element && xi && (data =
+		(struct Computed_field_transpose_type_specific_data *)
+		field->type_specific_data) && (m = data->source_number_of_rows) &&
+		(n = (field->source_fields[0]->number_of_components / m)))
+	{
+		/* returns n row x m column tranpose of m row x n column source field,
+			 where values always change along rows fastest */
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = Computed_field_evaluate_source_fields_cache_in_element(
+			field, element, xi, top_level_element, calculate_derivatives))
+		{
+			/* 2. Calculate the field */
+			source_values = field->source_fields[0]->values;
+			for (i = 0; i < n; i++)
+			{
+				for (j = 0; j < m; j++)
+				{
+					field->values[i*m + j] = source_values[j*n + i];
+				}
+			}
+			if (calculate_derivatives)
+			{
+				/* transpose derivatives in same way as values */
+				element_dimension = get_FE_element_dimension(element);
+				for (i = 0; i < n; i++)
+				{
+					for (j = 0; j < m; j++)
+					{
+						source_derivatives = field->source_fields[0]->derivatives +
+							element_dimension*(j*n + i);
+						destination_derivatives = field->derivatives +
+							element_dimension*(i*m + j);
+						for (d = 0; d < element_dimension; d++)
+						{
+							destination_derivatives[d] = source_derivatives[d];
+						}
+					}
+				}
+				field->derivatives_valid=1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_transpose_evaluate_cache_in_element.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_transpose_evaluate_cache_in_element */
+
+#define Computed_field_transpose_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_transpose_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_transpose_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_transpose_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_transpose_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_transpose_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_transpose(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_transpose_type_specific_data *data;
+
+	ENTER(List_Computed_field_transpose);
+	if (field && (data = 
+		(struct Computed_field_transpose_type_specific_data *)
+		field->type_specific_data))
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    source number of rows : %d\n",data->source_number_of_rows);
+		display_message(INFORMATION_MESSAGE,"    source field : %s\n",
+			field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_transpose.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_transpose */
+
+static int list_Computed_field_transpose_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_transpose_type_specific_data *data;
+
+	ENTER(list_Computed_field_transpose_commands);
+	if (field && (data = 
+		(struct Computed_field_transpose_type_specific_data *)
+		field->type_specific_data))
+	{
+		display_message(INFORMATION_MESSAGE," source_number_of_rows %d field %s",
+			data->source_number_of_rows,field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_transpose_commands.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_transpose_commands */
+
+int Computed_field_set_type_transpose(struct Computed_field *field,
+	int source_number_of_rows,struct Computed_field *source_field)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_TRANSPOSE which computes the transpose
+of the <source_number_of_rows> by source_number_of_columns <source_field>. The
+source_number_of_columns is computed as source_field->number_of_components
+divided by <source_number_of_rows>, and this division must have no remainder.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int number_of_source_fields, return_code;
+	struct Computed_field **temp_source_fields;
+	struct Computed_field_transpose_type_specific_data *data;
+
+	ENTER(Computed_field_set_type_transpose);
+	if (field && (0 < source_number_of_rows) && source_field)
+	{
+		if (0 == (source_field->number_of_components % source_number_of_rows))
+		{
+			/* 1. make dynamic allocations for any new type-specific data */
+			number_of_source_fields=1;
+			if (ALLOCATE(temp_source_fields,struct Computed_field *,
+				number_of_source_fields) && ALLOCATE(data,
+					struct Computed_field_transpose_type_specific_data,1))
+			{
+				/* 2. free current type-specific data */
+				Computed_field_clear_type(field);
+				/* 3. establish the new type */
+				field->type=COMPUTED_FIELD_NEW_TYPES;
+				field->type_string = computed_field_transpose_type_string;
+				field->number_of_components = source_field->number_of_components;
+				temp_source_fields[0] = ACCESS(Computed_field)(source_field);
+				field->source_fields = temp_source_fields;
+				field->number_of_source_fields = number_of_source_fields;
+				data->source_number_of_rows = source_number_of_rows;
+				field->type_specific_data = (void *)data;
+
+				/* Set all the methods */
+				field->computed_field_clear_type_specific_function =
+					Computed_field_transpose_clear_type_specific;
+				field->computed_field_copy_type_specific_function =
+					Computed_field_transpose_copy_type_specific;
+				field->computed_field_clear_cache_type_specific_function =
+					Computed_field_transpose_clear_cache_type_specific;
+				field->computed_field_type_specific_contents_match_function =
+					Computed_field_transpose_type_specific_contents_match;
+				field->computed_field_is_defined_in_element_function =
+					Computed_field_transpose_is_defined_in_element;
+				field->computed_field_is_defined_at_node_function =
+					Computed_field_transpose_is_defined_at_node;
+				field->computed_field_has_numerical_components_function =
+					Computed_field_transpose_has_numerical_components;
+				field->computed_field_evaluate_cache_at_node_function =
+					Computed_field_transpose_evaluate_cache_at_node;
+				field->computed_field_evaluate_cache_in_element_function =
+					Computed_field_transpose_evaluate_cache_in_element;
+				field->computed_field_evaluate_as_string_at_node_function =
+					Computed_field_transpose_evaluate_as_string_at_node;
+				field->computed_field_evaluate_as_string_in_element_function =
+					Computed_field_transpose_evaluate_as_string_in_element;
+				field->computed_field_set_values_at_node_function =
+					Computed_field_transpose_set_values_at_node;
+				field->computed_field_set_values_in_element_function =
+					Computed_field_transpose_set_values_in_element;
+				field->computed_field_get_native_discretization_in_element_function =
+					Computed_field_transpose_get_native_discretization_in_element;
+				field->computed_field_find_element_xi_function =
+					Computed_field_transpose_find_element_xi;
+				field->list_Computed_field_function = 
+					list_Computed_field_transpose;
+				field->list_Computed_field_commands_function = 
+					list_Computed_field_transpose_commands;
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_transpose.  Unable to allocate memory");
+				DEALLOCATE(temp_source_fields);
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Computed_field_set_type_transpose.  "
+				"Source field %s has %d components, hence cannot have %d rows",
+				source_field->name,source_field->number_of_components,
+				source_number_of_rows);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_transpose.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_transpose */
+
+int Computed_field_get_type_transpose(struct Computed_field *field,
+	int *source_number_of_rows, struct Computed_field **source_field)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_TRANSPOSE, the 
+<source_number_of_rows> and <source_field> used by it are returned.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_transpose_type_specific_data *data;
+
+	ENTER(Computed_field_get_type_transpose);
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_transpose_type_string) &&
+		source_field && (data = 
+			(struct Computed_field_transpose_type_specific_data *)
+			field->type_specific_data))
+	{
+		*source_number_of_rows = data->source_number_of_rows;
+		*source_field = field->source_fields[0];
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_transpose.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_transpose */
+
+static int define_Computed_field_type_transpose(struct Parse_state *state,
+	void *field_void,void *computed_field_matrix_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_TRANSPOSE (if it is not 
+already) and allows its contents to be modified.
+==============================================================================*/
+{
+	char *current_token;
+	int source_number_of_rows, return_code;
+	struct Computed_field *field,*source_field;
+	struct Computed_field_matrix_operations_package 
+		*computed_field_matrix_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_transpose);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_matrix_operations_package=
+		(struct Computed_field_matrix_operations_package *)
+		computed_field_matrix_operations_package_void))
+	{
+		return_code=1;
+		/* get valid parameters for transpose field */
+		source_number_of_rows = 1;
+		source_field = (struct Computed_field *)NULL;
+		if (computed_field_transpose_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code=Computed_field_get_type_transpose(field,
+				&source_number_of_rows,&source_field);
+		}
+		/* ACCESS the source fields for set_Computed_field_conditional */
+		if (source_field)
+		{
+			ACCESS(Computed_field)(source_field);
+		}
+		if (return_code)
+		{
+			/* try to handle help first */
+			if (current_token = state->current_token)
+			{
+				set_source_field_data.conditional_function =
+					Computed_field_has_numerical_components;
+				set_source_field_data.conditional_function_user_data = (void *)NULL;
+				set_source_field_data.computed_field_manager =
+					computed_field_matrix_operations_package->computed_field_manager;
+				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
+				{
+					option_table = CREATE(Option_table)();
+					Option_table_add_entry(option_table,"source_number_of_rows",
+						&source_number_of_rows,NULL,set_int_positive);
+					Option_table_add_entry(option_table,"field",&source_field,
+						&set_source_field_data,set_Computed_field_conditional);
+					return_code=Option_table_multi_parse(option_table,state);
+					DESTROY(Option_table)(&option_table);
+				}
+				else
+				{
+					/* if the "source_number_of_rows" token is next, read it */
+					if (fuzzy_string_compare(current_token,"source_number_of_rows"))
+					{
+						option_table = CREATE(Option_table)();
+						/* source_number_of_rows */
+						Option_table_add_entry(option_table,"source_number_of_rows",
+							&source_number_of_rows,NULL,set_int_positive);
+						return_code = Option_table_parse(option_table,state);
+						DESTROY(Option_table)(&option_table);
+					}
+					if (return_code)
+					{
+						option_table = CREATE(Option_table)();
+						Option_table_add_entry(option_table,"field",&source_field,
+							&set_source_field_data,set_Computed_field_conditional);
+						return_code = Option_table_multi_parse(option_table,state) &&
+							Computed_field_set_type_transpose(field,
+								source_number_of_rows,source_field);
+						DESTROY(Option_table)(&option_table);
+					}
+					if (!return_code)
+					{
+						/* error */
+						display_message(ERROR_MESSAGE,
+							"define_Computed_field_type_transpose.  Failed");
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Missing command options");
+				return_code = 0;
+			}
+		}
+		if (source_field)
+		{
+			DEACCESS(Computed_field)(&source_field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_transpose.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_transpose */
+
 int Computed_field_register_types_matrix_operations(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 26 September 2000
+LAST MODIFIED : 26 October 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1669,6 +2362,10 @@ DESCRIPTION :
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_projection_type_string,
 			define_Computed_field_type_projection,
+			&computed_field_matrix_operations_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_transpose_type_string,
+			define_Computed_field_type_transpose,
 			&computed_field_matrix_operations_package);
 	}
 	else
