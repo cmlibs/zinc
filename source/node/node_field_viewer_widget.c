@@ -161,25 +161,21 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 		}
 		else
 		{
-			field_type=Computed_field_get_type(field);
-			switch (field_type)
+			if (Computed_field_is_type_cmiss_number(field))
 			{
-				case COMPUTED_FIELD_CMISS_NUMBER:
+				temp_string=Computed_field_evaluate_as_string_at_node(field,
+					/*component_number*/-1,node);
+			}
+			else
+			{
+				if (ALLOCATE(values,FE_value,number_of_components))
 				{
-					temp_string=Computed_field_evaluate_as_string_at_node(field,
-						/*component_number*/-1,node);
-				} break;
-				default:
-				{
-					if (ALLOCATE(values,FE_value,number_of_components))
+					if (!Computed_field_evaluate_at_node(field,node,values))
 					{
-						if (!Computed_field_evaluate_at_node(field,node,values))
-						{
-							DEALLOCATE(values);
-						}
-						Computed_field_clear_cache(field);
+						DEALLOCATE(values);
 					}
-				} break;
+					Computed_field_clear_cache(field);
+				}
 			}
 		}
 		if (fe_field||temp_string||values)
@@ -414,32 +410,28 @@ data, and then changes the correct value in the array structure.
 				}
 				else
 				{
-					field_type=Computed_field_get_type(field);
-					switch (field_type)
+					if (Computed_field_is_type_cmiss_number(field))
 					{
-						case COMPUTED_FIELD_CMISS_NUMBER:
+						display_message(WARNING_MESSAGE,
+							"CMISS number cannot be changed here");
+					}
+					else
+					{
+						FE_value *values;
+						int number_of_components;
+						
+						number_of_components=Computed_field_get_number_of_components(field);
+						if (ALLOCATE(values,FE_value,number_of_components))
 						{
-							display_message(WARNING_MESSAGE,
-								"CMISS number cannot be changed here");
-						} break;
-						default:
-						{
-							FE_value *values;
-							int number_of_components;
-
-							number_of_components=Computed_field_get_number_of_components(field);
-							if (ALLOCATE(values,FE_value,number_of_components))
+							if (Computed_field_evaluate_at_node(field,node,values))
 							{
-								if (Computed_field_evaluate_at_node(field,node,values))
-								{
-									sscanf(value_string,FE_VALUE_INPUT_STRING,
-										&values[nodal_value_information->component_number]);
-									Computed_field_set_values_at_node(field,node,values);
-								}
-								Computed_field_clear_cache(field);
-								DEALLOCATE(values);
+								sscanf(value_string,FE_VALUE_INPUT_STRING,
+									&values[nodal_value_information->component_number]);
+								Computed_field_set_values_at_node(field,node,values);
 							}
-						} break;
+							Computed_field_clear_cache(field);
+							DEALLOCATE(values);
+						}
 					}
 				}
 				XtFree(value_string);
