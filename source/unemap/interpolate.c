@@ -6741,7 +6741,7 @@ if they should be 1-D or 2-D arrays ?
 										if (POTENTIAL==map_type)
 										{
 											display_message(INFORMATION_MESSAGE,"frame time = %g, ",
-												potential_time);
+												potential_time);										
 										}
 										display_message(INFORMATION_MESSAGE,
 							"average absolute error = %.4g, maximum absolute error = %.4g\n",

@@ -37,6 +37,10 @@ element,nodes, fields when they are no longer required.
 The map information is also used to compare a new map to the previous, to see if
 the node and element groups need to be regenerated, or just have the values changed.
 
+Currently Unemap_package is rather cluttered.
+Currently storing info to make map (eg signals), info for 3D window, 
+eg light model, and managers. Split into along these lines?
+
 ==============================================================================*/
 {
 	struct MANAGER(FE_field) *fe_field_manager;

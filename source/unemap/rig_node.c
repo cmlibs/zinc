@@ -2082,6 +2082,7 @@ DESCRIPTION :
 Reads signals from a signal file, stores them in a node group, via 
 FE_node_order_info.
 Performs the same loading functions as read_signal_file, but using the rig_node group
+Doesn't load in auxilliary devices that are linear combinations of other channels.
 ==============================================================================*/
 {
 
@@ -2152,9 +2153,9 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 
 	char *device_type_string;
 	enum Signal_value_type signal_value_type;	
-	FE_value fe_value_max,fe_value_min,*node_signals_fe_value,period,*times;
+	FE_value *node_signals_fe_value,period,*times;
 	float *buffer_signals_float,*buffer_value,*channel_gains,*channel_offsets,frequency;
-	int *buffer_times, count,fread_result,i,j,number_of_samples,number_of_devices,
+	int *buffer_times,channel_number,count,fread_result,i,j,number_of_samples,number_of_devices,
 		number_of_signals,return_code,temp_int,		
 	  channel_gain_components_number_of_derivatives[1]={0},
 	  channel_gain_components_number_of_versions[1]={1},
@@ -2168,13 +2169,13 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 	  signal_maximum_components_number_of_versions[1]={1},	
 		signal_status_components_number_of_derivatives[1]={0},
 	  signal_status_components_number_of_versions[1]={1};
-	short int *buffer_signals_short,*node_signals_short,short_max,short_min;
+		short int *buffer_signals_short,*node_signals_short;
 	struct CM_field_information field_info;	
 	struct Coordinate_system coordinate_system;		
 	struct FE_field *channel_gain_field,*channel_offset_field,*signal_field,
 		*signal_maximum_field,*signal_minimum_field,*signal_status_field;
 	struct FE_field_component component;
-	struct FE_node *node,*node_managed;
+	struct FE_node *device_node,*node,*node_managed;
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(FE_node) *node_manager;
 #if defined(NEW_CODE) /* not using yet, may use later*/
@@ -2289,52 +2290,61 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 									count=0;
 									while (return_code&&(number_of_devices>0))
 									{
-										/*???DB.  Check for channel number nonzero to skip auxiliary
-											devices that are a linear combination */
-										if ((1==BINARY_FILE_READ((char *)&temp_int,sizeof(int),1,
-											input_file))&&(1==BINARY_FILE_READ((char *)&channel_offsets[count],
-												sizeof(float),1,input_file))&&(1==BINARY_FILE_READ(
-													(char *)&channel_gains[count],sizeof(float),1,input_file)))
-										{																		
-											/* allow multiple signals for each device */
-											if (return_code)
-											{										
-												while (return_code&&(temp_int<0))
-												{
-													if (1==BINARY_FILE_READ((char *)&temp_int,
-														sizeof(int),1,input_file))
-													{										
-														/*???DB.  Need to read indices even if not using */
+										/* get the channel number for this node */	
+										/*???DB. If channel number zero skip, as is auxiliary
+												device that is a linear combination see 
+												read_binary_config_FE_node,read_text_config_FE_node*/
+										device_node =get_FE_node_order_info_node(node_order_info,count);
+										component.number=0;										
+										component.field=package->channel_number_field;										
+										if ((get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
+											&channel_number))&&(channel_number>0))
+										{																				
+											if ((1==BINARY_FILE_READ((char *)&temp_int,sizeof(int),1,
+												input_file))&&(1==BINARY_FILE_READ((char *)&channel_offsets[count],
+													sizeof(float),1,input_file))&&(1==BINARY_FILE_READ(
+														(char *)&channel_gains[count],sizeof(float),1,input_file)))
+											{																		
+												/* allow multiple signals for each device */
+												if (return_code)
+												{										
+													while (return_code&&(temp_int<0))
+													{
+														if (1==BINARY_FILE_READ((char *)&temp_int,
+															sizeof(int),1,input_file))
+														{										
+															/*???DB.  Need to read indices even if not using */
 #if defined(NEW_CODE) /* not using yet, may use later*/
-														if (temp_int<0)
-														{
-															index= -(temp_int+1);
+															if (temp_int<0)
+															{
+																index= -(temp_int+1);
+															}
+															else
+															{
+																index=temp_int;
+															}	
+#endif												
 														}
 														else
 														{
-															index=temp_int;
-														}	
-#endif												
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-															"read_signal_FE_node_group. Error reading file -"
-															" signal index");
-														return_code=0;
-													}
-												}/* while (return_code&&(temp_int<0)) */
-											}	/* if (return_code)	*/
-											number_of_devices--;
-											count++;
-										}	/* if ((1==BINARY_FILE_READ( */
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"read_signal_FE_node_group. Error reading file - "
-												"offsets and gains");
-											return_code=0;
+															display_message(ERROR_MESSAGE,
+																"read_signal_FE_node_group. Error reading file -"
+																" signal index");
+															return_code=0;
+														}
+													}/* while (return_code&&(temp_int<0)) */
+												}	/* if (return_code)	*/											
+											}	/* if ((1==BINARY_FILE_READ( */
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"read_signal_FE_node_group. Error reading file - "
+													"offsets and gains");
+												return_code=0;
+											}
 										}
+										number_of_devices--;
+										count++;
 									}	/* while (return_code&&(number_of_devices>0)) */
 									if (return_code&&(number_of_devices>0))
 									{
@@ -2429,25 +2439,9 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 										MANAGER_BEGIN_CACHE(FE_node)(node_manager);	
 										for(i=0;i<get_FE_node_order_info_number_of_nodes(
 											node_order_info);i++)
-										{		
-											switch (signal_value_type)
-											{
-												case SHORT_INT_VALUE:
-												{
-													short_min=buffer_signals_short[0];
-													short_max=buffer_signals_short[0]; 
-												} break;
-												case FLOAT_VALUE:
-												{
-													fe_value_min=buffer_signals_float[0];
-													fe_value_max=buffer_signals_float[0]; 
-												} break;
-											}	/* switch (signal_value_type) */									
+										{								
 											/* copy data from buffer to node_signals. Channels are interlaced */
 											/* assumes that all nodes (devices) have the same number of signals */
-											/* Also determine signal minimum and maximum values. These may be */
-											/*overwritten if loaded in in */
-											/*read_event_settings_and_signal_status_FE_node_group*/
 											for(j=0;j<number_of_samples;j++)
 											{
 												switch (signal_value_type)
@@ -2456,36 +2450,15 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 													{
 														node_signals_short[j] = 
 															buffer_signals_short[(j*number_of_signals)+i];
-														if(node_signals_short[j]>short_max)
-														{
-															short_max=node_signals_short[j];
-														}
-														if(node_signals_short[j]<short_min)
-														{
-															short_min=node_signals_short[j];
-														}
 													} break;
 													case FLOAT_VALUE:
 													{
 														node_signals_fe_value[j] = 
 															buffer_signals_float[(j*number_of_signals)+i];
-														if(node_signals_fe_value[j]>fe_value_max)
-														{
-															fe_value_max=node_signals_fe_value[j];
-														}
-														if(node_signals_fe_value[j]<fe_value_min)
-														{
-															fe_value_min=node_signals_fe_value[j];
-														}
 													} break;
 												}	/* switch (signal_value_type) */
 											}	/* for(j=0;j<number_of_samples) */
 											/* convert short to FE_value if necessary*/
-											if(signal_value_type==SHORT_INT_VALUE)
-											{
-												fe_value_min=(FE_value)short_min;
-												fe_value_max=(FE_value)short_max;
-											}
 										 	node_managed =get_FE_node_order_info_node(
 												node_order_info,i);
 											/* create a node to work with */
@@ -2565,7 +2538,8 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 														"error getting channel_offset_field");	
 													return_code =0;
 												}	
-												/* add signal_minimum field to node*/
+												/* add signal_minimum field to node. Set to default (1.0)*/
+												/* Value set up in draw_signal()*/
 												if (signal_minimum_field=get_FE_field_manager_matched_field(
 													fe_field_manager,"signal_minimum",
 													GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
@@ -2586,7 +2560,7 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 														component.number = 0;
 														component.field = signal_minimum_field;												
 														set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-															fe_value_min);
+															1.0);
 													}
 													else
 													{
@@ -2601,7 +2575,8 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 														"error getting  signal_minimum_field");	
 													return_code =0;
 												}	
-												/* add signal_maximum field to node*/
+												/* add signal_maximum field to node.Set to default (0.0)*/
+												/* Value set up in draw_signal()*/
 												if (signal_maximum_field=get_FE_field_manager_matched_field(
 													fe_field_manager,"signal_maximum",
 													GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
@@ -2621,7 +2596,7 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 														component.number = 0;
 														component.field = signal_maximum_field; 
 														set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-															fe_value_max);													
+															0.0);
 													}
 													else
 													{
@@ -4286,13 +4261,13 @@ The extraction arguments are:
 				{
 					/*???DB.  In future get highlight from active group */
 					highlight=0;
-					component.number=0;
+					component.number=0;										
 					component.field=draw_package->signal_minimum_field;
 					get_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
 						&signal_minimum);
 					component.field=draw_package->signal_maximum_field;
 					get_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
-						&signal_maximum);				
+						&signal_maximum);					
 				}
 			}
 		}

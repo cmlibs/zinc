@@ -161,7 +161,7 @@ Display a unemap information message.
 	}
 	else
 	{
-		printf("INFORMATION: %s",message);
+		printf("INFORMATION: %s\n",message);
 		return_code=1;
 	}
 	LEAVE;
@@ -408,10 +408,18 @@ Main program for unemap
 		/* set up messages */
 		set_display_message_function(ERROR_MESSAGE,display_error_message,
 			&user_interface);
+		/*if using nodes, print information and warning messages to stdout*/
+#if defined(UNEMAP_USE_NODES)
+		set_display_message_function(INFORMATION_MESSAGE,
+			display_information_message,(void *)NULL);
+		set_display_message_function(WARNING_MESSAGE,display_warning_message,
+			(void *)NULL);
+#else
 		set_display_message_function(INFORMATION_MESSAGE,
 			display_information_message,&user_interface);
 		set_display_message_function(WARNING_MESSAGE,display_warning_message,
 			&user_interface);
+#endif
 		/* retrieve application specific constants */
 #if defined (MOTIF)
 		XtVaGetApplicationResources(user_interface.application_shell,

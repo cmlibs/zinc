@@ -126,6 +126,7 @@ object
 			};
 		callbacks
 			{
+
 			XmNfocusCallback = procedures
 				{
 				associate_mapping_analysis(system_window_structure);

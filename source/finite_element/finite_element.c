@@ -10736,7 +10736,7 @@ if need to locally and repetatively get many arrays.
 
 	short *the_array,**array_address;
 
-	ENTER(get_FE_nodal_short_value);
+	ENTER(get_FE_nodal_short_array);
 	return_code=0;
 	/* check arguments */
 	if (node&&component&&(component->field)&&(0<=component->number)&&
