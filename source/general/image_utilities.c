@@ -336,11 +336,31 @@ Performs the read and byte.
 	return (return_code);
 } /* read_and_byte_swap */
 
-static int read_tiff_field(unsigned short int *tag,unsigned short int *type,
-	unsigned long int *count,void *value_address,FILE *tiff_file,
-	int least_to_most)
+/* define following macros to guarantee that unsigned integers stored in byte
+	 arrays with most significant byte first are correctly read into the given
+	 unsigned integer types, the sizeof which differs between machines, hance we
+	 cannot simply cast it. */
+
+/*
+#define UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array) *((unsigned long int *)(byte_array))
+#define UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array) *((unsigned short int *)(byte_array))
+*/
+
+#define UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array) \
+	(((unsigned long int)(*(byte_array)) << 24) + \
+	 ((unsigned long int)(*(byte_array + 1)) << 16) + \
+	 ((unsigned long int)(*(byte_array + 2)) << 8) + \
+	 ((unsigned long int)(*(byte_array + 3))))
+
+#define UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array) \
+	(((unsigned short int)(*(byte_array)) << 8) + \
+	 ((unsigned short int)(*(byte_array + 1))))
+
+static int read_tiff_field(unsigned short int *tag, unsigned short int *type,
+	unsigned long int *count, unsigned char **field_values_address,
+	FILE *tiff_file, int least_to_most)
 /*******************************************************************************
-LAST MODIFIED : 16 April 2000
+LAST MODIFIED : 30 March 2001
 
 DESCRIPTION :
 For reading a field in an image file directory.
@@ -350,6 +370,7 @@ For reading a field in an image file directory.
 		value_component_size;
 	long int current_file_position;
 	unsigned char byte_array[4],*value;
+	unsigned long int file_offset;
 
 	ENTER(read_tiff_field);
 	/* read field information */
@@ -361,7 +382,7 @@ For reading a field in an image file directory.
 	/* read tag */
 	if (1==read_and_byte_swap(byte_array,2,1,least_to_most,tiff_file))
 	{
-		*tag= *((unsigned short int *)byte_array);
+		*tag = UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array);
 #if defined (DEBUG)
 		/*???debug */
 		printf(".  tag=%d",*tag);
@@ -370,7 +391,7 @@ For reading a field in an image file directory.
 		if (1==read_and_byte_swap(byte_array,2,1,least_to_most,
 			tiff_file))
 		{
-			*type= *((unsigned short int *)byte_array);
+			*type = UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array);
 #if defined (DEBUG)
 			/*???debug */
 			printf(", type=");
@@ -499,7 +520,7 @@ For reading a field in an image file directory.
 			if (1==read_and_byte_swap(byte_array,4,1,least_to_most,
 				tiff_file))
 			{
-				*count= *((unsigned long int *)byte_array);
+				*count = UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array);
 #if defined (DEBUG)
 				/*???debug */
 				printf(", count=%ld",*count);
@@ -509,20 +530,20 @@ For reading a field in an image file directory.
 				{
 #if defined (DEBUG)
 				/*???debug */
-					printf(", byte_array=%ld",*((unsigned long int *)byte_array));
+					printf(", byte_array=%ld",UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array));
 #endif /* defined (DEBUG) */
 					number_of_bytes=(int)
 						((*count)*number_of_value_components*value_component_size);
 					if (0<number_of_bytes)
 					{
-						if (ALLOCATE(value,unsigned char,number_of_bytes))
+						if (ALLOCATE(value, unsigned char, number_of_bytes))
 						{
 							if (4<number_of_bytes)
 							{
 								byte_swap(byte_array,4,1,least_to_most);
 								current_file_position=ftell(tiff_file);
-								if (0==fseek(tiff_file,*((long int *)byte_array),
-									SEEK_SET))
+								file_offset = UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array);
+								if (0 == fseek(tiff_file, (signed long int)file_offset, SEEK_SET))
 								{
 									if (number_of_bytes==fread(value,1,number_of_bytes,tiff_file))
 									{
@@ -537,8 +558,8 @@ For reading a field in an image file directory.
 									{
 										display_message(ERROR_MESSAGE,
 											"read_tiff_field.  Reading field value %d %ld",
-											number_of_bytes,*((unsigned long int *)byte_array));
-										return_code=0;
+											number_of_bytes, file_offset);
+										return_code = 0;
 									}
 								}
 								else
@@ -551,10 +572,11 @@ For reading a field in an image file directory.
 							else
 							{
 								byte_swap(byte_array,value_component_size,
-								  (*count)*number_of_value_components,least_to_most);
+								  (int)(*count)*number_of_value_components,least_to_most);
 #if defined (DEBUG)
 								/*???debug */
-								printf(", swapped_byte_array=%lx",*((unsigned long int *)byte_array));
+								printf(", swapped_byte_array=%lx",
+									UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array));
 #endif /* defined (DEBUG) */
 								for (i=0;i<number_of_bytes;i++)
 								{
@@ -568,13 +590,13 @@ For reading a field in an image file directory.
 								printf(", value_address=%p",value);
 								printf(", value[0]=%x", *value);
 #endif /* defined (DEBUG) */
-								*((unsigned char **)value_address)=value;
+								*field_values_address = value;
 								/* If 4 >= number_of_bytes then the byte order is
 									already swapped */
 								if (4<number_of_bytes)
 								{
 									return_code=byte_swap(value,value_component_size,
-										(*count)*number_of_value_components,least_to_most);
+										(int)(*count)*number_of_value_components,least_to_most);
 								}
 							}
 						}
@@ -3214,7 +3236,7 @@ int read_tiff_image_file(char *file_name,int *number_of_components_address,
 	long int *height_address,long int *width_address,
 	long unsigned **image_address)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 30 March 2001
 
 DESCRIPTION :
 Reads an image from a TIFF file.
@@ -3293,16 +3315,15 @@ the second the denominator.
 	FILE *tiff_file;
 	float x_resolution, y_resolution;
 	int i,least_to_most,return_code;
-   long image_length,image_width,*strip_offset,*strip_offsets;
+  long image_length,image_width,*strip_offset,*strip_offsets;
 	unsigned char bit,byte,byte_array[4],colour_0,colour_1,*image,*image_ptr,
-		*new_strip,*strip;
+		*new_strip,*strip,*temp_unsigned_char_ptr, *field_values;
 	unsigned long byte_count,column_number,field_count,ifd_offset,
       number_of_fields,number_of_strips,rows_per_strip,
 		*strip_byte_count,*strip_byte_counts;
 	unsigned short bits_per_sample,compression,field_tag,field_type,file_type,
 		photometric_interpretation,planar_configuration,resolution_unit,
-		samples_per_pixel,*temp_unsigned_short_ptr;
-	void *value_address;
+		samples_per_pixel;
 
 	ENTER(read_tiff_image_file);
 #if defined (DEBUG)
@@ -3363,7 +3384,7 @@ the second the denominator.
 				if (1==read_and_byte_swap(byte_array,2,1,least_to_most,
 					tiff_file))
 				{
-					file_type= *((unsigned short int *)byte_array);
+					file_type = UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array);
 #if defined (DEBUG)
 					/*???debug */
 					printf("B) TIFF Version number = %d\n",file_type);
@@ -3389,7 +3410,7 @@ the second the denominator.
 					if (1==read_and_byte_swap(byte_array,4,1,least_to_most,
 						tiff_file))
 					{
-						ifd_offset= *((unsigned long int *)byte_array);
+						ifd_offset = UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array);
 #if defined (DEBUG)
 						/*???debug */
 						printf("C) Address of Image File Directory = %ld\n\n",ifd_offset);
@@ -3410,16 +3431,16 @@ the second the denominator.
 					if (return_code)
 					{
 						/* go to image file directory and find out the number of fields */
-						if (0==fseek(tiff_file,(signed long int)ifd_offset,0))
+						if (0==fseek(tiff_file, (signed long int)ifd_offset, 0))
 						{
 							if (1==read_and_byte_swap(byte_array,2,1,
 								least_to_most,tiff_file))
 							{
-								number_of_fields= *((unsigned short int *)byte_array);
+								number_of_fields = UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array);
 #if defined (DEBUG)
 								/*???debug */
 								printf("D) Image file directory\n");
-								printf("     Number of Fields = %ld\n",number_of_fields);
+								printf("     Number of Fields = %d\n",number_of_fields);
 #endif /* defined (DEBUG) */
 								if (0>=number_of_fields)
 								{
@@ -3455,8 +3476,8 @@ the second the denominator.
 								while (return_code&&(number_of_fields>0))
 								{
 									/* read field information */
-									if (return_code=read_tiff_field(&field_tag,&field_type,
-										&field_count,&value_address,tiff_file,least_to_most))
+									if (return_code = read_tiff_field(&field_tag, &field_type,
+										&field_count, &field_values, tiff_file, least_to_most))
 									{
 										/* allocate values specific to tag numbers */
 										switch (field_tag)
@@ -3473,13 +3494,13 @@ the second the denominator.
 													{
 														case TIFF_SHORT_FIELD:
 														{
-															image_width=
-																*((unsigned short int *)value_address);
+															image_width = (signed long)
+																UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
 														} break;
 														case TIFF_LONG_FIELD:
 														{
-															image_width=
-																*((long int *)value_address);
+															image_width = (signed long)
+																UNSIGNED_LONG_INT_FROM_4_BYTES(field_values);
 														} break;
 														default:
 														{
@@ -3491,7 +3512,7 @@ the second the denominator.
 												{
 													return_code=0;
 												}
-												DEALLOCATE(value_address);
+												DEALLOCATE(field_values);
 #if defined (DEBUG)
 												/*???debug */
 												if (return_code)
@@ -3516,13 +3537,13 @@ the second the denominator.
 													{
 														case TIFF_SHORT_FIELD:
 														{
-															image_length=
-																*((short int *)value_address);
+															image_length = (signed long)
+																UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
 														} break;
 														case TIFF_LONG_FIELD:
 														{
-															image_length=
-																*((long int *)value_address);
+															image_length = (signed long)
+																UNSIGNED_LONG_INT_FROM_4_BYTES(field_values);
 														} break;
 														default:
 														{
@@ -3534,7 +3555,7 @@ the second the denominator.
 												{
 													return_code=0;
 												}
-												DEALLOCATE(value_address);
+												DEALLOCATE(field_values);
 #if defined (DEBUG)
 												/*???debug */
 												if (return_code)
@@ -3553,10 +3574,11 @@ the second the denominator.
 												/*???debug */
 												printf("bits per sample");
 #endif /* defined (DEBUG) */
-												if ((1==field_count)&&(TIFF_SHORT_FIELD==field_type))
+												if ((1 == field_count) &&
+													(TIFF_SHORT_FIELD == field_type))
 												{
-													bits_per_sample=
-														*((unsigned short int *)value_address);
+													bits_per_sample =
+														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
 #if defined (DEBUG)
 													/*???debug */
 													printf("=%d\n",bits_per_sample);
@@ -3567,15 +3589,15 @@ the second the denominator.
 #if defined (DEBUG)
 													/*???debug */
 													printf("=%d %d %d",
-														((unsigned short int *)value_address)[0],
-														((unsigned short int *)value_address)[1],
-														((unsigned short int *)value_address)[2]);
+														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values),
+														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values + 2),
+														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values + 4));
 #endif /* defined (DEBUG) */
 													if ((3==field_count)&&(TIFF_SHORT_FIELD==field_type))
 													{
-														if ((8==((unsigned short int *)value_address)[0])&&
-															(8==((unsigned short int *)value_address)[1])&&
-															(8==((unsigned short int *)value_address)[2]))
+														if ((8 == UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values)) &&
+															(8 == UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values + 2)) &&
+															(8 == UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values + 4)))
 														{
 															bits_per_sample=8;
 #if defined (DEBUG)
@@ -3601,7 +3623,7 @@ the second the denominator.
 														return_code=0;
 													}
 												}
-												DEALLOCATE(value_address);
+												DEALLOCATE(field_values);
 											} break;
 											case 259: /* compression */
 											{
@@ -3611,7 +3633,8 @@ the second the denominator.
 #endif /* defined (DEBUG) */
 												if ((1==field_count)&&(TIFF_SHORT_FIELD==field_type))
 												{
-													compression= *((unsigned short int *)value_address);
+													compression =
+														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
 #if defined (DEBUG)
 													/*???debug */
 													printf("=%d\n",compression);
@@ -3625,7 +3648,7 @@ the second the denominator.
 #endif /* defined (DEBUG) */
 													return_code=0;
 												}
-												DEALLOCATE(value_address);
+												DEALLOCATE(field_values);
 											} break;
 											case 262: /* photometric interpretation */
 											{
@@ -3635,8 +3658,8 @@ the second the denominator.
 #endif /* defined (DEBUG) */
 												if ((1==field_count)&&(TIFF_SHORT_FIELD==field_type))
 												{
-													photometric_interpretation=
-														*((unsigned short int *)value_address);
+													photometric_interpretation =
+														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
 #if defined (DEBUG)
 													/*???debug */
 													printf("=%d\n",photometric_interpretation);
@@ -3650,7 +3673,7 @@ the second the denominator.
 #endif /* defined (DEBUG) */
 													return_code=0;
 												}
-												DEALLOCATE(value_address);
+												DEALLOCATE(field_values);
 											} break;
 											case 273: /* strip offsets */
 											{
@@ -3658,43 +3681,48 @@ the second the denominator.
 												/*???debug */
 												printf("strip offsets");
 #endif /* defined (DEBUG) */
-												if (field_count>0)
+												if (0 < field_count)
 												{
-													number_of_strips=field_count;
-													switch (field_type)
+													number_of_strips = field_count;
+													if (ALLOCATE(strip_offsets, signed long, field_count))
 													{
-														case TIFF_SHORT_FIELD:
+														strip_offset = strip_offsets;
+														temp_unsigned_char_ptr = field_values;
+														while ((0 < field_count) && strip_offsets)
 														{
-															if (ALLOCATE(strip_offsets,long,
-																field_count*sizeof(long int)))
+															switch (field_type)
 															{
-																strip_offset=strip_offsets;
-																temp_unsigned_short_ptr=
-																	(unsigned short int *)value_address;
-																while (field_count>0)
+																case TIFF_SHORT_FIELD:
 																{
-																	*strip_offset= *temp_unsigned_short_ptr;
-																	strip_offset++;
-																	temp_unsigned_short_ptr++;
-																	field_count--;
-																}
+																	*strip_offset = (signed long)
+																		UNSIGNED_SHORT_INT_FROM_2_BYTES(temp_unsigned_char_ptr);
+																	temp_unsigned_char_ptr += 2;
+																} break;
+																case TIFF_LONG_FIELD:
+																{
+																	*strip_offset = (signed long)
+																		UNSIGNED_LONG_INT_FROM_4_BYTES(temp_unsigned_char_ptr);
+																	temp_unsigned_char_ptr += 4;
+																} break;
+																default:
+																{
+																	DEALLOCATE(strip_offsets);
+																	return_code = 0;
+																} break;
 															}
-															else
-															{
-																return_code=0;
-															}
-															DEALLOCATE(value_address);
-														} break;
-														case TIFF_LONG_FIELD:
-														{
-															strip_offsets=(long int *)value_address;
-														} break;
-														default:
-														{
-															DEALLOCATE(value_address);
-															return_code=0;
+#if defined (DEBUG)
+															/*???debug */
+															printf(" %ld", *strip_offset);
+#endif /* defined (DEBUG) */
+															strip_offset++;
+															field_count--;
 														}
 													}
+													else
+													{
+														return_code = 0;
+													}
+													DEALLOCATE(field_values);
 												}
 												else
 												{
@@ -3720,8 +3748,8 @@ the second the denominator.
 #endif /* defined (DEBUG) */
 												if ((1==field_count)&&(TIFF_SHORT_FIELD==field_type))
 												{
-													samples_per_pixel=
-														*((unsigned short int *)value_address);
+													samples_per_pixel =
+														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
 #if defined (DEBUG)
 													/*???debug */
 													printf("=%d\n",samples_per_pixel);
@@ -3735,7 +3763,7 @@ the second the denominator.
 #endif /* defined (DEBUG) */
 													return_code=0;
 												}
-												DEALLOCATE(value_address);
+												DEALLOCATE(field_values);
 											} break;
 											case 278: /* rows/strip */
 											{
@@ -3749,13 +3777,13 @@ the second the denominator.
 													{
 														case TIFF_SHORT_FIELD:
 														{
-															rows_per_strip=
-																*((unsigned short int *)value_address);
+															rows_per_strip =
+																UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
 														} break;
 														case TIFF_LONG_FIELD:
 														{
-															rows_per_strip=
-																*((unsigned long int *)value_address);
+															rows_per_strip =
+																UNSIGNED_LONG_INT_FROM_4_BYTES(field_values);
 														} break;
 														default:
 														{
@@ -3767,7 +3795,7 @@ the second the denominator.
 												{
 													return_code=0;
 												}
-												DEALLOCATE(value_address);
+												DEALLOCATE(field_values);
 #if defined (DEBUG)
 												/*???debug */
 												if (return_code)
@@ -3786,44 +3814,49 @@ the second the denominator.
 												/*???debug */
 												printf("strip byte counts");
 #endif /* defined (DEBUG) */
-												if ((number_of_strips>0)&&
-													(number_of_strips==field_count))
+												if ((0 < number_of_strips) &&
+													(field_count == number_of_strips))
 												{
-													switch (field_type)
+													if (ALLOCATE(strip_byte_counts, unsigned long int,
+														field_count))
 													{
-														case TIFF_SHORT_FIELD:
+														strip_byte_count = strip_byte_counts;
+														temp_unsigned_char_ptr = field_values;
+														while ((0 < field_count) && strip_byte_counts)
 														{
-															if (ALLOCATE(strip_byte_counts,unsigned long,
-																field_count*sizeof(unsigned long int)))
+															switch (field_type)
 															{
-																strip_byte_count=strip_byte_counts;
-																temp_unsigned_short_ptr=
-																	(unsigned short int *)value_address;
-																while (field_count>0)
+																case TIFF_SHORT_FIELD:
 																{
-																	*strip_byte_count= *temp_unsigned_short_ptr;
-																	strip_byte_count++;
-																	temp_unsigned_short_ptr++;
-																	field_count--;
-																}
+																	*strip_byte_count =
+																		UNSIGNED_SHORT_INT_FROM_2_BYTES(temp_unsigned_char_ptr);
+																	temp_unsigned_char_ptr += 2;
+																} break;
+																case TIFF_LONG_FIELD:
+																{
+																	*strip_byte_count =
+																		UNSIGNED_LONG_INT_FROM_4_BYTES(temp_unsigned_char_ptr);
+																	temp_unsigned_char_ptr += 4;
+																} break;
+																default:
+																{
+																	DEALLOCATE(strip_byte_counts);
+																	return_code = 0;
+																} break;
 															}
-															else
-															{
-																return_code=0;
-															}
-															DEALLOCATE(value_address);
-														} break;
-														case TIFF_LONG_FIELD:
-														{
-															strip_byte_counts=
-																(unsigned long int *)value_address;
-														} break;
-														default:
-														{
-															DEALLOCATE(value_address);
-															return_code=0;
+#if defined (DEBUG)
+															/*???debug */
+															printf(" %ld", *strip_byte_count);
+#endif /* defined (DEBUG) */
+															strip_byte_count++;
+															field_count--;
 														}
 													}
+													else
+													{
+														return_code=0;
+													}
+													DEALLOCATE(field_values);
 												}
 												else
 												{
@@ -3847,12 +3880,13 @@ the second the denominator.
 												/*???debug */
 												printf("x_resolution");
 #endif /* defined (DEBUG) */
-												if ((1==field_count)&&
-													(TIFF_RATIONAL_FIELD==field_type)&&
-													(0<((unsigned long int *)value_address)[1]))
+												if ((1 == field_count) &&
+													(TIFF_RATIONAL_FIELD == field_type) &&
+													(0 < UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4)))
 												{
-													x_resolution=(float)((unsigned long int *)value_address)[0]/
-														(float)((unsigned long int *)value_address)[1];
+													x_resolution =
+														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values) /
+														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4);
 #if defined (DEBUG)
 													/*???debug */
 													printf("=%g\n",x_resolution);
@@ -3866,7 +3900,7 @@ the second the denominator.
 #endif /* defined (DEBUG) */
 													return_code=0;
 												}
-												DEALLOCATE(value_address);
+												DEALLOCATE(field_values);
 											} break;
 											case 283: /* y resolution */
 											{
@@ -3874,12 +3908,13 @@ the second the denominator.
 												/*???debug */
 												printf("y_resolution");
 #endif /* defined (DEBUG) */
-												if ((1==field_count)&&
-													(TIFF_RATIONAL_FIELD==field_type)&&
-													(0<((unsigned long int *)value_address)[1]))
+												if ((1 == field_count)&&
+													(TIFF_RATIONAL_FIELD == field_type)&&
+													(0 < UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4)))
 												{
-													y_resolution=(float)((unsigned long int *)value_address)[0]/
-														(float)((unsigned long int *)value_address)[1];
+													y_resolution =
+														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values) /
+														(float)UNSIGNED_LONG_INT_FROM_4_BYTES(field_values + 4);
 #if defined (DEBUG)
 													/*???debug */
 													printf("=%g\n",y_resolution);
@@ -3893,7 +3928,7 @@ the second the denominator.
 #endif /* defined (DEBUG) */
 													return_code=0;
 												}
-												DEALLOCATE(value_address);
+												DEALLOCATE(field_values);
 											} break;
 											case 284: /* planar configuration */
 											{
@@ -3903,8 +3938,8 @@ the second the denominator.
 #endif /* defined (DEBUG) */
 												if ((1==field_count)&&(TIFF_SHORT_FIELD==field_type))
 												{
-													planar_configuration=
-														*((unsigned short int *)value_address);
+													planar_configuration =
+														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
 #if defined (DEBUG)
 													/*???debug */
 													printf("=%d\n",planar_configuration);
@@ -3918,7 +3953,7 @@ the second the denominator.
 #endif /* defined (DEBUG) */
 													return_code=0;
 												}
-												DEALLOCATE(value_address);
+												DEALLOCATE(field_values);
 											} break;
 											case 296: /* resolution unit */
 											{
@@ -3928,8 +3963,8 @@ the second the denominator.
 #endif /* defined (DEBUG) */
 												if ((1==field_count)&&(TIFF_SHORT_FIELD==field_type))
 												{
-													resolution_unit=
-														*((unsigned short int *)value_address);
+													resolution_unit =
+														UNSIGNED_SHORT_INT_FROM_2_BYTES(field_values);
 #if defined (DEBUG)
 													/*???debug */
 													printf("=%d\n",resolution_unit);
@@ -3943,11 +3978,11 @@ the second the denominator.
 #endif /* defined (DEBUG) */
 													return_code=0;
 												}
-												DEALLOCATE(value_address);
+												DEALLOCATE(field_values);
 											} break;
 											default:
 											{
-												DEALLOCATE(value_address);
+												DEALLOCATE(field_values);
 											} break;
 										}
 #if defined (DEBUG)
@@ -3963,7 +3998,7 @@ the second the denominator.
 									/*???debug */
 									for (i=0;i<number_of_strips;i++)
 									{
-										printf("%d %d %d\n",i,strip_offsets[i],
+										printf("strip offset %d: %d %d\n",i,strip_offsets[i],
 											strip_byte_counts[i]);
 									}
 /*
