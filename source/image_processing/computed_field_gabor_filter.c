@@ -1164,7 +1164,7 @@ already) and allows its contents to be modified.
 				return_code=Option_table_multi_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
-			if ((dimension < 1) && source_filed)
+			if ((dimension < 1) && source_field)
 			{
 			        return_code = Computed_field_get_native_resolution(source_field,
 				     &dimension,&sizes,&minimums,&maximums,&texture_coordinate_field);
