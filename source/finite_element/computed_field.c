@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 17 November 1999
+LAST MODIFIED : 3 December 1999
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -10088,6 +10088,34 @@ components - useful for selecting vector/coordinate fields.
 	return (return_code);
 } /* Computed_field_has_4_components */
 
+int Computed_field_is_of_type(struct Computed_field *field,
+	void *computed_field_type_void)
+/*******************************************************************************
+LAST MODIFIED : 1 December 1999
+
+DESCRIPTION :
+Returns true if the <field> is of the given <computed_field_type>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_of_type);
+	if (field)
+	{
+		return_code=
+			(enum Computed_field_type)computed_field_type_void == field->type;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_of_type.  Missing field");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_of_type */
+
 int Computed_field_is_orientation_scale_capable(struct Computed_field *field,
 	void *dummy_void)
 /*******************************************************************************
@@ -10454,10 +10482,75 @@ a set of values.
 	return (return_code);
 } /* Computed_field_is_find_element_xi_capableC */
 
+struct Computed_field *Computed_field_manager_get_component_wrapper(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct Computed_field *field,int component_no)
+/*******************************************************************************
+LAST MODIFIED : 3 December 1999
+
+DESCRIPTION :
+If a COMPONENT wrapper for <field> <component_no> exists in the
+<computed_field_manager>, it is returned, otherwise a new one is made in the
+manager and returned.
+==============================================================================*/
+{
+	char *component_field_name,*component_name;
+	struct Computed_field *component_field;
+	struct Computed_field_component field_component;
+
+	ENTER(Computed_field_manager_get_component_wrapper);
+	component_field=(struct Computed_field *)NULL;
+	if (computed_field_manager&&field&&(0<=component_no)&&
+		(component_no<field->number_of_components))
+	{
+		field_component.field=field;
+		field_component.component_no=component_no;
+		/* try to find an existing wrapper for this component */
+		if (!(component_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+			Computed_field_wraps_field_component,&field_component,
+			computed_field_manager)))
+		{
+			if (component_name=Computed_field_get_component_name(field,component_no))
+			{
+				if (ALLOCATE(component_field_name,char,strlen(field->name)+
+					strlen(component_name)+2))
+				{
+					sprintf(component_field_name,"%s.%s",field->name,component_name);
+					if (component_field=CREATE(Computed_field)(component_field_name))
+					{
+						if (!(Computed_field_set_type_component(component_field,field,
+							component_no)&&
+							ADD_OBJECT_TO_MANAGER(Computed_field)(component_field,
+								computed_field_manager)))
+						{
+							DESTROY(Computed_field)(&component_field);
+						}
+					}
+					DEALLOCATE(component_field_name);
+				}
+				DEALLOCATE(component_name);
+			}
+			if (!component_field)
+			{
+				display_message(WARNING_MESSAGE,
+					"Computed_field_manager_get_component_wrapper.  Failed");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_manager_get_component_wrapper.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (component_field);
+} /* Computed_field_manager_get_component_wrapper */
+
 int set_Computed_field_conditional(struct Parse_state *state,
 	void *field_address_void,void *set_field_data_void)
 /*******************************************************************************
-LAST MODIFIED : 10 March 1999
+LAST MODIFIED : 3 December 1999
 
 DESCRIPTION :
 Modifier function to set the field from a command. <set_field_data_void> should
@@ -10469,8 +10562,7 @@ this function works just like set_Computed_field.
 {
 	char *current_token,*field_component_name,*temp_name;
 	int component_no,i,return_code;
-	struct Computed_field **field_address,*selected_field,*temp_field;
-	struct Computed_field_component field_component;
+	struct Computed_field **field_address,*selected_field;
 	struct Set_Computed_field_conditional_data *set_field_data;
 
 	ENTER(set_Computed_field_conditional);
@@ -10538,38 +10630,15 @@ this function works just like set_Computed_field.
 									}
 									else
 									{
-										field_component.field=selected_field;
-										field_component.component_no=component_no;
-										/* try to find an existing wrapper for this component */
-										if (temp_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-											Computed_field_wraps_field_component,&field_component,
-											set_field_data->computed_field_package->
-											computed_field_manager))
+										/* get or make wrapper for field component */
+										if (!(selected_field=
+											Computed_field_manager_get_component_wrapper(
+												set_field_data->computed_field_package->
+												computed_field_manager,selected_field,component_no)))
 										{
-											selected_field=temp_field;
-										}
-										else
-										{
-											/* make a wrapper for the field component */
-											field_component_name--;
-											*field_component_name='.';
-											if ((temp_field=CREATE(Computed_field)(current_token))&&
-												Computed_field_set_type_component(temp_field,
-													selected_field,component_no)&&
-												ADD_OBJECT_TO_MANAGER(Computed_field)(temp_field,
-													set_field_data->computed_field_package->
-													computed_field_manager))
-											{
-												selected_field=temp_field;
-												component_no=0;
-											}
-											else
-											{
-												display_message(WARNING_MESSAGE,
-													"set_Computed_field_component.  Not enough memory");
-												DESTROY(Computed_field)(&temp_field);
-												selected_field=(struct Computed_field *)NULL;
-											}
+											display_message(WARNING_MESSAGE,
+												"set_Computed_field_component.  "
+												"Could not make component wrapper");
 										}
 									}
 								}
@@ -10625,9 +10694,9 @@ this function works just like set_Computed_field.
 				display_message(INFORMATION_MESSAGE,
 					" FIELD_NAME[.COMPONENT_NAME]|none");
 				/* if possible, then write the name */
-				if (temp_field= *field_address)
+				if (selected_field= *field_address)
 				{
-					display_message(INFORMATION_MESSAGE,"[%s]",temp_field->name);
+					display_message(INFORMATION_MESSAGE,"[%s]",selected_field->name);
 				}
 				else
 				{

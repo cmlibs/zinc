@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 9 November 1999
+LAST MODIFIED : 3 December 1999
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -816,6 +816,29 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 
+int Computed_field_get_type_dot_product(struct Computed_field *field,
+	struct Computed_field **source_field1, struct Computed_field **source_field2);
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+If the field is of type DOT_PRODUCT, the source fields used
+by it is returned - otherwise an error is reported.
+Use function Computed_field_get_type to determine the field type.
+==============================================================================*/
+
+int Computed_field_set_type_dot_product(struct Computed_field *field,
+	struct Computed_field *source_field1, struct Computed_field *source_field2);
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_DOT_PRODUCT, 
+which returns the dot product of the components of the two source fields.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+
 int Computed_field_get_type_finite_element(struct Computed_field *field,
 	struct FE_field **fe_field);
 /*******************************************************************************
@@ -1172,6 +1195,30 @@ although its cache may be lost.
 with 3.
 ==============================================================================*/
 
+int Computed_field_get_type_xi_texture_coordinates(struct Computed_field *field,
+	struct FE_element **seed_element);
+/*******************************************************************************
+LAST MODIFIED : 16 June 1999
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_XI_TEXTURE_COORDINATES, 
+the seed element used for the mapping is returned - otherwise an error is reported.
+Use function Computed_field_get_type to determine the field type.
+==============================================================================*/
+
+int Computed_field_set_type_xi_texture_coordinates(struct Computed_field *field,
+	struct FE_element *seed_element, struct MANAGER(FE_element) *fe_element_manager);
+/*******************************************************************************
+LAST MODIFIED : 6 July 1999
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_XI_TEXTURE_COORDINATES.
+The seed element is set to the number given and the mapping calculated.
+Sets the number of components to the dimension of the given element.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+
 int Computed_field_has_1_component(struct Computed_field *field,
 	void *dummy_void);
 /*******************************************************************************
@@ -1219,6 +1266,15 @@ LAST MODIFIED : 10 March 1999
 
 DESCRIPTION :
 Conditional function returning true if <field> has exactly four components.
+==============================================================================*/
+
+int Computed_field_is_of_type(struct Computed_field *field,
+	void *computed_field_type_void);
+/*******************************************************************************
+LAST MODIFIED : 1 December 1999
+
+DESCRIPTION :
+Returns true if the <field> is of the given <computed_field_type>.
 ==============================================================================*/
 
 int Computed_field_is_orientation_scale_capable(struct Computed_field *field,
@@ -1360,6 +1416,18 @@ LAST MODIFIED : 17 May 1999
 DESCRIPTION :
 Returns non-zero if the same fields are defined in the same ways at the two
 nodes.
+==============================================================================*/
+
+struct Computed_field *Computed_field_manager_get_component_wrapper(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct Computed_field *field,int component_no);
+/*******************************************************************************
+LAST MODIFIED : 3 December 1999
+
+DESCRIPTION :
+If a COMPONENT wrapper for <field> <component_no> exists in the
+<computed_field_manager>, it is returned, otherwise a new one is made in the
+manager and returned.
 ==============================================================================*/
 
 int set_Computed_field_conditional(struct Parse_state *state,
