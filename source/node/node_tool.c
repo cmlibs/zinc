@@ -1410,8 +1410,7 @@ used to represent them.
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 				node_tool->interactive_tool,
 				node_tool->interactive_tool_manager);
-			node_tool->last_interaction_volume=
-				(struct Interaction_volume *)NULL;
+			node_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
 		}
 		else
 		{
