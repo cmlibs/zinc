@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 26 December 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -8327,11 +8327,61 @@ function fails if two faces have the same shape and share the same nodes.
 	return (return_code);
 } /* FE_element_face_line_to_element_type_node_sequence_list */
 
+static int node_on_axis(struct FE_node *node,struct FE_field *field,
+	enum Coordinate_system_type coordinate_system_type)
+/*******************************************************************************
+LAST MODIFIED : 26 December 2000
+
+DESCRIPTION :
+Returns non-zero if the <node> is on the axis for the <field>/
+<coordinate_system_type> and zero otherwise.
+==============================================================================*/
+{
+	FE_value node_value;
+	int return_code;
+
+	ENTER(node_on_axis);
+	return_code=0;
+	switch (coordinate_system_type)
+	{
+		case CYLINDRICAL_POLAR:
+		{
+			calculate_FE_field(field,0,node,(struct FE_element *)NULL,
+				(FE_value *)NULL,&node_value);
+			if (0==node_value)
+			{
+				return_code=1;
+			}
+		} break;
+		case PROLATE_SPHEROIDAL:
+		case OBLATE_SPHEROIDAL:
+		{
+			calculate_FE_field(field,1,node,(struct FE_element *)NULL,
+				(FE_value *)NULL,&node_value);
+			if ((0==node_value)||(PI==node_value))
+			{
+				return_code=1;
+			}
+		} break;
+		case SPHERICAL_POLAR:
+		{
+			calculate_FE_field(field,2,node,(struct FE_element *)NULL,
+				(FE_value *)NULL,&node_value);
+			if ((-PI/2==node_value)||(PI/2==node_value))
+			{
+				return_code=1;
+			}
+		} break;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* node_on_axis */
+
 /*
 Global functions
 ----------------
 */
-
 struct FE_node *CREATE(FE_node)(int cm_node_identifier,
 	struct FE_node *template_node)
 /*******************************************************************************
@@ -26151,13 +26201,13 @@ Modifies the already calculated <values>.
 
 	return (return_code);
 } /* theta_increasing_in_xi1 */
-#endif
+#endif /* defined (OLD_CODE) */
 
 int theta_increasing_in_xi1(struct FE_element_field_component *component,
 	struct FE_element *element,struct FE_field *field,int number_of_values,
 	FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 8 April 1999
+LAST MODIFIED : 26 December 2000
 
 DESCRIPTION :
 Modifies the already calculated <values>.
@@ -26167,8 +26217,8 @@ Modifies the already calculated <values>.
 {
 	char all_on_axis;
 	enum Coordinate_system_type coordinate_system_type;
-	FE_value *element_value,*element_value_2,node_value,offset_xi1_xi2,
-		offset_xi2_xi3,value_xi1,value_xi2,value_xi3;
+	FE_value *element_value,*element_value_2,offset_xi1_xi2,offset_xi2_xi3,
+		value_xi1,value_xi2,value_xi3;
 	int *basis_type,i,j,k,number_of_nodes_in_xi1,number_of_nodes_in_xi2,
 		number_of_nodes_in_xi3,return_code,xi2_basis_type;
 	struct FE_element_field *element_field;
@@ -26193,12 +26243,11 @@ Modifies the already calculated <values>.
 		if ((3==get_FE_field_number_of_components(field))&&
 			((CYLINDRICAL_POLAR==coordinate_system_type)||
 			(OBLATE_SPHEROIDAL==coordinate_system_type)||
-			(PROLATE_SPHEROIDAL==coordinate_system_type)))
+			(PROLATE_SPHEROIDAL==coordinate_system_type)||
+			(SPHERICAL_POLAR==coordinate_system_type)))
 		{
-		
 			element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
 				field,element->information->fields->element_field_list);
-	
 			if (element_field)
 			{
 				switch (coordinate_system_type)
@@ -26220,6 +26269,17 @@ Modifies the already calculated <values>.
 						if (component==(element_field->components)[2])
 						{
 							axis_component=(element_field->components)[1];
+						}
+						else
+						{
+							element_field=(struct FE_element_field *)NULL;
+						}
+					} break;
+					case SPHERICAL_POLAR:
+					{
+						if (component==(element_field->components)[1])
+						{
+							axis_component=(element_field->components)[2];
 						}
 						else
 						{
@@ -26322,30 +26382,8 @@ Modifies the already calculated <values>.
 					i=number_of_nodes_in_xi1;
 					while (all_on_axis&&(i>0))
 					{
-						switch (coordinate_system_type)
-						{
-							case PROLATE_SPHEROIDAL:
-							case OBLATE_SPHEROIDAL:
-							{
-								calculate_FE_field(field,1,node[(*node_to_element_map)->
-									node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-									&node_value);
-								if ((0!=node_value)&&(PI!=node_value))
-								{
-									all_on_axis=0;
-								}
-							} break;
-							case CYLINDRICAL_POLAR:
-							{
-								calculate_FE_field(field,0,node[(*node_to_element_map)->
-									node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-									&node_value);
-								if (0!=node_value)
-								{
-									all_on_axis=0;
-								}
-							} break;
-						}
+						all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
+							field,coordinate_system_type);
 						node_to_element_map++;
 						i--;
 					}
@@ -26414,30 +26452,8 @@ Modifies the already calculated <values>.
 						i=number_of_nodes_in_xi1;
 						while (all_on_axis&&(i>0))
 						{
-							switch (coordinate_system_type)
-							{
-								case PROLATE_SPHEROIDAL:
-								case OBLATE_SPHEROIDAL:
-								{
-									calculate_FE_field(field,1,node[(*node_to_element_map)->
-										node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-										&node_value);
-									if ((0!=node_value)&&(PI!=node_value))
-									{
-										all_on_axis=0;
-									}
-								} break;
-								case CYLINDRICAL_POLAR:
-								{
-									calculate_FE_field(field,0,node[(*node_to_element_map)->
-										node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-										&node_value);
-									if (0!=node_value)
-									{
-										all_on_axis=0;
-									}
-								} break;
-							}
+							all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
+								field,coordinate_system_type);
 							node_to_element_map++;
 							i--;
 						}
@@ -26510,30 +26526,8 @@ Modifies the already calculated <values>.
 							i=number_of_nodes_in_xi1;
 							while (all_on_axis&&(i>0))
 							{
-								switch (coordinate_system_type)
-								{
-									case PROLATE_SPHEROIDAL:
-									case OBLATE_SPHEROIDAL:
-									{
-										calculate_FE_field(field,1,node[(*node_to_element_map)->
-											node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-											&node_value);
-										if ((0!=node_value)&&(PI!=node_value))
-										{
-											all_on_axis=0;
-										}
-									} break;
-									case CYLINDRICAL_POLAR:
-									{
-										calculate_FE_field(field,0,node[(*node_to_element_map)->
-											node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-											&node_value);
-										if (0!=node_value)
-										{
-											all_on_axis=0;
-										}
-									} break;
-								}
+								all_on_axis=node_on_axis(node[(*node_to_element_map)->
+									node_index],field,coordinate_system_type);
 								node_to_element_map++;
 								i--;
 							}
@@ -26587,30 +26581,8 @@ Modifies the already calculated <values>.
 								i=number_of_nodes_in_xi1;
 								while (all_on_axis&&(i>0))
 								{
-									switch (coordinate_system_type)
-									{
-										case PROLATE_SPHEROIDAL:
-										case OBLATE_SPHEROIDAL:
-										{
-											calculate_FE_field(field,1,node[(*node_to_element_map)->
-												node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-												&node_value);
-											if ((0!=node_value)&&(PI!=node_value))
-											{
-												all_on_axis=0;
-											}
-										} break;
-										case CYLINDRICAL_POLAR:
-										{
-											calculate_FE_field(field,0,node[(*node_to_element_map)->
-												node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-												&node_value);
-											if (0!=node_value)
-											{
-												all_on_axis=0;
-											}
-										} break;
-									}
+									all_on_axis=node_on_axis(node[(*node_to_element_map)->
+										node_index],field,coordinate_system_type);
 									node_to_element_map++;
 									i--;
 								}
@@ -26817,7 +26789,7 @@ int theta_non_decreasing_in_xi1(
 	struct FE_element_field_component *component,struct FE_element *element,
 	struct FE_field *field,int number_of_values,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 8 April 1999
+LAST MODIFIED : 26 December 2000
 
 DESCRIPTION :
 Modifies the already calculated <values>.
@@ -26827,8 +26799,8 @@ Modifies the already calculated <values>.
 {
 	char all_on_axis;
 	enum Coordinate_system_type coordinate_system_type;
-	FE_value *element_value,*element_value_2,node_value,offset_xi1_xi2,
-		offset_xi2_xi3,value_xi1,value_xi2,value_xi3;
+	FE_value *element_value,*element_value_2,offset_xi1_xi2,offset_xi2_xi3,
+		value_xi1,value_xi2,value_xi3;
 	int *basis_type,i,j,k,number_of_nodes_in_xi1,number_of_nodes_in_xi2,
 		number_of_nodes_in_xi3,return_code,xi2_basis_type;
 	struct FE_element_field *element_field;
@@ -26853,7 +26825,8 @@ Modifies the already calculated <values>.
 		if ((3==get_FE_field_number_of_components(field))&&
 			((CYLINDRICAL_POLAR==coordinate_system_type)||
 			(OBLATE_SPHEROIDAL==coordinate_system_type)||
-			(PROLATE_SPHEROIDAL==coordinate_system_type)))
+			(PROLATE_SPHEROIDAL==coordinate_system_type)||
+			(SPHERICAL_POLAR==coordinate_system_type)))
 		{
 				
 			element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
@@ -26880,6 +26853,17 @@ Modifies the already calculated <values>.
 						if (component==(element_field->components)[2])
 						{
 							axis_component=(element_field->components)[1];
+						}
+						else
+						{
+							element_field=(struct FE_element_field *)NULL;
+						}
+					} break;
+					case SPHERICAL_POLAR:
+					{
+						if (component==(element_field->components)[1])
+						{
+							axis_component=(element_field->components)[2];
 						}
 						else
 						{
@@ -26982,30 +26966,8 @@ Modifies the already calculated <values>.
 					i=number_of_nodes_in_xi1;
 					while (all_on_axis&&(i>0))
 					{
-						switch (coordinate_system_type)
-						{
-							case PROLATE_SPHEROIDAL:
-							case OBLATE_SPHEROIDAL:
-							{
-								calculate_FE_field(field,1,node[(*node_to_element_map)->
-									node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-									&node_value);
-								if ((0!=node_value)&&(PI!=node_value))
-								{
-									all_on_axis=0;
-								}
-							} break;
-							case CYLINDRICAL_POLAR:
-							{
-								calculate_FE_field(field,0,node[(*node_to_element_map)->
-									node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-									&node_value);
-								if (0!=node_value)
-								{
-									all_on_axis=0;
-								}
-							} break;
-						}
+						all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
+							field,coordinate_system_type);
 						node_to_element_map++;
 						i--;
 					}
@@ -27074,30 +27036,8 @@ Modifies the already calculated <values>.
 						i=number_of_nodes_in_xi1;
 						while (all_on_axis&&(i>0))
 						{
-							switch (coordinate_system_type)
-							{
-								case PROLATE_SPHEROIDAL:
-								case OBLATE_SPHEROIDAL:
-								{
-									calculate_FE_field(field,1,node[(*node_to_element_map)->
-										node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-										&node_value);
-									if ((0!=node_value)&&(PI!=node_value))
-									{
-										all_on_axis=0;
-									}
-								} break;
-								case CYLINDRICAL_POLAR:
-								{
-									calculate_FE_field(field,0,node[(*node_to_element_map)->
-										node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-										&node_value);
-									if (0!=node_value)
-									{
-										all_on_axis=0;
-									}
-								} break;
-							}
+							all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
+								field,coordinate_system_type);
 							node_to_element_map++;
 							i--;
 						}
@@ -27170,30 +27110,8 @@ Modifies the already calculated <values>.
 							i=number_of_nodes_in_xi1;
 							while (all_on_axis&&(i>0))
 							{
-								switch (coordinate_system_type)
-								{
-									case PROLATE_SPHEROIDAL:
-									case OBLATE_SPHEROIDAL:
-									{
-										calculate_FE_field(field,1,node[(*node_to_element_map)->
-											node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-											&node_value);
-										if ((0!=node_value)&&(PI!=node_value))
-										{
-											all_on_axis=0;
-										}
-									} break;
-									case CYLINDRICAL_POLAR:
-									{
-										calculate_FE_field(field,0,node[(*node_to_element_map)->
-											node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-											&node_value);
-										if (0!=node_value)
-										{
-											all_on_axis=0;
-										}
-									} break;
-								}
+								all_on_axis=node_on_axis(node[(*node_to_element_map)->
+									node_index],field,coordinate_system_type);
 								node_to_element_map++;
 								i--;
 							}
@@ -27247,30 +27165,8 @@ Modifies the already calculated <values>.
 								i=number_of_nodes_in_xi1;
 								while (all_on_axis&&(i>0))
 								{
-									switch (coordinate_system_type)
-									{
-										case PROLATE_SPHEROIDAL:
-										case OBLATE_SPHEROIDAL:
-										{
-											calculate_FE_field(field,1,node[(*node_to_element_map)->
-												node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-												&node_value);
-											if ((0!=node_value)&&(PI!=node_value))
-											{
-												all_on_axis=0;
-											}
-										} break;
-										case CYLINDRICAL_POLAR:
-										{
-											calculate_FE_field(field,0,node[(*node_to_element_map)->
-												node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-												&node_value);
-											if (0!=node_value)
-											{
-												all_on_axis=0;
-											}
-										} break;
-									}
+									all_on_axis=node_on_axis(node[(*node_to_element_map)->
+										node_index],field,coordinate_system_type);
 									node_to_element_map++;
 									i--;
 								}
@@ -27473,7 +27369,7 @@ Modifies the already calculated <values>.
 	return (return_code);
 } /* theta_non_decreasing_in_xi1 */
 
-#if defined (CODE_FRAGMENTS)
+#if defined (OLD_CODE)
 int theta_decreasing_in_xi1(struct FE_element_field_component *component,
 	struct FE_element *element,struct FE_field *field,int number_of_values,
 	FE_value *values)
@@ -27587,13 +27483,13 @@ Modifies the already calculated <values>.
 
 	return (return_code);
 } /* theta_decreasing_in_xi1 */
-#endif
+#endif /* defined (OLD_CODE) */
 
 int theta_decreasing_in_xi1(struct FE_element_field_component *component,
 	struct FE_element *element,struct FE_field *field,int number_of_values,
 	FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 8 April 1999
+LAST MODIFIED : 26 December 2000
 
 DESCRIPTION :
 Modifies the already calculated <values>.
@@ -27603,8 +27499,8 @@ Modifies the already calculated <values>.
 {
 	char all_on_axis;
 	enum Coordinate_system_type coordinate_system_type;
-	FE_value *element_value,*element_value_2,node_value,offset_xi1_xi2,
-		offset_xi2_xi3,value_xi1,value_xi2,value_xi3;
+	FE_value *element_value,*element_value_2,offset_xi1_xi2,offset_xi2_xi3,
+		value_xi1,value_xi2,value_xi3;
 	int *basis_type,i,j,k,number_of_nodes_in_xi1,number_of_nodes_in_xi2,
 		number_of_nodes_in_xi3,return_code,xi2_basis_type;
 	struct FE_element_field *element_field;
@@ -27629,7 +27525,8 @@ Modifies the already calculated <values>.
 		if ((3==get_FE_field_number_of_components(field))&&
 			((CYLINDRICAL_POLAR==coordinate_system_type)||
 			(OBLATE_SPHEROIDAL==coordinate_system_type)||
-			(PROLATE_SPHEROIDAL==coordinate_system_type)))
+			(PROLATE_SPHEROIDAL==coordinate_system_type)||
+			(SPHERICAL_POLAR==coordinate_system_type)))
 		{
 		
 			element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
@@ -27656,6 +27553,17 @@ Modifies the already calculated <values>.
 						if (component==(element_field->components)[2])
 						{
 							axis_component=(element_field->components)[1];
+						}
+						else
+						{
+							element_field=(struct FE_element_field *)NULL;
+						}
+					} break;
+					case SPHERICAL_POLAR:
+					{
+						if (component==(element_field->components)[1])
+						{
+							axis_component=(element_field->components)[2];
 						}
 						else
 						{
@@ -27758,30 +27666,8 @@ Modifies the already calculated <values>.
 					i=number_of_nodes_in_xi1;
 					while (all_on_axis&&(i>0))
 					{
-						switch (coordinate_system_type)
-						{
-							case PROLATE_SPHEROIDAL:
-							case OBLATE_SPHEROIDAL:
-							{
-								calculate_FE_field(field,1,node[(*node_to_element_map)->
-									node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-									&node_value);
-								if ((0!=node_value)&&(PI!=node_value))
-								{
-									all_on_axis=0;
-								}
-							} break;
-							case CYLINDRICAL_POLAR:
-							{
-								calculate_FE_field(field,0,node[(*node_to_element_map)->
-									node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-									&node_value);
-								if (0!=node_value)
-								{
-									all_on_axis=0;
-								}
-							} break;
-						}
+						all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
+							field,coordinate_system_type);
 						node_to_element_map++;
 						i--;
 					}
@@ -27850,30 +27736,8 @@ Modifies the already calculated <values>.
 						i=number_of_nodes_in_xi1;
 						while (all_on_axis&&(i>0))
 						{
-							switch (coordinate_system_type)
-							{
-								case PROLATE_SPHEROIDAL:
-								case OBLATE_SPHEROIDAL:
-								{
-									calculate_FE_field(field,1,node[(*node_to_element_map)->
-										node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-										&node_value);
-									if ((0!=node_value)&&(PI!=node_value))
-									{
-										all_on_axis=0;
-									}
-								} break;
-								case CYLINDRICAL_POLAR:
-								{
-									calculate_FE_field(field,0,node[(*node_to_element_map)->
-										node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-										&node_value);
-									if (0!=node_value)
-									{
-										all_on_axis=0;
-									}
-								} break;
-							}
+							all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
+								field,coordinate_system_type);
 							node_to_element_map++;
 							i--;
 						}
@@ -27946,30 +27810,8 @@ Modifies the already calculated <values>.
 							i=number_of_nodes_in_xi1;
 							while (all_on_axis&&(i>0))
 							{
-								switch (coordinate_system_type)
-								{
-									case PROLATE_SPHEROIDAL:
-									case OBLATE_SPHEROIDAL:
-									{
-										calculate_FE_field(field,1,node[(*node_to_element_map)->
-											node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-											&node_value);
-										if ((0!=node_value)&&(PI!=node_value))
-										{
-											all_on_axis=0;
-										}
-									} break;
-									case CYLINDRICAL_POLAR:
-									{
-										calculate_FE_field(field,0,node[(*node_to_element_map)->
-											node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-											&node_value);
-										if (0!=node_value)
-										{
-											all_on_axis=0;
-										}
-									} break;
-								}
+								all_on_axis=node_on_axis(node[(*node_to_element_map)->
+									node_index],field,coordinate_system_type);
 								node_to_element_map++;
 								i--;
 							}
@@ -28023,30 +27865,8 @@ Modifies the already calculated <values>.
 								i=number_of_nodes_in_xi1;
 								while (all_on_axis&&(i>0))
 								{
-									switch (coordinate_system_type)
-									{
-										case PROLATE_SPHEROIDAL:
-										case OBLATE_SPHEROIDAL:
-										{
-											calculate_FE_field(field,1,node[(*node_to_element_map)->
-												node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-												&node_value);
-											if ((0!=node_value)&&(PI!=node_value))
-											{
-												all_on_axis=0;
-											}
-										} break;
-										case CYLINDRICAL_POLAR:
-										{
-											calculate_FE_field(field,0,node[(*node_to_element_map)->
-												node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-												&node_value);
-											if (0!=node_value)
-											{
-												all_on_axis=0;
-											}
-										} break;
-									}
+									all_on_axis=node_on_axis(node[(*node_to_element_map)->
+										node_index],field,coordinate_system_type);
 									node_to_element_map++;
 									i--;
 								}
@@ -28188,7 +28008,7 @@ int theta_non_increasing_in_xi1(
 	struct FE_element_field_component *component,struct FE_element *element,
 	struct FE_field *field,int number_of_values,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 8 April 1999
+LAST MODIFIED : 26 December 2000
 
 DESCRIPTION :
 Modifies the already calculated <values>.
@@ -28198,8 +28018,8 @@ Modifies the already calculated <values>.
 {
 	char all_on_axis;
 	enum Coordinate_system_type coordinate_system_type;
-	FE_value *element_value,*element_value_2,node_value,offset_xi1_xi2,
-		offset_xi2_xi3,value_xi1,value_xi2,value_xi3;
+	FE_value *element_value,*element_value_2,offset_xi1_xi2,offset_xi2_xi3,
+		value_xi1,value_xi2,value_xi3;
 	int *basis_type,i,j,k,number_of_nodes_in_xi1,number_of_nodes_in_xi2,
 		number_of_nodes_in_xi3,return_code,xi2_basis_type;
 	struct FE_element_field *element_field;
@@ -28224,7 +28044,8 @@ Modifies the already calculated <values>.
 		if ((3==get_FE_field_number_of_components(field))&&
 			((CYLINDRICAL_POLAR==coordinate_system_type)||
 			(OBLATE_SPHEROIDAL==coordinate_system_type)||
-			(PROLATE_SPHEROIDAL==coordinate_system_type)))
+			(PROLATE_SPHEROIDAL==coordinate_system_type)||
+			(SPHERICAL_POLAR==coordinate_system_type)))
 		{
 	
 			element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
@@ -28251,6 +28072,17 @@ Modifies the already calculated <values>.
 						if (component==(element_field->components)[2])
 						{
 							axis_component=(element_field->components)[1];
+						}
+						else
+						{
+							element_field=(struct FE_element_field *)NULL;
+						}
+					} break;
+					case SPHERICAL_POLAR:
+					{
+						if (component==(element_field->components)[1])
+						{
+							axis_component=(element_field->components)[2];
 						}
 						else
 						{
@@ -28353,30 +28185,8 @@ Modifies the already calculated <values>.
 					i=number_of_nodes_in_xi1;
 					while (all_on_axis&&(i>0))
 					{
-						switch (coordinate_system_type)
-						{
-							case PROLATE_SPHEROIDAL:
-							case OBLATE_SPHEROIDAL:
-							{
-								calculate_FE_field(field,1,node[(*node_to_element_map)->
-									node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-									&node_value);
-								if ((0!=node_value)&&(PI!=node_value))
-								{
-									all_on_axis=0;
-								}
-							} break;
-							case CYLINDRICAL_POLAR:
-							{
-								calculate_FE_field(field,0,node[(*node_to_element_map)->
-									node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-									&node_value);
-								if (0!=node_value)
-								{
-									all_on_axis=0;
-								}
-							} break;
-						}
+						all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
+							field,coordinate_system_type);
 						node_to_element_map++;
 						i--;
 					}
@@ -28445,30 +28255,8 @@ Modifies the already calculated <values>.
 						i=number_of_nodes_in_xi1;
 						while (all_on_axis&&(i>0))
 						{
-							switch (coordinate_system_type)
-							{
-								case PROLATE_SPHEROIDAL:
-								case OBLATE_SPHEROIDAL:
-								{
-									calculate_FE_field(field,1,node[(*node_to_element_map)->
-										node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-										&node_value);
-									if ((0!=node_value)&&(PI!=node_value))
-									{
-										all_on_axis=0;
-									}
-								} break;
-								case CYLINDRICAL_POLAR:
-								{
-									calculate_FE_field(field,0,node[(*node_to_element_map)->
-										node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-										&node_value);
-									if (0!=node_value)
-									{
-										all_on_axis=0;
-									}
-								} break;
-							}
+							all_on_axis=node_on_axis(node[(*node_to_element_map)->node_index],
+								field,coordinate_system_type);
 							node_to_element_map++;
 							i--;
 						}
@@ -28541,30 +28329,8 @@ Modifies the already calculated <values>.
 							i=number_of_nodes_in_xi1;
 							while (all_on_axis&&(i>0))
 							{
-								switch (coordinate_system_type)
-								{
-									case PROLATE_SPHEROIDAL:
-									case OBLATE_SPHEROIDAL:
-									{
-										calculate_FE_field(field,1,node[(*node_to_element_map)->
-											node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-											&node_value);
-										if ((0!=node_value)&&(PI!=node_value))
-										{
-											all_on_axis=0;
-										}
-									} break;
-									case CYLINDRICAL_POLAR:
-									{
-										calculate_FE_field(field,0,node[(*node_to_element_map)->
-											node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-											&node_value);
-										if (0!=node_value)
-										{
-											all_on_axis=0;
-										}
-									} break;
-								}
+								all_on_axis=node_on_axis(node[(*node_to_element_map)->
+									node_index],field,coordinate_system_type);
 								node_to_element_map++;
 								i--;
 							}
@@ -28618,30 +28384,8 @@ Modifies the already calculated <values>.
 								i=number_of_nodes_in_xi1;
 								while (all_on_axis&&(i>0))
 								{
-									switch (coordinate_system_type)
-									{
-										case PROLATE_SPHEROIDAL:
-										case OBLATE_SPHEROIDAL:
-										{
-											calculate_FE_field(field,1,node[(*node_to_element_map)->
-												node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-												&node_value);
-											if ((0!=node_value)&&(PI!=node_value))
-											{
-												all_on_axis=0;
-											}
-										} break;
-										case CYLINDRICAL_POLAR:
-										{
-											calculate_FE_field(field,0,node[(*node_to_element_map)->
-												node_index],(struct FE_element *)NULL,(FE_value *)NULL,
-												&node_value);
-											if (0!=node_value)
-											{
-												all_on_axis=0;
-											}
-										} break;
-									}
+									all_on_axis=node_on_axis(node[(*node_to_element_map)->
+										node_index],field,coordinate_system_type);
 									node_to_element_map++;
 									i--;
 								}
