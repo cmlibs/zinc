@@ -8050,7 +8050,7 @@ components - useful for selecting vector/coordinate fields.
 {
 	int return_code;
 
-	ENTER(Computed_field_has_4_components);
+	ENTER(Computed_field_has_3_components);
 	USE_PARAMETER(dummy_void);
 	if (field)
 	{
@@ -16999,7 +16999,8 @@ Adds <type> to the <option_table> so it is available to the commands.
 	{
 		Option_table_add_entry(data->option_table,type->name,data->field_void,
 			type->define_type_user_data,
-			type->define_Computed_field_type_function);		
+			type->define_Computed_field_type_function);
+		return_code=1;
 	}
 	else
 	{
