@@ -1,11 +1,21 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 13 September 2002
+LAST MODIFIED : 6 June 2003
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
 signal conditioning cards.
+
+SOFTWARE_VERSION:
+	2 June 2003.  Added so that applications can deal with different versions of
+		the hardware service
+3 2 June 2003.  Replaces SERVICE_VERSION in
+		unemap_hardware_service/unemap_hardware_service.c
+	4 June 2003.  For unemap_configure added <scrolling_frequency> and renamed
+		<scrolling_refresh_frequency> to <scrolling_callback_frequency>.  Added
+		unemap_get_scrolling_frequency and unemap_get_scrolling_callback_frequency.
+		This is to allow more control of scrolling
 
 CODE SWITCHS :
 WIN32_SYSTEM - uses Windows GDI (graphics device interface?)
@@ -347,6 +357,8 @@ NO_BATT_GOOD_WATCH - no thread watching BattGood
 Module constants
 ----------------
 */
+#define SOFTWARE_VERSION 3
+
 #if !defined (DA_INTERRUPTS_OFF)
 #define MINIMUM_NUMBER_OF_DA_POINTS 500
 #endif /* !defined (DA_INTERRUPTS_OFF) */
@@ -390,7 +402,6 @@ float initial_antialiasing_filter_frequency;
 /*???debug */
 	/*???DB.  Read in, but no longer used */
 int number_of_valid_ni_channels=64;
-#define NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL 4
 #endif /* defined (NI_DAQ) */
 
 /*
@@ -489,7 +500,9 @@ UINT module_scrolling_message=(UINT)0;
 HWND module_scrolling_window=(HWND)NULL;
 #endif /* defined (WIN32_USER_INTERFACE) */
 int module_number_of_scrolling_channels=0,
-	*module_scrolling_channel_numbers=(int *)NULL,module_scrolling_refresh_period;
+	module_number_of_scrolling_values_per_channel=1,
+	module_scrolling_callback_period=1,
+	*module_scrolling_channel_numbers=(int *)NULL;
 int module_sampling_on=0,module_scrolling_on=1;
 #if defined (UNEMAP_THREAD_SAFE)
 #if defined (WIN32_SYSTEM)
@@ -2229,7 +2242,7 @@ Always called so that <module_starting_sample_number> and
 		NUMBER_OF_CHANNELS_ON_NI_CARD;
 	end1=(module_starting_sample_number+module_sample_buffer_size)%
 		number_of_samples;
-	end2=end1+module_scrolling_refresh_period;
+	end2=end1+module_scrolling_callback_period;
 	end3=end2%number_of_samples;
 	if (module_sampling_on&&(((end1<=sample_number)&&(sample_number<=end2))||
 		((sample_number<=end3)&&(end3<end1))))
@@ -2282,6 +2295,7 @@ Always called so that <module_starting_sample_number> and
 		sample_number += number_of_samples-1;
 		sample_number %= number_of_samples;
 		if (module_scrolling_on&&(0<module_number_of_scrolling_channels)&&
+			(0<module_number_of_scrolling_values_per_channel)&&
 			(module_scrolling_callback
 #if defined (WIN32_USER_INTERFACE)
 			||module_scrolling_window
@@ -2293,19 +2307,19 @@ Always called so that <module_starting_sample_number> and
 			{
 				number_of_bytes=(module_number_of_scrolling_channels+2)*sizeof(int)+
 					module_number_of_scrolling_channels*
-					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT)+
+					module_number_of_scrolling_values_per_channel*sizeof(SHORT)+
 					sizeof(module_scrolling_callback_data);
 				if (ALLOCATE(byte_array,unsigned char,number_of_bytes))
 				{
 					*((int *)byte_array)=module_number_of_scrolling_channels;
 					channel_numbers=(int *)(byte_array+sizeof(int));
 					*((int *)(byte_array+(module_number_of_scrolling_channels+1)*
-						sizeof(int)))=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+						sizeof(int)))=module_number_of_scrolling_values_per_channel;
 					value_array=(SHORT *)(byte_array+
 						(module_number_of_scrolling_channels+2)*sizeof(int));
 					*((void **)(byte_array+((module_number_of_scrolling_channels+2)*
 						sizeof(int)+module_number_of_scrolling_channels*
-						NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT))))=
+						module_number_of_scrolling_values_per_channel*sizeof(SHORT))))=
 						module_scrolling_callback_data;
 				}
 				else
@@ -2323,7 +2337,7 @@ Always called so that <module_starting_sample_number> and
 #endif /* defined (WIN32_USER_INTERFACE) */
 				ALLOCATE(channel_numbers,int,module_number_of_scrolling_channels);
 				ALLOCATE(value_array,SHORT,module_number_of_scrolling_channels*
-					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
+					module_number_of_scrolling_values_per_channel);
 				if (!(channel_numbers&&value_array))
 				{
 					DEALLOCATE(channel_numbers);
@@ -2351,9 +2365,9 @@ Always called so that <module_starting_sample_number> and
 					offset=NUMBER_OF_CHANNELS_ON_NI_CARD*sample_number+
 						(ni_card->channel_reorder)[(channel_number-1)%
 						NUMBER_OF_CHANNELS_ON_NI_CARD];
-					averaging_length=module_scrolling_refresh_period/
-						NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
-					for (j=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-1;j>=0;j--)
+					averaging_length=module_scrolling_callback_period/
+						module_number_of_scrolling_values_per_channel;
+					for (j=module_number_of_scrolling_values_per_channel-1;j>=0;j--)
 					{
 						sum=0;
 						for (i=averaging_length;i>0;i--)
@@ -2370,7 +2384,7 @@ Always called so that <module_starting_sample_number> and
 						}
 						value[j]=(SHORT)(sum/averaging_length);
 					}
-					value += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+					value += module_number_of_scrolling_values_per_channel;
 				}
 				if ((UnEmap_2V1==module_NI_CARDS->unemap_hardware_version)||
 					(UnEmap_2V2==module_NI_CARDS->unemap_hardware_version))
@@ -2378,7 +2392,7 @@ Always called so that <module_starting_sample_number> and
 					/* Unemap_2V1 and UnEmap_2V2 invert */
 					value=value_array;
 					for (k=module_number_of_scrolling_channels*
-						NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;k>0;k--)
+						module_number_of_scrolling_values_per_channel;k>0;k--)
 					{
 						*value= -(*value);
 						value++;
@@ -2394,10 +2408,10 @@ Always called so that <module_starting_sample_number> and
 		for (i=0;i<module_number_of_scrolling_channels;i++)
 		{
 			fprintf(unemap_debug,"  %d ",module_scrolling_channel_numbers[i]);
-			for (j=0;j<NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;j++)
+			for (j=0;j<module_number_of_scrolling_values_per_channel;j++)
 			{
 				fprintf(unemap_debug," %d",
-					value_array[i*NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+j]);
+					value_array[i*module_number_of_scrolling_values_per_channel+j]);
 			}
 			fprintf(unemap_debug,"\n");
 		}
@@ -2413,16 +2427,17 @@ Always called so that <module_starting_sample_number> and
 					{
 						ALLOCATE(channel_numbers_2,int,module_number_of_scrolling_channels);
 						ALLOCATE(value_array_2,SHORT,module_number_of_scrolling_channels*
-							NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
+							module_number_of_scrolling_values_per_channel);
 						if (channel_numbers_2&&value_array_2)
 						{
 							memcpy((char *)channel_numbers_2,(char *)channel_numbers,
 								module_number_of_scrolling_channels*sizeof(int));
 							memcpy((char *)value_array_2,(char *)value_array,
 								module_number_of_scrolling_channels*
-								NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*sizeof(SHORT));
+								module_number_of_scrolling_values_per_channel*sizeof(SHORT));
 							(*module_scrolling_callback)(module_number_of_scrolling_channels,
-								channel_numbers_2,(int)NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,
+								channel_numbers_2,
+								(int)module_number_of_scrolling_values_per_channel,
 								value_array_2,module_scrolling_callback_data);
 						}
 						else
@@ -2444,7 +2459,7 @@ Always called so that <module_starting_sample_number> and
 				{
 #endif /* defined (WIN32_USER_INTERFACE) */
 					(*module_scrolling_callback)(module_number_of_scrolling_channels,
-						channel_numbers,(int)NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,
+						channel_numbers,(int)module_number_of_scrolling_values_per_channel,
 						value_array,module_scrolling_callback_data);
 #if defined (WIN32_USER_INTERFACE)
 				}
@@ -2581,13 +2596,13 @@ field of <ni_card>.
 					status=Config_DAQ_Event_Message(ni_card_temp->device_number,
 						/* add message */(i16)1,/* channel string */"AI0",
 						/* send message every N scans */(i16)1,
-						(i32)module_scrolling_refresh_period,(i32)0,(u32)0,(u32)0,
+						(i32)module_scrolling_callback_period,(i32)0,(u32)0,(u32)0,
 						(u32)0,(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
 #if defined (DEBUG)
 					/*???debug */
 					display_message(INFORMATION_MESSAGE,"set_NI_gain.  "
 						"Config_DAQ_Event_Message(%d,1,AI0,1,%d,0,0,0,0,NULL,0,%p)=%d\n",
-						ni_card_temp->device_number,module_scrolling_refresh_period,
+						ni_card_temp->device_number,module_scrolling_callback_period,
 						scrolling_callback_NI,status);
 #endif /* defined (DEBUG) */
 #endif /* !defined (NO_SCROLLING_CALLBACK) */
@@ -2595,7 +2610,7 @@ field of <ni_card>.
 					{
 						display_message(ERROR_MESSAGE,
 							"set_NI_gain.  Config_DAQ_Event_Message 1 failed.  %d %d",status,
-							module_scrolling_refresh_period);
+							module_scrolling_callback_period);
 					}
 				}
 				status=DAQ_DB_Config(ni_card_temp->device_number,/* enable */(i16)1);
@@ -2719,7 +2734,7 @@ static int load_NI_DA(i16 da_channel,int number_of_channels,
 	Unemap_stimulation_end_callback *stimulation_end_callback,
 	void *stimulation_end_callback_data)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 29 May 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -3016,6 +3031,8 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 #endif /* !defined (SYNCHRONOUS_STIMULATION) */
 						}
 #endif /* defined (OLD_CODE) */
+#if defined (OLD_CODE)
+						/*???DB.  May not even have started */
 						/*???DB.  Call the existing stimulation_end_callback ? */
 						if ((module_NI_CARDS[i]).stimulation_end_callback)
 						{
@@ -3023,6 +3040,7 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 								(UINT)(module_NI_CARDS[i]).stimulation_end_callback_id,
 								(WPARAM)NULL,(LPARAM)NULL);
 						}
+#endif /* defined (OLD_CODE) */
 						/* add the stimulation end callback */
 						(module_NI_CARDS[i]).stimulation_end_callback_id=
 							stimulation_end_callback_id;
@@ -6075,7 +6093,7 @@ stage 4 is calculating the offset
 #if !defined (NO_BATT_GOOD_WATCH)
 DWORD WINAPI batt_good_thread_function(LPVOID stop_flag_address_void)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 6 June 2006
 
 DESCRIPTION :
 ==============================================================================*/
@@ -6100,6 +6118,8 @@ DESCRIPTION :
 				if ((0==DIG_In_Line(module_NI_CARDS->device_number,(i16)0,
 					battery_good_input_line_UnEmap2vx,&state))&&!state)
 				{
+					display_message(INFORMATION_MESSAGE,
+						"Setting power off because of BattGood line");
 					unemap_set_power(0);
 				}
 			}
@@ -6193,8 +6213,7 @@ Global functions
 /*???debug */
 static int unemap_start_sampling_count=0;
 
-int unemap_configure(float sampling_frequency_slave,
-	int number_of_samples_in_buffer,
+int unemap_configure(float sampling_frequency_slave,int number_of_samples_in_buffer,
 #if defined (WIN32_USER_INTERFACE)
 	HWND scrolling_window,UINT scrolling_message,
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -6202,24 +6221,28 @@ int unemap_configure(float sampling_frequency_slave,
 	struct Event_dispatcher *event_dispatcher,
 #endif /* defined (UNIX) */
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
-	float scrolling_refresh_frequency,int synchronization_card)
+	float scrolling_frequency,float scrolling_callback_frequency,
+	int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2002
+LAST MODIFIED : 4 June 2003
 
 DESCRIPTION :
-Configures the hardware for sampling at the specified
-<sampling_frequency_slave> and with the specified <number_of_samples_in_buffer>.
-<sampling_frequency_slave> and <number_of_samples_in_buffer> are requests and
-the actual values used should be determined using unemap_get_sampling_frequency
-and unemap_get_maximum_number_of_samples.
+Configures the hardware for sampling at the specified <sampling_frequency> and
+with the specified <number_of_samples_in_buffer>. <sampling_frequency>,
+<number_of_samples_in_buffer>, <scrolling_frequency> and
+<scrolling_callback_frequency> are requests and the actual values used should
+be determined using unemap_get_sampling_frequency,
+unemap_get_maximum_number_of_samples, unemap_get_scrolling_frequency and
+unemap_get_scrolling_callback_frequency.
 
-Every <sampling_frequency_slave>/<scrolling_refresh_frequency> samples (one
-	sample is a measument on every channel)
+Every <sampling_frequency>/<scrolling_callback_frequency> samples (one sample
+	is a measurement on every channel)
 - if <scrolling_callback> is not NULL, <scrolling_callback> is called with
 	- first argument is the number of scrolling channels
 	- second argument is an array of channel numbers (in the order they were added
 		using unemap_set_scrolling_channel)
 	- third argument is the number of values for each channel
+		(<scrolling_frequency>/<scrolling_callback_frequency>)
 	- fourth argument is an array of channel values (all the values for the first
 		channel, then all the values for the second channel and so on)
 	- fifth argument is the user supplied callback data
@@ -6236,7 +6259,7 @@ Every <sampling_frequency_slave>/<scrolling_refresh_frequency> samples (one
 			are the channel values
 		- last sizeof(void *) bytes are the user supplied callback data
 	- LPARAM is a ULONG specifying the number of bytes in the WPARAM array
-		over the <scrolling_refresh_period>) in the array
+		over the <scrolling_callback_period>) in the array
 	- it is the responsibility of the window message handler to free the WPARAM
 		array.
 
@@ -6286,12 +6309,12 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 #if defined (WIN32_USER_INTERFACE)
 		"%p %u "
 #endif /* defined (WIN32_USER_INTERFACE) */
-		"%p %p %g %d\n",sampling_frequency_slave,number_of_samples_in_buffer,
+		"%p %p %g %g %d\n",sampling_frequency_slave,number_of_samples_in_buffer,
 #if defined (WIN32_USER_INTERFACE)
 		scrolling_window,scrolling_message,
 #endif /* defined (WIN32_USER_INTERFACE) */
-		scrolling_callback,scrolling_callback_data,scrolling_refresh_frequency,
-		synchronization_card);
+		scrolling_callback,scrolling_callback_data,scrolling_frequency,
+		scrolling_callback_frequency,synchronization_card);
 #endif /* defined (DEBUG) */
 	/*???debug */
 	unemap_start_sampling_count=0;
@@ -6309,7 +6332,9 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 		module_slave=0;
 	}
 	/* check arguments */
-	if ((0<sampling_frequency)&&(0<number_of_samples_in_buffer))
+	if ((0<sampling_frequency)&&(0<number_of_samples_in_buffer)&&
+		(!scrolling_callback||((0<scrolling_callback_frequency)&&
+		(scrolling_frequency>=scrolling_callback_frequency))))
 	{
 #if defined (NI_DAQ)
 		if (0==module_configured)
@@ -6405,19 +6430,24 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 							&(scrolling_callback_mutex_storage);
 #endif /* defined (UNIX) */
 #endif /* defined (UNEMAP_THREAD_SAFE) */
-					if ((0<scrolling_refresh_frequency)&&(scrolling_callback
+					if ((0<scrolling_callback_frequency)&&(scrolling_callback
 #if defined (WIN32_USER_INTERFACE)
 						||scrolling_window
 #endif /* defined (WIN32_USER_INTERFACE) */
 						))
 					{
-						module_scrolling_refresh_period=(int)(module_sampling_frequency/
-							scrolling_refresh_frequency);
-						/* have scrolling period divisible by 4 */
-						module_scrolling_refresh_period=
-							(module_scrolling_refresh_period-1)/4;
-						module_scrolling_refresh_period=
-							(module_scrolling_refresh_period+1)*4;
+						module_scrolling_callback_period=(int)(module_sampling_frequency/
+							scrolling_callback_frequency+0.5);
+						module_number_of_scrolling_values_per_channel=
+							(int)(scrolling_frequency/scrolling_callback_frequency+0.5);
+						/* have scrolling period divisible by 
+							module_number_of_scrolling_values_per_channel */
+						module_scrolling_callback_period=
+							(module_scrolling_callback_period-1)/
+							module_number_of_scrolling_values_per_channel;
+						module_scrolling_callback_period=
+							(module_scrolling_callback_period+1)*
+							module_number_of_scrolling_values_per_channel;
 #if defined (WIN32_USER_INTERFACE)
 						module_scrolling_window=scrolling_window;
 						module_scrolling_message=scrolling_message;
@@ -6429,7 +6459,8 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 					{
 						/* have a callback to keep <module_starting_sample_number> and
 							<module_sample_buffer_size> up to date */
-						module_scrolling_refresh_period=number_of_samples_in_buffer/2;
+						module_scrolling_callback_period=number_of_samples_in_buffer/2;
+						module_number_of_scrolling_values_per_channel=1;
 #if defined (WIN32_USER_INTERFACE)
 						module_scrolling_window=(HWND)NULL;
 						module_scrolling_message=(UINT)0;
@@ -6443,13 +6474,13 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 					status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
 						/* add message */(i16)1,/* channel string */"AI0",
 						/* send message every N scans */(i16)1,
-						(i32)module_scrolling_refresh_period,(i32)0,(u32)0,(u32)0,(u32)0,
+						(i32)module_scrolling_callback_period,(i32)0,(u32)0,(u32)0,(u32)0,
 						(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
 #if defined (DEBUG)
 					/*???debug */
 					display_message(INFORMATION_MESSAGE,"unemap_configure.  "
 						"Config_DAQ_Event_Message(%d,1,AI0,1,%d,0,0,0,0,NULL,0,%p)=%d\n",
-						module_NI_CARDS[0].device_number,module_scrolling_refresh_period,
+						module_NI_CARDS[0].device_number,module_scrolling_callback_period,
 						scrolling_callback_NI,status);
 #endif /* defined (DEBUG) */
 #else /* !defined (NO_SCROLLING_CALLBACK) */
@@ -6465,15 +6496,15 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 					{
 						display_message(ERROR_MESSAGE,
 							"unemap_configure.  Config_DAQ_Event_Message 1 failed.  %d %d",
-							status,module_scrolling_refresh_period);
+							status,module_scrolling_callback_period);
 					}
 #if defined (WIN32_SYSTEM)
 					/* have number_of_samples_in_buffer divisible by
-						module_scrolling_refresh_period */
+						module_scrolling_callback_period */
 					hardware_buffer_size=(number_of_samples_in_buffer-1)/
-						module_scrolling_refresh_period;
+						module_scrolling_callback_period;
 					hardware_buffer_size=(hardware_buffer_size+1)*
-						module_scrolling_refresh_period;
+						module_scrolling_callback_period;
 					hardware_buffer_size *= (u32)NUMBER_OF_CHANNELS_ON_NI_CARD;
 					memory_status.dwLength=sizeof(MEMORYSTATUS);
 					GlobalMemoryStatus(&memory_status);
@@ -6500,9 +6531,9 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 						hardware_buffer_size=(u32)(memory_status.dwTotalPhys/
 							(3*module_number_of_NI_CARDS*sizeof(i16)));
 						hardware_buffer_size=(hardware_buffer_size-1)/
-							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
 						hardware_buffer_size=(hardware_buffer_size+1)*
-							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
 					}
 #endif /* defined (OLD_CODE) */
 #if defined (OLD_CODE)
@@ -6516,9 +6547,9 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 						hardware_buffer_size=(u32)((float)memory_status.dwAvailPhys/
 							(2.2*(float)module_number_of_NI_CARDS*(float)sizeof(i16)));
 						hardware_buffer_size=(hardware_buffer_size-1)/
-							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
 						hardware_buffer_size=(hardware_buffer_size+1)*
-							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
 					}
 #endif /* defined (OLD_CODE) */
 #if defined (OLD_CODE)
@@ -6544,9 +6575,11 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 							hardware_buffer_size=(u32)((memory_status.dwTotalPhys-os_memory)/
 								(2*module_number_of_NI_CARDS*sizeof(i16)));
 							hardware_buffer_size=(hardware_buffer_size-1)/
-								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+								(module_scrolling_callback_period*
+								NUMBER_OF_CHANNELS_ON_NI_CARD);
 							hardware_buffer_size=(hardware_buffer_size+1)*
-								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+								(module_scrolling_callback_period*
+								NUMBER_OF_CHANNELS_ON_NI_CARD);
 						}
 					}
 #endif /* defined (OLD_CODE) */
@@ -6579,10 +6612,10 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 						{
 							hardware_buffer_size=(u32)((memory_status.dwTotalPhys-os_memory)/
 								(module_number_of_NI_CARDS*sizeof(i16)));
-							hardware_buffer_size /=
-								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
-							hardware_buffer_size *=
-								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							hardware_buffer_size /= (module_scrolling_callback_period*
+								NUMBER_OF_CHANNELS_ON_NI_CARD);
+							hardware_buffer_size *= (module_scrolling_callback_period*
+								NUMBER_OF_CHANNELS_ON_NI_CARD);
 						}
 #if defined (DEBUG)
 /*???debug */
@@ -7004,10 +7037,10 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 								hardware_buffer_size=available_physical_memory/
 									(module_number_of_NI_CARDS*sizeof(i16));
 							}
-							hardware_buffer_size /=
-								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
-							hardware_buffer_size *=
-								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							hardware_buffer_size /= (module_scrolling_callback_period*
+								NUMBER_OF_CHANNELS_ON_NI_CARD);
+							hardware_buffer_size *= (module_scrolling_callback_period*
+								NUMBER_OF_CHANNELS_ON_NI_CARD);
 							while (i>0)
 							{
 								i--;
@@ -7141,8 +7174,9 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"unemap_configure.  Invalid argument(s).  %g %d",sampling_frequency,
-			number_of_samples_in_buffer);
+			"unemap_configure.  Invalid argument(s).  %g %d %g %g",sampling_frequency,
+			number_of_samples_in_buffer,scrolling_frequency,
+			scrolling_callback_frequency);
 		return_code=0;
 	}
 #if defined (DEBUG)
@@ -7157,7 +7191,7 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 		module_scrolling_window,module_scrolling_message,
 #endif /* defined (WIN32_USER_INTERFACE) */
 		module_scrolling_callback,module_scrolling_callback_data,
-		module_scrolling_refresh_period,module_NI_CARDS[0].hardware_buffer_size);
+		module_scrolling_callback_period,module_NI_CARDS[0].hardware_buffer_size);
 #endif /* defined (DEBUG) */
 	LEAVE;
 
@@ -7277,7 +7311,8 @@ hardware.
 			}
 			module_sample_buffer_size=0;
 			module_starting_sample_number=0;
-			module_scrolling_refresh_period=0;
+			module_scrolling_callback_period=1;
+			module_number_of_scrolling_values_per_channel=1;
 #if defined (WIN32_USER_INTERFACE)
 			module_scrolling_window=(HWND)NULL;
 			module_scrolling_message=(UINT)0;
@@ -7355,6 +7390,35 @@ Returns the unemap <hardware_version>.
 
 	return (return_code);
 } /* unemap_get_hardware_version */
+
+int unemap_get_software_version(int *software_version)
+/*******************************************************************************
+LAST MODIFIED : 2 June 2003
+
+DESCRIPTION :
+The function does not need the software to be configured.
+
+Returns the unemap <software_version>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(unemap_get_software_version);
+	return_code=0;
+	if (software_version)
+	{
+		*software_version=SOFTWARE_VERSION;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_get_software_version.  Missing software_version");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* unemap_get_software_version */
 
 int unemap_shutdown(void)
 /*******************************************************************************
@@ -7662,13 +7726,13 @@ problem, but not on first sample) when using large sampling buffers.
 					status=Config_DAQ_Event_Message(module_NI_CARDS->device_number,
 						/* add message */(i16)1,/* channel string */"AI0",
 						/* send message every N scans */(i16)1,
-						(i32)module_scrolling_refresh_period,(i32)0,(u32)0,(u32)0,
+						(i32)module_scrolling_callback_period,(i32)0,(u32)0,(u32)0,
 						(u32)0,(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
 					if (0!=status)
 					{
 						display_message(ERROR_MESSAGE,"unemap_start_sampling.  "
 							"Config_DAQ_Event_Message 1 failed.  %d %d",status,
-							module_scrolling_refresh_period);
+							module_scrolling_callback_period);
 					}
 #endif /* !defined (NO_SCROLLING_CALLBACK) */
 				}
@@ -7854,7 +7918,8 @@ Starts the sampling.
 		/*???debug.  deconfigure and configure before starting sampling */
 		{
 			float save_module_sampling_frequency;
-			int save_module_scrolling_refresh_period,save_hardware_buffer_size;
+			int save_hardware_buffer_size,save_module_scrolling_callback_period,
+				save_module_number_of_scrolling_values_per_channel;
 			Unemap_hardware_callback *save_module_scrolling_callback;
 			void *save_module_scrolling_callback_data;
 #if defined (WIN32_USER_INTERFACE)
@@ -7869,7 +7934,9 @@ Starts the sampling.
 #endif /* defined (WIN32_USER_INTERFACE) */
 			save_module_scrolling_callback=module_scrolling_callback;
 			save_module_scrolling_callback_data=module_scrolling_callback_data;
-			save_module_scrolling_refresh_period=module_scrolling_refresh_period;
+			save_module_scrolling_callback_period=module_scrolling_callback_period;
+			save_module_number_of_scrolling_values_per_channel=
+				module_number_of_scrolling_values_per_channel;
 			save_hardware_buffer_size=module_NI_CARDS[0].hardware_buffer_size;
 /*			unemap_deconfigure();*/
 {
@@ -7953,7 +8020,8 @@ Starts the sampling.
 			}
 			module_sample_buffer_size=0;
 			module_starting_sample_number=0;
-			module_scrolling_refresh_period=0;
+			module_scrolling_callback_period=1;
+			module_number_of_scrolling_values_per_channel=1;
 #if defined (WIN32_USER_INTERFACE)
 			module_scrolling_window=(HWND)NULL;
 			module_scrolling_message=(UINT)0;
@@ -7977,7 +8045,10 @@ Starts the sampling.
 #endif /* defined (WIN32_USER_INTERFACE) */
 				save_module_scrolling_callback,save_module_scrolling_callback_data,
 				save_module_sampling_frequency/
-				(float)save_module_scrolling_refresh_period,1);*/
+				(float)save_module_scrolling_callback_period,
+				(float)save_module_number_of_scrolling_values_per_channel*
+				save_module_sampling_frequency/
+				(float)save_module_scrolling_callback_period,1);*/
 {
 	float sampling_frequency_slave=save_module_sampling_frequency;
 	int number_of_samples_in_buffer=
@@ -7988,8 +8059,11 @@ Starts the sampling.
 #endif /* defined (WIN32_USER_INTERFACE) */
 	Unemap_hardware_callback *scrolling_callback=save_module_scrolling_callback;
 	void *scrolling_callback_data=save_module_scrolling_callback_data;
-	float scrolling_refresh_frequency=save_module_sampling_frequency/
-		(float)save_module_scrolling_refresh_period;
+	float scrolling_callback_frequency=save_module_sampling_frequency/
+		(float)save_module_scrolling_callback_period;
+	float scrolling_frequency=
+		(float)save_module_number_of_scrolling_values_per_channel*
+		save_module_sampling_frequency/(float)save_module_scrolling_callback_period;
 	int synchronization_card=1;
 
 	float sampling_frequency;
@@ -8020,7 +8094,7 @@ Starts the sampling.
 #if defined (WIN32_USER_INTERFACE)
 		scrolling_window,scrolling_message,
 #endif /* defined (WIN32_USER_INTERFACE) */
-		scrolling_callback,scrolling_callback_data,scrolling_refresh_frequency,
+		scrolling_callback,scrolling_callback_data,scrolling_callback_frequency,
 		synchronization_card);
 #if defined (DEBUG)
 #endif /* defined (DEBUG) */
@@ -8106,19 +8180,19 @@ Starts the sampling.
 				module_sampling_low_count -= module_sampling_high_count;
 				if ((module_sampling_low_count>0)&&(module_sampling_high_count>0))
 				{
-					if ((0<scrolling_refresh_frequency)&&(scrolling_callback
+					if ((0<scrolling_callback_frequency)&&(scrolling_callback
 #if defined (WIN32_USER_INTERFACE)
 						||scrolling_window
 #endif /* defined (WIN32_USER_INTERFACE) */
 						))
 					{
-						module_scrolling_refresh_period=(int)(module_sampling_frequency/
-							scrolling_refresh_frequency);
+						module_scrolling_callback_period=(int)(module_sampling_frequency/
+							scrolling_callback_frequency);
 						/* have scrolling period divisible by 4 */
-						module_scrolling_refresh_period=
-							(module_scrolling_refresh_period-1)/4;
-						module_scrolling_refresh_period=
-							(module_scrolling_refresh_period+1)*4;
+						module_scrolling_callback_period=
+							(module_scrolling_callback_period-1)/4;
+						module_scrolling_callback_period=
+							(module_scrolling_callback_period+1)*4;
 #if defined (WIN32_USER_INTERFACE)
 						module_scrolling_window=scrolling_window;
 						module_scrolling_message=scrolling_message;
@@ -8130,7 +8204,8 @@ Starts the sampling.
 					{
 						/* have a callback to keep <module_starting_sample_number> and
 							<module_sample_buffer_size> up to date */
-						module_scrolling_refresh_period=number_of_samples_in_buffer/2;
+						module_scrolling_callback_period=number_of_samples_in_buffer/2;
+						module_number_of_scrolling_values_per_channel=1;
 #if defined (WIN32_USER_INTERFACE)
 						module_scrolling_window=(HWND)NULL;
 						module_scrolling_message=(UINT)0;
@@ -8145,12 +8220,12 @@ Starts the sampling.
 					status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
 						/* add message */(i16)1,/* channel string */"AI0",
 						/* send message every N scans */(i16)1,
-						(i32)module_scrolling_refresh_period,(i32)0,(u32)0,(u32)0,(u32)0,
+						(i32)module_scrolling_callback_period,(i32)0,(u32)0,(u32)0,(u32)0,
 						(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
 					/*???debug */
 					display_message(INFORMATION_MESSAGE,"unemap_start_sampling.  "
 						"Config_DAQ_Event_Message(%d,1,AI0,1,%d,0,0,0,0,NULL,0,%p)=%d\n",
-						module_NI_CARDS[0].device_number,module_scrolling_refresh_period,
+						module_NI_CARDS[0].device_number,module_scrolling_callback_period,
 						scrolling_callback_NI,status);
 #if defined (DEBUG)
 #endif /* defined (DEBUG) */
@@ -8170,16 +8245,16 @@ Starts the sampling.
 					{
 						display_message(ERROR_MESSAGE,
 							"unemap_configure.  Config_DAQ_Event_Message 1 failed.  %d %d",
-							status,module_scrolling_refresh_period);
+							status,module_scrolling_callback_period);
 					}
 #if defined (WIN32_SYSTEM)
 #if defined (RECONFIGURE_FOR_START_SAMPLING_1)
 					/* have number_of_samples_in_buffer divisible by
-						module_scrolling_refresh_period */
+						module_scrolling_callback_period */
 					hardware_buffer_size=(number_of_samples_in_buffer-1)/
-						module_scrolling_refresh_period;
+						module_scrolling_callback_period;
 					hardware_buffer_size=(hardware_buffer_size+1)*
-						module_scrolling_refresh_period;
+						module_scrolling_callback_period;
 					hardware_buffer_size *= (u32)NUMBER_OF_CHANNELS_ON_NI_CARD;
 					memory_status.dwLength=sizeof(MEMORYSTATUS);
 					GlobalMemoryStatus(&memory_status);
@@ -8206,9 +8281,9 @@ Starts the sampling.
 						hardware_buffer_size=(u32)(memory_status.dwTotalPhys/
 							(3*module_number_of_NI_CARDS*sizeof(i16)));
 						hardware_buffer_size=(hardware_buffer_size-1)/
-							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
 						hardware_buffer_size=(hardware_buffer_size+1)*
-							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
 					}
 #endif /* defined (OLD_CODE) */
 #if defined (OLD_CODE)
@@ -8222,9 +8297,9 @@ Starts the sampling.
 						hardware_buffer_size=(u32)((float)memory_status.dwAvailPhys/
 							(2.2*(float)module_number_of_NI_CARDS*(float)sizeof(i16)));
 						hardware_buffer_size=(hardware_buffer_size-1)/
-							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
 						hardware_buffer_size=(hardware_buffer_size+1)*
-							(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
 					}
 #endif /* defined (OLD_CODE) */
 #if defined (OLD_CODE)
@@ -8250,9 +8325,11 @@ Starts the sampling.
 							hardware_buffer_size=(u32)((memory_status.dwTotalPhys-os_memory)/
 								(2*module_number_of_NI_CARDS*sizeof(i16)));
 							hardware_buffer_size=(hardware_buffer_size-1)/
-								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+								(module_scrolling_callback_period*
+								NUMBER_OF_CHANNELS_ON_NI_CARD);
 							hardware_buffer_size=(hardware_buffer_size+1)*
-								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+								(module_scrolling_callback_period*
+								NUMBER_OF_CHANNELS_ON_NI_CARD);
 						}
 					}
 #endif /* defined (OLD_CODE) */
@@ -8282,10 +8359,10 @@ Starts the sampling.
 						{
 							hardware_buffer_size=(u32)((memory_status.dwTotalPhys-os_memory)/
 								(module_number_of_NI_CARDS*sizeof(i16)));
-							hardware_buffer_size /=
-								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
-							hardware_buffer_size *=
-								(module_scrolling_refresh_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
+							hardware_buffer_size /= (module_scrolling_callback_period*
+								NUMBER_OF_CHANNELS_ON_NI_CARD);
+							hardware_buffer_size *= (module_scrolling_callback_period*
+								NUMBER_OF_CHANNELS_ON_NI_CARD);
 						}
 /*???debug */
 {
@@ -8741,7 +8818,7 @@ Starts the sampling.
 		module_scrolling_window,module_scrolling_message,
 #endif /* defined (WIN32_USER_INTERFACE) */
 		module_scrolling_callback,module_scrolling_callback_data,
-		module_scrolling_refresh_period,module_NI_CARDS[0].hardware_buffer_size);
+		module_scrolling_callback_period,module_NI_CARDS[0].hardware_buffer_size);
 #if defined (DEBUG)
 #endif /* defined (DEBUG) */
 } /* unemap_configure */
@@ -11162,6 +11239,90 @@ The sampling frequency is assigned to <*frequency>.
 
 	return (return_code);
 } /* unemap_get_sampling_frequency */
+
+int unemap_get_scrolling_frequency(float *frequency)
+/*******************************************************************************
+LAST MODIFIED : 4 June 2003
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+The scrolling frequency is assigned to <*frequency>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(unemap_get_scrolling_frequency);
+	return_code=0;
+	/* check arguments */
+	if (frequency)
+	{
+#if defined (NI_DAQ)
+		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+		{
+			*frequency=(float)module_number_of_scrolling_values_per_channel*
+				module_sampling_frequency/(float)module_scrolling_callback_period;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"unemap_get_scrolling_frequency.  Invalid configuration.  %d %p %d",
+				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+		}
+#endif /* defined (NI_DAQ) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_get_scrolling_frequency.  Missing frequency");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* unemap_get_scrolling_frequency */
+
+int unemap_get_scrolling_callback_frequency(float *frequency)
+/*******************************************************************************
+LAST MODIFIED : 4 June 2003
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+The scrolling frequency is assigned to <*frequency>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(unemap_get_scrolling_callback_frequency);
+	return_code=0;
+	/* check arguments */
+	if (frequency)
+	{
+#if defined (NI_DAQ)
+		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+		{
+			*frequency=module_sampling_frequency/
+				(float)module_scrolling_callback_period;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"unemap_get_scrolling_callback_frequency.  "
+				"Invalid configuration.  %d %p %d",module_configured,module_NI_CARDS,
+				module_number_of_NI_CARDS);
+		}
+#endif /* defined (NI_DAQ) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_get_scrolling_callback_frequency.  Missing frequency");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* unemap_get_scrolling_callback_frequency */
 
 int unemap_set_gain(int channel_number,float pre_filter_gain,
 	float post_filter_gain)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.h
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 4 June 2003
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -75,24 +75,28 @@ int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
 	struct Event_dispatcher *event_dispatcher,
 #endif /* defined (UNIX) */
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
-	float scrolling_refresh_frequency,int synchronization_card);
+	float scrolling_frequency,float scrolling_callback_frequency,
+	int synchronization_card);
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 4 June 2003
 
 DESCRIPTION :
 Configures the hardware for sampling at the specified <sampling_frequency> and
-with the specified <number_of_samples_in_buffer>. <sampling_frequency> and
-<number_of_samples_in_buffer> are requests and the actual values used should
-be determined using unemap_get_sampling_frequency and
-unemap_get_maximum_number_of_samples.
+with the specified <number_of_samples_in_buffer>. <sampling_frequency>,
+<number_of_samples_in_buffer>, <scrolling_frequency> and
+<scrolling_callback_frequency> are requests and the actual values used should
+be determined using unemap_get_sampling_frequency,
+unemap_get_maximum_number_of_samples, unemap_get_scrolling_frequency and
+unemap_get_scrolling_callback_frequency.
 
-Every <sampling_frequency>/<scrolling_refresh_frequency> samples (one sample
-	is a measument on every channel)
+Every <sampling_frequency>/<scrolling_callback_frequency> samples (one sample
+	is a measurement on every channel)
 - if <scrolling_callback> is not NULL, <scrolling_callback> is called with
 	- first argument is the number of scrolling channels
 	- second argument is an array of channel numbers (in the order they were added
 		using unemap_set_scrolling_channel)
 	- third argument is the number of values for each channel
+		(<scrolling_frequency>/<scrolling_callback_frequency>)
 	- fourth argument is an array of channel values (all the values for the first
 		channel, then all the values for the second channel and so on)
 	- fifth argument is the user supplied callback data
@@ -109,7 +113,7 @@ Every <sampling_frequency>/<scrolling_refresh_frequency> samples (one sample
 			are the channel values
 		- last sizeof(void *) bytes are the user supplied callback data
 	- LPARAM is a ULONG specifying the number of bytes in the WPARAM array
-		over the <scrolling_refresh_period>) in the array
+		over the <scrolling_callback_period>) in the array
 	- it is the responsibility of the window message handler to free the WPARAM
 		array.
 
@@ -146,6 +150,16 @@ DESCRIPTION :
 The function does not need the hardware to be configured.
 
 Returns the unemap <hardware_version>.
+==============================================================================*/
+
+int unemap_get_software_version(int *software_version);
+/*******************************************************************************
+LAST MODIFIED : 2 June 2003
+
+DESCRIPTION :
+The function does not need the software to be configured.
+
+Returns the unemap <software_version>.
 ==============================================================================*/
 
 int unemap_shutdown(void);
@@ -490,6 +504,26 @@ DESCRIPTION :
 The function fails if the hardware is not configured.
 
 The sampling frequency is assigned to <*frequency>.
+==============================================================================*/
+
+int unemap_get_scrolling_frequency(float *frequency);
+/*******************************************************************************
+LAST MODIFIED : 4 June 2003
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+The scrolling frequency is assigned to <*frequency>.
+==============================================================================*/
+
+int unemap_get_scrolling_callback_frequency(float *frequency);
+/*******************************************************************************
+LAST MODIFIED : 4 June 2003
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+The scrolling callback frequency is assigned to <*frequency>.
 ==============================================================================*/
 
 int unemap_set_gain(int channel_number,float pre_filter_gain,
