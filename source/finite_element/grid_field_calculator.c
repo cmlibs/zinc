@@ -911,7 +911,7 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 								if (!(grid_calc->grid_field_widget=
 									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 										grid_calc->grid_field_form,(struct Computed_field *)NULL,
-										computed_field_manager,Computed_field_has_1_component,
+										computed_field_manager,Computed_field_is_scalar,
 										(void *)NULL)))
 								{
 									init_widgets=0;
@@ -920,7 +920,8 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 										grid_calc->coord_field_form,(struct Computed_field *)NULL,
 										computed_field_manager,
-										Computed_field_has_1_to_3_components,(void *)NULL)))
+										Computed_field_has_up_to_3_numerical_components,
+										(void *)NULL)))
 								{
 									init_widgets=0;
 								}

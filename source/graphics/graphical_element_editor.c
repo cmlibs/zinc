@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -1162,7 +1162,7 @@ Called when a modify button - add, delete, up, down - is activated.
 						gelem_editor->current_settings_type)
 					{
 						if (iso_scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-							Computed_field_has_1_component,(void *)NULL,
+							Computed_field_is_scalar,(void *)NULL,
 							Computed_field_package_get_computed_field_manager(
 								gelem_editor->computed_field_package)))
 						{
@@ -1642,7 +1642,7 @@ Creates a graphical_element_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								gelem_editor->default_coordinate_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_1_to_3_components,(void *)NULL)))
+								Computed_field_has_up_to_3_numerical_components,(void *)NULL)))
 							{
 								init_widgets=0;
 							}

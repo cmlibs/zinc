@@ -4173,9 +4173,12 @@ faces.
 #endif /* defined (DEBUG) */
 	voltex=(struct GT_voltex *)NULL;
 	if (element&&(element->shape)&&(3==element->shape->dimension)&&vtexture&&
-		coordinate_field&&Computed_field_has_1_to_3_components(coordinate_field,NULL)&&
-		((!blur_field)||Computed_field_has_1_to_4_components(blur_field,NULL))&&
-		((!displacement_field)||Computed_field_has_1_to_4_components(displacement_field,NULL)))
+		coordinate_field&&
+		Computed_field_has_up_to_3_numerical_components(coordinate_field,NULL)&&
+		((!blur_field)||
+			Computed_field_has_up_to_4_numerical_components(blur_field,NULL))&&
+		((!displacement_field)||
+			Computed_field_has_up_to_4_numerical_components(displacement_field,NULL)))
 	{
 		if (vtexture->mc_iso_surface->n_triangles)
 		{

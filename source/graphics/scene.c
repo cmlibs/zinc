@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -8146,7 +8146,7 @@ updates graphics of settings affected by the changes (probably all).
 			set_coordinate_field_data.computed_field_package=
 				scene->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[i]).to_be_modified= &default_coordinate_field;
 			(option_table[i]).user_data= &set_coordinate_field_data;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 1 May 2000
+LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -5762,7 +5762,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_coordinate_field_data.conditional_function=
-						Computed_field_has_1_to_3_components;
+						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"coordinate",
 						&(settings->coordinate_field),&set_coordinate_field_data,
@@ -5771,7 +5771,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_data_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_data_field_data.conditional_function=
-						Computed_field_has_at_least_1_component;
+						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"data",&(settings->data_field),
 						&set_data_field_data,set_Computed_field_conditional);
@@ -5957,7 +5957,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_coordinate_field_data.conditional_function=
-						Computed_field_has_1_to_3_components;
+						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"coordinate",
 						&(settings->coordinate_field),&set_coordinate_field_data,
@@ -5966,7 +5966,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_data_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_data_field_data.conditional_function=
-						Computed_field_has_at_least_1_component;
+						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"data",&(settings->data_field),
 						&set_data_field_data,set_Computed_field_conditional);
@@ -6141,7 +6141,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_coordinate_field_data.conditional_function=
-						Computed_field_has_1_to_3_components;
+						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"coordinate",
 						&(settings->coordinate_field),&set_coordinate_field_data,
@@ -6150,7 +6150,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_data_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_data_field_data.conditional_function=
-						Computed_field_has_at_least_1_component;
+						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"data",&(settings->data_field),
 						&set_data_field_data,set_Computed_field_conditional);
@@ -6308,7 +6308,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_coordinate_field_data.conditional_function=
-						Computed_field_has_1_to_3_components;
+						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"coordinate",
 						&(settings->coordinate_field),&set_coordinate_field_data,
@@ -6317,7 +6317,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_data_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_data_field_data.conditional_function=
-						Computed_field_has_at_least_1_component;
+						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"data",&(settings->data_field),
 						&set_data_field_data,set_Computed_field_conditional);
@@ -6344,7 +6344,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_radius_scalar_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_radius_scalar_field_data.conditional_function=
-						Computed_field_has_1_component;
+						Computed_field_is_scalar;
 					set_radius_scalar_field_data.conditional_function_user_data=
 						(void *)NULL;
 					Option_table_add_entry(option_table,"radius_scalar",
@@ -6486,7 +6486,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_coordinate_field_data.conditional_function=
-						Computed_field_has_1_to_3_components;
+						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"coordinate",
 						&(settings->coordinate_field),&set_coordinate_field_data,
@@ -6495,7 +6495,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_data_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_data_field_data.conditional_function=
-						Computed_field_has_at_least_1_component;
+						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"data",&(settings->data_field),
 						&set_data_field_data,set_Computed_field_conditional);
@@ -6551,7 +6551,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_texture_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_texture_coordinate_field_data.conditional_function=
-						Computed_field_has_1_to_3_components;
+						Computed_field_has_up_to_3_numerical_components;
 					set_texture_coordinate_field_data.conditional_function_user_data=
 						(void *)NULL;
 					Option_table_add_entry(option_table,"texture_coordinates",
@@ -6669,7 +6669,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							g_element_command_data->graphical_material_manager));
 					/* must start with valid iso_scalar_field: */
 					if (scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-						Computed_field_has_1_component,(void *)NULL,computed_field_manager))
+						Computed_field_is_scalar,(void *)NULL,computed_field_manager))
 					{
 						GT_element_settings_set_iso_surface_parameters(settings,
 							scalar_field,0.0);
@@ -6683,7 +6683,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_coordinate_field_data.conditional_function=
-						Computed_field_has_1_to_3_components;
+						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"coordinate",
 						&(settings->coordinate_field),&set_coordinate_field_data,
@@ -6692,7 +6692,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_data_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_data_field_data.conditional_function=
-						Computed_field_has_at_least_1_component;
+						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"data",&(settings->data_field),
 						&set_data_field_data,set_Computed_field_conditional);
@@ -6712,7 +6712,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_iso_scalar_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_iso_scalar_field_data.conditional_function=
-						Computed_field_has_1_component;
+						Computed_field_is_scalar;
 					set_iso_scalar_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"iso_scalar",
 						&(settings->iso_scalar_field),&set_iso_scalar_field_data,
@@ -6905,7 +6905,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_coordinate_field_data.conditional_function=
-						Computed_field_has_1_to_3_components;
+						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"coordinate",
 						&(settings->coordinate_field),&set_coordinate_field_data,
@@ -6914,7 +6914,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_data_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_data_field_data.conditional_function=
-						Computed_field_has_at_least_1_component;
+						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"data",&(settings->data_field),
 						&set_data_field_data,set_Computed_field_conditional);
@@ -7134,7 +7134,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_coordinate_field_data.conditional_function=
-						Computed_field_has_1_to_3_components;
+						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"coordinate",
 						&(settings->coordinate_field),&set_coordinate_field_data,
@@ -7143,7 +7143,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_data_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_data_field_data.conditional_function=
-						Computed_field_has_at_least_1_component;
+						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"data",&(settings->data_field),
 						&set_data_field_data,set_Computed_field_conditional);
@@ -7154,7 +7154,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_displacement_map_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_displacement_map_field_data.conditional_function=
-						Computed_field_has_1_to_4_components;
+						Computed_field_has_up_to_4_numerical_components;
 					set_displacement_map_field_data.conditional_function_user_data=
 						(void *)NULL;
 					Option_table_add_entry(option_table,"displacement_map_field",
@@ -7199,7 +7199,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_blur_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_blur_field_data.conditional_function=
-						Computed_field_has_1_to_4_components;
+						Computed_field_has_up_to_4_numerical_components;
 					set_blur_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"smooth_field",
 						&(settings->blur_field),&set_blur_field_data,
@@ -7337,7 +7337,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_coordinate_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_coordinate_field_data.conditional_function=
-						Computed_field_has_1_to_3_components;
+						Computed_field_has_up_to_3_numerical_components;
 					set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"coordinate",
 						&(settings->coordinate_field),&set_coordinate_field_data,
@@ -7346,7 +7346,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_data_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
 					set_data_field_data.conditional_function=
-						Computed_field_has_at_least_1_component;
+						Computed_field_has_numerical_components;
 					set_data_field_data.conditional_function_user_data=(void *)NULL;
 					Option_table_add_entry(option_table,"data",&(settings->data_field),
 						&set_data_field_data,set_Computed_field_conditional);

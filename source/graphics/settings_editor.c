@@ -2720,7 +2720,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->coordinate_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_1_to_3_components,(void *)NULL)))
+								Computed_field_has_up_to_3_numerical_components,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2728,7 +2728,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->radius_scalar_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_1_component,(void *)NULL)))
+								Computed_field_is_scalar,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2736,7 +2736,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->iso_scalar_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_1_component,(void *)NULL)))
+								Computed_field_is_scalar,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2857,7 +2857,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->texture_coord_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_1_to_3_components,(void *)NULL)))
+								Computed_field_has_up_to_3_numerical_components,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2865,7 +2865,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->data_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_at_least_1_component,(void *)NULL)))
+								Computed_field_has_numerical_components,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
