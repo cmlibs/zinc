@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 10 February 2002
+LAST MODIFIED : 11 June 2002
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -3243,7 +3243,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 
 int read_calibration_file(char *file_name,void *rig)
 /*******************************************************************************
-LAST MODIFIED : 29 July 2000
+LAST MODIFIED : 11 June 2002
 
 DESCRIPTION :
 This function reads in the characteristics of the acquisition channels for the
@@ -3272,7 +3272,8 @@ This function reads in the characteristics of the acquisition channels for the
 					/* find if there is a device using this channel */
 					device=rig_local->devices;
 					number_of_devices=rig_local->number_of_devices;
-					while ((number_of_devices>0)&&((*device)->channel->number!=number))
+					while ((number_of_devices>0)&&(!((*device)->channel)||
+						((*device)->channel->number!=number)))
 					{
 						number_of_devices--;
 						device++;
