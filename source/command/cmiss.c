@@ -10951,19 +10951,17 @@ element groups are destroyed together.
 static int gfx_destroy_nodes(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 Executes a GFX DESTROY NODES command.
 ==============================================================================*/
 {
 	char all_flag,ranges_flag,selected_flag;
-	int number_of_nodes_destroyed,number_of_nodes_not_destroyed,return_code;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct FE_node *node_to_destroy;
 	struct FE_node_list_conditional_data list_conditional_data;
-	struct GROUP(FE_node) *node_group;
-	struct LIST(FE_node) *destroy_node_list,*temp_node_list;
+	struct LIST(FE_node) *destroy_node_list;
 	struct Multi_range *node_ranges;
 	struct Option_table *option_table;
 
@@ -11020,77 +11018,9 @@ Executes a GFX DESTROY NODES command.
 				{
 					if (0<NUMBER_IN_LIST(FE_node)(destroy_node_list))
 					{
-						/* keep original destroy_node_list for reporting if not all nodes
-							 could be destroyed */
-						temp_node_list=CREATE(LIST(FE_node))();
-						COPY_LIST(FE_node)(temp_node_list,destroy_node_list);
-						/* remove all nodes in use by elements = cannot be destroyed */
-						FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							ensure_top_level_FE_element_nodes_are_not_in_list,
-							(void *)destroy_node_list,command_data->element_manager);
-						/* remove nodes still in destroy_node_list from temp_node_list so
-							 it lists only those that could not be destroyed */
-						REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-							FE_node_is_in_list,(void *)destroy_node_list,temp_node_list);
-						/* remove the nodes from all groups they are in */
-						while (return_code&&(node_group=
-							FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_node))(
-								FE_node_group_intersects_list,(void *)destroy_node_list,
-								command_data->node_group_manager)))
-						{
-							MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-							if (!REMOVE_OBJECTS_FROM_GROUP_THAT(FE_node)(
-								FE_node_is_in_list,(void *)destroy_node_list,node_group))
-							{
-								return_code=0;
-							}
-							MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-						}
-						/* remove nodes from the global node_selection */
-						FE_node_selection_begin_cache(command_data->node_selection);
-						FOR_EACH_OBJECT_IN_LIST(FE_node)(
-							FE_node_unselect_in_FE_node_selection,
-							(void *)command_data->node_selection,destroy_node_list);
-						FE_node_selection_end_cache(command_data->node_selection);
-						/* now remove the nodes from the manager */
-						number_of_nodes_destroyed=0;
-						while (return_code&&(node_to_destroy=
-							FIRST_OBJECT_IN_LIST_THAT(FE_node)(
-								(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-								destroy_node_list)))
-						{
-							/* node cannot be destroyed while it is in a list */
-							if (REMOVE_OBJECT_FROM_LIST(FE_node)(node_to_destroy,
-								destroy_node_list))
-							{
-								if (FE_node_can_be_destroyed(node_to_destroy))
-								{
-									if (return_code=REMOVE_OBJECT_FROM_MANAGER(FE_node)(
-										node_to_destroy,command_data->node_manager))
-									{
-										number_of_nodes_destroyed++;
-									}
-								}
-								else
-								{
-									/* add it to temp_node_list for reporting */
-									ADD_OBJECT_TO_LIST(FE_node)(node_to_destroy,temp_node_list);
-								}
-							}
-							else
-							{
-								return_code=0;
-							}
-						}
-						if (0<(number_of_nodes_not_destroyed=
-							NUMBER_IN_LIST(FE_node)(temp_node_list)))
-						{
-							display_message(WARNING_MESSAGE,"%d node(s) destroyed; "
-								"%d node(s) could not be destroyed because in use",
-								number_of_nodes_destroyed,number_of_nodes_not_destroyed);
-							return_code=0;
-						}
-						DESTROY(LIST(FE_node))(&temp_node_list);
+						return_code=destroy_listed_nodes(destroy_node_list,
+							command_data->node_manager,command_data->node_group_manager,
+							command_data->element_manager,command_data->node_selection);
 					}
 					else
 					{
@@ -16711,12 +16641,12 @@ Which tool that is being modified is passed in <node_tool_void>.
 		{
 			if (node_tool)
 			{
-				Node_tool_set_coordinate_field(node_tool,coordinate_field);
-				Node_tool_set_create_enabled(node_tool,create_enabled);
-				Node_tool_set_edit_enabled(node_tool,edit_enabled);
-				Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
 				Node_tool_set_select_enabled(node_tool,select_enabled);
+				Node_tool_set_edit_enabled(node_tool,edit_enabled);
+				Node_tool_set_create_enabled(node_tool,create_enabled);
+				Node_tool_set_coordinate_field(node_tool,coordinate_field);
 				Node_tool_set_node_group(node_tool,node_group);
+				Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
 			}
 			else
 			{
