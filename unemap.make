@@ -79,7 +79,7 @@ $(SOURCE_PATH)/unemap_sgi3d.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/co
 	imake -DIRIX -DUSE_UNEMAP_3D $${CMISS_ROOT_DEF} -s unemap_sgi3d.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #SGI rig 3d map optimised version
-unemap_3d : $(SOURCE_PATH)/unemap_sgi3d_optimised.make
+unemap_3d_optimised : $(SOURCE_PATH)/unemap_sgi3d_optimised.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgi3d_optimised.make ]; then \
 		$(MAKE) -f unemap_sgi3d_optimised.make $(TARGET) ; \
