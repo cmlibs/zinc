@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.c
 
-LAST MODIFIED : 3 May 2004
+LAST MODIFIED : 10 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1723,17 +1723,19 @@ Finds the id of the ok button in the map dialog.
 
 static int update_dialog_from_map(struct Map_dialog *map_dialog)
 /*******************************************************************************
-LAST MODIFIED : 3 May 2004
+LAST MODIFIED : 10 May 2004
 
 DESCRIPTION :
 Updates the dialog based on the map settings.
 ==============================================================================*/
 {
-	char value_string[20];
+	char direct_interpolation_valid,value_string[20];
 	enum Spectrum_simple_type spectrum_type;
 	float contour_step;
 	int number_of_contours,return_code;
 	struct Map *map;
+	struct Region *region;
+	struct Region_list_item *region_list_item;
 	struct Rig *rig;
 	Widget option_widget;
 
@@ -1809,20 +1811,49 @@ Updates the dialog based on the map settings.
 			XtVaSetValues(map_dialog->spectrum.type_option_menu,
 				XmNmenuHistory,option_widget,
 				NULL);
-#if defined (EXTEND_DIRECT_TO_PATCH)
-/*???DB.  Need Delaunay for plane (currently have sphere and cylinder) */
-			/* can only have DIRECT_INTERPOLATION for TORSO,POTENTIAL */
-			/*   or PATCH */
-			if ((map->rig_pointer)&&(rig=*(map->rig_pointer))&&(rig->current_region)&&
-				(((TORSO==rig->current_region->type)&&
-				((POTENTIAL== *(map->type))||(NO_MAP_FIELD== *(map->type))))||
-				(PATCH==rig->current_region->type)))
-#else /* defined (EXTEND_DIRECT_TO_PATCH) */
-			/* can only have DIRECT_INTERPOLATION for TORSO,POTENTIAL */
+			direct_interpolation_valid=0;
 			if ((map->rig_pointer)&&(rig=*(map->rig_pointer))&&(rig->current_region)&&
 				(TORSO==rig->current_region->type)&&
 				((POTENTIAL== *(map->type))||(NO_MAP_FIELD== *(map->type))))
+			{
+				direct_interpolation_valid=1;
+			}
+#if defined (EXTEND_DIRECT_TO_PATCH)
+			else if ((map->rig_pointer)&&(rig=*(map->rig_pointer)))
+			{
+				if (rig->current_region)
+				{
+					if (PATCH==rig->current_region->type)
+					{
+						direct_interpolation_valid=1;
+					}
+				}
+				else
+				{
+					region_list_item=get_Rig_region_list(rig);
+					if (region_list_item&&
+						(region=get_Region_list_item_region(region_list_item))&&
+						(PATCH==region->type))
+					{
+						direct_interpolation_valid=1;
+						region_list_item=get_Region_list_item_next(region_list_item);
+					}
+					while (direct_interpolation_valid&&region_list_item)
+					{
+						if ((region=get_Region_list_item_region(region_list_item))&&
+							(PATCH==region->type))
+						{
+							region_list_item=get_Region_list_item_next(region_list_item);
+						}
+						else
+						{
+							direct_interpolation_valid=0;
+						}
+					}
+				}
+			}
 #endif /* defined (EXTEND_DIRECT_TO_PATCH) */
+			if (direct_interpolation_valid)
 			{
 				XtSetSensitive(map_dialog->interpolation.option.direct,True);
 			}
