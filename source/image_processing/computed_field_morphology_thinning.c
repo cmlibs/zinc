@@ -377,6 +377,7 @@ int Evaluate_kernel(FE_value *data_index, FE_value *result_index, FE_value *kern
 			kernel[j] = *(data_index + offsets[j] + k);
 
 		}
+		return_code = 1;
 	}
 	LEAVE;
 	return (return_code);
