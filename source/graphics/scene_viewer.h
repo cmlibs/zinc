@@ -116,6 +116,9 @@ Members of the Scene_viewer structure are private.
 DECLARE_CALLBACK_TYPES(Scene_viewer_transform, \
 	struct Scene_viewer *, void *);
 
+DECLARE_CALLBACK_TYPES(Scene_viewer_destroy, \
+	struct Scene_viewer *, void *);
+
 /*
 Global functions
 ----------------
@@ -608,18 +611,15 @@ A value of zero turns off that transform capability.
 Negative values reverse the effects of mouse movement.
 ==============================================================================*/
 
-int Scene_viewer_sync_add_callback(struct Scene_viewer *scene_viewer,
+int Scene_viewer_add_sync_callback(struct Scene_viewer *scene_viewer,
 	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
-Adds a callback to <element_selection> so that when it changes <function> is
-called with <user_data>. <function> has 3 arguments, a
-struct Scene_viewer *, a void* and the void *user_data.
 ==============================================================================*/
 
-int Scene_viewer_sync_remove_callback(struct Scene_viewer *scene_viewer,
+int Scene_viewer_remove_sync_callback(struct Scene_viewer *scene_viewer,
 	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
@@ -629,21 +629,38 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
-int Scene_viewer_transform_add_callback(struct Scene_viewer *scene_viewer,
+int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
 	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
-Adds a callback to <element_selection> so that when it changes <function> is
-called with <user_data>. <function> has 3 arguments, a
-struct Scene_viewer *, a void* and the void *user_data.
 ==============================================================================*/
 
-int Scene_viewer_transform_remove_callback(struct Scene_viewer *scene_viewer,
+int Scene_viewer_remove_transform_callback(struct Scene_viewer *scene_viewer,
 	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer>.
+==============================================================================*/
+
+int Scene_viewer_add_destroy_callback(struct Scene_viewer *scene_viewer,
+	CALLBACK_FUNCTION(Scene_viewer_destroy) *function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 19 February 2002
+
+DESCRIPTION :
+Adds a callback to the <scene_viewer> that is called back before the scene
+viewer is destroyed.
+==============================================================================*/
+
+int Scene_viewer_remove_destroy_callback(struct Scene_viewer *scene_viewer,
+	CALLBACK_FUNCTION(Scene_viewer_destroy) *function,void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 19 February 2002
 
 DESCRIPTION :
 Removes the callback calling <function> with <user_data> from

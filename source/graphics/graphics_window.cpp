@@ -2786,7 +2786,7 @@ will be printed on the windows title bar.
 												graphics_window->interactive_tool);
 											/* get scene_viewer transform callbacks to allow
 												 synchronising of views in multiple panes */
-											Scene_viewer_sync_add_callback(
+											Scene_viewer_add_sync_callback(
 												graphics_window->scene_viewer[pane_no],
 												Graphics_window_Scene_viewer_view_changed,
 												graphics_window);

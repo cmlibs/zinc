@@ -38,10 +38,13 @@ struct Computed_field_window_projection_type_specific_data
 {
 	double *projection_matrix;
 	enum Computed_field_window_projection_type projection_type;
-	/* We need to hold on to the graphics_window as well as the 
-		scene_viewer as the scene_viewer is not accessed, the graphics_window is */
+	/* Hold onto the graphics window so we can write out the command, 
+	   assume that the scene_viewer will callback when this is destroyed. */
 	struct Graphics_window *graphics_window;
 	int pane_number;
+	/* The scene_viewer is not accessed by the computed field so that we
+		can still destroy the window and so the computed field responds to
+		a destroy callback and then must evaluate correctly with a NULL scene_viewer */
 	struct Scene_viewer *scene_viewer;
 	/* This flag indicates if the field has registered for callbacks with the
 		scene_viewer */
@@ -162,6 +165,45 @@ that the computed field has changed.
 	LEAVE;
 } /* Computed_field_window_projection_scene_viewer_callback */
 
+static void Computed_field_window_projection_scene_viewer_destroy_callback(
+	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void)
+/*******************************************************************************
+LAST MODIFIED : 19 February 2002
+
+DESCRIPTION :
+Clear the scene viewer reference when it is no longer valid.
+==============================================================================*/
+{
+	struct Computed_field *field;
+	struct Computed_field_window_projection_type_specific_data *data;
+
+	USE_PARAMETER(dummy_void);
+	ENTER(Computed_field_window_projection_scene_viewer_destroy_callback);
+	if (scene_viewer && (field = (struct Computed_field *)field_void) && 
+		(data = (struct Computed_field_window_projection_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (data->scene_viewer_callback_flag)
+		{
+			Scene_viewer_remove_transform_callback(data->scene_viewer, 
+			  Computed_field_window_projection_scene_viewer_callback,
+			  (void *)field);
+			data->scene_viewer_callback_flag = 0;
+		}
+		data->graphics_window = (struct Graphics_window *)NULL;
+		data->pane_number = 0;
+		data->scene_viewer = (struct Scene_viewer *)NULL;
+		Computed_field_changed(field, data->package->computed_field_manager);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_window_projection_scene_viewer_callback.  "
+			"Invalid arguments.");
+	}
+	LEAVE;
+} /* Computed_field_window_projection_scene_viewer_callback */
+
 static int Computed_field_window_projection_calculate_matrix(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -198,7 +240,7 @@ DESCRIPTION :
 			if (!data->scene_viewer_callback_flag)
 			{
 				data->scene_viewer_callback_flag = 
-					Scene_viewer_transform_add_callback(data->scene_viewer, 
+					Scene_viewer_add_transform_callback(data->scene_viewer, 
 						Computed_field_window_projection_scene_viewer_callback,
 						(void *)field);
 			}
@@ -546,7 +588,7 @@ Clear the type specific data used by this type.
 	{
 		if (data->scene_viewer_callback_flag)
 		{
-			Scene_viewer_transform_remove_callback(data->scene_viewer, 
+			Scene_viewer_remove_transform_callback(data->scene_viewer, 
 			  Computed_field_window_projection_scene_viewer_callback,
 			  (void *)field);
 			data->scene_viewer_callback_flag = 0;
@@ -555,10 +597,9 @@ Clear the type specific data used by this type.
 		{
 			DEALLOCATE(data->projection_matrix);
 		}
-		if (data->graphics_window)
-		{
-			DEACCESS(Graphics_window)(&(data->graphics_window));
-		}
+		Scene_viewer_remove_destroy_callback(data->scene_viewer, 
+			Computed_field_window_projection_scene_viewer_destroy_callback,
+			(void *)field);
 		DEALLOCATE(field->type_specific_data);
 		return_code = 1;
 	}
@@ -595,9 +636,14 @@ Copy the type specific data used by this type.
 			struct Computed_field_window_projection_type_specific_data, 1))
 		{
 			destination->projection_matrix = (double *)NULL;
-			destination->graphics_window = ACCESS(Graphics_window)
-				(source->graphics_window);
 			destination->scene_viewer = source->scene_viewer;
+			if (destination->scene_viewer)
+			{
+				Scene_viewer_add_destroy_callback(destination->scene_viewer, 
+					Computed_field_window_projection_scene_viewer_destroy_callback,
+					(void *)field);
+			}
+			destination->graphics_window = source->graphics_window;
 			destination->pane_number = source->pane_number;
 			destination->projection_type = source->projection_type;
 			destination->package = source->package;
@@ -713,7 +759,7 @@ static int Computed_field_evaluate_projection_matrix(
 	struct Computed_field *field,
 	int element_dimension, int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 10 October 2000
+LAST MODIFIED : 19 February 2002
 
 DESCRIPTION :
 Function called by Computed_field_evaluate_in_element to compute a field
@@ -732,94 +778,105 @@ for the same element, with the given <element_dimension> = number of Xi coords.
 		(data = (struct Computed_field_window_projection_type_specific_data *)
 		field->type_specific_data))
 	{
-		if (data->projection_matrix ||
-			Computed_field_window_projection_calculate_matrix(field))
+		if (data->scene_viewer)
 		{
-			return_code = 1;
-			projection_matrix = data->projection_matrix;
-			if (calculate_derivatives)
+			if (data->projection_matrix ||
+				Computed_field_window_projection_calculate_matrix(field))
 			{
-				field->derivatives_valid=1;
+				return_code = 1;
+				projection_matrix = data->projection_matrix;
+				if (calculate_derivatives)
+				{
+					field->derivatives_valid=1;
+				}
+				else
+				{
+					field->derivatives_valid=0;
+				}
+
+				/* Calculate the transformed coordinates */
+				coordinate_components=field->source_fields[0]->number_of_components;
+				for (i = 0 ; i < field->number_of_components ; i++)
+				{
+					field->values[i] = 0.0;
+					for (j = 0 ; j < coordinate_components ; j++)
+					{
+						field->values[i] += projection_matrix[i * (coordinate_components + 1) + j]
+							* field->source_fields[0]->values[j];
+					}
+					/* The last source value is fixed at 1 */
+					field->values[i] += 
+						projection_matrix[i * (coordinate_components + 1) + coordinate_components];
+				}
+
+				/* The last calculated value is the perspective value which divides through
+					all the other components */
+				perspective = 0.0;
+				for (j = 0 ; j < coordinate_components ; j++)
+				{
+					perspective += projection_matrix[field->number_of_components
+						* (coordinate_components + 1) + j] * field->source_fields[0]->values[j];
+				}
+				perspective += projection_matrix[field->number_of_components 
+					* (coordinate_components + 1) + coordinate_components];
+		
+				if (calculate_derivatives)
+				{
+					for (k=0;k<element_dimension;k++)
+					{
+						/* Calculate the coordinate derivatives without perspective */
+						for (i = 0 ; i < field->number_of_components ; i++)
+						{
+							field->derivatives[i * element_dimension + k] = 0.0;
+							for (j = 0 ; j < coordinate_components ; j++)
+							{
+								field->derivatives[i * element_dimension + k] += 
+									projection_matrix[i * (coordinate_components + 1) + j]
+									* field->source_fields[0]->derivatives[j * element_dimension + k];
+							}
+						}
+
+						/* Calculate the perspective derivative */
+						dhdxi = 0.0;
+						for (j = 0 ; j < coordinate_components ; j++)
+						{
+							dhdxi += projection_matrix[field->number_of_components 
+								* (coordinate_components + 1) + j]
+								* field->source_fields[0]->derivatives[j *element_dimension + k];
+						}
+
+						/* Calculate the perspective reciprocal derivative using chain rule */
+						dh1dxi = (-1.0) / (perspective * perspective) * dhdxi;
+
+						/* Calculate the derivatives of the perspective scaled transformed coordinates,
+							which is ultimately what we want */
+						for (i = 0 ; i < field->number_of_components ; i++)
+						{
+							field->derivatives[i * element_dimension + k] = 
+								field->derivatives[i * element_dimension + k] / perspective
+								+ field->values[i] * dh1dxi;
+						}
+					}
+				}
+
+				/* Now apply the perspective scaling to the non derivative transformed coordinates */
+				for (i = 0 ; i < field->number_of_components ; i++)
+				{
+					field->values[i] /= perspective;
+				}
 			}
 			else
 			{
-				field->derivatives_valid=0;
-			}
-
-			/* Calculate the transformed coordinates */
-			coordinate_components=field->source_fields[0]->number_of_components;
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] = 0.0;
-				for (j = 0 ; j < coordinate_components ; j++)
-				{
-					field->values[i] += projection_matrix[i * (coordinate_components + 1) + j]
-						* field->source_fields[0]->values[j];
-				}
-				/* The last source value is fixed at 1 */
-				field->values[i] += 
-					projection_matrix[i * (coordinate_components + 1) + coordinate_components];
-			}
-
-			/* The last calculated value is the perspective value which divides through
-				 all the other components */
-			perspective = 0.0;
-			for (j = 0 ; j < coordinate_components ; j++)
-			{
-				perspective += projection_matrix[field->number_of_components
-					* (coordinate_components + 1) + j] * field->source_fields[0]->values[j];
-			}
-			perspective += projection_matrix[field->number_of_components 
-				* (coordinate_components + 1) + coordinate_components];
-		
-			if (calculate_derivatives)
-			{
-				for (k=0;k<element_dimension;k++)
-				{
-					/* Calculate the coordinate derivatives without perspective */
-					for (i = 0 ; i < field->number_of_components ; i++)
-					{
-						field->derivatives[i * element_dimension + k] = 0.0;
-						for (j = 0 ; j < coordinate_components ; j++)
-						{
-							field->derivatives[i * element_dimension + k] += 
-								projection_matrix[i * (coordinate_components + 1) + j]
-								* field->source_fields[0]->derivatives[j * element_dimension + k];
-						}
-					}
-
-					/* Calculate the perspective derivative */
-					dhdxi = 0.0;
-					for (j = 0 ; j < coordinate_components ; j++)
-					{
-						dhdxi += projection_matrix[field->number_of_components 
-							* (coordinate_components + 1) + j]
-							* field->source_fields[0]->derivatives[j *element_dimension + k];
-					}
-
-					/* Calculate the perspective reciprocal derivative using chain rule */
-					dh1dxi = (-1.0) / (perspective * perspective) * dhdxi;
-
-					/* Calculate the derivatives of the perspective scaled transformed coordinates,
-						 which is ultimately what we want */
-					for (i = 0 ; i < field->number_of_components ; i++)
-					{
-						field->derivatives[i * element_dimension + k] = 
-							field->derivatives[i * element_dimension + k] / perspective
-							+ field->values[i] * dh1dxi;
-					}
-				}
-			}
-
-			/* Now apply the perspective scaling to the non derivative transformed coordinates */
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				field->values[i] /= perspective;
+				return_code=0;
 			}
 		}
 		else
 		{
-			return_code=0;
+			/* Just set everything to zero */
+			for (i = 0 ; i < field->number_of_components ; i++)
+			{
+				field->values[i] = 0.0;
+			}
 		}
 	}
 	else
@@ -943,29 +1000,39 @@ Sets the <values> of the computed <field> at <node>.
 		(data = (struct Computed_field_window_projection_type_specific_data *)
 			field->type_specific_data))
 	{
-		if (data->projection_matrix ||
-			Computed_field_window_projection_calculate_matrix(field))
+		if (data->scene_viewer)
 		{
-			copy_matrix(4,4,data->projection_matrix,lu_matrix);
-			result[0] = (double)values[0];
-			result[1] = (double)values[1];
-			result[2] = (double)values[2];
-			result[3] = 1.0;
-			if (LU_decompose(4,lu_matrix,indx,&d) &&
-				LU_backsubstitute(4,lu_matrix,indx,result) &&
-				(0.0 != result[3]))
+			if (data->projection_matrix ||
+				Computed_field_window_projection_calculate_matrix(field))
 			{
-				source_values[0] = (result[0] / result[3]);
-				source_values[1] = (result[1] / result[3]);
-				source_values[2] = (result[2] / result[3]);
-				return_code=Computed_field_set_values_at_node(
-					field->source_fields[0],node,source_values);
+				copy_matrix(4,4,data->projection_matrix,lu_matrix);
+				result[0] = (double)values[0];
+				result[1] = (double)values[1];
+				result[2] = (double)values[2];
+				result[3] = 1.0;
+				if (LU_decompose(4,lu_matrix,indx,&d) &&
+					LU_backsubstitute(4,lu_matrix,indx,result) &&
+					(0.0 != result[3]))
+				{
+					source_values[0] = (result[0] / result[3]);
+					source_values[1] = (result[1] / result[3]);
+					source_values[2] = (result[2] / result[3]);
+					return_code=Computed_field_set_values_at_node(
+						field->source_fields[0],node,source_values);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_window_projection_set_values_at_node.  "
+						"Could not invert field %s",field->name);
+					return_code=0;
+				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_window_projection_set_values_at_node.  "
-					"Could not invert field %s",field->name);
+					"Missing projection matrix for field %s",field->name);
 				return_code=0;
 			}
 		}
@@ -973,8 +1040,8 @@ Sets the <values> of the computed <field> at <node>.
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_window_projection_set_values_at_node.  "
-				"Missing projection matrix for field %s",field->name);
-			return_code=0;
+				"Scene_viewer invalid.");
+			return_code = 0;
 		}
 	}
 	else
@@ -1027,30 +1094,40 @@ DESCRIPTION :
 		&&(number_of_values==field->number_of_components)&&element&&xi&&
 		search_element_group)
 	{
-		if (data->projection_matrix ||
-			Computed_field_window_projection_calculate_matrix(field))
+		if (data->scene_viewer)
 		{
-			copy_matrix(4,4,data->projection_matrix,lu_matrix);
-			result[0] = (double)values[0];
-			result[1] = (double)values[1];
-			result[2] = (double)values[2];
-			result[3] = 1.0;
-			if (LU_decompose(4,lu_matrix,indx,&d) &&
-				LU_backsubstitute(4,lu_matrix,indx,result) &&
-				(0.0 != result[3]))
+			if (data->projection_matrix ||
+				Computed_field_window_projection_calculate_matrix(field))
 			{
-				source_values[0] = (result[0] / result[3]);
-				source_values[1] = (result[1] / result[3]);
-				source_values[2] = (result[2] / result[3]);
-				return_code=Computed_field_find_element_xi(
-					field->source_fields[0], source_values, 3, element,
-					xi, search_element_group);
+				copy_matrix(4,4,data->projection_matrix,lu_matrix);
+				result[0] = (double)values[0];
+				result[1] = (double)values[1];
+				result[2] = (double)values[2];
+				result[3] = 1.0;
+				if (LU_decompose(4,lu_matrix,indx,&d) &&
+					LU_backsubstitute(4,lu_matrix,indx,result) &&
+					(0.0 != result[3]))
+				{
+					source_values[0] = (result[0] / result[3]);
+					source_values[1] = (result[1] / result[3]);
+					source_values[2] = (result[2] / result[3]);
+					return_code=Computed_field_find_element_xi(
+						field->source_fields[0], source_values, 3, element,
+						xi, search_element_group);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_window_projection_find_element_xi.  "
+						"Could not invert field %s",field->name);
+					return_code=0;
+				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_field_window_projection_find_element_xi.  "
-					"Could not invert field %s",field->name);
+					"Missing projection matrix for field %s",field->name);
 				return_code=0;
 			}
 		}
@@ -1058,7 +1135,7 @@ DESCRIPTION :
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_window_projection_find_element_xi.  "
-				"Missing projection matrix for field %s",field->name);
+				"Scene_viewer invalid.");
 			return_code=0;
 		}
 	}
@@ -1219,9 +1296,13 @@ although its cache may be lost.
 			field->number_of_source_fields=number_of_source_fields;			
 			field->type_specific_data = (void *)data;
 			data->projection_matrix = (double *)NULL;
-			data->graphics_window = ACCESS(Graphics_window)(graphics_window);
+			/* Not accessed, responds to destroy callback instead */
+			data->graphics_window = graphics_window;
 			data->pane_number = pane_number;
 			data->scene_viewer = scene_viewer;
+			Scene_viewer_add_destroy_callback(scene_viewer, 
+				Computed_field_window_projection_scene_viewer_destroy_callback,
+				(void *)field);
 			data->projection_type = projection_type;
 			data->scene_viewer_callback_flag = 0;
 			data->package = package;
