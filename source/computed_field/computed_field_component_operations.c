@@ -698,7 +698,7 @@ static int Computed_field_divide_components_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 15 February 2002
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -726,6 +726,7 @@ Evaluate the fields cache at the node.
 			if (calculate_derivatives && field->source_fields[0]->derivatives_valid
 				&& field->source_fields[1]->derivatives_valid)
 			{
+				number_of_xi = get_FE_element_dimension(element);
 				derivative = field->derivatives;
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
@@ -4626,6 +4627,7 @@ DESCRIPTION :
 No type specific data
 ==============================================================================*/
 
+
 #define Computed_field_sum_components_copy_type_specific \
    Computed_field_default_copy_type_specific
 /*******************************************************************************
@@ -4634,6 +4636,7 @@ LAST MODIFIED : 25 February 2002
 DESCRIPTION :
 No type specific data
 ==============================================================================*/
+
 
 #define Computed_field_sum_components_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
