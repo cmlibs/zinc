@@ -393,6 +393,7 @@ Main program for unemap
 		(struct Graphical_material *)NULL;
 	struct Light *default_light=(struct Light *)NULL;
 	struct Light_model *default_light_model=(struct Light_model *)NULL;
+	struct LIST(FE_element_shape) *element_shape_list = (struct LIST(FE_element_shape) *)NULL;
 	struct LIST(GT_object) *glyph_list=(struct LIST(GT_object) *)NULL;
 	struct MANAGER(Computed_field) *computed_field_manager=
 		(struct MANAGER(Computed_field) *)NULL;
@@ -686,7 +687,7 @@ Main program for unemap
 		root_cmiss_region = ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
 		/* add FE_region to root_cmiss_region */
 		if (root_fe_region = CREATE(FE_region)((struct FE_region *)NULL,
-			fe_basis_manager))
+			fe_basis_manager, element_shape_list))
 		{
 			Cmiss_region_attach_FE_region(root_cmiss_region, root_fe_region);
 		}
@@ -855,7 +856,7 @@ Main program for unemap
 			interactive_tool_manager);
 		/* FE_element_shape manager */
 			/*???DB.  To be done */
-		all_FE_element_shape=CREATE_LIST(FE_element_shape)();
+		element_shape_list=CREATE_LIST(FE_element_shape)();
 #endif /* defined (UNEMAP_USE_3D) */
 #else /* defined (NOT_ACQUISITION_ONLY) */
 		page_window=(struct Page_window *)NULL;
@@ -1014,14 +1015,14 @@ Main program for unemap
 			them since this will cause memory addresses to be deallocated twice
 			as DEACCESS will also request the objects be removed from the list.
 			Do, however, send out an error message */
-		if (0 == NUMBER_IN_LIST(FE_element_shape)(all_FE_element_shape))
+		if (0 == NUMBER_IN_LIST(FE_element_shape)(element_shape_list))
 		{
-			DESTROY(LIST(FE_element_shape))(&all_FE_element_shape);
+			DESTROY(LIST(FE_element_shape))(&element_shape_list);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE, "%d element shape(s) still in use",
-				NUMBER_IN_LIST(FE_element_shape)(all_FE_element_shape));
+				NUMBER_IN_LIST(FE_element_shape)(element_shape_list);
 		}
 		DESTROY(MANAGER(Spectrum))(&spectrum_manager);
 		DEACCESS(Graphical_material)(&default_graphical_material);			
