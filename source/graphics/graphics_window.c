@@ -4431,7 +4431,7 @@ If <force_onscreen> is non zero then the pixels will always be grabbed from the
 graphics window on screen.
 ==============================================================================*/
 {
-	int frame_width, frame_height, number_of_components;
+	int frame_width, frame_height, number_of_components, return_code;
 #if defined (DM_BUFFERS)
 	double bottom, fraction_across, fraction_down, left,
 		NDC_left, NDC_top, NDC_width, NDC_height,
@@ -4444,7 +4444,7 @@ graphics window on screen.
 	int i, j, number_of_panes, pane,
 		pane_i, pane_j, pane_width, pane_height, panes_across, panes_down,
 		patch_width, patch_height,
-		return_code, tile_height, tile_width, tiles_across, tiles_down;
+		tile_height, tile_width, tiles_across, tiles_down;
 	struct Dm_buffer *dmbuffer;
 	struct Scene_viewer *scene_viewer;
 #endif /* defined (DM_BUFFERS) */
