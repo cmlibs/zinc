@@ -1,7 +1,7 @@
 /************************************************************************************
    FILE: computed_field_sterology_measures.c
 
-   LAST MODIFIED: 25 June 2004
+   LAST MODIFIED: 12 July 2004
 
    DESCRIPTION: Perform bone parameters extraction on Computed field.
 ===================================================================================*/
@@ -379,7 +379,7 @@ Window projection does have numerical components.
 #define Computed_field_sterology_measures_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 10 April 2004
+LAST MODIFIED : 10 July 2004
 
 DESCRIPTION :
 No special criteria.
@@ -1030,7 +1030,7 @@ int Computed_field_set_type_sterology_measures(struct Computed_field *field,
 	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
-LAST MODIFIED : 17 April 2004
+LAST MODIFIED : 10 July 2004
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_sterology_measures with the supplied
@@ -1197,7 +1197,7 @@ int Computed_field_get_type_sterology_measures(struct Computed_field *field,
 	int **input_sizes, int **output_sizes, FE_value **minimums,
 	FE_value **maximums, int *element_dimension)
 /*******************************************************************************
-LAST MODIFIED : 17 April 2004
+LAST MODIFIED : 10 July 2004
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_sterology_measures, the
@@ -1291,7 +1291,7 @@ parameters defining it are returned.
 static int define_Computed_field_type_sterology_measures(struct Parse_state *state,
 	void *field_void, void *computed_field_sterology_measures_package_void)
 /*******************************************************************************
-LAST MODIFIED : 18 April 2004
+LAST MODIFIED : 12 July 2004
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_sterology_measures (if it is not
