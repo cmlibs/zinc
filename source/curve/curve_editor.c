@@ -2890,19 +2890,28 @@ Callback for change of field component for selecting ranges.
 		if (choose_field_component_get_field_component(
 			curve_editor->component_widget,&field,&component_no))
 		{
-			if ((0<=component_no)&&
-				(component_no<get_FE_field_number_of_components(field)))
+			if (field)
 			{
-				if (component_no != curve_editor->range_component_no)
+				if ((0<=component_no)&&
+					(component_no<get_FE_field_number_of_components(field)))
 				{
-					curve_editor->range_component_no=component_no;
-					control_curve_editor_set_range_component_no(curve_editor,component_no);
+					if (component_no != curve_editor->range_component_no)
+					{
+						curve_editor->range_component_no=component_no;
+						control_curve_editor_set_range_component_no(curve_editor,
+							component_no);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"control_curve_editor_change_component.  Invalid component number");
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"control_curve_editor_change_component.  Invalid component number");
+					"control_curve_editor_change_component.  Missing field");
 			}
 		}
 	}

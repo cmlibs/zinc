@@ -7,11 +7,6 @@ DESCRIPTION :
 Widgets for editing a FE_field_scalar object = scalar function of a field.
 ==============================================================================*/
 #include <stdio.h>
-#if defined (MOTIF)
-#include <Xm/Xm.h>
-#include <Xm/PushBG.h>
-#include <Xm/RowColumn.h>
-#endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "choose/choose_enumerator.h"
 #include "choose/chooser.h"
@@ -32,7 +27,7 @@ Contains information required by the choose_enumerator_widget.
 {
 	struct Callback_data update_callback;
 	struct Chooser *chooser;
-	Widget widget,parent;
+	Widget parent,widget;
 }; /* struct Choose_enumerator */
 
 /*
@@ -88,7 +83,7 @@ Callback when chooser destroyed - so also destroy choose_enumerator.
 	USE_PARAMETER(reason);
 	if (choose_enumerator=(struct Choose_enumerator *)client_data)
 	{
-		DESTROY(Chooser)(&(choose_enumerator->chooser)); \
+		DESTROY(Chooser)(&(choose_enumerator->chooser));
 		DEALLOCATE(choose_enumerator);
 	}
 	else
@@ -381,7 +376,6 @@ Changes the list of <valid_strings> in the choose_enumerator_widget.
 			{
 				display_message(ERROR_MESSAGE,
 					"choose_enumerator_set_valid_strings.  Could not build menu");
-				return_code=0;
 			}
 		}
 		else

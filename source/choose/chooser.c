@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : chooser.c
 
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Widget for choosing a void pointer identified with a string out of a
@@ -29,12 +29,13 @@ Module variables
 */
 struct Chooser
 /*******************************************************************************
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Contains information required by the choose_object control dialog.
 ==============================================================================*/
 {
+	int force_update;
 	struct Callback_data update_callback;
 	Widget main_cascade,main_menu,widget,widget_parent;
 	void *current_item,*last_updated_item;
@@ -45,13 +46,15 @@ Module functions
 ----------------
 */
 
-static Widget Chooser_get_widget_from_item(Widget menu,void *current_item)
+static Widget Chooser_get_widget_from_item(Widget menu,void *current_item,
+	int no_current_item)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Returns the pushbutton widget for the <current_item> in the menus cascading
 from <menu>, or NULL if not found. Note this is recursive.
+Flag <no_current_item> indicates the <current_item> must be refound.
 ==============================================================================*/
 {
 	int i,num_children;
@@ -71,7 +74,7 @@ from <menu>, or NULL if not found. Note this is recursive.
 			if (xmPushButtonGadgetClass==widget_class)
 			{
 				XtVaGetValues(child_list[i],XmNuserData,&item,NULL);
-				if (((void *)item==current_item)||(!current_item))
+				if (((void *)item==current_item)||no_current_item)
 				{
 					item_widget=child_list[i];
 				}
@@ -80,7 +83,8 @@ from <menu>, or NULL if not found. Note this is recursive.
 			{
 				/* get submenu attached to cascade button */
 				XtVaGetValues(child_list[i],XmNsubMenuId,&submenu,NULL);
-				item_widget=Chooser_get_widget_from_item(submenu,current_item);
+				item_widget=Chooser_get_widget_from_item(submenu,current_item,
+					no_current_item);
 			}
 		}
 	}
@@ -96,7 +100,7 @@ from <menu>, or NULL if not found. Note this is recursive.
 
 static int Chooser_update(struct Chooser *chooser)
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Tells CMGUI about the current values. Sends a pointer to the current object.
@@ -108,7 +112,8 @@ Avoids sending repeated updates if the object address has not changed.
 	ENTER(Chooser_update);
 	if (chooser)
 	{
-		if (chooser->current_item != chooser->last_updated_item)
+		if (chooser->force_update||
+			(chooser->current_item != chooser->last_updated_item))
 		{
 			if (chooser->update_callback.procedure)
 			{
@@ -118,6 +123,7 @@ Avoids sending repeated updates if the object address has not changed.
 					chooser->current_item);
 			}
 			chooser->last_updated_item = chooser->current_item;
+			chooser->force_update=0;
 		}
 		return_code=1;
 	}
@@ -160,8 +166,8 @@ Callback for the option menu - change of object.
 			XtVaSetValues(chooser->main_cascade,
 				XmNlabelString,(XtPointer)new_string,NULL);
 			/* inform the client of the change */
-			/* always want an update if menu clicked on, so change history: */
-			chooser->last_updated_item=(void *)NULL;
+			/* always want an update if menu clicked on: */
+			chooser->force_update=1;
 			Chooser_update(chooser);
 		}
 		else
@@ -179,14 +185,16 @@ Callback for the option menu - change of object.
 } /* Chooser_menu_CB */
 
 static Widget Chooser_build_menu(Widget parent,int number_of_items,
-	void **items,char **item_names,struct Chooser *chooser)
+	void **items,char **item_names,struct Chooser *chooser,Widget *item_widget)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Creates a PullDownMenu widget for choosing any of the <number_of_items>
 <items>. If there are more than MAX_CHOOSER_ROWS items then this function
 builds menus of cascade buttons with their own submenus.
+Returns in <item_widget> the widget for the [last] item matching the
+current_item of the chooser.
 ==============================================================================*/
 {
 	Arg args[3];
@@ -241,15 +249,9 @@ builds menus of cascade buttons with their own submenus.
 					XtSetArg(args[1],XmNlabelString,(XtPointer)new_string);
 					if (button=XmCreatePushButtonGadget(menu,item_name,args,2))
 					{
-						if ((void *)NULL == chooser->current_item)
-						{
-							chooser->current_item = item;
-						}
 						if (item == chooser->current_item)
 						{
-							/* display current_item on main_cascade */
-							XtVaSetValues(chooser->main_cascade,
-								XmNlabelString,(XtPointer)new_string,NULL);
+							*item_widget=button;
 						}
 						XtManageChild(button);
 					}
@@ -325,7 +327,7 @@ builds menus of cascade buttons with their own submenus.
 					new_string=XmStringCreateSimple(item_name);
 					XtSetArg(args[0],XmNlabelString,(XtPointer)new_string);
 					if ((submenu=Chooser_build_menu(menu,
-						items_in_submenu,subitems,subitem_names,chooser))&&
+						items_in_submenu,subitems,subitem_names,chooser,item_widget))&&
 						(button=XmCreateCascadeButtonGadget(menu,item_name,args,1)))
 					{
 						/* attach cascade button to new submenu */
@@ -401,6 +403,7 @@ these may be added by the calling code.
 			chooser->widget_parent=parent;
 			chooser->current_item=current_item;
 			chooser->last_updated_item=current_item;
+			chooser->force_update=0;
 			XtSetArg(args[0],XmNleftAttachment,XmATTACH_FORM);
 			XtSetArg(args[1],XmNrightAttachment,XmATTACH_FORM);
 			XtSetArg(args[2],XmNtopAttachment,XmATTACH_FORM);
@@ -498,7 +501,7 @@ Cleans up the chooser structure. Note does not destroy widgets!
 int Chooser_build_main_menu(struct Chooser *chooser,int number_of_items,
 	void **items,char **item_names,void *new_item)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 9 February 2000
 
 DESCRIPTION :
 Makes a cascading menu of the <items> labelled with the given <item_names>.
@@ -506,8 +509,10 @@ Clears existing menu and detaches it from the main_cascade if required.
 The new menu is attached to the main_cascade button.
 ==============================================================================*/
 {
-	int current_item_found,i,return_code;
-	Widget menu;
+	int return_code;
+	Widget item_widget,menu;
+	XmString new_string;
+	XtPointer item;
 
 	ENTER(Chooser_build_main_menu);
 	if (chooser&&((0==number_of_items)||
@@ -516,20 +521,9 @@ The new menu is attached to the main_cascade button.
 		/* set last_updated_item to avoid update once set */
 		chooser->last_updated_item=new_item;
 		chooser->current_item=new_item;
-		if (chooser->current_item)
-		{
-			current_item_found=0;
-			for (i=0;(!current_item_found)&&(i<number_of_items);i++)
-			{
-				current_item_found=(items[i]==chooser->current_item);
-			}
-			if (!current_item_found)
-			{
-				chooser->current_item=(void *)NULL;
-			}
-		}
+		item_widget=(Widget)NULL;
 		if (menu=Chooser_build_menu(chooser->widget,number_of_items,items,
-			item_names,chooser))
+			item_names,chooser,&item_widget))
 		{
 			/* attach cascade button to new menu */
 			XtVaSetValues(chooser->main_cascade,XmNsubMenuId,(XtPointer)menu,NULL);
@@ -539,6 +533,24 @@ The new menu is attached to the main_cascade button.
 				XtDestroyWidget(chooser->main_menu);
 			}
 			chooser->main_menu=menu;
+			if (!item_widget)
+			{
+				/* get first item from menu */
+				item_widget=Chooser_get_widget_from_item(chooser->main_menu,
+					chooser->current_item,1);
+				if (item_widget)
+				{
+					XtVaGetValues(item_widget,XmNuserData,&item,NULL);
+					chooser->current_item=(void *)item;
+				}
+			}
+			if (item_widget)
+			{
+				/* display name of current_item on main_cascade */
+				XtVaGetValues(item_widget,XmNlabelString,(XtPointer)&new_string,NULL);
+				XtVaSetValues(chooser->main_cascade,
+					XmNlabelString,(XtPointer)new_string,NULL);
+			}
 			/* allow update in case current_item was changed */
 			Chooser_update(chooser);
 			return_code=1;
@@ -617,7 +629,7 @@ Returns the currently chosen item in the chooser_widget.
 
 int Chooser_set_item(struct Chooser *chooser,void *new_item)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 9 Fabruary 2000
 
 DESCRIPTION :
 Changes the chosen item in the chooser_widget.
@@ -636,12 +648,11 @@ Changes the chosen item in the chooser_widget.
 		chooser->current_item=new_item;
 		/* get pushbutton widget for current_item */
 		item_widget=
-			Chooser_get_widget_from_item(chooser->main_menu,chooser->current_item);
+			Chooser_get_widget_from_item(chooser->main_menu,chooser->current_item,0);
 		if (!item_widget)
 		{
-			chooser->current_item=(void *)NULL;
 			item_widget=Chooser_get_widget_from_item(chooser->main_menu,
-				chooser->current_item);
+				chooser->current_item,1);
 			if (item_widget)
 			{
 				XtVaGetValues(item_widget,XmNuserData,&item,NULL);
