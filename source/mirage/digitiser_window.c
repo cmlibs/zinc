@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : digitiser_window.c
 
-LAST MODIFIED : 21 June 1999
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION:
 Routines for generating and managing digitiser_windows. The digitiser window
@@ -122,7 +122,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(digitiser_window, \
 int Digitiser_window_set_view(struct Digitiser_window *digitiser_window,
 	int view_no)
 /*******************************************************************************
-LAST MODIFIED : 19 March 1998
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -130,7 +130,7 @@ DESCRIPTION :
 	double modelview_matrix[16],projection_matrix[16],eye[3],lookat[3],up[3],
 		viewport_left,viewport_top,viewport_pixels_per_unit_x,
 		viewport_pixels_per_unit_y;
-	int return_code,width_texels,height_texels;
+	int return_code;
 	struct Mirage_view *view,*old_view;
 
 	ENTER(Digitiser_window_set_view);
