@@ -71,6 +71,7 @@ changes in node position and derivatives etc.
 	/* flag indicating that the above manager is actually the data manager */
 	int use_data;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	void *node_group_manager_callback_id;
 	/* needed for destroy button */
 	struct MANAGER(FE_element) *element_manager;
 	struct FE_node_selection *node_selection;
@@ -2074,6 +2075,54 @@ Fetches the appropriate icon for the interactive tool.
 	return (image);
 } /* Node_tool_get_icon */
 
+static void Node_tool_node_group_change(
+	struct MANAGER_MESSAGE(GROUP(FE_node)) *message,void *node_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 30 September 2002
+
+DESCRIPTION :
+Node group manager change callback.  Makes sure we don't hold onto a 
+reference to an invalid node group.
+==============================================================================*/
+{
+	int return_code;
+	struct Node_tool *node_tool;
+
+	ENTER(Node_tool_node_group_change);
+	if (message && (node_tool = (struct Node_tool *)node_tool_void))
+	{
+		switch (message->change)
+		{
+			case MANAGER_CHANGE_REMOVE(GROUP(FE_node)):
+			{
+				/* If the node group we are creating into disappears then
+					remove our reference to it and leave create mode */
+				if (node_tool->node_group && 
+					IS_OBJECT_IN_LIST(GROUP(FE_node))(node_tool->node_group,
+					message->changed_object_list))
+				{
+					node_tool->node_group = (struct GROUP(FE_node) *)NULL;
+					Node_tool_set_create_enabled(node_tool, /*false*/0);
+				}
+				return_code = 1;
+			} break;
+			case MANAGER_CHANGE_OBJECT(GROUP(FE_node)):
+			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_node)):
+			case MANAGER_CHANGE_IDENTIFIER(GROUP(FE_node)):
+			case MANAGER_CHANGE_ADD(GROUP(FE_node)):
+			{
+				return_code = 1;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_tool_node_group_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Node_tool_node_group_change */
+
 /*
 Global functions
 ----------------
@@ -2171,6 +2220,9 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->node_manager=node_manager;
 			node_tool->use_data=use_data;
 			node_tool->node_group_manager=node_group_manager;
+			node_tool->node_group_manager_callback_id=
+				MANAGER_REGISTER(GROUP(FE_node))(Node_tool_node_group_change,
+				(void *)node_tool, node_tool->node_group_manager);
 			node_tool->element_manager=element_manager;
 			node_tool->node_selection=node_selection;
 			node_tool->computed_field_package=computed_field_package;
@@ -2449,6 +2501,13 @@ structure itself.
 		REACCESS(GT_object)(&(node_tool->rubber_band),(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(node_tool->rubber_band_material));
 		REACCESS(FE_node)(&(node_tool->template_node),(struct FE_node *)NULL);
+		if (node_tool->node_group_manager_callback_id && node_tool->node_group_manager)
+		{
+			MANAGER_DEREGISTER(GROUP(FE_node))(
+				node_tool->node_group_manager_callback_id,
+				node_tool->node_group_manager);
+			node_tool->node_group_manager_callback_id=(void *)NULL;
+		}
 		if (node_tool->time_keeper)
 		{
 			DEACCESS(Time_keeper)(&(node_tool->time_keeper));
