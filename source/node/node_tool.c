@@ -1,14 +1,13 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 17 May 2000
+LAST MODIFIED : 12 June 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
 Scene input.
 ==============================================================================*/
 #include <math.h>
-#include "command/command.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "graphics/element_group_settings.h"
