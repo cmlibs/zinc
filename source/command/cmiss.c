@@ -16618,7 +16618,7 @@ movie is being created.
 	static char *default_movie_name="default";
 	char add_frame,avi,cinepak_avi,cinepak_quicktime,*create_file_name,end,
 		every_frame,force_onscreen,indeo_avi,indeo_quicktime,loop,*movie_name,
-		mvc1_sgi_movie3,once,*open_file_name,play,quicktime,rgba_rle24_sgi_movie3,
+		mvc1_sgi_movie3,once,*open_file_name,play,quicktime,
 		rle24_sgi_movie3,skip_frames,sgi_movie3,stop;
 	double speed;
 	int height, return_code, width;
@@ -16661,7 +16661,6 @@ movie is being created.
 			open_file_name=(char *)NULL;
 			play = 0;
 			quicktime = 0;
-			rgba_rle24_sgi_movie3 = 0;
 			rle24_sgi_movie3 = 0;
 			sgi_movie3 = 0;
 			skip_frames = 0;
@@ -16724,9 +16723,6 @@ movie is being created.
 				NULL,set_char_flag);
 			/* quicktime */
 			Option_table_add_entry(option_table,"quicktime",&quicktime,
-				NULL,set_char_flag);
-			/* rgba_rle24_sgi_movie3 */
-			Option_table_add_entry(option_table,"rgba_rle24_sgi_movie3",&rgba_rle24_sgi_movie3,
 				NULL,set_char_flag);
 			/* rle24_sgi_movie3 */
 			Option_table_add_entry(option_table,"rle24_sgi_movie3",&rle24_sgi_movie3,
@@ -16842,11 +16838,6 @@ movie is being created.
 								{
 									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
 										X3D_MOVIE_CREATE_FILE_APPLE_ANIMATION_QUICKTIME);
-								}
-								else if(rgba_rle24_sgi_movie3)
-								{
-									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
-										X3D_MOVIE_CREATE_FILE_RLE24_SGI_MOVIE3_RGBA);
 								}
 								else if(rle24_sgi_movie3)
 								{
