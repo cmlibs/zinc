@@ -1024,7 +1024,8 @@ int Computed_field_set_type_sterology_measures(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
 	int dimension, int number_of_dirs, int radius, double pixel_size,
-	struct Set_names_from_list_data results,
+	int bvtv_index, int bsbv_index, int tbth_index, int tbsp_index,
+	int tbn_index, int euler_index, int smi_index, int mil_index,
 	int *input_sizes, int *output_sizes, FE_value *minimums, FE_value *maximums,
 	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
@@ -1041,13 +1042,12 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int depth, number_of_source_fields, return_code, i, j, result_depth, number_of_results;
+	int depth, number_of_source_fields, return_code, i, result_depth, number_of_results;
 	struct Computed_field **source_fields;
 	struct Computed_field_sterology_measures_type_specific_data *data;
-	struct Set_names_from_list_data temp;
 
 	ENTER(Computed_field_set_type_sterology_measures);
-	if (field && source_field && texture_coordinate_field && 
+	if (field && source_field && texture_coordinate_field &&
 		(number_of_dirs > 0) && (depth = source_field->number_of_components) &&
 		(dimension <= texture_coordinate_field->number_of_components) &&
 		region && graphics_buffer_package)
@@ -1071,55 +1071,71 @@ although its cache may be lost.
 			field->type_string = computed_field_sterology_measures_type_string;
 			/* 4. calculate the number of results and make dynamic allocation for data*/
 			number_of_results = 0;
-			for (i = 0; i < results.number_of_tokens; i++)
-			{
-			         number_of_results = my_Max(number_of_results, results.tokens[i].index);
-			}
+			number_of_results = my_Max(number_of_results, bvtv_index);
+			number_of_results = my_Max(number_of_results, bsbv_index);
+			number_of_results = my_Max(number_of_results, tbth_index);
+			number_of_results = my_Max(number_of_results, tbsp_index);
+			number_of_results = my_Max(number_of_results, tbn_index);
+			number_of_results = my_Max(number_of_results, euler_index);
+			number_of_results = my_Max(number_of_results, smi_index);
+			number_of_results = my_Max(number_of_results, mil_index);
 			data->results.number_of_tokens = number_of_results;
-			temp.number_of_tokens = number_of_results;
-			ALLOCATE(data->results.tokens, struct Set_names_from_list_token, number_of_results);
-			ALLOCATE(temp.tokens, struct Set_names_from_list_token, number_of_results);
-			/* 5. Evaluate the results data and calculate the number_of_components for field */
-			result_depth = 1;
-			j = 0;
-			for (i = 0; i < number_of_results; i++)
-			{
-			        while (results.tokens[j].index == 0)
-				{
-				        j++;
-				}
-				data->results.tokens[i].string = results.tokens[j].string;
-				data->results.tokens[i].index = results.tokens[j].index;
-				if (!(data->results.tokens[i].string == "mil"))
-				{
-					result_depth *= 1;
-				}
-				else
-				{
-					result_depth *= 12;
-				}
-				j++;
-			}
-			result_depth += number_of_results - 1;
-			field->number_of_components = result_depth;
-			/* 6. Sort the strings in results on the values of index */
-			for (i = 0; i < number_of_results; i++)
-			{
-			        for (j = 0; j < number_of_results; j++)
-				{
-				        if (data->results.tokens[j].index == (i + 1))
-					{
-					        temp.tokens[i].string = data->results.tokens[j].string;
-						temp.tokens[i].index = data->results.tokens[j].index;
-					}
-				}
-			}
-			for (i = 0; i < number_of_results; i++)
-			{
-			        data->results.tokens[i].string = temp.tokens[j].string;
-				data->results.tokens[i].index = temp.tokens[j].index;
-			}
 
+			ALLOCATE(data->results.tokens, struct Set_names_from_list_token, number_of_results);
+
+			/* 5. Evaluate the results data and calculate the number_of_components for field */
+			for (i = 0; i < number_of_results; i++)
+			{
+			        if (bvtv_index == i + 1)
+				{
+				        data->results.tokens[i].string = "bvtv";
+					data->results.tokens[i].index = bvtv_index;
+				}
+				else if (bsbv_index == i + 1)
+				{
+				        data->results.tokens[i].string = "bsbv";
+					data->results.tokens[i].index = bsbv_index;
+				}
+				else if (tbth_index == i + 1)
+				{
+				        data->results.tokens[i].string = "tbth";
+					data->results.tokens[i].index = tbth_index;
+				}
+				else if (tbsp_index == i + 1)
+				{
+				        data->results.tokens[i].string = "tbsp";
+					data->results.tokens[i].index = tbsp_index;
+				}
+				else if (tbn_index == i + 1)
+				{
+				        data->results.tokens[i].string = "tbn";
+					data->results.tokens[i].index = tbn_index;
+				}
+				else if (euler_index == i + 1)
+				{
+				        data->results.tokens[i].string = "euler";
+					data->results.tokens[i].index = euler_index;
+				}
+				else if (smi_index == i + 1)
+				{
+				        data->results.tokens[i].string = "smi";
+					data->results.tokens[i].index = smi_index;
+				}
+				else if (mil_index == i + 1)
+				{
+				        data->results.tokens[i].string = "mil";
+					data->results.tokens[i].index = mil_index;
+				}
+			}
+			if (mil_index > 0)
+			{
+			        result_depth = number_of_results + 11;
+			}
+			else
+			{
+			        result_depth = number_of_results;
+			}
+			field->number_of_components = result_depth;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			source_fields[1]=ACCESS(Computed_field)(texture_coordinate_field);
 			field->source_fields=source_fields;
@@ -1143,7 +1159,6 @@ although its cache may be lost.
 				computed_field_manager);
 
 			field->type_specific_data = data;
-			DEALLOCATE(temp.tokens);
 
 			/* Set all the methods */
 			COMPUTED_FIELD_ESTABLISH_METHODS(sterology_measures);
@@ -1177,7 +1192,8 @@ int Computed_field_get_type_sterology_measures(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
 	int *dimension, int *number_of_dirs, int *radius, double *pixel_size,
-	struct Set_names_from_list_data *results,
+	int *bvtv_index, int *bsbv_index, int *tbth_index, int *tbsp_index,
+	int *tbn_index, int *euler_index, int *smi_index, int *mil_index,
 	int **input_sizes, int **output_sizes, FE_value **minimums,
 	FE_value **maximums, int *element_dimension)
 /*******************************************************************************
@@ -1197,12 +1213,10 @@ parameters defining it are returned.
 		field->type_specific_data) && data->image)
 	{
 		*dimension = data->image->dimension;
-		results->number_of_tokens = data->results.number_of_tokens;
 		if (ALLOCATE(*input_sizes, int, *dimension)
 			&& ALLOCATE(*output_sizes, int, *dimension)
 			&& ALLOCATE(*minimums, FE_value, *dimension)
-			&& ALLOCATE(*maximums, FE_value, *dimension)
-			&& ALLOCATE(results->tokens, struct Set_names_from_list_token, results->number_of_tokens))
+			&& ALLOCATE(*maximums, FE_value, *dimension))
 		{
 			*source_field = field->source_fields[0];
 			*texture_coordinate_field = field->source_fields[1];
@@ -1216,9 +1230,42 @@ parameters defining it are returned.
 				(*minimums)[i] = data->image->minimums[i];
 				(*maximums)[i] = data->image->maximums[i];
 			}
-			for (i = 0; i < results->number_of_tokens; i++)
+			*bvtv_index = *bsbv_index = *tbth_index = *tbsp_index = 0;
+			*tbn_index = *euler_index = *smi_index = *mil_index = 0;
+			for (i = 0; i < data->results.number_of_tokens; i++)
 			{
-			        results->tokens[i] = data->results.tokens[i];
+			        if (strcmp(data->results.tokens[i].string, "bvtv") == 0)
+				{
+				        *bvtv_index = i + 1;
+				}
+				else if (strcmp(data->results.tokens[i].string, "bsbv") == 0)
+				{
+				        *bsbv_index = i + 1;
+				}
+				else if (strcmp(data->results.tokens[i].string, "tbth") == 0)
+				{
+				        *tbth_index = i + 1;
+				}
+				else if (strcmp(data->results.tokens[i].string, "tbsp") == 0)
+				{
+				        *tbsp_index = i + 1;
+				}
+				else if (strcmp(data->results.tokens[i].string, "tbn") == 0)
+				{
+				        *tbn_index = i + 1;
+				}
+				else if (strcmp(data->results.tokens[i].string, "euler") == 0)
+				{
+				        *euler_index = i + 1;
+				}
+				else if (strcmp(data->results.tokens[i].string, "smi") == 0)
+				{
+				        *smi_index = i + 1;
+				}
+				else if (strcmp(data->results.tokens[i].string, "mil") == 0)
+				{
+				        *mil_index = i + 1;
+				}
 			}
 			*element_dimension = data->element_dimension;
 			return_code=1;
@@ -1293,21 +1340,21 @@ already) and allows its contents to be modified.
 		/* results */
 		results.number_of_tokens = 8;
 		ALLOCATE(results.tokens, struct Set_names_from_list_token, 8);
-		results.tokens[0].string = mil_string;
+		results.tokens[0].string = bvtv_string;
 		results.tokens[0].index = 0;
-		results.tokens[1].string = bvtv_string;
+		results.tokens[1].string = bsbv_string;
 		results.tokens[1].index = 0;
-		results.tokens[2].string = bsbv_string;
+		results.tokens[2].string = tbth_string;
 		results.tokens[2].index = 0;
-		results.tokens[3].string = tbth_string;
+		results.tokens[3].string = tbsp_string;
 		results.tokens[3].index = 0;
-		results.tokens[4].string = tbsp_string;
+		results.tokens[4].string = tbn_string;
 		results.tokens[4].index = 0;
-		results.tokens[5].string = tbn_string;
+		results.tokens[5].string = euler_string;
 		results.tokens[5].index = 0;
-		results.tokens[6].string = euler_string;
+		results.tokens[6].string = smi_string;
 		results.tokens[6].index = 0;
-		results.tokens[7].string = smi_string;
+		results.tokens[7].string = mil_string;
 		results.tokens[7].index = 0;
 		/* texture_coordinate_field */
 		set_texture_coordinate_field_data.computed_field_manager =
@@ -1321,7 +1368,9 @@ already) and allows its contents to be modified.
 		{
 			return_code = Computed_field_get_type_sterology_measures(field,
 				&source_field, &texture_coordinate_field, &dimension, &number_of_dirs,
-				&radius, &pixel_size, &results,
+				&radius, &pixel_size, &results.tokens[0].index, &results.tokens[1].index,
+				&results.tokens[2].index, &results.tokens[3].index, &results.tokens[4].index,
+				&results.tokens[5].index, &results.tokens[6].index, &results.tokens[7].index,
 				&input_sizes, &output_sizes, &minimums, &maximums, &element_dimension);
 		}
 		if (return_code)
@@ -1456,7 +1505,9 @@ already) and allows its contents to be modified.
 			{
 				return_code = Computed_field_set_type_sterology_measures(field,
 					source_field, texture_coordinate_field, dimension, number_of_dirs,
-					radius, pixel_size, results,
+					radius, pixel_size, results.tokens[0].index, results.tokens[1].index,
+				        results.tokens[2].index, results.tokens[3].index, results.tokens[4].index,
+				        results.tokens[5].index, results.tokens[6].index, results.tokens[7].index,
 					input_sizes, output_sizes, minimums, maximums, element_dimension,
 					computed_field_sterology_measures_package->computed_field_manager,
 					computed_field_sterology_measures_package->root_region,
