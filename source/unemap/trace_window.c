@@ -5545,7 +5545,7 @@ calculated, it contains the entire signal.
 				{
 					interval=interval->next;
 				}	
-				buffer_end=interval->end_time;
+				buffer_end=interval->end_time;			
 			}
 			else
 			{
@@ -5561,9 +5561,8 @@ calculated, it contains the entire signal.
 				&current_times,&current_values,(enum Event_signal_status **)NULL,
 				(char **)NULL,(int *)NULL,(float *)NULL,&maximum_value/* (float *)NULL) */))
 			{
-				/* realloc Signal_buffer for cardiac_interval_device */				
-				frequency=(float)number_of_samples/(current_times[number_of_samples-1]
-					-current_times[0]);				
+				/* realloc Signal_buffer for cardiac_interval_device */	
+				frequency=source_device->signal->buffer->frequency;	
 				if(cardiac_interval_buffer=reallocate_Signal_buffer(cardiac_interval_buffer,
 					FLOAT_VALUE,number_of_signals,number_of_samples,frequency))
 				{
@@ -5743,8 +5742,7 @@ previous intervals.
 					(float *)NULL,(float *)NULL)&&(0<number_of_samples))
 				{
 					success=0;
-					frequency=(float)number_of_samples/
-						(times[number_of_samples-1]-times[0]);				
+					frequency=device->signal->buffer->frequency;	
 					if (intervals_buffer=reallocate_Signal_buffer(intervals_buffer,
 						FLOAT_VALUE,number_of_signals,number_of_samples,frequency))
 					{
@@ -12243,7 +12241,7 @@ DESCRIPTION : Move the indviudal cardiac interval markers.
 	}
 	LEAVE;
 	return(return_code);
-} /* move_Cardiac_interval_markers */
+} /* move_Cardac_interval_markers */
 
 static int move_Cardiac_interval_box(struct Trace_window_area_1 *trace_area_1,
 	struct Cardiac_interval *interval,float x_scale,
@@ -12565,7 +12563,7 @@ event.
 	Window confine_to,working_window;
 	XEvent xevent;
 
-	ENTER(move_Cardiac_interval_markers);
+	ENTER(move_Electrical_imaging_event_marker);
 	if(trace_area_3&&event&&signal_drawing_information&&display&&times)
 	{	
 		axes_left=trace_area_3->axes_left;
@@ -12641,7 +12639,7 @@ event.
 					{							
 						/*event->time, marker always reconciled when moved, so don't need */
 						/* to clear, reconcile, draw the marker again. I think! */
-
+											
 						/*write in the new time (&set flag),so last-selected/current event is */
 						/*labelled */
 						time=(int)((float)((times)[event->time])*1000./frequency+0.5);
