@@ -1744,9 +1744,10 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_node_group(
 	Triple glyph_centre,Triple glyph_size,
 	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
 	struct Computed_field *data_field,struct Computed_field *label_field,
-	enum Glyph_edit_mode glyph_edit_mode)
+	enum Graphics_select_mode select_mode,
+	struct LIST(FE_node) *selected_node_list)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Creates a GT_glyph_set displaying a <glyph> of size <glyph_size>, with centre
@@ -1760,8 +1761,10 @@ multiply the scaling effect in each axis taken from the
 The optional <data_field> is calculated as data over the glyph_set, for later
 colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
-The <glyph_edit_mode> controls whether node cmiss numbers are output as integer
-names with the glyph_set, and how they are to be interpreted when editing.
+The <select_mode> controls whether node cmiss numbers are output as integer
+names with the glyph_set. If <select_mode> is DRAW_SELECTED or DRAW_UNSELECTED,
+the nodes (not) in the <selected_node_list> are rendered only. This
+functionality is only supported if <node_group> is supplied.
 
 Notes:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
@@ -1771,6 +1774,7 @@ Notes:
 	GTDATA *data;
 	int i,n_data_components,*names,num_of_fields,number_of_points,return_code;
 	struct GT_glyph_set *glyph_set;
+	struct LIST(FE_node) *node_list;
 	struct Node_to_glyph_set_data node_to_glyph_set_data;
 	Triple *axis1_list,*axis2_list,*axis3_list,*point_list;
 	struct Computed_field *required_fields[4];
@@ -1781,7 +1785,9 @@ Notes:
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
 		((!orientation_scale_field)||
 			(9>=Computed_field_get_number_of_components(orientation_scale_field)))&&
-		glyph&&glyph_centre&&glyph_size&&glyph_scale_factors)
+		glyph&&glyph_centre&&glyph_size&&glyph_scale_factors&&
+		(((GRAPHICS_DRAW_SELECTED!=select_mode)&&
+			(GRAPHICS_DRAW_UNSELECTED!=select_mode))||selected_node_list))
 	{
 		if (computed_fields_of_node=CREATE(Computed_fields_of_node)())
 		{
@@ -1810,8 +1816,32 @@ Notes:
 			}			
 			computed_fields_of_node->num_required_fields=num_of_fields;
 
-			if (node_group)
-			{ 
+			node_list=(struct LIST(FE_node) *)NULL;
+			if (node_group&&((GRAPHICS_DRAW_SELECTED==select_mode)||
+				(GRAPHICS_DRAW_UNSELECTED==select_mode)))
+			{
+				if (GRAPHICS_DRAW_SELECTED==select_mode)
+				{
+					node_list=selected_node_list;
+				}
+				else
+				{
+					node_list=CREATE(LIST(FE_node))();
+					FOR_EACH_OBJECT_IN_GROUP(FE_node)(ensure_FE_node_is_in_list,
+						(void *)node_list,node_group);
+					FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_not_in_list,
+						(void *)node_list,selected_node_list);
+				}
+			}
+			if (node_list)
+			{
+				return_code= FOR_EACH_OBJECT_IN_LIST(FE_node)
+					(FE_node_count_if_computed_fields_defined,
+						(void *)computed_fields_of_node,node_list);
+				number_of_points=NUMBER_IN_LIST(FE_node)(node_list);
+			}
+			else if (node_group)
+			{
 				return_code= FOR_EACH_OBJECT_IN_GROUP(FE_node)
 					(FE_node_count_if_computed_fields_defined,
 						(void *)computed_fields_of_node,node_group);
@@ -1833,7 +1863,7 @@ Notes:
 			}		
 			glyph_set=(struct GT_glyph_set *)NULL;
 			if (return_code) 
-			{	
+			{
 				number_of_points=computed_fields_of_node->number_of_nodes;
 				if (0<number_of_points)
 				{		
@@ -1860,19 +1890,19 @@ Notes:
 							labels[i] = (char *)NULL;
 						}
 					}
-					if (GLYPH_EDIT_OFF != glyph_edit_mode)
+					if (GRAPHICS_NO_SELECT != select_mode)
 					{
 						ALLOCATE(names,int,number_of_points);
 					}
 					if (((!n_data_components)||data)&&((!label_field)||labels)&&
-						((GLYPH_EDIT_OFF==glyph_edit_mode)||names)&&
+						((GRAPHICS_NO_SELECT==select_mode)||names)&&
 						ALLOCATE(point_list,Triple,number_of_points)&&
 						ALLOCATE(axis1_list,Triple,number_of_points)&&
 						ALLOCATE(axis2_list,Triple,number_of_points)&&
 						ALLOCATE(axis3_list,Triple,number_of_points)&&
 						(glyph_set=CREATE(GT_glyph_set)(number_of_points,point_list,
 							axis1_list,axis2_list,axis3_list,glyph,labels,
-							n_data_components,data,/*object_name*/0,glyph_edit_mode,names)))
+							n_data_components,data,/*object_name*/0,names)))
 					{
 						/* set up information for the iterator */
 						node_to_glyph_set_data.glyph_centre[0]=glyph_centre[0];
@@ -1900,7 +1930,12 @@ Notes:
 						node_to_glyph_set_data.n_data_components=n_data_components;
 						node_to_glyph_set_data.label_field=label_field;
 						node_to_glyph_set_data.name=names;
-						if (node_group)
+						if (node_list)
+						{
+							return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(node_to_glyph_set,
+								(void *)(&node_to_glyph_set_data),node_list);
+						}
+						else if (node_group)
 						{
 							return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(node_to_glyph_set,
 								(void *)(&node_to_glyph_set_data),node_group);
@@ -1951,6 +1986,10 @@ Notes:
 				display_message(ERROR_MESSAGE,"create_GT_glyph_set_from_FE_node_group."
 					"  Field(s) not defined for all nodes");
 				glyph_set=(struct GT_glyph_set *)NULL;
+			}
+			if (node_list&&(GRAPHICS_DRAW_UNSELECTED==select_mode))
+			{
+				DESTROY(LIST(FE_node))(&node_list);
 			}
 			DESTROY(Computed_fields_of_node)(&computed_fields_of_node);
 		}
@@ -7169,9 +7208,9 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct GT_object *glyph,Triple glyph_centre,Triple glyph_size,
 	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
 	struct Computed_field *data_field,struct Computed_field *label_field,
-	enum Glyph_edit_mode glyph_edit_mode)
+	enum Graphics_select_mode select_mode)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -7188,7 +7227,7 @@ the glyph_set, for later colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
-<glyph_edit_mode> is not used yet and should be set to GLYPH_EDIT_NOTHING.
+<select_mode> is not used yet and should be set to GRAPHICS_NO_SELECT.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 ==============================================================================*/
@@ -7213,7 +7252,7 @@ Note:
 			Computed_field_get_number_of_components(orientation_scale_field)))&&
 			Computed_field_is_orientation_scale_capable(orientation_scale_field,
 				(void *)NULL)))&&
-		(GLYPH_EDIT_OFF==glyph_edit_mode))
+		(GRAPHICS_NO_SELECT==select_mode))
 	{
 		/* clear coordinates in case coordinate field is not 3 component */
 		coordinates[0]=0.0;
@@ -7251,8 +7290,7 @@ Note:
 			ALLOCATE(axis3_list,Triple,number_of_xi_points)&&
 			(glyph_set=CREATE(GT_glyph_set)(number_of_xi_points,point_list,
 				axis1_list,axis2_list,axis3_list,glyph,labels,
-				n_data_components,data,/*object_name*/element->cm.number,
-				glyph_edit_mode,names)))
+				n_data_components,data,/*object_name*/element->cm.number,names)))
 		{
 			/* get values from Triple arrays to FE_values for speed */
 			base_size1=(FE_value)glyph_size[0];
@@ -8669,7 +8707,7 @@ fields defined over it.
 						element_to_glyph_set_data->glyph_scale_factors,
 						element_to_glyph_set_data->data_field,
 						element_to_glyph_set_data->label_field,
-						element_to_glyph_set_data->glyph_edit_mode))
+						element_to_glyph_set_data->select_mode))
 					{
 						if (!GT_OBJECT_ADD(GT_glyph_set)(
 							element_to_glyph_set_data->graphics_object,

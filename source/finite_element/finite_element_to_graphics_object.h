@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -224,7 +224,7 @@ If the dimension is less than 3, <exterior> and <face_number> may be used.
 ==============================================================================*/
 {
 	char exterior;
-	enum Glyph_edit_mode glyph_edit_mode;
+	enum Graphics_select_mode select_mode;
 	enum Use_element_type use_element_type;
 	enum Xi_discretization_mode xi_discretization_mode;
 	float time;
@@ -297,9 +297,9 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct GT_object *glyph,Triple glyph_centre,Triple glyph_size,
 	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
 	struct Computed_field *data_field,struct Computed_field *label_field,
-	enum Glyph_edit_mode glyph_edit_mode);
+	enum Graphics_select_mode select_mode);
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -316,7 +316,7 @@ the glyph_set, for later colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
-<glyph_edit_mode> is not used yet and should be set to GLYPH_EDIT_NOTHING.
+<select_mode> is not used yet and should be set to GRAPHICS_NO_SELECT.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 ==============================================================================*/
@@ -327,9 +327,10 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_node_group(
 	Triple glyph_centre,Triple glyph_size,
 	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
 	struct Computed_field *data_field,struct Computed_field *label_field,
-	enum Glyph_edit_mode glyph_edit_mode);
+	enum Graphics_select_mode select_mode,
+	struct LIST(FE_node) *selected_node_list);
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Creates a GT_glyph_set displaying a <glyph> of size <glyph_size>, with centre
@@ -343,8 +344,10 @@ multiply the scaling effect in each axis taken from the
 The optional <data_field> is calculated as data over the glyph_set, for later
 colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
-The <glyph_edit_mode> controls whether node cmiss numbers are output as integer
-names with the glyph_set, and how they are to be interpreted when editing.
+The <select_mode> controls whether node cmiss numbers are output as integer
+names with the glyph_set. If <select_mode> is DRAW_SELECTED or DRAW_UNSELECTED,
+the nodes (not) in the <selected_node_list> are rendered only. This
+functionality is only supported if <node_group> is supplied.
 
 Notes:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
