@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -1155,9 +1155,12 @@ Called when a modify button - add, delete, up, down - is activated.
 				}
 				else
 				{
-					/* set material for all settings */
+					/* set materials for all settings */
 					GT_element_settings_set_material(settings,
 						gelem_editor->default_material);
+					GT_element_settings_set_selected_material(settings,
+						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+							"default_selected",gelem_editor->graphical_material_manager));
 					/* set iso_scalar_field for iso_surfaces */
 					if (GT_ELEMENT_SETTINGS_ISO_SURFACES==
 						gelem_editor->current_settings_type)
