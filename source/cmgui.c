@@ -2127,7 +2127,10 @@ Main program for the CMISS Graphical User Interface
 				destroy_interpreter(&status);
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
-		
+				if (command_data.event_dispatcher)
+				{
+					DESTROY(Event_dispatcher)(&command_data.event_dispatcher);
+				}		
 
 				/* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is
 					on.  When MEMORY_CHECKING is off this function does nothing */
