@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : unemap.Makefile
 #
-# LAST MODIFIED : 17 December 2002
+# LAST MODIFIED : 2 April 2003
 #
 # DESCRIPTION :
 #
@@ -842,6 +842,7 @@ utilities : $(UNEMAP_UTILITIES_PATH)/test_unemap_hardware$(TARGET_ABI_SUFFIX)
 utilities : $(UNEMAP_UTILITIES_PATH)/text2sig$(TARGET_ABI_SUFFIX)
 utilities : $(UNEMAP_UTILITIES_PATH)/tuff2sig$(TARGET_ABI_SUFFIX)
 utilities : $(UNEMAP_UTILITIES_PATH)/unique_channels$(TARGET_ABI_SUFFIX)
+utilities : $(UNEMAP_UTILITIES_PATH)/write_calibration$(TARGET_ABI_SUFFIX)
 
 ACTIVATION_SUMMARY_SRCS = \
 	unemap/utilities/activation_summary.c \
@@ -1384,7 +1385,28 @@ BUILD_UNIQUE_CHANNELS = $(call BuildNormalTarget,unique_channels$(TARGET_ABI_SUF
 $(UNEMAP_UTILITIES_PATH)/unique_channels$(TARGET_ABI_SUFFIX): $(UNIQUE_CHANNELS_OBJS)
 	$(BUILD_UNIQUE_CHANNELS)
 
+WRITE_CALIBRATION_SRCS = \
+	unemap/utilities/write_calibration.c \
+	command/parser.c \
+	general/debug.c \
+	general/geometry.c \
+	general/matrix_vector.c \
+	general/myio.c \
+	general/mystring.c \
+	unemap/interpolate.c \
+	unemap/rig.c \
+	user_interface/message.c
+
+WRITE_CALIBRATION_OBJSA = $(WRITE_CALIBRATION_SRCS:.c=.o)
+WRITE_CALIBRATION_OBJSB = $(WRITE_CALIBRATION_OBJSA:.cpp=.o)
+WRITE_CALIBRATION_OBJS = $(WRITE_CALIBRATION_OBJSB:.f=.o)
+BUILD_WRITE_CALIBRATION = $(call BuildNormalTarget,write_calibration$(TARGET_ABI_SUFFIX),$(UNEMAP_UTILITIES_PATH),WRITE_CALIBRATION_OBJS,-lm) 
+
+$(UNEMAP_UTILITIES_PATH)/write_calibration$(TARGET_ABI_SUFFIX): $(WRITE_CALIBRATION_OBJS)
+	$(BUILD_WRITE_CALIBRATION)
+
 UTILITIES_SRCS = \
+	$(WRITE_CALIBRATION_SRCS) \
 	$(UNIQUE_CHANNELS_SRCS) \
 	$(TUFF2SIG_SRCS) \
 	$(TEXT2SIG_SRCS) \
@@ -1415,6 +1437,7 @@ UTILITIES_SRCS = \
 	$(ACTIVATION_SUMMARY_SRCS)
 
 UTILITIES_OBJS = \
+	$(WRITE_CALIBRATION_OBJS) \
 	$(UNIQUE_CHANNELS_OBJS) \
 	$(TUFF2SIG_OBJS) \
 	$(TEXT2SIG_OBJS) \
