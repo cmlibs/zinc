@@ -100,6 +100,11 @@ None by default.
 
 =head2 Exportable functions
 
+Cmiss::Gtk::SceneViewer new(Class)
+
+Cmiss::scene_viewer gtk_cmiss_scene_viewer_get_cmiss_scene_viewer(
+   Cmiss::Gtk::SceneViewer gtk_cmiss_scene_viewer)
+
 =head1 AUTHOR
 
 Shane Blackett <s.blackett@auckland.ac.nz>
