@@ -371,7 +371,7 @@ orthographic up and front directions from the Xdefaults file.
 			sizeof(int),
 			XtOffsetOf(struct Graphics_window_defaults,viewing_height),
 			XmRString,
-			"400"
+			"512"
 		},
 		{
 			XmNgraphicsWindowViewingWidth,
@@ -380,7 +380,7 @@ orthographic up and front directions from the Xdefaults file.
 			sizeof(int),
 			XtOffsetOf(struct Graphics_window_defaults,viewing_width),
 			XmRString,
-			"400"
+			"512"
 		},
 		{
 			XmNgraphicsWindowTranslateRate,
@@ -2457,8 +2457,8 @@ will be printed on the windows title bar.
 						"transform_tool",graphics_window->interactive_tool_manager));
 				graphics_window->interactive_tool=graphics_window->transform_tool;
 				graphics_window->user_interface=user_interface;
-				graphics_window->default_viewing_height=400;
-				graphics_window->default_viewing_width=400;
+				graphics_window->default_viewing_height=512;
+				graphics_window->default_viewing_width=512;
 				graphics_window->default_translate_rate=1.0;
 				graphics_window->default_tumble_rate=1.5;
 				graphics_window->default_zoom_rate=1.0;
