@@ -403,7 +403,8 @@ to kill the process again.
 				track_ed->process_ID=0;
 				if (track_ed->mirage_movie)
 				{
-					Mirage_movie_refresh_node_groups(track_ed->mirage_movie);
+					Mirage_movie_refresh_node_groups(track_ed->mirage_movie,
+						track_ed->mirage_movie->exnode_frame_no);
 					/* must read frame in case it was one changed */
 					Mirage_movie_read_frame_nodes(track_ed->mirage_movie,
 						track_ed->mirage_movie->exnode_frame_no);
@@ -2637,7 +2638,7 @@ Node manager change callback. Puts changed nodes in the pending list.
 static void tracking_editor_process_input_cb(XtPointer track_ed_void,
 	int *source, XtInputId *input_id)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 Callback set up by XtAppAddInput. When XVG is running this callback is active
@@ -2717,7 +2718,7 @@ If there are it processes them, updating the bar chart accordingly.
 				{
 					printf("ABRT command received...\n");
 				}
-				Mirage_movie_refresh_node_groups(movie);
+				Mirage_movie_refresh_node_groups(movie,movie->exnode_frame_no);
 				/* must read frame in case it was one changed */
 				Mirage_movie_read_frame_nodes(movie,movie->exnode_frame_no);
 				printf("\a\a\a");
@@ -2751,7 +2752,7 @@ If there are it processes them, updating the bar chart accordingly.
 				}
 				Node_status_list_clear(movie->pending_list);
 				tracking_editor_update_bar_chart(track_ed);
-				Mirage_movie_refresh_node_groups(movie);
+				Mirage_movie_refresh_node_groups(movie,movie->exnode_frame_no);
 				/* must read frame in case it was one changed */
 				Mirage_movie_read_frame_nodes(movie,movie->exnode_frame_no);
 				/* tell the user the job is completed */
@@ -3121,7 +3122,8 @@ Reads a movie file into the tracking editor.
 					/*???RC better to restart in the last mode instead? */
 					Node_status_list_clear(tmp_movie->pending_list);
 					/* rebuild the placed, pending and problem node & element groups */
-					Mirage_movie_refresh_node_groups(tmp_movie);
+					Mirage_movie_refresh_node_groups(tmp_movie,
+						tmp_movie->exnode_frame_no);
 					/* show the current frame and range */
 					sprintf(tmp_string,"%i",tmp_movie->exnode_frame_no);
 					XtVaSetValues(track_ed->frame_text,XmNvalue,tmp_string,NULL);
@@ -3382,14 +3384,14 @@ and to choose the 3-D set needed for calibration.
 static void tracking_editor_frame_text_cb(Widget w,XtPointer track_ed_void,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 Callback specifying change of frame.
 ==============================================================================*/
 {
 	char tmp_string[20],*frame_text;
-	int frame_no;
+	int frame_no,last_exnode_frame_no;
 	struct Mirage_movie *movie;
 	struct Tracking_editor_dialog *track_ed;
 
@@ -3402,20 +3404,22 @@ Callback specifying change of frame.
 		XtVaGetValues(track_ed->frame_text,XmNvalue,&frame_text,NULL);
 		if (frame_text)
 		{
+			last_exnode_frame_no = movie->exnode_frame_no;
 			frame_no=atoi(frame_text);
 			/* do not write nodes while processing */
 			if (track_ed->processing || Mirage_movie_write_frame_nodes(movie))
 			{
-				if (tracking_editor_read_frame(track_ed,movie,frame_no))
+				tracking_editor_read_frame(track_ed,movie,frame_no);
+				/* update views in all digitiser windows so textures correctly
+					 displayed */
+				FOR_EACH_OBJECT_IN_MANAGER(Digitiser_window)(
+					Digitiser_window_update_view,(void *)NULL,
+					track_ed->digitiser_window_manager);
+				if (last_exnode_frame_no != movie->exnode_frame_no)
 				{
-					/* update views in all digitiser windows so textures correctly
-						 displayed */
-					FOR_EACH_OBJECT_IN_MANAGER(Digitiser_window)(
-						Digitiser_window_update_view,(void *)NULL,
-						track_ed->digitiser_window_manager);
-					Mirage_movie_refresh_node_groups(movie);
-					tracking_editor_update_bar_chart(track_ed);
+					Mirage_movie_refresh_node_groups(movie,last_exnode_frame_no);
 				}
+				tracking_editor_update_bar_chart(track_ed);
 			}
 		}
 		/* reshow the current frame */
@@ -3482,7 +3486,7 @@ Callback for clearing all pending ranges.
 static void tracking_editor_revert_cb(Widget widget,
 	XtPointer track_ed_void,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 10 April 1998
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 Callback for clearing all pending ranges.
@@ -3505,7 +3509,7 @@ Callback for clearing all pending ranges.
 			Mirage_movie_read_node_status_lists(movie,
 				"_last_frame_change");
 			Mirage_movie_read_frame_nodes(movie,movie->exnode_frame_no);
-			Mirage_movie_refresh_node_groups(movie);
+			Mirage_movie_refresh_node_groups(movie,movie->exnode_frame_no);
 		}
 	}
 	else
@@ -4735,7 +4739,7 @@ enum Tracking_editor_drag_mode
 static void tracking_editor_bar_chart_input_callback(Widget drawing_widget,
 	XtPointer track_ed_void,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4745,7 +4749,8 @@ DESCRIPTION :
 	double dx,dy,zoom_ratio,fact;
 	static enum Tracking_editor_drag_mode drag_mode=TRACK_ED_DRAG_NOTHING;
 	static int old_pointer_x,old_pointer_y;
-	int pointer_x,pointer_y,i,frame_no,index,mark_left,mark_right,mark_all_nodes;
+	int pointer_x,pointer_y,i,frame_no,index,last_frame_no,mark_left,mark_right,
+		mark_all_nodes;
 	static int mark_frame_no,mark_node_no,mark_x,mark_min_x,mark_max_x,
 		mark_min_y,mark_max_y;
 	struct Node_status *node_status;
@@ -5170,6 +5175,7 @@ DESCRIPTION :
 							if ((movie->exnode_frame_no != movie->image_frame_no) ||
 								(frame_no != movie->image_frame_no))
 							{
+								last_frame_no = movie->image_frame_no;
 								busy_cursor_on((Widget)NULL, track_ed->user_interface );
 								tracking_editor_read_frame(track_ed,movie,frame_no);
 								/* update views in all digitiser windows so textures correctly
@@ -5183,11 +5189,11 @@ DESCRIPTION :
 									"_last_frame_change");
 
 								/* reshow the current frame number */
-								Mirage_movie_refresh_node_groups(movie);
+								Mirage_movie_refresh_node_groups(movie,last_frame_no);
 								sprintf(tmp_string,"%i",movie->exnode_frame_no);
 								XtVaSetValues(track_ed->frame_text,XmNvalue,tmp_string,NULL);
 								tracking_editor_update_bar_chart(track_ed);
-								busy_cursor_off((Widget)NULL, track_ed->user_interface );
+								busy_cursor_off((Widget)NULL, track_ed->user_interface);
 							}
 						} break;
 					default:

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.h
 
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 The data types and function prototypes used for digitizing Mirage movies.
@@ -474,14 +474,20 @@ and the <extra_extension> added on the end. The current node file is also
 written - but with its usual name.
 ==============================================================================*/
 
-int Mirage_movie_refresh_node_groups(struct Mirage_movie *movie);
+int Mirage_movie_refresh_node_groups(struct Mirage_movie *movie,
+	int compare_frame_no);
 /*******************************************************************************
-LAST MODIFIED : 26 March 1998
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 Refreshes the placed, pending and problem node groups so that they match the
-entries in the Node_status_lists for the current_frame_no of the movie.
+entries in the Node_status_lists for the exnode_frame_no of the movie.
 Should be called after reading and changing frames.
+Because this can be very slow, esp. for updating the element group, the
+<compare_frame_no> is provided to allow you to compare the node status lists
+at that frame with the current exnode_frame_no to determine if any changes in
+the groups is necessary. Set compare_frame_no to exnode_frame_no to force the
+groups to be rebuilt.
 ==============================================================================*/
 
 int add_elements_with_node_to_group(struct FE_element *element,

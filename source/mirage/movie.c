@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2723,7 +2723,7 @@ Turns off surfaces for the placed elements in the 3-D view, updates scene.
 
 int Mirage_movie_read_frame_images(struct Mirage_movie *movie,int frame_no)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 Reads the images for frame <frame_no> in <movie>.
@@ -2737,8 +2737,8 @@ it is often useful for them to temporarily differ.
 	char *image_file_name,*last_image_file_name_template;
 	enum Texture_storage_type texture_storage;
 	int crop_bottom_margin,crop_height,crop_left_margin,crop_width,
-		number_of_bytes_per_component,number_of_components,return_code,
-		view_no;
+		number_of_bytes_per_component,number_of_components,number_of_images_read,
+		return_code,view_no;
 	long int image_width,image_height;
 	struct Mirage_view *view;
 	struct Texture *temp_texture;
@@ -2749,6 +2749,7 @@ it is often useful for them to temporarily differ.
 		(frame_no < movie->start_frame_no + movie->number_of_frames))
 	{
 		return_code=1;
+		number_of_images_read=0;
 		/* read images for each view */
 		image=(unsigned long *)NULL;
 		last_image_file_name_template=(char *)NULL;
@@ -2786,14 +2787,17 @@ it is often useful for them to temporarily differ.
 						crop_width=view->crop1_width;
 						crop_height=view->crop1_height;
 					}
-					if (NULL == image)
+					if (!image)
 					{
 						/*???debug*/
-						printf("  Reading texture image file: '%s'\n",image_file_name);
-						return_code=
+						printf("  Reading image: '%s'\n",image_file_name);
+						if (return_code=
 							read_image_file(image_file_name,&number_of_components,
 								&number_of_bytes_per_component,&image_height,&image_width,
-								&image) && (0<number_of_components);
+								&image) && (0<number_of_components))
+						{
+							number_of_images_read++;
+						}
 					}
 					if (image && return_code)
 					{
@@ -2888,8 +2892,12 @@ it is often useful for them to temporarily differ.
 			if ((frame_no != movie->image_frame_no) &&
 				(movie->image_frame_no >= movie->start_frame_no))
 			{
-				/* try to recover the last valid frame images = still a failure */
-				Mirage_movie_read_frame_images(movie,movie->image_frame_no);
+				/* if no images were read then stay at same image_frame_no */
+				if (0<number_of_images_read)
+				{
+					/* try to recover the last valid frame images = still a failure */
+					Mirage_movie_read_frame_images(movie,movie->image_frame_no);
+				}
 			}
 			else
 			{
@@ -3298,12 +3306,14 @@ struct add_completed_FE_element_to_group_data
 static int add_completed_FE_element_to_group(
 	struct FE_element *element,void *add_element_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 February 1998
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 If the dimension of the element is less than or equal to max_dimension, and
 all the nodes in the element are in the specified node_group, then the element
 is added to the passed element group.
+???RC note logic relies on elements being before faces before lines in order
+of calling for this to be most efficient - this is the case in element lists.
 ==============================================================================*/
 {
 	int return_code;
@@ -3315,22 +3325,21 @@ is added to the passed element group.
 		(struct add_completed_FE_element_to_group_data *)add_element_data_void)&&
 		add_element_data->node_group&&add_element_data->element_group)
 	{
-		if (element->shape->dimension <= add_element_data->max_dimension)
+		return_code=1;
+		/* check element is of correct dimension and not already in element_group */
+		if ((element->shape->dimension <= add_element_data->max_dimension)&&
+			!IS_OBJECT_IN_GROUP(FE_element)(element,add_element_data->element_group))
 		{
+			node_list=CREATE(LIST(FE_node))();
 			/* get list of nodes in element to compare with = SLOW */
-			if ((node_list=CREATE(LIST(FE_node))())&&
-				calculate_FE_element_field_nodes(element,(struct FE_field *)NULL,
-					node_list))
+			if (calculate_FE_element_field_nodes(element,(struct FE_field *)NULL,
+				node_list))
 			{
 				if (!FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_not_in_group,
 					(void *)(add_element_data->node_group),node_list))
 				{
-					return_code=ADD_OBJECT_TO_GROUP(FE_element)(element,
+					return_code=add_FE_element_and_faces_to_group(element,
 						add_element_data->element_group);
-				}
-				else
-				{
-					return_code=1;
 				}
 			}
 			else
@@ -3340,10 +3349,6 @@ is added to the passed element group.
 				return_code=0;
 			}
 			DESTROY(LIST(FE_node))(&node_list);
-		}
-		else
-		{
-			return_code=1;
 		}
 	}
 	else
@@ -3403,21 +3408,28 @@ specified view and frame.
 	return (return_code);
 } /* add_FE_node_to_group_if_in_group */
 
-int Mirage_movie_refresh_node_groups(struct Mirage_movie *movie)
+int Mirage_movie_refresh_node_groups(struct Mirage_movie *movie,
+	int compare_frame_no)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 Refreshes the placed, pending and problem node groups so that they match the
 entries in the Node_status_lists for the exnode_frame_no of the movie.
 Should be called after reading and changing frames.
+Because this can be very slow, esp. for updating the element group, the
+<compare_frame_no> is provided to allow you to compare the node status lists
+at that frame with the current exnode_frame_no to determine if any changes in
+the groups is necessary. Set compare_frame_no to exnode_frame_no to force the
+groups to be rebuilt.
 ==============================================================================*/
 {
-	int return_code,view_no;
+	int return_code,update_pending,update_placed,update_problem,view_no;
 	struct Mirage_view *view;
 	struct add_completed_FE_element_to_group_data add_element_data;
 	struct add_FE_node_to_group_if_in_group_data add_node_if_in_group_data;
 	struct Mirage_movie_add_node_to_group_data add_node_data;
+	struct Node_status_value_pair value_pair;
 
 	ENTER(Mirage_movie_refresh_node_groups);
 	if (movie)
@@ -3425,38 +3437,79 @@ Should be called after reading and changing frames.
 		add_node_data.frame_no=movie->exnode_frame_no;
 		add_element_data.max_dimension=2;
 
-		/* update pending problem and placed groups in 3-D */
-		add_node_data.node_status_list2=(struct LIST(Node_status) *)NULL;
-		add_node_data.node_status_list=movie->pending_list;
-		add_node_data.node_group=movie->pending_nodes_3d;
-		MANAGED_GROUP_BEGIN_CACHE(FE_node)(movie->pending_nodes_3d);
-		REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(movie->pending_nodes_3d);
-		FOR_EACH_OBJECT_IN_GROUP(FE_node)(Mirage_movie_add_node_to_group,
-			(void *)&add_node_data,movie->all_node_group);
-		MANAGED_GROUP_END_CACHE(FE_node)(movie->pending_nodes_3d);
-		add_node_data.node_status_list=movie->problem_list;
-		add_node_data.node_group=movie->problem_nodes_3d;
-		MANAGED_GROUP_BEGIN_CACHE(FE_node)(movie->problem_nodes_3d);
-		REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(movie->problem_nodes_3d);
-		FOR_EACH_OBJECT_IN_GROUP(FE_node)(Mirage_movie_add_node_to_group,
-			(void *)&add_node_data,movie->all_node_group);
-		MANAGED_GROUP_END_CACHE(FE_node)(movie->problem_nodes_3d);
-		add_node_data.node_status_list=movie->placed_list;
-		add_node_data.node_group=movie->placed_nodes_3d;
-		MANAGED_GROUP_BEGIN_CACHE(FE_node)(movie->placed_nodes_3d);
-		REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(movie->placed_nodes_3d);
-		FOR_EACH_OBJECT_IN_GROUP(FE_node)(Mirage_movie_add_node_to_group,
-			(void *)&add_node_data,movie->all_node_group);
-		MANAGED_GROUP_END_CACHE(FE_node)(movie->placed_nodes_3d);
+		value_pair.value1 = compare_frame_no;
+		value_pair.value2 = movie->exnode_frame_no;
 
-		/* also add placed elements in 3-D */
-		add_element_data.node_group=movie->placed_nodes_3d;
-		add_element_data.element_group=movie->placed_elements_3d;
-		MANAGED_GROUP_BEGIN_CACHE(FE_element)(movie->placed_elements_3d);
-		REMOVE_ALL_OBJECTS_FROM_GROUP(FE_element)(movie->placed_elements_3d);
-		FOR_EACH_OBJECT_IN_GROUP(FE_element)(add_completed_FE_element_to_group,
-			(void *)&add_element_data,movie->all_element_group);
-		MANAGED_GROUP_END_CACHE(FE_element)(movie->placed_elements_3d);
+		add_node_data.node_status_list2=(struct LIST(Node_status) *)NULL;
+
+		/* only update pending if forced to or changed from compare_frame_no */
+		if ((compare_frame_no == movie->exnode_frame_no) ||
+			FIRST_OBJECT_IN_LIST_THAT(Node_status)(
+				Node_status_value_pair_have_different_status,(void *)&value_pair,
+				movie->pending_list))
+		{
+			update_pending=1;
+			add_node_data.node_status_list=movie->pending_list;
+			add_node_data.node_group=movie->pending_nodes_3d;
+			MANAGED_GROUP_BEGIN_CACHE(FE_node)(movie->pending_nodes_3d);
+			REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(movie->pending_nodes_3d);
+			FOR_EACH_OBJECT_IN_GROUP(FE_node)(Mirage_movie_add_node_to_group,
+				(void *)&add_node_data,movie->all_node_group);
+			MANAGED_GROUP_END_CACHE(FE_node)(movie->pending_nodes_3d);
+		}
+		else
+		{
+			update_pending=0;
+		}
+
+		/* only update problem if forced to or changed from compare_frame_no */
+		if ((compare_frame_no == movie->exnode_frame_no) ||
+			FIRST_OBJECT_IN_LIST_THAT(Node_status)(
+				Node_status_value_pair_have_different_status,(void *)&value_pair,
+				movie->problem_list))
+		{
+			update_problem=1;
+			add_node_data.node_status_list=movie->problem_list;
+			add_node_data.node_group=movie->problem_nodes_3d;
+			MANAGED_GROUP_BEGIN_CACHE(FE_node)(movie->problem_nodes_3d);
+			REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(movie->problem_nodes_3d);
+			FOR_EACH_OBJECT_IN_GROUP(FE_node)(Mirage_movie_add_node_to_group,
+				(void *)&add_node_data,movie->all_node_group);
+			MANAGED_GROUP_END_CACHE(FE_node)(movie->problem_nodes_3d);
+		}
+		else
+		{
+			update_problem=0;
+		}
+
+		/* only update placed if forced to or changed from compare_frame_no */
+		if ((compare_frame_no == movie->exnode_frame_no) ||
+			FIRST_OBJECT_IN_LIST_THAT(Node_status)(
+				Node_status_value_pair_have_different_status,(void *)&value_pair,
+				movie->placed_list))
+		{
+			update_placed=1;
+			add_node_data.node_status_list=movie->placed_list;
+			add_node_data.node_group=movie->placed_nodes_3d;
+			MANAGED_GROUP_BEGIN_CACHE(FE_node)(movie->placed_nodes_3d);
+			REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(movie->placed_nodes_3d);
+			FOR_EACH_OBJECT_IN_GROUP(FE_node)(Mirage_movie_add_node_to_group,
+				(void *)&add_node_data,movie->all_node_group);
+			MANAGED_GROUP_END_CACHE(FE_node)(movie->placed_nodes_3d);
+
+			/* also add placed elements in 3-D */
+			add_element_data.node_group=movie->placed_nodes_3d;
+			add_element_data.element_group=movie->placed_elements_3d;
+			MANAGED_GROUP_BEGIN_CACHE(FE_element)(movie->placed_elements_3d);
+			REMOVE_ALL_OBJECTS_FROM_GROUP(FE_element)(movie->placed_elements_3d);
+			FOR_EACH_OBJECT_IN_GROUP(FE_element)(add_completed_FE_element_to_group,
+				(void *)&add_element_data,movie->all_element_group);
+			MANAGED_GROUP_END_CACHE(FE_element)(movie->placed_elements_3d);
+		}
+		else
+		{
+			update_placed=0;
+		}
 
 		/* update placed, pending and problem groups in each view */
 		add_node_data.node_status_list2=movie->placed_list;
@@ -3464,42 +3517,60 @@ Should be called after reading and changing frames.
 		{
 			if (view=movie->views[view_no])
 			{
-				/* add placed nodes for view */
-				add_node_data.node_status_list=view->placed_list;
-				add_node_data.node_group=view->placed_nodes;
-				MANAGED_GROUP_BEGIN_CACHE(FE_node)(view->placed_nodes);
-				REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(view->placed_nodes);
-				FOR_EACH_OBJECT_IN_GROUP(FE_node)(Mirage_movie_add_node_to_group,
-					(void *)&add_node_data,movie->all_node_group);
-				MANAGED_GROUP_END_CACHE(FE_node)(view->placed_nodes);
+				/* only update pending if 3-D pending change */
+				if (update_pending)
+				{
+					/* make pending and problem groups in each view from intersection of
+						 placed group in that view with placed/pending groups in 3-D */
+					add_node_if_in_group_data.node_group_must_be_in=
+						movie->pending_nodes_3d;
+					add_node_if_in_group_data.node_group_to_modify=view->pending_nodes;
+					MANAGED_GROUP_BEGIN_CACHE(FE_node)(view->pending_nodes);
+					REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(view->pending_nodes);
+					FOR_EACH_OBJECT_IN_GROUP(FE_node)(add_FE_node_to_group_if_in_group,
+						(void *)&add_node_if_in_group_data,view->placed_nodes);
+					MANAGED_GROUP_END_CACHE(FE_node)(view->pending_nodes);
+				}
 
-				/* also add placed elements in view */
-				add_element_data.node_group=view->placed_nodes;
-				add_element_data.element_group=view->placed_elements;
-				MANAGED_GROUP_BEGIN_CACHE(FE_element)(view->placed_elements);
-				REMOVE_ALL_OBJECTS_FROM_GROUP(FE_element)(view->placed_elements);
-				FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-					add_completed_FE_element_to_group,
-					(void *)&add_element_data,movie->all_element_group);
-				MANAGED_GROUP_END_CACHE(FE_element)(view->placed_elements);
+				/* only update problem if 3-D problem change */
+				if (update_problem)
+				{
+					add_node_if_in_group_data.node_group_must_be_in=
+						movie->problem_nodes_3d;
+					add_node_if_in_group_data.node_group_to_modify=view->problem_nodes;
+					MANAGED_GROUP_BEGIN_CACHE(FE_node)(view->problem_nodes);
+					REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(view->problem_nodes);
+					FOR_EACH_OBJECT_IN_GROUP(FE_node)(add_FE_node_to_group_if_in_group,
+						(void *)&add_node_if_in_group_data,view->placed_nodes);
+					MANAGED_GROUP_END_CACHE(FE_node)(view->problem_nodes);
+				}
 
-				/* make pending and problem groups in each view from intersection of
-					placed group in that view with placed/pending groups in 3-D */
-				add_node_if_in_group_data.node_group_must_be_in=movie->pending_nodes_3d;
-				add_node_if_in_group_data.node_group_to_modify=view->pending_nodes;
-				MANAGED_GROUP_BEGIN_CACHE(FE_node)(view->pending_nodes);
-				REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(view->pending_nodes);
-				FOR_EACH_OBJECT_IN_GROUP(FE_node)(add_FE_node_to_group_if_in_group,
-					(void *)&add_node_if_in_group_data,view->placed_nodes);
-				MANAGED_GROUP_END_CACHE(FE_node)(view->pending_nodes);
+				/* only update placed if forced to or changed from compare_frame_no.
+					 Note if 3-D groups have been updated then must update these */
+				if (update_placed ||
+					FIRST_OBJECT_IN_LIST_THAT(Node_status)(
+						Node_status_value_pair_have_different_status,(void *)&value_pair,
+						view->placed_list))
+				{
+					/* add placed nodes for view */
+					add_node_data.node_status_list=view->placed_list;
+					add_node_data.node_group=view->placed_nodes;
+					MANAGED_GROUP_BEGIN_CACHE(FE_node)(view->placed_nodes);
+					REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(view->placed_nodes);
+					FOR_EACH_OBJECT_IN_GROUP(FE_node)(Mirage_movie_add_node_to_group,
+						(void *)&add_node_data,movie->all_node_group);
+					MANAGED_GROUP_END_CACHE(FE_node)(view->placed_nodes);
 
-				add_node_if_in_group_data.node_group_must_be_in=movie->problem_nodes_3d;
-				add_node_if_in_group_data.node_group_to_modify=view->problem_nodes;
-				MANAGED_GROUP_BEGIN_CACHE(FE_node)(view->problem_nodes);
-				REMOVE_ALL_OBJECTS_FROM_GROUP(FE_node)(view->problem_nodes);
-				FOR_EACH_OBJECT_IN_GROUP(FE_node)(add_FE_node_to_group_if_in_group,
-					(void *)&add_node_if_in_group_data,view->placed_nodes);
-				MANAGED_GROUP_END_CACHE(FE_node)(view->problem_nodes);
+					/* also add placed elements in view */
+					add_element_data.node_group=view->placed_nodes;
+					add_element_data.element_group=view->placed_elements;
+					MANAGED_GROUP_BEGIN_CACHE(FE_element)(view->placed_elements);
+					REMOVE_ALL_OBJECTS_FROM_GROUP(FE_element)(view->placed_elements);
+					FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+						add_completed_FE_element_to_group,
+						(void *)&add_element_data,movie->all_element_group);
+					MANAGED_GROUP_END_CACHE(FE_element)(view->placed_elements);
+				}
 			}
 		}
 	}

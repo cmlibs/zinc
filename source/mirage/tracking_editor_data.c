@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tracking_editor_data.c
 
-LAST MODIFIED : 15 April 1999
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 Contains operations performed on the tracking editor data structures.
@@ -655,6 +655,38 @@ integer value.
 
 	return (return_code);
 } /* Node_status_is_value_in_range */
+
+int Node_status_value_pair_have_different_status(
+	struct Node_status *node_status,void *value_pair_void)
+/*******************************************************************************
+LAST MODIFIED : 6 September 2000
+
+DESCRIPTION :
+Iterator function returning true if value1 and value2 in the <value_pair> are
+not in the same state in the <node_status>, ie. one is in and one is out.
+==============================================================================*/
+{
+	int return_code;
+	struct Node_status_value_pair *value_pair;
+	
+	ENTER(Node_status_value_pair_have_different_status);
+	if (node_status&&
+		(value_pair=(struct Node_status_value_pair *)value_pair_void))
+	{
+		return_code=(
+			Multi_range_is_value_in_range(node_status->ranges,value_pair->value1) !=
+			Multi_range_is_value_in_range(node_status->ranges,value_pair->value2));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_status_value_pair_have_different_status.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_status_value_pair_have_different_status */
 
 int Node_status_not_clear(struct Node_status *node_status,void *dummy_void)
 /*******************************************************************************

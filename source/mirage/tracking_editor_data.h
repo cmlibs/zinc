@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tracking_editor_data.h
 
-LAST MODIFIED : 1 September 2000
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
 Contains data structures for the tracking editor, mainly the list
@@ -20,6 +20,18 @@ Global types
 struct Node_status;
 
 DECLARE_LIST_TYPES(Node_status);
+
+struct Node_status_value_pair
+/*******************************************************************************
+LAST MODIFIED : 6 September 2000
+
+DESCRIPTION :
+Data for passing to Node_status_value_pair_have_different_status iterator
+function.
+==============================================================================*/
+{
+	int value1,value2;
+};
 
 /*
 Global functions
@@ -159,6 +171,16 @@ LAST MODIFIED : 1 September 2000
 DESCRIPTION :
 Iterator version of Node_status_is_value_in_range. <value_address> points at the
 integer value.
+==============================================================================*/
+
+int Node_status_value_pair_have_different_status(
+	struct Node_status *node_status,void *value_pair_void);
+/*******************************************************************************
+LAST MODIFIED : 6 September 2000
+
+DESCRIPTION :
+Iterator function returning true if value1 and value2 in the <value_pair> are
+not in the same state in the <node_status>, ie. one is in and one is out.
 ==============================================================================*/
 
 int Node_status_not_clear(struct Node_status *node_status,void *dummy_void);
