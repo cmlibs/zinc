@@ -203,8 +203,9 @@ finally in the data group.
 				/* Try to find one */
 				if (FE_region_get_default_coordinate_FE_field(
 					gt_element_group->fe_region, &fe_field) ||
+					(gt_element_group->data_fe_region && 
 					FE_region_get_default_coordinate_FE_field(
-					gt_element_group->data_fe_region, &fe_field))
+						gt_element_group->data_fe_region, &fe_field)))
 				{
 					/* Find the computed_field wrapper */
 					if (computed_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
@@ -631,20 +632,23 @@ Callback for change in the global data selection.
 		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
 		/* find out if any of the changes affect nodes in this data_fe_region */
-		if (FIRST_OBJECT_IN_LIST_THAT(FE_node)(
-			FE_region_contains_FE_node_conditional,
-			(void *)gt_element_group->data_fe_region,
-			changes->newly_selected_node_list) ||
-			FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+		if (gt_element_group->data_fe_region)
+		{
+			if (FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+				FE_region_contains_FE_node_conditional,
+				(void *)gt_element_group->data_fe_region,
+				changes->newly_selected_node_list) ||
+				FIRST_OBJECT_IN_LIST_THAT(FE_node)(
 				FE_region_contains_FE_node_conditional,
 				(void *)gt_element_group->data_fe_region,
 				changes->newly_unselected_node_list))
-		{
-			/* update the graphics to match */
-			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_selected_data_change, (void *)NULL,
-				gt_element_group->list_of_settings);
-			GT_element_group_changed(gt_element_group);
+			{
+				/* update the graphics to match */
+				FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+					GT_element_settings_selected_data_change, (void *)NULL,
+					gt_element_group->list_of_settings);
+				GT_element_group_changed(gt_element_group);
+			}
 		}
 	}
 	else
@@ -686,10 +690,11 @@ If supplied, callbacks are requested from the <element_selection> and
 	struct GT_element_group *gt_element_group;
 
 	ENTER(CREATE(GT_element_group));
+	data_fe_region = (struct FE_region *)NULL;
 	if (cmiss_region &&
-		(fe_region = Cmiss_region_get_FE_region(cmiss_region)) &&
-		data_cmiss_region &&
-		(data_fe_region = Cmiss_region_get_FE_region(data_cmiss_region)))
+		(fe_region = Cmiss_region_get_FE_region(cmiss_region)) && 
+		(!data_cmiss_region || 
+		(data_fe_region = Cmiss_region_get_FE_region(data_cmiss_region))))
 	{
 		if (ALLOCATE(gt_element_group, struct GT_element_group, 1))
 		{
@@ -698,9 +703,17 @@ If supplied, callbacks are requested from the <element_selection> and
 			{
 				gt_element_group->cmiss_region = ACCESS(Cmiss_region)(cmiss_region);
 				gt_element_group->fe_region = ACCESS(FE_region)(fe_region);
-				gt_element_group->data_cmiss_region =
-					ACCESS(Cmiss_region)(data_cmiss_region);
-				gt_element_group->data_fe_region = ACCESS(FE_region)(data_fe_region);
+				if (data_cmiss_region)
+				{
+					gt_element_group->data_cmiss_region =
+						ACCESS(Cmiss_region)(data_cmiss_region);
+					gt_element_group->data_fe_region = ACCESS(FE_region)(data_fe_region);
+				}
+				else
+				{
+					gt_element_group->data_cmiss_region = (struct Cmiss_region *)NULL;
+					gt_element_group->data_fe_region = (struct FE_region *)NULL;
+				}
 				/* set settings shared by whole rendition */
 				gt_element_group->element_discretization.number_in_xi1=2;
 				gt_element_group->element_discretization.number_in_xi2=2;
@@ -717,8 +730,11 @@ If supplied, callbacks are requested from the <element_selection> and
 				/* request callbacks from FE_regions */
 				FE_region_add_callback(fe_region,
 					GT_element_group_FE_region_change, (void *)gt_element_group);
-				FE_region_add_callback(data_fe_region,
-					GT_element_group_data_FE_region_change, (void *)gt_element_group);
+				if (data_fe_region)
+				{
+					FE_region_add_callback(data_fe_region,
+						GT_element_group_data_FE_region_change, (void *)gt_element_group);
+				}
 				/* request callbacks from any managers supplied */
 				if (computed_field_manager)
 				{
@@ -875,8 +891,11 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 				/* remove callbacks from FE_regions */
 				FE_region_remove_callback(gt_element_group->fe_region,
 					GT_element_group_FE_region_change, (void *)gt_element_group);
-				FE_region_remove_callback(gt_element_group->data_fe_region,
-					GT_element_group_data_FE_region_change, (void *)gt_element_group);
+				if (gt_element_group->data_fe_region)
+				{
+					FE_region_remove_callback(gt_element_group->data_fe_region,
+						GT_element_group_data_FE_region_change, (void *)gt_element_group);
+				}
 				/* turn off manager messages */
 				if (gt_element_group->computed_field_manager_callback_id)
 				{
@@ -934,8 +953,14 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 				}
 				DEACCESS(Cmiss_region)(&(gt_element_group->cmiss_region));
 				DEACCESS(FE_region)(&(gt_element_group->fe_region));
-				DEACCESS(Cmiss_region)(&(gt_element_group->data_cmiss_region));
-				DEACCESS(FE_region)(&(gt_element_group->data_fe_region));
+				if (gt_element_group->data_cmiss_region)
+				{
+					DEACCESS(Cmiss_region)(&(gt_element_group->data_cmiss_region));
+				}
+				if (gt_element_group->data_fe_region)
+				{
+					DEACCESS(FE_region)(&(gt_element_group->data_fe_region));
+				}
 
 				DEALLOCATE(*gt_element_group_address);
 			}

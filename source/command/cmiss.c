@@ -15957,11 +15957,14 @@ If an element file is not specified a file selection box is presented to the
 user, otherwise the elements file is read.
 ==============================================================================*/
 {
-	char *file_name;
+	char *file_name, *region_path;
 	FILE *input_file;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region;
+	struct Cmiss_region *region, *top_region;
+	struct FE_region *fe_region;
+	struct LIST(FE_element_shape) *element_shape_list;
+	struct MANAGER(FE_basis) *basis_manager;
 	struct Option_table *option_table;
 
 	ENTER(gfx_read_elements);
@@ -15969,10 +15972,14 @@ user, otherwise the elements file is read.
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		file_name = (char *)NULL;
+		region_path = (char *)NULL;
 		option_table = CREATE(Option_table)();
 		/* example */
 		Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
 			&file_name, &(command_data->example_directory), set_file_name);
+		/* region */
+		Option_table_add_entry(option_table,"region",
+			&region_path, (void *)1, set_name);
 		/* default */
 		Option_table_add_entry(option_table,NULL,&file_name,
 			NULL,set_file_name);
@@ -15994,6 +16001,49 @@ user, otherwise the elements file is read.
 					return_code = 0;
 				}
 			}
+			if (region_path)
+			{
+				if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+					region_path, &top_region) && top_region))
+				{
+					if ((top_region = CREATE(Cmiss_region)()) &&
+						(basis_manager=CREATE_MANAGER(FE_basis)()) && 
+						(element_shape_list=CREATE(LIST(FE_element_shape))()))
+					{
+						if (fe_region=CREATE(FE_region)((struct FE_region *)NULL,basis_manager,
+								element_shape_list))
+						{
+							if (Cmiss_region_attach_FE_region(top_region,fe_region))
+							{
+								Cmiss_region_add_child_region(command_data->root_region, top_region, region_path,
+									/*child_position*/-1);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
+									"Unable to attach new region.");
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
+								"Unable to make new finite element region.");
+							return_code = 0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
+							"Unable to make new region, basis_manager or element_shape_list.");
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				top_region = command_data->root_region;
+			}
 			if (return_code)
 			{
 				/* open the file */
@@ -16005,10 +16055,10 @@ user, otherwise the elements file is read.
 					{
 						ACCESS(Cmiss_region)(region);
 						if (Cmiss_regions_FE_regions_can_be_merged(
-							command_data->root_region, region))
+							top_region, region))
 						{
 							if (!Cmiss_regions_merge_FE_regions(
-								command_data->root_region, region))
+								top_region, region))
 							{
 								display_message(ERROR_MESSAGE,
 									"Error merging elements from file: %s", file_name);
@@ -16041,7 +16091,14 @@ user, otherwise the elements file is read.
 			}
 		}
 		DESTROY(Option_table)(&option_table);
-		DEALLOCATE(file_name);
+		if (file_name)
+		{
+			DEALLOCATE(file_name);
+		}
+		if (region_path)
+		{
+			DEALLOCATE(region_path);
+		}
 	}
 	else
 	{
@@ -16064,14 +16121,17 @@ otherwise the nodes file is read.
 If the <use_data> flag is set, then read data, otherwise nodes.
 ==============================================================================*/
 {
-	char *file_name, time_set_flag;
+	char *file_name, *region_path, time_set_flag;
 	double maximum, minimum;
 	FILE *input_file;
 	float time;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Cmiss_region *region;
+	struct Cmiss_region *region, *top_region;
 	struct FE_import_time_index *node_time_index, node_time_index_data;
+	struct FE_region *fe_region;
+	struct LIST(FE_element_shape) *element_shape_list;
+	struct MANAGER(FE_basis) *basis_manager;
 	struct Option_table *option_table;
 
 	ENTER(gfx_read_nodes);
@@ -16080,6 +16140,7 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
 			file_name = (char *)NULL;
+			region_path = (char *)NULL;
 			time = 0;
 			time_set_flag = 0;
 			node_time_index = (struct FE_import_time_index *)NULL;
@@ -16087,6 +16148,12 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 			/* example */
 			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
 				&file_name, &(command_data->example_directory), set_file_name);
+			if (!use_data)
+			{
+				/* region */
+				Option_table_add_entry(option_table,"region",
+					&region_path, (void *)1, set_name);
+			}
 			/* time */
 			Option_table_add_entry(option_table,"time",
 				&time, &time_set_flag, set_float_and_char_flag);
@@ -16131,6 +16198,56 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 					{
 						return_code = check_suffix(&file_name,".exnode");
 					}
+					if (region_path)
+					{
+						if (!(Cmiss_region_get_region_from_path(command_data->root_region,
+							region_path, &top_region) && top_region))
+						{
+							if ((top_region = CREATE(Cmiss_region)()) &&
+								(basis_manager=CREATE_MANAGER(FE_basis)()) && 
+								(element_shape_list=CREATE(LIST(FE_element_shape))()))
+							{
+								if (fe_region=CREATE(FE_region)((struct FE_region *)NULL,basis_manager,
+										element_shape_list))
+								{
+									if (Cmiss_region_attach_FE_region(top_region,fe_region))
+									{
+										Cmiss_region_add_child_region(command_data->root_region, top_region, region_path,
+											/*child_position*/-1);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
+											"Unable to attach new region.");
+										return_code = 0;
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
+										"Unable to make new finite element region.");
+									return_code = 0;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE, "gfx_read_nodes.  "
+									"Unable to make new region, basis_manager or element_shape_list.");
+								return_code = 0;
+							}
+						}
+					}
+					else
+					{
+						if (use_data)
+						{
+							top_region = command_data->data_root_region;
+						}
+						else
+						{
+							top_region = command_data->root_region;
+						}
+					}
 					if (return_code)
 					{
 						if (input_file = fopen(file_name,"r"))
@@ -16140,47 +16257,31 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 								node_time_index))
 							{
 								ACCESS(Cmiss_region)(region);
-								if (use_data)
+								if (Cmiss_regions_FE_regions_can_be_merged(
+									top_region, region))
 								{
-									if (Cmiss_regions_FE_regions_can_be_merged(
-										command_data->data_root_region, region))
+									if (!Cmiss_regions_merge_FE_regions(
+										top_region, region))
 									{
-										if (!Cmiss_regions_merge_FE_regions(
-											command_data->data_root_region, region))
+										if (use_data)
 										{
 											display_message(ERROR_MESSAGE,
 												"Error merging data from file: %s", file_name);
-											return_code = 0;
 										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Contents of file %s not compatible with global objects",
-											file_name);
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"Error merging nodes from file: %s", file_name);
+										}
 										return_code = 0;
 									}
 								}
 								else
 								{
-									if (Cmiss_regions_FE_regions_can_be_merged(
-										command_data->root_region, region))
-									{
-										if (!Cmiss_regions_merge_FE_regions(
-											command_data->root_region, region))
-										{
-											display_message(ERROR_MESSAGE,
-												"Error merging nodes from file: %s", file_name);
-											return_code = 0;
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Contents of file %s not compatible with global objects",
-											file_name);
-										return_code = 0;
-									}
+									display_message(ERROR_MESSAGE,
+										"Contents of file %s not compatible with global objects",
+										file_name);
+									return_code = 0;
 								}
 								DEACCESS(Cmiss_region)(&region);
 							}
@@ -16225,7 +16326,14 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 				}
 			}
 			DESTROY(Option_table)(&option_table);
-			DEALLOCATE(file_name);
+			if (file_name)
+			{
+				DEALLOCATE(file_name);
+			}
+			if (region_path)
+			{
+				DEALLOCATE(region_path);
+			}
 		}
 		else
 		{
