@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 7 October 2004
+# LAST MODIFIED : 20 October 2004
 #
 # DESCRIPTION :
 #
@@ -602,6 +602,7 @@ API_SRCS = \
 	api/cmiss_function_inverse.cpp \
 	api/cmiss_function_matrix.cpp \
 	api/cmiss_function_matrix_determinant.cpp \
+	api/cmiss_function_matrix_dot_product.cpp \
 	api/cmiss_function_matrix_product.cpp \
 	api/cmiss_function_matrix_resize.cpp \
 	api/cmiss_function_matrix_sum.cpp \
@@ -723,6 +724,7 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/function_inverse.cpp \
 	computed_variable/function_matrix.cpp \
 	computed_variable/function_matrix_determinant.cpp \
+	computed_variable/function_matrix_dot_product.cpp \
 	computed_variable/function_matrix_product.cpp \
 	computed_variable/function_matrix_resize.cpp \
 	computed_variable/function_matrix_sum.cpp \
@@ -1396,6 +1398,7 @@ LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_function_inverse.cpp \
 	api/cmiss_function_matrix.cpp \
 	api/cmiss_function_matrix_determinant.cpp \
+	api/cmiss_function_matrix_dot_product.cpp \
 	api/cmiss_function_matrix_product.cpp \
 	api/cmiss_function_matrix_resize.cpp \
 	api/cmiss_function_matrix_sum.cpp \
