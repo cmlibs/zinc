@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -40,6 +40,26 @@ Global constants
 Global types
 ------------
 */
+enum Scene_graphical_element_mode
+/*******************************************************************************
+LAST MODIFIED : 4 February 2000
+
+DESCRIPTION :
+Controls whether graphical element groups are placed in the scene and if so,
+how they are rendered by default.
+Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
+for automatic creation of choose_enumerator widgets.
+==============================================================================*/
+{
+	GRAPHICAL_ELEMENT_MODE_INVALID,
+	GRAPHICAL_ELEMENT_MODE_BEFORE_FIRST,
+	GRAPHICAL_ELEMENT_NONE,
+	GRAPHICAL_ELEMENT_INVISIBLE,
+	GRAPHICAL_ELEMENT_EMPTY,
+	GRAPHICAL_ELEMENT_LINES,
+	GRAPHICAL_ELEMENT_MODE_AFTER_LAST
+}; /* enum Scene_graphical_element_mode */
+
 enum Scene_object_type
 /*******************************************************************************
 LAST MODIFIED : 15 July 1999
@@ -203,6 +223,37 @@ Contains all information necessary for an input callback from the scene.
 Global functions
 ----------------
 */
+
+char *Scene_graphical_element_mode_string(enum Scene_graphical_element_mode graphical_element_mode);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the <graphical_element_mode>.
+This string should match the command used to create that type of settings.
+The returned string must not be DEALLOCATEd!
+==============================================================================*/
+
+char **Scene_graphical_element_mode_get_valid_strings(int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2000
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+Scene_graphical_element_modes - obtained from function Scene_graphical_element_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum Scene_graphical_element_mode Scene_graphical_element_mode_from_string(
+	char *graphical_element_mode_string);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2000
+
+DESCRIPTION :
+Returns the <Scene_graphical_element_mode> described by <graphical_element_mode_string>, or
+INVALID if not recognized.
+==============================================================================*/
+
 PROTOTYPE_OBJECT_FUNCTIONS(Scene_object);
 PROTOTYPE_LIST_FUNCTIONS(Scene_object);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Scene_object, \
@@ -549,7 +600,17 @@ LAST MODIFIED : 8 February 1998
 DESCRIPTION :
 ==============================================================================*/
 
-int Scene_enable_graphical_finite_elements(struct Scene *scene,
+enum Scene_graphical_element_mode Scene_get_graphical_element_mode(struct Scene *scene);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2000
+
+DESCRIPTION :
+Returns the mode controlling how graphical element groups are displayed in the
+scene.
+==============================================================================*/
+
+int Scene_set_graphical_element_mode(struct Scene *scene,
+	enum Scene_graphical_element_mode graphical_element_mode,
 	struct Computed_field_package *computed_field_package,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
@@ -558,41 +619,16 @@ int Scene_enable_graphical_finite_elements(struct Scene *scene,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct User_interface *user_interface,int auto_display_GFEs);
+	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
-Gives scenes the data required to create and automatically update graphical
-finite elements. If <auto_display_GFEs> is non-zero, new GFEs will be visible
-with a default [line] rendition, otherwise they will be invisible with no
-default rendition. Must be called after Scene_enable_graphics since GFEs require
-the default material and spectrum.
-==============================================================================*/
-
-int Scene_disable_graphical_finite_elements(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 8 February 1998
-
-DESCRIPTION :
-==============================================================================*/
-
-int Scene_enable_default_gfe_rendition(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 2 March 1998
-
-DESCRIPTION :
-Sets <auto_display_GFEs> on so that new GFEs will be visible with a default
-line rendition.
-==============================================================================*/
-
-int Scene_disable_default_gfe_rendition(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 2 March 1998
-
-DESCRIPTION :
-Sets <auto_display_GFEs> off so that new GFEs will be invisible with no default
-rendition.
+Sets the mode controlling how graphical element groups are displayed in the
+scene. Passes the managers and other data required to create and update the
+graphical elements.
+Must be called after Scene_enable_graphics since GFEs require the default
+material and spectrum.
 ==============================================================================*/
 
 PROTOTYPE_OBJECT_FUNCTIONS(Scene);

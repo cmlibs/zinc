@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 6 September 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1692,7 +1692,7 @@ int enable_Mirage_movie_graphics(struct Mirage_movie *movie,
 	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 6 September 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
 From an already-created movie - eg. read in from read_Mirage_movie - creates
@@ -1890,7 +1890,11 @@ resulting 3-D display.
 		}
 
 		/* do not want all_element_group to be drawn in default scene */
-		Scene_disable_default_gfe_rendition(movie->scene);
+		Scene_set_graphical_element_mode(movie->scene,
+			GRAPHICAL_ELEMENT_INVISIBLE,computed_field_package,element_manager,
+			element_group_manager,fe_field_manager,node_manager,node_group_manager,
+			data_manager,data_group_manager,user_interface);
+
 		/* enlarge axes in default scene to fit size of face */
 		axis_lengths[0]=25.0;
 		axis_lengths[1]=25.0;
@@ -1973,7 +1977,10 @@ resulting 3-D display.
 		}
 
 		/* do want 3-D node/element groups to be drawn in default scene */
-		Scene_enable_default_gfe_rendition(movie->scene);
+		Scene_set_graphical_element_mode(movie->scene,
+			GRAPHICAL_ELEMENT_LINES,computed_field_package,element_manager,
+			element_group_manager,fe_field_manager,node_manager,node_group_manager,
+			data_manager,data_group_manager,user_interface);
 
 		if (return_code)
 		{
@@ -2053,7 +2060,10 @@ resulting 3-D display.
 		}
 
 		/* don't want any of the following GFEs shown in default_scene */
-		Scene_disable_default_gfe_rendition(movie->scene);
+		Scene_set_graphical_element_mode(movie->scene,
+			GRAPHICAL_ELEMENT_INVISIBLE,computed_field_package,element_manager,
+			element_group_manager,fe_field_manager,node_manager,node_group_manager,
+			data_manager,data_group_manager,user_interface);
 
 		/* Views */
 		for (view_no=0;return_code&&(view_no<movie->number_of_views);
@@ -2117,10 +2127,11 @@ resulting 3-D display.
 								graphical_material_manager,default_graphical_material,
 								light_manager,spectrum_manager,default_spectrum,
 								texture_manager)&&
-							Scene_enable_graphical_finite_elements(view->scene,
+							Scene_set_graphical_element_mode(view->scene,
+								GRAPHICAL_ELEMENT_INVISIBLE,
 								computed_field_package,element_manager,element_group_manager,
 								fe_field_manager,node_manager,node_group_manager,
-								data_manager,data_group_manager,user_interface,0)&&
+								data_manager,data_group_manager,user_interface)&&
 							/* turn off axes in each views scene */
 							Scene_set_axis_visibility(view->scene,g_INVISIBLE)&&
 							(gt_element_group=Scene_get_graphical_element_group(
@@ -2163,7 +2174,10 @@ resulting 3-D display.
 		}
 
 		/* re-enable visibility and line renditions for new GFEs in default_scene */
-		Scene_enable_default_gfe_rendition(movie->scene);
+		Scene_set_graphical_element_mode(movie->scene,
+			GRAPHICAL_ELEMENT_LINES,computed_field_package,element_manager,
+			element_group_manager,fe_field_manager,node_manager,node_group_manager,
+			data_manager,data_group_manager,user_interface);
 
 		if (return_code)
 		{

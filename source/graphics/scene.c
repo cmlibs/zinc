@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 13 December 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -96,7 +96,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Scene_object);
 
 struct Scene
 /*******************************************************************************
-LAST MODIFIED : 3 May 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
 Stores the collections of objects that make up a 3-D graphical model.
@@ -111,6 +111,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 	struct LIST(Scene_object) *scene_object_list;
 	/* need following managers for autocreation of graphical finite elements, */
 	/* material/light changes, etc. */
+	enum Scene_graphical_element_mode graphical_element_mode;
 	/* fields and computed_fields */
 	struct Computed_field_package *computed_field_package;
 	void *computed_field_manager_callback_id;
@@ -130,10 +131,6 @@ Stores the collections of objects that make up a 3-D graphical model.
 	void *data_manager_callback_id;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	void *data_group_manager_callback_id;
-	/* With GFEs enabled and the following flag true, all new element groups will
-		be added to the scene with default [line] renditions, and they will be
-		visible. Otherwise they are invisible with no default rendition */
-	int auto_display_GFEs;
 	/* graphics object representing axes */
 	struct GT_object *axis_object;
 
@@ -1365,7 +1362,7 @@ scene_object.
 static int Scene_add_graphical_finite_element(struct Scene *scene,
 	struct GROUP(FE_element) *element_group)
 /*******************************************************************************
-LAST MODIFIED : 23 August 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
 Adds a graphical <element_group> to the <scene> with some default settings.
@@ -1439,69 +1436,85 @@ Adds a graphical <element_group> to the <scene> with some default settings.
 								element_discretization.number_in_xi3=default_value;
 								GT_element_group_set_element_discretization(gt_element_group,
 									&element_discretization,scene->user_interface);
-								if (scene->auto_display_GFEs)
+								switch (scene->graphical_element_mode)
 								{
-									/* add default settings - wireframe (line) rendition */
-									if (settings=CREATE(GT_element_settings)(
-										GT_ELEMENT_SETTINGS_LINES))
+									case GRAPHICAL_ELEMENT_INVISIBLE:
 									{
-										GT_element_settings_set_material(settings,
-											scene->default_material);
-										if (GT_element_group_add_settings(gt_element_group,
-											settings,0))
+										visibility=g_INVISIBLE;
+									} break;
+									case GRAPHICAL_ELEMENT_EMPTY:
+									{
+										visibility=g_VISIBLE;
+									} break;
+									case GRAPHICAL_ELEMENT_LINES:
+									{
+										/* add default settings - wireframe (line) rendition */
+										if (settings=CREATE(GT_element_settings)(
+											GT_ELEMENT_SETTINGS_LINES))
 										{
-											/* if the group has data, add data_points to the
-												rendition */
-											if (FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-												(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,
-												(void *)NULL,data_group))
+											GT_element_settings_set_material(settings,
+												scene->default_material);
+											if (GT_element_group_add_settings(gt_element_group,
+												settings,0))
 											{
-												if (settings=CREATE(GT_element_settings)(
-													GT_ELEMENT_SETTINGS_DATA_POINTS))
+												/* if the group has data, add data_points to the
+													 rendition */
+												if (FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+													(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,
+													(void *)NULL,data_group))
 												{
-													GT_element_settings_set_material(settings,
-														scene->default_material);
-													/* set the glyph to "point" */
-													GT_element_settings_get_glyph_parameters(settings,
-														&glyph,glyph_centre,glyph_size,
-														&orientation_scale_field,glyph_scale_factors);
-													glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-														"point",scene->glyph_list);
-													GT_element_settings_set_glyph_parameters(settings,
-														glyph,glyph_centre,glyph_size,
-														orientation_scale_field,glyph_scale_factors);
-													if (!GT_element_group_add_settings(gt_element_group,
-														settings,0))
+													if (settings=CREATE(GT_element_settings)(
+														GT_ELEMENT_SETTINGS_DATA_POINTS))
 													{
-														DESTROY(GT_element_settings)(&settings);
+														GT_element_settings_set_material(settings,
+															scene->default_material);
+														/* set the glyph to "point" */
+														GT_element_settings_get_glyph_parameters(settings,
+															&glyph,glyph_centre,glyph_size,
+															&orientation_scale_field,glyph_scale_factors);
+														glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+															"point",scene->glyph_list);
+														GT_element_settings_set_glyph_parameters(settings,
+															glyph,glyph_centre,glyph_size,
+															orientation_scale_field,glyph_scale_factors);
+														if (!GT_element_group_add_settings(gt_element_group,
+															settings,0))
+														{
+															DESTROY(GT_element_settings)(&settings);
+														}
 													}
 												}
+												/* build graphics for default rendition */
+												GT_element_group_build_graphics_objects(
+													gt_element_group,(struct FE_element *)NULL,
+													(struct FE_node *)NULL);
 											}
-											/* build graphics for default rendition */
-											GT_element_group_build_graphics_objects(
-												gt_element_group,(struct FE_element *)NULL,
-												(struct FE_node *)NULL);
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"Scene_add_graphical_finite_element.  "
+													"Could not add default settings");
+												DESTROY(GT_element_settings)(&settings);
+											}
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,
 												"Scene_add_graphical_finite_element.  "
-												"Could not add default settings");
-											DESTROY(GT_element_settings)(&settings);
+												"Could not create default settings");
 										}
-									}
-									else
+										visibility=g_VISIBLE;
+										scene->display_list_current=0;
+									} break;
+									default:
 									{
 										display_message(ERROR_MESSAGE,
 											"Scene_add_graphical_finite_element.  "
-											"Could not create default settings");
-									}
-									visibility=g_VISIBLE;
-									scene->display_list_current=0;
-								}
-								else
-								{
-									visibility=g_INVISIBLE;
+											"Invalid graphical element mode %s",
+											Scene_graphical_element_mode_string(
+												scene->graphical_element_mode));
+										visibility=g_INVISIBLE;
+									} break;
 								}
 								/* set the visibility of the new GFE */
 								if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
@@ -1524,7 +1537,8 @@ Adds a graphical <element_group> to the <scene> with some default settings.
 						else
 						{
 							display_message(WARNING_MESSAGE,
-								"Scene_add_graphics_object.  Object with that name already in scene");
+								"Scene_add_graphical_finite_element.  "
+								"Object with that name already in scene");
 							return_code=1;
 						}
 					}
@@ -2926,6 +2940,143 @@ DESCRIPTION :
 Global functions
 ----------------
 */
+
+char *Scene_graphical_element_mode_string(enum Scene_graphical_element_mode graphical_element_mode)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the <graphical_element_mode>.
+This string should match the command used to create that type of settings.
+The returned string must not be DEALLOCATEd!
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Scene_graphical_element_mode_string);
+	switch (graphical_element_mode)
+	{
+		case GRAPHICAL_ELEMENT_NONE:
+		{
+			return_string="no_g_element";
+		} break;
+		case GRAPHICAL_ELEMENT_INVISIBLE:
+		{
+			return_string="invisible_g_element";
+		} break;
+		case GRAPHICAL_ELEMENT_EMPTY:
+		{
+			return_string="empty_g_element";
+		} break;
+		case GRAPHICAL_ELEMENT_LINES:
+		{
+			return_string="g_element_lines";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_graphical_element_mode_string.  Unknown graphical_element_mode");
+			return_string=(char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Scene_graphical_element_mode_string */
+
+char **Scene_graphical_element_mode_get_valid_strings(int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2000
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+Scene_graphical_element_modes - obtained from function Scene_graphical_element_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+	enum Scene_graphical_element_mode graphical_element_mode;
+	int i;
+
+	ENTER(Scene_graphical_element_mode_get_valid_strings);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=0;
+		graphical_element_mode=GRAPHICAL_ELEMENT_MODE_BEFORE_FIRST;
+		graphical_element_mode++;
+		while (graphical_element_mode<GRAPHICAL_ELEMENT_MODE_AFTER_LAST)
+		{
+			(*number_of_valid_strings)++;
+			graphical_element_mode++;
+		}
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			graphical_element_mode=GRAPHICAL_ELEMENT_MODE_BEFORE_FIRST;
+			graphical_element_mode++;
+			i=0;
+			while (graphical_element_mode<GRAPHICAL_ELEMENT_MODE_AFTER_LAST)
+			{
+				valid_strings[i]=Scene_graphical_element_mode_string(graphical_element_mode);
+				i++;
+				graphical_element_mode++;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_graphical_element_mode_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_graphical_element_mode_get_valid_strings.  Invalid argument");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Scene_graphical_element_mode_get_valid_strings */
+
+enum Scene_graphical_element_mode Scene_graphical_element_mode_from_string(
+	char *graphical_element_mode_string)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2000
+
+DESCRIPTION :
+Returns the <Scene_graphical_element_mode> described by <graphical_element_mode_string>, or
+INVALID if not recognized.
+==============================================================================*/
+{
+	enum Scene_graphical_element_mode graphical_element_mode;
+
+	ENTER(Scene_graphical_element_mode_from_string);
+	if (graphical_element_mode_string)
+	{
+		graphical_element_mode=GRAPHICAL_ELEMENT_MODE_BEFORE_FIRST;
+		graphical_element_mode++;
+		while ((graphical_element_mode<GRAPHICAL_ELEMENT_MODE_AFTER_LAST)&&
+			(!fuzzy_string_compare_same_length(graphical_element_mode_string,
+				Scene_graphical_element_mode_string(graphical_element_mode))))
+		{
+			graphical_element_mode++;
+		}
+		if (GRAPHICAL_ELEMENT_MODE_AFTER_LAST==graphical_element_mode)
+		{
+			graphical_element_mode=GRAPHICAL_ELEMENT_MODE_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_graphical_element_mode_from_string.  Invalid argument");
+		graphical_element_mode=GRAPHICAL_ELEMENT_MODE_INVALID;
+	}
+	LEAVE;
+
+	return (graphical_element_mode);
+} /* Scene_graphical_element_mode_from_string */
+
 DECLARE_OBJECT_FUNCTIONS(Scene_object)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Scene_object)
 DECLARE_INDEXED_LIST_FUNCTIONS(Scene_object)
@@ -4000,7 +4151,7 @@ as a command, using the given <command_prefix>.
 
 struct Scene *CREATE(Scene)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 3 May 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
 Scene now has pointer to its scene_manager, and it uses manager modify
@@ -4040,8 +4191,8 @@ from the default versions of these functions.
 			scene->data_manager_callback_id=(void *)NULL;
 			scene->data_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
 			scene->data_group_manager_callback_id=(void *)NULL;
-			/* defaults is not to automatically display GFEs */
-			scene->auto_display_GFEs=0;
+			/* defaults to not adding GFEs - besides, need managers anyway */
+			scene->graphical_element_mode=GRAPHICAL_ELEMENT_NONE;
 			/* axes created once graphics enabled */
 			scene->axis_object=(struct GT_object *)NULL;
 			/* attributes: */
@@ -4107,15 +4258,24 @@ Closes the scene and disposes of the scene data structure.
 	struct Scene *scene;
 
 	ENTER(DESTROY(Scene));
-	/* checking arguments */
 	if (scene_address&&(scene= *scene_address))
 	{
 		if (0==scene->access_count)
 		{
-			Scene_disable_graphics(scene);
 			Scene_disable_time_behaviour(scene);
 			Scene_disable_interactive_streamlines(scene);
-			Scene_disable_graphical_finite_elements(scene);
+			Scene_set_graphical_element_mode(scene,
+				GRAPHICAL_ELEMENT_NONE,
+				(struct Computed_field_package *)NULL,
+				(struct MANAGER(FE_element) *)NULL,
+				(struct MANAGER(GROUP(FE_element)) *)NULL,
+				(struct MANAGER(FE_field) *)NULL,
+				(struct MANAGER(FE_node) *)NULL,
+				(struct MANAGER(GROUP(FE_node)) *)NULL,
+				(struct MANAGER(FE_node) *)NULL,
+				(struct MANAGER(GROUP(FE_node)) *)NULL,
+				(struct User_interface *)NULL);
+			Scene_disable_graphics(scene);
 			DEALLOCATE(scene->name);
 			/* must destroy the display list */
 			if (scene->display_list)
@@ -4448,7 +4608,35 @@ DESCRIPTION :
 	return (return_code);
 } /* Scene_disable_interactive_streamlines */
 
-int Scene_enable_graphical_finite_elements(struct Scene *scene,
+enum Scene_graphical_element_mode Scene_get_graphical_element_mode(struct Scene *scene)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2000
+
+DESCRIPTION :
+Returns the mode controlling how graphical element groups are displayed in the
+scene.
+==============================================================================*/
+{
+	enum Scene_graphical_element_mode graphical_element_mode;
+
+	ENTER(Scene_get_graphical_element_mode);
+	if (scene)
+	{
+		graphical_element_mode = scene->graphical_element_mode;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_get_graphical_element_mode.  Invalid argument");
+		graphical_element_mode = GRAPHICAL_ELEMENT_MODE_INVALID;
+	}
+	LEAVE;
+
+	return (graphical_element_mode);
+} /* enum Scene_graphical_element_mode graphical_element_mode */
+
+int Scene_set_graphical_element_mode(struct Scene *scene,
+	enum Scene_graphical_element_mode graphical_element_mode,
 	struct Computed_field_package *computed_field_package,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
@@ -4457,233 +4645,178 @@ int Scene_enable_graphical_finite_elements(struct Scene *scene,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
-	struct User_interface *user_interface,int auto_display_GFEs)
+	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 3 May 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
-Gives scenes the data required to create and automatically update graphical
-finite elements. If <auto_display_GFEs> is non-zero, new GFEs will be visible
-with a default [line] rendition, otherwise they will be invisible with no
-default rendition. Must be called after Scene_enable_graphics since GFEs require
-the default material and spectrum.
+Sets the mode controlling how graphical element groups are displayed in the
+scene. Passes the managers and other data required to create and update the
+graphical elements.
+Must be called after Scene_enable_graphics since GFEs require the default
+material and spectrum.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Scene_enable_graphical_finite_elements);
-	if (scene&&computed_field_package&&element_manager&&element_group_manager&&
+	ENTER(Scene_set_graphical_element_mode);
+	if (scene&&((GRAPHICAL_ELEMENT_NONE == graphical_element_mode)||(
+		computed_field_package&&element_manager&&element_group_manager&&
 		fe_field_manager&&node_manager&&node_group_manager&&data_manager&&
-		data_group_manager)
+		data_group_manager)))
 	{
-		if (scene->graphical_material_manager)
+		return_code=1;
+		if (GRAPHICAL_ELEMENT_NONE == graphical_element_mode)
 		{
-			if (scene->element_manager)
+			/* clear manager messages and managers associated with last mode */
+			/* turn off manager messages */
+			if (scene->computed_field_manager_callback_id)
 			{
-				display_message(WARNING_MESSAGE,
-					"Scene_enable_graphical_finite_elements.  GFEs already enabled");
+				MANAGER_DEREGISTER(Computed_field)(
+					scene->computed_field_manager_callback_id,
+					Computed_field_package_get_computed_field_manager(
+						scene->computed_field_package));
+				scene->computed_field_manager_callback_id=(void *)NULL;
 			}
-			else
+			if (scene->element_manager_callback_id)
 			{
-				scene->computed_field_package=computed_field_package;
-				scene->element_manager=element_manager;
-				scene->element_group_manager=element_group_manager;
-				scene->fe_field_manager=fe_field_manager;
-				scene->node_manager=node_manager;
-				scene->node_group_manager=node_group_manager;
-				scene->data_manager=data_manager;
-				scene->data_group_manager=data_group_manager;
-				scene->user_interface=user_interface;
-				scene->auto_display_GFEs=auto_display_GFEs;
-				/* add all current element_groups to new scene */
-				FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
-					element_group_to_scene,(void *)scene,
+				MANAGER_DEREGISTER(FE_element)(
+					scene->element_manager_callback_id,
+					scene->element_manager);
+				scene->element_manager_callback_id=(void *)NULL;
+			}
+			if (scene->element_group_manager_callback_id)
+			{
+				MANAGER_DEREGISTER(GROUP(FE_element))(
+					scene->element_group_manager_callback_id,
 					scene->element_group_manager);
-				/* register for any element, element_group, node, node_group and
-					 computed_field changes so GFEs automatically created and updated */
-				scene->element_manager_callback_id=MANAGER_REGISTER(FE_element)(
-					Scene_element_change,(void *)scene,scene->element_manager);
-				scene->element_group_manager_callback_id=
-					MANAGER_REGISTER(GROUP(FE_element))(Scene_element_group_change,
-					(void *)scene,scene->element_group_manager);
-				/* register for any node_group changes */
-				scene->node_manager_callback_id=MANAGER_REGISTER(FE_node)(
-					Scene_node_change,(void *)scene,scene->node_manager);
-				scene->node_group_manager_callback_id=
-					MANAGER_REGISTER(GROUP(FE_node))(Scene_node_group_change,
-					(void *)scene,scene->node_group_manager);
-				/* register for any data_group changes */
-				scene->data_manager_callback_id=MANAGER_REGISTER(FE_node)(
-					Scene_data_change,(void *)scene,scene->data_manager);
-				scene->data_group_manager_callback_id=
-					MANAGER_REGISTER(GROUP(FE_node))(Scene_data_group_change,
-					(void *)scene,scene->data_group_manager);
-				/* register for any computed_field changes */
-				scene->computed_field_manager_callback_id=
-					MANAGER_REGISTER(Computed_field)(Scene_computed_field_change,
-						(void *)scene,Computed_field_package_get_computed_field_manager(
-							scene->computed_field_package));
+				scene->element_group_manager_callback_id=(void *)NULL;
 			}
-			return_code=1;
+			if (scene->node_manager_callback_id)
+			{
+				MANAGER_DEREGISTER(FE_node)(
+					scene->node_manager_callback_id,
+					scene->node_manager);
+				scene->node_manager_callback_id=(void *)NULL;
+			}
+			if (scene->node_group_manager_callback_id)
+			{
+				MANAGER_DEREGISTER(GROUP(FE_node))(
+					scene->node_group_manager_callback_id,
+					scene->node_group_manager);
+				scene->node_group_manager_callback_id=(void *)NULL;
+			}
+			if (scene->data_manager_callback_id)
+			{
+				MANAGER_DEREGISTER(FE_node)(
+					scene->data_manager_callback_id,
+					scene->data_manager);
+				scene->data_manager_callback_id=(void *)NULL;
+			}
+			if (scene->data_group_manager_callback_id)
+			{
+				MANAGER_DEREGISTER(GROUP(FE_node))(
+					scene->data_group_manager_callback_id,
+					scene->data_group_manager);
+				scene->data_group_manager_callback_id=(void *)NULL;
+			}
+			scene->computed_field_package=(struct Computed_field_package *)NULL;
+			scene->element_manager=(struct MANAGER(FE_element) *)NULL;
+			scene->element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
+			scene->node_manager=(struct MANAGER(FE_node) *)NULL;
+			scene->node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
+			scene->data_manager=(struct MANAGER(FE_node) *)NULL;
+			scene->data_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
+			scene->user_interface=(struct User_interface *)NULL;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Scene_enable_graphical_finite_elements.  Graphics not yet enabled");
-			return_code=0;
+			/* check managers consistent current mode - unless this is
+				 GRAPHICAL_ELEMENT_NONE so setting for the first time */
+			if ((GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode)||(
+				(computed_field_package == scene->computed_field_package)&&
+				(element_manager == scene->element_manager)&&
+				(element_group_manager == scene->element_group_manager)&&
+				(fe_field_manager == scene->fe_field_manager)&&
+				(node_manager == scene->node_manager)&&
+				(node_group_manager == scene->node_group_manager)&&
+				(data_manager == scene->data_manager)&&
+				(data_group_manager == scene->data_group_manager)))
+			{
+				if (scene->graphical_material_manager)
+				{
+					if (GRAPHICAL_ELEMENT_NONE == scene->graphical_element_mode)
+					{
+						scene->graphical_element_mode=graphical_element_mode;
+						scene->computed_field_package=computed_field_package;
+						scene->element_manager=element_manager;
+						scene->element_group_manager=element_group_manager;
+						scene->fe_field_manager=fe_field_manager;
+						scene->node_manager=node_manager;
+						scene->node_group_manager=node_group_manager;
+						scene->data_manager=data_manager;
+						scene->data_group_manager=data_group_manager;
+						scene->user_interface=user_interface;
+						/* add all current element_groups to new scene */
+						FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
+							element_group_to_scene,(void *)scene,
+							scene->element_group_manager);
+						/* register for any element, element_group, node, node_group and
+							 computed_field changes so GFEs automatically created and
+							 updated */
+						scene->element_manager_callback_id=MANAGER_REGISTER(FE_element)(
+							Scene_element_change,(void *)scene,scene->element_manager);
+						scene->element_group_manager_callback_id=
+							MANAGER_REGISTER(GROUP(FE_element))(Scene_element_group_change,
+								(void *)scene,scene->element_group_manager);
+						/* register for any node_group changes */
+						scene->node_manager_callback_id=MANAGER_REGISTER(FE_node)(
+							Scene_node_change,(void *)scene,scene->node_manager);
+						scene->node_group_manager_callback_id=
+							MANAGER_REGISTER(GROUP(FE_node))(Scene_node_group_change,
+								(void *)scene,scene->node_group_manager);
+						/* register for any data_group changes */
+						scene->data_manager_callback_id=MANAGER_REGISTER(FE_node)(
+							Scene_data_change,(void *)scene,scene->data_manager);
+						scene->data_group_manager_callback_id=
+							MANAGER_REGISTER(GROUP(FE_node))(Scene_data_group_change,
+								(void *)scene,scene->data_group_manager);
+						/* register for any computed_field changes */
+						scene->computed_field_manager_callback_id=
+							MANAGER_REGISTER(Computed_field)(Scene_computed_field_change,
+								(void *)scene,Computed_field_package_get_computed_field_manager(
+									scene->computed_field_package));
+					}
+					else
+					{
+						scene->graphical_element_mode=graphical_element_mode;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Scene_set_graphical_element_mode.  Graphics not yet enabled");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_set_graphical_element_mode.  Inconsistent managers");
+				return_code=0;
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_enable_graphical_finite_elements.  Invalid argument(s)");
+			"Scene_set_graphical_element_mode.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_enable_graphical_finite_elements */
-
-int Scene_disable_graphical_finite_elements(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 3 May 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_disable_graphical_finite_elements);
-	if (scene)
-	{
-		/* turn off manager messages */
-		if (scene->computed_field_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Computed_field)(
-				scene->computed_field_manager_callback_id,
-				Computed_field_package_get_computed_field_manager(
-					scene->computed_field_package));
-		}
-		if (scene->element_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(FE_element)(
-				scene->element_manager_callback_id,
-				scene->element_manager);
-		}
-		if (scene->element_group_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(GROUP(FE_element))(
-				scene->element_group_manager_callback_id,
-				scene->element_group_manager);
-		}
-		if (scene->node_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(FE_node)(
-				scene->node_manager_callback_id,
-				scene->node_manager);
-		}
-		if (scene->node_group_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(GROUP(FE_node))(
-				scene->node_group_manager_callback_id,
-				scene->node_group_manager);
-		}
-		if (scene->data_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(FE_node)(
-				scene->data_manager_callback_id,
-				scene->data_manager);
-		}
-		if (scene->data_group_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(GROUP(FE_node))(
-				scene->data_group_manager_callback_id,
-				scene->data_group_manager);
-		}
-		scene->computed_field_package=(struct Computed_field_package *)NULL;
-		scene->computed_field_manager_callback_id=(void *)NULL;
-		scene->element_manager=(struct MANAGER(FE_element) *)NULL;
-		scene->element_manager_callback_id=(void *)NULL;
-		scene->element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
-		scene->element_group_manager_callback_id=(void *)NULL;
-		scene->node_manager=(struct MANAGER(FE_node) *)NULL;
-		scene->node_manager_callback_id=(void *)NULL;
-		scene->node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-		scene->node_group_manager_callback_id=(void *)NULL;
-		scene->data_manager=(struct MANAGER(FE_node) *)NULL;
-		scene->data_manager_callback_id=(void *)NULL;
-		scene->data_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-		scene->data_group_manager_callback_id=(void *)NULL;
-		scene->user_interface=(struct User_interface *)NULL;
-		scene->auto_display_GFEs=0;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_disable_graphical_finite_elements.  Missing scene");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_disable_graphical_finite_elements */
-
-int Scene_enable_default_gfe_rendition(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 2 March 1998
-
-DESCRIPTION :
-Sets <auto_display_GFEs> on so that new GFEs will be visible with a default
-line rendition.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_enable_default_gfe_rendition);
-	if (scene)
-	{
-		scene->auto_display_GFEs=1;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_enable_default_gfe_rendition.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_enable_default_gfe_rendition */
-
-int Scene_disable_default_gfe_rendition(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 2 March 1998
-
-DESCRIPTION :
-Sets <auto_display_GFEs> off so that new GFEs will be invisible with no default
-rendition.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_disable_default_gfe_rendition);
-	if (scene)
-	{
-		scene->auto_display_GFEs=0;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_disable_default_gfe_rendition.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_disable_default_gfe_rendition */
+} /* Scene_set_graphical_element_mode */
 
 DECLARE_OBJECT_FUNCTIONS(Scene)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Scene)
@@ -4758,7 +4891,9 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 	/* check arguments */
 	if (source&&destination)
 	{
+#if defined (OLD_CODE)
 		Scene_disable_graphical_finite_elements(destination);
+#endif /* defined (OLD_CODE) */
 		Scene_disable_interactive_streamlines(destination);
 		Scene_disable_graphics(destination);
 		if (source->graphical_material_manager)
@@ -4782,15 +4917,12 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 			Scene_enable_interactive_streamlines(destination,
 				source->streamline_manager);
 		}
-		if (source->element_manager)
-		{
-			Scene_enable_graphical_finite_elements(destination,
-				source->computed_field_package,source->element_manager,
-				source->element_group_manager,source->fe_field_manager,
-				source->node_manager,source->node_group_manager,
-				source->data_manager,source->data_group_manager,
-				source->user_interface,source->auto_display_GFEs);
-		}
+		Scene_set_graphical_element_mode(destination,source->graphical_element_mode,
+			source->computed_field_package,source->element_manager,
+			source->element_group_manager,source->fe_field_manager,
+			source->node_manager,source->node_group_manager,
+			source->data_manager,source->data_group_manager,
+			source->user_interface);
 		/* copy list of lights to destination */
 		/* duplicate each scene_object in source and put in destination list */
 		if ((temp_list_of_lights=CREATE(LIST(Light))())&&
@@ -7876,7 +8008,8 @@ work on these sub_elements.  These created scenes are not added to the manager.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_Scene_including_sub_objects.  Missing state");
+		display_message(ERROR_MESSAGE,
+			"set_Scene_including_sub_objects.  Missing state");
 		return_code=0;
 	}
 	LEAVE;
@@ -7887,33 +8020,18 @@ work on these sub_elements.  These created scenes are not added to the manager.
 int modify_Scene(struct Parse_state *state,void *scene_void,
 	void *modify_scene_data_void)
 /*******************************************************************************
-LAST MODIFIED : 17 November 1998
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
 Parser commands for modifying scenes - lighting, etc.
 ==============================================================================*/
 {
-	static struct Modifier_entry
-		help_option_table[]=
-		{
-			{"SCENE_NAME",NULL,NULL,modify_Scene},
-			{NULL,NULL,NULL,NULL}
-		},
-		g_element_option_table[]=
-		{
-			{"g_element",NULL,NULL,set_char_flag},
-			{"no_g_element",NULL,NULL,unset_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{"add_light",NULL,NULL,set_Light},
-			{NULL,NULL,NULL,NULL},
-			{"remove_light",NULL,NULL,set_Light},
-			{NULL,NULL,NULL,NULL}
-		};
-	char g_element_flag,*current_token,previous_g_element_flag;
-	int i,return_code;
+	char *graphical_element_mode_string,**valid_strings;
+	enum Scene_graphical_element_mode graphical_element_mode,
+		old_graphical_element_mode;
+	int number_of_valid_strings,return_code,scene_changed;
+	char *current_token;
+	struct Option_table *option_table;
 	struct Scene *scene;
 	struct Light *light_to_add,*light_to_remove;
 	struct Modify_scene_data *modify_scene_data;
@@ -7930,67 +8048,59 @@ Parser commands for modifying scenes - lighting, etc.
 				{
 					light_to_add=(struct Light *)NULL;
 					light_to_remove=(struct Light *)NULL;
-					if (scene->element_manager)
-					{
-						g_element_flag=1;
-					}
-					else
-					{
-						g_element_flag=0;
-					}
-					previous_g_element_flag=g_element_flag;
-					i=0;
+					old_graphical_element_mode=Scene_get_graphical_element_mode(scene);
+
+					option_table=CREATE(Option_table)();
 					/* add_light */
-					(option_table[i]).to_be_modified= &light_to_add;
-					(option_table[i]).user_data=modify_scene_data->light_manager;
-					i++;
-					/* g_element/no_g_element */ 
-					(g_element_option_table[0]).to_be_modified= &g_element_flag;
-					(g_element_option_table[1]).to_be_modified= &g_element_flag;
-					(option_table[i]).user_data=g_element_option_table;
-					i++;
+					Option_table_add_entry(option_table,"add_light",&light_to_add,
+						modify_scene_data->light_manager,set_Light);
+					/* graphical_element_mode */ 
+					graphical_element_mode_string=Scene_graphical_element_mode_string(
+						old_graphical_element_mode);
+					valid_strings=Scene_graphical_element_mode_get_valid_strings(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&graphical_element_mode_string);
+					DEALLOCATE(valid_strings);
 					/* remove_light */
-					(option_table[i]).to_be_modified= &light_to_remove;
-					(option_table[i]).user_data=modify_scene_data->light_manager;
-					i++;
-					if (return_code=process_multiple_options(state,option_table))
+					Option_table_add_entry(option_table,"remove_light",&light_to_remove,
+						modify_scene_data->light_manager,set_Light);
+					if (return_code=Option_table_multi_parse(option_table,state))
 					{
+						scene_changed=0;
 						if (light_to_add)
 						{
 							Scene_add_light(scene,light_to_add);
+							scene_changed=1;
 						}
-						if (g_element_flag != previous_g_element_flag)
+						graphical_element_mode=Scene_graphical_element_mode_from_string(
+							graphical_element_mode_string);
+						if (graphical_element_mode != old_graphical_element_mode)
 						{
-							if (g_element_flag)
-							{
-								if (Scene_enable_graphical_finite_elements(scene,
-									modify_scene_data->computed_field_package,
-									modify_scene_data->element_manager,
-									modify_scene_data->element_group_manager,
-									modify_scene_data->fe_field_manager,
-									modify_scene_data->node_manager,
-									modify_scene_data->node_group_manager,
-									modify_scene_data->data_manager,
-									modify_scene_data->data_group_manager,
-									modify_scene_data->user_interface,
-									/*auto_display_GFEs*/1))
-								{
-									Scene_changed_private(scene);
-								}
-							}
-							else
-							{
-								if (Scene_disable_graphical_finite_elements(scene))
-								{
-									Scene_changed_private(scene);
-								}
-							}
+							Scene_set_graphical_element_mode(scene,
+								graphical_element_mode,
+								modify_scene_data->computed_field_package,
+								modify_scene_data->element_manager,
+								modify_scene_data->element_group_manager,
+								modify_scene_data->fe_field_manager,
+								modify_scene_data->node_manager,
+								modify_scene_data->node_group_manager,
+								modify_scene_data->data_manager,
+								modify_scene_data->data_group_manager,
+								modify_scene_data->user_interface);
+							scene_changed=1;
 						}
 						if (light_to_remove)
 						{
 							Scene_remove_light(scene,light_to_remove);
+							scene_changed=1;
+						}
+						if (scene_changed)
+						{
+							Scene_changed_private(scene);
 						}
 					}
+					DESTROY(Option_table)(&option_table);
 				}
 				else
 				{
@@ -8016,10 +8126,12 @@ Parser commands for modifying scenes - lighting, etc.
 					}
 					else
 					{
-						(help_option_table[0]).to_be_modified=
-							(modify_scene_data->default_scene);
-						(help_option_table[0]).user_data=modify_scene_data_void;
-						return_code=process_option(state,help_option_table);
+						option_table=CREATE(Option_table)();
+						Option_table_add_entry(option_table,"SCENE_NAME",
+							modify_scene_data->default_scene,modify_scene_data_void,
+							modify_Scene);
+						return_code=Option_table_parse(option_table,state);
+						DESTROY(Option_table)(&option_table);
 					}
 				}
 			}
@@ -8051,7 +8163,7 @@ Parser commands for modifying scenes - lighting, etc.
 
 int list_Scene(struct Scene *scene,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 26 April 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
 Writes the properties of the <scene> to the command window.
@@ -8064,15 +8176,10 @@ Writes the properties of the <scene> to the command window.
 	if (scene)
 	{
 		display_message(INFORMATION_MESSAGE,"scene : %s\n",scene->name);
-		display_message(INFORMATION_MESSAGE,"  graphical finite element groups: ");
-		if (scene->element_manager)
-		{
-			display_message(INFORMATION_MESSAGE,"enabled\n");
-		}
-		else
-		{
-			display_message(INFORMATION_MESSAGE,"disabled\n");
-		}
+		display_message(INFORMATION_MESSAGE,"  graphical element mode: ");
+		display_message(INFORMATION_MESSAGE,
+			Scene_graphical_element_mode_string(scene->graphical_element_mode));
+		display_message(INFORMATION_MESSAGE,"\n");
 		if (0<NUMBER_IN_LIST(Scene_object)(scene->scene_object_list))
 		{
 			display_message(INFORMATION_MESSAGE,"  objects in scene:\n");

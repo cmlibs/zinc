@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.c
 
-LAST MODIFIED : 2 September 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
 Contains function definitions for unemap package.
@@ -3090,11 +3090,11 @@ gets the glyph_list of the unemap package.
 int unemap_package_make_map_scene(struct Unemap_package *package,
 	struct Spectrum *spectrum)
 /*******************************************************************************
-LAST MODIFIED : September 27 1999
+LAST MODIFIED : 4 February 2000
 
 DESCRIPTION :
 Creates the unemap_package scene, if isn't already present.
-==============================================================================*/		 
+==============================================================================*/
 {
 	int return_code;
 	struct Scene *map_scene;
@@ -3115,12 +3115,12 @@ Creates the unemap_package scene, if isn't already present.
 					package->spectrum_manager,spectrum,
 					package->texture_manager);
 
-				Scene_enable_graphical_finite_elements(map_scene,
+				Scene_set_graphical_element_mode(map_scene,GRAPHICAL_ELEMENT_LINES,
 					package->computed_field_package,package->element_manager,
 					package->element_group_manager,package->fe_field_manager,
 					package->node_manager,package->node_group_manager,
 					package->data_manager,package->data_group_manager,
-					package->user_interface,1);
+					package->user_interface);
 
 				/*???RC.  May want to use functions to modify default_scene here */
 				/* eg. to add model lights, etc. */

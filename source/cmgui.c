@@ -969,12 +969,13 @@ Main program for the CMISS Graphical User Interface
 				command_data.texture_manager);
 			Scene_enable_interactive_streamlines(command_data.default_scene,
 				command_data.interactive_streamline_manager);
-			Scene_enable_graphical_finite_elements(command_data.default_scene,
+			Scene_set_graphical_element_mode(command_data.default_scene,
+				GRAPHICAL_ELEMENT_LINES,
 				command_data.computed_field_package,command_data.element_manager,
 				command_data.element_group_manager,command_data.fe_field_manager,
 				command_data.node_manager,command_data.node_group_manager,
 				command_data.data_manager,command_data.data_group_manager,
-				command_data.user_interface,1);
+				command_data.user_interface);
 			/*???RC.  May want to use functions to modify default_scene here */
 			/* eg. to add model lights, etc. */
 			/* ACCESS default so can never be destroyed */
