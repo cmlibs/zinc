@@ -644,7 +644,7 @@ already) and allows its contents to be modified.
 			maximum = 1.0;
 			if (!((texture_coordinate_field=
 				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_3_components,(void *)NULL,
+				Computed_field_is_find_element_xi_capable,(void *)NULL,
 				computed_field_sample_texture_package->computed_field_manager))))
 			{
 				if (strcmp(PARSER_HELP_STRING,state->current_token)&&
@@ -652,7 +652,7 @@ already) and allows its contents to be modified.
 				{
 					/* This is only a failure if we aren't asking for help */
 					display_message(ERROR_MESSAGE,
-						"At least one 3 component field must exist for a window_projeciton field.");
+						"At least one field capable of find_element_xi must exist for a window_projection field.");
 					return_code = 0;
 				}
 			}
@@ -673,7 +673,7 @@ already) and allows its contents to be modified.
 			/* coordinates */
 			set_source_field_data.computed_field_manager=
 				computed_field_sample_texture_package->computed_field_manager;
-			set_source_field_data.conditional_function=Computed_field_has_3_components;
+			set_source_field_data.conditional_function=Computed_field_is_find_element_xi_capable;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinates",&texture_coordinate_field,
 				&set_source_field_data,set_Computed_field_conditional);
