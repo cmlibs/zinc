@@ -1,12 +1,15 @@
 /*******************************************************************************
 FILE : interpolate.h
 
-LAST MODIFIED : 13 October 1997
+LAST MODIFIED : 26 June 2003
 
 DESCRIPTION :
 Function prototypes for calculating a finite element interpolation to data for a
 special case.
 ==============================================================================*/
+#if !defined (INTERPOLATE_H)
+#define INTERPOLATE_H
+
 #include <stddef.h>
 #include "unemap/rig.h"
 #include "unemap/mapping.h"
@@ -19,11 +22,11 @@ struct Interpolation_function *calculate_interpolation_functio(
 	enum Map_type map_type,struct Rig *rig,struct Region *region,
 	int *event_number_address,float potential_time,int *datum_address,
 	int *start_search_interval_address,int *end_search_interval_address,
-	char undecided_accepted,int finite_element_mesh_rows,
-	int finite_element_mesh_columns,float membrane_smoothing,
-	float plate_bending_smoothing);
+	float half_peak_to_peak_interval_width,char undecided_accepted,
+	int finite_element_mesh_rows,int finite_element_mesh_columns,
+	float membrane_smoothing,float plate_bending_smoothing);
 /*******************************************************************************
-LAST MODIFIED : 13 October 1997
+LAST MODIFIED : 26 June 2003
 
 DESCRIPTION :
 There are three groups of arguments for this function
@@ -46,3 +49,4 @@ DESCRIPTION :
 This function deallocates the memory associated with the fields of <**function>,
 deallocates the memory for <**function> and sets <*function> to NULL;
 ==============================================================================*/
+#endif /* !defined (INTERPOLATE_H) */

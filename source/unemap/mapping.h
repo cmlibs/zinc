@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 26 June 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -296,9 +296,10 @@ Data unique to each sub map, passed from calculate step to show step.
 
 struct Map
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 26 June 2003
 
-DESCRIPTION : The Map.
+DESCRIPTION :
+The Map.
 ==============================================================================*/
 {
 	enum Map_type *type;
@@ -311,6 +312,8 @@ DESCRIPTION : The Map.
 	/* a flag 1 = use signal  value to get colour */
 	int colour_electrodes_with_signal; 
 	int *end_search_interval,*start_search_interval;
+	/* for activation potential maps */
+	float half_peak_to_peak_interval_width;
 	enum Colour_option colour_option;
 	enum Contours_option contours_option;
 	enum Electrodes_label_type electrodes_label_type;
@@ -327,23 +330,23 @@ DESCRIPTION : The Map.
 	struct Rig **rig_pointer;
 	int number_of_electrodes;
 	struct Device **electrodes;
-
-	/* number_of_gouraud_triangles,triangle_electrode_indices for 2D and 3D gouraud maps */
+	/* number_of_gouraud_triangles,triangle_electrode_indices for 2D and 3D
+		gouraud maps */
 	int number_of_gouraud_triangles;
-	/* an array of 3 x number_of_gouraud_triangles. Conts are indices into map->electrodes*/
+	/* an array of 3 x number_of_gouraud_triangles. Conts are indices into
+		map->electrodes */
 	int *triangle_electrode_indices;
-
-	/* *electrode_tex_x to electrode_rgbs for generating gouraud texure for 3D maps*/
-	/* electrode_tex_x,y of length number_of_electrodes*/
+	/* *electrode_tex_x to electrode_rgbs for generating gouraud texure for 3D
+		maps */
+	/* electrode_tex_x,y of length number_of_electrodes */
 	int *electrode_tex_x,*electrode_tex_y;
 	int texture_x_length,texture_y_length;
-	/*??JW texture_image,electrode_rgbs should be in sub_map but haven't */
-	/* implemented sub maps for 3D yet*/
+	/*???JW.  texture_image,electrode_rgbs should be in sub_map but haven't
+		implemented sub maps for 3D yet */
 	/* texture_image of length texture_x_length*texture_y_length*3 */
 	unsigned char *texture_image;
-	/* electrode_rgbs of length number_of_electrodes*3*/
+	/* electrode_rgbs of length number_of_electrodes*3 */
 	unsigned char *electrode_rgbs;
-	
 	int number_of_auxiliary;
 	char *electrode_drawn;
 	int *draw_region_number,number_of_drawn_regions;

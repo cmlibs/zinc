@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 26 June 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -6235,7 +6235,7 @@ struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
 	struct Electrical_imaging_event **eimaging_event_list,
 	enum Signal_analysis_mode *analysis_mode)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2002
+LAST MODIFIED : 26 June 2003
 
 DESCRIPTION :
 This function allocates memory for a map and initializes the fields to the
@@ -6254,6 +6254,8 @@ NULL if not successful.
 #define XmCFiniteElementMeshRows "FiniteElementMeshRows"
 #define XmNfiniteElementMeshColumns "finiteElementMeshColumns"
 #define XmCFiniteElementMeshColumns "FiniteElementMeshColumns"
+#define XmNhalfPeakToPeakIntervalWidth "halfPeakToPeakIntervalWidth"
+#define XmCHalfPeakToPeakIntervalWidth "HalfPeakToPeakIntervalWidth"
 #define XmNmembraneSmoothingTenThous "membraneSmoothingTenThous"
 #define XmCMembraneSmoothingTenThous "MembraneSmoothingTenThous"
 #define XmNplateBendingSmoothingTenThous "plateBendingSmoothingTenThous"
@@ -6290,6 +6292,15 @@ NULL if not successful.
 				XtOffsetOf(Map_settings,finite_element_mesh_columns),
 				XmRString,
 				"4"
+			},
+			{
+				XmNhalfPeakToPeakIntervalWidth,
+				XmCHalfPeakToPeakIntervalWidth,
+				XmRFloat,
+				sizeof(float),
+				XtOffsetOf(Map_settings,half_peak_to_peak_interval_width),
+				XmRString,
+				"60"
 			}
 		},
 		resources_2[]=
@@ -8404,7 +8415,7 @@ the name of the cylindrical polar computed field, <z_min> and <z_range>
 #if defined (UNEMAP_USE_3D)
 static int draw_map_3d(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2003
+LAST MODIFIED : 26 June 2003
 
 DESCRIPTION :
 This function draws the <map> in as a 3D CMGUI scene, for the current region(s).
@@ -8421,8 +8432,8 @@ Removes 3d drawing for non-current region(s).
 	struct FE_field_order_info *field_order_info;
 	struct Computed_field *data_field,*texture_coords;
 	float frame_time,minimum,maximum;
-	int default_torso_loaded,delaunay_map,direct_on_smooth_torso,display_all_regions,
-		nodes_rejected_or_accepted,range_set,return_code,*times;
+	int default_torso_loaded,delaunay_map,direct_on_smooth_torso,
+		display_all_regions,nodes_rejected_or_accepted,range_set,return_code,*times;
 	enum Map_type map_type;
 	char undecided_accepted;
 	struct Map_drawing_information *drawing_information;
@@ -8497,7 +8508,8 @@ Removes 3d drawing for non-current region(s).
 			get_map_drawing_information_electrodes_accepted_or_rejected
 			(drawing_information);
 		spectrum=drawing_information->spectrum;
-		spectrum_manager=get_map_drawing_information_spectrum_manager(drawing_information);
+		spectrum_manager=get_map_drawing_information_spectrum_manager(
+			drawing_information);
 		if ((map->rig_pointer)&&(rig= *(map->rig_pointer)))
 		{
 			return_code=1;
@@ -8505,7 +8517,8 @@ Removes 3d drawing for non-current region(s).
 			signal=(device)->signal;
 			buffer=signal->buffer;
 			times=buffer->times;
-			frame_time=(int)((float)((times)[*(map->potential_time)])*1000./buffer->frequency);
+			frame_time=(int)((float)((times)[*(map->potential_time)])*1000./
+				buffer->frequency);
 			undecided_accepted=map->undecided_accepted;
 			current_region=get_Rig_current_region(rig);
 			/*if current_region NULL, displaying all regions*/
@@ -8557,7 +8570,8 @@ Removes 3d drawing for non-current region(s).
 						{
 							focus=0;
 						}
-						field_order_info=create_mapping_fields(region->type,focus,unemap_package);
+						field_order_info=create_mapping_fields(region->type,focus,
+							unemap_package);
 						if (map->interpolation_type==NO_INTERPOLATION)
 						{
 							/* no surface, just electrodes */
@@ -8585,8 +8599,10 @@ Removes 3d drawing for non-current region(s).
 									map->finite_element_mesh_rows);
 								set_map_3d_package_number_of_map_columns(map_3d_package,
 									map->finite_element_mesh_columns);
-								map_position_field=get_FE_field_order_info_field(field_order_info,0);
-								set_map_3d_package_position_field(map_3d_package,map_position_field);
+								map_position_field=get_FE_field_order_info_field(
+									field_order_info,0);
+								set_map_3d_package_position_field(map_3d_package,
+									map_position_field);
 								/* will deaccess the old map_3d_package*/
 								set_Region_map_3d_package(region,map_3d_package);
 							}
@@ -8600,7 +8616,8 @@ Removes 3d drawing for non-current region(s).
 									if (map_3d_package)
 									{
 										/*this will do a deaccess*/
-										set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
+										set_Region_map_3d_package(region,
+											(struct Map_3d_package *)NULL);
 									}
 									/* Create the new Map_3d_package*/
 									map_3d_package = CREATE(Map_3d_package)(
@@ -8609,15 +8626,17 @@ Removes 3d drawing for non-current region(s).
 										get_unemap_package_Computed_field_manager(unemap_package));
 									set_Region_map_3d_package(region,map_3d_package);
 									/*  set up the mapped torso node and element groups */
-									make_mapped_torso_node_and_element_groups(region,unemap_package);
+									make_mapped_torso_node_and_element_groups(region,
+										unemap_package);
 									map_define_scaled_offset_signal_at_time(unemap_package);
 								}
 								if (!map->fixed_range)
 								{
-									get_rig_node_group_signal_min_max_at_time(unrejected_node_group,
-										get_unemap_package_scaled_offset_signal_value_at_time_field(unemap_package),
-										get_unemap_package_signal_status_field(unemap_package),
-										time,&minimum,&maximum);
+									get_rig_node_group_signal_min_max_at_time(
+										unrejected_node_group,
+										get_unemap_package_scaled_offset_signal_value_at_time_field(
+										unemap_package),get_unemap_package_signal_status_field(
+										unemap_package),time,&minimum,&maximum);
 								}
 								else
 								{
@@ -8627,8 +8646,8 @@ Removes 3d drawing for non-current region(s).
 								z_min=get_map_3d_package_electrodes_min_z(map_3d_package);
 								z_max=get_map_3d_package_electrodes_max_z(map_3d_package);
 								z_range=z_max-z_min;
-								skin_texture=make_gouraud_texture_from_torso_map(map,region,time,
-									z_min,z_range,minimum,maximum,256/*texture_x_length*/,
+								skin_texture=make_gouraud_texture_from_torso_map(map,region,
+									time,z_min,z_range,minimum,maximum,256/*texture_x_length*/,
 									256/*texture_y_length*/,1/*draw_skin*/);
 								/* range set in make_gouraud_texture_from_torso_map, so don't*/
 								/* want to do it again below*/
@@ -8649,7 +8668,8 @@ Removes 3d drawing for non-current region(s).
 									/* BICUBIC_INTERPOLATION */
 									if (function=calculate_interpolation_functio(map_type,
 										rig,region,	map->event_number,frame_time,map->datum,
-										map->start_search_interval,map->end_search_interval,undecided_accepted,
+										map->start_search_interval,map->end_search_interval,
+										map->half_peak_to_peak_interval_width,undecided_accepted,
 										map->finite_element_mesh_rows,
 										map->finite_element_mesh_columns,map->membrane_smoothing,
 										map->plate_bending_smoothing))
@@ -11442,7 +11462,7 @@ static int draw_2d_calculate_electrode_value(struct Map *map,
 	struct Sub_map *sub_map,char *electrode_drawn,struct Device	**electrode,
 	float *f_value)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 26 June 2003
 
 DESCRIPTION :
 Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
@@ -11452,9 +11472,11 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 	double integral;
 	enum Map_type map_type;
 	float a,*float_value,frame_time,frame_time_freq,proportion;
-	int after,before,buffer_index,datum,end_search_interval,event_number,found,i,
-		middle,number_of_signals,return_code,start_search_interval,*times;
-	short int	*short_int_value;
+	int after,before,buffer_index,datum,end_search_interval,event_number,found,
+		half_peak_to_peak_interval_width_samples,i,middle,number_of_signals,
+		peak_max_float,peak_min_float,peak_val_float,return_code,
+		start_search_interval,*times;
+	short int	peak_max_short,peak_min_short,peak_val_short,*short_int_value;
 	struct Event *event;
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
@@ -11508,6 +11530,7 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 								} break;
 								case ACTIVATION_POTENTIAL:
 								{
+#if defined (OLD_CODE)
 									switch (signal->buffer->value_type)
 									{
 										case SHORT_INT_VALUE:
@@ -11527,6 +11550,88 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 									}
 									*f_value=((*f_value)-((*electrode)->channel->offset))*
 										((*electrode)->channel->gain);
+#endif /* defined (OLD_CODE) */
+									/* calculate peak to peak voltage for an interval
+										centred on the activation time */
+									if (map->half_peak_to_peak_interval_width>0)
+									{
+										half_peak_to_peak_interval_width_samples=
+											(int)((signal->buffer->frequency)*
+											(map->half_peak_to_peak_interval_width)/(float)1000.+0.5);
+									}
+									else
+									{
+										half_peak_to_peak_interval_width_samples=0;
+									}
+									start_search_interval=(event->time)-
+										half_peak_to_peak_interval_width_samples;
+									number_of_signals=signal->buffer->number_of_signals;
+									if (start_search_interval<0)
+									{
+										start_search_interval=0;
+									}
+									end_search_interval=(event->time)+
+										half_peak_to_peak_interval_width_samples;
+									if (end_search_interval>signal->buffer->number_of_samples)
+									{
+										end_search_interval=signal->buffer->number_of_samples;
+									}
+									switch (signal->buffer->value_type)
+									{
+										case SHORT_INT_VALUE:
+										{
+											short_int_value=
+												(signal->buffer->signals.short_int_values)+
+												(start_search_interval*number_of_signals+
+												(signal->index));
+											peak_min_short= *short_int_value;
+											peak_max_short=peak_min_short;
+											for (i=end_search_interval-start_search_interval;i>0;i--)
+											{
+												short_int_value += number_of_signals;
+												peak_val_short= *short_int_value;
+												if (peak_val_short<peak_min_short)
+												{
+													peak_min_short=peak_val_short;
+												}
+												else
+												{
+													if (peak_val_short>peak_max_short)
+													{
+														peak_max_short=peak_val_short;
+													}
+												}
+											}
+											*f_value=(float)(peak_max_short-peak_min_short);
+										} break;
+										case FLOAT_VALUE:
+										{
+											float_value=
+												(signal->buffer->signals.float_values)+
+												(start_search_interval*number_of_signals+
+												(signal->index));
+											peak_min_float= *float_value;
+											peak_max_float=peak_min_float;
+											for (i=end_search_interval-start_search_interval;i>0;i--)
+											{
+												float_value += number_of_signals;
+												peak_val_float= *float_value;
+												if (peak_val_float<peak_min_float)
+												{
+													peak_min_float=peak_val_float;
+												}
+												else
+												{
+													if (peak_val_float>peak_max_float)
+													{
+														peak_max_float=peak_val_float;
+													}
+												}
+											}
+											*f_value=peak_max_float-peak_min_float;
+										} break;
+									}
+									*f_value *= (*electrode)->channel->gain;
 								} break;
 							}
 							*electrode_drawn=1;
@@ -12416,7 +12521,7 @@ static int draw_2d_construct_interpolated_image_map(struct Map *map,
 	int *minimum_x,int *minimum_y,int *maximum_x,int *maximum_y,
 	float *max_f,float *min_f,char *background_map_boundary_base)
 /*******************************************************************************
-LAST MODIFIED 9 November 2001
+LAST MODIFIED : 26 June 2003
 
 DESCRIPTION :
 Construct a colour map image for colour map or contours or  values  in the
@@ -12425,11 +12530,12 @@ Construct a colour map image for colour map or contours or  values  in the
 {
 	enum Map_type map_type;
 	char valid_u_and_v;
-	float frame_time,f_approx,*min_x,*min_y,*pixel_value,*stretch_x,*stretch_y,u,v,
-		*x_mesh,*y_mesh,x_screen,x_screen_left,x_screen_step,y_screen,y_screen_top,
-		y_screen_step;
-	int column,i,j,map_width,map_height,number_of_mesh_rows,number_of_mesh_columns,
-		pixel_left,pixel_top,return_code,row,*start_x,*start_y,x_pixel,y_pixel;
+	float frame_time,f_approx,*min_x,*min_y,*pixel_value,*stretch_x,*stretch_y,u,
+		v,*x_mesh,*y_mesh,x_screen,x_screen_left,x_screen_step,y_screen,
+		y_screen_top,y_screen_step;
+	int column,i,j,map_width,map_height,number_of_mesh_rows,
+		number_of_mesh_columns,pixel_left,pixel_top,return_code,row,*start_x,
+		*start_y,x_pixel,y_pixel;
 	struct Interpolation_function *function;
 	struct Map_frame *frame;
 	struct Rig *rig;
@@ -12473,15 +12579,12 @@ Construct a colour map image for colour map or contours or  values  in the
 		/* interpolate data */
 		if ((0!=stretch_x[region_number])&&
 			(0!=stretch_y[region_number])&&
-			(function=calculate_interpolation_functio(
-				map_type,rig,the_region,map->event_number,
-				frame_time,map->datum,
-				map->start_search_interval,
-				map->end_search_interval,map->undecided_accepted,
-				map->finite_element_mesh_rows,
-				map->finite_element_mesh_columns,
-				map->membrane_smoothing,
-				map->plate_bending_smoothing)))
+			(function=calculate_interpolation_functio(map_type,rig,the_region,
+			map->event_number,frame_time,map->datum,map->start_search_interval,
+			map->end_search_interval,map->half_peak_to_peak_interval_width,
+			map->undecided_accepted,map->finite_element_mesh_rows,
+			map->finite_element_mesh_columns,map->membrane_smoothing,
+			map->plate_bending_smoothing)))
 		{
 			number_of_mesh_columns=
 				function->number_of_columns;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interpolate.c
 
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 26 June 2003
 
 DESCRIPTION :
 Functions for calculating a finite element interpolation to data for a special
@@ -5998,11 +5998,11 @@ struct Interpolation_function *calculate_interpolation_functio(
 	enum Map_type map_type,struct Rig *rig,struct Region *region,
 	int *event_number_address,float potential_time,int *datum_address,
 	int *start_search_interval_address,int *end_search_interval_address,
-	char undecided_accepted,int finite_element_mesh_rows,
-	int finite_element_mesh_columns,float membrane_smoothing,
-	float plate_bending_smoothing)
+	float half_peak_to_peak_interval_width,char undecided_accepted,
+	int finite_element_mesh_rows,int finite_element_mesh_columns,
+	float membrane_smoothing,float plate_bending_smoothing)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 26 June 2003
 
 DESCRIPTION :
 There are three groups of arguments for this function
@@ -6032,10 +6032,11 @@ if they should be 1-D or 2-D arrays ?
 #else
 		float *matrix_and_right_hand_side=(float *)NULL;
 #endif /* defined (DOUBLE_MATRIX) */		
-		int after,before,column,datum,end_search_interval,event_number,found,i,i_j,
-			i_jm1,im1_j,im1_jm1,j,middle,number_of_columns,number_of_data,
-			number_of_devices,number_of_equations,number_of_nodes,number_of_rows,
-			number_of_signals,number_of_valid_data,row,start_search_interval;
+		int after,before,column,datum,end_search_interval,event_number,found,
+			half_peak_to_peak_interval_width_samples,i,i_j,i_jm1,im1_j,im1_jm1,j,
+			middle,number_of_columns,number_of_data,number_of_devices,
+			number_of_equations,number_of_nodes,number_of_rows,number_of_signals,
+			number_of_valid_data,row,start_search_interval;
 		int *times=(int *)NULL;
 		float absolute_error,average_absolute_error,dfdx_i_j,dfdx_i_jm1,
 			dfdx_im1_j,dfdx_im1_jm1,dfdy_i_j,dfdy_i_jm1,dfdy_im1_j,dfdy_im1_jm1,
@@ -6043,7 +6044,8 @@ if they should be 1-D or 2-D arrays ?
 			f_approx,f_i_j,f_i_jm1,f_im1_j,f_im1_jm1,f_max,f_min,focus,
 			frequency,height,h01_u,h01_v,h02_u,h02_v,h11_u,h11_v,h12_u,h12_v,lambda,
 			max_data_x,max_data_y,maximum_absolute_error,min_data_x,min_data_y,
-			potential_time_freq,proportion,r,step_x,step_y,u,v,width,x,y,z;
+			peak_max_float,peak_min_float,peak_val_float,potential_time_freq,
+			proportion,r,step_x,step_y,u,v,width,x,y,z;
 		float *dfdx=(float *)NULL;
 		float *dfdy=(float *)NULL;
 		float *d2fdxdy=(float *)NULL;
@@ -6060,7 +6062,8 @@ if they should be 1-D or 2-D arrays ?
 		float *y_data_base=(float *)NULL;
 		float *y_mesh=(float *)NULL;
 		Linear_transformation *linear_trans=(Linear_transformation *)NULL;
-		short int *short_int_value=(short int *)NULL;
+		short int peak_max_short,peak_min_short,peak_val_short,
+			*short_int_value=(short int *)NULL;
 		struct Interpolation_function
 			*function=(struct Interpolation_function *)NULL;
 		struct Device **device=(struct Device **)NULL;
@@ -6072,9 +6075,11 @@ if they should be 1-D or 2-D arrays ?
 
 		ENTER(calculate_interpolation_functio);
 		if (rig&&region&&(
-			((((map_type==SINGLE_ACTIVATION)||(map_type==ACTIVATION_POTENTIAL))&&
+			((map_type==SINGLE_ACTIVATION)&&
 			((event_number= *event_number_address)>=1)&&
-			((datum= *datum_address)>=0)))||
+			((datum= *datum_address)>=0))||
+			((map_type==ACTIVATION_POTENTIAL)&&
+			((event_number= *event_number_address)>=1))||
 			((map_type==MULTIPLE_ACTIVATION)&&((datum= *datum_address)>=0))||
 			(map_type==POTENTIAL)||
 			(((map_type==INTEGRAL)&&
@@ -6193,6 +6198,15 @@ if they should be 1-D or 2-D arrays ?
 						focus=region->properties.sock.focus;
 						linear_trans=region->properties.sock.linear_transformation;
 					}
+					if (half_peak_to_peak_interval_width>0)
+					{
+						half_peak_to_peak_interval_width_samples=(int)(frequency*
+							half_peak_to_peak_interval_width/(float)1000.+0.5);
+					}
+					else
+					{
+						half_peak_to_peak_interval_width_samples=0;
+					}
 					i=number_of_data;
 					switch (map_type)
 					{
@@ -6247,7 +6261,7 @@ if they should be 1-D or 2-D arrays ?
 											} break;
 											case ACTIVATION_POTENTIAL:
 											{
-												/* calculate potential at activation time */
+#if defined (OLD_CODE)
 												switch (signal->buffer->value_type)
 												{
 													case SHORT_INT_VALUE:
@@ -6266,6 +6280,82 @@ if they should be 1-D or 2-D arrays ?
 												}
 												*value=((*value)-((*device)->channel->offset))*
 													((*device)->channel->gain);
+#endif /* defined (OLD_CODE) */
+												/* calculate peak to peak voltage for an interval
+													centred on the activation time */
+												start_search_interval=(event->time)-
+													half_peak_to_peak_interval_width_samples;
+												if (start_search_interval<0)
+												{
+													start_search_interval=0;
+												}
+												end_search_interval=(event->time)+
+													half_peak_to_peak_interval_width_samples;
+												if (end_search_interval>
+													signal->buffer->number_of_samples)
+												{
+													end_search_interval=
+														signal->buffer->number_of_samples;
+												}
+												number_of_signals=signal->buffer->number_of_signals;
+												switch (signal->buffer->value_type)
+												{
+													case SHORT_INT_VALUE:
+													{
+														short_int_value=
+															(signal->buffer->signals.short_int_values)+
+															(start_search_interval*number_of_signals+
+															(signal->index));
+														peak_min_short= *short_int_value;
+														peak_max_short=peak_min_short;
+														for (j=end_search_interval-start_search_interval;
+															j>0;j--)
+														{
+															short_int_value += number_of_signals;
+															peak_val_short= *short_int_value;
+															if (peak_val_short<peak_min_short)
+															{
+																peak_min_short=peak_val_short;
+															}
+															else
+															{
+																if (peak_val_short>peak_max_short)
+																{
+																	peak_max_short=peak_val_short;
+																}
+															}
+														}
+														*value=(float)(peak_max_short-peak_min_short);
+													} break;
+													case FLOAT_VALUE:
+													{
+														float_value=
+															(signal->buffer->signals.float_values)+
+															(start_search_interval*number_of_signals+
+															(signal->index));
+														peak_min_float= *float_value;
+														peak_max_float=peak_min_float;
+														for (j=end_search_interval-start_search_interval;
+															j>0;j--)
+														{
+															float_value += number_of_signals;
+															peak_val_float= *float_value;
+															if (peak_val_float<peak_min_float)
+															{
+																peak_min_float=peak_val_float;
+															}
+															else
+															{
+																if (peak_val_float>peak_max_float)
+																{
+																	peak_max_float=peak_val_float;
+																}
+															}
+														}
+														*value=peak_max_float-peak_min_float;
+													} break;
+												}
+												*value *= (*device)->channel->gain;
 											} break;
 										}
 										x_data++;
