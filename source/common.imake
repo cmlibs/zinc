@@ -184,18 +184,18 @@ DSO_LINK = $(LINK) $(ALL_FLAGS) -shared
 	@if [ -f $*.f ]; then \
 	   case $*.f in  \
 	      * ) \
-	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $*.f ;; \
+	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $*.f ;; \
 	   esac ; \
 	else \
 	   case $*.f in  \
 	      * ) \
-	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $(PRODUCT_SOURCE_PATH)/$*.f ;; \
+	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $(PRODUCT_SOURCE_PATH)/$*.f ;; \
 	   esac ; \
 	fi
 #else /* defined (CMISS_ROOT_DEFINED) */
 	case $*.f in  \
 		* ) \
-	  set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $*.f ;; \
+	  set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $*.f ;; \
 	esac ;
 #endif /* defined (CMISS_ROOT_DEFINED) */
 
