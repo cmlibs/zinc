@@ -2501,9 +2501,12 @@ make it the current node of <node_order_info>
 			&highlight);
 		while(current_node&&!highlight)
 		{
-			current_node=get_FE_node_order_info_next_node(node_order_info);	
-			get_FE_nodal_int_value(current_node,&component,0,FE_NODAL_VALUE,
-				&highlight);		
+			current_node=get_FE_node_order_info_next_node(node_order_info);
+			if(current_node)
+			{
+				get_FE_nodal_int_value(current_node,&component,0,FE_NODAL_VALUE,
+					&highlight);		
+			}
 		}
 		/*if nothing highlighted, just make the first the current */
 		if(!highlight)

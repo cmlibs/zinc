@@ -21,7 +21,7 @@ Contains function definitions for unemap package.
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 
 DECLARE_OBJECT_FUNCTIONS(Unemap_package)
 
@@ -66,8 +66,10 @@ The fields are filed in with set_unemap_package_fields()
 			/* fields of the rig_nodes */
 			package->device_name_field=(struct FE_field *)NULL;
 			package->device_type_field=(struct FE_field *)NULL;
+#if defined (UNEMAP_USE_NODES)
 			package->display_end_time_field=(struct FE_field *)NULL;
 			package->display_start_time_field=(struct FE_field *)NULL;
+#endif /* defined (UNEMAP_USE_NODES)*/
 			package->channel_number_field=(struct FE_field *)NULL;
 			package->read_order_field=(struct FE_field *)NULL;
 			package->highlight_field=(struct FE_field *)NULL;
@@ -117,8 +119,10 @@ to NULL.
 		DEACCESS(FE_field)(&(package->device_name_field));
 		DEACCESS(FE_field)(&(package->device_type_field));
 		DEACCESS(FE_field)(&(package->channel_number_field));
+#if defined (UNEMAP_USE_NODES)
 		DEACCESS(FE_field)(&(package->display_start_time_field));
 		DEACCESS(FE_field)(&(package->display_end_time_field));
+#endif /* defined (UNEMAP_USE_NODES)*/
 		DEACCESS(FE_field)(&(package->read_order_field));
 		DEACCESS(FE_field)(&(package->highlight_field));
 		DEACCESS(FE_field)(&(package->signal_field));
@@ -140,7 +144,9 @@ to NULL.
 
 	return (return_code);
 } /* DESTROY(Unemap_package) */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_device_name_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -197,7 +203,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_device_name_field */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_device_type_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -249,7 +257,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_device_type_field */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_channel_number_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -301,7 +311,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_channel_number_field */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_NODES)
 struct FE_field *get_unemap_package_display_start_time_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -353,7 +365,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_display_start_time_field */
+#endif /* defined (UNEMAP_USE_NODES)*/
 
+#if defined (UNEMAP_USE_NODES)
 struct FE_field *get_unemap_package_display_end_time_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -405,7 +419,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_display_end_time_field */
+#endif /* defined (UNEMAP_USE_NODES)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_read_order_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -457,7 +473,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_read_order_field */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_highlight_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -509,7 +527,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_highlight_field */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_signal_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -561,7 +581,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_signal_field */
+#endif /* defined (UNEMAP_USE_NODES)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_signal_minimum_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -613,7 +635,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_signal_minimum_field */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_signal_maximum_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -665,7 +689,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_signal_maximum_field */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_signal_status_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -717,7 +743,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_signal_status_field */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct Computed_field *get_unemap_package_signal_value_at_time_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -770,7 +798,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_signal_value_at_time_field */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct Computed_field *get_unemap_package_time_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -823,7 +853,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_time_field */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_channel_offset_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -875,7 +907,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_channel_offset_field */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_channel_gain_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -927,7 +961,9 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_channel_gain_field */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(FE_field) *get_unemap_package_FE_field_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -953,7 +989,9 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(fe_field_manager);
 }/* get_unemap_package_FE_field_manager */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(Computed_field) *get_unemap_package_Computed_field_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -979,7 +1017,9 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(computed_field_manager);
 }/* get_unemap_package_Computed_field_manager */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_NODES)
 struct FE_node_selection *get_unemap_package_FE_node_selection(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -1005,7 +1045,9 @@ gets a FE_node_selection of the unemap package.
 	LEAVE;
 	return(node_selection);
 }/* get_unemap_package_FE_node_selection */
+#endif /* defined (UNEMAP_USE_NODES)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(GROUP(FE_element)) *get_unemap_package_element_group_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -1031,7 +1073,9 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(element_group_manager);
 }/* get_unemap_package_element_group_manager */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(FE_node) *get_unemap_package_node_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -1057,7 +1101,9 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(node_manager);
 }/* get_unemap_package_node_manager */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(FE_element) *get_unemap_package_element_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -1083,7 +1129,9 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(element_manager);
 }/* get_unemap_package_element_manager */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(Interactive_tool) *get_unemap_package_interactive_tool_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -1109,7 +1157,9 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(interactive_tool_manager);
 }/* get_unemap_package_interactive_tool_manager */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(FE_basis) *get_unemap_package_basis_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -1136,7 +1186,9 @@ gets a manager of the unemap package.
 	return(basis_manager);
 }/* get_unemap_package_basis_manager */
 
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(GROUP(FE_node)) *get_unemap_package_data_group_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -1162,7 +1214,9 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(data_group_manager);
 }/* get_unemap_package_data_group_manager */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(GROUP(FE_node)) *get_unemap_package_node_group_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -1188,7 +1242,9 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(node_group_manager);
 }/* get_unemap_package_node_group_manager */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 static int rig_node_has_electrode_defined(struct FE_node *node,
 	void *package_void)
 /*******************************************************************************
@@ -1228,7 +1284,9 @@ Called  by (see also) unemap_package_rig_node_group_has_electrodes.
 	LEAVE;
 	return (return_code);
 }/* rig_node_has_electrode_defined */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 int unemap_package_rig_node_group_has_electrodes(struct Unemap_package *package,
 	struct GROUP(FE_node) *rig_node_group)
 /*******************************************************************************
@@ -1270,7 +1328,9 @@ set to "ELECTRODE". See also rig_node_has_electrode_defined
 	LEAVE;
 	return(return_code);
 }/* unemap_package_rig_node_group_has_electrodes. */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 int free_unemap_package_rig_fields(struct Unemap_package *unemap_package)
 /*******************************************************************************
 LAST MODIFIED : 17 May 2000
@@ -1322,6 +1382,7 @@ Frees the <unemap_package> rig's computed and fe fields
 				unemap_package->channel_number_field=(struct FE_field *)NULL;
 			}
 		}	
+#if  defined (UNEMAP_USE_NODES)
 		if(unemap_package->display_start_time_field)
 		{
 			temp_field=unemap_package->display_start_time_field;
@@ -1342,6 +1403,7 @@ Frees the <unemap_package> rig's computed and fe fields
 				unemap_package->display_end_time_field=(struct FE_field *)NULL;
 			}
 		}	
+#endif /* defined (UNEMAP_USE_NODES) */
 		if(unemap_package->read_order_field)
 		{
 			temp_field=unemap_package->read_order_field;
@@ -1432,7 +1494,9 @@ Frees the <unemap_package> rig's computed and fe fields
 	LEAVE;
 	return(return_code);		
 }/* free_unemap_package_rig_fields*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 int free_unemap_package_time_computed_fields(struct Unemap_package *unemap_package)
 /*******************************************************************************
 LAST MODIFIED : 4 May 2000
@@ -1542,7 +1606,9 @@ stored in the unemap package. Also frees any associated fe_fields
 	LEAVE;
 	return(return_code);
 }/*free_unemap_package_time_computed_fields */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 int free_unemap_package_rig_node_group_glyphs(
 	struct Map_drawing_information *drawing_information,
 	struct Unemap_package *package,
@@ -1612,7 +1678,9 @@ Frees up any glyphs used by the nodes in the rig_node_group
 
 	return (return_code);
 } /* free_unemap_package_rig_node_group_glyphs */
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 int free_unemap_package_rig_node_group(struct Unemap_package *package,	
 	struct GROUP(FE_node) **rig_node_group)
 /*******************************************************************************
@@ -1642,4 +1710,4 @@ free_unemap_package_rig_node_group_glyphs for this
 	LEAVE;
 	return (return_code);
 }/* free_unemap_package_rig_node_group */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */

@@ -22396,7 +22396,7 @@ Executes a UNEMAP OPEN command.
 	ENTER(execute_command_unemap_open);
 #if defined (UNEMAP)
 	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
-	electrode_selected_material=(struct Graphical_material *)NULL;	
+	electrode_selected_material=(struct Graphical_material *)NULL;
 #endif /*  defined (UNEMAP) */
 	USE_PARAMETER(dummy_to_be_modified);
 	/* check argument */
@@ -22455,8 +22455,8 @@ Executes a UNEMAP OPEN command.
 							XmNallowShellResize,False,NULL))
 						{
 							if (system=create_System_window(shell,close_emap,
-								command_data->default_time_keeper,command_data->user_interface,
-								command_data->unemap_package,	
+								command_data->default_time_keeper,command_data->user_interface 
+								,command_data->unemap_package,	
 								command_data->element_point_ranges_selection,
 								command_data->element_selection,
 								command_data->node_selection,
@@ -22473,7 +22473,8 @@ Executes a UNEMAP OPEN command.
 								command_data->default_graphical_material,
 								command_data->computed_field_package,
 								command_data->default_light,
-								command_data->default_light_model))
+								command_data->default_light_model
+									))
 							{
 								command_data->unemap_system_window=system;
 								create_Shell_list_item(&(system->window_shell),
@@ -22655,7 +22656,7 @@ Executes a CELL OPEN command.
 							/* add Cell 3D */
 							if (cell_window=create_Cell_window(command_data->user_interface,
 								(char *)NULL,command_data->control_curve_manager,
-								command_data->unemap_package,
+								command_data->unemap_package, 
 								command_data->any_object_selection,
 								command_data->interactive_tool_manager,
 								&(command_data->background_colour),command_data->light_manager,
@@ -22673,17 +22674,6 @@ Executes a CELL OPEN command.
                 command_data->computed_field_package,
                 command_data->element_point_ranges_selection,
 								execute_command))
-#if defined (OLD_CODE)
-#if defined (CELL_CONTROL_CURVE)
-							if (cell_window=create_Cell_window(shell,close_cell,
-								command_data->user_interface,
-								command_data->control_curve_manager,
-								command_data->unemap_package))
-#else
-							if (cell_window=create_Cell_window(shell,close_cell,
-								command_data->user_interface))
-#endif /* defined (CELL_CONTROL_CURVE) */
-#endif /* defined (OLD_CODE) */
 							{
 								return_code=1;
 								command_data->cell_window=cell_window;

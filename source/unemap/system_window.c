@@ -313,9 +313,9 @@ Opens the windows associated with the acquisition work area.
 				/* read in the default rig configuration */
 				if (read_configuration_file(default_configuration_file_name,
 					&(system->acquisition.rig)
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 					,system->unemap_package
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 					 ))
 				{
 					read_default_configuration=1;
@@ -1107,7 +1107,7 @@ Close emap environment.
 struct System_window *create_System_window(Widget shell,
 	XtCallbackProc close_button_callback,struct Time_keeper *time_keeper,
 	struct User_interface *user_interface,struct Unemap_package *unemap_package
-#if defined (UNEMAP_USE_NODES) 
+#if defined (UNEMAP_USE_3D)
 	,struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
@@ -1125,7 +1125,7 @@ struct System_window *create_System_window(Widget shell,
 	struct Computed_field_package *computed_field_package,
 	struct Light *light,
 	struct Light_model *light_model
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 3 September 2000
@@ -1329,19 +1329,19 @@ pointer to the created structure if successful and NULL if unsuccessful.
 	struct System_window *system;
 
 	ENTER(create_System_window);
-#if !defined (UNEMAP_USE_NODES)
+#if !defined (UNEMAP_USE_3D)
 	USE_PARAMETER(unemap_package);
-#endif /* !defined (UNEMAP_USE_NODES) */
+#endif /* !defined (UNEMAP_USE_3D) */
 	/* check arguments */
 	if (user_interface
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 		&&unemap_package&&element_point_ranges_selection&&element_selection&&
 		node_selection&&data_selection&&texture_manager&&
 		  interactive_tool_manager&&scene_manager&&light_model_manager&&
 	    light_manager&&spectrum_manager&&graphical_material_manager&&
 	    data_manager&&glyph_list&&graphical_material&&
 			computed_field_package&&light&&light_model
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 		)
 	{
 		if (MrmOpenHierarchy_base64_string(system_window_uidh,
@@ -1350,7 +1350,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 			/* allocate memory */
 			if (ALLOCATE(system,struct System_window,1))
 			{			
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 				system->unemap_package = unemap_package;			
 #else				
 				system->unemap_package = (struct Unemap_package *)NULL;				
@@ -1359,21 +1359,21 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				system->user_interface=user_interface;
 				system->map_drawing_information=
 					create_Map_drawing_information(user_interface
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 						,element_point_ranges_selection,element_selection,
 						node_selection,data_selection,texture_manager,
 						interactive_tool_manager,scene_manager,light_model_manager,
 						light_manager,spectrum_manager,graphical_material_manager,
 						data_manager,glyph_list,graphical_material,
 						computed_field_package,light,light_model
-#endif /* defined (UNEMAP_USE_NODES) */										 
+#endif /* defined (UNEMAP_USE_3D) */										 
 						 );	
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 				set_map_drawing_information_user_interface(system->map_drawing_information,
 					user_interface);
 				set_map_drawing_information_time_keeper(system->map_drawing_information,
 					time_keeper);
-#endif /* defined (UNEMAP_USE_NODES) */		
+#endif /* defined (UNEMAP_USE_3D) */		
 				system->configuration_directory=(char *)NULL;
 				system->configuration_file_extension=(char *)NULL;
 				system->postscript_file_extension=(char *)NULL;

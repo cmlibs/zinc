@@ -68,7 +68,7 @@ Close emap environment.
 struct System_window *create_System_window(Widget shell,
 	XtCallbackProc close_button_callback,struct Time_keeper *time_keeper,
 	struct User_interface *user_interface,struct Unemap_package *unemap_package
-#if defined (UNEMAP_USE_NODES) 
+#if defined (UNEMAP_USE_3D) 
 	,struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
@@ -86,7 +86,7 @@ struct System_window *create_System_window(Widget shell,
 	struct Computed_field_package *computed_field_package,
 	struct Light *light,
 	struct Light_model *light_model
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 	);
 /*******************************************************************************
 LAST MODIFIED : 27 April 1999

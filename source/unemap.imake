@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 28 August 2000
+XCOMM LAST MODIFIED : 15 September 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -25,13 +25,6 @@ PRODUCT_PATH=$(CMGUI_DEV_ROOT)
 #endif /* defined (CMISS_ROOT_DEFINED) */
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
 PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities
-#if defined (OLD_CODE)
-PRODUCT_PATH=/usr/people/bullivan/cmgui/uni_source
-UTILITIES_PATH=/usr/people/bullivan/cmgui/cvs_unemap/utilities
-PRODUCT_PATH=.
-PRODUCT_PATH=$(CMISS_ROOT)/cmgui/source
-UTILITIES_PATH=$(CMISS_ROOT)/cmgui/source/utilities
-#endif /* defined (OLD_CODE) */
 
 #if defined (IRIX) /* switch OperatingSystem */
 /* 1 IRIX */
@@ -111,7 +104,8 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 /* 1.2.2 IRIX-N32-!OPTIMISED */
 #if defined (USE_UNEMAP_NODES)
 /* 1.2.2.1 IRIX-N32-!OPTIMISED-USE_UNEMAP_NODES */
-/* currently only version with nodes */
+/* this version uses nodes for as much as possible, */
+/* USE_UNEMAP_3D uses nodes just for 3D window  */
 #define Target unemap_nodes
 #define AffineTarget unemap/affine_nodes
 #define Bmsi2sigTarget unemap/bmsi2sig_nodes
@@ -145,11 +139,48 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/n32
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #else /* defined (USE_UNEMAP_NODES) */
-/* 1.2.2.2 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES */
+#if defined (USE_UNEMAP_3D)
+/* 1.2.2.2 IRIX-N32-!OPTIMISED-USE_UNEMAP_3D */
+/* this version uses nodes just for 3D window , */
+/* USE_UNEMAP_NODES uses nodes for as much as possible   */
+#define Target unemap_3d
+#define AffineTarget unemap/affine_3d
+#define Bmsi2sigTarget unemap/bmsi2sig_3d
+#define Biosense2sigTarget unemap/biosense2sig_3d
+#define Biosense2vrmlTarget unemap/biosense2vrml_3d
+#define ChangeCalibrationTarget unemap/change_calibration_3d
+#define ChangeChannelsTarget unemap/change_channels_3d
+#define ChangeConfigurationTarget unemap/change_configuration_3d
+#define ChangeEventsTarget unemap/change_events_3d
+#define ChangeFrequencyTarget unemap/change_frequency_3d
+#define CombineSignalsTarget unemap/combine_signals_3d
+#define DifferenceSignalsTarget unemap/difference_signals_3d
+#define ExtractSignalTarget unemap/extract_signal_3d
+#define Img2sigTarget unemap/img2sig_3d
+#define MakePlaqueTarget unemap/make_plaque_3d
+#define OpticalSignalsTarget unemap/optical_signals_3d
+#define Plt2cnfgTarget unemap/plt2cnfg_3d
+#define Posdat2sigTarget unemap/posdat2sig_3d
+#define RatioSignalsTarget unemap/ratio_signals_3d
+#define RegisterTarget unemap/register_3d
+#define Sig2textTarget unemap/sig2text_3d
+#define TestUnemapHardwareTarget unemap/test_unemap_hardware_3d
+#define Tuff2sigTarget unemap/tuff2sig_3d
+#define UniqueChannelsTarget unemap/unique_channels_3d
+#define Uid2uidhTarget uid2uidh
+#define Makefile unemap_sgi3d.make
+#define DependMake unemap_sgi3d.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/3d
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/3d
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
+#else /* defined (USE_UNEMAP_3D) */
+/* 1.2.2.3 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES */
 /* The normal debug and memory check versions keep the same extension as they
 	only differ in one file */
 #if !defined (MEMORY_CHECK)
-/* 1.2.2.2.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-!MEMORY_CHECK */
+/* 1.2.2.3.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-!MEMORY_CHECK */
 #define Target unemap32
 #define AffineTarget unemap/affine32
 #define Bmsi2sigTarget unemap/bmsi2sig32
@@ -183,7 +214,7 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/n32_nonodes
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #else /* !defined (MEMORY_CHECK) */
-/* 1.2.2.2.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-MEMORY_CHECK */
+/* 1.2.2.3.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-MEMORY_CHECK */
 #define Target unemap_memorycheck
 #define AffineTarget unemap/affine32
 #define Bmsi2sigTarget unemap/bmsi2sig32
@@ -218,13 +249,15 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #endif /* !defined (MEMORY_CHECK) */
 #endif /* defined (USE_UNEMAP_NODES) */
+#endif /* defined (USE_UNEMAP_3D) */
 #endif /* defined (OPTIMISED) */
 #endif /* defined (O64) */
 #elif defined (LINUX) /* switch OperatingSystem */
 /* 2 LINUX */
 #if defined (USE_UNEMAP_NODES)
 /* 2.1 LINUX-USE_UNEMAP_NODES */
-/* currently only version with nodes */
+/* this version uses nodes for as much as possible , */
+/* USE_UNEMAP_3D uses nodes just for 3D window    */
 #define Target unemap_linux_nodes
 #define AffineTarget unemap/affine_linux_nodes
 #define Bmsi2sigTarget unemap/bmsi2sig_linux_nodes
@@ -259,7 +292,45 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_nodes_g
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_nodes_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_nodes_g
 #else /* defined (USE_UNEMAP_NODES) */
-/* 2.2 LINUX-!USE_UNEMAP_NODES */
+#if defined (USE_UNEMAP_3D)
+/* 2.2 LINUX-USE_UNEMAP_3D */
+/* this version uses nodes just for 3D window  */
+/* USE_UNEMAP_NODES uses nodes  for as much as possible   */
+#define Target unemap_linux_3d
+#define AffineTarget unemap/affine_linux_3d
+#define Bmsi2sigTarget unemap/bmsi2sig_linux_3d
+#define Biosense2sigTarget unemap/biosense2sig_linux_3d
+#define Biosense2vrmlTarget unemap/biosense2vrml_linux_3d
+#define ChangeCalibrationTarget unemap/change_calibration_linux_3d
+#define ChangeChannelsTarget unemap/change_channels_linux_3d
+#define ChangeConfigurationTarget unemap/change_configuration_linux_3d
+#define ChangeEventsTarget unemap/change_events_linux_3d
+#define ChangeFrequencyTarget unemap/change_frequency_linux_3d
+#define CombineSignalsTarget unemap/combine_signals_linux_3d
+#define DifferenceSignalsTarget unemap/difference_signals_linux_3d
+#define ExtractSignalTarget unemap/extract_signal_linux_3d
+#define Img2sigTarget unemap/img2sig_linux_3d
+#define MakePlaqueTarget unemap/make_plaque_linux_3d
+#define OpticalSignalsTarget unemap/optical_signals_linux_3d
+#define Plt2cnfgTarget unemap/plt2cnfg_linux_3d
+#define Posdat2sigTarget unemap/posdat2sig_linux_3d
+#define RatioSignalsTarget unemap/ratio_signals_linux_3d
+#define RegisterTarget unemap/register_linux_3d
+#define Sig2textTarget unemap/sig2text_linux_3d
+#define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_3d
+#define Tuff2sigTarget unemap/tuff2sig_linux_3d
+#define UniqueChannelsTarget unemap/unique_channels_linux_3d
+#define Uid2uidhTarget uid2uidh_linux
+#define Makefile unemap_linux_3d.make
+#define DependMake unemap_linux_3d.depend
+#define ObjSuffix o
+/* Can't use linux on its own as this is defined! */
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_3d_g
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_3d_g
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_3d_g
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_g
+#else /* defined (USE_UNEMAP_3D) */
+/* 2.3 LINUX-!USE_UNEMAP_NODES */
 #define Target unemap_linux
 #define AffineTarget unemap/affine_linux
 #define Bmsi2sigTarget unemap/bmsi2sig_linux
@@ -293,6 +364,7 @@ OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_g
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_g
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_g
+#endif /* defined (USE_UNEMAP_3D) */
 #endif /* defined (USE_UNEMAP_NODES) */
 #endif /* switch OperatingSystem */
 
@@ -332,7 +404,7 @@ WINDOWING_SYSTEM = -DMOTIF
 WINDOWING_SYSTEM = -DWINDOWS
 #endif /* (OLD_CODE) */
 
-#if defined (USE_UNEMAP_NODES)
+#if defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)
 #if defined (IRIX) /* switch OperatingSystem */
 #if defined (O64)
 XCOMM for OpenGL without SGI movie (64bit doesnt have libraries as of Jan99)
@@ -348,23 +420,27 @@ XCOMM for OpenGL without SGI movie
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
 GRAPHICS_LIB = -L/usr/local/lib -lMesaGL -lMesaGLU
 #endif /* switch OperatingSystem */
-#endif /* (USE_UNEMAP_NODES) */
+#endif /* (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)*/
 
 #if defined (USE_UNEMAP_NODES)
-USE_NODES_SWITCH = -DUNEMAP_USE_NODES
-#else
+USE_NODES_SWITCH = -DUNEMAP_USE_NODES -DUNEMAP_USE_3D
+#else /* (USE_UNEMAP_NODES) */
+#if defined (USE_UNEMAP_3D)
+USE_NODES_SWITCH = -DUNEMAP_USE_3D
+#else /* defined (USE_UNEMAP_3D) */
 USE_NODES_SWITCH =
-#endif
+#endif /* defined (USE_UNEMAP_3D) */
+#endif /* (USE_UNEMAP_NODES) */
 
 UIDH_INC = -I$(UIDH_PATH) -I$(PRODUCT_UIDH_PATH)
 
-#if defined (IRIX) && defined (USE_UNEMAP_NODES)
+#if defined (IRIX) && ( defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D) )
 EXTERNAL_INPUT_DEFINES = -DDIALS -DSPACEBALL -DPOLHEMUS -DFARO -DEXT_INPUT
 EXTERNAL_INPUT_LIB = -lXext -lXi
-#else /* defined (IRIX) && defined (USE_UNEMAP_NODES) */
+#else /* defined (IRIX) && ( defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D) ) */
 EXTERNAL_INPUT_DEFINES =
 EXTERNAL_INPUT_LIB =
-#endif /* defined (IRIX) && defined (USE_UNEMAP_NODES) */
+#endif /* defined (IRIX) && ( defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D) ) */
 
 POSTSCRIPT_DEFINES =
 
@@ -425,7 +501,7 @@ END_ALL_DEFINES =
 START_ALL_INCLUDES =
 END_ALL_INCLUDES =
 
-#if defined (USE_UNEMAP_NODES)
+#if defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)
 ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(PLATFORM_SWITCH) $(OPERATING_SYSTEM) $(WINDOWING_SYSTEM) $(USE_NODES_SWITCH) \
@@ -442,7 +518,7 @@ ALL_DEFINES = $(START_ALL_DEFINES) \
 	-DNOT_ACQUISITION_ONLY \
 	-DSPECTRAL_TOOLS \
 	$(END_ALL_DEFINES)
-#endif /* (USE_UNEMAP_NODES) */
+#endif /* (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)*/
 
 ALL_INCLUDES = $(START_ALL_INCLUDES) \
 	$(SOURCE_DIRECTORY_INC) \
@@ -452,21 +528,18 @@ ALL_INCLUDES = $(START_ALL_INCLUDES) \
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
-#if defined (USE_UNEMAP_NODES)
+#if defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)
 ALL_LIB = $(GRAPHICS_LIB) $(LIB) $(EXTERNAL_INPUT_LIB)
 #else
 ALL_LIB = $(LIB) $(EXTERNAL_INPUT_LIB)
-#endif
-
-#if defined (OLD_CODE)
-ALL_LIB = alpha.opt/opt
-#endif /* defined (OLD_CODE) */
+#endif /* defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D) */
 
 COMMAND_SRCS = \
 	command/parser.c
 
-#if defined (USE_UNEMAP_NODES)
+#if defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)
 CHOOSE_SRCS = \
+	choose/choose_computed_field.c \
 	choose/choose_fe_field.c \
 	choose/choose_node_group.c \
 	choose/chooser.c
@@ -640,7 +713,7 @@ UNEMAP_SRCS = \
 	unemap/trace_window.c \
 	unemap/unemap_package.c \
 	unemap/unemap_hardware_client.c
-#endif /*(USE_UNEMAP_NODES) */
+#endif /* defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D) */
 USER_INTERFACE_SRCS = \
 	user_interface/confirmation.c \
 	user_interface/filedir.c \

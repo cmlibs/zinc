@@ -336,7 +336,10 @@ UNEMAP_SWITCH =
 UNEMAP_SRCS = \
 	unemap/drawing_2d.c
 #else /* !defined (UNEMAP) */
-UNEMAP_SWITCH = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_NODES 
+#if defined (OLD_CODE)
+XCOMM for all nodal stuff UNEMAP_SWITCH = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_NODES 
+#endif
+UNEMAP_SWITCH = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_3D 
 UNEMAP_SRCS = \
 	unemap/acquisition.c \
 	unemap/acquisition_window.c \

@@ -30,9 +30,9 @@ DESCRIPTION :
 #include "general/postscript.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 #include "interaction/interactive_toolbar_widget.h"
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 #include "time/time.h"
 #include "time/time_keeper.h"
 #include "time/time_editor.h"
@@ -44,10 +44,10 @@ DESCRIPTION :
 #include "unemap/mapping_window.h"
 #include "unemap/mapping_window.uidh"
 #include "unemap/rig.h"
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 #include "unemap/rig_node.h"
 #include "unemap/unemap_package.h"
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 #include "unemap/setup_dialog.h"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
@@ -248,9 +248,9 @@ necessary.
 
 	ENTER(update_map_from_dialog);
 	USE_PARAMETER(call_data);
-#if !defined (UNEMAP_USE_NODES)
+#if !defined (UNEMAP_USE_3D)
 	USE_PARAMETER(spectrum_manager);
-#endif/* defined (UNEMAP_USE_NODES)*/
+#endif/* defined (UNEMAP_USE_3D)*/
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(map=mapping->map)&&
 		(map_dialog=mapping->map_dialog)&&(drawing_information=map->drawing_information))
 	{
@@ -286,7 +286,7 @@ necessary.
 				map->colour_option=SHOW_COLOUR;
 			}
 			spectrum=drawing_information->spectrum;
-#if defined (UNEMAP_USE_NODES)				
+#if defined (UNEMAP_USE_3D)				
 			if(spectrum_manager=get_map_drawing_information_spectrum_manager
 				(drawing_information))
 			{
@@ -299,7 +299,7 @@ necessary.
 							(spectrum_to_be_modified_copy,spectrum);
 #else
 						spectrum_to_be_modified_copy=spectrum;
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 						if (option_widget==map_dialog->spectrum.type_option.blue_red)
 						{
 							if (BLUE_TO_RED_SPECTRUM != Spectrum_get_simple_type(
@@ -351,7 +351,7 @@ necessary.
 							}
 						}
 
-#if defined (UNEMAP_USE_NODES)	
+#if defined (UNEMAP_USE_3D)	
 						MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
 							spectrum_to_be_modified_copy,spectrum_manager);
 						DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
@@ -373,7 +373,7 @@ necessary.
 				display_message(ERROR_MESSAGE,
 					" update_map_from_dialog. Spectrum_manager not present");
 			}
-#endif /* defined (UNEMAP_USE_NODES) */		
+#endif /* defined (UNEMAP_USE_3D) */		
 		}
 		XtVaGetValues(map_dialog->interpolation.option_menu,
 			XmNmenuHistory,&option_widget,
@@ -1245,12 +1245,12 @@ Finds the id of the interactive_tool_form
 	USE_PARAMETER(call_data);
 	if (mapping=(struct Mapping_window *)mapping_window)
 	{
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 		mapping->map3d_interactive_tool_form= *widget_id;
 #else
 		USE_PARAMETER(widget_id);
 		USE_PARAMETER(mapping);	
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 	}
 	else
 	{
@@ -1275,12 +1275,12 @@ Finds the id of the viewing
 	USE_PARAMETER(call_data);
 	if (mapping=(struct Mapping_window *)mapping_window)
 	{
-#if defined (UNEMAP_USE_NODES)	
+#if defined (UNEMAP_USE_3D)	
 		mapping->map3d_viewing_form= *widget_id;				
 #else
 		USE_PARAMETER(widget_id);
 		USE_PARAMETER(mapping);
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 	}
 	else
 	{
@@ -1735,9 +1735,9 @@ Creates a new rig using the values specified in the setup dialog.
 				region_type,MONITORING_OFF,EXPERIMENT_OFF,setup->number_of_rows,
 				number_in_row,setup->number_of_regions,
 				setup->number_of_auxiliary_devices,30./*??? enter focus ? */
-#if defined (UNEMAP_USE_NODES)		
+#if defined (UNEMAP_USE_3D)		
 				,mapping->map->unemap_package
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 					)))
 			{
 				/* destroy the present rig */
@@ -1835,9 +1835,9 @@ the mapping_area of the <mapping_window>.
 	ENTER(Mapping_window_make_drawing_area_2d);
 	if (mapping_window&&mapping_window->mapping_area)
 	{
-#if defined (UNEMAP_USE_NODES)			
+#if defined (UNEMAP_USE_3D)			
 		XtUnmanageChild(mapping_window->mapping_area_3d);
-#endif /* defined (UNEMAP_USE_NODES) */			
+#endif /* defined (UNEMAP_USE_3D) */			
 		XtManageChild(mapping_window->mapping_area_2d);		
 		return_code=1;
 	}
@@ -1852,7 +1852,7 @@ the mapping_area of the <mapping_window>.
 	return (return_code);
 } /* Mapping_window_make_drawing_area_2d */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int Mapping_window_make_drawing_area_3d(struct Mapping_window *mapping_window)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
@@ -1906,7 +1906,7 @@ the mapping_area of the <mapping_window>.
 
 	return (return_code);
 } /* Mapping_window_make_drawing_area_3d */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
 static void identify_mapping_modify_button(Widget *widget_id,
 	XtPointer client_data,XtPointer call_data)
@@ -2045,29 +2045,29 @@ new rig.
 {
 	int return_code;
 	struct Mapping_window *mapping;	
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 	struct Unemap_package *unemap_package;		
 #endif
 	ENTER(mapping_read_configuration_file);
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(mapping->map))
 	{
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 		unemap_package = mapping->map->unemap_package;
-#endif /* defined (UNEMAP_USE_NODES) */		
+#endif /* defined (UNEMAP_USE_3D) */		
 		/* destroy the existing configuration */
 		destroy_Rig(mapping->map->rig_pointer);
 		/* read the configuration file */
 		if (return_code=read_configuration_file(file_name,
 			(void *)(mapping->map->rig_pointer)
-#if defined (UNEMAP_USE_NODES)			
+#if defined (UNEMAP_USE_3D)			
 			,unemap_package
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 			 ))
 		{
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 			/* read the configuration file into nodes */		
 			file_read_config_FE_node_group(file_name,unemap_package,*(mapping->map->rig_pointer));
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 			/* unghost the save configuration and set default configuration buttons */
 			XtSetSensitive(mapping->file_menu.save_configuration_button,True);
 			XtSetSensitive(mapping->file_menu.set_default_configuration_button,True);
@@ -3126,7 +3126,7 @@ Sets the projection to be the 3D projection.
 ???DB.  MIXED ?
 ==============================================================================*/
 {
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 	struct Mapping_window *mapping;
 
 	ENTER(set_projection_3d);
@@ -3159,7 +3159,7 @@ Sets the projection to be the 3D projection.
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(client_data);
 	LEAVE;
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 } /* set_projection_3d */
 
 static void identify_mapping_colour_or_auxi(Widget *widget_id,
@@ -3343,7 +3343,7 @@ and frees the memory for the mapping window.
 	USE_PARAMETER(call_data);
 	if (mapping=(struct Mapping_window *)client_data)
 	{
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 		if(mapping->scene_viewer)
 		{
 			DESTROY(Scene_viewer)(&(mapping->scene_viewer));
@@ -3353,7 +3353,7 @@ and frees the memory for the mapping window.
 		/* the mapping window, so deaccess never gets called. See ACCESS */
 		DEACCESS(Interactive_tool)(&(mapping->transform_tool));
 #endif /*	defined (NEW_CODE) */
-#endif /*defined (UNEMAP_USE_NODES)*/
+#endif /*defined (UNEMAP_USE_3D)*/
 		if (mapping->potential_time_object)
 		{
 			DEACCESS(Time_object)(&(mapping->potential_time_object));
@@ -3958,7 +3958,7 @@ the mapping_window.
 	return (return_code);
 } /* write_map_animation_tiff_file */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int Mapping_window_set_interactive_tool(
 	struct Mapping_window *mapping_window,
 	struct Interactive_tool *interactive_tool)
@@ -4013,9 +4013,9 @@ toolbar to match the selection.
 
 	return (return_code);
 } /* Mapping_window_set_interactive_tool */
-#endif /*  defined (UNEMAP_USE_NODES) */
+#endif /*  defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static void Mapping_window_update_interactive_tool(Widget widget,
 	void *mapping_window_void,void *interactive_tool_void)
 /*******************************************************************************
@@ -4041,7 +4041,7 @@ Called when a new tool is chosen in the interactive_toolbar_widget.
 	}
 	LEAVE;
 } /* Mapping_window_update_interactive_tool */
-#endif /*  defined (UNEMAP_USE_NODES) */
+#endif /*  defined (UNEMAP_USE_3D) */
 
 static struct Mapping_window *create_Mapping_window(
 	struct Mapping_window **address,char *open,
@@ -4051,9 +4051,9 @@ static struct Mapping_window *create_Mapping_window(
 	char *postscript_file_extension,
 	struct Map_drawing_information *map_drawing_information,
 	struct User_interface *user_interface
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 	,struct MANAGER(Interactive_tool) *interactive_tool_manager 
-#endif /*  defined (UNEMAP_USE_NODES) */
+#endif /*  defined (UNEMAP_USE_3D) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 4 September 2000
@@ -4175,7 +4175,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 			{"mapping_rig",(XtPointer)NULL},
 			{"identifying_colour",(XtPointer)NULL}
 		};
-#if defined (UNEMAP_USE_NODES)		
+#if defined (UNEMAP_USE_3D)		
 	struct Callback_data callback;
 	struct Interactive_tool *node_tool;
 #endif
@@ -4183,13 +4183,13 @@ the created mapping window.  If unsuccessful, NULL is returned.
 	Widget child_widget;
 
 	ENTER(create_Mapping_window);
-#if defined (UNEMAP_USE_NODES)		
+#if defined (UNEMAP_USE_3D)		
 	node_tool=(struct Interactive_tool *)NULL;
 #endif
 	if (map_drawing_information&&
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 		interactive_tool_manager&&
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 		user_interface)
 	{
 		if (mapping_window_hierarchy_open)
@@ -4197,7 +4197,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 			/* allocate memory */
 			if (ALLOCATE(mapping,struct Mapping_window,1))
 			{	
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 				/* set up interactive tools*/
 				mapping->interactive_tool_manager=interactive_tool_manager;
 #if defined (NEW_CODE)
@@ -4211,7 +4211,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 					name)("transform_tool",mapping->interactive_tool_manager);
 #endif /* defined (NEW_CODE)	*/
 				mapping->interactive_tool=mapping->transform_tool;
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 				/* assign fields */
 				mapping->user_interface=user_interface;
 				mapping->address=address;
@@ -4254,11 +4254,11 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				mapping->mapping_area=(Widget)NULL;
 				mapping->mapping_area_2d=(Widget)NULL;
 				mapping->mapping_area_3d=(Widget)NULL;
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 				mapping->map3d_interactive_tool_form=(Widget)NULL;
 				mapping->interactive_toolbar_widget=(Widget)NULL;
 				mapping->map3d_viewing_form=(Widget)NULL;
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 				mapping->map_drawing_area_2d=(Widget)NULL;
 				mapping->scene_viewer=(struct Scene_viewer *)NULL;
 				mapping->map_drawing=(struct Drawing_2d *)NULL;
@@ -4382,7 +4382,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 								XmNmarginWidth,0,
 								NULL);
 							update_mapping_window_menu(mapping);
-#if defined (UNEMAP_USE_NODES)													
+#if defined (UNEMAP_USE_3D)													
 							/* create the subwidgets with default values */
 							if (mapping->interactive_toolbar_widget=
 								create_interactive_toolbar_widget(
@@ -4408,7 +4408,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 							callback.procedure=Mapping_window_update_interactive_tool;
 							interactive_toolbar_widget_set_callback(
 								mapping->interactive_toolbar_widget,&callback);
-#endif /*  defined (UNEMAP_USE_NODES) */
+#endif /*  defined (UNEMAP_USE_3D) */
 							/*??? more to do ? */
 							if (address)
 							{
@@ -4551,9 +4551,9 @@ properties.  Then the mapping window is opened.
 	ENTER(open_mapping_window);
 	if (mapping_address&&parent&&rig_address&&shell&&outer_form&&
 		current_mapping_window_address&&open&&current_associate&&user_interface
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 		&&unemap_package
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 		)
 	{
 		return_code=1;
@@ -4617,9 +4617,9 @@ properties.  Then the mapping window is opened.
 					rig_address,identifying_colour,screen_height,
 					configuration_file_extension,postscript_file_extension,
 					map_drawing_information,user_interface
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 					,get_unemap_package_interactive_tool_manager(unemap_package)
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 						))
 				{
 					mapping= *mapping_address;
@@ -4807,7 +4807,7 @@ Calls draw_map_3d or update_mapping_drawing_area_2d depending upon
 	ENTER(update_mapping_drawing_area);
 	if(mapping)
 	{
-#if defined (UNEMAP_USE_NODES) 
+#if defined (UNEMAP_USE_3D) 
 		/* 3d map for 3d projection */
 		if(mapping->map->projection_type==THREED_PROJECTION)
 		{			
@@ -4820,7 +4820,7 @@ Calls draw_map_3d or update_mapping_drawing_area_2d depending upon
 #else
 		/* old, 2d map*/
 		update_mapping_drawing_area_2d(mapping,recalculate);
-#endif /*defined( UNEMAP_USE_NODES) */	
+#endif /*defined( UNEMAP_USE_3D) */	
 	}
 	else
 	{		
@@ -5000,7 +5000,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 								NULL);
 						}					
 #endif /* defined (OLD_CODE)	*/
-#if defined (UNEMAP_USE_NODES)						
+#if defined (UNEMAP_USE_3D)						
 						XtManageChild(mapping->projection_choice);
 						XtVaSetValues(mapping->region_choice,
 							XmNleftWidget,mapping->projection_choice,
@@ -5157,7 +5157,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 									NULL);
 							}
 						}
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 						XtVaSetValues(mapping->region_choice,
 							XmNmenuHistory,current_region,
 							NULL);

@@ -717,9 +717,9 @@ Counts the number of items in a page list.
 
 struct Region *create_Region(char *name,enum Region_type type,int number,
 	int number_of_devices
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 	,struct Unemap_package *unemap_package
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 														 )
 /*******************************************************************************
 LAST MODIFIED : 8 October 1997
@@ -763,13 +763,13 @@ and NULL if unsuccessful.
 		}
 		region->number=number;
 		region->number_of_devices=number_of_devices;
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 		region->unemap_package=ACCESS(Unemap_package)(unemap_package);
 		region->rig_node_group=(struct GROUP(FE_node) *)NULL;
 		region->map_3d_package=(struct Map_3d_package *)NULL;
 		region->electrode_position_field=(struct FE_field *)NULL;
 		region->map_electrode_position_field=(struct FE_field *)NULL;
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 	}
 	else
 	{
@@ -792,7 +792,7 @@ the devices in the device list.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 	struct FE_field *temp_field=(struct FE_field *)NULL;
 	struct MANAGER(Computed_field) *computed_field_manager=
 		(struct MANAGER(Computed_field) *)NULL;	
@@ -800,12 +800,12 @@ the devices in the device list.
 		(struct MANAGER(FE_field) *)NULL;	
 	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
 	struct Region *the_region=(struct Region *)NULL;		
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 	ENTER(destroy_Region);
 	return_code=1;
 	if (*region)
 	{
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 		the_region=*region;
 		unemap_package=the_region->unemap_package;
 		if(the_region&&unemap_package)
@@ -836,7 +836,7 @@ the devices in the device list.
 		DEACCESS(FE_field)(&((*region)->electrode_position_field));
 		DEACCESS(FE_field)(&((*region)->map_electrode_position_field));
 		DEACCESS(Unemap_package)(&((*region)->unemap_package));	
-#endif
+#endif /* defined (UNEMAP_USE_3D) */
 		DEALLOCATE((*region)->name);
 		DEALLOCATE(*region);
 		*region=(struct Region *)NULL;
@@ -846,7 +846,7 @@ the devices in the device list.
 	return (return_code);
 } /* destroy_Region */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 struct Unemap_package *get_Region_unemap_package(struct Region *region)
 /*******************************************************************************
 LAST MODIFIED : 29 June 2000
@@ -870,9 +870,9 @@ Gets  unemap_package of <region>
 	LEAVE;
 	return (unemap_package);
 }/* get_Region_unemap_package*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 struct GROUP(FE_node) *get_Region_rig_node_group(struct Region *region)
 /*******************************************************************************
 LAST MODIFIED : 29 June 2000
@@ -896,9 +896,9 @@ Gets  rig_node_group of <region>
 	LEAVE;
 	return (rig_node_group);
 }/* get_Region_rig_node_group*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int set_Region_rig_node_group(struct Region *region,
 	struct GROUP(FE_node) *rig_node_group)
 /*******************************************************************************
@@ -924,9 +924,9 @@ Sets (and accesses) rig_node_group of <region> to <rig_node_group>
 	LEAVE;
 	return (return_code);
 }/* set_Region_rig_node_group*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 struct Map_3d_package *get_Region_map_3d_package(struct Region *region)
 /*******************************************************************************
 LAST MODIFIED : 29 June 2000
@@ -950,9 +950,9 @@ Gets  Map_3d_package  of <region>
 	LEAVE;
 	return (map_3d_package);
 }/* get_Region_map_3d_package*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int set_Region_map_3d_package(struct Region *region,struct Map_3d_package *map_3d_package)
 /*******************************************************************************
 LAST MODIFIED : 27 June 2000
@@ -978,9 +978,9 @@ Sets (and accesses) map_info_3 of <region> to <map_3d_package>
 	LEAVE;
 	return (return_code);
 }/* set_Region_map_3d_package*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_Region_electrode_position_field(struct Region *region)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000
@@ -1004,9 +1004,9 @@ Gets  electrode_position_field  of <region>
 	LEAVE;
 	return (electrode_position_field);
 }/* set_Region_electrode_position_field*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int set_Region_electrode_position_field(struct Region *region,
 	struct FE_field *electrode_position_field)
 /*******************************************************************************
@@ -1032,9 +1032,9 @@ Sets (and accesses) electrode_position_field of <region> to <electrode_position_
 	LEAVE;
 	return (return_code);
 }/* set_Region_electrode_position_field*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_Region_map_electrode_position_field(struct Region *region)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000
@@ -1058,9 +1058,9 @@ Gets  map_electrode_position_field  of <region>
 	LEAVE;
 	return (map_electrode_position_field);
 }/* set_Region_map_electrode_position_field*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int set_Region_map_electrode_position_field(struct Region *region,
 	struct FE_field *map_electrode_position_field)
 /*******************************************************************************
@@ -1087,7 +1087,7 @@ Sets (and accesses) map_electrode_position_field of <region> to
 	LEAVE;
 	return (return_code);
 }/* set_Region_map_electrode_position_field*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
 struct Region_list_item *create_Region_list_item(struct Region *region,
 	struct Region_list_item *next)
@@ -1250,7 +1250,7 @@ struct Rig *create_Rig(char *name,enum Monitoring_status monitoring,
 	struct Device **devices,struct Page_list_item *page_list,
 	int number_of_regions,struct Region_list_item *region_list,
 	struct Region *current_region
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 	,struct Unemap_package *unemap_package
 #endif /* defined (UNEMAP_USE_NODES)*/
 											 )
@@ -1290,10 +1290,10 @@ NULL if unsuccessful.
 			rig->number_of_regions=number_of_regions;
 			rig->region_list=region_list;
 			rig->current_region=current_region;
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 			rig->unemap_package=ACCESS(Unemap_package)(unemap_package);
 			rig->all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;	
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 			rig->signal_file_name=(char *)NULL;
 #if defined (OLD_CODE)
 ???DB.  Only read calibration when doing acquisition */
@@ -1323,9 +1323,9 @@ struct Rig *create_standard_Rig(char *name,enum Region_type region_type,
 	enum Monitoring_status monitoring,enum Experiment_status experiment,
 	int number_of_rows,int *electrodes_in_row,int number_of_regions,
 	int number_of_auxiliary_inputs,float sock_focus
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 	,struct Unemap_package *unemap_package
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 	)
 /*******************************************************************************
 LAST MODIFIED : 13 July 2000
@@ -1417,9 +1417,9 @@ combinations of electrodes).
 					sprintf(region_name+7,"%d",region_number+1);
 					if ((region=create_Region(region_name,region_type,region_number,
 						electrodes_in_region
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 						,unemap_package
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 						))&&(*region_item=create_Region_list_item(
 						region,(struct Region_list_item *)NULL)))
 					{
@@ -1548,9 +1548,9 @@ combinations of electrodes).
 						rig=create_Rig(name,monitoring,experiment,number_of_devices,devices,
 							(struct Page_list_item *)NULL,number_of_regions,region_list,
 							(struct Region *)NULL
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 							,unemap_package
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 							);
 					}
 					else
@@ -1629,7 +1629,7 @@ memory for <**rig> and changes <*rig> to NULL.
 			device++;
 			number_of_devices--;
 		}
-#if defined (UNEMAP_USE_NODES) 
+#if defined (UNEMAP_USE_3D) 
 		/*free up the package dependent things in the rig*/
 		if(((*rig)->all_devices_rig_node_group)&&((*rig)->unemap_package))
 		{
@@ -1638,7 +1638,7 @@ memory for <**rig> and changes <*rig> to NULL.
 				&((*rig)->all_devices_rig_node_group));
 		}	
 		DEACCESS(Unemap_package)(&((*rig)->unemap_package));
-#endif
+#endif /* defined (UNEMAP_USE_3D)  */
 		destroy_Page_list(&((*rig)->page_list));
 		destroy_Region_list(&((*rig)->region_list));
 		DEALLOCATE((*rig)->devices);
@@ -1652,7 +1652,7 @@ memory for <**rig> and changes <*rig> to NULL.
 	return (return_code);
 } /* destroy_Rig */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 struct Unemap_package *get_Rig_unemap_package(struct Rig *rig)
 /*******************************************************************************
 LAST MODIFIED : 29 June 2000
@@ -1676,9 +1676,9 @@ Gets  unemap_package of <rig>
 	LEAVE;
 	return (unemap_package);
 }/* get_Rig_unemap_package*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 struct GROUP(FE_node) *get_Rig_all_devices_rig_node_group(struct Rig *rig)
 /*******************************************************************************
 LAST MODIFIED : 29 June 2000
@@ -1702,9 +1702,9 @@ Gets  all_devices_rig_node_group of <rig>
 	LEAVE;
 	return (rig_node_group);
 }/* get_Rig_all_devices_rig_node_group*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int set_Rig_all_devices_rig_node_group(struct Rig *rig,
 	struct GROUP(FE_node) *rig_node_group)
 /*******************************************************************************
@@ -1730,7 +1730,7 @@ Sets (and accesses) all_devices_rig_node_group of <rig> to <rig_node_group>
 	LEAVE;
 	return (return_code);
 }/* set_Rig_all_devices_rig_node_group*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
 struct Region *get_Rig_current_region(struct Rig *rig)
 /*******************************************************************************
@@ -1832,9 +1832,9 @@ Sets  region_list of <rig> to <region>
 
 struct Rig *read_configuration(FILE *input_file,enum Rig_file_type file_type,
 	enum Region_type rig_type
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 	,struct Unemap_package *unemap_package
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
        )
 /*******************************************************************************
 LAST MODIFIED : 13 July 2000
@@ -1869,9 +1869,9 @@ pointer to the rig if successful and NULL if unsuccessful.
 		if (rig=create_Rig((char *)NULL,MONITORING_OFF,EXPERIMENT_OFF,0,
 			(struct Device **)NULL,(struct Page_list_item *)NULL,0,
 			(struct Region_list_item *)NULL,(struct Region *)NULL
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 			,unemap_package
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 			))
 		{
 			/* choose between the file types */
@@ -1907,9 +1907,9 @@ pointer to the rig if successful and NULL if unsuccessful.
 							/* create the region */
 							if ((*region_item_address=create_Region_list_item(create_Region(
 								(char *)NULL,region_type,number_of_regions,0
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 								,unemap_package
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 								),(struct Region_list_item *)NULL))&&
 								((*region_item_address)->region))
 							{
@@ -2580,9 +2580,9 @@ pointer to the rig if successful and NULL if unsuccessful.
 							/* create the region */
 							if ((*region_item_address=create_Region_list_item(create_Region(
 								(char *)NULL,region_type,region_number,0
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 								,unemap_package
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
                 ),(struct Region_list_item *)NULL))&&
 								((*region_item_address)->region))
 							{
@@ -3160,9 +3160,9 @@ This function reads in the characteristics of the acquisition channels for the
 } /* read_calibration_file */
 
 int read_configuration_file(char *file_name,void *rig_pointer
-#if defined (UNEMAP_USE_NODES)					
+#if defined (UNEMAP_USE_3D)					
 		 ,struct Unemap_package *unemap_package
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 13 July 2000
@@ -3233,9 +3233,9 @@ the specified configuration and returns a pointer to it.
 	if (input_file)
 	{
 		if (rig=read_configuration(input_file,file_type,rig_type
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 			,unemap_package
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 			))
 		{
 #if defined (OLD_CODE)
@@ -4784,7 +4784,7 @@ the memory for <**buffer> and changes <*buffer> to NULL.
 } /* destroy_Signal_buffer */
 
 int read_signal_file(FILE *input_file,struct Rig **rig_pointer
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 			,struct Unemap_package *unemap_package
 #endif /* defined (UNEMAP_USE_NODES)*/
 			)
@@ -4826,7 +4826,7 @@ the <input_file>.
 			{
 				/* read the the configuration file */
 				if (rig=read_configuration(input_file,BINARY,rig_type
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 					,unemap_package
 #endif /* defined (UNEMAP_USE_NODES)*/
 					))

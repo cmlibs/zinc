@@ -128,7 +128,7 @@ The mapping window object.
 #if defined (MOTIF)
 	Widget time_editor_dialog;
 #endif /* defined (MOTIF) */
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 #if defined (MOTIF)
 	Widget map3d_interactive_tool_form;	
 	Widget interactive_toolbar_widget;
@@ -139,7 +139,7 @@ The mapping window object.
 	/* Note: interactive_tool is NOT accessed by graphics_window; the chooser
 		 will update it if the current one is destroyed */
 	struct Interactive_tool *interactive_tool,*transform_tool;
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 	struct User_interface *user_interface;	
 }; /* struct Mapping_window */
 

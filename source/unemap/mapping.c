@@ -19,13 +19,13 @@ DESCRIPTION :
 #include "general/geometry.h"
 #include "general/postscript.h"
 #include "general/mystring.h"
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "graphics/graphics_window.h"
 #include "graphics/graphical_element.h"
 #include "graphics/element_group_settings.h"
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 #include "graphics/spectrum.h"
 #include "unemap/drawing_2d.h"
 #include "unemap/interpolate.h"
@@ -754,9 +754,9 @@ NULL if not successful.
 	USE_PARAMETER(unemap_package);
 	/* check arguments */
 	if (user_interface&&map_drawing_information
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 		&&unemap_package
-#endif
+#endif /* defined (UNEMAP_USE_3D) */
 			)
 	{
 		/* allocate memory */
@@ -877,11 +877,11 @@ NULL if not successful.
 #if defined (OLD_CODE)
 			map->user_interface=user_interface;
 #endif /* defined (OLD_CODE) */
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 			map->unemap_package = unemap_package;			
 #else
 			map->unemap_package = (struct Unemap_package *)NULL;		
-#endif
+#endif /* defined (UNEMAP_USE_3D) */
 		}
 		else
 		{
@@ -974,11 +974,11 @@ Updates the colour map being used for map.
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 
 	ENTER(update_colour_map_unemap);
-#if !defined (UNEMAP_USE_NODES)
+#if !defined (UNEMAP_USE_3D)
 	USE_PARAMETER(spectrum);
 	USE_PARAMETER(spectrum_to_be_modified_copy);
 	USE_PARAMETER(spectrum_manager);
-#endif/* defined (UNEMAP_USE_NODES)*/
+#endif/* defined (UNEMAP_USE_3D)*/
 	if (map&&(map->type)&&(drawing_information=map->drawing_information)&&
 		(drawing_information->user_interface)&&drawing&&(0<=map->frame_number)&&
 		(map_frame=map->frames))
@@ -1021,7 +1021,7 @@ Updates the colour map being used for map.
 			!((SINGLE_ACTIVATION== *(map->type))&&(0<=map->activation_front)&&
 			(map->activation_front<number_of_spectrum_colours)))
 		{
-#if defined (UNEMAP_USE_NODES)	
+#if defined (UNEMAP_USE_3D)	
 			spectrum=map->drawing_information->spectrum;
 			if(spectrum_manager=
 				get_map_drawing_information_spectrum_manager(drawing_information))
@@ -1059,7 +1059,7 @@ Updates the colour map being used for map.
 #else
 			Spectrum_set_minimum_and_maximum(map->drawing_information->spectrum,0.0,
 				6.0);
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
 			for (i=0;i<=start_cell;i++)
 			{
@@ -1656,7 +1656,7 @@ Updates the colour map being used for map.
 		{
 			XStoreColors(display,colour_map,spectrum_rgb,number_of_spectrum_colours);
 		}
-#if defined (UNEMAP_USE_NODES)	
+#if defined (UNEMAP_USE_3D)	
 		spectrum=map->drawing_information->spectrum;
 		if(spectrum_manager=
 			get_map_drawing_information_spectrum_manager(drawing_information))
@@ -1697,7 +1697,7 @@ Updates the colour map being used for map.
 		/*Ensure spectrum is set correctly */
 		Spectrum_set_minimum_and_maximum(map->drawing_information->spectrum,
 			map->minimum_value,map->maximum_value);
-#endif /* defined (UNEMAP_USE_NODES) */	
+#endif /* defined (UNEMAP_USE_3D) */	
 	}
 	else
 	{
@@ -1709,7 +1709,7 @@ Updates the colour map being used for map.
 	return (return_code);
 } /* update_colour_map */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static struct FE_field_order_info *create_mapping_fields(enum Region_type 
 	region_type,FE_value focus,struct Unemap_package *package)
 /*******************************************************************************
@@ -1941,9 +1941,9 @@ DESCRIPTION :
 	LEAVE;
 	return(the_field_order_info);
 }/* create_mapping_fields */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static struct FE_node *create_mapping_template_node(enum Region_type region_type,
 	struct FE_field_order_info *field_order_info,
 	struct Unemap_package *package,int coords_comp_0_num_versions,
@@ -2069,9 +2069,9 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 	LEAVE;
 	return(node);
 }/* create_mapping_template_node */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int set_mapping_FE_node_coord_values(struct FE_node *node,
 	struct FE_field *position_field,
 	int coords_comp_0_num_versions,int coords_comp_1_num_versions,
@@ -2168,9 +2168,9 @@ sets a node's values storage with the coordinate system component versions and v
 	return(return_code);
 }/* set_mapping_FE_node_coord_values */
 
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int set_mapping_FE_node_fit_values(struct FE_node *node,
 	struct FE_field *fit_field,
 	FE_value f,FE_value dfdx,FE_value dfdy,FE_value d2fdxdy)
@@ -2206,9 +2206,9 @@ Sets a node's values storage with the values  potential<f> and derivatives
 	LEAVE;
 	return(return_code);
 }/* set_mapping_FE_node_fit_values */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES) 
+#if defined (UNEMAP_USE_3D) 
 static struct FE_node *create_and_set_mapping_FE_node(struct FE_node *template_node,
 	struct MANAGER(FE_node) *node_manager,
 	enum Region_type	region_type,int node_number,
@@ -2269,9 +2269,9 @@ and the field_order_info.
 	LEAVE;
 	return (node);
 }/* create_and_set_mapping_FE_node*/
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static struct GROUP(FE_node) *interpolation_function_to_node_group(
 	struct FE_node_order_info **the_node_order_info,
 	struct FE_field_order_info **the_field_order_info,
@@ -2734,9 +2734,9 @@ i.e sock is a hemisphere, torso is a cylinder.
 
 	return (interpolation_node_group);
 }/*interpolation_function_to_node_group */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static struct GROUP(FE_element) *make_fit_elements(char *group_name,
 	struct FE_node_order_info *node_order_info,
 	struct FE_field_order_info *field_order_info,
@@ -3365,9 +3365,9 @@ DESCRIPTION :
 
 	return (element_group);
 } /* make_fit_elements */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int change_fit_node_group_values(struct FE_node_order_info 
 	*node_order_info,struct FE_field *fit_field,
 	struct Interpolation_function *function,char *name,
@@ -3620,13 +3620,13 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 	LEAVE;
 	return(return_code);
 }/* change_fit_node_group_values */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int make_fit_node_and_element_groups(
 	struct Interpolation_function *function,struct Unemap_package *package,
 	char *name,FE_value sock_lambda,FE_value sock_focus,FE_value torso_major_r,
-	FE_value torso_minor_r,FE_value patch_z,int region_number,struct Region *region)
+	FE_value torso_minor_r,FE_value patch_z,struct Region *region)
 /*******************************************************************************
 LAST MODIFIED : 28 June 2000
 
@@ -3680,7 +3680,7 @@ interpolation_function_to_node_group and make_fit_elements
 			strcat(fit_name,fit_str);
 			strcat(fit_name,type_str);
 			/*append the region number to the name, to ensure it's unique*/
-			sprintf(region_num_string,"%d",region_number);
+			sprintf(region_num_string,"%d",region->number);
 			append_string(&fit_name,region_num_string,&string_error);
 			/* check if the function properties are the same as the last one, i.e */
 			/* identical node and element groups should already exist */
@@ -3738,10 +3738,10 @@ interpolation_function_to_node_group and make_fit_elements
 	LEAVE;
 	return(return_code);
 }/*make_fit_node_and_element_groups */
- 
-#endif /* #if defined (UNEMAP_USE_NODES) */
 
-#if defined (UNEMAP_USE_NODES)
+#endif /* #if defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
 static int map_draw_constant_thickness_contours(struct Scene *scene,
 	struct Map_drawing_information *map_drawing_information,
 	struct Computed_field *data_field,
@@ -3790,57 +3790,55 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 			/* do nothing if the number of contours is the same */		
 			get_map_3d_package_contours(map_3d_package,&old_number_of_contours,
 				&old_contour_settings);
-			if(number_of_contours!=old_number_of_contours)
-			{	
-				/* create material for the contour, so can colour it black, indep of the  */
-				/* map surface (default) material*/
-				if(!(contour_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
-					("contour",graphical_material_manager)))		
-					if (contour_material=CREATE(Graphical_material)(
-						"contour"))
-					{
-						colour.red=0.0;
-						colour.green=0.0;
-						colour.blue=0.0;
-						Graphical_material_set_ambient(contour_material,&colour);
-						Graphical_material_set_diffuse(contour_material,&colour);			
-						ADD_OBJECT_TO_MANAGER(Graphical_material)(contour_material,
-							graphical_material_manager);
-					}
-				/* remove the old contour settings from the gt_element_group */
-				if(old_number_of_contours)
-				{					
-					for(i=0;i<old_number_of_contours;i++)
-					{					
-						GT_element_group_remove_settings(gt_element_group,old_contour_settings[i]);
-					}		
-				}
-				free_map_3d_package_map_contours(map_3d_package);
-				if(number_of_contours)
+		
+			/* create material for the contour, so can colour it black, indep of the  */
+			/* map surface (default) material*/
+			if(!(contour_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
+				("contour",graphical_material_manager)))		
+				if (contour_material=CREATE(Graphical_material)(
+					"contour"))
 				{
-					/* calculate the contour intervals */
-					contour_value=contour_minimum;
-					contour_step=(contour_maximum-contour_minimum)/(number_of_contours-1);
-					/* allocate, define and set the contours */
-					ALLOCATE(contour_settings,struct GT_element_settings *,number_of_contours);
-					for(i=0;i<number_of_contours;i++)
-					{
-						contour_settings[i]=CREATE(GT_element_settings)
-							(GT_ELEMENT_SETTINGS_ISO_SURFACES);
-						GT_element_settings_set_material(contour_settings[i],contour_material);
-						GT_element_settings_set_selected_material(contour_settings[i],
-							default_selected_material);
-						GT_element_settings_set_iso_surface_parameters(contour_settings[i],
-							data_field,contour_value);
-						GT_element_group_add_settings(gt_element_group,contour_settings[i],0);		
-						contour_value+=contour_step;
-					}			
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
-				}	
-				set_map_3d_package_contours(map_3d_package,number_of_contours,contour_settings);
+					colour.red=0.0;
+					colour.green=0.0;
+					colour.blue=0.0;
+					Graphical_material_set_ambient(contour_material,&colour);
+					Graphical_material_set_diffuse(contour_material,&colour);			
+					ADD_OBJECT_TO_MANAGER(Graphical_material)(contour_material,
+						graphical_material_manager);
+				}
+			/* remove the old contour settings from the gt_element_group */
+			if(old_number_of_contours)
+			{					
+				for(i=0;i<old_number_of_contours;i++)
+				{					
+					GT_element_group_remove_settings(gt_element_group,old_contour_settings[i]);
+				}		
 			}
-		}		
+			free_map_3d_package_map_contours(map_3d_package);
+			if(number_of_contours)
+			{
+				/* calculate the contour intervals */
+				contour_value=contour_minimum;
+				contour_step=(contour_maximum-contour_minimum)/(number_of_contours-1);
+				/* allocate, define and set the contours */
+				ALLOCATE(contour_settings,struct GT_element_settings *,number_of_contours);
+				for(i=0;i<number_of_contours;i++)
+				{
+					contour_settings[i]=CREATE(GT_element_settings)
+						(GT_ELEMENT_SETTINGS_ISO_SURFACES);
+					GT_element_settings_set_material(contour_settings[i],contour_material);
+					GT_element_settings_set_selected_material(contour_settings[i],
+						default_selected_material);
+					GT_element_settings_set_iso_surface_parameters(contour_settings[i],
+						data_field,contour_value);
+					GT_element_group_add_settings(gt_element_group,contour_settings[i],0);		
+					contour_value+=contour_step;
+				}			
+				GT_element_group_build_graphics_objects(gt_element_group,
+					(struct FE_element *)NULL,(struct FE_node *)NULL);
+			}	
+			set_map_3d_package_contours(map_3d_package,number_of_contours,contour_settings);
+		}				
 	}
 	else
 	{
@@ -3851,9 +3849,9 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 	LEAVE;
 	return(return_code);
 }/* map_draw_constant_thickness_contours */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 /* proportion of the contour that is blacked. 1000=1, 100=0.1  */
 #define CONTOUR_PROPORTION 100
 static int map_draw_contours(struct Map *map,	struct Spectrum *spectrum,
@@ -3931,9 +3929,9 @@ Draws (or erases) the map contours
 	LEAVE;
 	return(return_code);
 }/* map_draw_contours */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int map_show_surface(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
@@ -4181,9 +4179,9 @@ Also applies <number_of_contours> contours to surface.
 
 	return (return_code);
 } /* map_show_surface */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 #define FIT_SOCK_LAMBDA 4.5 /* chosen by trial and error!*/
 #define FIT_SOCK_FOCUS 1.0
 #if defined (OLD_CODE)
@@ -4352,9 +4350,9 @@ makes maps electrode position field, and adds to the nodes in the <rig_node_grou
 	LEAVE;
 	return(return_code);
 } /* make_and_add_map_electrode_position_fields */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)	
+#if defined (UNEMAP_USE_3D)	
 static struct GT_object *map_get_map_electrodes_glyph(
 	struct Map_drawing_information *drawing_information,
 	struct Map_3d_package *map_3d_package,enum Electrodes_marker_type electrodes_marker_type)
@@ -4414,9 +4412,9 @@ Also sets the glyph in the <map_3d_package>
 	LEAVE;
 	return(glyph);
 }/* map_get_map_electrodes_glyph */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int map_update_electrode_colour_from_time(struct Unemap_package *package,
 	FE_value time)
 /*******************************************************************************
@@ -4471,9 +4469,9 @@ the surface.
 	LEAVE;
 	return return_code;
 }/* map_updatelectrode_colour_from_time */
-#endif /* (UNEMAP_USE_NODES) */
+#endif /* (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int map_set_electrode_colour_from_time(struct Unemap_package *package,
 	struct Spectrum *spectrum,struct GT_element_settings *settings,FE_value time)
 /*******************************************************************************
@@ -4545,9 +4543,9 @@ Sets the <time> of the time field.
 	LEAVE;
 	return return_code;
 }/* map_set_electrode_colour_from_time */
-#endif /* (UNEMAP_USE_NODES) */
+#endif /* (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int map_show_map_electrodes(struct Unemap_package *package,
 	struct GT_object *glyph,struct Map *map,FE_value time,struct Region *region)
 /*******************************************************************************
@@ -4736,9 +4734,9 @@ Construct the settings and build the graphics objects for the glyphs.
 	LEAVE;
 	return (return_code);
 } /* map_show_map_electrodes */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int map_remove_map_electrode_glyphs(
 	struct Map_drawing_information *drawing_information,
 	struct Unemap_package *package,
@@ -4771,9 +4769,9 @@ in <region>
 	return(return_code);
 	LEAVE;
 }/* map_remove_map_electrode_glyphs */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int map_update_map_electrodes(struct Unemap_package *package,
 	struct Region *region,struct Map *map,FE_value time)
 /*******************************************************************************
@@ -4817,9 +4815,9 @@ rig_node_group in <region>. Glyph type taken from
 	LEAVE;
 	return(return_code);
 }/* map_update_map_electrodes */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int map_electrodes_properties_changed(struct Map *map,
 	struct Map_3d_package *map_3d_package)
 /*******************************************************************************
@@ -4879,9 +4877,9 @@ haven't
 	LEAVE;
 	return(return_code);
 }/* map_electrodes_properties_changed */
-#endif /* UNEMAP_USE_NODES */
+#endif /* UNEMAP_USE_3D */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int map_draw_map_electrodes(struct Unemap_package *unemap_package,
 	struct Map *map,FE_value time)
 /*******************************************************************************
@@ -4956,9 +4954,9 @@ region(s)
 	LEAVE;
 	return(return_code);
 }/* map_draw_map_electrodes*/
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int draw_torso_arm_labels(struct Map_drawing_information *drawing_information,
 	struct Region *region)/*FOR AJP*/
 /*******************************************************************************
@@ -5091,9 +5089,9 @@ Creates a pair of arm labels, and adds to the scene.
 	LEAVE;
 	return(return_code);
 }/* draw_torso_arm_labels */
-#endif /* UNEMAP_USE_NODES */
+#endif /* UNEMAP_USE_3D */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int map_remove_all_electrodes(struct Map *map)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2000
@@ -5144,9 +5142,9 @@ time computed fields used by the glyphs.
 	LEAVE;
 	return(return_code);
 }/* map_remove_all_electrodes */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int map_remove_torso_arms(struct Map *map)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -5191,9 +5189,9 @@ and do Scene_remove_graphics_object in the DESTROY Map_3d_package
 	LEAVE;
 	return(return_code);
 }/* map_remove_torso_arms */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 	
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int draw_map_3d(struct Map *map)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
@@ -5208,7 +5206,7 @@ Removes 3d drawing for non-current region(s).
 	struct FE_field *fit_field=(struct FE_field *)NULL;
 	struct Computed_field *data_field=(struct Computed_field *)NULL;
 	float frame_time,minimum, maximum;
-	int display_all_regions,range_set,region_number,return_code;
+	int display_all_regions,range_set,return_code;
 	enum Map_type map_type;
 	char undecided_accepted;
 	struct Map_drawing_information *drawing_information=
@@ -5296,7 +5294,7 @@ Removes 3d drawing for non-current region(s).
 							/* 1st node_group is 'all_devices_node_group */							
 							make_fit_node_and_element_groups(function,unemap_package,rig->name,
 								FIT_SOCK_LAMBDA,FIT_SOCK_FOCUS,FIT_TORSO_MAJOR_R,FIT_TORSO_MINOR_R,
-								FIT_PATCH_Z,region_number,region);	
+								FIT_PATCH_Z,region);	
 							destroy_Interpolation_function(&function);
 							/* get map_3d_package again, it may have changed */
 							map_3d_package=get_Region_map_3d_package(region);
@@ -5443,7 +5441,7 @@ Removes 3d drawing for non-current region(s).
 	LEAVE;
 	return (return_code);
 } /* draw_map_3d */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* #if defined (UNEMAP_USE_3D) */
 
 int draw_map(struct Map *map,int recalculate,struct Drawing_2d *drawing)
 /*******************************************************************************
@@ -5458,7 +5456,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 	ENTER(draw_map);
 	if(map)
 	{
-#if defined (UNEMAP_USE_NODES) 
+#if defined (UNEMAP_USE_3D) 
 		/* 3d map for 3d projection */
 		if(map->projection_type==THREED_PROJECTION)
 		{			
@@ -5474,7 +5472,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 #else
 		/* old, 2d map*/
 		return_code=draw_map_2d(map,recalculate,drawing);
-#endif /*defined( UNEMAP_USE_NODES) */	
+#endif /*defined( UNEMAP_USE_3D) */	
 	}
 	else
 	{
@@ -9262,7 +9260,7 @@ extern Visual *default_visual;
 
 struct Map_drawing_information *create_Map_drawing_information(
 	struct User_interface *user_interface
-#if defined (UNEMAP_USE_NODES) 
+#if defined (UNEMAP_USE_3D) 
 	,struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
@@ -9280,7 +9278,7 @@ struct Map_drawing_information *create_Map_drawing_information(
 	struct Computed_field_package *computed_field_package,
 	struct Light *light,
 	struct Light_model *light_model
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
       )
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
@@ -9417,14 +9415,14 @@ DESCRIPTION :
 	ENTER(create_Map_drawing_information);
 	/* check arguments */
 	if ((user_interface)
-#if defined (UNEMAP_USE_NODES)		 
+#if defined (UNEMAP_USE_3D)		 
       &&element_point_ranges_selection&&
 	    element_selection&&node_selection&&data_selection&&texture_manager&&
 		  interactive_tool_manager&&scene_manager&&light_model_manager&&
 	    light_manager&&spectrum_manager&&graphical_material_manager&&
 	    data_manager&&glyph_list&&graphical_material&&
 			computed_field_package&&light&&light_model	 
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
      )
 	{
 		if (ALLOCATE(map_drawing_information,struct Map_drawing_information,1))
@@ -9447,7 +9445,7 @@ visual=default_visual;
 			map_drawing_information->number_of_spectrum_colours=MAX_SPECTRUM_COLOURS;
 			map_drawing_information->colour_map=colour_map;
 			map_drawing_information->spectrum=CREATE(Spectrum)("mapping_spectrum");
-#if defined (UNEMAP_USE_NODES)  
+#if defined (UNEMAP_USE_3D)  
       map_drawing_information->element_point_ranges_selection=
 			  element_point_ranges_selection;
 			map_drawing_information->element_selection=element_selection;
@@ -9526,7 +9524,7 @@ visual=default_visual;
 			   display_message(ERROR_MESSAGE,"create_Map_drawing_information. "
          " Could not add spectrum to manager");
        }
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 			if (visual_info=XGetVisualInfo(display,VisualNoMask,&visual_info_template,
 				&number_of_visuals))
 			{
@@ -9743,7 +9741,7 @@ DESCRIPTION :
 			map_drawing_information->number_of_spectrum_colours,planes);
 		DEALLOCATE(map_drawing_information->spectrum_colours);
 		DEALLOCATE(map_drawing_information->spectrum_rgb);
-#if defined (UNEMAP_USE_NODES) 	
+#if defined (UNEMAP_USE_2D) 	
 		destroy_Colour(&map_drawing_information->no_interpolation_colour);
 		destroy_Colour(&map_drawing_information->background_colour);		
 		destroy_Colour(&map_drawing_information->electrode_colour);
@@ -9755,7 +9753,7 @@ DESCRIPTION :
 		DEACCESS(Graphical_material)(&map_drawing_information->map_graphical_material);	
 		DEACCESS(Graphical_material)(&map_drawing_information->electrode_graphical_material);	
 		DEACCESS(Time_keeper)(&map_drawing_information->time_keeper);	
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 		DEALLOCATE(*map_drawing_information_address);
 		return_code=1;
 	}
@@ -9768,7 +9766,7 @@ DESCRIPTION :
 	return (return_code);
 } /* destroy_Map_drawing_information */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 DECLARE_OBJECT_FUNCTIONS(Map_3d_package)
 
 struct Map_3d_package *CREATE(Map_3d_package)(int number_of_map_rows,
@@ -11538,4 +11536,4 @@ Should be in Scene_viewer? RC doesn't think so.
 
 	return (return_code);
 } /*map_drawing_information_align_scene  */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */

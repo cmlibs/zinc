@@ -4137,10 +4137,10 @@ Called to start experiment on the <page_window>.
 			{
 				read_configuration_file(acquisition_rig_filename,
 					page_window->rig_address
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 					/*??JW perhaps should pass down from somewhere? */
 					,(struct Unemap_package *)NULL
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 					);
 			}
 			if (!(*(page_window->rig_address)))
@@ -4160,10 +4160,10 @@ Called to start experiment on the <page_window>.
 					if (!(*(page_window->rig_address)=create_standard_Rig("default",PATCH,
 						MONITORING_OFF,EXPERIMENT_OFF,number_of_rows,electrodes_in_row,1,0,
 						(float)1
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 						/*??JWperhaps we should pass this down from above*/
 						,(struct Unemap_package *)NULL
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 						)))
 					{
 						display_message(ERROR_MESSAGE,

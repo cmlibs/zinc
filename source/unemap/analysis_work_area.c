@@ -2240,11 +2240,13 @@ Sets up the analysis work area for analysing a set of signals.
 			{
 				destroy_Signal_buffer(&buffer);
 			}
-#if defined (UNEMAP_USE_NODES)			
+#if defined (UNEMAP_USE_3D)			
 			if ((analysis->mapping_window)&&(analysis->mapping_window->map))
 			{
 				map_remove_torso_arms(analysis->mapping_window->map);
 			}	
+#endif /* defined (UNEMAP_USE_3D)*/	
+#if defined (UNEMAP_USE_NODES)
 			/* remove nodes from window, so can remove from rig */		
 			if(analysis->window)
 			{
@@ -2256,7 +2258,9 @@ Sets up the analysis work area for analysing a set of signals.
 			if (analysis->signal_drawing_package)
 			{
 				DEACCESS(Signal_drawing_package)(&(analysis->signal_drawing_package));
-			}						
+			}	
+#endif /* defined (UNEMAP_USE_NODES)*/							
+#if defined (UNEMAP_USE_3D)
 			free_unemap_package_time_computed_fields(analysis->unemap_package);
 			free_unemap_package_rig_fields(analysis->unemap_package);		
 #endif /* defined (UNEMAP_USE_NODES)*/		
@@ -2275,7 +2279,7 @@ Sets up the analysis work area for analysing a set of signals.
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
 				map->electrodes_option=SHOW_ELECTRODE_NAMES;
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 				if(map->drawing_information)
 				{
 					set_map_drawing_information_viewed_scene(map->drawing_information,0);
@@ -2290,7 +2294,7 @@ Sets up the analysis work area for analysing a set of signals.
 		/* open the input file */
 		if ((input_file=fopen(file_name,"rb"))&&
 			(read_signal_file(input_file,&(analysis->rig)
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 			 ,analysis->unemap_package
 #endif /* defined (UNEMAP_USE_NODES)*/
 			))&&(rig=analysis->rig)&&
@@ -2751,13 +2755,14 @@ Sets up the analysis work area for analysing a set of signals.
 				fclose(input_file);
 			}
 		}
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 		/* read the signal file into nodes */
 		/*???DB.  Would be better to be another callback from the same button ? */
 		if (file_read_signal_FE_node_group(file_name,
 			analysis->unemap_package,analysis->rig))
 		{
 			ACCESS(Unemap_package)(analysis->unemap_package);
+#if defined (UNEMAP_USE_NODES)
 			/* create the signal_drawing_package, store it, set it up */
 			if(!analysis->signal_drawing_package)
 			{
@@ -2822,14 +2827,15 @@ Sets up the analysis work area for analysing a set of signals.
 				FE_node_selection_select_node(get_unemap_package_FE_node_selection
 					(analysis->unemap_package),rig_node);			
 #endif /* defined (NEW_CODE) */
-			}		
+			}
+#endif /* defined (UNEMAP_USE_NODES) */		
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"analysis_read_signal_file. file_read_signal_FE_node_group failed ");
 		}
-#endif /* defined (UNEMAP_USE_NODES) */	
+#endif /* defined (UNEMAP_USE_3D) */	
 		if (return_code)
 		{
 			/*highlight the first device*/
@@ -3071,9 +3077,9 @@ signals.
 					NULL);
 				if ((signal_input_file=fopen(signal_file_name,"rb"))&&
 					read_signal_file(signal_input_file,&(analysis->rig)
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 						,analysis->unemap_package
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 						))
 				{
 					return_code=1;
@@ -4524,9 +4530,9 @@ the user for the Neurosoft signal file.
 		destroy_Rig(&neurosoft_rig);
 		/* read the rig configuration */
 		if (read_configuration_file(file_name,&neurosoft_rig
-#if defined (UNEMAP_USE_NODES)			
+#if defined (UNEMAP_USE_3D)			
 			,analysis->unemap_package
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 				)) 
 		{
 			/* prompt the user for the name of the signal file */
@@ -4740,9 +4746,9 @@ the user for the CardioMapp signal file.
 		destroy_Rig(&cardiomapp_rig);
 		/* read the rig configuration */
 		if (read_configuration_file(file_name,&cardiomapp_rig
-#if defined (UNEMAP_USE_NODES)			
+#if defined (UNEMAP_USE_3D)			
 			,analysis->unemap_package
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 			 ))
 		{
 			/* prompt the user for the name of the signal file */
@@ -9711,9 +9717,9 @@ Duplicates the raw rig, except that
 		if (rig=create_Rig(raw_rig->name,raw_rig->monitoring,raw_rig->experiment,0,
 			(struct Device **)NULL,(struct Page_list_item *)NULL,0,
 			(struct Region_list_item *)NULL,(struct Region *)NULL
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 			,get_Rig_unemap_package(raw_rig)
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 				))
 		{
 			if (raw_rig->signal_file_name)
@@ -9784,9 +9790,9 @@ Duplicates the raw rig, except that
 					{
 						if ((*region_item_address=create_Region_list_item(create_Region(
 							raw_region->name,raw_region->type,raw_region->number,0
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 							,get_Rig_unemap_package(raw_rig)
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 							),(struct Region_list_item *)NULL))&&
 							((*region_item_address)->region))
 						{
@@ -11141,9 +11147,9 @@ Reads in a signals file and adds the signals to the devices in the current rig.
 			input_file=(FILE *)NULL;
 			if ((input_file=fopen(file_name,"rb"))&&
 				read_signal_file(input_file,&(temp_rig)
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 			 ,analysis->unemap_package
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 				))
 			{
 				/* assume that analysis is not done on overlay signals, so don't read
@@ -13215,7 +13221,7 @@ Responds to update callbacks from the time object.
 									/* playing movie */
 									/* ??JW fix the range when playing the movie? IF so need */
 									/* to update map dialog as well as map->fixed_range=1 */
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 									/* 3d map */	
 									if (map->projection_type==THREED_PROJECTION)
 									{
@@ -13229,7 +13235,7 @@ Responds to update callbacks from the time object.
 									/*2d map */
 									else
 									{	
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 										/* 2d map */
 										if (map->frame_end_time>map->frame_start_time)
 										{
@@ -13257,9 +13263,9 @@ Responds to update callbacks from the time object.
 												"End time greater or equal to start time");
 											return_code=0;
 										}
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 									}
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 								}
 								else
 								{
@@ -13282,7 +13288,7 @@ Responds to update callbacks from the time object.
 									}
 									else
 									{
-#if defined (UNEMAP_USE_NODES)	
+#if defined (UNEMAP_USE_3D)	
 										/* 3d map */	
 										if (map->projection_type==THREED_PROJECTION)
 										{
@@ -13297,22 +13303,22 @@ Responds to update callbacks from the time object.
 										else
 										/* 2d map */
 										{
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 											/* 2d map */
 											interpolation=map->interpolation_type;
 											map->interpolation_type=NO_INTERPOLATION;
 											update_mapping_drawing_area(mapping,1);
 											update_mapping_colour_or_auxili(mapping);
 											map->interpolation_type=interpolation;
-#if defined (UNEMAP_USE_NODES) 
+#if defined (UNEMAP_USE_3D) 
 										}
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 									}
 								}
 							}
 							else
 							{
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 								/* 3d map */	
 								if (map->projection_type==THREED_PROJECTION)
 								{
@@ -13322,7 +13328,7 @@ Responds to update callbacks from the time object.
 									map->frame_end_time=map_potential_time;
 									map->frame_number=0;
 								}
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 								update_mapping_drawing_area(mapping,1);
 								update_mapping_colour_or_auxili(mapping);
 							}

@@ -29,7 +29,7 @@ the rig and signal information. rather than special structures.
 #include "user_interface/message.h"
 
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 
 /*
 Module Constants
@@ -103,7 +103,7 @@ to store info when iterating
 	struct MANAGER(FE_node) *node_manager;
 };
 
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
 /*
 Module variables
@@ -115,7 +115,7 @@ Module variables
 Module functions
 ----------------
 */
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 struct Min_max_iterator *CREATE(Min_max_iterator)(void)
 /*******************************************************************************
 LAST MODIFIED : 8 August 2000
@@ -137,8 +137,10 @@ Create a Min_max_iterator, set fields to NULL/0.
 		min_max_iterator->started=0; /*have we started accumulating info yet? */
 		min_max_iterator->channel_gain_field=(struct FE_field *)NULL;
 		min_max_iterator->channel_offset_field=(struct FE_field *)NULL;
+#if defined (UNEMAP_USE_NODES)
 		min_max_iterator->display_start_time_field=(struct FE_field *)NULL;
 		min_max_iterator->display_end_time_field=(struct FE_field *)NULL;
+#endif /* defined (UNEMAP_USE_NODES) */
 		min_max_iterator->signal_minimum_field=(struct FE_field *)NULL;
 		min_max_iterator->signal_maximum_field=(struct FE_field *)NULL;
 		min_max_iterator->signal_status_field=(struct FE_field *)NULL;	
@@ -179,7 +181,9 @@ This is only temp references for iteration.
 
 	return (return_code);
 } /* DESTROY(Min_max_iterator) */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_started(struct Min_max_iterator *min_max_iterator, 
 	int *started)
 /*******************************************************************************
@@ -205,7 +209,9 @@ gets the started of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_started */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_started(struct Min_max_iterator *min_max_iterator, int started)
 /*******************************************************************************
 LAST MODIFIED : 8 August 2000
@@ -230,7 +236,9 @@ Sets the started of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* set_Min_max_iterator_started */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_count(struct Min_max_iterator *min_max_iterator, 
 	int *count)
 /*******************************************************************************
@@ -256,7 +264,9 @@ gets the count of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_count */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_count(struct Min_max_iterator *min_max_iterator, int count)
 /*******************************************************************************
 LAST MODIFIED : 8 August 2000
@@ -281,7 +291,9 @@ Sets the count of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* set_Min_max_iterator_count */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_time(struct Min_max_iterator *min_max_iterator, 
 	FE_value *time)
 /*******************************************************************************
@@ -307,7 +319,9 @@ gets the time of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_time */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_time(struct Min_max_iterator *min_max_iterator, FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 8 August 2000
@@ -332,7 +346,9 @@ Sets the time of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* set_Min_max_iterator_time */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_min(struct Min_max_iterator *min_max_iterator, 
 	FE_value *min)
 /*******************************************************************************
@@ -358,7 +374,9 @@ gets the min of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_min */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_min(struct Min_max_iterator *min_max_iterator, FE_value min)
 /*******************************************************************************
 LAST MODIFIED : 8 August 2000
@@ -409,7 +427,9 @@ gets the max of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_max */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_max(struct Min_max_iterator *min_max_iterator, FE_value max)
 /*******************************************************************************
 LAST MODIFIED : 8 August 2000
@@ -434,7 +454,9 @@ Sets the max of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* set_Min_max_iterator_max */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *channel_gain_field)
 /*******************************************************************************
@@ -460,7 +482,9 @@ gets the channel_gain_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_channel_gain_field */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int set_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *channel_gain_field)
 /*******************************************************************************
@@ -512,7 +536,9 @@ gets the channel_offset_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_channel_offset_field */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int set_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *channel_offset_field)
 /*******************************************************************************
@@ -538,7 +564,9 @@ Sets the channel_offset_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* set_Min_max_iterator_channel_offset_field */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *display_start_time_field)
 /*******************************************************************************
@@ -564,7 +592,9 @@ gets the display_start_time_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_display_start_time_field */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int set_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *display_start_time_field)
 /*******************************************************************************
@@ -590,7 +620,9 @@ Sets the display_start_time_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* set_Min_max_iterator_display_start_time_field */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_Min_max_iterator_display_end_time_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *display_end_time_field)
 /*******************************************************************************
@@ -616,7 +648,9 @@ gets the display_end_time_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_display_end_time_field */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int set_Min_max_iterator_display_end_time_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *display_end_time_field)
 /*******************************************************************************
@@ -642,7 +676,9 @@ Sets the display_end_time_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* set_Min_max_iterator_display_end_time_field */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_Min_max_iterator_signal_minimum_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_minimum_field)
 /*******************************************************************************
@@ -668,7 +704,9 @@ gets the signal_minimum_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_signal_minimum_field */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int set_Min_max_iterator_signal_minimum_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_minimum_field)
 /*******************************************************************************
@@ -694,7 +732,9 @@ Sets the signal_minimum_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* set_Min_max_iterator_signal_minimum_field */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_Min_max_iterator_signal_maximum_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_maximum_field)
 /*******************************************************************************
@@ -720,7 +760,9 @@ gets the signal_maximum_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_signal_maximum_field */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int set_Min_max_iterator_signal_maximum_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_maximum_field)
 /*******************************************************************************
@@ -746,7 +788,9 @@ Sets the signal_maximum_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* set_Min_max_iterator_signal_maximum_field */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_status_field)
 /*******************************************************************************
@@ -772,7 +816,9 @@ gets the signal_status_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_signal_status_field */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_status_field)
 /*******************************************************************************
@@ -798,7 +844,9 @@ Sets the signal_status_field of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* set_Min_max_iterator_signal_status_field */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field_component *signal_component)
 /*******************************************************************************
@@ -824,7 +872,9 @@ gets the signal_component of Min_max_iterato
 	LEAVE;
 	return(return_code);
 }/* get_Min_max_iterator_signal_component */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field_component *signal_component)
 /*******************************************************************************
@@ -851,9 +901,9 @@ Sets the signal_component of Min_max_iterato
 	return(return_code);
 }/* set_Min_max_iterator_signal_component */
 
-#endif /*defined (UNEMAP_USE_NODES)*/
+#endif /*defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static struct FE_node *create_config_template_node(enum Config_node_type 
 	config_node_type,FE_value focus,struct FE_field_order_info **field_order_info,
 	struct Unemap_package *package,struct FE_field **electrode_position_field)
@@ -1307,9 +1357,9 @@ Also returns the created electrode_position_field.
 	LEAVE;
 	return(node);
 }/* create_config_template_node */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static struct FE_node *set_config_FE_node(FILE *input_file,
 	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
 	enum Config_node_type	config_node_type,int node_number,int read_order_number,
@@ -1549,9 +1599,9 @@ create_config_template_node, and the field_order_info.
 	LEAVE;
 	return (node);
 }/* set_config_FE_node*/
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static struct FE_node *read_text_config_FE_node(FILE *input_file,
 	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
 	enum Config_node_type	config_node_type,int node_number,int read_order_number,
@@ -1800,9 +1850,9 @@ cf read_FE_node() in import_finite_element.c
 
 	return (node);
 } /* read_text_config_FE_node */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static struct FE_node *read_binary_config_FE_node(FILE *input_file,
 	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
 	enum Config_node_type	config_node_type,int node_number,int read_order_number,
@@ -1920,7 +1970,7 @@ cf read_FE_node() in import_finite_element.c
 
 	return (node);
 } /* read_binary_config_FE_node */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (OLD_CODE)
 #if defined (UNEMAP_USE_NODES)
@@ -2038,7 +2088,7 @@ The caching must be ended by the calling function.
 #endif /* defined (UNEMAP_USE_NODES) */
 #endif /* defined (OLD_CODE) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int read_binary_config_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,enum Region_type rig_type,
 	struct FE_node_order_info **the_node_order_info,struct Rig *rig) 
@@ -2518,9 +2568,9 @@ in rig.c
 	LEAVE;
 	return (return_code);
 } /* read_binary_config_FE_node_group */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int read_text_config_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,enum Region_type region_type,struct Rig *rig)
 /*******************************************************************************
@@ -3016,9 +3066,9 @@ files, and there are no text signal files.
 
 	return (return_code);
 } /* read_text_config_FE_node_group */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int read_config_FE_node_group(FILE *input_file,
 	struct Unemap_package *unemap_package,
 	enum Region_type region_type,	enum Rig_file_type file_type,
@@ -3059,9 +3109,9 @@ cf read_FE_node_group() in import_finite_element.c
 
 	return (return_code);
 } /* read_config_FE_node_group */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int read_signal_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,
 	struct FE_node_order_info *node_order_info)
@@ -3083,7 +3133,8 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 	*channel_offset_component_names[1]=
 	{
 		"offset_value"
-	},	
+	},
+#if defined (UNEMAP_USE_NODES)	
 	*display_start_time_component_names[1]=
 	{
 		"display start time"
@@ -3091,7 +3142,8 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 	*display_end_time_component_names[1]=
 	{
 		"display end time"
-	},	
+	},
+#endif /* defined (UNEMAP_USE_NODES)*/	
 	*signal_maximum_component_names[1]=
 	{
 		"maximum_value"
@@ -3122,7 +3174,8 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 		{
 			FE_NODAL_VALUE
 		}
-	},	
+	},
+#if defined (UNEMAP_USE_NODES)	
 	*display_start_time_components_nodal_value_types[1]=
 	{
 		{
@@ -3135,6 +3188,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 			FE_NODAL_VALUE
 		}
 	},
+#endif /* defined (UNEMAP_USE_NODES)*/
 	*signal_maximum_components_nodal_value_types[1]=
 	{
 		{
@@ -3163,18 +3217,23 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 
 	char *device_type_string;
 	enum Signal_value_type signal_value_type;	
-	FE_value end_time,*node_signals_fe_value,period,start_time,*times;
+	FE_value *node_signals_fe_value,period,*times;
+#if defined (UNEMAP_USE_NODES)	
+	FE_value end_time,start_time;
+#endif /* defined (UNEMAP_USE_NODES)*/
 	float *buffer_signals_float,*buffer_value,*channel_gains,*channel_offsets,frequency;
 	int *buffer_times,channel_number,count,fread_result,i,j,number_of_samples,number_of_devices,
 		number_of_signals,return_code,temp_int,		
 	  channel_gain_components_number_of_derivatives[1]={0},
 	  channel_gain_components_number_of_versions[1]={1},
 		channel_offset_components_number_of_derivatives[1]={0},
-	  channel_offset_components_number_of_versions[1]={1},	
+	  channel_offset_components_number_of_versions[1]={1},
+#if defined (UNEMAP_USE_NODES)	
 		display_start_time_components_number_of_derivatives[1]={0},
 	  display_start_time_components_number_of_versions[1]={1},
 	  display_end_time_components_number_of_derivatives[1]={0},
 	  display_end_time_components_number_of_versions[1]={1},
+#endif /* defined (UNEMAP_USE_NODES)*/
 		signal_components_number_of_derivatives[1]={0},
 	  signal_components_number_of_versions[1]={1},
 		signal_minimum_components_number_of_derivatives[1]={0},
@@ -3186,8 +3245,11 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 		short int *buffer_signals_short,*node_signals_short;
 	struct CM_field_information field_info;	
 	struct Coordinate_system coordinate_system;		
-	struct FE_field *channel_gain_field,*channel_offset_field,*display_start_time_field,
-		*display_end_time_field,*signal_field,*signal_maximum_field,
+	struct FE_field *channel_gain_field,*channel_offset_field,
+#if defined (UNEMAP_USE_NODES)
+		*display_start_time_field,*display_end_time_field,
+#endif /* defined (UNEMAP_USE_NODES)*/
+		*signal_field,*signal_maximum_field,
 		*signal_minimum_field,*signal_status_field;
 	struct FE_field_component component;
 	struct FE_node *device_node,*node,*node_managed;
@@ -3210,8 +3272,10 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 	signal_field=(struct FE_field *)NULL;
 	channel_gain_field=(struct FE_field *)NULL;
 	channel_offset_field=(struct FE_field *)NULL;
+#if defined (UNEMAP_USE_NODES)
 	display_start_time_field=(struct FE_field *)NULL;
 	display_end_time_field=(struct FE_field *)NULL;
+#endif /* defined (UNEMAP_USE_NODES)*/
 	signal_minimum_field=(struct FE_field *)NULL;
 	signal_maximum_field=(struct FE_field *)NULL;
 	times=(FE_value *)NULL;
@@ -3382,8 +3446,10 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 												times[j] = buffer_times[j]*period;										
 											}	
 											/*used a little later in fields display_start_time display_start_time*/
+#if defined (UNEMAP_USE_NODES)
 											start_time=times[0];
 											end_time=times[number_of_samples-1];											
+#endif /* defined (UNEMAP_USE_NODES)*/
 										}
 										else
 										{
@@ -3714,6 +3780,8 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 														" define_field_at_node failed");							
 													return_code=0;
 												}
+												/* NOT for UNEMAP_USE_3D */
+#if defined (UNEMAP_USE_NODES)
 												/* create the display start time field, add it to the node */	
 												/*NOTE: it's a CONSTANT_FE_FIELD, values stored t field, not node */
 												if (display_start_time_field=get_FE_field_manager_matched_field(
@@ -3780,7 +3848,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 														"error getting  display_end_time_field");	
 													return_code =0;
 												}	
-
+#endif /* (UNEMAP_USE_NODES) */
 												/* copy node back into the manager */
 												MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
 													(node_managed,node,node_manager);
@@ -3865,9 +3933,9 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 
 	return(return_code);
 } /* read_signal_FE_node_group */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 static int read_event_settings_and_signal_status_FE_node_group(FILE *input_file,
 	struct Unemap_package *package,struct FE_node_order_info *node_order_info)
 /*******************************************************************************
@@ -4064,7 +4132,7 @@ Must call after read_signal_FE_node_group
 	LEAVE;
 	return(return_code);
 }/*read_event_settings_and_signal_status_FE_node_group. */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
 /*
 Global functions
@@ -5778,7 +5846,7 @@ The extraction arguments are:
 	return (return_code);
 } /* extract_signal_information */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int file_read_signal_FE_node_group(char *file_name,
 	struct Unemap_package *unemap_package,struct Rig *rig)
 /*******************************************************************************
@@ -5869,9 +5937,9 @@ configuration info.
 
 	return (return_code);
 } /* file_read_signal_FE_node_group */
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int file_read_config_FE_node_group(char *file_name,
 	struct Unemap_package *unemap_package,struct Rig *rig)
 /*******************************************************************************
@@ -5984,7 +6052,9 @@ cf file_read_FE_node_group() in import_finite_element.c
 
 	return (return_code);
 } /* file_read_config_FE_node_group */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 static int get_rig_node_map_electrode_position_min_max(struct FE_node *node,
 	void *position_min_max_iterator_void)
 /*******************************************************************************
@@ -6062,7 +6132,9 @@ Note: map_electrode_position_field  is cylindrical polar, convert to rc.
 	LEAVE;
 	return(return_code);
 }/* get_rig_node_map_electrode_position_min_max*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int get_rig_node_group_map_electrode_position_min_max(struct GROUP(FE_node) *node_group,
 	struct FE_field *map_electrode_position_field,FE_value *min_x,FE_value *max_x,
   FE_value *min_y,FE_value *max_y,FE_value *min_z,FE_value *max_z)
@@ -6143,7 +6215,9 @@ in the <node_group>. Note: Not necessarily rectangular catresian coords!
 
 	return (return_code);
 } /* get_rig_node_group_map_electrode_position_min_max */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_NODES)
 int iterative_get_rig_node_accepted_undecided_signal_min_max(struct FE_node *node,
 	void *min_max_iterator_void)
 /*******************************************************************************
@@ -6228,7 +6302,9 @@ This function is called iteratively by analysis_set_range
 	LEAVE;
 	return(return_code);
 }/* iterative_get_rig_node_accepted_undecided_signal_min_max*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_rig_node_signal_min_max(struct FE_node *node,
 	struct FE_field *signal_field,struct FE_field *display_start_time_field,
 	struct FE_field *display_end_time_field,struct FE_field *signal_status_field,
@@ -6406,7 +6482,9 @@ Event_signal_status in <status>
 	LEAVE;
 	return(return_code);
 }/* get_rig_node_signal_min_max */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int iterative_unrange_rig_node_signal(struct FE_node *node,	void *min_max_iterator_void)
 /*******************************************************************************
 LAST MODIFIED : 7 August 2000
@@ -6480,7 +6558,9 @@ This function is called iteratively by analysis_unrange_all
 	LEAVE;
 	return(return_code);
 }/* iterative_unrange_rig_node_signal*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int iterative_set_rig_node_signal_min_max(struct FE_node *node,	
 	void *min_max_iterator_void)
 /*******************************************************************************
@@ -6546,7 +6626,9 @@ This function is called iteratively by analysis_set_range
 	LEAVE;
 	return(return_code);
 }/* iterative_set_rig_node_signal_min_max*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_3D)
 static int iterative_get_rig_node_signal_min_max_at_time(struct FE_node *node,
 	void *min_max_iterator_void)
 /*******************************************************************************
@@ -6645,7 +6727,9 @@ Does nothing with REJECTED signals.
 	LEAVE;
 	return(return_code);
 }/* iterative_get_rig_node_signal_min_max_at_time*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int get_rig_node_group_signal_min_max_at_time(struct GROUP(FE_node) *node_group,
 	struct FE_field *signal_field,struct FE_field *signal_status_field,FE_value time,
 	FE_value *min,FE_value *max)
@@ -6735,7 +6819,9 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 
 	return (return_code);
 } /* get_rig_node_group_signal_min_max_at_time */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 static int iterative_rig_node_set_map_electrode_position_lambda_r(struct FE_node *node,
 	void *set_map_electrode_position_info_void)
 /*******************************************************************************
@@ -6922,7 +7008,9 @@ rig_node_group_set_map_electrode_position_lambda_r
 	LEAVE;
 	return(return_code);
 }/* rig_node_set_map_electrode_position_lambda_r */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int rig_node_group_set_map_electrode_position_lambda_r(
 	struct Unemap_package *package,struct GROUP(FE_node) *rig_node_group,
 	struct Region *region,FE_value sock_lambda,FE_value torso_major_r,
@@ -7012,7 +7100,9 @@ and changes the <rig_node_group>'s map_electrode_postions lambda or r values to
 	LEAVE;
 	return (return_code);
 } /* rig_node_group_set_map_electrode_position_lambda_r */
- 
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
 static int rig_node_add_map_electrode_position_field(struct FE_node *node,
 	void *add_map_electrode_position_info_void)
 /*******************************************************************************
@@ -7119,7 +7209,9 @@ Called by rig_node_group_add_map_electrode_position_field
 	LEAVE;
 	return(return_code);
 }/* rig_node_add_map_electrode_position_field */
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int rig_node_group_add_map_electrode_position_field(
 	struct Unemap_package *package,struct GROUP(FE_node) *rig_node_group,
 	struct FE_field *map_electrode_position_field)
@@ -7137,7 +7229,7 @@ in addition to the one created with create_config_template_node.
 	struct MANAGER(FE_field) *field_manager;
 	struct MANAGER(FE_node) *node_manager;
 	
-	ENTER(rig_node_group_change_electrode_position_focus);
+	ENTER(rig_node_group_add_map_electrode_position_field);
 	node_manager=(struct MANAGER(FE_node) *)NULL;
 	if (package&&rig_node_group&&map_electrode_position_field)
 	{				
@@ -7155,14 +7247,16 @@ in addition to the one created with create_config_template_node.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"rig_node_group_change_electrode_position_focus."
+		display_message(ERROR_MESSAGE,"rig_node_group_add_map_electrode_position_field."
 			" Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
 	return (return_code);
-} /* rig_node_group_change_electrode_position_focus */
+} /* rig_node_group_add_map_electrode_position_field*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_NODES)
 int sort_rig_node_sorts_by_read_order(void *first,void *second)
 /*******************************************************************************
 LAST MODIFIED : 25 July 2000
@@ -7196,7 +7290,9 @@ larger (> 0) read_order than the <second> device.
 
 	return (return_code);
 } /*sort_rig_node_sorts_by_read_order(  */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int sort_rig_node_sorts_by_event_time(void *first,void *second)
 /*******************************************************************************
 LAST MODIFIED : 26 July 2000

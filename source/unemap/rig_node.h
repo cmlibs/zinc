@@ -32,7 +32,9 @@ by  read_order or event_time using heapsort or quicksort
 	int read_order;
 	FE_value event_time; /* I think event_time is an FE_value*/
 };/* Rig_node_sort */
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_3D)
 struct Min_max_iterator
 /*******************************************************************************
 LAST MODIFIED : 7 August 2000
@@ -47,12 +49,15 @@ No ACCessing of feilds  as just temp reference for iteration.
 	FE_value max,min,time;
 	int count;
 	int started; /*have we started accumulating info yet? */
-	struct FE_field *channel_gain_field,*channel_offset_field,*display_start_time_field,
-		*display_end_time_field,*signal_minimum_field,*signal_maximum_field,
+	struct FE_field *channel_gain_field,*channel_offset_field
+#if  defined (UNEMAP_USE_NODES) 
+		,*display_start_time_field,*display_end_time_field
+#endif /* defined (UNEMAP_USE_NODES) */
+		,*signal_minimum_field,*signal_maximum_field,
 		*signal_status_field;	
 	struct FE_field_component *signal_component;
 };
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
 struct Signal_drawing_package
 /*******************************************************************************
@@ -70,8 +75,10 @@ unemap_package struct. If a field is set to NULL, then it isn't drawn.
 	struct FE_field *channel_number_field;
 	struct FE_field *device_name_field;
 	struct FE_field *device_type_field;	
+#if  defined (UNEMAP_USE_NODES)
 	struct FE_field *display_end_time_field;
 	struct FE_field *display_start_time_field;
+#endif /* defined (UNEMAP_USE_NODES) */
 	struct FE_field *read_order_field;
 	struct FE_field *highlight_field;	
 	struct FE_field *channel_gain_field;
@@ -90,7 +97,7 @@ Global functions
 PROTOTYPE_OBJECT_FUNCTIONS(Signal_drawing_package);
 #endif /* defined (UNEMAP_USE_NODES) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 struct Min_max_iterator *CREATE(Min_max_iterator)(void);
 /*******************************************************************************
 LAST MODIFIED : 8 August 2000
@@ -107,7 +114,9 @@ DESCRIPTION :
 Destroy a Min_max_iterator. Don't DEACCESS fields, 'cos never accessed them.
 This is only temp references for iteration.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_count(struct Min_max_iterator *min_max_iterator, 
 	int *count);
 /*******************************************************************************
@@ -116,7 +125,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the count of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_count(struct Min_max_iterator *min_max_iterator, 
 	int count);
 /*******************************************************************************
@@ -125,7 +136,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the count of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_started(struct Min_max_iterator *min_max_iterator, 
 	int *started);
 /*******************************************************************************
@@ -134,7 +147,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the started of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_started(struct Min_max_iterator *min_max_iterator, 
 	int started);
 /*******************************************************************************
@@ -143,7 +158,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the started of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_time(struct Min_max_iterator *min_max_iterator, 
 	FE_value *time);
 /*******************************************************************************
@@ -152,7 +169,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the time of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_time(struct Min_max_iterator *min_max_iterator, FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 8 August 2000
@@ -160,7 +179,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the time of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_min(struct Min_max_iterator *min_max_iterator, 
 	FE_value *min);
 /*******************************************************************************
@@ -169,7 +190,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the min of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_min(struct Min_max_iterator *min_max_iterator, FE_value min);
 /*******************************************************************************
 LAST MODIFIED : 8 August 2000
@@ -177,7 +200,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the min of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 
 int get_Min_max_iterator_max(struct Min_max_iterator *min_max_iterator, 
 	FE_value *max);
@@ -187,7 +212,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the max of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_max(struct Min_max_iterator *min_max_iterator, FE_value max);
 /*******************************************************************************
 LAST MODIFIED : 8 August 2000
@@ -195,7 +222,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the max of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *channel_gain_field);
 /*******************************************************************************
@@ -204,7 +233,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the channel_gain_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int set_Min_max_iterator_channel_gain_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *channel_gain_field);
 /*******************************************************************************
@@ -213,7 +244,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the channel_gain_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *channel_offset_field);
 /*******************************************************************************
@@ -222,7 +255,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the channel_offset_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int set_Min_max_iterator_channel_offset_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *channel_offset_field);
 /*******************************************************************************
@@ -231,7 +266,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the channel_offset_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *display_start_time_field);
 /*******************************************************************************
@@ -240,7 +277,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the display_start_time_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int set_Min_max_iterator_display_start_time_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *display_start_time_field);
 /*******************************************************************************
@@ -249,7 +288,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the display_start_time_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_Min_max_iterator_display_end_time_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *display_end_time_field);
 /*******************************************************************************
@@ -258,7 +299,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the display_end_time_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int set_Min_max_iterator_display_end_time_field(
 	struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *display_end_time_field);
@@ -268,7 +311,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the display_end_time_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_Min_max_iterator_signal_minimum_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_minimum_field);
 /*******************************************************************************
@@ -277,7 +322,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the signal_minimum_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int set_Min_max_iterator_signal_minimum_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_minimum_field);
 /*******************************************************************************
@@ -286,7 +333,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the signal_minimum_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_Min_max_iterator_signal_maximum_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_maximum_field);
 /*******************************************************************************
@@ -295,7 +344,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the signal_maximum_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int set_Min_max_iterator_signal_maximum_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_maximum_field);
 /*******************************************************************************
@@ -304,7 +355,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the signal_maximum_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_status_field);
 /*******************************************************************************
@@ -313,7 +366,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the signal_status_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_signal_status_field(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field *signal_status_field);
 /*******************************************************************************
@@ -322,7 +377,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the signal_status_field of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int get_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field_component *signal_component);
 /*******************************************************************************
@@ -331,7 +388,9 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 gets the signal_component of Min_max_iterato
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int set_Min_max_iterator_signal_component(struct Min_max_iterator *min_max_iterator, 
 	struct FE_field_component *signal_component);
 /*******************************************************************************
@@ -340,7 +399,7 @@ LAST MODIFIED : 8 August 2000
 DESCRIPTION :
 Sets the signal_component of Min_max_iterato
 ==============================================================================*/
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_NODES)
 struct Signal_drawing_package *CREATE(Signal_drawing_package)(void);
@@ -727,7 +786,7 @@ The extraction arguments are:
 	the maximum value to be displayed (not necessarily the maximum of the values)
 ==============================================================================*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int file_read_config_FE_node_group(char *file_name,
 	struct Unemap_package *unemap_package,struct Rig *rig);
 /*******************************************************************************
@@ -737,9 +796,9 @@ DESCRIPTION :
 Reads  configuration file into  a node group.
 cf file_read_FE_node_group() in import_finite_element.c
 ==============================================================================*/
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int file_read_signal_FE_node_group(char *file_name,
 	struct Unemap_package *unemap_package,struct Rig *rig);
 /*******************************************************************************
@@ -749,7 +808,9 @@ DESCRIPTION :
 Reads  node group(s) from a signal file into rig . Signal file includes the
 configuration info.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int get_rig_node_group_map_electrode_position_min_max(struct GROUP(FE_node) *node_group,
 	struct FE_field *map_electrode_position_field,FE_value *min_x,FE_value *max_x,
   FE_value *min_y,FE_value *max_y,FE_value *min_z,FE_value *max_z);
@@ -760,7 +821,9 @@ DESCRIPTION :
 Finds the min and max coordinates of the  <map_electrode_position_field>
 in the <node_group>
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_NODES)
 int iterative_get_rig_node_accepted_undecided_signal_min_max(struct FE_node *node,
 	void *min_max_iterator_void);
 /*******************************************************************************
@@ -768,7 +831,9 @@ LAST MODIFIED : 7 August 2000
 
 DESCRIPTION :
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int get_rig_node_signal_min_max(struct FE_node *node,
 	struct FE_field *signal_field,struct FE_field *display_start_time_field,
 	struct FE_field *display_end_time_field,struct FE_field *signal_status_field,
@@ -783,7 +848,9 @@ If <time_range> =0, determines the min, max over entire signal range.
 If <signal_status_field> and <status> set, return the node signal's 
 Event_signal_status in <status>
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int iterative_unrange_rig_node_signal(struct FE_node *node,	
 	void *min_max_iterator_void);
 /*******************************************************************************
@@ -794,7 +861,9 @@ Set the <nodes> signal_minimum,signal_maximum by determining the signals's
 actual min and max.
 This function is called iteratively by analysis_unrange_all
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int iterative_set_rig_node_signal_min_max(struct FE_node *node,	
 	void *min_max_iterator_void);
 /*******************************************************************************
@@ -804,7 +873,9 @@ DESCRIPTION :
 Set the <nodes> signal_minimum,signal_maximum from the <min_max_iterator>.
 This function is called iteratively by analysis_set_range
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_3D)
 int get_rig_node_group_signal_min_max_at_time(struct GROUP(FE_node) *node_group,
 	struct FE_field *signal_field,struct FE_field *signal_status_field,FE_value time,
 	FE_value *min,FE_value *max);
@@ -815,7 +886,9 @@ DESCRIPTION :
 Returns the <min> and <max>  signal values at the rig nodes in the rig_node_group
 <node_group>, field <signal_field>, time <time>
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int rig_node_group_set_map_electrode_position_lambda_r(
 	struct Unemap_package *package,struct GROUP(FE_node) *rig_node_group,
 	struct Region *region,FE_value sock_lambda,FE_value torso_major_r,
@@ -828,7 +901,9 @@ Sets the node group's nodal map_electrode_postions from the nodal electrode_posi
 and changes the <rig_node_group>'s map_electrode_postions lambda or r values to 
 <value>
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 int rig_node_group_add_map_electrode_position_field(
 	struct Unemap_package *package,struct GROUP(FE_node) *rig_node_group,
 	struct FE_field *map_electrode_position_field);
@@ -840,7 +915,9 @@ Add an electrode_position_field  to the <rig_node_group> nodes,
 in addition to the one created with create_config_template_node.
 
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_NODES)
 int sort_rig_node_sorts_by_read_order(void *first,void *second);
 /*******************************************************************************
 LAST MODIFIED : 25 July 2000
@@ -849,7 +926,9 @@ DESCRIPTION :
 Returns whether the <first> rig_node_sort has a smaller (< 0), the same (0) or a
 larger (> 0) read_order than the <second> device.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
+#if defined (UNEMAP_USE_NODES)
 int sort_rig_node_sorts_by_event_time(void *first,void *second);
 /*******************************************************************************
 LAST MODIFIED : 26 July 2000

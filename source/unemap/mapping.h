@@ -15,7 +15,7 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 #include "general/geometry.h"
 #include "graphics/spectrum.h"
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "graphics/graphics_window.h"
@@ -170,7 +170,7 @@ DESCRIPTION :
 	VARIABLE_THICKNESS
 }; /* enum Contour_thickness */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 struct Map_3d_package	
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -200,7 +200,7 @@ map_drawing_information.
 	struct MANAGER(GROUP(FE_element))	*element_group_manager;	
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;  
 };
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 
 struct Map_drawing_information
 /*******************************************************************************
@@ -240,7 +240,7 @@ from here.
 	XColor *spectrum_rgb;
 	XFontStruct *font;
 #endif /* defined (MOTIF) */
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 	/* These are for the map 3d graphics */
 	/* Flag to record if done "view all" on scene*/
 	int viewed_scene; 
@@ -267,7 +267,7 @@ from here.
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct MANAGER(FE_node) *data_manager;	
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;		
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 	struct User_interface *user_interface;
 }; /* struct Map_drawing_information */
 
@@ -409,7 +409,7 @@ DESCRIPTION:
 Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 ==============================================================================*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int map_remove_torso_arms(struct Map *map);
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -419,9 +419,9 @@ Removes the torso arms from the scene.
 ??JW perhaps should have a scene and scene_viewer in each Map_3d_package,
 and do Scene_remove_graphics_object in the DESTROY Map_3d_package
 ==============================================================================*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 int draw_map_3d(struct Map *map);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2000
@@ -452,7 +452,7 @@ This function draws the colour bar or the auxiliary inputs in the <drawing>.
 
 struct Map_drawing_information *create_Map_drawing_information(
 	struct User_interface *user_interface
-#if defined (UNEMAP_USE_NODES) 
+#if defined (UNEMAP_USE_3D) 
 	,struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
@@ -486,7 +486,7 @@ LAST MODIFIED : 21 June 1997
 DESCRIPTION :
 ==============================================================================*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 PROTOTYPE_OBJECT_FUNCTIONS(Map_3d_package);
 
 struct Map_3d_package *CREATE(Map_3d_package)(	int number_of_map_rows,
@@ -1010,6 +1010,6 @@ then we'd look along the y axis, with the z axis as the up vector.
 cf Scene_viewer_view_all.
 Should be in Scene_viewer? RC doesn't think so.
 ==============================================================================*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
 #endif /* !defined (MAPPING_H) */

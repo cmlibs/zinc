@@ -50,8 +50,10 @@ element,nodes, fields when they are no longer required.
 	struct FE_field *channel_offset_field;
 	struct FE_field *device_name_field;
 	struct FE_field *device_type_field;
+#if defined (UNEMAP_USE_NODES) 
 	struct FE_field *display_end_time_field;
 	struct FE_field *display_start_time_field;
+#endif /* defined (UNEMAP_USE_NODES) */
 	struct FE_field *read_order_field;
 	struct FE_field *highlight_field;
 	struct FE_field *signal_field;
@@ -64,7 +66,7 @@ element,nodes, fields when they are no longer required.
 	int access_count;
 }; /* struct Unemap_package */
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 
 PROTOTYPE_OBJECT_FUNCTIONS(Unemap_package);
 
@@ -95,7 +97,9 @@ DESCRIPTION :
 Frees the memory for the Unemap_package node field and 
 sets <*package_address> to NULL.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_device_name_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -113,7 +117,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_device_type_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -131,7 +137,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_channel_number_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -149,7 +157,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_NODES)
 struct FE_field *get_unemap_package_display_start_time_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -167,7 +177,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES)*/
 
+#if defined (UNEMAP_USE_NODES)
 struct FE_field *get_unemap_package_display_end_time_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -185,7 +197,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_read_order_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -203,7 +217,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_highlight_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -221,7 +237,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_signal_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -239,7 +257,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_signal_minimum_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -257,7 +277,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_signal_maximum_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -275,7 +297,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_signal_status_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -293,7 +317,9 @@ LAST MODIFIED : October 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_channel_offset_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -311,7 +337,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 
 struct FE_field *get_unemap_package_channel_gain_field(
 	struct Unemap_package *package);
@@ -330,7 +358,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(FE_field) *get_unemap_package_FE_field_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -339,7 +369,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 gets a manager of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(Computed_field) *get_unemap_package_Computed_field_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -348,7 +380,9 @@ LAST MODIFIED : 3 September 1999
 DESCRIPTION :
 gets a manager of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_NODES)
 struct FE_node_selection *get_unemap_package_FE_node_selection(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -357,7 +391,9 @@ LAST MODIFIED : 31 August 2000
 DESCRIPTION :
 gets a FE_node_selection of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(GROUP(FE_element)) *get_unemap_package_element_group_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -366,7 +402,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 gets a manager of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(FE_node) *get_unemap_package_node_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -375,7 +413,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 gets a manager of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(FE_element) *get_unemap_package_element_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -384,7 +424,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 gets a manager of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(Interactive_tool) *get_unemap_package_interactive_tool_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -393,7 +435,9 @@ LAST MODIFIED : 4 September 2000
 DESCRIPTION :
 gets a manager of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(FE_basis) *get_unemap_package_basis_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -402,7 +446,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 gets a manager of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(GROUP(FE_node)) *get_unemap_package_data_group_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -411,7 +457,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 gets a manager of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(GROUP(FE_node)) *get_unemap_package_node_group_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -420,7 +468,9 @@ LAST MODIFIED : July 8 1999
 DESCRIPTION :
 gets a manager of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 int unemap_package_rig_node_group_has_electrodes(struct Unemap_package *package,
 	struct GROUP(FE_node) *rig_node_group);
 /*******************************************************************************
@@ -430,7 +480,9 @@ DESCRIPTION :determines if the  <rig_node group>
  contains at least one node with a device_type field
 set to "ELECTRODE". See also rig_node_has_electrode_defined
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 int free_unemap_package_time_computed_fields(struct Unemap_package *unemap_package);
 /*******************************************************************************
 LAST MODIFIED : 4 May 2000
@@ -439,7 +491,9 @@ DESCRIPTION :
 Frees the time related computed fields (used by the map electrode glyphs) 
 stored in the unemap package. Also frees any associated fe_fields
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 int free_unemap_package_rig_fields(struct Unemap_package *unemap_package);
 /*******************************************************************************
 LAST MODIFIED : 17 May 2000
@@ -447,7 +501,9 @@ LAST MODIFIED : 17 May 2000
 DESCRIPTION :
 Frees the <unemap_package> rig's computed and fe fields
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 int free_unemap_package_rig_node_group_glyphs(
 	struct Map_drawing_information *drawing_information,
 	struct Unemap_package *package,
@@ -458,7 +514,9 @@ LAST MODIFIED : 7 July 2000
 DESCRIPTION :
 Frees up any glyphs used by the nodes in the rig_node_group
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 int free_unemap_package_rig_node_group(struct Unemap_package *package,	
 	struct GROUP(FE_node) **rig_node_group);
 /*******************************************************************************
@@ -468,7 +526,9 @@ DESCRIPTION :Frees the node, element and data groups of <rig_node_group>
 Note: DOESN't free the glyphs of the node group. See 
 free_unemap_package_rig_node_group_glyphs for this
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct Computed_field *get_unemap_package_signal_value_at_time_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -477,7 +537,9 @@ LAST MODIFIED : 3 May 2000
 DESCRIPTION :
 gets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 int set_unemap_package_signal_value_at_time_field(struct Unemap_package *package,
 	struct Computed_field *signal_value_at_time_field);
 /*******************************************************************************
@@ -486,7 +548,9 @@ LAST MODIFIED : 3 May 2000
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 struct Computed_field *get_unemap_package_time_field(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -495,7 +559,9 @@ LAST MODIFIED : 3 May 2000
 DESCRIPTION :
 gets the field of the unemap package.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
 int set_unemap_package_time_field(struct Unemap_package *package,
 	struct Computed_field *time_field);
 /*******************************************************************************
@@ -505,5 +571,5 @@ DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
 
-#endif /* #if defined(UNEMAP_USE_NODES) */
+#endif /* #if defined(UNEMAP_USE_3D) */
 #endif /* !defined (UNEMAP_PACKAGE_H) */

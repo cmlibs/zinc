@@ -1613,10 +1613,10 @@ for (i=0;i<16;i++)
 					}
 					if (rig=create_standard_Rig("Beekeeper EEG",PATCH,MONITORING_OFF,
 						EXPERIMENT_OFF,number_of_rows,electrodes_in_row,1,0,(float)1
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 						/*??JW perhaps we should pass this down from above*/
 						,(struct Unemap_package *)NULL
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 						))
 					{
 						rig->current_region=rig->region_list->region;

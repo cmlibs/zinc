@@ -17,7 +17,7 @@ Main program for unemap.  Based on cmgui.
 #include "general/debug.h"
 #include "general/error_handler.h"
 #if defined (NOT_ACQUISITION_ONLY)
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -35,7 +35,7 @@ Main program for unemap.  Based on cmgui.
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 #include "finite_element/finite_element.h"
 #include "time/time_keeper.h"
 #include "unemap/unemap_package.h"
@@ -270,7 +270,7 @@ Main program for unemap
 	int return_code;
 #if defined (NOT_ACQUISITION_ONLY)
 	struct Unemap_package *unemap_package;
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 	float default_light_direction[3]={0.0,-0.5,-1.0};	
 	struct Colour ambient_colour,default_colour;	
 	struct Computed_field *computed_field=(struct Computed_field *)NULL;
@@ -317,7 +317,7 @@ Main program for unemap
 	struct MANAGER(Texture) *texture_manager=(struct MANAGER(Texture) *)NULL;	
 	struct Node_tool *node_tool=(struct Node_tool *)NULL;
 	struct Transform_tool *transform_tool=(struct Transform_tool *)NULL;
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 	struct System_window *system;
 	struct Time_keeper *time_keeper;
 #else /* defined (NOT_ACQUISITION_ONLY) */
@@ -417,7 +417,7 @@ Main program for unemap
 		set_display_message_function(ERROR_MESSAGE,display_error_message,
 			&user_interface);
 		/*if using nodes, print information and warning messages to stdout*/
-#if defined(UNEMAP_USE_NODES)
+#if defined(UNEMAP_USE_3D)
 		set_display_message_function(INFORMATION_MESSAGE,
 			display_information_message,(void *)NULL);
 		set_display_message_function(WARNING_MESSAGE,display_warning_message,
@@ -427,7 +427,7 @@ Main program for unemap
 			display_information_message,(void *)NULL);
 		set_display_message_function(WARNING_MESSAGE,display_warning_message,
 			&user_interface);
-#endif
+#endif /* defined(UNEMAP_USE_3D) */
 		/* used to output information and warnings to windows*/
 #if defined(OLD_CODE)
 		set_display_message_function(INFORMATION_MESSAGE,
@@ -621,7 +621,7 @@ Main program for unemap
 #if defined (NOT_ACQUISITION_ONLY)
 		time_keeper=ACCESS(Time_keeper)(
 			CREATE(Time_keeper)("default",&user_interface));
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 		texture_manager=CREATE_MANAGER(Texture)();	
 		fe_field_manager=CREATE_MANAGER(FE_field)();
 		element_group_manager=CREATE_MANAGER(GROUP(FE_element))();
@@ -844,7 +844,7 @@ Main program for unemap
 				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 			}
 		}
-		node_tool=CREATE(Node_tool)(interactive_tool_manager,fe_field_manager,
+		node_tool=CREATE(Node_tool)(interactive_tool_manager,
 			node_manager,/*use_data*/0,node_group_manager,element_manager,
 			node_selection,computed_field_package,default_graphical_material,
 			&user_interface);		
@@ -857,19 +857,19 @@ Main program for unemap
 		/* FE_element_shape manager */
 		/*???DB.  To be done */
 		all_FE_element_shape=CREATE_LIST(FE_element_shape)();
-#else /* defined (UNEMAP_USE_NODES) */
+#else /* defined (UNEMAP_USE_3D) */
 		unemap_package=(struct Unemap_package *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
 		if (system=create_System_window(user_interface.application_shell,
 			exit_unemap,time_keeper,&user_interface,unemap_package
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 			,element_point_ranges_selection,element_selection,node_selection,
 			data_selection,texture_manager,interactive_tool_manager,scene_manager,
 			light_model_manager,light_manager,spectrum_manager,
 			graphical_material_manager,data_manager,glyph_list,
 			default_graphical_material,computed_field_package,default_light,
 			default_light_model
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 			))
 #else /* defined (NOT_ACQUISITION_ONLY) */
 		page_window=(struct Page_window *)NULL;
@@ -887,10 +887,7 @@ Main program for unemap
 			5,".sig",&user_interface))
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 		{
-#if defined (UNEMAP_USE_NODES)
-			
-		
-#endif /* defined (UNEMAP_USE_NODES) */
+
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (MOTIF)
 			create_Shell_list_item(&(system->window_shell),&user_interface);
@@ -984,7 +981,7 @@ Main program for unemap
 				application_main_loop is infinite.  Alternatively make sure that
 				application_main_loop is not infinite */
 #if defined (NOT_ACQUISITION_ONLY)
-#if defined (UNEMAP_USE_NODES )
+#if defined (UNEMAP_USE_3D )
 			DESTROY(Unemap_package)(&unemap_package);	
 
 			/* destroy Interactive_tools and manager */
@@ -1002,7 +999,7 @@ Main program for unemap
 			DESTROY(MANAGER(FE_node))(&node_manager);
 			DESTROY(MANAGER(GROUP(FE_node)))(&data_group_manager);
 			DESTROY(MANAGER(GROUP(FE_element)))(&element_group_manager);
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 /*???debug */
 /*			END_ERROR_HANDLING;*/
