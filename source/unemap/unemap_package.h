@@ -44,7 +44,7 @@ the node and element groups need to be regenerated, or just have the values chan
 
 Currently Unemap_package is rather cluttered.
 Currently storing info to make map (eg signals), info for 3D window, 
-eg light model, and managers. Split into along these lines?
+eg light model, and managers. Split into along these lines??JW
 
 ==============================================================================*/
 {
@@ -543,6 +543,40 @@ is 1,2,3...
 Returns -1 on error
 ==============================================================================*/
 
+int free_unemap_package_map_contours(struct Unemap_package *package,int map_number);
+/*******************************************************************************
+LAST MODIFIED : 16 May 2000
+
+DESCRIPTION :
+Frees the array of map contour GT_element_settings stored in the <package>
+<map_number> map_info.
+==============================================================================*/
+
+int get_unemap_package_map_contours(struct Unemap_package *package,
+	int map_number,int *number_of_contours,
+	struct GT_element_settings ***contour_settings);
+/*******************************************************************************
+LAST MODIFIED : 16 May 2000
+
+DESCRIPTION :
+gets the <number_of_contours> and <contour_settings> for map_info <map_number> 
+in <package>.
+get with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3... Returns -1 on error
+==============================================================================*/
+
+int set_unemap_package_map_contours(struct Unemap_package *package,int map_number,
+	int number_of_contours,struct GT_element_settings **contour_settings);
+/*******************************************************************************
+LAST MODIFIED : 16 May 2000
+
+DESCRIPTION :
+sets the <number_of_contours> and <contour_settings> for map_info <map_number> 
+in <package>.
+set with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3...
+==============================================================================*/
+
 int get_unemap_package_map_rig_node_group_number(
 	struct Unemap_package *package,int map_number);
 /*******************************************************************************
@@ -661,21 +695,12 @@ Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
 is 1,2,3...
 ==============================================================================*/
 
-int free_unemap_package_rig_computed_fields(struct Unemap_package *unemap_package);
+int free_unemap_package_rig_fields(struct Unemap_package *unemap_package);
 /*******************************************************************************
-LAST MODIFIED : August 20 1999
+LAST MODIFIED : 17 May 2000
 
 DESCRIPTION :
-Frees the fields stored in the unemap_package that are used by the computed 
-field manager
-==============================================================================*/
-
-int free_unemap_package_rig_fields(struct Unemap_package *package);
-/*******************************************************************************
-LAST MODIFIED : August 19 1999
-
-DESCRIPTION :
-Frees the fields stored in the unemap_package that are used by the rid_node_group
+Frees the <unemap_package> rig's computed and fe fields
 ==============================================================================*/
 
 int free_unemap_package_time_computed_fields(struct Unemap_package *unemap_package);

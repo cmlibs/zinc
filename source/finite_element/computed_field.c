@@ -17378,6 +17378,66 @@ be destroyed, assuming it is only accessed by this field and its manager.
 	return (return_code);
 } /* Computed_field_can_be_destroyed */
 
+int destroy_computed_field_given_fe_field(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager,
+	struct FE_field *fe_field)
+/*******************************************************************************
+LAST MODIFIED : 17 May 2000
+
+DESCRIPTION :
+Given <fe_field>, destroys the associated computed field, and fe_field
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *computed_field=(struct Computed_field *)NULL;
+
+	ENTER(destroy_computed_field_given_fe_field);
+	if(computed_field_manager&&fe_field_manager&&fe_field)
+	{
+		if(computed_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)
+			(Computed_field_is_read_only_with_fe_field,(void *)(fe_field),
+				computed_field_manager))
+		{
+			if (Computed_field_can_be_destroyed(computed_field))
+			{
+				/* also want to destroy (wrapped) FE_field */	
+				if (return_code=REMOVE_OBJECT_FROM_MANAGER(Computed_field)(
+					computed_field,computed_field_manager))
+				{							
+					return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
+						fe_field,fe_field_manager);
+				}
+				if (!return_code)
+				{
+					display_message(ERROR_MESSAGE,"destroy_computed_field_given_fe_field. "
+						" Could not destroy field");
+				}
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"destroy_computed_field_given_fe_field Cannot destroy field in use ");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"destroy_computed_field_given_fe_field."
+				"Field does not exist");	
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"destroy_computed_field_given_fe_field "
+			"invalid arguements ");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* destroy_computed_field_given_fe_field */
+
 int remove_computed_field_from_manager_given_FE_field(
 	struct MANAGER(Computed_field) *computed_field_manager,struct FE_field *field)
 /*******************************************************************************

@@ -1615,4 +1615,16 @@ LAST MODIFIED : August 27 1999
 DESCRIPTION :
 Frees the computed fields from the computed field manager, given the FE_field
 ==============================================================================*/
+
+int destroy_computed_field_given_fe_field(
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager,
+	struct FE_field *fe_field);
+/*******************************************************************************
+LAST MODIFIED : 17 May 2000
+
+DESCRIPTION :
+Given <fe_field>, destroys the associated computed field, and fe_field
+==============================================================================*/
+
 #endif /* !defined (COMPUTED_FIELD_H) */

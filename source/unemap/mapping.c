@@ -22,6 +22,7 @@ DESCRIPTION :
 #if defined (UNEMAP_USE_NODES)
 #include "graphics/graphics_window.h"
 #include "graphics/graphical_element.h"
+#include "graphics/element_group_settings.h"
 #endif
 #include "graphics/spectrum.h"
 #include "unemap/drawing_2d.h"
@@ -3537,6 +3538,8 @@ been embedded in the mapping Xwindow.
 				unemap_package->interactive_tool_manager,
 				user_interface))
 			{
+				/*perturb the lines, so we can see the contours */
+				Graphics_window_set_line_draw_mode(window,1);
 				set_unemap_package_window(unemap_package,window);
 				if (!ADD_OBJECT_TO_MANAGER(Graphics_window)(window,
 					graphics_window_manager))
@@ -3604,13 +3607,117 @@ Removes all line settings from the graphical finite element for
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
+static int map_draw_contours(struct Scene *scene,struct Unemap_package *package,	
+	struct Computed_field *data_field,int number_of_contours,FE_value contour_minimum,
+	FE_value contour_maximum,int map_number)
+/*******************************************************************************
+LAST MODIFIED : 17 May 2000
+
+DESCRIPTION :
+Removes any existing contours, draw <number_of_contours> map contours, evenly 
+spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour> 
+=0, simply removes any existing contours.
+==============================================================================*/
+{
+	int i,old_number_of_contours,return_code;
+	struct Colour colour;
+	struct Graphical_material *contour_material,*default_selected_material;
+	struct MANAGER(Graphical_material) *graphical_material_manager;
+	struct GROUP(FE_element) *element_group;
+	struct GT_element_group *gt_element_group;
+	struct GT_element_settings **contour_settings,**old_contour_settings;
+	FE_value contour_step,contour_value;
+
+	ENTER(map_make_surfaces);
+	contour_settings=(struct GT_element_settings **)NULL;
+	old_contour_settings=(struct GT_element_settings **)NULL;
+	gt_element_group=(struct GT_element_group *)NULL;
+	contour_material=(struct Graphical_material *)NULL;
+	default_selected_material=(struct Graphical_material *)NULL;
+	graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
+	element_group=(struct GROUP(FE_element) *)NULL;
+	if((!number_of_contours)||(data_field&&scene))
+	{		
+		element_group=get_unemap_package_map_element_group(package,map_number);
+		graphical_material_manager=get_unemap_package_Graphical_material_manager(package);
+		gt_element_group=Scene_get_graphical_element_group(scene,element_group);
+		default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
+		("default_selected",graphical_material_manager);
+
+		/* do nothing if the number of contours is the same */		
+		get_unemap_package_map_contours(package,map_number,&old_number_of_contours,
+			&old_contour_settings);
+		if(number_of_contours!=old_number_of_contours)
+		{	
+			/* create material for the contour, so can colour it black, indep of the  */
+			/* map surface (default material)*/
+			if(!(contour_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
+				("contour",graphical_material_manager)))		
+				if (contour_material=CREATE(Graphical_material)(
+					"contour"))
+			{
+				colour.red=0.0;
+				colour.green=0.0;
+				colour.blue=0.0;
+				Graphical_material_set_ambient(contour_material,&colour);
+				Graphical_material_set_diffuse(contour_material,&colour);			
+				ADD_OBJECT_TO_MANAGER(Graphical_material)(contour_material,
+					graphical_material_manager);
+			}
+			/* remove the old contour settings from the gt_element_group */
+			if(old_number_of_contours)
+			{					
+				for(i=0;i<old_number_of_contours;i++)
+				{					
+					GT_element_group_remove_settings(gt_element_group,old_contour_settings[i]);
+				}		
+			}
+			free_unemap_package_map_contours(package,map_number);
+			if(number_of_contours)
+			{
+				/* calculate the contour intervals */
+				contour_value=contour_minimum;
+				contour_step=(contour_maximum-contour_minimum)/(number_of_contours-1);
+				/* allocate, define and set the contours */
+				ALLOCATE(contour_settings,struct GT_element_settings *,number_of_contours);
+				for(i=0;i<number_of_contours;i++)
+				{
+					contour_settings[i]=CREATE(GT_element_settings)
+						(GT_ELEMENT_SETTINGS_ISO_SURFACES);
+					GT_element_settings_set_material(contour_settings[i],contour_material);
+					GT_element_settings_set_selected_material(contour_settings[i],
+						default_selected_material);
+					GT_element_settings_set_iso_surface_parameters(contour_settings[i],
+						data_field,contour_value);
+					GT_element_group_add_settings(gt_element_group,contour_settings[i],0);		
+					contour_value+=contour_step;
+				}			
+				GT_element_group_build_graphics_objects(gt_element_group,
+					(struct FE_element *)NULL,(struct FE_node *)NULL);
+			}	
+			set_unemap_package_map_contours(package,map_number,number_of_contours,
+					contour_settings);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"map_draw_contours. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* map_draw_contours */
+#endif /* #if defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
 static int map_show_surfaces(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Spectrum *spectrum,struct Computed_field *data_field,
 	struct Colour *no_interpolation_colour)
 /*******************************************************************************
-LAST MODIFIED : 26 April 2000
+LAST MODIFIED : 15 May 2000
 
 DESCRIPTION :
 Adds map's surfaces in the given <material> to the graphical finite element for
@@ -3620,32 +3727,33 @@ applies <spectrum> and <data_field> these to the <material>.
 If  <spectrum> and <data_field> are NULL and <no_interpolation_colour> is set, 
 removes any existing <spectrum> and <data_field>  and 
 applies  <no_interpolation_colour> to the <material>.
+Also applies <number_of_contours> contours to surface.
 ==============================================================================*/
 {
 	int return_code;	
 	struct Colour white={1,1,1};
 	struct GT_element_group *gt_element_group;
 	struct Computed_field *existing_data_field;
-	struct Graphical_material *default_material,*material_copy;
+	struct Graphical_material *default_selected_material,
+		*material_copy;
 	struct GT_element_settings *settings,*new_settings;
-	
 	struct Spectrum *existing_spectrum;
 
 	ENTER(map_make_surfaces);
 	gt_element_group=(struct GT_element_group *)NULL;
 	settings=(struct GT_element_settings *)NULL;
 	new_settings=(struct GT_element_settings *)NULL;
-	material_copy=(struct Graphical_material *)NULL;
-	default_material=(struct Graphical_material *)NULL;
+	material_copy=(struct Graphical_material *)NULL;	
+	default_selected_material=(struct Graphical_material *)NULL;
 	existing_data_field=(struct Computed_field *)NULL;
-	existing_spectrum=(struct Spectrum *)NULL;
+	existing_spectrum=(struct Spectrum *)NULL;	
 	if (scene&&element_group&&material&&((spectrum&&data_field&&!no_interpolation_colour)
 		||(!spectrum&&!data_field&&no_interpolation_colour)))
-	{	
-		if (gt_element_group=Scene_get_graphical_element_group(scene,element_group))
-		{	
-			default_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-						"default_selected",graphical_material_manager);
+	{				
+		if ((gt_element_group=Scene_get_graphical_element_group(scene,element_group))&&			 
+			 (default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
+			 ("default_selected",graphical_material_manager)))
+		{			 
 			/* do we already have settings, ie already created graphical element group?*/
 			if (settings=first_settings_in_GT_element_group_that(gt_element_group,
 				GT_element_settings_type_matches,(void *)GT_ELEMENT_SETTINGS_SURFACES))
@@ -3662,8 +3770,7 @@ applies  <no_interpolation_colour> to the <material>.
 						if(!((data_field==existing_data_field)&&(spectrum==existing_spectrum)))
 						{
 							if(new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES))
-							{
-								
+							{															
 								GT_element_settings_set_data_spectrum_parameters(new_settings,data_field,
 									spectrum);
 								GT_element_group_modify_settings(gt_element_group,settings,
@@ -3681,7 +3788,7 @@ applies  <no_interpolation_colour> to the <material>.
 					}/* if(data_field&&spectrum) */
 					else
 					{		
-						new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES);						
+						new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES);
 						/* change the material colour to our no_interpolation_colour */
 						material_copy=CREATE(Graphical_material)("");							
 						if(new_settings&&material_copy&&
@@ -3695,8 +3802,9 @@ applies  <no_interpolation_colour> to the <material>.
 							{
 								/* following removes spectrum from element group,*/
 								/* as new_settings don't use it*/
-								GT_element_settings_set_material(new_settings,material);
-								GT_element_settings_set_selected_material(new_settings,default_material);
+								GT_element_settings_set_material(new_settings,material);							
+								GT_element_settings_set_selected_material(new_settings,
+									default_selected_material);
 								GT_element_group_modify_settings(gt_element_group,settings,
 									new_settings);
 								GT_element_group_build_graphics_objects(gt_element_group,
@@ -3735,10 +3843,11 @@ applies  <no_interpolation_colour> to the <material>.
 								material,material_copy,graphical_material_manager))
 							{
 								/* use the spectrum and data_field*/									
-								GT_element_settings_set_material(new_settings,material);
-								GT_element_settings_set_selected_material(new_settings,default_material);
+								GT_element_settings_set_material(new_settings,material);							
+								GT_element_settings_set_selected_material(new_settings,
+									default_selected_material);
 								GT_element_settings_set_data_spectrum_parameters(new_settings,data_field,
-									spectrum);
+									spectrum);							
 								GT_element_group_modify_settings(gt_element_group,settings,
 									new_settings);	
 								GT_element_group_build_graphics_objects(gt_element_group,
@@ -3797,8 +3906,8 @@ applies  <no_interpolation_colour> to the <material>.
 								"map_show_surfaces. Couldn't copy material ");							
 							return_code=0;
 						}		
-					}
-					GT_element_settings_set_selected_material(settings,default_material);
+					}				
+					GT_element_settings_set_selected_material(settings,default_selected_material);
 					GT_element_settings_set_material(settings,material);
 					if (GT_element_group_add_settings(gt_element_group,settings,0))
 					{
@@ -3820,7 +3929,9 @@ applies  <no_interpolation_colour> to the <material>.
 			}/* if (old_settings=first_settings_in_GT_element_group_that */
 		}
 		else
-		{
+		{	
+			display_message(ERROR_MESSAGE,
+						"map_show_surfaces. no gt_element_group or default_material ");
 			return_code=0;
 		}
 	}
@@ -4205,7 +4316,7 @@ Construct the settings and build the graphics objects for the glyphs.
 	struct Computed_field *computed_coordinate_field,*computed_field,*label_field,
 		*orientation_scale_field;
 	struct FE_field *map_electrode_position_field,*field;
-	struct Graphical_material *default_material,*material;
+	struct Graphical_material *default_selected_material,*material;
 	struct GROUP(FE_element) *rig_element_group;
 	struct GROUP(FE_node) *rig_node_group;	
 	struct GT_element_group *gt_element_group;	
@@ -4222,7 +4333,7 @@ Construct the settings and build the graphics objects for the glyphs.
 	gt_element_group=(struct GT_element_group *)NULL;	
 	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
 	material=(struct Graphical_material *)NULL;	
-	default_material=(struct Graphical_material *)NULL;	
+	default_selected_material=(struct Graphical_material *)NULL;	
 	scene=(struct Scene *)NULL;	
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
 	rig_element_group=(struct GROUP(FE_element) *)NULL;
@@ -4265,9 +4376,9 @@ Construct the settings and build the graphics objects for the glyphs.
 				{						
 					graphical_material_manager=
 						get_unemap_package_Graphical_material_manager(package);
-					default_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+					default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
 						"default_selected",graphical_material_manager);
-					GT_element_settings_set_selected_material(settings,default_material);
+					GT_element_settings_set_selected_material(settings,default_selected_material);
 					GT_element_settings_set_material(settings,material);
 					GT_element_settings_set_select_mode(settings,GRAPHICS_SELECT_ON);					
 					glyph_centre[0]=0.0;
@@ -4470,7 +4581,7 @@ removes the maps elecrodes, if they've changed.
 			/*??JW maybe we should just store a flag to indicate that the electrode has*/
 			/* changed, rather than storing all the electrodes_marker_size,electrode */
 			/* option changed  etc at the package/map_info. If so, remove unemap/mapping.h*/
-			/* from unemap_package.h*/
+			/* from unemap_package.h*/				
 			GET_NAME(GT_object)(electrode_glyph,&electrode_glyph_name);	
 			/*Glyph type has changed */		
 			if((((!strcmp(electrode_glyph_name,"cross"))&&
@@ -4508,7 +4619,7 @@ removes the maps elecrodes, if they've changed.
 #if defined (UNEMAP_USE_NODES)
 int new_draw_map(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1999
+LAST MODIFIED : 15 May 2000
 
 DESCRIPTION :
 This function draws the <map> in as a 3D CMGUI scene.
@@ -4518,7 +4629,8 @@ This function draws the <map> in as a 3D CMGUI scene.
 	struct FE_field *fit_field=(struct FE_field *)NULL;
 	struct Computed_field *data_field=(struct Computed_field *)NULL;
 	float frame_time,minimum, maximum;
-	int number_of_regions,range_set,region_number,return_code,rig_node_group_number;
+	int number_of_contours,number_of_regions,range_set,region_number,
+		return_code,rig_node_group_number;
 	enum Map_type map_type;
 	char undecided_accepted;		
 	struct Rig *rig=(struct Rig *)NULL;
@@ -4580,7 +4692,9 @@ This function draws the <map> in as a 3D CMGUI scene.
 						else
 						{
 							current_region=rig->current_region;
-						}										
+						}		
+
+								
 						if (function=calculate_interpolation_functio(map_type,rig,current_region,
 							map->event_number,frame_time,map->datum,map->start_search_interval,
 							map->end_search_interval,undecided_accepted,
@@ -4604,7 +4718,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 
 							/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
 							if((map->interpolation_type==NO_INTERPOLATION)||
-								 (map->colour_option==HIDE_COLOUR))
+								(map->colour_option==HIDE_COLOUR))
 							{
 								/* No Spectrum or computed field used.*/
 								map_show_surfaces(scene,element_group,
@@ -4628,7 +4742,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 							}
 							if(!get_unemap_package_viewed_scene(unemap_package))
 							{														
-								/* make the map_electrode_position_field, add to the rig nodes*/							
+								/* make the map_electrode_position_field, add to the rig nodes*/
 								make_and_add_map_electrode_position_field(region_number,
 									current_region->type,unemap_package);
 							}
@@ -4642,12 +4756,12 @@ This function draws the <map> in as a 3D CMGUI scene.
 					{		
 						if(map->range_changed)
 						{
-							 map->range_changed=0;
+							map->range_changed=0;
 							range_set=1;
 						}
 					}
 					else
-					/* spectrum range automatic */
+						/* spectrum range automatic */
 					{		
 						/* NO_INTERPOLATION-map range comes from the signals (i.e electrodes) */
 						if(map->interpolation_type==NO_INTERPOLATION)
@@ -4664,7 +4778,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 							/*signals(electrodes) */
 						{		
 							/* remove the electrode glyphs, so only get range from surface(s)*/
-							/* electrodes added below. Tjis is a little inefficient, as must then */
+							/* electrodes added below. This is a little inefficient, as must then */
 							/* re-add electrodes. Also need to remove the time computed fields */
 							/* used by the glyphs */
 							for (region_number=0;region_number<number_of_regions;region_number++)
@@ -4680,7 +4794,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 						map->contour_minimum=minimum;
 						map->contour_maximum=maximum;
 						map->range_changed=0;
-					}	/* if(map->fixed_range) */				
+					}	/* if(map->fixed_range) */
 					if(range_set)
 					{						
 						if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
@@ -4709,7 +4823,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 								"new_draw_map.  Spectrum is not in manager!");
 							return_code=0;
 						}				
-					}				
+					}								
 					map_remove_map_electrodes_if_changed(unemap_package,number_of_regions,
 						map->electrodes_marker_type,map->electrodes_option,
 						map->electrodes_marker_size);
@@ -4719,7 +4833,24 @@ This function draws the <map> in as a 3D CMGUI scene.
 						map_draw_map_electrodes(unemap_package,region_number,
 							map->electrodes_marker_type,map->electrodes_option,
 							map->electrodes_marker_size,spectrum,time);
-					}									
+					}		
+					/* Show the contours */	
+					if((map->contours_option==SHOW_CONTOURS)&&
+							(map->interpolation_type!=NO_INTERPOLATION))
+					{
+						number_of_contours=map->number_of_contours;
+					}
+					else
+					{
+						number_of_contours=0;
+					}
+					for (region_number=0;region_number<number_of_regions;region_number++)
+					{	
+						/* remove/draw contours */
+						map_draw_contours(scene,unemap_package,data_field,
+							number_of_contours,map->contour_minimum,
+							map->contour_maximum,region_number);											
+					}								
 					/* First time the scene's viewed  do "view_all"*/
 					if(!get_unemap_package_viewed_scene(unemap_package))
 					{	

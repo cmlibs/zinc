@@ -29,8 +29,9 @@ struct Map_info
 	enum Electrodes_option electrodes_option;
 	enum Region_type region_type;	
 	FE_value electrode_size;
-	int access_count,number_of_map_columns,number_of_map_rows;	
+	int access_count,number_of_contours,number_of_map_columns,number_of_map_rows;	
 	int rig_node_group_number;/* the corresponding rig_node_group in unmap_package */
+	struct GT_element_settings **contour_settings;
 	struct FE_field *map_position_field,*map_fit_field;	
 	struct FE_node_order_info *node_order_info;	
 	struct GROUP(FE_element) *element_group;
@@ -80,6 +81,8 @@ Create and  and set it's components
 				map_info->rig_node_group_number=rig_node_group_number;
 				map_info->number_of_map_rows=number_of_map_rows;
 				map_info->number_of_map_columns=number_of_map_columns;
+				map_info->number_of_contours=0;
+				map_info->contour_settings=(struct GT_element_settings **)NULL;
 				map_info->region_type=region_type;				
 				map_info->node_order_info=ACCESS(FE_node_order_info)
 					(node_order_info);
@@ -122,6 +125,41 @@ Create and  and set it's components
 	return (map_info);	
 }
 
+static int free_map_info_map_contours(struct Map_info *map_info)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2000
+
+DESCRIPTION :
+Frees the array of map contour GT_element_settings stored in the <map_info>
+==============================================================================*/
+{
+	int i,number_of_contours,return_code;	
+
+	ENTER(free_map_info_map_contours);
+	if(map_info)
+	{
+		return_code=1;
+		number_of_contours=map_info->number_of_contours;
+		if(number_of_contours)
+		{					
+			for(i=0;i<number_of_contours;i++)
+			{										
+				DEACCESS(GT_element_settings)(&(map_info->contour_settings[i]));
+			}								
+			DEALLOCATE(map_info->contour_settings);
+			map_info->contour_settings=(struct GT_element_settings **)NULL;
+		}	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"free_map_info_map_contours Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+}/*free_map_info_map_contours */
+
 static int DESTROY(Map_info)(struct Map_info **map_info_address)
 /*******************************************************************************
 LAST MODIFIED : 8 September 1999
@@ -159,7 +197,9 @@ to NULL.
 		/* node_order_info */
 		DEACCESS(FE_node_order_info)(&(map_info->node_order_info));
 		/*element_group */
-		success=1;		
+		success=1;
+		/* contours*/
+		free_map_info_map_contours(map_info);
 		map_element_group=map_info->element_group;
 		while(success&&(element_to_destroy=FIRST_OBJECT_IN_GROUP_THAT(FE_element)
 			((GROUP_CONDITIONAL_FUNCTION(FE_element) *)NULL, NULL,map_element_group)))
@@ -189,57 +229,24 @@ to NULL.
 		remove_computed_field_from_manager_given_FE_field(computed_field_manager,
 			map_info->map_position_field);		
 		/* map_fit_field */
-		temp_field=map_info->map_fit_field; 		
-		DEACCESS(FE_field)(&temp_field);
 		if(map_info->map_fit_field)
-		{	
-			if (FE_field_can_be_destroyed
-				(map_info->map_fit_field))
-			{
-				if(REMOVE_OBJECT_FROM_MANAGER(FE_field)
-					(map_info->map_fit_field,fe_field_manager))
-				{
-					map_info->map_fit_field=(struct FE_field *)NULL;
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"DESTROY(Map_info)."
-						" Couldn't remove map_fit_field from manager");
-				}
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,"DESTROY(Map_info). "
-					"Couldn't destroy map_fit_field");
-			}
+		{
+			temp_field=map_info->map_fit_field; 		
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				map_info->map_fit_field);
+			map_info->map_fit_field=(struct FE_field *)NULL;
 		}
 		/* map_position_field */
-		temp_field=map_info->map_position_field; 		
-		DEACCESS(FE_field)(&temp_field);
 		if(map_info->map_position_field)
-		{	
-			if (FE_field_can_be_destroyed
-				(map_info->map_position_field))
-			{
-				if(REMOVE_OBJECT_FROM_MANAGER(FE_field)
-					(map_info->map_position_field,fe_field_manager))
-				{
-					map_info->map_position_field=(struct FE_field *)NULL;
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"DESTROY(Map_info)."
-						" Couldn't remove map_position_field from manager");
-				}
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,"DESTROY(Map_info). "
-					"Couldn't destroy map_position_field");
-			}	
+		{
+			temp_field=map_info->map_position_field; 		
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				map_info->map_position_field);
+			map_info->map_position_field=(struct FE_field *)NULL;
 		}
-
-		/* map_electrode_position_field */
+		DEALLOCATE(map_info->contour_settings);
 		/* fit_name */
 		DEALLOCATE(map_info->fit_name);
 		DEALLOCATE(*map_info_address);
@@ -1827,6 +1834,108 @@ Returns -1 on error
 	return (number_of_map_columns);
 } /* get_unemap_package_map_number_of_map_columns */
 
+int free_unemap_package_map_contours(struct Unemap_package *package,int map_number)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2000
+
+DESCRIPTION :
+Frees the array of map contour GT_element_settings stored in the <package>
+<map_number> map_info.
+==============================================================================*/
+{
+	int return_code;	
+	struct Map_info *map_info=(struct Map_info *)NULL;
+
+	ENTER(free_unemap_package_map_contours);
+	if(package)
+	{
+		return_code=1;		
+		if((package->maps_info)&&(map_info=package->maps_info[map_number]))
+		{
+			free_map_info_map_contours(map_info);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"free_unemap_package_map_contours Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+}/* free_unemap_package_map_contours */
+
+int get_unemap_package_map_contours(struct Unemap_package *package,
+	int map_number,int *number_of_contours,
+	struct GT_element_settings ***contour_settings)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2000
+
+DESCRIPTION :
+gets the <number_of_contours> and <contour_settings> for map_info <map_number> 
+in <package>.
+get with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3... Returns -1 on error
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_unemap_package_map_contours);
+	return_code=0;
+	if((package)&&(map_number>-1)&&(map_number<package->number_of_maps))	
+	{				
+		*number_of_contours=package->maps_info[map_number]->number_of_contours;
+		*contour_settings=package->maps_info[map_number]->contour_settings;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_map_contours."
+			" invalid arguments");
+		return_code=0; /* No map_info */
+		*number_of_contours=0;
+		*contour_settings=(struct GT_element_settings **)NULL;
+	}
+	LEAVE;
+	return (return_code);
+} /* get_unemap_package_map_contours */
+
+int set_unemap_package_map_contours(struct Unemap_package *package,int map_number,
+	int number_of_contours,struct GT_element_settings **contour_settings)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2000
+
+DESCRIPTION :
+sets the <number_of_contours> and <contour_settings> for map_info <map_number> 
+in <package>.
+set with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3...
+==============================================================================*/
+{
+	int i,return_code;
+
+	ENTER(set_unemap_package_map_contours)
+	return_code=0;
+	if((package)&&(map_number>-1)&&(map_number<package->number_of_maps))	
+	{
+	
+		return_code=1;	
+		package->maps_info[map_number]->number_of_contours=number_of_contours;
+		package->maps_info[map_number]->contour_settings=contour_settings;	
+		for(i=0;i<number_of_contours;i++)
+		{			
+			package->maps_info[map_number]->contour_settings[i]=
+				ACCESS(GT_element_settings)(contour_settings[i]);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_unemap_package_map_contours."
+			" invalid arguments");	
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_map_contours */
+
 int get_unemap_package_map_rig_node_group_number(
 	struct Unemap_package *package,int map_number)
 /*******************************************************************************
@@ -2211,6 +2320,7 @@ is 1,2,3...
 	return (return_code);
 }/* set_unemap_package_map_element_group */
 
+#if defined(OLD_CODE)
 int free_unemap_package_rig_computed_fields(struct Unemap_package *unemap_package)
 /*******************************************************************************
 LAST MODIFIED : August 20 1999
@@ -2300,7 +2410,138 @@ field manager
 	LEAVE;
 	return(return_code);		
 }/* free_unemap_package_rig_computed_fields*/
+#endif /* defined(OLD_CODE) */
 
+int free_unemap_package_rig_fields(struct Unemap_package *unemap_package)
+/*******************************************************************************
+LAST MODIFIED : 17 May 2000
+
+DESCRIPTION :
+Frees the <unemap_package> rig's computed and fe fields
+==============================================================================*/
+{
+	int count,return_code;
+	struct MANAGER(Computed_field) *computed_field_manager=
+		(struct MANAGER(Computed_field) *)NULL;
+	struct MANAGER(FE_field) *fe_field_manager=
+		(struct MANAGER(FE_field) *)NULL;
+	struct FE_field *temp_field=(struct FE_field *)NULL;
+
+	ENTER(free_unemap_package_rig_fields)
+	if(unemap_package)
+	{
+		return_code=1;
+		computed_field_manager=unemap_package->computed_field_manager;
+		fe_field_manager=unemap_package->fe_field_manager;
+	
+		if(unemap_package->electrode_position_fields)
+		{
+			for(count=0;count<unemap_package->number_of_electrode_position_fields;count++)
+			{
+				temp_field=unemap_package->electrode_position_fields[count];
+				DEACCESS(FE_field)(&temp_field);
+				destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+					unemap_package->electrode_position_fields[count]);
+				unemap_package->electrode_position_fields[count]=(struct FE_field *)NULL;
+			}	
+			unemap_package->number_of_electrode_position_fields=0;
+		}		
+		if(unemap_package->map_electrode_position_fields)
+		{
+			for(count=0;count<unemap_package->number_of_map_electrode_position_fields;count++)
+			{
+				temp_field=unemap_package->map_electrode_position_fields[count];
+				DEACCESS(FE_field)(&temp_field);
+				destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+					unemap_package->map_electrode_position_fields[count]);
+				unemap_package->map_electrode_position_fields[count]=(struct FE_field *)NULL;
+			}	
+			unemap_package->number_of_map_electrode_position_fields=0;
+		}		
+		if(unemap_package->device_name_field)
+		{
+			temp_field=unemap_package->device_name_field;
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				unemap_package->device_name_field);
+			unemap_package->device_name_field=(struct FE_field *)NULL;
+		}
+		if(unemap_package->device_type_field)
+		{
+			temp_field=unemap_package->device_type_field;
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				unemap_package->device_type_field);
+			unemap_package->device_type_field=(struct FE_field *)NULL;
+		}
+		if(unemap_package->channel_number_field)
+		{
+			temp_field=unemap_package->channel_number_field;
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				unemap_package->channel_number_field);
+			unemap_package->channel_number_field=(struct FE_field *)NULL;
+		}	
+		if(unemap_package->signal_field)
+		{
+			temp_field=unemap_package->signal_field;
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				unemap_package->signal_field);
+			unemap_package->signal_field=(struct FE_field *)NULL;
+		}
+		if(unemap_package->signal_minimum_field)
+		{
+			temp_field=unemap_package->signal_minimum_field;
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				unemap_package->signal_minimum_field);
+			unemap_package->signal_minimum_field=(struct FE_field *)NULL;
+		}
+		if(unemap_package->signal_maximum_field)
+		{
+			temp_field=unemap_package->signal_maximum_field;
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				unemap_package->signal_maximum_field);
+			unemap_package->signal_maximum_field=(struct FE_field *)NULL;
+		}	
+		if(unemap_package->signal_status_field)
+		{
+			temp_field=unemap_package->signal_status_field;
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				unemap_package->signal_status_field);
+			unemap_package->signal_status_field=(struct FE_field *)NULL;
+		}
+		if(unemap_package->channel_gain_field)
+		{
+			temp_field=unemap_package->channel_gain_field;
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				unemap_package->channel_gain_field);
+			unemap_package->channel_gain_field=(struct FE_field *)NULL;
+		}
+		if(unemap_package->channel_offset_field)
+		{
+			temp_field=unemap_package->channel_offset_field;
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				unemap_package->channel_offset_field);
+			unemap_package->channel_offset_field=(struct FE_field *)NULL;
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,"free_unemap_package_rig_fields."
+			" invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);		
+}/* free_unemap_package_rig_fields*/
+
+#if defined(OLD_CODE)
 int free_unemap_package_rig_fields(struct Unemap_package *package)
 /*******************************************************************************
 LAST MODIFIED : August 20 1999
@@ -2591,7 +2832,7 @@ Do this last, as it attempts to remove the fields from the managers.
 	LEAVE;
 	return (return_code);
 }/* free_unemap_package_rig_fields */
-
+#endif /* defined(OLD_CODE) */
 
 int free_unemap_package_time_computed_fields(struct Unemap_package *unemap_package)
 /*******************************************************************************
@@ -2599,19 +2840,24 @@ LAST MODIFIED : 4 May 2000
 
 DESCRIPTION :
 Frees the time related computed fields (used by the map electrode glyphs) 
-stored in the unemap package.
+stored in the unemap package. Also frees any associated fe_fields
 ==============================================================================*/
 {
 	int return_code;
 	struct Computed_field *computed_field,*temp_field;
+	struct FE_field *fe_field;
 	struct MANAGER(Computed_field) *computed_field_manager;
-	
+	struct MANAGER(FE_field) *fe_field_manager;
+
 	ENTER(free_unemap_package_time_computed_fields);
 	if(unemap_package)
 	{
 		computed_field=(struct Computed_field *)NULL;
 		temp_field=(struct Computed_field *)NULL;
+		temp_field=(struct Computed_field *)NULL;
+		fe_field=(struct FE_field *)NULL;
 		computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
+		fe_field_manager=(struct MANAGER(FE_field) *)NULL;
 		return_code=1;
 		computed_field_manager=get_unemap_package_Computed_field_manager(unemap_package);
 		computed_field=get_unemap_package_signal_value_at_time_field(unemap_package);
@@ -2622,12 +2868,27 @@ stored in the unemap package.
 			if (Computed_field_can_be_destroyed
 				(computed_field))
 			{
+				/* also want to destroy any wrapped FE_field */
+				fe_field=(struct FE_field *)NULL;
+				switch (Computed_field_get_type(computed_field))
+				{
+					case COMPUTED_FIELD_FINITE_ELEMENT:
+					{
+						Computed_field_get_type_finite_element(computed_field,
+							&fe_field);
+					}
+				}
 				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
 					(computed_field,computed_field_manager))
 				{
 					computed_field=(struct Computed_field *)NULL;
 					set_unemap_package_signal_value_at_time_field
-						(unemap_package,(struct Computed_field *)NULL);
+						(unemap_package,(struct Computed_field *)NULL);	
+					if (fe_field)
+					{
+						return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
+							fe_field,fe_field_manager);
+					}
 				}
 				else
 				{
@@ -2650,12 +2911,26 @@ stored in the unemap package.
 			if (Computed_field_can_be_destroyed
 				(computed_field))
 			{
+				fe_field=(struct FE_field *)NULL;
+				switch (Computed_field_get_type(computed_field))
+				{
+					case COMPUTED_FIELD_FINITE_ELEMENT:
+					{
+						Computed_field_get_type_finite_element(computed_field,
+							&fe_field);
+					}
+				}
 				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
 					(computed_field,computed_field_manager))
 				{
 					computed_field=(struct Computed_field *)NULL;
 					set_unemap_package_time_field
 						(unemap_package,(struct Computed_field *)NULL);
+					if (fe_field)
+					{
+						return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
+							fe_field,fe_field_manager);
+					}
 				}
 				else
 				{
@@ -2803,10 +3078,8 @@ associated with the rig
 	int return_code;
 
 	if(package)
-	{
-		/* free exisitng map nodes, elements, fields. Must do in this order */		
-		return_code=(free_unemap_package_rig_node_groups(package)&&
-		free_unemap_package_rig_computed_fields(package)&&
+	{	
+		return_code=(return_code=free_unemap_package_rig_node_groups(package)&&
 		free_unemap_package_time_computed_fields(package)&&
 		free_unemap_package_rig_fields(package));
 	}

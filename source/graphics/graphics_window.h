@@ -427,6 +427,16 @@ Parser commands for modifying graphics windows - views, lighting, etc.
 See comments with struct Modify_graphics_window_data;
 ==============================================================================*/
 
+int Graphics_window_set_line_draw_mode(struct Graphics_window *window,
+	int perturb_lines_flag);
+/*******************************************************************************
+LAST MODIFIED : 15 May 2000
+
+DESCRIPTION :
+Sets if the <graphics_window> perturbs lines or not, using <perturb_lines_flag>
+(1==TRUE,0==FALSE)
+==============================================================================*/
+
 int set_Graphics_window(struct Parse_state *state,void *window_address_void,
 	void *graphics_window_manager_void);
 /*******************************************************************************

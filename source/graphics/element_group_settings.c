@@ -517,7 +517,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 
 int DESTROY(GT_element_settings)(struct GT_element_settings **settings_ptr)
 /*******************************************************************************
-LAST MODIFIED : 19 March 1999
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 Frees the memory for the fields of <**settings_ptr>, frees the memory for
@@ -528,9 +528,10 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 	int return_code;
 
 	ENTER(DESTROY(GT_element_settings));
-	if (settings_ptr)
+	if (settings_ptr&&(settings= *settings_ptr))
 	{
-		if (settings= *settings_ptr)
+		/*???RC temp check access_count is zero! */
+		if (0==settings->access_count)
 		{
 			if (settings->name)
 			{
@@ -605,15 +606,16 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			{
 				DEACCESS(Spectrum)(&(settings->spectrum));
 			}
-			/*???RC temp check access_count is zero! */
-			if (0!=settings->access_count)
-			{
-				display_message(ERROR_MESSAGE,
-					"DESTROY(GT_element_settings).  Non-zero access_count");
-			}
 			DEALLOCATE(*settings_ptr);
+			return_code=1;
 		}
-		return_code=1;
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(GT_element_settings).  Non-zero access_count");
+			*settings_ptr=(struct GT_element_settings *)NULL;
+			return_code=0;
+		}
 	}
 	else
 	{

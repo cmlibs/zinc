@@ -15,6 +15,11 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 #include "general/geometry.h"
 #include "graphics/spectrum.h"
+#if defined (UNEMAP_USE_NODES)
+#include "graphics/graphics_window.h"
+#include "graphics/graphical_element.h"
+#include "graphics/element_group_settings.h"
+#endif
 #include "unemap/drawing_2d.h"
 #include "unemap/rig.h"
 #include "user_interface/user_interface.h"

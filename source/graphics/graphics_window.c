@@ -160,39 +160,39 @@ Module functions
 ----------------
 */
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphics_window, \
-	name,char *,strcmp)
+        name,char *,strcmp)
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphics_window)
 
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,viewing_form)
+        Graphics_window,viewing_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,viewing_area1)
+        Graphics_window,viewing_area1)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,viewing_area2)
+        Graphics_window,viewing_area2)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,viewing_area3)
+        Graphics_window,viewing_area3)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,viewing_area4)
+        Graphics_window,viewing_area4)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,view_all_button)
+        Graphics_window,view_all_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,time_edit_form)
+        Graphics_window,time_edit_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,perspective_button)
+        Graphics_window,perspective_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,layout_option)
+        Graphics_window,layout_option)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,layout_menu)
+        Graphics_window,layout_menu)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,orthographic_form)
+        Graphics_window,orthographic_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,ortho_up_option)
+        Graphics_window,ortho_up_option)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,ortho_up_menu)
+        Graphics_window,ortho_up_menu)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,ortho_front_button)
+        Graphics_window,ortho_front_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-	Graphics_window,interactive_tool_form)
+        Graphics_window,interactive_tool_form)
 
 static int axis_name_to_axis_number(char *axis_name)
 /*******************************************************************************
@@ -579,7 +579,7 @@ Keep in case a use is found for it.
 } /* Graphics_window_destroy_CB */
 
 static void Graphics_window_update_interactive_tool(Widget widget,
-	void *graphics_window_void,void *interactive_tool_void)
+        void *graphics_window_void,void *interactive_tool_void)
 /*******************************************************************************
 LAST MODIFIED : 9 May 2000
 
@@ -1776,6 +1776,51 @@ Parser commands for modifying the overlay scene of the current pane of the
 	return (return_code);
 } /* modify_Graphics_window_overlay */
 
+int Graphics_window_set_line_draw_mode(struct Graphics_window *window,
+	int perturb_lines_flag)
+/*******************************************************************************
+LAST MODIFIED : 15 May 2000
+
+DESCRIPTION :
+Sets if the <graphics_window> perturbs lines or not, using <perturb_lines_flag>
+(1==TRUE,0==FALSE)
+==============================================================================*/
+{
+	int pane_no,return_code;
+
+	ENTER(Graphics_window_set_line_draw_mode);
+	if (window)
+	{
+		/*  perturb lines */
+		if (perturb_lines_flag)
+		{
+			for (pane_no=0;pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES;
+					 pane_no++)
+			{
+				Scene_viewer_set_line_draw_mode(window->scene_viewer[pane_no],1);
+			}		
+		}
+		/* don't perturb lines */
+		else
+		{
+			for (pane_no=0;pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES;
+					 pane_no++)
+			{
+				Scene_viewer_set_line_draw_mode(window->scene_viewer[pane_no],0);
+			}		
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_set_line_draw_mode.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* Graphics_window_set_line_draw_mode */
+
 static int modify_Graphics_window_set(struct Parse_state *state,
 	void *window_void,void *modify_graphics_window_data_void)
 /*******************************************************************************
@@ -1978,6 +2023,9 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 							}
 							redraw=1;
 						}
+						Graphics_window_set_line_draw_mode(window,perturb_lines_flag);
+						redraw=1;
+#if defined (OLD_CODE)
 						if (perturb_lines_flag)
 						{
 							for (pane_no=0;pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES;
@@ -1998,6 +2046,7 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 							}
 							redraw=1;
 						}
+#endif
 						if (fast_transparency_flag||slow_transparency_flag||layered_transparency)
 						{
 							if (fast_transparency_flag)
