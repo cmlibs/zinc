@@ -126,51 +126,51 @@ None by default.
 
   (double eyex, double eyey, double eyez, double lookatx, double lookaty, double lookatz,
         double upx, double upy, double upz) get_lookat_parameters(
-	     Cmiss_scene_viewer_id scene_viewer)
+	     Cmiss::scene_viewer scene_viewer)
 
   int set_lookat_parameters_non_skew(
-        Cmiss_scene_viewer_id scene_viewer,double eyex,double eyey,double eyez,
+        Cmiss::scene_viewer scene_viewer,double eyex,double eyey,double eyez,
         double lookatx,double lookaty,double lookatz,
         double upx,double upy,double upz)
 
-  double get_view_angle(Cmiss_scene_viewer_id scene_viewer)
+  double get_view_angle(Cmiss::scene_viewer scene_viewer)
 The <view_angle> is returned in radians.
 
-  int set_view_angle(Cmiss_scene_viewer_id scene_viewer,
+  int set_view_angle(Cmiss::scene_viewer scene_viewer,
         double view_angle)
 The <view_angle> should be specified in radians.
 
-  int get_antialias_mode(Cmiss_scene_viewer_id scene_viewer)
+  int get_antialias_mode(Cmiss::scene_viewer scene_viewer)
 
-  int set_antialias_mode(Cmiss_scene_viewer_id scene_viewer,
+  int set_antialias_mode(Cmiss::scene_viewer scene_viewer,
         int antialias_mode)
 
-  int get_perturb_lines(Cmiss_scene_viewer_id scene_viewer)
+  int get_perturb_lines(Cmiss::scene_viewer scene_viewer)
 
-  int set_perturb_lines(Cmiss_scene_viewer_id scene_viewer,
+  int set_perturb_lines(Cmiss::scene_viewer scene_viewer,
         int perturb_lines)
 
   (double red, double green, double blue) get_background_colour_rgb(
-		  Cmiss_scene_viewer_id scene_viewer)
+		  Cmiss::scene_viewer scene_viewer)
 
-  int set_background_colour_rgb(Cmiss_scene_viewer_id scene_viewer,
+  int set_background_colour_rgb(Cmiss::scene_viewer scene_viewer,
         double red, double green, double blue)
 
-  char *get_interactive_tool_name(Cmiss_scene_viewer_id scene_viewer)
+  char *get_interactive_tool_name(Cmiss::scene_viewer scene_viewer)
 
-  int set_interactive_tool_by_name(Cmiss_scene_viewer_id scene_viewer,
+  int set_interactive_tool_by_name(Cmiss::scene_viewer scene_viewer,
 		  char *tool_name)
 
-  char *get_scene_name(Cmiss_scene_viewer_id scene_viewer)
+  char *get_scene_name(Cmiss::scene_viewer scene_viewer)
 
-  int set_scene_by_name(Cmiss_scene_viewer_id scene_viewer,
+  int set_scene_by_name(Cmiss::scene_viewer scene_viewer,
 		  char *scene_name)
 
-  int view_all(Cmiss_scene_viewer_id scene_viewer)
+  int view_all(Cmiss::scene_viewer scene_viewer)
 
-  int redraw_now(Cmiss_scene_viewer_id scene_viewer)
+  int redraw_now(Cmiss::scene_viewer scene_viewer)
 
-  int write_image_to_file(Cmiss_scene_viewer_id scene_viewer,
+  int write_image_to_file(Cmiss::scene_viewer scene_viewer,
         char *file_name, int force_onscreen, int preferred_width,
         int preferred_height)
 =head1 AUTHOR
