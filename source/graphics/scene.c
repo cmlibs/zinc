@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -77,17 +77,20 @@ Module types
 
 struct Scene_object
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Scenes store a list of these wrappers to GT_objects so that the same
 graphics object may have different visibility on different scenes.
 ==============================================================================*/
 {
+	/* identifier for indexed lists */
+	int position;
 	enum Scene_object_type type;
+	/* flag indicating object should be rendered fast at the expense of quality */
+	int fast_changing;
 	/* these are defined for all scene objects */
 	char *name;
-	int position;
 	gtMatrix *transformation;
 	/* these are defined only for SCENE_OBJECT_GRAPHICS_OBJECT */
 	struct GT_object *gt_object;
@@ -99,7 +102,9 @@ graphics object may have different visibility on different scenes.
 	struct Scene *child_scene;
 	void *scene_manager_callback_id;
 	struct MANAGER(Scene) *scene_manager;
-	/* this is the scene to which the scene_object belongs */
+	/* this is the scene to which the scene_object belongs to. Note it is
+		 never accessed as the scene that owns this object destroys it before
+		 the scene itself is destroyed. */
 	struct Scene *scene;
 	int access_count;
 }; /* struct Scene_object */
@@ -108,7 +113,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Scene_object);
 
 struct Scene
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Stores the collections of objects that make up a 3-D graphical model.
@@ -119,9 +124,10 @@ Stores the collections of objects that make up a 3-D graphical model.
 	/* keep pointer to this scene's manager since can pass on manager change */
 	/* messages if member manager changes occur (eg. materials) */
 	struct MANAGER(Scene) *scene_manager;
-	/* list of graphics objects in the scene (plus visibility flag) */
+	/* list of objects in the scene (plus visibility flag) */
 	struct LIST(Scene_object) *scene_object_list;
-	/* need following managers for autocreation of graphical finite elements, */
+	enum Scene_change_status change_status;
+ 	/* need following managers for autocreation of graphical finite elements, */
 	/* material/light changes, etc. */
 	enum Scene_graphical_element_mode graphical_element_mode;
 	/* fields and computed_fields */
@@ -170,7 +176,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 	/* such as picking and mouse drags */
 	struct Scene_input_callback input_callback;
 	/* display list identifier for the scene */
-	GLuint display_list;
+	GLuint display_list,fast_changing_display_list;
 	int display_list_current;
 	/* the number of objects accessing this scene. The scene cannot be removed
 		from manager unless it is 1 (ie. only the manager is accessing it) */
@@ -215,7 +221,7 @@ DECLARE_LOCAL_MANAGER_FUNCTIONS(Scene)
 
 static int Scene_refresh(struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 Tells the scene it has changed, forcing it to send the manager message
@@ -234,6 +240,7 @@ manager modify not identifier instead.
 		{
 			MANAGER_NOTE_CHANGE(Scene)(
 				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene),scene,scene->scene_manager);
+			scene->change_status = SCENE_NO_CHANGE;
 			return_code=1;
 		}
 		else
@@ -252,9 +259,9 @@ manager modify not identifier instead.
 	return (return_code);
 } /* Scene_refresh */
 
-static int Scene_notify_object_changed(struct Scene *scene)
+static int Scene_notify_object_changed(struct Scene *scene,int fast_changing)
 /*******************************************************************************
-LAST MODIFIED : 13 October 1998
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Scene functions such as add/remove graphics_object and set_visibility clear
@@ -264,7 +271,9 @@ is signified by a display_list_current value of 2.
 This function sets display_list_current to 2 if it is not already 0, then sends
 the manager message MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER to instruct clients of
 the scene that it has changed. They must call compile_Scene to make sure its
-display list is made up to date.
+display list is made up to date. If the <fast_changing> flag is set, and the
+scene is not already set for general change, set it to SCENE_FAST_CHANGE,
+otherwise SCENE_CHANGE.
 Private to the Scene and Scene_objects
 ==============================================================================*/
 {
@@ -273,6 +282,14 @@ Private to the Scene and Scene_objects
 	ENTER(Scene_notify_object_changed);
 	if (scene)
 	{
+		if (fast_changing && (SCENE_CHANGE != scene->change_status))
+		{
+			scene->change_status = SCENE_FAST_CHANGE;
+		}
+		else
+		{
+			scene->change_status = SCENE_CHANGE;
+		}
 		if (0 != scene->display_list_current)
 		{
 			/* objects in scene need recompiling */
@@ -293,7 +310,8 @@ Private to the Scene and Scene_objects
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Scene_notify_object_changed.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,
+			"Scene_notify_object_changed.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -301,15 +319,19 @@ Private to the Scene and Scene_objects
 	return (return_code);
 } /* Scene_notify_object_changed */
 
-static int Scene_changed_private(struct Scene *scene)
+static int Scene_changed_private(struct Scene *scene,int fast_changing)
 /*******************************************************************************
-LAST MODIFIED : 22 June 1998
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Tells the scene it has changed, forcing it to send the manager message
 MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER.  Recompiles the scene display list as well
 as the objects in the scene unlike the public Scene_changed which only compiles
-the component objects.
+the component objects. If the <fast_changing> flag is set, and the scene is not
+already set for general change, set it to SCENE_FAST_CHANGE, otherwise
+SCENE_CHANGE. If the <fast_changing> flag is set, and the
+scene is not already set for general change, set it to SCENE_FAST_CHANGE,
+otherwise SCENE_CHANGE.
 Private to the Scene and Scene_objects.
 ==============================================================================*/
 {
@@ -318,6 +340,14 @@ Private to the Scene and Scene_objects.
 	ENTER(Scene_changed_private);
 	if (scene)
 	{
+		if (fast_changing && (SCENE_CHANGE != scene->change_status))
+		{
+			scene->change_status = SCENE_FAST_CHANGE;
+		}
+		else
+		{
+			scene->change_status = SCENE_CHANGE;
+		}
 		scene->display_list_current=0;
 #if defined (DEBUG)
 		/*???debug*/
@@ -342,6 +372,140 @@ Private to the Scene and Scene_objects.
 	return (return_code);
 } /* Scene_changed_private */
 
+static int Scene_object_changed_external(struct Scene_object *scene_object)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Called when something changes about the <scene_object>, such that it would
+require a rebuild of the parent scene's display list. If it is in a scene,
+calls its Scene_changed_private function to inform the program about the change.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_changed_external);
+	if (scene_object)
+	{
+		if (scene_object->scene)
+		{
+			Scene_changed_private(scene_object->scene,scene_object->fast_changing);
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_changed_external.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_changed_external */
+
+static int Scene_object_changed_internal(struct Scene_object *scene_object)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Called when something changes about the <scene_object> such that just its
+display list needs building. If it is in a scene, calls its
+Scene_notify_object_changed function to inform the program about the change.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_changed_internal);
+	if (scene_object)
+	{
+		if (scene_object->scene)
+		{
+			Scene_notify_object_changed(scene_object->scene,
+				scene_object->fast_changing);
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_changed_internal.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_changed_internal */
+
+static struct Scene *Scene_object_get_scene(struct Scene_object *scene_object)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Returns the Scene that the <scene_object> is in.
+==============================================================================*/
+{
+	struct Scene *scene;
+
+	ENTER(Scene_object_get_scene);
+	if (scene_object)
+	{
+		scene=scene_object->scene;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_get_scene.  Missing scene_object");
+		scene=(struct Scene *)NULL;
+	}
+	LEAVE;
+
+	return (scene);
+} /* Scene_object_get_scene */
+
+static int Scene_object_set_scene(struct Scene_object *scene_object,
+	struct Scene *scene)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Sets the <scene> that the <scene_object> is in. This function should only be
+called by the <scene> when the <scene_object> is being added to or removed from
+its <scene_object_list>. This function fails if the the scene_object currently
+has a scene and it is being set to another scene, since scene objects can be
+only be in one scene at a time.
+The scene is never accessed as the scene that owns this object destroys it
+before the scene itself is destroyed.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_set_scene);
+	if (scene_object)
+	{
+		if (scene && (scene_object->scene) && (scene != scene_object->scene))
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_object_set_scene.  Scene_object already has a different scene");
+			return_code=0;
+		}
+		else
+		{
+			scene_object->scene = scene;
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_set_scene.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_set_scene */
+
 static int Scene_object_time_update_callback(struct Time_object *time_object,
 	double current_time, void *scene_object_void)
 /*******************************************************************************
@@ -363,7 +527,7 @@ Responds to changes in the time object.
 			case SCENE_OBJECT_GRAPHICS_OBJECT:
 			{
 				GT_object_changed(scene_object->gt_object);
-				Scene_notify_object_changed(scene_object->scene);
+				Scene_object_changed_internal(scene_object);
 				return_code=1;
 			} break;
 			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
@@ -407,7 +571,7 @@ Responds to changes in the graphics object.
 	if (graphics_object && (scene_object=(struct Scene_object *)scene_object_void))
 	{
 		Scene_update_time_behaviour(scene_object->scene, graphics_object);		
-		Scene_notify_object_changed(scene_object->scene);
+		Scene_object_changed_internal(scene_object);
 		return_code=1;
 	}
 	else
@@ -424,7 +588,7 @@ Responds to changes in the graphics object.
 static int Scene_object_element_group_update_callback(
 	struct GT_element_group *gt_element_group, void *scene_object_void)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Responds to changes in GT_element_groups. Only updates scene if group is
@@ -439,7 +603,7 @@ visible.
 	{
 		if (g_VISIBLE==scene_object->visibility)
 		{
-			Scene_changed_private(scene_object->scene);
+			Scene_object_changed_external(scene_object);
 		}
 		return_code=1;
 	}
@@ -518,9 +682,10 @@ linked list contained in the scene_object.
 	return (return_code);
 } /* compile_Scene_object */
 
-static int execute_Scene_object(struct Scene_object *scene_object,void *dummy_void)
+static int execute_Scene_object(struct Scene_object *scene_object,
+	void *fast_changing_void)
 /*******************************************************************************
-LAST MODIFIED :9 October 1998
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Calls the display lists of all created graphics_objects in the linked list
@@ -532,14 +697,14 @@ from 1 to assist conversion back to graphics_object addresses in picking.
 ==============================================================================*/
 {
 	float time;
-	int return_code;
+	int *fast_changing,return_code;
 
 	ENTER(execute_Scene_object);
-	USE_PARAMETER(dummy_void);
-	if (scene_object)
+	if (scene_object&&(fast_changing=(int *)fast_changing_void))
 	{
 		return_code=1;
-		if (g_VISIBLE==scene_object->visibility)
+		if ((g_VISIBLE==scene_object->visibility)&&
+			(scene_object->fast_changing == (*fast_changing)))
 		{
 			/* put out the name (position) of the scene_object: */
 			glLoadName((GLuint)scene_object->position);
@@ -606,7 +771,7 @@ from 1 to assist conversion back to graphics_object addresses in picking.
 static void Scene_object_child_scene_change(
 	struct MANAGER_MESSAGE(Scene) *message,void *scene_object_void)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Something has changed globally in the scene manager. If the contents of the
@@ -623,14 +788,14 @@ scene on this window are modified, redraw.
 		{
 			case MANAGER_CHANGE_ALL(Scene):
 			{
-				Scene_notify_object_changed(scene_object->scene);
+				Scene_object_changed_internal(scene_object);
 			} break;
 			case MANAGER_CHANGE_OBJECT(Scene):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene):
 			{
 				if (message->object_changed==scene_object->child_scene)
 				{
-					Scene_notify_object_changed(scene_object->scene);
+					Scene_object_changed_internal(scene_object);
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(Scene):
@@ -649,9 +814,9 @@ scene on this window are modified, redraw.
 	LEAVE;
 } /* Scene_object_scene_change */
 
-static struct Scene_object *CREATE(Scene_object)(char *name,struct Scene *scene)
+static struct Scene_object *CREATE(Scene_object)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 10 February 2000
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Creates a vanilla Scene_object that is able to be DESTROYed, must be properly
@@ -660,25 +825,26 @@ and is visible.
 ==============================================================================*/
 {
 	struct Scene_object *scene_object;
+
 	ENTER(CREATE(Scene_object));
-	if (name && scene)
+	if (name)
 	{
 		if (ALLOCATE(scene_object,struct Scene_object,1) &&
-			ALLOCATE(scene_object->name, char, strlen(name) + 1))
+			(scene_object->name=duplicate_string(name)))
 		{
-			scene_object->type = SCENE_OBJECT_TYPE_INVALID;
-			strcpy(scene_object->name, name);
 			scene_object->position=0;
+			scene_object->type = SCENE_OBJECT_TYPE_INVALID;
+			scene_object->fast_changing=0;
 			scene_object->gt_object=(struct GT_object *)NULL;
 			scene_object->visibility=g_VISIBLE;
 			scene_object->time_object = (struct Time_object *)NULL;
 			scene_object->transformation = (gtMatrix *)NULL;
 			scene_object->gt_element_group = (struct GT_element_group *)NULL;
 			scene_object->child_scene = (struct Scene *)NULL;	
-			/* The scene_object is not accessing the scene as the
-				scene owns these objects and destroys them all before
-				destroying itself */
-			scene_object->scene = scene;
+			/* the scene is NULL scene_object is added to it. Note also that it is
+				 never accessed as the scene that owns this object destroys it before
+				 the scene itself is destroyed. */
+			scene_object->scene = (struct Scene *)NULL;
 			scene_object->scene_manager = (struct MANAGER(Scene) *)NULL;
 			scene_object->scene_manager_callback_id = NULL;
 			scene_object->access_count=0;
@@ -701,9 +867,9 @@ and is visible.
 } /* CREATE(Scene_object) */
 
 static struct Scene_object *create_Scene_object_with_Graphics_object(
-	char *name, struct GT_object *gt_object, struct Scene *scene)
+	char *name, struct GT_object *gt_object)
 /*******************************************************************************
-LAST MODIFIED : 10 February 2000
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Creates a Scene_object with ACCESSed <gt_object> and visibility on.
@@ -714,7 +880,7 @@ Creates a Scene_object with ACCESSed <gt_object> and visibility on.
 	ENTER(CREATE(Scene_object));
 	if (gt_object)
 	{
-		if (scene_object=CREATE(Scene_object)(name,scene))
+		if (scene_object=CREATE(Scene_object)(name))
 		{
 			scene_object->type = SCENE_OBJECT_GRAPHICS_OBJECT;
 			scene_object->gt_object=ACCESS(GT_object)(gt_object);
@@ -739,9 +905,9 @@ Creates a Scene_object with ACCESSed <gt_object> and visibility on.
 } /* create_Scene_object_with_Graphics_object */
 
 static struct Scene_object *create_Scene_object_with_Graphical_element_group(
-	char *name, struct GT_element_group *gt_element_group, struct Scene *scene)
+	char *name, struct GT_element_group *gt_element_group)
 /*******************************************************************************
-LAST MODIFIED : 10 February 2000
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Creates a Scene_object with <gt_element_group> and visibility on.
@@ -752,7 +918,7 @@ Creates a Scene_object with <gt_element_group> and visibility on.
 	ENTER(create_Scene_object_with_Graphical_element_group);
 	if (gt_element_group)
 	{
-		if (scene_object=CREATE(Scene_object)(name,scene))
+		if (scene_object=CREATE(Scene_object)(name))
 		{
 			scene_object->type = SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP;
 			scene_object->gt_element_group=
@@ -780,10 +946,9 @@ Creates a Scene_object with <gt_element_group> and visibility on.
 } /* create_Scene_object_with_Graphical_element_group */
 
 static struct Scene_object *create_Scene_object_with_Scene(
-	char *name, struct Scene *child_scene, struct Scene *scene,
-	struct MANAGER(Scene) *scene_manager)
+	char *name, struct Scene *child_scene,struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 10 February 2000
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Creates a Scene_object with ACCESSed <gt_object> and visibility on.
@@ -792,9 +957,9 @@ Creates a Scene_object with ACCESSed <gt_object> and visibility on.
 	struct Scene_object *scene_object;
 
 	ENTER(create_Scene_object_with_Scene);
-	if (child_scene)
+	if (child_scene&&scene_manager)
 	{
-		if (scene_object=CREATE(Scene_object)(name,scene))
+		if (scene_object=CREATE(Scene_object)(name))
 		{
 			scene_object->type = SCENE_OBJECT_SCENE;
 			scene_object->child_scene = ACCESS(Scene)(child_scene);
@@ -931,10 +1096,12 @@ Returns the position identifier of <scene_object>, or 0 in case of error.
 static int Scene_object_set_position(struct Scene_object *scene_object,
 	int position)
 /*******************************************************************************
-LAST MODIFIED : 9 December 1997
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Sets the position identifier of <scene_object>. <position> must be positive.
+Note that the <scene_object> must not be in a scene to change this; hence also,
+no update messages are sent when this value is changed.
 ==============================================================================*/
 {
 	int return_code;
@@ -943,7 +1110,6 @@ Sets the position identifier of <scene_object>. <position> must be positive.
 	if (scene_object&&(0<position))
 	{
 		scene_object->position=position;
-		Scene_changed_private(scene_object->scene);
 		return_code=1;
 	}
 	else
@@ -956,6 +1122,99 @@ Sets the position identifier of <scene_object>. <position> must be positive.
 
 	return (return_code);
 } /* Scene_object_set_position */
+
+int Scene_object_is_fast_changing(struct Scene_object *scene_object,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Returns true if the fast_changing flag of <scene_object> is set.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_is_fast_changing);
+	USE_PARAMETER(dummy_void);
+	if (scene_object)
+	{
+		return_code = scene_object->fast_changing;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_is_fast_changing.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_is_fast_changing */
+
+int Scene_object_get_fast_changing(struct Scene_object *scene_object)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Returns the fast_changing flag of <scene_object>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_get_fast_changing);
+	if (scene_object)
+	{
+		return_code = scene_object->fast_changing;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_get_fast_changing.  Missing scene_object");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_get_fast_changing */
+
+int Scene_object_set_fast_changing(struct Scene_object *scene_object,
+	int fast_changing)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Sets the fast_changing flag of <scene_object>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_set_fast_changing);
+	if (scene_object)
+	{
+		if (fast_changing)
+		{
+			fast_changing = 1;
+		}
+		if (fast_changing != scene_object->fast_changing)
+		{
+			scene_object->fast_changing = fast_changing;
+			if ((g_VISIBLE==scene_object->visibility)&&scene_object->scene)
+			{
+				Scene_changed_private(scene_object->scene,/*fast_changing*/0);
+			}
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_set_fast_changing.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_set_fast_changing */
 
 static int Scene_object_copy_to_list(struct Scene_object *scene_object,
 	void *scene_object_list_void)
@@ -981,7 +1240,7 @@ Copies the scene_object and adds it to the list.
 			case SCENE_OBJECT_GRAPHICS_OBJECT:
 			{
 				if (scene_object_copy=create_Scene_object_with_Graphics_object(
-					scene_object->name, scene_object->gt_object, scene_object->scene))
+					scene_object->name, scene_object->gt_object))
 				{
 					return_code = 1;
 				}
@@ -990,7 +1249,7 @@ Copies the scene_object and adds it to the list.
 			{
 				if (scene_object_copy=create_Scene_object_with_Scene(
 					scene_object->name, scene_object->child_scene,
-					scene_object->scene, scene_object->scene_manager))
+					scene_object->scene_manager))
 				{
 					return_code = 1;
 				}
@@ -1127,7 +1386,7 @@ to the "axes" glyph used for displaying axes with the scene.
 static int Scene_add_scene_object(struct Scene *scene,
 	struct Scene_object *scene_object,int position)
 /*******************************************************************************
-LAST MODIFIED : 12 October 1998
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Adds <scene_object> to the list of objects on <scene> at <position>.
@@ -1138,15 +1397,15 @@ These routines are static as modules other than the scene should be using
 functions such as Scene_add_graphics_object rather creating their own scene_object.
 ==============================================================================*/
 {
-	int return_code,number_in_list;
+	int fast_changing,number_in_list,return_code;
 	struct Scene_object *scene_object_in_way;
 	
 	ENTER(Scene_add_scene_object);
-	/* check arguments */
 	if (scene&&scene_object)
 	{
 		if(!IS_OBJECT_IN_LIST(Scene_object)(scene_object, scene->scene_object_list))
 		{
+			fast_changing=Scene_object_get_fast_changing(scene_object);
 			number_in_list=NUMBER_IN_LIST(Scene_object)(scene->scene_object_list);
 			if ((1>position)||(number_in_list<position))
 			{
@@ -1169,6 +1428,8 @@ functions such as Scene_add_graphics_object rather creating their own scene_obje
 				if (ADD_OBJECT_TO_LIST(Scene_object)(scene_object,
 					scene->scene_object_list))
 				{
+					/* give the scene_object its scene to allow change calls */
+					Scene_object_set_scene(scene_object,scene);
 					DEACCESS(Scene_object)(&scene_object);
 					/* the old in-the-way scene_object is now the new scene_object */
 					scene_object=scene_object_in_way;
@@ -1186,8 +1447,8 @@ functions such as Scene_add_graphics_object rather creating their own scene_obje
 					return_code=0;
 				}
 			}
-			/* display list of scene needs rebuilding */
-			scene->display_list_current=0;
+			/* tell the scene it has changed */
+			Scene_changed_private(scene,fast_changing);
 		}
 		else
 		{
@@ -1210,7 +1471,7 @@ functions such as Scene_add_graphics_object rather creating their own scene_obje
 static int Scene_remove_scene_object(struct Scene *scene,
 	struct Scene_object *scene_object)
 /*******************************************************************************
-LAST MODIFIED : 12 October 1998
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Removes <scene object> from the list of objects on <scene>.
@@ -1219,7 +1480,7 @@ functions such as Scene_add_graphics_object rather creating their own
 scene_object.
 ==============================================================================*/
 {
-	int return_code,position,visibility;
+	int fast_changing,position,return_code,visibility;
 
 	ENTER(Scene_remove_scene_object);
 	/* check arguments */
@@ -1228,13 +1489,17 @@ scene_object.
 		if (IS_OBJECT_IN_LIST(Scene_object)(scene_object,
 			scene->scene_object_list))
 		{
+			fast_changing=Scene_object_get_fast_changing(scene_object);
 			/* now perform the remove */
 			position=Scene_object_get_position(scene_object);
 			visibility=Scene_object_get_visibility(scene_object);
-			return_code=REMOVE_OBJECT_FROM_LIST(Scene_object)(scene_object,
-				scene->scene_object_list);
+			if (return_code=REMOVE_OBJECT_FROM_LIST(Scene_object)(scene_object,
+				scene->scene_object_list))
+			{
+				/* clear its scene member to prevent further change calls */
+				Scene_object_set_scene(scene_object,(struct Scene *)NULL);
+			}
 			/* decrement positions of all remaining scene_objects */
-			return_code=1;
 			while (return_code&&(scene_object=FIND_BY_IDENTIFIER_IN_LIST(
 				Scene_object,position)(position+1,scene->scene_object_list)))
 			{
@@ -1257,10 +1522,7 @@ scene_object.
 			}
 			if (visibility)
 			{
-				/* display list of scene needs rebuilding */
-				scene->display_list_current=0;
-				/*???RC I think this should be here... */
-				Scene_notify_object_changed(scene);
+				Scene_changed_private(scene,fast_changing);
 			}
 		}
 		else
@@ -1392,7 +1654,7 @@ from <scene> in response to manager messages.
 static void Scene_streamline_change(
 	struct MANAGER_MESSAGE(Interactive_streamline) *message,void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 10 December 1997
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Streamline manager change callback.
@@ -1418,7 +1680,8 @@ Streamline manager change callback.
 				printf("Scene_streamline_change: CHANGE_ADD scene %s\n",scene->name);
 				if ( get_streamline_gt_object ( message->object_changed, &gt_object ))
 				{
-					Scene_add_graphics_object(scene,gt_object,0,gt_object->name);
+					Scene_add_graphics_object(scene,gt_object,0,gt_object->name,
+						/*fast_changing*/0);
 				}
 			} break;
 			case MANAGER_CHANGE_OBJECT(Interactive_streamline):
@@ -1427,7 +1690,7 @@ Streamline manager change callback.
 				/*???debug*/
 				printf("Scene_streamline_change: CHANGE_MODIFY scene %s\n",scene->name);
 				interactive_streamline_set_changed( message->object_changed );
-				Scene_notify_object_changed(scene);
+				Scene_notify_object_changed(scene,/*fast_changing*/0);
 			} break;
 			case MANAGER_CHANGE_DELETE(Interactive_streamline):
 			{
@@ -1545,7 +1808,7 @@ Tell the scene it has changed and it will rebuild affected materials too.
 					Scene_object_set_not_created_if_material,
 					(void *)(message->object_changed),scene->scene_object_list);
 				/*???RC Inefficient if modified material not used in scene */
-				Scene_notify_object_changed(scene);
+				Scene_notify_object_changed(scene,/*fast_changing*/0);
 			} break;
 			case MANAGER_CHANGE_ADD(Graphical_material):
 			case MANAGER_CHANGE_DELETE(Graphical_material):
@@ -1656,7 +1919,7 @@ graphics_obects using the affected spectrums as g_NOT_CREATED.
 				FOR_EACH_OBJECT_IN_LIST(Scene_object)(
 					Scene_object_set_not_created_if_spectrum,
 					(void *)(message->object_changed),scene->scene_object_list);
-				Scene_notify_object_changed(scene);
+				Scene_notify_object_changed(scene,/*fast_changing*/0);
 			} break;
 			case MANAGER_CHANGE_ADD(Spectrum):
 			case MANAGER_CHANGE_DELETE(Spectrum):
@@ -1702,7 +1965,7 @@ Tell the scene it has changed and it will rebuild affected textures too.
 					Graphical_material_uses_texture,(void *)message->object_changed,
 					scene->graphical_material_manager))
 				{
-					Scene_notify_object_changed(scene);
+					Scene_notify_object_changed(scene,/*fast_changing*/0);
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(Texture):
@@ -1737,7 +2000,7 @@ Responds to changes in the time object.
 	USE_PARAMETER(current_time);
 	if (time_object && (scene=(struct Scene *)scene_void))
 	{
-		Scene_notify_object_changed(scene);
+		Scene_notify_object_changed(scene,/*fast_changing*/0);
 		return_code=1;
 	}
 	else
@@ -2650,7 +2913,7 @@ Returns the visibility of <scene_object>.
 int Scene_object_set_visibility(struct Scene_object *scene_object,
 	enum GT_visibility_type visibility)
 /*******************************************************************************
-LAST MODIFIED : 19 November 1997
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Sets the visibility of <scene_object>.
@@ -2661,9 +2924,12 @@ Sets the visibility of <scene_object>.
 	ENTER(Scene_object_set_visibility);
 	if (scene_object)
 	{
-		scene_object->visibility=visibility;
-		Scene_changed_private(scene_object->scene);
 		return_code=1;
+		if (visibility != scene_object->visibility)
+		{
+			scene_object->visibility=visibility;
+			Scene_object_changed_external(scene_object);
+		}
 	}
 	else
 	{
@@ -2798,7 +3064,7 @@ Sets the transformation of <scene_object>.
 					(*scene_object->transformation)[i][j] = (*transformation)[i][j];
 				}
 			}
-			Scene_changed_private(scene_object->scene);
+			Scene_object_changed_external(scene_object);
 			return_code = 1;
 		}
 		  
@@ -2913,7 +3179,8 @@ objects to graphics object specific to a scene, eg. scene->axis_object.
 	int return_code;
 
 	ENTER(Scene_object_set_gt_object);
-	if (scene_object&&gt_object&&(SCENE_OBJECT_GRAPHICS_OBJECT==scene_object->type))
+	if (scene_object&&gt_object&&
+		(SCENE_OBJECT_GRAPHICS_OBJECT==scene_object->type))
 	{
 		ACCESS(GT_object)(gt_object);
 		if (scene_object->gt_object)
@@ -2921,7 +3188,7 @@ objects to graphics object specific to a scene, eg. scene->axis_object.
 			DEACCESS(GT_object)(&(scene_object->gt_object));
 		}
 		scene_object->gt_object=gt_object;
-		Scene_changed_private(scene_object->scene);
+		Scene_object_changed_internal(scene_object);
 		return_code=1;
 	}
 	else
@@ -3152,15 +3419,15 @@ Changes the Time_object referenced by <scene_object>.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Scene_object_time_object.  This object cannot be associated with a time object");
+			display_message(ERROR_MESSAGE,"Scene_object_set_time_object.  "
+				"Cannot associate this scene_object with a time object");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_object_time_object.  Invalid argument(s)");
+			"Scene_object_set_time_object.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -3321,7 +3588,7 @@ contains any gt_element_group.
 	int return_code;
 	struct GT_element_group *gt_element_group;
 
-	ENTER(Scene_object_has_element_group);
+	ENTER(Scene_object_has_graphical_element_group);
 	if (scene_object)
 	{
 		if (SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==scene_object->type)
@@ -3847,7 +4114,7 @@ as a command, using the given <command_prefix>.
 
 struct Scene *CREATE(Scene)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Scene now has pointer to its scene_manager, and it uses manager modify
@@ -3863,12 +4130,12 @@ from the default versions of these functions.
 	{
 		/* allocate memory for the scene structure */
 		if (ALLOCATE(scene,struct Scene,1)&&
-			ALLOCATE(scene->name,char,strlen(name)+1)&&
+			(scene->name=duplicate_string(name))&&
 			(scene->list_of_lights=CREATE(LIST(Light))())&&
 			(scene->scene_object_list=CREATE(LIST(Scene_object))()))
 		{
 			/* assign values to the fields */
-			strcpy(scene->name,name);
+			scene->change_status=SCENE_NO_CHANGE;
 			scene->access_count=0;
 			scene->scene_manager=(struct MANAGER(Scene) *)NULL;
 			/* fields, elements, nodes and data */
@@ -3910,6 +4177,7 @@ from the default versions of these functions.
 			scene->user_interface=(struct User_interface *)NULL;
 			/* display list index and current flag: */
 			scene->display_list=0;
+			scene->fast_changing_display_list=0;
 			scene->display_list_current=0;
 			/* input callback handling information: */
 			scene->input_callback.procedure=(Scene_input_callback_procedure *)NULL;
@@ -3944,7 +4212,7 @@ from the default versions of these functions.
 
 int DESTROY(Scene)(struct Scene **scene_address)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Closes the scene and disposes of the scene data structure.
@@ -3982,6 +4250,10 @@ Closes the scene and disposes of the scene data structure.
 			{
 				glDeleteLists(scene->display_list,1);
 			}
+			if (scene->fast_changing_display_list)
+			{
+				glDeleteLists(scene->fast_changing_display_list,1);
+			}
 			DESTROY(LIST(Light))(&(scene->list_of_lights));
 			DESTROY(LIST(Scene_object))(&(scene->scene_object_list));
 			DEALLOCATE(*scene_address);
@@ -4012,7 +4284,7 @@ int Scene_enable_graphics(struct Scene *scene,
 	struct Spectrum *default_spectrum,
 	struct MANAGER(Texture) *texture_manager)
 /*******************************************************************************
-LAST MODIFIED : 12 February 1999
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 The scene is initially incapable of generating any graphics, since it does not
@@ -4059,7 +4331,7 @@ NOTE: The light_manager is not currently used by the scene.
 			scene->axis_object=make_axis_graphics_object(default_material,glyph_list);
 			ACCESS(GT_object)(scene->axis_object);
 			Scene_add_graphics_object(scene,scene->axis_object,0,
-				scene->axis_object->name);
+				scene->axis_object->name,/*fast_changing*/0);
 		}
 		return_code=1;
 	}
@@ -6030,7 +6302,7 @@ understood for the type of <interaction_volume> passed.
 
 int Scene_add_light(struct Scene *scene,struct Light *light)
 /*******************************************************************************
-LAST MODIFIED : 12 December 1997
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Adds a light to the Scene list_of_lights.
@@ -6044,7 +6316,7 @@ Adds a light to the Scene list_of_lights.
 		if (!IS_OBJECT_IN_LIST(Light)(light,scene->list_of_lights))
 		{
 			return_code=ADD_OBJECT_TO_LIST(Light)(light,scene->list_of_lights);
-			Scene_changed_private(scene);
+			Scene_changed_private(scene,/*fast_changing*/0);
 		}
 		else
 		{
@@ -6100,7 +6372,7 @@ is NULL, returns true if <scene> has any lights.
 
 int Scene_remove_light(struct Scene *scene,struct Light *light)
 /*******************************************************************************
-LAST MODIFIED : 12 December 1997
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Removes a light from the Scene list_of_lights.
@@ -6115,7 +6387,7 @@ Removes a light from the Scene list_of_lights.
 		{
 			return_code=REMOVE_OBJECT_FROM_LIST(Light)(light,
 				scene->list_of_lights);
-			Scene_changed_private(scene);
+			Scene_changed_private(scene,/*fast_changing*/0);
 		}
 		else
 		{
@@ -6164,9 +6436,73 @@ most common task will be to call execute_Light.
 	return (return_code);
 } /* for_each_Light_in_Scene */
 
+int Scene_has_fast_changing_objects(struct Scene *scene)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Returns true if the scene may require special rendering because it has
+fast_changing objects in it, involving separately calling
+execute_Scene_non_fast_changing and execute_Scene_fast_changing, instead of
+execute_Scene.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_has_fast_changing_objects);
+	if (scene)
+	{
+		if (FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+			Scene_object_is_fast_changing,(void *)NULL,scene->scene_object_list))
+		{
+			return_code=1;
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_has_fast_changing_objects.  Missing scene");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_has_fast_changing_objects */
+
+enum Scene_change_status Scene_get_change_status(struct Scene *scene)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Returns the change state of the scene; SCENE_NO_CHANGE, SCENE_FAST_CHANGE or
+SCENE_CHANGE. Clients may respond to SCENE_FAST_CHANGE more efficiently.
+==============================================================================*/
+{
+	enum Scene_change_status change_status;
+
+	ENTER(Scene_get_change_status);
+	if (scene)
+	{
+		change_status=scene->change_status;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_get_change_status.  Missing scene");
+		change_status=SCENE_NO_CHANGE;
+	}
+	LEAVE;
+
+	return (change_status);
+} /* Scene_get_change_status */
+
 int compile_Scene(struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Assembles the display list containing the whole scene. Before that, however, it
@@ -6175,7 +6511,7 @@ Note that lights are not included in the scene and must be handled separately!
 ==============================================================================*/
 {
 	float glyph_time;
-	int return_code;
+	int fast_changing,return_code;
 
 	ENTER(compile_Scene);
 	/* checking arguments */
@@ -6204,7 +6540,7 @@ Note that lights are not included in the scene and must be handled separately!
 			glyph_time = 0.0;
 			FOR_EACH_OBJECT_IN_LIST(GT_object)(compile_GT_object,&glyph_time,
 				scene->glyph_list);
-			/* compile graphics_objects in the scene */
+			/* compile objects in the scene */
 			FOR_EACH_OBJECT_IN_LIST(Scene_object)(compile_Scene_object,
 				NULL,scene->scene_object_list);
 			/* compile lights in the scene */
@@ -6214,18 +6550,18 @@ Note that lights are not included in the scene and must be handled separately!
 			{
 				if (scene->display_list||(scene->display_list=glGenLists(1)))
 				{
+					fast_changing=0;
 #if defined (DEBUG)
 					/*???debug*/printf("--- compiling scene %s\n",scene->name);
 #endif /* defined (DEBUG) */
-					/* now compile the whole scene */
+					/* compile non-fast changing part of scene */
 					glNewList(scene->display_list,GL_COMPILE);
 					/* initialize the names stack at the start of the scene */
 					glInitNames();
-					/* push a dummy name to be overloaded with scene_object
-						identifiers */
+					/* push a dummy name to be overloaded with scene_object identifiers */
 					glPushName(0);
 					FOR_EACH_OBJECT_IN_LIST(Scene_object)(execute_Scene_object,
-						(void *)scene,scene->scene_object_list);
+						(void *)&fast_changing,scene->scene_object_list);
 					glPopName();
 					glEndList();
 				}
@@ -6234,6 +6570,29 @@ Note that lights are not included in the scene and must be handled separately!
 					display_message(ERROR_MESSAGE,
 						"compile_Scene.  Could not generate display list");
 					return_code=0;
+				}
+				if (Scene_has_fast_changing_objects(scene))
+				{
+					if (scene->fast_changing_display_list||
+						(scene->fast_changing_display_list=glGenLists(1)))
+					{
+						fast_changing=1;
+						glNewList(scene->fast_changing_display_list,GL_COMPILE);
+						/* initialize the names stack at the start of the scene */
+						glInitNames();
+						/* push dummy name to be overloaded with scene_object identifiers */
+						glPushName(0);
+						FOR_EACH_OBJECT_IN_LIST(Scene_object)(execute_Scene_object,
+							(void *)&fast_changing,scene->scene_object_list);
+						glPopName();
+						glEndList();
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"compile_Scene.  Could not generate fast changing display list");
+						return_code=0;
+					}
 				}
 			}
 			if (return_code)
@@ -6255,11 +6614,11 @@ Note that lights are not included in the scene and must be handled separately!
 
 int execute_Scene(struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 28 November 1997
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Calls the display list for <scene>. If the display list is not current, an
-an error is reported.
+an error is reported. Version calls both the normal and fast_changing lists.
 Note that lights are not included in the scene and must be handled separately!
 ==============================================================================*/
 {
@@ -6271,6 +6630,10 @@ Note that lights are not included in the scene and must be handled separately!
 		if (scene->display_list_current)
 		{
 			glCallList(scene->display_list);
+			if (Scene_has_fast_changing_objects(scene))
+			{
+				glCallList(scene->fast_changing_display_list);
+			}
 			return_code=1;
 		}
 		else
@@ -6291,16 +6654,93 @@ Note that lights are not included in the scene and must be handled separately!
 	return (return_code);
 } /* execute_Scene */
 
-int Scene_add_graphics_object(struct Scene *scene,
-	struct GT_object *graphics_object,int position, char *name)
+int execute_Scene_non_fast_changing(struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Calls just the normal non-fast_changing display list for <scene>, if any.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(execute_Scene_non_fast_changing);
+	if (scene)
+	{
+		if (scene->display_list_current)
+		{
+			glCallList(scene->display_list);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"execute_Scene_non_fast_changing.  display list not current");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_Scene_non_fast_changing.  Missing scene");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_Scene_non_fast_changing */
+
+int execute_Scene_fast_changing(struct Scene *scene)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Calls the just fast_changing display list for <scene>, if any.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(execute_Scene_fast_changing);
+	if (scene)
+	{
+		if (scene->display_list_current)
+		{
+			if (Scene_has_fast_changing_objects(scene))
+			{
+				glCallList(scene->fast_changing_display_list);
+			}
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"execute_Scene_fast_changing.  display list not current");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_Scene_fast_changing.  Missing scene");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_Scene_fast_changing */
+
+int Scene_add_graphics_object(struct Scene *scene,
+	struct GT_object *graphics_object,int position, char *name,
+	int fast_changing)
+/*******************************************************************************
+LAST MODIFIED : 11 July 1000
 
 DESCRIPTION :
 Adds <graphics_object> to the list of objects on <scene> at <position>.
 A position of 1 indicates the top of the list, while less than 1 or greater
 than the number of graphics objects in the list puts it at the end.
 The <name> is used for the scene_object and must be unique for the scene.
+Also set the <fast_changing> flag on creation to avoid wrong updates if on.
 ==============================================================================*/
 {
 	int return_code;
@@ -6311,13 +6751,13 @@ The <name> is used for the scene_object and must be unique for the scene.
 	if (scene&&graphics_object&&name)
 	{
 		if (!(scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_name, (void *)name,
-			scene->scene_object_list)))
+			Scene_object_has_name, (void *)name, scene->scene_object_list)))
 		{
 			if (scene_object=create_Scene_object_with_Graphics_object(
-				name, graphics_object, scene))
+				name, graphics_object))
 			{
-				return_code = Scene_add_scene_object(scene, scene_object,position);
+				Scene_object_set_fast_changing(scene_object,fast_changing);
+				return_code = Scene_add_scene_object(scene, scene_object, position);
 			}
 			else
 			{
@@ -6388,7 +6828,7 @@ Removes <graphics object> from the list of objects on <scene>.
 int Scene_add_child_scene(struct Scene *scene, struct Scene *child_scene,
 	int position, char *name, struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 20 November 1998
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Adds <child_scene> to the list of objects on <scene> at <position>.
@@ -6407,7 +6847,7 @@ The optional <scene_object_name> is used for the scene_object and must be unique
 			Scene_object_has_name, (void *)name, scene->scene_object_list)))
 		{
 			if (scene_object=create_Scene_object_with_Scene(
-				name, child_scene, scene, scene_manager))
+				name, child_scene, scene_manager))
 			{
 				return_code = Scene_add_scene_object(scene, scene_object,position);
 			}
@@ -6475,7 +6915,7 @@ Removes <child_scene> from the list of scenes in <scene>.
 int Scene_add_graphical_finite_element(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,char *scene_object_name)
 /*******************************************************************************
-LAST MODIFIED : 28 June 2000
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Adds a graphical <element_group> to the <scene> with some default settings
@@ -6550,7 +6990,7 @@ the same element group to be added twice.
 								scene->scene_object_list)))
 							{
 								if ((scene_object=create_Scene_object_with_Graphical_element_group(
-									scene_object_name, gt_element_group, scene)) && 
+									scene_object_name, gt_element_group)) && 
 									Scene_add_scene_object(scene, scene_object, /*position*/0))
 								{
 									/* give the new group a default coordinate field */
@@ -7314,7 +7754,7 @@ that the GFE for element_group is not in the scene.
 int Scene_set_element_group_position(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,int position)
 /*******************************************************************************
-LAST MODIFIED : 26 July 1999
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 The order in which objects are drawn is important for OpenGL transparency.
@@ -7334,11 +7774,7 @@ Scene_object for the group keeps the same name.
 			Scene_object_has_element_group,(void *)element_group,
 			scene->scene_object_list))
 		{
-			/* take it out of the list and add it at the new position */
-			ACCESS(Scene_object)(scene_object);
-			return_code=(Scene_remove_scene_object(scene,scene_object)&&
-				Scene_add_scene_object(scene,scene_object,position));
-			DEACCESS(Scene_object)(&scene_object);
+			return_code=Scene_set_scene_object_position(scene,scene_object,position);
 		}
 		else
 		{
@@ -7403,7 +7839,7 @@ that the graphics object is not in the scene.
 int Scene_set_graphics_object_position(struct Scene *scene,
 	struct GT_object *graphics_object,int position)
 /*******************************************************************************
-LAST MODIFIED : 9 December 1997
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 The order in which objects are drawn is important for OpenGL transparency.
@@ -7412,7 +7848,6 @@ from 1 at the top. A value less than 1 or greater than the number of graphics
 objects in the list puts <graphics_object> at the end.
 ==============================================================================*/
 {
-	char *name;
 	int return_code;
 	struct Scene_object *scene_object;
 
@@ -7423,13 +7858,7 @@ objects in the list puts <graphics_object> at the end.
 			Scene_object_has_gt_object,(void *)graphics_object,
 			scene->scene_object_list))
 		{
-			/* take it out of the list and add it at the new position */
-			ACCESS(Scene_object)(scene_object);
-			GET_NAME(Scene_object)(scene_object, &name);
-			return_code=(Scene_remove_graphics_object(scene,graphics_object)&&
-				Scene_add_graphics_object(scene,graphics_object,position,name));
-			DEACCESS(Scene_object)(&scene_object);
-			DEALLOCATE(name);
+			return_code=Scene_set_scene_object_position(scene,scene_object,position);
 		}
 		else
 		{
@@ -7525,7 +7954,7 @@ Returns the visibility of the GFE for <element_group> in <scene>.
 int Scene_set_element_group_visibility(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,enum GT_visibility_type visibility)
 /*******************************************************************************
-LAST MODIFIED : 15 June 1998
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Sets the visibility of the GFE for <element_group> in <scene>.
@@ -7541,11 +7970,7 @@ Sets the visibility of the GFE for <element_group> in <scene>.
 			Scene_object_has_element_group,(void *)element_group,
 			scene->scene_object_list))
 		{
-			return_code=1;
-			if (visibility != Scene_object_get_visibility(scene_object))
-			{
-				return_code=Scene_object_set_visibility(scene_object,visibility);
-			}
+			return_code=Scene_object_set_visibility(scene_object,visibility);
 		}
 		else
 		{
@@ -7623,13 +8048,7 @@ Sets the visibility of <graphics_object> in <scene>.
 			Scene_object_has_gt_object,(void *)graphics_object,
 			scene->scene_object_list))
 		{
-			return_code=1;
-			if (visibility != Scene_object_get_visibility(scene_object))
-			{
-				return_code=Scene_object_set_visibility(scene_object,visibility);
-				/* display list of scene needs rebuilding */
-				scene->display_list_current=0;
-			}
+			return_code=Scene_object_set_visibility(scene_object,visibility);
 		}
 		else
 		{
@@ -7829,77 +8248,6 @@ Returns the graphical element_group for <element_group> in <scene>.
 	return gt_element_group;
 } /* Scene_get_graphical_element_group */
 
-#if defined (OLD_CODE)
-int toggle_graphics_object_visibility_in_Scene(
-	char *graphics_object_name,struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 19 November 1997
-
-DESCRIPTION :
-Toggles visibility of graphics object with <graphics_object_name> on <scene>.
-Note that invisible objects are the ones that are selected!
-==============================================================================*/
-{
-	enum GT_visibility_type visibility;
-	int return_code;
-	struct GT_object *graphics_object;
-	struct Scene_object *scene_object;
-
-	ENTER(toggle_graphics_object_visibility_in_Scene);
-#if defined (OLD_CODE)
-	/* check arguments */
-	if (graphics_object_name&&scene)
-	{
-		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_gt_object_name,(void *)graphics_object_name,
-			scene->scene_object_list))
-		{
-			if (graphics_object=Scene_object_get_gt_object(scene_object))
-			{
-				if ((return_code=Scene_object_get_visibility(scene_object,
-					&visibility))&&(g_VISIBLE==visibility))
-				{
-					Scene_object_set_visibility(scene_object,g_INVISIBLE);
-#if defined (MOTIF)
-					XmListSelectItem(window->selection_list,graphics_object->list_name,0);
-#endif /* defined (MOTIF) */
-				}
-				else
-				{
-					Scene_object_set_visibility(scene_object,g_VISIBLE);
-#if defined (MOTIF)
-					XmListDeselectItem(window->selection_list,graphics_object->list_name);
-#endif /* defined (MOTIF) */
-				}
-				/* update the window */
-				Scene_changed(window->scene);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"toggle_graphics_object_visibility_in_Scene.  Missing gt_object");
-				return_code=0;
-			}
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"toggle_graphics_object_visibility_in_Scene.  Invalid argument(s)");
-		return_code=0;
-	}
-#endif /* defined (OLD_CODE) */
-	return_code=1;
-	LEAVE;
-
-	return (return_code);
-} /* toggle_graphics_object_visibility_in_Scene */
-#endif /* defined (OLD_CODE) */
-
 int set_Scene(struct Parse_state *state,
 	void *scene_address_void,void *scene_manager_void)
 /*******************************************************************************
@@ -8074,8 +8422,7 @@ work on these sub_elements.  These created scenes are not added to the manager.
 												if (scene = CREATE(Scene)(scene->name))
 												{
 													new_scene_object = create_Scene_object_with_Graphics_object(
-														index, Scene_object_get_gt_object(scene_object),
-														scene);
+														index, Scene_object_get_gt_object(scene_object));
 													if (Scene_object_has_transformation(scene_object))
 													{
 														Scene_object_get_transformation(scene_object,
@@ -8113,8 +8460,7 @@ work on these sub_elements.  These created scenes are not added to the manager.
 														{
 															/* Create a scene object for the graphics object in settings */
 															new_scene_object = create_Scene_object_with_Graphics_object(index,
-																GT_element_settings_get_graphics_object(gt_element_settings),
-																scene);
+																GT_element_settings_get_graphics_object(gt_element_settings));
 														}
 														else
 														{
@@ -8126,7 +8472,7 @@ work on these sub_elements.  These created scenes are not added to the manager.
 													{
 														/* Create a scene object for the whole graphical element */
 														new_scene_object = create_Scene_object_with_Graphical_element_group(
-															index, gt_element_group, scene);
+															index, gt_element_group);
 													}
 													if (return_code)
 													{
@@ -8259,7 +8605,7 @@ Parser commands for modifying scenes - lighting, etc.
 	char *graphical_element_mode_string,**valid_strings;
 	enum Scene_graphical_element_mode graphical_element_mode,
 		old_graphical_element_mode;
-	int number_of_valid_strings,return_code,scene_changed;
+	int number_of_valid_strings,return_code;
 	char *current_token;
 	struct Option_table *option_table;
 	struct Scene *scene;
@@ -8297,11 +8643,9 @@ Parser commands for modifying scenes - lighting, etc.
 						modify_scene_data->light_manager,set_Light);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
-						scene_changed=0;
 						if (light_to_add)
 						{
 							Scene_add_light(scene,light_to_add);
-							scene_changed=1;
 						}
 						graphical_element_mode=Scene_graphical_element_mode_from_string(
 							graphical_element_mode_string);
@@ -8322,16 +8666,10 @@ Parser commands for modifying scenes - lighting, etc.
 								modify_scene_data->node_selection,
 								modify_scene_data->data_selection,
 								modify_scene_data->user_interface);
-							scene_changed=1;
 						}
 						if (light_to_remove)
 						{
 							Scene_remove_light(scene,light_to_remove);
-							scene_changed=1;
-						}
-						if (scene_changed)
-						{
-							Scene_changed_private(scene);
 						}
 					}
 					DESTROY(Option_table)(&option_table);

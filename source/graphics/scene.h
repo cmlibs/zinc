@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -79,6 +79,19 @@ DESCRIPTION :
 	SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP,
 	SCENE_OBJECT_SCENE
 }; /* enum Scene_object_type */
+
+enum Scene_change_status
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Describes the nature of the change message received by scene clients.
+==============================================================================*/
+{
+	SCENE_NO_CHANGE,
+	SCENE_CHANGE,
+	SCENE_FAST_CHANGE
+};
 
 struct Scene_object;
 /*******************************************************************************
@@ -227,6 +240,32 @@ PROTOTYPE_LIST_FUNCTIONS(Scene_object);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Scene_object, \
 	position,int);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Scene_object);
+
+int Scene_object_is_fast_changing(struct Scene_object *scene_object,
+	void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Returns true if the fast_changing flag of <scene_object> is set.
+==============================================================================*/
+
+int Scene_object_get_fast_changing(struct Scene_object *scene_object);
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Returns the fast_changing flag of <scene_object>.
+==============================================================================*/
+
+int Scene_object_set_fast_changing(struct Scene_object *scene_object,
+	int fast_changing);
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Sets the fast_changing flag of <scene_object>.
+==============================================================================*/
 
 enum GT_visibility_type Scene_object_get_visibility(
 	struct Scene_object *scene_object);
@@ -1008,6 +1047,26 @@ Allows clients of the <scene> to perform functions with the lights in it. The
 most common task will be to call execute_Light.
 ==============================================================================*/
 
+int Scene_has_fast_changing_objects(struct Scene *scene);
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Returns true if the scene may require special rendering because it has
+fast_changing objects in it, involving separately calling
+execute_Scene_non_fast_changing and execute_Scene_fast_changing, instead of
+execute_Scene.
+==============================================================================*/
+
+enum Scene_change_status Scene_get_change_status(struct Scene *scene);
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Returns the change state of the scene; SCENE_NO_CHANGE, SCENE_FAST_CHANGE or
+SCENE_CHANGE. Clients may respond to SCENE_FAST_CHANGE more efficiently.
+==============================================================================*/
+
 int compile_Scene(struct Scene *scene);
 /*******************************************************************************
 LAST MODIFIED : 28 November 1997
@@ -1028,16 +1087,34 @@ an error is reported.
 Note that lights are not included in the scene and must be handled separately!
 ==============================================================================*/
 
-int Scene_add_graphics_object(struct Scene *scene,
-	struct GT_object *graphics_object,int position, char *name);
+int execute_Scene_non_fast_changing(struct Scene *scene);
 /*******************************************************************************
-LAST MODIFIED : 12 October 1998
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Calls just the normal non-fast_changing display list for <scene>, if any.
+==============================================================================*/
+
+int execute_Scene_fast_changing(struct Scene *scene);
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Calls the just fast_changing display list for <scene>, if any.
+==============================================================================*/
+
+int Scene_add_graphics_object(struct Scene *scene,
+	struct GT_object *graphics_object,int position, char *name,
+	int fast_changing);
+/*******************************************************************************
+LAST MODIFIED : 11 July 1000
 
 DESCRIPTION :
 Adds <graphics_object> to the list of objects on <scene> at <position>.
 A position of 1 indicates the top of the list, while less than 1 or greater
 than the number of graphics objects in the list puts it at the end.
 The <name> is used for the scene_object and must be unique for the scene.
+Also set the <fast_changing> flag on creation to avoid wrong updates if on.
 ==============================================================================*/
 
 int Scene_remove_graphics_object(struct Scene *scene,
