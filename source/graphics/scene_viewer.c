@@ -177,7 +177,6 @@ DESCRIPTION :
 	/* kept tumble axis and angle for spinning scene viewer */
 	double tumble_axis[3], tumble_angle;
 	int tumble_active;
-	struct Event_dispatcher_idle_callback *tumble_callback_id;
 	/* background */
 	struct Colour background_colour;
 	enum Scene_viewer_buffering_mode buffering_mode;
@@ -213,8 +212,6 @@ Module variables
 Module prototypes
 -----------------
 */
-/* Need to prototype this function as these two functions call each other */
-static int Scene_viewer_automatic_tumble_callback(void *scene_viewer_void);
 
 /*
 Module functions
@@ -1648,6 +1645,86 @@ all the dimensions are zero).  If non_zero then the supplied <antialias> and
 	return (return_code);
 } /* Scene_viewer_render_scene_in_viewport */
 
+static int Scene_viewer_automatic_tumble(struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 28 September 2000
+
+DESCRIPTION :
+Rotates the scene_viewer when the tumble is active.
+==============================================================================*/
+{
+	double centre_x,centre_y,size_x,size_y,viewport_bottom,viewport_height,
+		viewport_left,viewport_width;
+	enum Interactive_event_type interactive_event_type;
+	int return_code;
+	GLint viewport[4];
+	struct Interactive_event *interactive_event;
+	struct Interaction_volume *interaction_volume;
+
+	ENTER(Scene_viewer_automatic_tumble);
+	if (scene_viewer)
+	{
+		if (scene_viewer->tumble_active)
+		{
+			Scene_viewer_rotate_about_lookat_point(scene_viewer,
+				scene_viewer->tumble_axis,
+				scene_viewer->tumble_angle);
+			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+				scene_viewer->sync_callback_list,scene_viewer,NULL);
+
+			if (scene_viewer->interactive_tool)
+			{
+				glGetIntegerv(GL_VIEWPORT,viewport);
+				viewport_left   = (double)(viewport[0]);
+				viewport_bottom = (double)(viewport[1]);
+				viewport_width  = (double)(viewport[2]);
+				viewport_height = (double)(viewport[3]);
+
+				/*???RC*//*Scene_viewer_calculate_transformation(scene_viewer,
+					viewport_width,viewport_height);*/
+
+				size_x = SCENE_VIEWER_PICK_SIZE;
+				size_y = SCENE_VIEWER_PICK_SIZE;
+				
+				centre_x=(double)(scene_viewer->previous_pointer_x);
+				/* flip y as x event has y=0 at top of window, increasing down */
+				centre_y=viewport_height-(double)(scene_viewer->previous_pointer_y)-1.0;
+				
+				/* Update the interaction volume */
+				interactive_event_type=INTERACTIVE_EVENT_MOTION_NOTIFY;
+				interaction_volume=create_Interaction_volume_ray_frustum(
+					scene_viewer->modelview_matrix,scene_viewer->window_projection_matrix,
+					viewport_left,viewport_bottom,viewport_width,viewport_height,
+					centre_x,centre_y,size_x,size_y);
+				ACCESS(Interaction_volume)(interaction_volume);
+				interactive_event=CREATE(Interactive_event)(interactive_event_type,
+					/*button_number*/-1,/*input_modifier*/0,interaction_volume,
+					scene_viewer->scene);
+				ACCESS(Interactive_event)(interactive_event);
+				Interactive_tool_handle_interactive_event(
+					scene_viewer->interactive_tool,(void *)scene_viewer,
+					interactive_event);
+				DEACCESS(Interactive_event)(&interactive_event);
+				DEACCESS(Interaction_volume)(&interaction_volume);
+			}
+		}
+		else
+		{
+			scene_viewer->tumble_angle = 0.0;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_automatic_tumble.  Missing scene_viewer");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_automatic_tumble */
+
 static int Scene_viewer_idle_update_callback(void *scene_viewer_void)
 /*******************************************************************************
 LAST MODIFIED : 14 July 2000
@@ -1664,25 +1741,28 @@ Updates the scene_viewer.
 	{
 		/* set workproc no longer pending */
 		scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
-		Graphics_buffer_make_current(scene_viewer->graphics_buffer);
-		Scene_viewer_render_scene(scene_viewer);
-		if (scene_viewer->swap_buffers)
-		{
-			Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
-		}
 		if (scene_viewer->tumble_active)
 		{
-			if(!scene_viewer->tumble_callback_id)
+			scene_viewer->fast_changing = 0;
+			Scene_viewer_automatic_tumble(scene_viewer);
+			/* Repost the idle callback */
+			if(!scene_viewer->idle_update_callback_id)
 			{
-				scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_callback(
+				scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
 					User_interface_get_event_dispatcher(scene_viewer->user_interface),
-					Scene_viewer_automatic_tumble_callback, (void *)scene_viewer,
-					EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY);			
+					Scene_viewer_idle_update_callback, (void *)scene_viewer,
+					EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
 			}
 		}
 		else
 		{
 			scene_viewer->tumble_angle = 0.0;
+		}
+		Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+		Scene_viewer_render_scene(scene_viewer);
+		if (scene_viewer->swap_buffers)
+		{
+			Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
 		}
 		return_code = 0;
 	}
@@ -1733,92 +1813,6 @@ put in the queue, but the old one will update the window to the new state.
 
 	return (return_code);
 } /* Scene_viewer_redraw_in_idle_time */
-
-static int Scene_viewer_automatic_tumble_callback(void *scene_viewer_void)
-/*******************************************************************************
-LAST MODIFIED : 28 September 2000
-
-DESCRIPTION :
-A WorkProc that tumbles the scene_viewer, and then returns TRUE so that it is
-removed from WorkProc queue.
-==============================================================================*/
-{
-	double centre_x,centre_y,size_x,size_y,viewport_bottom,viewport_height,
-		viewport_left,viewport_width;
-	enum Interactive_event_type interactive_event_type;
-	int return_code;
-	struct Scene_viewer *scene_viewer;
-	GLint viewport[4];
-	struct Interactive_event *interactive_event;
-	struct Interaction_volume *interaction_volume;
-
-	ENTER(Scene_viewer_automatic_tumble_callback);
-	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
-	{
-		if (scene_viewer->tumble_active)
-		{
-			Scene_viewer_rotate_about_lookat_point(scene_viewer,
-				scene_viewer->tumble_axis,
-				scene_viewer->tumble_angle);
-			scene_viewer->fast_changing = 0;
-			Scene_viewer_redraw_in_idle_time(scene_viewer);
-			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				scene_viewer->sync_callback_list,scene_viewer,NULL);
-
-			if (scene_viewer->interactive_tool)
-			{
-				glGetIntegerv(GL_VIEWPORT,viewport);
-				viewport_left   = (double)(viewport[0]);
-				viewport_bottom = (double)(viewport[1]);
-				viewport_width  = (double)(viewport[2]);
-				viewport_height = (double)(viewport[3]);
-
-				/*???RC*//*Scene_viewer_calculate_transformation(scene_viewer,
-					viewport_width,viewport_height);*/
-
-				size_x = SCENE_VIEWER_PICK_SIZE;
-				size_y = SCENE_VIEWER_PICK_SIZE;
-				
-				centre_x=(double)(scene_viewer->previous_pointer_x);
-				/* flip y as x event has y=0 at top of window, increasing down */
-				centre_y=viewport_height-(double)(scene_viewer->previous_pointer_y)-1.0;
-				
-				/* Update the interaction volume */
-				interactive_event_type=INTERACTIVE_EVENT_MOTION_NOTIFY;
-				interaction_volume=create_Interaction_volume_ray_frustum(
-					scene_viewer->modelview_matrix,scene_viewer->window_projection_matrix,
-					viewport_left,viewport_bottom,viewport_width,viewport_height,
-					centre_x,centre_y,size_x,size_y);
-				ACCESS(Interaction_volume)(interaction_volume);
-				interactive_event=CREATE(Interactive_event)(interactive_event_type,
-					/*button_number*/-1,/*input_modifier*/0,interaction_volume,
-					scene_viewer->scene);
-				ACCESS(Interactive_event)(interactive_event);
-				Interactive_tool_handle_interactive_event(
-					scene_viewer->interactive_tool,(void *)scene_viewer,
-					interactive_event);
-				DEACCESS(Interactive_event)(&interactive_event);
-				DEACCESS(Interaction_volume)(&interaction_volume);
-			}
-		}
-		else
-		{
-			scene_viewer->tumble_angle = 0.0;
-		}
-		scene_viewer->tumble_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
-		/* So it doesn't call again */
-		return_code = 0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_automatic_tumble_callback.  Missing scene_viewer");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_automatic_tumble_callback */
 
 static void Scene_viewer_initialise_callback(struct Graphics_buffer *graphics_buffer,
 	void *dummy_void, void *scene_viewer_void)
@@ -2445,17 +2439,6 @@ Converts mouse button-press and motion events into viewing transformations in
 											scene_viewer->tumble_axis[2] = axis[2];
 											scene_viewer->tumble_angle = -angle;
 											scene_viewer->tumble_active = 0;
-											if (!scene_viewer->tumble_callback_id)
-											{
-												/* Add this now, if we hold still it will stop the
-													 rotate if not it will happen after the button
-													 release */
-												scene_viewer->tumble_callback_id = 
-													Event_dispatcher_add_idle_callback(
-													User_interface_get_event_dispatcher(scene_viewer->user_interface),
-													Scene_viewer_automatic_tumble_callback, (void *)scene_viewer,
-													EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY);			
-											}
 										}
 										else
 										{
@@ -2500,12 +2483,6 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->lookatx -= dx;
 							scene_viewer->lookaty -= dy;
 							scene_viewer->lookatz -= dz;
-							if (scene_viewer->tumble_active)
-							{
-								Scene_viewer_rotate_about_lookat_point(scene_viewer,
-									scene_viewer->tumble_axis,
-									scene_viewer->tumble_angle);
-							}
 							view_changed=1;
 						} break;
 						case SV_DRAG_ZOOM:
@@ -2530,12 +2507,6 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->right=radius;
 							scene_viewer->bottom=-radius;
 							scene_viewer->top=radius;
-							if (scene_viewer->tumble_active)
-							{
-								Scene_viewer_rotate_about_lookat_point(scene_viewer,
-									scene_viewer->tumble_axis,
-									scene_viewer->tumble_angle);
-							}
 							view_changed=1;
 						} break;
 						default:
@@ -2559,6 +2530,14 @@ Converts mouse button-press and motion events into viewing transformations in
 				if ((scene_viewer->drag_mode == SV_DRAG_TUMBLE) && scene_viewer->tumble_angle)
 				{
 					scene_viewer->tumble_active = 1;
+					if (!scene_viewer->idle_update_callback_id)
+					{
+						scene_viewer->idle_update_callback_id = 
+							Event_dispatcher_add_idle_callback(
+								User_interface_get_event_dispatcher(scene_viewer->user_interface),
+								Scene_viewer_idle_update_callback, (void *)scene_viewer,
+								EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);			
+					}
 				}
 				/* printf("button %d release at %d %d\n",input->button,
 					input->position_x,input->position_y); */
@@ -3207,7 +3186,6 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->tumble_axis[2] = 0.0;
 				scene_viewer->tumble_angle = 0;
 				scene_viewer->tumble_active = 0;
-				scene_viewer->tumble_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 				/* by default, use undistort stuff on textures */
 				scene_viewer->bk_texture_undistort_on=1;
 				scene_viewer->bk_texture_max_pixels_per_polygon=16.0;
@@ -3311,14 +3289,6 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_input_callback)))(
 				&scene_viewer->input_callback_list);
 		}
-		/* Remove Tumble callback */
-		if (scene_viewer->tumble_callback_id)
-		{
-			Event_dispatcher_remove_idle_callback(
-				User_interface_get_event_dispatcher(scene_viewer->user_interface),
-				scene_viewer->tumble_callback_id);
-			scene_viewer->tumble_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
-		}
 		/* must destroy the widget */
 		DEACCESS(Graphics_buffer)(&scene_viewer->graphics_buffer);				
 		if (scene_viewer->pixel_data)
@@ -3410,13 +3380,6 @@ eg. automatic tumble.
 	ENTER(Scene_viewer_stop_animations);
 	if (scene_viewer)
 	{
-		if (scene_viewer->tumble_callback_id)
-		{
-			Event_dispatcher_remove_idle_callback(
-				User_interface_get_event_dispatcher(scene_viewer->user_interface),
-				scene_viewer->tumble_callback_id);
-			scene_viewer->tumble_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
-		}
 		scene_viewer->tumble_active = 0;
 		scene_viewer->tumble_angle = 0.0;
 		return_code=1;
@@ -3454,13 +3417,6 @@ Must call this in DESTROY function.
 				User_interface_get_event_dispatcher(scene_viewer->user_interface),
 				scene_viewer->idle_update_callback_id);
 			scene_viewer->idle_update_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
-		}
-		if (scene_viewer->tumble_callback_id)
-		{
-			Event_dispatcher_remove_idle_callback(
-				User_interface_get_event_dispatcher(scene_viewer->user_interface),
-				scene_viewer->tumble_callback_id);
-			scene_viewer->tumble_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
 		}
 		scene_viewer->tumble_active = 0;
 		scene_viewer->tumble_angle = 0.0;
@@ -3879,13 +3835,6 @@ Sets the input_mode of the Scene_viewer.
 		(SCENE_VIEWER_TRANSFORM==input_mode)))
 	{
 		/* clear automatic tumble since cannot make successful input while on */
-		if (scene_viewer->tumble_callback_id)
-		{
-			Event_dispatcher_remove_idle_callback(
-				User_interface_get_event_dispatcher(scene_viewer->user_interface),
-				scene_viewer->tumble_callback_id);
-			scene_viewer->tumble_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
-		}
 		scene_viewer->tumble_active = 0;
 		scene_viewer->tumble_angle = 0.0;
 		scene_viewer->input_mode=input_mode;
@@ -5930,26 +5879,22 @@ Requests a full redraw immediately.
 	if (scene_viewer)
 	{
 		/* remove idle update workproc if pending */
+		event_dispatcher = User_interface_get_event_dispatcher(
+			scene_viewer->user_interface);
 		if (scene_viewer->idle_update_callback_id)
 		{
-			event_dispatcher = User_interface_get_event_dispatcher(
-				scene_viewer->user_interface);
 			Event_dispatcher_remove_idle_callback(
 				event_dispatcher, scene_viewer->idle_update_callback_id);
 			scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
-			if (scene_viewer->tumble_active)
+		}
+		if (scene_viewer->tumble_active)
+		{
+			Scene_viewer_automatic_tumble(scene_viewer);
+			if(!scene_viewer->idle_update_callback_id)
 			{
-				Scene_viewer_automatic_tumble_callback((void *)scene_viewer);
-				if(!scene_viewer->tumble_callback_id)
-				{
-					scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_callback(
-						event_dispatcher, Scene_viewer_automatic_tumble_callback, (void *)scene_viewer,
-						EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY);
-				}
-			}
-			else
-			{
-				scene_viewer->tumble_angle = 0.0;
+				scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
+					event_dispatcher, Scene_viewer_idle_update_callback, (void *)scene_viewer,
+					EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
 			}
 		}
 		Graphics_buffer_make_current(scene_viewer->graphics_buffer);
@@ -5989,26 +5934,22 @@ and <transparency_layers> are used for just this render.
 	if (scene_viewer)
 	{
 		/* remove idle update workproc if pending */
+		event_dispatcher = User_interface_get_event_dispatcher(
+			scene_viewer->user_interface);
 		if (scene_viewer->idle_update_callback_id)
 		{
-			event_dispatcher = User_interface_get_event_dispatcher(
-				scene_viewer->user_interface);
 			Event_dispatcher_remove_idle_callback(
 				event_dispatcher, scene_viewer->idle_update_callback_id);
 			scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
-			if (scene_viewer->tumble_active)
+		}
+		if (scene_viewer->tumble_active)
+		{
+			Scene_viewer_automatic_tumble(scene_viewer);
+			if(!scene_viewer->idle_update_callback_id)
 			{
-				Scene_viewer_automatic_tumble_callback((void *)scene_viewer);
-				if(!scene_viewer->tumble_callback_id)
-				{
-					scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_callback(
-						event_dispatcher, Scene_viewer_automatic_tumble_callback, (void *)scene_viewer,
-						EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY);
-				}
-			}
-			else
-			{
-				scene_viewer->tumble_angle = 0.0;
+				scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
+					event_dispatcher, Scene_viewer_idle_update_callback, (void *)scene_viewer,
+					EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
 			}
 		}
 		Graphics_buffer_make_current(scene_viewer->graphics_buffer);

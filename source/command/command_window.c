@@ -1189,7 +1189,7 @@ printf("XA_CMGUI_RESPONSE changed\n");
 } /* command_window_property_notify_callback */
 #endif /* defined (MOTIF) */
 
-#if defined (GTK_USER_INTERFACE)
+#if ! defined (MOTIF) && defined (GTK_USER_INTERFACE)
 static void command_entered_gtk(GtkEntry *entry, gpointer command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
@@ -1227,9 +1227,9 @@ Called when a command is entered in the command entry area.
 	}
 	LEAVE;
 } /* command_entered_gtk */
-#endif /* defined (GTK_USER_INTERFACE) */
+#endif /* ! defined (MOTIF) && defined (GTK_USER_INTERFACE) */
 
-#if defined (GTK_USER_INTERFACE)
+#if ! defined (MOTIF) && defined (GTK_USER_INTERFACE)
 static gboolean Command_window_gtk_button_press(GtkWidget *widget,
 	GdkEventButton *event, gpointer command_window_void)
 /*******************************************************************************
@@ -1312,9 +1312,9 @@ Called when a command is entered in the command entry area.
 	LEAVE;
 	return (return_code);
 } /* Command_window_gtk_button_press */
-#endif /* defined (GTK_USER_INTERFACE) */
+#endif /* ! defined (MOTIF) && defined (GTK_USER_INTERFACE) */
 
-#if defined (GTK_USER_INTERFACE)
+#if ! defined (MOTIF) && defined (GTK_USER_INTERFACE)
 static void command_window_close_gtk(GtkObject *object, gpointer command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
@@ -1338,7 +1338,7 @@ Called when the Close function is selected from the window manager menu.
 	}
 	LEAVE;
 } /* command_window_close_gtk */
-#endif /* defined (GTK_USER_INTERFACE) */
+#endif /* ! defined (MOTIF) && defined (GTK_USER_INTERFACE) */
 
 static int modify_Command_window_out_file_open(struct Parse_state *state,
 	void *dummy,void *command_window_void)
@@ -2060,23 +2060,23 @@ Adds the <command> to the bottom of the list for the <command_window>.
 	int max_commands,num_commands;
 	XmString new_command;
 #endif /* defined (MOTIF) */
-#if defined (GTK_USER_INTERFACE)
+#if ! defined (MOTIF) && defined (GTK_USER_INTERFACE)
 #if GTK_MAJOR_VERSION >= 2
 	GtkTextIter end_iterator;
 #else /* GTK_MAJOR_VERSION >= 2 */
 	guint text_length;
 #endif /* GTK_MAJOR_VERSION >= 2 */
-#endif /* defined (GTK_USER_INTERFACE) */
+#endif /* ! defined (MOTIF) && defined (GTK_USER_INTERFACE) */
 
 
 	ENTER(add_to_command_list);
 /*???debug */
 /* printf("enter add_to_command_list\n  %s\n",command); */
-#if defined (GTK_USER_INTERFACE)
+#if ! defined (MOTIF) && defined (GTK_USER_INTERFACE)
 #if GTK_MAJOR_VERSION < 2
 	USE_PARAMETER(command);
 #endif /* GTK_MAJOR_VERSION >= 2 */
-#endif /* defined (GTK_USER_INTERFACE) */
+#endif /* ! defined (MOTIF) && defined (GTK_USER_INTERFACE) */
 	if (command_window)
 	{
 #if defined (MOTIF) /* switch (USER_INTERFACE) */
@@ -2151,7 +2151,7 @@ Sets the value of the <prompt> for the <command_window>.
 	int return_code;
 
 	ENTER(set_command_prompt);
-#if defined (GTK_USER_INTERFACE)
+#if ! defined (MOTIF) && defined (GTK_USER_INTERFACE)
 	USE_PARAMETER(prompt);
 #endif /* switch (GTK_USER_INTERFACE) */
 	if (command_window)
@@ -2256,8 +2256,7 @@ Resets all functions of the command box widget.
 			XmCommandAppendValue(command_window->command_box,
 				command_window->command_prompt);
 		}
-#endif /* defined (MOTIF) */
-#if defined (GTK_USER_INTERFACE)
+#elif defined (GTK_USER_INTERFACE)
 		gtk_entry_set_text(GTK_ENTRY(command_window->entry),
 			command_window->command_prompt);
 		gtk_editable_set_position(GTK_EDITABLE(command_window->entry), -1);

@@ -92,8 +92,7 @@ Contains information for a graphics window.
 		ortho_up_menu,ortho_front_button,
 		interactive_toolbar_form,interactive_toolbar_widget;
 	Widget window_shell,main_window;
-#endif /* defined (MOTIF) */
-#if defined (GTK_USER_INTERFACE)
+#elif defined (GTK_USER_INTERFACE)
 	GtkWidget *shell_window;
 #endif /* defined (GTK_USER_INTERFACE) */
 	/* scene_viewers and their parameters: */
@@ -4198,8 +4197,7 @@ separated by 2 pixel borders within the viewing area.
 		/* subtract 2 pixel border */
 		*viewing_width=((int)width-2);
 		*viewing_height=((int)height-2);
-#endif /* defined (MOTIF) */
-#if defined (GTK_USER_INTERFACE)
+#elif defined (GTK_USER_INTERFACE)
 #if GTK_MAJOR_VERSION >= 2
 		gtk_window_get_size(GTK_WINDOW(window->shell_window),
 			viewing_width, viewing_height);
@@ -4263,8 +4261,7 @@ separated by 2 pixel borders within the viewing area.
 		{
 			Scene_viewer_set_border_width(window->scene_viewer_array[pane_no],1);
 		}
-#endif /* defined (MOTIF) */
-#if defined (GTK_USER_INTERFACE)
+#elif defined (GTK_USER_INTERFACE)
 #if GTK_MAJOR_VERSION >= 2
 		gtk_window_resize(GTK_WINDOW(window->shell_window),
 			viewing_width, viewing_height);

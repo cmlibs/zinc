@@ -9,6 +9,7 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
 #include <math.h>
 #include <stdio.h>
 #include <general/time.h>
+#include <sys/times.h>
 
 #include "general/compare.h"
 #include "general/debug.h"
@@ -112,6 +113,7 @@ Contains all information necessary for a file descriptor callback.
 {
 	struct Event_dispatcher_idle_callback *self;	
 	int access_count;
+	long timestamp;
 	enum Event_dispatcher_idle_priority priority;
 	Event_dispatcher_idle_function *idle_function;
 	void *user_data;
@@ -394,6 +396,7 @@ returns true then the pending flag is set in the <callback>.
 	{
 		callback->pending = callback->check_callback(descriptor_set,
 			callback->user_data);
+		return_code = 1;
 	}
 	else
 	{
@@ -593,6 +596,7 @@ Create a single object that belongs to a specific file descriptor.
 ==============================================================================*/
 {
 	struct Event_dispatcher_idle_callback *idle_callback;
+	struct tms times_buffer;
 
 	ENTER(CREATE(Event_dispatcher_idle_callback));
 
@@ -600,6 +604,7 @@ Create a single object that belongs to a specific file descriptor.
 	{
 		idle_callback->self = idle_callback;
 		idle_callback->priority = priority;
+		idle_callback->timestamp = (long)times(&times_buffer);
 		idle_callback->idle_function = idle_function;
 		idle_callback->user_data = user_data;
 		idle_callback->access_count = 0;
@@ -678,17 +683,28 @@ DESCRIPTION :
 		}
 		else
 		{
-			if (idle_one < idle_two)
+			if (idle_one->timestamp < idle_two->timestamp)
 			{
 				return_code = -1;
 			}
-			else if (idle_one >  idle_two)
+			if (idle_one->timestamp > idle_two->timestamp)
 			{
 				return_code = 1;
 			}
 			else
 			{
-				return_code = 0;
+				if (idle_one < idle_two)
+				{
+					return_code = -1;
+				}
+				else if (idle_one > idle_two)
+				{
+					return_code = 1;
+				}
+				else
+				{
+					return_code = 0;
+				}
 			}
 		}
 	}
@@ -1513,6 +1529,7 @@ DESCRIPTION :
 	int callback_code, select_code;
 	struct Event_dispatcher_descriptor_set descriptor_set;
 	struct timeval timeofday, timeout, *timeout_ptr;
+	struct tms times_buffer;
 	struct Event_dispatcher_descriptor_callback *descriptor_callback;
 	struct Event_dispatcher_idle_callback *idle_callback;
 	struct Event_dispatcher_timeout_callback *timeout_callback;
@@ -1552,12 +1569,9 @@ DESCRIPTION :
 			(void *)NULL, event_dispatcher->timeout_list);
 		if (event_dispatcher->special_idle_callback_pending && event_dispatcher->special_idle_callback)
 		{
-			callback_code = (*event_dispatcher->special_idle_callback->idle_function)
-				(event_dispatcher->special_idle_callback->user_data);
-			if (callback_code == 0)
-			{
-				event_dispatcher->special_idle_callback_pending = 0;
-			}
+			timeout.tv_sec = 0;
+			timeout.tv_usec = 0;
+			timeout_ptr = &timeout;
 		}
 		else
 		{
@@ -1614,61 +1628,74 @@ DESCRIPTION :
 					}
 				}
 			}
-			select_code = 0;
-			if (!(descriptor_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_descriptor_callback)
-					 (Event_dispatcher_descriptor_callback_is_pending,
-						 (void *)NULL, event_dispatcher->descriptor_list)))
+		}
+		select_code = 0;
+		if (!(descriptor_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_descriptor_callback)
+			(Event_dispatcher_descriptor_callback_is_pending,
+			(void *)NULL, event_dispatcher->descriptor_list)))
+		{
+			if (-1 < (select_code = select(100, &(descriptor_set.read_set),
+				&(descriptor_set.write_set), &(descriptor_set.error_set),
+				timeout_ptr)))
 			{
-				if (-1 < (select_code = select(100, &(descriptor_set.read_set),
-					&(descriptor_set.write_set), &(descriptor_set.error_set),
-					timeout_ptr)))
-				{
-					/* The select leaves only those descriptors that are pending in the read set,
-						we set the pending flag and then work through them one by one.  This makes sure
-						that each file callback that is waiting gets an equal chance and we don't just
-						call them directly from the iterator as any of the events could modify the list */
-					/* For Gtk I need to call check so long as there wasn't an error,
-						even if no file_descriptors selected at this level, Gtk will then
-						change its maximum priority and ask for a new select */
-					FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_descriptor_callback)
-						(Event_dispatcher_descriptor_do_check_callback,
-							&descriptor_set, event_dispatcher->descriptor_list);
-					descriptor_callback =
-						FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_descriptor_callback)
-						(Event_dispatcher_descriptor_callback_is_pending,
-						(void *)NULL, event_dispatcher->descriptor_list);
-				}
+				/* The select leaves only those descriptors that are pending in the read set,
+					we set the pending flag and then work through them one by one.  This makes sure
+					that each file callback that is waiting gets an equal chance and we don't just
+					call them directly from the iterator as any of the events could modify the list */
+				/* For Gtk I need to call check so long as there wasn't an error,
+					even if no file_descriptors selected at this level, Gtk will then
+					change its maximum priority and ask for a new select */
+				FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_descriptor_callback)
+					(Event_dispatcher_descriptor_do_check_callback,
+					&descriptor_set, event_dispatcher->descriptor_list);
+				descriptor_callback =
+					FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_descriptor_callback)
+					(Event_dispatcher_descriptor_callback_is_pending,
+					(void *)NULL, event_dispatcher->descriptor_list);
 			}
-			if (descriptor_callback)
+		}
+		if (descriptor_callback)
+		{
+			if (event_dispatcher->special_idle_callback)
 			{
-				if (event_dispatcher->special_idle_callback)
-				{
-					event_dispatcher->special_idle_callback_pending = 1;
-				}
-				/* Call the descriptor dispatch callback then */
-				descriptor_callback->pending = 0;
-				(*descriptor_callback->dispatch_callback)(descriptor_callback->user_data);
+				event_dispatcher->special_idle_callback_pending = 1;
 			}
-			else
+			/* Call the descriptor dispatch callback then */
+			descriptor_callback->pending = 0;
+			(*descriptor_callback->dispatch_callback)(descriptor_callback->user_data);
+		}
+		else
+		{
+			if (select_code == 0)
 			{
-				if (select_code == 0)
+				/* Look for ready timer callbacks first */
+				gettimeofday(&timeofday, NULL);
+				if (timeout_callback &&
+					((timeout_callback->timeout_s < (unsigned long)timeofday.tv_sec) ||
+					((timeout_callback->timeout_s == (unsigned long)timeofday.tv_sec) &&
+					(timeout_callback->timeout_ns <= (unsigned long)1000*timeofday.tv_usec))))
 				{
-					/* Look for ready timer callbacks first */
-					gettimeofday(&timeofday, NULL);
-					if (timeout_callback &&
-						((timeout_callback->timeout_s < (unsigned long)timeofday.tv_sec) ||
-							((timeout_callback->timeout_s == (unsigned long)timeofday.tv_sec) &&
-								(timeout_callback->timeout_ns <= (unsigned long)1000*timeofday.tv_usec))))
+					if (event_dispatcher->special_idle_callback)
 					{
-						if (event_dispatcher->special_idle_callback)
+						event_dispatcher->special_idle_callback_pending = 1;
+					}
+					/* Do it now */
+					callback_code = (*timeout_callback->timeout_function)(
+						timeout_callback->user_data);
+					REMOVE_OBJECT_FROM_LIST(Event_dispatcher_timeout_callback)
+						(timeout_callback, event_dispatcher->timeout_list);
+				}
+				else
+				{
+					if (event_dispatcher->special_idle_callback_pending && 
+						event_dispatcher->special_idle_callback)
+					{
+						callback_code = (*event_dispatcher->special_idle_callback->idle_function)
+							(event_dispatcher->special_idle_callback->user_data);
+						if (callback_code == 0)
 						{
-							event_dispatcher->special_idle_callback_pending = 1;
+							event_dispatcher->special_idle_callback_pending = 0;
 						}
-						/* Do it now */
-						callback_code = (*timeout_callback->timeout_function)(
-							timeout_callback->user_data);
-						REMOVE_OBJECT_FROM_LIST(Event_dispatcher_timeout_callback)
-							(timeout_callback, event_dispatcher->timeout_list);
 					}
 					else
 					{
@@ -1681,13 +1708,20 @@ DESCRIPTION :
 							{
 								event_dispatcher->special_idle_callback_pending = 1;
 							}
-							if (callback_code == 0)
+							if (IS_OBJECT_IN_LIST(Event_dispatcher_idle_callback)
+								(idle_callback, event_dispatcher->idle_list))
 							{
-								/* Error or finished so we remove it if this hasn't happened already */
-								if (IS_OBJECT_IN_LIST(Event_dispatcher_idle_callback)
-									(idle_callback, event_dispatcher->idle_list))
+								REMOVE_OBJECT_FROM_LIST(Event_dispatcher_idle_callback)
+									(idle_callback, event_dispatcher->idle_list);
+								if (callback_code != 0)
 								{
-									REMOVE_OBJECT_FROM_LIST(Event_dispatcher_idle_callback)
+									/* Not finished so add it back in, this is done rather
+										than just leaving the old event in so that it gets
+										a new timestamp and therefore a different idle event
+										goes next.  It can't be done while it is in the list
+									   as the timestamp is part of the list identifier */
+									idle_callback->timestamp = (long)times(&times_buffer);
+									ADD_OBJECT_TO_LIST(Event_dispatcher_idle_callback)
 										(idle_callback, event_dispatcher->idle_list);
 								}
 							}
@@ -1695,13 +1729,13 @@ DESCRIPTION :
 						}
 					}
 				}
-				else if (select_code == -1)
-				{
-					display_message(ERROR_MESSAGE,
-						"Event_dispatcher_do_one_event.  "
-						"Error on file descriptors.");
-					return_code=0;
-				}
+			}
+			else if (select_code == -1)
+			{
+				display_message(ERROR_MESSAGE,
+					"Event_dispatcher_do_one_event.  "
+					"Error on file descriptors.");
+				return_code=0;
 			}
 		}
 #endif /* switch (USER_INTERFACE) */

@@ -92,7 +92,9 @@ DESCRIPTION :
 	XmFontList button_fontlist, normal_fontlist;
 	XtAppContext application_context;
 #if ! defined (USE_XTAPP_CONTEXT)
-	struct Event_dispatcher_descriptor_callback *main_x_connection_handler;
+	int main_x_file_descriptor;
+	int x_app_pending;
+	struct Event_dispatcher_descriptor_callback *main_x_connection_callback;
 	struct Event_dispatcher_idle_callback *special_idle_x_callback;
 	struct Event_dispatcher_timeout_callback *timeout_x_callback;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
@@ -193,8 +195,95 @@ Module functions
 */
 #if defined (MOTIF)
 #if ! defined (USE_XTAPP_CONTEXT)
-static int User_interface_X_callback(int file_descriptor, 
+static int User_interface_X_query_callback(
+	struct Event_dispatcher_descriptor_set *descriptor_set, void *user_interface_void)
+/*******************************************************************************
+LAST MODIFIED : 18 November 2002
+
+DESCRIPTION :
+This function is called to add the main file descriptor for the X connection to
+those processed by the event dispatcher.
+==============================================================================*/
+{
+	int return_code;
+	struct User_interface *user_interface;
+
+	ENTER(User_interface_X_query_callback);
+	if (user_interface=(struct User_interface *)user_interface_void)
+	{
+		return_code = 1;
+		FD_SET(user_interface->main_x_file_descriptor, &(descriptor_set->read_set));
+		if (XtAppPending(user_interface->application_context))
+		{
+			user_interface->x_app_pending = 1;
+			if (descriptor_set->max_timeout_ns != 0)
+			{
+				descriptor_set->max_timeout_ns = 0;
+			}
+		}
+		else
+		{
+			user_interface->x_app_pending = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"User_interface_X_query_callback.  Missing user_interface");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* User_interface_X_query_callback */
+#endif /* ! defined (USE_XTAPP_CONTEXT) */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+#if ! defined (USE_XTAPP_CONTEXT)
+static int User_interface_X_check_callback(
+	struct Event_dispatcher_descriptor_set *descriptor_set,
 	void *user_interface_void)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct User_interface *user_interface;
+
+	ENTER(User_interface_X_check_callback);
+	if (user_interface=(struct User_interface *)user_interface_void)
+	{
+		return_code = 0;
+		if (user_interface->x_app_pending || 
+			(FD_ISSET(user_interface->main_x_file_descriptor, 
+			&(descriptor_set->read_set))))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"User_interface_X_check_callback.  Missing user_interface");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* User_interface_X_check_callback */
+#endif /* ! defined (USE_XTAPP_CONTEXT) */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+#if ! defined (USE_XTAPP_CONTEXT)
+static int User_interface_X_dispatch_callback(void *user_interface_void)
 /*******************************************************************************
 LAST MODIFIED : 6 March 2002
 
@@ -206,7 +295,6 @@ This function is called to process X connections.
 	struct User_interface *user_interface;
 
 	ENTER(User_interface_X_callback);
-	USE_PARAMETER(file_descriptor);
 	if (user_interface=(struct User_interface *)user_interface_void)
 	{
 		XtAppProcessEvent(user_interface->application_context, XtIMAll);
@@ -1300,7 +1388,7 @@ Open the <user_interface>.
 		user_interface->application_shell=(Widget)NULL;
 		user_interface->display=(Display *)NULL;
 #if ! defined (USE_XTAPP_CONTEXT)
-		user_interface->main_x_connection_handler = 
+		user_interface->main_x_connection_callback = 
 			(struct Event_dispatcher_descriptor_callback *)NULL;
 		user_interface->special_idle_x_callback = 
 			(struct Event_dispatcher_idle_callback *)NULL;
@@ -1382,9 +1470,14 @@ Open the <user_interface>.
 				user_interface->application_context);
 #else /* defined (USE_XTAPP_CONTEXT) */
 		/* ask X for it's file handle connections */
-			if (user_interface->main_x_connection_handler = Event_dispatcher_add_simple_descriptor_callback(
-				user_interface->event_dispatcher, ConnectionNumber(user_interface->display),
-				User_interface_X_callback, (void *)user_interface))
+			user_interface->main_x_file_descriptor = 
+				ConnectionNumber(user_interface->display);
+			user_interface->x_app_pending = 1;
+			if (user_interface->main_x_connection_callback = 
+				Event_dispatcher_add_descriptor_callback(
+				user_interface->event_dispatcher, User_interface_X_query_callback,
+				User_interface_X_check_callback, User_interface_X_dispatch_callback,
+				(void *)user_interface))
 			{
 				if (user_interface->special_idle_x_callback = Event_dispatcher_set_special_idle_callback(
 						 user_interface->event_dispatcher, User_interface_idle_X_callback, 
@@ -1646,11 +1739,11 @@ DESCRIPTION :
 			user_interface->no_cascade_pixmap=XmUNSPECIFIED_PIXMAP;
 		}
 #if ! defined (USE_XTAPP_CONTEXT)
-		if (user_interface->main_x_connection_handler)
+		if (user_interface->main_x_connection_callback)
 		{
 			Event_dispatcher_remove_descriptor_callback(
 				user_interface->event_dispatcher,
-				user_interface->main_x_connection_handler);
+				user_interface->main_x_connection_callback);
 		}
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF) */
