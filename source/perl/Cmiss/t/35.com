@@ -38,6 +38,8 @@ $fun_6=$var_1->evaluate_derivative(independent=>[$fun_1->prolate()]);
 print "$fun_6\n";
 $fun_6a=$var_1->evaluate_derivative(independent=>[$fun_1->focus()]);
 print "$fun_6a\n";
+#???DB.  All prolate_spheroidal_to_rectangular_cartesian functions are
+#   "equivalent"
 $fun_7=$var_1->evaluate_derivative(independent=>[$fun_3->prolate()]);
 print "$fun_7\n";
 # check evaluating second derivative

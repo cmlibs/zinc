@@ -31,7 +31,13 @@ $var_1=$fun_1->output();
 $fun_2=$var_1->evaluate();
 print "$var_1\n";
 print "$fun_1\n";
-print "$fun_2\n";
+if (defined($fun_2)&&($fun_2))
+{
+	print "$fun_2\n";
+} else
+{
+	print "undefined\n";
+}
 # make another variable to be used as an variable when evaluating
 $fun_3=new Cmiss::Function::Element_xi(element=>$heart->get_element(name=>21),xi=>[0.5,0.5,0.5]);
 # check evaluating with arguments with the arguments being for the variable

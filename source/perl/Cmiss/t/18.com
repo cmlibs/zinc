@@ -56,7 +56,13 @@ print "$return_code $var_1\n";
 $return_code=$var_1->set_input_value($input_1,new Cmiss::Variable_new::Vector(2,4,6));
 print "$return_code $var_1\n";
 $var_12=$var_1->get_input_value($var_2->input_values());
-print "$var_12\n";
+if (defined($var_12))
+{
+	print "$var_12\n";
+} else
+{
+	print "undefined\n";
+}
 $return_code=$var_1->set_input_value($var_2->input_values(),$var_2);
 print "$return_code $var_1\n";
 $return_code=1;

@@ -16,17 +16,41 @@ $function_1=new Cmiss::Function::Matrix(n_columns=>2,values=>[1,5,-3,8,2,4]);
 $function_2=new Cmiss::Function::Matrix(n_columns=>3,values=>[9,-1,6,7,11,3]);
 $variable_1=new Cmiss::Function_variable::Intersection($function_1->output(),$function_2->output());
 $function_2a=$variable_1->evaluate();
-print "$function_1 $function_2 $function_2a\n";
+#print "$function_1 $function_2 $function_2a\n";
+if (defined($function_1)&&($function_1))
+{
+	print "$function_1";
+} else
+{
+	print "undefined";
+}
+print " ";
+if (defined($function_2)&&($function_2))
+{
+	print "$function_2";
+} else
+{
+	print "undefined";
+}
+print " ";
+if (defined($function_2a)&&($function_2a))
+{
+	print "$function_2a";
+} else
+{
+	print "undefined";
+}
+print "\n";
 print "\n";
 
 # check evaluating
 $function_3=$variable_1->evaluate();
-if (defined($function_3))
+if (defined($function_3)&&($function_3))
 {
 	print "$function_3\n";
 } else
 {
-	print "\$function_3 is not defined\n";
+	print "undefined\n";
 }
 print "\n";
 

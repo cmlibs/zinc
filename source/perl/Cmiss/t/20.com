@@ -79,6 +79,12 @@ print "$var_2, $var_3\n";
 $return_code=$var_2->set_input_value($var_2->input_element_xi(),$var_3);
 print "$return_code $var_4\n";
 $var_12=$var_1->get_input_value($var_2->input_xi());
-print "$var_12\n";
+if (defined($var_12))
+{
+	print "$var_12\n";
+} else
+{
+	print "undefined\n";
+}
 $return_code=$var_1->set_input_value($var_2->input_xi(),$var_2);
 print "$return_code $var_1\n";
