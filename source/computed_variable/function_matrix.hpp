@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix.hpp
 //
-// LAST MODIFIED : 22 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -13,18 +13,14 @@
 #include "computed_variable/function.hpp"
 
 EXPORT template<typename Value_type>
-	class Function_variable_matrix_coefficients;
-
-EXPORT template<typename Value_type>
 class Function_matrix : public Function
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 // An identity function whose input/output is a matrix
 //==============================================================================
 {
-	friend class Function_variable_matrix_coefficients<Value_type>;
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
@@ -35,41 +31,43 @@ class Function_matrix : public Function
 		~Function_matrix();
 	// inherited
 	public:
-		string_handle get_string_representation();
-		Function_variable_handle input();
-		Function_variable_handle output();
+		virtual string_handle get_string_representation();
+		virtual Function_variable_handle input();
+		virtual Function_variable_handle output();
 	// additional
 	public:
 		// get a matrix entry variable
-		Function_variable_handle entry(Function_size_type,Function_size_type);
-		// get a matrix entry value
-		Value_type& operator()(Function_size_type,Function_size_type);
+		virtual Function_variable_handle entry(Function_size_type,
+			Function_size_type);
+		// get a matrix entry value.  NB. row and column start from 1
+		virtual Value_type& operator()(Function_size_type row,
+			Function_size_type column);
 		// get the specified sub-matrix
-		boost::intrusive_ptr< Function_matrix<Value_type> >
+		virtual boost::intrusive_ptr< Function_matrix<Value_type> >
 			sub_matrix(Function_size_type row_low,
 			Function_size_type row_high,Function_size_type column_low,
 			Function_size_type column_high) const;
-		Function_size_type number_of_rows() const;
-		Function_size_type number_of_columns() const;
+		virtual Function_size_type number_of_rows() const;
+		virtual Function_size_type number_of_columns() const;
 		// solve a system of linear equations
 		boost::intrusive_ptr< Function_matrix<Value_type> > solve(
 			const boost::intrusive_ptr< Function_matrix<Value_type> >&);
 	private:
-		Function_handle evaluate(Function_variable_handle atomic_variable);
-		bool evaluate_derivative(Scalar& derivative,
+		virtual Function_handle evaluate(Function_variable_handle atomic_variable);
+		virtual bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);
-		bool set_value(Function_variable_handle atomic_variable,
+		virtual bool set_value(Function_variable_handle atomic_variable,
 			Function_variable_handle atomic_value);
-		Function_handle get_value(Function_variable_handle atomic_variable);
+		virtual Function_handle get_value(Function_variable_handle atomic_variable);
 	private:
 		// copy constructor
 		Function_matrix(const Function_matrix&);
 		// assignment
 		Function_matrix& operator=(const Function_matrix&);
 		// equality
-		bool operator==(const Function&) const;
-	private:
+		virtual bool operator==(const Function&) const;
+	protected:
 		ublas::matrix<Value_type,ublas::column_major> values;
 };
 
