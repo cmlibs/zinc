@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 12 October 2001
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -33,7 +33,6 @@ if a value is already known.
 
 #include "command/parser.h"
 #include "finite_element/finite_element.h"
-#include "general/debug.h"
 #include "general/geometry.h"
 #include "general/list.h"
 #include "general/manager.h"
@@ -456,29 +455,6 @@ however, the cache is always cleared after calling.
 It is up to calling function to begin/end node manager cache if more than one
 node is being modified.
 Note that the values array will not be modified by this function.
-==============================================================================*/
-
-int Computed_field_update_nodal_values_from_source(
-	struct Computed_field *destination_field,	struct Computed_field *source_field,
-	struct GROUP(FE_node) *node_group, struct MANAGER(FE_node) *node_manager);
-/*******************************************************************************
-LAST MODIFIED : 1 November 1999
-
-DESCRIPTION :
-Set <destination_field> in all the nodes in <node_group> or <node_manager> if
-not supplied to the values from <source_field>.
-==============================================================================*/
-
-int Computed_field_update_element_values_from_source(
-	struct Computed_field *destination_field,	struct Computed_field *source_field,
-	struct GROUP(FE_element) *element_group,
-	struct MANAGER(FE_element) *element_manager);
-/*******************************************************************************
-LAST MODIFIED : 1 November 1999
-
-DESCRIPTION :
-Set grid-based <destination_field> in all the elements in <element_group> or
-<element_manager> if not supplied to the values from <source_field>.
 ==============================================================================*/
 
 int Computed_field_get_native_discretization_in_element(
