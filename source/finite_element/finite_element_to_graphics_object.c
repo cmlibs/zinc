@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 1 March 2000
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -1346,6 +1346,57 @@ found if either the dimension or the CM_element_type matches the element.
 
 	return (dimension);
 } /* Use_element_type_dimension */
+
+struct FE_element *FE_element_group_get_element_with_Use_element_type(
+	struct GROUP(FE_element) *element_group,
+	enum Use_element_type use_element_type,int element_number)
+/*******************************************************************************
+LAST MODIFIED : 1 March 2000
+
+DESCRIPTION :
+Because USE_FACES can refer to either a 2-D CM_FACE or a 2-D CM_ELEMENT, and
+USE_LINES can refer to a 1-D CM_LINE or a 1-D CM_ELEMENT, this function handles
+the logic for getting the most appropriate element from <element_group> with
+the given the <use_element_type> and <element_number>.
+==============================================================================*/
+{
+	struct CM_element_information element_identifier;
+	struct FE_element *element;
+
+	ENTER(FE_element_group_get_element_with_Use_element_type);
+	if (element_group)
+	{
+		element_identifier.type=Use_element_type_CM_element_type(use_element_type);
+		element_identifier.number=element_number;
+		if (!(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
+			&element_identifier,element_group)))
+		{
+			if (USE_ELEMENTS != use_element_type)
+			{
+				element_identifier.type=CM_ELEMENT;
+				if (element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
+					&element_identifier,element_group))
+				{
+					if (get_FE_element_dimension(element) !=
+						Use_element_type_dimension(use_element_type))
+					{
+						element=(struct FE_element *)NULL;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_group_get_element_with_Use_element_type.  "
+			"Invalid argument(s)");
+		element=(struct FE_element *)NULL;
+	}
+	LEAVE;
+
+	return (element);
+} /* FE_element_group_get_element_with_Use_element_type */
 
 #if defined (OLD_CODE)
 struct FE_element_conditional_count_data
@@ -7210,9 +7261,9 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct GT_object *glyph,Triple glyph_centre,Triple glyph_size,
 	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
 	struct Computed_field *data_field,struct Computed_field *label_field,
-	enum Graphics_select_mode select_mode)
+	enum Graphics_select_mode select_mode,struct Multi_range *selected_ranges)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -7229,7 +7280,10 @@ the glyph_set, for later colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
-<select_mode> is not used yet.
+<select_mode> is used in combination with the <selected_ranges> to draw only
+those points with numbers in or out of the given ranges when given value
+GRAPHICS_DRAW_SELECTED or GRAPHICS_DRAW_UNSELECTED. If <selected_ranges> is
+NULL, no numbers are selected.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 ==============================================================================*/
@@ -7239,7 +7293,8 @@ Note:
 		centre3,coordinates[3],orientation_scale[9],scale_factor1,
 		scale_factor2,scale_factor3,size[3],size1,size2,size3,xi[3];
 	GTDATA *data;
-	int i,j,n_data_components,*names,number_of_orientation_scale_components;
+	int i,j,n_data_components,*names,number_of_orientation_scale_components,
+		point_no,point_selected,points_to_draw;
 	struct GT_glyph_set *glyph_set;
 	Triple *axis1,*axis1_list,*axis2,*axis2_list,*axis3,*axis3_list,
 		*point,*point_list;
@@ -7267,127 +7322,186 @@ Note:
 		labels=(char **)NULL;
 		n_data_components = 0;
 		data=(GTDATA *)NULL;
-		if (data_field)
-		{
-			n_data_components = Computed_field_get_number_of_components(data_field);
-			ALLOCATE(data,GTDATA,number_of_xi_points*n_data_components);
-		}
-		if (label_field)
-		{
-			ALLOCATE(labels,char *,number_of_xi_points);
-			/* clear labels array pointers so new glyph_set not corrupted */
-			for (i=0;i<number_of_xi_points;i++)
-			{
-				labels[i] = (char *)NULL;
-			}
-		}
-		/* no identifiers for individual points yet */
 		names=(int *)NULL;
-		/* record element number as object_name for editing GT_object primitives */
-		if ((data||(!n_data_components))&&
-			ALLOCATE(point_list,Triple,number_of_xi_points)&&
-			ALLOCATE(axis1_list,Triple,number_of_xi_points)&&
-			ALLOCATE(axis2_list,Triple,number_of_xi_points)&&
-			ALLOCATE(axis3_list,Triple,number_of_xi_points)&&
-			(glyph_set=CREATE(GT_glyph_set)(number_of_xi_points,point_list,
-				axis1_list,axis2_list,axis3_list,glyph,labels,
-				n_data_components,data,/*object_name*/element->cm.number,names)))
+		if ((GRAPHICS_DRAW_SELECTED==select_mode)||
+			(GRAPHICS_DRAW_UNSELECTED==select_mode))
 		{
-			/* get values from Triple arrays to FE_values for speed */
-			base_size1=(FE_value)glyph_size[0];
-			base_size2=(FE_value)glyph_size[1];
-			base_size3=(FE_value)glyph_size[2];
-			centre1=(FE_value)glyph_centre[0];
-			centre2=(FE_value)glyph_centre[1];
-			centre3=(FE_value)glyph_centre[2];
-			scale_factor1=glyph_scale_factors[0];
-			scale_factor2=glyph_scale_factors[1];
-			scale_factor3=glyph_scale_factors[2];
-			point=point_list;
-			axis1=axis1_list;
-			axis2=axis2_list;
-			axis3=axis3_list;
-			for (i=0;(i<number_of_xi_points)&&glyph_set;i++)
+			points_to_draw=0;
+			if (selected_ranges)
 			{
-				xi[0]=(FE_value)xi_points[i][0];
-				xi[1]=(FE_value)xi_points[i][1];
-				xi[2]=(FE_value)xi_points[i][2];
-				/* evaluate all the fields in order orientation_scale, coordinate
-					 then data (if each specified). Reason for this order is that the
-					 orientation_scale field very often requires the evaluation of the
-					 same coordinate_field with derivatives, meaning that values for the
-					 coordinate_field will already be cached = more efficient. */
-				if (((!orientation_scale_field)||
-					Computed_field_evaluate_in_element(orientation_scale_field,element,xi,
-						top_level_element,orientation_scale,(FE_value *)NULL))&&
-					Computed_field_evaluate_in_element(coordinate_field,element,xi,
-						top_level_element,coordinates,(FE_value *)NULL)&&
-					((!data_field)||Computed_field_evaluate_in_element(
-						data_field,element,xi,top_level_element,data,(FE_value *)NULL))&&
-					((!label_field)||
-						(labels[i]=Computed_field_evaluate_as_string_in_element(
-							label_field,element,xi,top_level_element)))&&
-					make_glyph_orientation_scale_axes(
-						number_of_orientation_scale_components,orientation_scale,
-						a,b,c,size))
+				for (i=0;i<number_of_xi_points;i++)
 				{
-					/* size = base_size + variable_size * scale_factor */
-					size1 = base_size1+size[0]*scale_factor1;
-					size2 = base_size2+size[1]*scale_factor2;
-					size3 = base_size3+size[2]*scale_factor3;
-					for (j=0;j<3;j++)
+					if (Multi_range_is_value_in_range(selected_ranges,i))
 					{
-						a[j] *= size1;
-						b[j] *= size2;
-						c[j] *= size3;
-						(*point)[j]=(coordinates[j]-centre1*a[j]-centre2*b[j]-centre3*c[j]);
-						(*axis1)[j]=a[j];
-						(*axis2)[j]=b[j];
-						(*axis3)[j]=c[j];
-					}
-					point++;
-					axis1++;
-					axis2++;
-					axis3++;
-					if (data_field)
-					{
-						data+=n_data_components;
+						points_to_draw++;
 					}
 				}
-				else
-				{
-					/* error evaluating fields */
-					DESTROY(GT_glyph_set)(&glyph_set);
-				}
 			}
-			/* clear Computed_field caches so elements not accessed */
-			Computed_field_clear_cache(coordinate_field);
-			if (orientation_scale_field)
+			if (GRAPHICS_DRAW_UNSELECTED==select_mode)
 			{
-				Computed_field_clear_cache(orientation_scale_field);
-			}
-			if (data_field)
-			{
-				Computed_field_clear_cache(data_field);
-			}
-			if (label_field)
-			{
-				Computed_field_clear_cache(label_field);
+				points_to_draw=number_of_xi_points-points_to_draw;
 			}
 		}
 		else
 		{
-			DEALLOCATE(point_list);
-			DEALLOCATE(axis1_list);
-			DEALLOCATE(axis2_list);
-			DEALLOCATE(axis3_list);
-			DEALLOCATE(data);
-			DEALLOCATE(labels);
+			points_to_draw=number_of_xi_points;
 		}
-		if (!glyph_set)
+		if (0<points_to_draw)
 		{
-			display_message(ERROR_MESSAGE,
-				"create_GT_glyph_set_from_FE_element.  Failed");
+			if (data_field)
+			{
+				n_data_components = Computed_field_get_number_of_components(data_field);
+				ALLOCATE(data,GTDATA,points_to_draw*n_data_components);
+			}
+			if (label_field)
+			{
+				ALLOCATE(labels,char *,points_to_draw);
+				/* clear labels array pointers so new glyph_set not corrupted */
+				for (i=0;i<points_to_draw;i++)
+				{
+					labels[i] = (char *)NULL;
+				}
+			}
+			if (GRAPHICS_NO_SELECT!=select_mode)
+			{
+				ALLOCATE(names,int,points_to_draw);
+			}
+			/* no identifiers for individual points yet */
+			/* store element number as object_name for editing GT_object primitives */
+			if ((data||(!n_data_components))&&((!label_field)||labels)&&
+				((GRAPHICS_NO_SELECT==select_mode)||names)&&
+				ALLOCATE(point_list,Triple,points_to_draw)&&
+				ALLOCATE(axis1_list,Triple,points_to_draw)&&
+				ALLOCATE(axis2_list,Triple,points_to_draw)&&
+				ALLOCATE(axis3_list,Triple,points_to_draw)&&
+				(glyph_set=CREATE(GT_glyph_set)(points_to_draw,point_list,
+					axis1_list,axis2_list,axis3_list,glyph,labels,
+					n_data_components,data,/*object_name*/element->cm.number,names)))
+			{
+				/* get values from Triple arrays to FE_values for speed */
+				base_size1=(FE_value)glyph_size[0];
+				base_size2=(FE_value)glyph_size[1];
+				base_size3=(FE_value)glyph_size[2];
+				centre1=(FE_value)glyph_centre[0];
+				centre2=(FE_value)glyph_centre[1];
+				centre3=(FE_value)glyph_centre[2];
+				scale_factor1=glyph_scale_factors[0];
+				scale_factor2=glyph_scale_factors[1];
+				scale_factor3=glyph_scale_factors[2];
+				point=point_list;
+				axis1=axis1_list;
+				axis2=axis2_list;
+				axis3=axis3_list;
+				point_no=0;
+				for (i=0;(i<number_of_xi_points)&&glyph_set;i++)
+				{
+					if ((GRAPHICS_DRAW_SELECTED==select_mode)||
+						(GRAPHICS_DRAW_UNSELECTED==select_mode))
+					{
+						if (selected_ranges)
+						{
+							point_selected=Multi_range_is_value_in_range(selected_ranges,i);
+						}
+						else
+						{
+							point_selected=0;
+						}
+					}
+					if ((GRAPHICS_SELECT_ON==select_mode)||
+						(GRAPHICS_NO_SELECT==select_mode)||
+						((GRAPHICS_DRAW_SELECTED==select_mode)&&point_selected)||
+						((GRAPHICS_DRAW_UNSELECTED==select_mode)&&(!point_selected)))
+					{
+						if (names)
+						{
+							names[point_no]=i;
+						}
+						xi[0]=(FE_value)xi_points[i][0];
+						xi[1]=(FE_value)xi_points[i][1];
+						xi[2]=(FE_value)xi_points[i][2];
+						/* evaluate all the fields in order orientation_scale, coordinate
+							 then data (if each specified). Reason for this order is that the
+							 orientation_scale field very often requires the evaluation of the
+							 same coordinate_field with derivatives, meaning that values for
+							 the coordinate_field will already be cached = more efficient. */
+						if (((!orientation_scale_field)||
+							Computed_field_evaluate_in_element(orientation_scale_field,
+								element,xi,top_level_element,orientation_scale,
+								(FE_value *)NULL))&&
+							Computed_field_evaluate_in_element(coordinate_field,element,xi,
+								top_level_element,coordinates,(FE_value *)NULL)&&
+							((!data_field)||Computed_field_evaluate_in_element(
+								data_field,element,xi,top_level_element,data,
+								(FE_value *)NULL))&&
+							((!label_field)||
+								(labels[point_no]=Computed_field_evaluate_as_string_in_element(
+									label_field,element,xi,top_level_element)))&&
+							make_glyph_orientation_scale_axes(
+								number_of_orientation_scale_components,orientation_scale,
+								a,b,c,size))
+						{
+							/* size = base_size + variable_size * scale_factor */
+							size1 = base_size1+size[0]*scale_factor1;
+							size2 = base_size2+size[1]*scale_factor2;
+							size3 = base_size3+size[2]*scale_factor3;
+							for (j=0;j<3;j++)
+							{
+								a[j] *= size1;
+								b[j] *= size2;
+								c[j] *= size3;
+								(*point)[j]=
+									(coordinates[j]-centre1*a[j]-centre2*b[j]-centre3*c[j]);
+								(*axis1)[j]=a[j];
+								(*axis2)[j]=b[j];
+								(*axis3)[j]=c[j];
+							}
+							point++;
+							axis1++;
+							axis2++;
+							axis3++;
+							if (data_field)
+							{
+								data+=n_data_components;
+							}
+						}
+						else
+						{
+							/* error evaluating fields */
+							DESTROY(GT_glyph_set)(&glyph_set);
+						}
+						point_no++;
+					}
+				}
+				/* clear Computed_field caches so elements not accessed */
+				Computed_field_clear_cache(coordinate_field);
+				if (orientation_scale_field)
+				{
+					Computed_field_clear_cache(orientation_scale_field);
+				}
+				if (data_field)
+				{
+					Computed_field_clear_cache(data_field);
+				}
+				if (label_field)
+				{
+					Computed_field_clear_cache(label_field);
+				}
+			}
+			else
+			{
+				DEALLOCATE(point_list);
+				DEALLOCATE(axis1_list);
+				DEALLOCATE(axis2_list);
+				DEALLOCATE(axis3_list);
+				DEALLOCATE(data);
+				DEALLOCATE(labels);
+				DEALLOCATE(names);
+			}
+			if (!glyph_set)
+			{
+				display_message(ERROR_MESSAGE,
+					"create_GT_glyph_set_from_FE_element.  Failed");
+			}
 		}
 	}
 	else
@@ -8604,17 +8718,16 @@ printf("Warp called: volume1 = %s, volume2 = %s,  element = %d, coordinates = %s
 int element_to_glyph_set(struct FE_element *element,
 	void *element_to_glyph_set_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 1 March 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information about the
 fields defined over it.
 ==============================================================================*/
 {
-	FE_value element_to_top_level[9];
 	struct GT_glyph_set *glyph_set;
 	int dimension,i,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		number_of_xi_points,return_code,top_level_dimension,
+		number_of_xi_points,return_code,
 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Element_to_glyph_set_data *element_to_glyph_set_data;
 	struct FE_element *top_level_element;
@@ -8635,42 +8748,17 @@ fields defined over it.
 			element_to_glyph_set_data->element_group))
 		{
 			dimension=get_FE_element_dimension(element);
+			top_level_element=(struct FE_element *)NULL;
+			for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+			{
+				top_level_number_in_xi[i]=element_to_glyph_set_data->number_in_xi[i];
+			}
 			/* determine discretization of element for graphic */
-			if (top_level_element=FE_element_get_top_level_element_conversion(
-				element,/*check_top_level_element*/(struct FE_element *)NULL,
+			if (get_FE_element_discretization(element,
 				element_to_glyph_set_data->element_group,
-				element_to_glyph_set_data->face_number,element_to_top_level))
-			{
-				top_level_dimension=get_FE_element_dimension(top_level_element);
-				/* use native discretization of grid-based field if used in element */
-				if (!(element_to_glyph_set_data->native_discretization_field&&
-					FE_element_field_is_grid_based(top_level_element,
-						element_to_glyph_set_data->native_discretization_field)&&
-					get_FE_element_field_grid_map_number_in_xi(top_level_element,
-						element_to_glyph_set_data->native_discretization_field,
-						top_level_number_in_xi)))
-				{
-					for (i=0;i<top_level_dimension;i++)
-					{
-						top_level_number_in_xi[i]=
-							element_to_glyph_set_data->number_in_xi[i];
-					}
-				}
-				if (!get_FE_element_discretization_from_top_level(element,number_in_xi,
-					top_level_element,top_level_number_in_xi,element_to_top_level))
-				{
-					display_message(ERROR_MESSAGE,
-						"element_to_glyph_set.  Error getting discretization");
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"element_to_glyph_set.  Error getting top_level_element");
-				return_code=0;
-			}
-			if (return_code)
+				element_to_glyph_set_data->face_number,
+				element_to_glyph_set_data->native_discretization_field,
+				top_level_number_in_xi,&top_level_element,number_in_xi))
 			{
 				switch (element_to_glyph_set_data->xi_discretization_mode)
 				{
@@ -8708,7 +8796,8 @@ fields defined over it.
 						element_to_glyph_set_data->glyph_scale_factors,
 						element_to_glyph_set_data->data_field,
 						element_to_glyph_set_data->label_field,
-						element_to_glyph_set_data->select_mode))
+						element_to_glyph_set_data->select_mode,
+						(struct Multi_range *)NULL))
 					{
 						if (!GT_OBJECT_ADD(GT_glyph_set)(
 							element_to_glyph_set_data->graphics_object,
@@ -8730,6 +8819,12 @@ fields defined over it.
 						"element_to_glyph_set.  Error getting xi points");
 					return_code=0;
 				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"element_to_glyph_set.  Error getting discretization");
+				return_code=0;
 			}
 		}
 	}
@@ -8842,15 +8937,14 @@ printf("generate_clipped_GT_voltex_from_FE_element failed\n");
 int element_to_iso_scalar(struct FE_element *element,
 	void *element_to_iso_scalar_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 1 March 2000
 
 DESCRIPTION :
 Computes iso-surfaces/lines/points graphics from <element>.
 ==============================================================================*/
 {
-	FE_value element_to_top_level[9];
 	int i,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],return_code,
-		top_level_dimension,top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Element_to_iso_scalar_data *element_to_iso_scalar_data;
 	struct FE_element *top_level_element;
 
@@ -8868,42 +8962,17 @@ Computes iso-surfaces/lines/points graphics from <element>.
 			element_to_iso_scalar_data->face_number,
 			element_to_iso_scalar_data->element_group))
 		{
+			top_level_element=(struct FE_element *)NULL;
+			for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+			{
+				top_level_number_in_xi[i]=element_to_iso_scalar_data->number_in_xi[i];
+			}
 			/* determine discretization of element for graphic */
-			if (top_level_element=FE_element_get_top_level_element_conversion(
-				element,/*check_top_level_element*/(struct FE_element *)NULL,
+			if (get_FE_element_discretization(element,
 				element_to_iso_scalar_data->element_group,
-				element_to_iso_scalar_data->face_number,element_to_top_level))
-			{
-				top_level_dimension=get_FE_element_dimension(top_level_element);
-				/* use native discretization of grid-based field if used in element */
-				if (!(element_to_iso_scalar_data->native_discretization_field&&
-					FE_element_field_is_grid_based(top_level_element,
-						element_to_iso_scalar_data->native_discretization_field)&&
-					get_FE_element_field_grid_map_number_in_xi(top_level_element,
-						element_to_iso_scalar_data->native_discretization_field,
-						top_level_number_in_xi)))
-				{
-					for (i=0;i<top_level_dimension;i++)
-					{
-						top_level_number_in_xi[i]=
-							element_to_iso_scalar_data->number_in_xi[i];
-					}
-				}
-				if (!get_FE_element_discretization_from_top_level(element,number_in_xi,
-					top_level_element,top_level_number_in_xi,element_to_top_level))
-				{
-					display_message(ERROR_MESSAGE,
-						"element_to_iso_scalar.  Error getting discretization");
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"element_to_iso_scalar.  Error getting top_level_element");
-				return_code=0;
-			}
-			if (return_code)
+				element_to_iso_scalar_data->face_number,
+				element_to_iso_scalar_data->native_discretization_field,
+				top_level_number_in_xi,&top_level_element,number_in_xi))
 			{
 				switch (element_to_iso_scalar_data->graphics_object->object_type)
 				{
@@ -8958,6 +9027,12 @@ Computes iso-surfaces/lines/points graphics from <element>.
 						return_code=0;
 					} break;
 				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"element_to_iso_scalar.  Error getting discretization");
+				return_code=0;
 			}
 		}
 	}

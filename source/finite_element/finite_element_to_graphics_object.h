@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -290,6 +290,19 @@ Returns the dimension expected for the <use_element_type>. Note that a match is
 found if either the dimension or the CM_element_type matches the element.
 ==============================================================================*/
 
+struct FE_element *FE_element_group_get_element_with_Use_element_type(
+	struct GROUP(FE_element) *element_group,
+	enum Use_element_type use_element_type,int element_number);
+/*******************************************************************************
+LAST MODIFIED : 1 March 2000
+
+DESCRIPTION :
+Because USE_FACES can refer to either a 2-D CM_FACE or a 2-D CM_ELEMENT, and
+USE_LINES can refer to a 1-D CM_LINE or a 1-D CM_ELEMENT, this function handles
+the logic for getting the most appropriate element from <element_group> with
+the given the <use_element_type> and <element_number>.
+==============================================================================*/
+
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct FE_element *element,struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
@@ -297,9 +310,9 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct GT_object *glyph,Triple glyph_centre,Triple glyph_size,
 	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
 	struct Computed_field *data_field,struct Computed_field *label_field,
-	enum Graphics_select_mode select_mode);
+	enum Graphics_select_mode select_mode,struct Multi_range *selected_ranges);
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -316,7 +329,10 @@ the glyph_set, for later colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
-<select_mode> is not used yet.
+<select_mode> is used in combination with the <selected_ranges> to draw only
+those points with numbers in or out of the given ranges when given value
+GRAPHICS_DRAW_SELECTED or GRAPHICS_DRAW_UNSELECTED. If <selected_ranges> is
+NULL, no numbers are selected.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 ==============================================================================*/
