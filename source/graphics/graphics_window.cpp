@@ -4573,11 +4573,11 @@ graphics window on screen.
 				}
 				for (pane = 0 ; pane < number_of_panes ; pane++)
 				{
+					scene_viewer = Graphics_window_get_Scene_viewer(window,pane);
 					if ((tiles_across > 1) || (tiles_down > 1))
 					{
 						pane_i = pane % panes_across;
 						pane_j = pane / panes_across;
-						scene_viewer = Graphics_window_get_Scene_viewer(window,pane);
 						Scene_viewer_get_viewing_volume(scene_viewer,
 							&original_left, &original_right, &original_bottom, &original_top,
 							&original_near_plane, &original_far_plane);
