@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 14 December 1999
+LAST MODIFIED : 28 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -70,7 +70,7 @@ int calculate_device_event_markers(struct Device *device,int start_search,
 	int threshold_percentage,int minimum_separation_milliseconds,float level,
 	int gradient_average_width)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 28 December 1999
 
 DESCRIPTION :
 Calculate the positions of the event markers for a signal/<device> based upon
@@ -101,9 +101,9 @@ the the start and end times, the number of events and the search algorithm.
 		{
 			case SHORT_INT_VALUE:
 			{
-				int average_after,average_before,maximum_slope,minimum_slope,
+				int average,average_after,average_before,maximum_slope,minimum_slope,
 					no_maximum,slope,threshold;
-				short int first_value,last_value,*signals,*value,*value_after,
+				short int abs_value,first_value,last_value,*signals,*value,*value_after,
 					*value_before;
 
 				signals=buffer->signals.short_int_values;
@@ -314,6 +314,7 @@ the the start and end times, the number of events and the search algorithm.
 					case EDA_LEVEL:
 					{
 						/*???DB.  Could average signal over gradient_average_width */
+#if defined (OLD_CODE)
 						value=signals+(start_search*number_of_signals+(signal->index));
 						average_length=gradient_average_width;
 						present=start_search;
@@ -322,6 +323,166 @@ the the start and end times, the number of events and the search algorithm.
 						{
 							value += number_of_signals;
 							present++;
+						}
+						if (present<end_search)
+						{
+							/* found event */
+							if (event=create_Event(present,1,UNDECIDED,(struct Event *)NULL,
+								(struct Event *)NULL))
+							{
+								signal->first_event=event;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"calculate_device_event_markers.  Could not allocate event");
+								destroy_Event_list(&(signal->first_event));
+								return_code=0;
+							}
+						}
+#endif /* defined (OLD_CODE) */
+						average_length=gradient_average_width;
+						if (start_search<average_length)
+						{
+							start=average_length;
+							if (start>end_search)
+							{
+								start=end_search;
+							}
+							value=signals+signal->index;
+							abs_value= *value;
+							if (abs_value<0)
+							{
+								abs_value= -abs_value;
+							}
+							first_value=abs_value;
+							average=first_value*(average_length-start_search);
+							for (i=0;i<start_search;i++)
+							{
+								average += abs_value;
+								value += number_of_signals;
+								abs_value= *value;
+								if (abs_value<0)
+								{
+									abs_value= -abs_value;
+								}
+							}
+						}
+						else
+						{
+							start=start_search;
+							value=signals+
+								(start_search-average_length)*number_of_signals+signal->index;
+							abs_value= *value;
+							if (abs_value<0)
+							{
+								abs_value= -abs_value;
+							}
+							average=0;
+							for (i=0;i<average_length;i++)
+							{
+								average += abs_value;
+								value += number_of_signals;
+								abs_value= *value;
+								if (abs_value<0)
+								{
+									abs_value= -abs_value;
+								}
+							}
+						}
+						average += abs_value;
+						present=start_search;
+						if (start_search>(end=number_of_samples-average_length-1))
+						{
+							for (i=start_search+1;i<number_of_samples;i++)
+							{
+								value += number_of_signals;
+								abs_value= *value;
+								if (abs_value<0)
+								{
+									abs_value= -abs_value;
+								}
+								average += abs_value;
+							}
+							average += abs_value*(start_search-end);
+						}
+						else
+						{
+							for (i=0;i<average_length;i++)
+							{
+								value += number_of_signals;
+								abs_value= *value;
+								if (abs_value<0)
+								{
+									abs_value= -abs_value;
+								}
+								average += abs_value;
+							}
+						}
+						if (end_search>end)
+						{
+							abs_value=
+								signals[(number_of_samples-1)*number_of_signals+signal->index];
+							if (abs_value<0)
+							{
+								abs_value= -abs_value;
+							}
+							last_value=abs_value;
+						}
+						else
+						{
+							end=end_search;
+						}
+						offset=(2*average_length+1)*number_of_signals;
+						while ((present<end_search)&&(present<start)&&
+							(average<(2*average_length+1)*level))
+						{
+							present++;
+							average -= first_value;
+							value += number_of_signals;
+							if (present>end)
+							{
+								average += last_value;
+							}
+							else
+							{
+								abs_value= *value;
+								if (abs_value<0)
+								{
+									abs_value= -abs_value;
+								}
+								average += abs_value;
+							}
+						}
+						while ((present<end_search)&&(present<end)&&
+							(average<(2*average_length+1)*level))
+						{
+							present++;
+							value += number_of_signals;
+							abs_value= *(value-offset);
+							if (abs_value<0)
+							{
+								abs_value= -abs_value;
+							}
+							average -= abs_value;
+							abs_value= *value;
+							if (abs_value<0)
+							{
+								abs_value= -abs_value;
+							}
+							average += abs_value;
+						}
+						while ((present<end_search)&&
+							(average<(2*average_length+1)*level))
+						{
+							present++;
+							value += number_of_signals;
+							abs_value= *(value-offset);
+							if (abs_value<0)
+							{
+								abs_value= -abs_value;
+							}
+							average += last_value-abs_value;
 						}
 						if (present<end_search)
 						{
@@ -825,9 +986,9 @@ the the start and end times, the number of events and the search algorithm.
 			} break;
 			case FLOAT_VALUE:
 			{
-				float average_after,average_before,maximum_slope,minimum_slope,slope,
-					threshold;
-				float first_value,last_value,*signals,*value,*value_after,
+				float average,average_after,average_before,maximum_slope,minimum_slope,
+					slope,threshold;
+				float abs_value,first_value,last_value,*signals,*value,*value_after,
 					*value_before;
 				int no_maximum;
 
@@ -1039,6 +1200,7 @@ the the start and end times, the number of events and the search algorithm.
 					case EDA_LEVEL:
 					{
 						/*???DB.  Could average signal over gradient_average_width */
+#if defined (OLD_CODE)
 						value=signals+(start_search*number_of_signals+(signal->index));
 						average_length=gradient_average_width;
 						present=start_search;
@@ -1046,6 +1208,166 @@ the the start and end times, the number of events and the search algorithm.
 						{
 							value += number_of_signals;
 							present++;
+						}
+						if (present<end_search)
+						{
+							/* found event */
+							if (event=create_Event(present,1,UNDECIDED,(struct Event *)NULL,
+								(struct Event *)NULL))
+							{
+								signal->first_event=event;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"calculate_device_event_markers.  Could not allocate event");
+								destroy_Event_list(&(signal->first_event));
+								return_code=0;
+							}
+						}
+#endif /* defined (OLD_CODE) */
+						average_length=gradient_average_width;
+						if (start_search<average_length)
+						{
+							start=average_length;
+							if (start>end_search)
+							{
+								start=end_search;
+							}
+							value=signals+signal->index;
+							abs_value= *value;
+							if (abs_value<0)
+							{
+								abs_value= -abs_value;
+							}
+							first_value=abs_value;
+							average=first_value*(average_length-start_search);
+							for (i=0;i<start_search;i++)
+							{
+								average += abs_value;
+								value += number_of_signals;
+								abs_value= *value;
+								if (abs_value<0)
+								{
+									abs_value= -abs_value;
+								}
+							}
+						}
+						else
+						{
+							start=start_search;
+							value=signals+
+								(start_search-average_length)*number_of_signals+signal->index;
+							abs_value= *value;
+							if (abs_value<0)
+							{
+								abs_value= -abs_value;
+							}
+							average=0;
+							for (i=0;i<average_length;i++)
+							{
+								average += abs_value;
+								value += number_of_signals;
+								abs_value= *value;
+								if (abs_value<0)
+								{
+									abs_value= -abs_value;
+								}
+							}
+						}
+						average += abs_value;
+						present=start_search;
+						if (start_search>(end=number_of_samples-average_length-1))
+						{
+							for (i=start_search+1;i<number_of_samples;i++)
+							{
+								value += number_of_signals;
+								abs_value= *value;
+								if (abs_value<0)
+								{
+									abs_value= -abs_value;
+								}
+								average += abs_value;
+							}
+							average += abs_value*(start_search-end);
+						}
+						else
+						{
+							for (i=0;i<average_length;i++)
+							{
+								value += number_of_signals;
+								abs_value= *value;
+								if (abs_value<0)
+								{
+									abs_value= -abs_value;
+								}
+								average += abs_value;
+							}
+						}
+						if (end_search>end)
+						{
+							abs_value=
+								signals[(number_of_samples-1)*number_of_signals+signal->index];
+							if (abs_value<0)
+							{
+								abs_value= -abs_value;
+							}
+							last_value=abs_value;
+						}
+						else
+						{
+							end=end_search;
+						}
+						offset=(2*average_length+1)*number_of_signals;
+						while ((present<end_search)&&(present<start)&&
+							(average<(2*average_length+1)*level))
+						{
+							present++;
+							average -= first_value;
+							value += number_of_signals;
+							if (present>end)
+							{
+								average += last_value;
+							}
+							else
+							{
+								abs_value= *value;
+								if (abs_value<0)
+								{
+									abs_value= -abs_value;
+								}
+								average += abs_value;
+							}
+						}
+						while ((present<end_search)&&(present<end)&&
+							(average<(2*average_length+1)*level))
+						{
+							present++;
+							value += number_of_signals;
+							abs_value= *(value-offset);
+							if (abs_value<0)
+							{
+								abs_value= -abs_value;
+							}
+							average -= abs_value;
+							abs_value= *value;
+							if (abs_value<0)
+							{
+								abs_value= -abs_value;
+							}
+							average += abs_value;
+						}
+						while ((present<end_search)&&
+							(average<(2*average_length+1)*level))
+						{
+							present++;
+							value += number_of_signals;
+							abs_value= *(value-offset);
+							if (abs_value<0)
+							{
+								abs_value= -abs_value;
+							}
+							average += last_value-abs_value;
 						}
 						if (present<end_search)
 						{

@@ -766,7 +766,8 @@ DESCRIPTION :
 								frequency,(float)times[*(analysis->end_search_interval)]*1000./
 								frequency);
 							/* write the level */
-							fprintf(output_file,"level : %g\n",*(analysis->level));
+							fprintf(output_file,"level : %g, width : %d\n",
+								*(analysis->level),*(analysis->level_width));
 						} break;
 						case EDA_THRESHOLD:
 						{
@@ -993,7 +994,8 @@ DESCRIPTION :
 								frequency,(float)times[*(analysis->end_search_interval)]*1000./
 								frequency);
 							/* write the level */
-							fprintf(output_file,"level : %g\n",*(analysis->level));
+							fprintf(output_file,"level : %g, width : %d\n",
+								*(analysis->level),*(analysis->level_width));
 						} break;
 						case EDA_THRESHOLD:
 						{
@@ -3311,9 +3313,9 @@ struct Analysis_window *create_Analysis_window(
 	struct Device ***highlight,int *datum,int *event_number,
 	int *number_of_events,int *potential_time,
 	enum Event_detection_algorithm *detection,int *threshold,
-	int *minimum_separation,float *level,Pixel identifying_colour,
-	enum Signal_order order,enum Signal_layout layout,int *start_search_interval,
-	int *end_search_interval,int screen_height,
+	int *minimum_separation,float *level,int *level_width,
+	Pixel identifying_colour,enum Signal_order order,enum Signal_layout layout,
+	int *start_search_interval,int *end_search_interval,int screen_height,
 		/*???DB.  height of interval drawing area.  Better ? */
 	char *postscript_file_extension,char *events_file_extension,
 	struct Signal_drawing_information *signal_drawing_information,
@@ -3520,6 +3522,7 @@ returned.
 				analysis->threshold=threshold;
 				analysis->minimum_separation=minimum_separation;
 				analysis->level=level;
+				analysis->level_width=level_width;
 				analysis->start_search_interval=start_search_interval;
 				analysis->end_search_interval=end_search_interval;
 				/* create the structure for writing event time files */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 6 December 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -918,7 +918,7 @@ struct System_window *create_System_window(Widget shell,
 	XtCallbackProc close_button_callback,struct Time_keeper *time_keeper,
 	struct User_interface *user_interface,struct Unemap_package *unemap_package)
 /*******************************************************************************
-LAST MODIFIED : 6 December 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 This function allocates the memory for a system window structure.  It then
@@ -961,6 +961,8 @@ pointer to the created structure if successful and NULL if unsuccessful.
 #define XmCConfigurationDirectory "ConfigurationDirectory"
 #define XmNconfigurationFileExtension "configurationFileExtension"
 #define XmCConfigurationFileExtension "ConfigurationFileExtension"
+#define XmNgradientAverageWidth "gradientAverageWidth"
+#define XmCGradientAverageWidth "GradientAverageWidth"
 #define XmNlevelValue "levelValue"
 #define XmCLevelValue "LevelValue"
 #define XmNpointerSensitivity "pointerSensitivity"
@@ -1012,6 +1014,15 @@ pointer to the created structure if successful and NULL if unsuccessful.
 			XtOffsetOf(System_window_settings,configuration_file_extension),
 			XmRString,
 			"cnfg"
+		},
+		{
+			XmNgradientAverageWidth,
+			XmCGradientAverageWidth,
+			XmRInt,
+			sizeof(int),
+			XtOffsetOf(System_window_settings,analysis.gradient_average_width),
+			XmRString,
+			"6"
 		},
 		{
 			XmNlevelValue,
@@ -1172,6 +1183,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				/* retrieve the settings */
 				XtVaGetApplicationResources(user_interface->application_shell,
 					system,resources,XtNumber(resources),NULL);
+				system->analysis.level_width=system->analysis.gradient_average_width;
 				if (system->configuration_file_extension)
 				{
 					if (0<strlen(system->configuration_file_extension))

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.h
 
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -28,7 +28,7 @@ Global types
 */
 struct Analysis_work_area
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -53,6 +53,7 @@ DESCRIPTION :
 	int potential_time;
 	int minimum_separation,threshold;
 	float level;
+	int level_width;
 	enum Datum_type datum_type;
 	enum Edit_order edit_order;
 	enum Signal_order signal_order;

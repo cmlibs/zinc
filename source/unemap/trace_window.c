@@ -1812,6 +1812,31 @@ Saves the id of the trace enlarge level value.
 	LEAVE;
 } /* identify_trace_enlarge_level_va */
 
+static void identify_trace_enlarge_level_wi(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 27 December 1999
+
+DESCRIPTION :
+Saves the id of the trace enlarge level width.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_trace_enlarge_level_wi);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.enlarge.level_width= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_trace_enlarge_level_wi.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_trace_enlarge_level_wi */
+
 static void identify_trace_enlarge_thresh_s(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
@@ -4280,14 +4305,14 @@ static struct Trace_window *create_Trace_window(
 	enum Event_detection_objective *objective,enum Datum_type *datum_type,
 	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
-	int *threshold,int *minimum_separation,float *level,
+	int *threshold,int *minimum_separation,float *level,int *level_width,
 	int *start_search_interval,int *end_search_interval,
 	int screen_height,
 		/*???DB.  height of interval drawing area ? */
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 6 December 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 This function allocates the memory for an trace window and sets the fields to
@@ -4368,6 +4393,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)identify_trace_enlarge_events_u},
 		{"identify_trace_enlarge_level_va",
 			(XtPointer)identify_trace_enlarge_level_va},
+		{"identify_trace_enlarge_level_wi",
+			(XtPointer)identify_trace_enlarge_level_wi},
 		{"identify_trace_enlarge_thresh_s",
 			(XtPointer)identify_trace_enlarge_thresh_s},
 		{"change_threshold",(XtPointer)change_threshold},
@@ -4595,6 +4622,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_1.enlarge.minimum_separation_scroll=(Widget)NULL;
 				trace->area_1.enlarge.minimum_separation_label=(Widget)NULL;
 				trace->area_1.enlarge.level_value=(Widget)NULL;
+				trace->area_1.enlarge.level_width=(Widget)NULL;
 				trace->area_1.enlarge.all_current_choice=(Widget)NULL;
 				trace->area_1.enlarge.calculate_all_events=1;
 				trace->area_1.enlarge.all_current.all_button=(Widget)NULL;
@@ -4695,6 +4723,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->event_detection.threshold=threshold;
 				trace->event_detection.minimum_separation=minimum_separation;
 				trace->event_detection.level=level;
+				trace->event_detection.level_width=level_width;
 				trace->event_detection.start_search_interval=start_search_interval;
 				trace->event_detection.end_search_interval=end_search_interval;
 				trace->frequency_domain.display_mode=AMPLITUDE_PHASE;
@@ -5327,6 +5356,11 @@ the created trace window.  If unsuccessful, NULL is returned.
 							XtVaSetValues(trace->area_1.enlarge.level_value,
 								XmNvalue,value_string,
 								NULL);
+							/* set the level width */
+							sprintf(value_string,"%d",*level_width);
+							XtVaSetValues(trace->area_1.enlarge.level_width,
+								XmNvalue,value_string,
+								NULL);
 							/* adjust the enlarge datum choice */
 							child_widget=
 								XmOptionLabelGadget(trace->area_1.enlarge.datum_choice);
@@ -5395,9 +5429,6 @@ the created trace window.  If unsuccessful, NULL is returned.
 											XmNleftOffset,widget_spacing-left_margin,
 											NULL);
 									}
-#if defined (MAP_WIDGETS)
-/*???DB.  Use map/unmap instead of manage/unmanage */
-#else /* defined (MAP_WIDGETS) */
 									XtUnmanageChild(trace->area_1.enlarge.threshold_scroll);
 									XtUnmanageChild(trace->area_1.enlarge.threshold_label);
 									XtUnmanageChild(trace->area_1.enlarge.
@@ -5406,7 +5437,6 @@ the created trace window.  If unsuccessful, NULL is returned.
 										minimum_separation_label);
 									XtUnmanageChild(trace->area_1.enlarge.all_current_choice);
 									XtUnmanageChild(trace->area_1.enlarge.level_value);
-#endif /* defined (MAP_WIDGETS) */
 								} break;
 								case EDA_LEVEL:
 								{
@@ -5414,7 +5444,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 										XmNmenuHistory,
 										trace->area_1.enlarge.detection.level_button,NULL);
 									XtVaSetValues(trace->area_1.enlarge.calculate_button,
-										XmNleftWidget,trace->area_1.enlarge.level_value,
+										XmNleftWidget,trace->area_1.enlarge.level_width,
 										NULL);
 									if (left_margin>widget_spacing)
 									{
@@ -5464,6 +5494,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 									}
 									XtUnmanageChild(trace->area_1.enlarge.number_of_events_form);
 									XtUnmanageChild(trace->area_1.enlarge.level_value);
+									XtUnmanageChild(trace->area_1.enlarge.level_width);
 								} break;
 								default:
 								{
@@ -5908,13 +5939,13 @@ int open_trace_window(struct Trace_window **trace_address,Widget parent,
 	enum Event_detection_objective *objective,enum Datum_type *datum_type,
 	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
-	int *threshold,int *minimum_separation,float *level,
+	int *threshold,int *minimum_separation,float *level,int *level_width,
 	int *start_search_interval,int *end_search_interval,int screen_width,
 	int screen_height,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 If <*trace_address> is NULL, a trace window with the specified <parent> and
@@ -5937,7 +5968,7 @@ If <*trace_address> is NULL, a trace window with the specified <parent> and
 					trace_window_shell,identifying_colour,analysis_mode,detection,
 					objective,datum_type,edit_order,highlight,rig,datum,potential_time,
 					event_number,number_of_events,threshold,minimum_separation,level,
-					start_search_interval,end_search_interval,screen_height,
+					level_width,start_search_interval,end_search_interval,screen_height,
 					signal_drawing_information,user_interface))
 				{
 					/* add the destroy callback */
@@ -5961,15 +5992,6 @@ If <*trace_address> is NULL, a trace window with the specified <parent> and
 							trace->area_1.beat_averaging.number_of_beats.down_arrow);
 					}
 					*trace_address=trace;
-#if defined (MAP_WIDGETS)
-/*???DB.  Use map/unmap instead of manage/unmanage */
-					/*???DB.  Temp */
-					XtMapWidget(trace->area_1.enlarge.detection_choice);
-					XtMapWidget(trace->area_1.enlarge.objective_choice);
-					XtMapWidget(trace->area_1.enlarge.number_of_events_form);
-/*					XtMapWidget(trace->area_1.enlarge.calculate_button);
-					XtMapWidget(trace->area_1.enlarge.datum_choice);*/
-#endif /* defined (MAP_WIDGETS) */
 					/* pop up the trace window shell */
 					XtPopup(trace->shell,XtGrabNone);
 					trace->open=1;

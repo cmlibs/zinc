@@ -54,7 +54,7 @@ The order in which the events are traversed while editing.
 
 struct Enlarge_area
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 The area of the trace window where the enlarged signal is drawn.
@@ -94,6 +94,7 @@ The area of the trace window where the enlarged signal is drawn.
 	Widget minimum_separation_scroll;
 	Widget minimum_separation_label;
 	Widget level_value;
+	Widget level_width;
 	Widget all_current_choice;
 	struct
 	{
@@ -141,7 +142,7 @@ The area of the trace window where the event time is edited.
 
 struct Event_detection
 /*******************************************************************************
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 The information for detecting events.
@@ -152,7 +153,7 @@ The information for detecting events.
 	enum Datum_type *datum_type;
 	enum Edit_order *edit_order;
 	float *level;
-	int *datum,*event_number,*minimum_separation,*number_of_events,
+	int *datum,*event_number,*level_width,*minimum_separation,*number_of_events,
 		*potential_time,*threshold;
 	/* search interval display information */
 	int *end_search_interval,*start_search_interval;
@@ -484,13 +485,13 @@ int open_trace_window(struct Trace_window **trace_address,Widget parent,
 	enum Event_detection_objective *objective,enum Datum_type *datum_type,
 	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
-	int *threshold,int *minimum_separation,float *level,
+	int *threshold,int *minimum_separation,float *level,int *level_width,
 	int *start_search_interval,int *end_search_interval,int screen_width,
 	int screen_height,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 If <*trace_address> is NULL, a trace window with the specified <parent> and 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 28 December 1999
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -1048,26 +1048,15 @@ Sets the detection algorithm to interval.
 						XmNleftOffset,widget_spacing-left_margin,
 						NULL);
 				}
-#if defined (MAP_WIDGETS)
-/*???DB.  Use map/unmap instead of manage/unmanage */
-				XtUnmapWidget(enlarge->threshold_scroll);
-				XtUnmapWidget(enlarge->threshold_label);
-				XtUnmapWidget(enlarge->minimum_separation_scroll);
-				XtUnmapWidget(enlarge->minimum_separation_label);
-				XtUnmapWidget(enlarge->all_current_choice);
-				XtUnmapWidget(enlarge->level_value);
-				XtMapWidget(enlarge->number_of_events_form);
-				XtMapWidget(enlarge->objective_choice);
-#else /* defined (MAP_WIDGETS) */
 				XtUnmanageChild(enlarge->threshold_scroll);
 				XtUnmanageChild(enlarge->threshold_label);
 				XtUnmanageChild(enlarge->minimum_separation_scroll);
 				XtUnmanageChild(enlarge->minimum_separation_label);
 				XtUnmanageChild(enlarge->all_current_choice);
 				XtUnmanageChild(enlarge->level_value);
+				XtUnmanageChild(enlarge->level_width);
 				XtManageChild(enlarge->number_of_events_form);
 				XtManageChild(enlarge->objective_choice);
-#endif /* defined (MAP_WIDGETS) */
 				enlarge->calculate_all_events=1;
 				if (analysis->event_number>analysis->number_of_events)
 				{
@@ -1146,43 +1135,6 @@ Sets the detection algorithm to level.
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
 		(analysis->user_interface))
 	{
-		/*???debug */
-		{
-			Dimension height,left,margin_width,right,width;
-			Pixmap pixmap;
-			Widget child_widget;
-
-			enlarge= &(analysis->trace->area_1.enlarge);
-			child_widget=XmOptionLabelGadget(enlarge->detection_choice);
-			XtVaGetValues(child_widget,
-				XmNmarginLeft,&left,
-				XmNmarginRight,&right,
-				XmNmarginWidth,&margin_width,
-				NULL);
-			printf("label %p.  left=%d, right=%d, margin_width=%d\n",child_widget,
-				left,right,margin_width);
-			child_widget=XmOptionButtonGadget(enlarge->detection_choice);
-			XtVaGetValues(child_widget,
-				XmNmarginLeft,&left,
-				XmNmarginRight,&right,
-				XmNmarginWidth,&margin_width,
-				XmNheight,&height,
-				XmNwidth,&width,
-				XmNcascadePixmap,&pixmap,
-				NULL);
-			printf(
-				"button %p.  left=%d, right=%d, margin_width=%d, width=%d, height=%d, pixmap=%d\n",
-				child_widget,left,right,margin_width,width,height,pixmap);
-			XtVaSetValues(child_widget,
-				XmNmarginRight,0,
-				NULL);
-			child_widget=enlarge->detection.threshold_button;
-			XtVaGetValues(child_widget,
-				XmNheight,&height,
-				XmNwidth,&width,
-				NULL);
-			printf("threshold %p.  width=%d, height=%d\n",child_widget,width,height);
-		}
 		if (EDA_LEVEL!=analysis->detection)
 		{
 			widget_spacing=analysis->user_interface->widget_spacing;
@@ -1194,7 +1146,7 @@ Sets the detection algorithm to level.
 					XmNmenuHistory,enlarge->detection.level_button,
 					NULL);
 				XtVaSetValues(enlarge->calculate_button,
-					XmNleftWidget,enlarge->level_value,
+					XmNleftWidget,enlarge->level_width,
 					NULL);
 				child_widget=XmOptionLabelGadget(enlarge->datum_choice);
 				XtVaGetValues(child_widget,
@@ -1214,17 +1166,6 @@ Sets the detection algorithm to level.
 						XmNleftOffset,widget_spacing-left_margin,
 						NULL);
 				}
-#if defined (MAP_WIDGETS)
-/*???DB.  Use map/unmap instead of manage/unmanage */
-				XtUnmapWidget(enlarge->threshold_scroll);
-				XtUnmapWidget(enlarge->threshold_label);
-				XtUnmapWidget(enlarge->minimum_separation_scroll);
-				XtUnmapWidget(enlarge->minimum_separation_label);
-				XtUnmapWidget(enlarge->all_current_choice);
-				XtUnmapWidget(enlarge->number_of_events_form);
-				XtUnmapWidget(enlarge->objective_choice);
-				XtMapWidget(enlarge->level_value);
-#else /* defined (MAP_WIDGETS) */
 				XtUnmanageChild(enlarge->threshold_scroll);
 				XtUnmanageChild(enlarge->threshold_label);
 				XtUnmanageChild(enlarge->minimum_separation_scroll);
@@ -1233,7 +1174,7 @@ Sets the detection algorithm to level.
 				XtUnmanageChild(enlarge->number_of_events_form);
 				XtUnmanageChild(enlarge->objective_choice);
 				XtManageChild(enlarge->level_value);
-#endif /* defined (MAP_WIDGETS) */
+				XtManageChild(enlarge->level_width);
 				enlarge->calculate_all_events=1;
 				if (analysis->event_number>analysis->number_of_events)
 				{
@@ -1365,18 +1306,8 @@ Sets the detection algorithm to threshold.
 						XmNleftOffset,widget_spacing-(left_margin+right_margin),
 						NULL);
 				}
-#if defined (MAP_WIDGETS)
-/*???DB.  Use map/unmap instead of manage/unmanage */
-				XtUnmapWidget(enlarge->level_value);
-				XtUnmapWidget(enlarge->number_of_events_form);
-				XtMapWidget(enlarge->threshold_scroll);
-				XtMapWidget(enlarge->threshold_label);
-				XtMapWidget(enlarge->minimum_separation_scroll);
-				XtMapWidget(enlarge->minimum_separation_label);
-				XtMapWidget(enlarge->all_current_choice);
-				XtMapWidget(enlarge->objective_choice);
-#else /* defined (MAP_WIDGETS) */
 				XtUnmanageChild(enlarge->level_value);
+				XtUnmanageChild(enlarge->level_width);
 				XtUnmanageChild(enlarge->number_of_events_form);
 				XtManageChild(enlarge->threshold_scroll);
 				XtManageChild(enlarge->threshold_label);
@@ -1384,7 +1315,6 @@ Sets the detection algorithm to threshold.
 				XtManageChild(enlarge->minimum_separation_label);
 				XtManageChild(enlarge->all_current_choice);
 				XtManageChild(enlarge->objective_choice);
-#endif /* defined (MAP_WIDGETS) */
 				enlarge->calculate_all_events=1;
 				XtVaSetValues(enlarge->all_current_choice,
 					XmNmenuHistory,enlarge->all_current.all_button,
@@ -1738,7 +1668,8 @@ named file.
 							temp_int=1;
 							if (!((1==BINARY_FILE_WRITE((char *)&temp_int,sizeof(int),1,
 								output_file))&&(1==BINARY_FILE_WRITE((char *)&(analysis->level),
-								sizeof(float),1,output_file))))
+								sizeof(float),1,output_file))&&(1==BINARY_FILE_WRITE(
+								(char *)&(analysis->level_width),sizeof(int),1,output_file))))
 							{
 								return_code=0;
 								display_message(ERROR_MESSAGE,
@@ -1931,7 +1862,7 @@ Called when the "Save interval" button is clicked.
 
 static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 13 December 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -1946,8 +1877,8 @@ Sets up the analysis work area for analysing a set of signals.
 	FILE *input_file;
 	float level;
 	int buffer_end,buffer_start,datum,end_search_interval,event_number,event_time,
-		i,minimum_separation,number_of_events,potential_time,return_code,
-		start_search_interval,threshold,temp_int;
+		i,level_width,minimum_separation,number_of_events,potential_time,
+		return_code,start_search_interval,threshold,temp_int;
 	struct Analysis_work_area *analysis;
 	struct Device **device;
 	struct Event *event,**event_address;
@@ -2074,11 +2005,13 @@ Sets up the analysis work area for analysing a set of signals.
 			{
 				return_code=1;
 				level=analysis->level;
+				level_width=analysis->level_width;
 				if (EDA_LEVEL==detection)
 				{
 					if (!((1==BINARY_FILE_READ((char *)&temp_int,sizeof(int),1,
 						input_file))&&(1==BINARY_FILE_READ((char *)&level,sizeof(float),1,
-						input_file))))
+						input_file))&&(1==BINARY_FILE_READ((char *)&level_width,
+						sizeof(int),1,input_file))))
 					{
 						return_code=0;
 						display_message(ERROR_MESSAGE,
@@ -2121,6 +2054,10 @@ Sets up the analysis work area for analysing a set of signals.
 					if (level<0)
 					{
 						level=0;
+					}
+					if (level_width<0)
+					{
+						level_width=0;
 					}
 					if (number_of_events<1)
 					{
@@ -2209,6 +2146,14 @@ Sets up the analysis work area for analysing a set of signals.
 								XmNvalue,value_string,
 								NULL);
 						}
+						/* set the level width */
+						if (level_width!=analysis->level_width)
+						{
+							sprintf(value_string,"%d",level_width);
+							XtVaSetValues(trace->area_1.enlarge.level_width,
+								XmNvalue,value_string,
+								NULL);
+						}
 						/* set the datum type */
 						if (datum_type!=analysis->datum_type)
 						{
@@ -2281,6 +2226,7 @@ Sets up the analysis work area for analysing a set of signals.
 					analysis->threshold=threshold;
 					analysis->minimum_separation=minimum_separation;
 					analysis->level=level;
+					analysis->level_width=level_width;
 					analysis->datum_type=datum_type;
 					analysis->edit_order=edit_order;
 					analysis->number_of_events=number_of_events;
@@ -2547,8 +2493,8 @@ Sets up the analysis work area for analysing a set of signals.
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
-				&(analysis->start_search_interval),&(analysis->end_search_interval),
-				analysis->user_interface->screen_width,
+				&(analysis->level_width),&(analysis->start_search_interval),
+				&(analysis->end_search_interval),analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
 				analysis->signal_drawing_information,analysis->user_interface))
 			{
@@ -2631,7 +2577,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -2644,9 +2590,9 @@ signals.
 	float end_search_float,frequency,level,start_search_float,temp_float;
 	int analysis_number_of_events,bisect_left,bisect_right,datum,
 		comma_separated_table,device_line_length,device_name_length,
-		end_search_interval,event_number,event_time,i,minimum_separation,
-		next_accepted_event_number,next_accepted_event_time,number_of_devices,
-		number_of_events,previous_accepted_event_number,
+		end_search_interval,event_number,event_time,i,level_width,
+		minimum_separation,next_accepted_event_number,next_accepted_event_time,
+		number_of_devices,number_of_events,previous_accepted_event_number,
 		previous_accepted_event_time,return_code,start_search_interval,threshold,
 		*times;
 	struct Analysis_work_area *analysis;
@@ -2773,7 +2719,8 @@ signals.
 												"search start : %f, search end : %f\n",
 												&start_search_float,&end_search_float))
 											{
-												if (1==fscanf(input_file,"level : %f\n",&level))
+												if (2==fscanf(input_file,"level : %f, width : %d\n",
+													&level,&level_width))
 												{
 													if (analysis->trace)
 													{
@@ -2786,8 +2733,18 @@ signals.
 																XmNvalue,value_string,
 																NULL);
 														}
+														/* set the level width */
+														if (level_width!=analysis->level_width)
+														{
+															sprintf(value_string,"%d",level_width);
+															XtVaSetValues(
+																analysis->trace->area_1.enlarge.level_width,
+																XmNvalue,value_string,
+																NULL);
+														}
 													}
 													analysis->level=level;
+													analysis->level_width=level_width;
 													/* read the number of activations being input */
 													if (1!=fscanf(input_file,"number of events : %d\n\n",
 														&number_of_events))
@@ -3453,7 +3410,7 @@ signals.
 							&(analysis->potential_time),&(analysis->event_number),
 							&(analysis->number_of_events),&(analysis->threshold),
 							&(analysis->minimum_separation),&(analysis->level),
-							&(analysis->start_search_interval),
+							&(analysis->level_width),&(analysis->start_search_interval),
 							&(analysis->end_search_interval),
 							analysis->user_interface->screen_width,
 							analysis->user_interface->screen_height,
@@ -3699,8 +3656,8 @@ analysing the signals.
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
-				&(analysis->start_search_interval),&(analysis->end_search_interval),
-				analysis->user_interface->screen_width,
+				&(analysis->level_width),&(analysis->start_search_interval),
+				&(analysis->end_search_interval),analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
 				analysis->signal_drawing_information,analysis->user_interface))
 			{
@@ -3904,8 +3861,8 @@ for analysing the signals.
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
-				&(analysis->start_search_interval),&(analysis->end_search_interval),
-				analysis->user_interface->screen_width,
+				&(analysis->level_width),&(analysis->start_search_interval),
+				&(analysis->end_search_interval),analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
 				analysis->signal_drawing_information,analysis->user_interface))
 			{
@@ -4054,8 +4011,8 @@ for analysing the signals.
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
-				&(analysis->start_search_interval),&(analysis->end_search_interval),
-				analysis->user_interface->screen_width,
+				&(analysis->level_width),&(analysis->start_search_interval),
+				&(analysis->end_search_interval),analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
 				analysis->signal_drawing_information,analysis->user_interface))
 			{
@@ -4260,8 +4217,8 @@ for analysing the signals.
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
-				&(analysis->start_search_interval),&(analysis->end_search_interval),
-				analysis->user_interface->screen_width,
+				&(analysis->level_width),&(analysis->start_search_interval),
+				&(analysis->end_search_interval),analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
 				analysis->signal_drawing_information,analysis->user_interface))
 			{
@@ -4434,7 +4391,7 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 									&(analysis->potential_time),&(analysis->event_number),
 									&(analysis->number_of_events),&(analysis->threshold),
 									&(analysis->minimum_separation),&(analysis->level),
-									&(analysis->start_search_interval),
+									&(analysis->level_width),&(analysis->start_search_interval),
 									&(analysis->end_search_interval),
 									analysis->user_interface->screen_width,
 									analysis->user_interface->screen_height,
@@ -5118,7 +5075,7 @@ Adds the hot key handler to the widget.
 static void calculate_all_event_markers(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1998
+LAST MODIFIED : 27 December 1999
 
 DESCRIPTION :
 Calculate the positions of all event markers, recalculate the datum if this is
@@ -5127,8 +5084,8 @@ set to automatic and reorder the devices if this is required.
 {
 	char *value_string;
 	float level;
-	int datum,highlight_number,minimum_separation,number_of_devices,
-		threshold_percentage,xpos,ypos;
+	int datum,gradient_average_width,highlight_number,minimum_separation,
+		number_of_devices,threshold_percentage,xpos,ypos;
 	struct Analysis_work_area *analysis;
 	struct Device **device,**highlight,*highlight_device;
 	struct Event *event;
@@ -5206,6 +5163,7 @@ set to automatic and reorder the devices if this is required.
 						"calculate_all_event_markers.  Invalid highlight");
 				}
 			}
+			gradient_average_width=analysis->gradient_average_width;
 			switch (analysis->detection)
 			{
 				case EDA_LEVEL:
@@ -5214,11 +5172,44 @@ set to automatic and reorder the devices if this is required.
 					XtVaGetValues(analysis->trace->area_1.enlarge.level_value,
 						XmNvalue,&value_string,
 						NULL);
-					if (1!=sscanf(value_string,"%f",&level))
+					if (1==sscanf(value_string,"%f",&level))
 					{
-						level=(float)0;
+						if (level<0)
+						{
+							level=0;
+						}
 					}
+					else
+					{
+						level=analysis->level;
+					}
+					analysis->level=level;
 					XtFree(value_string);
+					sprintf(global_temp_string,"%g",level);
+					XtVaSetValues(analysis->trace->area_1.enlarge.level_value,
+						XmNvalue,global_temp_string,
+						NULL);
+					value_string=(char *)NULL;
+					XtVaGetValues(analysis->trace->area_1.enlarge.level_width,
+						XmNvalue,&value_string,
+						NULL);
+					if (1==sscanf(value_string,"%d",&gradient_average_width))
+					{
+						if (gradient_average_width<0)
+						{
+							gradient_average_width=0;
+						}
+					}
+					else
+					{
+						gradient_average_width=analysis->level_width;
+					}
+					analysis->level_width=gradient_average_width;
+					XtFree(value_string);
+					sprintf(global_temp_string,"%d",gradient_average_width);
+					XtVaSetValues(analysis->trace->area_1.enlarge.level_width,
+						XmNvalue,global_temp_string,
+						NULL);
 				} break;
 				case EDA_THRESHOLD:
 				{
@@ -5245,7 +5236,7 @@ set to automatic and reorder the devices if this is required.
 							analysis->start_search_interval,analysis->end_search_interval,
 							analysis->detection,analysis->objective,
 							analysis->number_of_events,threshold_percentage,
-							minimum_separation,level,analysis->gradient_average_width);
+							minimum_separation,level,gradient_average_width);
 					}
 					device++;
 					number_of_devices--;
@@ -5340,7 +5331,7 @@ set to automatic and reorder the devices if this is required.
 						analysis->start_search_interval,analysis->end_search_interval,
 						analysis->detection,analysis->objective,analysis->number_of_events,
 						threshold_percentage,minimum_separation,level,
-						analysis->gradient_average_width);
+						gradient_average_width);
 					draw_device_markers(highlight_device,buffer->start,buffer->end,
 						analysis->datum,0,analysis->potential_time,0,SIGNAL_AREA_DETAIL,0,
 						xpos,ypos,signals_area->axes_width,signals_area->axes_height,
@@ -10306,14 +10297,15 @@ Reads in a signals file and adds the signals to the devices in the current rig.
 static void analysis_accept_signal(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 28 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	char *value_string;
 	float level;
-	int device_number,i,minimum_separation,threshold_percentage,xpos,ypos;
+	int device_number,gradient_average_width,i,minimum_separation,
+		threshold_percentage,xpos,ypos;
 	struct Analysis_work_area *analysis;
 	struct Device **device,**highlight;
 	struct Mapping_window *mapping;
@@ -10337,6 +10329,7 @@ DESCRIPTION :
 				if ((analysis->calculate_events)&&(REJECTED==signal->status))
 				{
 					/* calculate events for the device */
+					gradient_average_width=analysis->gradient_average_width;
 					switch (analysis->detection)
 					{
 						case EDA_LEVEL:
@@ -10345,11 +10338,44 @@ DESCRIPTION :
 							XtVaGetValues(analysis->trace->area_1.enlarge.level_value,
 								XmNvalue,&value_string,
 								NULL);
-							if (1!=sscanf(value_string,"%f",&level))
+							if (1==sscanf(value_string,"%f",&level))
 							{
-								level=(float)0;
+								if (level<0)
+								{
+									level=0;
+								}
 							}
+							else
+							{
+								level=analysis->level;
+							}
+							analysis->level=level;
 							XtFree(value_string);
+							sprintf(global_temp_string,"%g",level);
+							XtVaSetValues(analysis->trace->area_1.enlarge.level_value,
+								XmNvalue,global_temp_string,
+								NULL);
+							value_string=(char *)NULL;
+							XtVaGetValues(analysis->trace->area_1.enlarge.level_width,
+								XmNvalue,&value_string,
+								NULL);
+							if (1==sscanf(value_string,"%d",&gradient_average_width))
+							{
+								if (gradient_average_width<0)
+								{
+									gradient_average_width=0;
+								}
+							}
+							else
+							{
+								gradient_average_width=analysis->level_width;
+							}
+							analysis->level_width=gradient_average_width;
+							XtFree(value_string);
+							sprintf(global_temp_string,"%d",gradient_average_width);
+							XtVaSetValues(analysis->trace->area_1.enlarge.level_width,
+								XmNvalue,global_temp_string,
+								NULL);
 						} break;
 						case EDA_THRESHOLD:
 						{
@@ -10366,7 +10392,7 @@ DESCRIPTION :
 						analysis->start_search_interval,analysis->end_search_interval,
 						analysis->detection,analysis->objective,analysis->number_of_events,
 						threshold_percentage,minimum_separation,level,
-						analysis->gradient_average_width);
+						gradient_average_width);
 					/* draw the events */
 					if (analysis->window)
 					{
@@ -11250,10 +11276,10 @@ Adds the hot key handler to the widget.
 static double analysis_potential_time_next_time_callback(double time_after,
 	enum Time_keeper_play_direction play_direction, void *analysis_void)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 28 December 1999
 
 DESCRIPTION :
-Calculates the next desired update callback from the time object
+Calculates the next desired update callback from the time object.
 ==============================================================================*/
 {
 	double next_time;
@@ -11265,46 +11291,45 @@ Calculates the next desired update callback from the time object
 	struct Map_drawing_information *drawing_information;
 	struct Signal_buffer *buffer;
 
-
-	if ((analysis = (struct Analysis_work_area *)analysis_void) &&
-		(analysis->highlight) && (highlight_device= *(analysis->highlight)) &&
+	ENTER(analysis_potential_time_next_time_callback);
+	if ((analysis=(struct Analysis_work_area *)analysis_void)&&
+		(analysis->highlight)&&(highlight_device= *(analysis->highlight))&&
 		(buffer=get_Device_signal_buffer(highlight_device)))
 	{
-		time_set = 0;
-
-		if ((mapping=analysis->mapping_window) && (map=mapping->map) &&
+		time_set=0;
+		if ((mapping=analysis->mapping_window)&&(map=mapping->map)&&
 			(drawing_information=map->drawing_information))
 		{
-			switch(analysis->map_type)
+			switch (analysis->map_type)
 			{
 				case POTENTIAL:
 				{
-					if(NO_INTERPOLATION!=map->interpolation_type)
+					if (NO_INTERPOLATION!=map->interpolation_type)
 					{
-						if(map->frame_end_time > map->frame_start_time)
+						if (map->frame_end_time>map->frame_start_time)
 						{
-							/* Valid frames */
-							switch(play_direction)
+							/* valid frames */
+							switch (play_direction)
 							{
 								case TIME_KEEPER_PLAY_FORWARD:
 								{
-									next_time = map->frame_start_time +
-										(map->frame_end_time - map->frame_start_time)
-										/ (float)(map->number_of_frames - 1) *
-										floor((float)(map->number_of_frames - 1) *
-										((time_after - map->frame_start_time)
-										/(map->frame_end_time - map->frame_start_time)) + 1.0);
-									time_set = 1;
+									next_time=map->frame_start_time+
+										(map->frame_end_time-map->frame_start_time)/
+										(float)(map->number_of_frames-1)*
+										floor((float)(map->number_of_frames-1)*
+										((time_after-map->frame_start_time)/
+										(map->frame_end_time-map->frame_start_time))+1.0);
+									time_set=1;
 								} break;
 								case TIME_KEEPER_PLAY_BACKWARD:
 								{
-									next_time = map->frame_start_time +
-										(map->frame_end_time - map->frame_start_time)
-										/ (float)(map->number_of_frames - 1) *
-										ceil((float)(map->number_of_frames - 1) *
-										((time_after - map->frame_start_time)
-										/(map->frame_end_time - map->frame_start_time)) - 1.0);
-									time_set = 1;
+									next_time=map->frame_start_time+
+										(map->frame_end_time - map->frame_start_time)/
+										(float)(map->number_of_frames-1)*
+										ceil((float)(map->number_of_frames-1)*
+										((time_after-map->frame_start_time)/
+										(map->frame_end_time-map->frame_start_time))-1.0);
+									time_set=1;
 								} break;
 							}
 						}
@@ -11314,433 +11339,449 @@ Calculates the next desired update callback from the time object
 				{
 					number_of_spectrum_colours=
 						drawing_information->number_of_spectrum_colours;
-					/* Valid frames */
-					switch(play_direction)
+					/* valid frames */
+					switch (play_direction)
 					{
 						case TIME_KEEPER_PLAY_FORWARD:
 						{
-							next_time = (float)buffer->times[analysis->datum]
-								* 1000.0 / buffer->frequency + map->minimum_value +
-								(map->maximum_value - map->minimum_value) /
-								(float)(number_of_spectrum_colours - 1) *
-								floor(1.0001 + (float)(number_of_spectrum_colours - 1) *
-								(time_after - (float)buffer->times[analysis->datum]
-								* 1000.0 / buffer->frequency - map->minimum_value)
-								/ (map->maximum_value - map->minimum_value));
-							time_set = 1;
+							next_time=(float)buffer->times[analysis->datum]*1000.0/
+								buffer->frequency+map->minimum_value+
+								(map->maximum_value-map->minimum_value)/
+								(float)(number_of_spectrum_colours-1)*
+								floor(1.0001+(float)(number_of_spectrum_colours-1)*
+								(time_after-(float)buffer->times[analysis->datum]*1000.0/
+								buffer->frequency-map->minimum_value)/
+								(map->maximum_value-map->minimum_value));
+							time_set=1;
 						} break;
 						case TIME_KEEPER_PLAY_BACKWARD:
 						{
-							next_time = (float)buffer->times[analysis->datum]
-								* 1000.0 / buffer->frequency + map->minimum_value +
-								(map->maximum_value - map->minimum_value) /
-								(float)(number_of_spectrum_colours - 1) *
-								ceil(-1.0001 + (float)(number_of_spectrum_colours - 1) *
-								(time_after - (float)buffer->times[analysis->datum]
-								* 1000.0 / buffer->frequency - map->minimum_value)
-								/ (map->maximum_value - map->minimum_value));
-							time_set = 1;
+							next_time=(float)buffer->times[analysis->datum]*1000.0/
+								buffer->frequency+map->minimum_value+
+								(map->maximum_value-map->minimum_value)/
+								(float)(number_of_spectrum_colours-1)*
+								ceil(-1.0001+(float)(number_of_spectrum_colours-1)*
+								(time_after-(float)buffer->times[analysis->datum]*1000.0/
+								buffer->frequency-map->minimum_value)/
+								(map->maximum_value-map->minimum_value));
+							time_set=1;
 						} break;
 					}
 				} break;
 			}
 		}
-		if(!time_set)
+		if (!time_set)
 		{
-			switch(play_direction)
+			switch (play_direction)
 			{
 				case TIME_KEEPER_PLAY_FORWARD:
 				{
-					next_time = (1.0 +
-						floor(time_after * buffer->frequency / 1000.0)) * 1000.0 / buffer->frequency;
+					next_time=(1.0+floor(time_after*buffer->frequency/1000.0))*1000.0/
+						buffer->frequency;
 				} break;
 				case TIME_KEEPER_PLAY_BACKWARD:
 				{
-					next_time = (-1.0 +
-						ceil(time_after * buffer->frequency / 1000.0)) * 1000.0 / buffer->frequency;
+					next_time=(-1.0+ceil(time_after*buffer->frequency/1000.0))*1000.0/
+						buffer->frequency;
 				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"analysis_potential_time_next_time_callback.  Unknown play direction");
-					next_time = 0;
+						"analysis_potential_time_next_time_callback.  "
+						"Unknown play direction");
+					next_time=0;
 				} break;
 			}
 		}
 #if defined (DEBUG)
-		printf("analysis_potential_time_next_time_callback. next_time %f\n", next_time);
+		printf("analysis_potential_time_next_time_callback. next_time %f\n",
+			next_time);
 #endif /* defined (DEBUG) */
 	}
-
 	LEAVE;
 
 	return (next_time);
-}/* analysis_potential_time_next_time_callback */
+} /* analysis_potential_time_next_time_callback */
 
 static int analysis_potential_time_update_callback(
 	struct Time_object *time_object,double current_time,void *analysis_void)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1998
+LAST MODIFIED : 28 December 1999
 
 DESCRIPTION :
-Responds to update callbacks from the time object
+Responds to update callbacks from the time object.
+???DB.  Assume current_time is in milli-seconds
 ==============================================================================*/
 {
 	Colormap colour_map;
 	Display *display;
 	enum Interpolation_type interpolation;
-	int cell_number, datum, frame_number, i, number_of_contours,
-		potential_time, previous_potential_time, return_code;
 	float contour_maximum,contour_minimum, frequency, maximum_value,minimum_value,
 		map_potential_time, number_of_spectrum_colours;
+	int cell_number, datum, frame_number, i, number_of_contours,
+		potential_time, previous_potential_time, return_code;
 	Pixel *spectrum_pixels;
-	struct Map *map;
-	struct Mapping_window *mapping;
-	struct Map_drawing_information *drawing_information;
-	struct Device *highlight_device;
 	struct Analysis_work_area *analysis;
+	struct Device *highlight_device;
+	struct Map *map;
+	struct Map_drawing_information *drawing_information;
+	struct Mapping_window *mapping;
 	struct Signal_buffer *buffer;
 	XColor colour, spectrum_rgb[MAX_SPECTRUM_COLOURS];
 
 	ENTER(analysis_potential_time_update_callback);
 	USE_PARAMETER(time_object);
-	if ((analysis = (struct Analysis_work_area *)analysis_void) &&
-		(analysis->highlight) && (highlight_device= *(analysis->highlight)) &&
+	return_code=0;
+	if ((analysis=(struct Analysis_work_area *)analysis_void)&&
+		(analysis->highlight)&&(highlight_device= *(analysis->highlight))&&
 		(buffer=get_Device_signal_buffer(highlight_device)))
 	{
 		frequency=buffer->frequency;
-
-		previous_potential_time = analysis->potential_time;
-		potential_time = current_time * frequency / 1000.0;
-		if(potential_time < 0)
+		previous_potential_time=analysis->potential_time;
+		potential_time=current_time*frequency/1000.0;
+		if (potential_time<0)
 		{
-			potential_time = 0;
+			potential_time=0;
 		}
-		if(potential_time >= buffer->number_of_samples)
+		if (potential_time>=buffer->number_of_samples)
 		{
-			potential_time = buffer->number_of_samples - 1;
+			potential_time=buffer->number_of_samples-1;
 		}
 #if defined (DEBUG)
-		printf("analysis_potential_time_update_callback.  initial %d (%d)\n", potential_time,
-			buffer->times[potential_time]);
+		printf("analysis_potential_time_update_callback.  initial %d (%d)\n",
+			potential_time,buffer->times[potential_time]);
 #endif /* defined (DEBUG) */
-		if(((float)buffer->times[potential_time] < (current_time - 1.0) * frequency / 1000.0))
+		if (((float)buffer->times[potential_time]<
+			(current_time-1.0)*frequency/1000.0))
 		{
-			while((potential_time < buffer->number_of_samples) &&
-				((float)buffer->times[potential_time] < (current_time - 1.0) * frequency / 1000.0))
+			while ((potential_time<buffer->number_of_samples)&&
+				((float)buffer->times[potential_time]<
+				(current_time-1.0)*frequency/1000.0))
 			{
 				potential_time++;
 			}
 		}
-		else if ((float)buffer->times[potential_time] > current_time * frequency / 1000.0 )
+		else
 		{
-			while((potential_time >= 0) &&
-				((float)buffer->times[potential_time] > current_time * frequency / 1000.0 ))
+			if ((float)buffer->times[potential_time]>current_time*frequency/1000.0)
 			{
-				potential_time--;
+				while ((potential_time>=0)&&
+					((float)buffer->times[potential_time]>current_time*frequency/1000.0))
+				{
+					potential_time--;
+				}
 			}
 		}
 #if defined (DEBUG)
-		printf("                                          final   %d (%d)\n", potential_time,
-			buffer->times[potential_time]);
+		printf("                                          final   %d (%d)\n",
+			potential_time,buffer->times[potential_time]);
 #endif /* defined (DEBUG) */
-
-		if(potential_time < 0)
+		if (potential_time<0)
 		{
 #if defined (OLD_CODE)
 			Time_keeper_request_new_time(
 				Time_object_get_time_keeper(analysis->potential_time_object),
-				(float)buffer->times[buffer->number_of_samples - 1] * 1000.0 / frequency);
+				(float)buffer->times[buffer->number_of_samples - 1]*1000.0/frequency);
 #endif /* defined (OLD_CODE) */
-			display_message(ERROR_MESSAGE,
-				"analysis_potential_time_update_callback.  Potential time less than minimum");
-		}
-		else if(potential_time >= buffer->number_of_samples)
-		{
-#if defined (OLD_CODE)
-			Time_keeper_request_new_time(
-				Time_object_get_time_keeper(analysis->potential_time_object),
-				(float)buffer->times[0] * 1000.0 / frequency);
-#endif /* defined (OLD_CODE) */
-			display_message(ERROR_MESSAGE,
-				"analysis_potential_time_update_callback.  Potential time greater than maximum");
+			display_message(ERROR_MESSAGE,"analysis_potential_time_update_callback.  "
+				"Potential time less than minimum");
 		}
 		else
 		{
-
-			analysis->potential_time = potential_time;
-
-			analysis_window_update_interval_area_time(analysis->window,
-				potential_time, previous_potential_time, &analysis->analysis_update_flags);
-			analysis_window_update_signal_area_time(analysis->window,
-				potential_time, previous_potential_time);
-
-			trace_update_potential_time(analysis->trace,
-				potential_time, previous_potential_time, &analysis->trace_update_flags);
-
-			if ((mapping=analysis->mapping_window) && (map=mapping->map) &&
-				(drawing_information=map->drawing_information))
+			if (potential_time>=buffer->number_of_samples)
 			{
-				switch(analysis->map_type)
+#if defined (OLD_CODE)
+				Time_keeper_request_new_time(
+					Time_object_get_time_keeper(analysis->potential_time_object),
+					(float)buffer->times[0]*1000.0/frequency);
+#endif /* defined (OLD_CODE) */
+				display_message(ERROR_MESSAGE,
+					"analysis_potential_time_update_callback.  "
+					"Potential time greater than maximum");
+			}
+			else
+			{
+				analysis->potential_time=potential_time;
+				analysis_window_update_interval_area_time(analysis->window,
+					potential_time,previous_potential_time,
+					&analysis->analysis_update_flags);
+				analysis_window_update_signal_area_time(analysis->window,
+					potential_time,previous_potential_time);
+				trace_update_potential_time(analysis->trace,
+					potential_time,previous_potential_time,&analysis->trace_update_flags);
+				if ((mapping=analysis->mapping_window)&&(map=mapping->map)&&
+					(drawing_information=map->drawing_information))
 				{
-					case POTENTIAL:
+					switch (analysis->map_type)
 					{
-						map_potential_time = current_time;
-						if(NO_INTERPOLATION!=map->interpolation_type)
+						case POTENTIAL:
 						{
-							if(map->activation_front != -1) /* playing movie*/
+							map_potential_time=current_time;
+							if (NO_INTERPOLATION!=map->interpolation_type)
 							{
-								map->fixed_range = 1; /* fix the range when playing the movie */
-#if defined(UNEMAP_USE_NODES) /* 3d map */		
-								map->frame_start_time = map_potential_time;
-								map->frame_end_time = map_potential_time;
-								map->frame_number = 0;		
-								/* recalculate not used for 3d maps */
-								update_mapping_drawing_area(mapping,1/*recalculate*/);
-								update_mapping_colour_or_auxili(mapping);	
-						
-#else /* old 2d map*/
-								if(map->frame_end_time > map->frame_start_time)
+								if (-1!=map->activation_front)
 								{
-									frame_number = (int)((float)(map->number_of_frames - 1) *
-										((map_potential_time - map->frame_start_time)
-											/(map->frame_end_time - map->frame_start_time)));
-									if(frame_number >= 0 && frame_number < map->number_of_frames)
+									/* playing movie */
+									/* fix the range when playing the movie */
+									map->fixed_range=1;
+#if defined (UNEMAP_USE_NODES)
+									/* 3d map */
+									map->frame_start_time=map_potential_time;
+									map->frame_end_time=map_potential_time;
+									map->frame_number=0;
+									/* recalculate not used for 3d maps */
+									update_mapping_drawing_area(mapping,1/*recalculate*/);
+									update_mapping_colour_or_auxili(mapping);
+#else /* defined (UNEMAP_USE_NODES) */
+									/* 2d map */
+									if (map->frame_end_time>map->frame_start_time)
 									{
-										map->frame_number = frame_number;
+										frame_number=(int)((float)(map->number_of_frames-1)*
+											((map_potential_time-map->frame_start_time)/
+											(map->frame_end_time-map->frame_start_time)));
+										if ((frame_number>=0)&&(frame_number<map->number_of_frames))
+										{
+											map->frame_number=frame_number;
+											update_mapping_drawing_area(mapping,0);
+											update_mapping_colour_or_auxili(mapping);
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"analysis_potential_time_update_callback.  "
+												"Wrong time for an animated_sequence");
+										}
+										return_code=1;
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"analysis_potential_time_update_callback.  "
+											"End time greater or equal to start time");
+										return_code=0;
+									}
+#endif /* defined (UNEMAP_USE_NODES) */
+								}
+								else
+								{
+									if ((map_potential_time>=map->frame_start_time)&&
+										(map_potential_time<=map->frame_end_time))
+									{
+										if (map->frame_start_time<map->frame_end_time)
+										{
+											frame_number=(int)((float)(map->number_of_frames-1)*
+												((map_potential_time-map->frame_start_time)/
+												(map->frame_end_time-map->frame_start_time)));
+										}
+										else
+										{
+											frame_number=0;
+										}
+										map->frame_number=frame_number;
 										update_mapping_drawing_area(mapping,0);
 										update_mapping_colour_or_auxili(mapping);
 									}
 									else
 									{
-										display_message(ERROR_MESSAGE,
-											"analysis_potential_time_update_callback."
-											"  Wrong time for an animated_sequence");
+#if defined (UNEMAP_USE_NODES)
+										/* 3d map */
+										map->frame_start_time=map_potential_time;
+										map->frame_end_time=map_potential_time;
+										map->frame_number=0;
+										/* recalculate not used for 3d maps */
+										update_mapping_drawing_area(mapping,1/*recalculate*/);
+										update_mapping_colour_or_auxili(mapping);
+#else /* defined (UNEMAP_USE_NODES) */
+										/* 2d map */
+										interpolation=map->interpolation_type;
+										map->interpolation_type=NO_INTERPOLATION;
+										update_mapping_drawing_area(mapping,1);
+										update_mapping_colour_or_auxili(mapping);
+										map->interpolation_type=interpolation;
+#endif /* defined (UNEMAP_USE_NODES) */
 									}
-									return_code = 1;
 								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"analysis_potential_time_update_callback. "
-										"End time greater or equal to start time");
-									return_code = 0;
-								}
-#endif
 							}
 							else
 							{
-								if(map_potential_time >= map->frame_start_time &&
-									map_potential_time <= map->frame_end_time)
+#if defined (UNEMAP_USE_NODES)
+								/* for 3d map, with NO_INTERPOLATION need the frame_start_time
+									to get the signal min,max */
+								map->frame_start_time=map_potential_time;
+								map->frame_end_time=map_potential_time;
+								map->frame_number=0;
+#endif /* defined (UNEMAP_USE_NODES) */
+								update_mapping_drawing_area(mapping,1);
+								update_mapping_colour_or_auxili(mapping);
+							}
+#if defined (OLD_CODE)
+								map->frame_start_time=map_potential_time;
+								map->frame_end_time=map_potential_time;
+								if (map->number_of_frames>1)
 								{
-									if(map->frame_start_time < map->frame_end_time)
+									/* deallocate all the frames except one */
+									i=map->number_of_frames;
+									frame=map->frames+1;
+									while (i>1)
 									{
-										frame_number = (int)((float)(map->number_of_frames - 1) *
-											((map_potential_time - map->frame_start_time)
-											/(map->frame_end_time - map->frame_start_time)));
+										DEALLOCATE(frame->contour_x);
+										DEALLOCATE(frame->contour_y);
+										DEALLOCATE(frame->pixel_values);
+										DEALLOCATE(frame->image->data);
+										XFree((char *)(frame->image));
+										frame++;
+										i--;
+									}
+									if (REALLOCATE(frame,map->frames,struct Map_frame,1))
+									{
+										map->frames=frame;
 									}
 									else
 									{
-										frame_number = 0;
+										display_message(ERROR_MESSAGE,
+											"analysis_potential_time_update_callback.  "
+											"Could not reallocate frame array");
+										return_code=0;
 									}
-									map->frame_number = frame_number;
+									map->number_of_frames=1;
+								}
+								map->frame_number=0;
+#endif /* defined (OLD_CODE) */
+						} break;
+						case SINGLE_ACTIVATION:
+						{
+							number_of_spectrum_colours=
+								drawing_information->number_of_spectrum_colours;
+							map->activation_front=(float)(number_of_spectrum_colours-1)*
+								(current_time-(float)buffer->times[analysis->datum]*1000.0/
+								frequency-map->minimum_value)/(map->maximum_value-
+								map->minimum_value);
+#if defined (DEBUG)
+							printf("analysis_potential_time_update_callback.  front %d current %f  datum %f  minimum %f maximum %f\n",
+								map->activation_front,current_time,
+								(float)buffer->times[analysis->datum]*1000.0/frequency,
+								map->minimum_value,map->maximum_value);
+#endif /* defined (DEBUG) */
+							if ((0<=map->activation_front)&&
+								(map->activation_front<number_of_spectrum_colours))
+							{
+								if (drawing_information->read_only_colour_map)
+								{
 									update_mapping_drawing_area(mapping,0);
 									update_mapping_colour_or_auxili(mapping);
 								}
 								else
 								{
-#if defined(UNEMAP_USE_NODES)/* 3d map */								
-									map->frame_start_time = map_potential_time;
-									map->frame_end_time = map_potential_time;								
-									map->frame_number = 0;	
-									/* recalculate not used for 3d maps */
-									update_mapping_drawing_area(mapping,1/*recalculate*/);
-									update_mapping_colour_or_auxili(mapping);						
-#else /* old 2d map*/
-									interpolation = map->interpolation_type;
-									map->interpolation_type = NO_INTERPOLATION; 
-									update_mapping_drawing_area(mapping,1);
-									update_mapping_colour_or_auxili(mapping);								
-									map->interpolation_type = interpolation;
-#endif
-								}
-							}
-						}
-						else
-						{
-#if defined (UNEMAP_USE_NODES)
-							/* for 3d map, with NO_INTERPOLATION need the frame_start_time to
-								get the signal min,max */
-							map->frame_start_time=map_potential_time;
-							map->frame_end_time=map_potential_time;
-							map->frame_number=0;
-#endif /* defined (UNEMAP_USE_NODES) */
-							update_mapping_drawing_area(mapping,1);
-							update_mapping_colour_or_auxili(mapping);
-						}
-#if defined (OLD_CODE)
-							map->frame_start_time = map_potential_time;
-							map->frame_end_time = map_potential_time;
-							if(map->number_of_frames > 1)
-							{
-								/* Deallocate all the frames except one */
-								i = map->number_of_frames;
-								frame = map->frames + 1;
-								while (i>1)
-								{
-									DEALLOCATE(frame->contour_x);
-									DEALLOCATE(frame->contour_y);
-									DEALLOCATE(frame->pixel_values);
-									DEALLOCATE(frame->image->data);
-									XFree((char *)(frame->image));
-									frame++;
-									i--;
-								}
-								if (REALLOCATE(frame,map->frames,struct Map_frame,1))
-								{
-									map->frames=frame;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"analysis_potential_time_update_callback.  Could not reallocate frame array");
-									return_code = 0;
-								}
-								map->number_of_frames = 1;
-							}
-							map->frame_number = 0;
-#endif /* defined (OLD_CODE) */
-					} break;
-					case SINGLE_ACTIVATION:
-					{
-						number_of_spectrum_colours=
-							drawing_information->number_of_spectrum_colours;
-						map->activation_front = (float)(number_of_spectrum_colours - 1) *
-							(current_time - (float)buffer->times[analysis->datum]
-							* 1000.0 / frequency - map->minimum_value)
-							/ (map->maximum_value - map->minimum_value);
-#if defined (DEBUG)
-						printf("analysis_potential_time_update_callback.  front %d current %f  datum %f  minimum %f maximum %f\n",
-							map->activation_front, current_time,
-							(float)buffer->times[analysis->datum] * 1000.0 / frequency,
-							map->minimum_value, map->maximum_value);
-#endif /* defined (DEBUG) */
-						if ((0<=map->activation_front)&&
-							(map->activation_front<number_of_spectrum_colours))
-						{
-							if (drawing_information->read_only_colour_map)
-							{
-								update_mapping_drawing_area(mapping,0);
-								update_mapping_colour_or_auxili(mapping);
-							}
-							else
-							{
-								display=drawing_information->user_interface->display;
-								colour_map=drawing_information->colour_map;
-								spectrum_pixels=drawing_information->spectrum_colours;
-								/* use background drawing colour for the whole spectrum */
-								colour.pixel=drawing_information->background_drawing_colour;
-								XQueryColor(display,colour_map,&colour);
-								for (i=0;i<number_of_spectrum_colours;i++)
-								{
+									display=drawing_information->user_interface->display;
+									colour_map=drawing_information->colour_map;
+									spectrum_pixels=drawing_information->spectrum_colours;
+									/* use background drawing colour for the whole spectrum */
+									colour.pixel=drawing_information->background_drawing_colour;
+									XQueryColor(display,colour_map,&colour);
+									for (i=0;i<number_of_spectrum_colours;i++)
+									{
+										spectrum_rgb[i].pixel=spectrum_pixels[i];
+										spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
+										spectrum_rgb[i].red=colour.red;
+										spectrum_rgb[i].blue=colour.blue;
+										spectrum_rgb[i].green=colour.green;
+									}
+									if ((SHOW_CONTOURS==map->contours_option)&&
+										(VARIABLE_THICKNESS==map->contour_thickness))
+									{
+										colour.pixel=drawing_information->contour_colour;
+										XQueryColor(display,colour_map,&colour);
+										number_of_contours=map->number_of_contours;
+										maximum_value=map->maximum_value;
+										minimum_value=map->minimum_value;
+										contour_maximum=map->contour_maximum;
+										contour_minimum=map->contour_minimum;
+										number_of_contours=map->number_of_contours;
+										for (i=0;i<number_of_contours;i++)
+										{
+											cell_number=(int)(((contour_maximum*(float)i+
+												contour_minimum*(float)(number_of_contours-1-i))/
+												(float)(number_of_contours-1)-minimum_value)/
+												(maximum_value-minimum_value)*
+												(float)(number_of_spectrum_colours-1)+0.5);
+											spectrum_rgb[cell_number].pixel=
+												spectrum_pixels[cell_number];
+											spectrum_rgb[cell_number].flags=DoRed|DoGreen|DoBlue;
+											spectrum_rgb[cell_number].red=colour.red;
+											spectrum_rgb[cell_number].blue=colour.blue;
+											spectrum_rgb[cell_number].green=colour.green;
+										}
+									}
+									/* show the activation front */
+									colour.pixel=drawing_information->contour_colour;
+									XQueryColor(display,colour_map,&colour);
+									i=map->activation_front;
 									spectrum_rgb[i].pixel=spectrum_pixels[i];
 									spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
 									spectrum_rgb[i].red=colour.red;
 									spectrum_rgb[i].blue=colour.blue;
 									spectrum_rgb[i].green=colour.green;
+									XStoreColors(display,colour_map,spectrum_rgb,
+										number_of_spectrum_colours);
+									/* show the map boundary */
+									colour.pixel=drawing_information->boundary_colour;
+									colour.flags=DoRed|DoGreen|DoBlue;
+									XStoreColor(display,colour_map,&colour);
 								}
-								if ((SHOW_CONTOURS==map->contours_option)&&
-									(VARIABLE_THICKNESS==map->contour_thickness))
-								{
-									colour.pixel=drawing_information->contour_colour;
-									XQueryColor(display,colour_map,&colour);
-									number_of_contours=map->number_of_contours;
-									maximum_value=map->maximum_value;
-									minimum_value=map->minimum_value;
-									contour_maximum=map->contour_maximum;
-									contour_minimum=map->contour_minimum;
-									number_of_contours=map->number_of_contours;
-									for (i=0;i<number_of_contours;i++)
-									{
-										cell_number=(int)(((contour_maximum*(float)i+contour_minimum*
-											(float)(number_of_contours-1-i))/(float)(number_of_contours-1)-
-											minimum_value)/(maximum_value-minimum_value)*
-											(float)(number_of_spectrum_colours-1)+0.5);
-										spectrum_rgb[cell_number].pixel=spectrum_pixels[cell_number];
-										spectrum_rgb[cell_number].flags=DoRed|DoGreen|DoBlue;
-										spectrum_rgb[cell_number].red=colour.red;
-										spectrum_rgb[cell_number].blue=colour.blue;
-										spectrum_rgb[cell_number].green=colour.green;
-									}
-								}
-								/* show the activation front */
-								colour.pixel=drawing_information->contour_colour;
-								XQueryColor(display,colour_map,&colour);
-								i=map->activation_front;
-								spectrum_rgb[i].pixel=spectrum_pixels[i];
-								spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-								spectrum_rgb[i].red=colour.red;
-								spectrum_rgb[i].blue=colour.blue;
-								spectrum_rgb[i].green=colour.green;
-								XStoreColors(display,colour_map,spectrum_rgb,
-									number_of_spectrum_colours);
-								/* show the map boundary */
-								colour.pixel=drawing_information->boundary_colour;
-								colour.flags=DoRed|DoGreen|DoBlue;
-								XStoreColor(display,colour_map,&colour);
-							}
-						}
-						else
-						{
-							if(Time_keeper_is_playing(
-								Time_object_get_time_keeper(analysis->potential_time_object)))
-							{
-#if defined (OLD_CODE)
-								if (TIME_KEEPER_PLAY_FORWARD==Time_keeper_get_play_direction(
-									Time_object_get_time_keeper(analysis->potential_time_object)))
-								{
-									Time_keeper_request_new_time(
-										Time_object_get_time_keeper(analysis->potential_time_object),
-										map->minimum_value + (float)buffer->times[analysis->datum]
-										* 1000.0 / frequency );
-								}
-								else
-								{
-									Time_keeper_request_new_time(
-										Time_object_get_time_keeper(analysis->potential_time_object),
-										map->maximum_value + (float)buffer->times[analysis->datum]
-										* 1000.0 / frequency );
-								}
-#endif /* defined (OLD_CODE) */
-								display_message(ERROR_MESSAGE,
-									"analysis_potential_time_update_callback.  Time outside range of single activation");
 							}
 							else
 							{
-								map->activation_front = -1;
-								update_mapping_drawing_area(mapping,0);
-								update_mapping_colour_or_auxili(mapping);
+								if (Time_keeper_is_playing(
+									Time_object_get_time_keeper(analysis->potential_time_object)))
+								{
+#if defined (OLD_CODE)
+									if (TIME_KEEPER_PLAY_FORWARD==Time_keeper_get_play_direction(
+										Time_object_get_time_keeper(analysis->
+										potential_time_object)))
+									{
+										Time_keeper_request_new_time(Time_object_get_time_keeper(
+											analysis->potential_time_object),map->minimum_value+
+											(float)buffer->times[analysis->datum]*1000.0/frequency);
+									}
+									else
+									{
+										Time_keeper_request_new_time(Time_object_get_time_keeper(
+											analysis->potential_time_object),map->maximum_value+
+											(float)buffer->times[analysis->datum]*1000.0/frequency);
+									}
+#endif /* defined (OLD_CODE) */
+									display_message(ERROR_MESSAGE,
+										"analysis_potential_time_update_callback.  "
+										"Time outside range of single activation");
+								}
+								else
+								{
+									map->activation_front= -1;
+									update_mapping_drawing_area(mapping,0);
+									update_mapping_colour_or_auxili(mapping);
+								}
 							}
-						}
-					} break;
-					case MULTIPLE_ACTIVATION:
-					{
-						datum = analysis->datum;
-						analysis->datum = (float)potential_time - (float)(analysis->start_search_interval);
-						update_mapping_drawing_area(mapping,2);
-						update_mapping_colour_or_auxili(mapping);
-						analysis->datum = datum;
-					} break;
+						} break;
+						case MULTIPLE_ACTIVATION:
+						{
+							datum=analysis->datum;
+							analysis->datum=(float)potential_time-
+								(float)(analysis->start_search_interval);
+							update_mapping_drawing_area(mapping,2);
+							update_mapping_colour_or_auxili(mapping);
+							analysis->datum=datum;
+						} break;
+					}
 				}
 			}
 		}
-		return_code = 1;
+		return_code=1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"analysis_potential_time_update_callback.  Missing analysis_window_structure");
-		return_code = 0;
+		display_message(ERROR_MESSAGE,"analysis_potential_time_update_callback.  "
+			"Missing analysis_window_structure");
+		return_code=0;
 	}
 	LEAVE;
 
@@ -11750,7 +11791,8 @@ Responds to update callbacks from the time object
 static int analysis_time_keeper_callback(struct Time_keeper *time_keeper,
 	enum Time_keeper_event event, void *analysis_void)
 /*******************************************************************************
-LAST MODIFIED : 14 December 1998
+LAST MODIFIED : 28 December 1999
+
 DESCRIPTION :
 ==============================================================================*/
 {
@@ -11760,17 +11802,16 @@ DESCRIPTION :
 	struct Mapping_window *mapping;
 
 	ENTER(analysis_time_keeper_callback);
-
-	if ((analysis = (struct Analysis_work_area *)analysis_void)
-		&& (mapping=analysis->mapping_window) && (map=mapping->map)
-		&& time_keeper)
+	return_code=0;
+	if ((analysis=(struct Analysis_work_area *)analysis_void)&&
+		(mapping=analysis->mapping_window)&&(map=mapping->map)&&time_keeper)
 	{
 		switch (event)
 		{
 			case TIME_KEEPER_STARTED:
 			{
 				/* only one animation at a time */
-				map->activation_front= 0;
+				map->activation_front=0;
 			} break;
 			case TIME_KEEPER_STOPPED:
 			{
@@ -11780,7 +11821,7 @@ DESCRIPTION :
 					analysis_void);
 			} break;
 		}
-		return_code = 1;
+		return_code=1;
 	}
 	else
 	{
@@ -11796,13 +11837,13 @@ DESCRIPTION :
 static int analysis_datum_time_update_callback(struct Time_object *time_object,
 	double current_time, void *analysis_void)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 28 December 1999
 
 DESCRIPTION :
-Responds to update callbacks from the time object
+Responds to update callbacks from the time object.
 ==============================================================================*/
 {
-	int datum, previous_datum, return_code;
+	int datum,previous_datum,return_code;
 	struct Analysis_work_area *analysis;
 #if defined (NEW_CODE)
 	struct Device *highlight_device;
@@ -11811,11 +11852,12 @@ Responds to update callbacks from the time object
 
 	ENTER(analysis_datum_time_update_callback);
 	USE_PARAMETER(time_object);
+	return_code=0;
 	if ((analysis=(struct Analysis_work_area *)analysis_void)&&
 		(analysis->highlight)
 #if defined (NEW_CODE)
-		&&(highlight_device= *(analysis->highlight))
-		&&(buffer=get_Device_signal_buffer(highlight_device))
+		&&(highlight_device= *(analysis->highlight))&&
+		(buffer=get_Device_signal_buffer(highlight_device))
 #endif /* defined (NEW_CODE) */
 		)
 	{
@@ -11841,13 +11883,13 @@ Responds to update callbacks from the time object
 			update_mapping_colour_or_auxili(mapping);
 		}
 #endif /* defined (NEW_CODE) */
-		return_code = 1;
+		return_code=1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-		"analysis_datum_time_update_callback.  Missing analysis_window_structure");
-		return_code = 0;
+		display_message(ERROR_MESSAGE,"analysis_datum_time_update_callback.  "
+			"Missing analysis_window_structure");
+		return_code=0;
 	}
 	LEAVE;
 
@@ -13020,8 +13062,6 @@ Creates the windows associated with the analysis work area.
 	};
 #define XmNeventsFileExtension "eventsFileExtension"
 #define XmCEventsFileExtension "EventsFileExtension"
-#define XmNgradientAverageWidth "gradientAverageWidth"
-#define XmCGradientAverageWidth "GradientAverageWidth"
 	static XtResource resources[]=
 	{
 		{
@@ -13032,15 +13072,6 @@ Creates the windows associated with the analysis work area.
 			XtOffsetOf(Analysis_work_area_settings,events_file_extension),
 			XmRString,
 			"events"
-		},
-		{
-			XmNgradientAverageWidth,
-			XmCGradientAverageWidth,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(Analysis_work_area_settings,gradient_average_width),
-			XmRString,
-			"6"
 		}
 	};
 
@@ -13177,9 +13208,9 @@ Creates the windows associated with the analysis work area.
 							&(analysis->event_number),&(analysis->number_of_events),
 							&(analysis->potential_time),&(analysis->detection),
 							&(analysis->threshold),&(analysis->minimum_separation),
-							&(analysis->level),analysis->identifying_colour,
-							analysis->signal_order,SEPARATE_LAYOUT,
-							&(analysis->start_search_interval),
+							&(analysis->level),&(analysis->level_width),
+							analysis->identifying_colour,analysis->signal_order,
+							SEPARATE_LAYOUT,&(analysis->start_search_interval),
 							&(analysis->end_search_interval),user_interface->screen_height,
 							postscript_file_extension,analysis->events_file_extension,
 							analysis->signal_drawing_information,user_interface))

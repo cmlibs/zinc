@@ -62,6 +62,7 @@ procedure
 	identify_trace_enlarge_events_u;
 	increment_number_of_events;
 	identify_trace_enlarge_level_va;
+	identify_trace_enlarge_level_wi;
 	identify_trace_enlarge_thresh_s;
 	change_threshold;
 	identify_trace_enlarge_thresh_l;
@@ -528,6 +529,7 @@ object
 			XmOptionMenu trace_enlarge_datum_choice;
 			XmForm trace_enlarge_events_number;
 			XmTextField trace_enlarge_level_value;
+			XmTextField trace_enlarge_level_width;
 			XmScrollBar trace_enlarge_threshold_scroll;
 			XmLabel trace_enlarge_threshold_label;
 			XmScrollBar trace_enlarge_separation_scroll;
@@ -973,6 +975,32 @@ object
 			MrmNcreateCallback = procedures
 				{
 				identify_trace_enlarge_level_va(trace_window_structure);
+				};
+			};
+		};
+	trace_enlarge_level_width: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmTextField trace_enlarge_level_value;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNmarginHeight = 5;
+			XmNhighlightThickness = 0;
+!			XmNmappedWhenManaged = false;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_trace_enlarge_level_wi(trace_window_structure);
 				};
 			};
 		};
