@@ -10284,7 +10284,7 @@ Should enclose multiple calls in FE_region_begin_change/end_change wrappers.
 				ACCESS(FE_node)(copy_node);
 				if (FE_node_set_position_cartesian(copy_node,coordinate_field,x2,y2,z2))
 				{
-					if (FE_region_merge_FE_node(fe_region, node))
+					if (FE_region_merge_FE_node(fe_region, copy_node))
 					{
 						return_code = 1;
 					}
