@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 16 March 2001
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -22,7 +22,6 @@ December 1997. Created MANAGER(Scene).
 #include "graphics/element_point_ranges.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
-#include "finite_element/finite_element_to_streamlines.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
@@ -544,6 +543,24 @@ LAST MODIFIED : 19 November 1997
 DESCRIPTION :
 ==============================================================================*/
 
+int Scene_begin_cache(struct Scene *scene);
+/*******************************************************************************
+LAST MODIFIED : 6 June 2001
+
+DESCRIPTION :
+Call before making several changes to the scene so only a single change message
+is sent. Call Scene_end_cache at the end of the changes.
+==============================================================================*/
+
+int Scene_end_cache(struct Scene *scene);
+/*******************************************************************************
+LAST MODIFIED : 6 June 2001
+
+DESCRIPTION :
+Call after making changes preceded by a call to Scene_begin_cache to enable a
+final message to be sent to clients.
+==============================================================================*/
+
 int Scene_enable_graphics(struct Scene *scene,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
@@ -597,23 +614,6 @@ LAST MODIFIED : 12 February 1999
 
 DESCRIPTION :
 Removes links to all objects required to vary graphics objects with time.
-==============================================================================*/
-
-int Scene_enable_interactive_streamlines(struct Scene *scene,
-	struct MANAGER(Interactive_streamline) *streamline_manager);
-/*******************************************************************************
-LAST MODIFIED : 8 February 1998
-
-DESCRIPTION :
-Allows scenes to automatically draw interactive streamlines when they are
-modified.
-==============================================================================*/
-
-int Scene_disable_interactive_streamlines(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 8 February 1998
-
-DESCRIPTION :
 ==============================================================================*/
 
 enum Scene_graphical_element_mode Scene_get_graphical_element_mode(
@@ -1039,13 +1039,13 @@ DESCRIPTION :
 Adds a light to the Scene list_of_lights.
 ==============================================================================*/
 
-int Scene_has_light(struct Scene *scene,struct Light *light);
+int Scene_has_light_in_list(struct Scene *scene,
+	struct LIST(Light) *light_list);
 /*******************************************************************************
-LAST MODIFIED : 12 December 1997
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
-Returns true if <Scene> has <light> in its list_of_lights, OR if <light>
-is NULL, returns true if <scene> has any lights.
+Returns true if the list_of_lights in <Scene> intersects <light_list>.
 ==============================================================================*/
 
 int Scene_remove_light(struct Scene *scene,struct Light *light);
@@ -1086,14 +1086,27 @@ Returns the change state of the scene; SCENE_NO_CHANGE, SCENE_FAST_CHANGE or
 SCENE_CHANGE. Clients may respond to SCENE_FAST_CHANGE more efficiently.
 ==============================================================================*/
 
+int build_Scene(struct Scene *scene);
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION :
+To speed up messaging response, graphical_elements put off building
+graphics objects for their settings until requested. This function should be
+called to request builds for all objects used by <scene>. It should be called
+before the scene is output to OpenGL, VRML and wavefront objs. In particular,
+this function must be called before compile_Scene.
+==============================================================================*/
+
 int compile_Scene(struct Scene *scene);
 /*******************************************************************************
-LAST MODIFIED : 28 November 1997
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 Assembles the display list containing the whole scene. Before that, however, it
 compiles the display lists of objects that will be executed in the scene.
 Note that lights are not included in the scene and must be handled separately!
+Must also call build_Scene before this functions.
 ==============================================================================*/
 
 int execute_Scene(struct Scene *scene);
