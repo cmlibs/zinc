@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : event_dispatcher.c
 
-LAST MODIFIED : 24 October 2002
+LAST MODIFIED : 1 June 2003
 
 DESCRIPTION :
 This provides an object which interfaces between a event_dispatcher and Cmgui
@@ -104,7 +104,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Event_dispatcher_timeout_callback);
 
 struct Event_dispatcher_idle_callback
 /*******************************************************************************
-LAST MODIFIED : 6 March 2002
+LAST MODIFIED : 1 June 2003
 
 DESCRIPTION :
 Contains all information necessary for a file descriptor callback.
@@ -112,7 +112,11 @@ Contains all information necessary for a file descriptor callback.
 {
 	struct Event_dispatcher_idle_callback *self;	
 	int access_count;
+#if defined (WIN32_SYSTEM)
+	FILETIME timestamp;
+#else /* defined (WIN32_SYSTEM) */
 	long timestamp;
+#endif /* defined (WIN32_SYSTEM) */
 	enum Event_dispatcher_idle_priority priority;
 	Event_dispatcher_idle_function *idle_function;
 	void *user_data;
@@ -588,14 +592,16 @@ static struct Event_dispatcher_idle_callback *CREATE(Event_dispatcher_idle_callb
 	Event_dispatcher_idle_function idle_function, void *user_data, 
 	enum Event_dispatcher_idle_priority priority)
 /*******************************************************************************
-LAST MODIFIED : 4 March 2002
+LAST MODIFIED : 1 June 2003
 
 DESCRIPTION :
 Create a single object that belongs to a specific file descriptor.
 ==============================================================================*/
 {
 	struct Event_dispatcher_idle_callback *idle_callback;
+#if !defined (WIN32_SYSTEM)
 	struct tms times_buffer;
+#endif /* !defined (WIN32_SYSTEM) */
 
 	ENTER(CREATE(Event_dispatcher_idle_callback));
 
@@ -603,7 +609,11 @@ Create a single object that belongs to a specific file descriptor.
 	{
 		idle_callback->self = idle_callback;
 		idle_callback->priority = priority;
+#if defined (WIN32_SYSTEM)
+		GetSystemTimeAsFileTime(&(idle_callback->timestamp));
+#else /* defined (WIN32_SYSTEM) */
 		idle_callback->timestamp = (long)times(&times_buffer);
+#endif /* defined (WIN32_SYSTEM) */
 		idle_callback->idle_function = idle_function;
 		idle_callback->user_data = user_data;
 		idle_callback->access_count = 0;
@@ -682,11 +692,29 @@ DESCRIPTION :
 		}
 		else
 		{
+#if defined (WIN32_SYSTEM)
+			if (((idle_one->timestamp).dwHighDateTime<
+				(idle_two->timestamp).dwHighDateTime)||
+				(((idle_one->timestamp).dwHighDateTime==
+				(idle_two->timestamp).dwHighDateTime)&&
+				((idle_one->timestamp).dwLowDateTime<
+				(idle_two->timestamp).dwLowDateTime)))
+#else /* defined (WIN32_SYSTEM) */
 			if (idle_one->timestamp < idle_two->timestamp)
+#endif /* defined (WIN32_SYSTEM) */
 			{
 				return_code = -1;
 			}
+#if defined (WIN32_SYSTEM)
+			if (((idle_one->timestamp).dwHighDateTime>
+				(idle_two->timestamp).dwHighDateTime)||
+				(((idle_one->timestamp).dwHighDateTime==
+				(idle_two->timestamp).dwHighDateTime)&&
+				((idle_one->timestamp).dwLowDateTime>
+				(idle_two->timestamp).dwLowDateTime)))
+#else /* defined (WIN32_SYSTEM) */
 			if (idle_one->timestamp > idle_two->timestamp)
+#endif /* defined (WIN32_SYSTEM) */
 			{
 				return_code = 1;
 			}
@@ -1302,23 +1330,36 @@ struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback(
 	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
 	Event_dispatcher_timeout_function *timeout_function, void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 1 June 2003
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	struct Event_dispatcher_timeout_callback *timeout_callback;
+#if defined (WIN32_SYSTEM)
+	ULONGLONG system_time;
+#else /* defined (WIN32_SYSTEM) */
 	struct timeval timeofday;
+#endif /* defined (WIN32_SYSTEM) */
 
 	ENTER(Event_dispatcher_register_descriptor_callback);
-
 	if (event_dispatcher && timeout_function)
 	{
+#if defined (WIN32_SYSTEM)
+		GetSystemTimeAsFileTime((FILETIME *)&system_time);
+		timeout_callback = Event_dispatcher_add_timeout_callback_at_time(
+			event_dispatcher, timeout_s +
+			(unsigned long)(system_time/(ULONGLONG)10000000), 
+			timeout_ns +
+			100*(unsigned long)(system_time%(ULONGLONG)10000000), 
+			timeout_function, user_data);
+#else /* defined (WIN32_SYSTEM) */
 		gettimeofday(&timeofday, NULL);
 		timeout_callback = Event_dispatcher_add_timeout_callback_at_time(
 			event_dispatcher, timeout_s + (unsigned long)timeofday.tv_sec, 
 			timeout_ns + 1000*(unsigned long)timeofday.tv_usec, 
 			timeout_function, user_data);
+#endif /* defined (WIN32_SYSTEM) */
 	}
 	else
 	{
