@@ -2418,10 +2418,14 @@ access this function.
 					if (double_buffer)
 					{
 						glDrawBuffer(GL_BACK);
+						/* Multipass rendering types need to have the correct read buffer */
+						glReadBuffer(GL_BACK);
 					}
 					else	
 					{
 						glDrawBuffer(GL_FRONT);
+						/* Multipass rendering types need to have the correct read buffer */
+						glReadBuffer(GL_FRONT);
 					}
 				}
 
