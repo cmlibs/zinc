@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.h
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
 The data structures used for representing graphical materials.
@@ -54,10 +54,17 @@ DESCRIPTION :
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 }; /* struct Modify_graphical_material_data */
 
+struct Graphical_material_Texture_change_data
+{
+	struct LIST(Texture) *changed_texture_list;
+	struct LIST(Graphical_material) *changed_material_list;
+};
+
 /*
 Global functions
 ----------------
 */
+
 struct Graphical_material *CREATE(Graphical_material)(char *name);
 /*******************************************************************************
 LAST MODIFIED : 20 June 1996
@@ -236,6 +243,19 @@ LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Returns true if the <material> uses a texture in the <texture_list>.
+==============================================================================*/
+
+int Graphical_material_Texture_change(struct Graphical_material *material,
+	void *texture_change_data_void);
+/*******************************************************************************
+LAST MODIFIED : 13 March 2002
+
+DESCRIPTION :
+If the <material> uses a texture in the <changed_texture_list>, marks the
+material compile_status as CHILD_GRAPHICS_NOT_COMPILED and adds the material
+to the <changed_material_list>.
+???RC Currently managed by Scene. This function should be replaced once messages
+go directly from texture to material.
 ==============================================================================*/
 
 int Graphical_material_set_spectrum_flag(struct Graphical_material *material);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 14 March 2002
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -29,6 +29,7 @@ return to direct rendering, as described with these routines.
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "general/object.h"
+#include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
 #include "graphics/texture.h"
@@ -52,7 +53,7 @@ Module types
 */
 struct Graphical_material
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
 The properties of a graphical material.
@@ -83,8 +84,8 @@ The properties of a graphical material.
 		compacted, all the bits indicate what has been changed */
 	int spectrum_flag;
 	int spectrum_flag_previous;
-	/* flag to say if the display list is up to date */
-	int display_list_current;
+	/* enumeration indicates whether the graphics display list is up to date */
+	enum Graphics_compile_status compile_status;
 	/* the texture for this material */
 	struct Texture *texture;
 	/* the number of structures that point to this material.  The material
@@ -326,7 +327,7 @@ Allocates memory and assigns fields for a material.
 #if defined (OPENGL_API)
 			material->display_list=0;
 #endif /* defined (OPENGL_API) */
-			material->display_list_current=0;
+			material->compile_status = GRAPHICS_NOT_COMPILED;
 		}
 		else
 		{
@@ -483,17 +484,9 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 		(destination->specular).blue=(source->specular).blue;
 		destination->shininess=source->shininess;
 		destination->alpha=source->alpha;
-		if (source->texture)
-		{
-			ACCESS(Texture)(source->texture);
-		}
-		if (destination->texture)
-		{
-			DEACCESS(Texture)(&(destination->texture));
-		}
-		destination->texture=source->texture;
+		REACCESS(Texture)(&(destination->texture), source->texture);
 		/* flag destination display list as no longer current */
-		destination->display_list_current=0;
+		destination->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
 	}
 	else
@@ -646,7 +639,7 @@ Sets the ambient colour of the material.
 		material->ambient.blue=ambient->blue;
 		material->spectrum_flag |= MATERIAL_SPECTRUM_AMBIENT;
 		/* display list needs to be compiled again */
-		material->display_list_current=0;
+		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
 	}
 	else
@@ -709,7 +702,7 @@ Sets the diffuse colour of the material.
 		material->diffuse.blue=diffuse->blue;
 		material->spectrum_flag |= MATERIAL_SPECTRUM_DIFFUSE;
 		/* display list needs to be compiled again */
-		material->display_list_current=0;
+		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
 	}
 	else
@@ -772,7 +765,7 @@ Sets the emission colour of the material.
 		material->emission.blue=emission->blue;
 		material->spectrum_flag |= MATERIAL_SPECTRUM_EMISSION;
 		/* display list needs to be compiled again */
-		material->display_list_current=0;
+		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
 	}
 	else
@@ -835,7 +828,7 @@ Sets the specular colour of the material.
 		material->specular.blue=specular->blue;
 		material->spectrum_flag |= MATERIAL_SPECTRUM_SPECULAR;
 		/* display list needs to be compiled again */
-		material->display_list_current=0;
+		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
 	}
 	else
@@ -894,7 +887,7 @@ Sets the alpha value of the material.
 		material->alpha=alpha;
 		material->spectrum_flag |= MATERIAL_SPECTRUM_ALPHA;
 		/* display list needs to be compiled again */
-		material->display_list_current=0;
+		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
 	}
 	else
@@ -952,7 +945,7 @@ Sets the shininess value of the material.
 	{
 		material->shininess=shininess;
 		/* display list needs to be compiled again */
-		material->display_list_current=0;
+		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
 	}
 	else
@@ -1017,7 +1010,7 @@ Sets the texture member of the material.
 		}
 		material->texture=texture;
 		/* display list needs to be compiled again */
-		material->display_list_current=0;
+		material->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code=1;
 	}
 	else
@@ -1059,6 +1052,46 @@ Returns true if the <material> uses a texture in the <texture_list>.
 
 	return (return_code);
 } /* Graphical_material_uses_texture */
+
+int Graphical_material_Texture_change(struct Graphical_material *material,
+	void *texture_change_data_void)
+/*******************************************************************************
+LAST MODIFIED : 13 March 2002
+
+DESCRIPTION :
+If the <material> uses a texture in the <changed_texture_list>, marks the
+material compile_status as CHILD_GRAPHICS_NOT_COMPILED and adds the material
+to the <changed_material_list>.
+???RC Currently managed by Scene. This function should be replaced once messages
+go directly from texture to material.
+==============================================================================*/
+{
+	int return_code;
+	struct Graphical_material_Texture_change_data *texture_change_data;
+
+	ENTER(Graphical_material_Texture_change);
+	if (material && (texture_change_data =
+		(struct Graphical_material_Texture_change_data *)texture_change_data_void))
+	{
+		if (material->texture && IS_OBJECT_IN_LIST(Texture)(material->texture,
+			texture_change_data->changed_texture_list))
+		{
+			material->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
+			ADD_OBJECT_TO_LIST(Graphical_material)(material,
+				texture_change_data->changed_material_list);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphical_material_Texture_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphical_material_Texture_change */
 
 int Graphical_material_set_spectrum_flag(struct Graphical_material *material)
 /*******************************************************************************
@@ -1482,122 +1515,10 @@ specified name and the default properties.
 	return (return_code);
 } /* file_read_Graphical_material_name */
 
-#if defined (OLD_CODE)
-int activate_Graphical_material(struct Graphical_material *material)
-/*******************************************************************************
-LAST MODIFIED : 28 November 1997
-
-DESCRIPTION :
-Directly outputs the graphics library commands for activating <material>.
-==============================================================================*/
-{
-	int return_code;
-#if defined (GL_API)
-	float values[21];
-#endif
-#if defined (OPENGL_API)
-	GLfloat values[4];
-#endif
-
-	ENTER(activate_Graphical_material);
-	if (material)
-	{
-#if defined (GL_API)
-		if (material->index<=0)
-		{
-			if (material->index<0)
-			{
-				material->index= -(material->index);
-			}
-			else
-			{
-				material->index=next_graphical_material_index;
-				next_graphical_material_index++;
-			}
-			values[0]=AMBIENT;
-			values[1]=(material->ambient).red;
-			values[2]=(material->ambient).green;
-			values[3]=(material->ambient).blue;
-			values[4]=DIFFUSE;
-			values[5]=(material->diffuse).red;
-			values[6]=(material->diffuse).green;
-			values[7]=(material->diffuse).blue;
-			values[8]=ALPHA;
-			values[9]=material->alpha;
-			values[10]=EMISSION;
-			values[11]=(material->emission).red;
-			values[12]=(material->emission).green;
-			values[13]=(material->emission).blue;
-			values[14]=SPECULAR;
-			values[15]=(material->specular).red;
-			values[16]=(material->specular).green;
-			values[17]=(material->specular).blue;
-			values[18]=SHININESS;
-			values[19]=(material->shininess)*128.;
-			values[20]=LMNULL;
-			lmdef(DEFMATERIAL,material->index,21,values);
-		}
-		if (material->index>0)
-		{
-			lmbind(MATERIAL,material->index);
-		}
-#endif
-#if defined (OPENGL_API)
-#if defined (MS_22AUG96)
-		if (0==material->list_index)
-		{
-			if (material->list_index=glGenLists(1))
-			{
-				glNewList(material->list_index,GL_COMPILE);
-#endif /* defined (MS_22AUG96) */
-				values[0]=(material->diffuse).red;
-				values[1]=(material->diffuse).green;
-				values[2]=(material->diffuse).blue;
-				values[3]=material->alpha;
-				glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,values);
-				values[0]=(material->ambient).red;
-				values[1]=(material->ambient).green;
-				values[2]=(material->ambient).blue;
-				glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,values);
-				values[0]=(material->emission).red;
-				values[1]=(material->emission).green;
-				values[2]=(material->emission).blue;
-				glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,values);
-				values[0]=(material->specular).red;
-				values[1]=(material->specular).green;
-				values[2]=(material->specular).blue;
-				glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,values);
-				glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,
-					(material->shininess)*128.);
-#if defined (MS_22AUG96)
-				glEndList();
-			}
-		}
-		if (material->list_index)
-		{
-			glCallList(material->list_index);
-		}
-#endif /* defined (MS_22AUG96) */
-#endif
-			activate_Texture(material->texture);
-			return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"activate_Graphical_material.  Missing material");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* activate_Graphical_material */
-#endif /* defined (OLD_CODE) */
-
 int compile_Graphical_material(struct Graphical_material *material,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 5 April 2000
+LAST MODIFIED : 14 March 2002
 
 DESCRIPTION :
 Graphical_material list/manager iterator function.
@@ -1617,37 +1538,39 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 	USE_PARAMETER(dummy_void);
 	if (material)
 	{
-		/*???RC compile texture here just to be safe */
-		if (material->texture)
+		return_code = 1;
+		if (GRAPHICS_COMPILED != material->compile_status)
 		{
-			compile_Texture(material->texture,NULL);
-		}
-		if (material->display_list_current)
-		{
-			return_code=1;
-		}
-		else
-		{
+			/* must compile texture before opening material display list */
+			if (material->texture)
+			{
+				compile_Texture(material->texture, NULL);
+			}
+			if (GRAPHICS_NOT_COMPILED == material->compile_status)
+			{
 #if defined (OPENGL_API)
-			if (material->display_list||(material->display_list=glGenLists(1)))
-			{
-				glNewList(material->display_list,GL_COMPILE);
-				direct_render_Graphical_material(material);
-				glEndList();
-				material->display_list_current=1;
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"compile_Graphical_material.  Could not generate display list");
-				return_code=0;
-			}
+				if (material->display_list || (material->display_list = glGenLists(1)))
+				{
+					glNewList(material->display_list,GL_COMPILE);
+					direct_render_Graphical_material(material);
+					glEndList();
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"compile_Graphical_material.  Could not generate display list");
+					return_code = 0;
+				}
 #else /* defined (OPENGL_API) */
-			display_message(ERROR_MESSAGE,
-				"compile_Graphical_material.  Not defined for this API");
-			return_code=0;
+				display_message(ERROR_MESSAGE,
+					"compile_Graphical_material.  Not defined for this API");
+				return_code = 0;
 #endif /* defined (OPENGL_API) */
+			}
+			if (return_code)
+			{
+				material->compile_status = GRAPHICS_COMPILED;
+			}
 		}
 	}
 	else
@@ -1663,7 +1586,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 
 int execute_Graphical_material(struct Graphical_material *material)
 /*******************************************************************************
-LAST MODIFIED : 7 September 2000
+LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
 Activates <material> by calling its display list. If the display list is not
@@ -1681,32 +1604,32 @@ direct_render_Graphical_material.
 	if (material)
 	{
 #if defined (OPENGL_API)
-		if (material->display_list_current)
+		if (GRAPHICS_COMPILED == material->compile_status)
 		{
 			glCallList(material->display_list);
-			return_code=1;
+			return_code = 1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"execute_Graphical_material.  Display list not current");
-			return_code=0;
+			return_code = 0;
 		}
 #else /* defined (OPENGL_API) */
 		display_message(ERROR_MESSAGE,
 			"execute_Graphical_material.  Not defined for this API");
-		return_code=0;
+		return_code = 0;
 #endif /* defined (OPENGL_API) */
 	}
 	else
 	{
 #if defined (OPENGL_API)
 		/* turn off any texture */
-		return_code=execute_Texture((struct Texture *)NULL);
+		return_code = execute_Texture((struct Texture *)NULL);
 #else /* defined (OPENGL_API) */
 		display_message(ERROR_MESSAGE,
 			"execute_Graphical_material.  Not defined for this API");
-		return_code=0;
+		return_code = 0;
 #endif /* defined (OPENGL_API) */
 	}
 	LEAVE;
