@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_editor_dialog.c
 
-LAST MODIFIED : 10 September 1998
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 This module creates a spectrum_editor_dialog.
@@ -333,7 +333,7 @@ static Widget create_spectrum_editor_dialog(
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 10 March 1998
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 Creates a dialog widget that allows the user to edit the properties of any of
@@ -459,7 +459,7 @@ the spectrums contained in the global list.
 									CREATE_CHOOSE_OBJECT_WIDGET(Scene)(
 										spectrum_editor_dialog->autorange_scene_form,
 										(struct Scene *)NULL, scene_manager,
-										(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL)))
+										(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL,(void *)NULL)))
 								{
 									spectrum_editor_dialog->autorange_scene =
 										CHOOSE_OBJECT_GET_OBJECT(Scene)

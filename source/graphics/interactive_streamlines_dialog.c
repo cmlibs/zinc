@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_streamlines_dialog.c
 
-LAST MODIFIED : 9 November 1998
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 This module creates a free streamline_editor_dialog input device, using two
@@ -314,7 +314,7 @@ static Widget create_interactive_streamline_dialog(
 	struct Interactive_streamline *init_data,
 	struct User_interface *user_interface,struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 20 March 2000
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 Creates a dialog widget that allows the user to manipulate
@@ -424,7 +424,8 @@ the interactive streamlines.
 										CREATE_CHOOSE_OBJECT_WIDGET(Scene)(
 										interactive_streamline_dialog->scene_form,
 										interactive_streamline_dialog->scene,
-										scene_manager,(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL))
+										scene_manager,(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL,
+										(void *)NULL))
 									{
 										callback.procedure=
 											interactive_streamline_dialog_update_scene;
