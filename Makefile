@@ -78,6 +78,32 @@ $(SOURCE_PATH)/cmgui_sgilite.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/co
 	$(COMMON_IMAKE_RULE) \
 	imake -DIRIX -DOPTIMISED -DLITEWEIGHT $${CMISS_ROOT_DEF} -s cmgui_sgilite.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
+#SGI F90 Interpreter version
+cmgui_f90 : force $(SOURCE_PATH)/cmgui_sgif90.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cmgui_sgif90.make ]; then \
+		$(MAKE) -f cmgui_sgif90.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgif90.make $(TARGET) ; \
+	fi	
+
+$(SOURCE_PATH)/cmgui_sgif90.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DIRIX -DOPTIMISED -DF90_INTERPRETER $${CMISS_ROOT_DEF} -s cmgui_sgif90.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
+#SGI Perl Interpreter version
+cmgui_perl : force $(SOURCE_PATH)/cmgui_sgiperl.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cmgui_sgiperl.make ]; then \
+		$(MAKE) -f cmgui_sgiperl.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgiperl.make $(TARGET) ; \
+	fi	
+
+$(SOURCE_PATH)/cmgui_sgiperl.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DIRIX -DOPTIMISED -DPERL_INTERPRETER $${CMISS_ROOT_DEF} -s cmgui_sgiperl.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
 #SGI debug memory check version
 cmgui_memorycheck : force $(SOURCE_PATH)/cmgui_sgi_memorycheck.make
 	$(COMMON_MAKE_RULE) \
