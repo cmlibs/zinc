@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 12 November 2001
+LAST MODIFIED : 7 March 2002
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -923,14 +923,14 @@ Callback for change of iso_scalar field.
 static void settings_editor_iso_value_text_CB(Widget widget,
 	XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 7 March 2002
 
 DESCRIPTION :
 Called when entry is made into the iso_value text field.
 ==============================================================================*/
 {
-	char *text_entry,temp_string[50];
-	double iso_value;
+	char *text_entry, temp_string[50];
+	double current_iso_value, iso_value;
 	struct Computed_field *scalar_field;
 	struct Settings_editor *settings_editor;
 
@@ -943,17 +943,20 @@ Called when entry is made into the iso_value text field.
 		if (settings_editor->current_settings)
 		{
 			GT_element_settings_get_iso_surface_parameters(
-				settings_editor->current_settings,&scalar_field,&iso_value);
+				settings_editor->current_settings,&scalar_field,&current_iso_value);
 			/* Get the text string */
 			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
 			if (text_entry)
 			{
 				sscanf(text_entry,"%lg",&iso_value);
 				XtFree(text_entry);
-				GT_element_settings_set_iso_surface_parameters(
-					settings_editor->current_settings,scalar_field,iso_value);
-				/* inform the client of the change */
-				settings_editor_update(settings_editor);
+				if (iso_value != current_iso_value)
+				{
+					GT_element_settings_set_iso_surface_parameters(
+						settings_editor->current_settings,scalar_field,iso_value);
+					/* inform the client of the change */
+					settings_editor_update(settings_editor);
+				}
 			}
 			else
 			{
