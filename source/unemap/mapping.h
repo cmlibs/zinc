@@ -182,15 +182,17 @@ map_drawing_information.
 {	
 	char *fit_name;
 	enum Electrodes_option electrodes_option;
-	FE_value electrode_size;
+	FE_value electrode_size,electrodes_max_z,electrodes_min_z;
 	/* a flag  */
 	int colour_electrodes_with_signal;
 	int access_count,number_of_contours,number_of_map_columns,number_of_map_rows;
 	struct GT_element_settings **contour_settings;
 	struct FE_field *map_position_field,*map_fit_field;	
-	struct FE_node_order_info *node_order_info;	
-	struct GROUP(FE_element) *element_group;
-	struct GROUP(FE_node) *node_group;		
+	struct FE_node_order_info *node_order_info;
+	/*element_group,node_group on the cylinder (or prolate spheroid or patch) surface*/
+	/* mapped_torso_element_group,mapped_torso_node_group on the loaded default torso mesh*/
+	struct GROUP(FE_element) *element_group,*mapped_torso_element_group;
+	struct GROUP(FE_node) *node_group,*mapped_torso_node_group;		
 	struct GT_object *electrode_glyph;	
 	struct GT_object *torso_arm_labels;/*FOR AJP*/
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -584,6 +586,40 @@ DESCRIPTION :
 Sets the electrode_size  for map_3d_package 
 ==============================================================================*/
 
+FE_value get_map_3d_package_electrodes_min_z(struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 9 November 2000
+
+DESCRIPTION :
+gets the map_electrodes_min_z for map_3d_package <map_number> 
+==============================================================================*/
+
+int set_map_3d_package_electrodes_min_z(struct Map_3d_package *map_3d_package,
+	FE_value electrodes_min_z);
+/*******************************************************************************
+LAST MODIFIED : 9 November 2000
+
+DESCRIPTION :
+Sets the electrodes_min_z  for map_3d_package <map_number> 
+==============================================================================*/
+
+FE_value get_map_3d_package_electrodes_max_z(struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 9 November 2000
+
+DESCRIPTION :
+gets the map_electrodes_max_z for map_3d_package <map_number> 
+==============================================================================*/
+
+int set_map_3d_package_electrodes_max_z(struct Map_3d_package *map_3d_package,
+	FE_value electrodes_max_z);
+/*******************************************************************************
+LAST MODIFIED :  November 2000
+
+DESCRIPTION :
+Sets the electrodes_max_z  for map_3d_package <map_number> 
+==============================================================================*/
+
 enum Electrodes_option get_map_3d_package_electrodes_option(
 	struct Map_3d_package *map_3d_package);
 /*******************************************************************************
@@ -698,6 +734,24 @@ DESCRIPTION :
 gets the node_group for map_3d_package 
 ==============================================================================*/
 
+struct GROUP(FE_node) *get_map_3d_package_mapped_torso_node_group(
+	struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the mapped_torso_node_group for map_3d_package 
+==============================================================================*/
+
+int set_map_3d_package_mapped_torso_node_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_node) *mapped_torso_node_group);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+Sets the mapped_torso_node_group for map_3d_package
+==============================================================================*/
+
 struct GROUP(FE_element) *get_map_3d_package_element_group(
 	struct Map_3d_package *map_3d_package);
 /*******************************************************************************
@@ -714,6 +768,24 @@ LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 Sets the element_group for map_3d_package
+==============================================================================*/
+
+struct GROUP(FE_element) *get_map_3d_package_mapped_torso_element_group(
+	struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the mapped_torso_element_group for map_3d_package
+==============================================================================*/
+
+int set_map_3d_package_mapped_torso_element_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_element) *mapped_torso_element_group);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+Sets the mapped_torso_element_group for map_3d_package
 ==============================================================================*/
 
 int get_map_drawing_information_viewed_scene(
@@ -999,11 +1071,13 @@ gets the glyph_list of the <map_drawing_information>.
 ==============================================================================*/
 
 int map_drawing_information_align_scene(
-	struct Map_drawing_information *map_drawing_information); /*FOR AJP*/
+	struct Map_drawing_information *map_drawing_information, double up_vector[3]); /*FOR AJP*/
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 13 November 2000
 
-DESCRIPTION : Aligns the <package> scene so that the largest cardinal dimension 
+DESCRIPTION : Aligns the <map_drawing_information> scene so that 
+if <up_vector> is not NULL, it is the scene viewer's up vector, else 
+the  largest cardinal dimension 
 component of the scene is the scene viewer's up vector, and the viewer is 
 looking along the scene's smallest cardinal dimension component towards the 
 centre of the scene. Eg if a scene is 100 by 30 by 150 (in x,y,z)
@@ -1011,6 +1085,36 @@ then we'd look along the y axis, with the z axis as the up vector.
 
 cf Scene_viewer_view_all.
 Should be in Scene_viewer? RC doesn't think so.
+==============================================================================*/
+
+struct FE_field *create_map_fit_field(char *field_name,
+	struct MANAGER(FE_field) *fe_field_manager);
+/*******************************************************************************
+LAST MODIFIED : 6 October 2000
+
+DESCRIPTION :
+creates the map fit field, the name <field_name>
+==============================================================================*/
+
+int define_fit_field_at_quad_elements_and_nodes(
+	struct GROUP(FE_element) *torso_element_group,
+	struct FE_field *fit_field,struct MANAGER(FE_basis) *basis_manager,
+	struct MANAGER(FE_element) *element_manager);
+/*******************************************************************************
+LAST MODIFIED : 8 November 2000
+
+DESCRIPTION :
+Finds all the elements in <torso_element_group> with 4 nodes, 
+for these elements defines <fit_field> at the element, and it's nodes.
+===============================================================================*/
+
+int set_torso_fit_field_values(struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 10 November 2000
+
+DESCRIPTION :
+set the nodeal values of the fit field at the nodes of the elements in
+<map_3d_package->mapped_torso_element_group>
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
 

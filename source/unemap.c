@@ -11,6 +11,7 @@ Main program for unemap.  Based on cmgui.
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 #if defined (MOTIF)
 #include <Xm/MessageB.h>
 #endif /* defined (MOTIF) */
@@ -23,6 +24,7 @@ Main program for unemap.  Based on cmgui.
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_vector_operations.h"
 #include "curve/control_curve.h"
+#include "finite_element/import_finite_element.h"
 #include "graphics/glyph.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
@@ -236,17 +238,6 @@ Exits unemap
 } /* exit_unemap */
 #endif /* defined (MOTIF) */
 
-#if defined (UNEMAP_USE_3D)
-/* the string of the defaut torso exnode file*/
-static char default_torso_exnode_string[]=
-#include "unemap/default_torso/torso_model.exnodeh"
-;
-/* the string of the defaut torso exelem file*/
-static char default_torso_exelem_string[]=
-#include "unemap/default_torso/torso_model.exelemh"
-;
-#endif /* defined (UNEMAP_USE_3D)*/
-
 /*
 Main program
 ------------
@@ -292,11 +283,13 @@ Main program for unemap
 	struct Element_point_ranges_selection *element_point_ranges_selection=
 		(struct Element_point_ranges_selection *)NULL;
 	struct FE_element_selection *element_selection=(struct FE_element_selection *)NULL;
+	struct FE_field *map_fit_field=(struct FE_field *)NULL;
 	struct FE_node_selection *node_selection=(struct FE_node_selection *)NULL;
 	struct FE_node_selection *data_selection=(struct FE_node_selection *)NULL;
 	struct Graphical_material *default_graphical_material=(struct Graphical_material *)NULL;
 	struct Graphical_material *default_selected_material=(struct Graphical_material *)NULL;	
-	struct Graphical_material *electrode_selected_material=(struct Graphical_material *)NULL;	
+	struct Graphical_material *electrode_selected_material=(struct Graphical_material *)NULL;
+	struct GROUP(FE_element) *torso_element_group=(struct GROUP(FE_element) *)NULL;	
 	struct GT_object *glyph=(struct GT_object *)NULL;
 	struct Light *default_light=(struct Light *)NULL;
 	struct Light_model *default_light_model=(struct Light_model *)NULL;
@@ -329,6 +322,14 @@ Main program for unemap
 	struct MANAGER(Texture) *texture_manager=(struct MANAGER(Texture) *)NULL;	
 	struct Node_tool *node_tool=(struct Node_tool *)NULL;
 	struct Interactive_tool *transform_tool=(struct Interactive_tool *)NULL;
+	struct Standard_torso_defaults
+	{
+		char *standard_torso_file;
+	};
+#define XmNstandardTorso "standardTorso"
+#define XmCStandardTorso "StandardTorso"
+	struct Standard_torso_defaults standard_torso_defaults;
+	char *default_torso_group_name=(char *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	struct System_window *system;
 	struct Time_keeper *time_keeper;
@@ -367,6 +368,17 @@ Main program for unemap
 			XmRString,
 			"green"
 		},
+#if defined (UNEMAP_USE_3D)
+		{
+			XmNstandardTorso,
+			XmCStandardTorso,
+			XmRString,
+			sizeof(char *),
+			XtOffsetOf(struct Standard_torso_defaults,standard_torso_file),
+			XmRString,
+			""
+		}
+#endif/* defined (UNEMAP_USE_3D) */
 	};
 	struct System_window_data
 	{
@@ -867,12 +879,6 @@ Main program for unemap
 		/* FE_element_shape manager */
 		/*???DB.  To be done */
 		all_FE_element_shape=CREATE_LIST(FE_element_shape)();
-		/* read in (and shift identifiers of) the default torso mesh nodes and elements */
-		/* (cleaned up when the program shuts down) */		
-		read_exnode_and_exelem_file_from_string_and_offset(
-				default_torso_exnode_string,default_torso_exelem_string,"default_torso",
-				fe_field_manager,node_manager,element_manager,node_group_manager,
-				data_group_manager,element_group_manager,fe_basis_manager);
 		unemap_package=CREATE(Unemap_package)(fe_field_manager,
 			element_group_manager,node_manager,data_manager,data_group_manager,
 			node_group_manager,fe_basis_manager,element_manager,computed_field_manager,
@@ -907,7 +913,6 @@ Main program for unemap
 			5,".sig",&user_interface))
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 		{
-
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (MOTIF)
 			create_Shell_list_item(&(system->window_shell),&user_interface);
@@ -929,6 +934,44 @@ Main program for unemap
 			/* these defaults match with the default resources above */
 			system_window_data.x = -1;
 			system_window_data.y = -1;
+#if defined (UNEMAP_USE_3D)
+			/* create and store the map fit field  */
+			map_fit_field=create_map_fit_field("fit",fe_field_manager);
+			set_unemap_package_map_fit_field(unemap_package,map_fit_field);
+			/* get the location of the default_torso file from Xresoures*/
+			standard_torso_defaults.standard_torso_file= "";			
+			XtVaGetApplicationResources(system->window_shell,
+				&standard_torso_defaults,resources,
+				XtNumber(resources),NULL);
+			/* do nothing if no default torso file specified */
+			if(standard_torso_defaults.standard_torso_file!="")
+			{									
+				/* read in the default torso node and element groups */
+				if(read_FE_node_and_elem_groups_and_return_name_given_file_name(
+					standard_torso_defaults.standard_torso_file,fe_field_manager,
+					node_manager,element_manager,node_group_manager,
+					data_group_manager,element_group_manager,fe_basis_manager,
+					&default_torso_group_name))
+				{
+					/* offset default torso  node and element groups */
+					offset_FE_node_and_element_identifiers_in_group(default_torso_group_name,
+						(INT_MAX/2),node_manager,element_manager,node_group_manager,
+						element_group_manager);									
+					/*put in name unemap_package*/
+					set_unemap_package_default_torso_name(unemap_package,default_torso_group_name);
+					/* define the fit field on  the defaut torso*/
+					torso_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
+						(default_torso_group_name,element_group_manager);
+					define_fit_field_at_quad_elements_and_nodes(torso_element_group,
+						map_fit_field,fe_basis_manager,element_manager);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Can't find standardTorso specified in Cmgui/Unemap file");
+				}
+			}
+#endif /* defined (UNEMAP_USE_3D) */
 			XtVaGetApplicationResources(system->window_shell,
 				&system_window_data,System_window_resources,
 				XtNumber(System_window_resources),NULL);

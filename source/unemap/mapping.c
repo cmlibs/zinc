@@ -39,17 +39,90 @@ DESCRIPTION :
 #include "user_interface/user_interface.h"
 
 /*
+Module variables
+----------------
+*/
+
+/* for map fit field */
+char *fit_comp_name[1]=
+{
+	"fitted_value"
+};
+int fit_components_number_of_derivatives[1]={3},
+	fit_components_number_of_versions[1]={1};
+enum FE_nodal_value_type fit_bicubic_component[4]=
+	{FE_NODAL_VALUE,FE_NODAL_D_DS1,FE_NODAL_D_DS2,FE_NODAL_D2_DS1DS2};
+
+/*
 Module constants
 ----------------
 */
 #define MAX_SPECTRUM_COLOURS 256
-
 /*
 Module types
 ------------
 */
 typedef struct Map Map_settings;
 typedef struct Map_drawing_information Map_drawing_information_settings;
+
+#if defined (UNEMAP_USE_3D)
+struct Define_fit_field_at_torso_element_nodes_data
+{
+	struct GROUP(FE_element) *quad_element_group;
+	struct FE_field *fit_field;
+}; /* define_fit_field_at_torso_element_nodes_data */
+
+struct Map_value_torso_data
+/*******************************************************************************
+LAST MODIFIED : 16 October 2000
+
+DESCRIPTION :
+used by set_map_fit_field_at_torso_node
+==============================================================================*/
+{ 
+	int first_torso_element_number;
+	struct Map_3d_package *map_3d_package;
+	struct FE_element *torso_element;
+	struct LIST(FE_node) *processed_nodes;
+};
+
+struct Element_torso_data
+/*******************************************************************************
+LAST MODIFIED : 19 October 2000
+
+DESCRIPTION :
+used by add_torso_elements_if_nodes_in_z_range
+==============================================================================*/
+{
+	struct LIST(FE_node) *torso_nodes_in_z_range;
+	struct GROUP(FE_element) *mapped_torso_element_group;	
+};
+
+	
+struct Z_value_data
+/*******************************************************************************
+LAST MODIFIED : 17 October 2000
+
+DESCRIPTION :
+
+==============================================================================*/
+{
+	FE_value map_min_z,map_max_z;
+	struct FE_field *torso_position_field;
+};
+	
+struct merge_fit_field_template_element_data
+/*******************************************************************************
+LAST MODIFIED : 24 October 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int count;
+	struct FE_element *template_element;
+	struct MANAGER(FE_element) *element_manager;	
+};
+#endif /* defined (UNEMAP_USE_3D)*/
 
 /*
 Prototype "cardiac database"
@@ -1712,13 +1785,56 @@ Updates the colour map being used for map.
 } /* update_colour_map */
 
 #if defined (UNEMAP_USE_3D)
+struct FE_field *create_map_fit_field(char *field_name,
+	struct MANAGER(FE_field) *fe_field_manager)
+/*******************************************************************************
+LAST MODIFIED : 6 October 2000
+
+DESCRIPTION :
+creates the map fit field, the name <field_name>
+==============================================================================*/
+{	
+	struct FE_field *map_fit_field;
+	struct CM_field_information field_info;
+	struct Coordinate_system coordinate_system;
+
+	ENTER(create_map_fit_field);
+	map_fit_field=(struct FE_field *)NULL;	
+	if(field_name&&fe_field_manager)
+	{
+		/* set up the info needed to create the potential field */			
+		set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
+		coordinate_system.type=NOT_APPLICABLE;				
+		/* create the potential  field, add it to the node */			
+		if (!(map_fit_field=get_FE_field_manager_matched_field(fe_field_manager,field_name,
+			GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+			/*number_of_indexed_values*/0,&field_info,
+			&coordinate_system,FE_VALUE_VALUE,
+			/*number_of_components*/1,fit_comp_name,
+			/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE)))
+		{
+			display_message(ERROR_MESSAGE,
+				"create_map_fit_field. Could not retrieve potential_value field");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+				"create_map_fit_field. invalid argument");
+	}
+	LEAVE;
+	return(map_fit_field);
+}/* create_map_fit_field */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
 static struct FE_field_order_info *create_mapping_fields(enum Region_type 
 	region_type,FE_value focus,struct Unemap_package *package)
 /*******************************************************************************
 LAST MODIFIED : 26 August 1999
 
 DESCRIPTION :
-
+Creates the mapping fields, returns them in a FE_field_order_info.
 ==============================================================================*/
 {		  
 #define NUM_MAPPING_FIELDS 2 /* position_field,fit_field*/ 	 
@@ -1746,10 +1862,6 @@ DESCRIPTION :
 	char *torso_fit_point_component_names[3]=
 	{
 		"r","theta","z"
-	};	
-	char *potential_component_names[1]=
-	{
-		"fitted_value"
 	};	
 	char *position_str = "_fit_point_position";
 
@@ -1901,17 +2013,7 @@ DESCRIPTION :
 			/* create fields common to all nodes*/
 			if(success)
 			{
-				/* set up the info needed to create the potential field */			
-				set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
-				coordinate_system.type=NOT_APPLICABLE;				
-				/* create the potential  field, add it to the node */			
-				if (potential_field=get_FE_field_manager_matched_field(
-					fe_field_manager,"fit",
-					GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-					/*number_of_indexed_values*/0,&field_info,
-					&coordinate_system,FE_VALUE_VALUE,
-					/*number_of_components*/1,potential_component_names,
-					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+				if(potential_field=get_unemap_package_map_fit_field(package))
 				{
 					set_FE_field_order_info_field(the_field_order_info,field_number,
 						potential_field);
@@ -1922,10 +2024,9 @@ DESCRIPTION :
 					display_message(ERROR_MESSAGE,
 						"create_mapping_fields. Could not retrieve potential_value field");
 					success=0;
-				}	
-				DEALLOCATE(fit_point_name);
+				}				
 			} /* if(success)*/
-
+			DEALLOCATE(fit_point_name);
 		}
 		else
 		{
@@ -1961,18 +2062,13 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 	struct FE_node *node;
 	int success;	
 	struct FE_field *position_field,*fit_field;
-
 	enum FE_nodal_value_type linear_component[1]={FE_NODAL_VALUE};
-	enum FE_nodal_value_type bicubic_component[4]=
-	{FE_NODAL_VALUE,FE_NODAL_D_DS1,FE_NODAL_D_DS2,FE_NODAL_D2_DS1DS2};
 	enum FE_nodal_value_type *components_value_types[3];
-
+	enum FE_nodal_value_type *fit_components_value_types[1];
 	int fit_point_components_number_of_derivatives[3]={0,0,0},
 		fit_point_components_number_of_versions[3]; /* defined below*/
 	int patch_fit_point_components_number_of_derivatives[2]={0,0},
 		patch_fit_point_components_number_of_versions[2]; /* defined below*/
-	int fit_components_number_of_derivatives[1]={3},
-	  fit_components_number_of_versions[1]={1};
 	int torso_fit_point_components_number_of_derivatives[3]={3,0,0},
 		torso_fit_point_components_number_of_versions[3]; /* defined below*/
 
@@ -2020,7 +2116,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 				}break;	
 				case TORSO:
 				{
-					components_value_types[0]=bicubic_component;
+					components_value_types[0]=fit_bicubic_component;
 					components_value_types[1]=linear_component;
 					components_value_types[2]=linear_component;
 					success=define_FE_field_at_node(node,position_field,
@@ -2042,12 +2138,12 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 			if(success)
 			{		
 				/* 2nd field in field_order_info is fit_field */
-				fit_field=get_FE_field_order_info_field(field_order_info,1);
-					components_value_types[0]=bicubic_component;
+				fit_components_value_types[0]=fit_bicubic_component;
+				fit_field=get_FE_field_order_info_field(field_order_info,1);				
 				success=define_FE_field_at_node(node,fit_field,
 					fit_components_number_of_derivatives,
 					fit_components_number_of_versions,
-					components_value_types);
+				  fit_components_value_types);
 			} /* if(success)*/		
 		}	
 		else
@@ -2174,7 +2270,7 @@ sets a node's values storage with the coordinate system component versions and v
 
 #if defined (UNEMAP_USE_3D)
 static int set_mapping_FE_node_fit_values(struct FE_node *node,
-	struct FE_field *fit_field,
+	struct FE_field *fit_field,int component_number,
 	FE_value f,FE_value dfdx,FE_value dfdy,FE_value d2fdxdy)
 /*******************************************************************************
 LAST MODIFIED : 3 September 1999
@@ -2192,7 +2288,7 @@ Sets a node's values storage with the values  potential<f> and derivatives
 	if(node&&fit_field)
 	{
 		component.field=fit_field;
-		component.number=0;
+		component.number=component_number;
 		return_code=(
 			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,f)&&
 			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D_DS1,dfdx)&&
@@ -2249,7 +2345,7 @@ and the field_order_info.
 			/*Set fields which are identical in all nodes*/
 			/* 2nd field contains fit */	
 			field=get_FE_field_order_info_field(field_order_info,1);
-			set_mapping_FE_node_fit_values(node,field,f,dfdx,dfdy,d2fdxdy);
+			set_mapping_FE_node_fit_values(node,field,0/*component_number*/,f,dfdx,dfdy,d2fdxdy);
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
 				cm_node_identifier)(node_number,node_manager))
 			{									
@@ -2312,8 +2408,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 	struct FE_node *template_node,*node;
 	struct FE_field_order_info *field_order_info;
 	struct FE_node_order_info *node_order_info;
-	FE_value c,dfdx,dfdy,d2fdxdy,dr_dt,/*dt_ds,*/dt_dxi,f,focus,lambda,mu,r,
-		r_value_and_derivatives[4],s,t,theta,torso_x,torso_y,x,y,z;
+	FE_value dfdx,dfdy,d2fdxdy,f,focus,lambda,mu,r_value_and_derivatives[4],theta,x,y,z;
 	int count,f_index,i,j,last_node_number,node_number,number_of_columns,number_of_nodes,
 		number_of_rows;	
 	struct GROUP(FE_node) *interpolation_node_group;	
@@ -2323,8 +2418,13 @@ i.e sock is a hemisphere, torso is a cylinder.
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct Map_3d_package *map_3d_package;
-
+#if !defined(ROUND_TORSO)
+	FE_value c,dr_dt,/*dt_ds,*/,dt_dxi,r,s,t,torso_x,torso_y;
+#endif /* !defined(ROUND_TORSO)*/
 	ENTER(interpolation_function_to_node_group);
+#if defined(ROUND_TORSO)
+	USE_PARAMETER(torso_minor_r);
+#endif /* !defined(ROUND_TORSO)*/
 	node_order_info =(struct FE_node_order_info *)NULL;	
 	interpolation_node_group =(struct GROUP(FE_node) *)NULL;
 	template_node = (struct FE_node *)NULL;	
@@ -2517,8 +2617,9 @@ i.e sock is a hemisphere, torso is a cylinder.
 								node_number = get_next_FE_node_number(node_manager,last_node_number);						
 								theta=function->x_mesh[j];
 								z=function->y_mesh[i];
+								/* ROUND_TORSO defined in rig_node.h */
 #if defined (ROUND_TORSO) /*FOR AJP*/
-								r_value_and_derivatives[0]= torso_major_r;
+								r_value_and_derivatives[0]= torso_major_r;		
 #else																
 								t=function->x_mesh[j];
 								c=cos(t);
@@ -3378,12 +3479,13 @@ static int change_fit_node_group_values(struct FE_node_order_info
 	struct MANAGER(GROUP(FE_element))	*element_group_manager,
 	struct MANAGER(FE_node) *node_manager)
 /*******************************************************************************
-LAST MODIFIED : August 12  1999
+LAST MODIFIED :14 November 2000
 
 DESCRIPTION :
 Given the <function> and <package>  <node_order_info> and <name>,
 Checks that a node group of name <name> exists, searches the node group for the
 nodes in <node_order_info>, and fills them in with values from <function>.
+Caching of nodes should be done outside this function
 *******************************************************************************/		 
 {
 	enum Region_type region_type;
@@ -3406,7 +3508,6 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 			name,node_group_manager))&&(FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
 				(name,element_group_manager)))
 		{	
-			MANAGER_BEGIN_CACHE(FE_node)(node_manager);	
 			switch(region_type)
 			{
 				case SOCK:
@@ -3427,7 +3528,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 						if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
 							(node,node_managed))
 						{
-							set_mapping_FE_node_fit_values(node,fit_field,
+							set_mapping_FE_node_fit_values(node,fit_field,0/*component_number*/,
 								f,dfdx,dfdy,d2fdxdy);
 							/* copy it back into the manager */
 							MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
@@ -3473,7 +3574,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 									if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
 										(node,node_managed))
 									{
-										set_mapping_FE_node_fit_values(node,fit_field,
+										set_mapping_FE_node_fit_values(node,fit_field,0/*component_number*/,
 											f,dfdx,dfdy,d2fdxdy);
 										/* copy it back into the manager */
 										MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
@@ -3526,7 +3627,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 									if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
 										(node,node_managed))
 									{
-										set_mapping_FE_node_fit_values(node,fit_field,
+										set_mapping_FE_node_fit_values(node,fit_field,0/*component_number*/,
 											f,dfdx,dfdy,d2fdxdy);
 										/* copy it back into the manager */
 										MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
@@ -3578,7 +3679,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 									if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
 										(node,node_managed))
 									{
-										set_mapping_FE_node_fit_values(node,fit_field,
+										set_mapping_FE_node_fit_values(node,fit_field,0/*component_number*/,
 											f,dfdx,dfdy,d2fdxdy);
 										/* copy it back into the manager */
 										MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
@@ -3605,7 +3706,6 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 					} /* while(count */
 				}break; /* case PATCH:*/
 			} /* switch(region_type) */
-			MANAGER_END_CACHE(FE_node)(node_manager);
 		}
 		else
 		{
@@ -3626,12 +3726,241 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 #endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
+int torso_node_is_in_z_range(struct FE_node *torso_node,void *z_value_data_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Conditional function returning true if <node>  in the z range of <data_void>.
+==============================================================================*/
+{
+	FE_value torso_node_z;
+	int return_code;
+	struct FE_field_component component;
+	struct Z_value_data *z_value_data;
+
+	ENTER(torso_node_is_in_z_range);
+	return_code=0;
+	if (torso_node&&(z_value_data=(struct Z_value_data *)z_value_data_void))
+	{
+		component.field=z_value_data->torso_position_field;
+		component.number=2;
+		get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
+							&torso_node_z);
+		if((torso_node_z>=z_value_data->map_min_z)&&
+			(torso_node_z<=z_value_data->map_max_z))
+		{
+			return_code=1;		
+		}	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"torso_node_is_in_z_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* torso_node_is_in_z_range  */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int add_torso_elements_if_nodes_in_z_range(
+	struct FE_element *torso_element,void *element_torso_data_void)
+/*******************************************************************************
+LAST MODIFIED : 9 November 2000
+
+DESCRIPTION :
+Get list of nodes in <torso_element>.
+If <torso_element> is a CM_ELEMENT  AND has 4 nodes and all nodes in 
+<torso_element> are also in element_torso_data->torso_nodes_in_z_range, 
+adds the element to element_torso_data->mapped_torso_element_group.
+Also sets the fit field at the torso nodes
+==============================================================================*/
+{	
+	int number_of_nodes,return_code;
+	struct Node_is_in_list_data node_is_in_list_data;
+	struct Element_torso_data *element_torso_data;
+	struct LIST(FE_node) *element_nodes;
+
+	ENTER(add_torso_elements_if_nodes_in_z_range);
+	return_code=1;
+	element_torso_data=(struct Element_torso_data *)NULL;
+	element_nodes=(struct LIST(FE_node) *)NULL;
+	if(torso_element&&element_torso_data_void&&(element_torso_data
+		=(struct Element_torso_data *)element_torso_data_void))
+	{	
+		/* only deal with elements, not lines */
+		if(torso_element->cm.type==CM_ELEMENT)
+		{
+			element_nodes=CREATE_LIST(FE_node)();
+			/*get all nodes in element */
+			calculate_FE_element_field_nodes(torso_element,
+				(struct FE_field *)NULL,element_nodes);
+			number_of_nodes=NUMBER_IN_LIST(FE_node)(element_nodes);
+			/* do nothing if not 4 nodes */
+			if(number_of_nodes==4)
+			{
+				/* determine if all element nodes in z range list */
+				node_is_in_list_data.node_list=
+					element_torso_data->torso_nodes_in_z_range;
+				if(FOR_EACH_OBJECT_IN_LIST(FE_node)(node_is_in_list,
+					(void *)&node_is_in_list_data,element_nodes))
+				{
+					/* add torso element to group*/
+					ADD_OBJECT_TO_GROUP(FE_element)(torso_element,
+						element_torso_data->mapped_torso_element_group);			
+				}	
+			}
+			DESTROY_LIST(FE_node)(&element_nodes);
+		} 
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"add_torso_elements_if_nodes_in_z_range. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* add_torso_elements_if_nodes_in_z_range */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int make_mapped_torso_node_and_element_groups(struct Region *region,
+	struct Unemap_package *unemap_package)
+/*******************************************************************************
+LAST MODIFIED : 10 November 2000
+
+DESCRIPTION :
+Makes the node and element groups for the mapped torso.
+Does by adding all the nodes/elements from the loaded default torso that have
+their z position within the z range of the map_node_group nodes. map_node_group
+nodes z values are defined by the electrodes.
+==============================================================================*/
+{
+	int return_code;	
+	char *default_torso_group_name;
+	char mapped_torso_group_name[]="mapped_torso";
+	FE_value min_x,max_x,min_y,max_y,min_z,max_z;
+	struct Element_torso_data element_torso_data;
+	struct FE_field *map_position_field,*torso_position_field;
+	struct FE_node *torso_node;	
+	struct FE_node_list_conditional_data list_conditional_data;	
+	struct GROUP(FE_element) *default_torso_element_group,
+		*mapped_torso_element_group;	
+	struct GROUP(FE_node) *map_node_group,*mapped_torso_node_group,
+		*mapped_torso_data_group,*default_torso_node_group;
+	struct LIST(FE_node) *torso_correct_z_node_list;
+	struct MANAGER(GROUP(FE_element)) *element_group_manager;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	struct MANAGER(GROUP(FE_node)) *data_group_manager;
+	struct Map_3d_package *map_3d_package;							
+	struct Z_value_data z_value_data;
+
+	ENTER(make_mapped_torso_node_and_element_groups);	
+	map_3d_package=(struct Map_3d_package *)NULL;
+	map_node_group=(struct GROUP(FE_node) *)NULL;
+	default_torso_node_group=(struct GROUP(FE_node) *)NULL;
+	map_position_field=(struct FE_field *)NULL;
+	torso_position_field=(struct FE_field *)NULL;
+	torso_node=(struct FE_node *)NULL;
+	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	default_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	mapped_torso_node_group=(struct GROUP(FE_node) *)NULL;
+	mapped_torso_data_group=(struct GROUP(FE_node) *)NULL;
+	torso_correct_z_node_list=(struct LIST(FE_node) *)NULL;
+	if(region&&(default_torso_group_name=
+		get_unemap_package_default_torso_name(unemap_package))
+		&&(element_group_manager=get_unemap_package_element_group_manager(unemap_package))
+		&&(node_group_manager=get_unemap_package_node_group_manager(unemap_package))
+		&&(data_group_manager=get_unemap_package_data_group_manager(unemap_package))
+		&&(default_torso_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),
+		name)(default_torso_group_name,element_group_manager)))
+	{
+		return_code=1;
+		map_3d_package=get_Region_map_3d_package(region);	
+		/* get min and max of cylinder */
+		map_node_group=get_map_3d_package_node_group(map_3d_package);
+		map_position_field=get_map_3d_package_position_field(map_3d_package);
+		get_node_group_position_min_max(map_node_group,map_position_field,
+			&min_x,&max_x,&min_y,&max_y,&min_z,&max_z);
+		/* now have min,max z to work with */
+		default_torso_node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),
+			name)(default_torso_group_name,node_group_manager);			
+		torso_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
+			((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,default_torso_node_group);
+		torso_position_field=get_FE_node_default_coordinate_field(torso_node);				
+		/* compile a list of torso nodes with the right z range */	
+		z_value_data.map_min_z=min_z;
+		z_value_data.map_max_z=max_z;
+		z_value_data.torso_position_field=torso_position_field;
+		torso_correct_z_node_list=CREATE_LIST(FE_node)(); 
+		list_conditional_data.node_list=torso_correct_z_node_list;
+		list_conditional_data.function=torso_node_is_in_z_range;
+		list_conditional_data.user_data=(void *)(&z_value_data);
+		FOR_EACH_OBJECT_IN_GROUP(FE_node)(ensure_FE_node_is_in_list_conditional,
+			(void *)&list_conditional_data,default_torso_node_group);
+		/* create same name node,element,data groups so can do graphics */
+		mapped_torso_element_group=CREATE(GROUP(FE_element))(mapped_torso_group_name);
+		mapped_torso_node_group=CREATE(GROUP(FE_node))(mapped_torso_group_name);
+		mapped_torso_data_group=CREATE(GROUP(FE_node))(mapped_torso_group_name);
+		MANAGED_GROUP_BEGIN_CACHE(FE_element)(mapped_torso_element_group);
+		MANAGED_GROUP_BEGIN_CACHE(FE_node)(mapped_torso_node_group);
+		set_map_3d_package_electrodes_max_z(map_3d_package,max_z);
+		set_map_3d_package_electrodes_min_z(map_3d_package,min_z);
+		element_torso_data.torso_nodes_in_z_range=torso_correct_z_node_list;
+		element_torso_data.mapped_torso_element_group=mapped_torso_element_group;
+		/* add torso elements to group if all nodes have are in z range */	
+		FOR_EACH_OBJECT_IN_GROUP(FE_element)(add_torso_elements_if_nodes_in_z_range,
+			(void *)&element_torso_data,default_torso_element_group);			
+		/* no longer needed, so destroy */
+		DESTROY_LIST(FE_node)(&torso_correct_z_node_list);
+		/* to fill node group */
+		FOR_EACH_OBJECT_IN_GROUP(FE_element)
+			(ensure_top_level_FE_element_nodes_are_in_group,
+				(void *)mapped_torso_node_group,mapped_torso_element_group);
+		if (!ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(
+			mapped_torso_data_group,data_group_manager))
+		{
+			DEACCESS(GROUP(FE_node))(&mapped_torso_data_group);
+		}	
+		if (!ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(
+			mapped_torso_node_group,node_group_manager))
+		{
+			DEACCESS(GROUP(FE_node))(&mapped_torso_node_group);			
+		}	
+		if (!ADD_OBJECT_TO_MANAGER(GROUP(FE_element))(
+			mapped_torso_element_group,element_group_manager))
+		{
+			DEACCESS(GROUP(FE_element))(&mapped_torso_element_group);			
+		}
+		set_map_3d_package_mapped_torso_node_group(map_3d_package,
+			mapped_torso_node_group);
+		set_map_3d_package_mapped_torso_element_group(map_3d_package,
+			mapped_torso_element_group);
+		MANAGED_GROUP_END_CACHE(FE_node)(mapped_torso_node_group);
+		MANAGED_GROUP_END_CACHE(FE_element)(mapped_torso_element_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"make_mapped_torso_node_and_element_groups. "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* make_mapped_torso_node_and_element_groups */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
 static int make_fit_node_and_element_groups(
 	struct Interpolation_function *function,struct Unemap_package *package,
 	char *name,FE_value sock_lambda,FE_value sock_focus,FE_value torso_major_r,
 	FE_value torso_minor_r,FE_value patch_z,struct Region *region)
 /*******************************************************************************
-LAST MODIFIED : 28 June 2000
+LAST MODIFIED : 13 November 2000
 
 DESCRIPTION :
 Given the <function> and <package>, determines if  identical node and element 
@@ -3640,6 +3969,8 @@ If the identical groups already exist, simply change the values stored at the no
 change_fit_node_group_values. 
 If the identical groups don't exist, create the groups and fill them in, with
 interpolation_function_to_node_group and make_fit_elements
+If <region>->type is TORSO, and we have a default torso loaded,
+do similar with the mapped torso node group
 *******************************************************************************/
 {
 	char *fit_name,*fit_str = "_fit",*patch_str="_patch",region_num_string[10],
@@ -3648,12 +3979,16 @@ interpolation_function_to_node_group and make_fit_elements
 	int return_code,string_length;
 	int string_error =0;
 	struct FE_node_order_info *node_order_info;
-	struct FE_field_order_info *field_order_info;	
-	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
+	struct FE_field_order_info *field_order_info;		
+	struct MANAGER(FE_node) *node_manager;
+	struct Map_3d_package *map_3d_package;
+
 	ENTER(make_fit_node_and_element_groups);
 	node_order_info = (struct FE_node_order_info *)NULL;
 	field_order_info = (struct FE_field_order_info *)NULL;	
-	if(function&&package&&name)
+	map_3d_package=(struct Map_3d_package *)NULL;
+	node_manager=(struct MANAGER(FE_node) *)NULL;
+	if(function&&package&&name&&(node_manager=get_unemap_package_node_manager(package)))
 	{
 		return_code=1;
 		/* construct the fit node group's name, from the name and region type*/
@@ -3694,13 +4029,21 @@ interpolation_function_to_node_group and make_fit_elements
 				  ==function->number_of_columns)&&(region->type
 				  ==function->region_type)&&
 				(!strcmp(get_map_3d_package_fit_name(map_3d_package),fit_name)))
-			{
+			{	
+				MANAGER_BEGIN_CACHE(FE_node)(node_manager);
 				/* just have to alter the nodal values */
 				change_fit_node_group_values(get_map_3d_package_node_order_info(map_3d_package),
 					get_map_3d_package_fit_field(map_3d_package),function,fit_name,
 					get_unemap_package_node_group_manager(package),
 					get_unemap_package_element_group_manager(package),
 					get_unemap_package_node_manager(package));
+
+				/* if the region is a torso, and loaded a default torso, set it's fit field values */
+				if((region->type==TORSO)&&(get_unemap_package_default_torso_name(package)))
+				{					
+					set_torso_fit_field_values(map_3d_package);
+				}
+				MANAGER_END_CACHE(FE_node)(node_manager);			
 			}
 			else
 			{				
@@ -3714,13 +4057,30 @@ interpolation_function_to_node_group and make_fit_elements
 					&node_order_info,&field_order_info,
 					function,package,fit_name,sock_lambda,sock_focus,torso_major_r,
 					torso_minor_r,patch_z,region);
-				make_fit_elements(fit_name,node_order_info,
-					field_order_info,
+				make_fit_elements(fit_name,node_order_info,field_order_info,
 					get_unemap_package_element_group_manager(package),
 					get_unemap_package_basis_manager(package),
 					get_unemap_package_element_manager(package),
 					function->region_type,function->number_of_rows,
 					function->number_of_columns,region);
+	
+				/* if have loaded  a default_torso and if the region is a torso*/
+				if((get_unemap_package_default_torso_name(package))&&(region->type==TORSO))
+				{		
+					/*  set up the mapped torso node and element groups */				
+					make_mapped_torso_node_and_element_groups(region,package);					
+					/*1st time thru */
+					if(!map_3d_package)
+					{ 
+						/* map_3d_package just created in interpolation_function_to_node_group*/
+						map_3d_package=get_Region_map_3d_package(region);					
+						/* set it's fit field values */
+						MANAGER_BEGIN_CACHE(FE_node)(node_manager);
+						set_torso_fit_field_values(map_3d_package);
+						MANAGER_END_CACHE(FE_node)(node_manager);
+					}
+														
+				}
 				DESTROY(FE_field_order_info)(&field_order_info);
 			}
 		}/* if(ALLOCATE( */
@@ -3749,7 +4109,7 @@ static int map_draw_constant_thickness_contours(struct Scene *scene,
 	struct Map_drawing_information *map_drawing_information,
 	struct Computed_field *data_field,
 	int number_of_contours,FE_value contour_minimum,FE_value contour_maximum,
-	struct Region *region)
+	struct Region *region,int default_torso_loaded)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
@@ -3784,9 +4144,18 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 		/* set_Region_map_3d_package(NULL) in draw_map_3d */
 		if(map_3d_package)
 		{
-			element_group=get_map_3d_package_element_group(map_3d_package);
-			graphical_material_manager=get_map_drawing_information_Graphical_material_manager(
-				map_drawing_information);
+			if(default_torso_loaded&&(region->type==TORSO))
+			{	
+				/* do contour on torso surface*/
+				element_group=get_map_3d_package_mapped_torso_element_group(map_3d_package);
+			}													
+			else
+			{
+				/* do contour on cylinder surface */
+				element_group=get_map_3d_package_element_group(map_3d_package);
+			}
+			graphical_material_manager=
+				get_map_drawing_information_Graphical_material_manager(map_drawing_information);
 			gt_element_group=Scene_get_graphical_element_group(scene,element_group);
 			default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
 				("default_selected",graphical_material_manager);
@@ -3834,13 +4203,14 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 						default_selected_material);
 					GT_element_settings_set_iso_surface_parameters(contour_settings[i],
 						data_field,contour_value);
-					GT_element_group_add_settings(gt_element_group,contour_settings[i],0);		
+					GT_element_group_add_settings(gt_element_group,contour_settings[i],0);
 					contour_value+=contour_step;
 				}			
 				GT_element_group_build_graphics_objects(gt_element_group,
 					(struct FE_element *)NULL,(struct FE_node *)NULL);
 			}	
-			set_map_3d_package_contours(map_3d_package,number_of_contours,contour_settings);
+			set_map_3d_package_contours(map_3d_package,number_of_contours,
+				contour_settings);
 		}				
 	}
 	else
@@ -3866,7 +4236,8 @@ DESCRIPTION :
 Draws (or erases) the map contours
 ==============================================================================*/
 {
-	int number_of_constant_contours,number_of_variable_contours,return_code;
+	int default_torso_loaded,number_of_constant_contours,number_of_variable_contours,
+		return_code;
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct Scene *scene=(struct Scene *)NULL;
 	struct Rig *rig=(struct Rig *)NULL;
@@ -3905,6 +4276,14 @@ Draws (or erases) the map contours
 			number_of_constant_contours=0;
 		}					
 		/* draw/remove VARIABLE_THICKNESS contours*/
+		if(get_unemap_package_default_torso_name(package))
+		{
+			default_torso_loaded=1;
+		}
+		else
+		{
+			default_torso_loaded=0;
+		}
 		Spectrum_overlay_contours(spectrum_manager,spectrum,
 			number_of_variable_contours,CONTOUR_PROPORTION);
 		region_item=get_Rig_region_list(rig);
@@ -3916,9 +4295,9 @@ Draws (or erases) the map contours
 				(unemap_package_rig_node_group_has_electrodes(package,rig_node_group)))
 			{			
 				/* draw/remove CONSTANT_THICKNESS contours */
-				map_draw_constant_thickness_contours(scene,map->drawing_information,data_field,
-					number_of_constant_contours,map->contour_minimum,
-					map->contour_maximum,region);					
+				map_draw_constant_thickness_contours(scene,map->drawing_information,
+					data_field,number_of_constant_contours,map->contour_minimum,
+					map->contour_maximum,region,default_torso_loaded);					
 			}				
 			region_item=get_Region_list_item_next(region_item);
 		}/* while(region_item)*/
@@ -3955,9 +4334,6 @@ Also applies <number_of_contours> contours to surface.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (OLD_CODE)	
-	struct Colour white={1,1,1};
-#endif/* defined (OLD_CODE)	*/
 	struct GT_element_group *gt_element_group;
 	struct Computed_field *existing_data_field;
 	struct Graphical_material *default_selected_material,
@@ -4062,12 +4438,7 @@ Also applies <number_of_contours> contours to surface.
 						if(material_copy&&new_settings&&
 							MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name)
 							(material_copy,material))
-						{																	
-							
-#if defined (OLD_CODE)
-							Graphical_material_set_ambient(material_copy,&white);
-							Graphical_material_set_diffuse(material_copy,&white);
-#endif /* defined (OLD_CODE) */
+						{																								
 							if(MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
 								material,material_copy,graphical_material_manager))
 							{
@@ -4191,9 +4562,14 @@ Also applies <number_of_contours> contours to surface.
 #define FIT_TORSO_MAJOR_R 200.0
 #define FIT_TORSO_MINOR_R 100.0
 #endif /* defined (OLD_CODE) */
+#if defined (ROUND_TORSO)
+#define FIT_TORSO_MAJOR_R 50.0
+#define FIT_TORSO_MINOR_R 0.0
+#else /* defined (ROUND_TORSO) */
 /*this is for FOR AJPs p117_m8c1_modified.signal*/
 #define FIT_TORSO_MAJOR_R 100.0
 #define FIT_TORSO_MINOR_R 50.0
+#endif /* defined (ROUND_TORSO) */
 #define FIT_PATCH_Z 0.0
 static int make_and_add_map_electrode_position_field(
 	struct Unemap_package *unemap_package,
@@ -4978,31 +5354,36 @@ region(s)
 		while(region_item)
 		{						
 			region=get_Region_list_item_region(region_item);
-			rig_node_group=get_Region_rig_node_group(region);
-			map_3d_package=get_Region_map_3d_package(region);
-			if(map_3d_package)
-			{
-				electrodes_properties_changed=
-					map_electrodes_properties_changed(map,map_3d_package);
+			/*for now, don't draw electrodes on default torso (can't yet!) */
+			if(!((region->type==TORSO)&&
+				(get_unemap_package_default_torso_name(unemap_package))))
+			{	
+				rig_node_group=get_Region_rig_node_group(region);
+				map_3d_package=get_Region_map_3d_package(region);
+				if(map_3d_package)
+				{
+					electrodes_properties_changed=
+						map_electrodes_properties_changed(map,map_3d_package);
+				}
+				else
+				{
+					electrodes_properties_changed=0;
+				}
+				/* remove undisplayed or changed electrodes */
+				if(electrodes_properties_changed||(!display_all_regions||
+					(region!=current_region)))
+				{									
+					map_remove_map_electrode_glyphs(drawing_information,
+						unemap_package,map_3d_package,rig_node_group);
+				}
+				/* draw current electrodes */
+				if(rig_node_group&&map_3d_package&&
+					(unemap_package_rig_node_group_has_electrodes(unemap_package,
+						rig_node_group))&&((region==current_region)||display_all_regions))
+				{
+					map_update_map_electrodes(unemap_package,region,map,time);
+				}		
 			}
-			else
-			{
-				electrodes_properties_changed=0;
-			}
-			/* remove undisplayed or changed electrodes */
-			if(electrodes_properties_changed||(!display_all_regions||
-				(region!=current_region)))
-			{									
-				map_remove_map_electrode_glyphs(drawing_information,
-					unemap_package,map_3d_package,rig_node_group);
-			}
-			/* draw current electrodes */
-			if(rig_node_group&&map_3d_package&&
-				(unemap_package_rig_node_group_has_electrodes(unemap_package,
-					rig_node_group))&&((region==current_region)||display_all_regions))
-			{
-				map_update_map_electrodes(unemap_package,region,map,time);
-			}		
 			region_item=get_Region_list_item_next(region_item);
 		}/* while(region_item)*/		
 	}
@@ -5250,6 +5631,798 @@ and do Scene_remove_graphics_object in the DESTROY Map_3d_package
 	return(return_code);
 }/* map_remove_torso_arms */
 #endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int set_map_fit_field_at_torso_node(struct FE_node *torso_node,
+	struct FE_element *torso_element,struct Map_3d_package *map_3d_package,
+	int first_torso_element_number)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2000
+
+DESCRIPTION :
+Defines and sets the value of the fit field at <torso_node>.
+===============================================================================*/
+{	
+	FE_value cylinder_jacobian[2],cylinder_xi_coords[2],df_ds1,df_ds2,d2f_ds1ds2,
+		df_du1,df_du2,df_dxi1,df_dxi2,d2f_dxi1dxi2,dx_dxi1,dx_dxi2,dy_dxi1,dy_dxi2,
+		dz_dxi1,dz_dxi2,fit,map_theta,map_z,minusY_div_X2plusY2,Ntheta_div_2PI,
+		Ntheta_plus_xi,Nz_div_Zrange,Nz_plus_xi,scale_factor,torso_jacobian[6],
+		torso_xi_coords[2],torso_node_x,torso_node_y,torso_node_z,torso_pos[3],
+		X2plusY2,	X_div_X2plusY2,z_range;
+	FE_value map_min_z,map_max_z,num_z_elements,num_theta_elements;
+
+	int element_number,Nz,Ntheta,return_code;
+	struct CM_element_information element_information;
+	struct FE_element *cylinder_element;
+	struct FE_element_field_values element_field_values;
+	struct FE_field_component component;
+	struct FE_field *map_fit_field,*torso_position_field;		
+	struct FE_node *node;
+	struct MANAGER(FE_node) *node_manager;
+
+	ENTER(set_map_fit_field_at_torso_node);
+	return_code=1;
+	cylinder_element=(struct FE_element *)NULL;	
+	map_fit_field=(struct FE_field *)NULL;
+	torso_position_field=(struct FE_field *)NULL;
+	node=(struct FE_node *)NULL;
+	node_manager=(struct MANAGER(FE_node) *)NULL;
+	if(torso_node&&(torso_position_field=
+		get_FE_node_default_coordinate_field(torso_node))&&map_3d_package&&torso_element&&
+		(node_manager=map_3d_package->node_manager))
+	{
+		map_min_z=get_map_3d_package_electrodes_min_z(map_3d_package);
+		map_max_z=get_map_3d_package_electrodes_max_z(map_3d_package);
+		num_z_elements=get_map_3d_package_number_of_map_rows(map_3d_package);
+		num_theta_elements=get_map_3d_package_number_of_map_columns(map_3d_package);
+		map_fit_field=get_map_3d_package_fit_field(map_3d_package); 
+		/* field should already defined at node */
+		if (FE_field_is_defined_at_node(map_fit_field,torso_node))
+		{
+			component.field=torso_position_field;
+			component.number=0;
+			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
+				&torso_node_x);
+			component.number=1;
+			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
+				&torso_node_y);		
+			component.number=2;
+			get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
+				&torso_node_z);
+			/*now have torso x,y,z determine map theta,z (don't need r)*/
+			/* add PI as want map_theta in range 0->2PI,atan2 returns -PI->PI */
+			map_theta=atan2(torso_node_y,torso_node_x) +PI;
+			/*map r is arbitary and not used*/		
+			map_z=torso_node_z;
+			/* now determine element number and Xi values */
+			Ntheta_plus_xi=num_theta_elements*(map_theta/(2*PI));
+			/* Ntheta is the theta element number, i.e the column number */
+			Ntheta=(int)(Ntheta_plus_xi);
+			/* handle case with theta point exactly on 2PI*/
+			if(Ntheta>=num_theta_elements)
+			{				
+				Ntheta=num_theta_elements-1;
+			}
+			/* cylinder_xi_coords[0] is Xi in the theta direction*/
+			cylinder_xi_coords[0]=Ntheta_plus_xi-Ntheta;
+			z_range=map_max_z-map_min_z;
+			Nz_plus_xi=num_z_elements*((map_z-map_min_z)/(z_range));
+			/* Nz is the z element number, i.e the row number */
+			Nz=(int)(Nz_plus_xi);
+			/* handle case with z point exactly on cylinder edge*/
+			if(Nz>=num_z_elements)
+			{
+				Nz=num_z_elements-1;
+			}
+			/* cylinder_xi_coords[1] is Xi in the z direction*/
+			cylinder_xi_coords[1]=Nz_plus_xi-Nz;
+			element_number=Nz*num_theta_elements+Ntheta+1;	
+			/* get map element, and value at element */		
+			element_information.type=CM_ELEMENT;
+			element_information.number=element_number+first_torso_element_number-1;
+			cylinder_element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)
+				(&element_information,map_3d_package->element_group);
+			if(cylinder_element)
+			{				
+				/* get the cylinder fit value and jacobian */				
+				if (calculate_FE_element_field_values(cylinder_element,map_fit_field,
+					/*calculate_derivatives */1,&element_field_values,
+					/*top_level_element*/(struct FE_element *)NULL))
+				{
+					/* calculate the value for the element field */
+					return_code=calculate_FE_element_field(0,/*component_number*/
+						&element_field_values,cylinder_xi_coords,&fit,cylinder_jacobian);
+					df_du1=cylinder_jacobian[0];
+					df_du2=cylinder_jacobian[1];
+					clear_FE_element_field_values(&element_field_values);
+				}
+				/* get the torso position and jacobian */	
+				torso_xi_coords[0]=0;
+				torso_xi_coords[1]=0;
+				if (calculate_FE_element_field_values(torso_element,torso_position_field,
+					/*calculate_derivatives */1,&element_field_values,
+					/*top_level_element*/(struct FE_element *)NULL))
+				{
+					/* calculate the value for the element field */
+					return_code=calculate_FE_element_field(/*component_number*/-1,
+					&element_field_values,torso_xi_coords,torso_pos,torso_jacobian);
+					dx_dxi1=torso_jacobian[0];
+					dx_dxi2=torso_jacobian[1];
+					dy_dxi1=torso_jacobian[2];
+					dy_dxi2=torso_jacobian[3];
+					dz_dxi1=torso_jacobian[4];
+					dz_dxi2=torso_jacobian[5];
+					clear_FE_element_field_values(&element_field_values);
+				}
+				X2plusY2=(torso_node_x*torso_node_x)+(torso_node_y*torso_node_y);
+				minusY_div_X2plusY2=-torso_node_y/X2plusY2;
+				X_div_X2plusY2=torso_node_x/X2plusY2;
+				Ntheta_div_2PI=Ntheta/(2*PI);
+				Nz_div_Zrange=Nz/z_range;
+				df_dxi1=df_du1*(minusY_div_X2plusY2*Ntheta_div_2PI*dx_dxi1 + 
+					X_div_X2plusY2*Ntheta_div_2PI*dy_dxi1) +df_du2*(Nz_div_Zrange*dz_dxi1);
+				df_dxi2=df_du2*(minusY_div_X2plusY2*Ntheta_div_2PI*dx_dxi2 + 
+					X_div_X2plusY2*Ntheta_div_2PI*dy_dxi2) +df_du2*(Nz_div_Zrange*dz_dxi2);
+				d2f_dxi1dxi2=df_dxi1*df_dxi2;
+#if defined (DEBUG)
+				printf(" Component %d \n",0);
+#endif /* defined (DEBUG)*/
+				FE_element_get_scale_factor_for_nodal_value(torso_element,torso_node, 
+					torso_position_field,0/*component_number*/,FE_NODAL_VALUE,&scale_factor);
+#if defined (DEBUG)
+				printf("   FE_NODAL_VALUE scale factor  = %f ",scale_factor);
+				printf(" fit = %f ",fit);
+#endif /* defined (DEBUG)*/
+				fit=fit/scale_factor;
+#if defined (DEBUG)
+				printf(" fit/scale factor = %f \n",fit);
+#endif /* defined (DEBUG)*/
+				FE_element_get_scale_factor_for_nodal_value(torso_element,torso_node, 
+					torso_position_field,0/*component_number*/,FE_NODAL_D_DS1,&scale_factor);
+				df_ds1=df_dxi1/scale_factor;
+#if defined (DEBUG)
+				printf("   FE_NODAL_D_DS1 scale factor  = %f ",scale_factor);
+				printf(" df_dxi1 = %f ",df_dxi1);
+				printf(" df_ds1 = %f \n",df_ds1);
+#endif /* defined (DEBUG)*/
+				FE_element_get_scale_factor_for_nodal_value(torso_element,torso_node, 
+					torso_position_field,0/*component_number*/,FE_NODAL_D_DS2,&scale_factor);
+				df_ds2=df_dxi2/scale_factor;
+#if defined (DEBUG)
+				printf("   FE_NODAL_D_DS2 scale factor  = %f ",scale_factor);
+				printf(" df_dxi1 = %f ",df_dxi1);
+				printf(" df_ds1 = %f \n",df_ds1);
+#endif /* defined (DEBUG)*/
+				FE_element_get_scale_factor_for_nodal_value(torso_element,torso_node, 
+					torso_position_field,0/*component_number*/,FE_NODAL_D2_DS1DS2,
+					&scale_factor);
+				d2f_ds1ds2=d2f_dxi1dxi2/scale_factor;
+#if defined (DEBUG)
+				printf("   FE_NODAL_D2_DS1DS2 scale factor  = %f ",scale_factor);
+				printf(" d2f_dxi1dxi2 = %f ",d2f_dxi1dxi2);
+				printf(" d2f_ds1ds2 = %f \n",d2f_ds1ds2);			
+#endif /* defined (DEBUG)*/			
+				/* and set the nodal values  */
+
+				/* create a node to work with */
+				node=CREATE(FE_node)(0,(struct FE_node *)NULL);
+				/* copy it from the manager */
+				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
+					(node,torso_node))
+				{
+					set_mapping_FE_node_fit_values(node,map_fit_field,0/*component_number*/,
+					fit,df_ds1,df_ds2,d2f_ds1ds2);
+					/* copy it back into the manager */
+					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
+						(torso_node,node,node_manager);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_map_fit_field_at_torso_node. MANAGER_COPY_WITH_IDENTIFIER failed ");
+					return_code=0;
+				}
+				/* destroy the working copy */
+				DESTROY(FE_node)(&node);	
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_node."
+					" can't find element");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_node."
+				" field undefined at node");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_node. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int merge_fit_field_template_element(struct FE_element *element,
+	void *merge_fit_field_template_element_void)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Merges the template_element containing the fit field in 
+<merge_fit_field_template_element_void> with <element>
+==============================================================================*/
+{
+	int i,return_code;
+	struct FE_element *template_element, *unmanaged_element;
+	struct CM_element_information cm;
+	struct MANAGER(FE_element) *element_manager;
+	struct merge_fit_field_template_element_data *merge_fit_field_template_element_data;
+	struct FE_node *node;
+
+	ENTER(merge_fit_field_template_element);
+	merge_fit_field_template_element_data=
+		(struct merge_fit_field_template_element_data *)NULL;
+	if (element&&merge_fit_field_template_element_void&&
+		(merge_fit_field_template_element_data=
+		(struct merge_fit_field_template_element_data *)
+		(merge_fit_field_template_element_void))&&
+		(template_element=merge_fit_field_template_element_data->template_element)&&
+		(element_manager=merge_fit_field_template_element_data->element_manager))
+	{
+		return_code=1;
+		/* only operate on top level (quad elements, not lines */
+		if(element->cm.type==CM_ELEMENT)
+		{
+			/* make template element use nodes from global element */
+			i=0;
+			while (return_code&&(i<4))
+			{
+				if (get_FE_element_node(element,i,&node))
+				{
+					return_code=set_FE_element_node(template_element,i,node);
+				}
+				else
+				{
+					return_code=0;
+				}
+				i++;
+			}
+			if (return_code)
+			{
+				cm.type = CM_ELEMENT;
+				cm.number = 0;
+				if (unmanaged_element=CREATE(FE_element)(&cm,element))
+				{
+					if (return_code=
+						merge_FE_element(unmanaged_element,template_element))
+					{
+						/* copy the merged element back into the manager */
+						return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
+							element,unmanaged_element,element_manager);
+					}
+					DESTROY(FE_element)(&unmanaged_element);
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			if (!return_code)
+			{		
+				display_message(ERROR_MESSAGE,"merge_fit_field_template_element.  Failed");
+			}		
+			merge_fit_field_template_element_data->count++;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"merge_fit_field_template_element. "
+			" Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* merge_fit_field_template_element */
+
+int set_up_fitted_potential_on_torso(struct GROUP(FE_element) *torso_group,
+	struct FE_field *potential_field,struct MANAGER(FE_basis) *basis_manager,
+	struct MANAGER(FE_element) *element_manager)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+Adds the <potential_field> to the elements in <torso_group>.
+Does by creating a template element, adding <potential_field> to this,
+and merging the template element with the elements in <torso_group>.
+==============================================================================*/
+{
+	int number_of_nodes,number_of_derivatives,number_of_scale_factor_sets,
+		*numbers_in_scale_factor_sets,i,k,l,m,return_code;
+	int cubic_hermite_basis_type[4]=
+	{
+		2,CUBIC_HERMITE,0,CUBIC_HERMITE
+	};
+	int shape_type[3]=
+	{
+		LINE_SHAPE,0,0
+	};
+	struct CM_element_information element_identifier;
+	struct FE_basis *cubic_hermite_basis;
+	struct FE_element *template_element;
+	struct FE_element_field_component **components;
+	struct FE_element_shape *shape;
+	struct merge_fit_field_template_element_data merge_fit_field_template_element_data;
+	struct Standard_node_to_element_map **standard_node_map;
+	void **scale_factor_set_identifiers;
+
+	ENTER(set_up_fitted_potential_on_torso);
+	return_code=0;
+	cubic_hermite_basis=(struct FE_basis *)NULL;
+	shape=(struct FE_element_shape *)NULL;
+	template_element=(struct FE_element *)NULL;
+	components=(struct FE_element_field_component **)NULL;
+	standard_node_map=(struct Standard_node_to_element_map **)NULL;
+	numbers_in_scale_factor_sets=(int *)NULL;	
+	if (torso_group&&potential_field)
+	{
+		if (cubic_hermite_basis=make_FE_basis(cubic_hermite_basis_type,basis_manager))
+		{
+			ACCESS(FE_basis)(cubic_hermite_basis);
+			if (shape=CREATE(FE_element_shape)(2,shape_type))
+			{
+				ACCESS(FE_element_shape)(shape);
+				/* define component */
+				if (1==get_FE_field_number_of_components(potential_field))
+				{					
+					element_identifier.type=CM_ELEMENT;
+					element_identifier.number=1;
+					number_of_scale_factor_sets=1;
+					number_of_derivatives=3;
+					if ((template_element=CREATE(FE_element)(&element_identifier,
+						(struct FE_element *)NULL))&&
+						(ALLOCATE(scale_factor_set_identifiers,void *,number_of_scale_factor_sets))
+						&&(ALLOCATE(numbers_in_scale_factor_sets,int,number_of_scale_factor_sets)))
+					{									
+						ACCESS(FE_element)(template_element);					
+						numbers_in_scale_factor_sets[0]=16;
+						scale_factor_set_identifiers[0]=cubic_hermite_basis;
+						number_of_nodes=4;
+						if (set_FE_element_shape(template_element,shape)&&
+							set_FE_element_node_scale_field_info(template_element,
+							number_of_scale_factor_sets,scale_factor_set_identifiers,
+							numbers_in_scale_factor_sets,number_of_nodes)&&
+							(ALLOCATE(components,struct FE_element_field_component *,1)))
+						{
+							/* define the potential field over the template element */
+							if (components[0]=CREATE(FE_element_field_component)(
+								STANDARD_NODE_TO_ELEMENT_MAP,number_of_nodes,cubic_hermite_basis,
+								(FE_element_field_component_modify)NULL))
+							{
+								/* create node map */
+								standard_node_map=(components[0])->
+									map.standard_node_based.node_to_element_maps;
+								m=0;
+								k=0;
+								return_code=1;
+								while (return_code&&(k<number_of_nodes))
+								{
+									if (*standard_node_map=CREATE(Standard_node_to_element_map)(
+										/*node_index*/k,/*number_of_values*/4))
+									{
+										for (l=0;l<(1+number_of_derivatives);l++)
+										{
+											(*standard_node_map)->nodal_value_indices[l]=l;
+											(*standard_node_map)->scale_factor_indices[l]=m;
+											/* set scale_factors to 1 */
+											template_element->information->scale_factors[
+												(*standard_node_map)->scale_factor_indices[l]]=1.0;
+											m++;
+										}
+									}
+									else
+									{														
+										display_message(ERROR_MESSAGE,"make_fit_elements.  "
+											"set_up_fitted_potential_on_torso not create " 
+											"Standard_node_to_element_map");
+										return_code=0;
+									}
+									standard_node_map++;
+									k++;
+								}
+								if (return_code)
+								{								
+									if (define_FE_field_at_element(template_element,
+										potential_field,components))
+									{										
+										for(i=0;i<16;i++)
+										{
+											set_FE_element_scale_factor(template_element,i,1.0);
+										}
+										/* add potential field to element */
+										merge_fit_field_template_element_data.template_element=
+											template_element;
+										merge_fit_field_template_element_data.element_manager=
+											element_manager;
+										merge_fit_field_template_element_data.count=0;
+										FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+											merge_fit_field_template_element,
+											(void *)(&merge_fit_field_template_element_data),torso_group);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"set_up_fitted_potential_on_torso.  Could not define field");
+										return_code=0;
+									}
+								}
+								DESTROY(FE_element_field_component)(&(components[0]));
+								DEALLOCATE(components);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"set_up_fitted_potential_on_torso.  Could not create component");
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"set_up_fitted_potential_on_torso. "
+								" Could not set element shape/scale factor info");
+							return_code=0;
+						}												
+						DEACCESS(FE_element)(&template_element);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_up_fitted_potential_on_torso.  Could not create template_element");
+						return_code=0;
+					}
+					DEALLOCATE(scale_factor_set_identifiers);
+					DEALLOCATE(numbers_in_scale_factor_sets);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_up_fitted_potential_on_torso.  Invalid potential field");
+					return_code=0;
+				}
+				DEACCESS(FE_element_shape)(&shape);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"set_up_fitted_potential_on_torso.  Could not create shape");
+				return_code=0;
+			}
+			DEACCESS(FE_basis)(&cubic_hermite_basis);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"set_up_fitted_potential_on_torso.  Could not create basis");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_up_fitted_potential_on_torso.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_up_fitted_potential_on_torso */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int define_fit_field_at_torso_element_nodes(
+	struct FE_element *torso_element,
+	void *define_fit_field_at_torso_element_nodes_data_void)
+/*******************************************************************************
+LAST MODIFIED : 8 November 2000
+
+DESCRIPTION :
+Get list of nodes in <torso_element>.
+If <torso_element> is a CM_ELEMENT  AND has 4 nodes then
+(
+defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
+<torso_element>, adds  <torso_element> to quad_element_group in 
+<define_fit_field_at_torso_element_nodes_data>
+)
+===============================================================================*/
+{
+	enum FE_nodal_value_type *fit_components_value_types[1];
+	int number_of_nodes,return_code;
+	struct Define_FE_field_at_node_data define_FE_field_at_node_data;
+	struct FE_field *fit_field;
+	struct GROUP(FE_element) *quad_element_group;
+	struct LIST(FE_node) *element_nodes;
+	struct Define_fit_field_at_torso_element_nodes_data 
+		*define_fit_field_at_torso_element_nodes_data;
+	
+	ENTER(define_fit_field_at_torso_element_nodes);	
+	fit_field=(struct FE_field *)NULL;
+	quad_element_group=(struct GROUP(FE_element) *)NULL;
+	define_fit_field_at_torso_element_nodes_data=
+		(struct Define_fit_field_at_torso_element_nodes_data *)NULL;
+	if(torso_element&&(define_fit_field_at_torso_element_nodes_data_void)&&
+		(define_fit_field_at_torso_element_nodes_data=
+			(struct Define_fit_field_at_torso_element_nodes_data *)
+			define_fit_field_at_torso_element_nodes_data_void)&&
+		(quad_element_group=
+			define_fit_field_at_torso_element_nodes_data->quad_element_group)&&
+		(fit_field=define_fit_field_at_torso_element_nodes_data->fit_field))
+	{	
+		element_nodes=CREATE_LIST(FE_node)();
+		/*get all nodes in element */
+		calculate_FE_element_field_nodes(torso_element,(struct FE_field *)NULL,
+			element_nodes);
+		/* only deal with elements, not lines */		
+		if(torso_element->cm.type==CM_ELEMENT)
+		{
+			return_code=1;
+			number_of_nodes=NUMBER_IN_LIST(FE_node)(element_nodes);
+			/* do nothing if not 4 nodes */
+			if(number_of_nodes==4)
+			{
+				fit_components_value_types[0]=fit_bicubic_component;
+				/* define the fit field at the element's nodes*/			
+				define_FE_field_at_node_data.field=fit_field;
+				define_FE_field_at_node_data.number_of_derivatives=
+					fit_components_number_of_derivatives;
+				define_FE_field_at_node_data.number_of_versions=
+					fit_components_number_of_versions;
+				define_FE_field_at_node_data.nodal_value_types=fit_components_value_types;
+				if(return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)
+					(iterative_define_FE_field_at_node,
+					(void *)(&define_FE_field_at_node_data),element_nodes))
+				{
+					/* Add the element to the group */
+					return_code=ADD_OBJECT_TO_GROUP(FE_element)(torso_element,quad_element_group);
+				}					
+			}
+			DESTROY(LIST(FE_node))(&element_nodes);	
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"define_fit_field_at_torso_element_nodes. "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+} /* define_fit_field_at_torso_element_nodes*/
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int define_fit_field_at_quad_elements_and_nodes(
+	struct GROUP(FE_element) *torso_element_group,
+	struct FE_field *fit_field,struct MANAGER(FE_basis) *basis_manager,
+	struct MANAGER(FE_element) *element_manager)
+/*******************************************************************************
+LAST MODIFIED : 8 November 2000
+
+DESCRIPTION :
+Finds all the elements in <torso_element_group> with 4 nodes, 
+for these elements defines <fit_field> at the element, and it's nodes.
+===============================================================================*/
+{
+	int return_code;
+	struct Define_fit_field_at_torso_element_nodes_data 
+		define_fit_field_at_torso_element_nodes_data;
+
+	ENTER(define_fit_field_at_quad_elements_and_nodes);
+	if(torso_element_group&&fit_field)
+	{
+		define_fit_field_at_torso_element_nodes_data.quad_element_group=
+			CREATE(GROUP(FE_element))("quad");
+		define_fit_field_at_torso_element_nodes_data.fit_field=fit_field;
+		/* set up the quad element group, and add the fit field to the nodes*/
+		FOR_EACH_OBJECT_IN_GROUP(FE_element)(define_fit_field_at_torso_element_nodes,
+			(void *)(&define_fit_field_at_torso_element_nodes_data),torso_element_group);
+		/* put the fit field on the quad group elements */
+		return_code=set_up_fitted_potential_on_torso(
+			define_fit_field_at_torso_element_nodes_data.quad_element_group,
+			fit_field,basis_manager,element_manager);
+		/* have altered the elements, but no longer need the group */
+		DESTROY(GROUP(FE_element))
+			(&define_fit_field_at_torso_element_nodes_data.quad_element_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"define_fit_field_at_quad_elements_and_nodes."
+			" Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* define_fit_field_at_quad_elements_and_nodes */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int set_map_fit_field_if_required(struct FE_node *torso_node,
+	void *map_value_torso_data_void)
+/*******************************************************************************
+LAST MODIFIED : 9 November 2000
+
+DESCRIPTION :
+Set the  nodal values of the fit field at the <torso_node>, if haven't already 
+done so. Maintains a list of processed nodes, so can tell which nodes have 
+already set.
+==============================================================================*/
+{
+	int return_code;
+	struct Map_value_torso_data *map_value_torso_data;
+
+	ENTER(set_map_fit_field_if_required);
+	map_value_torso_data=(struct Map_value_torso_data *)NULL;
+	if(torso_node&&map_value_torso_data_void&&
+		(map_value_torso_data=(struct Map_value_torso_data *)map_value_torso_data_void))
+	{	
+		/* if object is already in processed list, have nothing to do*/
+		if(!(IS_OBJECT_IN_LIST(FE_node)(torso_node,map_value_torso_data->processed_nodes)))
+		{	
+			/* set the fit field at the node */		
+			if(return_code=set_map_fit_field_at_torso_node(torso_node,
+				map_value_torso_data->torso_element,map_value_torso_data->map_3d_package,
+				map_value_torso_data->first_torso_element_number))
+			{
+				/* add to the list of processed nodes */
+				return_code=ADD_OBJECT_TO_LIST(FE_node)
+					(torso_node,map_value_torso_data->processed_nodes);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_fit_field_if_required. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_map_fit_field_if_required */
+
+static int set_map_fit_field_at_torso_element_nodes(
+	struct FE_element *torso_element,void *map_value_torso_data_void)
+/*******************************************************************************
+LAST MODIFIED : 9 November 2000
+
+DESCRIPTION :
+Set the  nodal values of the fit field at the <torso_element> nodes
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_node) *element_nodes;
+	struct Map_value_torso_data *map_value_torso_data;
+
+	ENTER(set_map_fit_field_at_torso_element_nodes);
+	element_nodes=(struct LIST(FE_node) *)NULL;
+	map_value_torso_data=(struct Map_value_torso_data *)NULL;
+	if(torso_element&&map_value_torso_data_void&&
+		(map_value_torso_data=(struct Map_value_torso_data *)map_value_torso_data_void))
+	{
+		element_nodes=CREATE_LIST(FE_node)();
+		/*get all nodes in element */
+		calculate_FE_element_field_nodes(torso_element,
+			(struct FE_field *)NULL,element_nodes);
+		/* for each node, set fit field value, if haven't done so already */
+		map_value_torso_data->torso_element=torso_element;
+		FOR_EACH_OBJECT_IN_LIST(FE_node)(set_map_fit_field_if_required,
+			(void *)map_value_torso_data,element_nodes);
+		DESTROY_LIST(FE_node)(&element_nodes);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_fit_field_at_torso_element_nodes. "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_map_fit_field_at_torso_element_nodes */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int set_torso_fit_field_values(struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 10 November 2000
+
+DESCRIPTION :
+set the nodal values of the fit field at the nodes of the elements in
+<map_3d_package->mapped_torso_element_group>
+Caching of nodes should be done outside this function
+==============================================================================*/
+{	
+	int first_element_number,return_code;
+	struct CM_element_information element_information;
+	struct FE_element *first_element;
+	struct GROUP(FE_element) *mapped_torso_element_group,*element_group;
+	struct Map_value_torso_data map_value_torso_data;		
+
+	ENTER(set_torso_fit_field_values);
+	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	element_group=(struct GROUP(FE_element) *)NULL;
+	first_element=(struct FE_element *)NULL;
+	if(map_3d_package)
+	{
+		return_code=1;
+		/* find the identifier of the first element */
+		element_group=get_map_3d_package_element_group(map_3d_package);
+		first_element=FIRST_OBJECT_IN_GROUP_THAT(FE_element)(FE_element_is_top_level,
+				NULL,element_group);
+		element_information=first_element->cm;
+		first_element_number=element_information.number;
+
+		mapped_torso_element_group=
+			get_map_3d_package_mapped_torso_element_group(map_3d_package);
+		/*  set the element's nodal values  */					
+		map_value_torso_data.map_3d_package=map_3d_package;
+		map_value_torso_data.first_torso_element_number=first_element_number;
+		/* torso_element set up later, in set_map_fit_field_at_torso_element_nodes */
+		map_value_torso_data.torso_element=(struct FE_element *)NULL;
+		map_value_torso_data.processed_nodes=CREATE_LIST(FE_node)();	
+		FOR_EACH_OBJECT_IN_GROUP(FE_element)(set_map_fit_field_at_torso_element_nodes,
+			(void *)&map_value_torso_data,mapped_torso_element_group);
+		DESTROY_LIST(FE_node)(&map_value_torso_data.processed_nodes);	
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,"set_torso_fit_field_values. "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_torso_fit_field_values*/
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int do_torso_mesh(struct Unemap_package *unemap_package,struct Region *region)
+/*******************************************************************************
+LAST MODIFIED : 10 November 2000
+
+DESCRIPTION :
+Makes the mapped torso node and element_groups, and sets the field values for 
+them. 
+Really a test function, as want to do these at different times
+==============================================================================*/
+{
+	int return_code;
+
+	struct Map_3d_package *map_3d_package;
+	ENTER(do_torso_mesh);
+	map_3d_package=(struct Map_3d_package *)NULL;
+	return_code=0;
+	if(region&&unemap_package)
+	{	
+		return_code=make_mapped_torso_node_and_element_groups(region,unemap_package);
+		map_3d_package=get_Region_map_3d_package(region);		
+		set_torso_fit_field_values(map_3d_package);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"do_torso_mesh. Can't find element group");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+} /* do_torso_mesh */
+#endif /* defined (UNEMAP_USE_3D) */
 	
 #if defined (UNEMAP_USE_3D)
 int draw_map_3d(struct Map *map)
@@ -5261,12 +6434,15 @@ This function draws the <map> in as a 3D CMGUI scene, for the current region(s).
 Removes 3d drawing for non-current region(s).
 
 ==============================================================================*/
-{
+{	
+	/* up vector for the scene. */
+	double z_up[3]={0.0,0.0,1.0};
+	double *up_vector;
 	FE_value time;
 	struct FE_field *fit_field=(struct FE_field *)NULL;
 	struct Computed_field *data_field=(struct Computed_field *)NULL;
 	float frame_time,minimum, maximum;
-	int display_all_regions,range_set,return_code;
+	int default_torso_loaded,display_all_regions,range_set,return_code;
 	enum Map_type map_type;
 	char undecided_accepted;
 	struct Map_drawing_information *drawing_information=
@@ -5291,6 +6467,14 @@ Removes 3d drawing for non-current region(s).
 		range_set=0;
 		display_all_regions=0;
 		unemap_package=map->unemap_package;
+		if(get_unemap_package_default_torso_name(unemap_package))
+		{
+			default_torso_loaded=1;
+		}
+		else
+		{
+			default_torso_loaded=0;
+		}
 		if (map->type)
 		{
 			map_type= *(map->type);
@@ -5314,13 +6498,13 @@ Removes 3d drawing for non-current region(s).
 			}		
 			if (map_type!=NO_MAP_FIELD)
 			{						
-				scene=get_map_drawing_information_scene(drawing_information);
+				scene=get_map_drawing_information_scene(drawing_information);			
 				region_item=get_Rig_region_list(rig);						
 				while(region_item)
 				{						
 					region=get_Region_list_item_region(region_item);
 					rig_node_group=get_Region_rig_node_group(region);
-					map_3d_package=get_Region_map_3d_package(region);				
+					map_3d_package=get_Region_map_3d_package(region);	
 					/* free everything except the current region(s) map_3d_package*/
 					if((region!=current_region)&&(!display_all_regions))
 					{						
@@ -5358,8 +6542,17 @@ Removes 3d drawing for non-current region(s).
 							destroy_Interpolation_function(&function);
 							/* get map_3d_package again, it may have changed */
 							map_3d_package=get_Region_map_3d_package(region);
-							/* Show the map element surface */														
-							element_group=get_map_3d_package_element_group(map_3d_package);
+							/* Show the map element surface */							
+							if((region->type==TORSO)&&default_torso_loaded)
+							{	
+								/* do torso surface*/
+								element_group=get_map_3d_package_mapped_torso_element_group(map_3d_package);
+							}													
+							else
+							{
+								/* do cylinder surface */
+								element_group=get_map_3d_package_element_group(map_3d_package);
+							}
 							/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
 							if((map->interpolation_type==NO_INTERPOLATION)||
 								(map->colour_option==HIDE_COLOUR))
@@ -5393,9 +6586,9 @@ Removes 3d drawing for non-current region(s).
 								rig_node_group,region);							
 						}/* if (function=calculate_interpolation_functio */
 						/*draw the arms  */				
-						if(region->type==TORSO)/*FOR AJP*/
+						if((region->type==TORSO)&&(!default_torso_loaded))/*FOR AJP*/
 						{
-							draw_torso_arm_labels(map->drawing_information,region);
+							draw_torso_arm_labels(map->drawing_information,region);	
 						}
 					}/* if(unemap_package_rig_node_group_has_electrodes */					
 					region_item=get_Region_list_item_next(region_item);
@@ -5474,14 +6667,23 @@ Removes 3d drawing for non-current region(s).
 							"draw_map_3d.  Spectrum is not in manager!");
 						return_code=0;
 					}				
-				}					
-				map_draw_map_electrodes(unemap_package,map,time);
+				}				
+				map_draw_map_electrodes(unemap_package,map,time);				
 				map_draw_contours(map,spectrum,unemap_package,data_field);
 				/* First time the scene's viewed  do "view_all"*/
 				if(!get_map_drawing_information_viewed_scene(drawing_information))				
 				{						
-					/* unemap_package_align_scene does Scene_viewer_view_all */				
-					if(map_drawing_information_align_scene(drawing_information))
+					/* set z as the up vector for default torso */
+					if((region->type==TORSO)&&(default_torso_loaded))
+					{
+						up_vector=z_up;						
+					}
+					else
+					{
+						up_vector=(double *)NULL;
+					}
+					/* unemap_package_align_scene does Scene_viewer_view_all */					
+					if(map_drawing_information_align_scene(drawing_information,up_vector))					
 					{																			
 						/* perturb the lines(for the contours) */
 						Scene_viewer_set_perturb_lines(get_map_drawing_information_scene_viewer
@@ -9846,6 +11048,7 @@ Create and  and set it's components
 	struct Map_3d_package *map_3d_package;
 
 	ENTER(CREATE(Map_3d_package));
+	map_3d_package=(struct Map_3d_package *)NULL;
 	if(fit_name&&node_order_info&&map_position_field&&map_fit_field)
 	{
 		if (ALLOCATE(map_3d_package,struct Map_3d_package,1))
@@ -9878,6 +11081,10 @@ Create and  and set it's components
 				map_3d_package->electrode_size=0;
 				map_3d_package->electrodes_option=HIDE_ELECTRODES;
 				map_3d_package->colour_electrodes_with_signal=1;
+				map_3d_package->electrodes_min_z=0;
+				map_3d_package->electrodes_max_z=0;
+				map_3d_package->mapped_torso_node_group=(struct GROUP(FE_node) *)NULL;
+				map_3d_package->mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
 				map_3d_package->access_count=0.0;
 			}
 			else
@@ -9947,11 +11154,12 @@ Frees the memory for the Map_3d_package and sets <*package_address>
 to NULL.
 ==============================================================================*/
 {
-	int return_code,success;
+	char *group_name;
+	int return_code;
 	struct FE_field *temp_field;
 	struct Map_3d_package *map_3d_package;
-	struct FE_element *element_to_destroy;
 	struct GROUP(FE_element) *map_element_group,*temp_map_element_group;
+	struct GROUP(FE_node) *temp_map_node_group,*data_group;
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(GROUP(FE_element))	*element_group_manager;
 	struct MANAGER(FE_node) *node_manager,*data_manager;
@@ -9960,6 +11168,7 @@ to NULL.
 	struct MANAGER(Computed_field) *computed_field_manager;
 
 	ENTER(DESTROY(Map_3d_package));
+	group_name=(char *)NULL;
 	if ((map_3d_package_address)&&(map_3d_package= *map_3d_package_address))
 	{
 		element_manager=map_3d_package->element_manager;
@@ -9977,33 +11186,57 @@ to NULL.
 		DEACCESS(GT_object)(&(map_3d_package->torso_arm_labels));/*FOR AJP*/
 		/* node_order_info */
 		DEACCESS(FE_node_order_info)(&(map_3d_package->node_order_info));
-		/*element_group */
-		success=1;
-		/* contours*/
+		/* contours*/		
 		free_map_3d_package_map_contours(map_3d_package);
+		/* map_group */
 		map_element_group=map_3d_package->element_group;
-		while(success&&(element_to_destroy=FIRST_OBJECT_IN_GROUP_THAT(FE_element)
-			((GROUP_CONDITIONAL_FUNCTION(FE_element) *)NULL, NULL,map_element_group)))
-		{
-			success = REMOVE_OBJECT_FROM_GROUP(FE_element)(
-				element_to_destroy,map_element_group);				
-			if (FE_element_can_be_destroyed(element_to_destroy))
-			{				
-				success = REMOVE_OBJECT_FROM_MANAGER(FE_element)(element_to_destroy,
-					element_manager);					
-			}					
-		}		
+		/* deaccess map_element_group. map_node_group deaccessed in */
+		/*free_node_and_element_and_data_groups*/
 		temp_map_element_group=map_element_group;
 		DEACCESS(GROUP(FE_element))(&temp_map_element_group);
-		if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_element)(map_element_group))
-		{
-			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(map_element_group,
-				element_group_manager);
-		}
-		/* map_group */
 		free_node_and_element_and_data_groups(&(map_3d_package->node_group),
 			element_manager,element_group_manager,data_manager,
 			data_group_manager,node_manager,node_group_manager);
+
+		/* mapped torso groups. The contained nodes and elements will remain, in */
+		/* the default_torso_groups, whose name is stored in the unemap_package->default_torso_name*/
+		/* mapped_torso_element_group,mapped_torso_node_group accesssed by map_3d_package, but */
+		/* corresponding data group isn't */
+		temp_map_element_group=map_3d_package->mapped_torso_element_group;			 
+		if(temp_map_element_group)
+		{
+			GET_NAME(GROUP(FE_element))(temp_map_element_group,&group_name);
+			DEACCESS(GROUP(FE_element))(&temp_map_element_group);
+			if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_element)
+				(map_3d_package->mapped_torso_element_group))
+			{
+				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))
+					(map_3d_package->mapped_torso_element_group,
+						element_group_manager);		
+			}	
+		}
+		temp_map_node_group=map_3d_package->mapped_torso_node_group;
+		if(temp_map_node_group)
+		{
+			DEACCESS(GROUP(FE_node))(&temp_map_node_group);
+			if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)
+				(map_3d_package->mapped_torso_node_group))
+			{
+				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))
+					(map_3d_package->mapped_torso_node_group,
+						node_group_manager);			
+			}
+		}
+		if (group_name&&(data_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
+			(group_name,data_group_manager)))
+		{							
+			if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(data_group))
+			{
+				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(data_group,
+					data_group_manager);
+			}
+		}	
+		DEALLOCATE(group_name);
 		/* computed_fields */
 		remove_computed_field_from_manager_given_FE_field(
 			computed_field_manager,map_3d_package->map_fit_field);		
@@ -10205,6 +11438,109 @@ Sets the electrode_size  for map_3d_package <map_number>
 	return (return_code);
 } /* set_map_3d_package_electrode_size */
 
+FE_value get_map_3d_package_electrodes_min_z(struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 9 November 2000
+
+DESCRIPTION :
+gets the map_electrodes_min_z for map_3d_package <map_number> 
+==============================================================================*/
+{
+	FE_value electrodes_min_z;
+
+	ENTER(get_map_3d_package_electrodes_min_z);
+	if(map_3d_package)	
+	{	
+		electrodes_min_z=map_3d_package->electrodes_min_z;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_electrodes_min_z."
+			" invalid arguments");
+		electrodes_min_z=0;
+	}
+	LEAVE;
+	return (electrodes_min_z);	
+} /* get_map_3d_package_electrodes_min_z */
+
+int set_map_3d_package_electrodes_min_z(struct Map_3d_package *map_3d_package,
+	FE_value electrodes_min_z)
+/*******************************************************************************
+LAST MODIFIED : 9 November 2000
+
+DESCRIPTION :
+Sets the electrodes_min_z  for map_3d_package <map_number> 
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_3d_package_electrodes_min_z);
+	if(map_3d_package)
+	{		
+		return_code =1;
+		map_3d_package->electrodes_min_z=electrodes_min_z;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_3d_package_electrodes_min_z ."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_3d_package_electrodes_min_z */
+
+FE_value get_map_3d_package_electrodes_max_z(struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 9 November 2000
+
+DESCRIPTION :
+gets the map_electrodes_max_z for map_3d_package <map_number> 
+==============================================================================*/
+{
+	FE_value electrodes_max_z;
+
+	ENTER(get_map_3d_package_electrodes_max_z);
+	if(map_3d_package)	
+	{	
+		electrodes_max_z=map_3d_package->electrodes_max_z;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_electrodes_max_z."
+			" invalid arguments");
+		electrodes_max_z=0;
+	}
+	LEAVE;
+	return (electrodes_max_z);	
+} /* get_map_3d_package_electrodes_max_z */
+
+int set_map_3d_package_electrodes_max_z(struct Map_3d_package *map_3d_package,
+	FE_value electrodes_max_z)
+/*******************************************************************************
+LAST MODIFIED :  November 2000
+
+DESCRIPTION :
+Sets the electrodes_max_z  for map_3d_package <map_number> 
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_3d_package_electrodes_max_z);
+	if(map_3d_package)
+	{		
+		return_code =1;
+		map_3d_package->electrodes_max_z=electrodes_max_z;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_3d_package_electrodes_max_z ."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_3d_package_electrodes_max_z */
 
 enum Electrodes_option get_map_3d_package_electrodes_option(
 	struct Map_3d_package *map_3d_package)
@@ -10610,6 +11946,114 @@ Sets the element_group for map_3d_package
 	LEAVE;
 	return (return_code);
 }/* set_map_3d_package_element_group */
+
+struct GROUP(FE_element) *get_map_3d_package_mapped_torso_element_group(
+	struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the mapped_torso_element_group for map_3d_package
+==============================================================================*/
+{
+	struct GROUP(FE_element) *mapped_torso_element_group;
+
+	ENTER(get_map_3d_package_mapped_torso_element_group);
+	if(map_3d_package)
+	{				
+		mapped_torso_element_group=map_3d_package->mapped_torso_element_group;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_mapped_torso_element_group."
+			" invalid arguments");
+		mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	}
+	LEAVE;
+	return (mapped_torso_element_group);	
+}/* get_map_3d_package_mapped_torso_element_group */
+
+int set_map_3d_package_mapped_torso_element_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_element) *mapped_torso_element_group)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+Sets the mapped_torso_element_group for map_3d_package
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_3d_package_mapped_torso_element_group);
+	if(map_3d_package)
+	{		
+		return_code =1;
+		REACCESS(GROUP(FE_element))
+			(&(map_3d_package->mapped_torso_element_group),mapped_torso_element_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_3d_package_mapped_torso_element_group."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_map_3d_package_mapped_torso_element_group */
+
+struct GROUP(FE_node) *get_map_3d_package_mapped_torso_node_group(
+	struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the mapped_torso_node_group for map_3d_package
+==============================================================================*/
+{
+	struct GROUP(FE_node) *mapped_torso_node_group;
+
+	ENTER(get_map_3d_package_mapped_torso_node_group);
+	if(map_3d_package)
+	{				
+		mapped_torso_node_group=map_3d_package->mapped_torso_node_group;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_mapped_torso_node_group."
+			" invalid arguments");
+		mapped_torso_node_group=(struct GROUP(FE_node) *)NULL;
+	}
+	LEAVE;
+	return (mapped_torso_node_group);	
+}/* get_map_3d_package_mapped_torso_node_group */
+
+int set_map_3d_package_mapped_torso_node_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_node) *mapped_torso_node_group)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+Sets the mapped_torso_node_group for map_3d_package
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_3d_package_mapped_torso_node_group);
+	if(map_3d_package)
+	{		
+		return_code =1;
+		REACCESS(GROUP(FE_node))
+			(&(map_3d_package->mapped_torso_node_group),mapped_torso_node_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_3d_package_mapped_torso_node_group."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_map_3d_package_mapped_torso_node_group */
 
 int get_map_drawing_information_viewed_scene(
 	struct Map_drawing_information *map_drawing_information)
@@ -11468,11 +12912,13 @@ gets the glyph_list of the <map_drawing_information>
 } /* get_map_drawing_information_glyph_list */
 
 int map_drawing_information_align_scene(
-	struct Map_drawing_information *map_drawing_information) /*FOR AJP*/
+	struct Map_drawing_information *map_drawing_information, double up_vector[3]) /*FOR AJP*/
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 13 November 2000
 
-DESCRIPTION : Aligns the <package> scene so that the largest cardinal dimension 
+DESCRIPTION : Aligns the <map_drawing_information> scene so that 
+if <up_vector> is not NULL, it is the scene viewer's up vector, else 
+the  largest cardinal dimension 
 component of the scene is the scene viewer's up vector, and the viewer is 
 looking along the scene's smallest cardinal dimension component towards the 
 centre of the scene. Eg if a scene is 100 by 30 by 150 (in x,y,z)
@@ -11556,13 +13002,25 @@ Should be in Scene_viewer? RC doesn't think so.
 						min_index--;
 					}
 				}
-				/*clear up vector */
-				for(i=0;i<3;i++)
+				/* if we've specified an up_vector, use it*/
+				if(up_vector)				
 				{
-					up[i]=0;				
+					for(i=0;i<3;i++)
+					{
+						up[i]=up_vector[i];				
+					}
 				}
-				/*set the up vector to be the max size component*/
-				up[max_index]=1;
+				else
+				/*else calculated one*/
+				{
+					/*clear up vector */
+					for(i=0;i<3;i++)
+					{
+						up[i]=0;				
+					}
+					/*set the up vector to be the max size component*/
+					up[max_index]=1;
+				}
 				/* get the dist of eye pt from centre pt (after Scene_viewer_set_view_simple ) */
 				/* (centre[] and lookat[] are the same)*/
 				diff[0]=eye[0]-centre[0];

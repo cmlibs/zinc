@@ -10,6 +10,7 @@ Functions for executing cmiss commands.
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 #include <math.h>
 #if defined (MOTIF)
 #include <Xm/List.h>
@@ -145,17 +146,6 @@ Module variables
 	user_interface.c) */
 struct CMISS_connection *CMISS = (struct CMISS_connection *)NULL;
 #endif /* LINK_CMISS */
-
-#if defined (UNEMAP_USE_3D)
-/* the string of the defaut torso exnode file*/
-static char default_torso_exnode_string[]=
-#include "unemap/default_torso/torso_model.exnodeh"
-;
-/* the string of the defaut torso exelem file*/
-static char default_torso_exelem_string[]=
-#include "unemap/default_torso/torso_model.exelemh"
-;
-#endif /* defined (UNEMAP_USE_3D)*/
 
 /*
 Module functions
@@ -22000,22 +21990,35 @@ Executes a CONNECTION command.
 static int execute_command_unemap_open(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 6 October 2000
 
 DESCRIPTION :
 Executes a UNEMAP OPEN command.
 ==============================================================================*/
-{
-	char *current_token;
-	Dimension window_width=0,window_height=0;
+{	
+	char *current_token,*default_torso_group_name;
 	int return_code;
+	Dimension window_width=0,window_height=0;
 	struct Cmiss_command_data *command_data;
+	struct Colour colour;
+	struct FE_field *map_fit_field;
+	struct Graphical_material *electrode_selected_material;
+	struct GROUP(FE_element) *torso_element_group;
+	struct MANAGER(Computed_field) *computed_field_manager;
 	struct System_window *system;
 	struct System_window_data
 	{
 		Position x;
 		Position y;
 	} system_window_data;
+	struct Standard_torso_defaults
+	{
+		char *standard_torso_file;
+	};
+	struct Standard_torso_defaults standard_torso_defaults;
+#define XmNstandardTorso "standardTorso"
+#define XmCStandardTorso "StandardTorso"
+
 	static XtResource resources[]=
 	{
 		{
@@ -22035,20 +22038,26 @@ Executes a UNEMAP OPEN command.
 			XtOffsetOf(struct System_window_data,y),
 			XmRImmediate,
 			(XtPointer) -1
+		},
+		{
+			XmNstandardTorso,
+			XmCStandardTorso,
+			XmRString,
+			sizeof(char *),
+			XtOffsetOf(struct Standard_torso_defaults,standard_torso_file),
+			XmRString,
+			""
 		}
 	};
 	Widget shell;
-#if defined (UNEMAP)
-	struct MANAGER(Computed_field) *computed_field_manager;
-	struct Graphical_material *electrode_selected_material;
-	struct Colour colour;
-#endif /*  defined (UNEMAP) */
+
 
 	ENTER(execute_command_unemap_open);
-#if defined (UNEMAP)
+	map_fit_field=(struct FE_field *)NULL;
+	default_torso_group_name=(char *)NULL;
 	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
-	electrode_selected_material=(struct Graphical_material *)NULL;
-#endif /*  defined (UNEMAP) */
+	electrode_selected_material=(struct Graphical_material *)NULL;		
+	torso_element_group=(struct GROUP(FE_element) *)NULL;
 	USE_PARAMETER(dummy_to_be_modified);
 	/* check argument */
 	if (state)
@@ -22057,11 +22066,10 @@ Executes a UNEMAP OPEN command.
 		{	
 			if (!((current_token=state->current_token)&&
 				!(strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
 			{
-#if defined (UNEMAP)
 				/* create material "electrode_selected" to be bright white for highlighting
-					electrode graphics */
+					 electrode graphics */
 				if(!(FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
 					("electrode_selected",command_data->graphical_material_manager)))
 				{
@@ -22081,15 +22089,6 @@ Executes a UNEMAP OPEN command.
 						}
 					}		
 				}	
-				/* read in (and shift identifiers of) the default torso mesh nodes and elements */
-				/* (cleaned up when the program shuts down) */		
-				read_exnode_and_exelem_file_from_string_and_offset(
-					default_torso_exnode_string,default_torso_exelem_string,
-					"default_torso",INT_MAX/2,command_data->fe_field_manager,
-					command_data->node_manager,
-					command_data->element_manager,command_data->node_group_manager,
-					command_data->data_group_manager,command_data->element_group_manager
-					,command_data->basis_manager);
 				/* create the unemap_package */
 				if(!(command_data->unemap_package))
 				{
@@ -22106,7 +22105,6 @@ Executes a UNEMAP OPEN command.
 				}
 				if(command_data->unemap_package)
 				{
-#endif /*  defined (UNEMAP) */
 					if (!(system=command_data->unemap_system_window))
 					{
 						/* create a shell */
@@ -22135,7 +22133,7 @@ Executes a UNEMAP OPEN command.
 								command_data->computed_field_package,
 								command_data->default_light,
 								command_data->default_light_model
-																	  ))
+																							))
 							{
 								command_data->unemap_system_window=system;
 								create_Shell_list_item(&(system->window_shell),
@@ -22152,7 +22150,7 @@ Executes a UNEMAP OPEN command.
 									XmNheight,&window_height,
 									NULL);
 								/* Do all this to allow backward compatibility but still allow the
-									resources to be set */
+									 resources to be set */
 								system_window_data.x = -1; /* These defaults match with the */
 								system_window_data.y = -1; /* default resources above */
 								XtVaGetApplicationResources(system->window_shell,
@@ -22172,22 +22170,85 @@ Executes a UNEMAP OPEN command.
 									XmNy, system_window_data.y,
 									XmNmappedWhenManaged, True,
 									NULL);
+								return_code=1;
+								/* turn off graphics in default scene, as updating these slows things down */
+								/* for unemap 3d window */
+								Scene_set_graphical_element_mode(command_data->default_scene,
+									GRAPHICAL_ELEMENT_EMPTY,
+									Computed_field_package_get_computed_field_manager(
+										command_data->computed_field_package),
+									command_data->element_manager,
+									command_data->element_group_manager,
+									command_data->fe_field_manager,
+									command_data->node_manager,
+									command_data->node_group_manager,
+									command_data->data_manager,
+									command_data->data_group_manager,
+									command_data->element_point_ranges_selection,
+									command_data->element_selection,
+									command_data->node_selection,
+									command_data->data_selection,
+									command_data->user_interface);								
+								/* create and store the map fit field  */
+								map_fit_field=create_map_fit_field("fit",command_data->fe_field_manager);
+								set_unemap_package_map_fit_field(command_data->unemap_package,
+									map_fit_field);
+								/* get the location of the default_torso file from Xresoures*/
+								standard_torso_defaults.standard_torso_file= "";			
+								XtVaGetApplicationResources(system->window_shell,
+									&standard_torso_defaults,resources,XtNumber(resources),NULL);
+								/* do nothing if no default torso file specified */
+								if(standard_torso_defaults.standard_torso_file!="")
+								{									
+									/* read in the default torso node and element groups */
+									if(read_FE_node_and_elem_groups_and_return_name_given_file_name(
+										standard_torso_defaults.standard_torso_file,
+										command_data->fe_field_manager,command_data->node_manager,
+										command_data->element_manager,command_data->node_group_manager,
+										command_data->data_group_manager,
+										command_data->element_group_manager,command_data->basis_manager,
+										&default_torso_group_name))
+									{
+										/* offset default torso  node and element groups */
+										offset_FE_node_and_element_identifiers_in_group(
+											default_torso_group_name,(INT_MAX/2),
+											command_data->node_manager,command_data->element_manager,
+											command_data->node_group_manager,
+											command_data->element_group_manager);									
+										/*put in name unemap_package*/
+										set_unemap_package_default_torso_name(command_data->unemap_package,
+											default_torso_group_name);
+										/* define the fit field on  the defaut torso*/
+										torso_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),
+											name)(default_torso_group_name,command_data->element_group_manager);
+										define_fit_field_at_quad_elements_and_nodes(torso_element_group,
+											map_fit_field,command_data->basis_manager,
+											command_data->element_manager);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"Can't find standardTorso specified in Cmgui/Unemap file");
+									}
+								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
 									"execute_command_unemap_open.  Could not create unemap_system_window");
+								return_code=0;
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"execute_command_unemap_open.  Could not create unemap_system_window shell");
+								"execute_command_unemap_open."
+								"  Could not create unemap_system_window shell");
+							return_code=0;
 						}
 					}
-					if (system)
-					{
-						return_code=1;
+					if (system&&return_code)
+					{						
 						/* pop up the system window shell */
 						XtPopup(system->window_shell,XtGrabNone);
 					}
@@ -22195,7 +22256,6 @@ Executes a UNEMAP OPEN command.
 					{
 						return_code=0;
 					}
-#if defined (UNEMAP)
 				}
 				else
 				{
@@ -22203,7 +22263,6 @@ Executes a UNEMAP OPEN command.
 						"execute_command_unemap_open. Couldn't create unemap_package");
 					return_code=0;
 				}
-#endif /* defined (UNEMAP) */
 			}
 			else
 			{

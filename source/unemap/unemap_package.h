@@ -55,7 +55,13 @@ element,nodes, fields when they are no longer required.
 	struct FE_field *display_end_time_field;
 	struct FE_field *display_start_time_field;
 	struct FE_field *highlight_field;
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_NODES) */	
+	/*store as a string rather than node group AND element group AND data group, etc*/
+	/* also used as a flag to determine if the default_torso has been loaded */
+	char *default_torso_name;
+	/* map_fit_field also in map_3d_package. Need to store here between creation*/
+	/* of map_fit_field and creation of map_3d_package. ??JW Remove from map_3d_package? */
+	struct FE_field *map_fit_field;  
 	struct FE_field *read_order_field;
 	struct FE_field *signal_field;
 	struct FE_field *signal_minimum_field;
@@ -216,6 +222,26 @@ int set_unemap_package_read_order_field(struct Unemap_package *package,
 	struct FE_field *read_order_field);
 /*******************************************************************************
 LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+struct FE_field *get_unemap_package_map_fit_field(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 6 October 2000
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+
+int set_unemap_package_map_fit_field(struct Unemap_package *package,
+	struct FE_field *read_order_field);
+/*******************************************************************************
+LAST MODIFIED :  6 October 2000
 
 DESCRIPTION :
 Sets the field of the unemap package.
@@ -629,6 +655,25 @@ LAST MODIFIED : 3 May 2000
 DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
-
 #endif /* #if defined(UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+char *get_unemap_package_default_torso_name(	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 3 November 2000
+
+DESCRIPTION :
+gets the <default_torso_name> of the unemap_package
+==============================================================================*/
+
+int set_unemap_package_default_torso_name(struct Unemap_package *package,
+	char *default_torso_name);
+/*******************************************************************************
+LAST MODIFIED : 3 November 2000
+
+DESCRIPTION :
+sets the <default_torso_name> of the unemap_package
+==============================================================================*/
+#endif /* #if defined(UNEMAP_USE_3D) */
+
 #endif /* !defined (UNEMAP_PACKAGE_H) */

@@ -36482,6 +36482,54 @@ field_order_info
 	return (return_code);
 } /* define_node_field_and_field_order_info */
 
+int iterative_define_FE_field_at_node(struct FE_node *node,
+	void *define_FE_field_at_node_data_void)
+/*******************************************************************************
+LAST MODIFIED : 8 November 2000
+
+DESCRIPTION :
+iterative wrapper for define_FE_field_at_node.
+first checks if field is already defined with FE_field_is_defined_at_node
+===============================================================================*/
+{
+	int *number_of_derivatives,*number_of_versions,return_code;
+	enum FE_nodal_value_type **nodal_value_types;
+	struct FE_field *field;
+	struct Define_FE_field_at_node_data  *define_FE_field_at_node_data;
+	
+	ENTER(iterative_define_FE_field_at_node);	
+	field=(struct FE_field *)NULL;
+	define_FE_field_at_node_data=(struct Define_FE_field_at_node_data  *)NULL;
+	if(node&&define_FE_field_at_node_data_void&&(define_FE_field_at_node_data=
+		(struct Define_FE_field_at_node_data  *)define_FE_field_at_node_data_void))
+	{	
+		field=define_FE_field_at_node_data->field;
+		number_of_derivatives=define_FE_field_at_node_data->number_of_derivatives;
+		number_of_versions=define_FE_field_at_node_data->number_of_versions;
+		nodal_value_types=define_FE_field_at_node_data->nodal_value_types;
+		if(!FE_field_is_defined_at_node(field,node))
+		{
+			if(!(return_code=define_FE_field_at_node(node,field,number_of_derivatives,
+				number_of_versions,nodal_value_types)))
+			{
+				display_message(ERROR_MESSAGE,"iterative_define_FE_field_at_node. define failed");
+			}
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"iterative_define_FE_field_at_node."
+			" Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+} /*iterative_define_FE_field_at_node */
+
 int get_FE_field_order_info_number_of_fields(
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
@@ -37376,6 +37424,36 @@ Given  <component_number>  and <nodal_value_type> of <field> at a
 
 	return (return_code);
 } /* FE_element_get_scale_factor_for_nodal_value */
+
+int node_is_in_list(struct FE_node *node,
+	void *node_is_in_list_data_void)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2000
+
+DESCRIPTION :
+returns 1 if <node> is in <node_is_in_list_data>'s node list.
+Called iteratively.
+==============================================================================*/
+{	
+	int return_code;
+	struct Node_is_in_list_data *node_is_in_list_data;
+	
+	ENTER(node_is_in_list);
+	return_code=1;
+	node_is_in_list_data=(struct Node_is_in_list_data *)NULL;
+	if(node&&node_is_in_list_data_void&&(node_is_in_list_data
+		=(struct Node_is_in_list_data *)node_is_in_list_data_void))
+	{
+		return_code=IS_OBJECT_IN_LIST(FE_node)(node,node_is_in_list_data->node_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"node_not_in_list. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* node_is_in_list */
 
 int offset_FE_node_and_element_identifiers_in_group(char *name,int last_identifier,
 	struct MANAGER(FE_node) *node_manager,

@@ -72,9 +72,11 @@ The fields are filed in with set_unemap_package_fields()
 			package->display_end_time_field=(struct FE_field *)NULL;
 			package->display_start_time_field=(struct FE_field *)NULL;
 			package->highlight_field=(struct FE_field *)NULL;
+			package->default_torso_name=(char *)NULL;
 #endif /* defined (UNEMAP_USE_NODES)*/
 			package->channel_number_field=(struct FE_field *)NULL;
-			package->read_order_field=(struct FE_field *)NULL;			
+			package->read_order_field=(struct FE_field *)NULL;
+			package->map_fit_field=(struct FE_field *)NULL;			
 			package->signal_field=(struct FE_field *)NULL;
 			package->signal_minimum_field=(struct FE_field *)NULL;
 			package->signal_maximum_field=(struct FE_field *)NULL;	
@@ -109,7 +111,7 @@ The fields are filed in with set_unemap_package_fields()
 
 int DESTROY(Unemap_package)(struct Unemap_package **package_address)
 /*******************************************************************************
-LAST MODIFIED : 26 April 1999
+LAST MODIFIED : 15 November 2000
 
 DESCRIPTION :
 Frees the memory for the Unemap_package node field and sets <*package_address>
@@ -118,8 +120,13 @@ to NULL.
 {
 	int return_code;
 	struct Unemap_package *package;
-
+#if defined(NEW_CODE)
+	struct GROUP(FE_node) *default_torso_node_group;
+#endif /* defined(NEW_CODE) */
 	ENTER(DESTROY(Unemap_package));
+#if defined(NEW_CODE)
+	default_torso_node_group=(struct GROUP(FE_node) *)NULL;
+#endif /* defined(NEW_CODE) */
 	if ((package_address)&&(package= *package_address))
 	{		
 		DEACCESS(FE_field)(&(package->device_name_field));
@@ -129,8 +136,30 @@ to NULL.
 		DEACCESS(FE_field)(&(package->display_start_time_field));
 		DEACCESS(FE_field)(&(package->display_end_time_field));
 		DEACCESS(FE_field)(&(package->highlight_field));
-#endif /* defined (UNEMAP_USE_NODES)*/
-		DEACCESS(FE_field)(&(package->read_order_field));		
+#endif /* defined (UNEMAP_USE_NODES)*/	
+		
+#if defined(NEW_CODE)
+		/* ??JW should really do this (although EVERYTHING is cleaned up on shut down) */
+		/* don't do at the moment as unemap doesn't destroy either the rig or the*/
+		/* unemap_package and cmgui doesn't destroy the rig. (The rig contains */
+		/* map_3d_packages which contain mapped_torso_node{element}_groups */
+		/* which contain a subset of the nodes,elements in default_torso_node_group */
+		if ((package->default_torso_name)&&(default_torso_node_group=
+			FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
+			(package->default_torso_name,package->node_group_manager)))
+		{	
+			/*access as free_node_and_element_and_data_groups assumes node group */
+			/* has been accesssed */
+			ACCESS(GROUP(FE_node))(default_torso_node_group);
+			free_node_and_element_and_data_groups(&default_torso_node_group,
+				package->element_manager,package->element_group_manager,
+				package->data_manager,package->data_group_manager,
+				package->node_manager,package->node_group_manager);		
+		}
+#endif /* defined(NEW_CODE) */	
+		DEALLOCATE(package->default_torso_name);
+		DEACCESS(FE_field)(&(package->read_order_field));
+		DEACCESS(FE_field)(&(package->map_fit_field));
 		DEACCESS(FE_field)(&(package->signal_field));
 		DEACCESS(FE_field)(&(package->signal_minimum_field));
 		DEACCESS(FE_field)(&(package->signal_maximum_field));	
@@ -478,11 +507,70 @@ Sets the field of the unemap package.
 } /* set_unemap_package_read_order_field */
 #endif /* defined (UNEMAP_USE_3D)*/
 
+#if defined (UNEMAP_USE_3D)
+struct FE_field *get_unemap_package_map_fit_field(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 6 October 2000
+
+DESCRIPTION :
+gets the field of the unemap package.
+map_fit_field also in map_3d_package. Need to store here between creation
+of map_fit_field and creation of map_3d_package. ??JW Remove from map_3d_package?
+==============================================================================*/
+{
+	struct FE_field *map_fit_field;
+	ENTER(get_unemap_package_map_fit_field);
+	if(package)
+	{
+		map_fit_field=package->map_fit_field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_map_fit_field."
+				" invalid arguments");
+		map_fit_field = (struct FE_field *)NULL;
+	}
+	LEAVE;
+	return (map_fit_field);
+} /* get_unemap_package_map_fit_field */
+
+int set_unemap_package_map_fit_field(struct Unemap_package *package,
+	struct FE_field *map_fit_field)
+/*******************************************************************************
+LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+Sets the field of the unemap package.	
+map_fit_field also in map_3d_package. Need to store here between creation
+of map_fit_field and creation of map_3d_package. ??JW Remove from map_3d_package?
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_map_fit_field);
+	if(package)
+	{
+		return_code =1;		
+		REACCESS(FE_field)(&(package->map_fit_field),map_fit_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_unemap_package_map_fit_field."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_map_fit_field */
+#endif /* defined (UNEMAP_USE_3D)*/
+
+
 #if defined (UNEMAP_USE_NODES)
 struct FE_field *get_unemap_package_highlight_field(
 	struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : July 12 1999
+LAST MODIFIED : 6 October 2000
 
 DESCRIPTION :
 gets the field of the unemap package.
@@ -1483,6 +1571,8 @@ LAST MODIFIED : 17 May 2000
 
 DESCRIPTION :
 Frees the <unemap_package> rig's computed and fe fields
+NOTE: map_fit_field ISN'T and SHOULDN'T be destroyed here. It isn't a property of 
+the rig. 
 ==============================================================================*/
 {
 	int return_code;
@@ -1559,7 +1649,7 @@ Frees the <unemap_package> rig's computed and fe fields
 				unemap_package->highlight_field=(struct FE_field *)NULL;
 			}
 		}	
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_NODES) */		
 		if(unemap_package->read_order_field)
 		{
 			temp_field=unemap_package->read_order_field;
@@ -1931,3 +2021,60 @@ free_unemap_package_rig_node_group_glyphs for this
 	return (return_code);
 }/* free_unemap_package_rig_node_group */
 #endif /* #if defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+char *get_unemap_package_default_torso_name(	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 3 November 2000
+
+DESCRIPTION :
+gets the <default_torso_name> of the unemap_package
+==============================================================================*/
+{
+	char *default_torso_name;
+	ENTER(get_unemap_package_default_torso_name);
+	if(package)
+	{
+		default_torso_name=package->default_torso_name;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_default_torso_name."
+				" invalid arguments");
+		default_torso_name = (char *)NULL;
+	}
+	LEAVE;
+	return (default_torso_name);
+} /* get_unemap_package_default_torso_name */
+
+int set_unemap_package_default_torso_name(struct Unemap_package *package,
+	char *default_torso_name)
+/*******************************************************************************
+LAST MODIFIED : 3 November 2000
+
+DESCRIPTION :
+sets the <default_torso_name> of the unemap_package, freeing any exisiting one.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_default_torso_name);
+	if(package)
+	{
+		return_code =1;
+		if(package->default_torso_name)
+		{
+			DEALLOCATE(package->default_torso_name);
+		}
+		package->default_torso_name=default_torso_name;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_unemap_package_default_torso_name."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_default_torso_name */
+#endif /* defined (UNEMAP_USE_3D)*/

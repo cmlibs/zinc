@@ -2832,11 +2832,6 @@ Sets up the analysis work area for analysing a set of signals.
 				component.field=highlight_field;
 				set_FE_nodal_int_value(rig_node,&component,/*version*/0,FE_NODAL_VALUE,
 					1/*highlight*/);
-#if defined (NEW_CODE)
-				/*select to node for 3D window*/
-				FE_node_selection_select_node(get_unemap_package_FE_node_selection
-					(analysis->unemap_package),rig_node);
-#endif /* defined (NEW_CODE) */
 			}
 #endif /* defined (UNEMAP_USE_NODES) */
 		}

@@ -918,6 +918,24 @@ DESCRIPTION :
 	struct MANAGER(FE_node) *node_manager;
 };
 
+struct Define_FE_field_at_node_data
+{	
+	struct FE_field *field;
+	int *number_of_derivatives,*number_of_versions;
+	enum FE_nodal_value_type **nodal_value_types;
+}; /* Define_FE_field_at_node_data */
+
+struct Node_is_in_list_data
+/*******************************************************************************
+LAST MODIFIED : 17 October 2000
+
+DESCRIPTION :
+used by all_nodes_in_list 
+==============================================================================*/
+{
+	struct LIST(FE_node) *node_list;
+};
+
 /*
 Global variables
 ----------------
@@ -972,6 +990,16 @@ LAST MODIFIED : 28 October 1998
 DESCRIPTION :
 Defines a field at a node (does not assign values).
 ==============================================================================*/
+
+int iterative_define_FE_field_at_node(struct FE_node *node,
+	void *define_FE_field_at_node_data_void);
+/*******************************************************************************
+LAST MODIFIED : 8 November 2000
+
+DESCRIPTION :
+iterative wrapper for define_FE_field_at_node.
+first checks if field is already defined with FE_field_is_defined_at_node
+===============================================================================*/
 
 int undefine_FE_field_at_node(struct FE_node *node,struct FE_field *field);
 /*******************************************************************************
@@ -4516,6 +4544,16 @@ and elements  identifier numbers so that the groups identifiers end at
 the legal integer range, <last_identifier> would be INT_MAX.
 Currently, there must be NO other node and elemnt groups in the manager when
 this function is called.
+==============================================================================*/
+
+int node_is_in_list(struct FE_node *node,
+	void *node_is_in_list_data_void);
+/*******************************************************************************
+LAST MODIFIED : 16 October 2000
+
+DESCRIPTION :
+returns 1 if <node> is in <node_is_in_list_data>'s node list.
+Called iteratively.
 ==============================================================================*/
 
 #if !defined (WINDOWS_DEV_FLAG)

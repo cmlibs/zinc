@@ -782,8 +782,6 @@ depend :
 	gets the first inclusion.  If it fails then you can get the correct makedepend 
 	by ensuring all the uidh files already exist before you makedepend */
 	( grep uidh DependMake.tmp | grep makedepend | awk -v Obj=ObjSuffix -F "[ ,]" '{printf("%s.%s:",substr($$4, 1, length($$4) - 2),Obj); for(i = 1 ; i <= NF ; i++)  { if (match($$i,"uidh")) printf(" %s", substr($$i, 2, length($$i) -2)) } printf("\n");}' >> DependMake)
-	( grep exnodeh DependMake.tmp | grep makedepend | awk -v Obj=ObjSuffix -F "[ ,]" '{printf("%s.%s:",substr($$4, 1, length($$4) - 2),Obj); for(i = 1 ; i <= NF ; i++)  { if (match($$i,"exnodeh")) printf(" %s", substr($$i, 2, length($$i) -2)) } printf("\n");}' >> DependMake)
-	( grep exelemh DependMake.tmp | grep makedepend | awk -v Obj=ObjSuffix -F "[ ,]" '{printf("%s.%s:",substr($$4, 1, length($$4) - 2),Obj); for(i = 1 ; i <= NF ; i++)  { if (match($$i,"exelemh")) printf(" %s", substr($$i, 2, length($$i) -2)) } printf("\n");}' >> DependMake)
 	rm DependMake.tmp
 
 transfer :
