@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 30 April 2003
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -1758,7 +1758,9 @@ Callback from <root_region> informing of <changes>.
 <scene> adds or removes graphical element groups to match.
 ==============================================================================*/
 {
-	int return_code;
+	char *child_region_name;
+	int child_number, return_code;
+	struct Cmiss_region *child_region, *data_child_region;
 	struct Scene *scene;
 	struct Scene_object *scene_object;
 
@@ -1768,20 +1770,86 @@ Callback from <root_region> informing of <changes>.
 		if (region_changes->children_changed)
 		{
 			Scene_begin_cache(scene);
-			/* remove any graphical elements for regions that no longer exist */
-			return_code = 1;
-			while (return_code &&
-				(scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-					Scene_object_has_removed_Cmiss_region, scene_void,
-					scene->scene_object_list)))
+			if (region_changes->child_removed)
 			{
-				return_code =
-					Scene_remove_Scene_object_private(scene, scene_object);
+				return_code = 1;
+				while (return_code &&
+					(scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+						Scene_object_has_Cmiss_region, (void *)region_changes->child_removed,
+						scene->scene_object_list)))
+				{
+					return_code =
+						Scene_remove_Scene_object_private(scene, scene_object);
+				}
 			}
-			if (GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode)
+			else if (region_changes->child_added)
 			{
-				/* ensure we have a graphical element for each child region */
-				Scene_update_graphical_element_groups(scene);
+				if (GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode)
+				{
+					Scene_begin_cache(scene);
+					/* ensure we have a graphical element for this child region if
+					 we now have a node and data pair */
+					if (root_region == scene->root_region)
+					{
+						child_region = region_changes->child_added;
+						if ((!Scene_has_Cmiss_region(scene, child_region)) &&
+							Cmiss_region_get_child_region_number(root_region,
+							child_region, &child_number) &&
+							Cmiss_region_get_child_region_name(root_region,
+							child_number, &child_region_name))
+						{
+							if (data_child_region = Cmiss_region_get_child_region_from_name(
+								scene->data_root_region, child_region_name))
+							{
+								return_code = Scene_add_graphical_element_group(scene, child_region,
+									data_child_region, /*position*/0, child_region_name);
+							}
+							DEALLOCATE(child_region_name);
+						}
+					}
+					else if (root_region == scene->data_root_region)
+					{
+						data_child_region = region_changes->child_added;
+						if ((!Scene_has_data_Cmiss_region(scene, data_child_region)) &&
+							Cmiss_region_get_child_region_number(root_region,
+							data_child_region, &child_number) &&
+							Cmiss_region_get_child_region_name(root_region,
+							child_number, &child_region_name))
+						{
+							if (child_region = Cmiss_region_get_child_region_from_name(
+								scene->root_region, child_region_name))
+							{
+								return_code = Scene_add_graphical_element_group(scene, child_region,
+									data_child_region, /*position*/0, child_region_name);
+							}
+							DEALLOCATE(child_region_name);
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+					Scene_end_cache(scene);
+				}
+			}
+			else
+			{
+				/* All change case, check everything */
+				/* remove any graphical elements for regions that no longer exist */
+				return_code = 1;
+				while (return_code &&
+					(scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+						Scene_object_has_removed_Cmiss_region, scene_void,
+						scene->scene_object_list)))
+				{
+					return_code =
+						Scene_remove_Scene_object_private(scene, scene_object);
+				}
+				if (GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode)
+				{
+					/* ensure we have a graphical element for each child region */
+					Scene_update_graphical_element_groups(scene);
+				}
 			}
 			Scene_end_cache(scene);
 		}
@@ -8473,6 +8541,41 @@ Returns true if <scene> contains a graphical element for <cmiss_region>.
 
 	return (return_code);
 } /* Scene_has_Cmiss_region */
+
+int Scene_has_data_Cmiss_region(struct Scene *scene,
+	struct Cmiss_region *cmiss_region)
+/*******************************************************************************
+LAST MODIFIED : 4 December 2003
+
+DESCRIPTION :
+Returns true if <scene> contains a graphical element for data <cmiss_region>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_has_data_Cmiss_region);
+	if (scene && cmiss_region)
+	{
+		if (FIRST_OBJECT_IN_LIST_THAT(Scene_object)(Scene_object_has_data_Cmiss_region,
+			(void *)cmiss_region, scene->scene_object_list))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_has_data_Cmiss_region.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_has_data_Cmiss_region */
 
 struct GT_element_group *Scene_get_graphical_element_group(
 	struct Scene *scene, struct Cmiss_region *cmiss_region)

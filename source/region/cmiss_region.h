@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_region.h
 
-LAST MODIFIED : 16 May 2003
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 Definition of Cmiss_region, used to create hierarchical data structures.
@@ -46,7 +46,7 @@ within it. Type and role of context objects are not known to the Cmiss_region.
 
 struct Cmiss_region_changes
 /*******************************************************************************
-LAST MODIFIED : 2 December 2000
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 Data broadcast with callbacks from <Cmiss_region> describing the changes.
@@ -54,6 +54,12 @@ Data broadcast with callbacks from <Cmiss_region> describing the changes.
 {
 	/* true if children added, removed or reordered in Cmiss_region */
 	int children_changed;
+	/* If a single child has been added then identify it here for efficiency */
+	struct Cmiss_region *child_added;
+	/* If a single child has been removed then identify it here for efficiency */
+	struct Cmiss_region *child_removed;
+	/* The name by which the parent used to name the child */
+	char *child_removed_name;
 	/* true if objects added to or removed from Cmiss_region */
 	int objects_changed;
 }; /* struct Cmiss_region_changes */

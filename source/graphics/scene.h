@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 3 December 2002
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -1410,6 +1410,15 @@ LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Returns true if <scene> contains a graphical element for <cmiss_region>.
+==============================================================================*/
+
+int Scene_has_data_Cmiss_region(struct Scene *scene,
+	struct Cmiss_region *cmiss_region);
+/*******************************************************************************
+LAST MODIFIED : 4 December 2003
+
+DESCRIPTION :
+Returns true if <scene> contains a graphical element for data <cmiss_region>.
 ==============================================================================*/
 
 struct GT_element_group *Scene_get_graphical_element_group(

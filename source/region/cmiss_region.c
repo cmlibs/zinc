@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_region.c
 
-LAST MODIFIED : 29 April 2003
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 Definition of Cmiss_region, used to create hierarchical data structures.
@@ -40,7 +40,7 @@ FULL_DECLARE_CMISS_CALLBACK_TYPES(Cmiss_region_change, \
 
 struct Cmiss_region
 /*******************************************************************************
-LAST MODIFIED : 2 December 2002
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 Object responsible for building directed acyclic graph hierarchies in Cmiss.
@@ -57,6 +57,12 @@ within it. Type and role of context objects are not known to the Cmiss_region.
 	struct Cmiss_region_child **child;
 	/* true if children added, removed or reordered in Cmiss_region */
 	int children_changed;
+	/* If a single child has been added then identify it here for efficiency */
+	struct Cmiss_region *child_added;
+	/* If a single child has been removed then identify it here for efficiency */
+	struct Cmiss_region *child_removed;
+	/* The name by which the parent used to name the child */
+	char *child_removed_name;
 	/* true if objects added to or removed from Cmiss_region */
 	int objects_changed;
 	/* change counter; if zero, change messages are sent with every change,
@@ -153,7 +159,7 @@ DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_region_change, \
 
 static int Cmiss_region_update(struct Cmiss_region *region)
 /*******************************************************************************
-LAST MODIFIED : 25 March 2003
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 Tells the clients of the <region> about changes of children or objects in this
@@ -171,13 +177,25 @@ region. No messages sent if change count positive or no changes have occurred.
 		{
 			/* construct the changes object */
 			changes.children_changed = region->children_changed;
+			changes.child_added = region->child_added;
+			changes.child_removed = region->child_removed;
+			/* This is an allocated string but we are transferring it and then
+				DEALLOCATING at the end of this routine */
+			changes.child_removed_name = region->child_removed_name;
 			changes.objects_changed = region->objects_changed;
 			/* must clear flags in the region before changes go out */
 			region->children_changed = 0;
+			region->child_added = (struct Cmiss_region *)NULL;
+			region->child_removed = (struct Cmiss_region *)NULL;
+			region->child_removed_name = (char *)NULL;
 			region->objects_changed = 0;
 			/* send the callbacks */
 			CMISS_CALLBACK_LIST_CALL(Cmiss_region_change)(
 				region->change_callback_list, region, &changes);
+			if (changes.child_removed_name)
+			{
+				DEALLOCATE(changes.child_removed_name);
+			}
 		}
 		return_code = 1;
 	}
@@ -200,7 +218,7 @@ DECLARE_OBJECT_FUNCTIONS(Cmiss_region)
 
 struct Cmiss_region *CREATE(Cmiss_region)(void)
 /*******************************************************************************
-LAST MODIFIED : 2 December 2002
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 Creates an empty Cmiss_region.
@@ -215,6 +233,9 @@ Creates an empty Cmiss_region.
 		region->number_of_child_regions = 0;
 		region->child = (struct Cmiss_region_child **)NULL;
 		region->children_changed = 0;
+		region->child_added = (struct Cmiss_region *)NULL;
+		region->child_removed = (struct Cmiss_region *)NULL;
+		region->child_removed_name = (char *)NULL;
 		region->objects_changed = 0;
 		region->change = 0;
 		region->change_callback_list =
@@ -240,7 +261,7 @@ Creates an empty Cmiss_region.
 
 int DESTROY(Cmiss_region)(struct Cmiss_region **region_address)
 /*******************************************************************************
-LAST MODIFIED : 2 December 2002
+LAST MODIFIED : 4 December 2003
 
 DESCRIPTION :
 Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
@@ -267,6 +288,10 @@ Frees the memory for the Cmiss_region and sets <*cmiss_region_address> to NULL.
 			if (region->child)
 			{
 				DEALLOCATE(region->child);
+			}
+			if (region->child_removed_name)
+			{
+				DEALLOCATE(region->child_removed_name);
 			}
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_region_change)))(
 				&(region->change_callback_list));
@@ -644,7 +669,21 @@ Ensures:
 					region->child = temp_child;
 					region->number_of_child_regions++;
 					/* note changes and inform clients */
-					region->children_changed = 1;
+					if (! region->children_changed)
+					{
+						region->children_changed = 1;
+						region->child_added = child_region;
+					}
+					else
+					{
+						/* More than a simple change */
+						region->child_added = (struct Cmiss_region *)NULL;
+						region->child_removed = (struct Cmiss_region *)NULL;
+						if (region->child_removed_name)
+						{
+							DEALLOCATE(region->child_removed_name);
+						}
+					}
 					Cmiss_region_update(region);
 				}
 				else
@@ -685,6 +724,7 @@ Removes <child_region> from <region>.
 in the child?
 ==============================================================================*/
 {
+	char *child_region_name;
 	int child_in_region, i, return_code;
 
 	ENTER(Cmiss_region_remove_child_region);
@@ -699,6 +739,11 @@ in the child?
 			}
 			else if (child_region == region->child[i]->region)
 			{
+				if (! region->children_changed)
+				{
+					/* Copy out the name before we remove it */
+					child_region_name = duplicate_string((region->child[i])->name);
+				}
 				DESTROY(Cmiss_region_child)(&(region->child[i]));
 				child_in_region = 1;
 			}
@@ -707,7 +752,22 @@ in the child?
 		{
 			(region->number_of_child_regions)--;
 			/* note changes and inform clients */
-			region->children_changed = 1;
+			if (! region->children_changed)
+			{
+				region->children_changed = 1;
+				region->child_removed = child_region;
+				region->child_removed_name = child_region_name;
+			}
+			else
+			{
+				/* More than a simple change */
+				region->child_added = (struct Cmiss_region *)NULL;
+				region->child_removed = (struct Cmiss_region *)NULL;
+				if (region->child_removed_name)
+				{
+					DEALLOCATE(region->child_removed_name);
+				}
+			}
 			Cmiss_region_update(region);
 			return_code = 1;
 		}

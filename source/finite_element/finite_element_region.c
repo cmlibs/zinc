@@ -7895,7 +7895,7 @@ having children added or removed.
 ==============================================================================*/
 {
 	char *child_name;
-	int i, number_of_child_regions1, number_of_child_regions2, return_code;
+	int i, j, number_of_child_regions1, number_of_child_regions2, return_code;
 	struct Cmiss_region *child_region, *region2;
 	struct FE_region *fe_region, *master_fe_region;
 
@@ -7907,11 +7907,24 @@ having children added or removed.
 		{
 			Cmiss_region_begin_change(region2);
 			return_code = 1;
-			if (Cmiss_region_get_number_of_child_regions(region1,
-				&number_of_child_regions1) &&
-				(master_fe_region = Cmiss_region_get_FE_region(region2)))
+			if (region_changes->child_removed && region_changes->child_removed_name)
 			{
-				for (i = 0; (i < number_of_child_regions1) && return_code; i++)
+				if (child_region = Cmiss_region_get_child_region_from_name(
+					region2, region_changes->child_removed_name))
+				{
+					return_code = Cmiss_region_remove_child_region(region2, child_region);
+				}
+				else
+				{
+					/* This happens every time as the original region notifies the synchronous
+						region and that region notifies back again */
+					return_code = 1;
+				}
+			}
+			else if (region_changes->child_added)
+			{
+				if (Cmiss_region_get_child_region_number(region1, region_changes->child_added,
+					/*child_number*/&i))
 				{
 					if (Cmiss_region_get_child_region_name(region1, /*child_number*/i,
 						&child_name))
@@ -7919,43 +7932,32 @@ having children added or removed.
 						if (child_region = Cmiss_region_get_child_region_from_name(
 							region2, child_name))
 						{
-							/* make sure child_region as at position i */
-							return_code = Cmiss_region_set_child_region_number(region2,
-								child_region, /*child_number*/i);
+							/* If it is already there and isn't in the same position something is wrong */
+							if (Cmiss_region_get_child_region_number(region2, child_region,
+								/*child_number*/&j))
+							{
+								return_code = (i == j);
+							}
+							else
+							{
+								return_code = 0;
+							}
 						}
 						else
 						{
 							/* create and add a new child region with child_name to region2 */
 							if (!((child_region = CREATE(Cmiss_region)()) &&
+								(master_fe_region = Cmiss_region_get_FE_region(region2)) &&
 								(fe_region = CREATE(FE_region)(master_fe_region,
 								(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL)) &&
 								Cmiss_region_attach_FE_region(child_region, fe_region) &&
 								Cmiss_region_add_child_region(region2, child_region, child_name,
-									/*child_position*/i)))
+								/*child_position*/i)))
 							{
 								return_code = 0;
 							}
 						}
 						DEALLOCATE(child_name);
-					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-				/* now remove excess children from region2 */
-				if (Cmiss_region_get_number_of_child_regions(region2,
-					&number_of_child_regions2))
-				{
-					for (i = (number_of_child_regions2 - number_of_child_regions1);
-						(0 < i) && return_code; i--)
-					{
-						if (!(Cmiss_region_get_child_region(region2,
-							/*child_number*/number_of_child_regions1, &child_region) &&
-							Cmiss_region_remove_child_region(region2, child_region)))
-						{
-							return_code = 0;
-						}
 					}
 				}
 				else
@@ -7965,7 +7967,67 @@ having children added or removed.
 			}
 			else
 			{
-				return_code = 0;
+				/* All change case, check everything */
+				if (Cmiss_region_get_number_of_child_regions(region1,
+						 &number_of_child_regions1))
+				{
+					for (i = 0; (i < number_of_child_regions1) && return_code; i++)
+					{
+						if (Cmiss_region_get_child_region_name(region1, /*child_number*/i,
+								 &child_name))
+						{
+							if (child_region = Cmiss_region_get_child_region_from_name(
+									 region2, child_name))
+							{
+								/* make sure child_region as at position i */
+								return_code = Cmiss_region_set_child_region_number(region2,
+									child_region, /*child_number*/i);
+							}
+							else
+							{
+								/* create and add a new child region with child_name to region2 */
+								if (!((child_region = CREATE(Cmiss_region)()) &&
+									(master_fe_region = Cmiss_region_get_FE_region(region2)) &&
+									(fe_region = CREATE(FE_region)(master_fe_region,
+									(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL)) &&
+									Cmiss_region_attach_FE_region(child_region, fe_region) &&
+									Cmiss_region_add_child_region(region2, child_region, child_name,
+									/*child_position*/i)))
+								{
+									return_code = 0;
+								}
+							}
+							DEALLOCATE(child_name);
+						}
+						else
+						{
+							return_code = 0;
+						}
+					}
+					/* now remove excess children from region2 */
+					if (Cmiss_region_get_number_of_child_regions(region2,
+							 &number_of_child_regions2))
+					{
+						for (i = (number_of_child_regions2 - number_of_child_regions1);
+							  (0 < i) && return_code; i--)
+						{
+							if (!(Cmiss_region_get_child_region(region2,
+										/*child_number*/number_of_child_regions1, &child_region) &&
+									 Cmiss_region_remove_child_region(region2, child_region)))
+							{
+								return_code = 0;
+							}
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				else
+				{
+					return_code = 0;
+				}
 			}
 			if (!return_code)
 			{
