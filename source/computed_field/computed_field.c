@@ -3384,6 +3384,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 			{
 				if (-1 == component_number)
 				{
+					error=0;
 					for (i=0;i<field->number_of_components;i++)
 					{
 						if (0<i)
