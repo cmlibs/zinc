@@ -18,7 +18,11 @@ DESCRIPTION :
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
-#include "unemap/rig.h" /* for enum Region_type.???JWMaybe we should move this elsewhere?*/
+/* for enum Electrodes_option.???JWMaybe we should move this elsewhere?*/
+/* or not use it at all - see map_remove_map_electrodes_if_changed */
+#include "unemap/mapping.h" 
+/* for enum Region_type.???JWMaybe we should move this elsewhere?*/
+#include "unemap/rig.h" 
 
 /*
 Global types
@@ -250,6 +254,28 @@ LAST MODIFIED : 8 May 2000
 
 DESCRIPTION :
 Sets the electrode_size  for map_info <map_number> in <package>.
+Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3...
+==============================================================================*/
+
+enum Electrodes_option get_unemap_package_map_electrodes_option(
+	struct Unemap_package *package,int map_number);
+/*******************************************************************************
+LAST MODIFIED : 9 May 2000
+
+DESCRIPTION :
+gets the map_electrodes_option for map_info <map_number> in <package>.
+get (and set) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3... i.e 
+==============================================================================*/
+
+int set_unemap_package_map_electrodes_option(struct Unemap_package *package,
+	enum Electrodes_option electrodes_option,int map_number);
+/*******************************************************************************
+LAST MODIFIED : 9 May 2000
+
+DESCRIPTION :
+Sets the electrodes_option  for map_info <map_number> in <package>.
 Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
 is 1,2,3...
 ==============================================================================*/

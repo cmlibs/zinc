@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 29 March 2000
+LAST MODIFIED 12 May 2000
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -248,7 +248,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 12 May 2000
 
 DESCRIPTION :
 Main program for unemap
@@ -415,6 +415,13 @@ Main program for unemap
 		set_display_message_function(WARNING_MESSAGE,display_warning_message,
 			(void *)NULL);
 #else
+		set_display_message_function(INFORMATION_MESSAGE,
+			display_information_message,(void *)NULL);
+		set_display_message_function(WARNING_MESSAGE,display_warning_message,
+			&user_interface);
+#endif
+		/* used to output information and warnings to windows*/
+#if defined(OLD_CODE)
 		set_display_message_function(INFORMATION_MESSAGE,
 			display_information_message,&user_interface);
 		set_display_message_function(WARNING_MESSAGE,display_warning_message,

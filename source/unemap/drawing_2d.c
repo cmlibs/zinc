@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : drawing_2d.c
 
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED 12 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -210,7 +210,7 @@ the memory for <**drawing> and changes <*drawing> to NULL.
 
 unsigned long *get_Drawing_2d_image(struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 12 May 2000
 
 DESCRIPTION :
 Allocates an image, suitable for passing to the image_utilities, and fills it
@@ -219,7 +219,7 @@ with the current contents of the <drawing>.
 {
 	XImage *pixel_image;
 	Display *display;
-	int column,row;
+	int column,row,row_padding;
 	Pixel pixel;
 	struct Colour_map_pixel *colour_map_entry;
 	struct LIST(Colour_map_pixel) *colour_map_list;
@@ -254,10 +254,11 @@ with the current contents of the <drawing>.
 				&window_attributes);
 			if (colour_map_list=CREATE(LIST(Colour_map_pixel))())
 			{
-				if (ALLOCATE(image,unsigned long,(drawing->width)*(drawing->height)))
+				if (ALLOCATE(image,unsigned long,(((drawing->width)*3)/4+1)*(drawing->height)))
 				{
 					image_entry=(unsigned char *)image;
 					row=drawing->height;
+					row_padding=(4-((drawing->width)*3)%4)%4;
 					while (image&&(row>0))
 					{
 						row--;
@@ -296,10 +297,12 @@ with the current contents of the <drawing>.
 								*image_entry=colour_map_entry->green;
 								image_entry++;
 								*image_entry=colour_map_entry->blue;
-								image_entry += 2;
+								image_entry++;
 							}
 							column++;
 						}
+						/* make sure that rows are long aligned */
+						image_entry += row_padding;
 					}
 				}
 				else
