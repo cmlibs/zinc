@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cell.imake
 XCOMM
-XCOMM LAST MODIFIED : 30 March 2002
+XCOMM LAST MODIFIED : 2 May 2002
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -757,7 +757,7 @@ $(OBJECT_PATH)/version.ObjSuffix.h : $(OBJS)
 	fi	
 	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.ObjSuffix.h;	  
 	date > date.h
-	sed 's/"//;s/./#define VERSION "\\033\[0;32mCell version 001.002.001 &/;s/.$$/&\\nCopyright 1996-2000, Auckland UniServices Ltd.\\033\[0m"/' < date.h >> $(OBJECT_PATH)/version.ObjSuffix.h
+	sed 's/"//;s/./#define VERSION "\\033\[0;32mCell version 001.002.001 &/;s/.$$/&\\nCopyright 1996-2002, Auckland UniServices Ltd.\\033\[0m"/' < date.h >> $(OBJECT_PATH)/version.ObjSuffix.h
 
 cell.ObjSuffix : cell.c $(OBJECT_PATH)/version.ObjSuffix.h $(INTERPRETER_LIB)
 	@if [ -f $*.c ]; then \
