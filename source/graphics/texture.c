@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -667,40 +667,42 @@ A modifier function to set the texture storage type.
 #if defined (SGI_MOVIE_FILE)
 static int Texture_refresh(struct Texture *texture)
 /*******************************************************************************
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Tells the texture it has changed, forcing it to send the manager message
 MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER.
 Don't want to copy the texture when we are doing intensive things like
 playing movies.
+???RC Review Manager Messages Here
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(Texture_refresh);
-	return_code=0;
 	if (texture)
 	{
 		/* display list is assumed to be current */
 		if (texture->texture_manager&&IS_MANAGED(Texture)(texture,
 			texture->texture_manager))
 		{
-			MANAGER_NOTE_CHANGE(Texture)(
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture),texture,
-				texture->texture_manager);
-			return_code=1;
+			/*???RC these messages are meant to be sent before and after a change.
+				Probably ok as can only have changed this scene before message sent */
+			MANAGER_BEGIN_CHANGE(Texture)(texture->texture_manager,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture), texture);
+			MANAGER_END_CHANGE(Texture)(texture->texture_manager);
+			return_code = 1;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Texture_refresh.  Texture not managed");
-			return_code=0;
+			display_message(ERROR_MESSAGE, "Texture_refresh.  Texture not managed");
+			return_code = 0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Texture_refresh.  Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "Texture_refresh.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
