@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : settings_editor.uil
 !
-! LAST MODIFIED : 22 December 1999
+! LAST MODIFIED : 22 February 2000
 !
 ! DESCRIPTION :
 ! The widgets for the settings editor widget.
@@ -49,8 +49,6 @@ procedure
 	seted_id_glyph_orient_form;
 	seted_id_glyph_sfactors_entry;
 	seted_id_glyph_sfactors_text;
-	seted_id_glyph_edit_mode_entry;
-	seted_id_glyph_edit_mode_form;
 	seted_id_label_field_entry;
   seted_id_label_field_btn;
   seted_id_label_field_form;
@@ -71,8 +69,7 @@ procedure
 	seted_id_strline_vector_form;
 	seted_id_strline_reverse_btn;
 
-	seted_id_strline_datatype_entry;
-	seted_id_strline_datatype_form;
+	seted_id_select_mode_form;
 
 !Identify appearance widgets:
   seted_id_material_form;
@@ -81,11 +78,16 @@ procedure
   seted_id_texture_coord_btn;
   seted_id_texture_coord_form;
 
+	seted_id_strline_datatype_entry;
+	seted_id_strline_datatype_form;
+
   seted_id_data_field_btn;
   seted_id_data_field_form;
 
   seted_id_spectrum_entry;
   seted_id_spectrum_form;
+
+  seted_id_selected_mat_form;
 
 !Callbacks:
   seted_coordinate_btn_CB;
@@ -241,6 +243,7 @@ object
       XmForm seted_seed_element_entry;
       XmRowColumn seted_seed_xi_entry;
       XmRowColumn seted_streamline_entry;
+      XmRowColumn seted_select_mode_entry;
       };
     };
   seted_separator: XmSeparatorGadget
@@ -268,9 +271,10 @@ object
       {
 !      XmLabelGadget seted_appearance_label;
       XmRowColumn seted_material_entry;
-		XmRowColumn seted_texture_coord_entry;
+			XmRowColumn seted_texture_coord_entry;
       XmRowColumn seted_strline_datatype_entry;
       XmRowColumn seted_data_spectrum_entry;
+      XmRowColumn seted_selected_mat_entry;
       };
     };
 !*******************************************************************************
@@ -456,7 +460,6 @@ object
       XmForm seted_glyph_size_centre_entry;
       XmForm seted_glyph_orient_entry;
       XmForm seted_glyph_sfactors_entry;
-      XmRowColumn seted_glyph_edit_mode_entry;
       };
     callbacks
       {
@@ -526,8 +529,7 @@ object
         seted_id_streamline_entry(seted_structure);
       };
     };
-!*******************************************************************************
-  seted_glyph_edit_mode_entry: XmRowColumn
+  seted_select_mode_entry: XmRowColumn
     {
     arguments
       {
@@ -539,30 +541,8 @@ object
       };
     controls
       {
-      XmLabelGadget seted_glyph_edit_mode_label;
-      XmForm seted_glyph_edit_mode_form;
-      };
-    callbacks
-      {
-      MrmNcreateCallback = procedure
-				seted_id_glyph_edit_mode_entry(seted_structure);
-      };
-    };
-  seted_glyph_edit_mode_label: XmLabelGadget
-    {
-    arguments
-      {
-      XmNlabelString = compound_string("Edit mode:");
-      XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
-      };
-    };
-  seted_glyph_edit_mode_form: XmForm
-    {
-    callbacks
-      {
-      MrmNcreateCallback =
-				procedure seted_id_glyph_edit_mode_form(seted_structure);
+      XmLabelGadget seted_select_mode_label;
+      XmForm seted_select_mode_form;
       };
     };
 !*******************************************************************************
@@ -1590,6 +1570,24 @@ object
       };
     };
 !*******************************************************************************
+  seted_select_mode_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Select mode:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+  seted_select_mode_form: XmForm
+    {
+    callbacks
+      {
+      MrmNcreateCallback =
+				procedure seted_id_select_mode_form(seted_structure);
+      };
+    };
+!*******************************************************************************
   seted_strline_datatype_entry: XmRowColumn
     {
     arguments
@@ -1699,6 +1697,23 @@ object
 !      MrmNcreateCallback = procedure
 !        seted_id_data_spectrum_entry(seted_structure);
 !      };
+    };
+  seted_selected_mat_entry: XmRowColumn
+    {
+		arguments
+			{
+!Uncomment the following to reduce size of rowcolumn.
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+			XmLabelGadget seted_selected_mat_label;
+			XmForm seted_selected_mat_form;
+      };
     };
 !*******************************************************************************
   seted_material_label: XmLabelGadget
@@ -1822,6 +1837,24 @@ object
       {
       MrmNcreateCallback = procedure
         seted_id_spectrum_form(seted_structure);
+      };
+    };
+!*******************************************************************************
+  seted_selected_mat_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Selected material:");
+      XmNfontList = button_font;
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      };
+    };
+  seted_selected_mat_form: XmForm
+    {
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+        seted_id_selected_mat_form(seted_structure);
       };
     };
 !*******************************************************************************

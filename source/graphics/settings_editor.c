@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -66,8 +66,7 @@ Contains all the information carried by the graphical element editor widget.
 	/* main dialog widgets */
 	Widget *widget_address,widget,widget_parent;
 	/* geometry widgets */
-	Widget glyph_edit_mode_entry,glyph_edit_mode_form,glyph_edit_mode_widget,
-		coordinate_button,coordinate_field_form,coordinate_field_widget,
+	Widget coordinate_button,coordinate_field_form,coordinate_field_widget,
 		use_element_type_entry,use_element_type_form,use_element_type_widget,
 		discretization_entry,discretization_text,
 		exterior_face_entry,exterior_button,face_button,face_option,face_menu,
@@ -89,14 +88,15 @@ Contains all the information carried by the graphical element editor widget.
 		seed_element_form,seed_element_widget,seed_xi_entry,seed_xi_text,
 		streamline_entry,streamline_type_form,streamline_type_widget,
 		streamline_length_text,streamline_width_text,stream_vector_field_form,
-		stream_vector_field_widget,streamline_reverse_button;
+		stream_vector_field_widget,streamline_reverse_button,
+		select_mode_entry,select_mode_form,select_mode_widget;
 	/* appearance widgets */
 	Widget material_form,material_widget,texture_coord_field_entry,
 		texture_coord_field_form,texture_coord_field_widget,
 		texture_coord_field_button,data_field_button,data_field_form,
 		data_field_widget,spectrum_entry,spectrum_form,spectrum_widget,
 		streamline_data_type_entry,streamline_data_type_form,
-		streamline_data_type_widget;
+		streamline_data_type_widget,selected_material_form,selected_material_widget;
 }; /* struct Settings_editor */
 
 /*
@@ -306,10 +306,6 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,glyph_scale_factors_text)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
-	Settings_editor,glyph_edit_mode_entry)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
-	Settings_editor,glyph_edit_mode_form)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,label_field_entry)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,label_field_button)
@@ -341,6 +337,8 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,stream_vector_field_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,streamline_reverse_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,select_mode_form)
 /* identify appearance settings widgets */
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,material_form)
@@ -362,6 +360,8 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,spectrum_entry)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,spectrum_form)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,selected_material_form)
 
 static void settings_editor_destroy_CB(Widget widget,XtPointer client_data,
 	unsigned long *reason)
@@ -1426,37 +1426,6 @@ Called when entry is made into the glyph_scale_factors text field.
 	LEAVE;
 } /* settings_editor_glyph_scale_factors_text_CB */
 
-static void settings_editor_update_glyph_edit_mode(Widget widget,
-	void *settings_editor_void,void *glyph_edit_mode_string_void)
-/*******************************************************************************
-LAST MODIFIED : 20 January 2000
-
-DESCRIPTION :
-Callback for change of glyph_edit_mode.
-==============================================================================*/
-{
-	struct Settings_editor *settings_editor;
-
-	ENTER(settings_editor_update_glyph_edit_mode);
-	USE_PARAMETER(widget);
-	if (settings_editor=(struct Settings_editor *)settings_editor_void)
-	{
-		if (GT_element_settings_set_glyph_edit_mode(
-			settings_editor->current_settings,
-			Glyph_edit_mode_from_string((char *)glyph_edit_mode_string_void)))
-		{
-			/* inform the client of the change */
-			settings_editor_update(settings_editor);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"settings_editor_update_glyph_edit_mode.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* settings_editor_update_glyph_edit_mode */
-
 static void settings_editor_label_button_CB(Widget widget,
 	XtPointer settings_editor_void,unsigned long *reason)
 /*******************************************************************************
@@ -1940,6 +1909,37 @@ Called when entry is made into the radius_scale_factor_text field.
 	LEAVE;
 } /* settings_editor_streamline_reverse_button_CB */
 
+static void settings_editor_update_select_mode(Widget widget,
+	void *settings_editor_void,void *select_mode_string_void)
+/*******************************************************************************
+LAST MODIFIED : 20 January 2000
+
+DESCRIPTION :
+Callback for change of select_mode.
+==============================================================================*/
+{
+	struct Settings_editor *settings_editor;
+
+	ENTER(settings_editor_update_select_mode);
+	USE_PARAMETER(widget);
+	if (settings_editor=(struct Settings_editor *)settings_editor_void)
+	{
+		if (GT_element_settings_set_select_mode(
+			settings_editor->current_settings,
+			Graphics_select_mode_from_string((char *)select_mode_string_void)))
+		{
+			/* inform the client of the change */
+			settings_editor_update(settings_editor);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"settings_editor_update_select_mode.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* settings_editor_update_select_mode */
+
 static void settings_editor_update_streamline_data_type(Widget widget,
 	void *settings_editor_void,void *streamline_data_type_string_void)
 /*******************************************************************************
@@ -2045,6 +2045,34 @@ Callback for change of material.
 	}
 	LEAVE;
 } /* settings_editor_update_material */
+
+static void settings_editor_update_selected_material(Widget widget,
+	void *settings_editor_void,void *selected_material_void)
+/*******************************************************************************
+LAST MODIFIED : 22 February 2000
+
+DESCRIPTION :
+Callback for change of selected_material.
+==============================================================================*/
+{
+	struct Settings_editor *settings_editor;
+
+	ENTER(settings_editor_update_selected_material);
+	USE_PARAMETER(widget);
+	if (settings_editor=(struct Settings_editor *)settings_editor_void)
+	{
+		GT_element_settings_set_selected_material(settings_editor->current_settings,
+			(struct Graphical_material *)selected_material_void);
+		/* inform the client of the change */
+		settings_editor_update(settings_editor);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"settings_editor_update_selected_material.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* settings_editor_update_selected_material */
 
 static void settings_editor_texture_coord_field_button_CB(Widget widget,
 	XtPointer settings_editor_void,unsigned long *reason)
@@ -2318,7 +2346,7 @@ Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Creates a settings_editor widget.
@@ -2399,10 +2427,6 @@ Creates a settings_editor widget.
 			DIALOG_IDENTIFY(settings_editor,glyph_scale_factors_entry)},
 		{"seted_id_glyph_sfactors_text",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,glyph_scale_factors_text)},
-		{"seted_id_glyph_edit_mode_entry",(XtPointer)
-			DIALOG_IDENTIFY(settings_editor,glyph_edit_mode_entry)},
-		{"seted_id_glyph_edit_mode_form",(XtPointer)
-			DIALOG_IDENTIFY(settings_editor,glyph_edit_mode_form)},
 		{"seted_id_label_field_entry",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,label_field_entry)},
 		{"seted_id_label_field_btn",(XtPointer)
@@ -2435,6 +2459,8 @@ Creates a settings_editor widget.
 			DIALOG_IDENTIFY(settings_editor,stream_vector_field_form)},
 		{"seted_id_strline_reverse_btn",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,streamline_reverse_button)},
+		{"seted_id_select_mode_form",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,select_mode_form)},
 		{"seted_id_material_form",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,material_form)},
 		{"seted_id_texture_coord_entry",(XtPointer)
@@ -2455,6 +2481,8 @@ Creates a settings_editor widget.
 			DIALOG_IDENTIFY(settings_editor,spectrum_entry)},
 		{"seted_id_spectrum_form",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,spectrum_form)},
+		{"seted_id_selected_mat_form",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,selected_material_form)},
 		{"seted_coordinate_btn_CB",(XtPointer)
 			settings_editor_coordinate_button_CB},
 		{"seted_exterior_btn_CB",(XtPointer)
@@ -2575,9 +2603,6 @@ Creates a settings_editor widget.
 				settings_editor->glyph_orientation_scale_field_widget=(Widget)NULL;
 				settings_editor->glyph_scale_factors_entry=(Widget)NULL;
 				settings_editor->glyph_scale_factors_text=(Widget)NULL;
-				settings_editor->glyph_edit_mode_entry=(Widget)NULL;
-				settings_editor->glyph_edit_mode_form=(Widget)NULL;
-				settings_editor->glyph_edit_mode_widget=(Widget)NULL;
 				settings_editor->label_field_entry=(Widget)NULL;
 				settings_editor->label_field_button=(Widget)NULL;
 				settings_editor->label_field_form=(Widget)NULL;
@@ -2599,6 +2624,8 @@ Creates a settings_editor widget.
 				settings_editor->stream_vector_field_form=(Widget)NULL;
 				settings_editor->stream_vector_field_widget=(Widget)NULL;
 				settings_editor->streamline_reverse_button=(Widget)NULL;
+				settings_editor->select_mode_form=(Widget)NULL;
+				settings_editor->select_mode_widget=(Widget)NULL;
 				/* clear appearance settings widgets */
 				settings_editor->material_form=(Widget)NULL;
 				settings_editor->material_widget=(Widget)NULL;
@@ -2612,11 +2639,12 @@ Creates a settings_editor widget.
 				settings_editor->data_field_button=(Widget)NULL;
 				settings_editor->data_field_form=(Widget)NULL;
 				settings_editor->data_field_widget=(Widget)NULL;
+				settings_editor->selected_material_form=(Widget)NULL;
+				settings_editor->selected_material_widget=(Widget)NULL;
 				settings_editor->spectrum_entry=(Widget)NULL;
 				settings_editor->spectrum_form=(Widget)NULL;
 				settings_editor->spectrum_widget=(Widget)NULL;
-				settings_editor->update_callback.procedure=
-					(Callback_procedure *)NULL;
+				settings_editor->update_callback.procedure=(Callback_procedure *)NULL;
 				settings_editor->update_callback.data=(void *)NULL;
 				/* register the callbacks */
 				if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
@@ -2642,17 +2670,6 @@ Creates a settings_editor widget.
 								settings_editor->use_element_type_form,
 								number_of_valid_strings,valid_strings,
 								Use_element_type_string(USE_ELEMENTS))))
-							{
-								init_widgets=0;
-							}
-							DEALLOCATE(valid_strings);
-							valid_strings=Glyph_edit_mode_get_valid_strings(
-								&number_of_valid_strings);
-							if (!(settings_editor->glyph_edit_mode_widget=
-								create_choose_enumerator_widget(
-								settings_editor->glyph_edit_mode_form,
-								number_of_valid_strings,valid_strings,
-								Glyph_edit_mode_string(GLYPH_EDIT_OFF))))
 							{
 								init_widgets=0;
 							}
@@ -2760,6 +2777,17 @@ Creates a settings_editor widget.
 							{
 								init_widgets=0;
 							}
+							valid_strings=Graphics_select_mode_get_valid_strings(
+								&number_of_valid_strings);
+							if (!(settings_editor->select_mode_widget=
+								create_choose_enumerator_widget(
+									settings_editor->select_mode_form,
+									number_of_valid_strings,valid_strings,
+									Graphics_select_mode_string(GRAPHICS_NO_SELECT))))
+							{
+								init_widgets=0;
+							}
+							DEALLOCATE(valid_strings);
 							valid_strings=Streamline_data_type_get_valid_strings(
 								&number_of_valid_strings);
 							if (!(settings_editor->streamline_data_type_widget=
@@ -2801,6 +2829,15 @@ Creates a settings_editor widget.
 								settings_editor->spectrum_form,
 								(struct Spectrum *)NULL,spectrum_manager,
 								(MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL)))
+							{
+								init_widgets=0;
+							}
+							if (!(settings_editor->selected_material_widget=
+								CREATE_CHOOSE_OBJECT_WIDGET(Graphical_material)(
+								settings_editor->selected_material_form,
+								(struct Graphical_material *)NULL,
+								settings_editor->graphical_material_manager,
+								(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2993,7 +3030,7 @@ Returns the currently chosen settings.
 int settings_editor_set_settings(Widget settings_editor_widget,
 	struct GT_element_settings *new_settings)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Changes the currently chosen settings.
@@ -3001,7 +3038,7 @@ Changes the currently chosen settings.
 {
 	char temp_string[50];
 	double iso_value;
-	enum Glyph_edit_mode glyph_edit_mode;
+	enum Graphics_select_mode select_mode;
 	enum GT_element_settings_type settings_type;
 	enum Streamline_type streamline_type;
 	enum Streamline_data_type streamline_data_type;
@@ -3183,12 +3220,6 @@ Changes the currently chosen settings.
 									field_set);
 								XtSetSensitive(settings_editor->glyph_scale_factors_entry,
 									field_set);
-								GT_element_settings_get_glyph_edit_mode(new_settings,
-									&glyph_edit_mode);
-								choose_enumerator_set_string(
-									settings_editor->glyph_edit_mode_widget,
-									Glyph_edit_mode_string(glyph_edit_mode));
-								XtManageChild(settings_editor->glyph_edit_mode_entry);
 								/* turn on callbacks */
 								callback.data=(void *)settings_editor;
 								callback.procedure=settings_editor_update_glyph;
@@ -3200,9 +3231,6 @@ Changes the currently chosen settings.
 								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
 									settings_editor->glyph_orientation_scale_field_widget,
 									&callback);
-								callback.procedure=settings_editor_update_glyph_edit_mode;
-								choose_enumerator_set_callback(
-									settings_editor->glyph_edit_mode_widget,&callback);
 								XtManageChild(settings_editor->glyph_group_entry);
 							}
 							else
@@ -3215,8 +3243,6 @@ Changes the currently chosen settings.
 								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
 									settings_editor->glyph_orientation_scale_field_widget,
 									&callback);
-								choose_enumerator_set_callback(
-									settings_editor->glyph_edit_mode_widget,&callback);
 								XtUnmanageChild(settings_editor->glyph_group_entry);
 							}
 
@@ -3450,6 +3476,14 @@ Changes the currently chosen settings.
 									settings_editor->stream_vector_field_widget,&callback);
 							}
 
+							select_mode=GT_element_settings_get_select_mode(new_settings);
+							choose_enumerator_set_string(settings_editor->select_mode_widget,
+								Graphics_select_mode_string(select_mode));
+							callback.data=(void *)settings_editor;
+							callback.procedure=settings_editor_update_select_mode;
+							choose_enumerator_set_callback(
+								settings_editor->select_mode_widget,&callback);
+
 							/* set values of appearance settings widgets */
 							/* material */
 							CHOOSE_OBJECT_SET_OBJECT(Graphical_material)(
@@ -3551,6 +3585,15 @@ Changes the currently chosen settings.
 									settings_editor->texture_coord_field_widget,&callback);
 								XtUnmanageChild(settings_editor->texture_coord_field_entry);
 							}
+							
+							/* selected material */
+							CHOOSE_OBJECT_SET_OBJECT(Graphical_material)(
+								settings_editor->selected_material_widget,
+								GT_element_settings_get_selected_material(new_settings));
+							callback.data=(void *)settings_editor;
+							callback.procedure=settings_editor_update_selected_material;
+							CHOOSE_OBJECT_SET_CALLBACK(Graphical_material)(
+								settings_editor->selected_material_widget,&callback);
 						}
 						else
 						{
@@ -3596,6 +3639,8 @@ Changes the currently chosen settings.
 						settings_editor->data_field_widget,&callback);
 					CHOOSE_OBJECT_SET_CALLBACK(Spectrum)(
 						settings_editor->spectrum_widget,&callback);
+					CHOOSE_OBJECT_SET_CALLBACK(Graphical_material)(
+						settings_editor->selected_material_widget,&callback);
 				}
 			}
 		}
