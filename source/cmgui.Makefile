@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 26 November 2003
+# LAST MODIFIED : 3 December 2003
 #
 # DESCRIPTION :
 #
@@ -399,6 +399,9 @@ else
    XML2_DEFINES = -DHAVE_XML2
    XML2_INC = -I$(XML2_PATH)/include/$(LIB_ARCH_DIR)/libxml2/
    XML2_LIB = $(XML2_PATH)/lib/$(LIB_ARCH_DIR)/libxml2.a
+ifndef IMAGEMAGICK
+   XML2_LIB += $(XML2_PATH)/lib/$(LIB_ARCH_DIR)/libz.a
+endif # IMAGEMAGICK
 endif
 
 STEREO_DISPLAY_DEFINES = -DSTEREO
