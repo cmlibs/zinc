@@ -2070,7 +2070,7 @@ PARSER_HELP_STRING or PARSER_RECURSIVE_HELP_STRING.
 
 int shift_Parse_state(struct Parse_state *state,int shift)
 /*******************************************************************************
-LAST MODIFIED : 12 June 1996
+LAST MODIFIED : 25 March 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2078,10 +2078,10 @@ DESCRIPTION :
 	int return_code;
 
 	ENTER(shift_Parse_state);
-	if (state&&(shift>0))
+	if (state)
 	{
 		state->current_index += shift;
-		if (state->current_index<=state->number_of_tokens)
+		if ((state->current_index < 0) || (state->current_index <= state->number_of_tokens))
 		{
 			if (state->current_index==state->number_of_tokens)
 			{
@@ -5188,4 +5188,34 @@ number of values specified in the <data>.
 
 	return (return_code);
 } /* Option_table_add_double_vector_with_help_entry */
+
+int Option_table_add_name_entry(struct Option_table *option_table,
+	char *token, char **name)
+/*******************************************************************************
+LAST MODIFIED : 25 March 2004
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  If the <token> is specified then
+the token following is assigned to <value>.  If <token> is NULL then this becomes
+a default option.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_name_entry);
+	if (option_table && name)
+	{
+		return_code = Option_table_add_entry(option_table, token, name,
+			NULL, set_name);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_name_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_name_entry */
 

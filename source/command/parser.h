@@ -766,4 +766,13 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 number of values specified in the <data>.
 ==============================================================================*/
 
+int Option_table_add_name_entry(struct Option_table *option_table,
+	char *token, char **name);
+/*******************************************************************************
+LAST MODIFIED : 25 March 2004
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  If the <token> is specified then
+the token following is assigned to <value>.
+==============================================================================*/
 #endif /* !defined (PARSER_H) */

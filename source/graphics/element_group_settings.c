@@ -6653,32 +6653,49 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				(struct Modify_g_element_data *)modify_g_element_data_void)
 			{
 				/* create the gt_element_settings: */
-				if (settings=modify_g_element_data->settings =
-					CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_NODE_POINTS))
+				settings = CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_NODE_POINTS);
+				/* if we are specifying the name then copy the existings settings values so
+					we can modify from these rather than the default */
+				if (modify_g_element_data->settings)
+				{
+					if (GT_ELEMENT_SETTINGS_NODE_POINTS ==modify_g_element_data->settings->settings_type)
+					{
+						GT_element_settings_copy_without_graphics_object(settings, modify_g_element_data->settings); 
+					}
+					DEACCESS(GT_element_settings)(&modify_g_element_data->settings);
+				}
+				if (settings)
 				{
 					/* access since deaccessed in gfx_modify_g_element */
-					ACCESS(GT_element_settings)(modify_g_element_data->settings);
+					modify_g_element_data->settings = ACCESS(GT_element_settings)(settings);
 					/* set essential parameters not set by CREATE function */
-					GT_element_settings_set_material(settings,
-						g_element_command_data->default_material);
-					GT_element_settings_set_selected_material(settings,
-						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-							"default_selected",
-							g_element_command_data->graphical_material_manager));
+					if (!GT_element_settings_get_material(settings))
+					{
+						GT_element_settings_set_material(settings,
+							g_element_command_data->default_material);
+					}
+					if (!GT_element_settings_get_selected_material(settings))
+					{
+						GT_element_settings_set_selected_material(settings,
+							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+								"default_selected",
+								g_element_command_data->graphical_material_manager));
+					}
+					orientation_scale_field = (struct Computed_field *)NULL;
+					variable_scale_field = (struct Computed_field *)NULL;
 					GT_element_settings_get_glyph_parameters(settings,
 						&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
 						&orientation_scale_field, glyph_scale_factors,
 						&variable_scale_field);
 					/* default to point glyph for fastest possible display */
-					if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-						g_element_command_data->glyph_list))
+					if (!glyph)
 					{
-						ACCESS(GT_object)(glyph);
+						glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
+							g_element_command_data->glyph_list);
 					}
-					orientation_scale_field = (struct Computed_field *)NULL;
-					variable_scale_field = (struct Computed_field *)NULL;
+					ACCESS(GT_object)(glyph);
 					number_of_components = 3;
-					invisible_flag=0;
+					invisible_flag = !GT_element_settings_get_visibility(settings);
 
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -6908,32 +6925,49 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				(struct Modify_g_element_data *)modify_g_element_data_void)
 			{
 				/* create the gt_element_settings: */
-				if (settings=modify_g_element_data->settings=
-					CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_DATA_POINTS))
+				settings = CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_DATA_POINTS);
+				/* if we are specifying the name then copy the existings settings values so
+					we can modify from these rather than the default */
+				if (modify_g_element_data->settings)
+				{
+					if (GT_ELEMENT_SETTINGS_DATA_POINTS ==modify_g_element_data->settings->settings_type)
+					{
+						GT_element_settings_copy_without_graphics_object(settings, modify_g_element_data->settings); 
+					}
+					DEACCESS(GT_element_settings)(&modify_g_element_data->settings);
+				}
+				if (settings)
 				{
 					/* access since deaccessed in gfx_modify_g_element */
-					ACCESS(GT_element_settings)(modify_g_element_data->settings);
+					modify_g_element_data->settings = ACCESS(GT_element_settings)(settings);
 					/* set essential parameters not set by CREATE function */
-					GT_element_settings_set_material(settings,
-						g_element_command_data->default_material);
-					GT_element_settings_set_selected_material(settings,
-						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-							"default_selected",
-							g_element_command_data->graphical_material_manager));
+					if (!GT_element_settings_get_material(settings))
+					{
+						GT_element_settings_set_material(settings,
+							g_element_command_data->default_material);
+					}
+					if (!GT_element_settings_get_selected_material(settings))
+					{
+						GT_element_settings_set_selected_material(settings,
+							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+								"default_selected",
+								g_element_command_data->graphical_material_manager));
+					}
+					orientation_scale_field = (struct Computed_field *)NULL;
+					variable_scale_field = (struct Computed_field *)NULL;
 					GT_element_settings_get_glyph_parameters(settings,
 						&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
 						&orientation_scale_field, glyph_scale_factors,
 						&variable_scale_field);
 					/* default to point glyph for fastest possible display */
-					if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-						g_element_command_data->glyph_list))
+					if (!glyph)
 					{
-						ACCESS(GT_object)(glyph);
+						glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
+							g_element_command_data->glyph_list);
 					}
-					orientation_scale_field = (struct Computed_field *)NULL;
-					variable_scale_field = (struct Computed_field *)NULL;
+					ACCESS(GT_object)(glyph);
 					number_of_components = 3;
-					invisible_flag=0;
+					invisible_flag = !GT_element_settings_get_visibility(settings);
 
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -7157,19 +7191,35 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				(struct Modify_g_element_data *)modify_g_element_data_void)
 			{
 				/* create the gt_element_settings: */
-				if (settings=modify_g_element_data->settings=
-					CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_LINES))
+				settings = CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_LINES);
+				/* if we are specifying the name then copy the existings settings values so
+					we can modify from these rather than the default */
+				if (modify_g_element_data->settings)
+				{
+					if (GT_ELEMENT_SETTINGS_LINES ==modify_g_element_data->settings->settings_type)
+					{
+						GT_element_settings_copy_without_graphics_object(settings, modify_g_element_data->settings); 
+					}
+					DEACCESS(GT_element_settings)(&modify_g_element_data->settings);
+				}
+				if (settings)
 				{
 					/* access since deaccessed in gfx_modify_g_element */
-					ACCESS(GT_element_settings)(modify_g_element_data->settings);
+					modify_g_element_data->settings = ACCESS(GT_element_settings)(settings);
 					/* set essential parameters not set by CREATE function */
-					GT_element_settings_set_material(settings,
-						g_element_command_data->default_material);
-					GT_element_settings_set_selected_material(settings,
-						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-							"default_selected",
-							g_element_command_data->graphical_material_manager));
-					invisible_flag=0;
+					if (!GT_element_settings_get_material(settings))
+					{
+						GT_element_settings_set_material(settings,
+							g_element_command_data->default_material);
+					}
+					if (!GT_element_settings_get_selected_material(settings))
+					{
+						GT_element_settings_set_selected_material(settings,
+							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+								"default_selected",
+								g_element_command_data->graphical_material_manager));
+					}
+					invisible_flag = !GT_element_settings_get_visibility(settings);
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
@@ -7327,19 +7377,35 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				(struct Modify_g_element_data *)modify_g_element_data_void)
 			{
 				/* create the gt_element_settings: */
-				if (settings=modify_g_element_data->settings=
-					CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_CYLINDERS))
+				settings = CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_CYLINDERS);
+				/* if we are specifying the name then copy the existings settings values so
+					we can modify from these rather than the default */
+				if (modify_g_element_data->settings)
+				{
+					if (GT_ELEMENT_SETTINGS_CYLINDERS ==modify_g_element_data->settings->settings_type)
+					{
+						GT_element_settings_copy_without_graphics_object(settings, modify_g_element_data->settings); 
+					}
+					DEACCESS(GT_element_settings)(&modify_g_element_data->settings);
+				}
+				if (settings)
 				{
 					/* access since deaccessed in gfx_modify_g_element */
-					ACCESS(GT_element_settings)(modify_g_element_data->settings);
+					modify_g_element_data->settings = ACCESS(GT_element_settings)(settings);
 					/* set essential parameters not set by CREATE function */
-					GT_element_settings_set_material(settings,
-						g_element_command_data->default_material);
-					GT_element_settings_set_selected_material(settings,
-						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-							"default_selected",
-							g_element_command_data->graphical_material_manager));
-					invisible_flag=0;
+					if (!GT_element_settings_get_material(settings))
+					{
+						GT_element_settings_set_material(settings,
+							g_element_command_data->default_material);
+					}
+					if (!GT_element_settings_get_selected_material(settings))
+					{
+						GT_element_settings_set_selected_material(settings,
+							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+								"default_selected",
+								g_element_command_data->graphical_material_manager));
+					}
+					invisible_flag = !GT_element_settings_get_visibility(settings);
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
@@ -7524,19 +7590,35 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				(struct Modify_g_element_data *)modify_g_element_data_void)
 			{
 				/* create the gt_element_settings: */
-				if (settings=modify_g_element_data->settings=
-					CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES))
+				settings = CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES);
+				/* if we are specifying the name then copy the existings settings values so
+					we can modify from these rather than the default */
+				if (modify_g_element_data->settings)
+				{
+					if (GT_ELEMENT_SETTINGS_SURFACES ==modify_g_element_data->settings->settings_type)
+					{
+						GT_element_settings_copy_without_graphics_object(settings, modify_g_element_data->settings); 
+					}
+					DEACCESS(GT_element_settings)(&modify_g_element_data->settings);
+				}
+				if (settings)
 				{
 					/* access since deaccessed in gfx_modify_g_element */
-					ACCESS(GT_element_settings)(modify_g_element_data->settings);
+					modify_g_element_data->settings = ACCESS(GT_element_settings)(settings);
 					/* set essential parameters not set by CREATE function */
-					GT_element_settings_set_material(settings,
-						g_element_command_data->default_material);
-					GT_element_settings_set_selected_material(settings,
-						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-							"default_selected",
-							g_element_command_data->graphical_material_manager));
-					invisible_flag=0;
+					if (!GT_element_settings_get_material(settings))
+					{
+						GT_element_settings_set_material(settings,
+							g_element_command_data->default_material);
+					}
+					if (!GT_element_settings_get_selected_material(settings))
+					{
+						GT_element_settings_set_selected_material(settings,
+							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+								"default_selected",
+								g_element_command_data->graphical_material_manager));
+					}
+					invisible_flag = !GT_element_settings_get_visibility(settings);
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
@@ -7697,6 +7779,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 {
 	char invisible_flag,*render_type_string,*select_mode_string,
 		*surface_data_region_path,*use_element_type_string, **valid_strings;
+	double iso_value;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
 	enum Use_element_type use_element_type;
@@ -7725,9 +7808,34 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				(struct Modify_g_element_data *)modify_g_element_data_void)
 			{
 				/* create the gt_element_settings: */
-				if (settings=modify_g_element_data->settings=
-					CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_ISO_SURFACES))
+				settings = CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_ISO_SURFACES);
+				/* if we are specifying the name then copy the existings settings values so
+					we can modify from these rather than the default */
+				if (modify_g_element_data->settings)
 				{
+					if (GT_ELEMENT_SETTINGS_ISO_SURFACES ==modify_g_element_data->settings->settings_type)
+					{
+						GT_element_settings_copy_without_graphics_object(settings, modify_g_element_data->settings); 
+					}
+					DEACCESS(GT_element_settings)(&modify_g_element_data->settings);
+				}
+				if (settings)
+				{
+					/* access since deaccessed in gfx_modify_g_element */
+					modify_g_element_data->settings = ACCESS(GT_element_settings)(settings);
+					/* set essential parameters not set by CREATE function */
+					if (!GT_element_settings_get_material(settings))
+					{
+						GT_element_settings_set_material(settings,
+							g_element_command_data->default_material);
+					}
+					if (!GT_element_settings_get_selected_material(settings))
+					{
+						GT_element_settings_set_selected_material(settings,
+							FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+								"default_selected",
+								g_element_command_data->graphical_material_manager));
+					}
 					if (settings->surface_data_region_path)
 					{
 						surface_data_region_path =
@@ -7737,23 +7845,19 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					{
 						Cmiss_region_get_root_region_path(&surface_data_region_path);
 					}
-					/* access since deaccessed in gfx_modify_g_element */
-					ACCESS(GT_element_settings)(modify_g_element_data->settings);
-					/* set essential parameters not set by CREATE function */
-					GT_element_settings_set_material(settings,
-						g_element_command_data->default_material);
-					GT_element_settings_set_selected_material(settings,
-						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-							"default_selected",
-							g_element_command_data->graphical_material_manager));
 					/* must start with valid iso_scalar_field: */
-					if (scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-						Computed_field_is_scalar,(void *)NULL,computed_field_manager))
+					GT_element_settings_get_iso_surface_parameters(settings,
+						&scalar_field, &iso_value);
+					if (!scalar_field)
 					{
-						GT_element_settings_set_iso_surface_parameters(settings,
-							scalar_field,0.0);
+						if (scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+							Computed_field_is_scalar,(void *)NULL,computed_field_manager))
+						{
+							GT_element_settings_set_iso_surface_parameters(settings,
+								scalar_field,0.0);
+						}
 					}
-					invisible_flag=0;
+					invisible_flag = !GT_element_settings_get_visibility(settings);
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
@@ -8057,31 +8161,48 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 		(fe_region = Cmiss_region_get_FE_region(g_element_command_data->region)))
 	{
 		/* create the gt_element_settings: */
-		if (settings=modify_g_element_data->settings=
-			CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_ELEMENT_POINTS))
+		settings = CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_ELEMENT_POINTS);
+		/* if we are specifying the name then copy the existings settings values so
+			we can modify from these rather than the default */
+		if (modify_g_element_data->settings)
+		{
+			if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS ==modify_g_element_data->settings->settings_type)
+			{
+				GT_element_settings_copy_without_graphics_object(settings, modify_g_element_data->settings); 
+			}
+			DEACCESS(GT_element_settings)(&modify_g_element_data->settings);
+		}
+		if (settings)
 		{
 			/* access since deaccessed in gfx_modify_g_element */
-			ACCESS(GT_element_settings)(modify_g_element_data->settings);
+			modify_g_element_data->settings = ACCESS(GT_element_settings)(settings);
 			/* set essential parameters not set by CREATE function */
-			GT_element_settings_set_material(settings,
-				g_element_command_data->default_material);
-			GT_element_settings_set_selected_material(settings,
-				FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-					"default_selected",
-					g_element_command_data->graphical_material_manager));
+			if (!GT_element_settings_get_material(settings))
+			{
+				GT_element_settings_set_material(settings,
+					g_element_command_data->default_material);
+			}
+			if (!GT_element_settings_get_selected_material(settings))
+			{
+				GT_element_settings_set_selected_material(settings,
+					FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+						"default_selected",
+						g_element_command_data->graphical_material_manager));
+			}
+			orientation_scale_field = (struct Computed_field *)NULL;
+			variable_scale_field = (struct Computed_field *)NULL;
+			xi_point_density_field = (struct Computed_field *)NULL;
 			GT_element_settings_get_glyph_parameters(settings,
 				&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
 				&orientation_scale_field, glyph_scale_factors,
 				&variable_scale_field);
 			/* default to point glyph for fastest possible display */
-			if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-				g_element_command_data->glyph_list))
+			if (!glyph)
 			{
-				ACCESS(GT_object)(glyph);
+				glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
+					g_element_command_data->glyph_list);
 			}
-			orientation_scale_field = (struct Computed_field *)NULL;
-			variable_scale_field = (struct Computed_field *)NULL;
-			xi_point_density_field = (struct Computed_field *)NULL;
+			ACCESS(GT_object)(glyph);
 			GT_element_settings_get_xi_discretization(settings,
 				&xi_discretization_mode, &xi_point_density_field);
 			if (xi_point_density_field)
@@ -8089,7 +8210,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				ACCESS(Computed_field)(xi_point_density_field);
 			}
 			number_of_components = 3;
-			invisible_flag = 0;
+			invisible_flag = !GT_element_settings_get_visibility(settings);
 
 			option_table=CREATE(Option_table)();
 			/* as */
@@ -8379,26 +8500,45 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 		(fe_region = Cmiss_region_get_FE_region(g_element_command_data->region)))
 	{
 		/* create the gt_element_settings: */
-		if (settings=modify_g_element_data->settings=
-			CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_VOLUMES))
+		settings = CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_VOLUMES);
+		/* if we are specifying the name then copy the existings settings values so
+			we can modify from these rather than the default */
+		if (modify_g_element_data->settings)
+		{
+			if (GT_ELEMENT_SETTINGS_VOLUMES ==modify_g_element_data->settings->settings_type)
+			{
+				GT_element_settings_copy_without_graphics_object(settings, modify_g_element_data->settings); 
+			}
+			DEACCESS(GT_element_settings)(&modify_g_element_data->settings);
+		}
+		if (settings)
 		{
 			/* access since deaccessed in gfx_modify_g_element */
-			ACCESS(GT_element_settings)(modify_g_element_data->settings);
+			modify_g_element_data->settings = ACCESS(GT_element_settings)(settings);
 			/* set essential parameters not set by CREATE function */
-			GT_element_settings_set_material(settings,
-				g_element_command_data->default_material);
-			GT_element_settings_set_selected_material(settings,
-				FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-					"default_selected",
-					g_element_command_data->graphical_material_manager));
-			/* must have a volume texture */
-			if (volume_texture=FIRST_OBJECT_IN_MANAGER_THAT(VT_volume_texture)(
-				(MANAGER_CONDITIONAL_FUNCTION(VT_volume_texture) *)NULL,
-				(void *)NULL,g_element_command_data->volume_texture_manager))
+			if (!GT_element_settings_get_material(settings))
 			{
-				GT_element_settings_set_volume_texture(settings,volume_texture);
+				GT_element_settings_set_material(settings,
+					g_element_command_data->default_material);
 			}
-			invisible_flag=0;
+			if (!GT_element_settings_get_selected_material(settings))
+			{
+				GT_element_settings_set_selected_material(settings,
+					FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+						"default_selected",
+						g_element_command_data->graphical_material_manager));
+			}
+			/* must have a volume texture */
+			if (!GT_element_settings_get_volume_texture(settings))
+			{
+				if (volume_texture=FIRST_OBJECT_IN_MANAGER_THAT(VT_volume_texture)(
+					(MANAGER_CONDITIONAL_FUNCTION(VT_volume_texture) *)NULL,
+					(void *)NULL,g_element_command_data->volume_texture_manager))
+				{
+					GT_element_settings_set_volume_texture(settings,volume_texture);
+				}
+			}
+			invisible_flag = !GT_element_settings_get_visibility(settings);
 			option_table=CREATE(Option_table)();
 			/* as */
 			Option_table_add_entry(option_table,"as",&(settings->name),
@@ -8570,20 +8710,44 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 		(fe_region = Cmiss_region_get_FE_region(g_element_command_data->region)))
 	{
 		/* create the gt_element_settings: */
-		if (settings=modify_g_element_data->settings=
-			CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_STREAMLINES))
+		settings = CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_STREAMLINES);
+		/* if we are specifying the name then copy the existings settings values so
+			we can modify from these rather than the default */
+		if (modify_g_element_data->settings)
+		{
+			if (GT_ELEMENT_SETTINGS_STREAMLINES ==modify_g_element_data->settings->settings_type)
+			{
+				GT_element_settings_copy_without_graphics_object(settings, modify_g_element_data->settings); 
+			}
+			DEACCESS(GT_element_settings)(&modify_g_element_data->settings);
+		}
+		if (settings)
 		{
 			/* access since deaccessed in gfx_modify_g_element */
-			ACCESS(GT_element_settings)(modify_g_element_data->settings);
+			modify_g_element_data->settings = ACCESS(GT_element_settings)(settings);
 			/* set essential parameters not set by CREATE function */
-			GT_element_settings_set_material(settings,
-				g_element_command_data->default_material);
-			GT_element_settings_set_selected_material(settings,
-				FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-					"default_selected",
-					g_element_command_data->graphical_material_manager));
-			reverse_track = 0;
-			invisible_flag=0;
+			if (!GT_element_settings_get_material(settings))
+			{
+				GT_element_settings_set_material(settings,
+					g_element_command_data->default_material);
+			}
+			if (!GT_element_settings_get_selected_material(settings))
+			{
+				GT_element_settings_set_selected_material(settings,
+					FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+						"default_selected",
+						g_element_command_data->graphical_material_manager));
+			}
+			/* The value stored in the settings is an integer rather than a char */
+			if (settings->reverse_track)
+			{
+				reverse_track = 1;
+			}
+			else
+			{
+				reverse_track = 0;
+			}
+			invisible_flag = !GT_element_settings_get_visibility(settings);
 			option_table=CREATE(Option_table)();
 			/* as */
 			Option_table_add_entry(option_table,"as",&(settings->name),

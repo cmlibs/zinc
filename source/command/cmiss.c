@@ -13772,10 +13772,11 @@ Executes a GFX MODIFY G_ELEMENT command.
 Parameter <help_mode> should be NULL when calling this function.
 ==============================================================================*/
 {
-	char *region_path;
-	int return_code;
+	char *dummy_string, *region_path, *settings_name;
+	int previous_state_index, return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region;
+	struct GT_element_group *gt_element_group;
 	struct G_element_command_data g_element_command_data;
 	struct Modify_g_element_data modify_g_element_data;
 	struct Option_table *option_table;
@@ -13816,7 +13817,49 @@ Parameter <help_mode> should be NULL when calling this function.
 				modify_g_element_data.position = -1;
 				modify_g_element_data.scene =
 					ACCESS(Scene)(command_data->default_scene);
+
 				modify_g_element_data.settings = (struct GT_element_settings *)NULL;
+				/* Look ahead for the "as" option and find the settings with that name
+					if there is one.  Then the modify routines can keep the previous defaults */
+				if (state && (previous_state_index = state->current_index))
+				{
+					option_table = CREATE(Option_table)();
+					/* as */
+					settings_name = (char *)NULL;
+					Option_table_add_name_entry(option_table, "as", &settings_name);
+					/* scene */
+					Option_table_add_entry(option_table, "scene",
+						&(modify_g_element_data.scene),
+						command_data->scene_manager, set_Scene);
+					/* default to absorb everything else */
+					dummy_string = (char *)NULL;
+					Option_table_add_name_entry(option_table, (char *)NULL, &dummy_string);
+					return_code = Option_table_multi_parse(option_table, state);
+					DESTROY(Option_table)(&option_table);
+					if (return_code && settings_name)
+					{
+						if (gt_element_group = Scene_get_graphical_element_group(
+							modify_g_element_data.scene, region))
+						{
+							if (modify_g_element_data.settings = first_settings_in_GT_element_group_that(
+								gt_element_group, GT_element_settings_has_name, (void *)settings_name))
+							{
+								ACCESS(GT_element_settings)(modify_g_element_data.settings);
+							}
+						}
+					}
+
+					if (dummy_string)
+					{
+						DEALLOCATE(dummy_string);
+					}
+					if (settings_name)
+					{
+						DEALLOCATE(settings_name);
+					}
+					/* Return back to where we were */
+					shift_Parse_state(state, previous_state_index - state->current_index);
+				}					
 
 				g_element_command_data.default_material =
 					Material_package_get_default_material(command_data->material_package);
