@@ -52,7 +52,7 @@ update_sources :
 		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
 	fi
 
-ESU_BUILD_LIST = cmgui cmgui-debug cmgui64 cmgui64-debug cmgui-console cmgui-debug-memorycheck
+ESU_BUILD_LIST = cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck
 ESP_BUILD_LIST = cmgui cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl cmgui-dynamicgl-debug cmgui-console
 HPC1_BUILD_LIST = cmgui cmgui-debug cmgui64 cmgui64-debug
 
@@ -61,7 +61,7 @@ update : update_sources
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
-		$(MAKE) -f cmguiMakefile $(ESU_BUILD_LIST) ; \
+		$(MAKE) -f cmguiMakefile $(ESU_BUILD_LIST) && \
 		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmguiMakefile $(ESP_BUILD_LIST)' && \
 		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f cmguiMakefile $(HPC1_BUILD_LIST) ;  ' && \
 		ssh 130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmguiMakefile cmgui-gtk ; /home/blackett/bin/cross-make -f cmguiMakefile cmgui-gtk' && \
@@ -76,7 +76,7 @@ depend: update_sources
 		CMGUI_DEV_ROOT=$(PWD) ; \
 		export CMGUI_DEV_ROOT ; \
 		$(MAKE) -f cmguiMakefile $(ESU_BUILD_LIST) TARGET=depend ; \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; setenv CMGUI_DEV_ROOT $(PWD) ; $(MAKE) -f cmguiMakefile $(ESP_BUILD_LIST) TARGET=depend ; ' && \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; setenv CMGUI_DEV_ROOT $(PWD) ; $(MAKE) -f cmguiMakefile $(ESP_BUILD_LIST) TARGET=depend ; ' ; \
 		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f cmguiMakefile $(HPC1_BUILD_LIST) TARGET=depend ;  ' ; \
 		ssh 130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmguiMakefile cmgui_linux_gtk TARGET=depend && /home/blackett/bin/cross-make -f cmguiMakefile cmgui_win32_gtk TARGET=depend' ; \
 	else \
