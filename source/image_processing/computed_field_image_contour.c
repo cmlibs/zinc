@@ -7,7 +7,6 @@
    DESCRIPTION: Implement image_contour extraction
 ====================================================================*/
 #include <math.h>
-//#include <time.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.h"
@@ -383,9 +382,6 @@ Perform a image_contour extraction operation on the image cache.
 			ALLOCATE(maxcol, FE_value, image->depth)&&
 			ALLOCATE(pixcolor, FE_value, image->depth))
 		{
-		        //Image_cache_median_filter(image,1);
-			//Image_cache_median_filter(image,1);
-			//Image_cache_median_filter(image,1);
 			result_index = (FE_value *)storage;
 			for (i = 0 ; i < storage_size ; i++)
 			{
@@ -452,7 +448,6 @@ Perform a image_contour extraction operation on the image cache.
 			{
 				DEALLOCATE(image->data);
 				image->data = storage;
-				//Image_cache_median_filter(image,2);
 				image->valid = 1;
 			}
 			else
@@ -492,7 +487,6 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	//FE_value *texture_coordinates, *values;
 	int return_code;
 	struct Computed_field_image_contour_type_specific_data *data;
 
@@ -538,7 +532,6 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	//FE_value *texture_coordinates, *values;
 	int return_code;
 	struct Computed_field_image_contour_type_specific_data *data;
 

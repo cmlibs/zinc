@@ -1,6 +1,5 @@
 #include <math.h>
 #include <stdio.h>
-//#include <time.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.h"

@@ -6,7 +6,6 @@ LAST MODIFIED: 18 February 2004
 DESCRIPYTION: Implement image erode transform
 =====================================================================================================*/
 #include <math.h>
-//#include <time.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.h"
@@ -476,7 +475,6 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	//FE_value *texture_coordinates, *values;
 	int return_code;
 	struct Computed_field_erode_filter_type_specific_data *data;
 
@@ -522,7 +520,6 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	//FE_value *texture_coordinates, *values;
 	int return_code;
 	struct Computed_field_erode_filter_type_specific_data *data;
 

@@ -8,7 +8,6 @@
                This segmentation operation is based on automatic thresholding
 ===================================================================*/
 #include <math.h>
-//#include <time.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.h"
@@ -361,14 +360,8 @@ Perform a automatic thresholding operation on the image cache.
 
 
 	ENTER(Image_cache_intensity_based_segment);
-	//if (image && (image->dimension > 0) && (image->depth > 0) && Image_cache_median_filter(image,1))
 	if (image && (image->dimension > 0) && (image->depth > 0))
 	{
-                //Image_cache_median_filter(image,1);
-                //Image_cache_median_filter(image,1);
-		//Image_cache_median_filter(image,1);
-                //Image_cache_median_filter(image,1);
-		//ok = "ok";
 		return_code = 1;
 		T = 0.0;
 		T0 = 0.0;
@@ -398,7 +391,6 @@ Perform a automatic thresholding operation on the image cache.
 			}
 
 			data_index = (FE_value *)image->data;
-			//data_index1 = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
 			/*compute the intensity image*/
 			for (i = 0; return_code && i < counter ; i++)
@@ -408,8 +400,6 @@ Perform a automatic thresholding operation on the image cache.
 			     {
 			             gray_img[i] +=  *(data_index + k) / image->depth;
 			     }
-			     //gray_img[i] = sqrt(gray_img[i]);
-			     //gray_img[i] = *(data_index);
 			     data_index += image->depth;
 			     result_index += image->depth;
 			}
@@ -421,6 +411,7 @@ Perform a automatic thresholding operation on the image cache.
 			}
 			T0 = T;
 			T3 = T;
+#if defined (OLD_CODE)
 			//printf("T3:%f\n",T3);
                         /* perform the initial thresholding by choosing the mean as threshold value*/
 			//for (i = 0; i < counter; i++)
@@ -469,6 +460,7 @@ Perform a automatic thresholding operation on the image cache.
 			   //      T = (T1 + T2)/2;
 			//	 if ((T-T0) <= 0.000001 && (T-T0) >= -0.000001) break;
 			//}
+#endif /* defined (OLD_CODE) */
 			T = 0.7;
 			for (i = (counter - 1); i >= 0; i--)
 			{
@@ -482,7 +474,6 @@ Perform a automatic thresholding operation on the image cache.
 				 else
 				 {
 				          for (k = 0; k < image->depth; k++)
-					           //result_index[k] = 1.0-*(data_index + k);
 						   result_index[k] = 1.0;
 				 }
 			}
@@ -491,9 +482,7 @@ Perform a automatic thresholding operation on the image cache.
 			{
 				DEALLOCATE(image->data);
 				image->data = storage;
-				//Image_cache_median_filter(image,2);
 				image->valid = 1;
-				//printf("hi: %s\n", ok );
 			}
 			else
 			{
@@ -532,7 +521,6 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	//FE_value *texture_coordinates, *values;
 	int return_code;
 	struct Computed_field_intensity_based_segment_type_specific_data *data;
 
@@ -578,7 +566,6 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	//FE_value *texture_coordinates, *values;
 	int return_code;
 	struct Computed_field_intensity_based_segment_type_specific_data *data;
 

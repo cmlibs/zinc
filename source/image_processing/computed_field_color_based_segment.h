@@ -9,8 +9,6 @@ Implements image processing operations on computed fields.
 #if !defined (COMPUTED_FIELD_color_based_segment_H)
 #define COMPUTED_FIELD_color_based_segment_H
 
-//struct Computed_field_color_based_segment_package;
-//struct Image_cache;
 int Computed_field_register_types_color_based_segment(
 	struct Computed_field_package *computed_field_package,
 	struct Cmiss_region *root_region, struct User_interface *user_interface);

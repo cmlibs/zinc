@@ -6,7 +6,6 @@ LAST MODIFIED: 18 February 2004
 DESCRIPTION: The following code implement histogram equalization operation
 ===============================================================*/
 #include <math.h>
-//#include <time.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.h"
@@ -390,7 +389,6 @@ Perform a median filter operation on the image cache.
 			}
 
 			data_index = (FE_value *)image->data;
-			//data_index1 = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
 			for (k= 0; k < image->depth; k++)
 			{
@@ -433,8 +431,6 @@ Perform a median filter operation on the image cache.
 						V = my_Min(number_of_bins,my_Max(0.0, V));
 						result_index[k] = V/number_of_bins;
 					}
-					//data_index += image->depth;
-					//result_index += image->depth;
 				}
 				else
 				{
@@ -485,7 +481,6 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	//FE_value *texture_coordinates, *values;
 	int return_code;
 	struct Computed_field_histogram_equalize_type_specific_data *data;
 
@@ -531,7 +526,6 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	//FE_value *texture_coordinates, *values;
 	int return_code;
 	struct Computed_field_histogram_equalize_type_specific_data *data;
 

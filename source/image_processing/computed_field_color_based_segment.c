@@ -7,7 +7,6 @@
 ==================================================================*/
 
 #include <math.h>
-//#include <time.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.h"
@@ -378,8 +377,6 @@ Perform a automatic thresholding operation on the image cache.
                         ALLOCATE(dist_img, FE_value, counter)&&
 			ALLOCATE(color_mean, FE_value, image->depth))
 		{
-                        //Image_cache_median_filter(image,1);
-                        //Image_cache_median_filter(image,1);
 			result_index = (FE_value *)storage;
 			for (i = 0 ; i < storage_size ; i++)
 			{
@@ -445,7 +442,6 @@ Perform a automatic thresholding operation on the image cache.
 				else
 				{
 				         for (k =0; k <image->depth; k++)
-					 //result_index[k] = *(data_index + k);
 					 result_index[k] = 1.0;
 				}
 				result_index += image->depth;
@@ -454,9 +450,6 @@ Perform a automatic thresholding operation on the image cache.
 			{
 				DEALLOCATE(image->data);
 				image->data = storage;
-				//Image_cache_median_filter(image,1);
-				//Image_cache_median_filter(image,1);
-				//Image_cache_median_filter(image,1);
 				image->valid = 1;
 			}
 			else
@@ -494,7 +487,6 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	//FE_value *texture_coordinates, *values;
 	int return_code;
 	struct Computed_field_color_based_segment_type_specific_data *data;
 
@@ -540,7 +532,6 @@ DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
-	//FE_value *texture_coordinates, *values;
 	int return_code;
 	struct Computed_field_color_based_segment_type_specific_data *data;
 
