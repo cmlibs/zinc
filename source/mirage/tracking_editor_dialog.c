@@ -121,6 +121,10 @@ DESCRIPTION :
    /* The socket processes input callback id */
 	XtInputId input_id;
 
+   /* The kill process timeout callback id */
+	XtIntervalId kill_process_interval_id;
+	int kill_attempts;
+
 	/* following needed to remotely run and control processes */
 	char host[BUFFER_SIZE],remote_host[BUFFER_SIZE];
 	int processing,process_socket,process_remote_client,process_ID;
@@ -213,10 +217,82 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(tracking_editor, \
 DECLARE_DIALOG_IDENTIFY_FUNCTION(tracking_editor, \
 	Tracking_editor_dialog,abort_button)
 
-static void tracking_editor_kill_process(
-	struct Tracking_editor_dialog *track_ed)
+static int tracking_editor_exit_process_mode(
+	struct Tracking_editor_dialog *track_ed);
 /*******************************************************************************
-LAST MODIFIED : 28 April 1998
+LAST MODIFIED : 26 June 2000
+
+DESCRIPTION :
+Prototype declaration.
+==============================================================================*/
+
+static void tracking_editor_kill_process_timeout_cb(XtPointer track_ed_void,
+	XtIntervalId *interval_id)
+/*******************************************************************************
+LAST MODIFIED : 26 June 2000
+
+DESCRIPTION :
+Callback set up by XtAppAddTimeout.  If this timeout is called then the kill
+didn't work in the expected time.  For five attempts this routine will attempt
+to kill the process again.
+==============================================================================*/
+{
+	struct Tracking_editor_dialog *track_ed;
+
+	ENTER(tracking_editor_kill_process_timeout_cb);
+	USE_PARAMETER(interval_id);
+	if (track_ed=(struct Tracking_editor_dialog *)track_ed_void)
+	{
+		if (track_ed->remote_host&&track_ed->process_ID)
+		{ 
+			if (track_ed->kill_attempts < 5)
+			{
+				track_ed->kill_attempts++;
+				printf("Attempt %d killing process %i on remote host %s\n",
+					track_ed->kill_attempts, track_ed->process_ID, track_ed->remote_host);
+				/* Also kill in tracking_editor_kill_process */
+				sprintf(buff, "rsh %s kill -INT %d",
+					track_ed->remote_host, track_ed->process_ID);
+				
+				/* Add timeout callback so we can try again if process doesn't respond */
+				track_ed->kill_process_interval_id = XtAppAddTimeOut(
+					track_ed->user_interface->application_context, /*milliseconds*/5000,
+					tracking_editor_kill_process_timeout_cb, (XtPointer)track_ed);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "tracking_editor_kill_process_timeout_cb.  "
+					"No reponse from remote process after five attempts.  Ignoring process.");
+				track_ed->processing=0;
+				track_ed->process_ID=0;
+				if (track_ed->mirage_movie)
+				{
+					Mirage_movie_refresh_node_groups(track_ed->mirage_movie);
+					/* must read frame in case it was one changed */
+					Mirage_movie_read_frame_nodes(track_ed->mirage_movie,
+						track_ed->mirage_movie->current_frame_no);
+				}
+				tracking_editor_exit_process_mode(track_ed);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "tracking_editor_kill_process_timeout_cb.  "
+				"Callback enabled but no process ID or host.");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "tracking_editor_kill_process_timeout_cb.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+} /* tracking_editor_kill_process_timeout_cb */
+
+static void tracking_editor_kill_process(struct Tracking_editor_dialog *track_ed)
+/*******************************************************************************
+LAST MODIFIED : 26 June 2000
 
 DESCRIPTION :
 Kills the process running on the remote host.
@@ -226,10 +302,21 @@ Kills the process running on the remote host.
 	{
 		printf("Killing process %i on remote host %s\n",track_ed->process_ID,
 			track_ed->remote_host);
+		/* Also kill in tracking_editor_kill_process_timeout_cb */
 		sprintf(buff, "rsh %s kill -INT %d",
 			track_ed->remote_host,track_ed->process_ID);
+#if defined (OLD_CODE)
+		/* Only reset this when the confirmation comes through the socket or we give up */
 		track_ed->process_ID=0;
+#endif /* defined (OLD_CODE) */
 		system(buff);
+
+		track_ed->kill_attempts = 1;
+
+		/* Add timeout callback so we can try again if process doesn't respond */
+		track_ed->kill_process_interval_id = XtAppAddTimeOut(
+			track_ed->user_interface->application_context, /*milliseconds*/5000,
+			tracking_editor_kill_process_timeout_cb, (XtPointer)track_ed);
 	}
 	else
 	{
@@ -2396,15 +2483,9 @@ static void tracking_editor_process_input_cb(XtPointer track_ed_void,
 LAST MODIFIED : 29 April 1998
 
 DESCRIPTION :
-Callback set up by XtAppAddTimeOut. When XVG is running this callback is active
-and called after a given time delay. It polls the socket to see if there are
-incoming messages. If there are it processes them, updating the bar chart
-accordingly.
-Except when the message says the processing is complete, this function then
-sets up another timeout.
-SAB Instead of setting a timeout and then polling in here, just at the file
-descriptor to those that X polls itself, it will callback only when data becomes
-available.
+Callback set up by XtAppAddInput. When XVG is running this callback is active
+and called when there are imcoming messages on the socket. 
+If there are it processes them, updating the bar chart accordingly.
 ==============================================================================*/
 {
 	char *args=NULL;
@@ -2462,6 +2543,12 @@ available.
 			if (strcmp("ABRT",InCom) == 0)
 			{
 				/*tracking_editor_send_message(remoteClient, "OK  ", NULL, 0);*/
+				if (track_ed->kill_process_interval_id)
+				{
+					/* This is the response from the kill that we want. */
+					XtRemoveTimeOut(track_ed->kill_process_interval_id);
+					track_ed->kill_process_interval_id = 0;
+				}
 				track_ed->processing=0;
 				track_ed->process_ID=0;
 				if (args)
@@ -5175,6 +5262,9 @@ DESCRIPTION :
 					track_ed->input_id=0;
 					track_ed->process_remote_client=0;
 					track_ed->process_socket=0;
+
+					track_ed->kill_process_interval_id=0;
+					track_ed->kill_attempts=0;
 
 					/* default values for process mode settings */
 					track_ed->tracking_tolerance = MEDIUM_TOLERANCE;
