@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 20 July 2004
+LAST MODIFIED : 16 September 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -10,7 +10,6 @@ DESCRIPTION :
 #include <math.h>
 #include <string.h>
 #include "general/debug.h"
-#include "general/postscript.h"
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "general/value.h"
