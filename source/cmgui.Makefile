@@ -107,13 +107,18 @@ ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/$(LIB_ARCH_DIR)/cmgui
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
-$(warning )
 ifdef MAKECMDGOALS
-   $(warning Making $(BIN_TARGET) $(MAKECMDGOALS).....)
+   define BUILDING_MESSAGE
+Making $(MAKECMDGOALS) for version $(BIN_TARGET)
+
+   endef
 else
-   $(warning Building $(BIN_TARGET).....)
+   define BUILDING_MESSAGE
+Building $(BIN_TARGET)
+
+   endef
 endif
-$(warning )
+$(warning $(BUILDING_MESSAGE))
 
 DEPENDFILE = $(BIN_TARGET).depend
 
