@@ -255,6 +255,7 @@ DESCRIPTION :
 	}
 	printf("SocketInitialize() : Created socket.\n");
 
+#if defined (OLD_CODE)
 	/* Indicate that socket re-use is allowed */
 	optionValue = 1;
 	if (setsockopt(*theSocket, SOL_SOCKET, SO_REUSEADDR, &optionValue, sizeof(optionValue)) == -1 ) {
@@ -262,12 +263,19 @@ DESCRIPTION :
 		close(*theSocket);
 		return(0);
 	}
+#endif /* defined (OLD_CODE) */
 
 	/* Bind this socket to all incoming addresses on the port */
 	memset(&socketDescriptor, 0, sizeof(socketDescriptor));
 	socketDescriptor.sin_family      = AF_INET; /* Protocol Family */
+	socketDescriptor.sin_port        = serv->s_port; /* Port */
+	socketDescriptor.sin_addr.s_addr = INADDR_ANY; /* listen to all */
+#if defined (OLD_CODE)
+	/* These functions stop the Linux version from working and don't
+		seem to be necessary! */
 	socketDescriptor.sin_port        = htons(serv->s_port); /* Port */
 	socketDescriptor.sin_addr.s_addr = htonl(INADDR_ANY); /* listen to all */
+#endif /* defined (OLD_CODE) */
 	if (bind(*theSocket,(struct sockaddr *)&socketDescriptor,
 		sizeof(struct sockaddr)) == -1 )
 	{
@@ -1029,7 +1037,7 @@ Must cache all pending node groups (3-D and in each view) before calling
 as an iterator.
 ==============================================================================*/
 {
-	int return_code,node_no;
+	int return_code;
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_iterator_node_pending_change);
@@ -1207,7 +1215,7 @@ Must cache all problem node groups (3-D and in each view) before calling
 as an iterator.
 ==============================================================================*/
 {
-	int return_code,node_no;
+	int return_code;
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_iterator_node_problem_change);
@@ -1910,10 +1918,9 @@ In both the above 2 cases the affected pending range is cleared.
 ==============================================================================*/
 {
 	int return_code,view_no,this_frame,start,stop;
-	struct Add_elements_with_node_data add_data;
 	struct FE_node *node;
 	struct Mirage_movie *movie;
-	struct Mirage_view *view,*add_view;
+	struct Mirage_view *view;
 	struct Node_status *node_status;
 	struct Remove_elements_with_node_data rem_data;
 
@@ -2479,7 +2486,6 @@ Reads a movie file into the tracking editor.
 ==============================================================================*/
 {
 	char *title,tmp_string[40];
-	FILE *input_file;
 	int return_code,max_nodes;
 	struct Mirage_movie *tmp_movie;
 	struct Tracking_editor_dialog *track_ed;
@@ -2654,6 +2660,8 @@ Callback for the file menu dialogs
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_save_movie_cb);
+	USE_PARAMETER(dialog);
+	USE_PARAMETER(call_data);
 	if (track_ed=(struct Tracking_editor_dialog *)client_data)
 	{
 		return_code=1;
@@ -2710,6 +2718,8 @@ Callback for file|save movie menu button.
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_save_movie_cb);
+	USE_PARAMETER(w);
+	USE_PARAMETER(call_data);
 	if (track_ed=(struct Tracking_editor_dialog *)client_data)
 	{
 		if (!Mirage_movie_full_save(track_ed->mirage_movie,""))
@@ -2757,17 +2767,18 @@ and to choose the 3-D set needed for calibration.
 ==============================================================================*/
 {
 	char *file_name_template,*file_name;
-	double grid_spacing,pos3[3],pos2[2];
+	double pos3[3],pos2[2];
 	FE_value node_x,node_y,node_z;
 	FILE *out_file;
-	int view_no,sizex,sizey,num_points_x,num_points_y,x,y,i,node_no,
-		top[50],right[50];
+	int view_no,i,node_no;
 	struct FE_node *node;
 	struct Tracking_editor_dialog *track_ed;
 	struct Mirage_movie *movie;
 	struct Mirage_view *view;
 
 	ENTER(tracking_editor_write_2d_cb);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if ((track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
 		(movie=track_ed->mirage_movie)&&movie->name)
 	{
@@ -2846,6 +2857,8 @@ Callback specifying change of frame.
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_frame_text_cb);
+	USE_PARAMETER(w);
+	USE_PARAMETER(call_data);
 	if ((track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
 		(movie=track_ed->mirage_movie))
 	{
@@ -2896,6 +2909,8 @@ Callback for clearing all pending ranges.
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_clear_pending_cb);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if ((track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
 		(movie=track_ed->mirage_movie))
 	{
@@ -2937,12 +2952,12 @@ DESCRIPTION :
 Callback for clearing all pending ranges.
 ==============================================================================*/
 {
-	int view_no;
 	struct Mirage_movie *movie;
-	struct Mirage_view *view;
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_revert_cb);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if ((track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
 		(movie=track_ed->mirage_movie))
 	{
@@ -2979,6 +2994,8 @@ Creates a new digitiser window.
 	struct Tracking_editor_dialog *dialog;
 
 	ENTER(tracking_editor_digitiser_cb);
+	USE_PARAMETER(w);
+	USE_PARAMETER(call_data);
 	if ((dialog=(struct Tracking_editor_dialog *)client_data)&&
 		dialog->mirage_movie)
 	{
@@ -3023,6 +3040,8 @@ Creates a new 3-D window.
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_3d_window_cb);
+	USE_PARAMETER(w);
+	USE_PARAMETER(call_data);
 	if (track_ed=(struct Tracking_editor_dialog *)track_ed_void)
 	{
 		if (name=Graphics_window_manager_get_new_name(
@@ -3066,6 +3085,7 @@ Toggles graphics object on and off: 3-D surfaces, etc.
 	int toggled_on,show_node_numbers;
 
 	ENTER(tracking_editor_view_objects_cb);
+	USE_PARAMETER(call_data);
 	if (widget&&(track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
 		(movie=track_ed->mirage_movie))
 	{
@@ -3160,6 +3180,7 @@ Turns on node numbers of the placed points in the 2-D and 3-D views.
 	int show_node_numbers;
 
 	ENTER(tracking_editor_view_node_numbers_cb);
+	USE_PARAMETER(call_data);
 	if (widget&&(track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
 		(movie=track_ed->mirage_movie))
 	{
@@ -3195,11 +3216,14 @@ incoming messages. If there are it processes them, updating the bar chart
 accordingly.
 Except when the message says the processing is complete, this function then
 sets up another timeout.
+SAB Instead of setting a timeout and then polling in here, just at the file
+descriptor to those that X polls itself, it will callback only when data becomes
+available.
 ==============================================================================*/
 {
 	char *args=NULL;
 	static char InCom[XVG_SOCKET_COMMAND_LEN+1],cbuf[1024];
-	int poll_value,ArgsLen,LongestArgsLen,PollReadEvents,frame_no,view_no;
+	int poll_value,PollReadEvents,frame_no,view_no;
 #if defined (SGI)
 	struct pollfd pfd;
 #else /* defined (SGI) */
@@ -3211,6 +3235,7 @@ sets up another timeout.
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_process_timeout_cb);
+	USE_PARAMETER(interval_id);
 	if ((track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
 		(movie=track_ed->mirage_movie))
 	{
@@ -3225,7 +3250,6 @@ sets up another timeout.
 		FD_SET(pfd, &read_fdset);
 #endif /* defined (SGI) */
 
-		LongestArgsLen = 0;
 		args=(char *)NULL;
 #if defined (SGI)
 		if ((0 < (poll_value=poll(&pfd,(unsigned long)1,0)))&&
@@ -3504,6 +3528,7 @@ DESCRIPTION :
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_tracking_second_pass_cb);
+	USE_PARAMETER(call_data);
 	if (widget&&(track_ed=(struct Tracking_editor_dialog *)track_ed_void))
 	{
 		track_ed->tracking_search_radius = 16;
@@ -3536,6 +3561,7 @@ DESCRIPTION :
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_tracking_second_pass_cb);
+	USE_PARAMETER(call_data);
 	if (widget&&(track_ed=(struct Tracking_editor_dialog *)track_ed_void))
 	{
 		track_ed->tracking_cm_interval = 0;
@@ -3575,7 +3601,6 @@ DESCRIPTION :
 		{XmNleftPosition,10},
 		{XmNtopAttachment,XmATTACH_FORM},
 		{XmNtopOffset,10}};
-	Boolean second_pass_set;
 	char search_radius_value[15], cm_interval_value[15];
 	int return_code;
 	struct Tracking_editor_dialog *track_ed;
@@ -3715,6 +3740,8 @@ Sets tracking or other process running if in one of these modes.
 	struct LIST(Node_status) *good_node_list;
 
 	ENTER(tracking_editor_process_cb);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if ((track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
 		(movie=track_ed->mirage_movie))
 	{
@@ -3930,6 +3957,8 @@ Aborts tracking.
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_abort_cb);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if ((track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
 		track_ed->processing)
 	{
@@ -4023,10 +4052,8 @@ LAST MODIFIED : 9 April 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-	int pending, return_code,i,num_children,view_no;
+	int return_code,i,num_children;
 	struct Mirage_movie *movie;
-	struct Mirage_view *view;
-	struct Node_status *pending_status;
 	Widget *child_list;
 	XtPointer dummy;
 
@@ -4203,7 +4230,8 @@ Tidys up when the user destroys the map dialog box.
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_destroy_cb);
-
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (track_ed=(struct Tracking_editor_dialog *)track_ed_void)
 	{
 		destroy_Shell_list_item_from_shell (&(track_ed->shell),
@@ -4286,6 +4314,8 @@ This is the configuration callback for the GL widget.
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_bar_chart_initialize_callback);
+	USE_PARAMETER(drawing_widget);
+	USE_PARAMETER(call_data);
 	if (track_ed=(struct Tracking_editor_dialog *)track_ed_void)
 	{
 		/* initialize graphics library to load XFont */
@@ -4359,12 +4389,11 @@ DESCRIPTION :
 	static enum Tracking_editor_drag_mode drag_mode=TRACK_ED_DRAG_NOTHING;
 	static int old_pointer_x,old_pointer_y;
 	int pointer_x,pointer_y,i,frame_no,index,mark_left,mark_right,mark_all_nodes,
-		view_no,old_current_frame_no;
+		old_current_frame_no;
 	static int mark_frame_no,mark_node_no,mark_x,mark_min_x,mark_max_x,
 		mark_min_y,mark_max_y,last_frame_no_read;
 	struct Node_status *node_status;
 	struct Mirage_movie *movie;
-	struct Mirage_view *view;
 	struct Select_node_frame_data select_data;
 	struct Tracking_editor_dialog *track_ed;
 	X3dThreeDDrawCallbackStruct *input_callback_data;
@@ -4377,6 +4406,7 @@ DESCRIPTION :
 	*/
 
 	ENTER(tracking_editor_bar_chart_input_callback);
+	USE_PARAMETER(drawing_widget);
 	if ((track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
 		(input_callback_data=(X3dThreeDDrawCallbackStruct *)call_data)&&
 		(X3dCR_INPUT==input_callback_data->reason)&&
@@ -4876,6 +4906,8 @@ Closes the dialog window, and any children dialogs that may be open.
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_close_cb);
+	USE_PARAMETER(widget_id);
+	USE_PARAMETER(call_data);
 	if (track_ed=(struct Tracking_editor_dialog *)client_data)
 	{
 		XtUnmanageChild(track_ed->dialog);
@@ -4995,7 +5027,7 @@ DESCRIPTION :
 	Widget drawing_widget;
 
 	ENTER(open_tracking_editor_dialog);
-	/* check arguments */
+	USE_PARAMETER(exit_button_callback);
 	if (address&&background_colour&&basis_manager&&computed_field_package&&
 		element_manager&&element_group_manager&&fe_field_manager&&
 		glyph_list&&graphical_material_manager&&default_graphical_material&&
@@ -5246,3 +5278,68 @@ DESCRIPTION :
 
 	return (return_code);
 } /* open_tracking_editor_dialog */
+
+
+#if defined (STANDALONE_SOCKET_TEST)
+int main ()
+{
+	char remote_host[BUFFER_SIZE], sys_command[4*BUFFER_SIZE];
+	int addressLength, error_code, process_remote_client, return_code, socket;
+	struct sockaddr_in socketDescriptor;
+
+	return_code = 0;
+	sprintf(sys_command,"track.process /usr/people/blackett/cmgui/test/xvglinux/anger/tracking/anger.cmmov esu29 /usr/people/blackett/cmgui/test/xvglinux/anger/tracking/anger.cmmov_req 1 16 0");
+	if (SocketInitialize(&socket, "xvg-cmgui"))
+	{
+		printf("running: %s\n",sys_command);
+		if (error_code=system(sys_command))
+		{
+			display_message(ERROR_MESSAGE,"tracking_editor_process_cb.  "
+				"error executing process: error code=%d",error_code);
+			close(socket);
+		}
+		else
+		{
+			/* wait for the remote host to connect */
+			printf("SocketInitialize() : Waiting for the remote host to connect...\n");
+			addressLength = sizeof(socketDescriptor);
+			memset(&socketDescriptor,0,addressLength);
+			/*???debug*/fprintf(stderr,"process_cb #1\n");
+			if (-1==(process_remote_client=
+				accept(socket,
+					(struct sockaddr *)&socketDescriptor,&addressLength)))
+			{
+				display_message(ERROR_MESSAGE,
+					"tracking_editor_process_cb.  accept()");
+				/* tracking_editor_kill_process(track_ed); */
+				close(socket);
+			}
+			else
+			{
+				sprintf(remote_host,"%d.%d.%d.%d",
+					(socketDescriptor.sin_addr.s_addr & 0xff000000) >> 24,
+					(socketDescriptor.sin_addr.s_addr & 0x00ff0000) >> 16,
+					(socketDescriptor.sin_addr.s_addr & 0x0000ff00) >> 8,
+					(socketDescriptor.sin_addr.s_addr & 0x000000ff));
+				printf("SocketInitialize() : host at IP address %s has connected...\n",
+					remote_host);
+			
+				/*???debug*/fprintf(stderr,"process_cb #2\n");
+				/* request timeout to check socket messages */
+				/* tracking_editor_enter_process_mode(track_ed); */
+				/* XtAppAddTimeOut(track_ed->user_interface->application_context,
+					20,tracking_editor_process_timeout_cb,(XtPointer)track_ed); */
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"main.STANDALONE_SOCKET_TEST  (Unable to initialise socket)");
+		/* tracking_editor_kill_process(track_ed); */
+		close(socket);
+	}
+
+	return(return_code);
+}
+#endif /* defined (STANDALONE_SOCKET_TEST) */
