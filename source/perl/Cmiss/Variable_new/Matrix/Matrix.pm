@@ -115,6 +115,14 @@ sub input_values
 	}
 }
 
+sub solve
+{
+	my ($self, $rhs, @args) = @_;
+	my ($objref);
+
+	$objref=solve_xs($self,$rhs);
+}
+
 require XSLoader;
 XSLoader::load('Cmiss::Variable_new::Matrix', $VERSION);
 

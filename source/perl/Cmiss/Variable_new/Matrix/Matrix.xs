@@ -154,3 +154,17 @@ input_values_xs(Cmiss::Variable_new::Matrix variable_matrix,AV *indices_array)
 		}
 	OUTPUT:
 		RETVAL
+
+Cmiss::Variable_new
+solve_xs(Cmiss::Variable_new::Matrix matrix,Cmiss::Variable_new rhs)
+	CODE:
+		if (matrix&&rhs)
+		{
+			RETVAL=Cmiss_variable_new_matrix_solve(matrix,rhs);
+		}
+		if (!RETVAL)
+		{
+			XSRETURN_UNDEF;
+		}
+	OUTPUT:
+		RETVAL

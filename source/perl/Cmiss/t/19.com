@@ -81,3 +81,11 @@ print "$return_code $var_1\n";
 $return_code=$var_1->set_input_value($var_1->input_values(),$var_2);
 print "$return_code $var_1\n";
 $return_code=1;
+#check solving
+$var_13=new Cmiss::Variable_new::Matrix(n_columns=>3,values=>[0,1,0,2,0,0,0,0,3]);
+$var_14=new Cmiss::Variable_new::Vector(1,2,3);
+$var_15=new Cmiss::Variable_new::Matrix(n_columns=>3,values=>[1,0,0,0,1,0,0,0,1]);
+$var_16=$var_13->solve($var_14);
+print "$var_13 $var_14 $var_16\n";
+$var_17=$var_13->solve($var_15);
+print "$var_13 $var_15 $var_17\n";

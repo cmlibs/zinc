@@ -1,4 +1,4 @@
-package Cmiss::Variable_new::Scalar;
+package Cmiss::Variable_new::Inverse;
 
 use 5.006;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Cmiss::Variable_new Exporter);
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 
-# This allows declaration	use Cmiss::Variable_new::Scalar ':all';
+# This allows declaration	use Cmiss::Variable_new::Inverse ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
@@ -37,7 +37,7 @@ sub AUTOLOAD {
     my $constname;
     our $AUTOLOAD;
     ($constname = $AUTOLOAD) =~ s/.*:://;
-    croak "&Cmiss::Variable_new::Scalar::constant not defined" if $constname eq 'constant';
+    croak "&Cmiss::Variable_new::Inverse::constant not defined" if $constname eq 'constant';
     my ($error, $val) = constant($constname);
     if ($error) { croak $error; }
     {
@@ -56,40 +56,115 @@ sub AUTOLOAD {
 use Cmiss;
 Cmiss::require_library('cmgui_computed_variable');
 
+# Named argument
 sub new
 {
 	my ($class, %arg) = @_;
-	my ($objref,$value);
+	my ($dependent,$independent,$objref);
 
-	if (exists $arg{value})
+	$dependent=$arg{dependent};
+	if ($dependent)
 	{
-		$value=$arg{value};
-		$objref=new_xs($value);
-		if ($objref)
+		$independent=$arg{independent};
+		if ($independent)
 		{
-			bless $objref,$class;
+			$objref=new_xs($dependent,$independent);
+			if ($objref)
+			{
+				bless $objref,$class;
+			}
+			else
+			{
+				croak "Could not create $class";
+			}
+		}
+		else
+		{
+			croak "Missing independent";
 		}
 	}
 	else
 	{
-		croak "Missing independent";
+		croak "Missing dependent";
 	}
 }
 
-sub input_value
+sub input_independent
 {
 	my ($self, %arg) = @_;
 	my ($objref);
 
-	$objref=input_value_xs($self);
+	$objref=input_independent_xs($self);
 	if ($objref)
 	{
 		bless $objref,'Cmiss::Variable_new_input';
 	}
 }
 
+sub input_step_tolerance
+{
+	my ($self, %arg) = @_;
+	my ($objref);
+
+	$objref=input_step_tolerance_xs($self);
+	if ($objref)
+	{
+		bless $objref,'Cmiss::Variable_new_input';
+	}
+}
+
+sub input_value_tolerance
+{
+	my ($self, %arg) = @_;
+	my ($objref);
+
+	$objref=input_value_tolerance_xs($self);
+	if ($objref)
+	{
+		bless $objref,'Cmiss::Variable_new_input';
+	}
+}
+
+sub input_maximum_iterations
+{
+	my ($self, %arg) = @_;
+	my ($objref);
+
+	$objref=input_maximum_iterations_xs($self);
+	if ($objref)
+	{
+		bless $objref,'Cmiss::Variable_new_input';
+	}
+}
+
+sub input_dependent_estimate
+{
+	my ($self, %arg) = @_;
+	my ($objref);
+
+	$objref=input_dependent_estimate_xs($self);
+	if ($objref)
+	{
+		bless $objref,'Cmiss::Variable_new_input';
+	}
+}
+
+# Inherit string conversion
+## Overload string and numerical conversion
+#use overload '""' => \&string_convert, '0+' => \&numerical_convert, fallback => 1;
+#
+#sub numerical_convert
+#{
+#	get_type(shift);
+#}
+#
+#sub string_convert
+#{
+#	get_type(shift);
+#}
+
 require XSLoader;
-XSLoader::load('Cmiss::Variable_new::Scalar', $VERSION);
+XSLoader::load('Cmiss::Variable_new::Inverse', $VERSION);
 
 # Preloaded methods go here.
 
@@ -101,25 +176,24 @@ __END__
 
 =head1 NAME
 
-Cmiss::Variable_new::Scalar - Perl extension for Cmiss scalar variables
+Cmiss::Variable_new::Inverse - Perl extension for Cmiss inverse variables
 
 =head1 SYNOPSIS
 
-  use Cmiss::Variable_new::Scalar;
+  use Cmiss::Variable_new::Inverse;
 
 =head1 ABSTRACT
 
-  This should be the abstract for Cmiss::Variable_new::Scalar.
+  This should be the abstract for Cmiss::Variable_new::Inverse.
   The abstract is used when making PPD (Perl Package Description) files.
   If you don't want an ABSTRACT you should also edit Makefile.PL to
   remove the ABSTRACT_FROM option.
 
 =head1 DESCRIPTION
 
-Stub documentation for Cmiss::Variable_new::Scalar, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
+Stub documentation for Cmiss::Variable_new::Inverse, created by h2xs. It looks like
+the author of the extension was negligent enough to leave the stub
 unedited.
-
 
 =head2 EXPORT
 
