@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 19 May 2000
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -8002,7 +8002,7 @@ Stops generating the calibration signal for the channels in the group.
 
 int unemap_set_power(int on)
 /*******************************************************************************
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 19 May 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -8035,7 +8035,11 @@ on.
 				}
 				else
 				{
+					/* turn on the mechanical relays */
 					set_shift_register(module_NI_CARDS,BattA_SHIFT_REGISTER_UnEmap2vx,1,
+						1);
+					/* then turn on the solid state relays */
+					set_shift_register(module_NI_CARDS,BattB_SHIFT_REGISTER_UnEmap2vx,1,
 						1);
 				}
 				channel_number=1;
@@ -8083,6 +8087,10 @@ on.
 				}
 				else
 				{
+					/* then turn off the solid state relays */
+					set_shift_register(module_NI_CARDS,BattB_SHIFT_REGISTER_UnEmap2vx,0,
+						1);
+					/* turn off the mechanical relays */
 					set_shift_register(module_NI_CARDS,BattA_SHIFT_REGISTER_UnEmap2vx,0,
 						1);
 				}
