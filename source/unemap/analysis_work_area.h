@@ -72,7 +72,7 @@ DESCRIPTION :
 	int pointer_sensitivity;
 	char *configuration_file_extension,*postscript_file_extension;
 	/* user settings */
-	char *events_file_extension;
+	char *events_file_extension,*signal_file_extension_read;
 	int average_width;
 	Pixel identifying_colour;
 	/* these flags ensure that when the next update occurs the XOR graphics are

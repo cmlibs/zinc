@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 24 May 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -3054,7 +3054,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 7 February 2001
+LAST MODIFIED : 24 May 2001
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -3070,8 +3070,8 @@ signals.
 		end_search_interval,event_number,event_time,i,minimum_separation,
 		next_accepted_event_number,next_accepted_event_time,number_of_devices,
 		number_of_events,previous_accepted_event_number,
-		previous_accepted_event_time,return_code,start_search_interval,threshold,
-		*times;
+		previous_accepted_event_time,return_code,signal_read_cancelled,
+		start_search_interval,threshold,*times;
 	struct Analysis_work_area *analysis;
 	struct Event *event,**event_next,*next_event;
 	struct Device **device;
@@ -3087,6 +3087,8 @@ signals.
 #endif /* defined (UNEMAP_USE_3D) */
 
 	ENTER(read_event_times_file);
+	return_code=0;
+	signal_read_cancelled=0;
 #if defined (UNEMAP_USE_3D) 
 	node_selection=(struct FE_node_selection *)NULL;	
 	device_name_field=(struct FE_field *)NULL;
@@ -3156,7 +3158,42 @@ signals.
 #endif /* defined (UNEMAP_USE_3D)*/
 						))
 				{
+					/* found the signal file at the file stored in the events file*/
 					return_code=1;
+				}
+				else
+				{
+					/* prompt the user to search for a signal file */
+					/*NOTE! they could load in the wrong one. */										
+					confirmation_information_ok("Warning!",
+					 "Can't find this Events File's Signal File. Please locate it.",
+#if defined (MOTIF)				
+					 (Widget)(NULL),
+#endif /* defined (MOTIF) */
+					 analysis->user_interface);
+					if (signal_file_name=confirmation_get_read_filename(
+						analysis->signal_file_extension_read,
+						analysis->user_interface))
+					{
+
+					  if((signal_input_file=fopen(signal_file_name,"rb"))&&
+							read_signal_file(signal_input_file,&(analysis->rig)
+#if defined (UNEMAP_USE_3D)
+								,analysis->unemap_package
+#endif /* defined (UNEMAP_USE_3D)*/
+															 ))
+						{
+							return_code=1;
+						}										
+					}
+					else
+					{
+						/*pressed cancel on confirmation_get_read_filename dialogue*/
+						signal_read_cancelled=1;
+					}
+				}
+				if(return_code)
+				{
 					rig=analysis->rig;
 					rig->signal_file_name=signal_file_name;
 					/* unghost the write interval button */
@@ -3973,8 +4010,11 @@ signals.
 				else
 				{
 					return_code=0;
-					display_message(ERROR_MESSAGE,
-						"read_event_times_file.  Invalid signal file: %s",signal_file_name);
+					if(!signal_read_cancelled)
+					{
+						display_message(ERROR_MESSAGE,
+							"read_event_times_file.  Invalid signal file: %s",signal_file_name);
+					}
 					DEALLOCATE(signal_file_name);
 					/* set the analysis window title */
 					new_dialog_title=XmStringCreateSimple("Analysis");
@@ -4031,29 +4071,30 @@ signals.
 #if defined (UNEMAP_USE_3D)			
 				/* read the signal file into nodes */
 				/*???DB.  Would be better to be another callback from the same button ? */
-				if (file_read_signal_FE_node_group(signal_file_name,
-					analysis->unemap_package,analysis->rig))
+				if (return_code&&signal_file_name)
 				{
-					ACCESS(Unemap_package)(analysis->unemap_package);
-
-		 
-					/* highlight the  node (and everything else) */
-					if ((analysis->highlight)&&(*(analysis->highlight)))
-					{	
-						/*get the rig_node corresponding to the device */
-						node_selection=get_unemap_package_FE_node_selection(analysis->unemap_package);
-						device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
-						rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
-						rig_node=find_rig_node_given_device(*(analysis->highlight),rig_node_group,
-							device_name_field);
-						/*trigger the selction callback*/
-						FE_node_selection_select_node(node_selection,rig_node);
+					if(file_read_signal_FE_node_group(signal_file_name,
+						analysis->unemap_package,analysis->rig))
+					{
+						ACCESS(Unemap_package)(analysis->unemap_package);		 
+						/* highlight the  node (and everything else) */
+						if ((analysis->highlight)&&(*(analysis->highlight)))
+						{	
+							/*get the rig_node corresponding to the device */
+							node_selection=get_unemap_package_FE_node_selection(analysis->unemap_package);
+							device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
+							rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
+							rig_node=find_rig_node_given_device(*(analysis->highlight),rig_node_group,
+								device_name_field);
+							/*trigger the selction callback*/
+							FE_node_selection_select_node(node_selection,rig_node);
+						}
 					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"read_event_times_file. file_read_signal_FE_node_group failed ");
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"read_event_times_file. file_read_signal_FE_node_group failed ");
+					}
 				}
 #endif /* defined (UNEMAP_USE_3D) */
 				update_analysis_window_menu(analysis->window);
@@ -16443,6 +16484,7 @@ Creates the windows associated with the analysis work area.
 		analysis->pointer_sensitivity=pointer_sensitivity;
 		analysis->postscript_file_extension=postscript_file_extension;
 		analysis->configuration_file_extension=configuration_file_extension;
+		analysis->signal_file_extension_read=signal_file_extension_read;
 		analysis->identifying_colour=identifying_colour;
 		analysis->map_drawing_information=map_drawing_information;
 		analysis->signal_drawing_information=create_Signal_drawing_information(
