@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 14 April 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -562,6 +562,131 @@ Finds the id of the analysis close button.
 	}
 	LEAVE;
 } /* identify_analysis_close_button */
+
+static void id_interval_menu(Widget *widget_id,XtPointer analysis_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 12 April 2004
+
+DESCRIPTION :
+Finds the id of the interval menu.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(id_interval_menu);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{
+		(analysis->interval).buffer_range.menu= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_interval_menu.  analysis_window missing");
+	}
+	LEAVE;
+} /* id_interval_menu */
+
+static void id_interval_start_number_text(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 12 April 2004
+
+DESCRIPTION :
+Finds the id of the starting sample number text field.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(id_interval_start_number_text);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{
+		(analysis->interval).buffer_range.start_sample_number_text= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_interval_start_number_text.  analysis_window missing");
+	}
+	LEAVE;
+} /* id_interval_start_number_text */
+
+static void id_interval_start_time_text(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 12 April 2004
+
+DESCRIPTION :
+Finds the id of the starting time text field.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(id_interval_start_time_text);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{
+		(analysis->interval).buffer_range.start_time_text= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_interval_start_time_text.  analysis_window missing");
+	}
+	LEAVE;
+} /* id_interval_start_time_text */
+
+static void id_interval_end_number_text(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 12 April 2004
+
+DESCRIPTION :
+Finds the id of the ending sample number text field.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(id_interval_end_number_text);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{
+		(analysis->interval).buffer_range.end_sample_number_text= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_interval_end_number_text.  analysis_window missing");
+	}
+	LEAVE;
+} /* id_interval_end_number_text */
+
+static void id_interval_end_time_text(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 12 April 2004
+
+DESCRIPTION :
+Finds the id of the ending time text field.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(id_interval_end_time_text);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{
+		(analysis->interval).buffer_range.end_time_text= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_interval_end_time_text.  analysis_window missing");
+	}
+	LEAVE;
+} /* id_interval_end_time_text */
 
 static void identify_analysis_menu(Widget *widget_id,XtPointer analysis_window,
 	XtPointer call_data)
@@ -4274,10 +4399,12 @@ DESCRIPTION :
 	if (interval&&(interval->drawing_area)&&(interval->drawing)&&
 		(interval->drawing->pixel_map)&&signal_drawing_information&&user_interface)
 	{
-		XDrawRectangle(User_interface_get_display(user_interface),XtWindow(interval->drawing_area),
+		XDrawRectangle(User_interface_get_display(user_interface),
+			XtWindow(interval->drawing_area),
 			(signal_drawing_information->graphics_context).interval_box_colour,
 			left,top,width,height);
-		XDrawRectangle(User_interface_get_display(user_interface),interval->drawing->pixel_map,
+		XDrawRectangle(User_interface_get_display(user_interface),
+			interval->drawing->pixel_map,
 			(signal_drawing_information->graphics_context).interval_box_colour,
 			left,top,width,height);
 		return_code=1;
@@ -4311,7 +4438,7 @@ struct Analysis_window *create_Analysis_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface,enum Signal_order *signal_order)
 /*******************************************************************************
-LAST MODIFIED :  11 December 2001
+LAST MODIFIED :  14 April 2004
 
 DESCRIPTION :
 This function allocates the memory for an analysis window and sets the fields
@@ -4376,6 +4503,11 @@ returned.
 #endif
 		{"identify_analysis_close_button",
 			(XtPointer)identify_analysis_close_button},
+		{"id_interval_menu",(XtPointer)id_interval_menu},
+		{"id_interval_start_number_text",(XtPointer)id_interval_start_number_text},
+		{"id_interval_start_time_text",(XtPointer)id_interval_start_time_text},
+		{"id_interval_end_number_text",(XtPointer)id_interval_end_number_text},
+		{"id_interval_end_time_text",(XtPointer)id_interval_end_time_text},
 		{"identify_analysis_menu",(XtPointer)identify_analysis_menu},
 		{"identify_analysis_map_button",(XtPointer)identify_analysis_map_button},
 		{"identify_analysis_map_potential",
@@ -4627,6 +4759,11 @@ returned.
 				analysis->interval.axes_width=0;
 				analysis->interval.left_box=0;
 				analysis->interval.right_box=0;
+				analysis->interval.buffer_range.menu=(Widget)NULL;
+				analysis->interval.buffer_range.start_sample_number_text=(Widget)NULL;
+				analysis->interval.buffer_range.start_time_text=(Widget)NULL;
+				analysis->interval.buffer_range.end_sample_number_text=(Widget)NULL;
+				analysis->interval.buffer_range.end_time_text=(Widget)NULL;
 				analysis->signals.drawing_area=(Widget)NULL;
 				analysis->signals.drawing=(struct Drawing_2d *)NULL;
 				analysis->signals.layout=layout;
@@ -4825,6 +4962,7 @@ returned.
 								XmNmarginWidth,0,
 								NULL);
 							update_analysis_window_menu(analysis);
+							update_analysis_window_buffer_range_menu(analysis);
 							install_accelerators(parent, parent);
 							/*??? more to do ? */
 							if (address)
@@ -4960,7 +5098,7 @@ The callback for redrawing the analysis drawing area.
 
 int update_interval_drawing_area(struct Analysis_window *analysis)
 /*******************************************************************************
-LAST MODIFIED : 11 January 2000
+LAST MODIFIED : 13 April 2004
 
 DESCRIPTION :
 The function for redrawing the analysis interval drawing area.
@@ -5090,6 +5228,7 @@ The function for redrawing the analysis interval drawing area.
 				XtSetSensitive(interval->previous_button,True);
 			}
 		}
+		update_analysis_window_buffer_range_menu(analysis);
 		XCopyArea(display,interval->drawing->pixel_map,
 			XtWindow(interval->drawing_area),
 			(analysis->signal_drawing_information->graphics_context).copy,0,0,
@@ -5681,3 +5820,74 @@ c.f analysis_set_highlight_max, analysis_set_highlight_min
 
 	return (return_code);
 }/* update_signal_range_widget_from_highlight_signal */
+
+int update_analysis_window_buffer_range_menu(struct Analysis_window *analysis)
+/*******************************************************************************
+LAST MODIFIED : 13 April 2004
+
+DESCRIPTION :
+Updates the analysis buffer range menu to be consistent with the current rig.
+==============================================================================*/
+{
+	char value_string[30];
+	int return_code;
+	struct Rig *rig;
+	struct Signal_buffer *buffer;
+
+	ENTER(update_analysis_window_buffer_range_menu);
+	return_code=0;
+	if (analysis)
+	{
+		if ((analysis->rig)&&(rig= *(analysis->rig))&&(rig->devices)&&
+			(buffer=get_Device_signal_buffer(*(rig->devices))))
+		{
+			sprintf(value_string,"%d",buffer->start);
+			XtVaSetValues((analysis->interval).buffer_range.start_sample_number_text,
+				XmNvalue,value_string,NULL);
+			if ((0<buffer->frequency)&&(buffer->times))
+			{
+				sprintf(value_string,"%g",(float)1000*
+					((float)(buffer->times)[buffer->start])/(buffer->frequency));
+			}
+			else
+			{
+				sprintf(value_string,"");
+			}
+			XtVaSetValues((analysis->interval).buffer_range.start_time_text,
+				XmNvalue,value_string,NULL);
+			sprintf(value_string,"%d",buffer->end);
+			XtVaSetValues((analysis->interval).buffer_range.end_sample_number_text,
+				XmNvalue,value_string,NULL);
+			if ((0<buffer->frequency)&&(buffer->times))
+			{
+				sprintf(value_string,"%g",(float)1000*
+					((float)(buffer->times)[buffer->end])/(buffer->frequency));
+			}
+			else
+			{
+				sprintf(value_string,"");
+			}
+			XtVaSetValues((analysis->interval).buffer_range.end_time_text,
+				XmNvalue,value_string,NULL);
+			XtSetSensitive((analysis->interval).buffer_range.menu,True);
+			return_code=1;
+		}
+		else
+		{
+			sprintf(value_string,"");
+			XtVaSetValues((analysis->interval).buffer_range.start_sample_number_text,
+				XmNvalue,value_string,NULL);
+			XtVaSetValues((analysis->interval).buffer_range.start_time_text,
+				XmNvalue,value_string,NULL);
+			XtVaSetValues((analysis->interval).buffer_range.end_sample_number_text,
+				XmNvalue,value_string,NULL);
+			XtVaSetValues((analysis->interval).buffer_range.end_time_text,
+				XmNvalue,value_string,NULL);
+			XtSetSensitive((analysis->interval).buffer_range.menu,False);
+			return_code=1;
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* update_analysis_window_buffer_range_menu */

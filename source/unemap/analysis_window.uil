@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : analysis_window.uil
 !
-! LAST MODIFIED : 8 June 2003
+! LAST MODIFIED : 14 April 2004
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the analysis window in the analysis work area.
@@ -30,6 +30,15 @@ procedure
 	identify_anal_signal_range;
 	identify_anal_sig_range_minim;
 	identify_anal_sig_range_maxim;
+	id_interval_menu;
+	id_interval_start_number_text;
+	analysis_set_buffer_start;
+	id_interval_start_time_text;
+	analysis_set_buffer_start_time;
+	id_interval_end_number_text;
+	analysis_set_buffer_end;
+	id_interval_end_time_text;
+	analysis_set_buffer_end_time;
 	analysis_set_highlight_min;
 	analysis_set_highlight_max;
 	analysis_read_edf_file;
@@ -188,11 +197,12 @@ object
 			};
 		controls
 			{
-			XmForm interval_menu;
+			XmForm signal_menu;
 			XmDrawingArea interval_drawing_area;
+			XmForm interval_menu;
 			};
 		};
-	interval_menu: XmForm
+	signal_menu: XmForm
 		{
 		arguments
 			{
@@ -224,14 +234,14 @@ object
 					};
 				};	
 			XmMenuBar analysis_range_menu_bar;
-			XmRowColumn anal_sig_range;
+			XmForm anal_sig_range;
 			XmSeparator
 				{
 				arguments
 					{
 					XmNorientation = XmVERTICAL;
 					XmNleftAttachment = XmATTACH_WIDGET;
-					XmNleftWidget = XmRowColumn anal_sig_range;
+					XmNleftWidget = XmForm anal_sig_range;
 					XmNleftOffset = 0;
 					XmNrightAttachment = XmATTACH_NONE;
 					XmNrightOffset = 0;
@@ -336,7 +346,6 @@ object
 				};
 			};
 		};
-	
 	analysis_range_button: XmCascadeButtonGadget
 		{
 		arguments
@@ -485,7 +494,7 @@ object
 			XmNshadowThickness = 0;
 			XmNhighlightThickness = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = XmRowColumn anal_sig_range;
+			XmNleftWidget = XmForm anal_sig_range;
 			XmNleftOffset = widget_spacing;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
@@ -601,27 +610,25 @@ object
 				};
 			};
 		};
-	anal_sig_range: XmRowColumn
+	anal_sig_range: XmForm
 		{
 		arguments
 			{
 			XmNsensitive = false;
-			XmNnumColumns = 3;
-			XmNorientation = XmHORIZONTAL;
-			XmNspacing = widget_spacing;
 			XmNborderWidth = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;	
 			XmNleftWidget = XmMenuBar analysis_range_menu_bar;
-			XmNleftOffset = 0;
+			XmNleftOffset = widget_spacing;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
 			};
 		controls
 			{		
-			XmRowColumn anal_sig_range_minimum_form;
-			XmRowColumn anal_sig_range_maximum_form;
+			XmForm anal_sig_range_minimum_form;
+			XmForm anal_sig_range_maximum_form;
 			};
 		callbacks
 			{
@@ -631,27 +638,40 @@ object
 				};
 			};
 		};
-	anal_sig_range_minimum_form: XmRowColumn
+	anal_sig_range_minimum_form: XmForm
 		{
 		arguments
 			{
 			XmNborderWidth = 0;
-			XmNnumColumns = 2;
-			XmNorientation = XmHORIZONTAL;
-			XmNspacing = widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;	
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
 			};
 		controls
 			{
-			XmLabel
-				{
-				arguments
-					{
-					XmNlabelString =
-					compound_string("min");
-					XmNfontList = button_font;
-					};
-				};
+			XmLabel anal_sig_range_minimum_label;
 			XmTextField anal_sig_range_minimum_text;
+			};
+		};
+	anal_sig_range_minimum_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("min");
+			XmNfontList = button_font;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;	
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
 			};
 		};
 	anal_sig_range_minimum_text: XmTextField
@@ -660,6 +680,17 @@ object
 			{
 			XmNcolumns = 8;
 			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmLabel anal_sig_range_minimum_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNmarginHeight = 5;
+			XmNhighlightThickness = 0;
 			};
 		callbacks
 			{
@@ -669,35 +700,49 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-					analysis_set_highlight_min(analysis_work_area_structure);
+				analysis_set_highlight_min(analysis_work_area_structure);
 				};
 			XmNlosingFocusCallback = procedures
 				{
-					analysis_set_highlight_min(analysis_work_area_structure);
+				analysis_set_highlight_min(analysis_work_area_structure);
 				};
 			};
 		};
-	anal_sig_range_maximum_form: XmRowColumn
+	anal_sig_range_maximum_form: XmForm
 		{
 		arguments
 			{
 			XmNborderWidth = 0;
-			XmNnumColumns = 2;
-			XmNorientation = XmHORIZONTAL;
-			XmNspacing = widget_spacing;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmForm anal_sig_range_minimum_form;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
 			};
 		controls
 			{
-			XmLabel
-				{
-				arguments
-					{
-					XmNlabelString =
-					compound_string("max");
-					XmNfontList = button_font;
-					};
-				};
+			XmLabel anal_sig_range_maximum_label;
 			XmTextField anal_sig_range_maximum_text;
+			};
+		};
+	anal_sig_range_maximum_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("max");
+			XmNfontList = button_font;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;	
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
 			};
 		};
 	anal_sig_range_maximum_text: XmTextField
@@ -706,6 +751,17 @@ object
 			{
 			XmNcolumns = 8;
 			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmLabel anal_sig_range_maximum_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNmarginHeight = 5;
+			XmNhighlightThickness = 0;
 			};
 		callbacks
 			{
@@ -715,11 +771,11 @@ object
 				};	
 			XmNactivateCallback = procedures
 				{
-					analysis_set_highlight_max(analysis_work_area_structure);
+				analysis_set_highlight_max(analysis_work_area_structure);
 				};
 			XmNlosingFocusCallback = procedures
 				{
-					analysis_set_highlight_max(analysis_work_area_structure);
+				analysis_set_highlight_max(analysis_work_area_structure);
 				};
 			};
 		};
@@ -761,9 +817,10 @@ object
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNrightOffset = widget_spacing;
 			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = XmForm interval_menu;
+			XmNtopWidget = XmForm signal_menu;
 			XmNtopOffset = widget_spacing;
-			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomWidget = XmForm interval_menu;
 			XmNbottomOffset = widget_spacing;
 			};
 		callbacks
@@ -784,6 +841,295 @@ object
 				{
 				select_analysis_interval(analysis_work_area_structure);
 				};
+			};
+		};
+	interval_menu: XmForm
+		{
+		arguments
+			{
+			XmNsensitive = false;
+			XmNborderWidth = 1;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			};
+		controls
+			{
+			XmLabel interval_start_label;
+			XmTextField interval_start_sample_text;
+			XmLabel interval_start_sample_label;
+			XmTextField interval_start_time_text;
+			XmLabel interval_start_time_label;
+			XmSeparator interval_start_end_separator;
+			XmLabel interval_end_label;
+			XmTextField interval_end_sample_text;
+			XmLabel interval_end_sample_label;
+			XmTextField interval_end_time_text;
+			XmLabel interval_end_time_label;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_interval_menu(analysis_window_structure);
+				};
+			};
+		};
+	interval_start_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Start");
+			XmNfontList = button_font;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;	
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	interval_start_sample_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmLabel interval_start_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNmarginHeight = 5;
+			XmNhighlightThickness = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_interval_start_number_text(analysis_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				analysis_set_buffer_start(analysis_work_area_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				analysis_set_buffer_start(analysis_work_area_structure);
+				};
+			};
+		};
+	interval_start_sample_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("#");
+			XmNfontList = button_font;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmTextField interval_start_sample_text;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	interval_start_time_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmLabel interval_start_sample_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNmarginHeight = 5;
+			XmNhighlightThickness = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_interval_start_time_text(analysis_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				analysis_set_buffer_start_time(analysis_work_area_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				analysis_set_buffer_start_time(analysis_work_area_structure);
+				};
+			};
+		};
+	interval_start_time_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("ms");
+			XmNfontList = button_font;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmTextField interval_start_time_text;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	interval_start_end_separator : XmSeparator
+		{
+		arguments
+			{
+			XmNorientation = XmVERTICAL;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmLabel interval_start_time_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		};
+	interval_end_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("End");
+			XmNfontList = button_font;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmSeparator interval_start_end_separator;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	interval_end_sample_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmLabel interval_end_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNmarginHeight = 5;
+			XmNhighlightThickness = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_interval_end_number_text(analysis_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				analysis_set_buffer_end(analysis_work_area_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				analysis_set_buffer_end(analysis_work_area_structure);
+				};
+			};
+		};
+	interval_end_sample_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("#");
+			XmNfontList = button_font;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmTextField interval_end_sample_text;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	interval_end_time_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmLabel interval_end_sample_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNmarginHeight = 5;
+			XmNhighlightThickness = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_interval_end_time_text(analysis_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				analysis_set_buffer_end_time(analysis_work_area_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				analysis_set_buffer_end_time(analysis_work_area_structure);
+				};
+			};
+		};
+	interval_end_time_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("ms");
+			XmNfontList = button_font;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmTextField interval_end_time_text;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
 			};
 		};
 	signals_area: XmForm

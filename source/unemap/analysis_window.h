@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.h
 
-LAST MODIFIED : 8 June 2001
+LAST MODIFIED : 12 April 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -101,7 +101,7 @@ The area of the analysis window where the signals are drawn.
 
 struct Interval_area
 /*******************************************************************************
-LAST MODIFIED : 23 August 2000
+LAST MODIFIED : 12 April 2004
 
 DESCRIPTION :
 The area of the analysis window where the interval is drawn.
@@ -137,6 +137,14 @@ The area of the analysis window where the interval is drawn.
 	int axes_height,axes_left,axes_top,axes_width;
 	/* analysis box information */
 	int left_box,right_box;
+	struct
+	{
+		Widget menu;
+		Widget start_sample_number_text;
+		Widget start_time_text;
+		Widget end_sample_number_text;
+		Widget end_time_text;
+	} buffer_range;
 }; /* struct Interval_area */
 
 struct Analysis_window
@@ -359,7 +367,7 @@ int update_analysis_window_menu(struct Analysis_window *analysis);
 LAST MODIFIED : 7 August 1992
 
 DESCRIPTION :
-Updates the analysis down menu to be consistent with the current rig.
+Updates the analysis down region to be consistent with the current rig.
 ==============================================================================*/
 
 int highlight_signal(struct Device *device,
@@ -411,4 +419,12 @@ creates (and returns) an FE_node_order_info containing the nodes of
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
 
-#endif
+int update_analysis_window_buffer_range_menu(struct Analysis_window *analysis);
+/*******************************************************************************
+LAST MODIFIED : 12 April 2004
+
+DESCRIPTION :
+Updates the analysis buffer range menu to be consistent with the current rig.
+==============================================================================*/
+
+#endif /* !defined (ANALYSIS_WINDOW_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 3 December 2003
+LAST MODIFIED : 14 April 2004
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -2101,7 +2101,7 @@ Sets the objective for the detection algorithm to negative value.
 static int file_analysis_write_signal_file(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 19 November 2000
+LAST MODIFIED : 12 April 2004
 
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
@@ -2111,23 +2111,27 @@ named file.
 	char *temp_string;
 	int return_code;
 	struct Analysis_work_area *analysis;
+	struct Rig *analysis_rig;
 	XmString new_dialog_title,old_dialog_title;
 
 	ENTER(file_analysis_write_signal_file);
 	return_code=0;
 	/* check the arguments */
-	if (analysis=(struct Analysis_work_area *)analysis_work_area)
+	analysis=(struct Analysis_work_area *)NULL;
+	analysis_rig=(struct Rig *)NULL;
+	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
+		(analysis_rig=analysis->rig))
 	{
 		if (return_code=analysis_write_signal_file(file_name,
-			analysis->rig,analysis->datum,analysis->potential_time,
+			analysis_rig,analysis->datum,analysis->potential_time,
 			analysis->start_search_interval,analysis->end_search_interval,
 			analysis->calculate_events,analysis->detection,analysis->event_number,
 			analysis->number_of_events,analysis->minimum_separation,
 			analysis->threshold,analysis->datum_type,analysis->edit_order,
 			analysis->signal_order,analysis->level,analysis->average_width))
 		{
-			if (!(analysis->rig->signal_file_name)||
-				strcmp(analysis->rig->signal_file_name,file_name))
+			if (!(analysis_rig->signal_file_name)||
+				strcmp(analysis_rig->signal_file_name,file_name))
 			{
 				XtVaGetValues(analysis->window->window,
 					XmNdialogTitle,&old_dialog_title,
@@ -2135,8 +2139,8 @@ named file.
 				/* assign the signal file name */
 				if (ALLOCATE(temp_string,char,strlen(file_name)+1))
 				{
-					DEALLOCATE(analysis->rig->signal_file_name);
-					analysis->rig->signal_file_name=temp_string;
+					DEALLOCATE(analysis_rig->signal_file_name);
+					analysis_rig->signal_file_name=temp_string;
 					strcpy(temp_string,file_name);
 					/* unghost the write interval button */
 					XtSetSensitive(analysis->window->file_menu.save_interval_button,
@@ -2174,8 +2178,8 @@ named file.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"file_analysis_write_signal_file.  Missing analysis_work_area");
+		display_message(ERROR_MESSAGE,"file_analysis_write_signal_file.  "
+			"Missing analysis_work_area (%p) or rig (%p)",analysis,analysis_rig);
 		return_code=0;
 	}
 	LEAVE;
@@ -2405,7 +2409,7 @@ signal type file
 static int analysis_work_area_read_signal_file(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2003
+LAST MODIFIED : 12 April 2004
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -2991,6 +2995,7 @@ Sets up the analysis work area for analysing a set of signals.
 			}
 		}
 		update_analysis_window_menu(analysis->window);
+		update_analysis_window_buffer_range_menu(analysis->window);
 		update_mapping_window_menu(analysis->mapping_window);
 		/* ensure projection_type matches region type */
 		ensure_projection_type_matches_region_type(analysis);
@@ -3035,7 +3040,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2003
+LAST MODIFIED : 12 April 2004
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -4023,6 +4028,7 @@ signals.
 				}
 				trace_change_rig(analysis->trace);
 				update_analysis_window_menu(analysis->window);
+				update_analysis_window_buffer_range_menu(analysis->window);
 				update_mapping_window_menu(analysis->mapping_window);
 				/* update the drawing areas */
 				update_signals_drawing_area(analysis->window);
@@ -4111,7 +4117,7 @@ signals.
 static int analysis_read_bard_signal_file(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2003
+LAST MODIFIED : 12 April 2004
 
 DESCRIPTION :
 Reads in the signals from the Bard file and sets up the analysis work area for
@@ -4237,6 +4243,7 @@ analysing the signals.
 					"analysis_read_bard_signal_file.  Could not open trace window");
 			}
 			update_analysis_window_menu(analysis->window);
+			update_analysis_window_buffer_range_menu(analysis->window);
 			update_mapping_window_menu(analysis->mapping_window);
 			/* update the drawing areas */
 			update_mapping_drawing_area(analysis->mapping_window,2);
@@ -4317,7 +4324,7 @@ Bard signal file (window.dat).
 static int analysis_read_beekeeper_eeg_fil(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2003
+LAST MODIFIED : 12 April 2004
 
 DESCRIPTION :
 Reads in the signals from the Beekeeper file and sets up the analysis work area
@@ -4442,6 +4449,7 @@ for analysing the signals.
 					"analysis_read_beekeeper_eeg_fil.  Could not open trace window");
 			}
 			update_analysis_window_menu(analysis->window);
+			update_analysis_window_buffer_range_menu(analysis->window);
 			update_mapping_window_menu(analysis->mapping_window);
 			/* update the drawing areas */
 			update_mapping_drawing_area(analysis->mapping_window,2);
@@ -4465,7 +4473,7 @@ for analysing the signals.
 static int analysis_read_bdf_or_edf_file(struct Analysis_work_area *analysis,
 	int bdf)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2003
+LAST MODIFIED : 12 April 2004
 
 DESCRIPTION :
 Reads in the signals from the bdf or edf file and sets up the analysis work area
@@ -4743,6 +4751,7 @@ for analysing the signals.  <bdf>!=0 reads bdf files, else reads edf files
 				}
 			}
 			update_analysis_window_menu(analysis->window);
+			update_analysis_window_buffer_range_menu(analysis->window);
 			update_mapping_window_menu(analysis->mapping_window);
 			/* ensure projection_type matches region type */
 			ensure_projection_type_matches_region_type(analysis);
@@ -4845,7 +4854,7 @@ for analysing the signals.
 static int analysis_read_neurosoft_sig_fil(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2003
+LAST MODIFIED : 12 April 2004
 
 DESCRIPTION :
 Reads in the signals from the Neurosoft file and sets up the analysis work area
@@ -4972,6 +4981,7 @@ for analysing the signals.
 					"analysis_read_neurosoft_sig_fil.  Could not open trace window");
 			}
 			update_analysis_window_menu(analysis->window);
+			update_analysis_window_buffer_range_menu(analysis->window);
 			update_mapping_window_menu(analysis->mapping_window);
 			/* update the drawing areas */
 			update_mapping_drawing_area(analysis->mapping_window,2);
@@ -5056,7 +5066,7 @@ the user for the Neurosoft signal file.
 static int analysis_read_cardiomapp_sig_fi(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2003
+LAST MODIFIED : 12 April 2004
 
 DESCRIPTION :
 Reads in the signals from the CardioMapp file and sets up the analysis work area
@@ -5182,6 +5192,7 @@ for analysing the signals.
 					"analysis_read_cardiomapp_sig_fi.  Could not open trace window");
 			}
 			update_analysis_window_menu(analysis->window);
+			update_analysis_window_buffer_range_menu(analysis->window);
 			update_mapping_window_menu(analysis->mapping_window);
 			/* update the drawing areas */
 			update_mapping_drawing_area(analysis->mapping_window,2);
@@ -6561,36 +6572,214 @@ enum Moving_status
 	SCALING_Y_AXIS_POSITIVE
 };
 
+static int change_analysis_interval(struct Analysis_work_area *analysis)
+/*******************************************************************************
+LAST MODIFIED : 14 April 2004
+
+DESCRIPTION :
+What needs to be done when the analysis interval (buffer range) is changed.
+==============================================================================*/
+{
+	char event_interval_changed,search_interval_changed;
+	int i,return_code,temp;
+	struct Device *highlight_device;
+	struct Interval_area *interval;
+	struct Map *map;
+	struct Signal_buffer *buffer;
+	struct Trace_window *trace;
+#if defined (UNEMAP_USE_NODES)
+	FE_value end_time,start_time;
+	int time_index;
+	struct FE_field *display_end_time_field,*display_start_time_field,
+		*signal_field;
+	struct Signal_drawing_package *signal_drawing_package;
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+	ENTER(change_analysis_interval);
+	return_code=0;
+	if (analysis&&(analysis->window)&&
+		(analysis->highlight)&&(highlight_device= *(analysis->highlight))&&
+		(buffer=get_Device_signal_buffer(highlight_device)))
+	{
+		return_code=1;
+		interval= &(analysis->window->interval);
+#if defined (UNEMAP_USE_NODES)
+		signal_drawing_package=analysis->signal_drawing_package;
+		display_start_time_field=
+			get_Signal_drawing_package_display_start_time_field(
+			signal_drawing_package);
+		display_end_time_field=get_Signal_drawing_package_display_end_time_field(
+			signal_drawing_package);
+		signal_field=get_Signal_drawing_package_signal_field(
+			signal_drawing_package);
+#endif /* defined (UNEMAP_USE_NODES)*/
+#if defined (UNEMAP_USE_NODES)
+		time_index=buffer->start;
+		/* get the start time, update the display_start_time_field */
+		get_FE_field_time_FE_value(signal_field,time_index,&start_time);
+		set_FE_field_FE_value_value(display_start_time_field,0,start_time);
+#endif /* defined (UNEMAP_USE_NODES)*/
+#if defined (UNEMAP_USE_NODES)
+		time_index=buffer->end;
+		/* get the end time, update the display_end_time_field */
+		get_FE_field_time_FE_value(signal_field,time_index,&end_time);
+		set_FE_field_FE_value_value(display_end_time_field,0,end_time);
+#endif /* defined (UNEMAP_USE_NODES)*/
+		/* update the search interval */
+		temp=analysis->end_search_interval-analysis->start_search_interval;
+		search_interval_changed=0;
+		if (buffer->start>analysis->start_search_interval)
+		{
+			search_interval_changed=1;
+			if (analysis->search_interval_divisions)
+			{
+				for (i=analysis->number_of_events-2;i>=0;i--)
+				{
+					(analysis->search_interval_divisions)[i] +=
+						(buffer->start)-(analysis->start_search_interval);
+				}
+			}
+			analysis->start_search_interval=buffer->start;
+			analysis->end_search_interval=
+				analysis->start_search_interval+temp;
+		}
+		if (buffer->end<analysis->end_search_interval)
+		{
+			search_interval_changed=1;
+			if (analysis->search_interval_divisions)
+			{
+				for (i=analysis->number_of_events-2;i>=0;i--)
+				{
+					(analysis->search_interval_divisions)[i] +=
+						(buffer->end)-(analysis->end_search_interval);
+				}
+			}
+			analysis->end_search_interval=buffer->end;
+			analysis->start_search_interval=analysis->end_search_interval-temp;
+			if (buffer->start>analysis->start_search_interval)
+			{
+				if (analysis->search_interval_divisions)
+				{
+					for (i=analysis->number_of_events-2;i>=0;i--)
+					{
+						(analysis->search_interval_divisions)[i] +=
+							(buffer->start)-(analysis->start_search_interval);
+						if ((analysis->search_interval_divisions)[i]>buffer->end)
+						{
+							(analysis->search_interval_divisions)[i]=buffer->end;
+						}
+					}
+				}
+				analysis->start_search_interval=buffer->start;
+			}
+		}
+		if ((trace=analysis->trace)&&
+			((EDA_LEVEL==analysis->detection)||(EDA_THRESHOLD==analysis->detection)))
+		{
+			/* update the highlight event interval */
+				/*???DB.  Should be in trace_change_display_interval ? */
+			temp=trace->area_3.edit.last_data-trace->area_3.edit.first_data;
+			event_interval_changed=0;
+			if (buffer->start>
+				trace->area_3.edit.first_data)
+			{
+				event_interval_changed=1;
+				trace->area_3.edit.first_data=buffer->start;
+				trace->area_3.edit.last_data=
+					analysis->trace->area_3.edit.first_data+temp;
+			}
+			if (buffer->end<trace->area_3.edit.last_data)
+			{
+				event_interval_changed=1;
+				trace->area_3.edit.last_data=buffer->end;
+				trace->area_3.edit.first_data=trace->area_3.edit.last_data-temp;
+				if (buffer->start>trace->area_3.edit.first_data)
+				{
+					trace->area_3.edit.first_data=buffer->start;
+				}
+			}
+			if (event_interval_changed)
+			{
+				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
+					(XtPointer)NULL);
+			}
+		}
+		if (search_interval_changed)
+		{
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+			if (EDA_INTERVAL==analysis->detection)
+			{
+				/* free the event memory */
+				destroy_all_events(analysis->rig);
+				XtSetSensitive(analysis->window->file_menu.save_times_button,False);
+				XtSetSensitive(analysis->window->map_menu.single_activation_button,
+					False);
+				XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
+					False);
+				XtSetSensitive(analysis->window->map_menu.activation_potential_button,
+					False);
+				analysis->calculate_events=0;
+			}
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+			trace_change_search_interval(analysis->trace);
+			if ((
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+				((EDA_INTERVAL==analysis->detection)&&
+				((SINGLE_ACTIVATION==analysis->map_type)||
+				(ACTIVATION_POTENTIAL==analysis->map_type)||
+				(MULTIPLE_ACTIVATION==analysis->map_type)))||
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+				(INTEGRAL==analysis->map_type))&&
+				(analysis->mapping_window)&&
+				(map=analysis->mapping_window->map))
+			{
+				analysis->map_type=NO_MAP_FIELD;
+				map->colour_option=HIDE_COLOUR;
+				map->contours_option=HIDE_CONTOURS;
+				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
+				/* clear the colour map */
+				map->activation_front= -1;
+				update_mapping_drawing_area(analysis->mapping_window,2);
+				update_mapping_colour_or_auxili(analysis->mapping_window);
+				XtSetSensitive(analysis->mapping_window->animate_button,False);
+			}
+		}
+		trace_change_display_interval(analysis->trace);
+		update_signals_drawing_area(analysis->window);
+		update_analysis_window_buffer_range_menu(analysis->window);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* change_analysis_interval */
+
 static void select_analysis_interval(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 14 April 2004
 
 DESCRIPTION :
 The callback for modifying the analysis interval in the analysis interval
 drawing area.
 ==============================================================================*/
 {
-	char event_interval_changed,number_string[20],search_interval_changed;
+	char number_string[20];
 	Cursor cursor;
 	Display *display;
 	enum Moving_status moving;
 	float frequency,x_scale;
 	GC potential_time_colour,potential_time_colour_text;
 	int ascent,axes_bottom,axes_left,axes_right,axes_top,box_range,descent,
-		direction,i,initial_potential_time,left_box,length,
-		minimum_box_range,pointer_sensitivity,pointer_x,pointer_y,
-		potential_time,previous_right_box,previous_pointer_x,
-		previous_potential_time,previous_left_box,right_box,temp,*times,x_string,
-		y_string;
+		direction,initial_potential_time,left_box,length,minimum_box_range,
+		pointer_sensitivity,pointer_x,pointer_y,potential_time,previous_right_box,
+		previous_pointer_x,previous_potential_time,previous_left_box,right_box,temp,
+		*times,x_string,y_string;
 	Pixmap pixel_map;
 	struct Analysis_work_area *analysis;
 	struct Device *highlight_device;
 	struct Interval_area *interval;
-	struct Map *map;
 	struct Signal_buffer *buffer;
 	struct Time_keeper *time_keeper;
-	struct Trace_window *trace;
 	unsigned int working_button;
 	Window working_window;
 	XButtonEvent *button_event;
@@ -6922,173 +7111,14 @@ drawing area.
 															buffer->start=SCALE_X(left_box,axes_left,0,
 																1/x_scale);
 															interval->left_box=left_box;
-#if defined (UNEMAP_USE_NODES)
-															time_index=buffer->start;
-																/*get the start time,update the display_start_time_field */
-															get_FE_field_time_FE_value(signal_field,time_index,
-																&start_time);
-															set_FE_field_FE_value_value(display_start_time_field,0,
-																start_time);
-#endif /* defined (UNEMAP_USE_NODES)*/
 														}
 														if (right_box!=interval->right_box)
 														{
 															buffer->end=SCALE_X(right_box,axes_left,0,
 																1/x_scale);
 															interval->right_box=right_box;
-#if defined (UNEMAP_USE_NODES)
-															time_index=buffer->end;
-																/*get the end time,update the display_end_time_field */
-															get_FE_field_time_FE_value(signal_field,time_index,&end_time);
-															set_FE_field_FE_value_value(display_end_time_field,0,end_time);
-#endif /* defined (UNEMAP_USE_NODES)*/
 														}
-														/* update the search interval */
-														temp=analysis->end_search_interval-
-															analysis->start_search_interval;
-														search_interval_changed=0;
-														if (buffer->start>analysis->start_search_interval)
-														{
-															search_interval_changed=1;
-															if (analysis->search_interval_divisions)
-															{
-																for (i=analysis->number_of_events-2;i>=0;i--)
-																{
-																	(analysis->search_interval_divisions)[i] +=
-																		(buffer->start)-
-																		(analysis->start_search_interval);
-																}
-															}
-															analysis->start_search_interval=buffer->start;
-															analysis->end_search_interval=
-																analysis->start_search_interval+temp;
-														}
-														if (buffer->end<analysis->end_search_interval)
-														{
-															search_interval_changed=1;
-															if (analysis->search_interval_divisions)
-															{
-																for (i=analysis->number_of_events-2;i>=0;i--)
-																{
-																	(analysis->search_interval_divisions)[i] +=
-																		(buffer->end)-
-																		(analysis->end_search_interval);
-																}
-															}
-															analysis->end_search_interval=buffer->end;
-															analysis->start_search_interval=
-																analysis->end_search_interval-temp;
-															if (buffer->start>analysis->
-																start_search_interval)
-															{
-																if (analysis->search_interval_divisions)
-																{
-																	for (i=analysis->number_of_events-2;i>=0;
-																			i--)
-																	{
-																		(analysis->search_interval_divisions)[
-																			i] += (buffer->start)-
-																			(analysis->start_search_interval);
-																		if ((analysis->search_interval_divisions)[
-																			i]>buffer->end)
-																		{
-																			(analysis->search_interval_divisions)[
-																				i]=buffer->end;
-																		}
-																	}
-																}
-																analysis->start_search_interval=buffer->start;
-															}
-														}
-														if ((trace=analysis->trace)&&
-															((EDA_LEVEL==analysis->detection)||
-																(EDA_THRESHOLD==analysis->detection)))
-														{
-																/* update the highlight event interval */
-															/*???DB.  Should be in
-																trace_change_display_interval ? */
-															temp=trace->area_3.edit.last_data-
-																trace->area_3.edit.first_data;
-															event_interval_changed=0;
-															if (buffer->start>
-																trace->area_3.edit.first_data)
-															{
-																event_interval_changed=1;
-																trace->area_3.edit.first_data=buffer->start;
-																trace->area_3.edit.last_data=
-																	analysis->trace->area_3.edit.first_data+
-																	temp;
-															}
-															if (buffer->end<trace->area_3.edit.last_data)
-															{
-																event_interval_changed=1;
-																trace->area_3.edit.last_data=buffer->end;
-																trace->area_3.edit.first_data=
-																	trace->area_3.edit.last_data-temp;
-																if (buffer->start>
-																	trace->area_3.edit.first_data)
-																{
-																	trace->area_3.edit.first_data=buffer->start;
-																}
-															}
-															if (event_interval_changed)
-															{
-																redraw_trace_3_drawing_area((Widget)NULL,
-																	(XtPointer)trace,(XtPointer)NULL);
-															}
-														}
-														if (search_interval_changed)
-														{
-#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
-															if (EDA_INTERVAL==analysis->detection)
-															{
-																/* free the event memory */
-																destroy_all_events(analysis->rig);
-																XtSetSensitive(analysis->window->file_menu.
-																	save_times_button,False);
-																XtSetSensitive(
-																	analysis->window->map_menu.
-																	single_activation_button,
-																	False);
-																XtSetSensitive(
-																	analysis->window->map_menu.
-																	multiple_activation_button,
-																	False);
-																XtSetSensitive(
-																	analysis->window->map_menu.
-																	activation_potential_button,
-																	False);
-																analysis->calculate_events=0;
-															}
-#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
-															trace_change_search_interval(analysis->trace);
-															if ((
-#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
-																((EDA_INTERVAL==analysis->detection)&&
-																((SINGLE_ACTIVATION==analysis->map_type)||
-																(ACTIVATION_POTENTIAL==analysis->map_type)||
-																(MULTIPLE_ACTIVATION==analysis->map_type)))||
-#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
-																(INTEGRAL==analysis->map_type))&&
-																(analysis->mapping_window)&&
-																(map=analysis->mapping_window->map))
-															{
-																analysis->map_type=NO_MAP_FIELD;
-																map->colour_option=HIDE_COLOUR;
-																map->contours_option=HIDE_CONTOURS;
-																map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
-																/* clear the colour map */
-																map->activation_front= -1;
-																update_mapping_drawing_area(
-																	analysis->mapping_window,2);
-																update_mapping_colour_or_auxili(
-																	analysis->mapping_window);
-																XtSetSensitive(analysis->mapping_window->
-																	animate_button,False);
-															}
-														}
-														trace_change_display_interval(analysis->trace);
-														update_signals_drawing_area(analysis->window);
+														change_analysis_interval(analysis);
 													}
 												} break;
 												case MOVING_POTENTIAL_TIME_MARKER:
@@ -7205,6 +7235,264 @@ drawing area.
 	}
 	LEAVE;
 } /* select_analysis_interval */
+
+static void analysis_set_buffer_start(Widget widget,
+	XtPointer analysis_work_area,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 14 April 2004
+
+DESCRIPTION :
+Sets the buffer start from the buffer range menu.
+==============================================================================*/
+{
+	char *value_string;
+	int start;
+	struct Analysis_window *analysis_window;
+	struct Analysis_work_area *analysis;
+	struct Device *highlight_device;
+	struct Signal_buffer *buffer;
+
+	ENTER(analysis_set_buffer_start);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
+		(analysis_window=analysis->window))
+	{
+		if ((analysis->highlight)&&(highlight_device= *(analysis->highlight))&&
+			(buffer=get_Device_signal_buffer(highlight_device)))
+		{
+			XtVaGetValues(
+				(analysis_window->interval).buffer_range.start_sample_number_text,
+				XmNvalue,&value_string,NULL);
+			if (1==sscanf(value_string,"%d",&start))
+			{
+				if (start<0)
+				{
+					buffer->start=0;
+				}
+				else
+				{
+					if (start>=buffer->end)
+					{
+						buffer->start=(buffer->end)-1;
+					}
+					else
+					{
+						buffer->start=start;
+					}
+				}
+				update_interval_drawing_area(analysis_window);
+				change_analysis_interval(analysis);
+			}
+			else
+			{
+				update_analysis_window_buffer_range_menu(analysis_window);
+			}
+		}
+	}
+	LEAVE;
+} /* analysis_set_buffer_start */
+
+static void analysis_set_buffer_start_time(Widget widget,
+	XtPointer analysis_work_area,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 14 April 2004
+
+DESCRIPTION :
+Sets the buffer start from the buffer range menu.
+==============================================================================*/
+{
+	char *value_string;
+	float frequency,start_time;
+	int number_of_samples,start,start_time_int,*times;
+	struct Analysis_window *analysis_window;
+	struct Analysis_work_area *analysis;
+	struct Device *highlight_device;
+	struct Signal_buffer *buffer;
+
+	ENTER(analysis_set_buffer_start_time);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
+		(analysis_window=analysis->window))
+	{
+		if ((analysis->highlight)&&(highlight_device= *(analysis->highlight))&&
+			(buffer=get_Device_signal_buffer(highlight_device)))
+		{
+			XtVaGetValues(
+				(analysis_window->interval).buffer_range.start_time_text,
+				XmNvalue,&value_string,NULL);
+			if ((1==sscanf(value_string,"%f",&start_time))&&
+				(0<(frequency=buffer->frequency))&&(times=buffer->times)&&
+				(0<(number_of_samples=buffer->number_of_samples)))
+			{
+				start_time /= 1000.;
+				start_time_int=(int)(frequency*start_time+0.5);
+				start=0;
+				while ((start<number_of_samples)&&(times[start]<start_time_int))
+				{
+					start++;
+				}
+				if ((0<start)&&((float)(times[start])/frequency-start_time>
+					start_time-(float)(times[start-1])/frequency))
+				{
+					start--;
+				}
+				if (start<0)
+				{
+					buffer->start=0;
+				}
+				else
+				{
+					if (start>=buffer->end)
+					{
+						buffer->start=(buffer->end)-1;
+					}
+					else
+					{
+						buffer->start=start;
+					}
+				}
+				update_interval_drawing_area(analysis_window);
+				change_analysis_interval(analysis);
+			}
+			else
+			{
+				update_analysis_window_buffer_range_menu(analysis_window);
+			}
+		}
+	}
+	LEAVE;
+} /* analysis_set_buffer_start_time */
+
+static void analysis_set_buffer_end(Widget widget,
+	XtPointer analysis_work_area,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 14 April 2004
+
+DESCRIPTION :
+Sets the buffer end from the buffer range menu.
+==============================================================================*/
+{
+	char *value_string;
+	int end;
+	struct Analysis_window *analysis_window;
+	struct Analysis_work_area *analysis;
+	struct Device *highlight_device;
+	struct Signal_buffer *buffer;
+
+	ENTER(analysis_set_buffer_end);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
+		(analysis_window=analysis->window))
+	{
+		if ((analysis->highlight)&&(highlight_device= *(analysis->highlight))&&
+			(buffer=get_Device_signal_buffer(highlight_device)))
+		{
+			XtVaGetValues(
+				(analysis_window->interval).buffer_range.end_sample_number_text,
+				XmNvalue,&value_string,NULL);
+			if (1==sscanf(value_string,"%d",&end))
+			{
+				if (end<=buffer->start)
+				{
+					buffer->end=(buffer->start)+1;
+				}
+				else
+				{
+					if (end>=buffer->number_of_samples)
+					{
+						buffer->end=(buffer->number_of_samples)-1;
+					}
+					else
+					{
+						buffer->end=end;
+					}
+				}
+				update_interval_drawing_area(analysis_window);
+				change_analysis_interval(analysis);
+			}
+			else
+			{
+				update_analysis_window_buffer_range_menu(analysis_window);
+			}
+		}
+	}
+	LEAVE;
+} /* analysis_set_buffer_end */
+
+static void analysis_set_buffer_end_time(Widget widget,
+	XtPointer analysis_work_area,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 14 April 2004
+
+DESCRIPTION :
+Sets the buffer end from the buffer range menu.
+==============================================================================*/
+{
+	char *value_string;
+	float frequency,end_time;
+	int number_of_samples,end,end_time_int,*times;
+	struct Analysis_window *analysis_window;
+	struct Analysis_work_area *analysis;
+	struct Device *highlight_device;
+	struct Signal_buffer *buffer;
+
+	ENTER(analysis_set_buffer_end_time);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
+		(analysis_window=analysis->window))
+	{
+		if ((analysis->highlight)&&(highlight_device= *(analysis->highlight))&&
+			(buffer=get_Device_signal_buffer(highlight_device)))
+		{
+			XtVaGetValues(
+				(analysis_window->interval).buffer_range.end_time_text,
+				XmNvalue,&value_string,NULL);
+			if ((1==sscanf(value_string,"%f",&end_time))&&
+				(0<(frequency=buffer->frequency))&&(times=buffer->times)&&
+				(0<(number_of_samples=buffer->number_of_samples)))
+			{
+				end_time /= 1000.;
+				end_time_int=(int)(frequency*end_time+0.5);
+				end=number_of_samples-1;
+				while ((end>0)&&(times[end]>end_time_int))
+				{
+					end--;
+				}
+				if ((end<number_of_samples-1)&&(end_time-(float)(times[end])/frequency>
+					(float)(times[end+1])/frequency-end_time))
+				{
+					end++;
+				}
+				if (end<=buffer->start)
+				{
+					buffer->end=(buffer->start)+1;
+				}
+				else
+				{
+					if (end>=buffer->number_of_samples)
+					{
+						buffer->end=(buffer->number_of_samples)-1;
+					}
+					else
+					{
+						buffer->end=end;
+					}
+				}
+				update_interval_drawing_area(analysis_window);
+				change_analysis_interval(analysis);
+			}
+			else
+			{
+				update_analysis_window_buffer_range_menu(analysis_window);
+			}
+		}
+	}
+	LEAVE;
+} /* analysis_set_buffer_end_time */
 
 static void decrement_number_of_events(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
@@ -10456,7 +10744,7 @@ should be done as a callback from the trace_window.
 																				signals->signal_height,xpos,ypos);
 																		} break;
 																	}
-																/* clear the interval drawing area */
+																	/* clear the interval drawing area */
 																	switch (moving)
 																	{
 																		case SCALING_Y_AXIS_NEGATIVE:
@@ -17422,7 +17710,7 @@ int create_analysis_work_area(struct Analysis_work_area *analysis,
 	struct User_interface *user_interface, struct Time_keeper *time_keeper,
 	struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 16 September 2002
+LAST MODIFIED : 14 April 2004
 
 DESCRIPTION :
 Creates the windows associated with the analysis work area.
@@ -17453,6 +17741,11 @@ Creates the windows associated with the analysis work area.
 		{"set_analysis_order_event",(XtPointer)set_analysis_order_event},
 		{"set_analysis_order_channel",(XtPointer)set_analysis_order_channel},
 		{"select_analysis_interval",(XtPointer)select_analysis_interval},
+		{"analysis_set_buffer_start",(XtPointer)analysis_set_buffer_start},
+		{"analysis_set_buffer_start_time",
+			(XtPointer)analysis_set_buffer_start_time},
+		{"analysis_set_buffer_end",(XtPointer)analysis_set_buffer_end},
+		{"analysis_set_buffer_end_time",(XtPointer)analysis_set_buffer_end_time},
 		{"select_signals_drawing_area",(XtPointer)select_signals_drawing_area},
 		{"calculate_all_event_markers",(XtPointer)calculate_all_event_markers},
 		{"select_trace_1_drawing_area",(XtPointer)select_trace_1_drawing_area},
