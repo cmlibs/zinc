@@ -428,9 +428,9 @@ Perform MIL analysis on the image cache.
         FE_value 	*rot1;		/* random theta rotations		*/
         FE_value	*rot2;		/* random phi rotations			*/
 
-        FE_value 	bv, tv, bvtv;		/* solid volume in mm^3 and BV/TV	*/
+        FE_value 	tv, bvtv;		/* solid volume in mm^3 and BV/TV	*/
         FE_value	*mil;		/* magnitude of MIL for ith rotation	*/
-        FE_value	bs, bsbv, tbth, tbn, tbsp;	/* BS, BS/BV Tb.Th, Tb.N and Tb.Sp		*/
+        FE_value	bsbv, tbth, tbn, tbsp;	/* BS/BV Tb.Th, Tb.N and Tb.Sp		*/
 
         FE_value euler_number;
 	FE_value mean_curvature;
@@ -445,8 +445,6 @@ Perform MIL analysis on the image cache.
 
         int	ix, iy, iz;			/* integer grid position	*/
         int	iline_sp;			/* spacing of test lines (int)	*/
-        int 	intrsctn;			/* number of intersections	*/
-
         int	irot;				/* rotation loop counter	*/
         int	i;				/* loop counter			*/
         FE_value	*elvector;		/* vector of ellipsoid coeff.(6) and goodness(4)	*/
@@ -470,7 +468,6 @@ Perform MIL analysis on the image cache.
 		prin1 = prin2 = prin3 = 0.0;
 		deg1 = deg2 = deg3 = 0.0;
 		iline_sp = 0;
-		intrsctn = 0;
 
 		levels = 256;
 		result_depth = 1;
@@ -600,8 +597,6 @@ Perform MIL analysis on the image cache.
 						Spatial_surface_density(pixsize, h, &sd);
 						tv *= pixsize * pixsize * pixsize;
 
-						bv = vf * tv;  /* BV, Scale voxels -> mm^3 */
-						bs = sd * tv; /* BS */
 						bsbv = sd / vf;	/* BS/BV, [mm^2 mm^-3] */
 						tbth = (5.0 /3.0)*vf / sd;	/* Tb.Th, [mm] */
 						tbn = vf / tbth;		/* Tb.N, [mm^-1] */
@@ -1052,7 +1047,7 @@ although its cache may be lost.
 	struct Set_names_from_list_data temp;
 
 	ENTER(Computed_field_set_type_sterology_measures);
-	if (field && source_field && texture_coordinate_field && (number_of_results > 0) &&
+	if (field && source_field && texture_coordinate_field && 
 		(number_of_dirs > 0) && (depth = source_field->number_of_components) &&
 		(dimension <= texture_coordinate_field->number_of_components) &&
 		region && graphics_buffer_package)
