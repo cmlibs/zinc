@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -36,6 +36,7 @@ Functions for executing cmiss commands.
 #include "data/sync_2d_3d.h"
 #include "element/element_creator.h"
 #include "element/element_point_viewer.h"
+#include "element/element_tool.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
@@ -10448,22 +10449,17 @@ element groups are destroyed together.
 static int gfx_destroy_elements(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Executes a GFX DESTROY ELEMENTS command.
 ==============================================================================*/
 {
 	char all_flag,ranges_flag,selected_flag;
-	int number_of_elements_destroyed,number_of_elements_not_destroyed,return_code;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Element_point_ranges *element_point_ranges;
-	struct FE_element *element_to_destroy;
 	struct FE_element_list_conditional_data list_conditional_data;
-	struct GROUP(FE_element) *element_group;
-	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
-	struct LIST(FE_element) *destroy_element_list,*selected_element_list,
-		*temp_element_list;
+	struct LIST(FE_element) *destroy_element_list;
 	struct Multi_range *element_ranges;
 	struct Option_table *option_table;
 
@@ -10524,100 +10520,11 @@ Executes a GFX DESTROY ELEMENTS command.
 				{
 					if (0<NUMBER_IN_LIST(FE_element)(destroy_element_list))
 					{
-						/* make element_list to put elements that could not be destroyed */
-						temp_element_list=CREATE(LIST(FE_element))();
-						/* remove the elements - and their faces recursively - from all
-							 groups they are in */
-						while (return_code&&(element_group=
-							FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_element))(
-								FE_element_group_intersects_list,(void *)destroy_element_list,
-								command_data->element_group_manager)))
-						{
-							MANAGED_GROUP_BEGIN_CACHE(FE_element)(element_group);
-							while (return_code&&(element_to_destroy=
-								FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
-									FE_element_is_in_list,(void *)destroy_element_list,
-									element_group)))
-							{
-								return_code=remove_FE_element_and_faces_from_group(
-									element_to_destroy,element_group);
-							}
-							MANAGED_GROUP_END_CACHE(FE_element)(element_group);
-						}
-						/* remove elements - and their faces and lines - from the
-							 global element_selection */
-						FE_element_selection_begin_cache(command_data->element_selection);
-						selected_element_list=FE_element_selection_get_element_list(
-							command_data->element_selection);
-						while (return_code&&(element_to_destroy=
-							FIRST_OBJECT_IN_LIST_THAT(FE_element)(
-								FE_element_has_all_top_level_parents_in_list,
-								(void *)destroy_element_list,selected_element_list)))
-						{
-							return_code=FE_element_selection_unselect_element(
-								command_data->element_selection,element_to_destroy);
-						}
-						FE_element_selection_end_cache(command_data->element_selection);
-						/* remove all references to elements being removed from the global
-							 element_point_ranges_selection */
-						Element_point_ranges_selection_begin_cache(
+						return_code=destroy_listed_elements(destroy_element_list,
+							command_data->element_manager,
+							command_data->element_group_manager,
+							command_data->element_selection,
 							command_data->element_point_ranges_selection);
-						selected_element_point_ranges_list=
-							Element_point_ranges_selection_get_element_point_ranges_list(
-								command_data->element_point_ranges_selection);
-						while (return_code&&(element_point_ranges=
-							FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)(
-								Element_point_ranges_uses_top_level_element_in_list,
-								(void *)destroy_element_list,
-								selected_element_point_ranges_list)))
-						{
-							return_code=
-								Element_point_ranges_selection_unselect_element_point_ranges(
-									command_data->element_point_ranges_selection,
-									element_point_ranges);
-						}
-						Element_point_ranges_selection_end_cache(
-							command_data->element_point_ranges_selection);
-						/* now remove the elements from the manager */
-						number_of_elements_destroyed=0;
-						while (return_code&&(element_to_destroy=
-							FIRST_OBJECT_IN_LIST_THAT(FE_element)(
-								(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL,(void *)NULL,
-								destroy_element_list)))
-						{
-							/* element cannot be destroyed while it is in a list */
-							if (REMOVE_OBJECT_FROM_LIST(FE_element)(element_to_destroy,
-								destroy_element_list))
-							{
-								if (FE_element_can_be_destroyed(element_to_destroy))
-								{
-									if (return_code=remove_FE_element_and_faces_from_manager(
-										element_to_destroy,command_data->element_manager))
-									{
-										number_of_elements_destroyed++;
-									}
-								}
-								else
-								{
-									/* add it to temp_element_list for reporting */
-									ADD_OBJECT_TO_LIST(FE_element)(element_to_destroy,
-										temp_element_list);
-								}
-							}
-							else
-							{
-								return_code=0;
-							}
-						}
-						if (0<(number_of_elements_not_destroyed=
-							NUMBER_IN_LIST(FE_element)(temp_element_list)))
-						{
-							display_message(WARNING_MESSAGE,"%d element(s) destroyed; "
-								"%d element(s) could not be destroyed because in use",
-								number_of_elements_destroyed,number_of_elements_not_destroyed);
-							return_code=0;
-						}
-						DESTROY(LIST(FE_element))(&temp_element_list);
 					}
 					else
 					{
@@ -12175,6 +12082,80 @@ Executes a GFX ELEMENT_CREATOR command.
 
 	return (return_code);
 } /* execute_command_gfx_element_creator */
+
+static int execute_command_gfx_element_tool(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Executes a GFX ELEMENT_TOOL command.
+==============================================================================*/
+{
+	int select_elements_enabled,select_faces_enabled,select_lines_enabled,
+		return_code;
+	struct Cmiss_command_data *command_data;
+	struct Element_tool *element_tool;
+	struct Option_table *option_table;
+
+	ENTER(execute_command_gfx_element_tool);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
+	{
+		/* initialize defaults */
+		if (element_tool=command_data->element_tool)
+		{
+			select_elements_enabled=
+				Element_tool_get_select_elements_enabled(element_tool);
+			select_faces_enabled=Element_tool_get_select_faces_enabled(element_tool);
+			select_lines_enabled=Element_tool_get_select_lines_enabled(element_tool);
+		}
+		else
+		{
+			select_elements_enabled=1;
+			select_faces_enabled=1;
+			select_lines_enabled=1;
+		}
+		option_table=CREATE(Option_table)();
+		/* select_elements/no_select_elements */
+		Option_table_add_switch(option_table,"select_elements","no_select_elements",
+			&select_elements_enabled);
+		/* select_faces/no_select_faces */
+		Option_table_add_switch(option_table,"select_faces","no_select_faces",
+			&select_faces_enabled);
+		/* select_lines/no_select_lines */
+		Option_table_add_switch(option_table,"select_lines","no_select_lines",
+			&select_lines_enabled);
+		if (return_code=Option_table_multi_parse(option_table,state))
+		{
+			if (element_tool)
+			{
+				Element_tool_set_select_elements_enabled(element_tool,
+					select_elements_enabled);
+				Element_tool_set_select_faces_enabled(element_tool,
+					select_faces_enabled);
+				Element_tool_set_select_lines_enabled(element_tool,
+					select_lines_enabled);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"execute_command_gfx_element_tool.  Missing element_tool");
+				return_code=0;
+			}
+		} /* parse error,help */
+		DESTROY(Option_table)(&option_table);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_command_gfx_element_tool.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_gfx_element_tool */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_erase(struct Parse_state *state,
@@ -16621,7 +16602,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 			create_enabled=0;
 			edit_enabled=0;
 			motion_update_enabled=0;
-			select_enabled=0;
+			select_enabled=1;
 			node_group=(struct GROUP(FE_node) *)NULL;
 		}
 		if (coordinate_field)
@@ -16666,7 +16647,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Must create node_tool before modifying it");
+					"execute_command_gfx_node_tool.  Missing node/data tool");
 				return_code=0;
 			}
 		} /* parse error,help */
@@ -21933,7 +21914,7 @@ Executes a GFX WRITE command.
 static int execute_command_gfx(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 12 May 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Executes a GFX command.
@@ -21952,6 +21933,7 @@ Executes a GFX command.
 		{"draw",NULL,NULL,execute_command_gfx_draw},
 		{"edit",NULL,NULL,execute_command_gfx_edit},
 		{"element_creator",NULL,NULL,execute_command_gfx_element_creator},
+		{"element_tool",NULL,NULL,execute_command_gfx_element_tool},
 		{"erase",NULL,NULL,execute_command_gfx_erase},
 		{"evaluate",NULL,NULL,gfx_evaluate},
 		{"export",NULL,NULL,execute_command_gfx_export},
@@ -22018,6 +22000,9 @@ Executes a GFX command.
 				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* element_creator */
+				(option_table[i]).user_data=command_data_void;
+				i++;
+				/* element_tool */
 				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* erase */
