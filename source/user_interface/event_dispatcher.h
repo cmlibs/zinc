@@ -11,6 +11,9 @@ registered file handles to the correct handlers.
 #define EVENT_DISPATCHER_H
 
 #include "general/object.h"
+#if defined (USE_XTAPP_CONTEXT)
+#include "Xm/Xm.h"
+#endif /* defined (USE_XTAPP_CONTEXT) */
 
 /*
 Global types

@@ -23,7 +23,7 @@ Module variables
 int number_of_scrolling_callbacks=0;
 
 #if defined (MOTIF)
-	XtAppContext application_context;
+struct Event_dispatcher *event_dispatcher;
 #endif /* defined (MOTIF) */
 
 float *calibrating_channel_gains=(float *)NULL,
@@ -151,12 +151,13 @@ static void print_menu(void)
 	printf("?\n");
 } /* print_menu */
 
-static void process_keyboard(
 #if defined (WINDOWS)
+static void process_keyboard(
 	void
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-	XtPointer dummy_client_data,int *source,XtInputId *id
+static int process_keyboard(
+	int source, void *dummy_client_data
 #endif /* defined (MOTIF) */
 	)
 {
@@ -165,7 +166,6 @@ static void process_keyboard(
 
 	USE_PARAMETER(dummy_client_data);
 	USE_PARAMETER(source);
-	USE_PARAMETER(id);
 	scanf("%c",&option);
 	if (isalnum(option))
 	{
@@ -186,13 +186,13 @@ static void process_keyboard(
 						fflush(stdout);
 						/* waiting for calibration to finish */
 #if defined (MOTIF)
-						if (application_context)
+						if (event_dispatcher)
 						{
 							while (calibrating)
 							{
 								printf(".");
 								fflush(stdout);
-								XtAppProcessEvent(application_context,XtIMAlternateInput);
+								Event_dispatcher_do_one_event(event_dispatcher);
 							}
 						}
 #endif /* defined (MOTIF) */
@@ -262,7 +262,7 @@ static void process_keyboard(
 						(HWND)NULL,0,
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-						application_context,
+						event_dispatcher,
 #endif /* defined (MOTIF) */
 						scrolling_callback,(void *)NULL,(float)5,synchronization_card);
 					printf("return_code=%d\n",return_code);
@@ -447,13 +447,13 @@ static void process_keyboard(
 						fflush(stdout);
 						/* waiting for retrieval to finish */
 #if defined (MOTIF)
-						if (application_context)
+						if (event_dispatcher)
 						{
 							while (!unemap_get_samples_acquired_background_finished)
 							{
 								printf(".");
 								fflush(stdout);
-								XtAppProcessEvent(application_context,XtIMAlternateInput);
+								Event_dispatcher_do_one_event(event_dispatcher);
 							}
 						}
 #endif /* defined (MOTIF) */
@@ -820,6 +820,9 @@ static void process_keyboard(
 			exit(0);
 		}
 	}
+#if defined (MOTIF)
+	return (1);
+#endif /* defined (MOTIF) */
 } /* process_keyboard */
 
 /*
@@ -832,13 +835,13 @@ int main(void)
 
 	return_code=1;
 #if defined (MOTIF)
-	if (application_context=XtCreateApplicationContext())
+	if (event_dispatcher=CREATE(Event_dispatcher)())
 	{
-		if (XtAppAddInput(application_context,fileno(stdin),
-			(XtPointer)XtInputReadMask,process_keyboard,(XtPointer)NULL))
+		if (Event_dispatcher_add_file_descriptor_handler(event_dispatcher,fileno(stdin),
+			process_keyboard,NULL))
 		{
 			print_menu();
-			XtAppMainLoop(application_context);
+			Event_dispatcher_main_loop(event_dispatcher);
 		}
 	}
 #endif /* defined (MOTIF) */

@@ -20,7 +20,7 @@ DESCRIPTION :
 #include "general/manager.h"
 #include "general/object.h"
 
-#include "unemap/analysis.h"
+#include "unemap/analysis_drawing.h"
 #include "unemap/drawing_2d.h"
 #include "unemap/rig.h"
 #include "user_interface/user_interface.h"

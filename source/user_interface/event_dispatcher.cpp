@@ -716,7 +716,7 @@ DESCRIPTION :
 
 	ENTER(Event_dispatcher_register_file_descriptor_handler);
 
-	if (event_dispatcher && file_descriptor && handler_function)
+	if (event_dispatcher && handler_function)
 	{
 		if (handler = CREATE(Event_dispatcher_file_descriptor_handler)(file_descriptor,
 			handler_function, user_data))
@@ -1239,7 +1239,7 @@ DESCRIPTION :
 		{
 			if (0 < (select_code = select(100, &read_set, NULL, NULL, timeout_ptr)))
 			{
-				if (!idle_callback)
+				if (!idle_callback && event_dispatcher->special_idle_callback)
 				{
 					ADD_OBJECT_TO_LIST(Event_dispatcher_idle_callback)
 						(event_dispatcher->special_idle_callback, event_dispatcher->idle_list);

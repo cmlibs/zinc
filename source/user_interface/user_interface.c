@@ -77,6 +77,7 @@ DESCRIPTION :
 #if ! defined (USE_XTAPP_CONTEXT)
 	struct Event_dispatcher_file_descriptor_handler *main_x_connection_handler;
 	struct Event_dispatcher_idle_callback *idle_x_callback;
+	struct Event_dispatcher_idle_callback *special_idle_x_callback;
 	struct Event_dispatcher_timeout_callback *timeout_x_callback;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF) */
@@ -1139,6 +1140,8 @@ Open the <user_interface>.
 			(struct Event_dispatcher_file_descriptor_handler *)NULL;
 		user_interface->idle_x_callback = 
 			(struct Event_dispatcher_idle_callback *)NULL;
+		user_interface->special_idle_x_callback = 
+			(struct Event_dispatcher_idle_callback *)NULL;
 		user_interface->timeout_x_callback = 
 			(struct Event_dispatcher_timeout_callback *)NULL;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
@@ -1207,7 +1210,7 @@ Open the <user_interface>.
 						 user_interface->event_dispatcher, User_interface_idle_X_callback, 
 						 (void *)user_interface, EVENT_DISPATCHER_X_PRIORITY))
 				{
-					if (user_interface->idle_x_callback = Event_dispatcher_set_special_idle_callback(
+					if (user_interface->special_idle_x_callback = Event_dispatcher_set_special_idle_callback(
 							 user_interface->event_dispatcher, User_interface_idle_X_callback, 
 							 (void *)user_interface, EVENT_DISPATCHER_X_PRIORITY))
 					{

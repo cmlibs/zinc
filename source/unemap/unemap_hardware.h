@@ -23,7 +23,7 @@ otherwise the group is all channels.
 #include <windows.h>
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-#include <X11/Intrinsic.h>
+#include "user_interface/event_dispatcher.h"
 #endif /* defined (MOTIF) */
 
 /*

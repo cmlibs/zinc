@@ -25,6 +25,7 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "unemap/analysis.h"
+#include "unemap/analysis_drawing.h"
 #include "unemap/eimaging_time_dialog.h"
 #include "unemap/drawing_2d.h"
 #include "unemap/rig.h"

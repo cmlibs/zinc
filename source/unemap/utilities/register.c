@@ -143,7 +143,7 @@ const int *calibrating_channel_numbers=(int *)NULL;
 int calibrating=0,calibrating_number_of_channels;
 
 #if defined (MOTIF)
-XtAppContext application_context;
+struct Event_dispatcher *event_dispatcher;
 #endif /* defined (MOTIF) */
 
 /*
@@ -684,12 +684,13 @@ static void print_menu(int channel_number,unsigned long number_of_channels)
 	printf("?\n");
 } /* print_menu */
 
-static void process_keyboard(
 #if defined (WINDOWS)
+static void process_keyboard(
 	struct Process_keyboard_data *process_keyboard_data
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-	XtPointer process_keyboard_data_void,int *source,XtInputId *id
+static int process_keyboard(
+	int source, void *process_keyboard_data_void
 #endif /* defined (MOTIF) */
 	)
 {
@@ -739,7 +740,6 @@ static void process_keyboard(
 
 #if defined (MOTIF)
 	USE_PARAMETER(source);
-	USE_PARAMETER(id);
 	process_keyboard_data=
 		(struct Process_keyboard_data *)process_keyboard_data_void;
 #endif /* defined (MOTIF) */
@@ -5220,13 +5220,13 @@ static void process_keyboard(
 								unemap_calibrate(calibration_finished,(void *)report);
 								/* waiting for calibration to finish */
 #if defined (MOTIF)
-								if (application_context)
+								if (event_dispatcher)
 								{
 									while (calibrating)
 									{
 /*										printf(".");
 										fflush(stdout);*/
-										XtAppProcessEvent(application_context,XtIMAlternateInput);
+										Event_dispatcher_do_one_event(event_dispatcher);
 									}
 								}
 #endif /* defined (MOTIF) */
@@ -6194,7 +6194,7 @@ static void process_keyboard(
 							(HWND)NULL,0,
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-							application_context,
+							event_dispatcher,
 #endif /* defined (MOTIF) */
 							(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,1);
 						unemap_set_power(1);
@@ -6506,7 +6506,7 @@ static void process_keyboard(
 							(HWND)NULL,0,
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-							application_context,
+							event_dispatcher,
 #endif /* defined (MOTIF) */
 							(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,1);
 					}
@@ -6532,6 +6532,9 @@ static void process_keyboard(
 	process_keyboard_data->sampling_delay=sampling_delay;
 	process_keyboard_data->number_of_channels=number_of_channels;
 	process_keyboard_data->number_of_samples=number_of_samples;
+#if defined (MOTIF)
+	return (1);
+#endif /* defined (MOTIF) */
 } /* process_keyboard */
 
 /*
@@ -6586,7 +6589,7 @@ int main(void)
 	}
 #endif /* defined (OLD_CODE) */
 #if defined (MOTIF)
-	if (application_context=XtCreateApplicationContext())
+	if (event_dispatcher=CREATE(Event_dispatcher)())
 	{
 #endif /* defined (MOTIF) */
 		/* in case unemap hardware already running */
@@ -6598,7 +6601,7 @@ int main(void)
 			(HWND)NULL,0,
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-			application_context,
+			event_dispatcher,
 #endif /* defined (MOTIF) */
 			(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,1)&&
 			unemap_get_sampling_frequency(&sampling_frequency)&&
@@ -6617,14 +6620,14 @@ int main(void)
 				process_keyboard_data.number_of_channels=number_of_channels;
 				process_keyboard_data.number_of_samples=number_of_samples;
 #if defined (MOTIF)
-				if (XtAppAddInput(application_context,fileno(stdin),
-					(XtPointer)XtInputReadMask,process_keyboard,
-					(XtPointer)&process_keyboard_data))
+				if (Event_dispatcher_add_file_descriptor_handler(
+					event_dispatcher, fileno(stdin),
+					process_keyboard, &process_keyboard_data))
 				{
 #endif /* defined (MOTIF) */
 					print_menu(channel_number,number_of_channels);
 #if defined (MOTIF)
-					XtAppMainLoop(application_context);
+					Event_dispatcher_main_loop(event_dispatcher);
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 					while (1)
