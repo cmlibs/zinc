@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -984,7 +984,7 @@ Function pops down dialog as a response,
 	}
 	else
 	{
-		display_message(WARNING_MESSAGE,"Node_tool_close_CB.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"Node_tool_close_CB.  Invalid argument(s)");
 	}
 	LEAVE;
 } /* Node_tool_close_CB */
@@ -1552,7 +1552,7 @@ for passing to an Interactive_toolbar.
 static Widget Node_tool_make_interactive_tool_button(
 	void *node_tool_void,Widget parent)
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Fetches a ToggleButton with an appropriate icon for the interactive tool
@@ -1568,8 +1568,7 @@ and as a child of <parent>.
 	widget=(Widget)NULL;
 	if ((node_tool=(struct Node_tool *)node_tool_void)&&parent)
 	{
-		if (MrmOpenHierarchy_base64_string(node_tool_uidh,
-			&node_tool_hierarchy,&node_tool_hierarchy_open))
+		if (node_tool_hierarchy_open)
 		{
 			if (node_tool->use_data)
 			{
@@ -1586,14 +1585,14 @@ and as a child of <parent>.
 			}
 			else
 			{
-				display_message(WARNING_MESSAGE,
+				display_message(ERROR_MESSAGE,
 					"Node_tool_make_interactive_tool_button.  Could not fetch widget");
 			}
 		}
 		else
 		{
-			display_message(WARNING_MESSAGE,
-				"Node_tool_make_interactive_tool_button.  Could not open heirarchy");
+			display_message(ERROR_MESSAGE,
+				"Node_tool_make_interactive_tool_button.  Heirarchy not open");
 		}
 	}
 	else
@@ -1690,11 +1689,6 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				node_tool->rubber_band_material=
 					ACCESS(Graphical_material)(rubber_band_material);
 				node_tool->user_interface=user_interface;
-
-				node_tool->scene_picked_object=(struct Scene_picked_object *)NULL;
-				node_tool->last_picked_node=(struct FE_node *)NULL;
-				node_tool->gt_element_group=(struct GT_element_group *)NULL;
-				node_tool->gt_element_settings=(struct GT_element_settings *)NULL;
 				/* user-settable flags */
 				node_tool->motion_update_enabled=1;
 				node_tool->select_enabled=1;
@@ -1728,6 +1722,10 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 					node_tool->interactive_tool,
 					node_tool->interactive_tool_manager);
+				node_tool->scene_picked_object=(struct Scene_picked_object *)NULL;
+				node_tool->last_picked_node=(struct FE_node *)NULL;
+				node_tool->gt_element_group=(struct GT_element_group *)NULL;
+				node_tool->gt_element_settings=(struct GT_element_settings *)NULL;
 				node_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
 				node_tool->rubber_band=(struct GT_object *)NULL;
 				/* initialise widgets */
@@ -1761,8 +1759,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 					XmAddWMProtocolCallback(node_tool->window_shell,
 						WM_DELETE_WINDOW,Node_tool_close_CB,node_tool);
 					/* Register the shell with the busy signal list */
-					create_Shell_list_item(&(node_tool->window_shell),
-						user_interface);
+					create_Shell_list_item(&(node_tool->window_shell),user_interface);
 					/* register the callbacks */
 					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
 						node_tool_hierarchy,callback_list,XtNumber(callback_list)))
@@ -1770,8 +1767,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 						/* assign and register the identifiers */
 						identifier_list[0].value=(XtPointer)node_tool;
 						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
-							node_tool_hierarchy,identifier_list,
-							XtNumber(identifier_list)))
+							node_tool_hierarchy,identifier_list,XtNumber(identifier_list)))
 						{
 							/* fetch node tool widgets */
 							if (MrmSUCCESS==MrmFetchWidget(node_tool_hierarchy,
@@ -2461,7 +2457,7 @@ Destroys all the nodes in <node_list> that are not accessed outside
 <node_manager>, the groups in <node_group_manager> and <node_selection>.
 Nodes in use by elements in the <element_manager> cannot be destroyed so are
 immediately ruled out in order to keep them in the node groups and selection.
-<node_group_manager>, <element_manager> and <node_selection> are optional.
+<node_group_manager> and <node_selection> are optional.
 Upon return <node_list> contains all the nodes that could not be destroyed.
 ???RC Should really be in its own module.
 ==============================================================================*/
@@ -2558,10 +2554,11 @@ Upon return <node_list> contains all the nodes that could not be destroyed.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_destroy_nodes.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"destroy_listed_nodes.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* destroy_listed_nodes */
+
