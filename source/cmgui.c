@@ -628,7 +628,6 @@ Main program for the CMISS Graphical User Interface
 	struct Coordinate_system rect_coord_system,temp_coordinate_system;
 	struct Execute_command *execute_command, *set_command;
 	struct FE_field *fe_field;
-	struct FE_time *fe_time;
 	struct Graphical_material *default_selected_material;
 	struct GT_object *glyph, *mirror_glyph;
 	struct MANAGER(Computed_field) *computed_field_manager;
