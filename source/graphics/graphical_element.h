@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.h
 
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 Graphical element group data structure.
@@ -103,6 +103,25 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 ==============================================================================*/
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(GT_element_group);
+
+int GT_element_group_begin_cache(struct GT_element_group *gt_element_group);
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+Call before making several changes to the gt_element_group so only a single
+change message is sent. Call GT_element_group_end_cache at the end of the
+changes.
+==============================================================================*/
+
+int GT_element_group_end_cache(struct GT_element_group *gt_element_group);
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+Call after making changes preceded by a call to GT_element_group_begin_cache to
+enable a final message to be sent to clients.
+==============================================================================*/
 
 int GT_element_group_add_callback(struct GT_element_group *GT_element_group, 
 	GT_element_group_callback callback, void *user_data);
@@ -246,17 +265,6 @@ is not NULL and is element-based in a given element, its native discretization
 is used in preference to the global element_discretization.
 ==============================================================================*/
 
-int GT_element_group_build_graphics_objects(
-	struct GT_element_group *gt_element_group,struct FE_element *changed_element,
-	struct FE_node *changed_node);
-/*******************************************************************************
-LAST MODIFIED : 12 June 1998
-
-DESCRIPTION :
-Adds or edits a graphics object for each settings in <gt_element_group> without
-a graphics object or affected by <changed_element> or <changed_node>.
-==============================================================================*/
-
 int GT_element_group_copy(struct GT_element_group *destination,
 	struct GT_element_group *source);
 /*******************************************************************************
@@ -360,15 +368,6 @@ DESCRIPTION :
 Wrapper for accessing the list of settings in <gt_element_group>.
 ==============================================================================*/
 
-int GT_element_group_changed(struct GT_element_group *gt_element_group);
-/*******************************************************************************
-LAST MODIFIED : 6 July 1999
-
-DESCRIPTION :
-External modules that change a GT_element_group should call this routine so that
-objects interested in this GT_element_group will be notified that is has changed.
-==============================================================================*/
-
 int GT_element_group_time_changed(struct GT_element_group *gt_element_group);
 /*******************************************************************************
 LAST MODIFIED : 25 October 2000
@@ -377,44 +376,35 @@ DESCRIPTION :
 Invalidate any components of a GT_element group that depend on time
 ==============================================================================*/
 
-int GT_element_group_clear_changed(struct GT_element_group *gt_element_group);
+int GT_element_group_has_embedded_field(
+	struct GT_element_group *gt_element_group,
+	struct LIST(FE_element) *changed_element_list,
+	struct LIST(FE_node) *changed_node_list);
 /*******************************************************************************
-LAST MODIFIED : 17 June 1998
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
-Clears the changed flag in <gt_element_group>. The flag can subsequently be
-checked with GT_element_group_has_changed to see whether the display list for
-the graphics object enclosing <gt_element_group> needs updating. Once it is
-updated, this routine should be called.
+Returns true if <gt_element_group> contains settings which use embedded fields
+which are affected by the <changed_node> or <changed_element>.
+If <changed_element_list> and <changed_node_list> are both NULL then this
+returns true if the group contains any settings using embedded fields.
 ==============================================================================*/
 
-int GT_element_group_has_changed(struct GT_element_group *gt_element_group);
-/*******************************************************************************
-LAST MODIFIED : 17 June 1998
-
-DESCRIPTION :
-Returns true if <gt_element_group> is flagged as having been changed.
-See also GT_element_group_clear_changed.
-==============================================================================*/
-
-int GT_element_group_has_embedded_field(struct GT_element_group *gt_element_group,
-	struct FE_element *changed_element, struct FE_node *changed_node);
-/*******************************************************************************
-LAST MODIFIED : 28 April 1999
-
-DESCRIPTION :
-Returns true if <gt_element_group> contains settings which use embedded fields which
-are affected by the <changed_node> or <changed_element>.
-If <changed_node> and <changed_element> are both NULL then this returns true 
-if the group contains any settings using embedded fields.
-==============================================================================*/
-
-int GT_element_group_has_multiple_times(struct GT_element_group *gt_element_group);
+int GT_element_group_has_multiple_times(
+	struct GT_element_group *gt_element_group);
 /*******************************************************************************
 LAST MODIFIED : 25 October 2000
 
 DESCRIPTION :
 Returns true if <gt_element_group> contains settings which depend on time.
+==============================================================================*/
+
+int build_GT_element_group(struct GT_element_group *gt_element_group);
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION :
+Builds any graphics objects for settings without them in <gt_element_group>.
 ==============================================================================*/
 
 int compile_GT_element_group(struct GT_element_group *gt_element_group,
@@ -434,4 +424,30 @@ LAST MODIFIED : 5 July 1999
 
 DESCRIPTION :
 ==============================================================================*/
+
+int GT_element_group_Graphical_material_change(
+	struct GT_element_group *gt_element_group,
+	struct LIST(Graphical_material) *changed_material_list);
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+NOTE: TEMPORARY UNTIL GRAPHICAL ELEMENTS RECEIVE THEIR OWN MATERIAL MESSAGES.
+If any of the settings in <gt_element_group> use materials with spectrums in the
+<changed_material_list>, clear their graphics objects and call
+GT_element_group_changed.
+==============================================================================*/
+
+int GT_element_group_Spectrum_change(struct GT_element_group *gt_element_group,
+	struct LIST(Spectrum) *changed_spectrum_list);
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+NOTE: TEMPORARY UNTIL GRAPHICAL ELEMENTS RECEIVE THEIR OWN SPECTRUM MESSAGES.
+If any of the settings in <gt_element_group> use spectrums in the
+<changed_spectrum_list>, clear their graphics objects and call
+GT_element_group_changed.
+==============================================================================*/
+
 #endif /* !defined (GRAPHICAL_ELEMENT_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.c
 
-LAST MODIFIED : 18 October 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -25,6 +25,7 @@ DESCRIPTION :
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 #include "user_interface/message.h"
+
 /*
 Module types
 ------------
@@ -39,7 +40,7 @@ struct GT_element_group_callback_data
 
 struct GT_element_group
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 5 June 2001
 
 DESCRIPTION :
 Structure for maintaining a graphical rendition of an element group.
@@ -55,7 +56,7 @@ Structure for maintaining a graphical rendition of an element group.
 	/* settings shared by whole rendition */
 	/* curve approximation with line segments over elements */
 	struct Element_discretization element_discretization;
-	/* number of segments used around cylinders and later spheres */
+	/* number of segments used around cylinders */
 	int circle_discretization;
 	/* default coordinate field for graphics drawn with settings below */
 	struct Computed_field *default_coordinate_field;
@@ -81,12 +82,24 @@ Structure for maintaining a graphical rendition of an element group.
 	struct MANAGER(Computed_field) *computed_field_manager;
 	void *computed_field_manager_callback_id;
 
+	/* storage for identifiers of nodes and elements that have changed --
+		 for partial updates of graphics when editing */
+	struct Multi_range *element_ranges, *node_ranges;
+
 	/* global stores of selected objects for automatic highlighting */
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *data_selection,*node_selection;
-	/* flag storing whether the GT_element_group has changed since last cleared */
-	int changed;
+
+	/* level of cache in effect */
+	int cache;
+	/* flag indicating that graphics objects in graphical element need building */
+	int build;
+	/* display list identifier for the graphical_element */
+	GLuint display_list;
+	/* flag indicating the status of the display_list */
+	int display_list_current;
+
 	/* for accessing objects */
 	int access_count;
 }; /* struct GT_element_group */
@@ -96,10 +109,257 @@ Module functions
 ----------------
 */
 
+static int GT_element_group_inform_clients(
+	struct GT_element_group *gt_element_group)
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+If changes have been made to <gt_element_group>, as indicated by its build flag
+being set, sends a callback to all registered clients.
+==============================================================================*/
+{
+	int return_code;
+	struct GT_element_group_callback_data *callback_data;
+
+	ENTER(GT_element_group_inform_clients);
+	if (gt_element_group)
+	{
+		if (gt_element_group->build)
+		{
+			callback_data = gt_element_group->update_callback_list;
+			while(callback_data)
+			{
+				(callback_data->callback)(gt_element_group,
+					callback_data->callback_user_data);
+				callback_data = callback_data->next;
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_inform_clients.  Invalid GT_element_group");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_inform_clients */
+
+static int GT_element_group_changed(struct GT_element_group *gt_element_group)
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+External modules that change a GT_element_group should call this routine so that
+objects interested in this GT_element_group will be notified that is has
+changed.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_group_changed);
+	if (gt_element_group)
+	{
+		/* mark graphical_element as needing a build */
+		gt_element_group->build = 1;
+		/* mark display list as not current */
+		gt_element_group->display_list_current = 0;
+		/* inform clients only if caching is off */
+		if (0 == gt_element_group->cache)
+		{
+			GT_element_group_inform_clients(gt_element_group);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_changed. Invalid GT_element_group");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_changed */
+
+static int GT_element_group_build_graphics_objects(
+	struct GT_element_group *gt_element_group,
+	struct LIST(FE_element) *changed_element_list,
+	struct LIST(FE_node) *changed_node_list)
+/*******************************************************************************
+LAST MODIFIED : 5 June 2001
+
+DESCRIPTION :
+Builds graphics objects for all settings in <gt_element_group> that do not have
+them. If either or both of <changed_element_list> nor <changed_node_list> are
+supplied, additionally updates all existing graphics objects affected by the
+changes, automatically expanding changed_element_list to include elements
+affected by changes to parent elements as well as to nodes.
+Does NOT call GT_element_group_changed as rebuilding is done just-in-time for
+rendering.
+==============================================================================*/
+{
+	int return_code;
+	struct Element_discretization element_discretization;
+	struct FE_element_list_FE_node_list_data	element_list_node_list_data;
+	struct GT_element_settings_to_graphics_object_data settings_to_object_data;
+
+	ENTER(GT_element_group_build_graphics_objects);
+	if (gt_element_group)
+	{
+		/*???debug*//*printf("Graphical_element: build graphics objects\n");*/
+		if (settings_to_object_data.default_rc_coordinate_field=
+			Computed_field_begin_wrap_coordinate_field(
+				gt_element_group->default_coordinate_field))
+		{
+			settings_to_object_data.build_graphics = 1;
+			if (changed_node_list || changed_element_list)
+			{
+				/* do not build new graphics; only edit. Need to rebuild for elements
+					 affected by node changes and faces affected by element changes */
+				settings_to_object_data.changed_node_list = changed_node_list;
+				settings_to_object_data.changed_element_list =
+					CREATE(LIST(FE_element))();
+				if (changed_element_list)
+				{
+					/* put all the changes elements and their faces in the new list */
+					FOR_EACH_OBJECT_IN_LIST(FE_element)(add_FE_element_and_faces_to_list,
+						(void *)settings_to_object_data.changed_element_list,
+						changed_element_list);
+				}
+				if (changed_node_list)
+				{
+					/* put all elements and faces from group using the changed nodes into
+						 the changed_element_list */
+					element_list_node_list_data.element_list =
+						settings_to_object_data.changed_element_list;
+					element_list_node_list_data.node_list = changed_node_list;
+					/* Note: add_FE_element_using_node_list_to_list is most efficient if
+						 elements are ordered with CM_ELEMENT first, then CM_FACE, then
+						 CM_LINE. Luckily, this is the case */
+					FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+						add_FE_element_using_node_list_to_list,
+						(void *)&element_list_node_list_data,
+						gt_element_group->element_group);
+				}
+			}
+			else
+			{
+				/* build new graphics */
+				settings_to_object_data.changed_node_list =
+					(struct LIST(FE_node) *)NULL;
+				settings_to_object_data.changed_element_list =
+					(struct LIST(FE_element) *)NULL;
+			}
+			settings_to_object_data.rc_coordinate_field =
+				(struct Computed_field *)NULL;
+			settings_to_object_data.wrapper_orientation_scale_field =
+				(struct Computed_field *)NULL;
+			settings_to_object_data.native_discretization_field =
+				gt_element_group->native_discretization_field;
+			settings_to_object_data.element_group = gt_element_group->element_group;
+			settings_to_object_data.node_group = gt_element_group->node_group;
+			settings_to_object_data.data_group = gt_element_group->data_group;
+			element_discretization.number_in_xi1 =
+				gt_element_group->element_discretization.number_in_xi1;
+			element_discretization.number_in_xi2 =
+				gt_element_group->element_discretization.number_in_xi2;
+			element_discretization.number_in_xi3 =
+				gt_element_group->element_discretization.number_in_xi3;
+			settings_to_object_data.element_discretization = &element_discretization;
+			settings_to_object_data.circle_discretization =
+				gt_element_group->circle_discretization;
+
+			settings_to_object_data.selected_element_point_ranges_list =
+				Element_point_ranges_selection_get_element_point_ranges_list(
+					gt_element_group->element_point_ranges_selection);
+			settings_to_object_data.selected_element_list =
+				FE_element_selection_get_element_list(
+					gt_element_group->element_selection);
+			settings_to_object_data.selected_data_list =
+				FE_node_selection_get_node_list(gt_element_group->data_selection);
+			settings_to_object_data.selected_node_list =
+				FE_node_selection_get_node_list(gt_element_group->node_selection);
+			return_code = FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+				GT_element_settings_to_graphics_object,(void *)&settings_to_object_data,
+				gt_element_group->list_of_settings);
+			/* destroy list created above */
+			Computed_field_end_wrap(
+				&settings_to_object_data.default_rc_coordinate_field);
+			if (settings_to_object_data.changed_element_list)
+			{
+				DESTROY(LIST(FE_element))(
+					&(settings_to_object_data.changed_element_list));
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"GT_element_group_build_graphics_objects.  "
+				"Could not get default_rc_coordinate_field wrapper");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"GT_element_group_build_graphics_objects.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_build_graphics_objects */
+
+int FE_element_number_to_GT_element_group_element_ranges(
+	struct FE_element *element, void *gt_element_group_void)
+/*******************************************************************************
+LAST MODIFIED : 5 June 2001
+
+DESCRIPTION :
+Iterator function for adding the number of <element> to the element_ranges in
+<gt_element_group> - iff the element is in its element_group. The number is
+obtained with CM_element_information_to_graphics_name.
+==============================================================================*/
+{
+	int element_number, return_code;
+	struct GT_element_group *gt_element_group;
+
+	ENTER(FE_element_number_to_GT_element_group_element_ranges);
+	if (element &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
+	{
+		if (IS_OBJECT_IN_GROUP(FE_element)(element,
+			gt_element_group->element_group))
+		{
+			element_number =
+				CM_element_information_to_graphics_name(element->identifier);
+			return_code = Multi_range_add_range(gt_element_group->element_ranges,
+				element_number, element_number);
+		}
+		else
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_number_to_GT_element_group_element_ranges.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_number_to_GT_element_group_element_ranges */
+
 static void GT_element_group_element_change(
 	struct MANAGER_MESSAGE(FE_element) *message,void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 One or several of the nodes have changed in the manager. If any changes affect
@@ -109,50 +369,56 @@ this <gt_element_group>, affected graphics are updated.
 	struct GT_element_group *gt_element_group;
 
 	ENTER(GT_element_group_element_change);
-	if (message&&
-		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	if (message &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(FE_element):
-			{
-				/* all graphics using elements need rebuilding */
-				for_each_settings_in_GT_element_group(gt_element_group,
-					GT_element_settings_element_change,(void *)NULL);
-				GT_element_group_build_graphics_objects(gt_element_group,
-					(struct FE_element *)NULL,(struct FE_node *)NULL);
-			} break;
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_element):
 			case MANAGER_CHANGE_OBJECT(FE_element):
 			case MANAGER_CHANGE_IDENTIFIER(FE_element):
 			{
-				/*???RC not very efficient for change of identifier, but this seldom
-					happens and must cause some graphics to be rebuilt sometimes */
-				if (IS_OBJECT_IN_GROUP(FE_element)(message->object_changed,
-					gt_element_group->element_group))
+				GT_element_group_begin_cache(gt_element_group);
+				/* Check to see if any embedded fields are affected by this
+					 element change. If so rebuild all graphics using them */
+				if (GT_element_group_has_embedded_field(gt_element_group,
+					message->changed_object_list, (struct LIST(FE_node) *)NULL))
 				{
-					/* regenerate those graphics affected by changed element */
-					GT_element_group_build_graphics_objects(gt_element_group,
-						message->object_changed,(struct FE_node *)NULL);
+					FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+						GT_element_settings_remove_graphics_object_if_embedded_field,
+						(void *)NULL, gt_element_group->list_of_settings);
+					GT_element_group_changed(gt_element_group);
 				}
-				else
+				/* check if any elements in the changed_object_list are in this group */
+				if (FIRST_OBJECT_IN_LIST_THAT(FE_element)(FE_element_is_in_group,
+					(void *)gt_element_group->element_group,
+					message->changed_object_list))
 				{
-					/* Check to see if any embedded fields are affected by this
-						 element change */
-					if (GT_element_group_has_embedded_field(gt_element_group,
-						message->object_changed, (struct FE_node *)NULL))
+					/* note must rebuild objects completely if identifiers change since
+						 graphics are tagged for editing with the old identifiers.
+						 Even when identifiers have not changed, only edit graphics if less
+						 than half the number of elements in this group have been modified
+						 overall, otherwise determining what has changed can be expensive */
+					if ((MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_element) !=
+						message->change) ||
+						(2*NUMBER_IN_LIST(FE_element)(message->changed_object_list) >
+							NUMBER_IN_GROUP(FE_element)(gt_element_group->element_group)) ||
+						(!FOR_EACH_OBJECT_IN_LIST(FE_element)(
+							FE_element_number_to_GT_element_group_element_ranges,
+							gt_element_group_void, message->changed_object_list)))
 					{
-						/* rebuild those graphics objects with embedded fields */
-						for_each_settings_in_GT_element_group(gt_element_group,
-							GT_element_settings_remove_graphics_object_if_embedded_field,
-							(void *)NULL);
-						GT_element_group_build_graphics_objects(gt_element_group,
-							(struct FE_element *)NULL,(struct FE_node *)NULL);
+						/* mark all graphics using elements as needing rebuilding when
+							 requested by the scene */
+						FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+							GT_element_settings_element_change, (void *)NULL,
+							gt_element_group->list_of_settings);
 					}
+					GT_element_group_changed(gt_element_group);
 				}
+				GT_element_group_end_cache(gt_element_group);
 			} break;
 			case MANAGER_CHANGE_ADD(FE_element):
-			case MANAGER_CHANGE_DELETE(FE_element):
+			case MANAGER_CHANGE_REMOVE(FE_element):
 			{
 				/* do nothing */
 			} break;
@@ -170,7 +436,7 @@ static void GT_element_group_element_group_change(
 	struct MANAGER_MESSAGE(GROUP(FE_element)) *message,
 	void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 1 June 2000
 
 DESCRIPTION :
 One or several of the element groups have changed in the manager. If the
@@ -182,26 +448,28 @@ destroy GT_element_groups - including this one. Hence, ignore them here.
 	struct GT_element_group *gt_element_group;
 
 	ENTER(GT_element_group_element_group_change);
-	if (message&&
-		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	if (message &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(GROUP(FE_element)):
 			case MANAGER_CHANGE_OBJECT(GROUP(FE_element)):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_element)):
 			{
-				if ((!message->object_changed) ||
-					(gt_element_group->element_group==message->object_changed))
+				if (IS_OBJECT_IN_LIST(GROUP(FE_element))(
+					gt_element_group->element_group, message->changed_object_list))
 				{
-					for_each_settings_in_GT_element_group(gt_element_group,
-						GT_element_settings_element_change,(void *)NULL);
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
+					/* mark all graphics using elements as needing rebuilding when
+						 requested by the scene */
+					FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+						GT_element_settings_element_change, (void *)NULL,
+						gt_element_group->list_of_settings);
+					/* notify clients of the change */
+					GT_element_group_changed(gt_element_group);
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(GROUP(FE_element)):
-			case MANAGER_CHANGE_DELETE(GROUP(FE_element)):
+			case MANAGER_CHANGE_REMOVE(GROUP(FE_element)):
 			case MANAGER_CHANGE_IDENTIFIER(GROUP(FE_element)):
 			{
 				/* do nothing */
@@ -216,10 +484,49 @@ destroy GT_element_groups - including this one. Hence, ignore them here.
 	LEAVE;
 } /* GT_element_group_element_group_change */
 
+int FE_node_number_to_GT_element_group_node_ranges(struct FE_node *node,
+	void *gt_element_group_void)
+/*******************************************************************************
+LAST MODIFIED : 5 June 2001
+
+DESCRIPTION :
+Iterator function for adding the number of <node> to the node_ranges in
+<gt_element_group> - iff the node is in its node_group.
+==============================================================================*/
+{
+	int node_number, return_code;
+	struct GT_element_group *gt_element_group;
+
+	ENTER(FE_node_number_to_GT_element_group_node_ranges);
+	if (node &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
+	{
+		if (IS_OBJECT_IN_GROUP(FE_node)(node, gt_element_group->node_group))
+		{
+			node_number = get_FE_node_cm_node_identifier(node);
+			return_code = Multi_range_add_range(gt_element_group->node_ranges,
+				node_number, node_number);
+		}
+		else
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_number_to_GT_element_group_node_ranges.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_number_to_GT_element_group_node_ranges */
+
 static void GT_element_group_node_change(
 	struct MANAGER_MESSAGE(FE_node) *message,void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 One or several of the nodes have changed in the manager. If any changes affect
@@ -229,50 +536,55 @@ this <gt_element_group>, affected graphics are updated.
 	struct GT_element_group *gt_element_group;
 
 	ENTER(GT_element_group_node_change);
-	if (message&&
-		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	if (message &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(FE_node):
-			{
-				/* rebuild all graphics for gt_element_group */
-				for_each_settings_in_GT_element_group(gt_element_group,
-					GT_element_settings_remove_graphics_object,(void *)NULL);
-				GT_element_group_build_graphics_objects(gt_element_group,
-					(struct FE_element *)NULL,(struct FE_node *)NULL);
-			} break;
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
 			case MANAGER_CHANGE_OBJECT(FE_node):
 			case MANAGER_CHANGE_IDENTIFIER(FE_node):
 			{
-				/*???RC not very efficient for change of identifier, but this seldom
-					happens and must cause some graphics to be rebuilt sometimes */
-				if (IS_OBJECT_IN_GROUP(FE_node)(message->object_changed,
-					gt_element_group->node_group))
+				GT_element_group_begin_cache(gt_element_group);
+				/* Check to see if any embedded fields are affected by this
+					 node change. If so rebuild all graphics using them */
+				if (GT_element_group_has_embedded_field(gt_element_group,
+					(struct LIST(FE_element) *)NULL, message->changed_object_list))
 				{
-					/* rebuild those graphics affected by changed node */
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,message->object_changed);
+					FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+						GT_element_settings_remove_graphics_object_if_embedded_field,
+						(void *)NULL, gt_element_group->list_of_settings);
+					GT_element_group_changed(gt_element_group);
 				}
-				else
+				/* check if any nodes in the changed_object_list are in this group */
+				if (FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_is_in_group,
+					(void *)gt_element_group->node_group, message->changed_object_list))
 				{
-					/* Check to see if any embedded fields are affected by this
-						 node change */
-					if (GT_element_group_has_embedded_field(gt_element_group,
-						(struct FE_element *)NULL, message->object_changed))
+					/* note must rebuild objects completely if identifiers change since
+						 graphics are tagged for editing with the old identifiers.
+						 Even when identifiers have not changed, only edit graphics if less
+						 than half the number of nodes in this group have been modified
+						 overall, otherwise determining what has changed can be expensive */
+					if ((MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node) !=
+						message->change) ||
+						(2*NUMBER_IN_LIST(FE_node)(message->changed_object_list) >
+							NUMBER_IN_GROUP(FE_node)(gt_element_group->node_group)) ||
+						(!FOR_EACH_OBJECT_IN_LIST(FE_node)(
+							FE_node_number_to_GT_element_group_node_ranges,
+							gt_element_group_void, message->changed_object_list)))
 					{
-						/* rebuild those graphics objects with embedded fields */
-						for_each_settings_in_GT_element_group(gt_element_group,
-							GT_element_settings_remove_graphics_object_if_embedded_field,
-							(void *)NULL);
-						GT_element_group_build_graphics_objects(gt_element_group,
-							(struct FE_element *)NULL,(struct FE_node *)NULL);
+						/* mark all graphics using nodes as needing rebuilding when
+							 requested by the scene */
+						FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+							GT_element_settings_node_change, (void *)NULL,
+							gt_element_group->list_of_settings);
 					}
+					GT_element_group_changed(gt_element_group);
 				}
+				GT_element_group_end_cache(gt_element_group);
 			} break;
 			case MANAGER_CHANGE_ADD(FE_node):
-			case MANAGER_CHANGE_DELETE(FE_node):
+			case MANAGER_CHANGE_REMOVE(FE_node):
 			{
 				/* do nothing */
 			} break;
@@ -289,7 +601,7 @@ this <gt_element_group>, affected graphics are updated.
 static void GT_element_group_node_group_change(
 	struct MANAGER_MESSAGE(GROUP(FE_node)) *message,void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
 One or several of the node groups have changed in the manager. If the node_group
@@ -299,26 +611,27 @@ for <gt_element_group> has changed, affected graphics are updated.
 	struct GT_element_group *gt_element_group;
 
 	ENTER(GT_element_group_node_group_change);
-	if (message&&
-		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	if (message &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(GROUP(FE_node)):
 			case MANAGER_CHANGE_OBJECT(GROUP(FE_node)):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_node)):
 			{
-				if ((!message->object_changed) ||
-					(gt_element_group->node_group==message->object_changed))
+				if (IS_OBJECT_IN_LIST(GROUP(FE_node))(
+					gt_element_group->node_group, message->changed_object_list))
 				{
-					for_each_settings_in_GT_element_group(gt_element_group,
-						GT_element_settings_node_change,(void *)NULL);
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
+					/* mark all graphics made from nodes (but not elements using the
+						 nodes) as needing rebuilding when requested by the scene */
+					FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+						GT_element_settings_node_group_change, (void *)NULL,
+						gt_element_group->list_of_settings);
+					GT_element_group_changed(gt_element_group);
 				}
 			} break;
-			case MANAGER_CHANGE_DELETE(GROUP(FE_node)):
 			case MANAGER_CHANGE_ADD(GROUP(FE_node)):
+			case MANAGER_CHANGE_REMOVE(GROUP(FE_node)):
 			case MANAGER_CHANGE_IDENTIFIER(GROUP(FE_node)):
 			{
 				/* do nothing */
@@ -336,7 +649,7 @@ for <gt_element_group> has changed, affected graphics are updated.
 static void GT_element_group_computed_field_change(
 	struct MANAGER_MESSAGE(Computed_field) *message,void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 One or more of the computed_fields have changed in the manager.
@@ -344,33 +657,31 @@ Updates any graphics affected by the change.
 ==============================================================================*/
 {
 	struct GT_element_group *gt_element_group;
-	struct GT_element_settings_computed_field_change_data change_data;
+	struct GT_element_settings_Computed_field_change_data change_data;
 
 	ENTER(GT_element_group_computed_field_change);
-	if (message&&
-		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	if (message &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(Computed_field):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field):
 			case MANAGER_CHANGE_OBJECT(Computed_field):
 			{
-				change_data.rebuild_graphics=0;
-				change_data.changed_field=message->object_changed;
-				change_data.default_coordinate_field=
+				change_data.rebuild_graphics = 0;
+				change_data.default_coordinate_field =
 					gt_element_group->default_coordinate_field;
+				change_data.changed_field_list = message->changed_object_list;
 				FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-					GT_element_settings_computed_field_change,(void *)&change_data,
+					GT_element_settings_Computed_field_change, (void *)&change_data,
 					gt_element_group->list_of_settings);
 				if (change_data.rebuild_graphics)
 				{
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
+					GT_element_group_changed(gt_element_group);
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(Computed_field):
-			case MANAGER_CHANGE_DELETE(Computed_field):
+			case MANAGER_CHANGE_REMOVE(Computed_field):
 			case MANAGER_CHANGE_IDENTIFIER(Computed_field):
 			{
 				/* do nothing */
@@ -388,7 +699,7 @@ Updates any graphics affected by the change.
 static void GT_element_group_data_change(
 	struct MANAGER_MESSAGE(FE_node) *message,void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 1 June 2001
 
 DESCRIPTION :
 One or several of the nodes have changed in the manager. If any changes affect
@@ -398,36 +709,28 @@ this <gt_element_group>, affected graphics are updated.
 	struct GT_element_group *gt_element_group;
 
 	ENTER(GT_element_group_data_change);
-	if (message&&
-		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	if (message &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(FE_node):
-			{
-				/* rebuild all graphics for gt_element_group */
-				/*???RC rebuild all for a data change? */
-				for_each_settings_in_GT_element_group(gt_element_group,
-					GT_element_settings_remove_graphics_object,(void *)NULL);
-				GT_element_group_build_graphics_objects(gt_element_group,
-					(struct FE_element *)NULL,(struct FE_node *)NULL);
-			} break;
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
 			case MANAGER_CHANGE_OBJECT(FE_node):
+			case MANAGER_CHANGE_IDENTIFIER(FE_node):
 			{
-				if (IS_OBJECT_IN_GROUP(FE_node)(message->object_changed,
-					gt_element_group->data_group))
+				/* check if any data in the group have been modified */
+				if (FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_is_in_group,
+					(void *)gt_element_group->data_group, message->changed_object_list))
 				{
 					/* rebuild those graphics affected by changed data */
-					for_each_settings_in_GT_element_group(gt_element_group,
-						GT_element_settings_data_change,(void *)NULL);
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
+					FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+						GT_element_settings_data_change, (void *)NULL,
+						gt_element_group->list_of_settings);
+					GT_element_group_changed(gt_element_group);
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(FE_node):
-			case MANAGER_CHANGE_DELETE(FE_node):
-			case MANAGER_CHANGE_IDENTIFIER(FE_node):
+			case MANAGER_CHANGE_REMOVE(FE_node):
 			{
 				/* do nothing */
 			} break;
@@ -444,7 +747,7 @@ this <gt_element_group>, affected graphics are updated.
 static void GT_element_group_data_group_change(
 	struct MANAGER_MESSAGE(GROUP(FE_node)) *message,void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 1 June 2001
 
 DESCRIPTION :
 One or several of the node groups have changed in the manager. If the data_group
@@ -454,26 +757,25 @@ for <gt_element_group> has changed, affected graphics are updated.
 	struct GT_element_group *gt_element_group;
 
 	ENTER(GT_element_group_data_group_change);
-	if (message&&
-		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	if (message &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(GROUP(FE_node)):
 			case MANAGER_CHANGE_OBJECT(GROUP(FE_node)):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_node)):
 			{
-				if ((!message->object_changed) ||
-					(gt_element_group->data_group==message->object_changed))
+				if (IS_OBJECT_IN_LIST(GROUP(FE_node))(
+					gt_element_group->data_group, message->changed_object_list))
 				{
-					for_each_settings_in_GT_element_group(gt_element_group,
-						GT_element_settings_data_change,(void *)NULL);
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
+					FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+						GT_element_settings_data_change, (void *)NULL,
+						gt_element_group->list_of_settings);
+					GT_element_group_changed(gt_element_group);
 				}
 			} break;
-			case MANAGER_CHANGE_DELETE(GROUP(FE_node)):
 			case MANAGER_CHANGE_ADD(GROUP(FE_node)):
+			case MANAGER_CHANGE_REMOVE(GROUP(FE_node)):
 			case MANAGER_CHANGE_IDENTIFIER(GROUP(FE_node)):
 			{
 				/* do nothing */
@@ -493,7 +795,7 @@ static void GT_element_group_element_point_ranges_selection_change(
 	struct Element_point_ranges_selection_changes *changes,
 	void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
 Callback for change in the global element selection.
@@ -502,14 +804,14 @@ Callback for change in the global element selection.
 	struct GT_element_group *gt_element_group;
 
 	ENTER(GT_element_group_element_point_ranges_selection_change);
-	if (element_point_ranges_selection&&changes&&
-		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	if (element_point_ranges_selection && changes &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
 		/* find out if any of the changes affect elements in this group */
 		if (FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)(
 			Element_point_ranges_element_is_in_group,
 			(void *)gt_element_group->element_group,
-			changes->newly_selected_element_point_ranges_list)||
+			changes->newly_selected_element_point_ranges_list) ||
 			FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)(
 				Element_point_ranges_element_is_in_group,
 				(void *)gt_element_group->element_group,
@@ -517,10 +819,9 @@ Callback for change in the global element selection.
 		{
 			/* update the graphics to match */
 			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_selected_element_points_change,(void *)NULL,
+				GT_element_settings_selected_element_points_change, (void *)NULL,
 				gt_element_group->list_of_settings);
-			GT_element_group_build_graphics_objects(gt_element_group,
-				(struct FE_element *)NULL,(struct FE_node *)NULL);
+			GT_element_group_changed(gt_element_group);
 		}
 	}
 	else
@@ -536,7 +837,7 @@ static void GT_element_group_element_selection_change(
 	struct FE_element_selection *element_selection,
 	struct FE_element_selection_changes *changes,void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
 Callback for change in the global element selection.
@@ -545,23 +846,22 @@ Callback for change in the global element selection.
 	struct GT_element_group *gt_element_group;
 
 	ENTER(GT_element_group_element_selection_change);
-	if (element_selection&&changes&&
-		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	if (element_selection && changes &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
 		/* find out if any of the changes affect elements in this group */
 		if (FIRST_OBJECT_IN_LIST_THAT(FE_element)(FE_element_is_in_group,
 			(void *)gt_element_group->element_group,
-			changes->newly_selected_element_list)||
+			changes->newly_selected_element_list) ||
 			FIRST_OBJECT_IN_LIST_THAT(FE_element)(FE_element_is_in_group,
 				(void *)gt_element_group->element_group,
 				changes->newly_unselected_element_list))
 		{
 			/* update the graphics to match */
 			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_selected_elements_change,(void *)NULL,
+				GT_element_settings_selected_elements_change, (void *)NULL,
 				gt_element_group->list_of_settings);
-			GT_element_group_build_graphics_objects(gt_element_group,
-				(struct FE_element *)NULL,(struct FE_node *)NULL);
+			GT_element_group_changed(gt_element_group);
 		}
 	}
 	else
@@ -576,7 +876,7 @@ static void GT_element_group_node_selection_change(
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection_changes *changes,void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
 Callback for change in the global node selection.
@@ -585,22 +885,21 @@ Callback for change in the global node selection.
 	struct GT_element_group *gt_element_group;
 
 	ENTER(GT_element_group_node_selection_change);
-	if (node_selection&&changes&&
-		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	if (node_selection && changes &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
 		/* find out if any of the changes affect nodes in this group */
 		if (FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_is_in_group,
-			(void *)gt_element_group->node_group,changes->newly_selected_node_list)||
+			(void *)gt_element_group->node_group,changes->newly_selected_node_list) ||
 			FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_is_in_group,
 				(void *)gt_element_group->node_group,
 				changes->newly_unselected_node_list))
 		{
 			/* update the graphics to match */
 			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_selected_nodes_change,(void *)NULL,
+				GT_element_settings_selected_nodes_change, (void *)NULL,
 				gt_element_group->list_of_settings);
-			GT_element_group_build_graphics_objects(gt_element_group,
-				(struct FE_element *)NULL,(struct FE_node *)NULL);
+			GT_element_group_changed(gt_element_group);
 		}
 	}
 	else
@@ -615,7 +914,7 @@ static void GT_element_group_data_selection_change(
 	struct FE_node_selection *data_selection,
 	struct FE_node_selection_changes *changes,void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
 Callback for change in the global data selection.
@@ -624,22 +923,21 @@ Callback for change in the global data selection.
 	struct GT_element_group *gt_element_group;
 
 	ENTER(GT_element_group_data_selection_change);
-	if (data_selection&&changes&&
-		(gt_element_group=(struct GT_element_group *)gt_element_group_void))
+	if (data_selection && changes &&
+		(gt_element_group = (struct GT_element_group *)gt_element_group_void))
 	{
 		/* find out if any of the changes affect data in this group */
 		if (FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_is_in_group,
-			(void *)gt_element_group->data_group,changes->newly_selected_node_list)||
+			(void *)gt_element_group->data_group,changes->newly_selected_node_list) ||
 			FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_is_in_group,
 				(void *)gt_element_group->data_group,
 				changes->newly_unselected_node_list))
 		{
 			/* update the graphics to match */
 			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_selected_data_change,(void *)NULL,
+				GT_element_settings_selected_data_change, (void *)NULL,
 				gt_element_group->list_of_settings);
-			GT_element_group_build_graphics_objects(gt_element_group,
-				(struct FE_element *)NULL,(struct FE_node *)NULL);
+			GT_element_group_changed(gt_element_group);
 		}
 	}
 	else
@@ -671,7 +969,7 @@ struct GT_element_group *CREATE(GT_element_group)(
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection *data_selection)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphical finite element group for
@@ -690,9 +988,9 @@ If supplied, callbacks are requested from the <element_selection> and
 	struct GT_element_group *gt_element_group;
 
 	ENTER(CREATE(GT_element_group));
-	if (element_group&&node_group&&data_group)
+	if (element_group && node_group && data_group)
 	{
-		if (ALLOCATE(gt_element_group,struct GT_element_group,1))
+		if (ALLOCATE(gt_element_group, struct GT_element_group, 1))
 		{
 			gt_element_group->list_of_settings=
 				(struct LIST(GT_element_settings) *)NULL;
@@ -778,14 +1076,23 @@ If supplied, callbacks are requested from the <element_selection> and
 							GT_element_group_computed_field_change,(void *)gt_element_group,
 							gt_element_group->computed_field_manager);
 				}
+				/* storage for identifiers of nodes and elements that have changed */
+				gt_element_group->element_ranges = CREATE(Multi_range)();
+				gt_element_group->node_ranges = CREATE(Multi_range)();
+
 				/* global selections */
 				gt_element_group->element_point_ranges_selection=
 					element_point_ranges_selection;
 				gt_element_group->element_selection=element_selection;
 				gt_element_group->node_selection=node_selection;
 				gt_element_group->data_selection=data_selection;
-				gt_element_group->changed=1;
-				gt_element_group->access_count=0;
+				gt_element_group->cache = 0;
+				gt_element_group->build = 1;
+				/* display list index and current flag: */
+				gt_element_group->display_list = 0;
+				gt_element_group->display_list_current = 0;
+
+				gt_element_group->access_count = 0;
 				/* request callbacks from the global selections */
 				if (element_point_ranges_selection)
 				{
@@ -885,7 +1192,7 @@ WITHOUT copying graphics objects, and WITHOUT manager and selection callbacks.
 int DESTROY(GT_element_group)(
 	struct GT_element_group **gt_element_group_address)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 5 June 2001
 
 DESCRIPTION :
 Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
@@ -910,6 +1217,13 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 			}
 			else
 			{
+				/* cache should be back to zero by now */
+				if (0 != gt_element_group->cache)
+				{
+					display_message(ERROR_MESSAGE,
+						"DESTROY(Gt_element_group).  gt_element_group->cache = %d != 0",
+						gt_element_group->cache);
+				}
 				/* turn off manager messages */
 				if (gt_element_group->element_manager_callback_id)
 				{
@@ -1003,6 +1317,14 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 					DEALLOCATE(callback_data);
 					callback_data = next;
 				}
+				DESTROY(Multi_range)(&(gt_element_group->element_ranges));
+				DESTROY(Multi_range)(&(gt_element_group->node_ranges));
+				/* must destroy the display list */
+				if (gt_element_group->display_list)
+				{
+					glDeleteLists(gt_element_group->display_list,1);
+				}
+
 				DEALLOCATE(*gt_element_group_address);
 			}
 		}
@@ -1046,46 +1368,73 @@ Returns the name of the <gt_element_group>.
 	return (return_code);
 } /* GET_NAME(GT_element_group) */
 
-int GT_element_group_changed(struct GT_element_group *gt_element_group)
+int GT_element_group_begin_cache(struct GT_element_group *gt_element_group)
 /*******************************************************************************
-LAST MODIFIED : 6 July 1999
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
-External modules that change a GT_element_group should call this routine so that
-objects interested in this GT_element_group will be notified that is has changed.
+Call before making several changes to the gt_element_group so only a single
+change message is sent. Call GT_element_group_end_cache at the end of the
+changes.
 ==============================================================================*/
 {
 	int return_code;
-	struct GT_element_group_callback_data *callback_data;
 
-	ENTER(GT_element_group_changed);
-
+	ENTER(GT_element_group_begin_cache);
 	if (gt_element_group)
 	{
-		gt_element_group->changed = 1;
-		callback_data = gt_element_group->update_callback_list;
-		while(callback_data)
+		/* increment cache to allow nesting */
+		(gt_element_group->cache)++;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_begin_cache.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_begin_cache */
+
+int GT_element_group_end_cache(struct GT_element_group *gt_element_group)
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+Call after making changes preceded by a call to GT_element_group_begin_cache to
+enable a final message to be sent to clients.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_group_end_cache);
+	if (gt_element_group)
+	{
+		/* decrement cache to allow nesting */
+		(gt_element_group->cache)--;
+		/* once cache has run out, inform clients of any changes */
+		if (0 == gt_element_group->cache)
 		{
-			(callback_data->callback)(gt_element_group,
-				callback_data->callback_user_data);
-			callback_data = callback_data->next;
+			GT_element_group_inform_clients(gt_element_group);
 		}
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_element_group_changed. Invalid GT_element_group");
-		return_code=0;
+			"GT_element_group_end_cache.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* GT_element_group_changed */
+} /* GT_element_group_end_cache */
 
 int GT_element_group_time_changed(struct GT_element_group *gt_element_group)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Invalidate any components of a GT_element group that depend on time
@@ -1100,6 +1449,7 @@ Invalidate any components of a GT_element group that depend on time
 		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
 			GT_element_settings_time_change,NULL,
 			gt_element_group->list_of_settings);		
+		GT_element_group_changed(gt_element_group);
 		return_code = 1;
 	}
 	else
@@ -1375,7 +1725,7 @@ int GT_element_group_set_circle_discretization(
 	struct GT_element_group *gt_element_group,int circle_discretization,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 3 March 1999
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Sets the circle discretization of the gt_element_group.
@@ -1384,24 +1734,25 @@ Sets the circle discretization of the gt_element_group.
 	int return_code;
 
 	ENTER(GT_element_group_set_circle_discretization);
-	if (gt_element_group&&
-		check_Circle_discretization(&circle_discretization,user_interface))
+	if (gt_element_group &&
+		check_Circle_discretization(&circle_discretization, user_interface))
 	{
-		return_code=1;
-		if (gt_element_group->circle_discretization != circle_discretization)
+		return_code = 1;
+		if (circle_discretization != gt_element_group->circle_discretization)
 		{
-			gt_element_group->circle_discretization=circle_discretization;
+			gt_element_group->circle_discretization = circle_discretization;
 			/* clear graphics for all settings using circle discretization */
 			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
 				GT_element_settings_circle_discretization_change,(void *)NULL,
 				gt_element_group->list_of_settings);
+			GT_element_group_changed(gt_element_group);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_group_set_circle_discretization.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1439,7 +1790,7 @@ int GT_element_group_set_default_coordinate_field(
 	struct GT_element_group *gt_element_group,
 	struct Computed_field *default_coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 3 March 1999
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Sets the <default_coordinate_field> used by <gt_element_group>. Settings without
@@ -1449,32 +1800,26 @@ a specific coordinate field will use this one.
 	int return_code;
 
 	ENTER(GT_element_group_set_default_coordinate_field);
-	if (gt_element_group&&default_coordinate_field&&
-		(3>=Computed_field_get_number_of_components(default_coordinate_field)))
+	if (gt_element_group && default_coordinate_field &&
+		(3 >= Computed_field_get_number_of_components(default_coordinate_field)))
 	{
-		return_code=1;
+		return_code = 1;
 		if (default_coordinate_field != gt_element_group->default_coordinate_field)
 		{
-			if (default_coordinate_field)
-			{
-				ACCESS(Computed_field)(default_coordinate_field);
-			}
-			if (gt_element_group->default_coordinate_field)
-			{
-				DEACCESS(Computed_field)(&(gt_element_group->default_coordinate_field));
-			}
-			gt_element_group->default_coordinate_field=default_coordinate_field;
+			REACCESS(Computed_field)(&(gt_element_group->default_coordinate_field),
+				default_coordinate_field);
 			/* clear graphics for all settings using default coordinate field */
 			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
 				GT_element_settings_default_coordinate_field_change,(void *)NULL,
 				gt_element_group->list_of_settings);
+			GT_element_group_changed(gt_element_group);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_group_set_default_coordinate_field.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1520,7 +1865,7 @@ int GT_element_group_set_element_discretization(
 	struct Element_discretization *element_discretization,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 3 March 1999
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Sets the element discretization of the gt_element_group.
@@ -1529,14 +1874,14 @@ Sets the element discretization of the gt_element_group.
 	int return_code;
 
 	ENTER(GT_element_group_set_element_discretization);
-	if (gt_element_group&&element_discretization&&
-		check_Element_discretization(element_discretization,user_interface))
+	if (gt_element_group && element_discretization &&
+		check_Element_discretization(element_discretization, user_interface))
 	{
-		return_code=1;
+		return_code = 1;
 		if ((gt_element_group->element_discretization.number_in_xi1 !=
-			element_discretization->number_in_xi1)||
+			element_discretization->number_in_xi1) ||
 			(gt_element_group->element_discretization.number_in_xi2 !=
-				element_discretization->number_in_xi2)||
+				element_discretization->number_in_xi2) ||
 			(gt_element_group->element_discretization.number_in_xi3 !=
 				element_discretization->number_in_xi3))
 		{
@@ -1550,13 +1895,14 @@ Sets the element discretization of the gt_element_group.
 			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
 				GT_element_settings_element_discretization_change,(void *)NULL,
 				gt_element_group->list_of_settings);
+			GT_element_group_changed(gt_element_group);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_group_set_element_discretization.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1594,7 +1940,7 @@ int GT_element_group_set_native_discretization_field(
 	struct GT_element_group *gt_element_group,
 	struct FE_field *native_discretization_field)
 /*******************************************************************************
-LAST MODIFIED : 3 March 1999
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Sets the <native_discretization_field> used by <gt_element_group>. If the field
@@ -1607,117 +1953,29 @@ is used in preference to the global element_discretization.
 	ENTER(GT_element_group_set_native_discretization_field);
 	if (gt_element_group)
 	{
-		return_code=1;
+		return_code = 1;
 		if (native_discretization_field !=
 			gt_element_group->native_discretization_field)
 		{
-			if (native_discretization_field)
-			{
-				ACCESS(FE_field)(native_discretization_field);
-			}
-			if (gt_element_group->native_discretization_field)
-			{
-				DEACCESS(FE_field)(&(gt_element_group->native_discretization_field));
-			}
-			gt_element_group->native_discretization_field=native_discretization_field;
+			REACCESS(FE_field)(&(gt_element_group->native_discretization_field),
+				native_discretization_field);
 			/* clear graphics for all settings using element discretization */
 			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_element_discretization_change,(void *)NULL,
+				GT_element_settings_element_discretization_change, (void *)NULL,
 				gt_element_group->list_of_settings);
+			GT_element_group_changed(gt_element_group);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_group_set_native_discretization_field.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* GT_element_group_set_native_discretization_field */
-
-int GT_element_group_build_graphics_objects(
-	struct GT_element_group *gt_element_group,struct FE_element *changed_element,
-	struct FE_node *changed_node)
-/*******************************************************************************
-LAST MODIFIED : 6 June 2000
-
-DESCRIPTION :
-Adds or edits a graphics object for each settings in <gt_element_group> without
-a graphics object or affected by <changed_element> or <changed_node>.
-==============================================================================*/
-{
-	int return_code;
-	struct Element_discretization element_discretization;
-	struct GT_element_settings_to_graphics_object_data settings_to_object_data;
-
-	ENTER(GT_element_group_build_graphics_objects);
-	if (gt_element_group)
-	{
-		if (settings_to_object_data.default_rc_coordinate_field=
-			Computed_field_begin_wrap_coordinate_field(
-				gt_element_group->default_coordinate_field))
-		{
-			settings_to_object_data.rc_coordinate_field=(struct Computed_field *)NULL;
-			settings_to_object_data.wrapper_orientation_scale_field=
-				(struct Computed_field *)NULL;
-			settings_to_object_data.native_discretization_field=
-				gt_element_group->native_discretization_field;
-			settings_to_object_data.element_group=gt_element_group->element_group;
-			settings_to_object_data.node_group=gt_element_group->node_group;
-			settings_to_object_data.data_group=gt_element_group->data_group;
-			element_discretization.number_in_xi1=
-				gt_element_group->element_discretization.number_in_xi1;
-			element_discretization.number_in_xi2=
-				gt_element_group->element_discretization.number_in_xi2;
-			element_discretization.number_in_xi3=
-				gt_element_group->element_discretization.number_in_xi3;
-			settings_to_object_data.element_discretization=&element_discretization;
-			settings_to_object_data.circle_discretization=
-				gt_element_group->circle_discretization;
-			settings_to_object_data.changed_element=changed_element;
-			settings_to_object_data.changed_node=changed_node;
-			settings_to_object_data.selected_element_point_ranges_list=
-				Element_point_ranges_selection_get_element_point_ranges_list(
-					gt_element_group->element_point_ranges_selection);
-			settings_to_object_data.selected_element_list=
-				FE_element_selection_get_element_list(
-					gt_element_group->element_selection);
-			settings_to_object_data.selected_data_list=
-				FE_node_selection_get_node_list(gt_element_group->data_selection);
-			settings_to_object_data.selected_node_list=
-				FE_node_selection_get_node_list(gt_element_group->node_selection);
-			/* create list for storing removed_primative names in edit mode */
-			settings_to_object_data.removed_primitives=
-				CREATE(LIST(Selected_graphic))();
-			return_code=FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-				GT_element_settings_to_graphics_object,(void *)&settings_to_object_data,
-				gt_element_group->list_of_settings);
-			/* destroy list created above */
-			DESTROY(LIST(Selected_graphic))(
-				&(settings_to_object_data.removed_primitives));
-			GT_element_group_changed(gt_element_group);
-			Computed_field_end_wrap(
-				&settings_to_object_data.default_rc_coordinate_field);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"GT_element_group_build_graphics_objects.  "
-				"Could not get default_rc_coordinate_field wrapper");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"GT_element_group_build_graphics_objects.  "
-			"Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_group_build_graphics_objects */
 
 int GT_element_group_copy(struct GT_element_group *destination,
 	struct GT_element_group *source)
@@ -1830,24 +2088,23 @@ actual GT_element_group.
 			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
 				GT_element_settings_extract_graphics_object_from_list,
 				(void *)temp_list_of_settings,destination->list_of_settings);
-			/* rebuild the graphics_objects */
-			GT_element_group_build_graphics_objects(destination,
-				(struct FE_element *)NULL,(struct FE_node *)NULL);
 			DESTROY(LIST(GT_element_settings))(&temp_list_of_settings);
-			return_code=1;
+			/* inform the client of the change */
+			GT_element_group_changed(destination);
+			return_code = 1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"GT_element_group_modify.  Could not create temporary list");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_group_modify.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -2185,101 +2442,42 @@ Wrapper for accessing the list of settings in <gt_element_group>.
 	return (return_code);
 } /* for_each_settings_in_GT_element_group */
 
-int GT_element_group_clear_changed(struct GT_element_group *gt_element_group)
+int GT_element_group_has_embedded_field(
+	struct GT_element_group *gt_element_group,
+	struct LIST(FE_element) *changed_element_list,
+	struct LIST(FE_node) *changed_node_list)
 /*******************************************************************************
-LAST MODIFIED : 17 June 1998
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
-Clears the changed flag in <gt_element_group>. The flag can subsequently be
-checked with GT_element_group_has_changed to see whether the display list for
-the graphics object enclosing <gt_element_group> needs updating. Once it is
-updated, this routine should be called.
+Returns true if <gt_element_group> contains settings which use embedded fields
+which are affected by the <changed_node> or <changed_element>.
+If <changed_element_list> and <changed_node_list> are both NULL then this
+returns true if the group contains any settings using embedded fields.
 ==============================================================================*/
 {
-	int return_code;
-
-	ENTER(GT_element_group_clear_changed);
-	if (gt_element_group)
-	{
-		gt_element_group->changed=0;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_group_clear_changed.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_group_clear_changed */
-
-int GT_element_group_has_changed(struct GT_element_group *gt_element_group)
-/*******************************************************************************
-LAST MODIFIED : 17 June 1998
-
-DESCRIPTION :
-Returns true if <gt_element_group> is flagged as having been changed.
-See also GT_element_group_clear_changed.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_element_group_has_changed);
-	if (gt_element_group)
-	{
-		return_code=gt_element_group->changed;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_group_has_changed.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_group_has_changed */
-
-int GT_element_group_has_embedded_field(struct GT_element_group *gt_element_group,
-	struct FE_element *changed_element, struct FE_node *changed_node)
-/*******************************************************************************
-LAST MODIFIED : 28 April 1999
-
-DESCRIPTION :
-Returns true if <gt_element_group> contains settings which use embedded fields which
-are affected by the <changed_node> or <changed_element>.
-If <changed_node> and <changed_element> are both NULL then this returns true 
-if the group contains any settings using embedded fields.
-==============================================================================*/
-{
-	struct FE_node_field_has_embedded_element_data data;
+	struct FE_node_is_embedded_in_changed_element_data data;
 	int return_code;
 
 	ENTER(GT_element_group_has_embedded_field);
 	if (gt_element_group)
 	{
 		if (Computed_field_depends_on_embedded_field(
-			gt_element_group->default_coordinate_field)
-			||(FIRST_OBJECT_IN_LIST_THAT(GT_element_settings)(
-			GT_element_settings_has_embedded_field,NULL,
-			gt_element_group->list_of_settings)))
+			gt_element_group->default_coordinate_field) ||
+			FIRST_OBJECT_IN_LIST_THAT(GT_element_settings)(
+				GT_element_settings_has_embedded_field, (void *)NULL,
+				gt_element_group->list_of_settings))
 		{
-			if ((!changed_element)&&(!changed_node))
+			if (changed_element_list || changed_node_list)
 			{
-				return_code = 1;
-			}
-			else
-			{
-				data.changed_node = changed_node;
-				data.changed_element = changed_element;
-				if((FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-					FE_node_has_embedded_element_or_node,
-					(void *)&data, gt_element_group->node_group))||
+				data.changed_element_list = changed_element_list;
+				data.changed_node_list = changed_node_list;
+				if ((FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+					FE_node_is_embedded_in_changed_element, (void *)&data,
+					gt_element_group->node_group))||
 					(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-					FE_node_has_embedded_element_or_node,
-					(void *)&data, gt_element_group->data_group)))
+						FE_node_is_embedded_in_changed_element, (void *)&data,
+						gt_element_group->data_group)))
 				{
 					return_code = 1;
 				}
@@ -2287,6 +2485,10 @@ if the group contains any settings using embedded fields.
 				{
 					return_code = 0;
 				}
+			}
+			else
+			{
+				return_code = 1;
 			}
 		}
 		else
@@ -2298,14 +2500,15 @@ if the group contains any settings using embedded fields.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_group_has_embedded_fields.  Invalid arguments");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* GT_element_group_has_embedded_fields */
 
-int GT_element_group_has_multiple_times(struct GT_element_group *gt_element_group)
+int GT_element_group_has_multiple_times(
+	struct GT_element_group *gt_element_group)
 /*******************************************************************************
 LAST MODIFIED : 25 October 2000
 
@@ -2340,10 +2543,150 @@ Returns true if <gt_element_group> contains settings which depend on time.
 	return (return_code);
 } /* GT_element_group_has_multiple_times */
 
+int build_GT_element_group(struct GT_element_group *gt_element_group)
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+Builds any graphics objects for settings without them in <gt_element_group>.
+==============================================================================*/
+{
+	int element_number, node_number, number_of_ranges, range_no, return_code,
+		start, stop;
+	struct CM_element_information cm;
+	struct FE_element *element;
+	struct FE_node *node;
+	struct LIST(FE_element) *element_list;
+	struct LIST(FE_node) *node_list;
+
+	ENTER(build_GT_element_group);
+	if (gt_element_group)
+	{
+		/* check whether graphical_element contents need building */
+		if (gt_element_group->build)
+		{
+			/* convert any changed element_ranges into element_list */
+			if (0 < (number_of_ranges =
+				Multi_range_get_number_of_ranges(gt_element_group->element_ranges)))
+			{
+				element_list = CREATE(LIST(FE_element))();
+				return_code = 1;
+				for (range_no = 0; (range_no < number_of_ranges) && return_code;
+					range_no++)
+				{
+					if (Multi_range_get_range(gt_element_group->element_ranges, range_no,
+						&start, &stop))
+					{
+						for (element_number = start;
+							(element_number <= stop) && return_code; element_number++)
+						{
+							if (CM_element_information_from_graphics_name(&cm,
+								element_number) &&
+								(element = FIND_BY_IDENTIFIER_IN_GROUP(FE_element, identifier)(
+									&cm, gt_element_group->element_group)))
+							{
+								return_code =
+									ADD_OBJECT_TO_LIST(FE_element)(element, element_list);
+							}
+							else
+							{
+								return_code = 0;
+							}
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				if (!return_code)
+				{
+					display_message(ERROR_MESSAGE,
+						"build_GT_object.  Could not build edit element list");
+				}
+				/* Must clear the ranges! */
+				Multi_range_clear(gt_element_group->element_ranges);
+			}
+			else
+			{
+				element_list = (struct LIST(FE_element) *)NULL;
+			}
+			/* convert any changed node_ranges into node_list */
+			if (0 < (number_of_ranges =
+				Multi_range_get_number_of_ranges(gt_element_group->node_ranges)))
+			{
+				node_list = CREATE(LIST(FE_node))();
+				return_code = 1;
+				for (range_no = 0; (range_no < number_of_ranges) && return_code;
+					range_no++)
+				{
+					if (Multi_range_get_range(gt_element_group->node_ranges, range_no,
+						&start, &stop))
+					{
+						for (node_number = start; (node_number <= stop) && return_code;
+							node_number++)
+						{
+							if (node = FIND_BY_IDENTIFIER_IN_GROUP(FE_node,
+								cm_node_identifier)(node_number, gt_element_group->node_group))
+							{
+								return_code = ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
+							}
+							else
+							{
+								return_code = 0;
+							}
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+				if (!return_code)
+				{
+					display_message(ERROR_MESSAGE,
+						"build_GT_object.  Could not build edit node list");
+				}
+				/* Must clear the ranges! */
+				Multi_range_clear(gt_element_group->node_ranges);
+			}
+			else
+			{
+				node_list = (struct LIST(FE_node) *)NULL;
+			}
+
+			return_code =  GT_element_group_build_graphics_objects(gt_element_group,
+				element_list, node_list);
+
+			if (node_list)
+			{
+				DESTROY(LIST(FE_node))(&node_list);
+			}
+			if (element_list)
+			{
+				DESTROY(LIST(FE_element))(&element_list);
+			}
+			gt_element_group->build = 0;
+		}
+		else
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "build_GT_object.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* build_GT_object */
+
 int compile_GT_element_group(struct GT_element_group *gt_element_group,
 	float time)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 7 July 2001
 
 DESCRIPTION :
 Rebuilds the display list for graphical_element_group. 
@@ -2355,20 +2698,37 @@ The object is compiled at the time pointed to by <time_void>.
 	ENTER(compile_GT_element_group);
 	if (gt_element_group)
 	{
-		return_code=1;
-
-		if (GT_element_group_has_changed(gt_element_group))
+		return_code = 1;
+		if (!gt_element_group->display_list_current)
 		{
-			GT_element_group_clear_changed(gt_element_group);
+			/* compile visible graphics objects in the graphical element */
+			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+				GT_element_settings_compile_visible_settings, (void *)&time,
+				gt_element_group->list_of_settings);
+			if (gt_element_group->display_list ||
+				(gt_element_group->display_list = glGenLists(1)))
+			{
+				glNewList(gt_element_group->display_list, GL_COMPILE);
+				/* push initial name to make space for subobject names */
+				glPushName(0);
+				FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+					GT_element_settings_execute_visible_settings,
+					(void *)&time, gt_element_group->list_of_settings);
+				glPopName();
+				glEndList();
+				gt_element_group->display_list_current = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "compile_GT_object.  Failed");
+				return_code = 0;
+			}
 		}
-		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-			GT_element_settings_compile_visible_settings,(void *)&time,
-			gt_element_group->list_of_settings);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"compile_GT_object.  Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "compile_GT_object.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -2389,25 +2749,107 @@ DESCRIPTION :
 	USE_PARAMETER(time);
 	if (gt_element_group)
 	{
-		return_code=1;
-		/* Execute display lists of graphics objects in settings making up
-			the GT_element_group objects, adding the position as names for
-			OpenGL picking */
-		/* push initial name to make space for subobject names */
-		glPushName(0);
-		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-			GT_element_settings_execute_visible_settings,
-			(void *)&time,gt_element_group->list_of_settings);
-		glPopName();
-		/* close individual object */
+		if (gt_element_group->display_list_current)
+		{
+			glCallList(gt_element_group->display_list);
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"execute_GT_element_group.  display list not current");
+			return_code = 0;
+		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"execute_GT_element_group.  Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"execute_GT_element_group.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* execute_GT_element_group */
 
+int GT_element_group_Graphical_material_change(
+	struct GT_element_group *gt_element_group,
+	struct LIST(Graphical_material) *changed_material_list)
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+NOTE: TEMPORARY UNTIL GRAPHICAL ELEMENTS RECEIVE THEIR OWN MATERIAL MESSAGES.
+If any of the settings in <gt_element_group> use materials with spectrums in the
+<changed_material_list>, clear their graphics objects and call
+GT_element_group_changed.
+==============================================================================*/
+{
+	int return_code;
+	struct GT_element_settings_Graphical_material_change_data
+		material_change_data;
+
+	ENTER(GT_element_group_Graphical_material_change);
+	if (gt_element_group && changed_material_list)
+	{
+		material_change_data.changed_material_list = changed_material_list;
+		/* flag to indicate if GT_element_group_changed needs to be called */
+		material_change_data.changed = 0;
+		return_code = FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+			GT_element_settings_Graphical_material_change,
+			(void *)&material_change_data, gt_element_group->list_of_settings);
+		if (material_change_data.changed)
+		{
+			GT_element_group_changed(gt_element_group);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_Graphical_material_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_Graphical_material_change */
+
+int GT_element_group_Spectrum_change(struct GT_element_group *gt_element_group,
+	struct LIST(Spectrum) *changed_spectrum_list)
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+NOTE: TEMPORARY UNTIL GRAPHICAL ELEMENTS RECEIVE THEIR OWN SPECTRUM MESSAGES.
+If any of the settings in <gt_element_group> use spectrums in the
+<changed_spectrum_list>, clear their graphics objects and call
+GT_element_group_changed.
+==============================================================================*/
+{
+	int return_code;
+	struct GT_element_settings_Spectrum_change_data spectrum_change_data;
+
+	ENTER(GT_element_group_Spectrum_change);
+	if (gt_element_group && changed_spectrum_list)
+	{
+		spectrum_change_data.changed_spectrum_list = changed_spectrum_list;
+		/* flag to indicate if GT_element_group_changed needs to be called */
+		spectrum_change_data.changed = 0;
+		return_code = FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+			GT_element_settings_Spectrum_change, (void *)&spectrum_change_data,
+			gt_element_group->list_of_settings);
+		if (spectrum_change_data.changed)
+		{
+			GT_element_group_changed(gt_element_group);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_Spectrum_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_Spectrum_change */
