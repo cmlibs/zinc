@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : auxiliary_graphics_types.h
 
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 Structures and enumerated types needed to produce graphics primitives but not
@@ -34,6 +34,23 @@ Controls quality of curve rendition.
 }; /* struct Element_discretization */
 
 typedef float Triple[3];
+
+enum Graphics_compile_status
+/*******************************************************************************
+LAST MODIFIED : 12 March 2002
+
+DESCRIPTION :
+Graphical objects use this enumeration to flag their compile status, which
+can indicate either no compilation is required, child graphics objects need
+compiling, or the object and its children need compilation.
+Currently applied only to OpenGL display lists, but relevant to other
+intermediate storage systems.
+==============================================================================*/
+{
+	GRAPHICS_COMPILED,
+	CHILD_GRAPHICS_NOT_COMPILED,
+	GRAPHICS_NOT_COMPILED
+}; /* enum Graphics_compile_status */
 
 enum Graphics_select_mode
 /*******************************************************************************
