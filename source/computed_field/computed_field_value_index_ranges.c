@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : field_value_index_ranges.c
+FILE : computed_field_value_index_ranges.c
 
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 12 October 2001
 
 DESCRIPTION :
 Stores ranges of indices of field values in a multi-range for a Computed_field.
@@ -9,7 +9,7 @@ Used, eg., to indicate which components have been modified in an editor.
 ==============================================================================*/
 #include <stdlib.h>
 #include <stdio.h>
-#include "finite_element/field_value_index_ranges.h"
+#include "computed_field/computed_field_value_index_ranges.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"

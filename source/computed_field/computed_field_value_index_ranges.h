@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : field_value_index_ranges.h
+FILE : computed_field_value_index_ranges.h
 
-LAST MODIFIED : 19 June 2000
+LAST MODIFIED : 12 October 2001
 
 DESCRIPTION :
 Stores ranges of indices of field values in a multi-range for a Computed_field.
