@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_private.h
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 8 October 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -65,7 +65,7 @@ Module types
 
 struct Computed_field
 /*******************************************************************************
-LAST MODIFIED : 17 June 1999
+LAST MODIFIED : 8 October 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -106,6 +106,8 @@ DESCRIPTION :
 	struct FE_element *element;
 	/* last node at which values calculated - ACCESSed by field */
 	struct FE_node *node;
+	/* last time at which values were calculated */
+	FE_value time;
 
 	/* cache used by external routine Computed_field_find_element_xi_special,
 	 contains all sorts of things we don't want to include in computed_field */

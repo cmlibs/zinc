@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 8 October 2002
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -459,7 +459,7 @@ Global functions
 
 struct Computed_field *CREATE(Computed_field)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 8 October 2002
 
 DESCRIPTION :
 Creates a basic Computed_field with the given <name>. Its type is initially
@@ -490,6 +490,7 @@ COMPUTED_FIELD_INVALID with no components.
 			field->derivatives_valid = 0;
 			field->element = (struct FE_element *)NULL;
 			field->node = (struct FE_node *)NULL;
+			field->time = 0;
 
 			field->find_element_xi_cache = (struct Computed_field_find_element_xi_special_cache *)NULL;
 
@@ -1626,7 +1627,7 @@ int Computed_field_evaluate_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 8 October 2002
 
 DESCRIPTION :
 Calculates the values and derivatives (if <calculate_derivatives> set) of
@@ -1658,7 +1659,7 @@ is avoided.
 		return_code;
 
 	ENTER(Computed_field_evaluate_cache_in_element);
-	if (field&&element)
+	if (field && element)
 	{
 		element_dimension=get_FE_element_dimension(element);
 		return_code=1;
@@ -1668,19 +1669,19 @@ is avoided.
 			Computed_field_clear_cache(field);
 		}
 		/* Are the values and derivatives in the cache not already calculated? */
-		if ((field->element != element)||
+		if ((element != field->element) || (time != field->time) ||
 			(calculate_derivatives && (!field->derivatives_valid)))
 		{
-			cache_is_valid=0;
+			cache_is_valid = 0;
 		}
 		else
 		{
-			cache_is_valid=1;
-			for (i=0;cache_is_valid&&(i<element_dimension);i++)
+			cache_is_valid = 1;
+			for (i = 0; cache_is_valid && (i < element_dimension); i++)
 			{
 				if (field->xi[i] != xi[i])
 				{
-					cache_is_valid=0;
+					cache_is_valid = 0;
 				}
 			}
 		}
@@ -1733,18 +1734,15 @@ is avoided.
 				}
 				if (return_code)
 				{
-					if (field->element)
+					REACCESS(FE_element)(&field->element, element);
+					field->time = time;
+					for (i = 0; i < element_dimension; i++)
 					{
-						DEACCESS(FE_element)(&field->element);
+						field->xi[i] = xi[i];
 					}
-					field->element=ACCESS(FE_element)(element);
-					for (i=0;i<element_dimension;i++)
+					for (; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 					{
-						field->xi[i]=xi[i];
-					}
-					for (;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
-					{
-						field->xi[i]=0.0;
+						field->xi[i] = 0.0;
 					}
 				}
 				else
@@ -2092,7 +2090,7 @@ number_of_components
 int Computed_field_evaluate_cache_at_node(
 	struct Computed_field *field,struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 8 October 2002
 
 DESCRIPTION :
 Calculates the values of <field> at <node>, if it is defined over the element.
@@ -2119,7 +2117,7 @@ fields with the name 'coordinates' are quite pervasive.
 			Computed_field_clear_cache(field);
 		}
 		/* does cache need recomputing? */
-		if (node != field->node)
+		if ((node != field->node) || (time != field->time))
 		{
 			/* make sure we have allocated values AND derivatives, or nothing */
 			if (!field->values)
@@ -2142,7 +2140,7 @@ fields with the name 'coordinates' are quite pervasive.
 				{
 					return_code = 
 						field->computed_field_evaluate_cache_at_node_function(
-							field, node,time);
+							field, node, time);
 				}
 				else
 				{
@@ -2155,11 +2153,8 @@ fields with the name 'coordinates' are quite pervasive.
 				/* Store information about what is cached, or clear it if error */
 				if (return_code)
 				{
-					if (field->node)
-					{
-						DEACCESS(FE_node)(&field->node);
-					}
-					field->node=ACCESS(FE_node)(node);
+					REACCESS(FE_node)(&field->node, node);
+					field->time = time;
 				}
 				else
 				{
