@@ -21,9 +21,9 @@ MAKEFILE = cmgui.make
 SUBMAKEFILE := cmgui.Makefile
 SUBMAKEFILE_FOUND = $(wildcard source/$(SUBMAKEFILE))
 ifdef CMISS_ROOT_DEFINED
-   ifeq ($(MAKEFILE_FOUND),)
+   ifeq ($(SUBMAKEFILE_FOUND),)
       SUBMAKEFILE := $(CMISS_ROOT)/cmgui/source/$(SUBMAKEFILE)
-   endif # $(MAKEFILE_FOUND) ==
+   endif # $(SUBMAKEFILE_FOUND) ==
 endif # CMISS_ROOT_DEFINED
 
 #Developers default
