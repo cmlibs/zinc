@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.h
 
-LAST MODIFIED : 6 April 2001
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -343,6 +343,15 @@ LAST MODIFIED : 12 December 1997
 DESCRIPTION :
 Returns true if <Scene_viewer> has <light> in its list_of_lights, OR if <light>
 is NULL, returns true if <scene_viewer> has any lights.
+==============================================================================*/
+
+int Scene_viewer_has_light_in_list(struct Scene_viewer *scene_viewer,
+	struct LIST(Light) *light_list);
+/*******************************************************************************
+LAST MODIFIED : 30 May 2001
+
+DESCRIPTION :
+Returns true if the list_of_lights in <Scene> intersects <light_list>.
 ==============================================================================*/
 
 int Scene_viewer_remove_light(struct Scene_viewer *scene_viewer,
