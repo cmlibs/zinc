@@ -295,7 +295,10 @@ DESCRIPTION :
 		} break;
 		case TEXTURE_COMPRESSED_UNSPECIFIED:
 		{
-#if defined (GL_ARB_texture_compression)
+			/* By testing for the enumerators rather than the function we can 
+				compile a version that will support texture compression on
+				hardware that has it while compiling on systems without */
+#if defined (GL_COMPRESSED_RGB_ARB) && defined (GL_COMPRESSED_RGBA_ARB)
 			if (query_gl_extension("GL_ARB_texture_compression"))
 			{
 				switch (number_of_components)
@@ -318,13 +321,13 @@ DESCRIPTION :
 			}
 			else
 			{
-#endif /* defined (GL_ARB_texture_compression) */
+#endif /* defined (GL_COMPRESSED_RGB_ARB) && defined (GL_COMPRESSED_RGBA_ARB) */
 				display_message(WARNING_MESSAGE, "Texture_get_hardware_storage_format.  "
 					"Texture compression not supported on this hardware.");
 				return_code = number_of_components;
-#if defined (GL_ARB_texture_compression)
+#if defined (GL_COMPRESSED_RGB_ARB) && defined (GL_COMPRESSED_RGBA_ARB)
 			}
-#endif /* defined (GL_ARB_texture_compression) */
+#endif /* defined (GL_COMPRESSED_RGB_ARB) && defined (GL_COMPRESSED_RGBA_ARB) */
 		} break;
 		default:
 		{
