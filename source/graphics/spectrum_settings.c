@@ -3,7 +3,7 @@ FILE : spectrum_settings.c
 
 Largely pillaged from graphics/element_group_settings.c
 
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 15 March 2002
 
 DESCRIPTION :
 Spectrum_settings structure and routines for describing and manipulating the
@@ -16,6 +16,7 @@ appearance of spectrums.
 #include "general/indexed_list_private.h"
 #include "general/list.h"
 #include "general/compare.h"
+#include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/colour.h"
 #include "graphics/material.h"
@@ -202,86 +203,6 @@ If the settings are of type settings_type, sets settings->settings_changed to 1.
 
 	return (return_code);
 } /* Spectrum_settings_changed_if_type */
-
-static int settings_string_start(char **string1,char *string2,int *error)
-/*******************************************************************************
-LAST MODIFIED : 10 March 1998
-
-DESCRIPTION :
-==============================================================================*/
-{
-
-	ENTER(settings_string_start);
-	/* check arguments */
-	if (string1&&string2)
-	{
-		if (ALLOCATE(*string1,char,strlen(string2)+1))
-		{
-			strcpy(*string1,string2);
-			*error=0;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"settings_string_start.  "
-				"Could not allocate space for string");
-			*error=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"settings_string_start.  "
-			"Invalid argument(s)");
-		*error=1;
-	}
-	LEAVE;
-
-	return (!(*error));
-} /* settings_string_start */
-
-static int settings_string_append(char **string1,char *string2,int *error)
-/*******************************************************************************
-LAST MODIFIED : 10 March 1998
-
-DESCRIPTION :
-Does nothing if *error is 1. Normally, reallocates *string1 to concatenate
-string2 on its end. If the reallocate fails, *error is set to 1 and *string1 is
-deallocated. Repeated calls to this function after an error has occurred thus
-do not add to the string.
-==============================================================================*/
-{
-	char *new_string;
-
-	ENTER(settings_string_append);
-	/* check arguments */
-	if (string1&&(*string1)&&string2)
-	{
-		if (!(*error))
-		{
-			if (REALLOCATE(new_string,*string1,char,
-				strlen(*string1)+strlen(string2)+1))
-			{
-				*string1=new_string;
-				strcat(*string1,string2);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"settings_string_append.  "
-					"Could not reallocate");
-				*error=1;
-				DEALLOCATE(*string1);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"settings_string_append.  "
-			"Invalid argument(s)");
-		*error=1;
-	}
-	LEAVE;
-
-	return (!(*error));
-} /* settings_string_append */
 
 /*
 Global functions
@@ -881,7 +802,7 @@ Spectrum_settings describe the same space.
 char *Spectrum_settings_string(struct Spectrum_settings *settings,
 	enum Spectrum_settings_string_details settings_detail)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 15 March 2002
 
 DESCRIPTION :
 Returns a string describing the settings, suitable for entry into the command
@@ -904,30 +825,25 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 		if (SPECTRUM_SETTINGS_STRING_COMPLETE_PLUS==settings_detail)
 		{
 			sprintf(temp_string,"%i. ",settings->position);
+			append_string(&settings_string,temp_string,&error);
 		}
-		else
-		{
-			/* sprintf(temp_string,""); */
-		}
-		settings_string_start(&settings_string,temp_string,&error);
-
 		switch (settings->settings_type)
 		{
 			case SPECTRUM_LINEAR:
 			{
-				settings_string_append(&settings_string,"linear",&error);
+				append_string(&settings_string,"linear",&error);
 			} break;
 			case SPECTRUM_LOG:
 			{
 				sprintf(temp_string,"log exaggeration %g",fabs(settings->exaggeration));
-				settings_string_append(&settings_string,temp_string,&error);
+				append_string(&settings_string,temp_string,&error);
 				if (settings->exaggeration >= 0)
 				{
-					settings_string_append(&settings_string," left",&error);
+					append_string(&settings_string," left",&error);
 				}
 				else
 				{
-					settings_string_append(&settings_string," right",&error);
+					append_string(&settings_string," right",&error);
 				}					
 			} break;
 			default:
@@ -938,26 +854,26 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 		}
 		if ( settings->reverse )
 		{
-			settings_string_append(&settings_string," reverse",&error);
+			append_string(&settings_string," reverse",&error);
 		}
 		sprintf(temp_string," range %g %g",settings->minimum,
 			settings->maximum);
-		settings_string_append(&settings_string,temp_string,&error);
+		append_string(&settings_string,temp_string,&error);
 		if ((settings->extend_above)&&(settings->settings_type!=SPECTRUM_STEP))
 		{
-			settings_string_append(&settings_string," extend_above",&error);
+			append_string(&settings_string," extend_above",&error);
 		}
 		if ((settings->extend_below)&&(settings->settings_type!=SPECTRUM_STEP))
 		{
-			settings_string_append(&settings_string," extend_below",&error);
+			append_string(&settings_string," extend_below",&error);
 		}
 		if (settings->fix_maximum)
 		{
-			settings_string_append(&settings_string," fix_maximum",&error);
+			append_string(&settings_string," fix_maximum",&error);
 		}
 		if (settings->fix_minimum)
 		{
-			settings_string_append(&settings_string," fix_minimum",&error);
+			append_string(&settings_string," fix_minimum",&error);
 		}
 		if (settings->settings_type == SPECTRUM_LINEAR ||
 			settings->settings_type == SPECTRUM_LOG )
@@ -968,55 +884,55 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 				{
 					sprintf(temp_string," rainbow colour_range %g %g",
 						settings->min_value, settings->max_value);
-					settings_string_append(&settings_string,temp_string,&error);	
+					append_string(&settings_string,temp_string,&error);	
 				} break;
 				case SPECTRUM_RED:
 				{
 					sprintf(temp_string," red colour_range %g %g",
 						settings->min_value, settings->max_value);
-					settings_string_append(&settings_string,temp_string,&error);	
+					append_string(&settings_string,temp_string,&error);	
 				} break;
 				case SPECTRUM_GREEN:
 				{
 					sprintf(temp_string," green colour_range %g %g",
 						settings->min_value, settings->max_value);
-					settings_string_append(&settings_string,temp_string,&error);	
+					append_string(&settings_string,temp_string,&error);	
 				} break;
 				case SPECTRUM_BLUE:
 				{
 					sprintf(temp_string," blue colour_range %g %g",
 						settings->min_value, settings->max_value);
-					settings_string_append(&settings_string,temp_string,&error);	
+					append_string(&settings_string,temp_string,&error);	
 				} break;
 				case SPECTRUM_ALPHA:
 				{
 					sprintf(temp_string," alpha colour_range %g %g",
 						settings->min_value, settings->max_value);
-					settings_string_append(&settings_string,temp_string,&error);	
+					append_string(&settings_string,temp_string,&error);	
 				} break;
 				case SPECTRUM_BANDED:
 				{
 					sprintf(temp_string," banded number_of_bands %d band_ratio %g",
 						settings->number_of_bands,
 						(float)(settings->black_band_proportion)/1000.0);
-					settings_string_append(&settings_string,temp_string,&error);
+					append_string(&settings_string,temp_string,&error);
 				} break;
 				case SPECTRUM_STEP:
 				{
 					sprintf(temp_string," step_texture step_value %g",settings->step_value);
-					settings_string_append(&settings_string,temp_string,&error);
+					append_string(&settings_string,temp_string,&error);
 				} break;	
 				case SPECTRUM_WHITE_TO_BLUE:
 				{
 					sprintf(temp_string," white_to_blue colour_range %g %g",
 						settings->min_value, settings->max_value);
-					settings_string_append(&settings_string,temp_string,&error);	
+					append_string(&settings_string,temp_string,&error);	
 				} break;	
 				case SPECTRUM_WHITE_TO_RED:
 				{
 					sprintf(temp_string," white_to_red colour_range %g %g",
 						settings->min_value, settings->max_value);
-					settings_string_append(&settings_string,temp_string,&error);	
+					append_string(&settings_string,temp_string,&error);	
 				} break;
 			}
 		}
@@ -1028,23 +944,23 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 			{
 				case SPECTRUM_DIFFUSE:
 				{
-					settings_string_append(&settings_string," diffuse",&error);
+					append_string(&settings_string," diffuse",&error);
 				} break;
 				case SPECTRUM_AMBIENT:
 				{
-					settings_string_append(&settings_string," ambient",&error);
+					append_string(&settings_string," ambient",&error);
 				} break;
 				case SPECTRUM_EMISSION:
 				{
-					settings_string_append(&settings_string," emission",&error);
+					append_string(&settings_string," emission",&error);
 				} break;
 				case SPECTRUM_SPECULAR:
 				{
-					settings_string_append(&settings_string," specular",&error);
+					append_string(&settings_string," specular",&error);
 				} break;
 				case SPECTRUM_AMBIENT_AND_DIFFUSE:
 				{
-					settings_string_append(&settings_string," ambient diffuse",&error);
+					append_string(&settings_string," ambient diffuse",&error);
 				} break;
 				default:
 				{
@@ -1054,7 +970,7 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 			}
 		}
 		sprintf(temp_string," component %d",settings->component_number + 1);
-		settings_string_append(&settings_string,temp_string,&error);	
+		append_string(&settings_string,temp_string,&error);	
 	}
 	else
 	{
