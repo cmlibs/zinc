@@ -965,7 +965,7 @@ object
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
 			XmNmarginHeight = 5;
-			XmNhighlightThickness = 1;
+			XmNhighlightThickness = 0;
 !			XmNmappedWhenManaged = false;
 			};
 		callbacks
