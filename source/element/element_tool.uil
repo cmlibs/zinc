@@ -13,13 +13,13 @@ procedure
 	elem_tool_id_select_elems_btn;
 	elem_tool_id_select_faces_btn;
 	elem_tool_id_select_lines_btn;
-	elem_tool_id_url_field_btn;
-	elem_tool_id_url_field_form;
+	elem_tool_id_command_field_btn;
+	elem_tool_id_command_field_form;
 
 	elem_tool_select_lines_btn_CB;
 	elem_tool_select_faces_btn_CB;
 	elem_tool_select_elems_btn_CB;
-	elem_tool_url_field_btn_CB;
+	elem_tool_command_field_btn_CB;
 	elem_tool_destroy_selected_CB;
 
 identifier
@@ -105,7 +105,7 @@ object
   		XmToggleButtonGadget elem_tool_select_elems_btn;
   		XmToggleButtonGadget elem_tool_select_faces_btn;
   		XmToggleButtonGadget elem_tool_select_lines_btn;
-			XmRowColumn elem_tool_url_field_entry;
+			XmRowColumn elem_tool_command_field_entry;
 			XmSeparatorGadget elem_tool_separator1;
 			XmPushButtonGadget elem_tool_destroy_selected_btn;
 			};
@@ -176,7 +176,7 @@ object
       };
     };
 !*******************************************************************************
-  elem_tool_url_field_entry: XmRowColumn
+  elem_tool_command_field_entry: XmRowColumn
     {
 		arguments
 			{
@@ -193,32 +193,32 @@ object
 			};
     controls
       {
-      XmToggleButtonGadget elem_tool_url_field_btn;
-      XmForm elem_tool_url_field_form;
+      XmToggleButtonGadget elem_tool_command_field_btn;
+      XmForm elem_tool_command_field_form;
       };
     };
-  elem_tool_url_field_btn: XmToggleButtonGadget
+  elem_tool_command_field_btn: XmToggleButtonGadget
     {
     arguments
       {
-      XmNlabelString = compound_string("URL field:");
+      XmNlabelString = compound_string("COMMAND field:");
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNfontList = button_font;
       };
 		callbacks
 			{
 			MrmNcreateCallback = procedure
-				elem_tool_id_url_field_btn(elem_tool_structure);
+				elem_tool_id_command_field_btn(elem_tool_structure);
       XmNvalueChangedCallback = procedure
-				elem_tool_url_field_btn_CB(elem_tool_structure);
+				elem_tool_command_field_btn_CB(elem_tool_structure);
 			};
     };
-	elem_tool_url_field_form: XmForm
+	elem_tool_command_field_form: XmForm
 		{
 		callbacks
 			{
 			MrmNcreateCallback = procedure
-				elem_tool_id_url_field_form(elem_tool_structure);
+				elem_tool_id_command_field_form(elem_tool_structure);
 			};
 		};
 !*******************************************************************************
@@ -229,7 +229,7 @@ object
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = elem_tool_url_field_entry;
+			XmNtopWidget = elem_tool_command_field_entry;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		};

@@ -98,7 +98,7 @@ changes in node position and derivatives etc.
 		 a stream of nodes where the user swipes, rather than just 1 */
 	int streaming_create_enabled;
 	enum Node_tool_edit_mode edit_mode;
-	struct Computed_field *coordinate_field, *url_field;
+	struct Computed_field *coordinate_field, *command_field;
 	struct FE_node *template_node;
 	/* information about picked nodes the editor knows about */
 	struct Scene_picked_object *scene_picked_object;
@@ -116,7 +116,7 @@ changes in node position and derivatives etc.
 	Widget coordinate_field_form,coordinate_field_widget,create_button,
 		define_button,edit_button,motion_update_button,node_group_form,
 		node_group_widget,select_button,streaming_create_button,
-		url_field_button,url_field_form,url_field_widget;
+		command_field_button,command_field_form,command_field_widget;
 	Widget widget,window_shell;
 #else /* defined (MOTIF) */
 	/* without cmiss_region_chooser need somewhere to store the region path */
@@ -177,8 +177,8 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,motion_update_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,node_group_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,select_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,streaming_create_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,url_field_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,url_field_form)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,command_field_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,command_field_form)
 #endif /* defined (MOTIF) */
 
 static int Node_tool_define_field_at_node(struct Node_tool *node_tool,
@@ -1418,81 +1418,81 @@ ie. streaming in response to interactive events = user drags.
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-static void Node_tool_url_field_button_CB(Widget widget,
+static void Node_tool_command_field_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2002
 
 DESCRIPTION :
-Callback from toggle button enabling a url_field to be selected.
+Callback from toggle button enabling a command_field to be selected.
 ==============================================================================*/
 {
-	struct Computed_field *url_field;
+	struct Computed_field *command_field;
 	struct Node_tool *node_tool;
 
-	ENTER(Node_tool_url_field_button_CB);
+	ENTER(Node_tool_command_field_button_CB);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
 	if (node_tool=(struct Node_tool *)node_tool_void)
 	{
-		if (Node_tool_get_url_field(node_tool))
+		if (Node_tool_get_command_field(node_tool))
 		{
-			Node_tool_set_url_field(node_tool, (struct Computed_field *)NULL);
+			Node_tool_set_command_field(node_tool, (struct Computed_field *)NULL);
 		}
 		else
 		{
 			/* get label field from widget */
-			url_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
-				node_tool->url_field_widget);
-			if (url_field)
+			command_field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+				node_tool->command_field_widget);
+			if (command_field)
 			{
-				Node_tool_set_url_field(node_tool, url_field);
+				Node_tool_set_command_field(node_tool, command_field);
 			}
 			else
 			{
-				XtVaSetValues(node_tool->url_field_button, XmNset, False, NULL);
+				XtVaSetValues(node_tool->command_field_button, XmNset, False, NULL);
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_url_field_button_CB.  Invalid argument(s)");
+			"Node_tool_command_field_button_CB.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Node_tool_url_field_button_CB */
+} /* Node_tool_command_field_button_CB */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-static void Node_tool_update_url_field(Widget widget,
-	void *node_tool_void, void *url_field_void)
+static void Node_tool_update_command_field(Widget widget,
+	void *node_tool_void, void *command_field_void)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2002
 
 DESCRIPTION :
-Callback for change of url_field.
+Callback for change of command_field.
 ==============================================================================*/
 {
 	struct Node_tool *node_tool;
 
-	ENTER(Node_tool_update_url_field);
+	ENTER(Node_tool_update_command_field);
 	USE_PARAMETER(widget);
 	if (node_tool = (struct Node_tool *)node_tool_void)
 	{
 		/* skip messages from chooser if it is grayed out */
-		if (XtIsSensitive(node_tool->url_field_widget))
+		if (XtIsSensitive(node_tool->command_field_widget))
 		{
-			Node_tool_set_url_field(node_tool,
-				(struct Computed_field *)url_field_void);
+			Node_tool_set_command_field(node_tool,
+				(struct Computed_field *)command_field_void);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_update_url_field.  Invalid argument(s)");
+			"Node_tool_update_command_field.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Node_tool_update_url_field */
+} /* Node_tool_update_command_field */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
@@ -1673,7 +1673,7 @@ of space affected by the interaction. Main events are button press, movement and
 release.
 ==============================================================================*/
 {
-	char *url_string;
+	char *command_string;
 	double d;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Interactive_event_type event_type;
@@ -1722,10 +1722,10 @@ release.
 							}
 							if (picked_node)
 							{
-								/* Open url_field of picked_node in browser */
-								if (node_tool->url_field)
+								/* Execute command_field of picked_node */
+								if (node_tool->command_field)
 								{
-									if (Computed_field_is_defined_at_node(node_tool->url_field,
+									if (Computed_field_is_defined_at_node(node_tool->command_field,
 										picked_node))
 									{
 										if (node_tool->time_keeper)
@@ -1736,14 +1736,13 @@ release.
 										{
 											time = 0;
 										}
-										if (url_string = Computed_field_evaluate_as_string_at_node(
-											node_tool->url_field, /*component_number*/-1,
+										if (command_string = Computed_field_evaluate_as_string_at_node(
+											node_tool->command_field, /*component_number*/-1,
 											picked_node, time))
 										{
-											do_help(url_string,
-												/*help_examples_directory*/(char *)NULL,
-												node_tool->execute_command, node_tool->user_interface);
-											DEALLOCATE(url_string);
+											Execute_command_execute_string(node_tool->execute_command,
+												command_string);
+											DEALLOCATE(command_string);
 										}
 									}
 								}
@@ -2197,10 +2196,10 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			DIALOG_IDENTIFY(node_tool,node_group_form)},
 		{"node_tool_id_coord_field_form",(XtPointer)
 			DIALOG_IDENTIFY(node_tool,coordinate_field_form)},
-		{"node_tool_id_url_field_btn",(XtPointer)
-			DIALOG_IDENTIFY(node_tool,url_field_button)},
-		{"node_tool_id_url_field_form",(XtPointer)
-			DIALOG_IDENTIFY(node_tool,url_field_form)},
+		{"node_tool_id_command_field_btn",(XtPointer)
+			DIALOG_IDENTIFY(node_tool,command_field_button)},
+		{"node_tool_id_command_field_form",(XtPointer)
+			DIALOG_IDENTIFY(node_tool,command_field_form)},
 		{"node_tool_select_btn_CB",
 		 (XtPointer)Node_tool_select_button_CB},
 		{"node_tool_edit_btn_CB",
@@ -2213,8 +2212,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 		 (XtPointer)Node_tool_create_button_CB},
 		{"node_tool_streaming_btn_CB",
 		 (XtPointer)Node_tool_streaming_create_button_CB},
-		{"node_tool_url_field_btn_CB",
-		 (XtPointer)Node_tool_url_field_button_CB},
+		{"node_tool_command_field_btn_CB",
+		 (XtPointer)Node_tool_command_field_button_CB},
 		{"node_tool_destroy_selected_CB",
 		 (XtPointer)Node_tool_destroy_selected_CB},
 		{"node_tool_undefine_selected_CB",
@@ -2266,7 +2265,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 					Computed_field_has_up_to_3_numerical_components, (void *)NULL,
 					computed_field_manager);
-			node_tool->url_field = (struct Computed_field *)NULL;
+			node_tool->command_field = (struct Computed_field *)NULL;
 			node_tool->template_node=(struct FE_node *)NULL;
 			/* interactive_tool */
 			if (use_data)
@@ -2310,9 +2309,9 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			node_tool->node_group_widget=(Widget)NULL;
 			node_tool->select_button=(Widget)NULL;
 			node_tool->streaming_create_button=(Widget)NULL;
-			node_tool->url_field_button=(Widget)NULL;
-			node_tool->url_field_form=(Widget)NULL;
-			node_tool->url_field_widget=(Widget)NULL;
+			node_tool->command_field_button=(Widget)NULL;
+			node_tool->command_field_form=(Widget)NULL;
+			node_tool->command_field_widget=(Widget)NULL;
 			node_tool->widget=(Widget)NULL;
 			node_tool->window_shell=(Widget)NULL;
 
@@ -2370,17 +2369,17 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 								{
 									init_widgets=0;
 								}
-								if (node_tool->url_field_widget =
+								if (node_tool->command_field_widget =
 									CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
-										node_tool->url_field_form,
-										node_tool->url_field, computed_field_manager,
+										node_tool->command_field_form,
+										node_tool->command_field, computed_field_manager,
 										Computed_field_has_string_value_type,
 										(void *)NULL, user_interface))
 								{
 									callback.data = (void *)node_tool;
-									callback.procedure = Node_tool_update_url_field;
+									callback.procedure = Node_tool_update_command_field;
 									CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
-										node_tool->url_field_widget, &callback);
+										node_tool->command_field_widget, &callback);
 								}
 								else
 								{
@@ -2420,9 +2419,9 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 										node_tool->streaming_create_button,
 										/*state*/node_tool->streaming_create_enabled,
 										/*notify*/False);
-									XmToggleButtonGadgetSetState(node_tool->url_field_button,
+									XmToggleButtonGadgetSetState(node_tool->command_field_button,
 										/*state*/False, /*notify*/False);
-									XtSetSensitive(node_tool->url_field_widget, /*state*/False);
+									XtSetSensitive(node_tool->command_field_widget, /*state*/False);
 									XtManageChild(node_tool->widget);
 									XtRealizeWidget(node_tool->window_shell);
 								}
@@ -3353,77 +3352,75 @@ created as the user drags the mouse around.
 	return (return_code);
 } /* Node_tool_set_streaming_create_enabled */
 
-struct Computed_field *Node_tool_get_url_field(
+struct Computed_field *Node_tool_get_command_field(
 	struct Node_tool *node_tool)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2002
 
 DESCRIPTION :
-Returns the url_field to be looked up in a web browser when the node is clicked
-on in the <node_tool>.
+Returns the command_field to be exectued when the node is clicked on in the <node_tool>.
 ==============================================================================*/
 {
-	struct Computed_field *url_field;
+	struct Computed_field *command_field;
 
-	ENTER(Node_tool_get_url_field);
+	ENTER(Node_tool_get_command_field);
 	if (node_tool)
 	{
-		url_field=node_tool->url_field;
+		command_field=node_tool->command_field;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_get_url_field.  Invalid argument(s)");
-		url_field=(struct Computed_field *)NULL;
+			"Node_tool_get_command_field.  Invalid argument(s)");
+		command_field=(struct Computed_field *)NULL;
 	}
 	LEAVE;
 
-	return (url_field);
-} /* Node_tool_get_url_field */
+	return (command_field);
+} /* Node_tool_get_command_field */
 
-int Node_tool_set_url_field(struct Node_tool *node_tool,
-	struct Computed_field *url_field)
+int Node_tool_set_command_field(struct Node_tool *node_tool,
+	struct Computed_field *command_field)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2002
 
 DESCRIPTION :
-Sets the url_field to be looked up in a web browser when the node is clicked on
-in the <node_tool>.
+Sets the command_field to be executed when the node is clicked on in the <node_tool>.
 ==============================================================================*/
 {
 	int field_set, return_code;
 
-	ENTER(Node_tool_set_url_field);
-	if (node_tool && ((!url_field) ||
-		Computed_field_has_string_value_type(url_field, (void *)NULL)))
+	ENTER(Node_tool_set_command_field);
+	if (node_tool && ((!command_field) ||
+		Computed_field_has_string_value_type(command_field, (void *)NULL)))
 	{
 		return_code = 1;
-		if (url_field != node_tool->url_field)
+		if (command_field != node_tool->command_field)
 		{
-			node_tool->url_field = url_field;
+			node_tool->command_field = command_field;
 #if defined (MOTIF)
-			if (url_field)
+			if (command_field)
 			{
 				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
-					node_tool->url_field_widget,node_tool->url_field);
+					node_tool->command_field_widget,node_tool->command_field);
 			}
 #endif /* defined (MOTIF) */
-			field_set = ((struct Computed_field *)NULL != url_field);
+			field_set = ((struct Computed_field *)NULL != command_field);
 #if defined (MOTIF)
-			XtVaSetValues(node_tool->url_field_button,
+			XtVaSetValues(node_tool->command_field_button,
 				XmNset, (XtPointer)field_set, NULL);
-			XtSetSensitive(node_tool->url_field_widget, field_set);
+			XtSetSensitive(node_tool->command_field_widget, field_set);
 #endif /* defined (MOTIF) */
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Node_tool_set_url_field.  Invalid argument(s)");
+			"Node_tool_set_command_field.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Node_tool_set_url_field */
+} /* Node_tool_set_command_field */
 

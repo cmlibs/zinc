@@ -258,24 +258,22 @@ Sets flag controlling, if create_enabled, whether a stream of nodes is
 created as the user drags the mouse around.
 ==============================================================================*/
 
-struct Computed_field *Node_tool_get_url_field(
+struct Computed_field *Node_tool_get_command_field(
 	struct Node_tool *node_tool);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2002
+LAST MODIFIED : 30 September 2003
 
 DESCRIPTION :
-Returns the url_field to be looked up in a web browser when the node is clicked
-on in the <node_tool>.
+Returns the command_field to be executed when the node is clicked on in the <node_tool>.
 ==============================================================================*/
 
-int Node_tool_set_url_field(struct Node_tool *node_tool,
-	struct Computed_field *url_field);
+int Node_tool_set_command_field(struct Node_tool *node_tool,
+	struct Computed_field *command_field);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2002
+LAST MODIFIED : 30 September 2003
 
 DESCRIPTION :
-Sets the url_field to be looked up in a web browser when the node is clicked on
-in the <node_tool>.
+Sets the command_field to be executed when the node is clicked on in the <node_tool>.
 ==============================================================================*/
 
 #endif /* !defined (NODE_TOOL_H) */

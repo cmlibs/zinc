@@ -76,25 +76,25 @@ DESCRIPTION :
 Hides the dialog for editing settings of the Element_point_tool.
 ==============================================================================*/
 
-struct Computed_field *Element_point_tool_get_url_field(
+struct Computed_field *Element_point_tool_get_command_field(
 	struct Element_point_tool *element_point_tool);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 30 September 2003
 
 DESCRIPTION :
-Returns the url_field to be looked up in a web browser when the element is
-clicked on in the <element_point_tool>.
+Returns the command_field to be executed when the element is clicked on in the 
+<element_point_tool>.
 ==============================================================================*/
 
-int Element_point_tool_set_url_field(
+int Element_point_tool_set_command_field(
 	struct Element_point_tool *element_point_tool,
-	struct Computed_field *url_field);
+	struct Computed_field *command_field);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 30 September 2003
 
 DESCRIPTION :
-Sets the url_field to be looked up in a web browser when the element is clicked
-on in the <element_point_tool>.
+Sets the command_field to be executed when the element is clicked on in the 
+<element_point_tool>.
 ==============================================================================*/
 
 #endif /* !defined (ELEMENT_POINT_TOOL_H) */

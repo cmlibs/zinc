@@ -10,10 +10,10 @@ module element_point_tool_module
 	version = 'v1.0'
 
 procedure
-	elem_pnt_tool_id_url_field_btn;
-	elem_pnt_tool_id_url_field_form;
+	elem_pnt_tool_id_cmd_field_btn;
+	elem_pnt_tool_id_cmd_field_form;
 
-	elem_pnt_tool_url_field_btn_CB;
+	elem_pnt_tool_cmd_field_btn_CB;
 
 identifier
 	!Pointer to data specific to this instance of the elem_tool widget
@@ -94,11 +94,11 @@ object
 			};
 		controls
 			{
-			XmRowColumn elem_pnt_tool_url_field_entry;
+			XmRowColumn elem_pnt_tool_cmd_field_entry;
 			};
 		};
 !*******************************************************************************
-  elem_pnt_tool_url_field_entry: XmRowColumn
+  elem_pnt_tool_cmd_field_entry: XmRowColumn
     {
 		arguments
 			{
@@ -114,32 +114,32 @@ object
 			};
     controls
       {
-      XmToggleButtonGadget elem_pnt_tool_url_field_btn;
-      XmForm elem_pnt_tool_url_field_form;
+      XmToggleButtonGadget elem_pnt_tool_cmd_field_btn;
+      XmForm elem_pnt_tool_cmd_field_form;
       };
     };
-  elem_pnt_tool_url_field_btn: XmToggleButtonGadget
+  elem_pnt_tool_cmd_field_btn: XmToggleButtonGadget
     {
     arguments
       {
-      XmNlabelString = compound_string("URL field:");
+      XmNlabelString = compound_string("CMD field:");
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNfontList = button_font;
       };
 		callbacks
 			{
 			MrmNcreateCallback = procedure
-				elem_pnt_tool_id_url_field_btn(elem_pnt_tool_structure);
+				elem_pnt_tool_id_cmd_field_btn(elem_pnt_tool_structure);
       XmNvalueChangedCallback = procedure
-				elem_pnt_tool_url_field_btn_CB(elem_pnt_tool_structure);
+				elem_pnt_tool_cmd_field_btn_CB(elem_pnt_tool_structure);
 			};
     };
-	elem_pnt_tool_url_field_form: XmForm
+	elem_pnt_tool_cmd_field_form: XmForm
 		{
 		callbacks
 			{
 			MrmNcreateCallback = procedure
-				elem_pnt_tool_id_url_field_form(elem_pnt_tool_structure);
+				elem_pnt_tool_id_cmd_field_form(elem_pnt_tool_structure);
 			};
 		};
 end module;

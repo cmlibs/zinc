@@ -124,24 +124,24 @@ DESCRIPTION :
 Returns flag controlling whether line & 1-D top-level elements can be selected.
 ==============================================================================*/
 
-struct Computed_field *Element_tool_get_url_field(
+struct Computed_field *Element_tool_get_command_field(
 	struct Element_tool *element_tool);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 30 September 2003
 
 DESCRIPTION :
-Returns the url_field to be looked up in a web browser when the element is
-clicked on in the <element_tool>.
+Returns the command_field to be executed when the element is clicked on in the
+ <element_tool>.
 ==============================================================================*/
 
-int Element_tool_set_url_field(struct Element_tool *element_tool,
-	struct Computed_field *url_field);
+int Element_tool_set_command_field(struct Element_tool *element_tool,
+	struct Computed_field *command_field);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2002
+LAST MODIFIED : 30 September 2003
 
 DESCRIPTION :
-Sets the url_field to be looked up in a web browser when the element is clicked
-on in the <element_tool>.
+Sets the command_field to be executed when the element is clicked on in the 
+<element_tool>.
 ==============================================================================*/
 
 #endif /* !defined (ELEMENT_TOOL_H) */

@@ -10769,10 +10769,10 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 	char *dialog_string;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct Computed_field *url_field;
+	struct Computed_field *command_field;
 	struct Element_point_tool *element_point_tool;
 	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_url_field_data;
+	struct Set_Computed_field_conditional_data set_command_field_data;
 
 	ENTER(execute_command_gfx_element_point_tool);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -10781,30 +10781,30 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 		/* initialize defaults */
 		if (element_point_tool=command_data->element_point_tool)
 		{
-			url_field = Element_point_tool_get_url_field(element_point_tool);
+			command_field = Element_point_tool_get_command_field(element_point_tool);
 		}
 		else
 		{
-			url_field = (struct Computed_field *)NULL;
+			command_field = (struct Computed_field *)NULL;
 		}
-		if (url_field)
+		if (command_field)
 		{
-			ACCESS(Computed_field)(url_field);
+			ACCESS(Computed_field)(command_field);
 		}
 		option_table = CREATE(Option_table)();
 		/* open_dialog/close_dialog */
 		dialog_string = (char *)NULL;
 		Option_table_add_enumerator(option_table, /*number_of_valid_strings*/2,
 			dialog_strings, &dialog_string);
-		/* url_field */
-		set_url_field_data.computed_field_manager=
+		/* command_field */
+		set_command_field_data.computed_field_manager=
 			Computed_field_package_get_computed_field_manager(
 				command_data->computed_field_package);
-		set_url_field_data.conditional_function =
+		set_command_field_data.conditional_function =
 			Computed_field_has_string_value_type;
-		set_url_field_data.conditional_function_user_data = (void *)NULL;
-		Option_table_add_entry(option_table, "url_field", &url_field,
-			&set_url_field_data, set_Computed_field_conditional);
+		set_command_field_data.conditional_function_user_data = (void *)NULL;
+		Option_table_add_entry(option_table, "command_field", &command_field,
+			&set_command_field_data, set_Computed_field_conditional);
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
 			if (element_point_tool)
@@ -10813,7 +10813,7 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 				{
 					Element_point_tool_pop_down_dialog(element_point_tool);
 				}
-				Element_point_tool_set_url_field(element_point_tool,url_field);
+				Element_point_tool_set_command_field(element_point_tool,command_field);
 				if (dialog_string == dialog_strings[0])
 				{
 					Element_point_tool_pop_up_dialog(element_point_tool);
@@ -10828,9 +10828,9 @@ Executes a GFX ELEMENT_POINT_TOOL command.
 			}
 		} /* parse error,help */
 		DESTROY(Option_table)(&option_table);
-		if (url_field)
+		if (command_field)
 		{
-			DEACCESS(Computed_field)(&url_field);
+			DEACCESS(Computed_field)(&command_field);
 		}
 	}
 	else
@@ -10860,10 +10860,10 @@ Executes a GFX ELEMENT_TOOL command.
 	int select_elements_enabled,select_faces_enabled,select_lines_enabled,
 		return_code;
 	struct Cmiss_command_data *command_data;
-	struct Computed_field *url_field;
+	struct Computed_field *command_field;
 	struct Element_tool *element_tool;
 	struct Option_table *option_table;
-	struct Set_Computed_field_conditional_data set_url_field_data;
+	struct Set_Computed_field_conditional_data set_command_field_data;
 
 	ENTER(execute_command_gfx_element_tool);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -10876,18 +10876,18 @@ Executes a GFX ELEMENT_TOOL command.
 				Element_tool_get_select_elements_enabled(element_tool);
 			select_faces_enabled=Element_tool_get_select_faces_enabled(element_tool);
 			select_lines_enabled=Element_tool_get_select_lines_enabled(element_tool);
-			url_field=Element_tool_get_url_field(element_tool);
+			command_field=Element_tool_get_command_field(element_tool);
 		}
 		else
 		{
 			select_elements_enabled=1;
 			select_faces_enabled=1;
 			select_lines_enabled=1;
-			url_field = (struct Computed_field *)NULL;
+			command_field = (struct Computed_field *)NULL;
 		}
-		if (url_field)
+		if (command_field)
 		{
-			ACCESS(Computed_field)(url_field);
+			ACCESS(Computed_field)(command_field);
 		}
 		option_table=CREATE(Option_table)();
 		/* open_dialog/close_dialog */
@@ -10903,15 +10903,15 @@ Executes a GFX ELEMENT_TOOL command.
 		/* select_lines/no_select_lines */
 		Option_table_add_switch(option_table,"select_lines","no_select_lines",
 			&select_lines_enabled);
-		/* url_field */
-		set_url_field_data.computed_field_manager=
+		/* command_field */
+		set_command_field_data.computed_field_manager=
 			Computed_field_package_get_computed_field_manager(
 				command_data->computed_field_package);
-		set_url_field_data.conditional_function =
+		set_command_field_data.conditional_function =
 			Computed_field_has_string_value_type;
-		set_url_field_data.conditional_function_user_data=(void *)NULL;
-		Option_table_add_entry(option_table,"url_field",&url_field,
-			&set_url_field_data,set_Computed_field_conditional);
+		set_command_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"command_field",&command_field,
+			&set_command_field_data,set_Computed_field_conditional);
 		if (return_code=Option_table_multi_parse(option_table,state))
 		{
 			if (element_tool)
@@ -10926,7 +10926,7 @@ Executes a GFX ELEMENT_TOOL command.
 					select_faces_enabled);
 				Element_tool_set_select_lines_enabled(element_tool,
 					select_lines_enabled);
-				Element_tool_set_url_field(element_tool,url_field);
+				Element_tool_set_command_field(element_tool,command_field);
 				if (dialog_string == dialog_strings[0])
 				{
 					Element_tool_pop_up_dialog(element_tool);
@@ -10940,9 +10940,9 @@ Executes a GFX ELEMENT_TOOL command.
 			}
 		} /* parse error,help */
 		DESTROY(Option_table)(&option_table);
-		if (url_field)
+		if (command_field)
 		{
-			DEACCESS(Computed_field)(&url_field);
+			DEACCESS(Computed_field)(&command_field);
 		}
 	}
 	else
@@ -15566,11 +15566,11 @@ Which tool that is being modified is passed in <node_tool_void>.
 		return_code,select_enabled, streaming_create_enabled;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *root_region;
-	struct Computed_field *coordinate_field, *url_field;
+	struct Computed_field *coordinate_field, *command_field;
 	struct Node_tool *node_tool;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_url_field_data;
+		set_command_field_data;
 
 	ENTER(execute_command_gfx_node_tool);
 	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
@@ -15593,7 +15593,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 		motion_update_enabled=0;
 		select_enabled=1;
 		streaming_create_enabled = 0;
-		url_field=(struct Computed_field *)NULL;
+		command_field=(struct Computed_field *)NULL;
 		region_path = (char *)NULL;
 		if (node_tool)
 		{
@@ -15605,16 +15605,16 @@ Which tool that is being modified is passed in <node_tool_void>.
 			select_enabled=Node_tool_get_select_enabled(node_tool);
 			streaming_create_enabled =
 				Node_tool_get_streaming_create_enabled(node_tool);
-			url_field=Node_tool_get_url_field(node_tool);
+			command_field=Node_tool_get_command_field(node_tool);
 			Node_tool_get_region_path(node_tool, &region_path);
 		}
 		if (coordinate_field)
 		{
 			ACCESS(Computed_field)(coordinate_field);
 		}
-		if (url_field)
+		if (command_field)
 		{
-			ACCESS(Computed_field)(url_field);
+			ACCESS(Computed_field)(command_field);
 		}
 
 		option_table=CREATE(Option_table)();
@@ -15648,15 +15648,15 @@ Which tool that is being modified is passed in <node_tool_void>.
 		/* streaming_create/no_streaming_create */
 		Option_table_add_switch(option_table, "streaming_create",
 			"no_streaming_create", &streaming_create_enabled);
-		/* url_field */
-		set_url_field_data.computed_field_manager=
+		/* command_field */
+		set_command_field_data.computed_field_manager=
 			Computed_field_package_get_computed_field_manager(
 				command_data->computed_field_package);
-		set_url_field_data.conditional_function =
+		set_command_field_data.conditional_function =
 			Computed_field_has_string_value_type;
-		set_url_field_data.conditional_function_user_data=(void *)NULL;
-		Option_table_add_entry(option_table,"url_field",&url_field,
-			&set_url_field_data,set_Computed_field_conditional);
+		set_command_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table,"command_field",&command_field,
+			&set_command_field_data,set_Computed_field_conditional);
 		if (return_code = Option_table_multi_parse(option_table,state))
 		{
 			if (node_tool)
@@ -15669,7 +15669,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 				Node_tool_set_region_path(node_tool,region_path);
 				Node_tool_set_streaming_create_enabled(node_tool,
 					streaming_create_enabled);
-				Node_tool_set_url_field(node_tool,url_field);
+				Node_tool_set_command_field(node_tool,command_field);
 
 				/* Set the state after setting the parameters as some of them
 				   states rely on these parameters */
@@ -15696,9 +15696,9 @@ Which tool that is being modified is passed in <node_tool_void>.
 		{
 			DEALLOCATE(region_path);
 		}
-		if (url_field)
+		if (command_field)
 		{
-			DEACCESS(Computed_field)(&url_field);
+			DEACCESS(Computed_field)(&command_field);
 		}
 		if (coordinate_field)
 		{
@@ -22069,6 +22069,53 @@ Executes a OPEN MENU command.
 } /* execute_command_open_menu */
 #endif /* defined (MOTIF) */
 
+static int execute_command_open_url(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 30 September 2003
+
+DESCRIPTION :
+Executes a OPEN URL command.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+
+	ENTER(execute_command_open_url);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		{
+			if (state->current_token)
+			{
+				do_help(state->current_token,
+					/*help_examples_directory*/(char *)NULL,
+					command_data->execute_command,
+					command_data->user_interface);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"execute_command_open_url.  Missing url");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"execute_command_open_url.  Missing command_data");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"execute_command_open_url.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_open_url */
+
 static int execute_command_read(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -22289,6 +22336,8 @@ Executes a OPEN command.
 				Option_table_add_entry(option_table, "menu", NULL,
 					command_data_void, execute_command_open_menu);
 #endif /* defined (MOTIF) */
+				Option_table_add_entry(option_table, "url", NULL,
+					command_data_void, execute_command_open_url);
 				return_code=Option_table_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
