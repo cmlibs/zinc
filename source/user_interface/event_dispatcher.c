@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : event_dispatcher.c
 
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 24 October 2002
 
 DESCRIPTION :
 This provides an object which interfaces between a event_dispatcher and Cmgui
@@ -1303,10 +1303,9 @@ DESCRIPTION :
 
 int Event_dispatcher_do_one_event(struct Event_dispatcher *event_dispatcher)
 /*******************************************************************************
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 24 October 2002
 
 DESCRIPTION :
-
 ==============================================================================*/
 {
 	int return_code;
@@ -1426,9 +1425,9 @@ DESCRIPTION :
 					event_dispatcher->special_idle_callback_pending = 1;
 				}
 				/* Call the file handler then */
+				file_descriptor_callback->pending = 0;
 				(*file_descriptor_callback->handler_function)(file_descriptor_callback->file_descriptor,
 					file_descriptor_callback->user_data);
-				file_descriptor_callback->pending = 0;
 			}
 			else
 			{
