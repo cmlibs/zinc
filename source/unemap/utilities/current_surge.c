@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : current_surge.c
 
-LAST MODIFIED : 9 April 2000
+LAST MODIFIED : 22 April 2000
 
 DESCRIPTION :
 Code for turning a unemap power distribution unit on and off until a current
@@ -216,6 +216,9 @@ u32 module_sampling_high_count=0,module_sampling_low_count=0;
 int module_slave=0;
 
 int max_channels=NUMBER_OF_CHANNELS_ON_NI_CARD;
+
+/*???debug */
+FILE *history_file=(FILE *)NULL;
 
 /*
 Module functions
@@ -1721,8 +1724,17 @@ Always called so that <module_starting_sample_number> and
 	struct NI_card *ni_card;
 	unsigned char *byte_array;
 	unsigned long offset,number_of_samples,sample_number;
+	/*???debug */
+	static int first=1;
+	static UINT last_message=0;
 
 	ENTER(scrolling_callback_NI);
+	/*???debug */
+	if (history_file&&first)
+	{
+		fprintf(history_file,"scrolling_callback_NI first message %u\n",message);
+		first=0;
+	}
 	/* keep <module_starting_sample_number> and <module_sample_buffer_size> up to
 		date */
 	sample_number=(unsigned long)lParam;
@@ -1745,6 +1757,14 @@ Always called so that <module_starting_sample_number> and
 		{
 			module_sample_buffer_size=number_of_samples;
 			module_starting_sample_number=sample_number%number_of_samples;
+			/*???debug */
+			if (history_file)
+			{
+				fprintf(history_file,
+					"1.  change module_starting_sample_number %lu  %u %u  %lu %lu\n",
+					module_starting_sample_number,message,last_message,sample_number,
+					number_of_samples);
+			}
 			if (module_buffer_full_callback)
 			{
 				(*module_buffer_full_callback)(module_buffer_full_callback_data);
@@ -1754,6 +1774,12 @@ Always called so that <module_starting_sample_number> and
 	else
 	{
 		module_starting_sample_number=sample_number%number_of_samples;
+		/*???debug */
+		if (history_file)
+		{
+			fprintf(history_file,"2.  change module_starting_sample_number %lu\n",
+				module_starting_sample_number);
+		}
 	}
 #if defined (DEBUG)
 /*???debug */
@@ -1930,6 +1956,8 @@ Always called so that <module_starting_sample_number> and
 			}
 		}
 	}
+	/*???debug */
+	last_message=message;
 	LEAVE;
 } /* scrolling_callback_NI */
 #endif /* defined (NI_DAQ) */
@@ -2166,6 +2194,12 @@ hardware.
 			}
 			module_sample_buffer_size=0;
 			module_starting_sample_number=0;
+			/*???debug */
+			if (history_file)
+			{
+				fprintf(history_file,"3.  change module_starting_sample_number %lu\n",
+					module_starting_sample_number);
+			}
 			module_scrolling_refresh_period=0;
 #if defined (WINDOWS)
 			module_scrolling_window=(HWND)NULL;
@@ -2531,9 +2565,40 @@ unemap_get_antialiasing_filter.
 	return (return_code);
 } /* unemap_set_antialiasing_filter_frequency */
 
+enum Power_sequence
+/*******************************************************************************
+LAST MODIFIED : 18 April 2000
+
+DESCRIPTION :
+The power up sequence for the different supplies (power down is the reverse).
+P = VCC+ (BattA)
+N = VCC- (BattB)
+D = VCC  (Batt24)
+_ means a delay and no _ means no delay
+eg.  PN_D means that VCC+ and VCC- are switch at the same time and then VCC is
+switched on.
+==============================================================================*/
+{
+	PND,
+	PN_D,
+	PD_N,
+	ND_P,
+	P_ND,
+	N_PD,
+	D_PN,
+	P_N_D,
+	P_D_N,
+	N_P_D,
+	N_D_P,
+	D_P_N,
+	D_N_P
+}; /* enum Power_sequence */
+
+static enum Power_sequence power_sequence=PND;
+
 static int unemap_set_power(int on)
 /*******************************************************************************
-LAST MODIFIED : 26 March 2000
+LAST MODIFIED : 22 April 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -2566,8 +2631,130 @@ on.
 				}
 				else
 				{
+#if defined (OLD_CODE)
 					set_shift_register(module_NI_CARDS,BattA_SHIFT_REGISTER_UnEmap2vx,1,
 						1);
+#endif /* defined (OLD_CODE) */
+					switch (power_sequence)
+					{
+						case PND:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,0);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,0);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+						case PN_D:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,0);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+						case PD_N:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,0);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+						case ND_P:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,0);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+						case P_ND:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,0);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+						case N_PD:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,0);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+						case D_PN:
+						{
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,0);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+						case P_N_D:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+						case P_D_N:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+						case N_P_D:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+						case N_D_P:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+						case D_P_N:
+						{
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+						case D_N_P:
+						{
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,1,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,1,1);
+						} break;
+					}
 				}
 				channel_number=1;
 				for (i=0;i<module_number_of_NI_CARDS;i++)
@@ -2617,8 +2804,130 @@ on.
 				}
 				else
 				{
+#if defined (OLD_CODE)
 					set_shift_register(module_NI_CARDS,BattA_SHIFT_REGISTER_UnEmap2vx,0,
 						1);
+#endif /* defined (OLD_CODE) */
+					switch (power_sequence)
+					{
+						case PND:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,0);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,0);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+						case PN_D:
+						{
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,0);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+						case PD_N:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,0);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+						case ND_P:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,0);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+						case P_ND:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,0);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+						case N_PD:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,0);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+						case D_PN:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,0);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+						case P_N_D:
+						{
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+						case P_D_N:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+						case N_P_D:
+						{
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+						case N_D_P:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+						case D_P_N:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+						case D_N_P:
+						{
+							set_shift_register(module_NI_CARDS,
+								BattA_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								BattB_SHIFT_REGISTER_UnEmap2vx,0,1);
+							set_shift_register(module_NI_CARDS,
+								Batt24_SHIFT_REGISTER_UnEmap2vx,0,1);
+						} break;
+					}
 				}
 				BattA_setting_UnEmap2vx=0;
 			}
@@ -3168,6 +3477,12 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 					}
 					module_sample_buffer_size=0;
 					module_starting_sample_number=0;
+					/*???debug */
+					if (history_file)
+					{
+						fprintf(history_file,"4.  change module_starting_sample_number %lu\n",
+							module_starting_sample_number);
+					}
 					if (0==status)
 					{
 						return_code=1;
@@ -3864,6 +4179,14 @@ Starts the sampling.
 										(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD)%
 										((module_NI_CARDS[0]).hardware_buffer_size/
 										(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD);
+									/*???debug */
+									if (history_file)
+									{
+										fprintf(history_file,
+											"5.  change module_starting_sample_number %lu %lu %lu\n",
+											module_starting_sample_number,retrieved,
+											(module_NI_CARDS[0]).hardware_buffer_size);
+									}
 									module_sample_buffer_size=0;
 									/* start the data acquisition */
 									status=GPCTR_Control((module_NI_CARDS[0]).device_number,
@@ -3925,6 +4248,12 @@ Starts the sampling.
 					(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD)%
 					((module_NI_CARDS[0]).hardware_buffer_size/
 					(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD);
+				/*???debug */
+				if (history_file)
+				{
+					fprintf(history_file,"6.  change module_starting_sample_number %lu\n",
+						module_starting_sample_number);
+				}
 				module_sample_buffer_size=0;
 				return_code=1;
 				module_sampling_on=1;
@@ -4011,11 +4340,23 @@ many samples were acquired.
 					{
 						module_sample_buffer_size=number_of_samples;
 						module_starting_sample_number=sample_number%number_of_samples;
+						/*???debug */
+						if (history_file)
+						{
+							fprintf(history_file,"7.  change module_starting_sample_number %lu\n",
+								module_starting_sample_number);
+						}
 					}
 				}
 				else
 				{
 					module_starting_sample_number=sample_number%number_of_samples;
+					/*???debug */
+					if (history_file)
+					{
+						fprintf(history_file,"8.  change module_starting_sample_number %lu\n",
+							module_starting_sample_number);
+					}
 				}
 				return_code=1;
 			}
@@ -4228,6 +4569,8 @@ static void print_menu(int channel_number,unsigned long number_of_channels)
 	printf("(2) Set calibrate mode      \n");
 	printf("(3) Set record mode         \n");
 	printf("(4) Test until error        \n");
+	printf("(5) Show power sequence     \n");
+	printf("(6) Set power sequence      \n");
 	printf("?\n");
 } /* print_menu */
 
@@ -4246,6 +4589,7 @@ static void process_keyboard(
 	float mean_VCC,mean_VCCm,mean_VCCp,ratio_VCCm_VCC,ratio_VCC_VCCp;
 	int count,i,offset,return_code;
 	short int *sample;
+	unsigned long number_of_samples_acquired,window_length;
 #if defined (MOTIF)
 	float sampling_frequency;
 	int channel_number;
@@ -4290,7 +4634,9 @@ static void process_keyboard(
 #endif /* defined (WINDOWS) */
 					unemap_stop_sampling();
 					register_write_signal_file("surge.sig",channel_number);
-					if (unemap_get_samples_acquired(0,samples))
+					if (unemap_get_samples_acquired(0,samples)&&
+						unemap_get_number_of_samples_acquired(
+						&number_of_samples_acquired))
 					{
 						/* assume that channel 1 is VCC, channel 2 is VCC- and channel 3 is
 							VCC+ */
@@ -4298,16 +4644,23 @@ static void process_keyboard(
 						mean_VCCp=0;
 						mean_VCCm=0;
 						sample=samples;
-						for (i=number_of_samples;i>0;i--)
+						/* only average "steady state" */
+						offset=(int)(0.1*sampling_frequency);
+						/*???debug */
+						printf("%lu %lu %d\n",number_of_channels,number_of_samples_acquired,
+							offset);
+						sample += offset*number_of_channels;
+						number_of_samples_acquired -= 2*offset;
+						for (i=number_of_samples_acquired;i>0;i--)
 						{
-							mean_VCC += sample[0];
-							mean_VCCm += sample[1];
-							mean_VCCp += sample[2];
+							mean_VCC += sample[1];
+							mean_VCCm += sample[3];
+							mean_VCCp += sample[5];
 							sample += number_of_channels;
 						}
-						mean_VCC /= (float)number_of_samples;
-						mean_VCCm /= (float)number_of_samples;
-						mean_VCCp /= (float)number_of_samples;
+						mean_VCC /= (float)number_of_samples_acquired;
+						mean_VCCm /= (float)number_of_samples_acquired;
+						mean_VCCp /= (float)number_of_samples_acquired;
 						printf("mean VCC = %g\n",mean_VCC);
 						printf("mean VCC- = %g\n",mean_VCCm);
 						printf("mean VCC+ = %g\n",mean_VCCp);
@@ -4331,6 +4684,9 @@ static void process_keyboard(
 				case '4':
 				{
 					/* test until error */
+					/*???DB.  The history file id to try and determine why the saved file
+						is getting out of synch with the on/off sequence */
+					history_file=fopen("surge_history.txt","w");
 					return_code=1;
 					count=0;
 					do
@@ -4348,7 +4704,9 @@ static void process_keyboard(
 						Sleep((DWORD)100);
 #endif /* defined (WINDOWS) */
 						unemap_stop_sampling();
-						if (unemap_get_samples_acquired(0,samples))
+						if (unemap_get_samples_acquired(0,samples)&&
+							unemap_get_number_of_samples_acquired(
+							&number_of_samples_acquired))
 						{
 							/* assume that channel 1 is VCC, channel 2 is VCC- and channel 3
 								is VCC+ */
@@ -4357,19 +4715,28 @@ static void process_keyboard(
 							mean_VCCm=0;
 							sample=samples;
 							/* only average "steady state" */
-/*							for (i=number_of_samples;i>0;i--) */
 							offset=(int)(0.1*sampling_frequency);
 							sample += offset*number_of_channels;
-							for (i=number_of_samples-2*offset;i>0;i--)
+							window_length=number_of_samples_acquired-2*offset;
+							for (i=window_length;i>0;i--)
 							{
-								mean_VCC += sample[0];
-								mean_VCCm += sample[1];
-								mean_VCCp += sample[2];
+								mean_VCC += sample[1];
+								mean_VCCm += sample[3];
+								mean_VCCp += sample[5];
 								sample += number_of_channels;
 							}
-							mean_VCC /= (float)number_of_samples;
-							mean_VCCm /= (float)number_of_samples;
-							mean_VCCp /= (float)number_of_samples;
+							mean_VCC /= (float)window_length;
+							mean_VCCm /= (float)window_length;
+							mean_VCCp /= (float)window_length;
+							if (history_file)
+							{
+								fprintf(history_file,"%d.  %f %f %f  %lu %lu %lu\n",count,
+									mean_VCC,mean_VCCm,mean_VCCp,module_starting_sample_number,
+									module_sample_buffer_size,(module_starting_sample_number+
+									module_sample_buffer_size)%
+									((module_NI_CARDS->hardware_buffer_size)/
+									NUMBER_OF_CHANNELS_ON_NI_CARD));
+							}
 							if (0!=mean_VCC)
 							{
 								ratio_VCCm_VCC=mean_VCCm/mean_VCC;
@@ -4401,15 +4768,100 @@ static void process_keyboard(
 						/* give time for capacitors to discharge */
 #if defined (WINDOWS)
 						/* in milliseconds */
-						Sleep((DWORD)2000);
+/*						Sleep((DWORD)2000);*/
 #endif /* defined (WINDOWS) */
 /*					} while (return_code&&(ratio_VCCm_VCC< -1)&&(1<ratio_VCC_VCCp));*/
-					} while (return_code&&(ratio_VCCm_VCC< -0.9)&&(0.9<ratio_VCC_VCCp));
-					printf("number of power on/off cycles = %d\n",count);
+/*					} while (return_code&&(ratio_VCCm_VCC< -0.9)&&(0.9<ratio_VCC_VCCp));*/
+					} while (return_code&&(ratio_VCCm_VCC< -0.9)&&(0.9<ratio_VCC_VCCp)&&
+						(number_of_samples_acquired<4000));
+					if (history_file)
+					{
+						fclose(history_file);
+						history_file=(FILE *)NULL;
+					}
+					printf("number of power on/off cycles = %d.  %g %g %lu\n",count,
+						ratio_VCCm_VCC,ratio_VCC_VCCp,number_of_samples_acquired);
 					printf("mean VCC = %g\n",mean_VCC);
 					printf("mean VCC- = %g\n",mean_VCCm);
 					printf("mean VCC+ = %g\n",mean_VCCp);
 					register_write_signal_file("surge.sig",channel_number);
+				} break;
+				case '5':
+				{
+					/* show power sequence */
+					switch (power_sequence)
+					{
+						case PND:
+						{
+							printf("VCC+ and VCC- and VCC\n");
+						} break;
+						case PN_D:
+						{
+							printf("VCC+ and VCC- then VCC\n");
+						} break;
+						case PD_N:
+						{
+							printf("VCC+ and VCC then VCC-\n");
+						} break;
+						case ND_P:
+						{
+							printf("VCC- and VCC then VCC+\n");
+						} break;
+						case P_ND:
+						{
+							printf("VCC+ then VCC- and VCC\n");
+						} break;
+						case N_PD:
+						{
+							printf("VCC- then VCC+ and VCC\n");
+						} break;
+						case D_PN:
+						{
+							printf("VCC then VCC+ and VCC-\n");
+						} break;
+						case P_N_D:
+						{
+							printf("VCC+ then VCC- then VCC\n");
+						} break;
+						case P_D_N:
+						{
+							printf("VCC+ then VCC then VCC-\n");
+						} break;
+						case N_P_D:
+						{
+							printf("VCC- then VCC+ then VCC\n");
+						} break;
+						case N_D_P:
+						{
+							printf("VCC- then VCC then VCC+\n");
+						} break;
+						case D_P_N:
+						{
+							printf("VCC then VCC+ then VCC-\n");
+						} break;
+						case D_N_P:
+						{
+							printf("VCC then VCC- then VCC+\n");
+						} break;
+					}
+				} break;
+				case '6':
+				{
+					/* set power sequence */
+					printf("(%d) VCC+ and VCC- and VCC\n",PND);
+					printf("(%d) VCC+ and VCC- then VCC\n",PN_D);
+					printf("(%d) VCC+ and VCC then VCC-\n",PD_N);
+					printf("(%d) VCC- and VCC then VCC+\n",ND_P);
+					printf("(%d) VCC+ then VCC- and VCC\n",P_ND);
+					printf("(%d) VCC- then VCC+ and VCC\n",N_PD);
+					printf("(%d) VCC then VCC+ and VCC-\n",D_PN);
+					printf("(%d) VCC+ then VCC- then VCC\n",P_N_D);
+					printf("(%d) VCC+ then VCC then VCC-\n",P_D_N);
+					printf("(%d) VCC- then VCC+ then VCC\n",N_P_D);
+					printf("(%d) VCC- then VCC then VCC+\n",N_D_P);
+					printf("(%d) VCC then VCC+ then VCC-\n",D_P_N);
+					printf("(%d) VCC then VCC- then VCC+\n",D_N_P);
+					scanf("%d",&power_sequence);
 				} break;
 				default:
 				{
@@ -4549,6 +5001,12 @@ field of <ni_card>.
 			all the cards have to be restarted, otherwise they'd be out of synch */
 		module_sample_buffer_size=0;
 		module_starting_sample_number=0;
+		/*???debug */
+		if (history_file)
+		{
+			fprintf(history_file,"9.  change module_starting_sample_number %lu\n",
+				module_starting_sample_number);
+		}
 		ni_card_temp=module_NI_CARDS;
 		status=0;
 		j=module_number_of_NI_CARDS;
