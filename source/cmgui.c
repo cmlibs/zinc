@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 26 September 2000
+LAST MODIFIED : 13 October 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -32,6 +32,7 @@ DESCRIPTION :
 #include "element/element_tool.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_component_operations.h"
+#include "computed_field/computed_field_deformation.h"
 #include "computed_field/computed_field_derivatives.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_matrix_operations.h"
@@ -391,7 +392,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 13 October 2000
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -1112,6 +1113,8 @@ Main program for the CMISS Graphical User Interface
 				DESTROY(Computed_field)(&computed_field);
 			}
 		}
+		Computed_field_register_types_deformation(
+			command_data.computed_field_package);
 	}
 
 	/* scene manager */
