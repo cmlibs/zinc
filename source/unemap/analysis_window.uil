@@ -1233,8 +1233,7 @@ object
 			};
 		controls
 			{
-			XmPushButton analysis_file_read_signals_butt;
-			XmPushButton analysis_file_read_edf_butt;
+			XmPushButton analysis_file_read_signals_butt;			
 			XmPushButton analysis_file_overlay_signals_b;
 			XmPushButton analysis_file_save_interval_but;
 			XmPushButton analysis_file_save_interval_as_;
@@ -1245,6 +1244,7 @@ object
 			XmPushButton analysis_file_read_beekeeper_bu;
 			XmPushButton analysis_file_read_cardiomapp_b;
 			XmPushButton analysis_file_read_neurosoft_bu;
+			XmPushButton analysis_file_read_edf_butt;
 			};
 		};
 	analysis_file_read_signals_butt: XmPushButton
