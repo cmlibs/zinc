@@ -9,6 +9,7 @@
 //???DB.  Should be templates?
 //==============================================================================
 
+#include <new>
 #include <string>
 #include <stdio.h>
 using namespace std;

@@ -19,6 +19,7 @@
 //==============================================================================
 
 #include <algorithm>
+#include <new>
 #include <string>
 using namespace std;
 

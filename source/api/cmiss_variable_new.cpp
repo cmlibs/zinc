@@ -12,6 +12,7 @@ The public interface to the Cmiss_variable_new object.
 - changing to C++
 ==============================================================================*/
 
+#include <new>
 #include <string>
 using namespace std;
 #include <string.h>

@@ -7,6 +7,7 @@ DESCRIPTION :
 The public interface to the Cmiss_variable_new basic objects.
 ==============================================================================*/
 
+#include <new>
 #include <string>
 using namespace std;
 #include "api/cmiss_variable_new_basic.h"
