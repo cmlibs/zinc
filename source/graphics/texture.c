@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 5 September 2000 2000
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -47,7 +47,7 @@ Module types
 */
 struct Texture
 /*******************************************************************************
-LAST MODIFIED : 27 September 1999
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 The properties of a graphical texture.
@@ -89,9 +89,9 @@ The properties of a graphical texture.
 	/* cropping of image in file */
 	int crop_bottom_margin,crop_height,crop_left_margin,crop_width;
 	/* texture display options */
-	enum Texture_wrap_type wrap;
-	enum Texture_filter_type filter;
-	enum Texture_combine_type combine;
+	enum Texture_combine_mode combine_mode;
+	enum Texture_filter_mode filter_mode;
+	enum Texture_wrap_mode wrap_mode;
 	struct Colour combine_colour;
 	float combine_alpha;
 
@@ -309,7 +309,7 @@ GL_EXT_texture_object extension.
 		values[2]=(texture->combine_colour).blue;
 		values[3]=texture->combine_alpha;
 		/* specify how the texture is combined */
-		switch (texture->combine)
+		switch (texture->combine_mode)
 		{
 			case TEXTURE_BLEND:
 			{
@@ -533,7 +533,7 @@ Directly outputs the commands setting up the <texture>.
 				}
 			} break;
 		}
-		switch (texture->wrap)
+		switch (texture->wrap_mode)
 		{
 			case TEXTURE_CLAMP_WRAP:
 			{
@@ -546,7 +546,7 @@ Directly outputs the commands setting up the <texture>.
 				glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
 			} break;
 		}
-		switch (texture->filter)
+		switch (texture->filter_mode)
 		{
 			case TEXTURE_LINEAR_FILTER:
 			{
@@ -578,483 +578,71 @@ Directly outputs the commands setting up the <texture>.
 } /* direct_render_Texture */
 #endif /* defined (OPENGL_API) */
 
-int set_Texture_image(struct Parse_state *state,void *texture_void,
-	void *set_file_name_option_table_void)
-/*******************************************************************************
-LAST MODIFIED : 22 June 1999
-
-DESCRIPTION :
-Modifier function to set the texture image from a command.
-==============================================================================*/
-{
-	char *current_token,*image_file_name;
-	int crop_bottom_margin,crop_height,crop_left_margin,crop_width,return_code;
-	struct Modifier_entry *entry;
-	struct Texture *texture;
-
-	ENTER(set_Texture_image);
-	if (state)
-	{
-		if (entry=(struct Modifier_entry *)set_file_name_option_table_void)
-		{
-			crop_left_margin=0;
-			crop_bottom_margin=0;
-			crop_width=0;
-			crop_height=0;
-			return_code=1;
-			if (current_token=state->current_token)
-			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				{
-					if (fuzzy_string_compare("crop",current_token))
-					{
-						if (!(shift_Parse_state(state,1)&&
-							(current_token=state->current_token)&&
-							(1==sscanf(current_token," %d",&crop_left_margin))&&
-							shift_Parse_state(state,1)&&(current_token=state->current_token)&&
-							(1==sscanf(current_token," %d",&crop_bottom_margin))&&
-							shift_Parse_state(state,1)&&(current_token=state->current_token)&&
-							(1==sscanf(current_token," %d",&crop_width))&&
-							shift_Parse_state(state,1)&&(current_token=state->current_token)&&
-							(1==sscanf(current_token," %d",&crop_height))&&
-							shift_Parse_state(state,1)))
-						{
-							display_message(WARNING_MESSAGE,"Missing/invalid crop value(s)");
-							display_parse_state_location(state);
-							return_code=0;
-						}
-					}
-				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE,
-						" <crop LEFT_MARGIN#[0] BOTTOM_MARGIN#[0] WIDTH#[0] HEIGHT#[0]>");
-				}
-			}
-			if (return_code)
-			{
-				image_file_name=(char *)NULL;
-				while (entry->option)
-				{
-					entry->to_be_modified= &image_file_name;
-					entry++;
-				}
-				entry->to_be_modified= &image_file_name;
-				if (return_code=process_option(state,
-					(struct Modifier_entry *)set_file_name_option_table_void))
-				{
-					if (texture=(struct Texture *)texture_void)
-					{
-						return_code=Texture_set_image_file(texture,image_file_name,
-							crop_left_margin,crop_bottom_margin,crop_width,crop_height,
-							0.0,0.0,0.0);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"set_Texture_image.  Missing texture_void");
-						return_code=0;
-					}
-				}
-				else
-				{
-					return_code=1;
-				}
-				if (image_file_name)
-				{
-					DEALLOCATE(image_file_name);
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_Texture_image.  Missing set_file_name_option_table_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_Texture_image.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_Texture_image */
-
-#if defined (OLD_CODE)
-static int set_Texture_image(struct Parse_state *state,void *texture_void,
-	void *set_file_name_option_table_void)
-/*******************************************************************************
-LAST MODIFIED : 14 November 1996
-
-DESCRIPTION :
-Modifier function to set the texture image from a command.
-==============================================================================*/
-{
-	char *image_file_name;
-	int return_code;
-	long int height_texels,number_of_components,width_texels;
-	long unsigned *image;
-	struct Modifier_entry *entry;
-	struct Texture *texture;
-#if defined (GL_API) || defined (OPENGL_API)
-	int i,j,row_offset;
-	unsigned char *pixel,temp_1,temp_2,temp_3,*texture_pixel;
-	long unsigned *texture_image;
-#endif /* defined (GL_API) || defined (OPENGL_API) */
-
-	ENTER(set_Texture_image);
-	if (state)
-	{
-		if (entry=(struct Modifier_entry *)set_file_name_option_table_void)
-		{
-			image_file_name=(char *)NULL;
-			while (entry->option)
-			{
-				entry->to_be_modified= &image_file_name;
-				entry++;
-			}
-			entry->to_be_modified= &image_file_name;
-			if (return_code=process_option(state,
-				(struct Modifier_entry *)set_file_name_option_table_void))
-			{
-				if (texture=(struct Texture *)texture_void)
-				{
-					if (read_image_file(image_file_name,&number_of_components,
-						&height_texels,&width_texels,&image))
-					{
-#if defined (OPENGL_API)
-						/* width and height must be powers of 2 */
-						{
-							long int new_height_texels,new_width_texels;
-							int i,j,k;
-
-							i=width_texels;
-							new_width_texels=1;
-							while (i>1)
-							{
-								new_width_texels *= 2;
-								i /= 2;
-							}
-							if (width_texels!=new_width_texels)
-							{
-								new_width_texels *= 2;
-							}
-							i=height_texels;
-							new_height_texels=1;
-							while (i>1)
-							{
-								new_height_texels *= 2;
-								i /= 2;
-							}
-							if (height_texels!=new_height_texels)
-							{
-								new_height_texels *= 2;
-							}
-							if ((width_texels!=new_width_texels)||
-								(height_texels!=new_height_texels))
-							{
-								display_message(WARNING_MESSAGE,
-		"image width and/or height not powers of 2.  Extending (%d,%d) to (%d,%d)",
-									width_texels,height_texels,new_width_texels,
-									new_height_texels);
-								if (REALLOCATE(texture_image,image,unsigned long,
-									(new_width_texels*new_height_texels*number_of_components+3)/
-									4))
-								{
-									image=texture_image;
-									pixel=(unsigned char *)image;
-									pixel += height_texels*width_texels*number_of_components;
-									texture_pixel=(unsigned char *)image;
-									texture_pixel += new_height_texels*new_width_texels*
-										number_of_components;
-									for (j=new_height_texels-height_texels;j>0;j--)
-									{
-										for (i=new_width_texels;i>0;i--)
-										{
-											for (k=number_of_components;k>0;k--)
-											{
-												texture_pixel--;
-												*texture_pixel=(unsigned char)0xff;
-											}
-										}
-									}
-									for (j=height_texels;j>0;j--)
-									{
-										for (i=new_width_texels-width_texels;i>0;i--)
-										{
-											for (k=number_of_components;k>0;k--)
-											{
-												texture_pixel--;
-												*texture_pixel=(unsigned char)0xff;
-											}
-										}
-										for (i=width_texels;i>0;i--)
-										{
-											for (k=number_of_components;k>0;k--)
-											{
-												texture_pixel--;
-												pixel--;
-												*texture_pixel= *pixel;
-											}
-										}
-									}
-									width_texels=new_width_texels;
-									height_texels=new_height_texels;
-								}
-								else
-								{
-									DEALLOCATE(image);
-								}
-							}
-						}
-						if (image)
-						{
-#endif /* defined (OPENGL_API) */
-							/* transform image into texturing format */
-#if defined (GL_API) || defined (OPENGL_API)
-							switch (number_of_components)
-							{
-								case 1:
-								{
-									/* image is I, texture image needs to be I and rows 4 byte
-										aligned */
-									row_offset=((int)(width_texels*number_of_components+3)/4)*4-
-										width_texels*number_of_components;
-									if (row_offset)
-									{
-										if (REALLOCATE(texture_image,image,unsigned long,
-											height_texels*((int)(width_texels*number_of_components+3)/
-											4)))
-										{
-											image=texture_image;
-											pixel=(unsigned char *)image;
-											pixel += height_texels*width_texels*number_of_components;
-											texture_pixel=(unsigned char *)image;
-											texture_pixel += height_texels*
-												(((int)(width_texels*number_of_components+3)/4)*4);
-											for (j=height_texels;j>0;j--)
-											{
-												texture_pixel -= row_offset;
-												for (i=width_texels;i>0;i--)
-												{
-													pixel -= number_of_components;
-													texture_pixel -= number_of_components;
-													texture_pixel[0]=pixel[0];
-												}
-											}
-										}
-										else
-										{
-											DEALLOCATE(image);
-										}
-									}
-								} break;
-								case 2:
-								{
-									/* image is IA, texture image needs to be AI and rows 4 byte
-										aligned */
-									if (REALLOCATE(texture_image,image,unsigned long,
-										height_texels*((int)(width_texels*number_of_components+3)/
-										4)))
-									{
-										image=texture_image;
-										pixel=(unsigned char *)image;
-										pixel += height_texels*width_texels*number_of_components;
-										texture_pixel=(unsigned char *)image;
-										texture_pixel += height_texels*
-											(((int)(width_texels*number_of_components+3)/4)*4);
-										row_offset=((int)(width_texels*number_of_components+3)/4)*4-
-											width_texels*number_of_components;
-										for (j=height_texels;j>0;j--)
-										{
-											texture_pixel -= row_offset;
-											for (i=width_texels;i>0;i--)
-											{
-												pixel -= number_of_components;
-												texture_pixel -= number_of_components;
-												temp_1=pixel[0];
-												temp_2=pixel[1];
-												texture_pixel[0]=temp_2;
-												texture_pixel[1]=temp_1;
-											}
-										}
-									}
-									else
-									{
-										DEALLOCATE(image);
-									}
-								} break;
-								case 3:
-								{
-									/* image is RGB, texture image needs to be BGR and rows 4 byte
-										aligned */
-									if (REALLOCATE(texture_image,image,unsigned long,
-										height_texels*((int)(width_texels*number_of_components+3)/
-										4)))
-									{
-										image=texture_image;
-										pixel=(unsigned char *)image;
-										pixel += height_texels*width_texels*number_of_components;
-										texture_pixel=(unsigned char *)image;
-										texture_pixel += height_texels*
-											(((int)(width_texels*number_of_components+3)/4)*4);
-										row_offset=((int)(width_texels*number_of_components+3)/4)*4-
-												width_texels*number_of_components;
-										for (j=height_texels;j>0;j--)
-										{
-											texture_pixel -= row_offset;
-											for (i=width_texels;i>0;i--)
-											{
-												pixel -= number_of_components;
-												texture_pixel -= number_of_components;
-												temp_1=pixel[0];
-												temp_2=pixel[1];
-												temp_3=pixel[2];
-#if defined (GL_API)
-												texture_pixel[0]=temp_3;
-												texture_pixel[1]=temp_2;
-												texture_pixel[2]=temp_1;
-#endif /* defined (GL_API) */
-#if defined (OPENGL_API)
-												texture_pixel[0]=temp_1;
-												texture_pixel[1]=temp_2;
-												texture_pixel[2]=temp_3;
-#endif /* defined (OPENGL_API) */
-											}
-										}
-									}
-									else
-									{
-										DEALLOCATE(image);
-									}
-								} break;
-#if defined (GL_API)
-								case 4:
-								{
-									/* image is RGBA, texture image needs to be ABGR */
-									pixel=(unsigned char *)image;
-									for (i=width_texels*height_texels;i>0;i--)
-									{
-										temp_1=pixel[0];
-										pixel[0]=pixel[3];
-										pixel[3]=temp_1;
-										temp_1=pixel[1];
-										pixel[1]=pixel[2];
-										pixel[2]=temp_1;
-										pixel += 4;
-									}
-								} break;
-#endif /* defined (GL_API) */
-							}
-#endif /* defined (GL_API) || defined (OPENGL_API) */
-#if defined (GL_API) || defined (OPENGL_API)
-							if (image)
-							{
-#endif /* defined (GL_API) || defined (OPENGL_API) */
-								/* assign values */
-								texture->number_of_components=number_of_components;
-								texture->height_texels=height_texels;
-								texture->width_texels=width_texels;
-								DEALLOCATE(texture->image);
-								texture->image=image;
-								DEALLOCATE(texture->image_file_name);
-								texture->image_file_name=image_file_name;
-								return_code=1;
-#if defined (GL_API) || defined (OPENGL_API)
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"set_Texture_image.  Could not transform image");
-								DEALLOCATE(image_file_name);
-								return_code=0;
-							}
-#endif /* defined (GL_API) || defined (OPENGL_API) */
-#if defined (OPENGL_API)
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"set_Texture_image.  Could not extend image");
-							DEALLOCATE(image_file_name);
-							return_code=0;
-						}
-#endif /* defined (OPENGL_API) */
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Invalid image file name : %s",
-							image_file_name);
-						DEALLOCATE(image_file_name);
-						display_parse_state_location(state);
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"set_Texture_image.  Missing texture_void");
-					DEALLOCATE(image_file_name);
-					return_code=0;
-				}
-			}
-			else
-			{
-				DEALLOCATE(image_file_name);
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_Texture_image.  Missing set_file_name_option_table_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_Texture_image.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_Texture_image */
-#endif /* defined (OLD_CODE) */
-
 int set_Texture_storage(struct Parse_state *state,void *enum_storage_void_ptr,
 	void *dummy_user_data)
 /*******************************************************************************
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 A modifier function to set the texture storage type.
 ==============================================================================*/
 {
-	enum Texture_storage_type *storage, tmp_storage;
+	char *current_token;
+	enum Texture_storage_type *storage_type_address, storage_type;
 	int return_code;
 
 	ENTER(set_Texture_storage);
 	if (state && state->current_token && (!dummy_user_data))
 	{
-		if (storage = (enum Texture_storage_type *)enum_storage_void_ptr)
+		if (storage_type_address=(enum Texture_storage_type *)enum_storage_void_ptr)
 		{
-			if (TEXTURE_UNDEFINED_STORAGE != (tmp_storage = 
-				Texture_storage_type_from_string(state->current_token)))
+			if (current_token=state->current_token)
 			{
-				*storage = tmp_storage;
-				return_code=shift_Parse_state(state,1);
-				return_code=1;
+				if (strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				{
+					if (TEXTURE_UNDEFINED_STORAGE != (storage_type = 
+						Texture_storage_type_from_string(state->current_token)))
+					{
+						*storage_type_address = storage_type;
+						return_code=shift_Parse_state(state,1);
+						return_code=1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_Texture_storage.  Invalid storage type.");
+						return_code=0;				
+					}
+				}
+				else
+				{
+					/* write help */
+					storage_type=TEXTURE_TYPE_BEFORE_FIRST;
+					storage_type++;
+					display_message(INFORMATION_MESSAGE," ");
+					while (storage_type<TEXTURE_TYPE_AFTER_LAST_NORMAL)
+					{
+						display_message(INFORMATION_MESSAGE,
+							Texture_storage_type_string(storage_type));
+						if (storage_type == *storage_type_address)
+						{
+							display_message(INFORMATION_MESSAGE,"[%s]",
+								Texture_storage_type_string(storage_type));
+						}
+						storage_type++;
+						if (storage_type<TEXTURE_TYPE_AFTER_LAST_NORMAL)
+						{
+							display_message(INFORMATION_MESSAGE,"|");
+						}
+					}
+				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"set_Texture_storage.  Invalid storage type.");
-				return_code=0;				
+				display_message(ERROR_MESSAGE,"Missing texture storage type");
+				display_parse_state_location(state);
+				return_code=0;
 			}
 		}
 		else
@@ -1073,268 +661,6 @@ A modifier function to set the texture storage type.
 
 	return (return_code);
 } /* set_Texture_storage */
-
-int set_Texture_wrap_repeat(struct Parse_state *state,void *texture_void,
-	void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture wrap type to repeat.
-==============================================================================*/
-{
-	int return_code;
-	struct Texture *texture;
-
-	ENTER(set_Texture_wrap_repeat);
-	if (state && (!dummy_user_data))
-	{
-		if (texture=(struct Texture *)texture_void)
-		{
-			texture->wrap=TEXTURE_REPEAT_WRAP;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_Texture_wrap_repeat.  Missing texture_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_Texture_wrap_repeat.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_Texture_wrap_repeat */
-
-int set_Texture_wrap_clamp(struct Parse_state *state,void *texture_void,
-	void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture wrap type to clamp.
-==============================================================================*/
-{
-	int return_code;
-	struct Texture *texture;
-
-	ENTER(set_Texture_wrap_clamp);
-	if (state && (!dummy_user_data))
-	{
-		if (texture=(struct Texture *)texture_void)
-		{
-			texture->wrap=TEXTURE_CLAMP_WRAP;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_Texture_wrap_clamp.  Missing texture_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_Texture_wrap_clamp.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_Texture_wrap_clamp */
-
-int set_Texture_filter_nearest(struct Parse_state *state,
-	void *texture_void,void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture magnification/minification filter to
-nearest.
-==============================================================================*/
-{
-	int return_code;
-	struct Texture *texture;
-
-	ENTER(set_Texture_filter_nearest);
-	if (state && (!dummy_user_data))
-	{
-		if (texture=(struct Texture *)texture_void)
-		{
-			texture->filter=TEXTURE_NEAREST_FILTER;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_Texture_filter_nearest.  Missing texture_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_Texture_filter_nearest.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_Texture_filter_nearest */
-
-int set_Texture_filter_linear(struct Parse_state *state,
-	void *texture_void,void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture magnification/minification filter to
-linear.
-==============================================================================*/
-{
-	int return_code;
-	struct Texture *texture;
-
-	ENTER(set_Texture_filter_linear);
-	if (state && (!dummy_user_data))
-	{
-		if (texture=(struct Texture *)texture_void)
-		{
-			texture->filter=TEXTURE_LINEAR_FILTER;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_Texture_filter_linear.  Missing texture_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_Texture_filter_linear.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_Texture_filter_linear */
-
-int set_Texture_combine_blend(struct Parse_state *state,
-	void *texture_void,void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture combine type to blend.
-==============================================================================*/
-{
-	int return_code;
-	struct Texture *texture;
-
-	ENTER(set_Texture_combine_blend);
-	if (state && (!dummy_user_data))
-	{
-		if (texture=(struct Texture *)texture_void)
-		{
-			texture->combine=TEXTURE_BLEND;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_Texture_combine_blend.  Missing texture_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_Texture_combine_blend.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_Texture_combine_blend */
-
-int set_Texture_combine_decal(struct Parse_state *state,
-	void *texture_void,void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture combine type to decal.
-==============================================================================*/
-{
-	int return_code;
-	struct Texture *texture;
-
-	ENTER(set_Texture_combine_decal);
-	if (state && (!dummy_user_data))
-	{
-		if (texture=(struct Texture *)texture_void)
-		{
-			texture->combine=TEXTURE_DECAL;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_Texture_combine_decal.  Missing texture_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_Texture_combine_decal.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_Texture_combine_decal */
-
-int set_Texture_combine_modulate(struct Parse_state *state,
-	void *texture_void,void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture combine type to modulate.
-==============================================================================*/
-{
-	int return_code;
-	struct Texture *texture;
-
-	ENTER(set_Texture_combine_modulate);
-	if (state && (!dummy_user_data))
-	{
-		if (texture=(struct Texture *)texture_void)
-		{
-			texture->combine=TEXTURE_MODULATE;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_Texture_combine_modulate.  Missing texture_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_Texture_combine_modulate.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_Texture_combine_modulate */
 
 #if defined (SGI_MOVIE_FILE)
 static int Texture_refresh(struct Texture *texture)
@@ -1478,6 +804,357 @@ DESCRIPTION :
 Global functions
 ----------------
 */
+
+char *Texture_combine_mode_string(enum Texture_combine_mode combine_mode)
+/*******************************************************************************
+LAST MODIFIED : 10 October 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the combine_mode,
+eg. TEXTURE_DECAL = "decal". This string should match the command
+used to set the type. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Texture_combine_mode_string);
+	switch (combine_mode)
+	{
+		case TEXTURE_BLEND:
+		{
+			return_string="blend";
+		} break;
+		case TEXTURE_DECAL:
+		{
+			return_string="decal";
+		} break;
+		case TEXTURE_MODULATE:
+		{
+			return_string="modulate";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Texture_combine_mode_string.  Unknown combine_mode");
+			return_string=(char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Texture_combine_mode_string */
+
+char **Texture_combine_mode_get_valid_strings(int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 10 October 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
+Texture_combine_modes.
+Strings are obtained from function Texture_combine_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+
+	ENTER(Texture_combine_mode_get_valid_strings);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=3;
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			valid_strings[0]=Texture_combine_mode_string(TEXTURE_BLEND);
+			valid_strings[1]=Texture_combine_mode_string(TEXTURE_DECAL);
+			valid_strings[2]=Texture_combine_mode_string(TEXTURE_MODULATE);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Texture_combine_mode_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_combine_mode_get_valid_strings.  Invalid argument(s)");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Texture_combine_mode_get_valid_strings */
+
+enum Texture_combine_mode Texture_combine_mode_from_string(
+	char *combine_mode_string)
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns the <Texture_combine_mode> described by <combine_mode_string>.
+==============================================================================*/
+{
+	enum Texture_combine_mode combine_mode;
+
+	ENTER(Texture_combine_mode_from_string);
+	if (combine_mode_string)
+	{
+		if (fuzzy_string_compare_same_length(combine_mode_string,
+			Texture_combine_mode_string(TEXTURE_BLEND)))
+		{
+			combine_mode = TEXTURE_BLEND;
+		}
+		else if (fuzzy_string_compare_same_length(combine_mode_string,
+			Texture_combine_mode_string(TEXTURE_DECAL)))
+		{
+			combine_mode = TEXTURE_DECAL;
+		}
+		else if (fuzzy_string_compare_same_length(combine_mode_string,
+			Texture_combine_mode_string(TEXTURE_MODULATE)))
+		{
+			combine_mode = TEXTURE_MODULATE;
+		}
+		else
+		{
+			combine_mode = TEXTURE_COMBINE_MODE_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_combine_mode_from_string.  Invalid argument");
+		combine_mode = TEXTURE_COMBINE_MODE_INVALID;
+	}
+	LEAVE;
+
+	return (combine_mode);
+} /* Texture_combine_mode_from_string */
+
+char *Texture_filter_mode_string(enum Texture_filter_mode filter_mode)
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the filter_mode,
+eg. TEXTURE_LINEAR_FILTER = "linear_filter". This string should match the
+command used to set the type. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Texture_filter_mode_string);
+	switch (filter_mode)
+	{
+		case TEXTURE_LINEAR_FILTER:
+		{
+			return_string="linear_filter";
+		} break;
+		case TEXTURE_NEAREST_FILTER:
+		{
+			return_string="nearest_filter";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Texture_filter_mode_string.  Unknown filter_mode");
+			return_string=(char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Texture_filter_mode_string */
+
+char **Texture_filter_mode_get_valid_strings(int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
+Texture_filter_modes.
+Strings are obtained from function Texture_filter_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+
+	ENTER(Texture_filter_mode_get_valid_strings);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=2;
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			valid_strings[0]=Texture_filter_mode_string(TEXTURE_LINEAR_FILTER);
+			valid_strings[1]=Texture_filter_mode_string(TEXTURE_NEAREST_FILTER);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Texture_filter_mode_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_filter_mode_get_valid_strings.  Invalid argument(s)");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Texture_filter_mode_get_valid_strings */
+
+enum Texture_filter_mode Texture_filter_mode_from_string(
+	char *filter_mode_string)
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns the <Texture_filter_mode> described by <filter_mode_string>.
+==============================================================================*/
+{
+	enum Texture_filter_mode filter_mode;
+
+	ENTER(Texture_filter_mode_from_string);
+	if (filter_mode_string)
+	{
+		if (fuzzy_string_compare_same_length(filter_mode_string,
+			Texture_filter_mode_string(TEXTURE_LINEAR_FILTER)))
+		{
+			filter_mode = TEXTURE_LINEAR_FILTER;
+		}
+		else if (fuzzy_string_compare_same_length(filter_mode_string,
+			Texture_filter_mode_string(TEXTURE_NEAREST_FILTER)))
+		{
+			filter_mode = TEXTURE_NEAREST_FILTER;
+		}
+		else
+		{
+			filter_mode = TEXTURE_FILTER_MODE_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_filter_mode_from_string.  Invalid argument");
+		filter_mode = TEXTURE_FILTER_MODE_INVALID;
+	}
+	LEAVE;
+
+	return (filter_mode);
+} /* Texture_filter_mode_from_string */
+
+char *Texture_wrap_mode_string(enum Texture_wrap_mode wrap_mode)
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the wrap_mode,
+eg. TEXTURE_CLAMP_WRAP = "clamp_wrap". This string should match the command
+used to set the type. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Texture_wrap_mode_string);
+	switch (wrap_mode)
+	{
+		case TEXTURE_CLAMP_WRAP:
+		{
+			return_string="clamp_wrap";
+		} break;
+		case TEXTURE_REPEAT_WRAP:
+		{
+			return_string="repeat_wrap";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Texture_wrap_mode_string.  Unknown wrap_mode");
+			return_string=(char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Texture_wrap_mode_string */
+
+char **Texture_wrap_mode_get_valid_strings(int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
+Texture_wrap_modes. Strings are obtained from function Texture_wrap_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+
+	ENTER(Texture_wrap_mode_get_valid_strings);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=2;
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			valid_strings[0]=Texture_wrap_mode_string(TEXTURE_CLAMP_WRAP);
+			valid_strings[1]=Texture_wrap_mode_string(TEXTURE_REPEAT_WRAP);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Texture_wrap_mode_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_wrap_mode_get_valid_strings.  Invalid argument(s)");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Texture_wrap_mode_get_valid_strings */
+
+enum Texture_wrap_mode Texture_wrap_mode_from_string(char *wrap_mode_string)
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns the <Texture_wrap_mode> described by <wrap_mode_string>.
+==============================================================================*/
+{
+	enum Texture_wrap_mode wrap_mode;
+
+	ENTER(Texture_wrap_mode_from_string);
+	if (wrap_mode_string)
+	{
+		if (fuzzy_string_compare_same_length(wrap_mode_string,
+			Texture_wrap_mode_string(TEXTURE_CLAMP_WRAP)))
+		{
+			wrap_mode = TEXTURE_CLAMP_WRAP;
+		}
+		else if (fuzzy_string_compare_same_length(wrap_mode_string,
+			Texture_wrap_mode_string(TEXTURE_REPEAT_WRAP)))
+		{
+			wrap_mode = TEXTURE_REPEAT_WRAP;
+		}
+		else
+		{
+			wrap_mode = TEXTURE_WRAP_MODE_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Texture_wrap_mode_from_string.  Invalid argument");
+		wrap_mode = TEXTURE_WRAP_MODE_INVALID;
+	}
+	LEAVE;
+
+	return (wrap_mode);
+} /* Texture_wrap_mode_from_string */
+
 struct Texture *CREATE(Texture)(char *name)
 /*******************************************************************************
 LAST MODIFIED : 27 September 1999
@@ -1534,9 +1211,9 @@ of all textures.
 			(texture->image)[1]=0xFFFFFFFF;
 			(texture->image)[2]=0xFFFFFFFF;
 			(texture->image)[3]=0xFFFFFFFF;
-			texture->wrap=TEXTURE_REPEAT_WRAP;
-			texture->filter=TEXTURE_NEAREST_FILTER;
-			texture->combine=TEXTURE_DECAL;
+			texture->combine_mode=TEXTURE_DECAL;
+			texture->filter_mode=TEXTURE_NEAREST_FILTER;
+			texture->wrap_mode=TEXTURE_REPEAT_WRAP;
 			(texture->combine_colour).red=0.;
 			(texture->combine_colour).green=0.;
 			(texture->combine_colour).blue=0.;
@@ -1835,9 +1512,9 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Texture,name)
 			destination->original_width_texels=source->original_width_texels;
 			destination->height_texels=source->height_texels;
 			destination->width_texels=source->width_texels;
-			destination->wrap=source->wrap;
-			destination->filter=source->filter;
-			destination->combine=source->combine;
+			destination->combine_mode=source->combine_mode;
+			destination->filter_mode=source->filter_mode;
+			destination->wrap_mode=source->wrap_mode;
 			(destination->combine_colour).red=(source->combine_colour).red;
 			(destination->combine_colour).green=(source->combine_colour).green;
 			(destination->combine_colour).blue=(source->combine_colour).blue;
@@ -2187,38 +1864,36 @@ Sets the colour to be combined with the texture in blending combine mode.
 	return (return_code);
 } /* Texture_set_combine_colour */
 
-int Texture_get_combine_mode(struct Texture *texture,
-	enum Texture_combine_type *combine_mode)
+enum Texture_combine_mode Texture_get_combine_mode(struct Texture *texture)
 /*******************************************************************************
-LAST MODIFIED : 13 February 1998
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 Returns how the texture is combined with the material: blend, decal or modulate.
 ==============================================================================*/
 {
-	int return_code;
+	enum Texture_combine_mode combine_mode;
 
 	ENTER(Texture_get_combine_mode);
-	if (texture&&combine_mode)
+	if (texture)
 	{
-		*combine_mode=texture->combine;
-		return_code=1;
+		combine_mode = texture->combine_mode;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Texture_get_combine_mode.  Invalid argument(s)");
-		return_code=0;
+		combine_mode = TEXTURE_COMBINE_MODE_INVALID;
 	}
 	LEAVE;
 
-	return (return_code);
+	return (combine_mode);
 } /* Texture_get_combine_mode */
 
 int Texture_set_combine_mode(struct Texture *texture,
-	enum Texture_combine_type combine_mode)
+	enum Texture_combine_mode combine_mode)
 /*******************************************************************************
-LAST MODIFIED : 13 February 1998
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 Sets how the texture is combined with the material: blend, decal or modulate.
@@ -2228,11 +1903,11 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 
 	ENTER(Texture_set_combine_mode);
 	if (texture&&((TEXTURE_BLEND==combine_mode)||
-		(TEXTURE_DECAL==combine_mode)&&(TEXTURE_MODULATE==combine_mode)))
+		(TEXTURE_DECAL==combine_mode)||(TEXTURE_MODULATE==combine_mode)))
 	{
-		if (combine_mode != texture->combine)
+		if (combine_mode != texture->combine_mode)
 		{
-			texture->combine=combine_mode;
+			texture->combine_mode = combine_mode;
 			/* display list needs to be compiled again */
 			texture->display_list_current=0;
 		}
@@ -2249,36 +1924,34 @@ Sets how the texture is combined with the material: blend, decal or modulate.
 	return (return_code);
 } /* Texture_set_combine_mode */
 
-int Texture_get_filter_mode(struct Texture *texture,
-	enum Texture_filter_type *filter_mode)
+enum Texture_filter_mode Texture_get_filter_mode(struct Texture *texture)
 /*******************************************************************************
-LAST MODIFIED : 13 February 1998
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 Returns the texture filter: linear or nearest.
 ==============================================================================*/
 {
-	int return_code;
+	enum Texture_filter_mode filter_mode;
 
 	ENTER(Texture_get_filter_mode);
-	if (texture&&filter_mode)
+	if (texture)
 	{
-		*filter_mode=texture->filter;
-		return_code=1;
+		filter_mode = texture->filter_mode;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Texture_get_filter_mode.  Invalid argument(s)");
-		return_code=0;
+		filter_mode = TEXTURE_FILTER_MODE_INVALID;
 	}
 	LEAVE;
 
-	return (return_code);
+	return (filter_mode);
 } /* Texture_get_filter_mode */
 
 int Texture_set_filter_mode(struct Texture *texture,
-	enum Texture_filter_type filter_mode)
+	enum Texture_filter_mode filter_mode)
 /*******************************************************************************
 LAST MODIFIED : 13 February 1998
 
@@ -2292,9 +1965,9 @@ Sets the texture filter: linear or nearest.
 	if (texture&&((TEXTURE_LINEAR_FILTER==filter_mode)||
 		(TEXTURE_NEAREST_FILTER==filter_mode)))
 	{
-		if (filter_mode != texture->filter)
+		if (filter_mode != texture->filter_mode)
 		{
-			texture->filter=filter_mode;
+			texture->filter_mode = filter_mode;
 			/* display list needs to be compiled again */
 			texture->display_list_current=0;
 		}
@@ -2487,11 +2160,12 @@ crop is performed as the image is put into the texture.
 } /* Texture_set_image */
 
 int Texture_set_image_file(struct Texture *texture,char *image_file_name,
+	int specify_width,int specify_height,enum Raw_image_storage raw_image_storage,
 	int crop_left_margin,int crop_bottom_margin,int crop_width,
 	int crop_height,double radial_distortion_centre_x,
 	double radial_distortion_centre_y,double radial_distortion_factor_k1)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 Reads the image for <texture> from file <image_file_name> and then crops it
@@ -2500,6 +2174,8 @@ using <left_margin_texels>, <bottom_margin_texels>, <width_texels> and
 if <left_margin_texels> and <bottom_margin_texels> are not both non-negative or
 if the cropping region is not contained in the image then no cropping is
 performed.
+<specify_width> and <specify_height> allow the width and height to be specified
+for formats that do not have a header, eg. RAW and YUV.
 ==============================================================================*/
 {
 	enum Texture_storage_type storage;
@@ -2511,8 +2187,11 @@ performed.
 	ENTER(Texture_set_image_file);
 	if (texture&&image_file_name)
 	{
+		image_height = specify_height;
+		image_width = specify_width;
 		if (read_image_file(image_file_name,&number_of_components,
-			&number_of_bytes_per_component,&image_height,&image_width,&image))
+			&number_of_bytes_per_component,&image_height,&image_width,
+			raw_image_storage,&image))
 		{
 			return_code=1;
 			switch(number_of_components)
@@ -2889,7 +2568,7 @@ LAST MODIFIED : 13 April 1999
 DESCRIPTION :
 Returns the byte values in the texture using the texture coordinates relative
 to the physical size.  Each texel is assumed to apply exactly
-at its centre and the filter_type used to determine whether the pixels are
+at its centre and the filter_mode used to determine whether the pixels are
 interpolated or not.  When closer than half a texel to a boundary the colour 
 is constant from the half texel location to the edge. 
 ==============================================================================*/
@@ -2911,7 +2590,7 @@ is constant from the half texel location to the edge.
 		x /= texture->width;
 		y /= texture->height;
 
-		switch(texture->wrap)
+		switch(texture->wrap_mode)
 		{
 			case TEXTURE_CLAMP_WRAP:
 			{
@@ -2950,7 +2629,7 @@ is constant from the half texel location to the edge.
 		max_x = (double)texture->original_width_texels - 0.5;
 		max_y = (double)texture->original_width_texels - 0.5;
 
-		switch(texture->filter)
+		switch (texture->filter_mode)
 		{
 			case TEXTURE_LINEAR_FILTER:
 			{
@@ -3382,38 +3061,36 @@ texture.
 	return (return_code);
 } /* Texture_get_size */
 
-int Texture_get_wrap_mode(struct Texture *texture,
-	enum Texture_wrap_type *wrap_mode)
+enum Texture_wrap_mode Texture_get_wrap_mode(struct Texture *texture)
 /*******************************************************************************
-LAST MODIFIED : 13 February 1998
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 Returns how textures coordinates outside [0,1] are handled.
 ==============================================================================*/
 {
-	int return_code;
+	enum Texture_wrap_mode wrap_mode;
 
 	ENTER(Texture_get_wrap_mode);
-	if (texture&&wrap_mode)
+	if (texture)
 	{
-		*wrap_mode=texture->wrap;
-		return_code=1;
+		wrap_mode = texture->wrap_mode;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Texture_get_wrap_mode.  Invalid argument(s)");
-		return_code=0;
+		wrap_mode = TEXTURE_WRAP_MODE_INVALID;
 	}
 	LEAVE;
 
-	return (return_code);
+	return (wrap_mode);
 } /* Texture_get_wrap_mode */
 
 int Texture_set_wrap_mode(struct Texture *texture,
-	enum Texture_wrap_type wrap_mode)
+	enum Texture_wrap_mode wrap_mode)
 /*******************************************************************************
-LAST MODIFIED : 13 February 1998
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 Sets how textures coordinates outside [0,1] are handled.
@@ -3425,9 +3102,9 @@ Sets how textures coordinates outside [0,1] are handled.
 	if (texture&&((TEXTURE_CLAMP_WRAP==wrap_mode)||
 		(TEXTURE_REPEAT_WRAP==wrap_mode)))
 	{
-		if (wrap_mode != texture->wrap)
+		if (wrap_mode != texture->wrap_mode)
 		{
-			texture->wrap=wrap_mode;
+			texture->wrap_mode = wrap_mode;
 			/* display list needs to be compiled again */
 			texture->display_list_current=0;
 		}
@@ -3511,7 +3188,7 @@ Writes the image stored in the texture to a file.
 
 int list_Texture(struct Texture *texture,void *dummy)
 /*******************************************************************************
-LAST MODIFIED : 28 September 1999
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 Writes the properties of the <texture> to the command window.
@@ -3573,7 +3250,7 @@ Writes the properties of the <texture> to the command window.
 			case TEXTURE_ABGR:
 			{
 				display_message(INFORMATION_MESSAGE,
-					"  components : alpha, blue, greed, red\n");
+					"  components : alpha, blue, green, red\n");
 			} break;
 			case TEXTURE_DMBUFFER:
 			{
@@ -3599,59 +3276,15 @@ Writes the properties of the <texture> to the command window.
 			"  width (texels) = %d, height (texels) = %d\n",
 			texture->width_texels,texture->height_texels);
 		/* write the type of wrapping */
-		switch (texture->wrap)
-		{
-			case TEXTURE_CLAMP_WRAP:
-			{
-				display_message(INFORMATION_MESSAGE,"  wrap : clamp\n");
-			} break;
-			case TEXTURE_REPEAT_WRAP:
-			{
-				display_message(INFORMATION_MESSAGE,"  wrap : repeat\n");
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"list_Texture.  Invalid wrap");
-			} break;
-		}
+		display_message(INFORMATION_MESSAGE,
+			"  wrap : %s\n",Texture_wrap_mode_string(texture->wrap_mode));
 		/* write the type of magnification/minification filter */
-		switch (texture->filter)
-		{
-			case TEXTURE_LINEAR_FILTER:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"  magnification/minification filter : linear\n");
-			} break;
-			case TEXTURE_NEAREST_FILTER:
-			{
-				display_message(INFORMATION_MESSAGE,
-					"  magnification/minification filter : nearest\n");
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"list_Texture.  Invalid filter");
-			} break;
-		}
+		display_message(INFORMATION_MESSAGE,
+			"  magnification/minification filter : %s\n",
+			Texture_filter_mode_string(texture->filter_mode));
 		/* write the combine type */
-		switch (texture->combine)
-		{
-			case TEXTURE_BLEND:
-			{
-				display_message(INFORMATION_MESSAGE,"  combine type : blend\n");
-			} break;
-			case TEXTURE_DECAL:
-			{
-				display_message(INFORMATION_MESSAGE,"  combine type : decal\n");
-			} break;
-			case TEXTURE_MODULATE:
-			{
-				display_message(INFORMATION_MESSAGE,"  combine type : modulate\n");
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"list_Texture.  Invalid combine");
-			} break;
-		}
+		display_message(INFORMATION_MESSAGE,"  combine type : %s\n",
+			Texture_combine_mode_string(texture->combine_mode));
 		/* write the colour */
 		display_message(INFORMATION_MESSAGE,
 			"  colour : red = %.3g, green = %.3g, blue = %.3g\n",
@@ -3672,7 +3305,7 @@ Writes the properties of the <texture> to the command window.
 
 int list_Texture_commands(struct Texture *texture,void *command_prefix_void)
 /*******************************************************************************
-LAST MODIFIED : 27 September 1999
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 Writes on the command window the command needed to recreate the <texture>.
@@ -3719,60 +3352,14 @@ The command is started with the string pointed to by <command_prefix>.
 			(texture->combine_colour).blue);
 		display_message(INFORMATION_MESSAGE," alpha %g",texture->combine_alpha);
 		/* write the combine type */
-		switch (texture->combine)
-		{
-			case TEXTURE_BLEND:
-			{
-				display_message(INFORMATION_MESSAGE," blend");
-			} break;
-			case TEXTURE_DECAL:
-			{
-				display_message(INFORMATION_MESSAGE," decal");
-			} break;
-			case TEXTURE_MODULATE:
-			{
-				display_message(INFORMATION_MESSAGE," modulate");
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"list_Texture_commands.  Invalid combine");
-			} break;
-		}
+		display_message(INFORMATION_MESSAGE," %s",
+			Texture_combine_mode_string(texture->combine_mode));
 		/* write the type of magnification/minification filter */
-		switch (texture->filter)
-		{
-			case TEXTURE_LINEAR_FILTER:
-			{
-				display_message(INFORMATION_MESSAGE,
-					" linear_filter");
-			} break;
-			case TEXTURE_NEAREST_FILTER:
-			{
-				display_message(INFORMATION_MESSAGE,
-					" nearest_filter");
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"list_Texture_commands.  Invalid filter");
-			} break;
-		}
+		display_message(INFORMATION_MESSAGE," %s",
+			Texture_filter_mode_string(texture->filter_mode));
 		/* write the type of wrapping */
-		switch (texture->wrap)
-		{
-			case TEXTURE_CLAMP_WRAP:
-			{
-				display_message(INFORMATION_MESSAGE," clamp_wrap");
-			} break;
-			case TEXTURE_REPEAT_WRAP:
-			{
-				display_message(INFORMATION_MESSAGE," repeat_wrap");
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,"list_Texture_commands.  Invalid wrap");
-			} break;
-		}
+		display_message(INFORMATION_MESSAGE," %s",
+			Texture_wrap_mode_string(texture->wrap_mode));
 		display_message(INFORMATION_MESSAGE,"\n");
 		return_code=1;
 	}

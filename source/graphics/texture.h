@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.h
 
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 The data structures used for representing textures.
@@ -43,34 +43,9 @@ DESCRIPTION :
 	TEXTURE_TYPE_AFTER_LAST
 }; /* enum Texture_storage_type */
 
-
-enum Texture_wrap_type
+enum Texture_combine_mode
 /*******************************************************************************
-LAST MODIFIED : 17 November 1994
-
-DESCRIPTION :
-What happens to a texture when the texture coordinates are outside [0,1].
-==============================================================================*/
-{
-	TEXTURE_CLAMP_WRAP,
-	TEXTURE_REPEAT_WRAP
-}; /* enum Texture_wrap_type */
-
-enum Texture_filter_type
-/*******************************************************************************
-LAST MODIFIED : 17 November 1994
-
-DESCRIPTION :
-What happens to when the screen and texture are at different resolutions.
-==============================================================================*/
-{
-	TEXTURE_LINEAR_FILTER,
-	TEXTURE_NEAREST_FILTER
-}; /* enum Texture_filter_type */
-
-enum Texture_combine_type
-/*******************************************************************************
-LAST MODIFIED : 17 November 1994
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 How the texture is combined with the material.
@@ -78,8 +53,35 @@ How the texture is combined with the material.
 {
 	TEXTURE_BLEND,
 	TEXTURE_DECAL,
-	TEXTURE_MODULATE
-}; /* enum Texture_combine_type */
+	TEXTURE_MODULATE,
+	TEXTURE_COMBINE_MODE_INVALID
+}; /* enum Texture_combine_mode */
+
+enum Texture_filter_mode
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+What happens to when the screen and texture are at different resolutions.
+==============================================================================*/
+{
+	TEXTURE_LINEAR_FILTER,
+	TEXTURE_NEAREST_FILTER,
+	TEXTURE_FILTER_MODE_INVALID
+}; /* enum Texture_filter_mode */
+
+enum Texture_wrap_mode
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+What happens to a texture when the texture coordinates are outside [0,1].
+==============================================================================*/
+{
+	TEXTURE_CLAMP_WRAP,
+	TEXTURE_REPEAT_WRAP,
+	TEXTURE_WRAP_MODE_INVALID
+}; /* enum Texture_wrap_mode */
 
 struct Texture;
 /*******************************************************************************
@@ -97,6 +99,95 @@ DECLARE_MANAGER_TYPES(Texture);
 Global functions
 ----------------
 */
+
+char *Texture_combine_mode_string(enum Texture_combine_mode combine_mode);
+/*******************************************************************************
+LAST MODIFIED : 10 October 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the combine_mode,
+eg. TEXTURE_DECAL = "decal". This string should match the command
+used to set the type. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+
+char **Texture_combine_mode_get_valid_strings(int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 10 October 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
+Texture_combine_modes.
+Strings are obtained from function Texture_combine_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum Texture_combine_mode Texture_combine_mode_from_string(
+	char *combine_mode_string);
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns the <Texture_combine_mode> described by <combine_mode_string>.
+==============================================================================*/
+
+char *Texture_filter_mode_string(enum Texture_filter_mode filter_mode);
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the filter_mode,
+eg. TEXTURE_LINEAR_FILTER = "linear_filter". This string should match the
+command used to set the type. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+
+char **Texture_filter_mode_get_valid_strings(int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
+Texture_filter_modes.
+Strings are obtained from function Texture_filter_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum Texture_filter_mode Texture_filter_mode_from_string(
+	char *filter_mode_string);
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns the <Texture_filter_mode> described by <filter_mode_string>.
+==============================================================================*/
+
+char *Texture_wrap_mode_string(enum Texture_wrap_mode wrap_mode);
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the wrap_mode,
+eg. TEXTURE_CLAMP_WRAP = "clamp_wrap". This string should match the command
+used to set the type. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+
+char **Texture_wrap_mode_get_valid_strings(int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
+Texture_wrap_modes. Strings are obtained from function Texture_wrap_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum Texture_wrap_mode Texture_wrap_mode_from_string(char *wrap_mode_string);
+/*******************************************************************************
+LAST MODIFIED : 11 October 2000
+
+DESCRIPTION :
+Returns the <Texture_wrap_mode> described by <wrap_mode_string>.
+==============================================================================*/
+
 struct Texture *CREATE(Texture)(char *name);
 /*******************************************************************************
 LAST MODIFIED : 25 September 1995
@@ -198,17 +289,16 @@ DESCRIPTION :
 Sets the colour to be combined with the texture in blending combine mode.
 ==============================================================================*/
 
-int Texture_get_combine_mode(struct Texture *texture,
-	enum Texture_combine_type *combine_mode);
+enum Texture_combine_mode Texture_get_combine_mode(struct Texture *texture);
 /*******************************************************************************
-LAST MODIFIED : 13 February 1998
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 Returns how the texture is combined with the material: blend, decal or modulate.
 ==============================================================================*/
 
 int Texture_set_combine_mode(struct Texture *texture,
-	enum Texture_combine_type combine_mode);
+	enum Texture_combine_mode combine_mode);
 /*******************************************************************************
 LAST MODIFIED : 13 February 1998
 
@@ -216,17 +306,16 @@ DESCRIPTION :
 Sets how the texture is combined with the material: blend, decal or modulate.
 ==============================================================================*/
 
-int Texture_get_filter_mode(struct Texture *texture,
-	enum Texture_filter_type *filter_mode);
+enum Texture_filter_mode Texture_get_filter_mode(struct Texture *texture);
 /*******************************************************************************
-LAST MODIFIED : 13 February 1998
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 Returns the texture filter: linear or nearest.
 ==============================================================================*/
 
 int Texture_set_filter_mode(struct Texture *texture,
-	enum Texture_filter_type filter_mode);
+	enum Texture_filter_mode filter_mode);
 /*******************************************************************************
 LAST MODIFIED : 13 February 1998
 
@@ -252,11 +341,12 @@ crop is performed as the image is put into the texture.
 ==============================================================================*/
 
 int Texture_set_image_file(struct Texture *texture,char *image_file_name,
-	int left_margin_texels,int bottom_margin_texels,int width_texels,
-	int height_texels,double radial_distortion_centre_x,
+	int specify_width,int specify_height,enum Raw_image_storage raw_image_storage,
+	int crop_left_margin,int crop_bottom_margin,int crop_width,
+	int crop_height,double radial_distortion_centre_x,
 	double radial_distortion_centre_y,double radial_distortion_factor_k1);
 /*******************************************************************************
-LAST MODIFIED : 18 May 1998
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 Reads the image for <texture> from file <image_file_name> and then crops it
@@ -265,6 +355,8 @@ using <left_margin_texels>, <bottom_margin_texels>, <width_texels> and
 if <left_margin_texels> and <bottom_margin_texels> are not both non-negative or
 if the cropping region is not contained in the image then no cropping is
 performed.
+<specify_width> and <specify_height> allow the width and height to be specified
+for formats that do not have a header, eg. RAW and YUV.
 ==============================================================================*/
 
 struct X3d_movie;
@@ -288,15 +380,6 @@ The <image_file_name> is specified purely so that it may be recorded with the
 texture, and must be given a value.
 ==============================================================================*/
 
-int set_Texture_image(struct Parse_state *state,void *texture_void,
-	void *set_file_name_option_table_void);
-/*******************************************************************************
-LAST MODIFIED : 19 May 1998
-
-DESCRIPTION :
-Modifier function to set the texture image from a command.
-==============================================================================*/
-
 int set_Texture_storage(struct Parse_state *state,void *enum_storage_void_ptr,
 	void *dummy_user_data);
 /*******************************************************************************
@@ -304,71 +387,6 @@ LAST MODIFIED : 29 June 2000
 
 DESCRIPTION :
 A modifier function to set the texture storage type.
-==============================================================================*/
-
-int set_Texture_wrap_repeat(struct Parse_state *state,void *texture_void,
-	void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture wrap type to repeat.
-==============================================================================*/
-
-int set_Texture_wrap_clamp(struct Parse_state *state,void *texture_void,
-	void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture wrap type to clamp.
-==============================================================================*/
-
-int set_Texture_filter_nearest(struct Parse_state *state,
-	void *texture_void,void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture magnification/minification filter to
-nearest.
-==============================================================================*/
-
-int set_Texture_filter_linear(struct Parse_state *state,
-	void *texture_void,void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture magnification/minification filter to
-linear.
-==============================================================================*/
-
-int set_Texture_combine_blend(struct Parse_state *state,
-	void *texture_void,void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture combine type to blend.
-==============================================================================*/
-
-int set_Texture_combine_decal(struct Parse_state *state,
-	void *texture_void,void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture combine type to decal.
-==============================================================================*/
-
-int set_Texture_combine_modulate(struct Parse_state *state,
-	void *texture_void,void *dummy_user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 August 1996
-
-DESCRIPTION :
-A modifier function to set the texture combine type to modulate.
 ==============================================================================*/
 
 int Texture_get_raw_pixel_values(struct Texture *texture,int x,int y,
@@ -388,7 +406,7 @@ LAST MODIFIED : 13 April 1999
 DESCRIPTION :
 Returns the byte values in the texture using the texture coordinates relative
 to the physical size.  Each texel is assumed to apply exactly
-at its centre and the filter_type used to determine whether the pixels are
+at its centre and the filter_mode used to determine whether the pixels are
 interpolated or not.  When closer than half a texel to a boundary the colour 
 is constant from the half texel location to the edge. 
 ==============================================================================*/
@@ -484,17 +502,16 @@ returned are at least as large as those of the original image read into the
 texture.
 ==============================================================================*/
 
-int Texture_get_wrap_mode(struct Texture *texture,
-	enum Texture_wrap_type *wrap_mode);
+enum Texture_wrap_mode Texture_get_wrap_mode(struct Texture *texture);
 /*******************************************************************************
-LAST MODIFIED : 13 February 1998
+LAST MODIFIED : 11 October 2000
 
 DESCRIPTION :
 Returns how textures coordinates outside [0,1] are handled.
 ==============================================================================*/
 
 int Texture_set_wrap_mode(struct Texture *texture,
-	enum Texture_wrap_type wrap_mode);
+	enum Texture_wrap_mode wrap_mode);
 /*******************************************************************************
 LAST MODIFIED : 13 February 1998
 
