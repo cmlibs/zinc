@@ -7,6 +7,11 @@ DESCRIPTION :
 A class to provide a consistent IO interface to files, memory, gzip and bzip
 streams.
 ==============================================================================*/
+#if defined (GENERIC_PC) && defined (UNIX)
+/* SAB 10 December 2004 Specifying -std=gnu99 on the command line doesn't seem
+	to be sufficient for the cross compiler so I am specifying it here too. */
+#  define _ISOC99_SOURCE
+#endif /* defined (GENERIC_PC) && defined (UNIX) */
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
