@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 28 September 2000
+LAST MODIFIED : 23 February 2001
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -312,8 +312,8 @@ successful and NULL if unsuccessful.
 		device->channel=channel;
 		device->signal=signal;
 		/* the important thing is that the maximum is less than the minimum */
-		device->signal_maximum=(float)0;
-		device->signal_minimum=(float)1;
+		device->signal_display_maximum=(float)0;
+		device->signal_display_minimum=(float)1;
 		device->highlight=0;
 	}
 	else
@@ -4133,10 +4133,12 @@ Assumes that the <output_file> has been opened with the specified <file_type>
 							{
 								fprintf(output_file," = NULL \n");
 							}
-							/* (*(rig->devices))->signal_maximum */						
-							fprintf(output_file,"     ->signal_maximum %f\n",device->signal_maximum);
-							/* (*(rig->devices))->signal_minimum */
-							fprintf(output_file,"     ->signal_miniimum %f\n",device->signal_minimum);
+							/* (*(rig->devices))->signal_display_maximum */						
+							fprintf(output_file,"     ->signal_display_maximum %f\n",
+								device->signal_display_maximum);
+							/* (*(rig->devices))->signal_display_minimum */
+							fprintf(output_file,"     ->signal_miniimum %f\n",
+								device->signal_display_minimum);
 							/* (*(rig->devices))->highlight */
 							fprintf(output_file,"     ->highlight %d\n",device->highlight);
 						} /* if (device->description->region==region) */
@@ -4362,10 +4364,12 @@ Assumes that the <output_file> has been opened with the specified <file_type>
 							{
 								fprintf(output_file," = NULL \n");
 							}
-							/* rig->page_list->page->device_list->device->signal_maximum */						
-							fprintf(output_file,"     ->signal_maximum %f\n",device->signal_maximum);
-							/* rig->page_list->page->device_list->device->signal_minimum */
-							fprintf(output_file,"     ->signal_miniimum %f\n",device->signal_minimum);
+							/* rig->page_list->page->device_list->device->signal_display_maximum */						
+							fprintf(output_file,"     ->signal_display_maximum %f\n",
+								device->signal_display_maximum);
+							/* rig->page_list->page->device_list->device->signal_display_minimum */
+							fprintf(output_file,"     ->signal_miniimum %f\n",
+								device->signal_display_minimum);
 							/* rig->page_list->page->device_list->device->highlight */
 							fprintf(output_file,"     ->highlight %d\n",device->highlight);
 							 

@@ -188,12 +188,12 @@ required.
 		if (return_code)
 		{
 			transform_real->signal->index=0;
-			transform_real->signal_minimum=1;
-			transform_real->signal_maximum=0;
+			transform_real->signal_display_minimum=1;
+			transform_real->signal_display_maximum=0;
 			transform_real->channel->offset=0.;
 			transform_imaginary->signal->index=1;
-			transform_imaginary->signal_minimum=1;
-			transform_imaginary->signal_maximum=0;
+			transform_imaginary->signal_display_minimum=1;
+			transform_imaginary->signal_display_maximum=0;
 			transform_imaginary->channel->offset=0.;
 			transform_buffer->frequency=transform_frequency;
 			transform_buffer->start=0;
@@ -770,12 +770,12 @@ required.
 		if (return_code)
 		{
 			transform_real->signal->index=0;
-			transform_real->signal_minimum=1;
-			transform_real->signal_maximum=0;
+			transform_real->signal_display_minimum=1;
+			transform_real->signal_display_maximum=0;
 			transform_real->channel->offset=0.;
 			transform_imaginary->signal->index=1;
-			transform_imaginary->signal_minimum=1;
-			transform_imaginary->signal_maximum=0;
+			transform_imaginary->signal_display_minimum=1;
+			transform_imaginary->signal_display_maximum=0;
 			transform_imaginary->channel->offset=0.;
 			transform_buffer->frequency=transform_frequency;
 			transform_buffer->start=0;
@@ -1673,8 +1673,8 @@ transform buffer if required.
 				*transform_buffer_time=i;
 			}
 			transform_real->signal->index=0;
-			transform_real->signal_minimum=1;
-			transform_real->signal_maximum=0;
+			transform_real->signal_display_minimum=1;
+			transform_real->signal_display_maximum=0;
 			transform_real->channel->offset=0.;
 			/* use channel offset and gain */
 			transform_real->channel->gain=1./(float)number_of_transform_points;
@@ -1699,8 +1699,8 @@ transform buffer if required.
 			{
 				transform_buffer->end=number_of_transform_points-1;
 				transform_imaginary->signal->index=1;
-				transform_imaginary->signal_minimum=1;
-				transform_imaginary->signal_maximum=0;
+				transform_imaginary->signal_display_minimum=1;
+				transform_imaginary->signal_display_maximum=0;
 				transform_imaginary->channel->offset=0.;
 				/* use channel offset and gain */
 /*				transform_imaginary->channel->gain=1.;*/

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 7 January 2001
+LAST MODIFIED : 23 February 2001
 
 DESCRIPTION :
 
@@ -1397,7 +1397,7 @@ current device
 					y_offset,string,length);
 				/* minimum */
 				sprintf(working_string,"%g",((page_window->scrolling_devices)[i])->
-					signal_minimum);
+					signal_display_minimum);
 				length=strlen(working_string);
 #if defined (MOTIF)
 				XTextExtents(font,working_string,length,&direction,&ascent,&descent,
@@ -1417,7 +1417,7 @@ current device
 					working_string,length);
 				/* maximum */
 				sprintf(working_string,"%g",((page_window->scrolling_devices)[i])->
-					signal_maximum);
+					signal_display_maximum);
 				length=strlen(working_string);
 #if defined (MOTIF)
 				XTextExtents(font,working_string,length,&direction,&ascent,&descent,
@@ -1530,8 +1530,8 @@ DESCRIPTION :
 		{
 			number_of_channels_device=
 				(page_window->number_of_scrolling_channels_device)[k];
-			device_minimum=(page_window->scrolling_devices)[k]->signal_minimum;
-			device_maximum=(page_window->scrolling_devices)[k]->signal_maximum;
+			device_minimum=(page_window->scrolling_devices)[k]->signal_display_minimum;
+			device_maximum=(page_window->scrolling_devices)[k]->signal_display_maximum;
 			y_offset=(short)((number_of_scrolling_devices-k-1)*height);
 			temp_float[0]=(float)0;
 			temp_float[1]=(float)0;
@@ -1561,22 +1561,22 @@ DESCRIPTION :
 			{
 				signal_value=temp_float[3-i];
 #if defined (OLD_CODE)
-				if (page_window->signal_maximum<page_window->signal_minimum)
+				if (page_window->signal_display_maximum<page_window->signal_display_minimum)
 				{
-					page_window->signal_maximum=signal_value;
-					page_window->signal_minimum=signal_value;
+					page_window->signal_display_maximum=signal_value;
+					page_window->signal_display_minimum=signal_value;
 				}
 				else
 				{
-					if (signal_value<page_window->signal_minimum)
+					if (signal_value<page_window->signal_display_minimum)
 					{
-						page_window->signal_minimum=signal_value;
+						page_window->signal_display_minimum=signal_value;
 					}
 					else
 					{
-						if (signal_value>page_window->signal_maximum)
+						if (signal_value>page_window->signal_display_maximum)
 						{
-							page_window->signal_maximum=signal_value;
+							page_window->signal_display_maximum=signal_value;
 						}
 					}
 				}
@@ -1734,22 +1734,22 @@ DESCRIPTION :
 		for (i=0;i<4;i++)
 		{
 			signal_value=temp_float[3-i];
-			if (page_window->signal_maximum<page_window->signal_minimum)
+			if (page_window->signal_display_maximum<page_window->signal_display_minimum)
 			{
-				page_window->signal_maximum=signal_value;
-				page_window->signal_minimum=signal_value;
+				page_window->signal_display_maximum=signal_value;
+				page_window->signal_display_minimum=signal_value;
 			}
 			else
 			{
-				if (signal_value<page_window->signal_minimum)
+				if (signal_value<page_window->signal_display_minimum)
 				{
-					page_window->signal_minimum=signal_value;
+					page_window->signal_display_minimum=signal_value;
 				}
 				else
 				{
-					if (signal_value>page_window->signal_maximum)
+					if (signal_value>page_window->signal_display_maximum)
 					{
-						page_window->signal_maximum=signal_value;
+						page_window->signal_display_maximum=signal_value;
 					}
 				}
 			}
@@ -2840,31 +2840,31 @@ DESCRIPTION :
 							}
 						}
 #if defined (OLD_CODE)
-						if (page_window->signal_maximum<page_window->signal_minimum)
+						if (page_window->signal_display_maximum<page_window->signal_display_minimum)
 						{
-							page_window->signal_maximum=signal_value;
-							page_window->signal_minimum=signal_value;
+							page_window->signal_display_maximum=signal_value;
+							page_window->signal_display_minimum=signal_value;
 						}
 						else
 						{
-							if (signal_value<page_window->signal_minimum)
+							if (signal_value<page_window->signal_display_minimum)
 							{
-								page_window->signal_minimum=signal_value;
+								page_window->signal_display_minimum=signal_value;
 							}
 							else
 							{
-								if (signal_value>page_window->signal_maximum)
+								if (signal_value>page_window->signal_display_maximum)
 								{
-									page_window->signal_maximum=signal_value;
+									page_window->signal_display_maximum=signal_value;
 								}
 							}
 						}
 #endif /* defined (OLD_CODE) */
 						signal_line[j].y=
-							(short)((((page_window->display_device->signal_maximum)-
+							(short)((((page_window->display_device->signal_display_maximum)-
 							(float)signal_value)*(float)drawing_rectangle.bottom)/
-							((page_window->display_device->signal_maximum)-
-							(page_window->display_device->signal_minimum)));
+							((page_window->display_device->signal_display_maximum)-
+							(page_window->display_device->signal_display_minimum)));
 					}
 					FillRect(device_context,&fill_rectangle,fill_brush);
 					Polyline(device_context,x_axis,2);
@@ -2992,7 +2992,7 @@ Writes the maximum for the current channel into the maximum field.
 			sprintf(number_string,"%g",
 				channel_gain*((float)(page_window->display_maximum)-channel_offset));
 #endif /* defined (OLD_CODE) */
-			sprintf(number_string,"%g",page_window->display_device->signal_maximum);
+			sprintf(number_string,"%g",page_window->display_device->signal_display_maximum);
 #if defined (MOTIF)
 			XtVaSetValues((page_window->maximum).value,XmNvalue,number_string,NULL);
 #endif /* defined (MOTIF) */
@@ -3042,7 +3042,7 @@ Writes the minimum for the current channel into the minimum field.
 			sprintf(number_string,"%g",
 				channel_gain*((float)(page_window->display_minimum)-channel_offset));
 #endif /* defined (OLD_CODE) */
-			sprintf(number_string,"%g",page_window->display_device->signal_minimum);
+			sprintf(number_string,"%g",page_window->display_device->signal_display_minimum);
 #if defined (MOTIF)
 			XtVaSetValues((page_window->minimum).value,XmNvalue,number_string,NULL);
 #endif /* defined (MOTIF) */
@@ -3272,11 +3272,11 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 					}
 					display_maximum=(long int)temp;
 #endif /* defined (OLD_CODE) */
-					if (display_maximum!=page_window->display_device->signal_maximum)
+					if (display_maximum!=page_window->display_device->signal_display_maximum)
 					{
-						if (display_maximum>page_window->display_device->signal_minimum)
+						if (display_maximum>page_window->display_device->signal_display_minimum)
 						{
-							page_window->display_device->signal_maximum=display_maximum;
+							page_window->display_device->signal_display_maximum=display_maximum;
 							draw_scrolling_background(page_window);
 							return_code=1;
 						}
@@ -3395,11 +3395,11 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 					}
 					display_minimum=(long int)temp;
 #endif /* defined (OLD_CODE) */
-					if (display_minimum!=page_window->display_device->signal_minimum)
+					if (display_minimum!=page_window->display_device->signal_display_minimum)
 					{
-						if (display_minimum<page_window->display_device->signal_maximum)
+						if (display_minimum<page_window->display_device->signal_display_maximum)
 						{
-							page_window->display_device->signal_minimum=display_minimum;
+							page_window->display_device->signal_display_minimum=display_minimum;
 							draw_scrolling_background(page_window);
 							return_code=1;
 						}
@@ -3787,8 +3787,8 @@ DESCRIPTION :
 		show_display_gain(page_window);
 #if defined (OLD_CODE)
 		/* reset range when change channel */
-		page_window->signal_maximum=(float)0;
-		page_window->signal_minimum=(float)1;
+		page_window->signal_display_maximum=(float)0;
+		page_window->signal_display_minimum=(float)1;
 #endif /* defined (OLD_CODE) */
 #if defined (MOTIF)
 		XtVaSetValues((page_window->electrode).value,XmNvalue,
@@ -3913,8 +3913,8 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 							page_window->channel_index=16*(channel_number/16)+
 								8*(channel_number%2)+(channel_number%16)/2;
 #if defined (OLD_CODE)
-							page_window->signal_maximum=0;
-							page_window->signal_minimum=1;
+							page_window->signal_display_maximum=0;
+							page_window->signal_display_minimum=1;
 #endif /* defined (OLD_CODE) */
 #if defined (WINDOWS)
 							InvalidateRect(page_window->scrolling_area,(CONST RECT *)NULL,
@@ -5897,15 +5897,15 @@ Called to start experiment on the <page_window>.
 											channel_offset=channel->offset;
 											channel_gain=(channel->gain_correction)/
 												(pre_filter_gain*post_filter_gain);
-											(*device_address)->signal_minimum=channel_gain*
+											(*device_address)->signal_display_minimum=channel_gain*
 												((float)minimum_signal_value-channel_offset);
-											(*device_address)->signal_maximum=channel_gain*
+											(*device_address)->signal_display_maximum=channel_gain*
 												((float)maximum_signal_value-channel_offset);
 										}
 										else
 										{
-											(*device_address)->signal_minimum=(float)-1;
-											(*device_address)->signal_maximum=(float)1;
+											(*device_address)->signal_display_minimum=(float)-1;
+											(*device_address)->signal_display_maximum=(float)1;
 										}
 									}
 									device_address++;
@@ -5915,33 +5915,33 @@ Called to start experiment on the <page_window>.
 								{
 									if ((*device_address)&&!((*device_address)->channel))
 									{
-										(*device_address)->signal_minimum=(float)0;
-										(*device_address)->signal_maximum=(float)0;
+										(*device_address)->signal_display_minimum=(float)0;
+										(*device_address)->signal_display_maximum=(float)0;
 										auxiliary_properties= &(((*device_address)->description->
 											properties).auxiliary);
 										for (j=0;j<auxiliary_properties->number_of_electrodes;j++)
 										{
 											if (0<(auxiliary_properties->electrode_coefficients)[j])
 											{
-												(*device_address)->signal_minimum +=
+												(*device_address)->signal_display_minimum +=
 													(auxiliary_properties->electrode_coefficients)[j]*
 													((auxiliary_properties->electrodes)[j])->
-													signal_minimum;
-												(*device_address)->signal_maximum +=
+													signal_display_minimum;
+												(*device_address)->signal_display_maximum +=
 													(auxiliary_properties->electrode_coefficients)[j]*
 													((auxiliary_properties->electrodes)[j])->
-													signal_maximum;
+													signal_display_maximum;
 											}
 											else
 											{
-												(*device_address)->signal_minimum +=
+												(*device_address)->signal_display_minimum +=
 													(auxiliary_properties->electrode_coefficients)[j]*
 													((auxiliary_properties->electrodes)[j])->
-													signal_maximum;
-												(*device_address)->signal_maximum +=
+													signal_display_maximum;
+												(*device_address)->signal_display_maximum +=
 													(auxiliary_properties->electrode_coefficients)[j]*
 													((auxiliary_properties->electrodes)[j])->
-													signal_minimum;
+													signal_display_minimum;
 											}
 										}
 									}
@@ -6988,8 +6988,8 @@ Called when the auto range button is pressed.
 				{
 					if ((*device)&&(channel=(*device)->channel))
 					{
-						(*device)->signal_minimum=(float)-1;
-						(*device)->signal_maximum=(float)1;
+						(*device)->signal_display_minimum=(float)-1;
+						(*device)->signal_display_maximum=(float)1;
 						channel_number=(channel->number)-1;
 						card_number=channel_number/64;
 						if ((0<=channel_number)&&(channel_number<number_of_channels))
@@ -7025,8 +7025,8 @@ Called when the auto range button is pressed.
 								signal_maximum=
 									(float)((-0.2*signal_minimum+2.2*signal_maximum)/2);
 								signal_minimum=temp;
-								(*device)->signal_minimum=signal_minimum;
-								(*device)->signal_maximum=signal_maximum;
+								(*device)->signal_display_minimum=signal_minimum;
+								(*device)->signal_display_maximum=signal_maximum;
 								if (card_maximum[card_number]<card_minimum[card_number])
 								{
 									card_minimum[card_number]=signal_minimum;
@@ -7067,23 +7067,23 @@ Called when the auto range button is pressed.
 							{
 								signal_minimum +=
 									(auxiliary_properties->electrode_coefficients)[j]*
-									((auxiliary_properties->electrodes)[j])->signal_minimum;
+									((auxiliary_properties->electrodes)[j])->signal_display_minimum;
 								signal_maximum +=
 									(auxiliary_properties->electrode_coefficients)[j]*
-									((auxiliary_properties->electrodes)[j])->signal_maximum;
+									((auxiliary_properties->electrodes)[j])->signal_display_maximum;
 							}
 							else
 							{
 								signal_minimum +=
 									(auxiliary_properties->electrode_coefficients)[j]*
-									((auxiliary_properties->electrodes)[j])->signal_maximum;
+									((auxiliary_properties->electrodes)[j])->signal_display_maximum;
 								signal_maximum +=
 									(auxiliary_properties->electrode_coefficients)[j]*
-									((auxiliary_properties->electrodes)[j])->signal_minimum;
+									((auxiliary_properties->electrodes)[j])->signal_display_minimum;
 							}
 						}
-						(*device)->signal_minimum=signal_minimum;
-						(*device)->signal_maximum=signal_maximum;
+						(*device)->signal_display_minimum=signal_minimum;
+						(*device)->signal_display_maximum=signal_maximum;
 					}
 					device++;
 				}
@@ -7181,15 +7181,15 @@ Called when the full range button is pressed.
 						channel_offset=channel->offset;
 						channel_gain=(channel->gain_correction)/
 							(pre_filter_gain*post_filter_gain);
-						(*device_address)->signal_minimum=channel_gain*
+						(*device_address)->signal_display_minimum=channel_gain*
 							((float)minimum_signal_value-channel_offset);
-						(*device_address)->signal_maximum=channel_gain*
+						(*device_address)->signal_display_maximum=channel_gain*
 							((float)maximum_signal_value-channel_offset);
 					}
 					else
 					{
-						(*device_address)->signal_minimum=(float)-1;
-						(*device_address)->signal_maximum=(float)1;
+						(*device_address)->signal_display_minimum=(float)-1;
+						(*device_address)->signal_display_maximum=(float)1;
 					}
 				}
 				device_address++;
@@ -7199,33 +7199,33 @@ Called when the full range button is pressed.
 			{
 				if ((*device_address)&&!((*device_address)->channel))
 				{
-					(*device_address)->signal_minimum=(float)0;
-					(*device_address)->signal_maximum=(float)0;
+					(*device_address)->signal_display_minimum=(float)0;
+					(*device_address)->signal_display_maximum=(float)0;
 					auxiliary_properties= &(((*device_address)->description->
 						properties).auxiliary);
 					for (j=0;j<auxiliary_properties->number_of_electrodes;j++)
 					{
 						if (0<(auxiliary_properties->electrode_coefficients)[j])
 						{
-							(*device_address)->signal_minimum +=
+							(*device_address)->signal_display_minimum +=
 								(auxiliary_properties->electrode_coefficients)[j]*
 								((auxiliary_properties->electrodes)[j])->
-								signal_minimum;
-							(*device_address)->signal_maximum +=
+								signal_display_minimum;
+							(*device_address)->signal_display_maximum +=
 								(auxiliary_properties->electrode_coefficients)[j]*
 								((auxiliary_properties->electrodes)[j])->
-								signal_maximum;
+								signal_display_maximum;
 						}
 						else
 						{
-							(*device_address)->signal_minimum +=
+							(*device_address)->signal_display_minimum +=
 								(auxiliary_properties->electrode_coefficients)[j]*
 								((auxiliary_properties->electrodes)[j])->
-								signal_maximum;
-							(*device_address)->signal_maximum +=
+								signal_display_maximum;
+							(*device_address)->signal_display_maximum +=
 								(auxiliary_properties->electrode_coefficients)[j]*
 								((auxiliary_properties->electrodes)[j])->
-								signal_minimum;
+								signal_display_minimum;
 						}
 					}
 				}
@@ -7266,8 +7266,8 @@ Called when the reset scale button is pressed.
 #endif /* defined (MOTIF) */
 	if (page_window=(struct Page_window *)page_window_structure)
 	{
-		page_window->signal_maximum=(float)0;
-		page_window->signal_minimum=(float)1;
+		page_window->signal_display_maximum=(float)0;
+		page_window->signal_display_minimum=(float)1;
 	}
 	else
 	{
@@ -7304,22 +7304,22 @@ Called when the scale button is pressed.
 	{
 		if (page_window->display_device)
 		{
-			if (page_window->signal_minimum<=page_window->signal_maximum)
+			if (page_window->signal_display_minimum<=page_window->signal_display_maximum)
 			{
-				if (page_window->signal_minimum<page_window->signal_maximum)
+				if (page_window->signal_display_minimum<page_window->signal_display_maximum)
 				{
-					page_window->display_maximum=page_window->signal_maximum;
-					page_window->display_minimum=page_window->signal_minimum;
+					page_window->display_maximum=page_window->signal_display_maximum;
+					page_window->display_minimum=page_window->signal_display_minimum;
 				}
 				else
 				{
-					page_window->display_maximum=page_window->signal_maximum+1;
-					page_window->display_minimum=page_window->signal_minimum-1;
+					page_window->display_maximum=page_window->signal_display_maximum+1;
+					page_window->display_minimum=page_window->signal_display_minimum-1;
 				}
 				/* reset the scale */
 					/*???DB.  Makes the reset scale button superfluous */
-				page_window->signal_maximum=(float)0;
-				page_window->signal_minimum=(float)1;
+				page_window->signal_display_maximum=(float)0;
+				page_window->signal_display_minimum=(float)1;
 				show_display_maximum(page_window);
 				show_display_minimum(page_window);
 				draw_scrolling_background(page_window);
@@ -9842,8 +9842,8 @@ the created page window.  If unsuccessful, NULL is returned.
 				page_window->pointer_sensitivity=pointer_sensitivity;
 					/*???DB.  Should pointer_sensitivity be in user_interface? */
 #if defined (OLD_CODE)
-				page_window->signal_maximum=(float)0;
-				page_window->signal_minimum=(float)1;
+				page_window->signal_display_maximum=(float)0;
+				page_window->signal_display_minimum=(float)1;
 #endif /* defined (OLD_CODE) */
 				page_window->display_device=(struct Device *)NULL;
 				page_window->display_device_number= -1;
@@ -10148,15 +10148,15 @@ the created page window.  If unsuccessful, NULL is returned.
 									channel_offset=channel->offset;
 									channel_gain=(channel->gain_correction)/
 										(pre_filter_gain*post_filter_gain);
-									(*device_address)->signal_minimum=
+									(*device_address)->signal_display_minimum=
 										channel_gain*((float)minimum_signal_value-channel_offset);
-									(*device_address)->signal_maximum=
+									(*device_address)->signal_display_maximum=
 										channel_gain*((float)maximum_signal_value-channel_offset);
 								}
 								else
 								{
-									(*device_address)->signal_minimum=(float)-1;
-									(*device_address)->signal_maximum=(float)1;
+									(*device_address)->signal_display_minimum=(float)-1;
+									(*device_address)->signal_display_maximum=(float)1;
 								}
 								if ((0<channel->number)&&(channel->number<channel_number)&&
 									((*device_address)->description)&&
@@ -10174,29 +10174,29 @@ the created page window.  If unsuccessful, NULL is returned.
 						{
 							if ((*device_address)&&!((*device_address)->channel))
 							{
-								(*device_address)->signal_minimum=(float)0;
-								(*device_address)->signal_maximum=(float)0;
+								(*device_address)->signal_display_minimum=(float)0;
+								(*device_address)->signal_display_maximum=(float)0;
 								auxiliary_properties= &(((*device_address)->description->
 									properties).auxiliary);
 								for (j=0;j<auxiliary_properties->number_of_electrodes;j++)
 								{
 									if (0<(auxiliary_properties->electrode_coefficients)[j])
 									{
-										(*device_address)->signal_minimum +=
+										(*device_address)->signal_display_minimum +=
 											(auxiliary_properties->electrode_coefficients)[j]*
-											((auxiliary_properties->electrodes)[j])->signal_minimum;
-										(*device_address)->signal_maximum +=
+											((auxiliary_properties->electrodes)[j])->signal_display_minimum;
+										(*device_address)->signal_display_maximum +=
 											(auxiliary_properties->electrode_coefficients)[j]*
-											((auxiliary_properties->electrodes)[j])->signal_maximum;
+											((auxiliary_properties->electrodes)[j])->signal_display_maximum;
 									}
 									else
 									{
-										(*device_address)->signal_minimum +=
+										(*device_address)->signal_display_minimum +=
 											(auxiliary_properties->electrode_coefficients)[j]*
-											((auxiliary_properties->electrodes)[j])->signal_maximum;
-										(*device_address)->signal_maximum +=
+											((auxiliary_properties->electrodes)[j])->signal_display_maximum;
+										(*device_address)->signal_display_maximum +=
 											(auxiliary_properties->electrode_coefficients)[j]*
-											((auxiliary_properties->electrodes)[j])->signal_minimum;
+											((auxiliary_properties->electrodes)[j])->signal_display_minimum;
 									}
 								}
 							}

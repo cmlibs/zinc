@@ -6411,8 +6411,8 @@ and <call_data>.
 	USE_PARAMETER(call_data);
 	if ((trace=(struct Trace_window *)trace_window)&&(trace->processed_device))
 	{
-		trace->processed_device->signal_minimum=1;
-		trace->processed_device->signal_maximum=0;
+		trace->processed_device->signal_display_minimum=1;
+		trace->processed_device->signal_display_maximum=0;
 		redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace_window,
 			(XtPointer)NULL);
 	}
@@ -8243,8 +8243,8 @@ Calculates the processed device.
 							buffer_offset=processed_buffer->number_of_signals;
 							processed_device->channel->offset=0;
 							processed_device->channel->gain=1;
-							processed_device->signal_maximum=maximum;
-							processed_device->signal_minimum=minimum;
+							processed_device->signal_display_maximum=maximum;
+							processed_device->signal_display_minimum=minimum;
 							for (i=number_of_samples;i>0;i--)
 							{
 								*processed_value= *value;
@@ -8350,8 +8350,8 @@ Calculates the processed device.
 						buffer_offset=processed_buffer->number_of_signals;
 						processed_device->channel->offset=0;
 						processed_device->channel->gain=1;
-						processed_device->signal_maximum=0;
-						processed_device->signal_minimum=1;
+						processed_device->signal_display_maximum=0;
+						processed_device->signal_display_minimum=1;
 						for (i=number_of_samples;i>0;i--)
 						{
 							*processed_value= *value;
@@ -9783,10 +9783,10 @@ The callback for redrawing part of the drawing area in trace area 3.
 										objective_toggle))&&(trace->processed_device)&&
 										(trace->valid_processing))
 									{
-										trace->processed_device->signal_minimum=
-											device->signal_minimum;
-										trace->processed_device->signal_maximum=
-											device->signal_maximum;
+										trace->processed_device->signal_display_minimum=
+											device->signal_display_minimum;
+										trace->processed_device->signal_display_maximum=
+											device->signal_display_maximum;
 										draw_signal((struct FE_node *)NULL,
 											(struct Signal_drawing_package *)NULL,
 											trace->processed_device,EDIT_AREA_DETAIL,1,0,&first_data,
@@ -10274,8 +10274,8 @@ See analysis_previous_event.
 			{
 				if (trace->processed_device)
 				{
-					trace->processed_device->signal_minimum=1;
-					trace->processed_device->signal_maximum=0;
+					trace->processed_device->signal_display_minimum=1;
+					trace->processed_device->signal_display_maximum=0;
 				}
 				trace_update_edit_interval(trace);
 				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
@@ -10604,8 +10604,8 @@ Draws the <event> marker in the <trace> window.
 					frequency=buffer->frequency;
 					start_analysis_interval=buffer->start;
 					end_analysis_interval=buffer->end;
-					signal_minimum=(*highlight)->signal_minimum;
-					signal_maximum=(*highlight)->signal_maximum;
+					signal_minimum=(*highlight)->signal_display_minimum;
+					signal_maximum=(*highlight)->signal_display_maximum;
 					trace_area_1= &(trace->area_1);
 					draw_event_marker(event,current_event_number,datum,times,frequency,
 						ENLARGE_AREA_DETAIL,start_analysis_interval,end_analysis_interval,

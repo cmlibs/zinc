@@ -345,7 +345,7 @@ are not.
 
 struct Device
 /*******************************************************************************
-LAST MODIFIED : 27 July 1999
+LAST MODIFIED : 23 February 2001
 
 DESCRIPTION :
 For an auxiliary that is a linear combination of electrodes, <channel> and
@@ -363,8 +363,8 @@ For an auxiliary that is a linear combination of electrodes, <channel> and
 	struct Channel *channel;
 	/* measured signal(s) */
 	struct Signal *signal;
-	/* user changeable maximum and minimum values */
-	float signal_maximum,signal_minimum;
+	/* user changeable maximum and minimum values  for display */
+	float signal_display_maximum,signal_display_minimum;
 	/* for display */
 	int highlight;
 }; /* struct Device */

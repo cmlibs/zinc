@@ -937,8 +937,8 @@ NB.  0<=current_data_interval<number_of_data_intervals
 				/* channel_offset) values*/
 				if (device)
 				{
-					device->signal_maximum=signal_maximum;
-					device->signal_minimum=signal_minimum;
+					device->signal_display_maximum=signal_maximum;
+					device->signal_display_minimum=signal_minimum;
 				}
 #if defined (UNEMAP_USE_NODES)
 				else
@@ -2025,8 +2025,8 @@ DESCRIPTION :
 					while (event)
 					{
 						draw_event_marker(event,current_event_number,datum,times,
-							frequency,detail,first_data,last_data,device->signal_minimum,
-							device->signal_maximum,axes_left,axes_top,axes_width,
+							frequency,detail,first_data,last_data,device->signal_display_minimum,
+							device->signal_display_maximum,axes_left,axes_top,axes_width,
 							axes_height,drawing_area_window,pixel_map,
 							signal_drawing_information,user_interface);
 						event=event->next;
@@ -2619,8 +2619,8 @@ named file.
 								nothing */
 							if (((*device)->channel)&&((*device)->signal))
 							{
-								signal_minimum=(*device)->signal_minimum;
-								signal_maximum=(*device)->signal_maximum;
+								signal_minimum=(*device)->signal_display_minimum;
+								signal_maximum=(*device)->signal_display_maximum;
 								if (0!=((*device)->channel)->gain)
 								{
 									signal_minimum=(((*device)->channel)->offset)+

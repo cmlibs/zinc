@@ -6059,8 +6059,8 @@ The extraction arguments are:
 					if (return_code)
 					{
 						highlight=device->highlight;
-						signal_minimum=device->signal_minimum;
-						signal_maximum=device->signal_maximum;					
+						signal_minimum=device->signal_display_minimum;
+						signal_maximum=device->signal_display_maximum;					
 					}
 				}
 			}
@@ -6824,7 +6824,7 @@ LAST MODIFIED : 7 August 2000
 DESCRIPTION :
 Sets the the <min_max_iterator>, min, max based upon the node's signal properties.
 Only proceses a node if it's signal status filed is accepted/undecided.
-This function is called iteratively by analysis_set_range
+This function is called iteratively by anal_set_range_all_accep_undec
 ==============================================================================*/
 {		
 	FE_value min,max;
@@ -7176,7 +7176,7 @@ LAST MODIFIED : 7 August 2000
 
 DESCRIPTION :
 Set the <nodes> signal_minimum,signal_maximum from the <min_max_iterator>.
-This function is called iteratively by analysis_set_range
+This function is called iteratively by anal_set_range_all_accep_undec
 ==============================================================================*/
 {		
 	FE_value signal_minimum,signal_maximum;

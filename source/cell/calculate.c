@@ -875,8 +875,8 @@ Calculates the cell window.
                     *device= *existing_device;
                     /* force the signal maximum and minimum to be
                     recalculated */
-                    (*device)->signal_minimum=1;
-                    (*device)->signal_maximum=0;
+                    (*device)->signal_display_minimum=1;
+                    (*device)->signal_display_maximum=0;
                     *existing_device=(struct Device *)NULL;
                     existing_device_number--;
                     existing_device++;
