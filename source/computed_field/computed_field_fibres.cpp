@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_fibres.c
 
-LAST MODIFIED : 28 January 2001
+LAST MODIFIED : 30 January 2001
 
 DESCRIPTION :
 Implements a number of basic continuum mechanics fibres operations on
@@ -225,7 +225,7 @@ static int Computed_field_fibre_axes_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 28 January 2001
+LAST MODIFIED : 30 January 2001
 
 DESCRIPTION :
 Compute the three 3-component fibre axes in the order fibre, sheet, normal from
@@ -365,6 +365,7 @@ Derivatives may not be computed for this type of Computed_field [yet].
 				f31 = c_x;
 				f32 = c_y;
 				f33 = c_z;
+#if defined (OLD_CODE)
 				/* note rearrangement of sin/cos to give equivalent rotation of
 					gamma - PI/2.  Note we will probably remove the -PI/2 factor at some
 					stage */
@@ -374,6 +375,13 @@ Derivatives may not be computed for this type of Computed_field [yet].
 				c_x = cos_gamma*f21 + sin_gamma*f31;
 				c_y = cos_gamma*f22 + sin_gamma*f32;
 				c_z = cos_gamma*f23 + sin_gamma*f33;
+#endif /* defined (OLD_CODE) */
+				b_x =  cos_gamma*f21 + sin_gamma*f31;
+				b_y =  cos_gamma*f22 + sin_gamma*f32;
+				b_z =  cos_gamma*f23 + sin_gamma*f33;
+				c_x = -sin_gamma*f21 + cos_gamma*f31;
+				c_y = -sin_gamma*f22 + cos_gamma*f32;
+				c_z = -sin_gamma*f23 + cos_gamma*f33;
 				/* put fibre, sheet then normal in field values */
 				field->values[0]=a_x;
 				field->values[1]=a_y;
