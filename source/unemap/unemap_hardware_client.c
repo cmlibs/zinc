@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 29 April 2002
+LAST MODIFIED : 7 May 2002
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -1672,10 +1672,10 @@ Thread to watch the scrolling socket.
 						else
 						{
 							running=0;
+#if defined (DEBUG)
 							display_message(INFORMATION_MESSAGE,
 								"scrolling_thread_function.  Stop %d %d\n",dwWait,
 								WAIT_OBJECT_0+1);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 						}
 					}
@@ -1771,7 +1771,7 @@ See <unemap_configure> for more details.
 	ENTER(crate_configure_start);
 #if defined (DEBUG)
 	/*???debug */
-	printf("enter crate_configure_start\n");
+	printf("enter crate_configure_start %p\n",crate);
 #endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
@@ -9198,7 +9198,7 @@ int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 29 April 2002
+LAST MODIFIED : 5 May 2002
 
 DESCRIPTION :
 Configures the hardware for sampling at the specified <sampling_frequency> and
@@ -9263,11 +9263,11 @@ attached SCU.  All other SCUs output the synchronization signal.
 				frequencies or buffer sizes retry with the minima */
 			master_sampling_frequency=sampling_frequency;
 			master_number_of_samples_in_buffer=number_of_samples_in_buffer;
-			crate=module_unemap_crates;
-			i=module_number_of_unemap_crates;
 			retry=0;
 			do
 			{
+				crate=module_unemap_crates;
+				i=module_number_of_unemap_crates;
 				if (crate_configure_start(crate,0,master_sampling_frequency,
 					master_number_of_samples_in_buffer,
 #if defined (WINDOWS)
@@ -9300,6 +9300,7 @@ attached SCU.  All other SCUs output the synchronization signal.
 #endif /* defined (DEBUG) */
 				if (i>0)
 				{
+					return_code=0;
 					while (i<=module_number_of_unemap_crates)
 					{
 						crate_configure_end(crate);
@@ -9368,16 +9369,29 @@ attached SCU.  All other SCUs output the synchronization signal.
 								{
 									retry=1;
 								}
+								else
+								{
+									retry=0;
+								}
 							}
 							else
 							{
 								return_code=0;
+								retry=0;
 							}
 						}
+						else
+						{
+							retry=0;
+						}
+					}
+					else
+					{
+						retry=0;
 					}
 #if defined (DEBUG)
 					/*???debug */
-					printf("  end completed %d\n",i);
+					printf("  end completed %d %d %d\n",i,return_code,retry);
 #endif /* defined (DEBUG) */
 					while (i>0)
 					{
