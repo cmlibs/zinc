@@ -2206,14 +2206,28 @@ Sets up the analysis work area for analysing a set of signals.
 	struct FE_field *field,*highlight_field;
 	struct FE_field_component component;
 	struct FE_node *rig_node;			
-	struct GROUP(FE_node) *rig_node_group;		
+	struct GROUP(FE_node) *rig_node_group;
+	struct FE_node_selection *node_selection;
 #endif /* defined (UNEMAP_USE_NODES) */
-
-	ENTER(analysis_read_signal_file);
+#if defined (UNEMAP_USE_3D)
+	struct FE_node_selection *node_selection;
+#endif /* defined (UNEMAP_USE_3D) */
+	ENTER(analysis_read_signal_file);	
+#if defined (UNEMAP_USE_3D)
+	node_selection=(struct FE_node_selection *)NULL;		
+#endif /* defined (UNEMAP_USE_3D) */
 	return_code=0;
 	/* check the arguments */
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
-	{
+	{			
+#if defined (UNEMAP_USE_3D)					
+		/* need to unselect nodes, as selecting them accesses them */ 
+		if(node_selection=get_unemap_package_FE_node_selection
+			(analysis->unemap_package))
+		{
+			FE_node_selection_clear(node_selection);
+		}
+#endif /* defined (UNEMAP_USE_3D)	 */				
 		/* clear the old analysis */
 		if (analysis->raw_rig)
 		{
@@ -2231,7 +2245,7 @@ Sets up the analysis work area for analysing a set of signals.
 			{
 				destroy_Signal_buffer(&buffer);
 			}
-#if defined (UNEMAP_USE_3D)			
+#if defined (UNEMAP_USE_3D)				
 			if ((analysis->mapping_window)&&(analysis->mapping_window->map))
 			{
 				map_remove_torso_arms(analysis->mapping_window->map);
@@ -2251,7 +2265,7 @@ Sets up the analysis work area for analysing a set of signals.
 				DEACCESS(Signal_drawing_package)(&(analysis->signal_drawing_package));
 			}	
 #endif /* defined (UNEMAP_USE_NODES)*/							
-#if defined (UNEMAP_USE_3D)
+#if defined (UNEMAP_USE_3D)		
 			free_unemap_package_time_computed_fields(analysis->unemap_package);
 			free_unemap_package_rig_fields(analysis->unemap_package);		
 #endif /* defined (UNEMAP_USE_NODES)*/		
