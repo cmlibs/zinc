@@ -5270,7 +5270,6 @@ that that function wants to receive.
 	return (return_code);
 } /* Scene_set_input_callback */
 
-#if defined (OLD_CODE)
 int Scene_input(struct Scene *scene,enum Scene_input_type input_type,
 	int button_number,int input_modifier,double viewx,double viewy,double viewz,
 	double nearx,double neary,double nearz,double farx,double fary,double farz,
@@ -5427,7 +5426,6 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 
 	return (return_code);
 } /* Scene_input */
-#endif /* defined (OLD_CODE) */
 
 struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
 	struct Interaction_volume *interaction_volume)

@@ -906,7 +906,6 @@ Sets the function that will be called to pass on input information, and the data
 that that function wants to receive.
 ==============================================================================*/
 
-#if defined (OLD_CODE)
 int Scene_input(struct Scene *scene,enum Scene_input_type input_type,
 	int button_number,int input_modifier,double viewx,double viewy,double viewz,
 	double nearx,double neary,double nearz,double farx,double fary,double farz,
@@ -931,7 +930,6 @@ of hits and the select buffer will be set accordingly. The main function of
 this routine is to convert picking information into a list of easy-to-interpret
 Scene_picked_objects to pass to clients of the scene, eg. node editor.
 ==============================================================================*/
-#endif /* defined (OLD_CODE) */
 
 struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
 	struct Interaction_volume *interaction_volume);

@@ -1330,8 +1330,7 @@ world space.
 	return (return_code);
 } /* Scene_viewer_unproject */
 
-#if defined (OLD_CODE)
-static int Scene_viewer_input_select(struct Scene_viewer *scene_viewer,
+static int Scene_viewer_input_select_old(struct Scene_viewer *scene_viewer,
 	XEvent *event)
 /*******************************************************************************
 LAST MODIFIED : 18 May 1998
@@ -1351,7 +1350,7 @@ Converts mouse button-press and motion events into viewing transformations in
 	GLuint *picking_buffer;
 	GLint viewport[4],hits;
 
-	ENTER(Scene_viewer_input_select);
+	ENTER(Scene_viewer_input_select_old);
 	if (scene_viewer&&event)
 	{
 		return_code=1;
@@ -1396,7 +1395,7 @@ Converts mouse button-press and motion events into viewing transformations in
 						if (0>hits)
 						{
 							display_message(ERROR_MESSAGE,
-								"Scene_viewer_input_select.  picking_buffer overflow");
+								"Scene_viewer_input_select_old.  picking_buffer overflow");
 						}
 						scene_input_modifier=0;
 						if (ShiftMask&(button_event->state))
@@ -1420,7 +1419,7 @@ Converts mouse button-press and motion events into viewing transformations in
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"Scene_viewer_input_select.  Could not allocate picking_buffer");
+							"Scene_viewer_input_select_old.  Could not allocate picking_buffer");
 						return_code=0;
 					}
 				}
@@ -1528,7 +1527,7 @@ Converts mouse button-press and motion events into viewing transformations in
 			} break;
 			default:
 			{
-				printf("Scene_viewer_input_select.  Invalid X event");
+				printf("Scene_viewer_input_select_old.  Invalid X event");
 				return_code=0;
 			} break;
 		}
@@ -1536,14 +1535,13 @@ Converts mouse button-press and motion events into viewing transformations in
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_input_select.  Invalid argument(s)");
+			"Scene_viewer_input_select_old.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_input_select */
-#endif /* defined (OLD_CODE) */
+} /* Scene_viewer_input_select_old */
 
 static int Scene_viewer_input_select(struct Scene_viewer *scene_viewer,
 	XEvent *event)
@@ -2292,7 +2290,15 @@ returned to the scene.
 				}
 				else
 				{
-					Scene_viewer_input_select(scene_viewer,event);
+					/*???RC temporary until all tools are Interactive_tools */
+					if (scene_viewer->interactive_tool)
+					{
+						Scene_viewer_input_select(scene_viewer,event);
+					}
+					else
+					{
+						Scene_viewer_input_select_old(scene_viewer,event);
+					}
 				}
 			} break;
 			case SCENE_VIEWER_UPDATE_ON_CLICK:
