@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.cpp
 //
-// LAST MODIFIED : 3 September 2004
+// LAST MODIFIED : 4 November 2004
 //
 // DESCRIPTION :
 // Finite element types - element, element/xi and finite element field.
@@ -1038,7 +1038,7 @@ the <node>.
 class Function_variable_matrix_nodal_values :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 3 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1240,6 +1240,7 @@ class Function_variable_matrix_nodal_values :
 		Function_size_type number_of_rows() const
 		{
 			int number_of_components,return_code;
+			struct Cmiss_region *cmiss_region;
 			struct Count_nodal_values_data count_nodal_values_data;
 			struct FE_field *fe_field;
 			struct FE_region *fe_region;
@@ -1251,7 +1252,8 @@ class Function_variable_matrix_nodal_values :
 			result=0;
 			if (function_finite_element&&
 				(fe_field=function_finite_element->field_private)&&
-				(fe_region=function_finite_element->region())&&
+				(cmiss_region=function_finite_element->region())&&
+				(fe_region=Cmiss_region_get_FE_region(cmiss_region))&&
 				(0<(number_of_components=get_FE_field_number_of_components(fe_field))))
 			{
 				count_nodal_values_data.number_of_values=0;
@@ -1456,7 +1458,7 @@ Function_variable_iterator_representation_atomic_nodal_values::
 	value_types(0),number_of_values(0),value_type_index(0),fe_region(0),
 	number_of_versions(0),atomic_variable(0),variable(variable)
 //******************************************************************************
-// LAST MODIFIED : 23 August 2004
+// LAST MODIFIED : 4 November 2004
 //
 // DESCRIPTION :
 // Constructor.  If <begin> then the constructed iterator points to the first
@@ -1466,11 +1468,13 @@ Function_variable_iterator_representation_atomic_nodal_values::
 //==============================================================================
 {
 	Function_finite_element_handle function_finite_element;
+	struct Cmiss_region *cmiss_region;
 
 	if (variable&&(function_finite_element=boost::dynamic_pointer_cast<
-		Function_finite_element,Function>(variable->function())))
+		Function_finite_element,Function>(variable->function()))&&
+		(cmiss_region=function_finite_element->region())&&
+		(fe_region=Cmiss_region_get_FE_region(cmiss_region)))
 	{
-		fe_region=function_finite_element->region();
 		ACCESS(FE_region)(fe_region);
 		if (begin)
 		{
@@ -3192,18 +3196,27 @@ Function_size_type Function_finite_element::number_of_components() const
 	return ((Function_size_type)get_FE_field_number_of_components(field_private));
 }
 
-struct FE_region *Function_finite_element::region() const
+struct Cmiss_region *Function_finite_element::region() const
 //******************************************************************************
-// LAST MODIFIED : 2 April 2004
+// LAST MODIFIED : 4 November 2004
 //
 // DESCRIPTION :
-// return the region that the field is defined for
+// Return the region that the field is defined for.
 //
-// NB.  The calling program should use ACCESS(FE_region) and
-//   DEACCESS(FE_region) to manage the lifetime of the returned region
+// NB.  The calling program should use ACCESS(Cmiss_region) and
+//   DEACCESS(Cmiss_region) to manage the lifetime of the returned region
 //==============================================================================
 {
-	return (FE_field_get_FE_region(field_private));
+	struct Cmiss_region *result;
+	struct FE_region *fe_region;
+
+	result=(struct Cmiss_region *)NULL;
+	if (fe_region=FE_field_get_FE_region(field_private))
+	{
+		FE_region_get_Cmiss_region(fe_region,&result);
+	}
+
+	return (result);
 }
 
 Function_size_type Function_finite_element::number_of_versions(

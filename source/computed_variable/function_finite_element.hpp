@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 3 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -14,6 +14,7 @@
 extern "C"
 {
 #include "finite_element/finite_element.h"
+#include "region/cmiss_region.h"
 }
 #include "computed_variable/function.hpp"
 #include "computed_variable/function_variable.hpp"
@@ -181,9 +182,9 @@ class Function_finite_element : public Function
 		// return the number of components
 		Function_size_type number_of_components() const;
 		// return the region that the field is defined for
-		// NB.  The calling program should use ACCESS(FE_region) and
-		//   DEACCESS(FE_region) to manage the lifetime of the returned region
-		struct FE_region *region() const;
+		// NB.  The calling program should use ACCESS(Cmiss_region) and
+		//   DEACCESS(Cmiss_region) to manage the lifetime of the returned region
+		struct Cmiss_region *region() const;
 		// return the number of versions for the component at the node
 		Function_size_type number_of_versions(
 			Function_size_type component_number,struct FE_node *node) const;
