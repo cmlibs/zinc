@@ -321,11 +321,13 @@ DESCRIPTION :
 			(struct Node_field_viewer_widget_struct *)node_field_viewer_void))
 	{
 		node_field_viewer_widget_update_values(node_field_viewer);
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"node_field_viewer_widget_time_change_callback.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 	return(return_code);
