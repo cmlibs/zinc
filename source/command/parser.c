@@ -2813,6 +2813,97 @@ or pointing to allocated strings.
 	return (return_code);
 } /* set_names */
 
+static int set_names_from_list(struct Parse_state *state, void *data_void, 
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 7 July 2004
+
+DESCRIPTION :
+Modifier function for reading string names from <state> until one of the
+tokens is not in <data->tokens->string>.  While a valid token is encountered
+then the index for that token is set in <data->valid_tokens->index> (these should
+all be initialised to zero). 
+==============================================================================*/
+{
+	char *current_token,**names;
+	int counter, i, number_of_names, return_code, valid_token;
+	struct Set_names_from_list_data *data;
+
+	ENTER(set_names_from_list);
+	USE_PARAMETER(dummy_void);
+	if (state && (data=(struct Set_names_from_list_data *)data_void))
+	{
+		valid_token = 1;
+		counter = 0;
+		while ((current_token=state->current_token) && valid_token)
+		{
+			return_code=1;
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				valid_token = 0;
+				for (i = 0 ; !valid_token && (i < data->number_of_tokens) ; i++)
+				{
+					if (fuzzy_string_compare_same_length(current_token,
+						data->tokens[i].string))
+					{
+						if (data->tokens[i].index == 0)
+						{
+							counter++;
+							data->tokens[i].index = counter;
+							valid_token = 1;
+							return_code = shift_Parse_state(state,1);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"set_names_from_list.  "
+								"Token \"%s\" repeated in list", data->tokens[i].string);
+							display_parse_state_location(state);
+							return_code = 0;
+						}
+					}
+				}
+			}
+			else
+			{
+				/* write help text */
+				for (i=0;i<number_of_names;i++)
+				{
+					display_message(INFORMATION_MESSAGE," NAME");
+				}
+				for (i=0;i<number_of_names;i++)
+				{
+					if (0==i)
+					{
+						display_message(INFORMATION_MESSAGE,"[",names[0]);
+					}
+					else
+					{
+						display_message(INFORMATION_MESSAGE," ",names[i]);
+					}
+					if (names[i])
+					{
+						display_message(INFORMATION_MESSAGE,"%s",names[i]);
+					}
+					else
+					{
+						display_message(INFORMATION_MESSAGE,"\"\"");
+					}
+				}
+				display_message(INFORMATION_MESSAGE,"]");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_names.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_names */
+
 int set_string(struct Parse_state *state,void *string_address_void,
 	void *string_description_void)
 /*******************************************************************************
@@ -5218,4 +5309,42 @@ a default option.
 
 	return (return_code);
 } /* Option_table_add_name_entry */
+
+int Option_table_add_set_names_from_list_entry(struct Option_table *option_table,
+   char *token, struct Set_names_from_list_data *data)
+/*******************************************************************************
+LAST MODIFIED : 7 July 2004
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <data> contains an array
+of size <data->number_of_tokens> tokens.  Each of these tokens points to a 
+string <data->tokens[i].string>.  Input will be read from the parse state until
+a token not in the list of strings.  As each string is encountered the
+corresponding <data->tokens[i].index> is set.  When set these start from one,
+and are initialised to zero in this routine.  The function checks that the tokens
+are not repeated.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Option_table_add_names_from_list_entry);
+	if (option_table && token && data && data->number_of_tokens)
+	{
+		for (i = 0 ; i < data->number_of_tokens ; i++)
+		{
+			data->tokens[i].index = 0;
+		}
+		return_code = Option_table_add_entry(option_table, token,
+			(void *)data, NULL, set_names_from_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_names_from_list_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_names_from_list_entry */
 

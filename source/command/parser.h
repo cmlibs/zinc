@@ -775,4 +775,45 @@ DESCRIPTION :
 Adds the given <token> to the <option_table>.  If the <token> is specified then
 the token following is assigned to <value>.
 ==============================================================================*/
+
+struct Set_names_from_list_token
+/*******************************************************************************
+LAST MODIFIED : 7 July 2004
+
+DESCRIPTION :
+An individual token for the Option_table_add_set_names_from_list_entry option 
+table entry.
+==============================================================================*/
+{
+	char *string;
+	int index;
+};
+
+
+struct Set_names_from_list_data
+/*******************************************************************************
+LAST MODIFIED : 7 July 2004
+
+DESCRIPTION :
+Data for the Option_table_add_set_names_from_list_entry option table entry.
+==============================================================================*/
+{
+	int number_of_tokens;
+	struct Set_names_from_list_token *tokens;
+};
+
+int Option_table_add_set_names_from_list_entry(struct Option_table *option_table,
+   char *token, struct Set_names_from_list_data *data);
+/*******************************************************************************
+LAST MODIFIED : 7 July 2004
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <data> contains an array
+of size <data->number_of_tokens> tokens.  Each of these tokens points to a 
+string <data->tokens[i].string>.  Input will be read from the parse state until
+a token not in the list of strings.  As each string is encountered the
+corresponding <data->tokens[i].index> is set.  When set these start from one,
+and are initialised to zero in this routine.  The function checks that the tokens
+are not repeated.
+==============================================================================*/
 #endif /* !defined (PARSER_H) */
