@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_streamlines.c
 
-LAST MODIFIED : 30 June 1999
+LAST MODIFIED : 24 March 2000
 
 DESCRIPTION :
 Functions for calculating streamlines in finite elements.
@@ -1255,7 +1255,7 @@ static int track_streamline_from_FE_element(struct FE_element **element,
 	Triple **stream_points,Triple **stream_vectors,Triple **stream_normals,
 	GTDATA **stream_data)
 /*******************************************************************************
-LAST MODIFIED : 16 March 1999
+LAST MODIFIED : 24 March 2000
 
 DESCRIPTION :
 Tracks the stream following <stream_vector_field> starting in the <*element> at
@@ -1444,6 +1444,10 @@ following way:
 									/* get angle from average curl along segment of streamline */
 									angle = 0.5*(previous_curl_component + curl_component)
 										* (total_stepped - previous_total_stepped);
+									if (reverse_track)
+									{
+										angle = -angle;
+									}
 									/* get displacement from old to current coordinates */
 									displacement[0]=coordinates[0]-displacement[0];
 									displacement[1]=coordinates[1]-displacement[1];
