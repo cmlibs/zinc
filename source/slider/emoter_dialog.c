@@ -6027,7 +6027,6 @@ Executes a GFX MODIFY EMOTER command.
 	struct Emoter_slider *emoter_slider;
 	struct Graphics_window *graphics_window;
 	struct Shared_emoter_slider_data *shared;
-	Widget emoter_dialog_widget;
 
 	ENTER(gfx_modify_emoter);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -6275,7 +6274,7 @@ Executes a GFX MODIFY EMOTER command.
 					}
 					if (keyframe)
 					{
-						emoter_keyframe_CB(emoter_dialog_widget, NULL, NULL);
+						emoter_keyframe_CB(emoter_dialog->widget, NULL, NULL);
 					}
 				}
 			}
