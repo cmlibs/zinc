@@ -212,6 +212,42 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #endif /* defined (O64) */
 #elif defined (LINUX) /* switch OperatingSystem */
 /* 2 LINUX */
+#if defined (USE_UNEMAP_NODES)
+/* 2.1 LINUX-USE_UNEMAP_NODES */
+/* currently only version with nodes */
+#define Target unemap_linux_nodes
+#define AffineTarget unemap/affine_linux_nodes
+#define Bmsi2sigTarget unemap/bmsi2sig_linux_nodes
+#define Biosense2sigTarget unemap/biosense2sig_linux_nodes
+#define Biosense2vrmlTarget unemap/biosense2vrml_linux_nodes
+#define ChangeCalibrationTarget unemap/change_calibration_linux_nodes
+#define ChangeChannelsTarget unemap/change_channels_linux_nodes
+#define ChangeConfigurationTarget unemap/change_configuration_linux_nodes
+#define ChangeEventsTarget unemap/change_events_linux_nodes
+#define ChangeFrequencyTarget unemap/change_frequency_linux_nodes
+#define CombineSignalsTarget unemap/combine_signals_linux_nodes
+#define DifferenceSignalsTarget unemap/difference_signals_linux_nodes
+#define ExtractSignalTarget unemap/extract_signal_linux_nodes
+#define Img2sigTarget unemap/img2sig_linux_nodes
+#define OpticalSignalsTarget unemap/optical_signals_linux_nodes
+#define Plt2cnfgTarget unemap/plt2cnfg_linux_nodes
+#define Posdat2sigTarget unemap/posdat2sig_linux_nodes
+#define RatioSignalsTarget unemap/ratio_signals_linux_nodes
+#define RegisterTarget unemap/register_linux_nodes
+#define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_nodes
+#define Tuff2sigTarget unemap/tuff2sig_linux_nodes
+#define UniqueChannelsTarget unemap/unique_channels_linux_nodes
+#define Uid2uidhTarget uid2uidh_linux_nodes
+#define Makefile unemap_linux_nodes.make
+#define DependMake unemap_linux_nodes.depend
+#define ObjSuffix o
+/* Can't use linux on its own as this is defined! */
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_nodes_g
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_nodes_g
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_nodes_g
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_nodes_g
+#else /* defined (USE_UNEMAP_NODES) */
+/* 2.2 LINUX-!USE_UNEMAP_NODES */
 #define Target unemap_linux
 #define AffineTarget unemap/affine_linux
 #define Bmsi2sigTarget unemap/bmsi2sig_linux
@@ -243,6 +279,7 @@ OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_g
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_g
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_g
+#endif /* defined (USE_UNEMAP_NODES) */
 #endif /* switch OperatingSystem */
 
 #if defined (CMISS_ROOT_DEFINED)
@@ -295,7 +332,7 @@ GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
 #elif defined(LINUX) /* switch OperatingSystem */
 XCOMM for OpenGL without SGI movie
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
-GRAPHICS_LIB = -lGL -lGLU
+GRAPHICS_LIB = -L/usr/local/lib -lMesaGL -lMesaGLU
 #endif /* switch OperatingSystem */
 #endif /* (USE_UNEMAP_NODES) */
 
@@ -351,7 +388,7 @@ LIB = -lMrm -lXm -lXt -lX11 -lXpm -lm
 #if defined (IRIX) /* switch OperatingSystem */
 LIB = -lMrm -lXm -lXt -lX11 -lPW -lftn -lm
 #elif defined(LINUX) /* switch OperatingSystem */
-LIB = -lMrm -lXm -lXt -lX11 -lXpm -lXext -lm -ldl -lXp -lSM -lICE
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE
 #endif /* switch OperatingSystem */
 
 #if defined (OLD_CODE)
@@ -402,7 +439,7 @@ ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
 #if defined (USE_UNEMAP_NODES)
-ALL_LIB = $(LIB) $(EXTERNAL_INPUT_LIB) $(GRAPHICS_LIB)
+ALL_LIB = $(GRAPHICS_LIB) $(LIB) $(EXTERNAL_INPUT_LIB)
 #else
 ALL_LIB = $(LIB) $(EXTERNAL_INPUT_LIB)
 #endif
@@ -449,7 +486,7 @@ GRAPHICS_SRCS = \
 	graphics/environment_map.c \
 	graphics/texture_line.c \
 	graphics/mcubes.c \
-	graphics/makegtobj.c \	
+	graphics/makegtobj.c \
 	graphics/glyph.c \
 	graphics/graphical_element.c \
 	graphics/auxiliary_graphics_types.c \
