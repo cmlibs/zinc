@@ -929,7 +929,8 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 									CREATE_TEXT_CHOOSE_OBJECT_WIDGET(FE_element)(
 										grid_calc->seed_element_form,
 										(struct FE_element *)NULL,element_manager,
-										FE_element_is_top_level,FE_element_to_element_string,
+										FE_element_is_top_level,(void *)NULL,
+										FE_element_to_element_string,
 										element_string_to_FE_element)))
 								{
 									init_widgets=0;
