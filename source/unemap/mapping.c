@@ -5051,7 +5051,7 @@ Creates a pair of arm labels, and adds to the scene.
 		if((map_3d_package=get_Region_map_3d_package(region))&&
 			(!(graphics_object=
 				get_map_3d_package_torso_arm_labels(map_3d_package)))&&
-			  get_rig_node_group_map_electrode_position_min_max(
+			  get_node_group_position_min_max(
 				get_Region_rig_node_group(region),
 				get_Region_map_electrode_position_field(region),
 				&min_x,&max_x,&min_y,&max_y,&min_z,&max_z))
