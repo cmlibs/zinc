@@ -103,7 +103,7 @@ TARGET_TYPE_DEFINES =
 .MAKEOPTS : -r
 
 .SUFFIXES :
-.SUFFIXES : .ObjSuffix .c .cpp .f .uil .uidh
+.SUFFIXES : .ObjSuffix .c .cpp .f .uil .uidh .exnode .exnodeh
 
 .c.ObjSuffix: 
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
@@ -221,6 +221,29 @@ TARGET_TYPE_DEFINES =
    $(UIL) -o $(UIDH_PATH)/$*.uid $*.uil && \
    $(UTILITIES_PATH)/$(UIDTOUIDH) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh
 #endif /* defined (CMISS_ROOT_DEFINED) */
+
+.exnode.exnodeh:
+	@if [ ! -d $(UIDH_PATH)/$(*D) ]; then \
+		mkdir -p $(UIDH_PATH)/$(*D); \
+	fi
+#if defined (CMISS_ROOT_DEFINED)	
+	@if [ -x $(UTILITIES_PATH)/exnode2exnodeh ]; then \
+      FOUND_EXNODETOEXNODEH=$(UTILITIES_PATH)/exnode2exnodeh; \
+  else \
+	    FOUND_EXNODETOEXNODEH=$(PRODUCT_UTILITIES_PATH)/exnode2exnodeh; \
+	fi ; \
+	if [ -f $*.exnode ]; then \
+      SOURCE_EXNODE=$*.exnode; \
+	else \
+      SOURCE_EXNODE=$(PRODUCT_SOURCE_PATH)/$*.exnode; \
+	fi ; \
+	set -x ; \
+  $${FOUND_EXNODETOEXNODEH} $${SOURCE_EXNODE} > $(UIDH_PATH)/$*.exnodeh
+#else /* defined (CMISS_ROOT_DEFINED) */
+	set -x ; \
+	$(UTILITIES_PATH)/exnode2exnodeh $*.exnode > $(UIDH_PATH)/$*.exnodeh
+#endif /* defined (CMISS_ROOT_DEFINED) */
+
 
 XCOMM Check that the makefile is being used on the correct system
 #if defined (IRIX)
