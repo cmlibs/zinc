@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.hpp
 //
-// LAST MODIFIED : 23 June 2004
+// LAST MODIFIED : 19 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -124,7 +124,7 @@ typedef boost::intrusive_ptr<Function_finite_element>
 
 class Function_finite_element : public Function
 //******************************************************************************
-// LAST MODIFIED : 23 June 2004
+// LAST MODIFIED : 19 July 2004
 //
 // DESCRIPTION :
 // A function for a finite element interpolation field.
@@ -133,13 +133,8 @@ class Function_finite_element : public Function
 //  evaluate, evaluate_derivative and set_value?
 //==============================================================================
 {
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-	friend class Function_variable_finite_element;
-	friend class Function_variable_nodal_values;
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 	friend class Function_variable_matrix_components;
 	friend class Function_variable_matrix_nodal_values;
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 	public:
 		// constructor
 		Function_finite_element(struct FE_field *field);

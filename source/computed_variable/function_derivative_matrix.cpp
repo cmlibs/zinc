@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.cpp
 //
-// LAST MODIFIED : 15 July 2004
+// LAST MODIFIED : 19 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -10,905 +10,18 @@
 
 #include "computed_variable/function_derivative_matrix.hpp"
 #include "computed_variable/function_matrix.hpp"
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-#include "computed_variable/function_variable.hpp"
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 #include "computed_variable/function_variable_composite.hpp"
 #include "computed_variable/function_variable_matrix.hpp"
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 #include "computed_variable/function_variable_value_scalar.hpp"
 
 // module typedefs
 // ===============
 
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 typedef boost::intrusive_ptr< Function_variable_matrix<Scalar> >
-	Function_variable_matrix_handle;
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
+	Function_variable_matrix_scalar_handle;
 
 // module classes
 // ==============
-
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-// forward declaration so that can use _handle
-class Function_variable_derivative_matrix;
-typedef boost::intrusive_ptr<Function_variable_derivative_matrix>
-	Function_variable_derivative_matrix_handle;
-
-// class Function_variable_iterator_representation_atomic_derivative_matrix
-// ------------------------------------------------------------------------
-
-class Function_variable_iterator_representation_atomic_derivative_matrix :
-	public Function_variable_iterator_representation
-//******************************************************************************
-// LAST MODIFIED : 3 March 2004
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	public:
-		// constructor
-		Function_variable_iterator_representation_atomic_derivative_matrix(
-			const bool begin,Function_variable_derivative_matrix_handle variable);
-		// a "virtual" constructor
-		Function_variable_iterator_representation *clone();
-	protected:
-		// destructor
-		~Function_variable_iterator_representation_atomic_derivative_matrix();
-	private:
-		// increment
-		void increment();
-		// decrement
-		void decrement();
-		// equality
-		bool equality(const Function_variable_iterator_representation *
-			representation);
-		// dereference
-		Function_variable_handle dereference() const;
-	private:
-		// copy constructor
-		Function_variable_iterator_representation_atomic_derivative_matrix(const
-			Function_variable_iterator_representation_atomic_derivative_matrix&);
-	private:
-		Function_variable_derivative_matrix_handle atomic_variable,variable;
-		std::list< std::list<Function_variable_handle> >
-			matrix_independent_variables;
-		std::list< std::list<Function_variable_handle> >::iterator
-			matrix_independent_variables_iterator;
-};
-
-
-// class Function_derivative_matrix_get_matrix_functor
-// ---------------------------------------------------
-
-class Function_derivative_matrix_get_matrix_functor
-//******************************************************************************
-// LAST MODIFIED : 18 February 2004
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	public:
-		Function_derivative_matrix_get_matrix_functor(Function_size_type& index,
-			std::list<Matrix>::reverse_iterator& matrix_reverse_iterator,
-			std::list<Matrix>& matrices,
-			std::list<Function_variable_handle>& partial_independent_variables):
-			matrix_reverse_iterator(matrix_reverse_iterator),
-			partial_independent_variable_iterator(partial_independent_variables.
-			rbegin()),index(index),offset(1+matrices.size())
-		{
-			matrix_reverse_iterator=matrices.rbegin();
-			index=partial_independent_variables.size();
-		};
-		int operator() (Function_variable_handle& independent_variable)
-		{
-			bool found;
-
-			offset /=2;
-			if (index>0)
-			{
-				found=(**partial_independent_variable_iterator== *independent_variable);
-			}
-			else
-			{
-				found=false;
-			}
-			if (found)
-			{
-				index--;
-				partial_independent_variable_iterator++;
-			}
-			else
-			{
-				int i;
-
-				for (i=offset;i>0;i--)
-				{
-					matrix_reverse_iterator++;
-				}
-			}
-
-			return (0);
-		}
-	private:
-		std::list<Matrix>::reverse_iterator& matrix_reverse_iterator;
-		std::list<Function_variable_handle>::reverse_iterator
-			partial_independent_variable_iterator;
-		Function_size_type& index;
-		Function_size_type offset;
-};
-
-static bool Function_variable_derivative_matrix_set_scalar_function(
-	Scalar& value,const Function_variable_handle variable);
-
-
-// class Function_variable_derivative_matrix
-// -----------------------------------------
-
-class Function_variable_derivative_matrix : public Function_variable
-//******************************************************************************
-// LAST MODIFIED : 30 June 2004
-//
-// DESCRIPTION :
-// <column> and <row> start from one when referencing a matrix entry.  Zero
-// indicates all.
-//==============================================================================
-{
-	friend class Function_derivative_matrix;
-	friend class
-		Function_variable_iterator_representation_atomic_derivative_matrix;
-	friend bool Function_variable_derivative_matrix_set_scalar_function(
-		Scalar& value,const Function_variable_handle variable);
-	public:
-		// constructor
-		Function_variable_derivative_matrix(
-			const Function_derivative_matrix_handle function_derivative_matrix):
-			Function_variable(function_derivative_matrix),column(0),row(0),
-			partial_independent_variables(0){};
-		Function_variable_derivative_matrix(
-			const Function_derivative_matrix_handle function_derivative_matrix,
-			const std::list<Function_variable_handle>& partial_independent_variables):
-			Function_variable(function_derivative_matrix),column(0),row(0),
-			partial_independent_variables(partial_independent_variables)
-		{
-			if (function_derivative_matrix)
-			{
-				if (0<(this->partial_independent_variables).size())
-				{
-					Function_size_type index;
-
-					std::for_each(
-						(function_derivative_matrix->independent_variables).rbegin(),
-						(function_derivative_matrix->independent_variables).rend(),
-						Function_derivative_matrix_get_matrix_functor(index,
-						matrix_reverse_iterator,function_derivative_matrix->matrices,
-						this->partial_independent_variables));
-					if (0!=index)
-					{
-						(this->partial_independent_variables).clear();
-						matrix_reverse_iterator=
-							(function_derivative_matrix->matrices).rend();
-					}
-				}
-				else
-				{
-					matrix_reverse_iterator=(function_derivative_matrix->matrices).rend();
-				}
-			}
-			else
-			{
-				(this->partial_independent_variables).clear();
-			}
-		};
-		Function_variable_derivative_matrix(
-			const Function_derivative_matrix_handle function_derivative_matrix,
-			const std::list<Function_variable_handle>& partial_independent_variables,
-			const Function_size_type row,const Function_size_type column):
-			Function_variable(function_derivative_matrix),column(column),row(row),
-			partial_independent_variables(partial_independent_variables)
-		{
-			if (function_derivative_matrix)
-			{
-				if (0<partial_independent_variables.size())
-				{
-					Function_size_type index;
-
-					std::for_each(
-						(function_derivative_matrix->independent_variables).rbegin(),
-						(function_derivative_matrix->independent_variables).rend(),
-						Function_derivative_matrix_get_matrix_functor(index,
-						matrix_reverse_iterator,function_derivative_matrix->matrices,
-						this->partial_independent_variables));
-					if (0==index)
-					{
-						if (this->row>matrix_reverse_iterator->size1())
-						{
-							this->row=0;
-						}
-						if (this->column>matrix_reverse_iterator->size2())
-						{
-							this->column=0;
-						}
-						if ((0!=this->row)&&(0!=this->column))
-						{
-							value_private=Function_variable_value_handle(
-								new Function_variable_value_scalar(
-								Function_variable_derivative_matrix_set_scalar_function));
-						}
-					}
-					else
-					{
-						(this->partial_independent_variables).clear();
-						matrix_reverse_iterator=
-							(function_derivative_matrix->matrices).rend();
-						this->row=0;
-						this->column=0;
-					}
-				}
-				else
-				{
-					matrix_reverse_iterator=(function_derivative_matrix->matrices).rend();
-					this->row=0;
-					this->column=0;
-				}
-			}
-			else
-			{
-				(this->partial_independent_variables).clear();
-				this->row=0;
-				this->column=0;
-			}
-		};
-		// destructor
-		~Function_variable_derivative_matrix(){};
-	// inherited
-	public:
-		Function_variable_handle clone() const
-		{
-			return (Function_variable_handle(new Function_variable_derivative_matrix(
-				*this)));
-		};
-		string_handle get_string_representation()
-		{
-			Function_derivative_matrix_handle function_derivative_matrix=
-				boost::dynamic_pointer_cast<Function_derivative_matrix,Function>(
-				function());
-			string_handle return_string(0),temp_string;
-
-			if (0==partial_independent_variables.size())
-			{
-				if (function_derivative_matrix)
-				{
-					return_string=function_derivative_matrix->get_string_representation();
-				}
-			}
-			else
-			{
-				if (return_string=new std::string)
-				{
-					std::list<Function_variable_handle>::iterator independent_variable;
-					std::ostringstream out;
-
-					out << "d" << partial_independent_variables.size() << "(";
-					if (function_derivative_matrix&&
-						(function_derivative_matrix->dependent_variable))
-					{
-						if (temp_string=function_derivative_matrix->dependent_variable->
-							get_string_representation())
-						{
-							out << *temp_string;
-							delete temp_string;
-						}
-					}
-					out << ")/d(";
-					independent_variable=partial_independent_variables.begin();
-					while (independent_variable!=partial_independent_variables.end())
-					{
-						if (temp_string=(*independent_variable)->
-							get_string_representation())
-						{
-							out << *temp_string;
-							delete temp_string;
-						}
-						independent_variable++;
-						if (independent_variable!=partial_independent_variables.end())
-						{
-							out << ",";
-						}
-					}
-					out << ")" << partial_independent_variables.size();
-					if ((0!=row)||(0!=column))
-					{
-						out << "[";
-						if (0!=row)
-						{
-							out << row;
-						}
-						else
-						{
-							out << "*";
-						}
-						out << ",";
-						if (0!=column)
-						{
-							out << column;
-						}
-						else
-						{
-							out << "*";
-						}
-						out << "]";
-					}
-					*return_string=out.str();
-				}
-			}
-
-			return (return_string);
-		};
-		Function_variable_iterator begin_atomic() const
-		{
-			return (Function_variable_iterator(
-				new Function_variable_iterator_representation_atomic_derivative_matrix(
-				true,Function_variable_derivative_matrix_handle(
-				const_cast<Function_variable_derivative_matrix*>(this)))));
-		};
-		Function_variable_iterator end_atomic() const
-		{
-			return (Function_variable_iterator(
-				new Function_variable_iterator_representation_atomic_derivative_matrix(
-				false,Function_variable_derivative_matrix_handle(
-				const_cast<Function_variable_derivative_matrix*>(this)))));
-		};
-		std::reverse_iterator<Function_variable_iterator> rbegin_atomic() const
-		{
-			return (std::reverse_iterator<Function_variable_iterator>(
-				new Function_variable_iterator_representation_atomic_derivative_matrix(
-				false,Function_variable_derivative_matrix_handle(
-				const_cast<Function_variable_derivative_matrix*>(this)))));
-		};
-		std::reverse_iterator<Function_variable_iterator> rend_atomic() const
-		{
-			return (std::reverse_iterator<Function_variable_iterator>(
-				new Function_variable_iterator_representation_atomic_derivative_matrix(
-				true,Function_variable_derivative_matrix_handle(
-				const_cast<Function_variable_derivative_matrix*>(this)))));
-		};
-		Function_size_type number_differentiable()
-		{
-			Function_derivative_matrix_handle function_derivative_matrix=
-				boost::dynamic_pointer_cast<Function_derivative_matrix,Function>(
-				function());
-			Function_size_type result;
-
-			result=0;
-			if (0==partial_independent_variables.size())
-			{
-				if (function_derivative_matrix)
-				{
-					std::list<Matrix>::iterator matrix_iterator;
-
-					for (matrix_iterator=(function_derivative_matrix->matrices).begin();
-						matrix_iterator!=(function_derivative_matrix->matrices).end();
-						matrix_iterator++)
-					{
-						result += (matrix_iterator->size1)()*(matrix_iterator->size2)();
-					}
-				}
-			}
-			else
-			{
-				if (0==row)
-				{
-					if (0==column)
-					{
-						result=(matrix_reverse_iterator->size1)()*
-							(matrix_reverse_iterator->size2)();
-					}
-					else
-					{
-						result=(matrix_reverse_iterator->size1)();
-					}
-				}
-				else
-				{
-					if (0==column)
-					{
-						result=(matrix_reverse_iterator->size2)();
-					}
-					else
-					{
-						result=1;
-					}
-				}
-			}
-
-			return (result);
-		};
-	private:
-		bool equality_atomic(const Function_variable_handle& variable) const
-		{
-			bool result;
-			Function_variable_derivative_matrix_handle variable_derivative_matrix;
-
-			result=false;
-			if (variable_derivative_matrix=boost::dynamic_pointer_cast<
-				Function_variable_derivative_matrix,Function_variable>(variable))
-			{
-				result=((function()==variable_derivative_matrix->function())&&
-					(row==variable_derivative_matrix->row)&&
-					(column==variable_derivative_matrix->column)&&
-					(partial_independent_variables==
-					variable_derivative_matrix->partial_independent_variables));
-			}
-
-			return (result);
-		};
-	private:
-		bool is_atomic()
-		{
-			bool result;
-
-			result=false;
-			if (this&&(0<partial_independent_variables.size())&&(0!=row)&&(0!=column))
-			{
-				result=true;
-			}
-
-			return (result);
-		};
-	private:
-		// copy constructor
-		Function_variable_derivative_matrix(
-			const Function_variable_derivative_matrix& variable):
-			Function_variable(variable),column(variable.column),row(variable.row),
-			partial_independent_variables(variable.partial_independent_variables),
-			matrix_reverse_iterator(variable.matrix_reverse_iterator){};
-		// assignment
-		Function_variable_derivative_matrix& operator=(
-			const Function_variable_derivative_matrix&);
-	private:
-		Function_size_type column,row;
-		std::list<Function_variable_handle> partial_independent_variables;
-		std::list<Matrix>::reverse_iterator matrix_reverse_iterator;
-};
-
-static bool Function_variable_derivative_matrix_set_scalar_function(
-	Scalar& value,const Function_variable_handle variable)
-{
-	bool result;
-	Function_variable_derivative_matrix_handle derivative_matrix_variable;
-
-	result=false;
-	if ((derivative_matrix_variable=boost::dynamic_pointer_cast<
-		Function_variable_derivative_matrix,Function_variable>(variable))&&
-		(derivative_matrix_variable->is_atomic)())
-	{
-		value=(*(derivative_matrix_variable->matrix_reverse_iterator))(
-			(derivative_matrix_variable->row)-1,
-			(derivative_matrix_variable->column)-1);
-	}
-
-	return (result);
-}
-
-
-// class Function_variable_iterator_representation_atomic_derivative_matrix
-// ------------------------------------------------------------------------
-
-Function_variable_iterator_representation_atomic_derivative_matrix::
-	Function_variable_iterator_representation_atomic_derivative_matrix(
-	const bool begin,Function_variable_derivative_matrix_handle variable):
-	atomic_variable(0),variable(variable),matrix_independent_variables(0),
-	matrix_independent_variables_iterator(0)
-//******************************************************************************
-// LAST MODIFIED : 30 June 2004
-//
-// DESCRIPTION :
-// Constructor.
-//==============================================================================
-{
-	if (variable)
-	{
-		Function_derivative_matrix_handle function_derivative_matrix=
-			boost::dynamic_pointer_cast<Function_derivative_matrix,Function>(
-			variable->function());
-
-		if (variable&&(0==(variable->partial_independent_variables).size())&&
-			function_derivative_matrix)
-		{
-			// set up all the possible independent variables
-			std::list<Function_variable_handle>::iterator
-				independent_variable_iterator;
-
-			for (independent_variable_iterator=(function_derivative_matrix->
-				independent_variables).begin();independent_variable_iterator!=
-				(function_derivative_matrix->independent_variables).end();
-				independent_variable_iterator++)
-			{
-				std::list<Function_variable_handle> independent_variables(0);
-				std::list< std::list<Function_variable_handle> >::iterator
-					matrix_independent_variables_iterator,
-					matrix_independent_variables_iterator_end;
-
-				independent_variables.push_back(*independent_variable_iterator);
-				matrix_independent_variables.push_back(independent_variables);
-				matrix_independent_variables_iterator_end=
-					matrix_independent_variables.end();
-				matrix_independent_variables_iterator_end--;
-				for (matrix_independent_variables_iterator=
-					matrix_independent_variables.begin();
-					matrix_independent_variables_iterator!=
-					matrix_independent_variables_iterator_end;
-					matrix_independent_variables_iterator++)
-				{
-					independent_variables.clear();
-					independent_variables= *matrix_independent_variables_iterator;
-					independent_variables.push_back(*independent_variable_iterator);
-					matrix_independent_variables.push_back(independent_variables);
-				}
-			}
-		}
-		if (begin&&variable)
-		{
-			if (atomic_variable=boost::dynamic_pointer_cast<
-				Function_variable_derivative_matrix,Function_variable>(
-				variable->clone()))
-			{
-				if (0<(atomic_variable->partial_independent_variables).size())
-				{
-					if (0==atomic_variable->row)
-					{
-						atomic_variable->row=1;
-					}
-					if (0==atomic_variable->column)
-					{
-						atomic_variable->column=1;
-					}
-				}
-				else
-				{
-					if (function_derivative_matrix)
-					{
-						atomic_variable->matrix_reverse_iterator=
-							(function_derivative_matrix->matrices).rend();
-						(atomic_variable->matrix_reverse_iterator)--;
-						atomic_variable->row=1;
-						atomic_variable->column=1;
-						matrix_independent_variables_iterator=
-							matrix_independent_variables.begin();
-						atomic_variable->partial_independent_variables=
-							*matrix_independent_variables_iterator;
-					}
-				}
-			}
-		}
-	}
-}
-
-Function_variable_iterator_representation
-	*Function_variable_iterator_representation_atomic_derivative_matrix::clone()
-//******************************************************************************
-// LAST MODIFIED : 3 March 2004
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	Function_variable_iterator_representation *result;
-
-	result=0;
-	if (this)
-	{
-		result=new
-			Function_variable_iterator_representation_atomic_derivative_matrix(*this);
-	}
-
-	return (result);
-}
-
-Function_variable_iterator_representation_atomic_derivative_matrix::
-	~Function_variable_iterator_representation_atomic_derivative_matrix()
-//******************************************************************************
-// LAST MODIFIED : 18 February 2004
-//
-// DESCRIPTION :
-// Destructor.
-//==============================================================================
-{
-	// do nothing
-}
-
-void Function_variable_iterator_representation_atomic_derivative_matrix::
-	increment()
-//******************************************************************************
-// LAST MODIFIED : 2 March 2004
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	if (variable)
-	{
-		Function_derivative_matrix_handle function_derivative_matrix=
-			boost::dynamic_pointer_cast<Function_derivative_matrix,Function>(
-			variable->function());
-
-		if (function_derivative_matrix&&atomic_variable)
-		{
-			bool next_matrix;
-
-			next_matrix=false;
-			if (0==variable->column)
-			{
-				(atomic_variable->column)++;
-				if (atomic_variable->column>
-					(atomic_variable->matrix_reverse_iterator->size2)())
-				{
-					if (0==variable->row)
-					{
-						(atomic_variable->column)=1;
-						(atomic_variable->row)++;
-						if (atomic_variable->row>
-							(atomic_variable->matrix_reverse_iterator->size1)())
-						{
-							next_matrix=true;
-						}
-					}
-					else
-					{
-						next_matrix=true;
-					}
-				}
-			}
-			else
-			{
-				if (0==variable->row)
-				{
-					(atomic_variable->row)++;
-					if (atomic_variable->row>
-						(atomic_variable->matrix_reverse_iterator->size1)())
-					{
-						next_matrix=true;
-					}
-				}
-				else
-				{
-					next_matrix=true;
-				}
-			}
-			if (next_matrix)
-			{
-				if ((0<(variable->partial_independent_variables).size())||
-					(atomic_variable->matrix_reverse_iterator==
-					(function_derivative_matrix->matrices).rbegin()))
-				{
-					// end
-					atomic_variable=0;
-				}
-				else
-				{
-					// reverse iterator
-					(atomic_variable->matrix_reverse_iterator)--;
-					if (0==variable->row)
-					{
-						atomic_variable->row=1;
-					}
-					else
-					{
-						atomic_variable->row=variable->row;
-					}
-					if (0==variable->column)
-					{
-						atomic_variable->column=1;
-					}
-					else
-					{
-						atomic_variable->column=variable->column;
-					}
-					(atomic_variable->partial_independent_variables).clear();
-					matrix_independent_variables_iterator++;
-					atomic_variable->partial_independent_variables=
-						*matrix_independent_variables_iterator;
-				}
-			}
-		}
-	}
-}
-
-void Function_variable_iterator_representation_atomic_derivative_matrix::
-	decrement()
-//******************************************************************************
-// LAST MODIFIED : 2 March 2004
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	if (variable)
-	{
-		Function_derivative_matrix_handle function_derivative_matrix=
-			boost::dynamic_pointer_cast<Function_derivative_matrix,Function>(
-			variable->function());
-
-		if (function_derivative_matrix)
-		{
-			if (atomic_variable)
-			{
-				bool previous_matrix;
-
-				previous_matrix=false;
-				if (0==variable->column)
-				{
-					(atomic_variable->column)--;
-					if (atomic_variable->column<1)
-					{
-						if (0==variable->row)
-						{
-							(atomic_variable->column)=
-								(atomic_variable->matrix_reverse_iterator->size2)();
-							(atomic_variable->row)--;
-							if (atomic_variable->row<1)
-							{
-								previous_matrix=true;
-							}
-						}
-						else
-						{
-							previous_matrix=true;
-						}
-					}
-				}
-				else
-				{
-					if (0==variable->row)
-					{
-						(atomic_variable->row)--;
-						if (atomic_variable->row<1)
-						{
-							previous_matrix=true;
-						}
-					}
-					else
-					{
-						previous_matrix=true;
-					}
-				}
-				if (previous_matrix)
-				{
-					if (0<(variable->partial_independent_variables).size())
-					{
-						// end
-						atomic_variable=0;
-					}
-					else
-					{
-						// reverse iterator
-						(atomic_variable->matrix_reverse_iterator)++;
-						if (atomic_variable->matrix_reverse_iterator==
-							(function_derivative_matrix->matrices).rend())
-						{
-							// end
-							atomic_variable=0;
-						}
-						else
-						{
-							if (0==variable->row)
-							{
-								atomic_variable->row=
-									(atomic_variable->matrix_reverse_iterator->size1)();
-							}
-							else
-							{
-								atomic_variable->row=variable->row;
-							}
-							if (0==variable->column)
-							{
-								atomic_variable->column=
-									(atomic_variable->matrix_reverse_iterator->size2)();
-							}
-							else
-							{
-								atomic_variable->column=variable->column;
-							}
-							(atomic_variable->partial_independent_variables).clear();
-							matrix_independent_variables_iterator--;
-							atomic_variable->partial_independent_variables=
-								*matrix_independent_variables_iterator;
-						}
-					}
-				}
-			}
-			else
-			{
-				if (atomic_variable=boost::dynamic_pointer_cast<
-					Function_variable_derivative_matrix,Function_variable>(
-					variable->clone()))
-				{
-					if (0<(atomic_variable->partial_independent_variables).size())
-					{
-						if (0==atomic_variable->row)
-						{
-							atomic_variable->row=(variable->matrix_reverse_iterator->size1)();
-						}
-						if (0==atomic_variable->column)
-						{
-							atomic_variable->column=
-								(variable->matrix_reverse_iterator->size2)();
-						}
-					}
-					else
-					{
-						if (function_derivative_matrix)
-						{
-							atomic_variable->matrix_reverse_iterator=
-								(function_derivative_matrix->matrices).rbegin();
-							atomic_variable->row=
-								(atomic_variable->matrix_reverse_iterator->size1)();
-							atomic_variable->column=
-								(atomic_variable->matrix_reverse_iterator->size2)();
-							matrix_independent_variables_iterator=
-								matrix_independent_variables.end();
-							matrix_independent_variables_iterator--;
-							atomic_variable->partial_independent_variables=
-								*matrix_independent_variables_iterator;
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-bool Function_variable_iterator_representation_atomic_derivative_matrix::
-	equality(const Function_variable_iterator_representation *representation)
-//******************************************************************************
-// LAST MODIFIED : 17 March 2004
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	const Function_variable_iterator_representation_atomic_derivative_matrix
-		*representation_derivative_matrix=dynamic_cast<
-		const Function_variable_iterator_representation_atomic_derivative_matrix *>(
-		representation);
-
-	return (representation_derivative_matrix&&
-		(atomic_variable==representation_derivative_matrix->atomic_variable));
-}
-
-Function_variable_handle
-	Function_variable_iterator_representation_atomic_derivative_matrix::
-	dereference() const
-//******************************************************************************
-// LAST MODIFIED : 1 March 2004
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	return (atomic_variable);
-}
-
-Function_variable_iterator_representation_atomic_derivative_matrix::
-	Function_variable_iterator_representation_atomic_derivative_matrix(const
-	Function_variable_iterator_representation_atomic_derivative_matrix&
-	representation):Function_variable_iterator_representation(),
-	atomic_variable(0),variable(representation.variable),
-	matrix_independent_variables(representation.matrix_independent_variables),
-	matrix_independent_variables_iterator(
-	representation.matrix_independent_variables_iterator)
-//******************************************************************************
-// LAST MODIFIED : 3 March 2004
-//
-// DESCRIPTION :
-// Copy constructor.
-//==============================================================================
-{
-	if (representation.atomic_variable)
-	{
-		atomic_variable=boost::dynamic_pointer_cast<
-			Function_variable_derivative_matrix,Function_variable>(
-			(representation.atomic_variable)->clone());
-	}
-}
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 
 // class Function_derivative_matrix_get_matrix_functor
 // ---------------------------------------------------
@@ -982,7 +95,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_derivative_matrix>
 class Function_variable_matrix_derivative_matrix :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 15 July 2004
+// LAST MODIFIED : 19 July 2004
 //
 // DESCRIPTION :
 // <column> and <row> start from one when referencing a matrix entry.  Zero
@@ -1172,14 +285,14 @@ class Function_variable_matrix_derivative_matrix :
 
 			return (return_string);
 		};
-		Function_variable_matrix_handle operator()(
+		Function_variable_matrix_scalar_handle operator()(
 			Function_size_type row,Function_size_type column)
 		{
-			Function_variable_matrix_handle result(0);
+			Function_variable_matrix_scalar_handle result(0);
 
 			if ((row<=number_of_rows())&&(column<=number_of_columns()))
 			{
-				result=Function_variable_matrix_handle(
+				result=Function_variable_matrix_scalar_handle(
 					new Function_variable_matrix_derivative_matrix(
 					boost::dynamic_pointer_cast<Function_derivative_matrix,Function>(
 					function_private),partial_independent_variables,row,column));
@@ -1254,7 +367,6 @@ class Function_variable_matrix_derivative_matrix :
 		std::list<Function_variable_handle> partial_independent_variables;
 		std::list<Matrix>::reverse_iterator matrix_reverse_iterator;
 };
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 
 
 // global classes
@@ -1310,15 +422,11 @@ string_handle Function_derivative_matrix::get_string_representation()
 
 Function_variable_handle Function_derivative_matrix::input()
 //******************************************************************************
-// LAST MODIFIED : 19 February 2004
+// LAST MODIFIED : 19 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-	return (Function_variable_handle(new Function_variable_derivative_matrix(
-		Function_derivative_matrix_handle(this))));
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 	Function_variable_handle result(0);
 	std::list<Function_variable_handle> composite_variables_list(0);
 	std::list<Function_variable_handle>::iterator independent_variable_iterator;
@@ -1358,64 +466,31 @@ Function_variable_handle Function_derivative_matrix::input()
 
 	return (Function_variable_handle(new Function_variable_composite(
 		Function_derivative_matrix_handle(this),composite_variables_list)));
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 }
 
 Function_variable_handle Function_derivative_matrix::output()
 //******************************************************************************
-// LAST MODIFIED : 19 February 2004
+// LAST MODIFIED : 19 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-	return (Function_variable_handle(new Function_variable_derivative_matrix(
-		Function_derivative_matrix_handle(this))));
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 	return (input());
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 }
 
-#if defined (OLD_CODE)
-Function_variable_handle Function_derivative_matrix::matrix(
-	std::list<Function_variable_handle>& partial_independent_variables)
-//******************************************************************************
-// LAST MODIFIED : 19 February 2004
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	return (Function_variable_handle(new
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		Function_variable_derivative_matrix
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		Function_variable_matrix_derivative_matrix
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		(Function_derivative_matrix_handle(this),partial_independent_variables)));
-}
-#else // defined (OLD_CODE)
 Function_handle Function_derivative_matrix::matrix(
 	std::list<Function_variable_handle>& partial_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 19 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	Function_derivative_matrix_handle function_derivative_matrix;
 	Function_handle result(0);
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-	Function_variable_derivative_matrix_handle
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-	Function_variable_matrix_derivative_matrix_handle
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		matrix_variable(new
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		Function_variable_derivative_matrix
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		Function_variable_matrix_derivative_matrix
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		(Function_derivative_matrix_handle(this),partial_independent_variables));
+	Function_variable_matrix_derivative_matrix_handle matrix_variable(new
+		Function_variable_matrix_derivative_matrix(
+		Function_derivative_matrix_handle(this),partial_independent_variables));
 
 	if (matrix_variable&&(function_derivative_matrix=boost::dynamic_pointer_cast<
 		Function_derivative_matrix,Function>(matrix_variable->function()))&&
@@ -1428,7 +503,6 @@ Function_handle Function_derivative_matrix::matrix(
 
 	return (result);
 }
-#endif // defined (OLD_CODE)
 
 Function_derivative_matrix_handle Function_derivative_matrix_compose(
 	const Function_variable_handle& dependent_variable,
@@ -2606,43 +1680,27 @@ bool Function_derivative_matrix::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 19 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	bool result;
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-	Function_variable_derivative_matrix_handle
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 	Function_variable_matrix_derivative_matrix_handle
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 		atomic_dependent_variable,atomic_independent_variable;
 
 	result=false;
 	if ((atomic_dependent_variable=boost::dynamic_pointer_cast<
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		Function_variable_derivative_matrix
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		Function_variable_matrix_derivative_matrix
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		,Function_variable>(atomic_variable))&&
+		Function_variable_matrix_derivative_matrix,Function_variable>(
+		atomic_variable))&&
 		(Function_handle(this)==atomic_dependent_variable->function())&&
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		(atomic_dependent_variable->is_atomic)()&&
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 		(1==atomic_dependent_variable->number_differentiable()))
 	{
 		result=true;
 		if ((1==atomic_independent_variables.size())&&
 			(atomic_independent_variable=boost::dynamic_pointer_cast<
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-			Function_variable_derivative_matrix
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-			Function_variable_matrix_derivative_matrix
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-			,Function_variable>(atomic_independent_variables.front()))&&
+			Function_variable_matrix_derivative_matrix,Function_variable>(
+			atomic_independent_variables.front()))&&
 			(*atomic_dependent_variable== *atomic_independent_variable))
 		{
 			derivative=1;
@@ -2660,33 +1718,21 @@ bool Function_derivative_matrix::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 19 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	bool result;
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-	Function_variable_derivative_matrix_handle
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 	Function_variable_matrix_derivative_matrix_handle
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 		atomic_derivative_matrix_variable;
 	Function_variable_value_scalar_handle value_scalar;
 
 	result=false;
 	if ((atomic_derivative_matrix_variable=boost::dynamic_pointer_cast<
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		Function_variable_derivative_matrix
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		Function_variable_matrix_derivative_matrix
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		,Function_variable>(atomic_variable))&&
+		Function_variable_matrix_derivative_matrix,Function_variable>(
+		atomic_variable))&&
 		(Function_handle(this)==atomic_derivative_matrix_variable->function())&&
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		(atomic_derivative_matrix_variable->is_atomic)()&&
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 		atomic_value&&(atomic_value->value())&&
 		(std::string("Scalar")==(atomic_value->value())->type())&&
 		(value_scalar=boost::dynamic_pointer_cast<Function_variable_value_scalar,
@@ -2704,30 +1750,21 @@ bool Function_derivative_matrix::set_value(
 Function_handle Function_derivative_matrix::get_value(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 23 June 2004
+// LAST MODIFIED : 19 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	Function_handle result(0);
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 	Function_variable_matrix_derivative_matrix_handle
 		atomic_variable_derivative_matrix;
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 	Matrix result_matrix(1,1);
 
 	if ((Function_handle(this)==(atomic_variable->function)())&&
-#if defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		Function_variable_derivative_matrix_set_scalar_function(
-		result_matrix(0,0),atomic_variable)
-#else // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
 		(atomic_variable_derivative_matrix=boost::dynamic_pointer_cast<
 		Function_variable_matrix_derivative_matrix,Function_variable>(
 		atomic_variable))&&atomic_variable_derivative_matrix->get_entry(
-		result_matrix(0,0))
-#endif // defined (BEFORE_FUNCTION_VARIABLE_MATRIX_ABSTRACT)
-		)
+		result_matrix(0,0)))
 	{
 		result=Function_handle(new Function_matrix(result_matrix));
 	}
