@@ -164,12 +164,13 @@ Functions for executing cmiss commands.
 #include "node/interactive_node_editor_dialog.h"
 #endif /* defined (MOTIF) */
 #include "node/node_operations.h"
-#if defined (MOTIF) || (GTK_USER_INTERFACE)
 #include "node/node_tool.h"
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) */
 #if defined (MOTIF)
 #include "node/node_viewer.h"
 #include "projection/projection_window.h"
+#endif /* defined (MOTIF) */
+#include "selection/any_object_selection.h"
+#if defined (MOTIF)
 #include "slider/emoter_dialog.h"
 #include "slider/node_group_slider_dialog.h"
 #include "three_d_drawing/movie_extensions.h"
