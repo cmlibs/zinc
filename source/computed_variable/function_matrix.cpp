@@ -67,6 +67,9 @@ class Function_variable_iterator_representation_atomic_matrix :
 		Function_variable_matrix_handle atomic_variable,variable;
 };
 
+static bool Function_variable_matrix_set_scalar_function(Scalar& value,
+	const Function_variable_handle variable);
+
 
 // class Function_variable_matrix
 // ------------------------------
@@ -308,7 +311,7 @@ bool is_atomic(Function_variable_matrix_handle variable)
 	return (result);
 }
 
-bool Function_variable_matrix_set_scalar_function(Scalar& value,
+static bool Function_variable_matrix_set_scalar_function(Scalar& value,
 	const Function_variable_handle variable)
 {
 	bool result;

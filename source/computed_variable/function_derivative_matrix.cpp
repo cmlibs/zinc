@@ -124,6 +124,9 @@ class Function_derivative_matrix_get_matrix_functor
 		Function_size_type offset;
 };
 
+static bool Function_variable_derivative_matrix_set_scalar_function(
+	Scalar& value,const Function_variable_handle variable);
+
 
 // class Function_variable_derivative_matrix
 // -----------------------------------------
@@ -141,7 +144,7 @@ class Function_variable_derivative_matrix : public Function_variable
 	friend class
 		Function_variable_iterator_representation_atomic_derivative_matrix;
 	friend bool is_atomic(Function_variable_derivative_matrix_handle variable);
-	friend  bool Function_variable_derivative_matrix_set_scalar_function(
+	friend bool Function_variable_derivative_matrix_set_scalar_function(
 		Scalar& value,const Function_variable_handle variable);
 	public:
 		// constructor
@@ -459,8 +462,8 @@ bool is_atomic(Function_variable_derivative_matrix_handle variable)
 	return (result);
 }
 
-bool Function_variable_derivative_matrix_set_scalar_function(Scalar& value,
-	const Function_variable_handle variable)
+static bool Function_variable_derivative_matrix_set_scalar_function(
+	Scalar& value,const Function_variable_handle variable)
 {
 	bool result;
 	Function_variable_derivative_matrix_handle derivative_matrix_variable;
