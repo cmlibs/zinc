@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.c
 
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 20 November 2000
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -2086,7 +2086,7 @@ scene_viewer.
 static int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 	XEvent *event)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 20 November 2000
 
 DESCRIPTION :
 Converts mouse button-press and motion events into viewing transformations in
@@ -2245,8 +2245,10 @@ Converts mouse button-press and motion events into viewing transformations in
 									if (Scene_viewer_rotate_about_lookat_point(scene_viewer,axis,
 										-angle))
 									{
-										if (Interactive_tool_transform_get_free_spin(
-											scene_viewer->interactive_tool))
+										if (Interactive_tool_is_Transform_tool(
+											scene_viewer->interactive_tool) &&
+											Interactive_tool_transform_get_free_spin(
+												scene_viewer->interactive_tool))
 										{
 											/* Store axis and angle so that we can make the
 												 scene viewer spin if left alone. */
