@@ -9707,9 +9707,10 @@ printf("read only colour map\n");
 						{
 							XFreeColors(display,colour_map,spectrum_colours,
 								number_of_spectrum_colours,0);
-							number_of_spectrum_colours=0;
 							display_message(ERROR_MESSAGE,
-								"create_Map_drawing_information.  Could not allocate spectrum");
+				"create_Map_drawing_information.  Could not allocate spectrum.  %d %d",
+								number_of_spectrum_colours,MAX_SPECTRUM_COLOURS);
+							number_of_spectrum_colours=0;
 						}
 					}
 					else

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 31 August 2000
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -11986,7 +11986,7 @@ DESCRIPTION :
 static void trace_analysis_mode_apply(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 April 2000
+LAST MODIFIED : 12 October 2000
 
 DESCRIPTION :
 Applies the current analysis mode settings to all signals.
@@ -12531,9 +12531,7 @@ Applies the current analysis mode settings to all signals.
 					/* run through all the signals */
 					for (i=rig->number_of_devices;i>0;i--)
 					{	
-						/* if (*device)->channel== NULL, then a linear combination auxilliary. */
-						/* Do nothing. */
-						if((*device)->channel)
+						if ((*device)->signal)
 						{
 							if (fourier_transform(SQUARE_WINDOW,*device,(struct Device *)NULL,
 								trace->real_device_1,trace->imaginary_device_1))
@@ -12550,7 +12548,8 @@ Applies the current analysis mode settings to all signals.
 								{
 									notch=(int)floor(((trace->filtering).notch_frequency)*
 										(transform_buffer->frequency));
-									if ((0<=notch)&&(notch<(transform_buffer->number_of_samples)-1))
+									if ((0<=notch)&&
+										(notch<(transform_buffer->number_of_samples)-1))
 									{
 										real_value[notch*transform_buffer_offset]=0;
 										imaginary_value[notch*transform_buffer_offset]=0;
@@ -12594,8 +12593,10 @@ Applies the current analysis mode settings to all signals.
 										imaginary_value += transform_buffer_offset;
 									}
 									real_value += (low_pass-high_pass)*transform_buffer_offset;
-									imaginary_value += (low_pass-high_pass)*transform_buffer_offset;
-									for (j=(transform_buffer->number_of_samples)-low_pass-1;j>0;j--)
+									imaginary_value +=
+										(low_pass-high_pass)*transform_buffer_offset;
+									for (j=(transform_buffer->number_of_samples)-low_pass-1;j>0;
+										j--)
 									{
 										*real_value=0.;
 										real_value += transform_buffer_offset;
@@ -12620,7 +12621,8 @@ Applies the current analysis mode settings to all signals.
 									trace->imaginary_device_1,trace->processed_device,
 									(struct Device *)NULL))
 								{								
-									(*device)->channel->gain=trace->processed_device->channel->gain;
+									(*device)->channel->gain=
+										trace->processed_device->channel->gain;
 									(*device)->channel->offset=
 										trace->processed_device->channel->offset;								
 									/* the number of samples for the processed device will be the
@@ -12738,35 +12740,38 @@ Applies the current analysis mode settings to all signals.
 					/* run through all the signals */
 					for (i=rig->number_of_devices;i>0;i--)
 					{
-						if (fourier_transform(SQUARE_WINDOW,*device,(struct Device *)NULL,
-							trace->real_device_1,trace->imaginary_device_1))
+						if ((*device)->signal)
 						{
-							/* calculate power spectrum (square of magnitude of FT, which is
-								the FT of the auto-correlation) */
-							real_value=((transform_buffer->signals).float_values)+
-								(trace->real_device_1->signal->index);
-							imaginary_value=((transform_buffer->signals).float_values)+
-								(trace->imaginary_device_1->signal->index);
-							value_1=((buffer->signals).float_values)+
-								((*device)->signal->index);
-							/* remove DC */
-							*value_1=0.;
-							/* the number of samples for the processed device will be the
-								largest power of 2 <= (buffer->end)-(buffer->start)+1 */
-							for (j=transform_number_of_samples-1;j>0;j--)
+							if (fourier_transform(SQUARE_WINDOW,*device,(struct Device *)NULL,
+								trace->real_device_1,trace->imaginary_device_1))
 							{
-								value_1 += buffer_offset_1;
-								real_value += transform_buffer_offset;
-								imaginary_value += transform_buffer_offset;
-								x= *real_value;
-								y= *imaginary_value;
-								*value_1=x*x+y*y;
+								/* calculate power spectrum (square of magnitude of FT, which is
+									the FT of the auto-correlation) */
+								real_value=((transform_buffer->signals).float_values)+
+									(trace->real_device_1->signal->index);
+								imaginary_value=((transform_buffer->signals).float_values)+
+									(trace->imaginary_device_1->signal->index);
+								value_1=((buffer->signals).float_values)+
+									((*device)->signal->index);
+								/* remove DC */
+								*value_1=0.;
+								/* the number of samples for the processed device will be the
+									largest power of 2 <= (buffer->end)-(buffer->start)+1 */
+								for (j=transform_number_of_samples-1;j>0;j--)
+								{
+									value_1 += buffer_offset_1;
+									real_value += transform_buffer_offset;
+									imaginary_value += transform_buffer_offset;
+									x= *real_value;
+									y= *imaginary_value;
+									*value_1=x*x+y*y;
+								}
 							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
+							else
+							{
+								display_message(ERROR_MESSAGE,
 					"trace_analysis_mode_apply.  Could not calculate Fourier transform");
+							}
 						}
 						device++;
 					}
