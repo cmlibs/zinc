@@ -104,7 +104,7 @@ typedef int (Standard_basis_function)(void *,FE_value *,FE_value *);
 
 struct FE_basis
 /*******************************************************************************
-LAST MODIFIED : 21 May 2001
+LAST MODIFIED : 1 October 1995
 
 DESCRIPTION :
 Stores the information for calculating basis function values from xi
@@ -128,10 +128,11 @@ list.
 			has cubic variation in xi2 and 2-D serendipity variation for xi1 and
 			xi3 (16 nodes).
 		3.  CUBIC_HERMITE        0               0
-											LINEAR_SIMPLEX         1
-																			LINEAR_SIMPLEX
+											LINEAR_LAGRANGE        1
+																			LINEAR_LAGRANGE
 			has cubic variation in xi1 and 2-D linear simplex variation for xi2 and
 			xi3 (6 nodes)
+???RC Shouldn't the above be LINEAR_SIMPLEX, not LINEAR_LAGRANGE?
 		4.  POLYGON        0           5
 								LINEAR_LAGRANGE    0
 																POLYGON
