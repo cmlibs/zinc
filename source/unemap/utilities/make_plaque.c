@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : make_plaque.c
 
-LAST MODIFIED : 6 May 2001
+LAST MODIFIED : 4 July 2001
 
 DESCRIPTION :
 Make a unemap configuration file for multiple flexible pcb plaques in a row.
@@ -15,8 +15,9 @@ int main()
 {
 	char file_name[121];
 	FILE *cnfg_file;
-	int bipolar,ecg_module,electrode_number,end1,end2,end3,i,j,number_of_pcbs,
-		number_in_row,region_number,start1,start2,start3,start4;
+	int bipolar,channel,ecg_module,electrode_number,end1,end2,end3,i,j,
+		number_of_pcbs,number_in_row,old_4by16,region_number,start1,start2,start3,
+		start4;
 
 	printf("File name? (.cnfg assumed)\n");
 	scanf("%s",file_name);
@@ -38,16 +39,29 @@ int main()
 			{
 				if (0<number_of_pcbs)
 				{
+					printf("4x16 (o) or 4x17 (n) ?\n");
+					scanf("%s",file_name);
+					if (('o'==file_name[0])||('O'==file_name[0]))
+					{
+						old_4by16=1;
+					}
+					else
+					{
+						old_4by16=0;
+					}
 					printf("Bipolar (b) or unipolar (u) ?\n");
 					scanf("%s",file_name);
 					if (('b'==file_name[0])||('B'==file_name[0]))
 					{
 						bipolar=1;
-#if defined (OLD_CODE)
-/* for 4x16 flexible pcbs */
-						number_in_row=15;
-#endif /* defined (OLD_CODE) */
-						number_in_row=16;
+						if (old_4by16)
+						{
+							number_in_row=15;
+						}
+						else
+						{
+							number_in_row=16;
+						}
 					}
 					else
 					{
@@ -57,36 +71,39 @@ int main()
 					fprintf(cnfg_file,"patch : region %d\n",region_number);
 					for (i=0;i<number_of_pcbs;i++)
 					{
-						if (ecg_module==(electrode_number/64)+i+1)
+						if ((ecg_module==(electrode_number/64)+i+1)&&bipolar)
 						{
 							/*???DB.  Currently only for bipolar */
-#if defined (OLD_CODE)
-/* for 4x16 flexible pcbs */
+							if (old_4by16)
+							{
 #if defined (OLD_CODE)
 /* pre bipolar adapter ecg */
-							start1=2;
-							end1=number_in_row;
-							start2=0;
-							end2=number_in_row;
-							start3=1;
-							end3=number_in_row;
-							start4=0;
+								start1=2;
+								end1=number_in_row;
+								start2=0;
+								end2=number_in_row;
+								start3=1;
+								end3=number_in_row;
+								start4=0;
 #endif /* defined (OLD_CODE) */
-							start1=0;
-							end1=number_in_row;
-							start2=0;
-							end2=number_in_row;
-							start3=0;
-							end3=number_in_row-1;
-							start4=0;
-#endif /* defined (OLD_CODE) */
-							start1=0;
-							end1=number_in_row-1;
-							start2=0;
-							end2=number_in_row-1;
-							start3=0;
-							end3=number_in_row-1;
-							start4=0;
+								start1=0;
+								end1=number_in_row;
+								start2=0;
+								end2=number_in_row;
+								start3=0;
+								end3=number_in_row-1;
+								start4=0;
+							}
+							else
+							{
+								start1=0;
+								end1=number_in_row;
+								start2=1;
+								end2=number_in_row;
+								start3=1;
+								end3=number_in_row;
+								start4=1;
+							}
 						}
 						else
 						{
@@ -103,14 +120,27 @@ int main()
 							fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+1);
 							if (bipolar)
 							{
-								fprintf(cnfg_file,"channel : %d\n",
-									electrode_number+i*64+64-2*j);
+								if (old_4by16)
+								{
+									channel=electrode_number+i*64+64-2*j;
+								}
+								else
+								{
+									channel=electrode_number+i*64+1+2*j;
+								}
 							}
 							else
 							{
-								fprintf(cnfg_file,"channel : %d\n",
-									electrode_number+i*64+32-2*j);
+								if (old_4by16)
+								{
+									channel=electrode_number+i*64+32-2*j;
+								}
+								else
+								{
+									channel=electrode_number+i*64+33+2*j;
+								}
 							}
+							fprintf(cnfg_file,"channel : %d\n",channel);
 							fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
 								(number_of_pcbs-i-1)*4+3);
 						}
@@ -119,14 +149,27 @@ int main()
 							fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+17);
 							if (bipolar)
 							{
-								fprintf(cnfg_file,"channel : %d\n",
-									electrode_number+i*64+32-2*j);
+								if (old_4by16)
+								{
+									channel=electrode_number+i*64+32-2*j;
+								}
+								else
+								{
+									channel=electrode_number+i*64+33+2*j;
+								}
 							}
 							else
 							{
-								fprintf(cnfg_file,"channel : %d\n",
-									electrode_number+i*64+64-2*j);
+								if (old_4by16)
+								{
+									channel=electrode_number+i*64+64-2*j;
+								}
+								else
+								{
+									channel=electrode_number+i*64+1+2*j;
+								}
 							}
+							fprintf(cnfg_file,"channel : %d\n",channel);
 							fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
 								(number_of_pcbs-i-1)*4+2);
 						}
@@ -135,18 +178,27 @@ int main()
 							fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+33);
 							if (bipolar)
 							{
-								fprintf(cnfg_file,"channel : %d\n",
-#if defined (OLD_CODE)
-/* for 4x16 flexible pcbs */
-									electrode_number+i*64+61-2*j);
-#endif /* defined (OLD_CODE) */
-									electrode_number+i*64+63-2*j);
+								if (old_4by16)
+								{
+									channel=electrode_number+i*64+61-2*j;
+								}
+								else
+								{
+									channel=electrode_number+i*64+2+2*j;
+								}
 							}
 							else
 							{
-								fprintf(cnfg_file,"channel : %d\n",
-									electrode_number+i*64+31-2*j);
+								if (old_4by16)
+								{
+									channel=electrode_number+i*64+31-2*j;
+								}
+								else
+								{
+									channel=electrode_number+i*64+34+2*j;
+								}
 							}
+							fprintf(cnfg_file,"channel : %d\n",channel);
 							fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
 								(number_of_pcbs-i-1)*4+1);
 						}
@@ -155,18 +207,27 @@ int main()
 							fprintf(cnfg_file,"electrode : %d\n",electrode_number+i*64+j+49);
 							if (bipolar)
 							{
-								fprintf(cnfg_file,"channel : %d\n",
-#if defined (OLD_CODE)
-/* for 4x16 flexible pcbs */
-									electrode_number+i*64+29-2*j);
-#endif /* defined (OLD_CODE) */
-									electrode_number+i*64+31-2*j);
+								if (old_4by16)
+								{
+									channel=electrode_number+i*64+29-2*j;
+								}
+								else
+								{
+									channel=electrode_number+i*64+34+2*j;
+								}
 							}
 							else
 							{
-								fprintf(cnfg_file,"channel : %d\n",
-									electrode_number+i*64+63-2*j);
+								if (old_4by16)
+								{
+									channel=electrode_number+i*64+63-2*j;
+								}
+								else
+								{
+									channel=electrode_number+i*64+2+2*j;
+								}
 							}
+							fprintf(cnfg_file,"channel : %d\n",channel);
 							fprintf(cnfg_file,"position : x = %d, y = %d\n",j,
 								(number_of_pcbs-i-1)*4);
 						}
@@ -178,7 +239,7 @@ int main()
 					number_of_pcbs= -number_of_pcbs;
 				}
 				if ((electrode_number/64<ecg_module)&&
-					(ecg_module<=(electrode_number/64)+number_of_pcbs))
+					(ecg_module<=(electrode_number/64)+number_of_pcbs)&&bipolar)
 				{
 					fprintf(cnfg_file,"patch : ecg\n");
 #if defined (OLD_CODE)
