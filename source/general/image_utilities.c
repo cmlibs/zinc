@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.c
 
-LAST MODIFIED : 31 August 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Utilities for handling images.
@@ -2666,7 +2666,7 @@ int read_tiff_image_file(char *file_name,int *number_of_components_address,
 	long int *height_address,long int *width_address,
 	long unsigned **image_address)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Reads an image from a TIFF file.
@@ -4033,7 +4033,7 @@ present in some files */
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"read_tiff_image_file.  Could not open image file");
+				"read_tiff_image_file.  Could not open image file '%s'",file_name);
 		}
 	}
 	else
