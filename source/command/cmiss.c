@@ -5969,7 +5969,7 @@ Executes a GFX CREATE STREAMLINES command.
 			set_seed_data_field_data.conditional_function_user_data=
 				(void *)ELEMENT_XI_VALUE;
 			Option_table_add_entry(option_table,"seed_data_field",&seed_data_field,
-				&set_seed_data_field_data,set_Computed_field_conditional);
+				&set_seed_data_field_data,set_FE_field_conditional);
 			/* seed_data_group */
 			Option_table_add_entry(option_table,"seed_data_group",&seed_data_group,
 				command_data->data_group_manager,set_FE_node_group);
