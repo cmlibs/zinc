@@ -2794,7 +2794,8 @@ it is often useful for them to temporarily differ.
 						if (return_code=
 							read_image_file(image_file_name,&number_of_components,
 								&number_of_bytes_per_component,&image_height,&image_width,
-								&image) && (0<number_of_components))
+								/*raw_image_storage*/RAW_PLANAR_RGB,&image) &&
+							(0<number_of_components))
 						{
 							number_of_images_read++;
 						}
