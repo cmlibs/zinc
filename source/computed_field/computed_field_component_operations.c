@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_component_operations.c
 
-LAST MODIFIED : 01 October 2003
+LAST MODIFIED : 02 October 2003
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -19,6 +19,555 @@ struct Computed_field_component_operations_package
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
+
+static char computed_field_power_type_string[] = "power";
+
+int Computed_field_is_type_power(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_power);
+	if (field)
+	{
+		return_code = 
+		  (field->type_string == computed_field_power_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_power.  Missing field");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_power */
+
+#define Computed_field_power_clear_type_specific \
+   Computed_field_default_clear_type_specific
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+No type specific data
+==============================================================================*/
+
+#define Computed_field_power_copy_type_specific \
+   Computed_field_default_copy_type_specific
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+No type specific data
+==============================================================================*/
+
+#define Computed_field_power_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+#define Computed_field_power_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+No type specific data
+==============================================================================*/
+
+#define Computed_field_power_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_power_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_power_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_power_not_in_use \
+	(Computed_field_not_in_use_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+No special criteria.
+==============================================================================*/
+
+static int Computed_field_power_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Computed_field_power_evaluate_cache_at_node);
+	if (field && node && (field->number_of_source_fields == 2) && 
+		(field->number_of_components ==
+      field->source_fields[0]->number_of_components) && 
+		(field->number_of_components ==
+      field->source_fields[1]->number_of_components))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
+		{
+			/* 2. Calculate the field */
+			for (i = 0 ; i < field->number_of_components ; i++)
+			{
+				field->values[i] =
+          (FE_value)pow((double)(field->source_fields[0]->values[i]),
+            (double)(field->source_fields[1]->values[i]));
+			}			
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_power_evaluate_cache_at_node.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_power_evaluate_cache_at_node */
+
+static int Computed_field_power_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Evaluate the fields cache at the element.
+==============================================================================*/
+{
+	FE_value *derivative;
+	int i, j, number_of_xi, return_code;
+
+	ENTER(Computed_field_power_evaluate_cache_in_element);
+	if (field && element && xi && (field->number_of_source_fields > 0) && 
+		(field->number_of_components ==
+      field->source_fields[0]->number_of_components))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_in_element(field, element,
+				xi, time, top_level_element, calculate_derivatives))
+		{
+			/* 2. Calculate the field */
+			for (i = 0 ; i < field->number_of_components ; i++)
+			{
+				field->values[i] =
+          (FE_value)pow((double)(field->source_fields[0]->values[i]),
+            (double)(field->source_fields[1]->values[i]));
+			}
+			if (calculate_derivatives && field->source_fields[0]->derivatives_valid
+				&& field->source_fields[1]->derivatives_valid)
+			{
+        number_of_xi = get_FE_element_dimension(element);
+				derivative = field->derivatives;
+				for (i = 0 ; i < field->number_of_components ; i++)
+				{
+					for (j = 0 ; j < number_of_xi ; j++)
+					{
+            /* d(u^v)/dx =
+             *   v * u^(v-1) * du/dx   +   u^v * ln(u) * dv/dx
+             */
+						*derivative =
+              field->source_fields[1]->values[i] *
+              (FE_value)pow((double)(field->source_fields[0]->values[i]),
+                (double)(field->source_fields[1]->values[i]-1)) *
+              field->source_fields[0]->derivatives[i * number_of_xi + j] +
+              (FE_value)pow((double)(field->source_fields[0]->values[i]),
+                (double)(field->source_fields[1]->values[i])) *
+              (FE_value)log((double)(field->source_fields[0]->values[i])) *
+              field->source_fields[1]->derivatives[i * number_of_xi + j];
+						derivative++;
+					}
+				}
+				field->derivatives_valid = 1;
+			}
+			else
+			{
+				field->derivatives_valid = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_power_evaluate_cache_in_element.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_power_evaluate_cache_in_element */
+
+#define Computed_field_power_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_power_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_power_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_power_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_power_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_power_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_power(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_power);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"    source fields : %s %s\n",field->source_fields[0]->name,
+			field->source_fields[1]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_power.  Invalid field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_power */
+
+static char *Computed_field_power_get_command_string(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Returns allocated command string for reproducing field. Includes type.
+==============================================================================*/
+{
+	char *command_string, *field_name;
+	int error;
+
+	ENTER(Computed_field_power_get_command_string);
+	command_string = (char *)NULL;
+	if (field)
+	{
+		error = 0;
+		append_string(&command_string,
+			computed_field_power_type_string, &error);
+		append_string(&command_string, " fields ", &error);
+		if (GET_NAME(Computed_field)(field->source_fields[0], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+		if (GET_NAME(Computed_field)(field->source_fields[1], &field_name))
+		{
+			make_valid_token(&field_name);
+			append_string(&command_string, " ", &error);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_power_get_command_string.  Invalid field");
+	}
+	LEAVE;
+
+	return (command_string);
+} /* Computed_field_power_get_command_string */
+
+#define Computed_field_power_has_multiple_times \
+	Computed_field_default_has_multiple_times
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Works out whether time influences the field.
+==============================================================================*/
+
+int Computed_field_set_type_power(struct Computed_field *field,
+	struct Computed_field *source_field_one,
+	struct Computed_field *source_field_two)
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_POWER with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int number_of_source_fields,return_code;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_power);
+	if (field&&source_field_one&&source_field_two&&
+		(source_field_one->number_of_components ==
+			source_field_two->number_of_components))
+	{
+		return_code=1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_fields=2;
+		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type_string = computed_field_power_type_string;
+			field->number_of_components = source_field_one->number_of_components;
+			source_fields[0]=ACCESS(Computed_field)(source_field_one);
+			source_fields[1]=ACCESS(Computed_field)(source_field_two);
+			field->source_fields=source_fields;
+			field->number_of_source_fields=number_of_source_fields;			
+			field->type_specific_data = (void *)1;
+
+			/* Set all the methods */
+			COMPUTED_FIELD_ESTABLISH_METHODS(power);
+		}
+		else
+		{
+			DEALLOCATE(source_fields);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_power.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_power */
+
+int Computed_field_get_type_power(struct Computed_field *field,
+	struct Computed_field **source_field_one,
+	struct Computed_field **source_field_two)
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_POWER, the 
+<source_field_one> and <source_field_two> used by it are returned.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_power);
+	if (field&&(field->type_string==computed_field_power_type_string))
+	{
+		*source_field_one = field->source_fields[0];
+		*source_field_two = field->source_fields[1];
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_power.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_power */
+
+static int define_Computed_field_type_power(struct Parse_state *state,
+	void *field_void,void *computed_field_component_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 02 October 2003
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_POWER (if it is not 
+already) and allows its contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field,**source_fields;
+	struct Computed_field_component_operations_package 
+		*computed_field_component_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_array_data set_source_field_array_data;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_power);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_component_operations_package=
+		(struct Computed_field_component_operations_package *)
+		computed_field_component_operations_package_void))
+	{
+		return_code=1;
+		/* get valid parameters for projection field */
+		source_fields = (struct Computed_field **)NULL;
+		if (ALLOCATE(source_fields, struct Computed_field *, 2))
+		{
+			source_fields[0] = (struct Computed_field *)NULL;
+			source_fields[1] = (struct Computed_field *)NULL;
+			if (computed_field_power_type_string ==
+				Computed_field_get_type_string(field))
+			{
+				return_code=Computed_field_get_type_power(field, 
+					source_fields, source_fields + 1);
+			}
+			if (return_code)
+			{
+				/* must access objects for set functions */
+				if (source_fields[0])
+				{
+					ACCESS(Computed_field)(source_fields[0]);
+				}
+				if (source_fields[1])
+				{
+					ACCESS(Computed_field)(source_fields[1]);
+				}
+
+				option_table = CREATE(Option_table)();
+				/* fields */
+				set_source_field_data.computed_field_manager=
+					computed_field_component_operations_package->computed_field_manager;
+				set_source_field_data.conditional_function=
+          Computed_field_has_numerical_components;
+				set_source_field_data.conditional_function_user_data=(void *)NULL;
+				set_source_field_array_data.number_of_fields=2;
+				set_source_field_array_data.conditional_data= &set_source_field_data;
+				Option_table_add_entry(option_table,"fields",source_fields,
+					&set_source_field_array_data,set_Computed_field_array);
+				return_code=Option_table_multi_parse(option_table,state);
+				/* no errors,not asking for help */
+				if (return_code)
+				{
+					return_code = Computed_field_set_type_power(field,
+						source_fields[0], source_fields[1]);
+				}
+				if (!return_code)
+				{
+					if ((!state->current_token)||
+						(strcmp(PARSER_HELP_STRING,state->current_token)&&
+							strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+					{
+						/* error */
+						display_message(ERROR_MESSAGE,
+							"define_Computed_field_type_power.  Failed");
+					}
+				}
+				if (source_fields[0])
+				{
+					DEACCESS(Computed_field)(&source_fields[0]);
+				}
+				if (source_fields[1])
+				{
+					DEACCESS(Computed_field)(&source_fields[1]);
+				}
+				DESTROY(Option_table)(&option_table);
+			}
+			DEALLOCATE(source_fields);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"define_Computed_field_type_power.  Not enough memory");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_power.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_power */
 
 static char computed_field_multiply_components_type_string[] = "multiply_components";
 
@@ -5938,7 +6487,7 @@ already) and allows its contents to be modified.
 int Computed_field_register_types_component_operations(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 02 October 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5953,6 +6502,10 @@ DESCRIPTION :
 		computed_field_component_operations_package.computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_power_type_string, 
+			define_Computed_field_type_power,
+			&computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
 			computed_field_multiply_components_type_string, 
 			define_Computed_field_type_multiply_components,
