@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.h
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 18 September 2002
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -17,6 +17,7 @@ translating and zooming with mouse button press and motion events.
 #if !defined (SCENE_VIEWER_H)
 #define SCENE_VIEWER_H
 
+#include "api/cmiss_scene_viewer.h"
 #include "general/callback.h"
 #include "general/image_utilities.h"
 #include "general/object.h"
@@ -27,22 +28,51 @@ translating and zooming with mouse button press and motion events.
 #include "interaction/interactive_tool.h"
 #include "three_d_drawing/graphics_buffer.h"
 
+/* 
+The Cmiss_scene_viewer which is Public is currently the same object as the 
+cmgui internal Scene_viewer.  The Public interface is contained in 
+api/cmiss_scene_viewer.h however most of the functions come directly from
+this module.  So that these functions match the public declarations the 
+struct Scene_viewer is declared to be the same as Cmiss_scene_viewer here
+and the functions given their public names.
+*/
+/* Convert the type */
+#define Scene_viewer Cmiss_scene_viewer
+
+/* Convert the enumerators */
+#define Scene_viewer_transparency_mode Cmiss_scene_viewer_transparency_mode
+/* Be sure to implement any new modes in Scene_viewer_transparency_mode_string. */
+#define SCENE_VIEWER_FAST_TRANSPARENCY CMISS_SCENE_VIEWER_FAST_TRANSPARENCY
+#define SCENE_VIEWER_SLOW_TRANSPARENCY CMISS_SCENE_VIEWER_SLOW_TRANSPARENCY
+#define SCENE_VIEWER_LAYERED_TRANSPARENCY CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY
+
+/* Convert the functions that have identical interfaces */
+#define Scene_viewer_set_lookat_parameters_non_skew \
+   Cmiss_scene_viewer_set_lookat_parameters_non_skew
+#define Scene_viewer_get_lookat_parameters \
+   Cmiss_scene_viewer_get_lookat_parameters
+#define Scene_viewer_get_transparency_mode Cmiss_scene_viewer_get_transparency_mode
+#define Scene_viewer_set_transparency_mode Cmiss_scene_viewer_set_transparency_mode
+#define Scene_viewer_get_transparency_layers \
+   Cmiss_scene_viewer_get_transparency_layers
+#define Scene_viewer_set_transparency_layers \
+   Cmiss_scene_viewer_set_transparency_layers
+#define Scene_viewer_transparency_mode Cmiss_scene_viewer_transparency_mode 
+#define Scene_viewer_get_view_angle Cmiss_scene_viewer_get_view_angle
+#define Scene_viewer_set_view_angle Cmiss_scene_viewer_set_view_angle
+#define Scene_viewer_get_antialias_mode Cmiss_scene_viewer_get_antialias_mode
+#define Scene_viewer_set_antialias_mode Cmiss_scene_viewer_set_antialias_mode
+#define Scene_viewer_get_perturb_lines Cmiss_scene_viewer_get_perturb_lines
+#define Scene_viewer_set_perturb_lines Cmiss_scene_viewer_set_perturb_lines
+#define Scene_viewer_view_all Cmiss_scene_viewer_view_all
+#define Scene_viewer_redraw_now Cmiss_scene_viewer_redraw_now
+
+#include "graphics/scene_viewer.h"
+
 /*
 Global types
 ------------
 */
-enum Scene_viewer_projection_mode
-/*******************************************************************************
-LAST MODIFIED : 14 October 1998
-
-DESCRIPTION :
-Be sure to implement any new modes in Scene_viewer_projection_mode_string.
-==============================================================================*/
-{
-	SCENE_VIEWER_PARALLEL,
-	SCENE_VIEWER_PERSPECTIVE,
-	SCENE_VIEWER_CUSTOM
-};
 
 enum Scene_viewer_input_mode
 /*******************************************************************************
@@ -58,20 +88,42 @@ DESCRIPTION :
 	SCENE_VIEWER_TRANSFORM
 };
 
-enum Scene_viewer_buffer_mode
+enum Scene_viewer_buffering_mode
 /*******************************************************************************
-LAST MODIFIED : 14 October 1998
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
-???RC May want to add left and right buffer options for 3-D display.
-Be sure to implement any new modes in Scene_viewer_buffer_mode_string.
+Be sure to implement any new modes in Scene_viewer_buffering_mode_string.
 ==============================================================================*/
 {
 	SCENE_VIEWER_PIXEL_BUFFER,
 	SCENE_VIEWER_SINGLE_BUFFER,
-	SCENE_VIEWER_DOUBLE_BUFFER,
-	SCENE_VIEWER_STEREO_SINGLE_BUFFER,
-	SCENE_VIEWER_STEREO_DOUBLE_BUFFER
+	SCENE_VIEWER_DOUBLE_BUFFER
+};
+
+enum Scene_viewer_projection_mode
+/*******************************************************************************
+LAST MODIFIED : 16 September 2002
+
+DESCRIPTION :
+Specifies the sort of projection matrix used to render the 3D scene.
+==============================================================================*/
+{
+	SCENE_VIEWER_PARALLEL,
+	SCENE_VIEWER_PERSPECTIVE,
+	SCENE_VIEWER_CUSTOM
+};
+
+enum Scene_viewer_stereo_mode
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Be sure to implement any new modes in Scene_viewer_buffering_mode_string.
+==============================================================================*/
+{
+	SCENE_VIEWER_MONO,
+	SCENE_VIEWER_STEREO
 };
 
 enum Scene_viewer_viewport_mode
@@ -90,32 +142,6 @@ Be sure to implement any new modes in Scene_viewer_viewport_mode_string.
 	SCENE_VIEWER_RELATIVE_VIEWPORT
 };
 
-enum Scene_viewer_transparency_mode
-/*******************************************************************************
-LAST MODIFIED : 23 November 1998
-
-DESCRIPTION :
-In mode SCENE_VIEWER_SLOW_TRANSPARENCY the display list for the scene is
-rendered twice. In the first pass only opaque objects (alpha=1.0) are rendered,
-while these set the depth buffer. In the second pass writing to the depth buffer
-is disabled, while only fragments for which alpha does not equal 1.0 are
-rendered.
-Be sure to implement any new modes in Scene_viewer_transparency_mode_string.
-==============================================================================*/
-{
-	SCENE_VIEWER_FAST_TRANSPARENCY,
-	SCENE_VIEWER_SLOW_TRANSPARENCY,
-	SCENE_VIEWER_LAYERED_TRANSPARENCY
-};
-
-struct Scene_viewer;
-/*******************************************************************************
-LAST MODIFIED : 18 November 1997
- 
-DESCRIPTION :
-Members of the Scene_viewer structure are private.
-==============================================================================*/
-
 DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
 	struct Scene_viewer *, void *);
 
@@ -127,7 +153,7 @@ Global functions
 ----------------
 */
 struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
-	struct Colour *background_colour,enum Scene_viewer_buffer_mode buffer_mode,
+	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
@@ -135,7 +161,7 @@ struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffe
 	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 18 November 1998
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
 Creates a Scene_viewer in the widget <parent> to display <scene>.
@@ -285,13 +311,22 @@ Sets the border_width of the scene_viewer widget. Note that the border is
 only shown on the bottom and right of each viewer in the graphics window.
 ==============================================================================*/
 
-enum Scene_viewer_buffer_mode Scene_viewer_get_buffer_mode(
+enum Scene_viewer_buffering_mode Scene_viewer_get_buffering_mode(
 	struct Scene_viewer *scene_viewer);
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
 
 DESCRIPTION :
 Returns the buffer mode - single_buffer/double_buffer - of the Scene_viewer.
+==============================================================================*/
+
+enum Scene_viewer_stereo_mode Scene_viewer_get_stereo_mode(
+	struct Scene_viewer *scene_viewer);
+/*******************************************************************************
+LAST MODIFIED : 16 September 2002
+
+DESCRIPTION :
+Returns the stereo mode - mono/stereo - of the Scene_viewer.
 ==============================================================================*/
 
 struct Interactive_tool *Scene_viewer_get_interactive_tool(
@@ -445,8 +480,8 @@ int Scene_viewer_set_lookat_parameters_non_skew(
 LAST MODIFIED : 7 October 1998
 
 DESCRIPTION :
-Special version of Scene_viewer_set_lookat_parameters that ensures the up vector
-is orthogonal to the view direction - so prejection is not skew.
+Normal function for controlling Scene_viewer_set_lookat_parameters that ensures
+the up vector is orthogonal to the view direction - so projection is not skew.
 ==============================================================================*/
 
 int Scene_viewer_set_lookat_parameters(struct Scene_viewer *scene_viewer,
@@ -548,10 +583,10 @@ in the scene_viewer window, and -1 to +1 from far to near.
 The overlay_scene may be NULL, indicating that no overlay is in use.
 ==============================================================================*/
 
-enum Scene_viewer_projection_mode Scene_viewer_get_projection_mode(
-	struct Scene_viewer *scene_viewer);
+int Scene_viewer_get_projection_mode(struct Scene_viewer *scene_viewer,
+	enum Scene_viewer_projection_mode *projection_mode);
 /*******************************************************************************
-LAST MODIFIED : 5 October 1998
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 Returns the projection mode - parallel/perspective - of the Scene_viewer.
@@ -687,10 +722,10 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
-enum Scene_viewer_transparency_mode Scene_viewer_get_transparency_mode(
-	struct Scene_viewer *scene_viewer);
+int Scene_viewer_get_transparency_mode(struct Scene_viewer *scene_viewer,
+	enum Scene_viewer_transparency_mode *transparency_mode);
 /*******************************************************************************
-LAST MODIFIED : 23 November 1998
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 See Scene_viewer_set_transparency_mode for explanation.
@@ -709,16 +744,17 @@ semi-transparent objects are rendered without writing the depth buffer. Hence,
 you can even see through the first semi-transparent surface drawn.
 ==============================================================================*/
 
-int Scene_viewer_get_transparency_layers(struct Scene_viewer *scene_viewer);
+int Scene_viewer_get_transparency_layers(struct Scene_viewer *scene_viewer,
+	int *transparency_layers);
 /*******************************************************************************
-LAST MODIFIED : 9 October 1999
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 See Scene_viewer_set_transparency_layers for explanation.
 ==============================================================================*/
 
 int Scene_viewer_set_transparency_layers(struct Scene_viewer *scene_viewer,
-	int layers);
+	int transparency_layers);
 /*******************************************************************************
 LAST MODIFIED : 9 October 1999
 
@@ -898,7 +934,8 @@ Sets the width and height of the Scene_viewers drawing area.
 
 int Scene_viewer_get_opengl_information(struct Scene_viewer *scene_viewer,
 	char **opengl_version, char **opengl_vendor, char **opengl_extensions,
-	int *visual_id);
+	int *visual_id, int *colour_buffer_depth, int *depth_buffer_depth,
+	int *accumulation_buffer_depth);
 /*******************************************************************************
 LAST MODIFIED : 9 August 2002
 
@@ -959,6 +996,19 @@ viewing transformations.  Uses the specified viewport to draw into (unless
 all the dimensions are zero).
 ==============================================================================*/
 
+int Scene_viewer_render_scene_in_viewport_with_overrides(
+	struct Scene_viewer *scene_viewer, int left, int bottom, int right, int top,
+	int antialias, int transparency_layers);
+/*******************************************************************************
+LAST MODIFIED : 17 September 2002
+
+DESCRIPTION :
+Called to redraw the Scene_viewer scene after changes in the display lists or
+viewing transformations.  Uses the specified viewport to draw into (unless
+all the dimensions are zero).  If non_zero then the supplied <antialias> and
+<transparency_layers> are used for just this render.
+==============================================================================*/
+
 int Scene_viewer_redraw(struct Scene_viewer *scene_viewer);
 /*******************************************************************************
 LAST MODIFIED : 14 July 2000
@@ -992,6 +1042,25 @@ DESCRIPTION :
 Forces a redraw of the given scene viewer to take place immediately but does
 not swap the back and front buffers so that utilities such as the movie
 extensions can get the undated frame from the backbuffer.
+==============================================================================*/
+
+struct Cmgui_image *Scene_viewer_get_image(struct Scene_viewer *scene_viewer,
+	int force_onscreen, int preferred_width, int preferred_height,
+	int preferred_antialias, int preferred_transparency_layers,
+	enum Texture_storage_type storage);
+/*******************************************************************************
+LAST MODIFIED : 18 September 2002
+
+DESCRIPTION :
+Creates and returns a Cmgui_image from the image in <scene_viewer>, usually for
+writing. The image has a single depth plane and is in RGBA format.
+Up to the calling function to DESTROY the returned Cmgui_image.
+If <preferred_width>, <preferred_height>, <preferred_antialias> or
+<preferred_transparency_layers> are non zero then they attempt to override the
+default values for just this call.
+If <force_onscreen> is set then the pixels are grabbed directly from the window
+display and the <preferred_width> and <preferred_height> are ignored.
+Currently limited to 1 byte per component -- may want to improve for HPC.
 ==============================================================================*/
 
 int Scene_viewer_set_update_pixel_image(struct Scene_viewer *scene_viewer);
@@ -1068,13 +1137,23 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
-char *Scene_viewer_buffer_mode_string(
-	enum Scene_viewer_buffer_mode buffer_mode);
+char *Scene_viewer_buffering_mode_string(
+	enum Scene_viewer_buffering_mode buffering_mode);
 /*******************************************************************************
 LAST MODIFIED : 14 October 1998
 
 DESCRIPTION :
-Returns a string label for the <buffer_mode>.
+Returns a string label for the <buffering_mode>.
+NOTE: Calling function must not deallocate returned string.
+==============================================================================*/
+
+char *Scene_viewer_stereo_mode_string(
+	enum Scene_viewer_stereo_mode stereo_mode);
+/*******************************************************************************
+LAST MODIFIED : 16 September 2002
+
+DESCRIPTION :
+Returns a string label for the <stereo_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : ThreeDDraw.h
 
-LAST MODIFIED : 26 April 2000
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
 Public header file for the 3-D drawing widget.
@@ -13,24 +13,24 @@ Public header file for the 3-D drawing widget.
 
 typedef enum
 /*******************************************************************************
-LAST MODIFIED : 21 April 1994
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
-???DB.  Analogous for PEXlib ?
 ==============================================================================*/
 {
+	X3dANY_BUFFERING_MODE,
 	X3dSINGLE_BUFFERING,
 	X3dDOUBLE_BUFFERING
 } X3dBufferingMode;
 
 typedef enum
 /*******************************************************************************
-LAST MODIFIED : 21 April 1994
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
-???DB.  Analogous for PEXlib ?
 ==============================================================================*/
 {
+	X3dANY_STEREO_MODE,
 	X3dMONO_BUFFERING,
 	X3dSTEREO_BUFFERING
 } X3dStereoBufferingMode;
@@ -40,7 +40,6 @@ typedef enum
 LAST MODIFIED : 21 April 1994
 
 DESCRIPTION :
-???DB.  Analogous for PEXlib ?
 ==============================================================================*/
 {
 	X3dCOLOUR_INDEX_MODE,
@@ -54,6 +53,10 @@ Name               Class              RepType             Default Value
 ----               -----              -------             -------------
 bufferColourMode   BufferColourMode   X3dBufferColourMode X3dCOLOUR_INDEX_MODE
 bufferingMode      BufferingMode      X3dBufferingMode    X3dSINGLE_BUFFERING
+stereoBufferingMode StereoBufferingMode X3dStereoBufferingMode X3dMONO_BUFFERING
+AccumulationBufferDepth AccumulationBufferDepth XtInt      0
+AccumulationBufferDepth AccumulationBufferDepth XtInt      0
+visualId           VisualId           XtInt               0
 exposeCallback     ExposeCallback     XtPointer           NULL
 initializeCallback InitializeCallback XtPointer           NULL
 inputCallback      InputCallback      XtPointer           NULL
@@ -72,6 +75,12 @@ renderingContext   RenderingContext   PEXRenderer         NULL
 #define X3dNstereoBufferingMode "stereoBufferingMode"
 #define X3dCStereoBufferingMode "StereoBufferingMode"
 #define X3dRStereoBufferingMode "X3dStereoBufferingMode"
+#define X3dNcolourBufferDepth "colourBufferDepth"
+#define X3dCColourBufferDepth "ColourBufferDepth"
+#define X3dNdepthBufferDepth "depthBufferDepth"
+#define X3dCDepthBufferDepth "DepthBufferDepth"
+#define X3dNaccumulationBufferDepth "accumulationBufferDepth"
+#define X3dCAccumulationBufferDepth "AccumulationBufferDepth"
 #define X3dNvisualId "visualId"
 #define X3dCVisualId "VisualId"
 #define X3dNexposeCallback "exposeCallback"
@@ -167,6 +176,48 @@ LAST MODIFIED : 9 August 2002
 
 DESCRIPTION :
 Returns the visual ID actually used by this X3d widget.
+==============================================================================*/
+
+int X3dThreeDDrawingGetColourBufferDepth(Widget widget, int *colour_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the colour buffer depth actually used by this X3d widget.
+==============================================================================*/
+
+int X3dThreeDDrawingGetDepthBufferDepth(Widget widget, int *depth_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the colour buffer depth actually used by this X3d widget.
+==============================================================================*/
+
+int X3dThreeDDrawingGetAccumulationBufferDepth(Widget widget,
+	int *accumulation_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the colour buffer depth actually used by this X3d widget.
+==============================================================================*/
+
+int X3dThreeDDrawingGetBufferingMode(Widget widget,
+	X3dBufferingMode *buffering_mode);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the buffering mode used by this X3d widget.
+==============================================================================*/
+
+int X3dThreeDDrawingGetStereoMode(Widget widget, X3dStereoBufferingMode *stereo_mode);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the buffering mode used by this X3d widget.
 ==============================================================================*/
 
 #if defined (OPENGL_API) && defined (MOTIF)

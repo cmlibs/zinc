@@ -505,14 +505,15 @@ Creates a Cell_cmgui_interface object, setting the data fields.
       }
       form = Cell_window_get_scene_form(cmgui_interface->cell_window);
 		if (graphics_buffer = create_Graphics_buffer_X3d(
-			form, X3dCOLOUR_RGB_MODE, 
-			X3dDOUBLE_BUFFERING, X3dMONO_BUFFERING,
+			form, GRAPHICS_BUFFER_DOUBLE_BUFFERING, GRAPHICS_BUFFER_MONO,
+ 			/*minimum_colour_buffer_depth*/0,
+ 			/*minimum_depth_buffer_depth*/0,
+			/*minimum_accumulation_buffer_depth*/0,
 			User_interface_get_specified_visual_id(
 			cmgui_interface->user_interface)))
 		{
-			if (cmgui_interface->scene_viewer =
-				CREATE(Scene_viewer)(graphics_buffer,cmgui_interface->background_colour,
-				SCENE_VIEWER_DOUBLE_BUFFER,cmgui_interface->light_manager,
+			if (cmgui_interface->scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
+				cmgui_interface->background_colour,cmgui_interface->light_manager,
 				cmgui_interface->default_light,cmgui_interface->light_model_manager,
 				cmgui_interface->default_light_model,cmgui_interface->scene_manager,
 				cmgui_interface->scene,cmgui_interface->texture_manager,

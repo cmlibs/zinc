@@ -953,6 +953,10 @@ ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
 	$(MOVIE_FILE_LIB) $(XML_LIB) $(LIB)
 
+API_SRCS = \
+	api/cmiss_core.c \
+	api/cmiss_graphics_window.c \
+	api/cmiss_scene_viewer.c
 CHOOSE_INTERFACE_SRCS = \
 	choose/choose_computed_field.c \
 	choose/choose_control_curve.c \
@@ -1202,6 +1206,7 @@ VIEW_INTERFACE_SRCS = \
 
 XCOMM DB.  makedepend has problems if too many files
 SRCS_1 = \
+	$(API_SRCS) \
 	$(COMFILE_SRCS) \
 	$(COMMAND_SRCS) \
 	$(COMPUTED_FIELD_SRCS) \
@@ -1260,7 +1265,9 @@ SRCS_2 = \
 	$(COMMAND_INTERFACE_SRCS)
 #elif defined (GTK_USER_INTERFACE)  /* switch (USER_INTERFACE) */
 SRCS_2 = \
-	graphics/graphics_window.c
+	$(COMMAND_INTERFACE_SRCS) \
+	graphics/graphics_window.c \
+	gtk/gtk_cmiss_scene_viewer.c
 #elif 1 /* SGI imake doesn't do else correctly *//* switch (USER_INTERFACE) */
 SRCS_2 =
 #endif  /* switch (USER_INTERFACE) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_library.h
 
-LAST MODIFIED : 5 December 2001
+LAST MODIFIED : 12 September 2002
 
 DESCRIPTION :
 Functions and structures for interfacing with the graphics library.
@@ -37,6 +37,23 @@ Global types
 */
 
 typedef float gtMatrix[4][4];
+
+enum Texture_storage_type
+/*******************************************************************************
+LAST MODIFIED : 28 February 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	TEXTURE_LUMINANCE,
+	TEXTURE_LUMINANCE_ALPHA,
+	TEXTURE_RGB,
+	TEXTURE_RGBA,
+	TEXTURE_ABGR,
+	/* The last two types are special and are not user-selectable */
+	TEXTURE_DMBUFFER,
+	TEXTURE_PBUFFER
+}; /* enum Texture_storage_type */
 
 /*
 Global variables
@@ -283,4 +300,15 @@ memory.
 ???SAB.  Taken directly from the insight book on OpenGL Extensions
 ==============================================================================*/
 #endif /* defined (OPENGL_API) */
+
+int Graphics_library_read_pixels(unsigned char *frame_data,
+	int width, int height, enum Texture_storage_type storage);
+/*******************************************************************************
+LAST MODIFIED : 12 September 2002
+
+DESCRIPTION :
+Read pixels from the current graphics context into <frame_data> of size <width>
+and <height> according to the storage type.  'MakeCurrent' the desired source 
+before calling this routine.
+==============================================================================*/
 #endif

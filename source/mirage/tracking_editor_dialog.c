@@ -3644,7 +3644,12 @@ Creates a new 3-D window.
 			track_ed->graphics_window_manager))
 		{
 			if (window=CREATE(Graphics_window)(name,
-				SCENE_VIEWER_DOUBLE_BUFFER,track_ed->background_colour,
+				GRAPHICS_WINDOW_DOUBLE_BUFFERING, GRAPHICS_BUFFER_MONO,
+				/*minimum_colour_buffer_depth*/0,
+				/*minimum_depth_buffer_depth*/0,
+				/*minimum_accumulation_buffer_depth*/0,
+				/*specified_visual_id*/0,
+				track_ed->background_colour,
 				track_ed->light_manager,track_ed->default_light,
 				track_ed->light_model_manager,track_ed->default_light_model,
 				track_ed->scene_manager,track_ed->default_scene,

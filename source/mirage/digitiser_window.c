@@ -682,7 +682,7 @@ will be printed on the windows title bar.
 {
 	Atom WM_DELETE_WINDOW;
 	char *window_title;
-	enum Scene_viewer_buffer_mode scene_viewer_buffer_mode;
+	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
 	MrmType digitiser_window_dialog_class;
 	static MrmRegisterArg callbacks[] =
 	{
@@ -718,7 +718,6 @@ will be printed on the windows title bar.
 	struct Digitiser_window *digitiser_window=NULL;
 	struct Graphics_buffer *graphics_buffer;
 	struct Mirage_view *view;
-	X3dBufferingMode x3d_buffering_mode;
 
 	ENTER(create_digitiser_window);
 	/* check arguments */
@@ -831,23 +830,25 @@ will be printed on the windows title bar.
 								/* create the Scene_viewer */
 								if (DIGITISER_WINDOW_SINGLE_BUFFER==buffer_mode)
 								{
-									scene_viewer_buffer_mode=SCENE_VIEWER_SINGLE_BUFFER;
-									x3d_buffering_mode=X3dSINGLE_BUFFERING;
+									graphics_buffer_buffering_mode=
+										GRAPHICS_BUFFER_SINGLE_BUFFERING;
 								}
 								else
 								{
-									scene_viewer_buffer_mode=SCENE_VIEWER_DOUBLE_BUFFER;
-									x3d_buffering_mode=X3dDOUBLE_BUFFERING;
+									graphics_buffer_buffering_mode=
+										GRAPHICS_BUFFER_DOUBLE_BUFFERING;
 								}
 								if (graphics_buffer = create_Graphics_buffer_X3d(
-									digitiser_window->viewing_area, X3dCOLOUR_RGB_MODE, 
-									x3d_buffering_mode, X3dMONO_BUFFERING,
+									digitiser_window->viewing_area,
+									graphics_buffer_buffering_mode, GRAPHICS_BUFFER_MONO,
+ 									/*minimum_colour_buffer_depth*/0,
+ 									/*minimum_depth_buffer_depth*/0,
+									/*minimum_accumulation_buffer_depth*/0,
 									User_interface_get_specified_visual_id(
 									digitiser_window->user_interface)))
 								{
 									if ((digitiser_window->scene_viewer=CREATE(Scene_viewer)(
-										graphics_buffer,
-										background_colour,scene_viewer_buffer_mode,
+										graphics_buffer,background_colour,
 										digitiser_window->light_manager,default_light,
 										digitiser_window->light_model_manager,default_light_model,
 										digitiser_window->scene_manager,view->scene,

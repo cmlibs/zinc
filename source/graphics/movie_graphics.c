@@ -350,7 +350,8 @@ be grabbed from the graphics window on screen.
 				height = mheight;
 			}
 			if (Graphics_window_get_frame_pixels(movie->graphics_window, TEXTURE_ABGR,
-				&width, &height, &frame_data, force_onscreen))
+				&width, &height, /*preferred_antialias*/0,
+				/*preferred_transparency_layers*/0, &frame_data, force_onscreen))
 			{
 				X3d_movie_add_frame(movie->x3d_movie, width, height,
 					(char *)frame_data);

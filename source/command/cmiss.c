@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 29 August 2002
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -26,9 +26,9 @@ Functions for executing cmiss commands.
 #endif /* defined (MOTIF) */
 #include "command/cmiss.h"
 #include "command/console.h"
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 #include "command/command_window.h"
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 #include "command/example_path.h"
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
@@ -190,13 +190,13 @@ Changes the command prompt provided to the user.
 	ENTER(set_command_prompt);
 	if (prompt && command_data)
 	{
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 		if (command_data->command_window)
 		{
 			return_code = Command_window_set_command_prompt(command_data->command_window,
 				prompt);
 		}
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 		if (command_data->command_console)
 		{
 			return_code = Console_set_command_prompt(command_data->command_console,
@@ -9995,32 +9995,15 @@ DESCRIPTION :
 Executes a GFX CREATE WINDOW command.
 ==============================================================================*/
 {
-	char double_buffer_flag,*name,mono_buffer_flag,single_buffer_flag,
-		stereo_buffer_flag;
-	enum Scene_viewer_buffer_mode buffer_mode;
-	int return_code;
+	char any_buffering_mode_flag, any_stereo_mode_flag, double_buffer_flag,
+		*name,mono_buffer_flag,single_buffer_flag,stereo_buffer_flag;
+	enum Graphics_window_buffering_mode buffer_mode;
+	enum Graphics_window_stereo_mode stereo_mode;
+	int minimum_colour_buffer_depth, minimum_depth_buffer_depth,
+		minimum_accumulation_buffer_depth, return_code, specified_visual_id;
 	struct Cmiss_command_data *command_data;
 	struct Graphics_window *window;
-	static struct Modifier_entry
-		buffer_option_table[]=
-		{
-			{"single_buffer",NULL,NULL,set_char_flag},
-			{"double_buffer",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{NULL,NULL,NULL,NULL},
-			{"name",NULL,(void *)1,set_name},
-			{NULL,NULL,NULL,NULL},
-			{NULL,NULL,NULL,set_name}
-		},
-		stereo_buffer_option_table[]=
-		{
-			{"mono_buffer",NULL,NULL,set_char_flag},
-			{"stereo_buffer",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		};
+	struct Option_table *buffer_option_table, *option_table, *stereo_option_table
 
 	ENTER(gfx_create_window);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -10033,59 +10016,107 @@ Executes a GFX CREATE WINDOW command.
 			name=Graphics_window_manager_get_new_name(
 				command_data->graphics_window_manager);
 			buffer_mode=SCENE_VIEWER_DOUBLE_BUFFER;
+			stereo_mode = GRAPHICS_WINDOW_MONO;
+			minimum_depth_buffer_depth=8;
+			minimum_accumulation_buffer_depth=8;
+			minimum_colour_buffer_depth = 0;
+			if (command_data->user_interface)
+			{
+				specified_visual_id = User_interface_get_specified_visual_id(
+					command_data->user_interface);
+			}
+			else
+			{
+				specified_visual_id = 0;
+			}
 			if (state->current_token)
 			{
 				/* change defaults */
+				any_buffering_mode_flag=0;
 				single_buffer_flag=0;
 				double_buffer_flag=0;
+				any_stereo_mode_flag=0;
 				mono_buffer_flag=0;
 				stereo_buffer_flag=0;
-				(stereo_buffer_option_table[0]).to_be_modified= &mono_buffer_flag;
-				(stereo_buffer_option_table[1]).to_be_modified= &stereo_buffer_flag;
-				(option_table[0]).user_data=stereo_buffer_option_table;
-				(option_table[1]).to_be_modified= &name;
-				(buffer_option_table[0]).to_be_modified= &single_buffer_flag;
-				(buffer_option_table[1]).to_be_modified= &double_buffer_flag;
-				(option_table[2]).user_data=buffer_option_table;
-				(option_table[3]).to_be_modified= &name;
-				if (return_code=process_multiple_options(state,option_table))
+
+				option_table = CREATE(Option_table)();
+				/* accumulation_buffer_depth */
+				Option_table_add_entry(option_table, "accumulation_buffer_depth",
+					&minimum_accumulation_buffer_depth, NULL, set_int_non_negative);
+				/* any_buffer_mode/double_buffer/single_buffer */
+				buffer_option_table=CREATE(Option_table)();
+				Option_table_add_entry(buffer_option_table,"any_buffer_mode",
+					&any_buffering_mode_flag,(void *)NULL,set_char_flag);
+				Option_table_add_entry(buffer_option_table,"double_buffer",
+					&double_buffer_flag,(void *)NULL,set_char_flag);
+				Option_table_add_entry(buffer_option_table,"single_buffer",
+					&single_buffer_flag,(void *)NULL,set_char_flag);
+				Option_table_add_suboption_table(option_table, buffer_option_table);
+				/* any_stereo_mode/mono_buffer/stereo_buffer */
+				stereo_option_table=CREATE(Option_table)();
+				Option_table_add_entry(stereo_option_table,"any_stereo_mode",
+					&any_stereo_mode_flag,(void *)NULL,set_char_flag);
+				Option_table_add_entry(stereo_option_table,"mono_buffer",
+					&mono_buffer_flag,(void *)NULL,set_char_flag);
+				Option_table_add_entry(stereo_option_table,"stereo_buffer",
+					&stereo_buffer_flag,(void *)NULL,set_char_flag);
+				Option_table_add_suboption_table(option_table, stereo_option_table);
+				/* colour_buffer_depth */
+				Option_table_add_entry(option_table, "colour_buffer_depth",
+					&minimum_colour_buffer_depth, NULL, set_int_non_negative);
+				/* depth_buffer_depth */
+				Option_table_add_entry(option_table, "depth_buffer_depth",
+					&minimum_depth_buffer_depth, NULL, set_int_non_negative);
+				/* name */
+				Option_table_add_entry(option_table,"name",&name,(void *)1,set_name);
+				/* specified_visual_id */
+				Option_table_add_entry(option_table, "specified_visual_id",
+					&specified_visual_id, NULL, set_int_non_negative);
+				/* default */
+				Option_table_add_entry(option_table,(char *)NULL,&name,(void *)NULL,
+					set_name);
+				return_code = Option_table_multi_parse(option_table,state);
+				DESTROY(Option_table)(&option_table);
+				if (return_code)
 				{
-					if (single_buffer_flag && double_buffer_flag)
+					if (any_buffering_mode_flag + single_buffer_flag + double_buffer_flag > 1)
 					{
 						display_message(ERROR_MESSAGE,
-							"Only one of single_buffer/double_buffer");
+							"Only one of any_buffer_mode/single_buffer/double_buffer");
 						return_code=0;
 					}
-					if (mono_buffer_flag && stereo_buffer_flag)
+					if (any_stereo_mode_flag + mono_buffer_flag + stereo_buffer_flag > 1)
 					{
 						display_message(ERROR_MESSAGE,
-							"Only one of mono_buffer/stereo_buffer");
+							"Only one of any_stereo_mode/mono_buffer/stereo_buffer");
 						return_code=0;
 					}
 				}
 				if (return_code)
 				{
-					if (single_buffer_flag)
+					if (any_buffering_mode_flag)
 					{
-						if (stereo_buffer_flag)
-						{
-							buffer_mode=SCENE_VIEWER_STEREO_SINGLE_BUFFER;
-						}
-						else
-						{
-							buffer_mode=SCENE_VIEWER_SINGLE_BUFFER;
-						}
+						buffer_mode = GRAPHICS_WINDOW_ANY_BUFFERING_MODE;
+					}
+					else if (single_buffer_flag)
+					{
+						buffer_mode = GRAPHICS_WINDOW_SINGLE_BUFFERING;
 					}
 					else
 					{
-						if (stereo_buffer_flag)
-						{
-							buffer_mode=SCENE_VIEWER_STEREO_DOUBLE_BUFFER;
-						}
-						else
-						{
-							buffer_mode=SCENE_VIEWER_DOUBLE_BUFFER;
-						}
+						buffer_mode = GRAPHICS_WINDOW_DOUBLE_BUFFERING;
+					}
+					if (any_stereo_mode_flag)
+					{
+						stereo_mode = GRAPHICS_WINDOW_ANY_STEREO_MODE;
+					}
+					else if (stereo_buffer_flag)
+					{
+						stereo_mode = GRAPHICS_WINDOW_STEREO;
+					}
+					else
+					{
+						stereo_mode = GRAPHICS_WINDOW_MONO;
 					}
 				}
 			}
@@ -10107,8 +10138,10 @@ Executes a GFX CREATE WINDOW command.
 				{
 				   if (command_data->user_interface)
 					{
-					   if (window=CREATE(Graphics_window)(name,
-						   buffer_mode,&(command_data->background_colour),
+					   if (window=CREATE(Graphics_window)(name,buffer_mode,stereo_mode,
+							minimum_colour_buffer_depth, minimum_depth_buffer_depth,
+							minimum_accumulation_buffer_depth, specified_visual_id,
+							&(command_data->background_colour),
 							command_data->light_manager,command_data->default_light,
 							command_data->light_model_manager,command_data->default_light_model,
 							command_data->scene_manager,command_data->default_scene,
@@ -17133,7 +17166,7 @@ Executes a GFX LIST MOVIE.
 } /* gfx_list_movie_graphics */
 #endif /* defined (SGI_MOVIE_FILE) */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 static int gfx_list_graphics_window(struct Parse_state *state,
 	void *dummy_to_be_modified,void *graphics_window_manager_void)
 /*******************************************************************************
@@ -17221,7 +17254,7 @@ Executes a GFX LIST WINDOW.
 
 	return (return_code);
 } /* gfx_list_graphics_window */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 
 static int execute_command_gfx_list(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -17322,11 +17355,11 @@ Executes a GFX LIST command.
 			/* volume texture */
 			Option_table_add_entry(option_table, "vtexture", NULL,
 				command_data->volume_texture_manager, gfx_list_volume_texture);
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 			/* graphics window */
 			Option_table_add_entry(option_table, "window", NULL,
 				command_data->graphics_window_manager, gfx_list_graphics_window);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 			return_code = Option_table_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 		}
@@ -19441,7 +19474,8 @@ Executes a GFX PRINT command.
 		**valid_strings;
 	enum Image_file_format image_file_format;
 	enum Texture_storage_type storage;
-	int height, number_of_valid_strings, return_code, width;
+	int antialias, height, number_of_valid_strings, return_code, 
+		transparency_layers, width;
 	struct Cmgui_image *cmgui_image;
 	struct Cmgui_image_information *cmgui_image_information;
 	struct Cmiss_command_data *command_data;
@@ -19453,10 +19487,12 @@ Executes a GFX PRINT command.
 	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialize defaults */
+		antialias = 0;
 		file_name = (char *)NULL;
 		height = 0;
 		force_onscreen_flag = 0;
 		storage = TEXTURE_RGBA;
+		transparency_layers = 0;
 		width = 0;
 		/* default file format is to obtain it from the filename extension */
 		image_file_format = UNKNOWN_IMAGE_FILE_FORMAT;
@@ -19469,6 +19505,9 @@ Executes a GFX PRINT command.
 		}
 
 		option_table = CREATE(Option_table)();
+		/* antialias */
+		Option_table_add_entry(option_table, "antialias",
+			&antialias, NULL, set_int_positive);
 		/* image file format */
 		image_file_format_string =
 			ENUMERATOR_STRING(Image_file_format)(image_file_format);
@@ -19491,6 +19530,9 @@ Executes a GFX PRINT command.
 		/* height */
 		Option_table_add_entry(option_table, "height",
 			&height, NULL, set_int_non_negative);
+		/* transparency_layers */
+		Option_table_add_entry(option_table, "transparency_layers",
+			&transparency_layers, NULL, set_int_positive);
 		/* width */
 		Option_table_add_entry(option_table, "width",
 			&width, NULL, set_int_non_negative);
@@ -19536,7 +19578,8 @@ Executes a GFX PRINT command.
 			Cmgui_image_information_add_file_name(cmgui_image_information,
 				file_name);
 			if (cmgui_image = Graphics_window_get_image(window,
-				force_onscreen_flag, width, height, storage))
+				force_onscreen_flag, width, height, antialias,
+				transparency_layers, storage))
 			{
 				if (!Cmgui_image_write(cmgui_image, cmgui_image_information))
 				{
@@ -26202,7 +26245,7 @@ Executes a LIST_MEMORY command.
 ==============================================================================*/
 {
 	char increment_counter, suppress_pointers;
-	int count_number,return_code;
+	int count_number,return_code,set_counter;
 	static struct Modifier_entry option_table[]=
 	{
 		{"increment_counter",NULL,NULL,set_char_flag},
@@ -26225,15 +26268,23 @@ Executes a LIST_MEMORY command.
 		/* no errors, not asking for help */
 		if (return_code)
 		{
+			if (increment_counter)
+			{
+				set_counter = -1;
+			}
+			else
+			{
+				set_counter = 0;
+			}
 			if (suppress_pointers)
 			{
 				return_code=list_memory(count_number, /*show_pointers*/0,
-					increment_counter, /*show_structures*/0);
+					set_counter, /*show_structures*/0);
 			}
 			else
 			{
 				return_code=list_memory(count_number, /*show_pointers*/1,
-					increment_counter, /*show_structures*/1);
+					set_counter, /*show_structures*/1);
 			}
 		} /* parse error, help */
 		else
@@ -27000,11 +27051,11 @@ DESCRIPTION:
 					Option_table_add_entry(option_table, "cell", NULL, command_data_void,
 						execute_command_cell);
 #endif /* defined (CELL) */
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 					/* command_window */
 					Option_table_add_entry(option_table, "command_window", NULL, command_data->command_window,
 						modify_Command_window);
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 					/* create */
 					Option_table_add_entry(option_table, "create", NULL, command_data_void,
 						execute_command_create);
@@ -27058,12 +27109,6 @@ DESCRIPTION:
 					DESTROY(Option_table)(&option_table);
 				}
 			}
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
-			if (command_data->command_window)
-			{
-				reset_command_box(command_data->command_window);
-			}
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 			destroy_Parse_state(&state);
 		}
 		else
@@ -27101,21 +27146,27 @@ and then executes the returned strings
 	ENTER(cmiss_execute_command);
 	if (command_data=(struct Cmiss_command_data *)command_data_void)
 	{
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 		if (command_data->command_window)
 		{
 			add_to_command_list(command_string,command_data->command_window);
 		}
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 		quit = 0;
 
 		interpret_command(command_string, (void *)command_data, 
 		  &quit, &execute_command, &return_code);
 
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
+		if (command_data->command_window)
+		{
+			reset_command_box(command_data->command_window);
+		}
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
+
 		if (quit)
 		{
-			display_message(ERROR_MESSAGE,
-				"cmiss_execute_command.  Proper quit for cmgui not implemented yet");
+			Event_dispatcher_end_main_loop(command_data->event_dispatcher);
 		}
 	}
 	else
@@ -27155,12 +27206,12 @@ Execute a <command_string>. If there is a command
 			{
 				/* add command to command history */
 				/*???RC put out processed tokens instead? */
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 				if (command_data->command_window)
 				{
 					add_to_command_list(command_string,command_data->command_window);
 				}
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 				/* check for a "<" as one of the of the tokens */
 					/*???DB.  Include for backward compatability.  Remove ? */
 				token=state->tokens;
@@ -27182,11 +27233,11 @@ Execute a <command_string>. If there is a command
 					Option_table_add_entry(option_table, "cell", NULL, command_data_void,
 						execute_command_cell);
 #endif /* defined (CELL) */
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 					/* command_window */
 					Option_table_add_entry(option_table, "command_window", NULL, command_data->command_window,
 						modify_Command_window);
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 					/* create */
 					Option_table_add_entry(option_table, "create", NULL, command_data_void,
 						execute_command_create);
@@ -27235,12 +27286,12 @@ Execute a <command_string>. If there is a command
 					DESTROY(Option_table)(&option_table);
 				}
 			}
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 			if (command_data->command_window)
 			{
 				reset_command_box(command_data->command_window);
 			}
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 			destroy_Parse_state(&state);
 		}
 		else

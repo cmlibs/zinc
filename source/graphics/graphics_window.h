@@ -28,6 +28,30 @@ Global/Public types
 -------------------
 */
 
+enum Graphics_window_buffering_mode
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	GRAPHICS_WINDOW_ANY_BUFFERING_MODE,
+	GRAPHICS_WINDOW_SINGLE_BUFFERING,
+	GRAPHICS_WINDOW_DOUBLE_BUFFERING
+};
+
+enum Graphics_window_stereo_mode
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	GRAPHICS_WINDOW_ANY_STEREO_MODE,
+	GRAPHICS_WINDOW_MONO,
+	GRAPHICS_WINDOW_STEREO
+};
+
 enum Graphics_window_layout_mode
 /*******************************************************************************
 LAST MODIFIED : 28 June 2000
@@ -84,7 +108,10 @@ Global/Public functions
 -----------------------
 */
 struct Graphics_window *CREATE(Graphics_window)(char *name,
-	enum Scene_viewer_buffer_mode buffer_mode,
+	enum Graphics_window_buffering_mode buffering_mode,
+	enum Graphics_window_stereo_mode stereo_mode, 
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth, int specified_visual_id,
 	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,
 	struct Light *default_light,
@@ -95,7 +122,7 @@ struct Graphics_window *CREATE(Graphics_window)(char *name,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 5 October 1997
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION:
 Creates a Graphics_window object, window shell and widgets. Returns a pointer
@@ -104,6 +131,14 @@ manager it is to live in, since users will want to close windows with the
 window manager widgets.
 Each window has a unique <name> that can be used to identify it, and which
 will be printed on the windows title bar.
+If <minimum_colour_buffer_depth>, <minimum_depth_buffer_depth> or 
+<minimum_accumulation_buffer_depth> are not zero then they are used to filter
+out the possible visuals selected for graphics_buffers.  If they are zero then 
+the accumulation_buffer_depth are not tested and the maximum colour buffer depth is
+chosen.
+If <specified_visual_id> is nonzero then this overrides all other visual
+selection mechanisms and this visual will be used if possible or the create will
+fail.
 ==============================================================================*/
 
 int DESTROY(Graphics_window)(struct Graphics_window **graphics_window_address);
@@ -351,9 +386,10 @@ the pixels out of the backbuffer before the frames are swapped.
 
 int Graphics_window_get_frame_pixels(struct Graphics_window *window,
 	enum Texture_storage_type storage, int *width, int *height,
+	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen);
 /*******************************************************************************
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 18 September 2002
 
 DESCRIPTION :
 Returns the contents of the graphics window as pixels.  <width> and <height>
@@ -365,9 +401,10 @@ graphics window on screen.
 
 struct Cmgui_image *Graphics_window_get_image(struct Graphics_window *window,
 	int force_onscreen, int preferred_width, int preferred_height,
+	int preferred_antialias, int preferred_transparency_layers,
 	enum Texture_storage_type storage);
 /*******************************************************************************
-LAST MODIFIED : 23 April 2002
+LAST MODIFIED : 18 September 2002
 
 DESCRIPTION :
 Creates and returns a Cmgui_image from the image in <window>, usually for

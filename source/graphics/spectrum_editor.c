@@ -1186,14 +1186,17 @@ Creates a spectrum_editor widget.
 										viewer_light_model = CREATE(Light_model)("spectrum_editor_light_model");
 										Light_model_set_ambient(viewer_light_model, &ambient_colour);
 										if (graphics_buffer = create_Graphics_buffer_X3d(
-											spectrum_editor->viewer_form, X3dCOLOUR_RGB_MODE, 
-											X3dDOUBLE_BUFFERING, X3dMONO_BUFFERING,
+											spectrum_editor->viewer_form,
+											GRAPHICS_BUFFER_DOUBLE_BUFFERING, GRAPHICS_BUFFER_MONO,
+											/*minimum_colour_buffer_depth*/0,
+											/*minimum_depth_buffer_depth*/0,
+											/*minimum_accumulation_buffer_depth*/0,
 											User_interface_get_specified_visual_id(
 											user_interface)))
 										{
 											spectrum_editor->spectrum_editor_scene_viewer = 
 												CREATE(Scene_viewer)(graphics_buffer,
-												&background_colour,SCENE_VIEWER_DOUBLE_BUFFER,
+												&background_colour,
 												(struct MANAGER(Light) *)NULL,viewer_light,
 												(struct MANAGER(Light_model) *)NULL,viewer_light_model,
 												(struct MANAGER(Scene) *)NULL,

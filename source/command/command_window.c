@@ -124,6 +124,16 @@ DESCRIPTION :
 	HWND command_history;
 	HWND command_entry;
 	HWND command_output_pane;
+#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+	char *command_prompt;
+	GtkWidget *entry;
+	GtkWidget *history_view;
+	GtkWidget *output_view;
+	GtkWidget *shell;
+	GtkTextBuffer *history_buffer;
+	GtkTextBuffer *output_buffer;
+	GtkTextMark *history_end;
+	GtkTextMark *output_end;
 #endif  /* switch (USER_INTERFACE) */
 	/* the information written to the command window can also be directed to a
 		file */
@@ -1176,6 +1186,152 @@ printf("XA_CMGUI_RESPONSE changed\n");
 } /* command_window_property_notify_callback */
 #endif /* defined (MOTIF) */
 
+#if defined (GTK_USER_INTERFACE)
+static void command_entered_gtk(GtkEntry *entry, gpointer command_window_void)
+/*******************************************************************************
+LAST MODIFIED : 17 September 2002
+
+DESCRIPTION :
+Called when a command is entered in the command entry area.
+==============================================================================*/
+{
+	char *command;
+	struct Command_window *command_window;
+
+	ENTER(command_entered_gtk);
+	if (command_window=(struct Command_window *)command_window_void)
+	{
+		if (command = gtk_editable_get_chars(GTK_EDITABLE(entry), 0, -1))
+		{
+			if (command_window->out_file &&
+				(command_window->out_file_mode & OUTFILE_INPUT))
+			{
+				fprintf(command_window->out_file,"%s\n",command);
+			}
+
+			Execute_command_execute_string(command_window->execute_command,
+				command);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"command_entered_gtk.  "
+				"Unable to retrieve command string.");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"command_entered_gtk.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* command_entered_gtk */
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
+static gboolean Command_window_gtk_button_press(GtkWidget *widget,
+	GdkEventButton *event, gpointer command_window_void)
+/*******************************************************************************
+LAST MODIFIED : 17 September 2002
+
+DESCRIPTION :
+Called when a command is entered in the command entry area.
+==============================================================================*/
+{
+	gboolean return_code;
+	gchar *selected_text;
+	gint buffer_x, buffer_y;
+	GtkTextIter end, start;
+	GtkTextView *history_view;
+	struct Command_window *command_window;
+
+	ENTER(Command_window_gtk_button_press);
+	USE_PARAMETER(widget);
+	if (command_window=(struct Command_window *)command_window_void)
+	{
+		switch(event->type)
+		{
+			case GDK_BUTTON_PRESS:
+			{
+				/* Code from default triple click handler */
+				history_view = GTK_TEXT_VIEW(command_window->history_view);
+				gtk_text_view_window_to_buffer_coords(history_view,
+					GTK_TEXT_WINDOW_WIDGET, event->x, event->y, &buffer_x, &buffer_y);
+				gtk_text_view_get_iter_at_location (history_view,
+					&start, buffer_x, buffer_y);
+
+				end = start;
+				if (gtk_text_view_starts_display_line (history_view, &start))
+            {
+					gtk_text_view_backward_display_line_start (history_view, &start);
+            }
+				else
+            {
+					gtk_text_view_backward_display_line_start (history_view, &start);
+					if (!gtk_text_view_starts_display_line (history_view, &end))
+						gtk_text_view_forward_display_line_end (history_view, &end);
+            }
+				
+				gtk_text_buffer_move_mark_by_name (command_window->history_buffer,
+					"selection_bound", &start);
+				gtk_text_buffer_move_mark_by_name (command_window->history_buffer,
+					"insert",&end);
+
+				/* Set the entry box to show the selected line */
+				selected_text = gtk_text_buffer_get_text(command_window->history_buffer,
+					&start, &end, FALSE);
+				gtk_entry_set_text(GTK_ENTRY(command_window->entry),
+					selected_text);
+				g_free(selected_text);
+				gtk_editable_set_position(GTK_EDITABLE(command_window->entry), -1);
+
+				return_code = TRUE;
+			} break;
+			case GDK_2BUTTON_PRESS:
+			{
+				command_entered_gtk(GTK_ENTRY(command_window->entry), command_window_void);
+				return_code = TRUE;
+			} break;
+			default:
+			{
+				return_code = FALSE;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Command_window_gtk_button_press.  Invalid argument(s)");
+	}
+
+	LEAVE;
+	return (return_code);
+} /* Command_window_gtk_button_press */
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
+static void command_window_close_gtk(GtkObject *object, gpointer command_window_void)
+/*******************************************************************************
+LAST MODIFIED : 17 September 2002
+
+DESCRIPTION :
+Called when the Close function is selected from the window manager menu.
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(command_window_close_gtk);
+	USE_PARAMETER(object);
+	if (command_window=(struct Command_window *)command_window_void)
+	{
+		Execute_command_execute_string(command_window->execute_command, "QUIT");
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"command_window_close_gtk.  Missing command window");
+	}
+	LEAVE;
+} /* command_window_close_gtk */
+#endif /* defined (GTK_USER_INTERFACE) */
+
 static int modify_Command_window_out_file_open(struct Parse_state *state,
 	void *dummy,void *command_window_void)
 /*******************************************************************************
@@ -1437,8 +1593,14 @@ Create the structures and retrieve the command window from the uil file.
 	BOOL win32_return_code;
 	static char *class_name="Command_window";
 	WNDCLASSEX class_information;
+#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+	GtkTextIter end_iterator;
+	GtkWidget *history_scroll, *output_scroll, *vbox, *vpaned;
 #endif /* switch (USER_INTERFACE) */
 
+#if defined (GTK_USER_INTERFACE)
+	USE_PARAMETER(version_id_string);
+#endif /* switch (GTK_USER_INTERFACE) */
 	ENTER(CREATE(Command_window));
 	/* check arguments */
 	if (execute_command&&user_interface)
@@ -1690,6 +1852,103 @@ Create the structures and retrieve the command window from the uil file.
 				display_message(ERROR_MESSAGE,
 					"CREATE(Command_window).  Insufficient memory for command_window prompt");
 			}
+#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+			command_window->entry = (GtkWidget *)NULL;
+			command_window->history_view = (GtkWidget *)NULL;
+			command_window->output_view = (GtkWidget *)NULL;
+			command_window->shell = (GtkWidget *)NULL;
+			command_window->history_buffer = (GtkTextBuffer *)NULL;
+			command_window->output_buffer = (GtkTextBuffer *)NULL;
+
+			if (ALLOCATE(command_window->command_prompt, char , 1))
+			{
+				*command_window->command_prompt = 0;
+				if (command_window->shell = gtk_window_new(GTK_WINDOW_TOPLEVEL))
+				{
+					gtk_window_set_title(GTK_WINDOW(command_window->shell), "CMISS Command Window");
+					gtk_widget_set_name(command_window->shell, "command_window");
+				
+					/* create a vpaned widget and add it to our toplevel window */
+					vpaned = gtk_vpaned_new ();
+					gtk_container_add (GTK_CONTAINER (command_window->shell), vpaned);
+					gtk_widget_show (vpaned);
+				
+					vbox = gtk_vbox_new(FALSE, 3);
+
+					command_window->history_view = gtk_text_view_new ();
+					command_window->history_buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (command_window->history_view));
+					gtk_widget_set_name(command_window->history_view, "command_history");
+					gtk_text_view_set_editable(GTK_TEXT_VIEW(command_window->history_view),
+						FALSE);
+					gtk_text_buffer_get_end_iter(command_window->history_buffer,
+						&end_iterator);
+					command_window->history_end = gtk_text_buffer_create_mark(
+						command_window->history_buffer, "end", &end_iterator, FALSE);
+					g_signal_connect (GTK_WIDGET(command_window->history_view),
+						"button-press-event", G_CALLBACK(Command_window_gtk_button_press),
+						(gpointer)command_window);
+					GTK_WIDGET_UNSET_FLAGS(command_window->history_view, GTK_CAN_FOCUS);
+					gtk_widget_show (command_window->history_view);
+
+					history_scroll = gtk_scrolled_window_new(NULL, NULL);
+					gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(history_scroll),
+						GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+					gtk_container_add (GTK_CONTAINER (history_scroll),
+						command_window->history_view);
+
+					gtk_box_pack_start (GTK_BOX (vbox), history_scroll, TRUE, TRUE, 0);
+					gtk_widget_show (history_scroll);
+
+					command_window->entry = gtk_entry_new();
+					g_signal_connect (GTK_ENTRY(command_window->entry), "activate",
+						G_CALLBACK(command_entered_gtk), (gpointer)command_window);
+					gtk_widget_set_name(command_window->entry, "command_entry");
+					gtk_widget_show (command_window->entry);
+					gtk_box_pack_end (GTK_BOX (vbox), command_window->entry, FALSE, TRUE, 0);
+				
+					gtk_widget_show (vbox);
+					gtk_paned_pack1 (GTK_PANED (vpaned), vbox, TRUE, TRUE);
+
+					command_window->output_view = gtk_text_view_new ();
+					command_window->output_buffer = gtk_text_view_get_buffer(
+						GTK_TEXT_VIEW(command_window->output_view));
+					gtk_text_view_set_editable(GTK_TEXT_VIEW(command_window->output_view),
+						FALSE);
+					gtk_widget_set_name(command_window->output_view, "command_output");
+					gtk_text_buffer_get_end_iter(command_window->output_buffer,
+						&end_iterator);
+					command_window->output_end = gtk_text_buffer_create_mark(
+						command_window->output_buffer, "end", &end_iterator, FALSE);
+					gtk_widget_show (command_window->output_view);
+
+					output_scroll = gtk_scrolled_window_new(NULL, NULL);
+					gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(output_scroll),
+						GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+					gtk_container_add (GTK_CONTAINER (output_scroll),
+						command_window->output_view);
+					gtk_widget_show (output_scroll);
+
+					gtk_paned_pack2 (GTK_PANED (vpaned), output_scroll, TRUE, TRUE);
+					
+					gtk_widget_show (vpaned);
+
+					g_signal_connect (G_OBJECT(command_window->shell), "destroy",
+						G_CALLBACK(command_window_close_gtk), (gpointer)command_window);
+
+					gtk_window_resize(GTK_WINDOW(command_window->shell), 600, 500);
+					gtk_widget_show (command_window->shell);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"CREATE(Command_window).  Unable to create top level shell");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"CREATE(Command_window).  Insufficient memory for command_window prompt");
+			}
 #endif /* switch (USER_INTERFACE) */
 		}
 		else
@@ -1757,10 +2016,14 @@ Adds the <command> to the bottom of the list for the <command_window>.
 	int max_commands,num_commands;
 	XmString new_command;
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+	GtkTextIter end_iterator;
+#endif /* defined (GTK_USER_INTERFACE) */
+
 
 	ENTER(add_to_command_list);
 /*???debug */
-/*printf("enter add_to_command_list\n  %s\n",command);*/
+/* printf("enter add_to_command_list\n  %s\n",command); */
 	if (command_window)
 	{
 #if defined (MOTIF) /* switch (USER_INTERFACE) */
@@ -1785,6 +2048,15 @@ Adds the <command> to the bottom of the list for the <command_window>.
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		SendMessage(command_window->command_history, LB_ADDSTRING, 0, 
 			(LPARAM)command);
+#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		gtk_text_buffer_get_end_iter(command_window->history_buffer,
+			&end_iterator);
+		gtk_text_buffer_insert(command_window->history_buffer,
+			&end_iterator, command, strlen(command));
+		gtk_text_buffer_insert(command_window->history_buffer,
+			&end_iterator, "\n", 1);
+		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(command_window->history_view),
+			command_window->history_end, 0.0, FALSE, 0.0, 0.0);
 #endif /* switch (USER_INTERFACE) */
 		return_code=1;
 	}
@@ -1810,10 +2082,15 @@ DESCRIPTION :
 Sets the value of the <prompt> for the <command_window>.
 ==============================================================================*/
 {
+#if defined (MOTIF)
 	char *temp;
+#endif /* defined (MOTIF) */
 	int return_code;
 
 	ENTER(set_command_prompt);
+#if defined (GTK_USER_INTERFACE)
+	USE_PARAMETER(prompt);
+#endif /* switch (GTK_USER_INTERFACE) */
 	if (command_window)
 	{
 #if defined (MOTIF) /* switch (USER_INTERFACE) */
@@ -1839,7 +2116,7 @@ Sets the value of the <prompt> for the <command_window>.
 		{
 			command_window->command_prompt=XmStringCreateSimple("");
 		}
-#elif defined (WIN32_USER_INTERFACE)  /* switch (USER_INTERFACE) */
+#elif defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		if (command_window->command_prompt)
 		{
 			DEALLOCATE(command_window->command_prompt);
@@ -1917,6 +2194,12 @@ Resets all functions of the command box widget.
 				command_window->command_prompt);
 		}
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+		gtk_entry_set_text(GTK_ENTRY(command_window->entry),
+			command_window->command_prompt);
+		gtk_editable_set_position(GTK_EDITABLE(command_window->entry), -1);
+#endif /* defined (GTK_USER_INTERFACE) */
+
 		return_code=1;
 	}
 	else
@@ -2006,6 +2289,8 @@ Writes the <message> to the <command_window>.
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #define MAX_OUTPUT (10000)
 	int new_length, position;
+#elif defined (GTK_USER_INTERFACE)
+	GtkTextIter end_iterator;
 #endif /* switch (USER_INTERFACE) */
 	
 	ENTER(write_command_window);
@@ -2042,6 +2327,16 @@ Writes the <message> to the <command_window>.
 			(WPARAM)-1, (LPARAM)-1);
 		SendMessage(command_window->command_output_pane, EM_REPLACESEL,
 			(WPARAM)FALSE, (LPARAM)message);
+#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		gtk_text_buffer_get_end_iter(command_window->output_buffer,
+			&end_iterator);
+		gtk_text_buffer_insert(command_window->output_buffer,
+			&end_iterator, message, strlen(message));
+		gtk_text_buffer_get_end_iter(command_window->output_buffer,
+			&end_iterator);
+		gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(command_window->output_view),
+			command_window->output_end, 0.0, FALSE, 0.0, 0.0);
+		return_code = 1;
 #endif /* switch (USER_INTERFACE) */
 		if (command_window->out_file &&
 			(command_window->out_file_mode & OUTFILE_OUTPUT))

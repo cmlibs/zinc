@@ -17,6 +17,8 @@ DESCRIPTION :
 		this because it fixes the names and is less clear.
 ???DB.  Add an argument which causes the command tree to be written to stdout
 ==============================================================================*/
+/*SAB I have concatenated the correct version file for each version
+  externally in the shell with cat #include "version.h"*/
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,14 +26,15 @@ DESCRIPTION :
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
-/*SAB I have concatenated the correct version file for each version
-  externally in the shell with cat #include "version.h"*/
+#include "api/cmiss_graphics_window_private.h"
+#include "api/cmiss_scene_viewer.h"
+#include "api/cmiss_scene_viewer_private.h"
 #include "comfile/comfile_window.h"
 #include "command/cmiss.h"
 #include "command/command.h"
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 #include "command/command_window.h"
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 #include "command/console.h"
 #if defined (MOTIF)
 #include "element/element_creator.h"
@@ -86,6 +89,9 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 #include "graphics/transform_tool.h"
 #include "graphics/volume_texture.h"
+#if defined (GTK_USER_INTERFACE)
+#include "gtk/gtk_cmiss_scene_viewer.h"
+#endif /* defined (GTK_USER_INTERFACE) */
 #if defined (MOTIF)
 #include "interaction/interactive_tool.h"
 #include "interaction/select_tool.h"
@@ -167,7 +173,7 @@ Module variables
 Module functions
 ----------------
 */
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 static int display_error_message(char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
@@ -195,9 +201,9 @@ Display a cmgui error message.
 
 	return (return_code);
 } /* display_error_message */
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 static int display_information_message(char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
@@ -222,9 +228,9 @@ Display a cmgui information message.
 
 	return (return_code);
 } /* display_information_message */
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 static int display_warning_message(char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
@@ -253,7 +259,7 @@ Display a cmgui warning message.
 
 	return (return_code);
 } /* display_warning_message */
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 
 static int cmgui_execute_comfile(char *comfile_name,char *example_id,
 	char *examples_directory,char *example_symbol,char **example_comfile_name,
@@ -828,7 +834,6 @@ Main program for the CMISS Graphical User Interface
 	display_message(INFORMATION_MESSAGE, VERSION "\n");
 
 	/* set default values for command-line modifiable options */
-
 	/* Note User_interface will not be created if command_list selected */
 	batch_mode = 0;
 	command_list = 0;
@@ -1350,8 +1355,10 @@ Main program for the CMISS Graphical User Interface
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
 	create_interpreter(argc, argv, comfile_name, &status);
 
-	/* Set a useful default for the interpreter variable */
-	interpreter_set_string("example", ".", &status);
+	/* Set a useful default for the interpreter variable, need to 
+	   specify full name as this function does not run embedded by
+		a package directive */
+	interpreter_set_string("cmiss::example", ".", &status);
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 	command_data.default_time_keeper=ACCESS(Time_keeper)(
@@ -1478,6 +1485,18 @@ Main program for the CMISS Graphical User Interface
 			);
 #endif /* defined (UNEMAP) */
 
+	if (command_data.user_interface)
+	{
+		Cmiss_scene_viewer_set_data(&command_data.background_colour,
+			command_data.interactive_tool_manager, command_data.transform_tool,
+			command_data.light_manager, command_data.default_light,
+			command_data.light_model_manager, command_data.default_light_model,
+			command_data.scene_manager, command_data.default_scene,
+			command_data.texture_manager, command_data.user_interface);
+		
+		Cmiss_graphics_window_set_data(command_data.graphics_window_manager);
+	}
+
 	/* properly set up the Execute_command objects */
 	Execute_command_set_command_function(execute_command,
 		cmiss_execute_command, (void *)(&command_data));
@@ -1543,10 +1562,10 @@ Main program for the CMISS Graphical User Interface
 				strcat(version_id_string,"mirage ");
 #endif /* defined (MIRAGE) */
 
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 				if (console_mode)
 				{
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 					if (!(command_data.command_console = CREATE(Console)(
 						command_data.execute_command,
 						command_data.event_dispatcher, /*stdin*/0)))
@@ -1554,7 +1573,7 @@ Main program for the CMISS Graphical User Interface
 						display_message(ERROR_MESSAGE,"main.  "
 							"Unable to create console.");
 					}
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 				}
 				else
 				{
@@ -1585,7 +1604,7 @@ Main program for the CMISS Graphical User Interface
 						return_code=0;
 					}
 				}
-#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE) */
 #if defined (MOTIF)
 			}
 			else
@@ -1674,6 +1693,115 @@ Main program for the CMISS Graphical User Interface
 		}
 	}
 
+#if defined (GTK_USER_INTERFACE)
+#if defined (DEBUG)
+	/* Now lets test it */
+	{
+		/* Create the list of "messages" */
+		GtkWidget *create_list( void )
+			{
+
+				GtkWidget *scrolled_window;
+				GtkWidget *tree_view;
+				GtkListStore *model;
+				GtkTreeIter iter;
+				GtkCellRenderer *cell;
+				GtkTreeViewColumn *column;
+
+				int i;
+				
+				/* Create a new scrolled window, with scrollbars only if needed */
+				scrolled_window = gtk_scrolled_window_new (NULL, NULL);
+				gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),
+					GTK_POLICY_AUTOMATIC,
+					GTK_POLICY_AUTOMATIC);
+				
+				model = gtk_list_store_new (1, G_TYPE_STRING);
+				tree_view = gtk_tree_view_new ();
+				gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled_window),
+					tree_view);
+				gtk_tree_view_set_model (GTK_TREE_VIEW (tree_view), GTK_TREE_MODEL (model));
+				gtk_widget_show (tree_view);
+				
+				/* Add some messages to the window */
+				for (i = 0; i < 10; i++) {
+					gchar *msg = g_strdup_printf ("Message #%d", i);
+					gtk_list_store_append (GTK_LIST_STORE (model), &iter);
+					gtk_list_store_set (GTK_LIST_STORE (model),
+						&iter,
+						0, msg,
+						-1);
+					g_free (msg);
+				}
+				
+				cell = gtk_cell_renderer_text_new ();
+				
+				column = gtk_tree_view_column_new_with_attributes ("Messages",
+					cell,
+					"text", 0,
+					NULL);
+				
+				gtk_tree_view_append_column (GTK_TREE_VIEW (tree_view),
+					GTK_TREE_VIEW_COLUMN (column));
+				
+				return scrolled_window;
+			}
+		
+		GtkWidget *shell, *gtk_cmiss_scene_viewer, *vpaned, *list;
+		struct Cmiss_scene_viewer *cmiss_scene_viewer;
+
+		if (shell = gtk_window_new(GTK_WINDOW_TOPLEVEL))
+		{
+			gtk_window_set_title(GTK_WINDOW(shell), "Gtk scene viewer test");
+			
+			if (gtk_cmiss_scene_viewer = gtk_cmiss_scene_viewer_new())
+			{
+				/* create a vpaned widget and add it to our toplevel window */
+				vpaned = gtk_vpaned_new ();
+				gtk_container_add (GTK_CONTAINER (shell), vpaned);
+				gtk_widget_show (vpaned);
+
+				/* Now create the contents of the two halves of the window */
+				
+				list = create_list ();
+				gtk_paned_add1 (GTK_PANED (vpaned), list);
+				gtk_widget_show (list);
+
+				gtk_paned_add2 (GTK_PANED (vpaned), gtk_cmiss_scene_viewer);
+				gtk_widget_show (gtk_cmiss_scene_viewer);
+				gtk_widget_show (shell);
+
+
+				/* Now lets call some Cmiss_scene_viewer api functions */
+				cmiss_scene_viewer = gtk_cmiss_scene_viewer_get_cmiss_scene_viewer(
+					GTK_CMISS_SCENE_VIEWER(gtk_cmiss_scene_viewer));
+
+				{
+					double eyex, eyey, eyez, lookatx, lookaty, lookatz,
+						upx, upy, upz;
+
+					Cmiss_scene_viewer_get_lookat_parameters(
+						cmiss_scene_viewer, &eyex, &eyey, &eyez,
+						&lookatx, &lookaty, &lookatz, &upx, &upy, &upz);
+					Cmiss_scene_viewer_set_lookat_parameters_non_skew(
+						cmiss_scene_viewer, eyex, eyey, eyez,
+						lookatx, lookaty, lookatz, upx, upy, upz);
+				}
+				
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Unable to create GtkCmissSceneViewer");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Unable to GtkWindow");
+		}
+	}
+#endif /* defined (DEBUG) */
+#endif /* defined (GTK_USER_INTERFACE) */
+
 	/* main processing / loop */
 
 	if (return_code)
@@ -1690,6 +1818,13 @@ Main program for the CMISS Graphical User Interface
 	}
 
 	/* clean-up memory */
+
+	if (command_data.user_interface)
+	{
+		Cmiss_scene_viewer_free_data();
+		
+		Cmiss_graphics_window_free_data();
+	}
 
 #if defined (SGI_MOVIE_FILE)
 	DESTROY(MANAGER(Movie_graphics))(&command_data.movie_graphics_manager);
@@ -1880,7 +2015,7 @@ Main program for the CMISS Graphical User Interface
 
 	if (command_data.user_interface)
 	{
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 		if (console_mode)
 		{
 #endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
@@ -1888,7 +2023,7 @@ Main program for the CMISS Graphical User Interface
 			{
 				DESTROY(Console)(&command_data.command_console);
 			}
-#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE) || defined (GTK_USER_INTERFACE)
 		}
 		else
 		{

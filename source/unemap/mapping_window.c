@@ -2082,16 +2082,17 @@ the mapping_area of the <mapping_window>.
 		map_drawing_information_make_map_scene(drawing_information,unemap_package);
 		if (!mapping_window->scene_viewer)
 		{
-			graphics_buffer = create_Graphics_buffer_X3d(
-				mapping_window->map3d_viewing_form, X3dCOLOUR_RGB_MODE, 
-				X3dDOUBLE_BUFFERING, X3dMONO_BUFFERING,
+			graphics_buffer = create_Graphics_buffer_X3d(mapping_window->map3d_viewing_form,
+				GRAPHICS_BUFFER_DOUBLE_BUFFERING, GRAPHICS_BUFFER_MONO,
+				/*minimum_colour_buffer_depth*/0,
+				/*minimum_depth_buffer_depth*/0,
+				/*minimum_accumulation_buffer_depth*/0,
 				User_interface_get_specified_visual_id(
 				get_map_drawing_information_user_interface(drawing_information)));
 			mapping_window->scene_viewer=
 				/* map3d_viewing_form is a sub-form of mapping_area_3d */
 				CREATE(Scene_viewer)(graphics_buffer,
 					get_map_drawing_information_background_colour(drawing_information),
-					SCENE_VIEWER_DOUBLE_BUFFER,
 					get_map_drawing_information_Light_manager(drawing_information),
 					get_map_drawing_information_light(drawing_information),
 					get_map_drawing_information_Light_model_manager(drawing_information),

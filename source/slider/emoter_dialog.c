@@ -3051,14 +3051,16 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 								return_code = 1;
 							}
 							graphics_buffer = create_Graphics_buffer_X3d(
-								emoter_slider->animated_pixmap, X3dCOLOUR_RGB_MODE, 
-								X3dSINGLE_BUFFERING, X3dMONO_BUFFERING,
+								emoter_slider->animated_pixmap,
+								GRAPHICS_BUFFER_SINGLE_BUFFERING, GRAPHICS_BUFFER_MONO,
+ 								/*minimum_colour_buffer_depth*/0,
+ 								/*minimum_depth_buffer_depth*/0,
+								/*minimum_accumulation_buffer_depth*/0,
 								User_interface_get_specified_visual_id(
 								shared_data->user_interface));
 							emoter_slider->scene_viewer = CREATE(Scene_viewer)(
 								graphics_buffer,
 								&(shared_data->viewer_background_colour),
-								SCENE_VIEWER_PIXEL_BUFFER,
 								(struct MANAGER(Light) *)NULL,shared_data->viewer_light,
 								(struct MANAGER(Light_model) *)NULL,
 								shared_data->viewer_light_model,

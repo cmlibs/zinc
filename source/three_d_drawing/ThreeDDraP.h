@@ -92,6 +92,9 @@ GL has a number of output buffers - normal, overlay, underlay and popup.
 	XVisualInfo *visual_information;
 	XtCallbackList expose_callback;
 	XtCallbackList initialize_callback;
+	unsigned int colour_buffer_depth;
+	unsigned int depth_buffer_depth;
+	unsigned int accumulation_buffer_depth;
 	unsigned int visual_id;
 #if defined (OPENGL_API)
 	/*???DB.  May be one for all buffers ? */

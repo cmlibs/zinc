@@ -93,6 +93,9 @@ Contains information for a graphics window.
 		interactive_toolbar_form,interactive_toolbar_widget;
 	Widget window_shell,main_window;
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+	GtkWidget *shell_window;
+#endif /* defined (GTK_USER_INTERFACE) */
 	/* scene_viewers and their parameters: */
 	enum Graphics_window_layout_mode layout_mode;
 	struct Scene_viewer **scene_viewer_array;
@@ -931,7 +934,7 @@ ranges and sets the view parameters so that everything can be seen.
 static void Graphics_window_print_button_CB(Widget caller,
 	XtPointer *graphics_window_void, XmAnyCallbackStruct *caller_data)
 /*******************************************************************************
-LAST MODIFIED : 23 April 2002
+LAST MODIFIED : 18 September 2002
 
 DESCRIPTION :
 Callback for when the print_button is pressed.
@@ -960,7 +963,8 @@ wholly from the file name extension
 			width = 0;
 			height = 0;
 			if (cmgui_image = Graphics_window_get_image(graphics_window,
-				force_onscreen, width, height, storage))
+					 force_onscreen, width, height, /*preferred_antialias*/0,
+					 /*preferred_transparency_layers*/0, storage))
 			{
 				cmgui_image_information = CREATE(Cmgui_image_information)();
 				Cmgui_image_information_add_file_name(cmgui_image_information,
@@ -2172,8 +2176,8 @@ view angle, interest point etc.
 				Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
 					&bottom,&top,&near,&far))
 			{
-				if (SCENE_VIEWER_CUSTOM==
-					Scene_viewer_get_projection_mode(scene_viewer))
+				if (Scene_viewer_get_projection_mode(scene_viewer, &projection_mode) &&
+					(SCENE_VIEWER_CUSTOM==projection_mode))
 				{
 					view_angle=0.0;
 				}
@@ -2486,7 +2490,10 @@ Global functions
 */
 
 struct Graphics_window *CREATE(Graphics_window)(char *name,
-	enum Scene_viewer_buffer_mode buffer_mode,
+	enum Graphics_window_buffering_mode buffering_mode,
+	enum Graphics_window_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth, int specified_visual_id,
 	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,
 	struct Light *default_light,
@@ -2497,7 +2504,7 @@ struct Graphics_window *CREATE(Graphics_window)(char *name,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 2 November 2000
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION:
 Creates a Graphics_window object, window shell and widgets. Returns a pointer
@@ -2508,6 +2515,8 @@ Each window has a unique <name> that can be used to identify it, and which
 will be printed on the windows title bar.
 A stereo buffering mode will automatically be chosen when the visual supports
 it.
+A nonzero <specified_visual_id> overrides all other visual selection mechanisms
+and either uses that visual or fails.
 ==============================================================================*/
 {
 #if defined (MOTIF)
@@ -2515,6 +2524,8 @@ it.
 	char **valid_strings;
 #endif /* defined (MOTIF) */
 	char *window_title;
+	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
+	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
 #if defined (MOTIF)
 	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
 	EDIT_VAR_PRECISION time_value;
@@ -2577,18 +2588,15 @@ it.
 	struct Graphics_window *graphics_window=NULL;
 #if defined (MOTIF)
 	Widget viewing_area[4];
-	X3dBufferingMode x3d_buffering_mode;
-	X3dStereoBufferingMode x3d_stereo_buffering_mode;
 #endif /* defined (MOTIF) */
-#if defined (GTK_USER_INTERFACE)
-	GtkWidget *shell_window;
-#endif /* defined (GTK_USER_INTERFACE) */
 
 	ENTER(create_graphics_window);
-	if (name&&((SCENE_VIEWER_SINGLE_BUFFER==buffer_mode)||
-		(SCENE_VIEWER_DOUBLE_BUFFER==buffer_mode)||
-		(SCENE_VIEWER_STEREO_SINGLE_BUFFER==buffer_mode)||
-		(SCENE_VIEWER_STEREO_DOUBLE_BUFFER==buffer_mode))&&background_colour&&
+	if (name&&((GRAPHICS_WINDOW_ANY_BUFFERING_MODE==buffering_mode)||
+		(GRAPHICS_WINDOW_SINGLE_BUFFERING==buffering_mode)||
+		(GRAPHICS_WINDOW_DOUBLE_BUFFERING==buffering_mode))&&
+		((GRAPHICS_WINDOW_ANY_STEREO_MODE==stereo_mode)||
+		(GRAPHICS_WINDOW_MONO==stereo_mode)||
+		(GRAPHICS_WINDOW_STEREO==stereo_mode))&&background_colour&&
 		light_manager&&light_model_manager&&default_light_model&&
 		scene_manager&&scene&&texture_manager&&interactive_tool_manager&&
 		user_interface)
@@ -2638,6 +2646,54 @@ it.
 			}
 			graphics_window->ortho_up_axis=0;
 			graphics_window->ortho_front_axis=0;
+			switch (buffering_mode)
+			{
+				case GRAPHICS_WINDOW_ANY_BUFFERING_MODE:
+				{
+					graphics_buffer_buffering_mode=
+						GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
+				} break;
+				case GRAPHICS_WINDOW_SINGLE_BUFFERING:
+				{
+					graphics_buffer_buffering_mode=
+						GRAPHICS_BUFFER_SINGLE_BUFFERING;
+				} break;
+				case GRAPHICS_WINDOW_DOUBLE_BUFFERING:
+				{
+					graphics_buffer_buffering_mode=
+						GRAPHICS_BUFFER_DOUBLE_BUFFERING;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"CREATE(Graphics_window).  Invalid buffering mode");
+					return_code=0;
+				}
+			}
+			switch (stereo_mode)
+			{
+				case GRAPHICS_WINDOW_ANY_STEREO_MODE:
+				{
+					graphics_buffer_stereo_mode=
+						GRAPHICS_BUFFER_ANY_STEREO_MODE;
+				} break;
+				case GRAPHICS_WINDOW_MONO:
+				{
+					graphics_buffer_stereo_mode=
+						GRAPHICS_BUFFER_MONO;
+				} break;
+				case GRAPHICS_WINDOW_STEREO:
+				{
+					graphics_buffer_stereo_mode=
+						GRAPHICS_BUFFER_STEREO;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"CREATE(Graphics_window).  Invalid buffering mode");
+					return_code=0;
+				}
+			}
 #if defined (MOTIF)
 			/* clear widgets yet to be read in and created */
 			graphics_window->window_shell=(Widget)NULL;
@@ -2812,58 +2868,22 @@ it.
 										viewing_area[2]=graphics_window->viewing_area3;
 										viewing_area[3]=graphics_window->viewing_area4;
 										return_code=1;
-										switch (buffer_mode)
-										{
-											case SCENE_VIEWER_SINGLE_BUFFER:
-											case SCENE_VIEWER_STEREO_SINGLE_BUFFER:
-											{
-												x3d_buffering_mode=X3dSINGLE_BUFFERING;
-											} break;
-											case SCENE_VIEWER_DOUBLE_BUFFER:
-											case SCENE_VIEWER_STEREO_DOUBLE_BUFFER:
-											{
-												x3d_buffering_mode=X3dDOUBLE_BUFFERING;
-											} break;
-											default:
-											{
-												display_message(ERROR_MESSAGE,
-													"CREATE(Scene_viewer).  Invalid buffering mode");
-												return_code=0;
-											}
-										}
-										switch (buffer_mode)
-										{
-											case SCENE_VIEWER_SINGLE_BUFFER:
-											case SCENE_VIEWER_DOUBLE_BUFFER:
-											{
-												x3d_stereo_buffering_mode=X3dMONO_BUFFERING;
-											} break;
-											case SCENE_VIEWER_STEREO_SINGLE_BUFFER:
-											case SCENE_VIEWER_STEREO_DOUBLE_BUFFER:
-											{
-												x3d_stereo_buffering_mode=X3dSTEREO_BUFFERING;
-											} break;
-											default:
-											{
-												display_message(ERROR_MESSAGE,
-													"CREATE(Scene_viewer).  Invalid buffering mode");
-												return_code=0;
-											}
-										}
 										for (pane_no=0;return_code&&
 											(pane_no<graphics_window->number_of_scene_viewers);
 											pane_no++)
 										{
 											if (graphics_buffer = create_Graphics_buffer_X3d(
-												viewing_area[pane_no], X3dCOLOUR_RGB_MODE, 
-												x3d_buffering_mode, x3d_stereo_buffering_mode,
-												User_interface_get_specified_visual_id(
-												graphics_window->user_interface)))
+												viewing_area[pane_no],
+												graphics_buffer_buffering_mode,
+												graphics_buffer_stereo_mode,
+												minimum_colour_buffer_depth,
+												minimum_depth_buffer_depth,
+												minimum_accumulation_buffer_depth,
+												specified_visual_id))
 											{
 												if (graphics_window->scene_viewer_array[pane_no]=
 													CREATE(Scene_viewer)(graphics_buffer,
-													background_colour,buffer_mode,
-													light_manager,default_light,
+													background_colour,light_manager,default_light,
 													light_model_manager,default_light_model,
 													scene_manager,graphics_window->scene,
 													texture_manager,graphics_window->user_interface))
@@ -3013,12 +3033,15 @@ it.
 				graphics_window=(struct Graphics_window *)NULL;
 			}
 #elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
-			if (shell_window = gtk_window_new(GTK_WINDOW_TOPLEVEL))
+			if (graphics_window->shell_window = gtk_window_new(GTK_WINDOW_TOPLEVEL))
 			{
-				gtk_window_set_title(GTK_WINDOW(shell_window),
+				gtk_window_set_title(GTK_WINDOW(graphics_window->shell_window),
 					window_title);
-				if (graphics_buffer = create_Graphics_buffer_gtkglarea(
-						 GTK_CONTAINER(shell_window)))
+				if (graphics_buffer = create_Graphics_buffer_gtkgl(
+					GTK_CONTAINER(graphics_window->shell_window),
+					graphics_buffer_buffering_mode, graphics_buffer_stereo_mode,
+					minimum_colour_buffer_depth, minimum_depth_buffer_depth,
+					minimum_accumulation_buffer_depth, specified_visual_id))
 				{
 					/* create one Scene_viewers */
 					graphics_window->number_of_scene_viewers = 1;
@@ -3027,10 +3050,9 @@ it.
 						graphics_window->number_of_scene_viewers))
 					{
 						pane_no = 0;
-						if (graphics_window->scene_viewer_array[pane_no] = CREATE(Scene_viewer)(
-							 graphics_buffer,
-							 background_colour, buffer_mode,
-							 light_manager,default_light,
+						if (graphics_window->scene_viewer_array[pane_no] = 
+							 CREATE(Scene_viewer)(graphics_buffer,
+							 background_colour, light_manager,default_light,
 							 light_model_manager,default_light_model,
 							 scene_manager, graphics_window->scene,
 							 texture_manager, user_interface))
@@ -3058,7 +3080,7 @@ it.
 							/* initial view is of all of the current scene */
 							Graphics_window_view_all(graphics_window);
 
-							gtk_widget_show_all(shell_window);
+							gtk_widget_show_all(graphics_window->shell_window);
 							return_code = 1;
 						}
 						else
@@ -3382,6 +3404,7 @@ DESCRIPTION :
 Sets the current_pane of the <window> to <pane_no>, from 0 to number_of_panes-1.
 ==============================================================================*/
 {
+	enum Scene_viewer_projection_mode projection_mode;
 	int return_code;
 
 	ENTER(Graphics_window_set_current_pane);
@@ -3389,8 +3412,9 @@ Sets the current_pane of the <window> to <pane_no>, from 0 to number_of_panes-1.
 	{
 		window->current_pane=pane_no;
 		/* make sure the parallel/perspective button is set up for pane */
-		Graphics_window_set_projection_mode(window,pane_no,
-			Scene_viewer_get_projection_mode(window->scene_viewer_array[pane_no]));
+		Scene_viewer_get_projection_mode(window->scene_viewer_array[pane_no],
+			&projection_mode);
+		Graphics_window_set_projection_mode(window,pane_no,projection_mode);
 
 		return_code=1;
 	}
@@ -3943,8 +3967,8 @@ Returns the projection mode used by pane <pane_no> of <window>.
 	if (window&&(0<=pane_no)&&(pane_no<window->number_of_panes)&&
 		(window->scene_viewer_array[pane_no]))
 	{
-		projection_mode=Scene_viewer_get_projection_mode(
-			window->scene_viewer_array[pane_no]);
+		Scene_viewer_get_projection_mode(window->scene_viewer_array[pane_no],
+			&projection_mode);
 	}
 	else
 	{
@@ -4061,7 +4085,6 @@ LAST MODIFIED : 8 October 1998
 DESCRIPTION :
 Returns the Scene_viewer in pane <pane_no> of <window>. Calling function can
 then set view and other parameters for the scene_viewer directly.
-???RC  May not need this in the longer term. Better if not allowed to get at.
 ==============================================================================*/
 {
 	struct Scene_viewer *scene_viewer;
@@ -4176,6 +4199,10 @@ separated by 2 pixel borders within the viewing area.
 		*viewing_width=((int)width-2);
 		*viewing_height=((int)height-2);
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+		gtk_window_get_size(GTK_WINDOW(window->shell_window),
+			viewing_width, viewing_height);
+#endif /* defined (GTK_USER_INTERFACE) */
 		return_code=1;
 	}
 	else
@@ -4232,6 +4259,11 @@ separated by 2 pixel borders within the viewing area.
 			Scene_viewer_set_border_width(window->scene_viewer_array[pane_no],1);
 		}
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+		gtk_window_resize(GTK_WINDOW(window->shell_window),
+			viewing_width, viewing_height);
+#endif /* defined (GTK_USER_INTERFACE) */
+
 		return_code=1;
 	}
 	else
@@ -4385,98 +4417,19 @@ the pixels out of the backbuffer before the frames are swapped.
 	return (return_code);
 } /* Graphics_window_update_now_without_swapbuffers */
 
-static int Graphics_window_read_pixels(unsigned char *frame_data,
-	int width, int height, enum Texture_storage_type storage)
-/*******************************************************************************
-LAST MODIFIED : 23 April 2002
-
-DESCRIPTION :
-Read pixels into <frame_data> of size <width> and <height> according to the 
-storage type.
-==============================================================================*/
-{
-#if defined (OPENGL_API)
-	GLenum read_buffer;
-#endif /* defined (OPENGL_API) */
-	int return_code;
-
-	ENTER(Graphics_window_read_pixels);
-	if (frame_data && width && height)
-	{
-#if defined (OPENGL_API)
-		printf("Graphics_window_read_pixels:  Reading width %d, height %d\n", width, height);
-		/* Make sure we get it from the front for a double buffer,
-			has no effect on a single buffer, keep the old read
-			buffer so we can set it back after reading */
-		glGetIntegerv(GL_READ_BUFFER,(GLint *)(&read_buffer));
-		glReadBuffer(GL_FRONT);
-		switch(storage)
-		{
-			case TEXTURE_LUMINANCE:
-			{
-				glReadPixels(0, 0, width, height, GL_LUMINANCE,
-					GL_UNSIGNED_BYTE,frame_data);
-				return_code=1;
-			} break;
-			case TEXTURE_LUMINANCE_ALPHA:
-			{
-				glReadPixels(0, 0, width, height, GL_LUMINANCE_ALPHA,
-					GL_UNSIGNED_BYTE,frame_data);
-				return_code=1;
-			} break;
-			case TEXTURE_RGB:
-			{
-				glReadPixels(0, 0, width, height, GL_RGB,
-					GL_UNSIGNED_BYTE,frame_data);
-				return_code=1;
-			} break;
-			case TEXTURE_RGBA:
-			{
-				glReadPixels(0, 0, width, height, GL_RGBA,
-					GL_UNSIGNED_BYTE,frame_data);
-				return_code=1;
-			} break;
-#if defined (GL_ABGR_EXT)
-			case TEXTURE_ABGR:
-			{
-				glReadPixels(0, 0, width, height, GL_ABGR_EXT,
-					GL_UNSIGNED_BYTE,frame_data);
-				return_code=1;
-			} break;
-#endif /* defined (GL_ABGR_EXT) */
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Graphics_window_read_pixels.  Unsupported or unknown storage type");
-				return_code=0;
-			} break;
-		}
-		glReadBuffer(read_buffer);
-#else /* defined (OPENGL_API) */
-		return_code=0;
-#endif /* defined (OPENGL_API) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_read_pixels.  Invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphics_window_read_pixels */
-
 int Graphics_window_get_frame_pixels(struct Graphics_window *window,
 	enum Texture_storage_type storage, int *width, int *height,
+	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen)
 /*******************************************************************************
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 18 September 2002
 
 DESCRIPTION :
 Returns the contents of the graphics window as pixels.  <width> and <height>
 will be respected if the window is drawn offscreen and they are non zero,
 otherwise they are set in accordance with current size of the graphics window.
+If <preferred_antialias> or <preferred_transparency_layers> are non zero then they
+attempt to override the default values for just this call.
 If <force_onscreen> is non zero then the pixels will always be grabbed from the
 graphics window on screen.
 ==============================================================================*/
@@ -4510,9 +4463,10 @@ graphics window on screen.
 				case GRAPHICS_WINDOW_LAYOUT_2D:
 				{
 					/* Only one pane */
-					Scene_viewer_render_scene_in_viewport(
+					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/0),
-						/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height);
+						/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
+						preferred_antialias, preferred_transparency_layers);
 					return_code=1;
 				} break;
 				case GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC:
@@ -4523,22 +4477,26 @@ graphics window on screen.
 					glClear(GL_COLOR_BUFFER_BIT);
 #endif /* defined (OPENGL_API) */
 					/* Four panes */
-					Scene_viewer_render_scene_in_viewport(
+					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/0),
 						/*left*/0, /*bottom*/(*height / 2 + 1),
-						/*right*/(*width / 2 - 1), /*top*/*height);
-					Scene_viewer_render_scene_in_viewport(
+						/*right*/(*width / 2 - 1), /*top*/*height,
+						preferred_antialias, preferred_transparency_layers);
+					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/1),
 						/*left*/(*width / 2 + 1), /*bottom*/(*height / 2 + 1),
-						/*right*/*width, /*top*/*height);
-					Scene_viewer_render_scene_in_viewport(
+						/*right*/*width, /*top*/*height,
+						preferred_antialias, preferred_transparency_layers);
+					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/2),
 						/*left*/0, /*bottom*/0, /*right*/(*width / 2 - 1), 
-						/*top*/(*height / 2 - 1));
-					Scene_viewer_render_scene_in_viewport(
+						/*top*/(*height / 2 - 1),
+						preferred_antialias, preferred_transparency_layers);
+					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/3),
 						/*left*/(*width / 2 + 1), /*bottom*/0, /*right*/*width, 
-						/*top*/(*height / 2 - 1));
+						/*top*/(*height / 2 - 1),
+						preferred_antialias, preferred_transparency_layers);
 					return_code=1;
 				} break;
 				case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
@@ -4550,13 +4508,15 @@ graphics window on screen.
 					glClear(GL_COLOR_BUFFER_BIT);
 #endif /* defined (OPENGL_API) */
 					/* Two panes, side by side */
-					Scene_viewer_render_scene_in_viewport(
+					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/0),
-						/*left*/0, /*bottom*/0, /*right*/(*width / 2 - 1), /*top*/*height);
-					Scene_viewer_render_scene_in_viewport(
+						/*left*/0, /*bottom*/0, /*right*/(*width / 2 - 1), /*top*/*height,
+						preferred_antialias, preferred_transparency_layers);
+					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/1),
 						/*left*/(*width / 2 + 1), /*bottom*/0,
-						/*right*/*width, /*top*/*height);
+						/*right*/*width, /*top*/*height,
+						preferred_antialias, preferred_transparency_layers);
 					return_code=1;
 				} break;
 				default:
@@ -4573,7 +4533,7 @@ graphics window on screen.
 				if (ALLOCATE(*frame_data, unsigned char,
 					number_of_components * (*width) * (*height)))
 				{
-					if (!(return_code=Graphics_window_read_pixels(*frame_data, *width,
+					if (!(return_code=Graphics_library_read_pixels(*frame_data, *width,
 						*height, storage)))
 					{
 						DEALLOCATE(*frame_data);
@@ -4598,7 +4558,10 @@ graphics window on screen.
 #endif /* defined (MOTIF) */
 			/* Always use the window size if grabbing from screen */
 			Graphics_window_get_viewing_area_size(window, width, height);
-			Graphics_window_update_now(window);
+			Scene_viewer_render_scene_in_viewport_with_overrides(
+				Graphics_window_get_Scene_viewer(window,/*pane_no*/0),
+				/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
+				preferred_antialias, preferred_transparency_layers);
 			number_of_components =
 				Texture_storage_type_get_number_of_components(storage);
 			if (ALLOCATE(*frame_data, unsigned char,
@@ -4610,7 +4573,7 @@ graphics window on screen.
 					case GRAPHICS_WINDOW_LAYOUT_2D:
 					{
 						/* Only one pane */
-						if (!(return_code=Graphics_window_read_pixels(*frame_data, *width,
+						if (!(return_code=Graphics_library_read_pixels(*frame_data, *width,
 							*height, storage)))
 						{
 							DEALLOCATE(*frame_data);
@@ -4665,9 +4628,10 @@ graphics window on screen.
 
 struct Cmgui_image *Graphics_window_get_image(struct Graphics_window *window,
 	int force_onscreen, int preferred_width, int preferred_height,
+	int preferred_antialias, int preferred_transparency_layers,
 	enum Texture_storage_type storage)
 /*******************************************************************************
-LAST MODIFIED : 23 April 2002
+LAST MODIFIED : 18 September 2002
 
 DESCRIPTION :
 Creates and returns a Cmgui_image from the image in <window>, usually for
@@ -4694,7 +4658,8 @@ Currently limited to 1 byte per component -- may want to improve for HPC.
 		width = preferred_width;
 		height = preferred_height;
 		if (Graphics_window_get_frame_pixels(window, storage,
-			&width, &height, &frame_data, force_onscreen))
+			&width, &height, preferred_antialias, preferred_transparency_layers,
+			&frame_data, force_onscreen))
 		{
 			cmgui_image = Cmgui_image_constitute(width, height,
 				number_of_components, number_of_bytes_per_component,
@@ -5208,11 +5173,13 @@ Writes the properties of the <window> to the command window.
 		texture_height, texture_width, top,
 		up[3], view[3], view_angle, viewport_left, viewport_top,
 		viewport_pixels_per_unit_x, viewport_pixels_per_unit_y;
-	enum Scene_viewer_buffer_mode buffer_mode;
+	enum Scene_viewer_buffering_mode buffering_mode;
 	enum Scene_viewer_projection_mode projection_mode;
 	enum Scene_viewer_transparency_mode transparency_mode;
 	enum Scene_viewer_viewport_mode viewport_mode;
-	int antialias,height,pane_no,perturb_lines,return_code,width,undistort_on,visual_id;
+	int accumulation_buffer_depth,antialias,colour_buffer_depth,depth_buffer_depth,
+		height,pane_no,perturb_lines,return_code,transparency_layers,width,
+		undistort_on,visual_id;
 	struct Colour colour;
 	struct Scene *overlay_scene;
 	struct Scene_viewer *scene_viewer;
@@ -5223,10 +5190,10 @@ Writes the properties of the <window> to the command window.
 	if (window)
 	{
 		display_message(INFORMATION_MESSAGE,"Graphics window : %s\n",window->name);
-		if (buffer_mode=Scene_viewer_get_buffer_mode(window->scene_viewer_array[0]))
+		if (buffering_mode=Scene_viewer_get_buffering_mode(window->scene_viewer_array[0]))
 		{
 			display_message(INFORMATION_MESSAGE,"  %s\n",
-				Scene_viewer_buffer_mode_string(buffer_mode));
+				Scene_viewer_buffering_mode_string(buffering_mode));
 		}
 		/* image */
 		if (GET_NAME(Scene)(window->scene,&name))
@@ -5289,7 +5256,7 @@ Writes the properties of the <window> to the command window.
 				DEALLOCATE(name);
 			}
 			/* view */
-			projection_mode=Scene_viewer_get_projection_mode(scene_viewer);
+			Scene_viewer_get_projection_mode(scene_viewer, &projection_mode);
 			display_message(INFORMATION_MESSAGE,"    projection: %s\n",
 				Scene_viewer_projection_mode_string(projection_mode));
 			if (SCENE_VIEWER_CUSTOM==projection_mode)
@@ -5413,14 +5380,15 @@ Writes the properties of the <window> to the command window.
 			display_message(INFORMATION_MESSAGE,"  Interactive tool: %s\n",name);
 			DEALLOCATE(name);
 		}
-		transparency_mode = Scene_viewer_get_transparency_mode(scene_viewer);
+		Scene_viewer_get_transparency_mode(scene_viewer, &transparency_mode);
 		display_message(INFORMATION_MESSAGE,
 			"  Transparency mode: %s\n",Scene_viewer_transparency_mode_string(
 				transparency_mode));
 		if (transparency_mode == SCENE_VIEWER_LAYERED_TRANSPARENCY)
 		{
+			Scene_viewer_get_transparency_layers(scene_viewer, &transparency_layers);
 			display_message(INFORMATION_MESSAGE,"    transparency_layers: %d\n", 
-				Scene_viewer_get_transparency_layers(scene_viewer));
+				transparency_layers);
 		}
 		display_message(INFORMATION_MESSAGE,
 			"  Current pane: %d\n",window->current_pane+1);
@@ -5446,12 +5414,16 @@ Writes the properties of the <window> to the command window.
 		}
 		/* OpenGL information */
 		if (Scene_viewer_get_opengl_information(window->scene_viewer_array[0],
-			&opengl_version, &opengl_vendor, &opengl_extensions, &visual_id))
+			&opengl_version, &opengl_vendor, &opengl_extensions, &visual_id,
+			&colour_buffer_depth, &depth_buffer_depth, &accumulation_buffer_depth))
 		{
 			display_message(INFORMATION_MESSAGE,"  OpenGL Information\n");
 			display_message(INFORMATION_MESSAGE,"    Version %s\n", opengl_version);
 			display_message(INFORMATION_MESSAGE,"    Vendor %s\n", opengl_vendor);
-			display_message(INFORMATION_MESSAGE,"    Visual ID %d\n",visual_id);
+  			display_message(INFORMATION_MESSAGE,"    Visual ID %d\n",visual_id);
+  			display_message(INFORMATION_MESSAGE,"    Colour buffer depth %d\n",colour_buffer_depth);
+  			display_message(INFORMATION_MESSAGE,"    Depth buffer depth %d\n",depth_buffer_depth);
+  			display_message(INFORMATION_MESSAGE,"    Accumulation buffer depth %d\n",accumulation_buffer_depth);
 		}
 		sprintf(line,"  access count = %i\n",window->access_count);
 		display_message(INFORMATION_MESSAGE,line);
@@ -5484,11 +5456,12 @@ to the command window.
 		NDC_height,NDC_left,NDC_top,NDC_width,near,projection_matrix[16],right,
 		texture_height,texture_width,top,up[3],view_angle,viewport_left,
 		viewport_top,viewport_pixels_per_unit_x,viewport_pixels_per_unit_y;
-	enum Scene_viewer_buffer_mode buffer_mode;
+	enum Scene_viewer_buffering_mode buffering_mode;
 	enum Scene_viewer_projection_mode projection_mode;
 	enum Scene_viewer_transparency_mode transparency_mode;
 	enum Scene_viewer_viewport_mode viewport_mode;
-	int antialias,height,i,pane_no,perturb_lines,return_code,width,undistort_on;
+	int antialias,height,i,pane_no,perturb_lines,return_code,transparency_layers,
+		width,undistort_on;
 	struct Colour colour;
 	struct Scene *overlay_scene;
 	struct Scene_viewer *scene_viewer;
@@ -5505,10 +5478,10 @@ to the command window.
 			display_message(INFORMATION_MESSAGE,"gfx create window %s",name);
 			DEALLOCATE(name);
 		}
-		if (buffer_mode=Scene_viewer_get_buffer_mode(window->scene_viewer_array[0]))
+		if (buffering_mode=Scene_viewer_get_buffering_mode(window->scene_viewer_array[0]))
 		{
 			display_message(INFORMATION_MESSAGE," %s",
-				Scene_viewer_buffer_mode_string(buffer_mode));
+				Scene_viewer_buffering_mode_string(buffering_mode));
 		}
 		display_message(INFORMATION_MESSAGE,";\n");
 		/* image */
@@ -5585,7 +5558,7 @@ to the command window.
 			/* view */
 			display_message(INFORMATION_MESSAGE,
 				"gfx modify window %s view",window->name);
-			projection_mode=Scene_viewer_get_projection_mode(scene_viewer);
+			Scene_viewer_get_projection_mode(scene_viewer, &projection_mode);
 			display_message(INFORMATION_MESSAGE," %s",
 				Scene_viewer_projection_mode_string(projection_mode));
 			if (SCENE_VIEWER_CUSTOM==projection_mode)
@@ -5698,13 +5671,13 @@ to the command window.
 		{
 			display_message(INFORMATION_MESSAGE," no_antialias");
 		}
-		transparency_mode = Scene_viewer_get_transparency_mode(scene_viewer);
+		Scene_viewer_get_transparency_mode(scene_viewer, &transparency_mode);
 		display_message(INFORMATION_MESSAGE," %s",
 			Scene_viewer_transparency_mode_string(transparency_mode));
 		if (transparency_mode == SCENE_VIEWER_LAYERED_TRANSPARENCY)
 		{
-			display_message(INFORMATION_MESSAGE,
-				" %d",Scene_viewer_get_transparency_layers(scene_viewer));
+			Scene_viewer_get_transparency_layers(scene_viewer, &transparency_layers);
+			display_message(INFORMATION_MESSAGE," %d",transparency_layers);
 		}
 		display_message(INFORMATION_MESSAGE,";\n");
 		DEALLOCATE(prefix);

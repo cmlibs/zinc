@@ -13,10 +13,13 @@ Should be merged with dm_interface.c
 #include "three_d_drawing/ThreeDDraw.h"
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+#define GTK_USE_GTKGLAREA
 #include <gtk/gtk.h>
-#if !defined (TEST_WITH_GTK_DRAWING_AREA)
+#if defined (GTK_USE_GTKGLAREA)
 #include <gtkgl/gtkglarea.h>
-#endif /* !defined (TEST_WITH_GTK_DRAWING_AREA) */
+#else /* defined (GTK_USE_GTKGLAREA) */
+#include <gtk/gtkgl.h>
+#endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #include "general/callback_private.h"
 #include "general/debug.h"
@@ -26,8 +29,20 @@ Should be merged with dm_interface.c
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
+enum Graphics_buffer_type
+{
+	GRAPHICS_BUFFER_INVALID_TYPE,
+	GRAPHICS_BUFFER_X3D_TYPE,
+	GRAPHICS_BUFFER_GTKGLAREA_TYPE,
+	GRAPHICS_BUFFER_GTKGLEXT_TYPE
+};
+
 #if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
 static GtkWidget *share_glarea = (GtkWidget *)NULL;
+#else /* defined (GTK_USE_GTKGLAREA) */
+static GdkGLContext *share_glcontext = (GdkGLContext *)NULL;
+#endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 
 /*
@@ -61,10 +76,23 @@ struct Graphics_buffer
 	Widget parent;
 #endif /* defined (MOTIF) */
 
-/* For GRAPHICS_BUFFER_GTKGLAREA_TYPE */
 #if defined (GTK_USER_INTERFACE)
+
+/* For GRAPHICS_BUFFER_GTKGLAREA_TYPE and GRAPHICS_BUFFER_GTKGLEXT_TYPE */
 	GtkWidget *glarea;
-#endif /* defined (MOTIF) */
+
+#if defined (GTK_USE_GTKGLAREA)
+/* For GRAPHICS_BUFFER_GTKGLAREA_TYPE */
+	/* No inquiry functions so we save the state */
+	enum Graphics_buffer_buffering_mode buffering_mode;
+	enum Graphics_buffer_stereo_mode stereo_mode;
+#else /* defined (GTK_USE_GTKGLAREA) */
+/* For GRAPHICS_BUFFER_GTKGLEXT_TYPE */
+	GdkGLConfig *glconfig;
+	GdkGLContext *glcontext;
+	GdkGLDrawable *gldrawable;
+#endif /* ! defined (GTK_USER_GLAREA) */
+#endif /* defined (GTK_USER_INTERFACE) */
 };
 
 /*
@@ -433,6 +461,14 @@ if there are no more initialise events pending.
 	ENTER(graphics_buffer_gtkglarea_initialise_callback);
 	if (widget && (graphics_buffer = (struct Graphics_buffer *)graphics_buffer_void))
 	{
+#if ! defined (GTK_USE_GTKGLAREA)
+		graphics_buffer->glcontext = gtk_widget_get_gl_context(graphics_buffer->glarea);
+		if (!share_glcontext)
+		{
+			share_glcontext = graphics_buffer->glcontext;
+		}
+		graphics_buffer->gldrawable = gtk_widget_get_gl_drawable(graphics_buffer->glarea);
+#endif /* defined (GTK_USER_INTERFACE) */
 		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
 			graphics_buffer->initialise_callback_list, graphics_buffer, NULL);
 	}
@@ -754,26 +790,55 @@ Global functions
 
 #if defined (MOTIF)
 struct Graphics_buffer *create_Graphics_buffer_X3d(Widget parent,
-	X3dBufferColourMode colour_mode, X3dBufferingMode buffer_mode,
-	X3dStereoBufferingMode stereo_buffer_mode, int specified_visual_id)
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth, int specified_visual_id)
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 18 September 2002
 
 DESCRIPTION :
 If <specified_visual_id> is not zero then this visual is required.
 ==============================================================================*/
 {
 	struct Graphics_buffer *buffer;
+	X3dBufferingMode x3d_buffering_mode;
+	X3dStereoBufferingMode x3d_stereo_mode;
 
 	ENTER(create_Graphics_buffer_X3d);
 
 	if (buffer = CREATE(Graphics_buffer)())
 	{
-		if (buffer->drawing_widget=XtVaCreateWidget("cm_graphics_buffer_area",
+		switch(buffering_mode)
+		{
+			case GRAPHICS_BUFFER_SINGLE_BUFFERING:
+			{
+				x3d_buffering_mode = X3dSINGLE_BUFFERING;
+			} break;
+			case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
+			{
+				x3d_buffering_mode = X3dDOUBLE_BUFFERING;
+			} break;
+		}
+		switch(stereo_mode)
+		{
+			case GRAPHICS_BUFFER_MONO:
+			{
+				x3d_stereo_mode = X3dMONO_BUFFERING;
+			} break;
+			case GRAPHICS_BUFFER_STEREO:
+			{
+				x3d_stereo_mode = X3dSTEREO_BUFFERING;
+			} break;
+		}
+		if (buffer->drawing_widget=XtVaCreateWidget("cmiss_graphics_buffer_area",
 			threeDDrawingWidgetClass,parent,
-			X3dNbufferColourMode,colour_mode,
- 			X3dNbufferingMode,buffer_mode,
- 			X3dNstereoBufferingMode,stereo_buffer_mode,
+			X3dNbufferColourMode,X3dCOLOUR_RGB_MODE,
+ 			X3dNbufferingMode,x3d_buffering_mode,
+ 			X3dNstereoBufferingMode,x3d_stereo_mode,
+			X3dNcolourBufferDepth, minimum_colour_buffer_depth,
+			X3dNdepthBufferDepth, minimum_depth_buffer_depth,
+			X3dNaccumulationBufferDepth, minimum_accumulation_buffer_depth,
 			X3dNvisualId, specified_visual_id,
 			XmNleftAttachment,XmATTACH_FORM,
 			XmNrightAttachment,XmATTACH_FORM,
@@ -786,21 +851,32 @@ If <specified_visual_id> is not zero then this visual is required.
 			XmNtopOffset,0,
 			NULL))
 		{
-			buffer->type = GRAPHICS_BUFFER_X3D_TYPE;
-			buffer->parent = parent;
-			XtAddCallback(buffer->drawing_widget ,X3dNinitializeCallback,
-				Graphics_buffer_X3d_initialize_callback, buffer);
-			XtAddCallback(buffer->drawing_widget, X3dNresizeCallback,
-				Graphics_buffer_X3d_resize_callback, buffer);
-			XtAddCallback(buffer->drawing_widget, X3dNexposeCallback,
-				Graphics_buffer_X3d_expose_callback, buffer);
-			XtAddCallback(buffer->drawing_widget, X3dNinputCallback,
-				Graphics_buffer_X3d_input_callback, buffer);
+			if (X3dThreeDisInitialised(buffer->drawing_widget))
+			{
+				buffer->type = GRAPHICS_BUFFER_X3D_TYPE;
+				buffer->parent = parent;
+				XtAddCallback(buffer->drawing_widget ,X3dNinitializeCallback,
+					Graphics_buffer_X3d_initialize_callback, buffer);
+				XtAddCallback(buffer->drawing_widget, X3dNresizeCallback,
+					Graphics_buffer_X3d_resize_callback, buffer);
+				XtAddCallback(buffer->drawing_widget, X3dNexposeCallback,
+					Graphics_buffer_X3d_expose_callback, buffer);
+				XtAddCallback(buffer->drawing_widget, X3dNinputCallback,
+					Graphics_buffer_X3d_input_callback, buffer);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
+					"Unable to initialise X3D widget.");
+				XtDestroyWidget(buffer->drawing_widget);
+				DESTROY(Graphics_buffer)(&buffer);
+				buffer = (struct Graphics_buffer *)NULL;
+			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
-				"Unable to initialise X3D widget.");
+				"Unable to create X3D widget.");
 			DESTROY(Graphics_buffer)(&buffer);
 			buffer = (struct Graphics_buffer *)NULL;
 		}
@@ -818,42 +894,95 @@ If <specified_visual_id> is not zero then this visual is required.
 #endif /* defined (MOTIF) */
 
 #if defined (GTK_USER_INTERFACE)
-struct Graphics_buffer *create_Graphics_buffer_gtkglarea(GtkContainer *parent)
+#if defined (GTK_USE_GTKGLAREA)
+struct Graphics_buffer *create_Graphics_buffer_gtkgl(GtkContainer *parent,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_accumulation_buffer_depth, int specified_visual_id)
 /*******************************************************************************
 LAST MODIFIED : 10 July 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
-#if !defined (TEST_WITH_GTK_DRAWING_AREA)
+#define MAX_GL_ATTRIBUTES (50)
 	GtkGLArea *share;
-	int attrlist[] = {
-		GDK_GL_RGBA,
-		GDK_GL_DOUBLEBUFFER,
-		GDK_GL_BUFFER_SIZE, 24,
-		GDK_GL_ACCUM_RED_SIZE, 16,
-		GDK_GL_ACCUM_GREEN_SIZE, 16,
-		GDK_GL_ACCUM_BLUE_SIZE, 16,
-		GDK_GL_DEPTH_SIZE, 8,
-		GDK_GL_NONE
-	};
-#endif /* !defined (TEST_WITH_GTK_DRAWING_AREA) */
+	int accumulation_colour_size, attribute_list[MAX_GL_ATTRIBUTES], *attribute_ptr;
 	struct Graphics_buffer *buffer;
 
 	ENTER(create_Graphics_buffer_gtkglarea);
-
-#if !defined (TEST_WITH_GTK_DRAWING_AREA)
 	if (gdk_gl_query() == TRUE)
 	{
-#endif /* !defined (TEST_WITH_GTK_DRAWING_AREA) */
 		if (buffer = CREATE(Graphics_buffer)())
 		{
-#if defined (TEST_WITH_GTK_DRAWING_AREA)
-			if (buffer->glarea = gtk_drawing_area_new())
+			attribute_ptr = attribute_list;
+
+			*attribute_ptr = GDK_GL_RGBA;
+			attribute_ptr++;
+ 			if (buffering_mode == GRAPHICS_BUFFER_DOUBLE_BUFFERING)
 			{
-				g_object_set_data(G_OBJECT(buffer->glarea), "graphics_buffer_ptr",
-					(gpointer)buffer);
-#else /* defined (TEST_WITH_GTK_DRAWING_AREA) */
+				*attribute_ptr = GDK_GL_DOUBLEBUFFER;
+				attribute_ptr++;
+				buffer->buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
+			}
+			else
+			{
+				/* GRAPHICS_BUFFER_ANY_BUFFERING_MODE so don't specify it */
+				buffer->buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+			}
+ 			if (stereo_mode == GRAPHICS_BUFFER_STEREO)
+			{
+				*attribute_ptr = GDK_GL_STEREO;
+				attribute_ptr++;
+				buffer->stereo_mode = GRAPHICS_BUFFER_STEREO;
+			}
+			else
+			{
+				/* GRAPHICS_BUFFER_ANY_STEREO_MODE so don't specify it */
+				buffer->stereo_mode = GRAPHICS_BUFFER_MONO;
+			}
+			if (minimum_colour_buffer_depth)
+			{
+				*attribute_ptr = GDK_GL_BUFFER_SIZE;
+				attribute_ptr++;
+				*attribute_ptr = minimum_colour_buffer_depth;
+				attribute_ptr++;
+			}
+			if (minimum_depth_buffer_depth)
+			{
+				*attribute_ptr = GDK_GL_DEPTH_SIZE;
+				attribute_ptr++;
+				*attribute_ptr = minimum_depth_buffer_depth;
+				attribute_ptr++;
+			}
+			if (minimum_accumulation_buffer_depth)
+			{
+				accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
+				*attribute_ptr = GDK_GL_ACCUM_RED_SIZE;
+				attribute_ptr++;
+				*attribute_ptr = accumulation_colour_size;
+				attribute_ptr++;
+				*attribute_ptr = GDK_GL_ACCUM_GREEN_SIZE;
+				attribute_ptr++;
+				*attribute_ptr = accumulation_colour_size;
+				attribute_ptr++;
+				*attribute_ptr = GDK_GL_ACCUM_BLUE_SIZE;
+				attribute_ptr++;
+				*attribute_ptr = accumulation_colour_size;
+				attribute_ptr++;
+				*attribute_ptr = GDK_GL_ACCUM_ALPHA_SIZE;
+				attribute_ptr++;
+				*attribute_ptr = accumulation_colour_size;
+				attribute_ptr++;
+			}
+			if (specified_visual_id)
+			{
+				display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
+					"Specified visual id is not implemented for gtkglext.");
+			}
+			*attribute_ptr = GDK_GL_NONE;
+			attribute_ptr++;
 			if (share_glarea)
 			{
 				share = GTK_GL_AREA(share_glarea);
@@ -862,13 +991,12 @@ DESCRIPTION :
 			{
 				share = (GtkGLArea *)NULL;
 			}
-			if (buffer->glarea = gtk_gl_area_share_new(attrlist, share))
+			if (buffer->glarea = gtk_gl_area_share_new(attribute_list, share))
 			{
 				if (!share_glarea)
 				{
 					share_glarea = buffer->glarea;
 				}
-#endif /* defined (TEST_WITH_GTK_DRAWING_AREA) */
 				buffer->type = GRAPHICS_BUFFER_GTKGLAREA_TYPE;
 				gtk_widget_set_events(GTK_WIDGET(buffer->glarea),
 					GDK_EXPOSURE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|
@@ -914,7 +1042,6 @@ DESCRIPTION :
 				"Unable to create generic Graphics_buffer.");
 			buffer = (struct Graphics_buffer *)NULL;
 		}
-#if !defined (TEST_WITH_GTK_DRAWING_AREA)
 	}
 	else
 	{
@@ -922,11 +1049,167 @@ DESCRIPTION :
 			"Gdk Open GL not supported.");				
 		buffer = (struct Graphics_buffer *)NULL;
 	}
-#endif /* !defined (TEST_WITH_GTK_DRAWING_AREA) */
 	LEAVE;
 
 	return (buffer);
-} /* create_Graphics_buffer_X3d */
+} /* create_Graphics_buffer_gtkglarea */
+#endif /* defined (GTK_USE_GTKGLAREA) */
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
+#if ! defined (GTK_USE_GTKGLAREA)
+struct Graphics_buffer *create_Graphics_buffer_gtkgl(GtkContainer *parent,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_accumulation_buffer_depth, int specified_visual_id)
+/*******************************************************************************
+LAST MODIFIED : 10 July 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+#define MAX_GL_ATTRIBUTES (50)
+	GdkGLConfig *glconfig;
+	GtkWidget *glarea;
+	int accumulation_colour_size, attribute_list[MAX_GL_ATTRIBUTES], *attribute_ptr;
+	struct Graphics_buffer *buffer;
+
+	ENTER(create_Graphics_buffer_gtkglarea);
+
+	if (gdk_gl_query_extension() == TRUE)
+	{
+		if (glarea = gtk_drawing_area_new())
+		{
+			if (buffer = CREATE(Graphics_buffer)())
+			{
+				attribute_ptr = attribute_list;
+
+				*attribute_ptr = GDK_GL_RGBA;
+				attribute_ptr++;
+				if (buffering_mode == GRAPHICS_BUFFER_DOUBLE_BUFFERING)
+				{
+					*attribute_ptr = GDK_GL_DOUBLEBUFFER;
+					attribute_ptr++;
+				}
+				/* else GRAPHICS_BUFFER_ANY_BUFFERING_MODE so don't specify it */
+				if (stereo_mode == GRAPHICS_BUFFER_STEREO)
+				{
+					*attribute_ptr = GDK_GL_STEREO;
+					attribute_ptr++;
+				}
+				/* else GRAPHICS_BUFFER_ANY_STEREO_MODE so don't specify it */
+				if (minimum_colour_buffer_depth)
+				{
+					*attribute_ptr = GDK_GL_BUFFER_SIZE;
+					attribute_ptr++;
+					*attribute_ptr = minimum_colour_buffer_depth;
+					attribute_ptr++;
+				}
+				if (minimum_depth_buffer_depth)
+				{
+					*attribute_ptr = GDK_GL_DEPTH_SIZE;
+					attribute_ptr++;
+					*attribute_ptr = minimum_depth_buffer_depth;
+					attribute_ptr++;
+				}
+				if (minimum_accumulation_buffer_depth)
+				{
+					accumulation_colour_size = minimum_accumulation_buffer_depth / 4;
+					*attribute_ptr = GDK_GL_ACCUM_RED_SIZE;
+					attribute_ptr++;
+					*attribute_ptr = accumulation_colour_size;
+					attribute_ptr++;
+					*attribute_ptr = GDK_GL_ACCUM_GREEN_SIZE;
+					attribute_ptr++;
+					*attribute_ptr = accumulation_colour_size;
+					attribute_ptr++;
+					*attribute_ptr = GDK_GL_ACCUM_BLUE_SIZE;
+					attribute_ptr++;
+					*attribute_ptr = accumulation_colour_size;
+					attribute_ptr++;
+					*attribute_ptr = GDK_GL_ACCUM_ALPHA_SIZE;
+					attribute_ptr++;
+					*attribute_ptr = accumulation_colour_size;
+					attribute_ptr++;
+				}
+				if (specified_visual_id)
+				{
+					display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
+						"Specified visual id is not implemented for gtkglext.");
+				}
+				*attribute_ptr = GDK_GL_ATTRIB_LIST_NONE;
+				attribute_ptr++;
+				if ((glconfig = gdk_gl_config_new(attribute_list)) &&
+					gtk_widget_set_gl_capability(glarea, glconfig, share_glcontext,
+						TRUE, GDK_GL_RGBA_TYPE))
+				{
+					buffer->glarea = glarea;
+					buffer->glconfig = gtk_widget_get_gl_config(glarea);
+					buffer->type = GRAPHICS_BUFFER_GTKGLEXT_TYPE;
+					gtk_widget_set_events(buffer->glarea,
+						GDK_EXPOSURE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|
+						GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|
+						GDK_KEY_PRESS_MASK|GDK_KEY_RELEASE_MASK);
+					g_signal_connect(G_OBJECT(buffer->glarea), "realize",
+						G_CALLBACK(Graphics_buffer_gtkglarea_initialise_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "size-allocate",
+						G_CALLBACK(Graphics_buffer_gtkglarea_resize_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "expose-event",
+						G_CALLBACK(Graphics_buffer_gtkglarea_expose_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "button-press-event",
+						G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "button-release-event",
+						G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "key-press-event",
+						G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "key-release-event",
+						G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
+						(gpointer)buffer);
+					g_signal_connect(G_OBJECT(buffer->glarea), "motion-notify-event",
+						G_CALLBACK(Graphics_buffer_gtkglarea_motion_notify_callback),
+						(gpointer)buffer);
+					gtk_container_add(parent, buffer->glarea);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
+						"Unable to add opengl capability.");
+					DESTROY(Graphics_buffer)(&buffer);
+					buffer = (struct Graphics_buffer *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
+					"Unable to create generic Graphics_buffer.");
+				buffer = (struct Graphics_buffer *)NULL;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
+				"Could not create drawing area widget.");				
+			buffer = (struct Graphics_buffer *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkgl.  "
+			"Gdk Open GL EXT not supported.");				
+		buffer = (struct Graphics_buffer *)NULL;
+	}
+	LEAVE;
+
+	return (buffer);
+} /* create_Graphics_buffer_gtkgl */
+#endif /* ! defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 
 int Graphics_buffer_make_current(struct Graphics_buffer *buffer)
@@ -936,10 +1219,10 @@ LAST MODIFIED : 2 July 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
-
+  	int return_code;
+	
 	ENTER(Graphics_buffer_make_current);
-
+	
 	if (buffer)
 	{
 		switch (buffer->type)
@@ -947,19 +1230,74 @@ DESCRIPTION :
 #if defined (MOTIF)
 			case GRAPHICS_BUFFER_X3D_TYPE:
 			{
+#if defined (NEW_CODE)
+				{
+					Widget window_shell, topshell;
+					Window window_xwindow, topshell_xwindow;
+					Display *display;
+					XWindowAttributes xwindow_attributes;
+					XEvent event;
+					XtAppContext context;
+
+					window_shell = buffer->drawing_widget;
+					while(!XtIsShell(window_shell))
+					{
+						topshell = XtParent(window_shell);
+					}
+
+					topshell = window_shell;
+					while(!XtIsTopLevelShell(topshell))
+					{
+						topshell = XtParent(topshell);
+					}
+				
+					if (XtIsRealized(window_shell) && XtIsRealized(topshell))
+					{
+						display = XtDisplay(topshell);
+						window_xwindow = XtWindow(window_shell);
+						topshell_xwindow = XtWindow(topshell);
+						context = XtWidgetToApplicationContext(window_shell);
+					
+						/* Wait for the dialog to be mapped.  It's guaranteed to become so unless... */
+					
+						while (XGetWindowAttributes(display, window_xwindow, &xwindow_attributes),
+							xwindow_attributes.map_state != IsViewable)
+						{
+						
+							/* ...if the primary is (or becomes) unviewable or unmapped, it's
+								probably iconified, and nothing will happen. */
+						
+							if (XGetWindowAttributes(display, topshell_xwindow, &xwindow_attributes),
+								xwindow_attributes.map_state != IsViewable)
+								break;
+						
+							/* At this stage, we are guaranteed there will be an event of some kind.
+								Beware; we are presumably in a callback, so this can recurse. */
+						
+							XtAppNextEvent(context, &event);
+							XtDispatchEvent(&event);
+						}
+					}
+				}
+#endif /* defined (NEW_CODE) */
 				X3dThreeDDrawingMakeCurrent(buffer->drawing_widget);
 				return_code = 1;
 			} break;
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
 			{
-#if defined (TEST_WITH_GTK_DRAWING_AREA)
-#else /* defined (TEST_WITH_GTK_DRAWING_AREA) */
 				gtk_gl_area_make_current(GTK_GL_AREA(buffer->glarea));
-#endif /* defined (TEST_WITH_GTK_DRAWING_AREA) */
 				return_code = 1;
 			} break;
+#else /* defined (GTK_USE_GTKGLAREA) */
+			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+			{
+				gdk_gl_drawable_make_current(buffer->gldrawable, buffer->glcontext);
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 			default:
 			{
@@ -976,19 +1314,19 @@ DESCRIPTION :
 		return_code = 0;
 	}
 	LEAVE;
-
+	
 	return (return_code);
 } /* Graphics_buffer_make_current */
 
-int Graphics_buffer_get_visual_id(struct Graphics_buffer *buffer)
+int Graphics_buffer_get_visual_id(struct Graphics_buffer *buffer, int *visual_id)
 /*******************************************************************************
-LAST MODIFIED : 9 August 2002
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
 Returns the visual id used by the graphics buffer.
 ==============================================================================*/
 {
-	int visual_id;
+	int return_code;
 
 	ENTER(Graphics_buffer_get_visual_id);
 
@@ -999,20 +1337,30 @@ Returns the visual id used by the graphics buffer.
 #if defined (MOTIF)
 			case GRAPHICS_BUFFER_X3D_TYPE:
 			{
-				visual_id = X3dThreeDDrawingGetVisualID(buffer->drawing_widget);
+				*visual_id = X3dThreeDDrawingGetVisualID(buffer->drawing_widget);
+				return_code = 1;
 			} break;
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
 			{
-				visual_id = 0;
+				*visual_id = 0;
+				return_code = 0;
 			} break;
+#else /* defined (GTK_USE_GTKGLAREA) */
+			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+			{
+				*visual_id = 0;
+				return_code = 0;
+			} break;
+#endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_visual_id.  "
 					"Graphics_bufffer type unknown or not supported.");				
-				visual_id = 0;
+				return_code = 0;
 			} break;
 		}
 	}
@@ -1020,12 +1368,390 @@ Returns the visual id used by the graphics buffer.
 	{
 		display_message(ERROR_MESSAGE,"Graphics_buffer_get_visual_id.  "
 			"Graphics_bufffer missing.");				
-		visual_id = 0;
+		return_code = 0;
 	}
 	LEAVE;
 
-	return (visual_id);
+	return (return_code);
 } /* Graphics_buffer_get_visual_id */
+
+int Graphics_buffer_get_colour_buffer_depth(struct Graphics_buffer *buffer,
+	int *colour_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the depth of the colour buffer used by the graphics buffer.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Graphics_buffer_get_colour_buffer_depth);
+	if (buffer)
+	{
+		return_code = 1;
+		switch (buffer->type)
+		{
+#if defined (MOTIF)
+			case GRAPHICS_BUFFER_X3D_TYPE:
+			{
+				return_code = X3dThreeDDrawingGetColourBufferDepth(
+					buffer->drawing_widget, colour_buffer_depth);
+			} break;
+#endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
+			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+			{
+				*colour_buffer_depth = 0;
+				return_code = 0;
+			} break;
+#else /* defined (GTK_USE_GTKGLAREA) */
+			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+			{
+				gdk_gl_config_get_attrib(buffer->glconfig, GDK_GL_BUFFER_SIZE,
+					colour_buffer_depth);
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USE_GTKGLAREA) */
+#endif /* defined (GTK_USER_INTERFACE) */
+			default:
+			{
+				display_message(ERROR_MESSAGE,"Graphics_buffer_get_colour_buffer_depth.  "
+					"Graphics_bufffer type unknown or not supported.");				
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_buffer_get_colour_buffer_depth.  "
+			"Graphics_bufffer missing.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_buffer_get_colour_buffer_depth */
+
+int Graphics_buffer_get_depth_buffer_depth(struct Graphics_buffer *buffer,
+	int *depth_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the depth of the depth buffer used by the graphics buffer.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Graphics_buffer_get_depth_buffer_depth);
+	if (buffer)
+	{
+		return_code = 1;
+		switch (buffer->type)
+		{
+#if defined (MOTIF)
+			case GRAPHICS_BUFFER_X3D_TYPE:
+			{
+				return_code = X3dThreeDDrawingGetDepthBufferDepth(
+					buffer->drawing_widget, depth_buffer_depth);
+			} break;
+#endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
+			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+			{
+				*depth_buffer_depth = 0;
+				return_code = 0;
+			} break;
+#else /* defined (GTK_USE_GTKGLAREA) */
+			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+			{
+				gdk_gl_config_get_attrib(buffer->glconfig, GDK_GL_DEPTH_SIZE,
+					depth_buffer_depth);
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USE_GTKGLAREA) */
+#endif /* defined (GTK_USER_INTERFACE) */
+			default:
+			{
+				display_message(ERROR_MESSAGE,"Graphics_buffer_get_depth_buffer_depth.  "
+					"Graphics_bufffer type unknown or not supported.");				
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_buffer_get_depth_buffer_depth.  "
+			"Graphics_bufffer missing.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_buffer_get_depth_buffer_depth */
+
+int Graphics_buffer_get_accumulation_buffer_depth(struct Graphics_buffer *buffer,
+	int *accumulation_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the depth of the accumulation buffer used by the graphics buffer.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Graphics_buffer_get_accumulation_buffer_depth);
+	if (buffer)
+	{
+		return_code = 1;
+		switch (buffer->type)
+		{
+#if defined (MOTIF)
+			case GRAPHICS_BUFFER_X3D_TYPE:
+			{
+				return_code = X3dThreeDDrawingGetAccumulationBufferDepth(
+					buffer->drawing_widget, accumulation_buffer_depth);
+			} break;
+#endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
+			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+			{
+				*accumulation_buffer_depth = 0;
+				return_code = 0;
+			} break;
+#else /* defined (GTK_USE_GTKGLAREA) */
+			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+			{
+				int accum_red_size, accum_green_size, accum_blue_size, accum_alpha_size; 
+				gdk_gl_config_get_attrib(buffer->glconfig, GDK_GL_ACCUM_RED_SIZE,
+					&accum_red_size);
+				gdk_gl_config_get_attrib(buffer->glconfig, GDK_GL_ACCUM_GREEN_SIZE,
+					&accum_green_size);
+				gdk_gl_config_get_attrib(buffer->glconfig, GDK_GL_ACCUM_BLUE_SIZE,
+					&accum_blue_size);
+				gdk_gl_config_get_attrib(buffer->glconfig, GDK_GL_ACCUM_ALPHA_SIZE,
+					&accum_alpha_size);
+				*accumulation_buffer_depth = accum_red_size + accum_green_size + 
+					accum_blue_size + accum_alpha_size;
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USE_GTKGLAREA) */
+#endif /* defined (GTK_USER_INTERFACE) */
+			default:
+			{
+				display_message(ERROR_MESSAGE,"Graphics_buffer_get_accumulation_buffer_depth.  "
+					"Graphics_bufffer type unknown or not supported.");				
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_buffer_get_accumulation_buffer_depth.  "
+			"Graphics_bufffer missing.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_buffer_get_accumulation_buffer_depth */
+
+int Graphics_buffer_get_buffering_mode(struct Graphics_buffer *buffer,
+	enum Graphics_buffer_buffering_mode *buffering_mode)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the buffering mode used by the graphics buffer.
+==============================================================================*/
+{
+	int return_code;
+#if defined (MOTIF)
+	X3dBufferingMode x3d_buffering_mode;
+#endif /* defined (MOTIF) */
+
+	ENTER(Graphics_buffer_get_buffering_mode);
+#if defined (GTK_USER_INTERFACE)
+	USE_PARAMETER(buffering_mode);
+#endif /* defined (GTK_USER_INTERFACE) */
+	if (buffer)
+	{
+		switch (buffer->type)
+		{
+#if defined (MOTIF)
+			case GRAPHICS_BUFFER_X3D_TYPE:
+			{
+				if (return_code = X3dThreeDDrawingGetBufferingMode(
+						 buffer->drawing_widget, &x3d_buffering_mode))
+				{
+					switch(x3d_buffering_mode)
+					{
+						case X3dANY_BUFFERING_MODE:
+						{
+							/* An actual buffer should have a mode by now */
+							display_message(ERROR_MESSAGE,"Graphics_buffer_get_buffering_mode.  "
+								"X3d returned ANY_BUFFERING_MODE which is invalid.");
+							return_code = 0;
+						} break;
+						case X3dSINGLE_BUFFERING:
+						{
+							*buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+						} break;
+						case X3dDOUBLE_BUFFERING:
+						{
+							*buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,"Graphics_buffer_get_buffering_mode.  "
+								"Unknown X3d buffering mode.");
+							return_code = 0;
+						} break;
+					}
+				}
+			} break;
+#endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
+			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+			{
+				*buffering_mode = buffer->buffering_mode;
+				return_code = 1;
+			} break;
+#else /* defined (GTK_USE_GTKGLAREA) */
+			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+			{
+				if (gdk_gl_config_is_double_buffered(buffer->glconfig))
+				{
+					*buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
+				}
+				else
+				{
+					*buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
+				}
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USE_GTKGLAREA) */
+#endif /* defined (GTK_USER_INTERFACE) */
+			default:
+			{
+				display_message(ERROR_MESSAGE,"Graphics_buffer_get_buffering_mode.  "
+					"Graphics_bufffer type unknown or not supported.");				
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_buffer_get_buffering_mode.  "
+			"Graphics_bufffer missing.");				
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_buffer_get_buffering_mode */
+
+int Graphics_buffer_get_stereo_mode(struct Graphics_buffer *buffer,
+	enum Graphics_buffer_stereo_mode *stereo_mode)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the stereo mode used by the graphics buffer.
+==============================================================================*/
+{
+	int return_code;
+#if defined (MOTIF)
+	X3dStereoBufferingMode x3d_stereo_mode;
+#endif /* defined (MOTIF) */
+
+	ENTER(Graphics_buffer_get_stereo_mode);
+#if defined (GTK_USER_INTERFACE)
+	USE_PARAMETER(stereo_mode);
+#endif /* defined (GTK_USER_INTERFACE) */
+	if (buffer)
+	{
+		switch (buffer->type)
+		{
+#if defined (MOTIF)
+			case GRAPHICS_BUFFER_X3D_TYPE:
+			{
+				if (return_code = X3dThreeDDrawingGetStereoMode(
+						 buffer->drawing_widget, &x3d_stereo_mode))
+				{
+					switch(x3d_stereo_mode)
+					{
+						case X3dANY_STEREO_MODE:
+						{
+							/* An actual buffer should have a mode by now */
+							display_message(ERROR_MESSAGE,"Graphics_buffer_get_stereo_mode.  "
+								"X3d returned ANY_STEREO_MODE which is invalid.");
+							return_code = 0;
+						} break;
+						case X3dMONO_BUFFERING:
+						{
+							*stereo_mode = GRAPHICS_BUFFER_MONO;
+						} break;
+						case X3dSTEREO_BUFFERING:
+						{
+							*stereo_mode = GRAPHICS_BUFFER_STEREO;
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,"Graphics_buffer_get_stereo_mode.  "
+								"Unknown X3d stereo mode.");
+							return_code = 0;
+						} break;
+					}
+				}
+			} break;
+#endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
+			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+			{
+				*stereo_mode = buffer->stereo_mode;
+				return_code = 1;
+			} break;
+#else /* defined (GTK_USE_GTKGLAREA) */
+			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+			{
+				if (gdk_gl_config_is_stereo(buffer->glconfig))
+				{
+					*stereo_mode = GRAPHICS_BUFFER_STEREO;
+				}
+				else
+				{
+					*stereo_mode = GRAPHICS_BUFFER_MONO;
+				}
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USE_GTKGLAREA) */
+#endif /* defined (GTK_USER_INTERFACE) */
+			default:
+			{
+				display_message(ERROR_MESSAGE,"Graphics_buffer_get_stereo_mode.  "
+					"Graphics_bufffer type unknown or not supported.");				
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_buffer_get_stereo_mode.  "
+			"Graphics_bufffer missing.");				
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_buffer_get_stereo_mode */
 
 int Graphics_buffer_swap_buffers(struct Graphics_buffer *buffer)
 /*******************************************************************************
@@ -1050,14 +1776,19 @@ DESCRIPTION :
 			} break;
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
 			{
-#if defined (TEST_WITH_GTK_DRAWING_AREA)
-#else /* defined (TEST_WITH_GTK_DRAWING_AREA) */
 				gtk_gl_area_swapbuffers(GTK_GL_AREA(buffer->glarea));
-#endif /* defined (TEST_WITH_GTK_DRAWING_AREA) */
 				return_code = 1;
 			} break;
+#else /* defined (GTK_USE_GTKGLAREA) */
+			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+			{
+				gdk_gl_drawable_swap_buffers(buffer->gldrawable);
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 			default:
 			{
@@ -1167,10 +1898,17 @@ Returns the width of buffer represented by <buffer>.
 			} break;
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
 			{
 				width = buffer->glarea->allocation.width;
 			} break;
+#else /* defined (GTK_USE_GTKGLAREA) */
+			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+			{
+				width = buffer->glarea->allocation.width;
+			} break;
+#endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTKGLAREA) */
 			default:
 			{
@@ -1267,10 +2005,17 @@ Returns the height of buffer represented by <buffer>.
 			} break;
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
 			{
 				height = buffer->glarea->allocation.height;
 			} break;
+#else /* defined (GTK_USE_GTKGLAREA) */
+			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+			{
+				height = buffer->glarea->allocation.height;
+			} break;
+#endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTKGLAREA) */
 			default:
 			{
@@ -1464,10 +2209,17 @@ into unmanaged or invisible widgets.
 			} break;
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
 			{
 				return_code = 1;
 			} break;
+#else /* defined (GTK_USE_GTKGLAREA) */
+			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+			{
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 			default:
 			{
@@ -1510,11 +2262,19 @@ Activates the graphics <buffer>.
 			} break;
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
 			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
 			{
 				gtk_widget_show(buffer->glarea);
 				return_code = 1;
 			} break;
+#else /* defined (GTK_USE_GTKGLAREA) */
+			case GRAPHICS_BUFFER_GTKGLEXT_TYPE:
+			{
+				gtk_widget_show(buffer->glarea);
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 			default:
 			{
@@ -1669,10 +2429,12 @@ x==============================================================================*
 		return_code=1;
 
 #if defined (GTK_USER_INTERFACE)
+#if defined (GTK_USE_GTKGLAREA)
 		if (share_glarea == buffer->glarea)
 		{
 			share_glarea = (GtkWidget *)NULL;
 		}
+#endif /* defined (GTK_USE_GTKGLAREA) */
 #endif /* defined (GTK_USER_INTERFACE) */
 		if (buffer->initialise_callback_list)
 		{

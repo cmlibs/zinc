@@ -258,6 +258,7 @@ material results.
 				values[2]=(material->specular).blue;
 				glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,values);
 				glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,(material->shininess)*128.);
+
 				if (material->texture)
 				{
 					execute_Texture(material->texture);

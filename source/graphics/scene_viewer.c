@@ -19,15 +19,7 @@ November 97 Created from rendering part of Drawing.
 ==============================================================================*/
 #include <stdio.h>
 #include <math.h>
-#if defined (MOTIF)
-#include <X11/Xlib.h>
-#include <X11/Intrinsic.h>
-#include <GL/glx.h>
-#endif /* defined (MOTIF) */
 #include "three_d_drawing/dm_interface.h"
-#if defined (MOTIF)
-#include "three_d_drawing/ThreeDDraw.h"
-#endif /* defined (MOTIF) */
 #include "three_d_drawing/movie_extensions.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
@@ -188,7 +180,8 @@ DESCRIPTION :
 	struct Event_dispatcher_idle_callback *tumble_callback_id;
 	/* background */
 	struct Colour background_colour;
-	enum Scene_viewer_buffer_mode buffer_mode;
+	enum Scene_viewer_buffering_mode buffering_mode;
+	enum Scene_viewer_stereo_mode stereo_mode;
 	int pixel_height,pixel_width,update_pixel_image;
 	void *pixel_data;
 	int antialias;
@@ -663,9 +656,10 @@ modes, so push/pop them if you want them preserved.
 } /* Scene_viewer_calculate_transformation */
 
 static int Scene_viewer_render_scene_private(struct Scene_viewer *scene_viewer,
-	int picking_on,int left, int bottom, int right, int top)
+	int picking_on,int left, int bottom, int right, int top,
+	int override_antialias, int override_transparency_layers)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 Called to redraw the Scene_viewer scene after changes in the display lists or
@@ -674,6 +668,8 @@ If <picking_on> is set, then don't clear the projection matrix to identity so
 that picking matrix may be set before calling this routine.
 <left>, <right>, <top> and <bottom> define the viewport to draw into, if they
 are all zero then the scene_viewer->widget size is used instead.
+If <override_antialias> or <override_transparency_layers> are non zero 
+then they override the default values for just this call.
 There are convienience functions, Scene_viewer_render_scene,
 Scene_viewer_render_scene_with_picking, Scene_viewer_render_scene_in_viewport to
 access this function.
@@ -745,7 +741,7 @@ access this function.
 			{
 				if (!(scene_viewer->update_pixel_image)&&
 					/*				(SCENE_VIEWER_NO_INPUT==scene_viewer->input_mode)&&*/
-					(SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffer_mode)&&
+					(SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffering_mode)&&
 					(scene_viewer->pixel_width)&&(scene_viewer->pixel_height))
 				{
 					glClearColor((scene_viewer->background_colour).red,
@@ -866,10 +862,11 @@ access this function.
 					/* depth tests are against a normalised z coordinate (i.e. [0..1])
 						 so the following sets this up and turns on the test */
 					if (double_buffer &&
-						(SCENE_VIEWER_STEREO_DOUBLE_BUFFER != scene_viewer->buffer_mode))
+						(SCENE_VIEWER_STEREO != scene_viewer->stereo_mode))
 					{
 						glDrawBuffer(GL_BACK);
 					}
+
 					glDepthRange((GLclampd)0,(GLclampd)1);
 					glDepthMask(GL_TRUE);
 					glEnable(GL_DEPTH_TEST);
@@ -897,9 +894,15 @@ access this function.
 					/* no antialiasing while picking */
 					if (!picking_on)
 					{
-						antialias = scene_viewer->antialias;
-						if ((SCENE_VIEWER_STEREO_DOUBLE_BUFFER == scene_viewer->buffer_mode)
-							|| (SCENE_VIEWER_STEREO_SINGLE_BUFFER == scene_viewer->buffer_mode))
+						if (override_antialias)
+						{
+							antialias = override_antialias;
+						}
+						else
+						{
+							antialias = scene_viewer->antialias;
+						}
+						if (SCENE_VIEWER_STEREO == scene_viewer->stereo_mode)
 						{
 							stereo = 1;
 							stereo_buffers = 2;
@@ -1209,6 +1212,7 @@ access this function.
 									}
 								}
 
+
 								/********* RENDER MAIN SCENE *********/
 								if (!picking_on)
 								{
@@ -1361,7 +1365,14 @@ access this function.
 											/* Draw each layer separately to help transparency */
 											glMatrixMode(GL_PROJECTION);
 											glGetDoublev(GL_PROJECTION_MATRIX,temp_matrix);
-											layers = scene_viewer->transparency_layers;
+											if (override_transparency_layers)
+											{
+												layers = override_transparency_layers;
+											}
+											else
+											{
+												layers = scene_viewer->transparency_layers;
+											}
 											for (layer = 0 ; layer < layers ; layer++)
 											{		
 												glMatrixMode(GL_PROJECTION);
@@ -1467,7 +1478,7 @@ access this function.
 						/* disable stencil buffer */
 						glDisable(GL_STENCIL_TEST);
 					}
-					if (SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffer_mode)
+					if (SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffering_mode)
 					{
 						if (REALLOCATE(new_data,scene_viewer->pixel_data,char,
 							3*(viewport_width+1)*(viewport_height+1)))
@@ -1531,7 +1542,8 @@ viewing transformations.
 	if (scene_viewer)
 	{
 		return_code=Scene_viewer_render_scene_private(scene_viewer, /*picking_on*/0,
-			/*left*/0, /*bottom*/0, /*right*/0, /*top*/0);
+			/*left*/0, /*bottom*/0, /*right*/0, /*top*/0, /*override_antialias*/0, 
+			/*override_transparency_layers*/0);
 	}
 	else
 	{
@@ -1559,7 +1571,8 @@ viewing transformations.  Writes picking names with the primitives.
 	if (scene_viewer)
 	{
 		return_code=Scene_viewer_render_scene_private(scene_viewer, /*picking_on*/1,
-			/*left*/0, /*bottom*/0, /*right*/0, /*top*/0);
+			/*left*/0, /*bottom*/0, /*right*/0, /*top*/0, /*override_antialias*/0, 
+			/*override_transparency_layers*/0);
 	}
 	else
 	{
@@ -1589,7 +1602,40 @@ all the dimensions are zero).
 	if (scene_viewer)
 	{
 		return_code=Scene_viewer_render_scene_private(scene_viewer, /*picking_on*/0,
-			left, bottom, right, top);
+			left, bottom, right, top, /*override_antialias*/0, 
+			/*override_transparency_layers*/0);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_render_scene_in_viewport.  Missing scene_viewer");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_render_scene_in_viewport */
+
+int Scene_viewer_render_scene_in_viewport_with_overrides(
+	struct Scene_viewer *scene_viewer, int left, int bottom, int right, int top,
+	int antialias, int transparency_layers)
+/*******************************************************************************
+LAST MODIFIED : 17 September 2002
+
+DESCRIPTION :
+Called to redraw the Scene_viewer scene after changes in the display lists or
+viewing transformations.  Uses the specified viewport to draw into (unless
+all the dimensions are zero).  If non_zero then the supplied <antialias> and
+<transparency_layers> are used for just this render.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_render_scene_in_viewport);
+	if (scene_viewer)
+	{
+		return_code=Scene_viewer_render_scene_private(scene_viewer, /*picking_on*/0,
+			left, bottom, right, top, antialias, transparency_layers);
 	}
 	else
 	{
@@ -2988,8 +3034,9 @@ background_texture and it is in the changed_object_list, then redraw.
 Global functions
 ----------------
 */
+
 struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
-	struct Colour *background_colour,enum Scene_viewer_buffer_mode buffer_mode,
+	struct Colour *background_colour,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct Light_model *default_light_model,
@@ -2997,7 +3044,7 @@ struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffe
 	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 12 July 2000
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
 Creates a Scene_viewer in the widget <parent> to display <scene>.
@@ -3008,13 +3055,54 @@ of objects from these managers that are in use by the scene_viewer. Redraws are
 performed in idle time so that multiple redraws are avoided.
 ==============================================================================*/
 {
+ 	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
+	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
+ 	enum Scene_viewer_buffering_mode buffering_mode;
+	enum Scene_viewer_stereo_mode stereo_mode;
 	int return_code,i;
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(CREATE(Scene_viewer));
-	if (background_colour&&default_light_model&&scene&&user_interface)
+	if (graphics_buffer&&background_colour&&default_light_model&&scene&&
+		user_interface&&Graphics_buffer_get_buffering_mode(graphics_buffer,
+		&graphics_buffer_buffering_mode)&&Graphics_buffer_get_stereo_mode(
+		graphics_buffer,&graphics_buffer_stereo_mode))
 	{
 		return_code=1;
+		switch(graphics_buffer_buffering_mode)
+		{
+			case GRAPHICS_BUFFER_SINGLE_BUFFERING:
+			{
+				buffering_mode = SCENE_VIEWER_SINGLE_BUFFER;
+			} break;
+			case GRAPHICS_BUFFER_DOUBLE_BUFFERING:
+			{
+				buffering_mode = SCENE_VIEWER_DOUBLE_BUFFER;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE, "CREATE(Scene_viewer).  "
+					"Invalid Graphics_buffer_buffering_mode.");
+				return_code = 0;
+			} break;
+		}
+		switch(graphics_buffer_stereo_mode)
+		{
+			case GRAPHICS_BUFFER_MONO:
+			{
+				stereo_mode = SCENE_VIEWER_MONO;
+			} break;
+			case GRAPHICS_BUFFER_STEREO:
+			{
+				stereo_mode = SCENE_VIEWER_STEREO;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE, "CREATE(Scene_viewer).  "
+					"Invalid Graphics_buffer_stereo_mode.");
+				return_code = 0;
+			} break;
+		}
 		if (return_code)
 		{
 			/* allocate memory for the scene_viewer structure */
@@ -3028,6 +3116,8 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->input_mode=SCENE_VIEWER_TRANSFORM;
 				scene_viewer->temporary_transform_mode=0;
 				scene_viewer->user_interface=user_interface;
+				scene_viewer->buffering_mode = buffering_mode;
+				scene_viewer->stereo_mode = stereo_mode;
 				scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 				(scene_viewer->background_colour).red=background_colour->red;
 				(scene_viewer->background_colour).green=background_colour->green;
@@ -3121,7 +3211,6 @@ performed in idle time so that multiple redraws are avoided.
 				/* by default, use undistort stuff on textures */
 				scene_viewer->bk_texture_undistort_on=1;
 				scene_viewer->bk_texture_max_pixels_per_polygon=16.0;
-				scene_viewer->buffer_mode=buffer_mode;
 				scene_viewer->transparency_mode=SCENE_VIEWER_FAST_TRANSPARENCY;
 				scene_viewer->input_callback_list=
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_input_callback)))();
@@ -3134,10 +3223,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->pixel_width=0;
 				scene_viewer->pixel_height=0;
 				scene_viewer->update_pixel_image=0;
-				if (SCENE_VIEWER_PIXEL_BUFFER==buffer_mode )
-				{
-					ALLOCATE(scene_viewer->pixel_data,char,1);
-				}
+				scene_viewer->pixel_data = (char *)NULL;
 				for (i = 0 ; i < 4 * MAX_CLIP_PLANES ; i++)
 				{
 					scene_viewer->clip_planes[i] = 0.0;
@@ -3235,7 +3321,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		}
 		/* must destroy the widget */
 		DEACCESS(Graphics_buffer)(&scene_viewer->graphics_buffer);				
-		if (SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffer_mode)
+		if (scene_viewer->pixel_data)
 		{
 			DEALLOCATE(scene_viewer->pixel_data);
 		}
@@ -3472,6 +3558,7 @@ Sets the background_colour of the scene_viewer.
 		scene_viewer->background_colour.red=background_colour->red;
 		scene_viewer->background_colour.green=background_colour->green;
 		scene_viewer->background_colour.blue=background_colour->blue;
+		Scene_viewer_redraw(scene_viewer);
 		return_code=1;
 	}
 	else
@@ -3690,7 +3777,7 @@ only shown on the bottom and right of each viewer in the graphics window.
 	return (return_code);
 } /* Scene_viewer_set_border_width */
 
-enum Scene_viewer_buffer_mode Scene_viewer_get_buffer_mode(
+enum Scene_viewer_buffering_mode Scene_viewer_get_buffering_mode(
 	struct Scene_viewer *scene_viewer)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
@@ -3699,24 +3786,52 @@ DESCRIPTION :
 Returns the buffer mode - single_buffer/double_buffer - of the Scene_viewer.
 ==============================================================================*/
 {
-	enum Scene_viewer_buffer_mode buffer_mode;
+	enum Scene_viewer_buffering_mode buffering_mode;
 
-	ENTER(Scene_viewer_get_buffer_mode);
+	ENTER(Scene_viewer_get_buffering_mode);
 	if (scene_viewer)
 	{
-		buffer_mode=scene_viewer->buffer_mode;
+		buffering_mode=scene_viewer->buffering_mode;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_buffer_mode.  Invalid argument(s)");
+			"Scene_viewer_get_buffering_mode.  Invalid argument(s)");
 		/* return any valid mode */
-		buffer_mode=SCENE_VIEWER_DOUBLE_BUFFER;
+		buffering_mode=SCENE_VIEWER_DOUBLE_BUFFER;
 	}
 	LEAVE;
 
-	return (buffer_mode);
-} /* Scene_viewer_get_buffer_mode */
+	return (buffering_mode);
+} /* Scene_viewer_get_buffering_mode */
+
+enum Scene_viewer_stereo_mode Scene_viewer_get_stereo_mode(
+	struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 16 September 2002
+
+DESCRIPTION :
+Returns the stereo mode - mono/stereo - of the Scene_viewer.
+==============================================================================*/
+{
+	enum Scene_viewer_stereo_mode stereo_mode;
+
+	ENTER(Scene_viewer_get_stereo_mode);
+	if (scene_viewer)
+	{
+		stereo_mode=scene_viewer->stereo_mode;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_stereo_mode.  Invalid argument(s)");
+		/* return any valid mode */
+		stereo_mode=SCENE_VIEWER_MONO;
+	}
+	LEAVE;
+
+	return (stereo_mode);
+} /* Scene_viewer_get_stereo_mode */
 
 enum Scene_viewer_input_mode Scene_viewer_get_input_mode(
 	struct Scene_viewer *scene_viewer)
@@ -4163,6 +4278,7 @@ Sets the view direction and orientation of the Scene_viewer.
 			scene_viewer->upy=upv[1];
 			scene_viewer->upz=upv[2];
 			scene_viewer->transform_flag = 1;
+			Scene_viewer_redraw(scene_viewer);
 			return_code=1;
 		}
 		else
@@ -4192,8 +4308,8 @@ int Scene_viewer_set_lookat_parameters_non_skew(
 LAST MODIFIED : 7 October 1998
 
 DESCRIPTION :
-Special version of Scene_viewer_set_lookat_parameters that ensures the up vector
-is orthogonal to the view direction - so prejection is not skew.
+Normal function for controlling Scene_viewer_set_lookat_parameters that ensures
+the up vector is orthogonal to the view direction - so projection is not skew.
 ==============================================================================*/
 {
 	int return_code;
@@ -4226,6 +4342,7 @@ is orthogonal to the view direction - so prejection is not skew.
 			scene_viewer->upy=upv[1];
 			scene_viewer->upz=upv[2];
 			scene_viewer->transform_flag = 1;
+			Scene_viewer_redraw(scene_viewer);
 			return_code=1;
 		}
 		else
@@ -4527,31 +4644,32 @@ The overlay_scene may be NULL, indicating that no overlay is in use.
 	return (return_code);
 } /* Scene_viewer_set_overlay_scene */
 
-enum Scene_viewer_projection_mode Scene_viewer_get_projection_mode(
-	struct Scene_viewer *scene_viewer)
+int Scene_viewer_get_projection_mode(struct Scene_viewer *scene_viewer,
+	enum Scene_viewer_projection_mode *projection_mode)
 /*******************************************************************************
-LAST MODIFIED : 5 October 1998
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 Returns the projection mode - parallel/perspective - of the Scene_viewer.
 ==============================================================================*/
 {
-	enum Scene_viewer_projection_mode projection_mode;
+	int return_code;
 
 	ENTER(Scene_viewer_get_projection_mode);
 	if (scene_viewer)
 	{
-		projection_mode=scene_viewer->projection_mode;
+		*projection_mode=scene_viewer->projection_mode;
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_get_projection_mode.  Invalid argument(s)");
-		projection_mode=SCENE_VIEWER_PARALLEL;
+		return_code = 0;
 	}
 	LEAVE;
 
-	return (projection_mode);
+	return (return_code);
 } /* Scene_viewer_get_projection_mode */
 
 int Scene_viewer_set_projection_mode(struct Scene_viewer *scene_viewer,
@@ -4572,6 +4690,7 @@ Sets the projection mode - parallel/perspective/custom - of the Scene_viewer.
 	{
 		scene_viewer->projection_mode=projection_mode;
 		scene_viewer->transform_flag = 1;
+		Scene_viewer_redraw(scene_viewer);
 		return_code=1;
 	}
 	else
@@ -4710,6 +4829,7 @@ Sets the Scene_viewer scene.
 		{
 			DEACCESS(Scene)(&(scene_viewer->scene));
 			scene_viewer->scene=ACCESS(Scene)(scene);
+			Scene_viewer_redraw(scene_viewer);
 		}
 		return_code=1;
 	}
@@ -4794,32 +4914,32 @@ Negative values reverse the effects of mouse movement.
 	return (return_code);
 } /* Scene_viewer_set_transform_rate */
 
-enum Scene_viewer_transparency_mode Scene_viewer_get_transparency_mode(
-	struct Scene_viewer *scene_viewer)
+int Scene_viewer_get_transparency_mode(struct Scene_viewer *scene_viewer,
+	enum Scene_viewer_transparency_mode *transparency_mode)
 /*******************************************************************************
-LAST MODIFIED : 23 November 1998
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 See Scene_viewer_set_transparency_mode for explanation.
 ==============================================================================*/
 {
-	enum Scene_viewer_transparency_mode transparency_mode;
+	int return_code;
 
 	ENTER(Scene_viewer_get_transparency_mode);
 	if (scene_viewer)
 	{
-		transparency_mode=scene_viewer->transparency_mode;
+		*transparency_mode = scene_viewer->transparency_mode;
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_get_transparency_mode.  Invalid argument(s)");
-		/* return any valid value */
-		transparency_mode=SCENE_VIEWER_FAST_TRANSPARENCY;
+		return_code = 0;
 	}
 	LEAVE;
 
-	return (transparency_mode);
+	return (return_code);
 } /* Scene_viewer_get_transparency_mode */
 
 int Scene_viewer_set_transparency_mode(struct Scene_viewer *scene_viewer,
@@ -4843,6 +4963,7 @@ you can even see through the first semi-transparent surface drawn.
 		(SCENE_VIEWER_LAYERED_TRANSPARENCY==transparency_mode)))
 	{
 		scene_viewer->transparency_mode=transparency_mode;
+		Scene_viewer_redraw(scene_viewer);
 		return_code=1;
 	}
 	else
@@ -4856,9 +4977,10 @@ you can even see through the first semi-transparent surface drawn.
 	return (return_code);
 } /* Scene_viewer_set_transparency_mode */
 
-int Scene_viewer_get_transparency_layers(struct Scene_viewer *scene_viewer)
+int Scene_viewer_get_transparency_layers(struct Scene_viewer *scene_viewer,
+	int *transparency_layers)
 /*******************************************************************************
-LAST MODIFIED : 9 October 1999
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 See Scene_viewer_set_transparency_layers for explanation.
@@ -4869,13 +4991,14 @@ See Scene_viewer_set_transparency_layers for explanation.
 	ENTER(Scene_viewer_get_transparency_layers);
 	if (scene_viewer)
 	{
-		return_code=scene_viewer->transparency_layers;
+		*transparency_layers = scene_viewer->transparency_layers;
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_get_transparency_layers.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -4883,9 +5006,9 @@ See Scene_viewer_set_transparency_layers for explanation.
 } /* Scene_viewer_get_transparency_layers */
 
 int Scene_viewer_set_transparency_layers(struct Scene_viewer *scene_viewer,
-	int layers)
+	int transparency_layers)
 /*******************************************************************************
-LAST MODIFIED : 9 October 1999
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 When the transparency_mode of the Scene_viewer is layered_transparency then
@@ -4901,7 +5024,7 @@ tight around the objects in the scene.
 	ENTER(Scene_viewer_set_transparency_mode);
 	if (scene_viewer)
 	{
-		scene_viewer->transparency_layers=layers;
+		scene_viewer->transparency_layers = transparency_layers;
 		return_code=1;
 	}
 	else
@@ -5066,6 +5189,7 @@ For PARALLEL and PERSPECTIVE projection modes only.
 		scene_viewer->bottom = centre_y - height*size_ratio;
 		scene_viewer->top    = centre_y + height*size_ratio;
 		scene_viewer->transform_flag = 1;
+		Scene_viewer_redraw(scene_viewer);
 		return_code=1;
 	}
 	else
@@ -5130,6 +5254,7 @@ eye_distance*0.99 in front of it.
 			scene_viewer->near_plane=eye_distance-clip_distance;
 		}
 		scene_viewer->transform_flag = 1;
+		Scene_viewer_redraw(scene_viewer);
 		return_code=1;
 	}
 	else
@@ -5209,6 +5334,7 @@ rendering a higher resolution image in parts.
 			scene_viewer->near_plane=near_plane;
 			scene_viewer->far_plane=far_plane;
 			scene_viewer->transform_flag = 1;
+			Scene_viewer_redraw(scene_viewer);
 			return_code=1;
 		}
 		else
@@ -5373,6 +5499,10 @@ Zero turns antialiasing off.
 				return_code=0;
 			}
 		}
+		if (return_code)
+		{
+			Scene_viewer_redraw(scene_viewer);
+		}
 	}
 	else
 	{
@@ -5438,6 +5568,7 @@ surface in the same space.
 			scene_viewer->perturb_lines=0;
 			return_code=1;
 		}
+		Scene_viewer_redraw(scene_viewer);
 	}
 	else
 	{
@@ -5572,9 +5703,10 @@ Sets the width and height of the Scene_viewers drawing area.
 
 int Scene_viewer_get_opengl_information(struct Scene_viewer *scene_viewer,
 	char **opengl_version, char **opengl_vendor, char **opengl_extensions,
-	int *visual_id)
+	int *visual_id, int *colour_buffer_depth, int *depth_buffer_depth,
+	int *accumulation_buffer_depth)
 /*******************************************************************************
-LAST MODIFIED : 9 August 2002
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
 Returns the OpenGL state information.  The <opengl_version>, <opengl_vendor> and
@@ -5592,7 +5724,13 @@ so should not be modified or deallocated.
 		*opengl_vendor=(char *)glGetString(GL_VENDOR);
 		*opengl_extensions=(char *)glGetString(GL_EXTENSIONS);
 
-		*visual_id = Graphics_buffer_get_visual_id(scene_viewer->graphics_buffer);
+		Graphics_buffer_get_visual_id(scene_viewer->graphics_buffer, visual_id);
+		Graphics_buffer_get_colour_buffer_depth(scene_viewer->graphics_buffer,
+			colour_buffer_depth);
+		Graphics_buffer_get_depth_buffer_depth(scene_viewer->graphics_buffer,
+			depth_buffer_depth);
+		Graphics_buffer_get_accumulation_buffer_depth(scene_viewer->graphics_buffer,
+			accumulation_buffer_depth);
 		return_code=1;
 	}
 	else
@@ -5866,6 +6004,174 @@ extensions can get the updated frame from the backbuffer.
 	return (return_code);
 } /* Scene_viewer_redraw_now_without_swapbuffers */
 
+static int Scene_viewer_get_frame_pixels(struct Scene_viewer *scene_viewer,
+	enum Texture_storage_type storage, int *width, int *height,
+	int preferred_antialias, int preferred_transparency_layers,
+	unsigned char **frame_data, int force_onscreen)
+/*******************************************************************************
+LAST MODIFIED : 18 September 2002
+
+DESCRIPTION :
+Returns the contents of the scene viewer as pixels.  <width> and <height>
+will be respected if the window is drawn offscreen and they are non zero,
+otherwise they are set in accordance with current size of the scene viewer.
+If <preferred_antialias> or <preferred_transparency_layers> are non zero then they
+attempt to override the default values for just this call.
+If <force_onscreen> is non zero then the pixels will always be grabbed from the
+scene viewer on screen.
+==============================================================================*/
+{
+	int number_of_components, return_code;
+#if defined (DM_BUFFERS)
+	struct Dm_buffer *dmbuffer;
+#endif /* defined (DM_BUFFERS) */
+
+	ENTER(Scene_viewer_get_frame_pixels);
+#if !defined (DM_BUFFERS)
+	USE_PARAMETER(force_onscreen);
+#endif /* !defined (DM_BUFFERS) */
+	if (scene_viewer && width && height)
+	{
+		if ((!*width) || (!*height))
+		{
+			/* Only use the scene viewer size if either dimension is zero */
+			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+		}
+#if defined (DM_BUFFERS)
+		/* Update the window or offscreen area if possible */
+		if ((!force_onscreen) && (dmbuffer = CREATE(Dm_buffer)(*width, *height, 
+			/*depth_buffer_flag*/1, /*shared_display_buffer_flag*/1,
+			scene_viewer->user_interface)))
+		{
+			Dm_buffer_glx_make_current(dmbuffer);
+			Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
+				/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
+				preferred_antialias, preferred_transparency_layers);
+			number_of_components =
+				Texture_storage_type_get_number_of_components(storage);
+			if (ALLOCATE(*frame_data, unsigned char,
+				number_of_components * (*width) * (*height)))
+			{
+				if (!(return_code=Graphics_library_read_pixels(*frame_data, *width,
+					*height, storage)))
+				{
+					DEALLOCATE(*frame_data);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_viewer_get_frame_pixels.  Unable to allocate pixels");
+				return_code=0;
+			}
+			DESTROY(Dm_buffer)(&dmbuffer);
+		}
+		else
+		{
+#endif /* defined (DM_BUFFERS) */
+			/* Always use the window size if grabbing from screen */
+			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+			Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
+				/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
+				preferred_antialias, preferred_transparency_layers);
+			number_of_components =
+				Texture_storage_type_get_number_of_components(storage);
+			if (ALLOCATE(*frame_data, unsigned char,
+				number_of_components * (*width) * (*height)))
+			{
+				if (!(return_code=Graphics_library_read_pixels(*frame_data, *width,
+					*height, storage)))
+				{
+					DEALLOCATE(*frame_data);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_viewer_get_frame_pixels.  Unable to allocate pixels");
+				return_code=0;
+			}
+#if defined (DM_BUFFERS)
+		}
+#endif /* defined (DM_BUFFERS) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_frame_pixels.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return return_code;
+} /* Scene_viewer_get_frame_pixels */
+
+struct Cmgui_image *Scene_viewer_get_image(struct Scene_viewer *scene_viewer,
+	int force_onscreen, int preferred_width, int preferred_height,
+	int preferred_antialias, int preferred_transparency_layers,
+	enum Texture_storage_type storage)
+/*******************************************************************************
+LAST MODIFIED : 18 September 2002
+
+DESCRIPTION :
+Creates and returns a Cmgui_image from the image in <scene_viewer>, usually for
+writing. The image has a single depth plane and is in RGBA format.
+Up to the calling function to DESTROY the returned Cmgui_image.
+If <preferred_width>, <preferred_height>, <preferred_antialias> or
+<preferred_transparency_layers> are non zero then they attempt to override the
+default values for just this call.
+If <force_onscreen> is set then the pixels are grabbed directly from the window
+display and the <preferred_width> and <preferred_height> are ignored.
+Currently limited to 1 byte per component -- may want to improve for HPC.
+==============================================================================*/
+{
+	unsigned char *frame_data;
+	int bytes_per_pixel, height, number_of_bytes_per_component,
+		number_of_components, width;
+	struct Cmgui_image *cmgui_image;
+
+	ENTER(Scene_viewer_get_image);
+	cmgui_image = (struct Cmgui_image *)NULL;
+	if (scene_viewer)
+	{
+		number_of_components =
+			Texture_storage_type_get_number_of_components(storage);
+		number_of_bytes_per_component = 1;
+		bytes_per_pixel = number_of_components*number_of_bytes_per_component;
+		width = preferred_width;
+		height = preferred_height;
+		if (Scene_viewer_get_frame_pixels(scene_viewer, storage,
+			&width, &height, preferred_antialias, preferred_transparency_layers,
+			&frame_data, force_onscreen))
+		{
+			cmgui_image = Cmgui_image_constitute(width, height,
+				number_of_components, number_of_bytes_per_component,
+				width*bytes_per_pixel, frame_data);
+			if (!cmgui_image)
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_viewer_get_image.  Could not constitute image");
+			}
+			DEALLOCATE(frame_data);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_viewer_get_image.  Could not get frame pixels");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_image.  Missing window");
+	}
+	LEAVE;
+
+	return (cmgui_image);
+} /* Scene_viewer_get_image */
+
 int Scene_viewer_set_update_pixel_image(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
 LAST MODIFIED : 18 May 1998
@@ -5880,6 +6186,7 @@ pixel buffer mode
 	ENTER(Scene_viewer_set_update_pixel_image);
 	if (scene_viewer)
 	{
+		scene_viewer->buffering_mode = SCENE_VIEWER_PIXEL_BUFFER;
 		scene_viewer->update_pixel_image=1;
 	}
 	else
@@ -5908,7 +6215,7 @@ values for each of Red Green and Blue only.
 	int return_code;
 
 	ENTER(Scene_viewer_set_update_pixel_image);
-	if (scene_viewer&&(SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffer_mode))
+	if (scene_viewer&&(SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffering_mode))
 	{
 		*width=scene_viewer->pixel_width;
 		*height=scene_viewer->pixel_height;
@@ -5941,9 +6248,9 @@ It is expected to be byte sized values for each of Red Green and Blue only.
 	void *new_data;
 
 	ENTER(Scene_viewer_set_update_pixel_image);
-	if (scene_viewer&&(SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffer_mode)&&
-		height&&width&&data)
+	if (scene_viewer&&height&&width&&data)
 	{
+		scene_viewer->buffering_mode = SCENE_VIEWER_PIXEL_BUFFER;
 		if (REALLOCATE(new_data,scene_viewer->pixel_data,char,3*width*height))
 		{
 			scene_viewer->pixel_width=width;
@@ -6415,20 +6722,20 @@ Removes the callback calling <function> with <user_data> from
 	return (return_code);
 } /* Scene_viewer_remove_destroy_callback */
 
-char *Scene_viewer_buffer_mode_string(
-	enum Scene_viewer_buffer_mode buffer_mode)
+char *Scene_viewer_buffering_mode_string(
+	enum Scene_viewer_buffering_mode buffering_mode)
 /*******************************************************************************
 LAST MODIFIED : 14 October 1998
 
 DESCRIPTION :
-Returns a string label for the <buffer_mode>.
+Returns a string label for the <buffering_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 {
 	char *return_string;
 
-	ENTER(Scene_viewer_buffer_mode_string);
-	switch (buffer_mode)
+	ENTER(Scene_viewer_buffering_mode_string);
+	switch (buffering_mode)
 	{
 		case SCENE_VIEWER_PIXEL_BUFFER:
 		{
@@ -6442,25 +6749,52 @@ NOTE: Calling function must not deallocate returned string.
 		{
 			return_string="double_buffer";
 		} break;
-		case SCENE_VIEWER_STEREO_SINGLE_BUFFER:
-		{
-			return_string="stereo_single_buffer";
-		} break;
-		case SCENE_VIEWER_STEREO_DOUBLE_BUFFER:
-		{
-			return_string="stereo_double_buffer";
-		} break;
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"Scene_viewer_buffer_mode_string.  Unknown buffer mode");
+				"Scene_viewer_buffering_mode_string.  Unknown buffer mode");
 			return_string=(char *)NULL;
 		}
 	}
 	LEAVE;
 
 	return (return_string);
-} /* Scene_viewer_buffer_mode_string */
+} /* Scene_viewer_buffering_mode_string */
+
+char *Scene_viewer_stereo_mode_string(
+	enum Scene_viewer_stereo_mode stereo_mode)
+/*******************************************************************************
+LAST MODIFIED : 16 September 2002
+
+DESCRIPTION :
+Returns a string label for the <stereo_mode>.
+NOTE: Calling function must not deallocate returned string.
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Scene_viewer_stereo_mode_string);
+	switch (stereo_mode)
+	{
+		case SCENE_VIEWER_MONO:
+		{
+			return_string="mono";
+		} break;
+		case SCENE_VIEWER_STEREO:
+		{
+			return_string="stereo";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_viewer_stereo_mode_string.  Unknown stereo mode");
+			return_string=(char *)NULL;
+		}
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Scene_viewer_stereo_mode_string */
 
 char *Scene_viewer_projection_mode_string(
 	enum Scene_viewer_projection_mode projection_mode)

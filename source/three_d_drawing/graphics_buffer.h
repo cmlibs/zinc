@@ -12,14 +12,29 @@ Should be merged with dm_interface.c
 
 #include "general/callback.h"
 #include "general/object.h"
-#if defined (MOTIF)
-#include "three_d_drawing/ThreeDDraw.h"
-#endif /* defined (MOTIF) */
+
+#if defined (GTK_USER_INTERFACE)
+/* #define GTK_USE_GTKGLAREA */
+#endif /* defined (GTK_USER_INTERFACE) */
 
 /*
 Global types
 ------------
 */
+
+enum Graphics_buffer_buffering_mode
+{
+	GRAPHICS_BUFFER_ANY_BUFFERING_MODE,
+	GRAPHICS_BUFFER_SINGLE_BUFFERING,
+	GRAPHICS_BUFFER_DOUBLE_BUFFERING
+};
+
+enum Graphics_buffer_stereo_mode
+{
+	GRAPHICS_BUFFER_ANY_STEREO_MODE,
+	GRAPHICS_BUFFER_MONO,
+	GRAPHICS_BUFFER_STEREO
+};
 
 enum Graphics_buffer_input_modifier
 {
@@ -51,13 +66,6 @@ struct Graphics_buffer_input
 	enum Graphics_buffer_input_modifier input_modifier;
 };
 
-enum Graphics_buffer_type
-{
-	GRAPHICS_BUFFER_INVALID_TYPE,
-	GRAPHICS_BUFFER_X3D_TYPE,
-	GRAPHICS_BUFFER_GTKGLAREA_TYPE
-};
-
 struct Graphics_buffer;
 
 DECLARE_CMISS_CALLBACK_TYPES(Graphics_buffer_callback, \
@@ -75,10 +83,12 @@ PROTOTYPE_OBJECT_FUNCTIONS(Graphics_buffer);
 
 #if defined (MOTIF)
 struct Graphics_buffer *create_Graphics_buffer_X3d(Widget parent,
-	X3dBufferColourMode colour_mode, X3dBufferingMode buffer_mode,
-	X3dStereoBufferingMode stereo_buffer_mode, int specified_visual_id);
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,	
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth,
+	int minimum_accumulation_buffer_depth, int specified_visual_id);
 /*******************************************************************************
-LAST MODIFIED : 12 August 2002
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 If <specified_visual_id> is not zero then this visual is required.
@@ -86,9 +96,13 @@ If <specified_visual_id> is not zero then this visual is required.
 #endif /* defined (MOTIF) */
 
 #if defined (GTK_USER_INTERFACE)
-struct Graphics_buffer *create_Graphics_buffer_gtkglarea(GtkContainer *parent);
+struct Graphics_buffer *create_Graphics_buffer_gtkgl(GtkContainer *parent,
+	enum Graphics_buffer_buffering_mode buffering_mode,
+	enum Graphics_buffer_stereo_mode stereo_mode,
+	int minimum_colour_buffer_depth, int minimum_depth_buffer_depth, 
+	int minimum_accumulation_buffer_depth, int specified_visual_id);
 /*******************************************************************************
-LAST MODIFIED : 10 July 2002
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -100,12 +114,57 @@ LAST MODIFIED : 1 July 2002
 DESCRIPTION :
 ==============================================================================*/
 
-int Graphics_buffer_get_visual_id(struct Graphics_buffer *buffer);
+int Graphics_buffer_get_visual_id(struct Graphics_buffer *buffer, int *visual_id);
 /*******************************************************************************
-LAST MODIFIED : 9 August 2002
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
 Returns the visual id used by the graphics buffer.
+==============================================================================*/
+
+int Graphics_buffer_get_buffering_mode(struct Graphics_buffer *buffer,
+	enum Graphics_buffer_buffering_mode *buffering_mode);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the buffering mode being used by the graphics buffer.
+==============================================================================*/
+
+int Graphics_buffer_get_stereo_mode(struct Graphics_buffer *buffer,
+	enum Graphics_buffer_stereo_mode *stereo_mode);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the stereo mode being used by the graphics buffer.
+==============================================================================*/
+
+int Graphics_buffer_get_colour_buffer_depth(struct Graphics_buffer *buffer,
+	int *colour_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the depth of the colour buffer used by the graphics buffer.
+==============================================================================*/
+
+int Graphics_buffer_get_depth_buffer_depth(struct Graphics_buffer *buffer,
+	int *depth_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the depth of the depth buffer used by the graphics buffer.
+==============================================================================*/
+
+int Graphics_buffer_get_accumulation_buffer_depth(struct Graphics_buffer *buffer,
+	int *accumulation_buffer_depth);
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the depth of the accumulation buffer used by the graphics buffer.
 ==============================================================================*/
 
 int Graphics_buffer_swap_buffers(struct Graphics_buffer *buffer);

@@ -13,6 +13,15 @@ Function definitions for debugging.
 #include "user_interface/message.h"
 #include "general/debug.h"
 
+/*#define USE_EXTERNAL_STRUCTS*/
+#if defined (USE_EXTERNAL_STRUCTS)
+/* This code, while useful for debugging, causes this file to be dependent
+	on parts of cmgui it shouldn't so it isn't on by default. */
+#include "finite_element/finite_element.h"
+#include "graphics/mcubes.h"
+#include "graphics/volume_texture.h"
+#endif /* defined (USE_EXTERNAL_STRUCTS) */
+
 /*#define MEMORY_CHECKING*/
 
 #if defined (MEMORY_CHECKING)
@@ -230,18 +239,46 @@ DESCRIPTION :
 			{
 				printf("   \"%s\"\n", (char *)block->ptr);
 			}
-#if defined (DEBUG)
-			/* This code, while useful for debugging, causes this file to be dependent
-				on parts of cmgui it shouldn't. */
-			else if (!strcmp(block->type, "struct FE_field"))
-			{
-				list_FE_field(block->ptr, NULL);
-			}
-			else if (!strcmp(block->type, "struct FE_element"))
-			{
-				list_FE_element(block->ptr, NULL);
-			}
-#endif /* defined (DEBUG) */
+#if defined (USE_EXTERNAL_STRUCTS)
+				/* This code, while useful for debugging, causes this file to be dependent
+					on parts of cmgui it shouldn't. */
+				else if (!strcmp(block->type, "struct FE_field"))
+				{
+					list_FE_field(block->ptr, NULL);
+				}
+				else if (!strcmp(block->type, "struct FE_element"))
+				{
+					list_FE_element(block->ptr, NULL);
+				}
+				else if (!strcmp(block->type, "struct MC_triangle"))
+				{
+					struct MC_triangle *triangle = (struct MC_triangle *)block->ptr;
+					printf("  triangle_index %d\n", triangle->triangle_index);
+					printf("  vertex_indices %d,%d,%d\n", triangle->vertex_index[0],
+						triangle->vertex_index[1], triangle->vertex_index[2]);
+					printf("  cell_ptr 0x%x\n", triangle->cell_ptr);					
+					printf("  list_index = %d\n", triangle->triangle_list_index);
+				}
+				else if (!strcmp(block->type, "struct MC_vertex"))
+				{
+					struct MC_vertex *vertex = (struct MC_vertex *)block->ptr;
+					printf("  vertex_index %d\n", vertex->vertex_index);
+				}
+				else if (!strcmp(block->type, "struct Triangle"))
+				{
+					struct Triangle *triangle = (struct Triangle *)block->ptr;
+					printf("  vertex1 %lf,%lf,%lf\n", triangle->v[0][0], triangle->v[0][1], triangle->v[0][2]);
+					printf("  vertex2 %lf,%lf,%lf\n", triangle->v[1][0], triangle->v[1][1], triangle->v[1][2]);
+					printf("  vertex3 %lf,%lf,%lf\n", triangle->v[2][0], triangle->v[2][1], triangle->v[2][2]);
+					printf("  clip_history1 %d\n", triangle->clip_history);
+					printf("  cell_history2 %d\n", triangle->clip_history2);
+				}
+				else if (!strcmp(block->type, "struct MC_vertex"))
+				{
+					struct MC_vertex *vertex = (struct MC_vertex *)block->ptr;
+					printf("  vertex_index %d\n", vertex->vertex_index);
+				}
+#endif /* defined (USE_EXTERNAL_STRUCTS) */
 		}
 		return_code = 1;
 	}

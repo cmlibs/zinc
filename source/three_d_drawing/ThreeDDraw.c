@@ -79,6 +79,7 @@ Use an X font:
 #include <X11/StringDefs.h>
 #include <X11/Xresource.h>
 #include "three_d_drawing/ThreeDDraP.h"
+#include "user_interface/message.h"
 #if defined (PEXLIB_API)
 #if defined (VAX)
 #include <PEXlibprotos.h>
@@ -144,6 +145,33 @@ Resources for the 3-D drawing widget.
 		XtOffsetOf(ThreeDDrawingRec,three_d_drawing.normal_buffer.stereo_buffering_mode),
 		XtRString,
 		"X3dMONO_BUFFERING"
+	},
+	{
+		X3dNcolourBufferDepth,
+		X3dCColourBufferDepth,
+		XtRInt,
+		sizeof(int),
+		XtOffsetOf(ThreeDDrawingRec,three_d_drawing.normal_buffer.colour_buffer_depth),
+		XtRInt,
+		0
+	},
+	{
+		X3dNdepthBufferDepth,
+		X3dCDepthBufferDepth,
+		XtRInt,
+		sizeof(int),
+		XtOffsetOf(ThreeDDrawingRec,three_d_drawing.normal_buffer.depth_buffer_depth),
+		XtRInt,
+		0
+	},
+	{
+		X3dNaccumulationBufferDepth,
+		X3dCAccumulationBufferDepth,
+		XtRInt,
+		sizeof(int),
+		XtOffsetOf(ThreeDDrawingRec,three_d_drawing.normal_buffer.accumulation_buffer_depth),
+		XtRInt,
+		0
 	},
 	{
 		X3dNvisualId,
@@ -328,7 +356,7 @@ widget.
 							if (!XSetWMColormapWindows(display,top_level_window,
 								new_colour_map_windows,number_of_colour_map_windows+1))
 							{
-			printf("ThreeDDrawingRealize.  Could not set colour map windows list\n");
+			display_message(ERROR_MESSAGE,"ThreeDDrawingRealize.  Could not set colour map windows list\n");
 							}
 							XFree(colour_map_windows);
 							free(new_colour_map_windows);
@@ -338,7 +366,7 @@ widget.
 							/* a list of colour map windows dose not exist */
 							if (!XSetWMColormapWindows(display,top_level_window,&window,1))
 							{
-			printf("ThreeDDrawingRealize.  Could not set colour map windows list\n");
+			display_message(ERROR_MESSAGE,"ThreeDDrawingRealize.  Could not set colour map windows list\n");
 							}
 						}
 #if defined (OPENGL_API)
@@ -373,7 +401,7 @@ widget.
 						}
 						else
 						{
-							printf("ThreeDDrawingRealize.  Could not link GL to X\n");
+							display_message(ERROR_MESSAGE,"ThreeDDrawingRealize.  Could not link GL to X\n");
 						}
 #endif
 #if defined (IBM)
@@ -406,18 +434,18 @@ widget.
 					}
 					else
 					{
-						printf("ThreeDDrawingRealize.  Could not create window\n");
+						display_message(ERROR_MESSAGE,"ThreeDDrawingRealize.  Could not create window\n");
 						XFreeColormap(display,attributes->colormap);
 					}
 				}
 				else
 				{
-					printf("ThreeDDrawingRealize.  Could not create colour map\n");
+					display_message(ERROR_MESSAGE,"ThreeDDrawingRealize.  Could not create colour map\n");
 				}
 			}
 			else
 			{
-				printf(
+				display_message(ERROR_MESSAGE,
 		"ThreeDDrawingRealize.  Missing visual information and/or graphics info\n");
 			}
 #endif
@@ -452,7 +480,7 @@ widget.
 			}
 			else
 			{
-				printf("ThreeDDrawingRealize.  Missing visual information\n");
+				display_message(ERROR_MESSAGE,"ThreeDDrawingRealize.  Missing visual information\n");
 				/* use the core realize instead */
 				(*(coreClassRec.core_class.realize))(widget,value_mask,attributes);
 			}
@@ -485,12 +513,12 @@ widget.
 				}
 				else
 				{
-					printf("ThreeDDrawingRealize.  Could not link GL to X\n");
+					display_message(ERROR_MESSAGE,"ThreeDDrawingRealize.  Could not link GL to X\n");
 				}
 			}
 			else
 			{
-				printf(
+				display_message(ERROR_MESSAGE,
 "ThreeDDrawingRealize.  Missing visual information and/or Gl configuration\n");
 				/* use the core realize instead */
 				(*(coreClassRec.core_class.realize))(widget,value_mask,attributes);
@@ -535,7 +563,7 @@ widget.
 			}
 			else
 			{
-				printf("ThreeDDrawingRealize.  Missing PEXlib or visual information\n");
+				display_message(ERROR_MESSAGE,"ThreeDDrawingRealize.  Missing PEXlib or visual information\n");
 				/* use the core realize instead */
 				(*(coreClassRec.core_class.realize))(widget,value_mask,attributes);
 			}
@@ -562,7 +590,7 @@ widget.
 	}
 	else
 	{
-		printf("ThreeDDrawingRealize.  Missing widget\n");
+		display_message(ERROR_MESSAGE,"ThreeDDrawingRealize.  Missing widget\n");
 	}
 } /* ThreeDDrawingRealize */
 
@@ -586,7 +614,8 @@ else \
 	success=True; \
 }
 
-XrmQuark X3dDOUBLE_BUFFERING_quark,X3dSINGLE_BUFFERING_quark;
+XrmQuark X3dANY_BUFFERING_MODE_quark,X3dDOUBLE_BUFFERING_quark,
+	X3dSINGLE_BUFFERING_quark;
 
 static Boolean X3dCvtStringToBufferingMode(Display *display,XrmValue *args,
 	Cardinal *num_args,XrmValue *from,XrmValue *to,XtPointer *converter_data)
@@ -608,41 +637,50 @@ Converts a string to a buffering mode.
 	{
 		if (string_quark=XrmStringToQuark((char *)(from->addr)))
 		{
-			if (X3dSINGLE_BUFFERING_quark==string_quark)
+			if (X3dANY_BUFFERING_MODE_quark==string_quark)
 			{
-				buffering_mode=X3dSINGLE_BUFFERING;
+				buffering_mode=X3dANY_BUFFERING_MODE;
 				SET_TO(buffering_mode,X3dBufferingMode);
 			}
 			else
 			{
-				if (X3dDOUBLE_BUFFERING_quark==string_quark)
+				if (X3dSINGLE_BUFFERING_quark==string_quark)
 				{
-					buffering_mode=X3dDOUBLE_BUFFERING;
+					buffering_mode=X3dSINGLE_BUFFERING;
 					SET_TO(buffering_mode,X3dBufferingMode);
 				}
 				else
 				{
-					success=False;
+					if (X3dDOUBLE_BUFFERING_quark==string_quark)
+					{
+						buffering_mode=X3dDOUBLE_BUFFERING;
+						SET_TO(buffering_mode,X3dBufferingMode);
+					}
+					else
+					{
+						success=False;
+					}
 				}
 			}
 		}
 		else
 		{
-			printf(
+			display_message(ERROR_MESSAGE,
 				"X3dCvtStringToBufferColourMode.  Could not convert string to quark\n");
 			success=False;
 		}
 	}
 	else
 	{
-		printf("X3dCvtStringToBufferColourMode.  Invalid arguments\n");
+		display_message(ERROR_MESSAGE,"X3dCvtStringToBufferColourMode.  Invalid arguments\n");
 		success=False;
 	}
 
 	return (success);
 } /* X3dCvtStringToBufferColourMode */
 
-XrmQuark X3dMONO_BUFFERING_quark,X3dSTEREO_BUFFERING_quark;
+XrmQuark X3dANY_STEREO_MODE_quark,X3dMONO_BUFFERING_quark,
+	X3dSTEREO_BUFFERING_quark;
 
 static Boolean X3dCvtStringToStereoBufferingMode(Display *display,XrmValue *args,
 	Cardinal *num_args,XrmValue *from,XrmValue *to,XtPointer *converter_data)
@@ -664,34 +702,42 @@ Converts a string to a buffering mode.
 	{
 		if (string_quark=XrmStringToQuark((char *)(from->addr)))
 		{
-			if (X3dMONO_BUFFERING_quark==string_quark)
+			if (X3dANY_STEREO_MODE_quark==string_quark)
 			{
-				stereo_buffering_mode=X3dMONO_BUFFERING;
-				SET_TO(stereo_buffering_mode,X3dStereoBufferingMode);
+				stereo_buffering_mode=X3dANY_STEREO_MODE;
+				SET_TO(stereo_buffering_mode,X3dBufferingMode);
 			}
 			else
 			{
-				if (X3dSTEREO_BUFFERING_quark==string_quark)
+				if (X3dMONO_BUFFERING_quark==string_quark)
 				{
-					stereo_buffering_mode=X3dSTEREO_BUFFERING;
+					stereo_buffering_mode=X3dMONO_BUFFERING;
 					SET_TO(stereo_buffering_mode,X3dStereoBufferingMode);
 				}
 				else
 				{
-					success=False;
+					if (X3dSTEREO_BUFFERING_quark==string_quark)
+					{
+						stereo_buffering_mode=X3dSTEREO_BUFFERING;
+						SET_TO(stereo_buffering_mode,X3dStereoBufferingMode);
+					}
+					else
+					{
+						success=False;
+					}
 				}
 			}
 		}
 		else
 		{
-			printf(
+			display_message(ERROR_MESSAGE,
 				"X3dCvtStringToStereoBufferingMode.  Could not convert string to quark\n");
 			success=False;
 		}
 	}
 	else
 	{
-		printf("X3dCvtStringToStereoBufferingMode.  Invalid arguments\n");
+		display_message(ERROR_MESSAGE,"X3dCvtStringToStereoBufferingMode.  Invalid arguments\n");
 		success=False;
 	}
 
@@ -740,14 +786,14 @@ Converts a string to a buffer colour mode.
 		}
 		else
 		{
-			printf(
+			display_message(ERROR_MESSAGE,
 				"X3dCvtStringToBufferColourMode.  Could not convert string to quark\n");
 			success=False;
 		}
 	}
 	else
 	{
-		printf("X3dCvtStringToBufferColourMode.  Invalid arguments\n");
+		display_message(ERROR_MESSAGE,"X3dCvtStringToBufferColourMode.  Invalid arguments\n");
 		success=False;
 	}
 
@@ -763,10 +809,12 @@ The class initialize method.
 ==============================================================================*/
 {
 	/* register type converters */
+	X3dANY_BUFFERING_MODE_quark=XrmStringToQuark("X3dANY_BUFFERING_MODE");
 	X3dSINGLE_BUFFERING_quark=XrmStringToQuark("X3dSINGLE_BUFFERING");
 	X3dDOUBLE_BUFFERING_quark=XrmStringToQuark("X3dDOUBLE_BUFFERING");
 	XtSetTypeConverter(XtRString,X3dRBufferingMode,X3dCvtStringToBufferingMode,
 		(XtConvertArgList)NULL,0,XtCacheNone,NULL);
+	X3dANY_STEREO_MODE_quark=XrmStringToQuark("X3dANY_STEREO_MODE");
 	X3dMONO_BUFFERING_quark=XrmStringToQuark("X3dMONO_BUFFERING");
 	X3dSTEREO_BUFFERING_quark=XrmStringToQuark("X3dSTEREO_BUFFERING");
 	XtSetTypeConverter(XtRString,X3dRStereoBufferingMode,X3dCvtStringToStereoBufferingMode,
@@ -794,13 +842,11 @@ because the initialize method is downward chained.
 	ThreeDDrawingWidget request,new;
 #if defined (OPENGL_API)
 	Bool direct_rendering;
-	int best_buffer_size,best_depth_size,error_base,event_base,i,
-		number_of_valid_visual_infos,number_of_visual_infos,value;
-	XVisualInfo *best_visual_info,**valid_visual_info_list,*visual_info,
-		*visual_info_list,visual_info_template;
-#if defined (OLD_CODE)
-	int configuration[3];
-#endif
+	int accum_alpha,accum_red,accum_green,accum_blue,best_buffer_size,
+		best_depth_size,buffer_size,depth_size,double_buffer,error_base,event_base,i,
+		number_of_visual_infos,opengl,rgba,stereo;
+	XVisualInfo *best_visual_info,*visual_info,*visual_info_list,
+		visual_info_template;
 #endif
 #if defined (GL_API)
 	int number_of_matching_visual_structures;
@@ -835,10 +881,11 @@ because the initialize method is downward chained.
 		screen_number=XScreenNumberOfScreen(XtScreen(new_widget));
 		(new->three_d_drawing).normal_buffer.colour_mode=
 			(request->three_d_drawing).normal_buffer.colour_mode;
-		(new->three_d_drawing).normal_buffer.buffering_mode=
-			(request->three_d_drawing).normal_buffer.buffering_mode;
-		(new->three_d_drawing).normal_buffer.stereo_buffering_mode=
-			(request->three_d_drawing).normal_buffer.stereo_buffering_mode;
+		(new->three_d_drawing).normal_buffer.visual_information=(XVisualInfo *)NULL;
+#if defined (OPENGL_API)
+		(new->three_d_drawing).normal_buffer.rendering_context=(GLXContext)NULL;
+#endif
+
 		/* get visual information */
 #if defined (OPENGL_API)
 		/* check the existence of the GLX server extension */
@@ -854,7 +901,7 @@ because the initialize method is downward chained.
 					glx_major_version = major_version_number;
 					glx_minor_version = minor_version_number;
 					/* only want to print this once */
-					printf("GLX version = %d.%d\n",
+					display_message(ERROR_MESSAGE,"GLX version = %d.%d\n",
 						major_version_number,minor_version_number);
 				}
 			}
@@ -863,224 +910,160 @@ because the initialize method is downward chained.
 			if (visual_info_list=XGetVisualInfo(display,VisualScreenMask,
 				&visual_info_template,&number_of_visual_infos))
 			{
-				if (valid_visual_info_list=(XVisualInfo **)
-					malloc(number_of_visual_infos*sizeof(XVisualInfo *)))
+				visual_info=visual_info_list;
+				best_visual_info=(XVisualInfo *)NULL;
+				best_buffer_size=0;
+				for (i=number_of_visual_infos;i>0;i--)
 				{
-					/* choose the visuals with appropriate buffering */
-					number_of_valid_visual_infos=0;
-					visual_info=visual_info_list;
-					for (i=number_of_visual_infos;i>0;i--)
+					if ((request->three_d_drawing).normal_buffer.visual_id)
 					{
-						glXGetConfig(display,visual_info,GLX_USE_GL,&value);
-						/* only use read only visuals */
-						if (value
-#if defined (USING_MESA)
-							&&((PseudoColor==visual_info->class)||
-							(TrueColor==visual_info->class))
-#endif /* defined (USING_MESA) */
-							)
+						/* This overrides all other considerations */
+						if (visual_info->visualid == 
+							(request->three_d_drawing).normal_buffer.visual_id)
 						{
-							glXGetConfig(display,visual_info,GLX_DOUBLEBUFFER,&value);
-							if ((value&&(X3dDOUBLE_BUFFERING==
-								(request->three_d_drawing).normal_buffer.buffering_mode))||
-								(!value&&(X3dSINGLE_BUFFERING==
-									(request->three_d_drawing).normal_buffer.buffering_mode)))
-							{
-								glXGetConfig(display,visual_info,GLX_STEREO,&value);
-								if ((value&&(X3dSTEREO_BUFFERING==
-									(request->three_d_drawing).normal_buffer.stereo_buffering_mode))||
-									(!value&&(X3dMONO_BUFFERING==
-									(request->three_d_drawing).normal_buffer.stereo_buffering_mode)))
-								{
-									valid_visual_info_list[number_of_valid_visual_infos]=
-										visual_info;
-									number_of_valid_visual_infos++;
-								}
-							}
-						}
-						visual_info++;
-					}
-					if (0<number_of_valid_visual_infos)
-					{
-						/* choose the visual with the best colour mode */
-						best_visual_info=(XVisualInfo *)NULL;
-						best_buffer_size=0;
-						/* if the widget has been told a required visual use that */
-						if ((request->three_d_drawing).normal_buffer.visual_id)
-						{
-							for (i=0;i<number_of_valid_visual_infos;i++)
-							{
-								if (valid_visual_info_list[i]->visualid == 
- 									(request->three_d_drawing).normal_buffer.visual_id)
-								{
-									best_visual_info=valid_visual_info_list[i];
-									glXGetConfig(display, best_visual_info,
-										GLX_BUFFER_SIZE, &best_buffer_size);
-									glXGetConfig(display, best_visual_info,
-										GLX_DEPTH_SIZE, &best_depth_size);
-								}
-							}							
-						}
-						else
-						{	
-							for (i=0;i<number_of_valid_visual_infos;i++)
-							{
-#if defined (DEBUG)
-								{
-									printf("Selecting visual, id %d\n",
-										valid_visual_info_list[i]->visualid);
-									glXGetConfig(display,valid_visual_info_list[i],GLX_RGBA,
-										&value);
-									printf("RGB %d\n", value);
-									glXGetConfig(display,valid_visual_info_list[i],
-										GLX_BUFFER_SIZE,&value);
-									printf("buffer %d\n", value);
-									glXGetConfig(display,valid_visual_info_list[i],
-										GLX_DEPTH_SIZE, &value);
-									printf("depth %d\n\n", value);
-								}
-#endif /* defined (DEBUG) */
-
-								glXGetConfig(display,valid_visual_info_list[i],GLX_RGBA,&value);
-								if ((value&&(X3dCOLOUR_RGB_MODE==
-										  (request->three_d_drawing).normal_buffer.colour_mode))||
-									(!value&&(X3dCOLOUR_INDEX_MODE==
-										(request->three_d_drawing).normal_buffer.colour_mode)))
-								{
-									if (best_visual_info)
-									{
-										glXGetConfig(display,valid_visual_info_list[i],
-											GLX_BUFFER_SIZE,&value);
-										if (value>best_buffer_size)
-										{
-											best_visual_info=valid_visual_info_list[i];
-											best_buffer_size=value;
-											glXGetConfig(display,best_visual_info,GLX_DEPTH_SIZE,
-												&best_depth_size);
-										}
-										else
-										{
-											if (value==best_buffer_size)
-											{
-												glXGetConfig(display,valid_visual_info_list[i],
-													GLX_DEPTH_SIZE, &value);
-												if (value>best_depth_size)
-												{
-													best_visual_info=valid_visual_info_list[i];
-													best_depth_size=value;
-												}
-											}
-										}
-									}
-									else
-									{
-										best_visual_info=valid_visual_info_list[i];
-										glXGetConfig(display, best_visual_info,
-											GLX_BUFFER_SIZE, &best_buffer_size);
-										glXGetConfig(display, best_visual_info,
-											GLX_DEPTH_SIZE, &best_depth_size);
-									}
-								}
-							}
-						}
-						if (best_visual_info && ((new->three_d_drawing).normal_buffer.visual_information=
-							XGetVisualInfo(display,VisualAllMask,best_visual_info,
-							  &number_of_visual_infos)))
-						{
-#if defined (DEBUG)
-							/*???debug */
-							/* only want to print this once, unless using different visuals */
-							if (!shareable_context)
-							{
-								printf("openGL visual id = %lu\n",(new->three_d_drawing)
-									.normal_buffer.visual_information->visualid);
-							}
-#endif /* defined (DEBUG) */
-							/* create the OpenGL rendering context */
-							direct_rendering=GL_TRUE;
-							if ((new->three_d_drawing).normal_buffer.rendering_context=
-								glXCreateContext(display,(new->three_d_drawing).normal_buffer.
-								visual_information,shareable_context,direct_rendering))
-							{
-								if (!shareable_context)
-								{
-									shareable_context=
-										(new->three_d_drawing).normal_buffer.rendering_context;
-								}
-							}
-							else
-							{
-								printf(
-							"ThreeDDrawingInitialize.  Could not create rendering context\n");
-							}
-						}
-						else
-						{
-							printf(
-						"ThreeDDrawingInitialize.  No visuals with required colour mode\n");
+							best_visual_info=visual_info;
 						}
 					}
 					else
 					{
-						printf(
-				"ThreeDDrawingInitialize.  No visuals with required buffering mode\n");
+						/* Require OpenGL */
+						glXGetConfig(display,visual_info,GLX_USE_GL,&opengl);
+						if (opengl)
+						{
+							glXGetConfig(display,visual_info,GLX_RGBA,&rgba);
+							if ((rgba && (X3dCOLOUR_RGB_MODE==
+									  (request->three_d_drawing).normal_buffer.colour_mode))
+								|| (!rgba && (X3dCOLOUR_INDEX_MODE==
+										 (request->three_d_drawing).normal_buffer.colour_mode)))
+							{
+								glXGetConfig(display,visual_info,GLX_DOUBLEBUFFER,
+									&double_buffer);
+								if ((X3dANY_BUFFERING_MODE==
+										 (request->three_d_drawing).normal_buffer.buffering_mode)
+									|| (double_buffer && (X3dDOUBLE_BUFFERING==
+											 (request->three_d_drawing).normal_buffer.buffering_mode))
+									|| (!double_buffer && (X3dSINGLE_BUFFERING==
+											 (request->three_d_drawing).normal_buffer.buffering_mode)))
+								{
+									glXGetConfig(display,visual_info,GLX_STEREO,&stereo);
+									if ((X3dANY_STEREO_MODE==
+											 (request->three_d_drawing).normal_buffer.stereo_buffering_mode)
+										|| (stereo&&(X3dSTEREO_BUFFERING==
+												 (request->three_d_drawing).normal_buffer.stereo_buffering_mode))||
+										(!stereo&&(X3dMONO_BUFFERING==
+											(request->three_d_drawing).normal_buffer.stereo_buffering_mode)))
+									{
+										/* Get all the other stuff we want to know about */
+										glXGetConfig(display, visual_info, GLX_BUFFER_SIZE,
+											&buffer_size);
+										glXGetConfig(display, visual_info, GLX_DEPTH_SIZE,
+											&depth_size);
+										glXGetConfig(display, visual_info, GLX_ACCUM_RED_SIZE,
+											&accum_red);
+										glXGetConfig(display, visual_info, GLX_ACCUM_GREEN_SIZE,
+											&accum_green);
+										glXGetConfig(display, visual_info, GLX_ACCUM_BLUE_SIZE,
+											&accum_blue);
+										glXGetConfig(display, visual_info, GLX_ACCUM_ALPHA_SIZE,
+											&accum_alpha);
+										if ((!(request->three_d_drawing).normal_buffer.colour_buffer_depth)
+											|| ((unsigned int)buffer_size >= (request->three_d_drawing).normal_buffer.colour_buffer_depth))
+										{
+											if ((!(request->three_d_drawing).normal_buffer.depth_buffer_depth)
+												|| ((unsigned int)depth_size >= (request->three_d_drawing).normal_buffer.depth_buffer_depth))
+											{
+												if ((!(request->three_d_drawing).normal_buffer.accumulation_buffer_depth)
+													|| ((unsigned int)(accum_red + accum_green + accum_blue + accum_alpha) >= (request->three_d_drawing).normal_buffer.accumulation_buffer_depth))
+												{
+													if ((buffer_size > best_buffer_size)
+														|| ((buffer_size == best_buffer_size)
+														&& (depth_size > best_depth_size)))
+													{
+														best_visual_info=visual_info;
+														best_buffer_size = buffer_size;
+														best_depth_size = depth_size;
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
 					}
-					free(valid_visual_info_list);
+					visual_info++;
+				}
+				/* Need to reget the visual information as we are going to free the
+					other list */
+				if (best_visual_info && (visual_info=
+					XGetVisualInfo(display,VisualAllMask,best_visual_info,
+					&number_of_visual_infos)))
+				{
+					(new->three_d_drawing).normal_buffer.visual_information = visual_info;
+					/* create the OpenGL rendering context */
+					direct_rendering=GL_TRUE;
+					if ((new->three_d_drawing).normal_buffer.rendering_context=
+						glXCreateContext(display,visual_info,shareable_context,
+						direct_rendering))
+					{
+						if (!shareable_context)
+						{
+							shareable_context=
+								(new->three_d_drawing).normal_buffer.rendering_context;
+						}
+						glXGetConfig(display,visual_info,GLX_DOUBLEBUFFER, &double_buffer);
+						if (double_buffer)
+						{
+							(new->three_d_drawing).normal_buffer.buffering_mode=X3dDOUBLE_BUFFERING;
+						}
+						else
+						{
+							(new->three_d_drawing).normal_buffer.buffering_mode=X3dSINGLE_BUFFERING;
+						}
+						glXGetConfig(display,visual_info,GLX_STEREO, &stereo);
+						if (stereo)
+						{
+							(new->three_d_drawing).normal_buffer.buffering_mode=X3dSTEREO_BUFFERING;
+						}
+						else
+						{
+							(new->three_d_drawing).normal_buffer.buffering_mode=X3dMONO_BUFFERING;
+						}
+						glXGetConfig(display, visual_info, GLX_BUFFER_SIZE, &buffer_size);
+						(new->three_d_drawing).normal_buffer.colour_buffer_depth =
+							buffer_size;
+						glXGetConfig(display, visual_info, GLX_DEPTH_SIZE, &depth_size);
+						(new->three_d_drawing).normal_buffer.depth_buffer_depth =
+							depth_size;
+						glXGetConfig(display, visual_info, GLX_ACCUM_RED_SIZE, &accum_red);
+						glXGetConfig(display, visual_info, GLX_ACCUM_GREEN_SIZE, &accum_green);
+						glXGetConfig(display, visual_info, GLX_ACCUM_BLUE_SIZE, &accum_blue);
+						glXGetConfig(display, visual_info, GLX_ACCUM_ALPHA_SIZE, &accum_alpha);
+						(new->three_d_drawing).normal_buffer.accumulation_buffer_depth =
+							accum_red + accum_green + accum_blue + accum_alpha;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"ThreeDDrawingInitialize.  "
+							"Could not create rendering context\n");
+					}
 				}
 				else
 				{
-					printf(
-			"ThreeDDrawingInitialize.  Insufficient memory for valid visual list\n");
+					display_message(ERROR_MESSAGE,"ThreeDDrawingInitialize.  "
+						"Unable to find a satisfactory visual\n");
 				}
 				XFree(visual_info_list);
 			}
 			else
 			{
-				printf("ThreeDDrawingInitialize.  Could not find visual\n");
+				display_message(ERROR_MESSAGE,"ThreeDDrawingInitialize.  Could not find visual\n");
 			}
-#if defined (OLD_CODE)
-			/* construct the desired OpenGL configuration */
-			i=0;
-			if (X3dCOLOUR_RGB_MODE==
-				(request->three_d_drawing).normal_buffer.colour_mode)
-			{
-				configuration[i]=GLX_RGBA;
-				i++;
-			}
-			if (X3dDOUBLE_BUFFERING==
-				(request->three_d_drawing).normal_buffer.buffering_mode)
-			{
-				configuration[i]=GLX_DOUBLEBUFFER;
-				i++;
-			}
-			configuration[i]=None;
-			/* retrieve the visual information */
-			if ((new->three_d_drawing).normal_buffer.visual_information=
-				glXChooseVisual(display,screen_number,configuration))
-			{
-/*???debug */
-printf("openGL visual id = %d\n",
-	(new->three_d_drawing).normal_buffer.visual_information->visualid);
-				/* create the OpenGL rendering context */
-				share_context=(GLXContext)NULL;
-				direct_rendering=GL_TRUE;
-				if (!((new->three_d_drawing).normal_buffer.rendering_context=
-					glXCreateContext(display,(new->three_d_drawing).normal_buffer.
-					visual_information,share_context,direct_rendering)))
-				{
-					printf(
-						"ThreeDDrawingInitialize.  Could not create rendering context\n");
-				}
-			}
-			else
-			{
-				printf("ThreeDDrawingInitialize.  Could not find visual\n");
-			}
-#endif
 		}
 		else
 		{
-			printf("ThreeDDrawingInitialize.  Missing GLX server extension\n");
+			display_message(ERROR_MESSAGE,"ThreeDDrawingInitialize.  Missing GLX server extension\n");
 		}
 #endif
 #if defined (GL_API)
@@ -1096,13 +1079,13 @@ printf("openGL visual id = %d\n",
 			visual_info=visual_info_list;
 			best_visual_info=visual_info;
 /*???debug */
-printf("visual=%d, depth=%d, colourmap size=%d\n",visual_info->visualid,
+display_message(ERROR_MESSAGE,"visual=%d, depth=%d, colourmap size=%d\n",visual_info->visualid,
 	visual_info->depth,visual_info->colormap_size);
 			for (i=number_of_matching_visual_structures-1;i>0;i--)
 			{
 				visual_info++;
 /*???debug */
-printf("visual=%d, depth=%d, colourmap size=%d\n",visual_info->visualid,
+display_message(ERROR_MESSAGE,"visual=%d, depth=%d, colourmap size=%d\n",visual_info->visualid,
 	visual_info->depth,visual_info->colormap_size);
 /*        if (visual_info->colormap_size>best_visual_info->colormap_size)
 				{
@@ -1118,7 +1101,7 @@ printf("visual=%d, depth=%d, colourmap size=%d\n",visual_info->visualid,
 		}
 		else
 		{
-			printf(
+			display_message(ERROR_MESSAGE,
 	"ThreeDDrawingInitialize.  Could not find a visual for %d bit PseudoColor\n",
 				DefaultDepth(display,screen_number));
 		}
@@ -1139,7 +1122,7 @@ printf("visual=%d, depth=%d, colourmap size=%d\n",visual_info->visualid,
 		}
 		else
 		{
-			printf(
+			display_message(ERROR_MESSAGE,
 	"ThreeDDrawingInitialize.  Could not find a visual for %d bit PseudoColor\n",
 				DefaultDepth(display,screen_number));
 		}
@@ -1225,14 +1208,14 @@ printf("visual=%d, depth=%d, colourmap size=%d\n",visual_info->visualid,
 									&visual_info_template,&number_of_matching_visual_structures))
 								{
 /*???debug */
-printf("GL visual id = %d\n",
+display_message(ERROR_MESSAGE,"GL visual id = %d\n",
 	(new->three_d_drawing).normal_buffer.visual_information->visualid);
 									(new->core).depth=((new->three_d_drawing).normal_buffer.
 										visual_information)->depth;
 								}
 								else
 								{
-									printf(
+									display_message(ERROR_MESSAGE,
 								"ThreeDDrawingInitialize.  Could not get visual information\n");
 								}
 							} break;
@@ -1249,13 +1232,13 @@ printf("GL visual id = %d\n",
 							{
 								if (GLX_NONE!=new_configuration->arg)
 								{
-									printf(
+									display_message(ERROR_MESSAGE,
 										"ThreeDDrawingInitialize.  Invalid window id returned\n");
 								}
 							} break;
 							default:
 							{
-								printf("ThreeDDrawingInitialize.  Invalid mode %d\n",
+								display_message(ERROR_MESSAGE,"ThreeDDrawingInitialize.  Invalid mode %d\n",
 									new_configuration->mode);
 							} break;
 						}
@@ -1268,7 +1251,7 @@ printf("GL visual id = %d\n",
 					} break;
 					default:
 					{
-						printf("ThreeDDrawingInitialize.  Invalid buffer\n");
+						display_message(ERROR_MESSAGE,"ThreeDDrawingInitialize.  Invalid buffer\n");
 					} break;
 				}
 				new_configuration++;
@@ -1276,7 +1259,7 @@ printf("GL visual id = %d\n",
 		}
 		else
 		{
-			printf(
+			display_message(ERROR_MESSAGE,
 				"ThreeDDrawingInitialize.  Requested configuration not available\n");
 		}
 #endif
@@ -1300,58 +1283,58 @@ printf("GL visual id = %d\n",
 #if defined (IBM)
 					if (extension_info=PEXGetExtensionInfo(display))
 					{
-						printf("PEXlib\n");
-						printf(
+						display_message(ERROR_MESSAGE,"PEXlib\n");
+						display_message(ERROR_MESSAGE,
 							"  major version = %d, minor version = %d, release = %d\n",
 							extension_info->major_version,extension_info->minor_version,
 							extension_info->release);
-						printf("  vendor name = %s\n",extension_info->vendor_name);
+						display_message(ERROR_MESSAGE,"  vendor name = %s\n",extension_info->vendor_name);
 						if (PEXCompleteImplementation==extension_info->subset_info)
 						{
-							printf("  complete implementation\n");
+							display_message(ERROR_MESSAGE,"  complete implementation\n");
 						}
 						else
 						{
 							if (PEXImmediateMode&(extension_info->subset_info))
 							{
-								printf("  immediate mode");
+								display_message(ERROR_MESSAGE,"  immediate mode");
 							}
 							if (PEXStructureMode&(extension_info->subset_info))
 							{
-								printf("  structure mode");
+								display_message(ERROR_MESSAGE,"  structure mode");
 							}
 							if (PEXWorkstationOnly&(extension_info->subset_info))
 							{
-								printf("  workstation only");
+								display_message(ERROR_MESSAGE,"  workstation only");
 							}
-							printf("\n");
+							display_message(ERROR_MESSAGE,"\n");
 						}
 					}
 #endif
 #if defined (VAX)
 					if (extension_info)
 					{
-						printf("PEXlib\n");
-						printf(
+						display_message(ERROR_MESSAGE,"PEXlib\n");
+						display_message(ERROR_MESSAGE,
 							"  major version = %d, minor version = %d, release = %d\n",
 							extension_info->majorVersion,extension_info->minorVersion,
 							extension_info->release);
-						printf("  vendor name = %s\n",extension_info->vendorName);
+						display_message(ERROR_MESSAGE,"  vendor name = %s\n",extension_info->vendorName);
 						if (0==extension_info->subsetInfo)
 						{
-							printf("  complete implementation\n");
+							display_message(ERROR_MESSAGE,"  complete implementation\n");
 						}
 						else
 						{
 							if (0x1&(extension_info->subsetInfo))
 							{
-								printf("  immediate mode");
+								display_message(ERROR_MESSAGE,"  immediate mode");
 							}
 							if (0x2&(extension_info->subsetInfo))
 							{
-								printf("  workstation only");
+								display_message(ERROR_MESSAGE,"  workstation only");
 							}
-							printf("\n");
+							display_message(ERROR_MESSAGE,"\n");
 							PEXFree(extension_info);
 						}
 					}
@@ -1359,12 +1342,12 @@ printf("GL visual id = %d\n",
 				}
 				else
 				{
-					printf("ThreeDDrawingInitialize.  Could not initialize PEXlib\n");
+					display_message(ERROR_MESSAGE,"ThreeDDrawingInitialize.  Could not initialize PEXlib\n");
 				}
 			}
 			else
 			{
-				printf("ThreeDDrawingInitialize.  Missing PEX server extension\n");
+				display_message(ERROR_MESSAGE,"ThreeDDrawingInitialize.  Missing PEX server extension\n");
 			}
 		}
 		if (PEXlib_initialized)
@@ -1386,7 +1369,7 @@ printf("GL visual id = %d\n",
 			}
 			else
 			{
-				printf(
+				display_message(ERROR_MESSAGE,
 	"ThreeDDrawingInitialize.  Could not find a visual for %d bit PseudoColor\n",
 					DefaultDepth(display,screen_number));
 			}
@@ -1418,7 +1401,7 @@ printf("GL visual id = %d\n",
 	}
 	else
 	{
-		printf("ThreeDDrawingInitialize.  Invalid argument(s)\n");
+		display_message(ERROR_MESSAGE,"ThreeDDrawingInitialize.  Invalid argument(s)\n");
 	}
 } /* ThreeDDrawingInitialize */
 
@@ -1662,14 +1645,18 @@ The destroy method.
 		}
 		/* destroy the OpenGL rendering context - unless it is the shared one! */
 		/* X3dThreeDDrawingCleanUp is set up for destroying shareable_context */
-		if ((drawing_widget->three_d_drawing).normal_buffer.rendering_context !=
-			shareable_context)
+		if ((drawing_widget->three_d_drawing).normal_buffer.rendering_context &&
+			((drawing_widget->three_d_drawing).normal_buffer.rendering_context !=
+			shareable_context))
 		{
 			glXDestroyContext(display,
 				(drawing_widget->three_d_drawing).normal_buffer.rendering_context);
 		}
 		/* free the visual information */
-		XFree((drawing_widget->three_d_drawing).normal_buffer.visual_information);
+		if ((drawing_widget->three_d_drawing).normal_buffer.visual_information)
+		{
+			XFree((drawing_widget->three_d_drawing).normal_buffer.visual_information);
+		}
 		/*???DB.  Free the colour map */
 	}
 #endif
@@ -1867,7 +1854,7 @@ i.e. it couldn't create a valid rendering context.
 	}
 	else
 	{
-		printf("X3dThreeDDrawingMakeCurrent.  Missing or invalid widget\n");
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingMakeCurrent.  Missing or invalid widget\n");
 		return_code = 0;
 	}
 
@@ -1914,7 +1901,7 @@ there may be multiple GL windows.
 	}
 	else
 	{
-		printf("X3dThreeDDrawingMakeCurrent.  Missing widget\n");
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingMakeCurrent.  Missing widget\n");
 	}
 } /* X3dThreeDDrawingMakeCurrent */
 
@@ -1941,13 +1928,13 @@ supplied drawable the current GL source.
 			read_drawable,
 			(drawing_widget)->three_d_drawing.normal_buffer.rendering_context))
 		{
-			printf("X3dThreeDDrawingMakeCurrent.  Unable to make current read and draw drawables\n");
+			display_message(ERROR_MESSAGE,"X3dThreeDDrawingMakeCurrent.  Unable to make current read and draw drawables\n");
 		}
 #endif /* defined (GLX_SGI_make_current_read) */
 	}
 	else
 	{
-		printf("X3dThreeDDrawingMakeCurrent.  Missing widget\n");
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingMakeCurrent.  Missing widget\n");
 	}
 } /* X3dThreeDDrawingMakeCurrent */
 
@@ -1972,7 +1959,7 @@ Change the context to the last ThreeDDrawing that was made current
 	}
 	else
 	{
-		printf("X3dThreeDDrawingRemakeCurrent.  Missing widget\n");
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingRemakeCurrent.  Missing widget\n");
 	}
 } /* X3dThreeDDrawingRemakeCurrent */
 
@@ -2011,7 +1998,7 @@ Swaps the buffers current widget.
 	}
 	else
 	{
-		printf("X3dThreeDDrawingSwapBuffers.  Missing current\n");
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingSwapBuffers.  Missing current\n");
 	}
 } /* X3dThreeDDrawingSwapBuffers */
 
@@ -2037,7 +2024,7 @@ Three_D_Drawing, eg. OpenGL shareable_context.
 	}
 	else
 	{
-		printf("X3dThreeDDrawingCleanUp.  Missing display\n");
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingCleanUp.  Missing display\n");
 	}
 } /* X3dThreeDDrawingCleanUp */
 
@@ -2061,7 +2048,7 @@ playing in here
 	}
 	else
 	{
-		printf("X3dThreeDDrawingGetGLXContex.  Missing widget\n");
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingGetGLXContex.  Missing widget\n");
 		context=(GLXContext)NULL;
 	}
 
@@ -2087,12 +2074,147 @@ Returns the visual ID actually used by this X3d widget.
 	}
 	else
 	{
-		printf("X3dThreeDDrawingGetVisualID.  Missing widget\n");
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingGetVisualID.  Missing widget\n");
 		visual_id = 0;
 	}
 
 	return (visual_id);
 } /* X3dThreeDDrawingGetVisualID */
+
+int X3dThreeDDrawingGetColourBufferDepth(Widget widget,
+	int *colour_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the buffering mode used by this X3d widget.
+==============================================================================*/
+{
+	int return_code;
+	ThreeDDrawingWidget drawing_widget;
+
+	if ((drawing_widget=(ThreeDDrawingWidget)widget)&&
+		(True==IsThreeDDrawing(widget)))
+	{
+		*colour_buffer_depth = (int)(drawing_widget)->three_d_drawing.normal_buffer.colour_buffer_depth;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingGetBufferingMode.  Missing widget\n");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* X3dThreeDDrawingGetColourBufferDepth */
+
+int X3dThreeDDrawingGetDepthBufferDepth(Widget widget,
+	int *depth_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the buffering mode used by this X3d widget.
+==============================================================================*/
+{
+	int return_code;
+	ThreeDDrawingWidget drawing_widget;
+
+	if ((drawing_widget=(ThreeDDrawingWidget)widget)&&
+		(True==IsThreeDDrawing(widget)))
+	{
+		*depth_buffer_depth = (int)(drawing_widget)->three_d_drawing.normal_buffer.depth_buffer_depth;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingGetBufferingMode.  Missing widget\n");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* X3dThreeDDrawingGetDepthBufferDepth */
+
+int X3dThreeDDrawingGetAccumulationBufferDepth(Widget widget,
+	int *accumulation_buffer_depth)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the buffering mode used by this X3d widget.
+==============================================================================*/
+{
+	int return_code;
+	ThreeDDrawingWidget drawing_widget;
+
+	if ((drawing_widget=(ThreeDDrawingWidget)widget)&&
+		(True==IsThreeDDrawing(widget)))
+	{
+		*accumulation_buffer_depth = (int)(drawing_widget)->three_d_drawing.normal_buffer.accumulation_buffer_depth;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingGetBufferingMode.  Missing widget\n");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* X3dThreeDDrawingGetAccumulationBufferDepth */
+
+int X3dThreeDDrawingGetBufferingMode(Widget widget,
+	X3dBufferingMode *buffering_mode)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the buffering mode used by this X3d widget.
+==============================================================================*/
+{
+	int return_code;
+	ThreeDDrawingWidget drawing_widget;
+
+	if ((drawing_widget=(ThreeDDrawingWidget)widget)&&
+		(True==IsThreeDDrawing(widget)))
+	{
+		*buffering_mode=(drawing_widget)->three_d_drawing.normal_buffer.buffering_mode;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingGetBufferingMode.  Missing widget\n");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* X3dThreeDDrawingGetBufferingMode */
+
+int X3dThreeDDrawingGetStereoMode(Widget widget,
+	X3dStereoBufferingMode *stereo_mode)
+/*******************************************************************************
+LAST MODIFIED : 19 September 2002
+
+DESCRIPTION :
+Returns the buffering mode used by this X3d widget.
+==============================================================================*/
+{
+	int return_code;
+	ThreeDDrawingWidget drawing_widget;
+
+	if ((drawing_widget=(ThreeDDrawingWidget)widget)&&
+		(True==IsThreeDDrawing(widget)))
+	{
+		*stereo_mode=(drawing_widget)->three_d_drawing.normal_buffer.stereo_buffering_mode;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"X3dThreeDDrawingGetStereoMode.  Missing widget\n");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* X3dThreeDDrawingGetStereoMode */
 
 #if defined (OPENGL_API) && defined (MOTIF)
 int query_glx_extension(char *extName, Display *display, int screen)

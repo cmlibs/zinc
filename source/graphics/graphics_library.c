@@ -944,3 +944,86 @@ memory.
 	return (return_code);
 } /* query_extension */
 #endif /* defined (OPENGL_API) */
+
+int Graphics_library_read_pixels(unsigned char *frame_data,
+	int width, int height, enum Texture_storage_type storage)
+/*******************************************************************************
+LAST MODIFIED : 12 September 2002
+
+DESCRIPTION :
+Read pixels from the current graphics context into <frame_data> of size <width>
+and <height> according to the storage type.  'MakeCurrent' the desired source 
+before calling this routine.
+==============================================================================*/
+{
+#if defined (OPENGL_API)
+	GLenum read_buffer;
+#endif /* defined (OPENGL_API) */
+	int return_code;
+
+	ENTER(Graphics_library_read_pixels);
+	if (frame_data && width && height)
+	{
+#if defined (OPENGL_API)
+		/* Make sure we get it from the front for a double buffer,
+			has no effect on a single buffer, keep the old read
+			buffer so we can set it back after reading */
+		glGetIntegerv(GL_READ_BUFFER,(GLint *)(&read_buffer));
+		glReadBuffer(GL_FRONT);
+		switch(storage)
+		{
+			case TEXTURE_LUMINANCE:
+			{
+				glReadPixels(0, 0, width, height, GL_LUMINANCE,
+					GL_UNSIGNED_BYTE,frame_data);
+				return_code=1;
+			} break;
+			case TEXTURE_LUMINANCE_ALPHA:
+			{
+				glReadPixels(0, 0, width, height, GL_LUMINANCE_ALPHA,
+					GL_UNSIGNED_BYTE,frame_data);
+				return_code=1;
+			} break;
+			case TEXTURE_RGB:
+			{
+				glReadPixels(0, 0, width, height, GL_RGB,
+					GL_UNSIGNED_BYTE,frame_data);
+				return_code=1;
+			} break;
+			case TEXTURE_RGBA:
+			{
+				glReadPixels(0, 0, width, height, GL_RGBA,
+					GL_UNSIGNED_BYTE,frame_data);
+				return_code=1;
+			} break;
+#if defined (GL_ABGR_EXT)
+			case TEXTURE_ABGR:
+			{
+				glReadPixels(0, 0, width, height, GL_ABGR_EXT,
+					GL_UNSIGNED_BYTE,frame_data);
+				return_code=1;
+			} break;
+#endif /* defined (GL_ABGR_EXT) */
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Graphics_library_read_pixels.  Unsupported or unknown storage type");
+				return_code=0;
+			} break;
+		}
+		glReadBuffer(read_buffer);
+#else /* defined (OPENGL_API) */
+		return_code=0;
+#endif /* defined (OPENGL_API) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_library_read_pixels.  Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_library_read_pixels */
+
