@@ -4717,7 +4717,6 @@ The graphics object is stored with with the settings it was created from.
 									group_string, settings_name);
 								settings->graphics_object=CREATE(GT_object)(
 									graphics_object_name,graphics_object_type,settings->material);
-								/*???RC needs work */
 								if (settings->selected_material)
 								{
 									set_GT_object_selected_material(settings->graphics_object,
@@ -7118,7 +7117,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_streamlines(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 24 March 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT STREAMLINES command.
@@ -7227,7 +7226,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
 					/* reverse */
 					/*???RC use negative length to denote reverse track instead? */
-					Option_table_add_entry(option_table,"reverse",
+					Option_table_add_entry(option_table,"reverse_track",
 						&reverse_track,NULL,set_char_flag);
 					/* scene */
 					Option_table_add_entry(option_table,"scene",

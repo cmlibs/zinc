@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.h
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 24 March 2000
 
 DESCRIPTION :
 Graphical element group data structure.
@@ -74,14 +74,14 @@ Callbacks from the selections ensure objects in this group are automatically
 highlighted in the graphics.
 ==============================================================================*/
 
-struct GT_element_group *copy_create_GT_element_group(
+struct GT_element_group *create_editor_copy_GT_element_group(
 	struct GT_element_group *existing_gt_element_group);
 /*******************************************************************************
-LAST MODIFIED : 21 March 2000
+LAST MODIFIED : 24 March 2000
 
 DESCRIPTION :
 Creates a GT_element_group that is a copy of <existing_gt_element_group> -
-WITHOUT copying graphics objects.
+WITHOUT copying graphics objects, and without selection callbacks.
 ==============================================================================*/
 
 int DESTROY(GT_element_group)(struct GT_element_group **gt_element_group);

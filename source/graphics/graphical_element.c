@@ -182,14 +182,14 @@ The GT_element_group does not access the element group, but it does access the
 node and data groups. It must therefore be destroyed in response to element
 group manager delete messages - currently handled by a Scene - which must
 precede removing the node and data groups from their respective managers.
-Callbacks from the selections ensure objects in this group are automatically
-highlighted in the graphics.
+If supplied, callbacks are requested from the <element_selection> and
+<node_selection> to enable automatic highlighting of selected graphics.
 ==============================================================================*/
 {
 	struct GT_element_group *gt_element_group;
 
 	ENTER(CREATE(GT_element_group));
-	if (element_group&&node_group&&data_group&&element_selection&&node_selection)
+	if (element_group&&node_group&&data_group)
 	{
 		if (ALLOCATE(gt_element_group,struct GT_element_group,1))
 		{
@@ -226,10 +226,16 @@ highlighted in the graphics.
 				gt_element_group->changed=1;
 				gt_element_group->access_count=0;
 				/* request callbacks from the global selections */
-				FE_element_selection_add_callback(element_selection,
-					GT_element_group_element_selection_change,(void *)gt_element_group);
-				FE_node_selection_add_callback(node_selection,
-					GT_element_group_node_selection_change,(void *)gt_element_group);
+				if (element_selection)
+				{
+					FE_element_selection_add_callback(element_selection,
+						GT_element_group_element_selection_change,(void *)gt_element_group);
+				}
+				if (node_selection)
+				{
+					FE_node_selection_add_callback(node_selection,
+						GT_element_group_node_selection_change,(void *)gt_element_group);
+				}
 			}
 			else
 			{
@@ -257,19 +263,19 @@ highlighted in the graphics.
 	return (gt_element_group);
 } /* CREATE(GT_element_group) */
 
-struct GT_element_group *copy_create_GT_element_group(
+struct GT_element_group *create_editor_copy_GT_element_group(
 	struct GT_element_group *existing_gt_element_group)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 24 March 2000
 
 DESCRIPTION :
 Creates a GT_element_group that is a copy of <existing_gt_element_group> -
-WITHOUT copying graphics objects.
+WITHOUT copying graphics objects, and without selection callbacks.
 ==============================================================================*/
 {
 	struct GT_element_group *gt_element_group;
 
-	ENTER(copy_create_GT_element_group);
+	ENTER(create_editor_copy_GT_element_group);
 	if (existing_gt_element_group)
 	{
 		/* make an empty GT_element_group for the same groups */
@@ -277,8 +283,8 @@ WITHOUT copying graphics objects.
 			existing_gt_element_group->element_group,
 			existing_gt_element_group->node_group,
 			existing_gt_element_group->data_group,
-			existing_gt_element_group->element_selection,
-			existing_gt_element_group->node_selection))
+			(struct FE_element_selection *)NULL,
+			(struct FE_node_selection *)NULL))
 		{
 			/* copy settings WITHOUT graphics objects; do not cause whole function
 				 to fail if copy fails */
@@ -288,18 +294,18 @@ WITHOUT copying graphics objects.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"copy_create_GT_element_group.  Invalid argument(s)");
+			"create_editor_copy_GT_element_group.  Invalid argument(s)");
 		gt_element_group=(struct GT_element_group *)NULL;
 	}
 	LEAVE;
 
 	return (gt_element_group);
-} /* copy_create_GT_element_group */
+} /* create_editor_copy_GT_element_group */
 
 int DESTROY(GT_element_group)(
 	struct GT_element_group **gt_element_group_address)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 24 March 2000
 
 DESCRIPTION :
 Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
@@ -325,11 +331,17 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 			else
 			{
 				/* remove callbacks from the global selections */
-				FE_element_selection_remove_callback(
-					gt_element_group->element_selection,
-					GT_element_group_element_selection_change,(void *)gt_element_group);
-				FE_node_selection_remove_callback(gt_element_group->node_selection,
-					GT_element_group_node_selection_change,(void *)gt_element_group);
+				if (gt_element_group->element_selection)
+				{
+					FE_element_selection_remove_callback(
+						gt_element_group->element_selection,
+						GT_element_group_element_selection_change,(void *)gt_element_group);
+				}
+				if (gt_element_group->node_selection)
+				{
+					FE_node_selection_remove_callback(gt_element_group->node_selection,
+						GT_element_group_node_selection_change,(void *)gt_element_group);
+				}
 				DESTROY(LIST(GT_element_settings))(
 					&(gt_element_group->list_of_settings));
 				DESTROY(LIST(Element_point_ranges))(
