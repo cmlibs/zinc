@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -1882,7 +1882,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 
 int DESTROY(Node_tool)(struct Node_tool **node_tool_address)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 Frees and deaccesses objects in the <node_tool> and deallocates the
@@ -1917,6 +1917,12 @@ structure itself.
 		REACCESS(GT_object)(&(node_tool->rubber_band),(struct GT_object *)NULL);
 		DEACCESS(Graphical_material)(&(node_tool->rubber_band_material));
 		REACCESS(FE_node)(&(node_tool->template_node),(struct FE_node *)NULL);
+		if (node_tool->window_shell)
+		{
+			destroy_Shell_list_item_from_shell(&(node_tool->window_shell),
+				node_tool->user_interface);
+			XtDestroyWidget(node_tool->window_shell);
+		}
 		DEALLOCATE(*node_tool_address);
 		return_code=1;
 	}

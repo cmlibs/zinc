@@ -1155,36 +1155,44 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
-	command_data.transform_tool=CREATE(Transform_tool)(
-		command_data.interactive_tool_manager);
-	command_data.node_tool=CREATE(Node_tool)(
-		command_data.interactive_tool_manager,
-		command_data.fe_field_manager,
-		command_data.node_manager,/*use_data*/0,
-		command_data.node_group_manager,
-		command_data.element_manager,
-		command_data.node_selection,
-		command_data.computed_field_package,
-		command_data.default_graphical_material,
-		command_data.user_interface);
-	command_data.element_tool=CREATE(Element_tool)(
-		command_data.interactive_tool_manager,
-		command_data.element_selection,
-		command_data.default_graphical_material);
-	command_data.data_tool=CREATE(Node_tool)(
-		command_data.interactive_tool_manager,
-		command_data.fe_field_manager,
-		command_data.data_manager,/*use_data*/1,
-		command_data.data_group_manager,
-		(struct MANAGER(FE_element) *)NULL,
-		command_data.data_selection,
-		command_data.computed_field_package,
-		command_data.default_graphical_material,
-		command_data.user_interface);
-	command_data.element_point_tool=CREATE(Element_point_tool)(
-		command_data.interactive_tool_manager,
-		command_data.element_point_ranges_selection,
-		command_data.default_graphical_material);
+	command_data.transform_tool=(struct Transform_tool *)NULL;
+	command_data.node_tool=(struct Node_tool *)NULL;
+	command_data.element_tool=(struct Element_tool *)NULL;
+	command_data.data_tool=(struct Node_tool *)NULL;
+	command_data.element_point_tool=(struct Element_point_tool *)NULL;
+	if (command_data.user_interface)
+	{
+		command_data.transform_tool=CREATE(Transform_tool)(
+			command_data.interactive_tool_manager);
+		command_data.node_tool=CREATE(Node_tool)(
+			command_data.interactive_tool_manager,
+			command_data.fe_field_manager,
+			command_data.node_manager,/*use_data*/0,
+			command_data.node_group_manager,
+			command_data.element_manager,
+			command_data.node_selection,
+			command_data.computed_field_package,
+			command_data.default_graphical_material,
+			command_data.user_interface);
+		command_data.element_tool=CREATE(Element_tool)(
+			command_data.interactive_tool_manager,
+			command_data.element_selection,
+			command_data.default_graphical_material);
+		command_data.data_tool=CREATE(Node_tool)(
+			command_data.interactive_tool_manager,
+			command_data.fe_field_manager,
+			command_data.data_manager,/*use_data*/1,
+			command_data.data_group_manager,
+			(struct MANAGER(FE_element) *)NULL,
+			command_data.data_selection,
+			command_data.computed_field_package,
+			command_data.default_graphical_material,
+			command_data.user_interface);
+		command_data.element_point_tool=CREATE(Element_point_tool)(
+			command_data.interactive_tool_manager,
+			command_data.element_point_ranges_selection,
+			command_data.default_graphical_material);
+	}
 	command_data.element_creator=(struct Element_creator *)NULL;
 
 	if (return_code)
@@ -1844,11 +1852,26 @@ Main program for the CMISS Graphical User Interface
 					DESTROY(Element_creator)(&command_data.element_creator);
 				}
 				/* destroy Interactive_tools and manager */
-				DESTROY(Transform_tool)(&command_data.transform_tool);
-				DESTROY(Element_point_tool)(&command_data.element_point_tool);
-				DESTROY(Node_tool)(&command_data.data_tool);
-				DESTROY(Element_tool)(&command_data.element_tool);
-				DESTROY(Node_tool)(&command_data.node_tool);
+				if (command_data.transform_tool)
+				{
+					DESTROY(Transform_tool)(&command_data.transform_tool);
+				}
+				if (command_data.element_point_tool)
+				{
+					DESTROY(Element_point_tool)(&command_data.element_point_tool);
+				}
+				if (command_data.data_tool)
+				{
+					DESTROY(Node_tool)(&command_data.data_tool);
+				}
+				if (command_data.element_tool)
+				{
+					DESTROY(Element_tool)(&command_data.element_tool);
+				}
+				if (command_data.node_tool)
+				{
+					DESTROY(Node_tool)(&command_data.node_tool);
+				}
 				DESTROY(MANAGER(Interactive_tool))(
 					&(command_data.interactive_tool_manager));
 
