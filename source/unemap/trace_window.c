@@ -13258,7 +13258,7 @@ Called when the "highlighted_device" is changed.
 	ENTER(trace_change_signal);
 	return_code=0;
 	if (trace)
-	{
+	{		
 		switch (*trace->analysis_mode)
 		{
 			case ELECTRICAL_IMAGING:
@@ -13424,7 +13424,7 @@ device.
 		switch (*trace->analysis_mode)
 		{
 			case EVENT_DETECTION: case BEAT_AVERAGING:
-			{
+			{				
 				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
 					(XtPointer)NULL);
 				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,

@@ -9898,11 +9898,7 @@ Actually draw the map from the calculated data.
 		{
 			draw_2d_landmarks(map,sub_map,drawing);
 		}
-		/* draw the extrema */
-		if (SHOW_EXTREMA==map->extrema_option)
-		{
-			draw_2d_extrema(map,sub_map,drawing);
-		}									
+									
 		if (map_type==POTENTIAL)
 		{							
 			write_map_title(map,sub_map,drawing);
@@ -9940,6 +9936,11 @@ Actually draw the map from the calculated data.
 			electrode_drawn++;
 			electrode_value++;
 		}/* for (;number_of_electrodes>0;number_of_electrodes--) */
+		/* draw the extrema */
+		if (SHOW_EXTREMA==map->extrema_option)
+		{
+			draw_2d_extrema(map,sub_map,drawing);
+		}	
 #if defined (DEBUG)
 		draw_2d_show_delauney_lines(map,sub_map_number,drawing);
 #endif /* defined (DEBUG)*/

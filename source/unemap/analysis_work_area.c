@@ -11786,7 +11786,6 @@ then sets all signals to this range.
 	struct Device **device;
 	struct Region *current_region;
 	struct Rig *rig;
-
 	ENTER(anal_set_range_all_accep_undec);
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
@@ -12761,7 +12760,6 @@ static int accept_signal(struct Analysis_work_area *analysis,
 LAST MODIFIED : 8 November 2000
 
 DESCRIPTION : accept the analysis signal.
-!!jw combine with reject_signal?
 ==============================================================================*/
 {
 	char *value_string;
@@ -12928,15 +12926,6 @@ DESCRIPTION : accept the analysis signal.
 				}
 				/* change the signal status */
 				signal->status=ACCEPTED;
-				/* redraw the signal */
-				update_interval_drawing_area(analysis->window);
-				trace_change_signal_status(analysis->trace);			
-				/* to recalculate RMS_signal. Perhaps should do trace_change_signal for all modes */
-				if(*analysis->trace->analysis_mode==ELECTRICAL_IMAGING)
-				{	
-					analysis->trace->calculate_rms=1;				
-					trace_change_signal(analysis->trace);
-				}
 #if defined(UNEMAP_USE_3D)
 				/* ??JW reject the corresponding node (until have a complete nodal version */ 
 				/* of analysis_accept_signal) */
@@ -13099,17 +13088,6 @@ DESCRIPTION : reject the  <signal> in <analysis>
 				}				
 				/* change the signal status */
 				signal->status=REJECTED;
-				/* redraw the signal */
-				/* the signals drawing area does not need doing because it is
-					highlighted */
-				update_interval_drawing_area(analysis->window);
-				trace_change_signal_status(analysis->trace);		 
-				/* to recalculate RMS_signal. Perhaps should do trace_change_signal for all modes */
-				if(*analysis->trace->analysis_mode==ELECTRICAL_IMAGING)
-				{	
-					analysis->trace->calculate_rms=1;				
-					trace_change_signal(analysis->trace);
-				}
 #if defined(UNEMAP_USE_3D)
 				/* ??JW reject the corresponding node (until have a complete nodal version */ 
 				/* of reject_signal) */
@@ -13212,7 +13190,7 @@ DESCRIPTION : accept or reject the <analysis> highlighted signals.
 	{
 		return_code=1;
 		if(rig=analysis->rig)
-		{	
+		{			
 #if defined(UNEMAP_USE_3D)
 			node_manager=(struct MANAGER(FE_node) *)NULL;
 			node_selection=(struct FE_node_selection *)NULL;
@@ -13238,6 +13216,15 @@ DESCRIPTION : accept or reject the <analysis> highlighted signals.
 				}
 				device++;
 			}
+			/* redraw the signal */
+			update_interval_drawing_area(analysis->window);
+			trace_change_signal_status(analysis->trace);			
+			/* to recalculate RMS_signal. Perhaps should do trace_change_signal for all modes */
+			if(*analysis->trace->analysis_mode==ELECTRICAL_IMAGING)
+			{	
+				analysis->trace->calculate_rms=1;				
+				trace_change_signal(analysis->trace);
+			}
 			mapping=analysis->mapping_window;				
 			if(mapping&&(mapping->map))
 			{
@@ -13259,15 +13246,15 @@ DESCRIPTION : accept or reject the <analysis> highlighted signals.
 			{
 				/* for rejection, unhighlight all the devices (this is already done for */
 				/*UNEMAP_USE_3D) in rig_node_group_node_selection_change*/
-			highlight_analysis_perform_highlighting(analysis,0/*multiple_selection*/,
-				(struct Device **)NULL,0/*new_device_number*/,0/* new_electrode_number*/,
-				0/* new_auxiliary_number*/);
+				highlight_analysis_perform_highlighting(analysis,0/*multiple_selection*/,
+					(struct Device **)NULL,0/*new_device_number*/,0/* new_electrode_number*/,
+					0/* new_auxiliary_number*/);
 			}
 #endif /* defined(UNEMAP_USE_3D) */
 #if defined(UNEMAP_USE_3D)						
 			MANAGER_END_CACHE(FE_node)(node_manager);	
 			FE_node_selection_end_cache(node_selection);			
-#endif/* defined(UNEMAP_USE_3D)*/
+#endif/* defined(UNEMAP_USE_3D)*/		
 		}/* if(rig=analysis->rig)*/
 	}
 	else
