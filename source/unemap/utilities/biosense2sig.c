@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : biosense2sig.c
 
-LAST MODIFIED : 24 February 2000
+LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
 Converts a a Biosense location and activation time file to a signal file.
@@ -19,9 +19,9 @@ Converts a a Biosense location and activation time file to a signal file.
 
 /*#define FIT_SPHERE*/
 
-static int analysis_write_signal_file(char *file_name,void *analysis_work_area)
+static int my_analysis_write_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 17 January 2000
+LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
@@ -40,7 +40,7 @@ named file.
 	struct Rig *rig;
 	struct Signal_buffer *buffer;
 
-	ENTER(analysis_write_signal_file);
+	ENTER(my_analysis_write_signal_file);
 	/* check the arguments */
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
 		(rig=analysis->rig))
@@ -99,7 +99,7 @@ named file.
 							{
 								return_code=0;
 								display_message(ERROR_MESSAGE,
-							"analysis_write_signal_file.  Error writing EDA_LEVEL settings");
+							"my_analysis_write_signal_file.  Error writing EDA_LEVEL settings");
 							}
 						}
 						/* for each signal write the status, range and events */
@@ -108,8 +108,8 @@ named file.
 							/* write the status and range */
 							/*???DB.  Originally the unscaled maximum and minimum were
 								stored.  This has to be maintained for backward compatability */
-							signal_minimum=(*device)->signal_minimum;
-							signal_maximum=(*device)->signal_maximum;
+							signal_minimum=(*device)->signal_display_minimum;
+							signal_maximum=(*device)->signal_display_maximum;
 							if (0!=((*device)->channel)->gain)
 							{
 								signal_minimum=(((*device)->channel)->offset)+
@@ -158,7 +158,7 @@ named file.
 										{
 											return_code=0;
 											display_message(ERROR_MESSAGE,
-												"analysis_write_signal_file.  Error writing event");
+												"my_analysis_write_signal_file.  Error writing event");
 										}
 									}
 								}
@@ -166,14 +166,14 @@ named file.
 								{
 									return_code=0;
 									display_message(ERROR_MESSAGE,
-								"analysis_write_signal_file.  Error writing number of events");
+								"my_analysis_write_signal_file.  Error writing number of events");
 								}
 							}
 							else
 							{
 								return_code=0;
 								display_message(ERROR_MESSAGE,
-									"analysis_write_signal_file.  Error writing signal range");
+									"my_analysis_write_signal_file.  Error writing signal range");
 							}
 							device++;
 							i--;
@@ -183,7 +183,7 @@ named file.
 					{
 						return_code=0;
 						display_message(ERROR_MESSAGE,
-							"analysis_write_signal_file.  Error writing analysis settings");
+							"my_analysis_write_signal_file.  Error writing analysis settings");
 					}
 				}
 			}
@@ -192,20 +192,20 @@ named file.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"analysis_write_signal_file.  Invalid file: %s",file_name);
+				"my_analysis_write_signal_file.  Invalid file: %s",file_name);
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"analysis_write_signal_file.  Missing analysis_work_area");
+			"my_analysis_write_signal_file.  Missing analysis_work_area");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* analysis_write_signal_file */
+} /* my_analysis_write_signal_file */
 
 int main(int argc,char *argv[])
 /*******************************************************************************
@@ -890,7 +890,7 @@ DESCRIPTION :
 										(struct Region *)NULL))
 									{
 										/* add the activation times */
-										if (analysis_write_signal_file(argv[2],
+										if (my_analysis_write_signal_file(argv[2],
 											&analysis_work_area))
 										{
 											printf("Created signal file: %s\n",argv[2]);
