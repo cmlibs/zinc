@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_creator.c
 
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Mouse controlled element creator/creator.
@@ -552,85 +552,6 @@ generating 2-D bilinear elements.
 	return (return_code);
 } /* Graphical_element_creator_make_template_element */
 
-struct Scene_picked_object_get_nearest_picked_node_data
-{
-	struct FE_node *picked_node;
-	struct MANAGER(FE_node) *node_manager;
-	/* "nearest" value from Scene_picked_object for picked_node */
-	unsigned int nearest;
-};
-
-static int Scene_picked_object_get_nearest_picked_node(
-	struct Scene_picked_object *picked_object,void *picked_node_data_void)
-/*******************************************************************************
-LAST MODIFIED : 15 July 1999
-
-DESCRIPTION :
-If the <picked_object> refers to a node, the "nearest" value is compared with
-that for the currently picked_node in the <picked_node_data>. I there was no
-currently picked_node or the new node is nearer, it becomes the picked node and
-its "nearest" value is stored in the picked_node_data.
-==============================================================================*/
-{
-	int node_number,return_code;
-	struct FE_node *picked_node;
-	struct Scene_object *scene_object;
-	struct Scene_picked_object_get_nearest_picked_node_data *picked_node_data;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *settings;
-	unsigned int nearest;
- 
-	ENTER(Scene_picked_object_get_nearest_picked_node);
-	if (picked_object&&(picked_node_data=
-		(struct Scene_picked_object_get_nearest_picked_node_data *)
-		picked_node_data_void))
-	{
-		return_code=1;
-		/* is the last scene_object a Graphical_element wrapper, and does the
-			 settings for the graphic refer to node_glyphs? */
-		if ((scene_object=Scene_picked_object_get_Scene_object(picked_object,
-			Scene_picked_object_get_number_of_scene_objects(picked_object)-1))&&
-			(SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP==
-				Scene_object_get_type(scene_object))&&(gt_element_group=
-					Scene_object_get_graphical_element_group(scene_object))&&
-			(3==Scene_picked_object_get_number_of_subobjects(picked_object))&&
-			(settings=get_settings_at_position_in_GT_element_group(gt_element_group,
-				Scene_picked_object_get_subobject(picked_object,0)))&&
-			(GT_ELEMENT_SETTINGS_NODE_POINTS==
-				GT_element_settings_get_settings_type(settings)))
-		{
-			node_number=Scene_picked_object_get_subobject(picked_object,2);
-			if (picked_node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,cm_node_identifier)(
-				node_number,picked_node_data->node_manager))
-			{
-				nearest=Scene_picked_object_get_nearest(picked_object);
-				if (((struct FE_node *)NULL==picked_node_data->picked_node)||
-					(nearest < picked_node_data->nearest))
-				{
-					picked_node_data->picked_node = picked_node;
-					picked_node_data->nearest = nearest;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_picked_object_get_nearest_picked_node.  "
-					"Node number %d not in manager",node_number);
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_picked_object_get_nearest_picked_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_picked_object_get_nearest_picked_node */
-
 static int Graphical_element_creator_add_element(
 	struct Graphical_element_creator *element_creator)
 /*******************************************************************************
@@ -717,7 +638,7 @@ static void Graphical_element_creator_scene_input_callback(struct Scene *scene,
 	void *graphical_element_creator_void,
 	struct Scene_input_callback_data *scene_input_callback_data)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 Receives mouse button press, motion and release events from <scene>, and
@@ -728,9 +649,10 @@ creates nodes and elements from the entered positions.
 	FE_value node_coordinates[3];
 	int i,node_number,return_code;
 	struct FE_field_component field_component;
-	struct FE_node *node;
+	struct FE_node *node,*temp_node;
 	struct Graphical_element_creator *element_creator;
-	struct Scene_picked_object_get_nearest_picked_node_data picked_node_data;
+	struct GT_element_group *gt_element_group;
+	struct LIST(FE_node) *selected_nodes;
 
 	ENTER(Graphical_element_creator_scene_input_callback);
 	if (scene&&(element_creator=(struct Graphical_element_creator *)
@@ -752,13 +674,13 @@ creates nodes and elements from the entered positions.
 					/*???debug end */
 #endif /* defined (DEBUG) */
 					/* get picked node nearest to the near plane, if any */
-					picked_node_data.picked_node=(struct FE_node *)NULL;
-					picked_node_data.node_manager=element_creator->node_manager;
-					FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
-						Scene_picked_object_get_nearest_picked_node,
-						(void *)&picked_node_data,
-						scene_input_callback_data->picked_object_list);
-					if (!(node=picked_node_data.picked_node))
+					node=Scene_picked_object_list_get_nearest_node(
+						scene_input_callback_data->picked_object_list,
+						element_creator->node_manager,element_creator->node_group,
+						(struct Scene_picked_object **)NULL,
+						(struct GT_element_group **)NULL,
+						(struct GT_element_settings **)NULL);
+					if (!node)
 					{
 						if (MESH_EDITOR_CREATE_ELEMENTS !=
 							element_creator->mesh_editor_create_mode)
@@ -861,7 +783,40 @@ creates nodes and elements from the entered positions.
 							return_code=0;
 						}
 					}
-					if (!return_code)
+					if (return_code)
+					{
+						if (node)
+						{
+							/* highlight node just created */
+							if (selected_nodes=CREATE(LIST(FE_node))())
+							{
+								switch (element_creator->mesh_editor_create_mode)
+								{
+									case MESH_EDITOR_CREATE_ONLY_NODES:
+									{
+										ADD_OBJECT_TO_LIST(FE_node)(node,selected_nodes);
+									} break;
+									case MESH_EDITOR_CREATE_ELEMENTS:
+									case MESH_EDITOR_CREATE_NODES_AND_ELEMENTS:
+									{
+										for (i=0;i<element_creator->number_of_clicked_nodes;i++)
+										{
+											get_FE_element_node(element_creator->element,i,
+												&temp_node);
+											ensure_FE_node_is_in_list(temp_node,
+												(void *)selected_nodes);
+										}
+									} break;
+								}
+								gt_element_group=Scene_get_graphical_element_group(scene,
+									element_creator->element_group);
+								GT_element_group_modify_selected_nodes(gt_element_group,
+									GT_ELEMENT_GROUP_SELECT_REPLACE,selected_nodes);
+								DESTROY(LIST(FE_node))(&selected_nodes);
+							}
+						}
+					}
+					else
 					{
 						display_message(WARNING_MESSAGE,
 							"Graphical_element_creator_scene_input_callback.  "
@@ -1188,7 +1143,7 @@ int Graphical_element_creator_set_mesh_editor_create_mode(
 	enum Mesh_editor_create_mode mesh_editor_create_mode,
 	struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1201,14 +1156,12 @@ DESCRIPTION :
 		return_code=1;
 		if (mesh_editor_create_mode != element_creator->mesh_editor_create_mode)
 		{
-			if ((MESH_EDITOR_NO_CREATE==mesh_editor_create_mode)||
-				(MESH_EDITOR_CREATE_ONLY_NODES==mesh_editor_create_mode))
+			/* clear all highlighted objects highlight node just created */
+			Scene_clear_selected(scene);
+			if (element_creator->element)
 			{
-				if (element_creator->element)
-				{
-					display_message(WARNING_MESSAGE,"Aborting current element creation");
-					DEACCESS(FE_element)(&(element_creator->element));
-				}
+				display_message(WARNING_MESSAGE,"Aborting current element creation");
+				DEACCESS(FE_element)(&(element_creator->element));
 			}
 			if (MESH_EDITOR_NO_CREATE==mesh_editor_create_mode)
 			{
