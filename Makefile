@@ -32,7 +32,7 @@ COMMON_IMAKE_RULE= \
 	fi ;
 
 COMMON_MAKE_RULE= \
-	CMGUI_DEV_ROOT=/cygdrive/c/dev/cmgui ; \
+	CMGUI_DEV_ROOT=$(PWD) ; \
 	export CMGUI_DEV_ROOT ; \
 	cd $(SOURCE_PATH);	
 
