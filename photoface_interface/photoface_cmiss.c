@@ -2348,6 +2348,8 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 										photoface_remote_path);
 									fprintf(setup_comfile, "$PHOTOFACE_MODEL = \"%s\"\n",
 										model_name);
+									fprintf(setup_comfile, "$PHOTOFACE_STATE = \"%s\"\n",
+										state);
 									fprintf(setup_comfile, "open comfile $PHOTOFACE_CMISS/pf_setup.com exec\n");
 
 									fclose(setup_comfile);
