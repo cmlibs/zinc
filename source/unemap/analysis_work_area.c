@@ -400,7 +400,7 @@ DESCRIPTION :
 			/*we're drawing a single map*/
 			map->number_of_frames=1;
 			update_mapping_drawing_area(mapping,2);
-			update_mapping_colour_or_auxili(mapping);
+			update_mapping_colour_or_auxili(mapping);			
 			mapping_window_set_animation_buttons(mapping);
 		}
 	}

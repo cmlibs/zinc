@@ -197,7 +197,6 @@ timekeeper.
 	if (time)
 	{
 		time->current_time = new_time;
-		
 		callback_data = time->callback_list;
 		while(callback_data)
 		{

@@ -126,7 +126,7 @@ Finds the id of the mapping map button.
 
 static void mapping_window_update_time_limits(struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 30 April 1999
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 Sets the minimum and maximum of the time_keeper to relate to the current map
@@ -1623,17 +1623,27 @@ DESCRIPTION :
 Starts the activation map animation.
 ==============================================================================*/
 {
+	struct Device *device;
 	struct Mapping_window *mapping;
 	struct Map *map;
+	struct Rig *rig;
+	struct Signal *signal;
+	struct Signal_buffer *buffer;
 	struct Time_keeper *time_keeper;
 
 	ENTER(animate_activation_map);
 	mapping= (struct Mapping_window *)NULL;
 	map= (struct Map *)NULL;
 	time_keeper=(struct Time_keeper *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	signal=(struct Signal *)NULL;
+	rig=(struct Rig *)NULL;
+	device=(struct Device *)NULL;
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(map=mapping->map)&&
+		(rig=*map->rig_pointer)&&(device=*(rig->devices))&&
+		(signal=device->signal)&&(buffer=signal->buffer)&&
 		(map->type)&&((SINGLE_ACTIVATION== *(map->type))||
 		((MULTIPLE_ACTIVATION== *(map->type))&&
 		(NO_INTERPOLATION==map->interpolation_type))||(POTENTIAL== *(map->type))))
@@ -1672,16 +1682,18 @@ Starts the activation map animation.
 						}/* map->interpolation_type */
 					} break;
 					case SINGLE_ACTIVATION:
-					{
+					{				 
 						map->activation_front= 0;
 						Time_keeper_request_new_time(time_keeper,
-								map->minimum_value + (float)*(map->datum));
+							map->minimum_value + (float)buffer->times[*(map->datum)]
+							* 1000.0 / buffer->frequency);
 					} break;
 					case MULTIPLE_ACTIVATION:
 					{
-						map->activation_front= *(map->datum);
+						map->activation_front= *(map->datum);		
 						Time_keeper_request_new_time(time_keeper,
-								*(map->start_search_interval));
+							(float)buffer->times[*(map->start_search_interval)]*1000.0/
+							(buffer->frequency));
 					} break;
 				}
 				bring_up_time_editor_dialog(&mapping->time_editor_dialog,
@@ -3236,6 +3248,7 @@ The callback for redrawing part of a mapping drawing area.
 									update_mapping_colour_or_auxili(mapping);
 									/* set the sensitivity of the save electrode values button */
 									update_mapping_window_file_menu(mapping);
+									mapping_window_update_time_limits(mapping);
 									mapping_window_set_animation_buttons(mapping);
 								}
 								else

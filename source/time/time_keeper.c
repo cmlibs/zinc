@@ -549,7 +549,7 @@ DESCRIPTION :
 	ENTER(Time_keeper_request_new_time);
 
 	if (time_keeper)
-	{
+	{		
 		/* SAB Some things in UNEMAP expect this to callback even when the
 			value hasn't changed */
 		/* Ensure that this new time request isn't generated from the callbacks
@@ -559,7 +559,6 @@ DESCRIPTION :
 			recursive_check = 1;
 
 			time_keeper->time = new_time;
-
 			/* If the object is playing */
 			if(time_keeper->xt_interval_id)
 			{
@@ -1284,7 +1283,7 @@ DESCRIPTION :
 	ENTER(Time_object_set_time_keeper);
 
 	if (time_keeper)
-	{
+	{		
 		time_keeper->maximum_set = 1;
 		time_keeper->maximum = maximum;
 		Time_keeper_notify_clients(time_keeper, TIME_KEEPER_NEW_MAXIMUM);
@@ -1337,7 +1336,7 @@ DESCRIPTION :
 	ENTER(Time_object_set_time_keeper);
 
 	if (time_keeper)
-	{
+	{	
 		time_keeper->minimum_set = 1;
 		time_keeper->minimum = minimum;
 		Time_keeper_notify_clients(time_keeper, TIME_KEEPER_NEW_MINIMUM);
