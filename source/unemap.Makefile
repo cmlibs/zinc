@@ -391,15 +391,12 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 
-ifeq ($(SYSNAME),Linux)
-MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/linux86 -llapack-debug -lblas-debug
-endif # $(SYSNAME) == Linux
 ifeq ($(SYSNAME:IRIX%=),)
 MATRIX_LIB = -lscs
-endif # $(SYSNAME) == Linux
-ifeq ($(SYSNAME),win32)
-MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/win32 -llapack-debug -lblas-debug
-endif # $(SYSNAME) == win32
+else # ($(SYSNAME:IRIX%=),)
+MATRIX_INC = -L$(CMISS_ROOT)/linear_solvers/lib/$(LIB_ARCH_DIR) -llapack-debug -lblas-debug
+endif # ($(SYSNAME:IRIX%=),)
+
 
 ifeq ($(SYSNAME:IRIX%=),)
    LIB = -lPW -lftn -lm -lC -lCio -lpthread 
