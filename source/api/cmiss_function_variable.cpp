@@ -130,7 +130,6 @@ it is no longer required.
 #else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 
-#if defined (NOT_DEBUG)
 Cmiss_function_id Cmiss_function_variable_evaluate(
 	Cmiss_function_variable_id variable,Cmiss_function_variable_id input,
 	Cmiss_function_id value)
@@ -166,7 +165,7 @@ See the include file.
 
 	return (result);
 }
-#else // defined (NOT_DEBUG)
+#if defined (NOT_DEBUG)
 Cmiss_function_id Cmiss_function_variable_evaluate(
 	Cmiss_function_variable_id,Cmiss_function_variable_id,
 	Cmiss_function_id)
@@ -183,6 +182,7 @@ See the include file.
 
 	return (result);
 }
+#else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 
 #if defined (NOT_DEBUG)
