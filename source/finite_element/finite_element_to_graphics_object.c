@@ -7004,9 +7004,10 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct GT_object *glyph,Triple glyph_centre,Triple glyph_size,
 	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
 	struct Computed_field *data_field,struct Computed_field *label_field,
-	enum Graphics_select_mode select_mode,struct Multi_range *selected_ranges)
+	enum Graphics_select_mode select_mode,struct Multi_range *selected_ranges,
+	int *point_numbers)
 /*******************************************************************************
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -7027,6 +7028,8 @@ to say which parent element they should be evaluated on as necessary.
 those points with numbers in or out of the given ranges when given value
 GRAPHICS_DRAW_SELECTED or GRAPHICS_DRAW_UNSELECTED. If <selected_ranges> is
 NULL, no numbers are selected.
+If <point_numbers> are supplied then points numbers for OpenGL picking are taken
+from this array, otherwise they are sequential, starting at 0.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 ==============================================================================*/
@@ -7157,7 +7160,14 @@ Note:
 					{
 						if (names)
 						{
-							names[point_no]=i;
+							if (point_numbers)
+							{
+								names[point_no]=point_numbers[i];
+							}
+							else
+							{
+								names[point_no]=i;
+							}
 						}
 						xi[0]=(FE_value)xi_points[i][0];
 						xi[1]=(FE_value)xi_points[i][1];
@@ -8520,7 +8530,7 @@ fields defined over it.
 						element_to_glyph_set_data->data_field,
 						element_to_glyph_set_data->label_field,
 						element_to_glyph_set_data->select_mode,
-						(struct Multi_range *)NULL))
+						(struct Multi_range *)NULL,(int *)NULL))
 					{
 						if (!GT_OBJECT_ADD(GT_glyph_set)(
 							element_to_glyph_set_data->graphics_object,
