@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : glyph.h
 
-LAST MODIFIED : 20 November 2000
+LAST MODIFIED : 16 July 2002
 
 DESCRIPTION :
 Glyphs are GT_objects which contain simple geometric shapes such as
@@ -161,6 +161,14 @@ The sphere is centred at (0,0,0) and its poles are on the (1,0,0) line. It fits
 into the unit cube spanning from -0.5 to +0.5 across all axes. Parameter
 <number_of_segments_around> should normally be an even number at least 6 and
 twice <number_of_segments_down> look remotely spherical.
+==============================================================================*/
+
+struct LIST(GT_object) *make_standard_glyphs(void);
+/*******************************************************************************
+LAST MODIFIED : 16 July 2002
+
+DESCRIPTION :
+Creates a list of standard glyphs for the cmgui and unemap applications.
 ==============================================================================*/
 
 #endif /* !defined (GLYPH_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : glyph.c
 
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 16 July 2002
 
 DESCRIPTION :
 Glyphs are GT_objects which contain simple geometric shapes such as
@@ -1244,3 +1244,113 @@ twice <number_of_segments_down> look remotely spherical.
 
 	return (glyph);
 } /* make_glyph_sphere */
+
+struct LIST(GT_object) *make_standard_glyphs(void)
+/*******************************************************************************
+LAST MODIFIED : 16 July 2002
+
+DESCRIPTION :
+Creates a list of standard glyphs for the cmgui and unemap applications.
+==============================================================================*/
+{
+	struct GT_object *glyph, *mirror_glyph;
+	struct LIST(GT_object) *glyph_list;
+
+	ENTER(make_glyph_sphere);
+	if (glyph_list = CREATE(LIST(GT_object))())
+	{
+		/* add standard glyphs */
+		if (glyph=make_glyph_arrow_line("arrow_line",0.25,0.125))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		mirror_glyph = glyph;
+		if (glyph=make_glyph_mirror("mirror_arrow_line",mirror_glyph))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_arrow_solid("arrow_solid",12,2./3.,1./6.))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		mirror_glyph = glyph;
+		if (glyph=make_glyph_mirror("mirror_arrow_solid",mirror_glyph))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_axes("axes",0.1,0.025,0.1))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_cone("cone",12))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		mirror_glyph = glyph;
+		if (glyph=make_glyph_mirror("mirror_cone",mirror_glyph))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_cross("cross"))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_cube_solid("cube_solid"))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_cube_wireframe("cube_wireframe"))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_cylinder("cylinder6",6))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_cylinder("cylinder",12))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_cylinder("cylinder_hires",48))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_sphere("diamond",4,2))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_line("line"))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		mirror_glyph = glyph;
+		if (glyph=make_glyph_mirror("mirror_line",mirror_glyph))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_point("point",g_POINT_MARKER,0))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_sheet("sheet"))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_sphere("sphere",12,6))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_sphere("sphere_hires",48,24))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"make_standard_glyphs.  Could not create glyph list");
+	}
+	LEAVE;
+
+	return (glyph_list);
+} /* make_standard_glyphs */
