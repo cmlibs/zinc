@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 26 October 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -32,9 +32,11 @@ DESCRIPTION :
 #include "element/element_tool.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_component_operations.h"
+#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_deformation.h"
 #include "computed_field/computed_field_derivatives.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_matrix_operations.h"
 #include "computed_field/computed_field_sample_texture.h"
@@ -1043,13 +1045,17 @@ Main program for the CMISS Graphical User Interface
 		(struct Computed_field_finite_element_package *)NULL;
 	if (command_data.computed_field_package)
 	{
+		Computed_field_register_types_component_operations(
+			command_data.computed_field_package);
+		Computed_field_register_types_composite(
+			command_data.computed_field_package);
 		Computed_field_register_types_derivatives(
+			command_data.computed_field_package);
+		Computed_field_register_types_fibres(
 			command_data.computed_field_package);
 		Computed_field_register_types_matrix_operations(
 			command_data.computed_field_package);
 		Computed_field_register_types_vector_operations(
-			command_data.computed_field_package);
-		Computed_field_register_types_component_operations(
 			command_data.computed_field_package);
 		if (command_data.graphics_window_manager)
 		{

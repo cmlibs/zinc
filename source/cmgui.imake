@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 17 October 2000
+XCOMM LAST MODIFIED : 18 October 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -700,16 +700,19 @@ COMMAND_SRCS = \
 COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field.c \
 	computed_field/computed_field_component_operations.c \
+	computed_field/computed_field_composite.c \
 	computed_field/computed_field_coordinate.c \
 	computed_field/computed_field_deformation.c \
 	computed_field/computed_field_derivatives.c \
+	computed_field/computed_field_fibres.c \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_finite_element.c \
 	computed_field/computed_field_integration.c \
 	computed_field/computed_field_matrix_operations.c \
 	computed_field/computed_field_sample_texture.c \
 	computed_field/computed_field_vector_operations.c \
-	computed_field/computed_field_window_projection.c
+	computed_field/computed_field_window_projection.c \
+	computed_field/computed_field_wrappers.c
 CURVE_SRCS = \
 	curve/control_curve.c \
 	curve/control_curve_editor.c \
