@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 20 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -3450,6 +3450,33 @@ LAST MODIFIED : 8 June 1999
 
 DESCRIPTION :
 A modifier function for specifying an element.
+==============================================================================*/
+
+int ensure_FE_element_is_in_list(struct FE_element *element,
+	void *element_list_void);
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+Iterator function for adding <element> to <element_list> if not currently in it.
+==============================================================================*/
+
+int ensure_FE_element_is_not_in_list(struct FE_element *element,
+	void *element_list_void);
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+Iterator function for removing <element> from <element_list> if currently in it.
+==============================================================================*/
+
+int toggle_FE_element_in_list(struct FE_element *element,
+	void *element_list_void);
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+If <element> is in <element_list> it is taken out, otherwise it is added.
 ==============================================================================*/
 
 int ensure_FE_element_and_faces_are_in_group(struct FE_element *element,

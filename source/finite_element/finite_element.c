@@ -31119,6 +31119,114 @@ A modifier function for specifying an element.
 	return (return_code);
 } /* set_FE_element */
 
+int ensure_FE_element_is_in_list(struct FE_element *element,
+	void *element_list_void)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+Iterator function for adding <element> to <element_list> if not currently in it.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_element) *element_list;
+
+	ENTER(ensure_FE_element_is_in_list);
+	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
+	{
+		if (!FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
+			element->identifier,element_list))
+		{
+			return_code=ADD_OBJECT_TO_LIST(FE_element)(element,element_list);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ensure_FE_element_is_in_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* ensure_FE_element_is_in_list */
+
+int ensure_FE_element_is_not_in_list(struct FE_element *element,
+	void *element_list_void)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+Iterator function for removing <element> from <element_list> if currently in it.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_element) *element_list;
+
+	ENTER(ensure_FE_element_is_not_in_list);
+	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
+	{
+		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
+			element->identifier,element_list))
+		{
+			return_code=REMOVE_OBJECT_FROM_LIST(FE_element)(element,element_list);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ensure_FE_element_is_not_in_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* ensure_FE_element_is_not_in_list */
+
+int toggle_FE_element_in_list(struct FE_element *element,
+	void *element_list_void)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+If <element> is in <element_list> it is taken out, otherwise it is added.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_element) *element_list;
+
+	ENTER(toggle_FE_element_in_list);
+	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
+	{
+		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
+			element->identifier,element_list))
+		{
+			return_code=REMOVE_OBJECT_FROM_LIST(FE_element)(element,element_list);
+		}
+		else
+		{
+			return_code=ADD_OBJECT_TO_LIST(FE_element)(element,element_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"toggle_FE_element_in_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* toggle_FE_element_in_list */
+
 int ensure_FE_element_and_faces_are_in_group(struct FE_element *element,
 	void *element_group_void)
 /*******************************************************************************
