@@ -369,6 +369,7 @@ struct FE_node_value_data
 {
 	struct FE_node *source_node;
 	Value_storage *dest_values_storage;
+	struct LIST(FE_node_field) *exclusion_field_list;
 }; /* FE_node_value_data */
 
 /*
@@ -517,6 +518,8 @@ Module functions
 ----------------
 */
 PROTOTYPE_LIST_FUNCTIONS(FE_node_field);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_node_field,field, \
+	struct FE_field *);
 PROTOTYPE_LIST_FUNCTIONS(FE_node_field_info);
 
 static int get_Value_storage_size(enum Value_type value_type)
@@ -1621,9 +1624,14 @@ node_value_data.values_storage.
 		the_node_value_data = (struct FE_node_value_data *)node_value_data;
 		if(the_node_value_data->dest_values_storage)
 		{	
-			/* get the values_storage for this node field*/	
-			FE_node_field_copy_value_storage(node_field,
-				the_node_value_data->source_node,&the_node_value_data->dest_values_storage);			
+			if ((!the_node_value_data->exclusion_field_list)||
+				!FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(node_field->field,
+					the_node_value_data->exclusion_field_list))
+			{
+				/* get the values_storage for this node field*/	
+				FE_node_field_copy_value_storage(node_field,
+					the_node_value_data->source_node,&the_node_value_data->dest_values_storage);
+			}
 		}
 		else
 		{
@@ -1644,7 +1652,7 @@ node_value_data.values_storage.
 } /* iterative_FE_node_field_copy_values_storage */
 
 static int copy_FE_node_value_storage(struct FE_node *node, 
-	Value_storage **values_storage)
+	Value_storage **values_storage, struct LIST(FE_node_field) *exclusion_field_list)
 /******************************************************************************
 LAST MODIFIED: 4 March 1999
 
@@ -1658,6 +1666,10 @@ get this.
 
 The the calling function is responsible for deallocating values_storage,
 and any arrays in values_storage.
+
+The optional <exclusion_field_list> excludes any fields that are referenced by
+FE_node_fields in its list so that values that are about to be overwritten 
+are not allocated and copied.
 ==============================================================================*/
 {
 	int return_code;
@@ -1669,6 +1681,7 @@ and any arrays in values_storage.
 		return_code = 1;
 		data.source_node = node;
 		data.dest_values_storage = *values_storage; 
+		data.exclusion_field_list = exclusion_field_list;
 		/* data will be set and arrays allocated within */
 		/* iterative_FE_node_field_copy_values_storage */
 		if((node->fields)&&(values_storage))
@@ -1762,7 +1775,8 @@ and any arrays in values_storage.
 			{
 				if(ALLOCATE(dest_values_storage,Value_storage,size))
 				{
-					copy_FE_node_value_storage(node,&dest_values_storage);
+					copy_FE_node_value_storage(node,&dest_values_storage,
+						(struct LIST(FE_node_field) *)NULL);
 				}
 				else
 				{
@@ -2419,6 +2433,11 @@ for the information and sets <*field_info_address> to NULL.
 			{
 				return_code=REMOVE_OBJECT_FROM_LIST(FE_node_field_info)(field_info,
 					all_FE_node_field_info);
+				if (0 == NUMBER_IN_LIST(FE_node_field_info)(all_FE_node_field_info))
+				{
+					DESTROY(LIST(FE_node_field_info))(&all_FE_node_field_info);
+					all_FE_node_field_info = (struct LIST(FE_node_field_info) *)NULL;
+				}
 			}
 			else
 			{
@@ -12486,7 +12505,9 @@ LAST MODIFIED : 28 April 1999
 
 DESCRIPTION :
 Merges the fields in <destination> with those from <source>, leaving the
-combined fields in <destination>.
+combined fields in <destination>.  Where a field exists in both <source> and
+<destination> then the <destination> field values persist, as in our normal
+usage these will actually be the values most recently read in.
 ???DB.  It is important that the new fields for <destination> are added after
 	those for <source> (existing node in the manager) otherwise elements that
 	use <source> will be broken
@@ -12564,7 +12585,8 @@ combined fields in <destination>.
 							values_size = merge_data.values_size;
 
 							if((ALLOCATE(new_value,Value_storage,values_size))&&
-								(copy_FE_node_value_storage(source,&new_value)))
+								(copy_FE_node_value_storage(source,&new_value,
+									destination_info->node_field_list)))
 							{
 #if defined (OLD_CODE)
 								if (merge_data.changed_node)
@@ -27150,6 +27172,7 @@ no name, and the single component is named "1".
 	ENTER(CREATE(FE_field));
 	if (ALLOCATE(field,struct FE_field,1))
 	{
+		field->name=(char *)NULL;
 		field->fe_field_type=GENERAL_FE_FIELD;
 		field->indexer_field=(struct FE_field *)NULL;
 		field->number_of_indexed_values=0;
@@ -27196,7 +27219,10 @@ Frees the memory for the field and sets <*field_address> to NULL.
 		if (0==field->access_count)
 		{
 			/* free the field name */
-			DEALLOCATE(field->name);
+			if (field->name)
+			{
+				DEALLOCATE(field->name);
+			}
 
 			REACCESS(FE_field)(&(field->indexer_field),(struct FE_field *)NULL);
 			if (field->values_storage)
