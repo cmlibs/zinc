@@ -72,13 +72,13 @@ unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-de
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
 ESU_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap64 unemap-nodes unemap-3d unemap-3d-debug utilities
-ESU_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+ESU_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
 ESU_BUILD_MACHINE = 130.216.208.35 #esu35
 ESP_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap-3d unemap-3d-debug utilities
-ESP_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+ESP_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
 ESP_BUILD_MACHINE = 130.216.208.156 #esp56
 HPC1_BUILD_LIST = unemap unemap-debug unemap64 unemap64-debug unemap-3d
-HPC1_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+HPC1_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
 HPC1_BUILD_MACHINE = 130.216.191.92 #hpc1
 
 update_sources :

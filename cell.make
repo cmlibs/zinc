@@ -62,10 +62,10 @@ cell cell-debug cell-debug-memorycheck cell64 cell64-debug utilities :
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
 ESU_BUILD_LIST = cell cell-debug cell-debug-memorycheck cell64 utilities
-ESU_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+ESU_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
 ESU_BUILD_MACHINE = 130.216.208.35 #esu35
 ESP_BUILD_LIST = cell cell-debug cell-debug-memorycheck utilities
-ESP_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+ESP_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
 ESP_BUILD_MACHINE = 130.216.208.156 #esp56
 
 update_sources :
