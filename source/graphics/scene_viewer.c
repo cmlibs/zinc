@@ -475,6 +475,7 @@ DESCRIPTION :
 			viewport_left,viewport_right,viewport_top,viewport_bottom);
 #endif /* defined (DEBUG) */
 		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
 		glLoadIdentity();
 		glOrtho(viewport_left,viewport_right,viewport_bottom,viewport_top,
 			-1.0,1.0);
@@ -643,6 +644,8 @@ DESCRIPTION :
 			glEnd();
 		}
 		execute_Texture((struct Texture *)NULL);
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
 		return_code=1;
 	}
 	else
@@ -877,8 +880,6 @@ static int Scene_viewer_apply_projection_matrix(
 LAST MODIFIED : 8 April 2003
 
 DESCRIPTION :
-This is the last function in the render callstack that actually executes the
-scene.
 ==============================================================================*/
 {
 	int return_code;
@@ -1104,7 +1105,59 @@ DESCRIPTION :
 	return (return_code);	
 } /* Scene_viewer_render_overlay_scene */
 
-static int Scene_viewer_set_up_main_scene(
+static int Scene_viewer_initialise_matrices_and_swap_buffers(
+		struct Scene_viewer_rendering_data *rendering_data)
+/*******************************************************************************
+LAST MODIFIED : 9 April 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Scene_viewer *scene_viewer;
+
+	ENTER(Scene_viewer_initialise_matrices_and_swap_buffers);
+	if (rendering_data && (scene_viewer = rendering_data->scene_viewer))
+	{
+		return_code = 1;
+
+		/* load identity matrix for rendering normal scene */
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+							
+		Scene_viewer_call_next_renderer(rendering_data);
+
+		if (rendering_data->rendering_double_buffered)
+		{
+			scene_viewer->swap_buffers=1;
+		}
+		else
+		{
+			scene_viewer->swap_buffers=0;
+		}
+
+		glFlush();
+
+		/* SAB  Reapply the projection matrix which was cleared by the 
+			last glPopMatrix (Apply projection is further down the stack) 
+			so that unproject gets the full transformation */
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glLoadMatrixd(scene_viewer->window_projection_matrix);
+
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Scene_viewer_initialise_matrices_and_swap_buffers.  "
+			"Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);	
+} /* Scene_viewer_initialise_matrices_and_swap_buffers */
+
+static int Scene_viewer_apply_modelview_lights_and_clip_planes(
 		struct Scene_viewer_rendering_data *rendering_data)
 /*******************************************************************************
 LAST MODIFIED : 9 April 2003
@@ -1115,18 +1168,15 @@ DESCRIPTION :
 	int i, return_code;
 	struct Scene_viewer *scene_viewer;
 
-	ENTER(Scene_viewer_set_up_main_scene);
+	ENTER(Scene_viewer_apply_modelview_turn_on_lights_and_clip_planes);
 	if (rendering_data && (scene_viewer = rendering_data->scene_viewer))
 	{
 		return_code = 1;
 
-		/* load identity matrix for rendering normal scene */
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-							
 		/* ModelView matrix */
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
+
 		reset_Lights();
 		/* turn on lights that are part of the Scene_viewer,
 			ie. headlamps */
@@ -1220,35 +1270,17 @@ DESCRIPTION :
 
 		Scene_viewer_call_next_renderer(rendering_data);
 
-		if (rendering_data->rendering_double_buffered)
-		{
-			scene_viewer->swap_buffers=1;
-		}
-		else
-		{
-			scene_viewer->swap_buffers=0;
-		}
-
-		glFlush();
-
-		/* SAB  Reapply the projection matrix which was cleared by the 
-			last glPopMatrix (Apply projection is further down the stack) 
-			so that unproject gets the full transformation */
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glLoadMatrixd(scene_viewer->window_projection_matrix);
-
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "Scene_viewer_render_overlay_scene_for_picking.  "
+		display_message(ERROR_MESSAGE, "Scene_viewer_apply_modelview_lights_and_clip_planes.  "
 			"Invalid arguments");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);	
-} /* Scene_viewer_render_overlay_scene_for_picking */
+} /* Scene_viewer_apply_modelview_lights_and_clip_planes */
 
 static int Scene_viewer_handle_fastchanging(
 	struct Scene_viewer_rendering_data *rendering_data)
@@ -1280,7 +1312,7 @@ update the fastchanging objects.
 			scene_viewer->swap_buffers=0;
 			/* Set up projection */
 			glMatrixMode(GL_PROJECTION);
-			glLoadMatrixd(scene_viewer->projection_matrix);
+			glLoadMatrixd(scene_viewer->window_projection_matrix);
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
 			reset_Lights();
@@ -1305,7 +1337,7 @@ update the fastchanging objects.
 			{
 				/* for OpenGL window z coordinates, 0.0=near_plane, 1.0=far */
 				if (GL_TRUE==gluUnProject(0.0001,0.0001,0.0001,
-						 scene_viewer->modelview_matrix,scene_viewer->projection_matrix,viewport,
+						 scene_viewer->modelview_matrix,scene_viewer->window_projection_matrix,viewport,
 						 &obj_x,&obj_y,&obj_z))
 				{
 					if (scene_viewer->first_fast_change &&
@@ -1321,13 +1353,17 @@ update the fastchanging objects.
 						glReadBuffer(GL_BACK);
 						glDrawBuffer(GL_FRONT);
 					}
+					/* Copy all the pixels irrespective of their alpha values */
+					glDisable(GL_BLEND);
 					glRasterPos3d(obj_x,obj_y,obj_z);
 					glCopyPixels(0,0,rendering_data->viewport_width,
 						rendering_data->viewport_height,GL_COLOR);
 				}
 				glDrawBuffer(GL_FRONT);
+				glEnable(GL_BLEND);
 			}
 			execute_Scene_fast_changing(scene_viewer->scene);
+			glFlush();
 			scene_viewer->first_fast_change=0;
 		}
 		else
@@ -1370,8 +1406,6 @@ Renders the background into the scene.
 
 		if (scene_viewer->background_texture)
 		{
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
 			glDisable(GL_LIGHTING);
 			glColor3f((scene_viewer->background_colour).red,
 				(scene_viewer->background_colour).green,
@@ -1523,17 +1557,17 @@ the entire scene.
 	if (rendering_data)
 	{
 		return_code = 1;
-		glClearAccum(0.0, 0.0, 0.0, 0.0);
-		glClear(GL_ACCUM_BUFFER_BIT);
 		antialias = rendering_data->override_antialias;
 		for (accumulation_count = 0 ; accumulation_count < antialias ;
 			  accumulation_count++)
 		{
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 			glMatrixMode(GL_PROJECTION);
 
-			glPushMatrix();
+			/* SAB This should more robustly be a glPushMatrix and glPopMatrix
+				pair but the SGI implementations sometimes have only one
+				level on the Projection matrix stack and so knowing that this
+				matrix is the identity so far I can just reload that */
+			glLoadIdentity();
 
 			/********* CALCULATE ANTIALIAS OFFSET MATRIX *********/
 			switch(antialias)
@@ -1599,29 +1633,21 @@ the entire scene.
 			glMultMatrixd(temp_matrix);
 
 			Scene_viewer_call_next_renderer(rendering_data);
-
-			glBlendFunc(GL_ONE, GL_ZERO);
-
-			if (-3==accumulation_count)
+			
+			if (0==accumulation_count)
 			{
-				glAccum(GL_LOAD,1.0/((GLfloat)antialias));
+				glAccum(GL_LOAD,1.0f/((GLfloat)antialias));
 			}
 			else
 			{
-				glAccum(GL_ACCUM,1.0/((GLfloat)antialias));
+				glAccum(GL_ACCUM,1.0f/((GLfloat)antialias));
 			}
-
-			glMatrixMode(GL_PROJECTION);
-
-			glPopMatrix();
 			
 		} /* for (antialias_count) */
 
-		glLogicOp(GL_COPY);
-		
 		/* We want to ensure that we return white when we accumulate a white
 			background */
-		glAccum(GL_RETURN,1.0);
+		glAccum(GL_RETURN,1.001f);
 		glFlush();
 	}
 	else
@@ -2242,6 +2268,14 @@ access this function.
 				Scene_viewer_calculate_transformation(scene_viewer,
 					rendering_data.viewport_width,rendering_data.viewport_height);
 
+				if (SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffering_mode)
+				{
+					render_object = CREATE(Scene_viewer_render_object)(
+						Scene_viewer_use_pixel_buffer);
+					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
+						rendering_data.render_callstack);
+				}
+	
 				if (rendering_data.rendering_double_buffered)
 				{
 					render_object = CREATE(Scene_viewer_render_object)(
@@ -2250,10 +2284,16 @@ access this function.
 						rendering_data.render_callstack);
 				}
 
-				if (SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffering_mode)
+				/* Initialise the matricies and handle the double buffer flag */
+				render_object = CREATE(Scene_viewer_render_object)(
+					Scene_viewer_initialise_matrices_and_swap_buffers);
+				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
+					rendering_data.render_callstack);
+
+				if (rendering_data.override_antialias > 1)
 				{
 					render_object = CREATE(Scene_viewer_render_object)(
-						Scene_viewer_use_pixel_buffer);
+						Scene_viewer_antialias);
 					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 						rendering_data.render_callstack);
 				}
@@ -2261,6 +2301,12 @@ access this function.
 				/* Render the background */
 				render_object = CREATE(Scene_viewer_render_object)(
 					Scene_viewer_render_background);
+				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
+					rendering_data.render_callstack);
+
+				/* Apply the modelview matrix, lights and clip planes */
+				render_object = CREATE(Scene_viewer_render_object)(
+					Scene_viewer_apply_modelview_lights_and_clip_planes);
 				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 					rendering_data.render_callstack);
 
@@ -2281,24 +2327,10 @@ access this function.
 						rendering_data.render_callstack);
 				}
 
-				/* Initialise the modelview matrix and the lights */
-				render_object = CREATE(Scene_viewer_render_object)(
-					Scene_viewer_set_up_main_scene);
-				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-					rendering_data.render_callstack);
-
 				if (SCENE_VIEWER_STEREO == scene_viewer->stereo_mode)
 				{
 					render_object = CREATE(Scene_viewer_render_object)(
 						Scene_viewer_stereo);
-					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-						rendering_data.render_callstack);
-				}
-
-				if (rendering_data.override_antialias > 1)
-				{
-					render_object = CREATE(Scene_viewer_render_object)(
-						Scene_viewer_antialias);
 					ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 						rendering_data.render_callstack);
 				}
