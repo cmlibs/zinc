@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 19 December 2001
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -8067,7 +8067,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_streamlines(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 19 December 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT STREAMLINES command.
@@ -8087,7 +8087,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data,set_stream_vector_field_data;
@@ -8095,9 +8094,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	ENTER(gfx_modify_g_element_streamlines);
 	if (state)
 	{
-		if ((g_element_command_data=
-			(struct G_element_command_data *)g_element_command_data_void)&&
-			(computed_field_manager=g_element_command_data->computed_field_manager))
+		if (g_element_command_data =
+			(struct G_element_command_data *)g_element_command_data_void)
 		{
 			if (modify_g_element_data=
 				(struct Modify_g_element_data *)modify_g_element_data_void)
@@ -8115,11 +8113,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
 							"default_selected",
 							g_element_command_data->graphical_material_manager));
-					stream_vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-						Computed_field_is_stream_vector_capable,(void *)NULL,
-						computed_field_manager);
-					REACCESS(Computed_field)(&(settings->stream_vector_field),
-						stream_vector_field);
 					reverse_track = 0;
 					invisible_flag=0;
 					option_table=CREATE(Option_table)();
