@@ -13,6 +13,7 @@ Main program for cell.  Based on unemap.
 #include "cell/cell_window.h"
 #include "general/debug.h"
 #include "general/error_handler.h"
+#include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -115,12 +116,13 @@ Main program for cell
 ==============================================================================*/
 {
 	int return_code=0;
-  float default_light_direction[3]={0.0,-0.5,-1.0};
+	float default_light_direction[3]={0.0,-0.5,-1.0};
   struct Colour default_colour,ambient_colour;
 	struct GT_object *glyph;
   struct Select_tool *select_tool;
   struct Interactive_tool *transform_tool;
-	struct User_interface user_interface;
+  struct Event_dispatcher *event_dispatcher;
+  struct User_interface *user_interface;
   struct Any_object_selection *any_object_selection;
   struct Colour background_colour;
   struct Graphical_material *default_graphical_material;
@@ -143,14 +145,9 @@ Main program for cell
 	/* display the version */
 	display_message(INFORMATION_MESSAGE, VERSION "\n");
 	/* open the user interface */
-	user_interface.application_context=(XtAppContext)NULL;
-	user_interface.application_name="cell";
-	user_interface.application_shell=(Widget)NULL;
-	user_interface.argc_address= &argc;
-	user_interface.argv=argv;
-	user_interface.class_name="Cell";
-	user_interface.display=(Display *)NULL;
-	if (open_user_interface(&user_interface))
+	if ((event_dispatcher = CREATE(Event_dispatcher)())
+		&&(user_interface = CREATE(User_interface)(&argc, argv, event_dispatcher,
+		"Cell", "cell")))
 	{
     /* set up messages */
     set_display_message_function(ERROR_MESSAGE,display_error_message,
@@ -312,13 +309,13 @@ Main program for cell
     }
     interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
     transform_tool = CREATE(Interactive_tool_transform)(
-      &user_interface);
+      user_interface);
     ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,
       interactive_tool_manager);
 		select_tool = CREATE(Select_tool)(interactive_tool_manager,
 			any_object_selection,default_graphical_material);
     time_keeper=ACCESS(Time_keeper)(CREATE(Time_keeper)("default",
-      &user_interface));
+      event_dispatcher, user_interface));
     
     /* create the cell interface */
     if (cell_interface = CREATE(Cell_interface)(any_object_selection,
@@ -326,14 +323,14 @@ Main program for cell
       default_light_model,default_scene,default_spectrum,time_keeper,
       graphics_object_list,glyph_list,interactive_tool_manager,light_manager,
       light_model_manager,graphical_material_manager,scene_manager,
-      spectrum_manager,texture_manager,&user_interface,exit_cell_window
+      spectrum_manager,texture_manager,user_interface,exit_cell_window
 #if defined (CELL_DISTRIBUTED)
       ,(struct Element_point_ranges_selection *)NULL
 #endif /* defined (CELL_DISTRIBUTED) */
       ))
     {
       /* the GUI loop */
-      return_code = application_main_loop(&user_interface);
+      return_code = application_main_loop(user_interface);
       /* clean-up */
       DESTROY(Cell_interface)(&cell_interface);
       /* reset up messages */
@@ -343,9 +340,6 @@ Main program for cell
         (Display_message_function *)NULL, NULL);
       set_display_message_function(WARNING_MESSAGE,
         (Display_message_function *)NULL, NULL);
-      /* close the user interface */
-      close_user_interface(&user_interface);
-      DEACCESS(Time_keeper)(&time_keeper);
       if (select_tool)
       {
         DESTROY(Select_tool)(&select_tool);
@@ -377,7 +371,10 @@ Main program for cell
         "Unable to create Cell interface");
     }
     /* close the user interface */
-    close_user_interface(&user_interface);
+	 DEACCESS(Time_keeper)(&time_keeper);
+	 /* close the user interface */
+	 DESTROY(User_interface)(&user_interface);
+	 DESTROY(Event_dispatcher)(&event_dispatcher);
   }
   else
   {
