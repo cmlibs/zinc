@@ -176,7 +176,7 @@ static int CALLBACK_MATCHES(callback_type)( \
 LAST MODIFIED : 20 March 2000 \
 \
 DESCRIPTION : \
-Returns true if the
+Returns true if the \
 Sends <callback> with the object and call_data in <callback_data>. \
 ============================================================================*/ \
 { \
@@ -248,20 +248,20 @@ Adds a callback = <function> + <user_data> to <callback_list>. \
 ============================================================================*/ \
 { \
 	int return_code; \
-  struct CALLBACK_ITEM(callback_type) *callback; \
+  struct CALLBACK_ITEM(callback_type) *callback, *existing_callback; \
 \
 	ENTER(CALLBACK_LIST_ADD_CALLBACK(callback_type)); \
 	if (callback_list&&function) \
 	{ \
 		if (callback=CREATE(CALLBACK_ITEM(callback_type))(function,user_data)) \
 		{ \
-			if (FIRST_OBJECT_IN_LIST_THAT(CALLBACK_ITEM(callback_type))( \
+			if (existing_callback = \
+				FIRST_OBJECT_IN_LIST_THAT(CALLBACK_ITEM(callback_type))( \
 				CALLBACK_MATCHES(callback_type),(void *)callback,callback_list)) \
 			{ \
-				display_message(ERROR_MESSAGE,"CALLBACK_LIST_ADD_CALLBACK(" \
-					#callback_type ").  Callback already exists in list"); \
-				DESTROY(CALLBACK_ITEM(callback_type))(&callback); \
-				return_code=0; \
+            ACCESS(CALLBACK_ITEM(callback_type))(existing_callback); \
+            DESTROY(CALLBACK_ITEM(callback_type))(&callback); \
+            return_code = 1; \
 			} \
 			else \
 			{ \
@@ -318,16 +318,24 @@ Removes a callback = <function> + <user_data> from <callback_list>. \
 			FIRST_OBJECT_IN_LIST_THAT(CALLBACK_ITEM(callback_type))( \
 				CALLBACK_MATCHES(callback_type),(void *)&callback,callback_list)) \
 		{ \
-			if (REMOVE_OBJECT_FROM_LIST(CALLBACK_ITEM(callback_type))( \
-				existing_callback,callback_list)) \
-			{ \
-				return_code=1; \
-			} \
-			else \
-			{ \
-				display_message(ERROR_MESSAGE,"CALLBACK_LIST_REMOVE_CALLBACK(" \
-					#callback_type ").  Could not remove callback from list"); \
-				return_code=0; \
+         if (existing_callback->access_count == 1) \
+         { \
+			   if (REMOVE_OBJECT_FROM_LIST(CALLBACK_ITEM(callback_type))( \
+				   existing_callback,callback_list)) \
+			   { \
+				   return_code=1; \
+			   } \
+			   else \
+			   { \
+				   display_message(ERROR_MESSAGE,"CALLBACK_LIST_REMOVE_CALLBACK(" \
+					   #callback_type ").  Could not remove callback from list"); \
+				   return_code=0; \
+			   } \
+         } \
+		   else \
+         { \
+            DEACCESS(CALLBACK_ITEM(callback_type))(&existing_callback); \
+            return_code = 1; \
 			} \
 		} \
 		else \
