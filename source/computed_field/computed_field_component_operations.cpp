@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_component_operations.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 01 October 2003
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -190,6 +190,7 @@ Evaluate the fields cache at the node.
 			if (calculate_derivatives && field->source_fields[0]->derivatives_valid
 				&& field->source_fields[1]->derivatives_valid)
 			{
+        number_of_xi = get_FE_element_dimension(element);
 				derivative = field->derivatives;
 				for (i = 0 ; i < field->number_of_components ; i++)
 				{
