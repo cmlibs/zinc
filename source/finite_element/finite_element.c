@@ -45742,3 +45742,332 @@ the adjacent element.
 
 	return (return_code);
 } /* FE_element_xi_increment */
+
+int make_square_FE_element(struct FE_element **element_ptr,
+	struct FE_region *fe_region, int element_dimension, int basis_type,
+	struct FE_field *field)
+/*******************************************************************************
+LAST MODIFIED : 5 August 2003
+
+DESCRIPTION :
+Generates a square element with the specified <element_dimension>, <fe_region> and
+<basis_type>.  If a <field> is supplied it is defined on the element with unit
+scale factors.
+Shifted and generalised from element_creator.c.
+==============================================================================*/
+{
+	int *basis_type_array,i,j,k,number_of_components,number_of_nodes,
+		number_of_nodes_per_xi,
+		number_of_scale_factors,return_code,*type,*type_entry,*xi_basis_type;
+	struct CM_element_information element_identifier;
+	struct FE_basis *element_basis;
+	struct FE_element *element;
+	struct FE_element_field_component *component,**components;
+			struct FE_element_shape *element_shape;
+	struct Standard_node_to_element_map *standard_node_map;
+
+	ENTER(make_square_FE_element);
+	return_code=1;
+	element = (struct FE_element *)NULL;
+	if (element_ptr && fe_region && (element_dimension > 0))
+	{
+		/* make shape */
+		element_shape=(struct FE_element_shape *)NULL;
+		if (return_code)
+		{
+			/* make default n-D "square" element shape */
+			if (ALLOCATE(type,int,(element_dimension*(element_dimension+1))/2))
+			{
+				/* retrieve a "square" element of the specified element_dimension */
+				type_entry=type;
+				for (i=element_dimension-1;i>=0;i--)
+				{
+					*type_entry=LINE_SHAPE;
+					type_entry++;
+					for (j=i;j>0;j--)
+					{
+						*type_entry=0;
+						type_entry++;
+					}
+				}
+				if (element_shape=CREATE(FE_element_shape)(element_dimension,type,
+						 fe_region))
+				{
+					ACCESS(FE_element_shape)(element_shape);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"make_square_FE_element.  Error creating shape");
+					return_code=0;
+				}
+				DEALLOCATE(type);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"make_square_FE_element.  Not enough memory");
+				return_code=0;
+			}
+		}
+		/* make basis */
+		element_basis=(struct FE_basis *)NULL;
+		if (return_code)
+		{
+			/* make default N-linear basis */
+			if (ALLOCATE(basis_type_array,int,
+					 1+(element_dimension*(1+element_dimension))/2))
+			{
+				xi_basis_type=basis_type_array;
+				*xi_basis_type=element_dimension;
+				xi_basis_type++;
+				for (i=element_dimension;0<i;i--)
+				{
+					for (j=i;0<j;j--)
+					{
+						if (i==j)
+						{
+							*xi_basis_type=basis_type;
+						}
+						else
+						{
+							*xi_basis_type=NO_RELATION;
+						}
+						xi_basis_type++;
+					}
+				}
+				if (element_basis =
+					make_FE_basis(basis_type_array,
+						FE_region_get_basis_manager(fe_region)))
+				{
+					ACCESS(FE_basis)(element_basis);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"make_square_FE_element.  Error creating shape");
+					return_code=0;
+				}
+				DEALLOCATE(basis_type_array);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"make_square_FE_element.  Not enough memory");
+				return_code=0;
+			}
+		}
+		/* make template_element */
+		if (return_code)
+		{
+			element_identifier.type=CM_ELEMENT;
+			element_identifier.number=0;
+			if (element = CREATE(FE_element)(
+					 &element_identifier, element_shape, fe_region,
+					 (struct FE_element *)NULL))
+			{
+				switch (basis_type)
+				{
+					case QUADRATIC_LAGRANGE:
+					{
+						number_of_nodes_per_xi = 3;
+					} break;
+					case CUBIC_LAGRANGE:
+					{
+						number_of_nodes_per_xi = 4;
+					} break;
+					default:
+					{
+						number_of_nodes_per_xi = 2;
+					} break;
+				}
+				number_of_nodes=1;
+				for (i=0;i<element_dimension;i++)
+				{
+					number_of_nodes *= number_of_nodes_per_xi;
+				}
+				switch (basis_type)
+				{
+					case CUBIC_HERMITE:
+					{
+						number_of_scale_factors = number_of_nodes * 4;
+					} break;
+					default:
+					{
+						number_of_scale_factors = number_of_nodes;
+					} break;
+				}
+				if (set_FE_element_number_of_nodes(element,
+						 number_of_nodes) &&
+					set_FE_element_number_of_scale_factor_sets(
+						element,
+						/*number_of_scale_factor_sets*/1,
+						/*scale_factor_set_identifiers*/(void *)&element_basis,
+						/*numbers_in_scale_factor_sets*/&number_of_scale_factors))
+				{
+					if (field)
+					{
+						number_of_components = get_FE_field_number_of_components(
+							field);
+						if (ALLOCATE(components,struct FE_element_field_component *,
+								 number_of_components))
+						{
+							for (i=0;i<number_of_components;i++)
+							{
+								components[i]=(struct FE_element_field_component *)NULL;
+							}
+							for (i=0;(i<number_of_components)&&return_code;i++)
+							{
+								if (component=CREATE(FE_element_field_component)(
+										 STANDARD_NODE_TO_ELEMENT_MAP,number_of_nodes,
+										 element_basis,(FE_element_field_component_modify)NULL))
+								{
+									for (j=0;j<number_of_nodes;j++)
+									{
+										switch (basis_type)
+										{
+											case CUBIC_HERMITE:
+											{
+												if (standard_node_map =
+													CREATE(Standard_node_to_element_map)(
+														/*node_index*/j, /*number_of_values*/4))
+												{
+													for (k = 0 ; return_code && (k < 4) ; k++)
+													{
+														if (!(Standard_node_to_element_map_set_nodal_value_index(
+															standard_node_map, k, k) &&
+															Standard_node_to_element_map_set_scale_factor_index(
+															standard_node_map, k, j * 4 + k) &&
+															/* set scale_factors to 1 */
+															set_FE_element_scale_factor(element,
+															/*scale_factor_number*/j * 4 + k, 1.0)))
+														{
+															return_code = 0;
+														}
+													}
+													if (return_code)
+													{
+														return_code = FE_element_field_component_set_standard_node_map(
+															component, /*node_number*/j, standard_node_map);
+													}
+													else
+													{
+														DESTROY(Standard_node_to_element_map)(&standard_node_map);
+													}
+												}
+												else
+												{
+													return_code=0;
+												}
+											} break;
+											default:
+											{
+												if (standard_node_map =
+													CREATE(Standard_node_to_element_map)(
+														/*node_index*/j, /*number_of_values*/1))
+												{
+													if (!(Standard_node_to_element_map_set_nodal_value_index(
+														standard_node_map, 0, 0) &&
+														Standard_node_to_element_map_set_scale_factor_index(
+														standard_node_map, 0, j) &&
+														/* set scale_factors to 1 */
+														set_FE_element_scale_factor(element,
+														/*scale_factor_number*/j, 1.0) &&
+														FE_element_field_component_set_standard_node_map(
+														component, /*node_number*/j, standard_node_map)))
+													{
+														DESTROY(Standard_node_to_element_map)(
+															&standard_node_map);
+														return_code = 0;
+													}
+												}
+												else
+												{
+													return_code=0;
+												}
+											} break;
+										}
+									}
+								}
+								else
+								{
+									return_code=0;
+								}
+								components[i]=component;
+							}
+							if (return_code)
+							{
+								if (!define_FE_field_at_element(
+										 element,field,components))
+								{
+									display_message(ERROR_MESSAGE,
+										"make_square_FE_element.  "
+										"Could not define coordinate field at template_element");
+									DESTROY(FE_element)(&(element));
+									return_code=0;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"make_square_FE_element.  "
+									"Could not create components");
+								DESTROY(FE_element)(&(element));
+							}
+							for (i=0;i<number_of_components;i++)
+							{
+								DESTROY(FE_element_field_component)(&(components[i]));
+							}
+							DEALLOCATE(components);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"make_square_FE_element.  "
+							"Could not allocate components");
+						DESTROY(FE_element)(&(element));
+						return_code=0;
+					}
+				}
+				if (return_code && element)
+				{
+					*element_ptr = element;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"make_square_FE_element.  "
+					"Could not set element shape and field info");
+				DESTROY(FE_element)(&(element));
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"make_square_FE_element.  "
+				"Could not create template element");
+			return_code=0;
+		}
+		/* deaccess basis and shape so at most used by template element */
+		if (element_basis)
+		{
+			DEACCESS(FE_basis)(&element_basis);
+		}
+		if (element_shape)
+		{
+			DEACCESS(FE_element_shape)(&element_shape);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"make_square_FE_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* make_square_FE_element */

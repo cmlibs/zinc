@@ -4772,4 +4772,16 @@ DESCRIPTION :
 Adds the <increment> to <xi> changing to another element if necessary.
 ==============================================================================*/
 
+int make_square_FE_element(struct FE_element **element_ptr,
+	struct FE_region *fe_region, int element_dimension, int basis_type,
+	struct FE_field *field);
+/*******************************************************************************
+LAST MODIFIED : 5 August 2003
+
+DESCRIPTION :
+Generates a square element with the specified <element_dimension>, <fe_region> and
+<basis_type>.  If a <field> is supplied it is defined on the element with unit
+scale factors.
+Shifted and generalised from element_creator.c.
+==============================================================================*/
 #endif /* !defined (FINITE_ELEMENT_H) */
