@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.c
 
-LAST MODIFIED : 12 March 2002
+LAST MODIFIED : 20 March 2002
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -3360,7 +3360,7 @@ objects interested in this GT_object will be notified that is has changed.
 int GT_object_Graphical_material_change(struct GT_object *graphics_object,
 	struct LIST(Graphical_material) *changed_material_list)
 /*******************************************************************************
-LAST MODIFIED : 12 March 2002
+LAST MODIFIED : 20 March 2002
 
 DESCRIPTION :
 Tells the <graphics_object> that the materials in the <changed_material_list>
@@ -3393,7 +3393,10 @@ change to any material in use in the linked graphics objects.
 				}
 				else
 				{
-					graphics_object->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
+					if (GRAPHICS_NOT_COMPILED != graphics_object->compile_status)
+					{
+						graphics_object->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
+					}
 				}
 				GT_object_inform_clients(graphics_object);
 			}
