@@ -2336,7 +2336,7 @@ DESCRIPTION :
 	return (return_code);
 } /* list_Computed_field_default_coordinate_commands */
 
-static int Computed_field_get_type_default_coordinate(struct Computed_field *field,
+int Computed_field_get_type_default_coordinate(struct Computed_field *field,
 	struct MANAGER(Computed_field) **computed_field_manager)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -2812,7 +2812,7 @@ Converts <field> into type COMPUTED_FIELD_CMISS_NUMBER.
 
 static char computed_field_xi_coordinates_type_string[] = "xi_coordinates";
 
-static int Computed_field_is_type_xi_coordinates(struct Computed_field *field)
+int Computed_field_is_type_xi_coordinates(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
 
@@ -3206,7 +3206,7 @@ Converts <field> into type COMPUTED_FIELD_XI_COORDINATES.
 	return (return_code);
 } /* define_Computed_field_type_xi_coordinates */
 
-static int Computed_field_is_type_node_value(struct Computed_field *field)
+int Computed_field_is_type_node_value(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
 
@@ -3457,37 +3457,13 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_node_value_has_numerical_components */
 
-int Computed_field_node_value_can_be_destroyed(struct Computed_field *field)
+#define Computed_field_node_value_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_node_value_type_specific_data *data;
-	struct FE_field *temp_fe_field;
-
-	ENTER(Computed_field_node_value_can_be_destroyed);
-	if (field && (data = 
-		(struct Computed_field_node_value_type_specific_data *)
-		field->type_specific_data))
-	{
-		/* check the fe_field can be destroyed */
-		temp_fe_field=data->fe_field;
-		DEACCESS(FE_field)(&temp_fe_field);
-		return_code=FE_field_can_be_destroyed(data->fe_field);
-		ACCESS(FE_field)(data->fe_field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_node_value_can_be_destroyed.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_node_value_can_be_destroyed */
 
 static int Computed_field_node_value_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node)
@@ -4214,7 +4190,7 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_node_value */
 
-static int Computed_field_is_type_node_array_value_at_time(struct Computed_field *field)
+int Computed_field_is_type_node_array_value_at_time(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
 
@@ -4469,37 +4445,13 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_node_array_value_at_time_has_numerical_components */
 
-static int Computed_field_node_array_value_at_time_can_be_destroyed(struct Computed_field *field)
+#define Computed_field_node_array_value_at_time_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_node_array_value_at_time_type_specific_data *data;
-	struct FE_field *temp_fe_field;
-
-	ENTER(Computed_field_node_array_value_at_time_can_be_destroyed);
-	if (field && (data = 
-		(struct Computed_field_node_array_value_at_time_type_specific_data *)
-		field->type_specific_data))
-	{
-		/* check the fe_field can be destroyed */
-		temp_fe_field=data->fe_field;
-		DEACCESS(FE_field)(&temp_fe_field);
-		return_code=FE_field_can_be_destroyed(data->fe_field);
-		ACCESS(FE_field)(data->fe_field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_node_array_value_at_time_can_be_destroyed.  Missing field");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Computed_field_node_array_value_at_time_can_be_destroyed */
 
 static int Computed_field_node_array_value_at_time_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node)

@@ -1406,13 +1406,8 @@ stored in the unemap package. Also frees any associated fe_fields
 		set_unemap_package_signal_value_at_time_field
 						(unemap_package,(struct Computed_field *)NULL);
 		if(computed_field)
-		{	
-#if 0 /*!!jw not sure what's going on with this-ask Shane when he returns */			
-			if (Computed_field_can_be_destroyed
-				(computed_field))
-#else
-			if(1)
-#endif
+		{				
+			if (Computed_field_can_be_destroyed(computed_field))
 			{			
 
 				/* also want to destroy any wrapped FE_field */

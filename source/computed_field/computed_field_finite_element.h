@@ -83,6 +83,16 @@ LAST MODIFIED : 18 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
+int Computed_field_get_type_default_coordinate(struct Computed_field *field,
+	struct MANAGER(Computed_field) **computed_field_manager);
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_DEFAULT_COORDINATE, the 
+<source_field> and <xi_index> used by it are returned.
+==============================================================================*/
+
 int Computed_field_set_type_default_coordinate(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager);
 /*******************************************************************************
@@ -177,6 +187,13 @@ DESCRIPTION :
 Frees the computed fields from the computed field manager, given the FE_field
 ==============================================================================*/
 
+int Computed_field_is_type_node_array_value_at_time(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
 int Computed_field_set_type_node_array_value_at_time(struct Computed_field *field,
 	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
 	int version_number,struct Computed_field *time_field);
@@ -221,6 +238,13 @@ field is guaranteed to be unchanged from its original state, although its cache
 may be lost.
 ==============================================================================*/
 
+int Computed_field_is_type_xi_coordinates(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
 int Computed_field_set_type_xi_coordinates(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 20 July 2000
@@ -231,5 +255,12 @@ fields, <source_field_one> and <source_field_two>.  Sets the number of
 components equal to the source_fields.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
+==============================================================================*/
+
+int Computed_field_is_type_node_value(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
 ==============================================================================*/
 #endif /* !defined (COMPUTED_FIELD_FINITE_ELEMENT_H) */
