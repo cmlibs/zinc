@@ -13506,7 +13506,7 @@ Executes a GFX LIST ENVIRONMENT_MAP.
 static int gfx_list_Computed_field(struct Parse_state *state,
 	void *dummy_to_be_modified,void *computed_field_package_void)
 /*******************************************************************************
-LAST MODIFIED : 12 March 1999
+LAST MODIFIED : 14 December 2001
 
 DESCRIPTION :
 Executes a GFX LIST FIELD.
@@ -13524,6 +13524,7 @@ Executes a GFX LIST FIELD.
 	};
 	struct Computed_field *computed_field;
 	struct Computed_field_package *computed_field_package;
+	struct List_Computed_field_commands_data list_commands_data;
 	struct LIST(Computed_field) *list_of_fields;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Set_Computed_field_conditional_data set_field_data;
@@ -13562,16 +13563,19 @@ Executes a GFX LIST FIELD.
 					}
 					else
 					{
-						if (list_of_fields=CREATE(LIST(Computed_field))())
+						if (list_of_fields = CREATE(LIST(Computed_field))())
 						{
-							while (return_code&&(computed_field=FIRST_OBJECT_IN_MANAGER_THAT(
-								Computed_field)(Computed_field_commands_ready_to_list,
-								(void *)list_of_fields,computed_field_manager)))
+							list_commands_data.command_prefix = command_prefix;
+							list_commands_data.listed_fields = 0;
+							list_commands_data.computed_field_list = list_of_fields;
+							list_commands_data.computed_field_manager =
+								computed_field_manager;
+							while (FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
+								list_Computed_field_commands_if_managed_source_fields_in_list,
+								(void *)&list_commands_data, computed_field_manager) &&
+								(0 != list_commands_data.listed_fields))
 							{
-								return_code=list_Computed_field_commands(computed_field,
-									(void *)command_prefix)&&
-									ADD_OBJECT_TO_LIST(Computed_field)(computed_field,
-										list_of_fields);
+								list_commands_data.listed_fields = 0;
 							}
 							DESTROY(LIST(Computed_field))(&list_of_fields);
 						}
