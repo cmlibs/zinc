@@ -4876,7 +4876,7 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 									&(analysis->datum_type),&(analysis->edit_order),
 									&(analysis->highlight),
 #if defined (UNEMAP_USE_NODES)
-				&(analysis->highlight_rig_node),
+									&(analysis->highlight_rig_node),
 #endif /* defined (UNEMAP_USE_NODES) */
 									&(analysis->rig),&(analysis->signal_drawing_package),
 									&(analysis->datum),
@@ -14350,6 +14350,7 @@ Guts of highlighting happens in highlight_analysis_perform_highlighting
 
 #if defined (UNEMAP_USE_NODES)
 /* need to alter to use callbacks, cf highlight_analysis_device*/
+/* see also rig_node_group_node_selection_change */
 int highlight_analysis_device_node(unsigned int multiple_selection,
 	struct FE_node *device_node,	int *device_number,int *electrode_number,
 	int *auxiliary_number,struct Analysis_work_area *analysis)
@@ -14417,7 +14418,6 @@ cf highlight_analysis_device
 			get_Signal_drawing_package_device_type_field(signal_drawing_package))&&	
 		(device_node||device_number||electrode_number||auxiliary_number))
 	{	
-		/*node selection goes on in highlight_electrode_or_auxil, so cache here*/
 		current_region=get_Rig_current_region(analysis->rig);			
 		rig_node_order_info=get_Analysis_window_rig_node_order_info(analysis->window);		
 		if(rig_node_order_info)
@@ -14674,7 +14674,8 @@ cf highlight_analysis_device
 						}/* if (electrode_number& */
 					}/* if (mapping&&map) */
 				}/* if (device_number */
-			}/* if (new_highlight_rig_node=devic */		
+			}/* if (new_highlight_rig_node=devic */	
+	
 			if (return_code)
 			{
 				if (device_node)
@@ -15758,6 +15759,18 @@ Callback for change in the  node selection. Checks to see if nodes  are in
 the rig_node group. If are highlights them.
 ==============================================================================*/
 {	
+#if defined (UNEMAP_USE_NODES)
+	/*Need to update the code to work entirely with nodes i.e to use highlight field*/
+	/* of nodes and noty use devices at all */
+	/* See also  highlight_analysis_device_node (needs updating too) */
+	ENTER(rig_node_group_node_selection_change);
+	USE_PARAMETER(node_selection);
+	USE_PARAMETER(changes);
+	USE_PARAMETER(analysis_work_area_void);	
+	display_message(ERROR_MESSAGE,
+			"rig_node_group_node_selection_change. Update to work with nodes! ");
+	LEAVE;
+#else /* if defined(UNEMAP_USE_NODES) */
 	struct rig_node_selection_change_data data;
 	struct Analysis_work_area *analysis;
 	struct LIST(FE_node) *node_list;
@@ -15819,7 +15832,7 @@ the rig_node group. If are highlights them.
 		else
 		{
 			/* This method is more efficient if just one node is (un)selected  */
-			/* change unselected nodes. Don't highlight anything, just unhighlight unselected   */	
+			/* change unselected nodes. Don't highlight anything, just unhighlight unselected  */	
 			data.highlight=0;
 			FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_selection_change,(void *)&data,
 				changes->newly_unselected_node_list);
@@ -15835,6 +15848,7 @@ the rig_node group. If are highlights them.
 			"rig_node_group_node_selection_change.  Invalid argument(s)");
 	}
 	LEAVE;
+#endif /* defined (UNEMAP_USE_NODES)*/
 } /* rig_node_group_node_selection_change */
 #endif /* defined (UNEMAP_USE_3D) */
 

@@ -7241,8 +7241,8 @@ to the drawing or writes to a postscript file.
 								}
 								frame=(map->frames)+(map->frame_number);
 								if (frame_image=frame->image)
-								{
-									update_colour_map_unemap(map,drawing);
+								{								
+									update_colour_map_unemap(map,drawing);									
 									if ((CONSTANT_THICKNESS==map->contour_thickness)&&
 										(pixel_value=frame->pixel_values))
 									{
@@ -7789,8 +7789,8 @@ to the drawing or writes to a postscript file.
 										map->contour_minimum=min_f;
 										map->contour_maximum=max_f;
 									}
-								}
-								update_colour_map_unemap(map,drawing);
+								}								
+								update_colour_map_unemap(map,drawing);								
 							}
 						}
 						/* write contour values */
@@ -8776,8 +8776,13 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 										}
 									}
 								} /* if(map->colour_electrodes_with_signal) */
+								else
+								{								
+									graphics_context=(drawing_information->graphics_context).
+										unhighlighted_colour;
+								}
 								if (*electrode_drawn)
-								{
+								{								
 									marker_size=map->electrodes_marker_size;
 									if (marker_size<1)
 									{

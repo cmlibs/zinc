@@ -119,7 +119,7 @@ else
 ==============================================================================*/
 
 #if defined (UNEMAP_USE_NODES) 
-/* still keep highlight_analysis_device, as will use both for a while */
+/* need to alter to use callbacks, cf highlight_analysis_device*/
 int highlight_analysis_device_node(unsigned int multiple_selection,
 	struct FE_node *device_node,	int *device_number,int *electrode_number,
 	int *auxiliary_number,struct Analysis_work_area *analysis);

@@ -5270,37 +5270,29 @@ window.
 				device_channel_number=0;
 			}
 		}
-		if (map&&(map->electrodes_option!=HIDE_ELECTRODES)&&
+		if (map&&/*(map->electrodes_option!=HIDE_ELECTRODES)&&*/
 			(electrode_number>=0)&&(map->electrode_drawn)&&
 			((map->electrode_drawn)[electrode_number])&&mapping&&
 			(mapping->map_drawing_area_2d)&&(mapping->map_drawing))
 		{
 			switch (map->electrodes_option)
-			{
-				case SHOW_ELECTRODE_NAMES:
-				case SHOW_CHANNEL_NUMBERS:
+			{	
+				case HIDE_ELECTRODES:
 				{
 					electrode_drawn=1;
-					if (SHOW_ELECTRODE_NAMES==map->electrodes_option)
-					{
-						name=device_name;
-					}
-					else
-					{
-						sprintf(value_string,"%d",device_channel_number);
-						name=value_string;
-					}
-					if (device_highlighted)
-					{
-						graphics_context=(drawing_information->graphics_context).
-							highlighted_colour;
-					}
-					else
-					{
-						graphics_context=(drawing_information->graphics_context).
-							unhighlighted_colour;
-					}
-				} break;
+					/*do nothing at the moment*/
+				}break;
+				case SHOW_ELECTRODE_NAMES:
+				{
+					electrode_drawn=1;
+					name=device_name;
+				}break;
+				case SHOW_CHANNEL_NUMBERS:
+				{
+					electrode_drawn=1;				
+					sprintf(value_string,"%d",device_channel_number);
+					name=value_string;
+				}break;
 				case SHOW_ELECTRODE_VALUES:
 				{
 					f_value=(map->electrode_value)[electrode_number];
@@ -5316,57 +5308,68 @@ window.
 						{
 							name=(char *)NULL;
 						}
-						if (device_highlighted)
-						{
-							graphics_context=(drawing_information->graphics_context).
-								highlighted_colour;
-						}
-						else
-						{
-							if ((HIDE_COLOUR==map->colour_option)&&
-								(SHOW_CONTOURS==map->contours_option))
-							{
-								graphics_context=(drawing_information->graphics_context).
-									unhighlighted_colour;
-							}
-							else
-							{
-								min_f=map->minimum_value;
-								max_f=map->maximum_value;
-								graphics_context=(drawing_information->graphics_context).
-									spectrum;
-								if (f_value<=min_f)
-								{
-									XSetForeground(display,graphics_context,
-										spectrum_pixels[0]);
-								}
-								else
-								{
-									if (f_value>=max_f)
-									{
-										XSetForeground(display,graphics_context,
-											spectrum_pixels[number_of_spectrum_colours-1]);
-									}
-									else
-									{
-										if ((range_f=max_f-min_f)<=0)
-										{
-											range_f=1;
-										}
-										XSetForeground(display,graphics_context,
-											spectrum_pixels[(int)((f_value-min_f)*
-											(float)(number_of_spectrum_colours-1)/range_f)]);
-									}
-								}
-							}
-						}
 					}
-				} break;
+				}break;	
 				default:
 				{
 					name=(char *)NULL;
 				} break;
+			}/* switch */
+
+			
+			if (device_highlighted)
+			{
+				graphics_context=(drawing_information->graphics_context).
+					highlighted_colour;
 			}
+			else
+			{
+				if ((map->electrodes_option==SHOW_ELECTRODE_VALUES)&&
+					(HIDE_COLOUR==map->colour_option)&&
+					(SHOW_CONTOURS==map->contours_option))
+				{
+					graphics_context=(drawing_information->graphics_context).
+						unhighlighted_colour;
+				}
+				else
+				{
+					min_f=map->minimum_value;
+					max_f=map->maximum_value;				
+					if(map->colour_electrodes_with_signal)
+					{					
+						graphics_context=(drawing_information->graphics_context).spectrum;
+						if (f_value<=min_f)
+						{
+							XSetForeground(display,graphics_context,
+								spectrum_pixels[0]);
+						}
+						else
+						{
+							if (f_value>=max_f)
+							{
+								XSetForeground(display,graphics_context,
+									spectrum_pixels[number_of_spectrum_colours-1]);
+							}
+							else
+							{
+								if ((range_f=max_f-min_f)<=0)
+								{
+									range_f=1;
+								}
+								XSetForeground(display,graphics_context,
+									spectrum_pixels[(int)((f_value-min_f)*
+										(float)(number_of_spectrum_colours-1)/range_f)]);
+							}
+						}
+					}
+					else
+					{				
+						graphics_context=(drawing_information->graphics_context).
+							unhighlighted_colour;
+					}
+				}
+			}
+			
 			if (electrode_drawn)
 			{
 				/* draw marker */
