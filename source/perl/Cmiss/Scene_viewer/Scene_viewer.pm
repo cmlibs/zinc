@@ -122,6 +122,8 @@ use Cmiss::Scene_viewer;
 
 $bob = Cmiss::Graphics_window::get_scene_viewer_by_name("1", 0);
 
+Cmiss::Scene_viewer::view_all($bob);
+
 =head1 DESCRIPTION
 
 Perl bindings to the public interface of Cmiss::Scene_viewer.
