@@ -454,7 +454,8 @@ Returns the two integers <time_index_one> and <time_index_two> which index into
 the time array bracketing the supplied <time>, the <xi> value is set between 0
 and 1 to indicate what fraction of the way between <time_index_one> and 
 <time_index_two> the value is found.  Returns 0 if time is outside the range
-of the time index array.
+of the time index array however sets <time_index_one> and <time_index_two> to
+be either the minimum or maximum value as appropriate.
 ==============================================================================*/
 {
 	int array_index,done,index_high,index_low,number_of_times,return_code,step;	
@@ -469,135 +470,154 @@ of the time index array.
 
 		first_time = fe_time_sequence->times[0];
 		last_time = fe_time_sequence->times[number_of_times-1];
-		/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
-		/*This assumption and hence estimate is true for most signal files. */
-		if (last_time>first_time)
+		if ((time >= first_time) && (time <= last_time))
 		{
-			fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
-			fe_value_index+=0.5;/*round float to nearest int */
-			array_index=floor(fe_value_index);
-		}
-		else
-		{
-			array_index = 0;
-		}
-		time_low=0;
-		time_high=0;
-		done=0;
-		index_low=0;
-		index_high=number_of_times-1;
-		/* do binary search for <time>'s array index. Also look at time of */
-		/* adjacent array element, as index estimate may be slightly off due to*/
-		/* rounding error. This avoids unnecessarily long search from end of array */
-		while(!done)
-		{	
-			if ((array_index >= 0) && (array_index < number_of_times))
+			/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
+			/*This assumption and hence estimate is true for most signal files. */
+			if (last_time>first_time)
 			{
-				this_time = fe_time_sequence->times[array_index];
-				if (this_time>time)
-				{ 
-					index_high=array_index;					
-					if (array_index>0)
-					{
-						/* get adjacent array element*/
-						time_low = fe_time_sequence->times[array_index - 1];
-						/* are we between elements?*/
-						if (time_low<time)
-						{			
-							index_low=array_index-1;
-							return_code=1;
-							done=1;
-						}	
-						else
-						{
-							time_low=0;
-						}
-					}
-					else
-					{
-						/* can't get lower adjacent array element when array_index=0. Finished*/
-						time_low = fe_time_sequence->times[array_index];
-						index_low=array_index;
-						return_code=1;
-						done=1;
-					}
-				}
-				else if (this_time<time)
-				{
-					index_low=array_index;
-					if (array_index<(number_of_times-1))
-					{
-						/* get adjacent array element*/
-						time_high = fe_time_sequence->times[array_index + 1];
-						/* are we between elements?*/
-						if (time_high>time)
-						{		
-							index_high=array_index+1;
-							return_code=1;
-							done=1;
-						}	
-						else
-						{
-							time_high=0;
-						}
-					}
-					else
-					{
-						/* can't get higher adjacent array element when */
-						/*array_index=(number_of_times-1). Finished*/
-						time_high = fe_time_sequence->times[array_index];
-						index_high=array_index;
-						return_code=1;
-						done=1;
-					}
-				}
-				else /* (this_time == time) */
-				{
-					index_low=array_index;
-					index_high=array_index;
-					time_high=this_time;
-					time_low=this_time;
-					return_code=1;
-					done=1;
-				}
-				if (!done)
-				{	
-					step=(index_high-index_low)/2;	
-					/* No exact match, can't subdivide further, must do interpolation.*/
-					if (step==0)												
-					{	
-						done=1;	
-						return_code=1;														
-					}
-					else
-					{
-						array_index=index_low+step;
-					}
-						
-				}/* if (!done)	*/
+				fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
+				fe_value_index+=0.5;/*round float to nearest int */
+				array_index=floor(fe_value_index);
 			}
 			else
 			{
-				if (array_index < 0)
+				array_index = 0;
+			}
+			time_low=0;
+			time_high=0;
+			done=0;
+			index_low=0;
+			index_high=number_of_times-1;
+			/* do binary search for <time>'s array index. Also look at time of */
+			/* adjacent array element, as index estimate may be slightly off due to*/
+			/* rounding error. This avoids unnecessarily long search from end of array */
+			while(!done)
+			{	
+				if ((array_index >= 0) && (array_index < number_of_times))
 				{
-					/* Before start of times, don't write an error as
-						we want the calling routine to decide how to treat this */
-					done = 1;
-					index_low = 0;
-					index_high = 0;
-					return_code = 0;
+					this_time = fe_time_sequence->times[array_index];
+					if (this_time>time)
+					{ 
+						index_high=array_index;					
+						if (array_index>0)
+						{
+							/* get adjacent array element*/
+							time_low = fe_time_sequence->times[array_index - 1];
+							/* are we between elements?*/
+							if (time_low<time)
+							{			
+								index_low=array_index-1;
+								return_code=1;
+								done=1;
+							}	
+							else
+							{
+								time_low=0;
+							}
+						}
+						else
+						{
+							/* can't get lower adjacent array element when array_index=0. Finished*/
+							time_low = fe_time_sequence->times[array_index];
+							index_low=array_index;
+							return_code=1;
+							done=1;
+						}
+					}
+					else if (this_time<time)
+					{
+						index_low=array_index;
+						if (array_index<(number_of_times-1))
+						{
+							/* get adjacent array element*/
+							time_high = fe_time_sequence->times[array_index + 1];
+							/* are we between elements?*/
+							if (time_high>time)
+							{		
+								index_high=array_index+1;
+								return_code=1;
+								done=1;
+							}	
+							else
+							{
+								time_high=0;
+							}
+						}
+						else
+						{
+							/* can't get higher adjacent array element when */
+							/*array_index=(number_of_times-1). Finished*/
+							time_high = fe_time_sequence->times[array_index];
+							index_high=array_index;
+							return_code=1;
+							done=1;
+						}
+					}
+					else /* (this_time == time) */
+					{
+						index_low=array_index;
+						index_high=array_index;
+						time_high=this_time;
+						time_low=this_time;
+						return_code=1;
+						done=1;
+					}
+					if (!done)
+					{	
+						step=(index_high-index_low)/2;	
+						/* No exact match, can't subdivide further, must do interpolation.*/
+						if (step==0)												
+						{	
+							done=1;	
+							return_code=1;														
+						}
+						else
+						{
+							array_index=index_low+step;
+						}
+						
+					}/* if (!done)	*/
 				}
 				else
 				{
-					/* After end of times, don't write an error as
-						we want the calling routine to decide how to treat this */
-					done = 1;
-					index_low = number_of_times-1;
-					index_high = number_of_times-1;
-					return_code = 0;
+					if (array_index < 0)
+					{
+						/* Before start of times, don't write an error as
+							we want the calling routine to decide how to treat this */
+						done = 1;
+						index_low = 0;
+						index_high = 0;
+						return_code = 0;
+					}
+					else
+					{
+						/* After end of times, don't write an error as
+							we want the calling routine to decide how to treat this */
+						done = 1;
+						index_low = number_of_times-1;
+						index_high = number_of_times-1;
+						return_code = 0;
+					}
 				}
+			}	/* while(!done)	*/
+		}
+		else
+		{
+			/* Outside range of sequence so return_code is zero but we 
+			 still set the indices */
+			return_code = 0;
+			if (time < first_time)
+			{
+				index_low = 0;
+				index_high = 0;
 			}
-		}	/* while(!done)	*/
+			else
+			{
+				index_low = number_of_times - 1;
+				index_high = number_of_times - 1;
+			}
+		}
 		/* index_low and index_high should now be adjacent */
 		if (!time_low)
 		{
@@ -905,9 +925,10 @@ Searches <fe_time> for a fe_time_sequence which has the list of times formed
 by merging the two time_sequences supplied.
 ==============================================================================*/
 {
-	int maximum_number_of_times, number_of_times;
+	int i, maximum_number_of_times, number_of_times, time_found, time_index;
 	FE_value *end_one, *end_two, *index_one, *index_two, *merged_index, *times;
 	struct FE_time_sequence *fe_time_sequence;
+#define TIME_SEQUENCE_MERGING_SMALL_COUNT (10)
 
 	ENTER(get_FE_time_sequence_matching_time_series);
 	fe_time_sequence=(struct FE_time_sequence *)NULL;
@@ -920,76 +941,117 @@ by merging the two time_sequences supplied.
 		}
 		else
 		{
-			maximum_number_of_times = time_sequence_one->number_of_times + 
-				time_sequence_two->number_of_times;
-			if (ALLOCATE(times, FE_value, maximum_number_of_times))
+			/* Make a fast path if there only a few values, by checking to see if they
+				are a subset of the other sequence */
+			if (time_sequence_one->number_of_times <= time_sequence_two->number_of_times)
 			{
-				number_of_times = 0;
-				merged_index = times;
-				index_one = time_sequence_one->times;
-				index_two = time_sequence_two->times;
-				end_one = time_sequence_one->times + time_sequence_one->number_of_times;
-				end_two = time_sequence_two->times + time_sequence_two->number_of_times;
-
-				while ((index_one < end_one) && (index_two < end_two))
+				if (time_sequence_one->number_of_times < TIME_SEQUENCE_MERGING_SMALL_COUNT)
 				{
-					if (*index_one < *index_two)
+					i = 0;
+					time_found = 1;
+					while (time_found && (i < time_sequence_one->number_of_times))
 					{
-						*merged_index = *index_one;
-						index_one++;
-						number_of_times++;
-						merged_index++;
+						time_found = FE_time_sequence_get_index_for_time(
+							time_sequence_two, time_sequence_one->times[i], &time_index);
+						i++;
 					}
-					else if (*index_one > *index_two)
+					if (time_found)
 					{
-						*merged_index = *index_two;
-						index_two++;
-						number_of_times++;
-						merged_index++;
-					}
-					else
-					{
-						*merged_index = *index_one;
-						index_one++;
-						index_two++;
-						number_of_times++;
-						merged_index++;
+						fe_time_sequence = time_sequence_two;
 					}
 				}
-				if (index_one < end_one)
-				{
-					/* Copy over the end of array one */
-					while(index_one < end_one)
-					{
-						*merged_index = *index_one;
-						index_one++;
-						number_of_times++;
-						merged_index++;
-					}
-				}
-				else if (index_two < end_two)
-				{
-					/* Copy over the end of array two */
-					while(index_two < end_two)
-					{
-						*merged_index = *index_two;
-						index_two++;
-						number_of_times++;
-						merged_index++;
-					}
-				}
-
-				fe_time_sequence = get_FE_time_sequence_matching_time_series(
-					fe_time, number_of_times, times);
-
-				DEALLOCATE(times);
 			}
-			else
+			else 
 			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_time_sequence_matching_time_series.  "
-					"Could not ALLOCATE temporary time array.");
-				fe_time_sequence=(struct FE_time_sequence *)NULL;
+				if (time_sequence_two->number_of_times < TIME_SEQUENCE_MERGING_SMALL_COUNT)
+				{
+					i = 0;
+					time_found = 1;
+					while (time_found && (i < time_sequence_two->number_of_times))
+					{
+						time_found = FE_time_sequence_get_index_for_time(
+							time_sequence_one, time_sequence_two->times[i], &time_index);
+						i++;
+					}
+					if (time_found)
+					{
+						fe_time_sequence = time_sequence_one;
+					}
+				}
+			}
+			if (!fe_time_sequence)
+			{
+				maximum_number_of_times = time_sequence_one->number_of_times + 
+					time_sequence_two->number_of_times;
+				if (ALLOCATE(times, FE_value, maximum_number_of_times))
+				{
+					number_of_times = 0;
+					merged_index = times;
+					index_one = time_sequence_one->times;
+					index_two = time_sequence_two->times;
+					end_one = time_sequence_one->times + time_sequence_one->number_of_times;
+					end_two = time_sequence_two->times + time_sequence_two->number_of_times;
+
+					while ((index_one < end_one) && (index_two < end_two))
+					{
+						if (*index_one < *index_two)
+						{
+							*merged_index = *index_one;
+							index_one++;
+							number_of_times++;
+							merged_index++;
+						}
+						else if (*index_one > *index_two)
+						{
+							*merged_index = *index_two;
+							index_two++;
+							number_of_times++;
+							merged_index++;
+						}
+						else
+						{
+							*merged_index = *index_one;
+							index_one++;
+							index_two++;
+							number_of_times++;
+							merged_index++;
+						}
+					}
+					if (index_one < end_one)
+					{
+						/* Copy over the end of array one */
+						while(index_one < end_one)
+						{
+							*merged_index = *index_one;
+							index_one++;
+							number_of_times++;
+							merged_index++;
+						}
+					}
+					else if (index_two < end_two)
+					{
+						/* Copy over the end of array two */
+						while(index_two < end_two)
+						{
+							*merged_index = *index_two;
+							index_two++;
+							number_of_times++;
+							merged_index++;
+						}
+					}
+
+					fe_time_sequence = get_FE_time_sequence_matching_time_series(
+						fe_time, number_of_times, times);
+
+					DEALLOCATE(times);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"get_FE_time_sequence_matching_time_series.  "
+						"Could not ALLOCATE temporary time array.");
+					fe_time_sequence=(struct FE_time_sequence *)NULL;
+				}
 			}
 		}
 	}
