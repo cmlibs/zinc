@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 27 November 2000
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -11,6 +11,8 @@ The functions for creating graphical objects from finite elements.
 #include <stdlib.h>
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_adjacent_elements.h"
 #include "finite_element/finite_element_to_graphics_object.h"
@@ -4312,20 +4314,25 @@ faces.
 } /* create_GT_voltex_from_FE_element */
 
 int create_surface_data_points_from_GT_voltex(struct GT_voltex *voltex,
-   struct FE_element *element, struct Computed_field *coordinate_field,
+	struct FE_element *element, struct Computed_field *coordinate_field,
 	struct VT_volume_texture *vtexture,
 	struct MANAGER(FE_node) *data_manager, struct GROUP(FE_node) *data_group,
-	struct MANAGER(FE_field) *fe_field_manager, struct Computed_field *data_density_field)
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager,
+	struct Computed_field *data_density_field,
+	struct Computed_field *data_coordinate_field)
 /*******************************************************************************
-LAST MODIFIED : 26 July 2000
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
 This function takes a <voltex> and the corresponding <vtexture> and creates
 a randomly placed set of data_points over the surface the <voltex> describes.
-The vtexture is used to define element_xi as well as the coordinates
-for each of the data_points.  These can then be used to draw axes or gradient
-vectors over the surface of an isosurface or to create hair streamlines starting
-from the surface of a volume texture.
+The vtexture is used to define an element_xi field at each of the data_points.
+These can then be used to draw axes or gradient vectors over the surface of an
+isosurface or to create hair streamlines starting from the surface of a volume
+texture. If the <data_coordinate_field> is supplied, it - ie. the FE_field it is
+calculated from -  will be defined at the data points, and the field is given
+the position of the point, with appropriate coordinate conversion.
 ==============================================================================*/
 {
 	FE_value area, coordinate_1,coordinate_2,coordinate_3,
@@ -4334,16 +4341,13 @@ from the surface of a volume texture.
 	int aaa, *adjacency_table, bbb, ccc,i, j, k, m, node_number, n_iso_polys, 
 		number_of_elements, n_xi[3], return_code, *triangle_list2;
 	struct CM_field_information field_info;
+	struct Computed_field *rc_data_coordinate_field;
 	struct Coordinate_system rect_cart_coords;
 	struct FE_element **element_block,**element_block_ptr,*local_element;
 	struct FE_node *new_node, *template_node;
 	struct FE_field *fe_coordinate_field, *fe_element_xi_field;
+	struct LIST(FE_field) *fe_coordinate_field_list;
 	struct VT_iso_vertex *vertex_list;
-
-	char *coordinate_component_names[3]=
-	{
-		"x","y","z"
-	};
 	enum FE_nodal_value_type *coordinate_components_nodal_value_types[3]=
 	{
 		{
@@ -4368,9 +4372,8 @@ from the surface of a volume texture.
 			FE_NODAL_VALUE
 		}
 	};
-	int element_xi_components_number_of_derivatives[1]={0},
-		element_xi_components_number_of_versions[1]={1};
-
+	int element_xi_components_number_of_derivatives[1] = {0},
+		element_xi_components_number_of_versions[1] = {1};
 
 	ENTER(create_surface_data_points_from_GT_voltex);
 #if defined (DEBUG)
@@ -4378,223 +4381,226 @@ from the surface of a volume texture.
 	printf("enter create_surface_data_points_from_GT_voltex\n");
 #endif /* defined (DEBUG) */
 	if (element&&(element->shape)&&(3==element->shape->dimension)&&vtexture&&
-		vtexture&&data_manager&&data_group&&fe_field_manager&&
+		vtexture&&data_manager&&data_group&& computed_field_manager && fe_field_manager &&
 		coordinate_field&&(3>=Computed_field_get_number_of_components(coordinate_field))&&
 		data_density_field&&(4>=Computed_field_get_number_of_components(data_density_field))&&
 		vtexture->mc_iso_surface&&voltex&&
 		(vtexture->mc_iso_surface->n_triangles==voltex->n_iso_polys)&&
 		(vtexture->mc_iso_surface->n_vertices==voltex->n_vertices))
 	{
-		template_node = (struct FE_node *)NULL;
-		if (vtexture->mc_iso_surface->n_triangles)
+		fe_coordinate_field_list = (struct LIST(FE_field) *)NULL;
+		fe_coordinate_field = (struct FE_field *)NULL;
+		rc_data_coordinate_field = (struct Computed_field *)NULL;
+		if ((!data_coordinate_field) || (
+			(3 == Computed_field_get_number_of_components(data_coordinate_field)) &&
+			(fe_coordinate_field_list = Computed_field_get_defining_FE_field_list(
+				data_coordinate_field, computed_field_manager)) &&
+			(1 == NUMBER_IN_LIST(FE_field)(fe_coordinate_field_list)) &&
+			(fe_coordinate_field = FIRST_OBJECT_IN_LIST_THAT(FE_field)(
+				(LIST_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL,
+				fe_coordinate_field_list)) &&
+			(3 == get_FE_field_number_of_components(fe_coordinate_field)) &&
+			(rc_data_coordinate_field = Computed_field_begin_wrap_coordinate_field(
+				data_coordinate_field))))
 		{
-			/* examine min & max xi values of voltex. If 0<xi<1 possibly repeat.  If
-				xi>1 then will need to draw over other elements, so must find
-				neighbouring ones */
-			/*???MS.  27 August 1996.  At present put in a hack to subtrat the
-			  vtexture->ximin values of the xi values.  Should formalize this
-			  later */
-			number_of_elements=1;
-			node_number = 1;
-			for (i=0;i<3;i++)
+			template_node = (struct FE_node *)NULL;
+			if (vtexture->mc_iso_surface->n_triangles)
 			{
-				/* MACRO TEXTURES : spread over several elements */
-				/* round to nearest integer above if non integer (eg 1->1,1.2 ->2) */
-				n_xi[i]=(int)ceil(vtexture->ximax[i]);
-				/* MICRO TEXTURES : repeated within one element */
-				/* if texture is to be repeated then calc # of repetitions for each
-					value */
-				number_of_elements *= n_xi[i]; /* n_xi_rep[i]? */
-			}
-			/* allocate memory for elements */
-			ALLOCATE(element_block,struct FE_element *,number_of_elements);
-			ALLOCATE(adjacency_table,int,6*number_of_elements);
-			if (element_block&&adjacency_table)
-			{
-				/* pick seed element starting at minimum xi1,2,3 position (ie give
-					closest bottom leftmost element ) */
-				/* calculate elements sitting in block which texture extends into */
-				/* count the number of faces */
-				element_block_ptr=element_block;
-				for (i=0;i<n_xi[0];i++)
+				/* examine min & max xi values of voltex. If 0<xi<1 possibly repeat.  If
+					 xi>1 then will need to draw over other elements, so must find
+					 neighbouring ones */
+				/*???MS.  27 August 1996.  At present put in a hack to subtrat the
+					vtexture->ximin values of the xi values.  Should formalize this
+					later */
+				number_of_elements=1;
+				node_number = 1;
+				for (i=0;i<3;i++)
 				{
-					for (j=0;j<n_xi[1];j++)
+					/* MACRO TEXTURES : spread over several elements */
+					/* round to nearest integer above if non integer (eg 1->1,1.2 ->2) */
+					n_xi[i]=(int)ceil(vtexture->ximax[i]);
+					/* MICRO TEXTURES : repeated within one element */
+					/* if texture is to be repeated then calc # of repetitions for each
+						 value */
+					number_of_elements *= n_xi[i]; /* n_xi_rep[i]? */
+				}
+				/* allocate memory for elements */
+				ALLOCATE(element_block,struct FE_element *,number_of_elements);
+				ALLOCATE(adjacency_table,int,6*number_of_elements);
+				if (element_block&&adjacency_table)
+				{
+					/* pick seed element starting at minimum xi1,2,3 position (ie give
+						 closest bottom leftmost element ) */
+					/* calculate elements sitting in block which texture extends into */
+					/* count the number of faces */
+					element_block_ptr=element_block;
+					for (i=0;i<n_xi[0];i++)
 					{
-						for (k=0;k<n_xi[2];k++)
+						for (j=0;j<n_xi[1];j++)
 						{
-							element_block_ptr[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i]=
-								(struct FE_element *)NULL;
-							for (m=0;m<6;m++)
+							for (k=0;k<n_xi[2];k++)
 							{
-								adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+m]=0;
+								element_block_ptr[k*n_xi[0]*n_xi[1]+j*n_xi[0]+i]=
+									(struct FE_element *)NULL;
+								for (m=0;m<6;m++)
+								{
+									adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+m]=0;
+								}
 							}
 						}
 					}
-				}
-				/* recursively filling element block */
-				fill_table(element_block,adjacency_table,element,0,0,0,n_xi);
-				return_code=1;
-				/* check the voltex can be completely drawn inside mesh */
-				for (i=0;return_code&&(i<number_of_elements);i++)
-				{
-					if (!element_block[i])
+					/* recursively filling element block */
+					fill_table(element_block,adjacency_table,element,0,0,0,n_xi);
+					return_code=1;
+					/* check the voltex can be completely drawn inside mesh */
+					for (i=0;return_code&&(i<number_of_elements);i++)
 					{
-						display_message(WARNING_MESSAGE,
-							"create_surface_data_points_from_GT_voltex.  "
-							"voltex extends beyond elements");
-						return_code=0;
-					}
-				}
-				if (return_code)
-				{
-					n_iso_polys=vtexture->mc_iso_surface->n_triangles;
-					triangle_list2 = voltex->triangle_list;
-					vertex_list = voltex->vertex_list;
-										
-					for ( i = 0 ; return_code && (i < n_iso_polys) ; i++)
-					{
-						/* Find centre of triangle in xi space and evaluate surface_point_map */
-						xi[0] = 0.0;
-						xi[1] = 0.0;
-						xi[2] = 0.0;
-						for (j=0;j<3;j++)
+						if (!element_block[i])
 						{
-							xi[0] += ((vtexture->mc_iso_surface->
-								compiled_vertex_list)[triangle_list2[3*i+j]]->coord)[0];
-							xi[1] += ((vtexture->mc_iso_surface->
-								compiled_vertex_list)[triangle_list2[3*i+j]]->coord)[1];
-							xi[2] += ((vtexture->mc_iso_surface->
-								compiled_vertex_list)[triangle_list2[3*i+j]]->coord)[2];
+							display_message(WARNING_MESSAGE,
+								"create_surface_data_points_from_GT_voltex.  "
+								"voltex extends beyond elements");
+							return_code=0;
 						}
-						xi[0] /= 3.0;
-						xi[1] /= 3.0;
-						xi[2] /= 3.0;
-
-						Set_element_and_local_xi(element_block, n_xi, xi, &local_element);
-
-						Computed_field_evaluate_in_element(
-							data_density_field, local_element,
-							xi,(struct FE_element *)NULL,density_data,(FE_value *)NULL);
-
-#if defined (DEBUG)
-						printf("create_surface_data_points_from_GT_voltex.  colour %f\n", texture_data[0]);
-#endif /* defined (DEBUG) */
-
-						/* Evaluate area of triangle in real space */
-						aaa = triangle_list2[3*i];
-						bbb = triangle_list2[3*i + 1];
-						ccc = triangle_list2[3*i + 2];
-						coordinate_1 = sqrt(
-							(vertex_list[aaa].coord[0] - vertex_list[bbb].coord[0]) *
-							(vertex_list[aaa].coord[0] - vertex_list[bbb].coord[0]) +
-							(vertex_list[aaa].coord[1] - vertex_list[bbb].coord[1]) *
-							(vertex_list[aaa].coord[1] - vertex_list[bbb].coord[1]) +
-							(vertex_list[aaa].coord[2] - vertex_list[bbb].coord[2]) *
-							(vertex_list[aaa].coord[2] - vertex_list[bbb].coord[2]));
-						coordinate_2 = sqrt(
-							(vertex_list[bbb].coord[0] - vertex_list[ccc].coord[0]) *
-							(vertex_list[bbb].coord[0] - vertex_list[ccc].coord[0]) +
-							(vertex_list[bbb].coord[1] - vertex_list[ccc].coord[1]) *
-							(vertex_list[bbb].coord[1] - vertex_list[ccc].coord[1]) +
-							(vertex_list[bbb].coord[2] - vertex_list[ccc].coord[2]) *
-							(vertex_list[bbb].coord[2] - vertex_list[ccc].coord[2]));
-						coordinate_3 = sqrt(
-							(vertex_list[ccc].coord[0] - vertex_list[aaa].coord[0]) *
-							(vertex_list[ccc].coord[0] - vertex_list[aaa].coord[0]) +
-							(vertex_list[ccc].coord[1] - vertex_list[aaa].coord[1]) *
-							(vertex_list[ccc].coord[1] - vertex_list[aaa].coord[1]) +
-							(vertex_list[ccc].coord[2] - vertex_list[aaa].coord[2]) *
-							(vertex_list[ccc].coord[2] - vertex_list[aaa].coord[2]));
-						area = 0.5 * ( coordinate_1 + coordinate_2 + coordinate_3 );
-						area = sqrt ( area * (area - coordinate_1) *
-							(area - coordinate_2) * (area - coordinate_3));
-						expected_number = area * density_data[0];
-						random_number = CMGUI_RANDOM(float);
+					}
+					if (return_code)
+					{
+						n_iso_polys=vtexture->mc_iso_surface->n_triangles;
+						triangle_list2 = voltex->triangle_list;
+						vertex_list = voltex->vertex_list;
 										
-#if defined (DEBUG)
-						printf("create_surface_data_points_from_GT_voltex.\n\tarea %f expected %f random %f\n",
-							area, expected_number, random_number);
-#endif /* defined (DEBUG) */
-
-						/* Successively sum terms from a Poisson Distribution and 
-							add another point while the cumulated sum is still less
-							than a random 0-1 variable. */
-						probability = exp( -expected_number );
-						cumulated_probability = probability;
-						j = 0;
-						while(return_code && (cumulated_probability < random_number))
+						for ( i = 0 ; return_code && (i < n_iso_polys) ; i++)
 						{
-							xi1 = CMGUI_RANDOM(float);
-							xi2 = CMGUI_RANDOM(float);
-							if(xi1 + xi2 > 1.0)
+							/* Find centre of triangle in xi space and evaluate surface_point_map */
+							xi[0] = 0.0;
+							xi[1] = 0.0;
+							xi[2] = 0.0;
+							for (j=0;j<3;j++)
 							{
-								xi1 = 1.0 - xi1;
-								xi2 = 1.0 - xi2;
+								xi[0] += ((vtexture->mc_iso_surface->
+									compiled_vertex_list)[triangle_list2[3*i+j]]->coord)[0];
+								xi[1] += ((vtexture->mc_iso_surface->
+									compiled_vertex_list)[triangle_list2[3*i+j]]->coord)[1];
+								xi[2] += ((vtexture->mc_iso_surface->
+									compiled_vertex_list)[triangle_list2[3*i+j]]->coord)[2];
 							}
-
-							xi[0] = vtexture->mc_iso_surface->
-								compiled_vertex_list[triangle_list2[3*i+0]]->coord[0]
-								+ xi1 * (vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+1]]->coord[0]
-									- vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+0]]->coord[0])
-								+ xi2 * (vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+2]]->coord[0]
-									- vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+0]]->coord[0]);
-							xi[1] = vtexture->mc_iso_surface->
-								compiled_vertex_list[triangle_list2[3*i+0]]->coord[1]
-								+ xi1 * (vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+1]]->coord[1]
-									- vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+0]]->coord[1])
-								+ xi2 * (vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+2]]->coord[1]
-									- vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+0]]->coord[1]);
-							xi[2] = vtexture->mc_iso_surface->
-								compiled_vertex_list[triangle_list2[3*i+0]]->coord[2]
-								+ xi1 * (vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+1]]->coord[2]
-									- vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+0]]->coord[2])
-								+ xi2 * (vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+2]]->coord[2]
-									- vtexture->mc_iso_surface->
-									compiled_vertex_list[triangle_list2[3*i+0]]->coord[2]);
+							xi[0] /= 3.0;
+							xi[1] /= 3.0;
+							xi[2] /= 3.0;
 
 							Set_element_and_local_xi(element_block, n_xi, xi, &local_element);
 
-							if (!(Computed_field_evaluate_in_element(
-								coordinate_field, local_element,
-								xi,(struct FE_element *)NULL, position, (FE_value *)NULL)))
-							{
-								display_message(ERROR_MESSAGE,
-									"create_surface_data_points_from_GT_voltex."
-									"  Unable to evaluate node coordinate position");
-								return_code = 0;
-							}
-									
+							Computed_field_evaluate_in_element(
+								data_density_field, local_element,
+								xi,(struct FE_element *)NULL,density_data,(FE_value *)NULL);
 
-							/* If this is the first one create the template */
-							if( !template_node)
+#if defined (DEBUG)
+							printf("create_surface_data_points_from_GT_voltex.  colour %f\n",
+								texture_data[0]);
+#endif /* defined (DEBUG) */
+
+							/* Evaluate area of triangle in real space */
+							aaa = triangle_list2[3*i];
+							bbb = triangle_list2[3*i + 1];
+							ccc = triangle_list2[3*i + 2];
+							coordinate_1 = sqrt(
+								(vertex_list[aaa].coord[0] - vertex_list[bbb].coord[0]) *
+								(vertex_list[aaa].coord[0] - vertex_list[bbb].coord[0]) +
+								(vertex_list[aaa].coord[1] - vertex_list[bbb].coord[1]) *
+								(vertex_list[aaa].coord[1] - vertex_list[bbb].coord[1]) +
+								(vertex_list[aaa].coord[2] - vertex_list[bbb].coord[2]) *
+								(vertex_list[aaa].coord[2] - vertex_list[bbb].coord[2]));
+							coordinate_2 = sqrt(
+								(vertex_list[bbb].coord[0] - vertex_list[ccc].coord[0]) *
+								(vertex_list[bbb].coord[0] - vertex_list[ccc].coord[0]) +
+								(vertex_list[bbb].coord[1] - vertex_list[ccc].coord[1]) *
+								(vertex_list[bbb].coord[1] - vertex_list[ccc].coord[1]) +
+								(vertex_list[bbb].coord[2] - vertex_list[ccc].coord[2]) *
+								(vertex_list[bbb].coord[2] - vertex_list[ccc].coord[2]));
+							coordinate_3 = sqrt(
+								(vertex_list[ccc].coord[0] - vertex_list[aaa].coord[0]) *
+								(vertex_list[ccc].coord[0] - vertex_list[aaa].coord[0]) +
+								(vertex_list[ccc].coord[1] - vertex_list[aaa].coord[1]) *
+								(vertex_list[ccc].coord[1] - vertex_list[aaa].coord[1]) +
+								(vertex_list[ccc].coord[2] - vertex_list[aaa].coord[2]) *
+								(vertex_list[ccc].coord[2] - vertex_list[aaa].coord[2]));
+							area = 0.5 * ( coordinate_1 + coordinate_2 + coordinate_3 );
+							area = sqrt ( area * (area - coordinate_1) *
+								(area - coordinate_2) * (area - coordinate_3));
+							expected_number = area * density_data[0];
+							random_number = CMGUI_RANDOM(float);
+										
+#if defined (DEBUG)
+							printf("create_surface_data_points_from_GT_voltex.\n\tarea %f expected %f "
+								"random %f\n", area, expected_number, random_number);
+#endif /* defined (DEBUG) */
+
+							/* Successively sum terms from a Poisson Distribution and 
+								 add another point while the cumulated sum is still less
+								 than a random 0-1 variable. */
+							probability = exp( -expected_number );
+							cumulated_probability = probability;
+							j = 0;
+							while(return_code && (cumulated_probability < random_number))
 							{
-								/* create the fields */
-								/* coordinate field */
-								set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);
-								rect_cart_coords.type=RECTANGULAR_CARTESIAN;
-								if (fe_coordinate_field=get_FE_field_manager_matched_field(
-									fe_field_manager,"coordinates",
-									GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
-									/*number_of_indexed_values*/0,&field_info,
-									&rect_cart_coords,FE_VALUE_VALUE,
-									/*number_of_components*/3,coordinate_component_names,
-									/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+								xi1 = CMGUI_RANDOM(float);
+								xi2 = CMGUI_RANDOM(float);
+								if(xi1 + xi2 > 1.0)
 								{
-									/* element_xi field */
+									xi1 = 1.0 - xi1;
+									xi2 = 1.0 - xi2;
+								}
+
+								xi[0] = vtexture->mc_iso_surface->
+									compiled_vertex_list[triangle_list2[3*i+0]]->coord[0]
+									+ xi1 * (vtexture->mc_iso_surface->
+										compiled_vertex_list[triangle_list2[3*i+1]]->coord[0]
+										- vtexture->mc_iso_surface->
+										compiled_vertex_list[triangle_list2[3*i+0]]->coord[0])
+									+ xi2 * (vtexture->mc_iso_surface->
+										compiled_vertex_list[triangle_list2[3*i+2]]->coord[0]
+										- vtexture->mc_iso_surface->
+										compiled_vertex_list[triangle_list2[3*i+0]]->coord[0]);
+								xi[1] = vtexture->mc_iso_surface->
+									compiled_vertex_list[triangle_list2[3*i+0]]->coord[1]
+									+ xi1 * (vtexture->mc_iso_surface->
+										compiled_vertex_list[triangle_list2[3*i+1]]->coord[1]
+										- vtexture->mc_iso_surface->
+										compiled_vertex_list[triangle_list2[3*i+0]]->coord[1])
+									+ xi2 * (vtexture->mc_iso_surface->
+										compiled_vertex_list[triangle_list2[3*i+2]]->coord[1]
+										- vtexture->mc_iso_surface->
+										compiled_vertex_list[triangle_list2[3*i+0]]->coord[1]);
+								xi[2] = vtexture->mc_iso_surface->
+									compiled_vertex_list[triangle_list2[3*i+0]]->coord[2]
+									+ xi1 * (vtexture->mc_iso_surface->
+										compiled_vertex_list[triangle_list2[3*i+1]]->coord[2]
+										- vtexture->mc_iso_surface->
+										compiled_vertex_list[triangle_list2[3*i+0]]->coord[2])
+									+ xi2 * (vtexture->mc_iso_surface->
+										compiled_vertex_list[triangle_list2[3*i+2]]->coord[2]
+										- vtexture->mc_iso_surface->
+										compiled_vertex_list[triangle_list2[3*i+0]]->coord[2]);
+
+								Set_element_and_local_xi(element_block, n_xi, xi, &local_element);
+
+								if (!(Computed_field_evaluate_in_element(
+									coordinate_field, local_element,
+									xi,(struct FE_element *)NULL, position, (FE_value *)NULL)))
+								{
+									display_message(ERROR_MESSAGE,
+										"create_surface_data_points_from_GT_voltex."
+										"  Unable to evaluate node coordinate position");
+									return_code = 0;
+								}
+
+								/* If this is the first one create the template */
+								if (!template_node)
+								{
+									/* create or find the element_xi field */
 									set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);
 									rect_cart_coords.type=RECTANGULAR_CARTESIAN;
-									if (fe_element_xi_field=get_FE_field_manager_matched_field(
+									if (fe_element_xi_field = get_FE_field_manager_matched_field(
 										fe_field_manager,"element_xi",
 										GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
 										/*number_of_indexed_values*/0,&field_info,
@@ -4602,18 +4608,19 @@ from the surface of a volume texture.
 										/*number_of_components*/1,element_xi_component_names,
 										/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
 									{
-												
 										/* create the node */
-										if ((template_node=CREATE(FE_node)(0,(struct FE_node *)NULL))&&
-											define_FE_field_at_node(template_node,
-												fe_coordinate_field,coordinate_components_number_of_derivatives,
-												coordinate_components_number_of_versions,
-												coordinate_components_nodal_value_types)&&
+										if ((template_node=CREATE(FE_node)(0,(struct FE_node *)NULL)) &&
+											((!fe_coordinate_field) ||
+												define_FE_field_at_node(template_node,
+													fe_coordinate_field,
+													coordinate_components_number_of_derivatives,
+													coordinate_components_number_of_versions,
+													coordinate_components_nodal_value_types)) &&
 											define_FE_field_at_node(template_node,
 												fe_element_xi_field,element_xi_components_number_of_derivatives,
 												element_xi_components_number_of_versions,
 												element_xi_components_nodal_value_types))
-										{			
+										{
 											return_code=1;	
 										}
 									}
@@ -4622,87 +4629,107 @@ from the surface of a volume texture.
 										return_code=0;
 									}
 								}
-								else
-								{
-									return_code=0;
-								}
-										
-							}
-									
-							if (new_node=CREATE(FE_node)(node_number = get_next_FE_node_number(
-								data_manager,node_number), template_node))
-							{					
-								int length;
-								set_FE_nodal_field_FE_value_values(fe_coordinate_field,new_node,
-									position, &length);
-								set_FE_nodal_element_xi_value(new_node,
-									fe_element_xi_field, 0/*component_number*/, 0/*version*/,
-									FE_NODAL_VALUE, local_element, xi);
-								if (ADD_OBJECT_TO_GROUP(FE_node)(new_node, data_group))
-								{
-									if (!(ADD_OBJECT_TO_MANAGER(FE_node)(new_node, data_manager)))
+								node_number = get_next_FE_node_number(data_manager, node_number);
+								if (new_node = CREATE(FE_node)(node_number, template_node))
+								{	
+									ACCESS(FE_node)(new_node);
+									if (((!fe_coordinate_field) ||
+										Computed_field_set_values_at_node(rc_data_coordinate_field,
+											new_node, position)) &&
+										set_FE_nodal_element_xi_value(new_node,
+											fe_element_xi_field, 0/*component_number*/, 0/*version*/,
+											FE_NODAL_VALUE, local_element, xi))
+									{
+										if (ADD_OBJECT_TO_GROUP(FE_node)(new_node, data_group))
+										{
+											if (!(ADD_OBJECT_TO_MANAGER(FE_node)(new_node, data_manager)))
+											{
+												display_message(ERROR_MESSAGE,
+													"create_surface_data_points_from_GT_voltex.  "
+													"Could not add node to manager");
+												return_code = 0;
+												/* must remove it from the group or won't be destroyed */
+												REMOVE_OBJECT_FROM_GROUP(FE_node)(new_node, data_group);
+											}
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"create_surface_data_points_from_GT_voltex.  "
+												"Could not add node to group");
+											return_code = 0;
+										}
+									}
+									else
 									{
 										display_message(ERROR_MESSAGE,
-											"create_surface_data_points_from_GT_voltex."
-											"  Could not add node to manager");
+											"create_surface_data_points_from_GT_voltex.  "
+											"Could not set fields at node");
 										return_code = 0;
-										DESTROY(FE_node)(&new_node);
 									}
+									DEACCESS(FE_node)(&new_node);
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"create_surface_data_points_from_GT_voltex."
-										"  Could not add node to group");
+										"create_surface_data_points_from_GT_voltex.  "
+										"Could not create FE_node");
 									return_code = 0;
-									DESTROY(FE_node)(&new_node);
 								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"create_surface_data_points_from_GT_voltex."
-									"  Could not create FE_node");
-								return_code = 0;
-							}
-							j++;
-							probability *= expected_number / (float) j;
-							cumulated_probability += probability;
+								j++;
+								probability *= expected_number / (float) j;
+								cumulated_probability += probability;
 #if defined (DEBUG)
-							printf("create_surface_data_points_from_GT_voltex.  point_coords %f %f %f\n",
-								position[0], position[1], position[2]);
-							printf("create_surface_data_points_from_GT_voltex.  rand xi %f %f\n",
-								xi1, xi2);
-							printf("create_surface_data_points_from_GT_voltex.  element %p\n",
-								element);
-							printf("create_surface_data_points_from_GT_voltex.  xi %f %f %f\n",
-								xi[0], xi[1], xi[2]);
-							printf("%d %f %f\n", j, probability, cumulated_probability);
+								printf("create_surface_data_points_from_GT_voltex.  "
+									"point_coords %f %f %f\n", position[0], position[1], position[2]);
+								printf("create_surface_data_points_from_GT_voltex.  rand xi %f %f\n",
+									xi1, xi2);
+								printf("create_surface_data_points_from_GT_voltex.  element %p\n",
+									element);
+								printf("create_surface_data_points_from_GT_voltex.  xi %f %f %f\n",
+									xi[0], xi[1], xi[2]);
+								printf("%d %f %f\n", j, probability, cumulated_probability);
 #endif /* defined (DEBUG) */
+							}
+						}
+						Computed_field_clear_cache(coordinate_field);
+						Computed_field_clear_cache(data_density_field);
+						if(template_node)
+						{
+							DESTROY(FE_node)(&template_node);
 						}
 					}
-					Computed_field_clear_cache(coordinate_field);
-					Computed_field_clear_cache(data_density_field);
-					if(template_node)
-					{
-						DESTROY(FE_node)(&template_node);
-					}
 				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"create_surface_data_points_from_GT_voltex.  Could not allocate memory for elements");
+					return_code = 0;
+				}
+				DEALLOCATE(element_block);
+				DEALLOCATE(adjacency_table);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"create_surface_data_points_from_GT_voltex.  Could not allocate memory for elements");
+				/* display_message(ERROR_MESSAGE,
+					 "create_surface_data_points_from_GT_voltex.  n_iso_polys = 0");*/
 				return_code = 0;
 			}
-			DEALLOCATE(element_block);
-			DEALLOCATE(adjacency_table);
+			if (rc_data_coordinate_field)
+			{
+				Computed_field_end_wrap(&rc_data_coordinate_field);
+			}
 		}
 		else
 		{
-/*			display_message(ERROR_MESSAGE,
-				"create_surface_data_points_from_GT_voltex.  n_iso_polys = 0");*/
+			display_message(ERROR_MESSAGE,
+				"create_surface_data_points_from_GT_voltex.  "
+				"Could not use surface data coordinate field");
 			return_code = 0;
+		}
+		if (fe_coordinate_field_list)
+		{
+			DESTROY(LIST(FE_field))(&fe_coordinate_field_list);
 		}
 	}
 	else
@@ -7433,7 +7460,7 @@ fields defined over it.
 int element_to_volume(struct FE_element *element,
 	void *void_element_to_volume_data)
 /*******************************************************************************
-LAST MODIFIED : 21 October 1998
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
 Converts a 3-D element into a volume.
@@ -7457,7 +7484,7 @@ Converts a 3-D element into a volume.
 				element_to_volume_data->coordinate_field,
 				element_to_volume_data->data_field,
 				element_to_volume_data->volume_texture))*/
-			if (volume_element=generate_clipped_GT_voltex_from_FE_element(
+			if (volume_element= generate_clipped_GT_voltex_from_FE_element(
 				element_to_volume_data->clipping,
 				element,
 				element_to_volume_data->coordinate_field,
@@ -7477,13 +7504,17 @@ Converts a 3-D element into a volume.
 						&& element_to_volume_data->data_manager
 						&& element_to_volume_data->fe_field_manager)
 					{
-						return_code = create_surface_data_points_from_GT_voltex(volume_element,
-							element, element_to_volume_data->coordinate_field,
+						return_code = create_surface_data_points_from_GT_voltex(
+							volume_element,
+							element,
+							element_to_volume_data->coordinate_field,
 							element_to_volume_data->volume_texture,
 							element_to_volume_data->data_manager,
 							element_to_volume_data->surface_data_group,
+							element_to_volume_data->computed_field_manager,
 							element_to_volume_data->fe_field_manager, 
-							element_to_volume_data->surface_data_density_field);
+							element_to_volume_data->surface_data_density_field,
+							element_to_volume_data->surface_data_coordinate_field);
 					}
 					else
 					{
@@ -7529,7 +7560,7 @@ printf("generate_clipped_GT_voltex_from_FE_element failed\n");
 int element_to_iso_scalar(struct FE_element *element,
 	void *element_to_iso_scalar_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2000
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
 Computes iso-surfaces/lines/points graphics from <element>.
@@ -7580,12 +7611,14 @@ Computes iso-surfaces/lines/points graphics from <element>.
 								element_to_iso_scalar_data->data_field,
 								element_to_iso_scalar_data->scalar_field,
 								element_to_iso_scalar_data->surface_data_density_field,
+								element_to_iso_scalar_data->surface_data_coordinate_field,
 								number_in_xi,
 								element_to_iso_scalar_data->graphics_object,
 								element_to_iso_scalar_data->render_type,
 								element_to_iso_scalar_data->surface_data_group,
 								element_to_iso_scalar_data->data_manager,
-								element_to_iso_scalar_data->fe_field_manager);
+								element_to_iso_scalar_data->fe_field_manager,
+								element_to_iso_scalar_data->computed_field_manager);
 						}
 						else
 						{
@@ -7643,13 +7676,16 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	double iso_value,float time,struct Clipping *clipping,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
-	struct Computed_field *surface_data_density_field,int *number_in_xi,
+	struct Computed_field *surface_data_density_field,
+	struct Computed_field *surface_data_coordinate_field,
+	int *number_in_xi,
 	struct GT_object *graphics_object,enum Render_type render_type,
 	struct GROUP(FE_node) *surface_data_group,
 	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(FE_field) *fe_field_manager)
+	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(Computed_field) *computed_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).
@@ -7892,7 +7928,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 								graphics_object,
 								time,iso_surface_voltex))
 							{
-								if(surface_data_density_field
+								if (surface_data_density_field
 									&& surface_data_group
 									&& data_manager
 									&& fe_field_manager)
@@ -7903,8 +7939,10 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 										volume_texture,
 										data_manager,
 										surface_data_group,
+										computed_field_manager, 
 										fe_field_manager, 
-										surface_data_density_field);
+										surface_data_density_field,
+										surface_data_coordinate_field);
 								}
 								else
 								{

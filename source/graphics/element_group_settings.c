@@ -4746,15 +4746,18 @@ Converts a finite element into a graphics object with the supplied settings.
 									}
 									if (draw_element)
 									{
-										return_code=create_iso_surfaces_from_FE_element(element,
-											settings->iso_value,time,(struct Clipping *)NULL,
+										return_code = create_iso_surfaces_from_FE_element(element,
+											settings->iso_value, time, (struct Clipping *)NULL,
 											settings_to_object_data->rc_coordinate_field,
-											settings->data_field,settings->iso_scalar_field,
-											(struct Computed_field *)NULL,number_in_xi,
-											settings->graphics_object,settings->render_type,
+											settings->data_field, settings->iso_scalar_field,
+											/*surface_data_density_field*/(struct Computed_field *)NULL,
+											/*surface_data_coordinate_field*/(struct Computed_field *)NULL,
+											number_in_xi,
+											settings->graphics_object, settings->render_type,
 											(struct GROUP(FE_node) *)NULL,
 											(struct MANAGER(FE_node) *)NULL,
-											(struct MANAGER(FE_field) *)NULL);
+											(struct MANAGER(FE_field) *)NULL,
+											(struct MANAGER(Computed_field) *)NULL);
 									}
 								}
 								else

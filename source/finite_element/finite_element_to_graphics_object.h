@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -148,7 +148,7 @@ Data for warping a volume.
 
 struct Element_to_volume_data
 /*******************************************************************************
-LAST MODIFIED : 21 October 1998
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
 Data for converting a 3-D element into a volume.
@@ -159,6 +159,8 @@ Data for converting a 3-D element into a volume.
 	struct Computed_field *coordinate_field;
 	struct Computed_field *data_field;
 	struct Computed_field *surface_data_density_field;
+	struct Computed_field *surface_data_coordinate_field;
+	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Computed_field *displacement_map_field;
 	int displacement_map_xi_direction;
 	struct GROUP(FE_node) *surface_data_group;
@@ -172,7 +174,7 @@ Data for converting a 3-D element into a volume.
 
 struct Element_to_iso_scalar_data
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
 Data for converting a 3-D element into an iso_surface (via a volume_texture).
@@ -185,6 +187,8 @@ Data for converting a 3-D element into an iso_surface (via a volume_texture).
 	int face_number;
 	struct Clipping *clipping;
 	struct Computed_field *coordinate_field, *data_field, *scalar_field;
+	struct Computed_field *surface_data_coordinate_field;
+	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Computed_field *surface_data_density_field;
 	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct FE_field *native_discretization_field;
@@ -557,14 +561,25 @@ texture_map.
 ==============================================================================*/
 
 int create_surface_data_points_from_GT_voltex(struct GT_voltex *voltex,
-   struct FE_element *element, struct Computed_field *coordinate_field,
+	struct FE_element *element, struct Computed_field *coordinate_field,
 	struct VT_volume_texture *vtexture,
 	struct MANAGER(FE_node) *data_manager, struct GROUP(FE_node) *data_group,
-	struct MANAGER(FE_field) *fe_field_manager, struct Computed_field *data_density_field);
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct MANAGER(FE_field) *fe_field_manager,
+	struct Computed_field *data_density_field,
+	struct Computed_field *data_coordinate_field);
 /*******************************************************************************
-LAST MODIFIED : 28 April 1999
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
+This function takes a <voltex> and the corresponding <vtexture> and creates
+a randomly placed set of data_points over the surface the <voltex> describes.
+The vtexture is used to define an element_xi field at each of the data_points.
+These can then be used to draw axes or gradient vectors over the surface of an
+isosurface or to create hair streamlines starting from the surface of a volume
+texture. If the <data_coordinate_field> is supplied, it - ie. the FE_field it is
+calculated from -  will be defined at the data points, and the field is given
+the position of the point, with appropriate coordinate conversion.
 ==============================================================================*/
 
 int warp_GT_voltex_with_FE_element(struct GT_voltex *voltex1,
@@ -759,13 +774,16 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	double iso_value,float time,struct Clipping *clipping,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
-	struct Computed_field *surface_data_density_field,int *number_in_xi,
+	struct Computed_field *surface_data_density_field,
+	struct Computed_field *surface_data_coordinate_field,
+	int *number_in_xi,
 	struct GT_object *graphics_object,enum Render_type render_type,
 	struct GROUP(FE_node) *surface_data_group,
 	struct MANAGER(FE_node) *data_manager,
-	struct MANAGER(FE_field) *fe_field_manager);
+	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(Computed_field) *computed_field_manager);
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).
