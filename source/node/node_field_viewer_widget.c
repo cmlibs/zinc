@@ -13,7 +13,7 @@ Note the node passed to this widget should be a non-managed local copy.
 #include <Xm/RowColumn.h>
 #include <Xm/ScrolledW.h>
 #include <Xm/TextF.h>
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "node/node_field_viewer_widget.h"

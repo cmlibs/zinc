@@ -16,7 +16,7 @@ appearance of graphical finite element groups.
 #include "general/multi_range.h"
 #include "general/mystring.h"
 #include "general/object.h"
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"

@@ -10,7 +10,7 @@ The functions for creating graphical objects from finite elements.
 #include <math.h>
 #include <stdlib.h>
 #include "command/parser.h"
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"

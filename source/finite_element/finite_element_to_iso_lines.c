@@ -9,7 +9,7 @@ value over 2-D elements.
 ==============================================================================*/
 
 #include <math.h>
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_iso_lines.h"
 #include "finite_element/finite_element_to_graphics_object.h"

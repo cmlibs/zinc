@@ -9,7 +9,7 @@ Functions for calculating streamlines in finite elements.
 	finite_element_to_graphics_object further ?
 ==============================================================================*/
 #include <math.h>
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_streamlines.h"
 #include "general/debug.h"

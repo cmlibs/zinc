@@ -9,7 +9,7 @@ Widget for choosing a Computed_field, based on choose_object macro.
 
 #include "choose/choose_computed_field.h"
 #include "choose/choose_object_private.h"
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 
 /*
 Module types

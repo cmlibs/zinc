@@ -22,7 +22,7 @@ Provides the widgets to manipulate element group settings.
 #include "choose/choose_volume_texture.h"
 #include "choose/text_choose_fe_element.h"
 #include "command/parser.h"
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"

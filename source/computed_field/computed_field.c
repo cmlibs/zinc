@@ -179,8 +179,8 @@ Computed_field_clear_type;
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 #include <math.h>
-#include "finite_element/computed_field.h"
-#include "finite_element/computed_field_find_xi.h"
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_find_xi.h"
 #include "finite_element/finite_element.h"
 #include "general/child_process.h"
 #include "general/compare.h"

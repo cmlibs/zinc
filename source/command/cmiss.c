@@ -28,12 +28,12 @@ Functions for executing cmiss commands.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "command/parser.h"
 #if !defined (WINDOWS_DEV_FLAG)
+#include "computed_field/computed_field.h"
 #include "data/data_grabber_dialog.h"
 #include "data/node_transform.h"
 #include "data/sync_2d_3d.h"
 #include "element/element_creator.h"
 #include "element/element_point_viewer.h"
-#include "finite_element/computed_field.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
