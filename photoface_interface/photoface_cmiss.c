@@ -2117,8 +2117,14 @@ If either path is NULL the internal storage for that path is free'd.
 	ENTER(pf_specify_paths);
 	return_code=PF_SUCCESS_RC;
 	/* Deallocate the old paths */
-	DEALLOCATE(photoface_local_path);
-	DEALLOCATE(photoface_remote_path);
+	if (photoface_local_path)
+	{
+		DEALLOCATE(photoface_local_path);
+	}
+	if (photoface_remote_path)
+	{
+		DEALLOCATE(photoface_remote_path);
+	}
 	if (photoface_local_path_in)
 	{
 		if (ALLOCATE(photoface_local_path,char,
