@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 21 August 2003
+LAST MODIFIED : 19 November 2003
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -2871,9 +2871,9 @@ See <unemap_configure> for more details.
 #if defined (DEBUG)
 								/*???debug */
 								display_message(INFORMATION_MESSAGE,
-									"crate_configure_start.  %g %d %g %g %d %d\n",
-									sampling_frequency,number_of_samples_in_buffer,
-									temp_scrolling_callback_frequency,
+									"crate_configure_start.  %g %g %d %g %g %d %d\n",
+									sampling_frequency,sampling_frequency_slave,
+									number_of_samples_in_buffer,temp_scrolling_callback_frequency,
 									scrolling_callback_frequency,
 									crate->number_of_configured_channels,
 									crate->software_version);
@@ -3242,8 +3242,8 @@ DESCRIPTION :
 #if defined (DEBUG)
 			/*???debug */
 			display_message(INFORMATION_MESSAGE,
-				"Received %d bytes, data %x %x %ld\n",retval,buffer[0],
-				buffer[1],buffer_size);
+				"Received %d (%d) bytes, data %x %x %ld\n",retval,2+sizeof(long),
+				buffer[0],buffer[1],buffer_size);
 #endif /* defined (DEBUG) */
 			if ((2+sizeof(long)==retval)&&(0==buffer_size)&&(buffer[0]))
 			{
@@ -6385,7 +6385,7 @@ The sampling frequency is assigned to <*frequency>.
 static int crate_get_scrolling_frequency(struct Unemap_crate *crate,
 	float *frequency)
 /*******************************************************************************
-LAST MODIFIED : 6 June 2002
+LAST MODIFIED : 31 October 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -6477,6 +6477,7 @@ The scrolling frequency is assigned to <*frequency>.
 		else
 		{
 			*frequency=(float)100;
+			return_code=1;
 		}
 	}
 	else
@@ -6493,7 +6494,7 @@ The scrolling frequency is assigned to <*frequency>.
 static int crate_get_scrolling_callback_frequency(struct Unemap_crate *crate,
 	float *frequency)
 /*******************************************************************************
-LAST MODIFIED : 6 June 2002
+LAST MODIFIED : 31 October 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -6585,6 +6586,7 @@ The scrolling callback frequency is assigned to <*frequency>.
 		else
 		{
 			*frequency=(float)25;
+			return_code=1;
 		}
 	}
 	else
@@ -6859,7 +6861,7 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 static int crate_set_gain(struct Unemap_crate *crate,int channel_number,
 	float pre_filter_gain,float post_filter_gain)
 /*******************************************************************************
-LAST MODIFIED : 17 August 2003
+LAST MODIFIED : 19 November 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -6956,13 +6958,13 @@ For UNEMAP_2V1 and UNEMAP_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 					unemap_card=crate->unemap_cards;
 					for (i=0;i<crate->number_of_unemap_cards;i++)
 					{
-						if (0<(crate->unemap_cards)[i].channel_number)
+						if (0<unemap_card->channel_number)
 						{
-							crate_get_gain_start(crate,
-								(crate->unemap_cards)[i].channel_number);
+							crate_get_gain_start(crate,unemap_card->channel_number);
 							crate_get_gain_end(crate,&(unemap_card->pre_filter_gain),
 								&(unemap_card->post_filter_gain));
 						}
+						unemap_card++;
 					}
 				}
 				else
@@ -10531,7 +10533,7 @@ int unemap_configure(int number_of_channels,int *channel_numbers,
 	float scrolling_frequency,float scrolling_callback_frequency,
 	int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 13 August 2003
+LAST MODIFIED : 31 October 2003
 
 DESCRIPTION :
 Configures the hardware for sampling the specified channels
@@ -10610,102 +10612,118 @@ signal.
 		if (initialize_connection()&&module_unemap_crates&&
 			(0<module_number_of_unemap_crates))
 		{
-			/* distribute the channels among the crates */
-			if (-1==number_of_channels)
+			return_code=0;
+			/* configure crates and if they end up with different sampling
+				frequencies or buffer sizes retry with the minima */
+			master_sampling_frequency=sampling_frequency;
+			master_scrolling_frequency=scrolling_frequency;
+			master_scrolling_callback_frequency=scrolling_callback_frequency;
+			master_number_of_samples_in_buffer=number_of_samples_in_buffer;
+			retry=0;
+			do
 			{
-				crate=module_unemap_crates;
-				for (i=module_number_of_unemap_crates;i>0;i--)
+				/* distribute the channels among the crates */
+				if (-1==number_of_channels)
 				{
-					crate->number_of_configured_channels=0;
-					crate++;
-				}
-				return_code=1;
-			}
-			else if (0==number_of_channels)
-			{
-				return_code=1;
-				crate=module_unemap_crates;
-				i=module_number_of_unemap_crates;
-				k=0;
-				while (return_code&&(i>0))
-				{
-					crate->number_of_configured_channels=crate->number_of_channels;
-					ALLOCATE(crate->configured_channels,int,crate->number_of_channels);
-					ALLOCATE(crate->configured_channel_offsets,int,
-						crate->number_of_channels);
-					if ((crate->configured_channels)&&(crate->configured_channel_offsets))
+					crate=module_unemap_crates;
+					for (i=module_number_of_unemap_crates;i>0;i--)
 					{
-						for (j=0;j<crate->number_of_channels;j++)
-						{
-							(crate->configured_channels)[j]=j+1;
-							(crate->configured_channel_offsets)[j]=k;
-							k++;
-						}
+						crate->number_of_configured_channels=0;
 						crate++;
-						i--;
 					}
-					else
-					{
-						return_code=0;
-						DEALLOCATE(crate->configured_channels);
-						DEALLOCATE(crate->configured_channel_offsets);
-					}
+					return_code=1;
 				}
-				if (!return_code)
+				else if (0==number_of_channels)
 				{
-					channel_number=0;
-					while (i<module_number_of_unemap_crates)
+					return_code=1;
+					crate=module_unemap_crates;
+					i=module_number_of_unemap_crates;
+					k=0;
+					while (return_code&&(i>0))
 					{
-						crate--;
-						i++;
-						DEALLOCATE(crate->configured_channels);
-						DEALLOCATE(crate->configured_channel_offsets);
-					}
-				}
-			}
-			else
-			{
-				return_code=1;
-				crate=module_unemap_crates;
-				for (i=module_number_of_unemap_crates;i>0;i--)
-				{
-					crate->number_of_configured_channels=0;
-					crate++;
-				}
-				i=0;
-				while (return_code&&(i<number_of_channels))
-				{
-					channel_number=channel_numbers[i];
-					if (channel_number>0)
-					{
-						crate=module_unemap_crates;
-						j=module_number_of_unemap_crates;
-						while ((j>0)&&(channel_number>crate->number_of_channels))
+						crate->number_of_configured_channels=crate->number_of_channels;
+						ALLOCATE(crate->configured_channels,int,crate->number_of_channels);
+						ALLOCATE(crate->configured_channel_offsets,int,
+							crate->number_of_channels);
+						if ((crate->configured_channels)&&
+							(crate->configured_channel_offsets))
 						{
-							channel_number -= crate->number_of_channels;
+							for (j=0;j<crate->number_of_channels;j++)
+							{
+								(crate->configured_channels)[j]=j+1;
+								(crate->configured_channel_offsets)[j]=k;
+								k++;
+							}
 							crate++;
-							j--;
+							i--;
 						}
-						if (j>0)
+						else
 						{
-							if (REALLOCATE(configured_channels,crate->configured_channels,int,
-								(crate->number_of_configured_channels)+1))
+							return_code=0;
+							DEALLOCATE(crate->configured_channels);
+							DEALLOCATE(crate->configured_channel_offsets);
+						}
+					}
+					if (!return_code)
+					{
+						channel_number=0;
+						while (i<module_number_of_unemap_crates)
+						{
+							crate--;
+							i++;
+							DEALLOCATE(crate->configured_channels);
+							DEALLOCATE(crate->configured_channel_offsets);
+						}
+					}
+				}
+				else
+				{
+					return_code=1;
+					crate=module_unemap_crates;
+					for (i=module_number_of_unemap_crates;i>0;i--)
+					{
+						crate->number_of_configured_channels=0;
+						crate++;
+					}
+					i=0;
+					while (return_code&&(i<number_of_channels))
+					{
+						channel_number=channel_numbers[i];
+						if (channel_number>0)
+						{
+							crate=module_unemap_crates;
+							j=module_number_of_unemap_crates;
+							while ((j>0)&&(channel_number>crate->number_of_channels))
 							{
-								crate->configured_channels=configured_channels;
+								channel_number -= crate->number_of_channels;
+								crate++;
+								j--;
 							}
-							if (REALLOCATE(configured_channel_offsets,
-								crate->configured_channel_offsets,int,
-								(crate->number_of_configured_channels)+1))
+							if (j>0)
 							{
-								crate->configured_channel_offsets=configured_channel_offsets;
-							}
-							if (configured_channels&&configured_channel_offsets)
-							{
-								(crate->configured_channel_offsets)[
-									crate->number_of_configured_channels]=i;
-								(crate->configured_channels)[
-									crate->number_of_configured_channels]=channel_number;
-								(crate->number_of_configured_channels)++;
+								if (REALLOCATE(configured_channels,crate->configured_channels,int,
+									(crate->number_of_configured_channels)+1))
+								{
+									crate->configured_channels=configured_channels;
+								}
+								if (REALLOCATE(configured_channel_offsets,
+									crate->configured_channel_offsets,int,
+									(crate->number_of_configured_channels)+1))
+								{
+									crate->configured_channel_offsets=configured_channel_offsets;
+								}
+								if (configured_channels&&configured_channel_offsets)
+								{
+									(crate->configured_channel_offsets)[
+										crate->number_of_configured_channels]=i;
+									(crate->configured_channels)[
+										crate->number_of_configured_channels]=channel_number;
+									(crate->number_of_configured_channels)++;
+								}
+								else
+								{
+									return_code=0;
+								}
 							}
 							else
 							{
@@ -10716,36 +10734,21 @@ signal.
 						{
 							return_code=0;
 						}
+						i++;
 					}
-					else
+					if (!return_code)
 					{
-						return_code=0;
-					}
-					i++;
-				}
-				if (!return_code)
-				{
-					crate=module_unemap_crates;
-					for (i=module_number_of_unemap_crates;i>0;i--)
-					{
-						crate->number_of_configured_channels=0;
-						DEALLOCATE(crate->configured_channels);
-						DEALLOCATE(crate->configured_channel_offsets);
-						crate++;
+						crate=module_unemap_crates;
+						for (i=module_number_of_unemap_crates;i>0;i--)
+						{
+							crate->number_of_configured_channels=0;
+							DEALLOCATE(crate->configured_channels);
+							DEALLOCATE(crate->configured_channel_offsets);
+							crate++;
+						}
 					}
 				}
-			}
-			if (return_code)
-			{
-				return_code=0;
-				/* configure crates and if they end up with different sampling
-					frequencies or buffer sizes retry with the minima */
-				master_sampling_frequency=sampling_frequency;
-				master_scrolling_frequency=scrolling_frequency;
-				master_scrolling_callback_frequency=scrolling_callback_frequency;
-				master_number_of_samples_in_buffer=number_of_samples_in_buffer;
-				retry=0;
-				do
+				if (return_code)
 				{
 					crate=module_unemap_crates;
 					i=module_number_of_unemap_crates;
@@ -10908,27 +10911,28 @@ signal.
 							}
 						}
 					}
-				} while (return_code&&retry);
-				if (return_code)
-				{
-					return_code=1;
-					module_number_of_configured_channels=0;
-					crate=module_unemap_crates;
-					for (i=module_number_of_unemap_crates;i>0;i--)
-					{
-						module_number_of_configured_channels +=
-							crate->number_of_configured_channels;
-						crate++;
-					}
-#if defined (CACHE_CLIENT_INFORMATION)
-					get_cache_information();
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
 				}
-			}
-			else
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"unemap_configure.  Invalid number_of_channels %d",
+						number_of_channels);
+				}
+			} while (return_code&&retry);
+			if (return_code)
 			{
-				display_message(ERROR_MESSAGE,
-					"unemap_configure.  Invalid channel number %d",channel_number);
+				return_code=1;
+				module_number_of_configured_channels=0;
+				crate=module_unemap_crates;
+				for (i=module_number_of_unemap_crates;i>0;i--)
+				{
+					module_number_of_configured_channels +=
+						crate->number_of_configured_channels;
+					crate++;
+				}
+#if defined (CACHE_CLIENT_INFORMATION)
+				get_cache_information();
+#endif /* defined (CACHE_CLIENT_INFORMATION) */
 			}
 		}
 #if defined (OLD_CODE)
