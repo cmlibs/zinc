@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : chooser.c
 
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Widget for choosing a void pointer identified with a string out of a
 hierarchical cascading menu system.
 ==============================================================================*/
+#include <stdio.h>
 #include <string.h>
 #if defined (MOTIF)
 #include <Xm/Xm.h>
@@ -28,13 +29,13 @@ Module variables
 */
 struct Chooser
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Contains information required by the choose_object control dialog.
 ==============================================================================*/
 {
-	struct Callback_data destroy_callback,update_callback;
+	struct Callback_data update_callback;
 	Widget main_cascade,main_menu,widget,widget_parent;
 	void *current_item,*last_updated_item;
 }; /* struct Chooser */
@@ -130,38 +131,6 @@ Avoids sending repeated updates if the object address has not changed.
 
 	return (return_code);
 } /* Chooser_update */
-
-static void Chooser_destroy_CB(Widget widget,
-	XtPointer client_data,XtPointer reason)
-/*******************************************************************************
-LAST MODIFIED : 19 January 2000
-
-DESCRIPTION :
-Callback for the chooser dialog - tidies up all memory allocation.
-==============================================================================*/
-{
-	struct Chooser *chooser;
-
-	ENTER(Chooser_destroy_CB);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(reason);
-	if (chooser=(struct Chooser *)client_data)
-	{
-		/* allow parent to destroy itself */
-		if (chooser->destroy_callback.procedure)
-		{
-			/* now call the procedure with the user data */
-			(chooser->destroy_callback.procedure)(
-				chooser->widget,chooser->destroy_callback.data,(void *)NULL);
-		}
-		DEALLOCATE(chooser);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Chooser_destroy_CB.  Missing chooser");
-	}
-	LEAVE;
-} /* Chooser_destroy_CB */
 
 static void Chooser_menu_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
@@ -398,32 +367,32 @@ builds menus of cascade buttons with their own submenus.
 Global functions
 ----------------
 */
-Widget CREATE(Chooser)(Widget parent,int number_of_items,void **items,
-	char **item_names,void *current_item)
+
+struct Chooser *CREATE(Chooser)(Widget parent,int number_of_items,void **items,
+	char **item_names,void *current_item,Widget *chooser_widget)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Creates a menu from which any of the given <items> with <item_names> may be
-chosen.
+chosen. Returns the <chooser_widget> which is then owned by the calling code.
+Note that it has no userdata and no destroy callbacks associated with it - but
+these may be added by the calling code.
 ==============================================================================*/
 {
 	Arg args[7];
 	int num_children;
 	struct Chooser *chooser;
-	Widget *child_list,return_widget;
+	Widget *child_list;
 	XmFontList fontlist;
 
 	ENTER(CREATE(Chooser));
-	return_widget=(Widget)NULL;
 	if (parent&&((0==number_of_items)||
 		((0<number_of_items)&&items&&item_names)))
 	{
 		if (ALLOCATE(chooser,struct Chooser,1))
 		{
 			/* initialise the structure */
-			chooser->destroy_callback.procedure=(Callback_procedure *)NULL;
-			chooser->destroy_callback.data=(void *)NULL;
 			chooser->update_callback.procedure=(Callback_procedure *)NULL;
 			chooser->update_callback.data=(void *)NULL;
 			chooser->main_cascade=(Widget)NULL;
@@ -441,13 +410,11 @@ chosen.
 			XtSetArg(args[6],XmNmarginWidth,0);
 			if (chooser->widget=XmCreateMenuBar(parent,"chooser",args,7))
 			{
-				/* add destroy callback for top widget */
-				XtAddCallback(chooser->widget,XmNdestroyCallback,
-					Chooser_destroy_CB,(XtPointer)chooser);
+				*chooser_widget = chooser->widget;
 				if (chooser->main_cascade=
 					XmCreateCascadeButtonGadget(chooser->widget,"cascade",NULL,0))
 				{
-					if (Chooser_build_main_menu(chooser->widget,number_of_items,
+					if (Chooser_build_main_menu(chooser,number_of_items,
 						items,item_names,current_item))
 					{
 						/* tricky: steal font from child cascade buttons for main_cascade */
@@ -462,7 +429,6 @@ chosen.
 						}
 						XtManageChild(chooser->main_cascade);
 						XtManageChild(chooser->widget);
-						return_widget=chooser->widget;
 					}
 					else
 					{
@@ -495,16 +461,44 @@ chosen.
 	{
 		display_message(ERROR_MESSAGE,
 			"CREATE(Chooser).  Invalid argument(s)");
+		chooser=(struct Chooser *)NULL;
 	}
 	LEAVE;
 
-	return (return_widget);
+	return (chooser);
 } /* CREATE(Chooser) */
 
-int Chooser_build_main_menu(Widget chooser_widget,int number_of_items,
+int DESTROY(Chooser)(struct Chooser **chooser_address)
+/*******************************************************************************
+LAST MODIFIED : 21 January 2000
+
+DESCRIPTION :
+Cleans up the chooser structure. Note does not destroy widgets!
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(DESTROY(Chooser));
+	if (chooser_address&&(*chooser_address))
+	{
+		DEALLOCATE(*chooser_address);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Chooser).  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Chooser) */
+
+int Chooser_build_main_menu(struct Chooser *chooser,int number_of_items,
 	void **items,char **item_names,void *new_item)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Makes a cascading menu of the <items> labelled with the given <item_names>.
@@ -513,58 +507,46 @@ The new menu is attached to the main_cascade button.
 ==============================================================================*/
 {
 	int current_item_found,i,return_code;
-	struct Chooser *chooser;
 	Widget menu;
 
 	ENTER(Chooser_build_main_menu);
-	if (chooser_widget&&((0==number_of_items)||
+	if (chooser&&((0==number_of_items)||
 		((0<number_of_items)&&items&&item_names)))
 	{
-		/* Get the pointer to the data for the chooser dialog */
-		XtVaGetValues(chooser_widget,XmNuserData,&chooser,NULL);
-		if (chooser&&chooser->main_cascade)
+		/* set last_updated_item to avoid update once set */
+		chooser->last_updated_item=new_item;
+		chooser->current_item=new_item;
+		if (chooser->current_item)
 		{
-			/* set last_updated_item to avoid update once set */
-			chooser->last_updated_item=new_item;
-			chooser->current_item=new_item;
-			if (chooser->current_item)
+			current_item_found=0;
+			for (i=0;(!current_item_found)&&(i<number_of_items);i++)
 			{
-				current_item_found=0;
-				for (i=0;(!current_item_found)&&(i<number_of_items);i++)
-				{
-					current_item_found=(items[i]==chooser->current_item);
-				}
-				if (!current_item_found)
-				{
-					chooser->current_item=(void *)NULL;
-				}
+				current_item_found=(items[i]==chooser->current_item);
 			}
-			if (menu=Chooser_build_menu(chooser->widget,number_of_items,items,
-				item_names,chooser))
+			if (!current_item_found)
 			{
-				/* attach cascade button to new menu */
-				XtVaSetValues(chooser->main_cascade,XmNsubMenuId,(XtPointer)menu,NULL);
-				/* clear existing menu */
-				if (chooser->main_menu)
-				{
-					XtDestroyWidget(chooser->main_menu);
-				}
-				chooser->main_menu=menu;
-				/* allow update in case current_item was changed */
-				Chooser_update(chooser);
-				return_code=1;
+				chooser->current_item=(void *)NULL;
 			}
-			else
+		}
+		if (menu=Chooser_build_menu(chooser->widget,number_of_items,items,
+			item_names,chooser))
+		{
+			/* attach cascade button to new menu */
+			XtVaSetValues(chooser->main_cascade,XmNsubMenuId,(XtPointer)menu,NULL);
+			/* clear existing menu */
+			if (chooser->main_menu)
 			{
-				display_message(ERROR_MESSAGE,
-					"Chooser_build_main_menu.  Could not create menu");
-				return_code=0;
+				XtDestroyWidget(chooser->main_menu);
 			}
+			chooser->main_menu=menu;
+			/* allow update in case current_item was changed */
+			Chooser_update(chooser);
+			return_code=1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Chooser_build_main_menu.  Missing chooser");
+				"Chooser_build_main_menu.  Could not create menu");
 			return_code=0;
 		}
 	}
@@ -579,76 +561,23 @@ The new menu is attached to the main_cascade button.
 	return (return_code);
 } /* Chooser_build_main_menu */
 
-int Chooser_set_destroy_callback(Widget chooser_widget,
-	struct Callback_data *new_destroy_callback)
-/*******************************************************************************
-LAST MODIFIED : 19 January 2000
-
-DESCRIPTION :
-Changes the destroy callback item of the chooser_widget.
-==============================================================================*/
-{
-	int return_code;
-	struct Chooser *chooser;
-
-	ENTER(Chooser_set_destroy_callback);
-	if (chooser_widget&&new_destroy_callback)
-	{
-		/* Get the pointer to the data for the chooser dialog */
-		XtVaGetValues(chooser_widget,XmNuserData,&chooser,NULL);
-		if (chooser)
-		{
-			chooser->destroy_callback.procedure=new_destroy_callback->procedure;
-			chooser->destroy_callback.data=new_destroy_callback->data;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Chooser_set_destroy_callback.  Missing chooser");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Chooser_set_destroy_callback.  Missing widget");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Chooser_set_destroy_callback */
-
-int Chooser_set_update_callback(Widget chooser_widget,
+int Chooser_set_update_callback(struct Chooser *chooser,
 	struct Callback_data *new_update_callback)
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
-Changes the update callback item of the chooser_widget.
+Changes the update callback of the chooser_widget.
 ==============================================================================*/
 {
 	int return_code;
-	struct Chooser *chooser;
 
 	ENTER(Chooser_set_update_callback);
-	if (chooser_widget&&new_update_callback)
+	if (chooser&&new_update_callback)
 	{
-		/* Get the pointer to the data for the chooser dialog */
-		XtVaGetValues(chooser_widget,XmNuserData,&chooser,NULL);
-		if (chooser)
-		{
-			chooser->update_callback.procedure=new_update_callback->procedure;
-			chooser->update_callback.data=new_update_callback->data;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Chooser_set_update_callback.  Missing chooser");
-			return_code=0;
-		}
+		chooser->update_callback.procedure=new_update_callback->procedure;
+		chooser->update_callback.data=new_update_callback->data;
+		return_code=1;
 	}
 	else
 	{
@@ -661,96 +590,74 @@ Changes the update callback item of the chooser_widget.
 	return (return_code);
 } /* Chooser_set_update_callback */
 
-void *Chooser_get_item(Widget chooser_widget)
+void *Chooser_get_item(struct Chooser *chooser)
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Returns the currently chosen item in the chooser_widget.
 ==============================================================================*/
 {
-	void *return_address;
-	struct Chooser *chooser;
+	void *item;
 
 	ENTER(Chooser_get_item);
-	if (chooser_widget)
+	if (chooser)
 	{
-		/* Get the pointer to the data for the chooser dialog */
-		XtVaGetValues(chooser_widget,XmNuserData,&chooser,NULL);
-		if (chooser)
-		{
-			return_address=chooser->current_item;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Chooser_get_item.  Missing chooser");
-			return_address=(void *)NULL;
-		}
+		item=chooser->current_item;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"Chooser_get_item.  Missing widget");
-		return_address=(void *)NULL;
+		item=(void *)NULL;
 	}
 	LEAVE;
 
-	return (return_address);
+	return (item);
 } /* Chooser_get_item */
 
-int Chooser_set_item(Widget chooser_widget,void *new_item)
+int Chooser_set_item(struct Chooser *chooser,void *new_item)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Changes the chosen item in the chooser_widget.
 ==============================================================================*/
 {
 	int return_code;
-	struct Chooser *chooser;
 	Widget item_widget;
 	XmString new_string;
 	XtPointer item;
 
 	ENTER(Chooser_set_item);
-	if (chooser_widget)
+	if (chooser)
 	{
-		/* Get the pointer to the data for the chooser dialog */
-		XtVaGetValues(chooser_widget,XmNuserData,&chooser,NULL);
-		if (chooser)
+		/* set last_updated_item to avoid update once set */
+		chooser->last_updated_item=new_item;
+		chooser->current_item=new_item;
+		/* get pushbutton widget for current_item */
+		item_widget=
+			Chooser_get_widget_from_item(chooser->main_menu,chooser->current_item);
+		if (!item_widget)
 		{
-			/* set last_updated_item to avoid update once set */
-			chooser->last_updated_item=new_item;
-			chooser->current_item=new_item;
-			/* get pushbutton widget for current_item */
-			item_widget=
-				Chooser_get_widget_from_item(chooser->main_menu,chooser->current_item);
-			if (!item_widget)
-			{
-				chooser->current_item=(void *)NULL;
-				item_widget=Chooser_get_widget_from_item(chooser->main_menu,
-					chooser->current_item);
-				if (item_widget)
-				{
-					XtVaGetValues(item_widget,XmNuserData,&item,NULL);
-					chooser->current_item=(void *)item;
-				}
-			}
+			chooser->current_item=(void *)NULL;
+			item_widget=Chooser_get_widget_from_item(chooser->main_menu,
+				chooser->current_item);
 			if (item_widget)
 			{
-				/* display name of current_item on main_cascade */
-				XtVaGetValues(item_widget,XmNlabelString,(XtPointer)&new_string,NULL);
-				XtVaSetValues(chooser->main_cascade,
-					XmNlabelString,(XtPointer)new_string,NULL);
+				XtVaGetValues(item_widget,XmNuserData,&item,NULL);
+				chooser->current_item=(void *)item;
 			}
-			/* allow update in case new_item was not valid */
-			Chooser_update(chooser);
-			return_code=1;
 		}
-		else
+		if (item_widget)
 		{
-			display_message(ERROR_MESSAGE,"Chooser_set_item.  Missing chooser");
-			return_code=0;
+			/* display name of current_item on main_cascade */
+			XtVaGetValues(item_widget,XmNlabelString,(XtPointer)&new_string,NULL);
+			XtVaSetValues(chooser->main_cascade,
+				XmNlabelString,(XtPointer)new_string,NULL);
 		}
+		/* allow update in case new_item was not valid */
+		Chooser_update(chooser);
+		return_code=1;
 	}
 	else
 	{

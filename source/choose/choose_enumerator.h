@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_enumerator.h
 
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Widgets for editing an enumerated value. To overcome type differences, the
@@ -24,16 +24,15 @@ char **Enumerated_type_get_valid_strings(&number_of_valid_strings);
 Global Types
 ------------
 */
-struct Choose_enumerator;
 
 /*
 Global Functions
 ---------------
 */
-struct Choose_enumerator *CREATE(Choose_enumerator)(Widget parent,
+Widget create_choose_enumerator_widget(Widget parent,
 	int number_of_valid_strings,char **valid_strings,char *enumerator_string);
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Creates an editor for specifying a string out of the <valid_strings>, with the
@@ -44,46 +43,45 @@ Note: Choose_enumerator will be automatically DESTROYed with its widgets.
 ==============================================================================*/
 
 struct Callback_data *choose_enumerator_get_callback(
-	struct Choose_enumerator *choose_enumerator);
+	Widget choose_enumerator_widget);
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Returns a pointer to the callback item of the choose_enumerator_widget.
 ==============================================================================*/
 
-int choose_enumerator_set_callback(struct Choose_enumerator *choose_enumerator,
+int choose_enumerator_set_callback(Widget choose_enumerator_widget,
 	struct Callback_data *new_callback);
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Changes the callback item of the choose_enumerator_widget.
 ==============================================================================*/
 
-char *choose_enumerator_get_string(struct Choose_enumerator *choose_enumerator);
+char *choose_enumerator_get_string(Widget choose_enumerator_widget);
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Returns the current enumerator_string in use by the editor. Calling function
 must not destroy or modify the returned static string.
 ==============================================================================*/
 
-int choose_enumerator_set_string(struct Choose_enumerator *choose_enumerator,
+int choose_enumerator_set_string(Widget choose_enumerator_widget,
 	char *enumerator_string);
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Changes the enumerator_string in the choose_enumerator_widget.
 ==============================================================================*/
 
-int choose_enumerator_set_valid_strings(
-	struct Choose_enumerator *choose_enumerator,int number_of_valid_strings,
-	char **valid_strings,char *enumerator_string);
+int choose_enumerator_set_valid_strings(Widget choose_enumerator_widget,
+	int number_of_valid_strings,char **valid_strings,char *enumerator_string);
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Changes the list of <valid_strings> in the choose_enumerator_widget.

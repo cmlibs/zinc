@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_volume_texture.c
 
-LAST MODIFIED : 24 July 1998
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Widget for choosing a volume_texture, based on choose_object macro.
@@ -14,7 +14,7 @@ Widget for choosing a volume_texture, based on choose_object macro.
 Module types
 ------------
 */
-FULL_DECLARE_CHOOSE_OBJECT_STRUCT_TYPE(VT_volume_texture);
+FULL_DECLARE_CHOOSE_OBJECT_TYPE(VT_volume_texture);
 
 /*
 Module functions

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_fe_field.c
 
-LAST MODIFIED : 29 January 1999
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Widget for choosing a FE_field, based on choose_object macro.
@@ -15,7 +15,7 @@ Widget for choosing a FE_field, based on choose_object macro.
 Module types
 ------------
 */
-FULL_DECLARE_CHOOSE_OBJECT_STRUCT_TYPE(FE_field);
+FULL_DECLARE_CHOOSE_OBJECT_TYPE(FE_field);
 
 /*
 Module functions

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_computed_field.c
 
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Widget for choosing a Computed_field, based on choose_object macro.
@@ -15,7 +15,7 @@ Widget for choosing a Computed_field, based on choose_object macro.
 Module types
 ------------
 */
-FULL_DECLARE_CHOOSE_OBJECT_STRUCT_TYPE(Computed_field);
+FULL_DECLARE_CHOOSE_OBJECT_TYPE(Computed_field);
 
 /*
 Module functions

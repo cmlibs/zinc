@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_enumerator.c
 
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Widgets for editing a FE_field_scalar object = scalar function of a field.
@@ -24,14 +24,15 @@ Module variables
 */
 struct Choose_enumerator
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Contains information required by the choose_enumerator_widget.
 ==============================================================================*/
 {
-	Widget chooser_widget,parent;
 	struct Callback_data update_callback;
+	struct Chooser *chooser;
+	Widget widget,parent;
 }; /* struct Choose_enumerator */
 
 /*
@@ -41,7 +42,7 @@ Module functions
 
 static int choose_enumerator_update(struct Choose_enumerator *choose_enumerator)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Tells client that the component has changed.
@@ -56,7 +57,7 @@ Tells client that the component has changed.
 		{
 			(choose_enumerator->update_callback.procedure)(
 				(Widget)NULL,choose_enumerator->update_callback.data,
-				Chooser_get_item(choose_enumerator->chooser_widget));
+				Chooser_get_item(choose_enumerator->chooser));
 		}
 		return_code=1;
 	}
@@ -71,10 +72,10 @@ Tells client that the component has changed.
 	return (return_code);
 } /* choose_enumerator_update */
 
-static void choose_enumerator_destroy_callback(Widget widget,
-	void *choose_enumerator_void,void *dummy_void)
+static void choose_enumerator_destroy_CB(Widget widget,
+	XtPointer client_data,XtPointer reason)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Callback when chooser destroyed - so also destroy choose_enumerator.
@@ -82,20 +83,21 @@ Callback when chooser destroyed - so also destroy choose_enumerator.
 {
 	struct Choose_enumerator *choose_enumerator;
 
-	ENTER(choose_enumerator_update_callback);
+	ENTER(choose_enumerator_destroy_CB);
 	USE_PARAMETER(widget);
-	USE_PARAMETER(dummy_void);
-	if (choose_enumerator=(struct Choose_enumerator *)choose_enumerator_void)
+	USE_PARAMETER(reason);
+	if (choose_enumerator=(struct Choose_enumerator *)client_data)
 	{
+		DESTROY(Chooser)(&(choose_enumerator->chooser)); \
 		DEALLOCATE(choose_enumerator);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"choose_enumerator_destroy_callback.  Invalid argument(s)");
+			"choose_enumerator_destroy_CB.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* choose_enumerator_destroy_callback */
+} /* choose_enumerator_destroy_CB */
 
 static void choose_enumerator_update_callback(Widget widget,
 	void *choose_enumerator_void,void *current_item_void)
@@ -127,10 +129,10 @@ Callback for change of coordinate field.
 Global functions
 ----------------
 */
-struct Choose_enumerator *CREATE(Choose_enumerator)(Widget parent,
+Widget create_choose_enumerator_widget(Widget parent,
 	int number_of_valid_strings,char **valid_strings,char *enumerator_string)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Creates an editor for specifying a string out of the <valid_strings>, with the
@@ -142,68 +144,85 @@ Note: Choose_enumerator will be automatically DESTROYed with its widgets.
 {
 	struct Callback_data callback;
 	struct Choose_enumerator *choose_enumerator;
+	Widget return_widget;
 
-	ENTER(CREATE(Choose_enumerator));
-	choose_enumerator=(struct Choose_enumerator *)NULL;
+	ENTER(create_choose_enumerator_widget);
+	return_widget=(Widget)NULL;
 	if (parent&&valid_strings&&(0<number_of_valid_strings)&&enumerator_string)
 	{
 		if (ALLOCATE(choose_enumerator,struct Choose_enumerator,1))
 		{
-			choose_enumerator->chooser_widget=(Widget)NULL;
+			choose_enumerator->chooser=(struct Chooser *)NULL;
+			choose_enumerator->widget=(Widget)NULL;
 			choose_enumerator->parent=parent;
 			choose_enumerator->update_callback.procedure=(Callback_procedure *)NULL;
 			choose_enumerator->update_callback.data=(void *)NULL;
-			if (choose_enumerator->chooser_widget=
+			if (choose_enumerator->chooser=
 				CREATE(Chooser)(parent,number_of_valid_strings,(void **)valid_strings,
-					valid_strings,(void *)enumerator_string))
+					valid_strings,(void *)enumerator_string,&(choose_enumerator->widget)))
 			{
+				/* add choose_enumerator as user data to chooser widget */
+				XtVaSetValues(choose_enumerator->widget,XmNuserData,choose_enumerator,
+					NULL);
+				/* add destroy callback for chooser widget */
+				XtAddCallback(choose_enumerator->widget,XmNdestroyCallback,
+					choose_enumerator_destroy_CB,(XtPointer)choose_enumerator);
+				/* get updates when chooser changes */ \
 				callback.data=(void *)choose_enumerator;
 				callback.procedure=choose_enumerator_update_callback;
-				Chooser_set_update_callback(choose_enumerator->chooser_widget,
-					&callback);
-				/* get destroy callback from chooser so parent can destroy itself */
-				callback.procedure=choose_enumerator_destroy_callback;
-				Chooser_set_destroy_callback(choose_enumerator->chooser_widget,
-					&callback);
+				Chooser_set_update_callback(choose_enumerator->chooser,&callback);
+				return_widget=choose_enumerator->widget;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"CREATE(Choose_enumerator).  Could not create chooser");
+					"create_choose_enumerator_widget.  Could not create chooser");
 				DEALLOCATE(choose_enumerator);
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"CREATE(Choose_enumerator).  Not enough memory");
+				"create_choose_enumerator_widget.  Not enough memory");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Choose_enumerator).  Invalid argument(s)");
+			"create_choose_enumerator_widget.  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (choose_enumerator);
-} /* CREATE(Choose_enumerator) */
+	return (return_widget);
+} /* create_choose_enumerator_widget */
 
 struct Callback_data *choose_enumerator_get_callback(
-	struct Choose_enumerator *choose_enumerator)
+	Widget choose_enumerator_widget)
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Returns a pointer to the callback item of the choose_enumerator_widget.
 ==============================================================================*/
 {
 	struct Callback_data *callback;
+	struct Choose_enumerator *choose_enumerator;
 
 	ENTER(choose_enumerator_get_callback);
-	if (choose_enumerator)
+	if (choose_enumerator_widget)
 	{
-		callback = &(choose_enumerator->update_callback);
+		/* Get the pointer to the data for the choose_enumerator_widget */
+		XtVaGetValues(choose_enumerator_widget,XmNuserData,&choose_enumerator,NULL);
+		if (choose_enumerator)
+		{
+			callback = &(choose_enumerator->update_callback);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"choose_enumerator_get_callback.  Missing chooser");
+			callback=(struct Callback_data *)NULL;
+		}
 	}
 	else
 	{
@@ -216,23 +235,35 @@ Returns a pointer to the callback item of the choose_enumerator_widget.
 	return (callback);
 } /* choose_enumerator_get_callback */
 
-int choose_enumerator_set_callback(struct Choose_enumerator *choose_enumerator,
+int choose_enumerator_set_callback(Widget choose_enumerator_widget,
 	struct Callback_data *new_callback)
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Changes the callback item of the choose_enumerator_widget.
 ==============================================================================*/
 {
 	int return_code;
+	struct Choose_enumerator *choose_enumerator;
 
 	ENTER(choose_enumerator_set_callback);
-	if (choose_enumerator&&new_callback)
+	if (choose_enumerator_widget&&new_callback)
 	{
-		choose_enumerator->update_callback.procedure=new_callback->procedure;
-		choose_enumerator->update_callback.data=new_callback->data;
-		return_code=1;
+		/* Get the pointer to the data for the choose_enumerator_widget */
+		XtVaGetValues(choose_enumerator_widget,XmNuserData,&choose_enumerator,NULL);
+		if (choose_enumerator)
+		{
+			choose_enumerator->update_callback.procedure=new_callback->procedure;
+			choose_enumerator->update_callback.data=new_callback->data;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"choose_enumerator_set_callback.  Missing chooser");
+			return_code=0;
+		}
 	}
 	else
 	{
@@ -245,9 +276,9 @@ Changes the callback item of the choose_enumerator_widget.
 	return (return_code);
 } /* choose_enumerator_set_callback */
 
-char *choose_enumerator_get_string(struct Choose_enumerator *choose_enumerator)
+char *choose_enumerator_get_string(Widget choose_enumerator_widget)
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Returns the current enumerator_string in use by the editor. Calling function
@@ -255,12 +286,23 @@ must not destroy or modify the returned static string.
 ==============================================================================*/
 {
 	char *enumerator_string;
+	struct Choose_enumerator *choose_enumerator;
 
 	ENTER(choose_enumerator_get_string);
-	if (choose_enumerator)
+	if (choose_enumerator_widget)
 	{
-		enumerator_string=
-			(char *)Chooser_get_item(choose_enumerator->chooser_widget);
+		/* Get the pointer to the data for the choose_enumerator_widget */
+		XtVaGetValues(choose_enumerator_widget,XmNuserData,&choose_enumerator,NULL);
+		if (choose_enumerator)
+		{
+			enumerator_string=(char *)Chooser_get_item(choose_enumerator->chooser);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"choose_enumerator_get_string.  Missing chooser");
+			enumerator_string=(char *)NULL;
+		}
 	}
 	else
 	{
@@ -273,22 +315,34 @@ must not destroy or modify the returned static string.
 	return (enumerator_string);
 } /* choose_enumerator_get_string */
 
-int choose_enumerator_set_string(struct Choose_enumerator *choose_enumerator,
+int choose_enumerator_set_string(Widget choose_enumerator_widget,
 	char *enumerator_string)
 /*******************************************************************************
-LAST MODIFIED : 19 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Changes the enumerator_string in the choose_enumerator_widget.
 ==============================================================================*/
 {
 	int return_code;
+	struct Choose_enumerator *choose_enumerator;
 
 	ENTER(choose_enumerator_set_string);
-	if (choose_enumerator&&enumerator_string)
+	if (choose_enumerator_widget&&enumerator_string)
 	{
-		return_code=Chooser_set_item(choose_enumerator->chooser_widget,
-			(void *)enumerator_string);
+		/* Get the pointer to the data for the choose_enumerator_widget */
+		XtVaGetValues(choose_enumerator_widget,XmNuserData,&choose_enumerator,NULL);
+		if (choose_enumerator)
+		{
+			return_code=
+				Chooser_set_item(choose_enumerator->chooser,(void *)enumerator_string);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"choose_enumerator_set_string.  Missing chooser");
+			return_code=0;
+		}
 	}
 	else
 	{
@@ -301,28 +355,39 @@ Changes the enumerator_string in the choose_enumerator_widget.
 	return (return_code);
 } /* choose_enumerator_set_string */
 
-int choose_enumerator_set_valid_strings(
-	struct Choose_enumerator *choose_enumerator,int number_of_valid_strings,
-	char **valid_strings,char *enumerator_string)
+int choose_enumerator_set_valid_strings(Widget choose_enumerator_widget,
+	int number_of_valid_strings,char **valid_strings,char *enumerator_string)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Changes the list of <valid_strings> in the choose_enumerator_widget.
 ==============================================================================*/
 {
 	int return_code;
+	struct Choose_enumerator *choose_enumerator;
 
 	ENTER(choose_enumerator_set_valid_strings);
-	if (choose_enumerator&&(0<number_of_valid_strings)&&valid_strings&&
+	if (choose_enumerator_widget&&(0<number_of_valid_strings)&&valid_strings&&
 		enumerator_string)
 	{
-		if (!(return_code=Chooser_build_main_menu(choose_enumerator->chooser_widget,
-			number_of_valid_strings,(void **)valid_strings,valid_strings,
-			(void *)enumerator_string)))
+		/* Get the pointer to the data for the choose_enumerator_widget */
+		XtVaGetValues(choose_enumerator_widget,XmNuserData,&choose_enumerator,NULL);
+		if (choose_enumerator)
+		{
+			if (!(return_code=Chooser_build_main_menu(
+				choose_enumerator->chooser,number_of_valid_strings,
+				(void **)valid_strings,valid_strings,(void *)enumerator_string)))
+			{
+				display_message(ERROR_MESSAGE,
+					"choose_enumerator_set_valid_strings.  Could not build menu");
+				return_code=0;
+			}
+		}
+		else
 		{
 			display_message(ERROR_MESSAGE,
-				"choose_enumerator_set_valid_strings.  Could not build menu");
+				"choose_enumerator_set_valid_strings.  Missing chooser");
 			return_code=0;
 		}
 	}

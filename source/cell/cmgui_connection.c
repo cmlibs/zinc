@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui_connection.c
 
-LAST MODIFIED : 17 September 1999
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Functions for talking between Cell and Cmgui.
@@ -593,7 +593,7 @@ Create a new export dialog.
 static FE_value calculate_field_value_from_control_curves(
 	struct Control_curve **xi_variables,FE_value *element_xi,FE_value value)
 /*******************************************************************************
-LAST MODIFIED : 30 September 1999
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Takes the <element_xi> position and converts it to a "time" for each of the
@@ -602,8 +602,11 @@ three time variables, and then uses the value of each time variable at this
 ==============================================================================*/
 {
 	FE_value return_value;
+	float value_return;
+#if defined(OLD_CODE)
 	float start_time,finish_time;
 	float value_return,*scale,time;
+#endif /* defined(OLD_CODE) */
 	int i;
 
 	ENTER(calculate_field_value_from_control_curves);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_element_group.c
 
-LAST MODIFIED : 24 October 1997
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Widget for choosing a GROUP(FE_element), based on choose_object macro.
@@ -16,7 +16,7 @@ Widget for choosing a GROUP(FE_element), based on choose_object macro.
 Module types
 ------------
 */
-FULL_DECLARE_CHOOSE_OBJECT_STRUCT_TYPE(GROUP(FE_element));
+FULL_DECLARE_CHOOSE_OBJECT_TYPE(GROUP(FE_element));
 
 /*
 Module functions

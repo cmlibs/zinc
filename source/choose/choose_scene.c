@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_scene.c
 
-LAST MODIFIED : 8 December 1997
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Widget for choosing a scene, based on choose_object macro.
@@ -14,7 +14,7 @@ Widget for choosing a scene, based on choose_object macro.
 Module types
 ------------
 */
-FULL_DECLARE_CHOOSE_OBJECT_STRUCT_TYPE(Scene);
+FULL_DECLARE_CHOOSE_OBJECT_TYPE(Scene);
 
 /*
 Module functions

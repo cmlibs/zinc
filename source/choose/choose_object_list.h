@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_object_list.h
 
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 ???RC Version of choose_object using lists instead of managers.
@@ -19,17 +19,6 @@ Calls the client-specified callback routine if a different object is chosen.
 Global Types
 ------------
 */
-#if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_LIST_STRUCT_( object_type ) \
-	choose_object_list_struct_ ## object_type
-#else
-#define CHOOSE_OBJECT_LIST_STRUCT_( object_type ) colstru ## object_type
-#endif
-#define CHOOSE_OBJECT_LIST_STRUCT( object_type ) \
-	CHOOSE_OBJECT_LIST_STRUCT_(object_type)
-
-#define PROTOTYPE_CHOOSE_OBJECT_LIST_STRUCT_TYPE( object_type ) \
-struct CHOOSE_OBJECT_LIST_STRUCT(object_type)
 
 /*
 Global Functions
@@ -45,13 +34,12 @@ Global Functions
 	CREATE_CHOOSE_OBJECT_LIST_WIDGET_(object_type)
 
 #define PROTOTYPE_CREATE_CHOOSE_OBJECT_LIST_WIDGET_FUNCTION( object_type ) \
-struct CHOOSE_OBJECT_LIST_STRUCT(object_type) \
-*CREATE_CHOOSE_OBJECT_LIST_WIDGET(object_type)(Widget parent, \
+Widget CREATE_CHOOSE_OBJECT_LIST_WIDGET(object_type)(Widget parent, \
 	struct object_type *current_object, \
 	struct LIST(object_type) *object_list, \
 	LIST_CONDITIONAL_FUNCTION(object_type) *conditional_function) \
 /***************************************************************************** \
-LAST MODIFIED : 20 January 2000 \
+LAST MODIFIED : 21 January 2000 \
 \
 DESCRIPTION : \
 Creates an option menu from which an object from the manager may be chosen. \
@@ -70,9 +58,9 @@ to be selectable. \
 
 #define PROTOTYPE_CHOOSE_OBJECT_LIST_GET_CALLBACK_FUNCTION( object_type ) \
 struct Callback_data *CHOOSE_OBJECT_LIST_GET_CALLBACK(object_type)( \
-	struct CHOOSE_OBJECT_LIST_STRUCT(object_type) *choose_object_list) \
+	Widget choose_object_list_widget) \
 /***************************************************************************** \
-LAST MODIFIED : 20 January 2000 \
+LAST MODIFIED : 21 January 2000 \
 \
 DESCRIPTION : \
 Returns a pointer to the callback item of the choose_object_list widget. \
@@ -89,10 +77,9 @@ Returns a pointer to the callback item of the choose_object_list widget. \
 
 #define PROTOTYPE_CHOOSE_OBJECT_LIST_SET_CALLBACK_FUNCTION( object_type ) \
 int CHOOSE_OBJECT_LIST_SET_CALLBACK(object_type)( \
-	struct CHOOSE_OBJECT_LIST_STRUCT(object_type) *choose_object_list, \
-	struct Callback_data *new_callback) \
+	Widget choose_object_list_widget,struct Callback_data *new_callback) \
 /***************************************************************************** \
-LAST MODIFIED : 20 January 2000 \
+LAST MODIFIED : 21 January 2000 \
 \
 DESCRIPTION : \
 Changes the callback item of the choose_object_list widget. \
@@ -109,9 +96,9 @@ Changes the callback item of the choose_object_list widget. \
 
 #define PROTOTYPE_CHOOSE_OBJECT_LIST_GET_OBJECT_FUNCTION( object_type ) \
 struct object_type *CHOOSE_OBJECT_LIST_GET_OBJECT(object_type)( \
-	struct CHOOSE_OBJECT_LIST_STRUCT(object_type) *choose_object_list) \
+	Widget choose_object_list_widget) \
 /***************************************************************************** \
-LAST MODIFIED : 20 January 2000 \
+LAST MODIFIED : 21 January 2000 \
 \
 DESCRIPTION : \
 Returns the currently chosen object in the choose_object_list widget. \
@@ -128,10 +115,9 @@ Returns the currently chosen object in the choose_object_list widget. \
 
 #define PROTOTYPE_CHOOSE_OBJECT_LIST_SET_OBJECT_FUNCTION( object_type ) \
 int CHOOSE_OBJECT_LIST_SET_OBJECT(object_type)( \
-	struct CHOOSE_OBJECT_LIST_STRUCT(object_type) *choose_object_list, \
-	struct object_type *new_object) \
+	Widget choose_object_list_widget,struct object_type *new_object) \
 /***************************************************************************** \
-LAST MODIFIED : 20 January 2000 \
+LAST MODIFIED : 21 January 2000 \
 \
 DESCRIPTION : \
 Changes the chosen object in the choose_object_list widget. \
@@ -148,16 +134,15 @@ Changes the chosen object in the choose_object_list widget. \
 
 #define PROTOTYPE_CHOOSE_OBJECT_LIST_REFRESH_FUNCTION( object_type ) \
 int CHOOSE_OBJECT_LIST_REFRESH(object_type)( \
-	struct CHOOSE_OBJECT_LIST_STRUCT(object_type) *choose_object_list) \
+	Widget choose_object_list_widget) \
 /***************************************************************************** \
-LAST MODIFIED : 20 January 2000 \
+LAST MODIFIED : 21 January 2000 \
 \
 DESCRIPTION : \
 Tells the choose_object_list widget that the list has changed. \
 ============================================================================*/
 
 #define PROTOTYPE_CHOOSE_OBJECT_LIST_GLOBAL_FUNCTIONS( object_type) \
-PROTOTYPE_CHOOSE_OBJECT_LIST_STRUCT_TYPE(object_type); \
 PROTOTYPE_CREATE_CHOOSE_OBJECT_LIST_WIDGET_FUNCTION(object_type); \
 PROTOTYPE_CHOOSE_OBJECT_LIST_GET_CALLBACK_FUNCTION(object_type); \
 PROTOTYPE_CHOOSE_OBJECT_LIST_SET_CALLBACK_FUNCTION(object_type); \

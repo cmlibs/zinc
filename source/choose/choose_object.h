@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_object.h
 
-LAST MODIFIED : 10 September 1998
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Macros for implementing an option menu dialog control for choosing an object
@@ -37,52 +37,14 @@ Global Functions
 Widget CREATE_CHOOSE_OBJECT_WIDGET(object_type)(Widget parent, \
 	struct object_type *current_object, \
 	struct MANAGER(object_type) *object_manager, \
-	MANAGER_CONDITIONAL_FUNCTION(object_type) *conditional_function) \
+	LIST_CONDITIONAL_FUNCTION(object_type) *conditional_function) \
 /***************************************************************************** \
-LAST MODIFIED : 10 September 1998 \
+LAST MODIFIED : 21 January 2000 \
 \
 DESCRIPTION : \
 Creates an option menu from which an object from the manager may be chosen. \
 The optional conditional function permits a subset of objects in the manager \
 to be selectable. \
-============================================================================*/
-
-#if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_SET_CALLBACK_( object_type ) \
-	choose_object_set_callback_ ## object_type
-#else
-#define CHOOSE_OBJECT_SET_CALLBACK_( object_type ) cosc ## object_type
-#endif
-#define CHOOSE_OBJECT_SET_CALLBACK( object_type ) \
-	CHOOSE_OBJECT_SET_CALLBACK_(object_type)
-
-#define PROTOTYPE_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION( object_type ) \
-int CHOOSE_OBJECT_SET_CALLBACK(object_type)(Widget choose_object_widget, \
-	struct Callback_data *new_callback) \
-/***************************************************************************** \
-LAST MODIFIED : 23 July 1997 \
-\
-DESCRIPTION : \
-Changes the callback item of the choose_object_widget. \
-============================================================================*/
-
-#if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_SET_OBJECT_( object_type ) \
-	choose_object_set_object_ ## object_type
-#else
-#define CHOOSE_OBJECT_SET_OBJECT_( object_type ) coso ## object_type
-#endif
-#define CHOOSE_OBJECT_SET_OBJECT( object_type ) \
-	CHOOSE_OBJECT_SET_OBJECT_(object_type)
-
-#define PROTOTYPE_CHOOSE_OBJECT_SET_OBJECT_FUNCTION( object_type ) \
-int CHOOSE_OBJECT_SET_OBJECT(object_type)(Widget choose_object_widget, \
-	struct object_type *new_object) \
-/***************************************************************************** \
-LAST MODIFIED : 23 July 1997 \
-\
-DESCRIPTION : \
-Changes the chosen object in the choose_object_widget. \
 ============================================================================*/
 
 #if defined (FULL_NAMES)
@@ -98,10 +60,29 @@ Changes the chosen object in the choose_object_widget. \
 struct Callback_data *CHOOSE_OBJECT_GET_CALLBACK(object_type)( \
 	Widget choose_object_widget) \
 /***************************************************************************** \
-LAST MODIFIED : 23 July 1997 \
+LAST MODIFIED : 21 January 2000 \
 \
 DESCRIPTION : \
-Returns a pointer to the callback item of the choose_object_widget. \
+Returns a pointer to the callback item of the choose_object widget. \
+============================================================================*/
+
+#if defined (FULL_NAMES)
+#define CHOOSE_OBJECT_SET_CALLBACK_( object_type ) \
+	choose_object_set_callback_ ## object_type
+#else
+#define CHOOSE_OBJECT_SET_CALLBACK_( object_type ) cosc ## object_type
+#endif
+#define CHOOSE_OBJECT_SET_CALLBACK( object_type ) \
+	CHOOSE_OBJECT_SET_CALLBACK_(object_type)
+
+#define PROTOTYPE_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION( object_type ) \
+int CHOOSE_OBJECT_SET_CALLBACK(object_type)( \
+	Widget choose_object_widget,struct Callback_data *new_callback) \
+/***************************************************************************** \
+LAST MODIFIED : 21 January 2000 \
+\
+DESCRIPTION : \
+Changes the callback item of the choose_object widget. \
 ============================================================================*/
 
 #if defined (FULL_NAMES)
@@ -117,17 +98,36 @@ Returns a pointer to the callback item of the choose_object_widget. \
 struct object_type *CHOOSE_OBJECT_GET_OBJECT(object_type)( \
 	Widget choose_object_widget) \
 /***************************************************************************** \
-LAST MODIFIED : 23 July 1997 \
+LAST MODIFIED : 21 January 2000 \
 \
 DESCRIPTION : \
-Returns the currently chosen object in the choose_object_widget. \
+Returns the currently chosen object in the choose_object widget. \
+============================================================================*/
+
+#if defined (FULL_NAMES)
+#define CHOOSE_OBJECT_SET_OBJECT_( object_type ) \
+	choose_object_set_object_ ## object_type
+#else
+#define CHOOSE_OBJECT_SET_OBJECT_( object_type ) coso ## object_type
+#endif
+#define CHOOSE_OBJECT_SET_OBJECT( object_type ) \
+	CHOOSE_OBJECT_SET_OBJECT_(object_type)
+
+#define PROTOTYPE_CHOOSE_OBJECT_SET_OBJECT_FUNCTION( object_type ) \
+int CHOOSE_OBJECT_SET_OBJECT(object_type)( \
+	Widget choose_object_widget,struct object_type *new_object) \
+/***************************************************************************** \
+LAST MODIFIED : 21 January 2000 \
+\
+DESCRIPTION : \
+Changes the chosen object in the choose_object widget. \
 ============================================================================*/
 
 #define PROTOTYPE_CHOOSE_OBJECT_GLOBAL_FUNCTIONS( object_type) \
 PROTOTYPE_CREATE_CHOOSE_OBJECT_WIDGET_FUNCTION(object_type); \
-PROTOTYPE_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION(object_type); \
-PROTOTYPE_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type); \
 PROTOTYPE_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION(object_type); \
-PROTOTYPE_CHOOSE_OBJECT_GET_OBJECT_FUNCTION(object_type)
+PROTOTYPE_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION(object_type); \
+PROTOTYPE_CHOOSE_OBJECT_GET_OBJECT_FUNCTION(object_type); \
+PROTOTYPE_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type)
 
 #endif /* !defined (CHOOSE_OBJECT_H) */

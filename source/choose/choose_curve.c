@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_control_curve.c
 
-LAST MODIFIED : 8 November 1999
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Widget for choosing a Control_curve, based on choose_object macro.
@@ -15,7 +15,7 @@ Widget for choosing a Control_curve, based on choose_object macro.
 Module types
 ------------
 */
-FULL_DECLARE_CHOOSE_OBJECT_STRUCT_TYPE(Control_curve);
+FULL_DECLARE_CHOOSE_OBJECT_TYPE(Control_curve);
 
 /*
 Module functions

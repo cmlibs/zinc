@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_spectrum.c
 
-LAST MODIFIED : 24 October 1997
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Widget for choosing a Spectrum, based on choose_object macro.
@@ -16,7 +16,7 @@ Widget for choosing a Spectrum, based on choose_object macro.
 Module types
 ------------
 */
-FULL_DECLARE_CHOOSE_OBJECT_STRUCT_TYPE(Spectrum);
+FULL_DECLARE_CHOOSE_OBJECT_TYPE(Spectrum);
 
 /*
 Module functions

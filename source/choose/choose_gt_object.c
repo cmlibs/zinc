@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_gt_object.c
 
-LAST MODIFIED : 10 July 1998
+LAST MODIFIED : 21 January 2000
 
 DESCRIPTION :
 Widget for choosing a GT_object, based on choose_object macro.
@@ -15,7 +15,7 @@ Widget for choosing a GT_object, based on choose_object macro.
 Module types
 ------------
 */
-FULL_DECLARE_CHOOSE_OBJECT_LIST_STRUCT_TYPE(GT_object);
+FULL_DECLARE_CHOOSE_OBJECT_LIST_TYPE(GT_object);
 
 /*
 Module functions
