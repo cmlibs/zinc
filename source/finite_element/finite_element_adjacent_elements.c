@@ -158,32 +158,34 @@ the <element> has.
 	int element_number, node_index, node_number, number_of_nodes, return_code;
 
 	ENTER(FE_element_add_nodes_to_node_element_list);
-	if (element&&(element->cm.type == CM_ELEMENT)&&
-		(list = (struct LIST(Index_multi_range) *)node_element_list_void))
+	if (element&&(list = (struct LIST(Index_multi_range) *)node_element_list_void))
 	{
 		return_code = 1;
-		element_number = element->cm.number;
-		number_of_nodes = element->information->number_of_nodes;
-		for (node_index = 0 ; return_code && (node_index < number_of_nodes) ; 
-			node_index++)
+		if (element->cm.type == CM_ELEMENT)
 		{
-			node_number = get_FE_node_cm_node_identifier(element->information->
-				nodes[node_index]);
-			if (node_elements=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)
-				(node_number,list))
+			element_number = element->cm.number;
+			number_of_nodes = element->information->number_of_nodes;
+			for (node_index = 0 ; return_code && (node_index < number_of_nodes) ; 
+				  node_index++)
 			{
-				return_code = Index_multi_range_add_range(node_elements,
-					element_number, element_number);
-			}
-			else
-			{
-				if (!((node_elements=CREATE(Index_multi_range)(node_number))
-					&& Index_multi_range_add_range(node_elements,
-					element_number, element_number) && 
-					ADD_OBJECT_TO_LIST(Index_multi_range)(node_elements, list)))
+				node_number = get_FE_node_cm_node_identifier(element->information->
+					nodes[node_index]);
+				if (node_elements=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)
+					(node_number,list))
 				{
-					DESTROY(Index_multi_range)(&node_elements);
-					return_code = 0;
+					return_code = Index_multi_range_add_range(node_elements,
+						element_number, element_number);
+				}
+				else
+				{
+					if (!((node_elements=CREATE(Index_multi_range)(node_number))
+						&& Index_multi_range_add_range(node_elements,
+							element_number, element_number) && 
+						ADD_OBJECT_TO_LIST(Index_multi_range)(node_elements, list)))
+					{
+						DESTROY(Index_multi_range)(&node_elements);
+						return_code = 0;
+					}
 				}
 			}
 		}
