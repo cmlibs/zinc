@@ -197,6 +197,30 @@ ifeq ($(USER_INTERFACE), CONSOLE_USER_INTERFACE)
   USER_INTERFACE = -DCONSOLE_USER_INTERFACE
 endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
 
+# MOTIF_USER_INTERFACE or GTK_USER_INTERFACE
+ifeq ($(filter-out MOTIF_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
+  ifeq ($(SYSNAME),Linux))
+    #Don't put the system X_LIB into the compiler if we are cross compiling
+    GCC_LIBC = $(shell gcc -print-libgcc-file-name)
+    GLIBC_CROSS_COMPILE = $(CMISS_ROOT)/cross-compile/i386-glibc21-linux
+    ifeq ($(GCC_LIBC:$(GLIBC_CROSS_COMPILE)%=),)
+      #We are cross compiling
+      X_INC += -I$(GLIBC_CROSS_COMPILE)/include
+      X_LIB = $(GLIBC_CROSS_COMPILE)/lib
+    else
+      X_INC += -I/usr/X11R6/include
+      ifeq ($(INSTRUCTION),x86_64)
+        X_LIB = /usr/X11R6/lib64
+      else
+        X_LIB = /usr/X11R6/lib
+      endif
+    endif
+  endif
+  ifeq ($(SYSNAME),AIX)
+    X_LIB = /usr/X11R6/lib
+  endif
+endif
+
 GRAPHICS_LIBRARY_DEFINES = -DOPENGL_API
 GRAPHICS_LIB =
 GRAPHICS_INC =
@@ -224,7 +248,7 @@ ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
    ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
       GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
    endif
-   GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) /usr/X11R6/lib)))
+   GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) $(X_LIB))))
    ifeq ($(SYSNAME),win32)
       GRAPHICS_LIB += -lopengl32 -lglu32
    else # $(SYSNAME) == win32
@@ -282,7 +306,7 @@ else # ! PERL_INTERPRETER
    ifeq ($(SYSNAME),win32)
       INTERPRETER_LIB += \
 	$(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libPerl_cmiss.a \
-	$(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperl56.a
+	$(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperl59.a
    endif # $(SYSNAME) == win32 
 endif # ! PERL_INTERPRETER
 
@@ -459,17 +483,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
       ifneq ($(wildcard $(CMISS_ROOT)/mesa/$(LIB_ARCH_DIR)/include),)
          USER_INTERFACE_INC += -I$(CMISS_ROOT)/mesa/$(LIB_ARCH_DIR)/include
       endif
-      #Don't put the system X_LIB into the compiler if we are cross compiling
-      GCC_LIBC = $(shell gcc -print-libgcc-file-name)
-      GLIBC_CROSS_COMPILE = $(CMISS_ROOT)/cross-compile/i386-glibc21-linux
-      ifeq ($(GCC_LIBC:$(GLIBC_CROSS_COMPILE)%=),)
-         #We are cross compiling
-         USER_INTERFACE_INC += -I$(GLIBC_CROSS_COMPILE)/include
-         X_LIB = $(GLIBC_CROSS_COMPILE)/lib
-      else
-         USER_INTERFACE_INC += -I/usr/X11R6/include
-         X_LIB = /usr/X11R6/lib
-      endif
+      USER_INTERFACE_INC += $(X_INC)
       USER_INTERFACE_LIB += -L$(X_LIB)
 
       ifneq ($(STATIC_LINK),true)
@@ -504,17 +518,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    ifeq ($(SYSNAME),Linux)
-      #Don't put the system X_LIB into the compiler if we are cross compiling
-      GCC_LIBC = $(shell gcc -print-libgcc-file-name)
-      GLIBC_CROSS_COMPILE = $(CMISS_ROOT)/cross-compile/i386-glibc21-linux
-      ifeq ($(GCC_LIBC:$(GLIBC_CROSS_COMPILE)%=),)
-         #We are cross compiling
-         USER_INTERFACE_INC += -I$(GLIBC_CROSS_COMPILE)/include
-         X_LIB = $(GLIBC_CROSS_COMPILE)/lib
-      else
-         USER_INTERFACE_INC += -I/usr/X11R6/include
-         X_LIB = /usr/X11R6/lib
-      endif
+      USER_INTERFACE_INC += $(X_INC)
       USER_INTERFACE_LIB += -L$(X_LIB)
    endif
    ifeq ($(SYSNAME:CYGWIN%=),)
