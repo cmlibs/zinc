@@ -2502,8 +2502,7 @@ Invokes the graphical element group editor.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void) &&
-		  command_data->user_interface)
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialize defaults */
 			element_group = (struct GROUP(FE_element) *)NULL;
@@ -2548,7 +2547,8 @@ Invokes the graphical element group editor.
 				}
 				else
 				{
-					if (!CREATE(Graphical_element_editor_dialog)(
+					if ((!command_data->user_interface) ||
+						(!CREATE(Graphical_element_editor_dialog)(
 						&(command_data->graphical_element_editor_dialog),
 						command_data->user_interface->application_shell,
 						command_data->computed_field_package,
@@ -2559,7 +2559,7 @@ Invokes the graphical element group editor.
 						command_data->default_graphical_material,command_data->glyph_list,
 						command_data->scene_manager,scene,command_data->spectrum_manager,
 						command_data->default_spectrum,command_data->volume_texture_manager,
-						command_data->user_interface))
+						command_data->user_interface)))
 					{
 						display_message(ERROR_MESSAGE,"gfx_create_g_element_editor.  "
 							"Could not create graphical element editor");
@@ -2580,7 +2580,7 @@ Invokes the graphical element group editor.
 		else
 		{
 			display_message(ERROR_MESSAGE,"gfx_create_g_element_editor.  "
-				"Missing command_data or user interface.");
+				"Missing command_data.");
 			return_code=0;
 		}
 	}
