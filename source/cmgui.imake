@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 28 June 2001
+XCOMM LAST MODIFIED : 12 October 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -784,6 +784,8 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_integration.c \
 	computed_field/computed_field_matrix_operations.c \
 	computed_field/computed_field_sample_texture.c \
+	computed_field/computed_field_update.c \
+	computed_field/computed_field_value_index_ranges.c \
 	computed_field/computed_field_vector_operations.c \
 	computed_field/computed_field_window_projection.c \
 	computed_field/computed_field_wrappers.c
@@ -811,9 +813,9 @@ ELEMENT_SRCS = \
 	element/element_tool.c
 FINITE_ELEMENT_SRCS = \
 	finite_element/export_finite_element.c \
-	finite_element/field_value_index_ranges.c \
 	finite_element/finite_element.c \
 	finite_element/finite_element_adjacent_elements.c \
+	finite_element/finite_element_discretization.c \
 	finite_element/finite_element_to_graphics_object.c \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
