@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 30 June 2000
+LAST MODIFIED : 6 December 2000
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -942,7 +942,7 @@ Callback for change of element.
 static void Element_point_viewer_update_top_level_element(Widget widget,
 	void *element_point_viewer_void,void *top_level_element_void)
 /*******************************************************************************
-LAST MODIFIED : 21 June 2000
+LAST MODIFIED : 6 December 2000
 
 DESCRIPTION :
 Callback for change of top_level_element.
@@ -1008,7 +1008,13 @@ Callback for change of top_level_element.
 		else
 		{
 			/* must be no element if no top_level_element */
-			element_point_viewer->element_point_identifier.element=top_level_element;
+			element_point_viewer->element_point_identifier.element =
+				(struct FE_element *)NULL;
+			Element_point_viewer_refresh_xi_discretization_mode(element_point_viewer);
+			Element_point_viewer_refresh_discretization_text(element_point_viewer);
+			Element_point_viewer_refresh_point_number_text(element_point_viewer);
+			Element_point_viewer_refresh_xi_text(element_point_viewer);
+			Element_point_viewer_refresh_grid_value_text(element_point_viewer);
 			Element_point_viewer_set_viewer_element_point(element_point_viewer);
 		}
 	}
@@ -1058,7 +1064,8 @@ Callback for change of xi_discretization_mode.
 			}
 		}
 		element_point_viewer->element_point_number=0;
-		if (Element_point_ranges_identifier_is_valid(
+		if (
+Element_point_ranges_identifier_is_valid(
 			&(element_point_viewer->element_point_identifier)))
 		{
 			Element_point_viewer_calculate_xi(element_point_viewer);
@@ -1233,7 +1240,7 @@ Called when entry is made into the point_number_text field.
 static void Element_point_viewer_xi_text_CB(Widget widget,
 	void *element_point_viewer_void,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 6 December 2000
 
 DESCRIPTION :
 Called when entry is made into the xi_text field.
@@ -1243,42 +1250,46 @@ Called when entry is made into the xi_text field.
 	float xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int dimension,i;
 	struct Element_point_viewer *element_point_viewer;
+	struct FE_element *element;
 	struct Parse_state *temp_state;
 	XmAnyCallbackStruct *any_callback;
 
 	ENTER(Element_point_viewer_xi_text_CB);
 	USE_PARAMETER(widget);
 	if ((element_point_viewer=
-		(struct Element_point_viewer *)element_point_viewer_void)&&
-		(any_callback=(XmAnyCallbackStruct *)call_data)&&
-		(dimension=get_FE_element_dimension(
-			element_point_viewer->element_point_identifier.element)))
+		(struct Element_point_viewer *)element_point_viewer_void) &&
+		(any_callback = (XmAnyCallbackStruct *)call_data))
 	{
-		if (XmCR_ACTIVATE == any_callback->reason)
+		if ((element = element_point_viewer->element_point_identifier.element) &&
+			(dimension = get_FE_element_dimension(element)))
 		{
-			/* Get the text string */
-			if (value_string=
-				XmTextFieldGetString(element_point_viewer->xi_text))
+			if (XmCR_ACTIVATE == any_callback->reason)
 			{
-				/* clean up spaces? */
-				if (temp_state=create_Parse_state(value_string))
+				/* Get the text string */
+				if (value_string=
+					XmTextFieldGetString(element_point_viewer->xi_text))
 				{
-					if (set_float_vector(temp_state,xi,(void *)&dimension))
+					/* clean up spaces? */
+					if (temp_state=create_Parse_state(value_string))
 					{
-						for (i=0;i<dimension;i++)
+						if (set_float_vector(temp_state,xi,(void *)&dimension))
 						{
-							element_point_viewer->element_point_identifier.exact_xi[i]=xi[i];
+							for (i=0;i<dimension;i++)
+							{
+								element_point_viewer->element_point_identifier.exact_xi[i] =
+									xi[i];
+							}
+							Element_point_viewer_select_current_point(element_point_viewer);
 						}
-						Element_point_viewer_select_current_point(element_point_viewer);
+						destroy_Parse_state(&temp_state);
 					}
-					destroy_Parse_state(&temp_state);
+					XtFree(value_string);
 				}
-				XtFree(value_string);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Element_point_viewer_xi_text_CB.  Missing text");
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Element_point_viewer_xi_text_CB.  Missing text");
+				}
 			}
 		}
 		/* always restore xi_text to actual value stored */
@@ -1290,7 +1301,7 @@ Called when entry is made into the xi_text field.
 			"Element_point_viewer_xi_text_CB.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Element_point_viewer_discretization_text_CB */
+} /* Element_point_viewer_xi_text_CB */
 
 static void Element_point_viewer_update_grid_field(Widget widget,
 	void *element_point_viewer_void,void *grid_field_void)
