@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_unemap_interface.c
 
-LAST MODIFIED : 20 June 2001
+LAST MODIFIED : 1 November 2001
 
 DESCRIPTION :
 The interface between Cell and UnEMAP
@@ -836,7 +836,7 @@ int Cell_unemap_interface_add_signals(
   struct Cell_variable_unemap_interface **variable_unemap_interfaces,
   float tabT)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 1 November 2001
 
 DESCRIPTION :
 Adds the signals defined by the array of <variable_unemap_interfaces> to the
@@ -1054,7 +1054,7 @@ devices are destroyed and new ones are created.
                     {
                       map->colour_option=HIDE_COLOUR;
                       map->contours_option=HIDE_CONTOURS;
-                      map->electrodes_option=SHOW_ELECTRODE_NAMES;
+                      map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
                       /*map->projection=HAMMER;*/
                     }
                     /* unghost the mapping window file button */

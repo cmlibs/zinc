@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.c
 
-LAST MODIFIED : 23 October 2001
+LAST MODIFIED : 1 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -971,7 +971,7 @@ Finds the id of the electrodes option menu in the map dialog.
 	USE_PARAMETER(call_data);
 	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
 	{
-		map_dialog->electrodes.option_menu= *widget_id;
+		map_dialog->electrodes.label_menu= *widget_id;
 	}
 	else
 	{
@@ -996,7 +996,7 @@ Finds the id of the name button in electrodes option menu in the map dialog.
 	USE_PARAMETER(call_data);
 	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
 	{
-		map_dialog->electrodes.option.name= *widget_id;
+		map_dialog->electrodes.label.name= *widget_id;
 	}
 	else
 	{
@@ -1021,7 +1021,7 @@ Finds the id of the value button in electrodes option menu in the map dialog.
 	USE_PARAMETER(call_data);
 	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
 	{
-		map_dialog->electrodes.option.value= *widget_id;
+		map_dialog->electrodes.label.value= *widget_id;
 	}
 	else
 	{
@@ -1046,7 +1046,7 @@ Finds the id of the channel button in electrodes option menu in the map dialog.
 	USE_PARAMETER(call_data);
 	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
 	{
-		map_dialog->electrodes.option.channel= *widget_id;
+		map_dialog->electrodes.label.channel= *widget_id;
 	}
 	else
 	{
@@ -1071,7 +1071,7 @@ Finds the id of the hide button in electrodes option menu in the map dialog.
 	USE_PARAMETER(call_data);
 	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
 	{
-		map_dialog->electrodes.option.hide= *widget_id;
+		map_dialog->electrodes.label.hide= *widget_id;
 	}
 	else
 	{
@@ -1864,11 +1864,11 @@ initializes the appropriate fields.
 				map_dialog->contours.down_arrow=(Widget)NULL;
 				map_dialog->contours.number=(Widget)NULL;
 				map_dialog->contours.up_arrow=(Widget)NULL;
-				map_dialog->electrodes.option_menu=(Widget)NULL;
-				map_dialog->electrodes.option.name=(Widget)NULL;
-				map_dialog->electrodes.option.value=(Widget)NULL;
-				map_dialog->electrodes.option.channel=(Widget)NULL;
-				map_dialog->electrodes.option.hide=(Widget)NULL;
+				map_dialog->electrodes.label_menu=(Widget)NULL;
+				map_dialog->electrodes.label.name=(Widget)NULL;
+				map_dialog->electrodes.label.value=(Widget)NULL;
+				map_dialog->electrodes.label.channel=(Widget)NULL;
+				map_dialog->electrodes.label.hide=(Widget)NULL;
 				map_dialog->electrodes.marker_type_menu=(Widget)NULL;
 				map_dialog->electrodes.marker_type.circle=(Widget)NULL;
 				map_dialog->electrodes.marker_type.plus=(Widget)NULL;
@@ -1966,13 +1966,13 @@ initializes the appropriate fields.
 									XtVaSetValues(XmOptionLabelGadget((map_dialog->contours).
 										type_option_menu),XmNfontList,font_list,NULL);
 								}
-								if ((map_dialog->electrodes.option_menu)&&
-									(map_dialog->electrodes.option.hide))
+								if ((map_dialog->electrodes.label_menu)&&
+									(map_dialog->electrodes.label.hide))
 								{
-									XtVaGetValues(map_dialog->electrodes.option.hide,
+									XtVaGetValues(map_dialog->electrodes.label.hide,
 										XmNfontList,&font_list,NULL);
 									XtVaSetValues(XmOptionLabelGadget(map_dialog->
-										electrodes.option_menu),XmNfontList,font_list,NULL);
+										electrodes.label_menu),XmNfontList,font_list,NULL);
 								}
 								if ((map_dialog->electrodes.marker_type_menu)&&
 									(map_dialog->electrodes.marker_type.plus))
@@ -2285,26 +2285,26 @@ Opens the <map_dialog>.
 			XtVaSetValues(map_dialog->contours.number,
 				XmNlabelString,XmStringCreate(value_string,XmSTRING_DEFAULT_CHARSET),
 				NULL);
-			switch (map->electrodes_option)
+			switch (map->electrodes_label_type)
 			{
 				case SHOW_ELECTRODE_NAMES:
 				{
-					option_widget=map_dialog->electrodes.option.name;
+					option_widget=map_dialog->electrodes.label.name;
 				} break;
 				case SHOW_ELECTRODE_VALUES:
 				{
-					option_widget=map_dialog->electrodes.option.value;
+					option_widget=map_dialog->electrodes.label.value;
 				} break;
 				case SHOW_CHANNEL_NUMBERS:
 				{
-					option_widget=map_dialog->electrodes.option.channel;
+					option_widget=map_dialog->electrodes.label.channel;
 				} break;
-				case HIDE_ELECTRODES:
+				case HIDE_ELECTRODE_LABELS:
 				{
-					option_widget=map_dialog->electrodes.option.hide;
+					option_widget=map_dialog->electrodes.label.hide;
 				} break;
 			}
-			XtVaSetValues(map_dialog->electrodes.option_menu,
+			XtVaSetValues(map_dialog->electrodes.label_menu,
 				XmNmenuHistory,option_widget,
 				NULL);
 			map_dialog->electrodes_marker_size=map->electrodes_marker_size;

@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : map_dialog.uil
 !
-!LAST MODIFIED : 25 May 2000
+!LAST MODIFIED : 1 November 2001
 !
 !DESCRIPTION :
 !The widgets/gadgets for the map dialog in the mapping work area.
@@ -71,6 +71,7 @@ procedure
 	identify_map_dialog_animation;
 	identify_map_dialog_ok_button;
 	update_map_from_dialog;
+	update_dialog_elec_options;
 	identify_map_dialog_apply_butto;
 	identify_map_dialog_cancel_butt;
 	close_map_dialog;
@@ -1133,6 +1134,10 @@ object
 								{
 								identify_map_dialog_elect_circl(map_dialog_structure);
 								};
+							XmNactivateCallback = procedures
+								{
+								update_dialog_elec_options(mapping_window_structure);
+								};
 							};
 						};
 					XmPushButtonGadget
@@ -1148,6 +1153,10 @@ object
 							MrmNcreateCallback = procedures
 								{
 								identify_map_dialog_elect_plus(map_dialog_structure);
+								};
+							XmNactivateCallback = procedures
+								{
+								update_dialog_elec_options(mapping_window_structure);
 								};
 							};
 						};
@@ -1165,6 +1174,10 @@ object
 								{
 								identify_map_dialog_elect_squar(map_dialog_structure);
 								};
+							XmNactivateCallback = procedures
+								{
+								update_dialog_elec_options(mapping_window_structure);
+								};
 							};
 						};
 					XmPushButtonGadget
@@ -1180,6 +1193,10 @@ object
 							MrmNcreateCallback = procedures
 								{
 								identify_map_dialog_elect_none(map_dialog_structure);
+								};
+							XmNactivateCallback = procedures
+								{
+								update_dialog_elec_options(mapping_window_structure);
 								};
 							};
 						};

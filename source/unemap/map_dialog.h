@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.h
 
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 1 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -22,7 +22,7 @@ Global types
 */
 struct Map_dialog
 /*******************************************************************************
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED :1 November 2001
 
 DESCRIPTION :
 The dialog box for configuring a map.
@@ -98,14 +98,14 @@ The dialog box for configuring a map.
 #if defined (MOTIF)
 	struct
 	{
-		Widget option_menu;
+		Widget label_menu;
 		struct
 		{
 			Widget name;
 			Widget value;
 			Widget channel;
 			Widget hide;
-		} option;
+		} label;
 		Widget marker_type_menu;
 		struct
 		{
