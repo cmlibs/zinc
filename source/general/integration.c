@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : integration.c
 
-LAST MODIFIED : 27 December 2002
+LAST MODIFIED : 29 December 2002
 
 DESCRIPTION :
 Structures and functions for integerating a computed field over a group of
@@ -94,7 +94,7 @@ If fails, puts zero at <dimension_address>.
 static int FE_basis_get_xi_basis_type(struct FE_basis *basis,
 	int xi_number, enum FE_basis_type *basis_type_address)
 /*******************************************************************************
-LAST MODIFIED : 27 December 2002
+LAST MODIFIED : 29 December 2002
 
 DESCRIPTION :
 Returns the basis type of <basis> on <xi_number> -- on main diagonal of
@@ -113,7 +113,7 @@ type array. The first xi_number is 0.
 		{
 			offset += basis->type[0] - i;
 		}
-		*basis_type_address = basis->type[offset];
+		*basis_type_address=(enum FE_basis_type)(basis->type[offset]);
 		return_code = 1;
 	}
 	else
@@ -131,7 +131,7 @@ static int FE_basis_get_next_linked_xi_number(
 	struct FE_basis *basis, int xi_number,
 	int *next_xi_number_address, int *xi_link_number_address)
 /*******************************************************************************
-LAST MODIFIED : 27 December 2002
+LAST MODIFIED : 29 December 2002
 
 DESCRIPTION :
 Returns in <next_xi_number_address> the next xi number higher than <xi_number>
@@ -143,8 +143,7 @@ If there is no remaining linked dimension, 0 is returned in both addresses.
 Also checks that the linked xi numbers have the same basis type.
 ==============================================================================*/
 {
-	enum FE_basis_type basis_type;
-	int dimension,i, limit, offset, return_code;
+	int basis_type,dimension,i,limit,offset,return_code;
 
 	ENTER(FE_basis_get_next_linked_xi_number);
 	if (basis && basis->type &&
