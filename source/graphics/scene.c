@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -1835,7 +1835,7 @@ static int Scene_picked_object_get_nearest_element_point(
 	struct Scene_picked_object *scene_picked_object,
 	void *nearest_element_point_data_void)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element_point, the "nearest" value is
@@ -1848,8 +1848,10 @@ created to store the nearest point; it is up to the calling function to manage
 and destroy it once returned.
 ==============================================================================*/
 {
+	enum Xi_discretization_mode xi_discretization_mode;
 	int element_point_number,face_number,i,return_code,
 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct CM_element_information cm;
 	struct Element_discretization element_discretization;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
@@ -1893,9 +1895,23 @@ and destroy it once returned.
 				(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
 					GT_element_settings_get_settings_type(settings)))
 			{
-				if (element=FE_element_group_get_element_with_Use_element_type(
-					element_group,GT_element_settings_get_use_element_type(settings),
-					Scene_picked_object_get_subobject(scene_picked_object,1)))
+				cm.number=Scene_picked_object_get_subobject(scene_picked_object,1);
+				xi_discretization_mode=
+					GT_element_settings_get_xi_discretization_mode(settings);
+				if (XI_DISCRETIZATION_CELL_CORNERS==xi_discretization_mode)
+				{
+					/* cell_corners always calculated on top_level_element */
+					cm.type=CM_ELEMENT;
+					element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(&cm,
+						element_group);
+				}
+				else
+				{
+					element=FE_element_group_get_element_with_Use_element_type(
+						element_group,GT_element_settings_get_use_element_type(settings),
+						cm.number);
+				}
+				if (element)
 				{
 					/* determine discretization of element for graphic */
 					top_level_element=(struct FE_element *)NULL;
@@ -1914,9 +1930,8 @@ and destroy it once returned.
 						element_point_ranges_identifier.element=element;
 						element_point_ranges_identifier.top_level_element=top_level_element;
 						element_point_ranges_identifier.xi_discretization_mode=
-							GT_element_settings_get_xi_discretization_mode(settings);
-						if (XI_DISCRETIZATION_EXACT_XI==
-							element_point_ranges_identifier.xi_discretization_mode)
+							xi_discretization_mode;
+						if (XI_DISCRETIZATION_EXACT_XI==xi_discretization_mode)
 						{
 							for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
 							{
@@ -2007,8 +2022,10 @@ If the <scene_picked_object> refers to an element_point, it is converted into
 an Element_point_ranges and added to the <picked_element_points_list>.
 ==============================================================================*/
 {
+	enum Xi_discretization_mode xi_discretization_mode;
 	int element_point_number,face_number,i,return_code,
 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct CM_element_information cm;
 	struct Element_discretization element_discretization;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
@@ -2039,9 +2056,23 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
 				GT_element_settings_get_settings_type(settings)))
 		{
-			if (element=FE_element_group_get_element_with_Use_element_type(
-				element_group,GT_element_settings_get_use_element_type(settings),
-				Scene_picked_object_get_subobject(scene_picked_object,1)))
+			cm.number=Scene_picked_object_get_subobject(scene_picked_object,1);
+			xi_discretization_mode=
+				GT_element_settings_get_xi_discretization_mode(settings);
+			if (XI_DISCRETIZATION_CELL_CORNERS==xi_discretization_mode)
+			{
+				/* cell_corners always calculated on top_level_element */
+				cm.type=CM_ELEMENT;
+				element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(&cm,
+					element_group);
+			}
+			else
+			{
+				element=FE_element_group_get_element_with_Use_element_type(
+					element_group,GT_element_settings_get_use_element_type(settings),
+					cm.number);
+			}
+			if (element)
 			{
 				/* determine discretization of element for graphic */
 				top_level_element=(struct FE_element *)NULL;
@@ -2060,7 +2091,7 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 					element_point_ranges_identifier.element=element;
 					element_point_ranges_identifier.top_level_element=top_level_element;
 					element_point_ranges_identifier.xi_discretization_mode=
-						GT_element_settings_get_xi_discretization_mode(settings);
+						xi_discretization_mode;
 					if (XI_DISCRETIZATION_EXACT_XI==
 						element_point_ranges_identifier.xi_discretization_mode)
 					{
