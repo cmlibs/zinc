@@ -4216,7 +4216,7 @@ Writes the properties of the <texture> to the command window.
 	int return_code;
 #if defined (GL_ARB_texture_compression)
 	GLenum texture_target;
-	GLuint texture_size;
+	GLint texture_size;
 #endif /* defined (GL_ARB_texture_compression) */
 	
 
