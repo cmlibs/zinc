@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 14 March 2002
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -7586,83 +7586,130 @@ Executes a GFX CREATE SURFACES command.
 	return (return_code);
 } /* gfx_create_surfaces */
 
-static int set_Texture_image_from_field(struct Texture *texture, struct Computed_field *field,
+static int set_Texture_image_from_field(struct Texture *texture,
+	struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field, struct Spectrum *spectrum,
 	struct GROUP(FE_element) *element_group, enum Texture_storage_type storage,
-	int image_width,int image_height,
-	char *image_file_name,int crop_left_margin,int crop_bottom_margin,
-	int crop_width,int crop_height, struct User_interface *user_interface)
+	int image_width, int image_height, int image_depth,
+	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Creates the image in the format given by sampling the <field> according to the
 reverse mapping of the <texture_coordinate_field>.  The values returned by
-field are converted to "colours" by applying the <spectrum>
+field are converted to "colours" by applying the <spectrum>.
+Currently limited to 1 byte per component.
 ==============================================================================*/
 {
+	unsigned char *image_plane, *ptr;
 	FE_value *data_values, values[3], xi[3];
 	float hint_minimums[3] = {0.0, 0.0, 0.0};
 	float hint_maximums[3] = {1.0, 1.0, 1.0};
 	float hint_resolution[3];
-	float	red, green, blue, alpha, texture_height, texture_width;
-	int j,k,number_of_components,number_of_data_components,return_code,
-		tex_number_of_components;
-	long unsigned *texture_image;
+	float	red, green, blue, alpha, texture_depth, texture_height, texture_width;
+	int bytes_per_pixel, i, image_width_bytes, j, k,
+		number_of_bytes_per_component, number_of_components,
+		number_of_data_components, return_code, tex_number_of_components;
+	unsigned long field_evaluate_error_count, find_element_xi_error_count,
+		spectrum_render_error_count, total_number_of_pixels;
 	struct Colour result;
 	struct Computed_field_find_element_xi_special_cache *cache;
 	struct FE_element *element;
 	struct Graphical_material *material;
-	unsigned char *ptr;
 
 	ENTER(set_Texture_image_from_field);
-	if (texture&&field&&texture_coordinate_field&&spectrum&&
-		(4>=(number_of_components = Texture_get_number_of_components_from_storage_type(storage)))
-		&&(3>=(tex_number_of_components = Computed_field_get_number_of_components(texture_coordinate_field)))
-		&&Computed_field_is_find_element_xi_capable(texture_coordinate_field, /*dummy*/NULL))
+	if (texture && field && texture_coordinate_field && spectrum &&
+		element_group &&
+		(4 >= (number_of_components =
+			Texture_storage_type_get_number_of_components(storage))) &&
+		(3 >= (tex_number_of_components =
+			Computed_field_get_number_of_components(texture_coordinate_field))) &&
+		Computed_field_is_find_element_xi_capable(texture_coordinate_field,
+			/*dummy*/NULL) &&
+		(0 < image_width) && (0 < image_height) && (0 < image_depth))
 	{
-		cache = (struct Computed_field_find_element_xi_special_cache *)NULL;
-		number_of_data_components = Computed_field_get_number_of_components(field);
-		Texture_get_physical_size(texture, &texture_width, &texture_height);
-		if (ALLOCATE(texture_image,unsigned long,
-			(image_width*image_height*number_of_components+3)/4) &&
-			 ALLOCATE(data_values, FE_value, Computed_field_get_number_of_components(field))
-			&& (material = CREATE(Graphical_material)("texture_tmp")))
+		return_code = 1;
+		number_of_bytes_per_component = 1;
+		/* allocate the texture image */
+		if (Texture_allocate_image(texture, image_width, image_height,
+			image_depth, storage, number_of_bytes_per_component))
 		{
-			hint_resolution[0] = image_width;
-			hint_resolution[1] = image_height;
-			hint_resolution[2] = 0;
-			ptr = (unsigned char *)texture_image;
-			values[2] = 0.0;
-			for (j=0;j<image_height;j++)
+			cache = (struct Computed_field_find_element_xi_special_cache *)NULL;
+			number_of_data_components =
+				Computed_field_get_number_of_components(field);
+			Texture_get_physical_size(texture, &texture_width, &texture_height,
+				&texture_depth);
+			/* allocate space for a single image plane */
+			bytes_per_pixel = number_of_components*number_of_bytes_per_component;
+			image_width_bytes = image_width*bytes_per_pixel;
+			ALLOCATE(image_plane, unsigned char, image_height*image_width_bytes);
+			ALLOCATE(data_values, FE_value,
+				Computed_field_get_number_of_components(field));
+			material = CREATE(Graphical_material)("texture_tmp");
+			if (image_plane && data_values && material)
 			{
-				values[1] = texture_height * ((float)j + 0.5) / (float)image_height;
-				for (k = 0 ; k < image_width ; k++)
+				hint_resolution[0] = image_width;
+				hint_resolution[1] = image_height;
+				hint_resolution[2] = image_depth;
+				field_evaluate_error_count = 0;
+				find_element_xi_error_count = 0;
+				spectrum_render_error_count = 0;
+				total_number_of_pixels = image_width*image_height*image_depth;
+				for (i = 0; (i < image_depth) && return_code; i++)
 				{
-					values[0] = texture_width * ((float)k + 0.5) / (float)image_width;
-					if(Computed_field_find_element_xi_special(texture_coordinate_field,
-						&cache, values, tex_number_of_components, &element, xi, element_group,
-						user_interface, hint_minimums, hint_maximums, hint_resolution)
-						|| Computed_field_find_element_xi(texture_coordinate_field,
-						values, tex_number_of_components, &element, xi, element_group))
+					ptr = (unsigned char *)image_plane;
+					values[2] = texture_depth * ((float)i + 0.5) / (float)image_depth;
+					for (j = 0; (j < image_height) && return_code; j++)
 					{
-						/* Computed_field_find_element_xi_special returns true if it has
-							performed a valid calculation even if the element isn't found
-							to stop the slow Computed_field_find_element_xi being called */
-						if (element)
+						values[1] = texture_height * ((float)j + 0.5) / (float)image_height;
+						for (k = 0; (k < image_width) && return_code; k++)
 						{
-							if (Computed_field_evaluate_in_element(field,
-							   element, xi,/*time*/0,(struct FE_element *)NULL,
-							   data_values, (FE_value *)NULL))
+							values[0] = texture_width * ((float)k + 0.5) / (float)image_width;
+							/* Computed_field_find_element_xi_special returns true if it has
+								 performed a valid calculation even if the element isn't found
+								 to stop the slow Computed_field_find_element_xi being called */
+							if (Computed_field_find_element_xi_special(
+								texture_coordinate_field, &cache, values,
+								tex_number_of_components, &element, xi, element_group,
+								user_interface, hint_minimums, hint_maximums,
+								hint_resolution) ||
+								Computed_field_find_element_xi(texture_coordinate_field,
+									values, tex_number_of_components, &element, xi,
+									element_group))
 							{
-								if (spectrum_render_value_on_material(spectrum,
-									material, number_of_data_components, data_values))
+								if (element)
 								{
-									Graphical_material_get_diffuse(material, &result);
-									red = result.red;
-									green = result.green;
-									blue = result.blue;
-									Graphical_material_get_alpha(material, &alpha);
+									if (Computed_field_evaluate_in_element(field,
+										element, xi,/*time*/0,(struct FE_element *)NULL,
+										data_values, (FE_value *)NULL))
+									{
+										if (spectrum_render_value_on_material(spectrum,
+											material, number_of_data_components, data_values))
+										{
+											Graphical_material_get_diffuse(material, &result);
+											red = result.red;
+											green = result.green;
+											blue = result.blue;
+											Graphical_material_get_alpha(material, &alpha);
+										}
+										else
+										{
+											red = 0.5;
+											green = 0.5;
+											blue = 0.5;
+											alpha = 1.0;
+											spectrum_render_error_count++;
+										}
+									}
+									else
+									{
+										red = 0.5;
+										green = 0.5;
+										blue = 0.5;
+										alpha = 1.0;
+										field_evaluate_error_count++;
+									}
 								}
 								else
 								{
@@ -7670,8 +7717,6 @@ field are converted to "colours" by applying the <spectrum>
 									green = 0.5;
 									blue = 0.5;
 									alpha = 1.0;
-									display_message(ERROR_MESSAGE,
-										"set_Texture_image_from_field.  Unable to evaluate spectrum");
 								}
 							}
 							else
@@ -7680,91 +7725,101 @@ field are converted to "colours" by applying the <spectrum>
 								green = 0.5;
 								blue = 0.5;
 								alpha = 1.0;
-								display_message(ERROR_MESSAGE,
-									"set_Texture_image_from_field.  Unable to evaluate field in element");
+								find_element_xi_error_count++;
+							}
+							switch (storage)
+							{
+								case TEXTURE_LUMINANCE:
+								{
+									*ptr = (unsigned char)((red + green + blue) * 255.0 / 3.0);
+									ptr++;
+								} break;
+								case TEXTURE_LUMINANCE_ALPHA:
+								{
+									*ptr = (unsigned char)((red + green + blue) * 255.0 / 3.0);
+									ptr++;
+									*ptr = (unsigned char)(alpha * 255.0);
+									ptr++;
+								} break;
+								case TEXTURE_RGB:
+								{
+									*ptr = (unsigned char)(red * 255.0);
+									ptr++;
+									*ptr = (unsigned char)(green * 255.0);
+									ptr++;
+									*ptr = (unsigned char)(blue * 255.0);
+									ptr++;
+								} break;
+								case TEXTURE_RGBA:
+								{
+									*ptr = (unsigned char)(red * 255.0);
+									ptr++;
+									*ptr = (unsigned char)(green * 255.0);
+									ptr++;
+									*ptr = (unsigned char)(blue * 255.0);
+									ptr++;
+									*ptr = (unsigned char)(alpha * 255.0);
+									ptr++;
+								} break;
+								case TEXTURE_ABGR:
+								{
+									*ptr = (unsigned char)(alpha * 255.0);
+									ptr++;
+									*ptr = (unsigned char)(blue * 255.0);
+									ptr++;
+									*ptr = (unsigned char)(green * 255.0);
+									ptr++;
+									*ptr = (unsigned char)(red * 255.0);
+									ptr++;
+								} break;
+								default:
+								{
+									display_message(ERROR_MESSAGE,
+										"set_Texture_image_from_field.  Unsupported storage type");
+									return_code = 0;
+								} break;
 							}
 						}
-						else
-						{
-							red = 0.5;
-							green = 0.5;
-							blue = 0.5;
-							alpha = 1.0;
-						}
 					}
-					else
+					if (!Texture_set_image_block(texture,
+						/*left*/0, /*bottom*/0, image_width, image_height, /*depth_plane*/i,
+						image_width_bytes, image_plane))
 					{
-						red = 0.5;
-						green = 0.5;
-						blue = 0.5;
-						alpha = 1.0;
 						display_message(ERROR_MESSAGE,
-							"set_Texture_image_from_field.  Unable to find element_xi for values");
-					}
-					switch(storage)
-					{
-						case TEXTURE_LUMINANCE:
-						{
-							*ptr = (unsigned char)((red + green + blue) * 255.0 / 3.0);
-							ptr++;
-						} break;
-						case TEXTURE_LUMINANCE_ALPHA:
-						{
-							*ptr = (unsigned char)((red + green + blue) * 255.0 / 3.0);
-							ptr++;
-							*ptr = (unsigned char)(alpha * 255.0);
-							ptr++;
-						} break;
-						case TEXTURE_RGB:
-						{
-							*ptr = (unsigned char)(red * 255.0);
-							ptr++;
-							*ptr = (unsigned char)(green * 255.0);
-							ptr++;
-							*ptr = (unsigned char)(blue * 255.0);
-							ptr++;
-						} break;
-						case TEXTURE_RGBA:
-						{
-							*ptr = (unsigned char)(red * 255.0);
-							ptr++;
-							*ptr = (unsigned char)(green * 255.0);
-							ptr++;
-							*ptr = (unsigned char)(blue * 255.0);
-							ptr++;
-							*ptr = (unsigned char)(alpha * 255.0);
-							ptr++;
-						} break;
-						case TEXTURE_ABGR:
-						{
-							*ptr = (unsigned char)(alpha * 255.0);
-							ptr++;
-							*ptr = (unsigned char)(blue * 255.0);
-							ptr++;
-							*ptr = (unsigned char)(green * 255.0);
-							ptr++;
-							*ptr = (unsigned char)(red * 255.0);
-							ptr++;
-						} break;
-						default:
-						{
-							display_message(ERROR_MESSAGE,
-								"set_Texture_image_from_field.  Unsupported storage type.");
-							return_code=0;
-						} break;
+							"set_Texture_image_from_field.  Could not set texture block");
+						return_code = 0;
 					}
 				}
+				Computed_field_clear_cache(field);
+				Computed_field_clear_cache(texture_coordinate_field);
+				if (0 < field_evaluate_error_count)
+				{
+					display_message(WARNING_MESSAGE, "set_Texture_image_from_field.  "
+						"Field could not be evaluated in element for %d out of %d pixels",
+						field_evaluate_error_count, total_number_of_pixels);
+				}
+				if (0 < spectrum_render_error_count)
+				{
+					display_message(WARNING_MESSAGE, "set_Texture_image_from_field.  "
+						"Spectrum could not be evaluated for %d out of %d pixels",
+						spectrum_render_error_count, total_number_of_pixels);
+				}
+				if (0 < find_element_xi_error_count)
+				{
+					display_message(WARNING_MESSAGE, "set_Texture_image_from_field.  "
+						"Unable to find element:xi for %d out of %d pixels",
+						find_element_xi_error_count, total_number_of_pixels);
+				}
 			}
-			Texture_set_image(texture, texture_image,
-				storage, /* number_of_bytes_per_component */ 1,
-				image_width, image_height, TEXTURE_BOTTOM_TO_TOP,
-				image_file_name, crop_left_margin, crop_bottom_margin,
-				crop_width, crop_height,/*perform_crop*/0);
-			Computed_field_clear_cache(field);
-			Computed_field_clear_cache(texture_coordinate_field);
-			DEALLOCATE(data_values);
-			DEALLOCATE(texture_image);
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"set_Texture_image_from_field.  Not enough memory");
+				return_code = 0;
+			}
 			DESTROY(Graphical_material)(&material);
+			DEALLOCATE(data_values);
+			DEALLOCATE(image_plane);
 			if (cache)
 			{
 				DESTROY(Computed_field_find_element_xi_special_cache)(&cache);
@@ -7773,15 +7828,15 @@ field are converted to "colours" by applying the <spectrum>
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"set_Texture_image_from_field.  Could not allocate texture image");
-			return_code=0;
+				"set_Texture_image_from_field.  Could not allocate image in texture");
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"set_Texture_image_from_field.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -7791,6 +7846,7 @@ field are converted to "colours" by applying the <spectrum>
 struct Texture_evaluate_image_data
 {
 	enum Texture_storage_type storage;
+	int depth_texels;
 	int height_texels;
 	int width_texels;
 	struct Computed_field *field, *texture_coordinates_field;
@@ -7801,7 +7857,7 @@ struct Texture_evaluate_image_data
 static int gfx_modify_Texture_evaluate_image(struct Parse_state *state,
 	void *data_void, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 6 March 2002
 
 DESCRIPTION :
 Modifies the properties of a texture.
@@ -7822,11 +7878,14 @@ Modifies the properties of a texture.
 			if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
 				(data = (struct Texture_evaluate_image_data *)data_void))
 			{
-
 				option_table = CREATE(Option_table)();
+				/* depth_texels */
+				Option_table_add_entry(option_table, "depth_texels",
+					&data->depth_texels, NULL, set_int_positive);
 				/* element_group */
-				Option_table_add_entry(option_table, "element_group", &data->element_group,
-					command_data->element_group_manager, set_FE_element_group);
+				Option_table_add_entry(option_table, "element_group",
+					&data->element_group, command_data->element_group_manager,
+					set_FE_element_group);
 				/* field */
 				set_field_data.computed_field_manager=
 					Computed_field_package_get_computed_field_manager(
@@ -7840,14 +7899,14 @@ Modifies the properties of a texture.
 				Option_table_add_entry(option_table, "format", &data->storage,
 					NULL, set_Texture_storage);
 				/* height_texels */
-				Option_table_add_entry(option_table, "height_texels", &data->height_texels,
-					NULL, set_int_positive);
+				Option_table_add_entry(option_table, "height_texels",
+					&data->height_texels, NULL, set_int_positive);
 				/* spectrum */
 				Option_table_add_entry(option_table, "spectrum", &data->spectrum, 
 					command_data->spectrum_manager, set_Spectrum);
 				/* width_texels */
-				Option_table_add_entry(option_table, "width_texels", &data->width_texels, 
-					NULL, set_int_positive);
+				Option_table_add_entry(option_table, "width_texels",
+					&data->width_texels, NULL, set_int_positive);
 				/* texture_coordinates */
 				set_texture_coordinates_field_data.computed_field_manager=
 					Computed_field_package_get_computed_field_manager(
@@ -7970,137 +8029,183 @@ Modifies the properties of a texture.
 	return (return_code);
 } /* gfx_modify_Texture_image */
 
-int gfx_modify_Texture(struct Parse_state *state,void *texture_void,
-	void *command_data_void)
+struct Texture_file_number_series_data
+{
+	int start, stop, increment;
+};
+
+static int gfx_modify_Texture_file_number_series(struct Parse_state *state,
+	void *data_void, void *dummy_user_data)
 /*******************************************************************************
-LAST MODIFIED : 12 October 2000
+LAST MODIFIED : 8 February 2002
 
 DESCRIPTION :
 Modifies the properties of a texture.
 ==============================================================================*/
 {
-	char *combine_mode_string, *current_token, *field_name, *filter_mode_string,
-		*raw_image_storage_string, **valid_strings, *wrap_mode_string;
+	char *current_token;
+	int range, return_code;
+	struct Texture_file_number_series_data *data;
+
+	ENTER(gfx_modify_Texture_file_number_series);
+	USE_PARAMETER(dummy_user_data);
+	if (state && (data = (struct Texture_file_number_series_data *)data_void))
+	{
+		return_code = 1;
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				if ((1 == sscanf(current_token, " %d", &(data->start))) &&
+					shift_Parse_state(state, 1) &&
+					(current_token = state->current_token) &&
+					(1 == sscanf(current_token, " %d", &(data->stop))) &&
+					shift_Parse_state(state, 1) &&
+					(current_token = state->current_token) &&
+					(1 == sscanf(current_token, " %d", &(data->increment))) &&
+					shift_Parse_state(state, 1))
+				{
+					/* check range proceeds from start to stop with a whole number of
+						 increments, and that increment is positive */
+					if (!(((0 < data->increment) &&
+						(0 <= (range = data->stop - data->start)) &&
+						(0 == (range % data->increment))) ||
+						((0 > data->increment) &&
+							(0 <= (range = data->start - data->stop))
+							&& (0 == (range % -data->increment)))))
+					{
+						display_message(ERROR_MESSAGE,
+							"Invalid file number series");
+						display_parse_state_location(state);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Missing 3-D image series START, STOP or INCREMENT");
+					display_parse_state_location(state);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, " START STOP INCREMENT");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_modify_Texture_file_number_series.  Missing state");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_modify_Texture_file_number_series */
+
+int gfx_modify_Texture(struct Parse_state *state,void *texture_void,
+	void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 11 March 2002
+
+DESCRIPTION :
+Modifies the properties of a texture.
+==============================================================================*/
+{
+	char *combine_mode_string, *current_token, *file_number_pattern,
+		*filter_mode_string, *raw_image_storage_string, *resize_filter_mode_string,
+		**valid_strings, *wrap_mode_string;
 	double texture_distortion[3];
-	float alpha,distortion_centre_x,distortion_centre_y,distortion_factor_k1,
-		height,width;
+	enum Raw_image_storage raw_image_storage;
+	enum Texture_combine_mode combine_mode;
+	enum Texture_filter_mode filter_mode;
+	enum Texture_resize_filter_mode resize_filter_mode;
+	enum Texture_wrap_mode wrap_mode;
+	float alpha, depth, distortion_centre_x, distortion_centre_y,
+		distortion_factor_k1, height, width;
 	int number_of_valid_strings, process, return_code, specify_height,
-		specify_width;
+		specify_width, texture_is_managed;
+	struct Cmgui_image *cmgui_image;
+	struct Cmgui_image_information *cmgui_image_information;
 	struct Cmiss_command_data *command_data;
 	struct Colour colour;
 	struct Option_table *option_table;
-	struct Texture *texture_to_be_modified,*texture_to_be_modified_copy;
+	struct Texture *texture;
 	struct Texture_evaluate_image_data evaluate_data;
 	struct Texture_image_data image_data;
+	struct Texture_file_number_series_data file_number_series_data;
 	/* do not make the following static as 'set' flag must start at 0 */
 	struct Set_vector_with_help_data texture_distortion_data=
 		{3," DISTORTION_CENTRE_X DISTORTION_CENTRE_Y DISTORTION_FACTOR_K1",0};
 #if defined (SGI_MOVIE_FILE)
-	struct Movie_graphics *movie,*old_movie;
+	struct Movie_graphics *movie, *old_movie;
 	struct X3d_movie *x3d_movie;
 #endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(gfx_modify_Texture);
 	if (state)
 	{
-		if (current_token=state->current_token)
+		if (current_token = state->current_token)
 		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			if (command_data = (struct Cmiss_command_data *)command_data_void)
 			{
-				process=0;
-				if (texture_to_be_modified=(struct Texture *)texture_void)
+				process = 0;
+				if (texture = (struct Texture *)texture_void)
 				{
-					if (IS_MANAGED(Texture)(texture_to_be_modified,
-						command_data->texture_manager))
-					{
-						if (texture_to_be_modified_copy=CREATE(Texture)((char *)NULL))
-						{
-							MANAGER_COPY_WITH_IDENTIFIER(Texture,name)(
-								texture_to_be_modified_copy,texture_to_be_modified);
-							process=1;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"gfx_modify_Texture.  Could not create texture copy");
-							return_code=0;
-						}
-					}
-					else
-					{
-						texture_to_be_modified_copy=texture_to_be_modified;
-						texture_to_be_modified=(struct Texture *)NULL;
-						process=1;
-					}
+					texture_is_managed =
+						IS_MANAGED(Texture)(texture, command_data->texture_manager);
+					process = 1;
 				}
 				else
 				{
 					if (strcmp(PARSER_HELP_STRING,current_token)&&
 						strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 					{
-						if (command_data->texture_manager)
+						if (texture = FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)(
+							current_token, command_data->texture_manager))
 						{
-							if (texture_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,
-								name)(current_token,command_data->texture_manager))
-							{
-								if (return_code=shift_Parse_state(state,1))
-								{
-									if (texture_to_be_modified_copy=CREATE(Texture)((char *)NULL))
-									{
-										MANAGER_COPY_WITH_IDENTIFIER(Texture,name)(
-											texture_to_be_modified_copy,texture_to_be_modified);
-										process=1;
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"gfx_modify_Texture.  Could not create texture copy");
-										return_code=0;
-									}
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"Unknown texture : %s",
-									current_token);
-								display_parse_state_location(state);
-								return_code=0;
-							}
+							texture_is_managed = 1;
+							process = 1;
+							return_code = shift_Parse_state(state, 1);
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"gfx_modify_Texture.  Missing texture manager");
-							return_code=0;
+							display_message(ERROR_MESSAGE, "Unknown texture : %s",
+								current_token);
+							display_parse_state_location(state);
+							return_code = 0;
 						}
 					}
 					else
 					{
-						if (texture_to_be_modified=CREATE(Texture)((char *)NULL))
+						if (texture = CREATE(Texture)((char *)NULL))
 						{
 							option_table = CREATE(Option_table)();
 							Option_table_add_entry(option_table, "TEXTURE_NAME",
-								(void *)texture_to_be_modified,command_data_void,gfx_modify_Texture);
+								(void *)texture, command_data_void, gfx_modify_Texture);
 							return_code = Option_table_parse(option_table, state);
-								/*???DB.  return_code will be 0 ? */
+							/*???DB.  return_code will be 0 ? */
 							DESTROY(Option_table)(&option_table);
-							DESTROY(Texture)(&texture_to_be_modified);
+							DESTROY(Texture)(&texture);
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
 								"gfx_modify_Texture.  Could not create dummy texture");
-							return_code=0;
+							return_code = 0;
 						}
 					}
 				}
 				if (process)
 				{
 #if defined (SGI_MOVIE_FILE)
-					if (x3d_movie=Texture_get_movie(texture_to_be_modified_copy))
+					if (x3d_movie=Texture_get_movie(texture))
 					{
-						if (movie=FIRST_OBJECT_IN_MANAGER_THAT(Movie_graphics)(
-							Movie_graphics_has_X3d_movie,(void *)x3d_movie,
+						if (movie = FIRST_OBJECT_IN_MANAGER_THAT(Movie_graphics)(
+							Movie_graphics_has_X3d_movie, (void *)x3d_movie,
 							command_data->movie_graphics_manager))
 						{
 							ACCESS(Movie_graphics)(movie);
@@ -8115,12 +8220,13 @@ Modifies the properties of a texture.
 					{
 						movie = (struct Movie_graphics *)NULL;
 					}
-					old_movie=movie;
+					old_movie = movie;
 #endif /* defined (SGI_MOVIE_FILE) */
-					Texture_get_combine_alpha(texture_to_be_modified_copy, &alpha);
-					Texture_get_combine_colour(texture_to_be_modified_copy, &colour);
-					Texture_get_physical_size(texture_to_be_modified_copy,&width,&height);
-					Texture_get_distortion_info(texture_to_be_modified_copy,
+					Texture_get_combine_alpha(texture, &alpha);
+					Texture_get_combine_colour(texture, &colour);
+					Texture_get_physical_size(texture,
+						&width, &height, &depth);
+					Texture_get_distortion_info(texture,
 						&distortion_centre_x,&distortion_centre_y,&distortion_factor_k1);
 					texture_distortion[0]=(double)distortion_centre_x;
 					texture_distortion[1]=(double)distortion_centre_y;
@@ -8138,35 +8244,49 @@ Modifies the properties of a texture.
 					evaluate_data.field = (struct Computed_field *)NULL;
 					evaluate_data.spectrum = (struct Spectrum *)NULL;
 					evaluate_data.element_group = (struct GROUP(FE_element) *)NULL;
-					evaluate_data.height_texels = 100;
-					evaluate_data.width_texels = 100;
+					evaluate_data.depth_texels = 1;
+					evaluate_data.height_texels = 64;
+					evaluate_data.width_texels = 64;
 					evaluate_data.storage = TEXTURE_RGB;
 					evaluate_data.texture_coordinates_field =
 						(struct Computed_field *)NULL;
-					
+
+					file_number_pattern = (char *)NULL;
+					/* increment must be non-zero for following to be "set" */
+					file_number_series_data.start = 0;
+					file_number_series_data.stop = 0;
+					file_number_series_data.increment = 0;
+
 					option_table = CREATE(Option_table)();
 					/* alpha */
 					Option_table_add_entry(option_table, "alpha", &alpha,
 					  NULL,set_float_0_to_1_inclusive);
 					/* blend/decal/modulate */
-					combine_mode_string = Texture_combine_mode_string(
-						Texture_get_combine_mode(texture_to_be_modified_copy));
-					valid_strings =
-						Texture_combine_mode_get_valid_strings(&number_of_valid_strings);
-					Option_table_add_enumerator(option_table,number_of_valid_strings,
-						valid_strings,&combine_mode_string);
+					combine_mode_string = ENUMERATOR_STRING(Texture_combine_mode)(
+						Texture_get_combine_mode(texture));
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Texture_combine_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Texture_combine_mode) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &combine_mode_string);
 					DEALLOCATE(valid_strings);
 					/* clamp_wrap/repeat_wrap */
-					wrap_mode_string = Texture_wrap_mode_string(
-						Texture_get_wrap_mode(texture_to_be_modified_copy));
-					valid_strings =
-						Texture_wrap_mode_get_valid_strings(&number_of_valid_strings);
+					wrap_mode_string = ENUMERATOR_STRING(Texture_wrap_mode)(
+						Texture_get_wrap_mode(texture));
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Texture_wrap_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Texture_wrap_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&wrap_mode_string);
 					DEALLOCATE(valid_strings);
 					/* colour */
 					Option_table_add_entry(option_table, "colour", &colour,
 					  NULL,set_Colour);
+					/* depth */
+					Option_table_add_entry(option_table, "depth", &depth,
+					  NULL, set_float_positive);
 					/* distortion */
 					Option_table_add_entry(option_table, "distortion",
 						&texture_distortion,
@@ -8179,10 +8299,12 @@ Modifies the properties of a texture.
 						&image_data, command_data->set_file_name_option_table,
 						gfx_modify_Texture_image);
 					/* linear_filter/nearest_filter */
-					filter_mode_string = Texture_filter_mode_string(
-						Texture_get_filter_mode(texture_to_be_modified_copy));
-					valid_strings =
-						Texture_filter_mode_get_valid_strings(&number_of_valid_strings);
+					filter_mode_string = ENUMERATOR_STRING(Texture_filter_mode)(
+						Texture_get_filter_mode(texture));
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Texture_filter_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Texture_filter_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&filter_mode_string);
 					DEALLOCATE(valid_strings);
@@ -8191,12 +8313,33 @@ Modifies the properties of a texture.
 					Option_table_add_entry(option_table, "movie", &movie,
 					  command_data->movie_graphics_manager, set_Movie_graphics);
 #endif /* defined (SGI_MOVIE_FILE) */
+					/* number_pattern */
+					Option_table_add_entry(option_table, "number_pattern",
+						&file_number_pattern, (void *)1, set_name);
+					/* number_series */
+					Option_table_add_entry(option_table, "number_series",
+						&file_number_series_data, NULL,
+						gfx_modify_Texture_file_number_series);
 					/* raw image storage mode */
-					raw_image_storage_string=Raw_image_storage_string(RAW_PLANAR_RGB);
+					raw_image_storage_string =
+						ENUMERATOR_STRING(Raw_image_storage)(RAW_PLANAR_RGB);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Raw_image_storage)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Raw_image_storage) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &raw_image_storage_string);
+					DEALLOCATE(valid_strings);
+					/* resize_linear_filter/resize_nearest_filter */
+					resize_filter_mode_string =
+						ENUMERATOR_STRING(Texture_resize_filter_mode)(
+							Texture_get_resize_filter_mode(texture));
 					valid_strings =
-						Raw_image_storage_get_valid_strings(&number_of_valid_strings);
+						ENUMERATOR_GET_VALID_STRINGS(Texture_resize_filter_mode)(
+							&number_of_valid_strings, (ENUMERATOR_CONDITIONAL_FUNCTION(
+								Texture_resize_filter_mode) *)NULL, (void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
-						valid_strings,&raw_image_storage_string);
+						valid_strings,&resize_filter_mode_string);
 					DEALLOCATE(valid_strings);
 					/* specify_height */
 					Option_table_add_entry(option_table, "specify_height",&specify_height,
@@ -8229,54 +8372,110 @@ Modifies the properties of a texture.
 					}
 					if (return_code)
 					{
-						if (image_data.image_file_name)
+						if (texture_is_managed)
 						{
-							return_code=Texture_set_image_file(texture_to_be_modified_copy,
-								image_data.image_file_name,specify_width,specify_height,
-								Raw_image_storage_from_string(raw_image_storage_string),
-								image_data.crop_left_margin,image_data.crop_bottom_margin,
-								image_data.crop_width,image_data.crop_height,
-								0.0,0.0,0.0);
+							MANAGER_BEGIN_CHANGE(Texture)(command_data->texture_manager,
+								MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture), texture);
 						}
+						/* must change filter modes etc. before reading new images since
+							 some of them will apply immediately to the new images */
+						Texture_set_combine_alpha(texture, alpha);
+						Texture_set_combine_colour(texture, &colour);
+						Texture_set_physical_size(texture, width,
+							height, depth);
 
-						Texture_set_combine_alpha(texture_to_be_modified_copy, alpha);
-						Texture_set_combine_colour(texture_to_be_modified_copy, &colour);
-						Texture_set_physical_size(texture_to_be_modified_copy,width,height);
+						STRING_TO_ENUMERATOR(Texture_combine_mode)(
+							combine_mode_string, &combine_mode);
+						Texture_set_combine_mode(texture, combine_mode);
 
-						Texture_set_combine_mode(texture_to_be_modified_copy,
-							Texture_combine_mode_from_string(combine_mode_string));
+						STRING_TO_ENUMERATOR(Texture_filter_mode)(
+							filter_mode_string, &filter_mode);
+						Texture_set_filter_mode(texture, filter_mode);
 
-						Texture_set_filter_mode(texture_to_be_modified_copy,
-							Texture_filter_mode_from_string(filter_mode_string));
+						STRING_TO_ENUMERATOR(Texture_resize_filter_mode)(
+							resize_filter_mode_string, &resize_filter_mode);
+						Texture_set_resize_filter_mode(texture,
+							resize_filter_mode);
 
-						Texture_set_wrap_mode(texture_to_be_modified_copy,
-							Texture_wrap_mode_from_string(wrap_mode_string));
+						STRING_TO_ENUMERATOR(Texture_wrap_mode)(
+							wrap_mode_string, &wrap_mode);
+						Texture_set_wrap_mode(texture, wrap_mode);
 
 						if (texture_distortion_data.set)
 						{
 							distortion_centre_x=(float)texture_distortion[0];
 							distortion_centre_y=(float)texture_distortion[1];
 							distortion_factor_k1=(float)texture_distortion[2];
-							Texture_set_distortion_info(texture_to_be_modified_copy,
+							Texture_set_distortion_info(texture,
 								distortion_centre_x,distortion_centre_y,distortion_factor_k1);
 						}
-						if (texture_to_be_modified)
+
+						if (image_data.image_file_name)
 						{
-							MANAGER_MODIFY_NOT_IDENTIFIER(Texture,name)(
-								texture_to_be_modified,texture_to_be_modified_copy,
-								command_data->texture_manager);
-							DESTROY(Texture)(&texture_to_be_modified_copy);
-						}
-						else
-						{
-							texture_to_be_modified=texture_to_be_modified_copy;
+							cmgui_image_information = CREATE(Cmgui_image_information)();
+							/* specify file name(s) */
+							if (0 != file_number_series_data.increment)
+							{
+								if (strstr(image_data.image_file_name, file_number_pattern))
+								{
+									Cmgui_image_information_add_file_name_series(
+										cmgui_image_information,
+										/*file_name_template*/image_data.image_file_name,
+										file_number_pattern,
+										file_number_series_data.start,
+										file_number_series_data.stop,
+										file_number_series_data.increment);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE, "gfx modify texture:  "
+										"File number pattern \"%s\" not found in file name \"%s\"",
+										file_number_pattern, image_data.image_file_name);
+									return_code = 0;
+								}
+							}
+							else
+							{
+								Cmgui_image_information_add_file_name(cmgui_image_information,
+									image_data.image_file_name);
+							}
+							/* specify width and height and raw_image_storage */
+							Cmgui_image_information_set_width(cmgui_image_information,
+								specify_width);
+							Cmgui_image_information_set_height(cmgui_image_information,
+								specify_height);
+							STRING_TO_ENUMERATOR(Raw_image_storage)(
+								raw_image_storage_string, &raw_image_storage);
+							Cmgui_image_information_set_raw_image_storage(
+								cmgui_image_information, raw_image_storage);
+							if (return_code)
+							{
+								if (cmgui_image = Cmgui_image_read(cmgui_image_information))
+								{
+									Texture_set_image(texture, cmgui_image,
+										image_data.image_file_name, file_number_pattern,
+										file_number_series_data.start,
+										file_number_series_data.stop,
+										file_number_series_data.increment,
+										image_data.crop_left_margin, image_data.crop_bottom_margin,
+										image_data.crop_width, image_data.crop_height);
+									DESTROY(Cmgui_image)(&cmgui_image);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"gfx modify texture:  Could not read image file");
+									return_code = 0;
+								}
+							}
+							DESTROY(Cmgui_image_information)(&cmgui_image_information);
 						}
 #if defined (SGI_MOVIE_FILE)
 						if ( movie != old_movie )
 						{
 							/* Movie is outside manager copy so that is updates
 								the correct texture based on movie events */
-							Texture_set_movie(texture_to_be_modified,
+							Texture_set_movie(texture,
 								Movie_graphics_get_X3d_movie(movie),
 								command_data->user_interface, "movie");
 						}
@@ -8284,28 +8483,21 @@ Modifies the properties of a texture.
 						if (evaluate_data.field && evaluate_data.spectrum && 
 							evaluate_data.texture_coordinates_field)
 						{
-							GET_NAME(Computed_field)(evaluate_data.field, &field_name);
-							set_Texture_image_from_field(texture_to_be_modified, 
+							set_Texture_image_from_field(texture, 
 								evaluate_data.field,
 								evaluate_data.texture_coordinates_field, 
 								evaluate_data.spectrum, evaluate_data.element_group,
 								evaluate_data.storage, evaluate_data.width_texels, 
-								evaluate_data.height_texels, field_name,
-								0, 0, 0, 0, command_data->user_interface);
-							DEALLOCATE(field_name);
+								evaluate_data.height_texels, evaluate_data.depth_texels,
+								command_data->user_interface);
 						}
 #if defined (GL_API)
-						texture_to_be_modified->index= -(texture_to_be_modified->index);
+						texture->index= -(texture->index);
 #endif
-#if defined (MS_22AUG96)
-#if defined (OPENGL_API)
-						if (texture_to_be_modified->list_index)
+						if (texture_is_managed)
 						{
-							glDeleteLists(texture_to_be_modified->list_index,1);
-							texture_to_be_modified->list_index=0;
+							MANAGER_END_CHANGE(Texture)(command_data->texture_manager);
 						}
-#endif
-#endif /* defined (MS_22AUG96) */
 					}
 					if (image_data.image_file_name)
 					{
@@ -8334,6 +8526,7 @@ Modifies the properties of a texture.
 					{
 						DEACCESS(Computed_field)(&evaluate_data.texture_coordinates_field);
 					}
+					DEALLOCATE(file_number_pattern);
 				}
 			}
 			else
@@ -8367,7 +8560,6 @@ Modifies the properties of a texture.
 	return (return_code);
 } /* gfx_modify_Texture */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_texture(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -8471,7 +8663,6 @@ Executes a GFX CREATE TEXTURE command.
 
 	return (return_code);
 } /* gfx_create_texture */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_texture_map(struct Parse_state *state,
@@ -8749,7 +8940,7 @@ editor at a time.  This implementation may be changed later.
 static int gfx_create_tracking_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
 Executes a GFX CREATE TRACKING_EDITOR command.
@@ -8797,6 +8988,7 @@ Executes a GFX CREATE TRACKING_EDITOR command.
 					command_data->element_manager,
 					command_data->element_group_manager,
 					command_data->fe_field_manager,
+					command_data->fe_time,
 					command_data->glyph_list,
 					command_data->graphical_material_manager,
 					command_data->default_graphical_material,
@@ -17519,185 +17711,146 @@ Which tool that is being modified is passed in <node_tool_void>.
 	return (return_code);
 } /* execute_command_gfx_node_tool */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_print(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 October 1998
+LAST MODIFIED : 14 March 2002
 
 DESCRIPTION :
 Executes a GFX PRINT command.
 ==============================================================================*/
 {
-	char *file_name,force_onscreen_flag,postscript_flag,rgb_flag,tiff_flag;
-#if ! defined (IMAGEMAGICK)
-	enum Image_file_format file_format;
-#endif /* ! defined (IMAGEMAGICK) */
-	int height, return_code, width;
+	char *file_name, force_onscreen_flag, *image_file_format_string,
+		**valid_strings;
+	enum Image_file_format image_file_format;
+	int height, number_of_valid_strings, return_code, width;
+	struct Cmgui_image *cmgui_image;
+	struct Cmgui_image_information *cmgui_image_information;
 	struct Cmiss_command_data *command_data;
 	struct Graphics_window *window;
-	struct Option_table *format_option_table, *option_table;
+	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_print);
 	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
+	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		/* initialize defaults */
+		file_name = (char *)NULL;
+		height = 0;
+		force_onscreen_flag = 0;
+		width = 0;
+		/* default file format is to obtain it from the filename extension */
+		image_file_format = UNKNOWN_IMAGE_FILE_FORMAT;
+		/* must have at least one graphics_window to print */
+		if (window = FIRST_OBJECT_IN_MANAGER_THAT(
+			Graphics_window)((MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
+				(void *)NULL, command_data->graphics_window_manager))
 		{
-			/* initialize defaults */
-			file_name=(char *)NULL;
-			height = 0;
-			force_onscreen_flag = 0;
-			width = 0;
-			/* default is postscript (see later) */
-			postscript_flag=0;
-			rgb_flag=0;
-			tiff_flag=0;
-			/* must have at least one graphics_window to print */
-			if (window=FIRST_OBJECT_IN_MANAGER_THAT(
-				Graphics_window)((MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
-					(void *)NULL,command_data->graphics_window_manager))
-			{
-				ACCESS(Graphics_window)(window);
-			}
+			ACCESS(Graphics_window)(window);
+		}
 
-			option_table = CREATE(Option_table)();
-			/* file */
-			Option_table_add_entry(option_table, "file", &file_name,
-				(void *)1, set_name);
-			/* force_onscreen */
-			Option_table_add_entry(option_table, "force_onscreen",
-				&force_onscreen_flag, NULL, set_char_flag);
-			/* height */
-			Option_table_add_entry(option_table, "height",
-				&height, NULL, set_int_non_negative);
-			/* postscript/rgb/tiff */
-			format_option_table=CREATE(Option_table)();
-			Option_table_add_entry(format_option_table,"postscript",
-				&postscript_flag,NULL,set_char_flag);
-			Option_table_add_entry(format_option_table,"rgb",
-				&rgb_flag,NULL,set_char_flag);
-			Option_table_add_entry(format_option_table,"tiff",
-				&tiff_flag,NULL,set_char_flag);
-			Option_table_add_suboption_table(option_table,format_option_table);
-			/* width */
-			Option_table_add_entry(option_table, "width",
-				&width, NULL, set_int_non_negative);
-			/* window */
-			Option_table_add_entry(option_table, "window",
-				&window, command_data->graphics_window_manager, set_Graphics_window);
+		option_table = CREATE(Option_table)();
+		/* image file format */
+		image_file_format_string =
+			ENUMERATOR_STRING(Image_file_format)(image_file_format);
+		valid_strings = ENUMERATOR_GET_VALID_STRINGS(Image_file_format)(
+			&number_of_valid_strings,
+			(ENUMERATOR_CONDITIONAL_FUNCTION(Image_file_format) *)NULL,
+			(void *)NULL);
+		Option_table_add_enumerator(option_table, number_of_valid_strings,
+			valid_strings, &image_file_format_string);
+		DEALLOCATE(valid_strings);
+		/* file */
+		Option_table_add_entry(option_table, "file", &file_name,
+			(void *)1, set_name);
+		/* force_onscreen */
+		Option_table_add_entry(option_table, "force_onscreen",
+			&force_onscreen_flag, NULL, set_char_flag);
+		/* height */
+		Option_table_add_entry(option_table, "height",
+			&height, NULL, set_int_non_negative);
+		/* width */
+		Option_table_add_entry(option_table, "width",
+			&width, NULL, set_int_non_negative);
+		/* window */
+		Option_table_add_entry(option_table, "window",
+			&window, command_data->graphics_window_manager, set_Graphics_window);
 
-			return_code=Option_table_multi_parse(option_table,state);
-			DESTROY(Option_table)(&option_table);
-			/* no errors, not asking for help */
-			if (return_code)
+		return_code = Option_table_multi_parse(option_table, state);
+		DESTROY(Option_table)(&option_table);
+		/* no errors, not asking for help */
+		if (return_code)
+		{
+			if (!file_name)
 			{
-				if (!file_name)
+				if (!(file_name = confirmation_get_write_filename(NULL,
+					command_data->user_interface)))
 				{
-					if (!(file_name = confirmation_get_write_filename(NULL,
-						command_data->user_interface)))
-					{
-						return_code = 0;
-					}					
-				}
-				if (!window)
-				{
-					display_message(ERROR_MESSAGE,"No graphics windows to print");
-					return_code=0;
-				}
-				if (rgb_flag||postscript_flag||tiff_flag)
-				{
-					if (rgb_flag+postscript_flag+tiff_flag == 1)
-					{
-#if defined (IMAGEMAGICK)
-						/* For imagemagick each type of file format does not
-							have to be implemented as the format is automatically
-							determined from the file suffix or prefix */
-						char *extended_filename;
-						if ((!strchr(file_name, ':'))&&
-							(ALLOCATE(extended_filename, char, strlen(file_name) + 6)))
-						{
-							if (rgb_flag)
-							{
-								sprintf(extended_filename, "sgi:%s", file_name);
-							}
-							else if (postscript_flag)
-							{
-								sprintf(extended_filename, "ps:%s", file_name);
-							}
-							else
-							{
-								sprintf(extended_filename, "tiff:%s", file_name);
-							}
-							DEALLOCATE(file_name);
-							file_name = extended_filename;
-						}
-#else /* defined (IMAGEMAGICK) */
-							if (rgb_flag)
-							{
-								file_format = RGB_FILE_FORMAT;
-							}
-							else if (postscript_flag)
-							{
-								file_format = POSTSCRIPT_FILE_FORMAT;
-							}
-							else
-							{
-								file_format = TIFF_FILE_FORMAT;
-							}						
-#endif /* defined (IMAGEMAGICK) */
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Specify only one of postscript|rgb|tiff.");
-						return_code=0;
-					}
-				}
-#if ! defined (IMAGEMAGICK)
-				else
-				{
-					display_message(ERROR_MESSAGE,"A file format type (postscript|rgb|tiff) is required.");
-					return_code=0;
-				}
-#endif /* ! defined (IMAGEMAGICK) */
-				if (return_code)
-				{
-#if defined (IMAGEMAGICK)
-					write_Graphics_window_to_file(file_name,
-						window, force_onscreen_flag, width, height);
-#else /* defined (IMAGEMAGICK) */
-					write_Graphics_window_to_file(file_name,
-						window, file_format, force_onscreen_flag, width, height);
-#endif /* defined (IMAGEMAGICK) */
-				}
-			} /* parse error, help */
-			if (window)
-			{
-				DEACCESS(Graphics_window)(&window);
+					display_message(ERROR_MESSAGE, "gfx print:  No file name specified");
+					return_code = 0;
+				}					
 			}
-			if (file_name)
+			if (!window)
 			{
-				DEALLOCATE(file_name);
+				display_message(ERROR_MESSAGE,
+					"gfx print:  No graphics windows to print");
+				return_code = 0;
 			}
 		}
-		else
+		if (return_code)
 		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_gfx_print.  Missing command_data");
-			return_code=0;
+			cmgui_image_information = CREATE(Cmgui_image_information)();
+			if (image_file_format_string)
+			{
+				STRING_TO_ENUMERATOR(Image_file_format)(
+					image_file_format_string, &image_file_format);
+			}
+			else
+			{
+				image_file_format = UNKNOWN_IMAGE_FILE_FORMAT;
+			}
+			Cmgui_image_information_set_image_file_format(
+				cmgui_image_information, image_file_format);
+			Cmgui_image_information_add_file_name(cmgui_image_information,
+				file_name);
+			if (cmgui_image = Graphics_window_get_image(window,
+				force_onscreen_flag, width, height))
+			{
+				if (!Cmgui_image_write(cmgui_image, cmgui_image_information))
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx print:  Error writing image %s", file_name);
+					return_code = 0;
+				}
+				DESTROY(Cmgui_image)(&cmgui_image);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"execute_command_gfx_print.  Could not get image from window");
+				return_code = 0;
+			}
+			DESTROY(Cmgui_image_information)(&cmgui_image_information);
+		}
+		if (window)
+		{
+			DEACCESS(Graphics_window)(&window);
+		}
+		if (file_name)
+		{
+			DEALLOCATE(file_name);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"execute_command_gfx_print.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"execute_command_gfx_print.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* execute_command_gfx_print */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_read_Control_curve(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -22077,385 +22230,213 @@ Executes a GFX WRITE_ELEMENT_LAYOUT command.
 	return (return_code);
 } /* execute_command_gfx_write_element_layout */
 
-#if defined (IMAGEMAGICK)
 static int gfx_write_texture(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 May 1999
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 Executes a GFX WRITE TEXTURE command.
 ==============================================================================*/
 {
-	char *current_token,*extended_filename,*file_name,postscript_flag,
-		rgb_flag,tiff_flag;
-	int return_code;
+	char *current_token, *file_name, *file_number_pattern,
+		*image_file_format_string, **valid_strings;
+	enum Image_file_format image_file_format;
+	int number_of_bytes_per_component, number_of_valid_strings,
+		original_depth_texels, original_height_texels, original_width_texels,
+		return_code;
+	struct Cmgui_image *cmgui_image;
+	struct Cmgui_image_information *cmgui_image_information;
 	struct Cmiss_command_data *command_data;
-	struct Option_table *format_option_table, *option_table;
+	struct Option_table *option_table;
 	struct Texture *texture;
 
 	ENTER(gfx_write_texture);
 	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
+	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		texture = (struct Texture *)NULL;
+		if (current_token = state->current_token)
 		{
-			texture = (struct Texture *)NULL;
-			if (current_token=state->current_token)
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
 			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				if (command_data->texture_manager)
 				{
-					if (command_data->texture_manager)
+					if (texture = FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)
+						(current_token, command_data->texture_manager))
 					{
-						if (texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)
-							(current_token,command_data->texture_manager))
-						{
-							return_code=shift_Parse_state(state,1);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"gfx_write_texture.  Unknown texture : %s",
-								current_token);
-							display_parse_state_location(state);
-							return_code=0;
-						}
+						return_code = shift_Parse_state(state, 1);
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"gfx_write_Texture.  Missing texture manager");
-						return_code=0;
+							"gfx write texture:  Unknown texture : %s",current_token);
+						display_parse_state_location(state);
+						return_code = 0;
 					}
 				}
 				else
 				{
-					display_message(INFORMATION_MESSAGE,
-						" TEXTURE_NAME");
-					return_code = 1;
-					/* By not shifting the parse state the rest of the help should come out */
+					display_message(ERROR_MESSAGE,
+						"gfx_write_texture.  Missing texture manager");
+					return_code = 0;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"gfx_modify_Texture.  Missing texture name");
-				return_code=0;
+				display_message(INFORMATION_MESSAGE, " TEXTURE_NAME");
+				return_code = 1;
+				/* by not shifting parse state the rest of the help should come out */
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx write texture:  Missing texture name");
+			return_code = 0;
+		}
+		if (return_code)
+		{
+			/* initialize defaults */
+			file_name = (char *)NULL;
+			file_number_pattern = (char *)NULL;
+			/* default file format is to obtain it from the filename extension */
+			image_file_format = UNKNOWN_IMAGE_FILE_FORMAT;
+			if (texture)
+			{
+				/* by default, save as much information as there is in the texture */
+				number_of_bytes_per_component =
+					Texture_get_number_of_bytes_per_component(texture);
+			}
+			else
+			{
+				number_of_bytes_per_component = 1;
 			}
 
+			option_table = CREATE(Option_table)();
+			/* image file format */
+			image_file_format_string =
+				ENUMERATOR_STRING(Image_file_format)(image_file_format);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Image_file_format)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Image_file_format) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table, number_of_valid_strings,
+				valid_strings, &image_file_format_string);
+			/* bytes_per_component */
+			Option_table_add_entry(option_table, "bytes_per_component",
+				&number_of_bytes_per_component, (void *)NULL, set_int_positive);
+			/* file */
+			Option_table_add_entry(option_table, "file", &file_name,
+				(void *)1, set_name);
+			/* number_pattern */
+			Option_table_add_entry(option_table, "number_pattern",
+				&file_number_pattern, (void *)1, set_name);
+			DEALLOCATE(valid_strings);
+			return_code = Option_table_multi_parse(option_table, state);
+			/* no errors, not asking for help */
 			if (return_code)
 			{
-				/* initialize defaults */
-				file_name=(char *)NULL;
-				postscript_flag=0;
-				rgb_flag=0;
-				tiff_flag=0;
-
-				option_table=CREATE(Option_table)();
-				/* file */
-				Option_table_add_entry(option_table, "file", &file_name,
-					(void *)1, set_name);
-				/* postscript/rgb/tiff */
-				format_option_table=CREATE(Option_table)();
-				Option_table_add_entry(format_option_table,"postscript",
-					&postscript_flag,NULL,set_char_flag);
-				Option_table_add_entry(format_option_table,"rgb",
-					&rgb_flag,NULL,set_char_flag);
-				Option_table_add_entry(format_option_table,"tiff",
-					&tiff_flag,NULL,set_char_flag);
-				Option_table_add_suboption_table(option_table,format_option_table);
-
-				return_code=Option_table_multi_parse(option_table,state);
-				DESTROY(Option_table)(&option_table);
-				/* no errors, not asking for help */
-				if (return_code)
+				if (!file_name)
 				{
-					if (postscript_flag + rgb_flag + tiff_flag > 1)
+					if (!(file_name = confirmation_get_write_filename(NULL,
+						command_data->user_interface)))
 					{
-						display_message(ERROR_MESSAGE,"gfx_write_texture.  Specify only one of postscript, rgb or tiff");
+						display_message(ERROR_MESSAGE,
+							"gfx write texture:  No file name specified");
+						return_code = 0;
+					}					
+				}
+				if ((1 != number_of_bytes_per_component) &&
+					(2 != number_of_bytes_per_component))
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx write texture:  bytes_per_component may be 1 or 2");
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				cmgui_image_information = CREATE(Cmgui_image_information)();
+				if (image_file_format_string)
+				{
+					STRING_TO_ENUMERATOR(Image_file_format)(
+						image_file_format_string, &image_file_format);
+				}
+				Cmgui_image_information_set_image_file_format(
+					cmgui_image_information, image_file_format);
+				Cmgui_image_information_set_number_of_bytes_per_component(
+					cmgui_image_information, number_of_bytes_per_component);
+				if (file_number_pattern)
+				{
+					if (strstr(file_name, file_number_pattern))
+					{
+						/* number images from 1 to the number of depth texels used */
+						if (Texture_get_original_size(texture, &original_width_texels,
+							&original_height_texels, &original_depth_texels))
+						{
+							Cmgui_image_information_add_file_name_series(
+								cmgui_image_information, file_name, file_number_pattern,
+								/*start_file_number*/1,
+								/*stop_file_number*/original_depth_texels,
+								/*file_number_increment*/1);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "gfx write texture:  "
+							"File number pattern \"%s\" not found in file name \"%s\"",
+							file_number_pattern, file_name);
 						return_code = 0;
 					}
-					if(!texture)
-					{
-						display_message(ERROR_MESSAGE,"gfx_write_texture.  Specify texture to write");
-						return_code=0;
-					}
+				}
+				else
+				{
+					Cmgui_image_information_add_file_name(cmgui_image_information,
+						file_name);
 				}
 				if (return_code)
 				{
-					if (!file_name)
+					if (cmgui_image = Texture_get_image(texture))
 					{
-						if (!(file_name = confirmation_get_write_filename(NULL,
-							command_data->user_interface)))
+						if (!Cmgui_image_write(cmgui_image, cmgui_image_information))
 						{
+							display_message(ERROR_MESSAGE,
+								"gfx write texture:  Error writing image %s", file_name);
 							return_code = 0;
 						}
-					}
-					if ((postscript_flag|rgb_flag|tiff_flag) &&
-						(!strchr(file_name, ':')) &&
-						ALLOCATE(extended_filename, char, strlen(file_name) + 6))
-					{
-						if (rgb_flag)
-						{
-							sprintf(extended_filename, "sgi:%s", file_name);
-						}
-						else if (postscript_flag)
-						{
-							sprintf(extended_filename, "ps:%s", file_name);
-						}
-						else
-						{
-							sprintf(extended_filename, "tiff:%s", file_name);
-						}
-						DEALLOCATE(file_name);
-						file_name = extended_filename;
-					}
-				}
-				if (return_code)
-				{
-					Texture_write_to_file(texture, file_name);
-				} /* parse error, help */
-				if (file_name)
-				{
-					DEALLOCATE(file_name);
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_write_texture.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_write_texture.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_write_texture */
-#else /* defined (IMAGEMAGICK) */
-static int gfx_write_texture(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 28 May 1999
-
-DESCRIPTION :
-Executes a GFX WRITE TEXTURE command.
-==============================================================================*/
-{
-	auto struct Modifier_entry
-		landscape_portrait_option_table[]=
-		{
-			{"landscape",NULL,NULL,set_char_flag},
-			{"portrait",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{"file",NULL,(void *)1,set_name},
-			{NULL,NULL,NULL,NULL},
-			{NULL,NULL,NULL,NULL},
-			{NULL,NULL,NULL,NULL}
-		},
-		postscript_rgb_tiff_option_table[]=
-		{
-			{"postscript",NULL,NULL,set_char_flag},
-			{"rgb",NULL,NULL,set_char_flag},
-			{"tiff",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		};
-	char *current_token,*file_name,landscape_flag,portrait_flag,postscript_flag,
-		rgb_flag,tiff_flag;
-	enum Image_file_format file_format;
-	enum Image_orientation orientation;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	struct Texture *texture;
-
-	ENTER(gfx_write_texture);
-	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			texture = (struct Texture *)NULL;
-			if (current_token=state->current_token)
-			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				{
-					if (command_data->texture_manager)
-					{
-						if (texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)
-							(current_token,command_data->texture_manager))
-						{
-							return_code=shift_Parse_state(state,1);
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"gfx_write_texture.  Unknown texture : %s",
-								current_token);
-							display_parse_state_location(state);
-							return_code=0;
-						}
+						DESTROY(Cmgui_image)(&cmgui_image);
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"gfx_write_Texture.  Missing texture manager");
-						return_code=0;
+							"gfx_write_texture.  Could not get image from texture");
+						return_code = 0;
 					}
 				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE,
-						" TEXTURE_NAME");
-					return_code = 1;
-					/* By not shifting the parse state the rest of the help should come out */
-				}
+				DESTROY(Cmgui_image_information)(&cmgui_image_information);
 			}
-			else
+			DESTROY(Option_table)(&option_table);
+			if (file_name)
 			{
-				display_message(ERROR_MESSAGE,
-					"gfx_modify_Texture.  Missing texture name");
-				return_code=0;
+				DEALLOCATE(file_name);
 			}
-
-			if (return_code)
+			if (file_number_pattern)
 			{
-				/* initialize defaults */
-				file_name=(char *)NULL;
-				landscape_flag=0;
-				portrait_flag=0;
-				postscript_flag=0;
-				rgb_flag=0;
-				tiff_flag=0;
-
-				(option_table[0]).to_be_modified= &file_name;
-				(landscape_portrait_option_table[0]).to_be_modified= &landscape_flag;
-				(landscape_portrait_option_table[1]).to_be_modified= &portrait_flag;
-				(option_table[1]).user_data=landscape_portrait_option_table;
-				(postscript_rgb_tiff_option_table[0]).to_be_modified= &postscript_flag;
-				(postscript_rgb_tiff_option_table[1]).to_be_modified= &rgb_flag;
-				(postscript_rgb_tiff_option_table[2]).to_be_modified= &tiff_flag;
-				(option_table[2]).user_data=postscript_rgb_tiff_option_table;
-				return_code=process_multiple_options(state,option_table);
-				/* no errors, not asking for help */
-				if (return_code)
-				{
-					if (postscript_flag + rgb_flag + tiff_flag > 1)
-					{
-						display_message(ERROR_MESSAGE,"gfx_write_texture.  Specify only one of postscript, rgb or tiff");
-						return_code = 0;
-					}
-					if (landscape_flag && portrait_flag)
-					{
-						display_message(ERROR_MESSAGE,"gfx_write_texture.  Specify only one of landscape or portrait");
-						return_code = 0;
-					}
-					if (postscript_flag + rgb_flag + tiff_flag == 0)
-					{
-						display_message(ERROR_MESSAGE,"gfx_write_texture.  Must specify one of postscript, rgb or tiff");
-						return_code = 0;
-					}				
-					if(!texture)
-					{
-						display_message(ERROR_MESSAGE,"gfx_write_texture.  Specify texture to write");
-						return_code=0;
-					}
-				}
-				if (return_code)
-				{
-					if (rgb_flag)
-					{
-						file_format = RGB_FILE_FORMAT;
-					}
-					else if (tiff_flag)
-					{
-						file_format = TIFF_FILE_FORMAT;
-					}
-					else if (postscript_flag)
-					{
-						file_format = POSTSCRIPT_FILE_FORMAT;
-					}
-					if (landscape_flag)
-					{
-						orientation = LANDSCAPE_ORIENTATION;
-					}
-					else
-					{
-						/* Default */
-						orientation = PORTRAIT_ORIENTATION;
-					}
-					if (!file_name)
-					{
-						switch (file_format)
-						{
-							case RGB_FILE_FORMAT:
-							{
-								if (!(file_name = confirmation_get_write_filename(".rgb",
-									command_data->user_interface)))
-								{
-									return_code = 0;
-								}
-							} break;
-							case TIFF_FILE_FORMAT:
-							{
-								if (!(file_name = confirmation_get_write_filename(".tiff",
-									command_data->user_interface)))
-								{
-									return_code = 0;
-								}					
-							} break;
-							case POSTSCRIPT_FILE_FORMAT:
-							{
-								if (!(file_name = confirmation_get_write_filename(".ps",
-									command_data->user_interface)))
-								{
-									return_code = 0;
-								}					
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,"gfx_write_texture.  Error setting file extension");
-								return_code = 0;							
-							} break;
-						}
-					}
-				}
-				if (return_code)
-				{
-					Texture_write_to_file(texture, file_name, file_format, orientation);
-				} /* parse error, help */
-				if (file_name)
-				{
-					DEALLOCATE(file_name);
-				}
+				DEALLOCATE(file_number_pattern);
 			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_write_texture.  Missing command_data");
-			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_write_texture.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "gfx_write_texture.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* gfx_write_texture */
-#endif /* defined (IMAGEMAGICK) */
 
 static int execute_command_gfx_write(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
