@@ -30,7 +30,7 @@ cmgui-debug :
 
 cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE=USER_INTERFACE=MOTIF_USER_INTERFACE
 cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX=DYNAMIC_GL_LINUX=true
-cmgui cmgui-dynamicgl cmgui64 : DEBUG=DEBUG=false
+cmgui cmgui-dynamicgl cmgui64 cmgui-console cmgui-gtk : DEBUG=DEBUG=false
 cmgui-debug cmgui-dynamicgl-debug cmgui64-debug : DEBUG=DEBUG=true
 cmgui64 cmgui64-debug : ABI=ABI=64
 cmgui-debug-memorycheck : MEMORYCHECK=MEMORYCHECK=true
