@@ -1,8 +1,11 @@
 SHELL=/bin/sh
-VPATH=$(CMISS_ROOT)/cmgui
+PRODUCT_PATH=$(CMISS_ROOT)/cmgui
+PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
 TEST_PATH=$(CMISS_ROOT)/cmgui/test_examples
-BIN_PATH=bin
+BIN_PATH=devbin
 SOURCE_PATH=source
+
+VPATH=$(PRODUCT_PATH)
 
 #SGI debug version
 $(BIN_PATH)/cmgui : force $(SOURCE_PATH)/cmgui_sgi.make
@@ -10,7 +13,7 @@ $(BIN_PATH)/cmgui : force $(SOURCE_PATH)/cmgui_sgi.make
 	if [ -f cmgui_sgi.make ]; then \
 		make -f cmgui_sgi.make CMGUI_ROOT=$(PWD) ; \
 	else \
-		make -f $(VPATH)/cmgui_sgi.make; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi.make CMGUI_ROOT=$(PWD) ; \
 	fi
 
 $(SOURCE_PATH)/cmgui_sgi.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
@@ -21,98 +24,120 @@ $(SOURCE_PATH)/cmgui_sgi.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 	if [ -f cmgui.imake ]; then \
 		imake -DIRIX $${CMISS_ROOT_DEF} -s cmgui_sgi.make -T cmgui.imake -f /dev/null; \
 	else \
-		imake -DIRIX $${CMISS_ROOT_DEF} -s cmgui_sgi.make -T $(VPATH)/source/cmgui.imake -f /dev/null; \
+		imake -DIRIX $${CMISS_ROOT_DEF} -s cmgui_sgi.make -T $(PRODUCT_SOURCE_PATH)/cmgui.imake -f /dev/null; \
 	fi
 
 #SGI optimised version
-$(BIN_PATH)/cmgui_optimised : force cmgui_sgioptimised.make
+$(BIN_PATH)/cmgui_optimised : force $(SOURCE_PATH)/cmgui_sgioptimised.make
+	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgioptimised.make ]; then \
-		make -f cmgui_sgioptimised.make; \
+		make -f cmgui_sgioptimised.make CMGUI_ROOT=$(PWD) ; \
 	else \
-		make -f $(VPATH)/cmgui_sgioptimised.make; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgioptimised.make CMGUI_ROOT=$(PWD) ; \
 	fi	
 
-cmgui_sgioptimised.make : cmgui.imake cmgui.make
+$(SOURCE_PATH)/cmgui_sgioptimised.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
+	cd $(SOURCE_PATH); \
+	if [ ! -z $${CMISS_ROOT:=""} ] ; then \
+		CMISS_ROOT_DEF=-DCMISS_ROOT_DEFINED; \
+	fi ; \
 	if [ -f cmgui.imake ]; then \
-		imake -DIRIX -DOPTIMISED -s cmgui_sgioptimised.make -T cmgui.imake -f /dev/null; \
+		imake -DIRIX -DOPTIMISED $${CMISS_ROOT_DEF} -s cmgui_sgioptimised.make -T cmgui.imake -f /dev/null; \
 	else \
-		imake -DIRIX -DOPTIMISED -s cmgui_sgioptimised.make -T $(VPATH)/cmgui.imake -f /dev/null; \
+		imake -DIRIX -DOPTIMISED $${CMISS_ROOT_DEF} -s cmgui_sgioptimised.make -T $(PRODUCT_SOURCE_PATH)/source/cmgui.imake -f /dev/null; \
 	fi
 
 #SGI optimised lite version
-$(BIN_PATH)/cmgui_lite : force cmgui_sgilite.make
+$(BIN_PATH)/cmgui_lite : force $(SOURCE_PATH)/cmgui_sgilite.make
+	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgilite.make ]; then \
-		make -f cmgui_sgilite.make; \
+		make -f cmgui_sgilite.make CMGUI_ROOT=$(PWD) ; \
 	else \
-		make -f $(VPATH)/cmgui_sgilite.make; \
+		make -f $(VPATH)/cmgui_sgilite.make CMGUI_ROOT=$(PWD) ; \
 	fi	
 
-cmgui_sgilite.make : cmgui.imake cmgui.make
+$(SOURCE_PATH)/cmgui_sgilite.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
+	cd $(SOURCE_PATH); \
+	if [ ! -z $${CMISS_ROOT:=""} ] ; then \
+		CMISS_ROOT_DEF=-DCMISS_ROOT_DEFINED; \
+	fi ; \
 	if [ -f cmgui.imake ]; then \
-		imake -DIRIX -DOPTIMISED -DLITEWEIGHT -s cmgui_sgilite.make -T cmgui.imake -f /dev/null; \
+		imake -DIRIX -DOPTIMISED -DLITEWEIGHT $${CMISS_ROOT_DEF} -s cmgui_sgilite.make -T cmgui.imake -f /dev/null; \
 	else \
-		imake -DIRIX -DOPTIMISED -DLITEWEIGHT -s cmgui_sgilite.make -T $(VPATH)/cmgui.imake -f /dev/null; \
+		imake -DIRIX -DOPTIMISED -DLITEWEIGHT $${CMISS_ROOT_DEF} -s cmgui_sgilite.make -T $(PRODUCT_SOURCE_PATH)/cmgui.imake -f /dev/null; \
 	fi
 
 #SGI debug memory check version
-$(BIN_PATH)/cmgui_memorycheck : force cmgui_sgi_memorycheck.make
+$(BIN_PATH)/cmgui_memorycheck : force $(SOURCE_PATH)/cmgui_sgi_memorycheck.make
+	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgi_memorycheck.make ]; then \
-		make -f cmgui_sgi_memorycheck.make; \
+		make -f cmgui_sgi_memorycheck.make CMGUI_ROOT=$(PWD) ; \
 	else \
-		make -f $(VPATH)/cmgui_sgi_memorycheck.make; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi_memorycheck.make CMGUI_ROOT=$(PWD) ; \
 	fi
 
-cmgui_sgi_memorycheck.make : cmgui.imake cmgui.make
+$(SOURCE_PATH)/cmgui_sgi_memorycheck.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
+	cd $(SOURCE_PATH); \
 	if [ -f cmgui.imake ]; then \
-		imake -DIRIX -DMEMORY_CHECK -s cmgui_sgi_memorycheck.make -T cmgui.imake -f /dev/null; \
+		imake -DIRIX -DMEMORY_CHECK $${CMISS_ROOT_DEF} -s cmgui_sgi_memorycheck.make -T cmgui.imake -f /dev/null; \
 	else \
-		imake -DIRIX -DMEMORY_CHECK -s cmgui_sgi_memorycheck.make -T $(VPATH)/cmgui.imake -f /dev/null; \
+		imake -DIRIX -DMEMORY_CHECK $${CMISS_ROOT_DEF} -s cmgui_sgi_memorycheck.make -T $(PRODUCT_SOURCE_PATH)/cmgui.imake -f /dev/null; \
 	fi
 
 #SGI 64bit version
-$(BIN_PATH)/cmgui64 : force cmgui_sgi64.make
+$(BIN_PATH)/cmgui64 : force $(SOURCE_PATH)/cmgui_sgi64.make
+	cd $(SOURCE_PATH); \
 	if [ -f cmgui_sgi64.make ]; then \
-		make -f cmgui_sgi64.make; \
+		make -f cmgui_sgi64.make CMGUI_ROOT=$(PWD) ; \
 	else \
-		make -f $(VPATH)/cmgui_sgi64.make; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi64.make CMGUI_ROOT=$(PWD) ; \
 	fi	
 
-cmgui_sgi64.make : cmgui.imake cmgui.make
+$(SOURCE_PATH)/cmgui_sgi64.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
+	cd $(SOURCE_PATH); \
+	if [ ! -z $${CMISS_ROOT:=""} ] ; then \
+		CMISS_ROOT_DEF=-DCMISS_ROOT_DEFINED; \
+	fi ; \
 	if [ -f cmgui.imake ]; then \
-		imake -DIRIX -DO64 -DOPTIMISED -s cmgui_sgi64.make -T cmgui.imake -f /dev/null; \
+		imake -DIRIX -DO64 -DOPTIMISED $${CMISS_ROOT_DEF} -s cmgui_sgi64.make -T cmgui.imake -f /dev/null; \
 	else \
-		imake -DIRIX -DO64 -DOPTIMISED -s cmgui_sgi64.make -T $(VPATH)/cmgui.imake -f /dev/null; \
+		imake -DIRIX -DO64 -DOPTIMISED $${CMISS_ROOT_DEF} -s cmgui_sgi64.make -T $(PRODUCT_SOURCE_PATH)/cmgui.imake -f /dev/null; \
 	fi
 
 #Linux version
-$(BIN_PATH)/cmgui_linux : force cmgui_linux.make
+$(BIN_PATH)/cmgui_linux : force $(SOURCE_PATH)/cmgui_linux.make
+	cd $(SOURCE_PATH); \
 	if [ -f cmgui_linux.make ]; then \
-		make -f cmgui_linux.make; \
+		make -f cmgui_linux.make CMGUI_ROOT=$(PWD) ; \
 	else \
-		make -f $(VPATH)/cmgui_linux.make; \
+		make -f $(PRODUCT_SOURCE_PATH)/cmgui_linux.make CMGUI_ROOT=$(PWD) ; \
 	fi
 
-cmgui_linux.make : cmgui.imake cmgui.make
+$(SOURCE_PATH)/cmgui_linux.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
+	cd $(SOURCE_PATH); \
+	if [ ! -z $${CMISS_ROOT:=""} ] ; then \
+		CMISS_ROOT_DEF=-DCMISS_ROOT_DEFINED; \
+	fi ; \
 	if [ -f cmgui.imake ]; then \
-		imake -DLINUX -s cmgui_linux.make -T cmgui.imake -f /dev/null; \
+		imake -DLINUX $${CMISS_ROOT_DEF} -s cmgui_linux.make -T cmgui.imake -f /dev/null; \
 	else \
-		imake -DLINUX -s cmgui_linux.make -T $(VPATH)/cmgui.imake -f /dev/null; \
+		imake -DLINUX $${CMISS_ROOT_DEF} -s cmgui_linux.make -T $(PRODUCT_SOURCE_PATH)/cmgui.imake -f /dev/null; \
 	fi
 
 update :
-	if ( [ "$(PWD)" -ef "$(VPATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
+	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
 		cvs update && \
 		chgrp -R cmgui_programmers * && \
-		make -f cmgui.make CMGUI_BASE_DIRECTORY=$(VPATH) cmgui cmgui_optimised cmgui64 cmgui_lite cmgui_memorycheck && \
-		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(VPATH) ; make -f cmgui.make cmgui_linux' && \
+		make -f cmgui.make cmgui cmgui_optimised cmgui64 cmgui_lite cmgui_memorycheck && \
+		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; make -f cmgui.make cmgui_linux' && \
 		chgrp -R cmgui_programmers *; \
 	else \
-		echo "Must be cmiss and in $(VPATH)"; \
+		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
 	fi
 
 depend : cmgui_sgi.make cmgui_sgioptimised.make cmgui_sgi64.make cmgui_linux.make cmgui_sgi_memorycheck.make
 	if [ "$(USER)" = "cmiss" ]; then \
-		cd $(VPATH); \
+		cd $(PRODUCT_SOURCE_PATH); \
 		make -f cmgui_sgi.make depend ; \
 		make -f cmgui_sgioptimised.make depend ; \
 		make -f cmgui_sgi_memorycheck.make depend ; \
@@ -135,7 +160,7 @@ run_tests :
 
 cronjob :
 	if [ "$(USER)" = "cmiss" ]; then \
-		cd $(VPATH); \
+		cd $(PRODUCT_PATH); \
 		echo -n > programmer.mail ; \
 		if ! make -f cmgui.make depend; then \
 			cat dependfail.mail >> programmer.mail ; \
