@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.c
 
-LAST MODIFIED : 27 March 2000
+LAST MODIFIED : 12 May 2000
 
 DESCRIPTION :
 A module for supporting command parsing.
@@ -1401,6 +1401,60 @@ of option_table!
 	return (return_code);
 } /* Option_table_add_suboption_table */
 
+int Option_table_add_switch(struct Option_table *option_table,
+	char *on_string,char *off_string,int *value_address)
+/*******************************************************************************
+LAST MODIFIED : 12 May 2000
+
+DESCRIPTION :
+Adds a newly created suboption table containing 2 items:
+an <on_string> token that invokes set_int_switch with <value_address>;
+an <off_string> token that invokes unset_int_switch with <value_address>;
+The <on_string> and <off_string> should be static, eg. passed in quotes.
+==============================================================================*/
+{
+	int return_code;
+	struct Option_table *suboption_table;
+
+	ENTER(Option_table_add_switch);
+	if (option_table&&on_string&&off_string&&value_address)
+	{
+		if (option_table->valid)
+		{
+			if (suboption_table=CREATE(Option_table)())
+			{
+				Option_table_add_entry(suboption_table,on_string,
+					value_address,on_string,set_int_switch);
+				Option_table_add_entry(suboption_table,off_string,
+					value_address,off_string,unset_int_switch);
+				return_code=
+					Option_table_add_suboption_table(option_table,suboption_table);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Option_table_add_switch.  Not enough memory");
+				return_code=0;
+				option_table->valid=0;
+			}
+		}
+		else
+		{
+			/* report no further errors */
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_switch.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_switch */
+
 int set_enumerator_string(struct Parse_state *state,
 	void *enumerator_string_address_void,void *enumerator_string_value_void)
 /*******************************************************************************
@@ -1914,6 +1968,52 @@ DESCRIPTION :
 
 	return (return_code);
 } /* destroy_Parse_state */
+
+int Parse_state_help_mode(struct Parse_state *state)
+/*******************************************************************************
+LAST MODIFIED : 12 May 2000
+
+DESCRIPTION :
+Returns 1 if the current_token in <state> is either of
+PARSER_HELP_STRING or PARSER_RECURSIVE_HELP_STRING.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code;
+
+	ENTER(Parse_state_help_mode);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				/* non-help token */
+				return_code=0;
+			}
+			else
+			{
+				/* help token */
+				return_code=1;
+			}
+		}
+		else
+		{
+			/* no token */
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Parse_state_help_mode.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Parse_state_help_mode */
 
 int shift_Parse_state(struct Parse_state *state,int shift)
 /*******************************************************************************
@@ -2484,7 +2584,6 @@ Clean up the global assign_variable_list.
 	return (return_code);
 } /* destroy_assign_variable_list */
 
-
 int set_name(struct Parse_state *state,void *name_address_void,
 	void *prefix_space)
 /*******************************************************************************
@@ -2562,6 +2661,104 @@ Allocates memory for a name, then copies the passed string into it.
 
 	return (return_code);
 } /* set_name */
+
+int set_names(struct Parse_state *state,void *names_void,
+	void *number_of_names_address_void)
+/*******************************************************************************
+LAST MODIFIED : 10 May 2000
+
+DESCRIPTION :
+Modifier function for reading number_of_names (>0) string names from
+<state>. User data consists of a pointer to an integer containing the
+number_of_names, while <names_void> should point to a large enough space to
+store the number_of_names pointers. The names in this array must either be NULL
+or pointing to allocated strings.
+==============================================================================*/
+{
+	char *current_token,**names;
+	int i,number_of_names,return_code;
+
+	ENTER(set_names);
+	if (state&&(names=(char **)names_void)&&number_of_names_address_void&&
+		(0<(number_of_names=*((int *)number_of_names_address_void))))
+	{
+		if (current_token=state->current_token)
+		{
+			return_code=1;
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				for (i=0;return_code&&(i<number_of_names);i++)
+				{
+					if (current_token=state->current_token)
+					{
+						if (names[i])
+						{
+							DEALLOCATE(names[i]);
+						}
+						if (names[i]=duplicate_string(current_token))
+						{
+							return_code=shift_Parse_state(state,1);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"set_names.  Not enough memory");
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Missing name");
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+			}
+			else
+			{
+				/* write help text */
+				for (i=0;i<number_of_names;i++)
+				{
+					display_message(INFORMATION_MESSAGE," NAME");
+				}
+				for (i=0;i<number_of_names;i++)
+				{
+					if (0==i)
+					{
+						display_message(INFORMATION_MESSAGE,"[",names[0]);
+					}
+					else
+					{
+						display_message(INFORMATION_MESSAGE," ",names[i]);
+					}
+					if (names[i])
+					{
+						display_message(INFORMATION_MESSAGE,"%s",names[i]);
+					}
+					else
+					{
+						display_message(INFORMATION_MESSAGE,"\"\"");
+					}
+				}
+				display_message(INFORMATION_MESSAGE,"]");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing %d names",number_of_names);
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_names.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_names */
 
 int set_int(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data)
@@ -4002,6 +4199,108 @@ A modifier function for setting a character flag to 0.
 
 	return (return_code);
 } /* unset_char_flag */
+
+int set_int_switch(struct Parse_state *state,void *value_address_void,
+	void *token_void)
+/*******************************************************************************
+LAST MODIFIED : 12 May 2000
+
+DESCRIPTION :
+A modifier function for setting an integer switch to 1.
+If the value is currently set, this is indicated in the help, with the <token>
+if supplied, otherwise the word CURRENT.
+If the option's <token> is supplied and its value is currently set, it 
+==============================================================================*/
+{
+	char *token;
+	int *value_address;
+	int return_code;
+
+	ENTER(set_int_switch);
+	if (state&&(value_address=(int *)value_address_void))
+	{
+		if (!Parse_state_help_mode(state))
+		{
+			*value_address=1;
+			return_code=1;
+		}
+		else
+		{
+			/* indicate if switch currently set */
+			if (*value_address)
+			{
+				if (token=(char *)token_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%s]",token);
+				}
+				else
+				{
+					display_message(INFORMATION_MESSAGE,"[CURRENT]");
+				}
+			}
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_int_switch.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_int_switch */
+
+int unset_int_switch(struct Parse_state *state,void *value_address_void,
+	void *token_void)
+/*******************************************************************************
+LAST MODIFIED : 12 May 2000
+
+DESCRIPTION :
+A modifier function for setting an integer switch to 0.
+If the value is currently unset, this is indicated in the help, with the <token>
+if supplied, otherwise the word CURRENT.
+If the option's <token> is supplied and its value is currently set, it 
+==============================================================================*/
+{
+	char *token;
+	int *value_address;
+	int return_code;
+
+	ENTER(unset_int_switch);
+	if (state&&(value_address=(int *)value_address_void))
+	{
+		if (!Parse_state_help_mode(state))
+		{
+			*value_address=0;
+			return_code=1;
+		}
+		else
+		{
+			/* indicate if switch currently unset */
+			if (!(*value_address))
+			{
+				if (token=(char *)token_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%s]",token);
+				}
+				else
+				{
+					display_message(INFORMATION_MESSAGE,"[CURRENT]");
+				}
+			}
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"unset_int_switch.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* unset_int_switch */
 
 int set_file_name(struct Parse_state *state,void *name_address_void,
 	void *directory_name_address_void)

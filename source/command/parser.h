@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.h
 
-LAST MODIFIED : 27 March 2000
+LAST MODIFIED : 12 May 2000
 
 DESCRIPTION :
 Public interface for the beginnings of a simple parser (although at the moment
@@ -203,6 +203,18 @@ Note that if any error occurs, the option_table is marked as being invalid and
 no further errors will be reported on subsequent calls.
 ==============================================================================*/
 
+int Option_table_add_switch(struct Option_table *option_table,
+	char *on_string,char *off_string,int *value_address);
+/*******************************************************************************
+LAST MODIFIED : 12 May 2000
+
+DESCRIPTION :
+Adds a newly created suboption table containing 2 items:
+an <on_string> token that invokes set_int_switch with <value_address>;
+an <off_string> token that invokes unset_int_switch with <value_address>;
+The <on_string> and <off_string> should be static, eg. passed in quotes.
+==============================================================================*/
+
 int Option_table_parse(struct Option_table *option_table,
 	struct Parse_state *state);
 /*******************************************************************************
@@ -242,6 +254,15 @@ int destroy_Parse_state(struct Parse_state **state_address);
 LAST MODIFIED : 18 November 1994
 
 DESCRIPTION :
+==============================================================================*/
+
+int Parse_state_help_mode(struct Parse_state *state);
+/*******************************************************************************
+LAST MODIFIED : 12 May 2000
+
+DESCRIPTION :
+Returns 1 if the current_token in <state> is either of
+PARSER_HELP_STRING or PARSER_RECURSIVE_HELP_STRING.
 ==============================================================================*/
 
 int shift_Parse_state(struct Parse_state *state,int shift);
@@ -313,6 +334,19 @@ LAST MODIFIED : 27 May 1997
 
 DESCRIPTION :
 Allocates memory for a name, then copies the passed string into it.
+==============================================================================*/
+
+int set_names(struct Parse_state *state,void *names_void,
+	void *number_of_names_address_void);
+/*******************************************************************************
+LAST MODIFIED : 10 May 2000
+
+DESCRIPTION :
+Modifier function for reading number_of_names (>0) string names from
+<state>. User data consists of a pointer to an integer containing the
+number_of_names, while <names_void> should point to a large enough space to
+store the number_of_names pointers. The names in this array must either be NULL
+or pointing to allocated strings.
 ==============================================================================*/
 
 int set_int(struct Parse_state *state,void *value_address_void,
@@ -513,6 +547,39 @@ LAST MODIFIED : 5 November 1997
 
 DESCRIPTION :
 A modifier function for setting a character flag to 0.
+==============================================================================*/
+
+int set_int_switch(struct Parse_state *state,void *value_address_void,
+	void *token_void);
+/*******************************************************************************
+LAST MODIFIED : 12 May 2000
+
+DESCRIPTION :
+A modifier function for setting an integer switch to 1.
+If the value is currently set, this is indicated in the help, with the <token>
+if supplied, otherwise the word CURRENT.
+If the option's <token> is supplied and its value is currently set, it 
+==============================================================================*/
+
+int unset_int_switch(struct Parse_state *state,void *value_address_void,
+	void *token_void);
+/*******************************************************************************
+LAST MODIFIED : 12 May 2000
+
+DESCRIPTION :
+A modifier function for setting an integer switch to 0.
+If the value is currently unset, this is indicated in the help, with the <token>
+if supplied, otherwise the word CURRENT.
+If the option's <token> is supplied and its value is currently set, it 
+==============================================================================*/
+
+int unset_int_switch(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data);
+/*******************************************************************************
+LAST MODIFIED : 12 May 2000
+
+DESCRIPTION :
+A modifier function for setting an integer switch to 0.
 ==============================================================================*/
 
 int set_file_name(struct Parse_state *state,void *name_address_void,
