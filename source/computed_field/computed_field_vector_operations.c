@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_vector_operations.c
 
-LAST MODIFIED : 1 July 2000
+LAST MODIFIED : 21 November 2000
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
@@ -490,7 +490,7 @@ although its cache may be lost.
 int Computed_field_get_type_normalise(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 7 November 2000
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_NORMALISE, the 
@@ -500,8 +500,9 @@ If the field is of type COMPUTED_FIELD_NORMALISE, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_normalise);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_normalise_type_string))
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_normalise_type_string) &&
+		source_field)
 	{
 		*source_field = field->source_fields[0];
 		return_code=1;
@@ -1122,7 +1123,7 @@ DESCRIPTION :
 static int list_Computed_field_cross_product_commands(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 21 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1133,7 +1134,7 @@ DESCRIPTION :
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE,
-			" dimension %d\n",field->number_of_components);
+			" dimension %d",field->number_of_components);
 		display_message(INFORMATION_MESSAGE," fields");
 		for (i = 0 ; i < field->number_of_components - 1 ; i++)
 		{
@@ -1988,7 +1989,7 @@ int Computed_field_get_type_dot_product(struct Computed_field *field,
 	struct Computed_field **source_field_one,
 	struct Computed_field **source_field_two)
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 7 November 2000
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_DOT_PRODUCT, the 
@@ -1998,8 +1999,9 @@ If the field is of type COMPUTED_FIELD_DOT_PRODUCT, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_dot_product);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_dot_product_type_string))
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_dot_product_type_string) &&
+		source_field_one && source_field_two)
 	{
 		*source_field_one = field->source_fields[0];
 		*source_field_two = field->source_fields[1];
@@ -2753,7 +2755,7 @@ although its cache may be lost.
 int Computed_field_get_type_magnitude(struct Computed_field *field,
 	struct Computed_field **source_field)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 7 November 2000
 
 DESCRIPTION :
 If the field is of type COMPUTED_FIELD_MAGNITUDE, the 
@@ -2763,8 +2765,9 @@ If the field is of type COMPUTED_FIELD_MAGNITUDE, the
 	int return_code;
 
 	ENTER(Computed_field_get_type_magnitude);
-	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
-		(field->type_string==computed_field_magnitude_type_string))
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_magnitude_type_string) &&
+		source_field)
 	{
 		*source_field = field->source_fields[0];
 		return_code=1;
