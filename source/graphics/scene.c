@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 25 August 2000
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -7193,7 +7193,7 @@ Removes <child_scene> from the list of scenes in <scene>.
 int Scene_add_graphical_finite_element(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,char *scene_object_name)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Adds a graphical <element_group> to the <scene> with some default settings
@@ -7339,8 +7339,14 @@ the same element group to be added twice.
 														if (settings=CREATE(GT_element_settings)(
 															GT_ELEMENT_SETTINGS_DATA_POINTS))
 														{
-															GT_element_settings_set_coordinate_field(settings,
-																element_xi_coordinate_field);
+															if (element_xi_coordinate_field&&
+																!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+																	FE_node_has_Computed_field_defined,
+																	(void *)default_coordinate_field,data_group)))
+															{
+																GT_element_settings_set_coordinate_field(
+																	settings,element_xi_coordinate_field);
+															}
 															GT_element_settings_set_material(settings,
 																scene->default_material);
 															GT_element_settings_set_selected_material(settings,
