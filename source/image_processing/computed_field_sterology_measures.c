@@ -165,7 +165,10 @@ Clear the type specific data used by this type.
 				data->computed_field_manager_callback_id,
 				data->computed_field_manager);
 		}
-
+		if (data->results.tokens)
+		{
+		        DEALLOCATE(data->results.tokens);
+		}
 		if (data->input_sizes)
 		{
 			DEALLOCATE(data->input_sizes);
@@ -214,7 +217,13 @@ Copy the type specific data used by this type.
 			destination->radius = source->radius;
 			destination->pixel_size = source->pixel_size;
 			destination->dimension = source->dimension;
-			destination->results = source->results;
+			destination->results.number_of_tokens = source->results.number_of_tokens;
+			for (i = 0; i < source->results.number_of_tokens; i++)
+			{
+				destination->results.tokens[i].string = source->results.tokens[i].string;
+				destination->results.tokens[i].index = source->results.tokens[i].index;
+			}
+
 			for (i = 0; i < source->dimension; i++)
 			{
 				destination->input_sizes[i] = source->input_sizes[i];
