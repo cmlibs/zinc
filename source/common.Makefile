@@ -115,7 +115,7 @@ ifeq ($(SYSNAME:IRIX%=),)
    CC = cc -c
    CPP = CC -c
    FORTRAN = f77 -c
-   MAKEDEPEND = cc -M
+   MAKEDEPEND = makedepend -f- -Y --
    CPREPROCESS = cc -P
    # LINK = cc
    # Must use C++ linker for XML */
