@@ -32,6 +32,8 @@ Macros
 	allocation of zero size. Inlined for optimisation */
 #if defined (OPTIMISED)
 
+#include <stdlib.h>
+
 #define ALLOCATE( result , type , number ) \
  ( result = ( 0 < ( number ) ) ? ( type * )malloc( ( number ) * sizeof( type ) ) : ( type * )NULL )
 
