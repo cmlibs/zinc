@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_resize_implementation.cpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -25,7 +25,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_resize :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -36,12 +36,20 @@ class Function_variable_matrix_resize :
 		Function_variable_matrix_resize(
 			const boost::intrusive_ptr< Function_matrix_resize<Value_type> >
 			function_matrix_resize):
-			Function_variable_matrix<Value_type>(function_matrix_resize){};
+			Function_variable_matrix<Value_type>(function_matrix_resize
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			,false
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			){};
 		Function_variable_matrix_resize(
 			const boost::intrusive_ptr< Function_matrix_resize<Value_type> >
 			function_matrix_resize,const Function_size_type row,
 			const Function_size_type column):Function_variable_matrix<Value_type>(
-			function_matrix_resize,row,column){};
+			function_matrix_resize,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			row,column){};
 		~Function_variable_matrix_resize(){}
 	public:
 		Function_variable_handle clone() const

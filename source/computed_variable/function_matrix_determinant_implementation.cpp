@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_determinant_implementation.cpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -24,7 +24,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_determinant :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -35,7 +35,11 @@ class Function_variable_matrix_determinant :
 		Function_variable_matrix_determinant(
 			const boost::intrusive_ptr< Function_matrix_determinant<Value_type> >
 			function_matrix_determinant):
-			Function_variable_matrix<Value_type>(function_matrix_determinant,1,1){};
+			Function_variable_matrix<Value_type>(function_matrix_determinant,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			1,1){};
 		~Function_variable_matrix_determinant(){}
 	public:
 		Function_variable_handle clone() const

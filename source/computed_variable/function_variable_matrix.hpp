@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_matrix.hpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 // A variable that is a matrix.
@@ -13,13 +13,16 @@
 
 #include "computed_variable/function_variable.hpp"
 
+//???DB.  Debugging
+//#define Function_variable_matrix_HAS_INPUT_ATTRIBUTE
+
 EXPORT template<typename Value_type>
 	class Function_variable_iterator_representation_atomic_matrix;
 
 EXPORT template<typename Value_type>
 class Function_variable_matrix : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 // An identifier for a matrix.
@@ -34,8 +37,15 @@ class Function_variable_matrix : public Function_variable
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
 	public:
-		Function_variable_matrix(const Function_handle function);
+		Function_variable_matrix(const Function_handle function
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			,const bool input
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			);
 		Function_variable_matrix(const Function_handle function,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			const bool input,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
 			const Function_size_type row,const Function_size_type column);
 	// inherited
 	public:
@@ -83,6 +93,10 @@ class Function_variable_matrix : public Function_variable
 		// destructor.  Virtual for proper destruction of derived classes
 		virtual ~Function_variable_matrix();
 	protected:
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+		// if true then input variable otherwise output variable
+		bool input_private;
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
 		Function_size_type column_private,row_private;
 };
 

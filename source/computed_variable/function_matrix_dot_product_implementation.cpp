@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_dot_product_implementation.cpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -25,7 +25,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_dot_product :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -36,7 +36,11 @@ class Function_variable_matrix_dot_product :
 		Function_variable_matrix_dot_product(
 			const boost::intrusive_ptr< Function_matrix_dot_product<Value_type> >
 			function_matrix_dot_product):
-			Function_variable_matrix<Value_type>(function_matrix_dot_product,1,1){};
+			Function_variable_matrix<Value_type>(function_matrix_dot_product,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			1,1){};
 		~Function_variable_matrix_dot_product(){}
 	public:
 		Function_variable_handle clone() const

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_trace_implementation.cpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -24,7 +24,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_trace :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -35,7 +35,11 @@ class Function_variable_matrix_trace :
 		Function_variable_matrix_trace(
 			const boost::intrusive_ptr< Function_matrix_trace<Value_type> >
 			function_matrix_trace):
-			Function_variable_matrix<Value_type>(function_matrix_trace,1,1){};
+			Function_variable_matrix<Value_type>(function_matrix_trace,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			1,1){};
 		~Function_variable_matrix_trace(){}
 	public:
 		Function_variable_handle clone() const

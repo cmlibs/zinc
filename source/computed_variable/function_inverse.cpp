@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_inverse.cpp
 //
-// LAST MODIFIED : 26 January 2005
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2364,7 +2364,7 @@ typedef boost::intrusive_ptr<Function_variable_value_tolerance>
 class Function_variable_value_tolerance :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 23 November 2004
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2373,7 +2373,11 @@ class Function_variable_value_tolerance :
 		// constructor
 		Function_variable_value_tolerance(
 			const Function_inverse_handle& function_inverse):
-			Function_variable_matrix<Scalar>(function_inverse,1,1){};
+			Function_variable_matrix<Scalar>(function_inverse,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			true,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			1,1){};
 		// destructor
 		~Function_variable_value_tolerance(){};
 	// inherited
@@ -2453,7 +2457,7 @@ typedef boost::intrusive_ptr<Function_variable_step_tolerance>
 
 class Function_variable_step_tolerance : public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 23 November 2004
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2462,7 +2466,11 @@ class Function_variable_step_tolerance : public Function_variable_matrix<Scalar>
 		// constructor
 		Function_variable_step_tolerance(
 			const Function_inverse_handle& function_inverse):
-			Function_variable_matrix<Scalar>(function_inverse,1,1){};
+			Function_variable_matrix<Scalar>(function_inverse,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			true,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			1,1){};
 		// destructor
 		~Function_variable_step_tolerance(){};
 	// inherited
@@ -2543,7 +2551,7 @@ typedef boost::intrusive_ptr<Function_variable_maximum_iterations>
 class Function_variable_maximum_iterations :
 	public Function_variable_matrix<Function_size_type>
 //******************************************************************************
-// LAST MODIFIED : 23 November 2004
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2552,7 +2560,11 @@ class Function_variable_maximum_iterations :
 		// constructor
 		Function_variable_maximum_iterations(
 			const Function_inverse_handle& function_inverse):
-			Function_variable_matrix<Function_size_type>(function_inverse,1,1){};
+			Function_variable_matrix<Function_size_type>(function_inverse,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			true,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			1,1){};
 		// destructor
 		~Function_variable_maximum_iterations(){};
 	// inherited

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_linear_span.cpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -26,7 +26,7 @@
 
 class Function_variable_linear_span : public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 6 January 2005
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 // Evaluates to a vector.
@@ -37,11 +37,19 @@ class Function_variable_linear_span : public Function_variable_matrix<Scalar>
 		// constructor
 		Function_variable_linear_span(
 			const Function_linear_span_handle& function_linear_span):
-			Function_variable_matrix<Scalar>(function_linear_span){};
+			Function_variable_matrix<Scalar>(function_linear_span
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			,false
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			){};
 		Function_variable_linear_span(
 			const Function_linear_span_handle& function_linear_span,
 			const Function_size_type row,const Function_size_type column):
-			Function_variable_matrix<Scalar>(function_linear_span,row,column){};
+			Function_variable_matrix<Scalar>(function_linear_span,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			row,column){};
 		// destructor
 		~Function_variable_linear_span(){};
 	// inherited

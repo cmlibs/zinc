@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_matrix_implementation.cpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -259,10 +259,17 @@ class Function_variable_iterator_representation_atomic_matrix :
 
 EXPORT template<typename Value_type>
 Function_variable_matrix<Value_type>::Function_variable_matrix(
-	const Function_handle function):Function_variable(function),column_private(0),
-	row_private(0)
+	const Function_handle function
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+	,const bool input
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+	):Function_variable(function),
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+	input_private(input),
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+	column_private(0),row_private(0)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 // Constructor.
@@ -273,11 +280,18 @@ Function_variable_matrix<Value_type>::Function_variable_matrix(
 
 EXPORT template<typename Value_type>
 Function_variable_matrix<Value_type>::Function_variable_matrix(
-	const Function_handle function,const Function_size_type row,
-	const Function_size_type column):Function_variable(function),
+	const Function_handle function,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+	const bool input,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+	const Function_size_type row,const Function_size_type column):
+	Function_variable(function),
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+	input_private(input),
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
 	column_private(column),row_private(row)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 // Constructor.
@@ -912,7 +926,7 @@ boost::intrusive_ptr< Function_variable_matrix<Value_type> >
 	Function_variable_matrix<Value_type>::operator()(Function_size_type row,
 	Function_size_type column) const
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -925,7 +939,11 @@ boost::intrusive_ptr< Function_variable_matrix<Value_type> >
 		(column<=number_of_columns()))
 	{
 		result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
-			new Function_variable_matrix<Value_type>(function_matrix,row,column));
+			new Function_variable_matrix<Value_type>(function_matrix,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			row,column));
 	}
 
 	return (result);
@@ -1024,7 +1042,7 @@ EXPORT template<typename Value_type>
 bool Function_variable_matrix<Value_type>::equality_atomic(
 	const Function_variable_handle& variable) const
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 // Need typeid because want most derived class to be the same (some functions
@@ -1039,6 +1057,9 @@ bool Function_variable_matrix<Value_type>::equality_atomic(
 		Function_variable_matrix<Value_type>,Function_variable>(variable))
 	{
 		result=equivalent(function_private,variable_matrix->function())&&
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			(input_private==variable_matrix->input_private)&&
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
 			(row_private==variable_matrix->row_private)&&
 			(column_private==variable_matrix->column_private)&&
 			(typeid(*this)==typeid(*variable_matrix));
@@ -1050,10 +1071,14 @@ bool Function_variable_matrix<Value_type>::equality_atomic(
 EXPORT template<typename Value_type>
 Function_variable_matrix<Value_type>::Function_variable_matrix(
 	const Function_variable_matrix<Value_type>& variable):
-	Function_variable(variable),column_private(variable.column_private),
+	Function_variable(variable),
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+	input_private(variable.input_private),
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+	column_private(variable.column_private),
 	row_private(variable.row_private)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 // Copy constructor.
