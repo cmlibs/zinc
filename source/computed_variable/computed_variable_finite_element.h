@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable_finite_element.h
 
-LAST MODIFIED : 16 February 2003
+LAST MODIFIED : 19 February 2003
 
 DESCRIPTION :
 Implements computed variables which interface to finite element fields:
@@ -27,6 +27,8 @@ NOTES :
 #if !defined (COMPUTED_VARIABLE_FINITE_ELEMENT_H)
 #define COMPUTED_VARIABLE_FINITE_ELEMENT_H
 
+#include "finite_element/finite_element.h"
+#include "computed_variable/computed_value.h"
 #include "computed_variable/computed_variable.h"
 
 /*
@@ -45,38 +47,6 @@ Private package
 Global functions
 ----------------
 */
-int Computed_value_set_type_mesh_location(struct Computed_value *value,
-	struct FE_region *region,struct FE_node *node,struct FE_element *element,
-	FE_value *xi);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Makes <value> of type mesh_location and sets its <region>, <node>, <element>
-and <xi).  After success, the <value> is responsible for DEALLOCATEing <xi>.
-==============================================================================*/
-
-int Computed_value_is_type_mesh_location(struct Computed_value *value);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Returns a non-zero if <value> is a mesh_location and zero otherwise.
-==============================================================================*/
-
-int Computed_value_get_type_mesh_location(Computed_value *value,
-	struct FE_region **region_address,struct FE_node **node_address,
-	struct FE_element **element_address,FE_value **xi_address);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-If <value> is of type mesh_location, gets its <*region_address>,
-<*node_address>, <*element_address> and <*xi_address).
-
-The calling program must not DEALLOCATE the returned <*xi_address>.
-==============================================================================*/
-
 int Computed_variable_set_type_element_value(struct Computed_variable *variable,
 	struct Computed_variable *fe_variable,struct FE_element *element,
 	int *grid_point,int version);
@@ -112,6 +82,33 @@ If <variable> is of type element_value, gets its <*fe_variable_address>,
 
 The calling program must not DEALLOCATE the returned <*grid_point_address>.
 ==============================================================================*/
+
+int Computed_variable_set_type_element_xi(struct Computed_variable *variable);
+/*******************************************************************************
+LAST MODIFIED : 19 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+
+int Computed_variable_is_type_element_xi(struct Computed_variable *variable);
+/*******************************************************************************
+LAST MODIFIED : 23 January 2003
+
+DESCRIPTION :
+Returns non-zero if <variable> is a element_xi Computed_variable.
+==============================================================================*/
+
+#if defined (OLD_CODE)
+int Computed_variable_get_type_element_xi(
+	struct Computed_variable *variable,
+	struct Computed_variable **fe_variable_address);
+/*******************************************************************************
+LAST MODIFIED : 23 January 2003
+
+DESCRIPTION :
+If <variable> is of type element_value, gets its <*fe_variable_address>.
+==============================================================================*/
+#endif /* defined (OLD_CODE) */
 
 int Computed_variable_set_type_FE_time(struct Computed_variable *variable,
 	struct Computed_variable *fe_variable);
@@ -177,35 +174,6 @@ LAST MODIFIED : 23 January 2003
 DESCRIPTION :
 If <variable> is of type finite_element, gets its <*fe_field_address> and
 <*component_number_address>.
-==============================================================================*/
-
-int Computed_variable_set_type_mesh_location(struct Computed_variable *variable,
-	struct Computed_variable *fe_variable);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Converts the <variable> into a mesh_location Computed_variable for the
-specified <fe_variable> (a finite_element Computed_variable, all finite element
-computed variables if NULL).
-==============================================================================*/
-
-int Computed_variable_is_type_mesh_location(struct Computed_variable *variable);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Returns non-zero if <variable> is a mesh_location Computed_variable.
-==============================================================================*/
-
-int Computed_variable_get_type_mesh_location(
-	struct Computed_variable *variable,
-	struct Computed_variable **fe_variable_address);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-If <variable> is of type element_value, gets its <*fe_variable_address>.
 ==============================================================================*/
 
 int Computed_variable_set_type_nodal_value(struct Computed_variable *variable,
@@ -275,7 +243,7 @@ If <variable> is of type scale_factor, gets its <*fe_variable_address>,
 <*version_address>.
 ==============================================================================*/
 
-???DB.  Where I'm up to
+/*???DB.  Where I'm up to */
 
 int Computed_variable_is_read_only_with_fe_field(
 	struct Computed_variable *field,void *fe_field_void);

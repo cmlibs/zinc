@@ -569,6 +569,16 @@ DESCRIPTION :
 Returns the type specific data for the <variable>.
 ==============================================================================*/
 
+int Computed_variable_set_type_specific_information(
+	struct Computed_variable *variable,char *type_string,
+	void *type_specific_data);
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+Sets the type specific information for the <variable>.
+==============================================================================*/
+
 int Computed_variable_clear_type(struct Computed_variable *variable);
 /*******************************************************************************
 LAST MODIFIED : 27 January 2003

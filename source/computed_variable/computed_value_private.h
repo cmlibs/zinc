@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value_private.h
 
-LAST MODIFIED : 12 February 2003
+LAST MODIFIED : 19 February 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -46,6 +46,48 @@ int Computed_value_ ## value_type ## _clear_type_specific( \
 \
 	return (return_code); \
 } /* Computed_value_ ## value_type ## _clear_type_specific */
+
+typedef Computed_value_type_specific_data*
+	(*Computed_value_duplicate_data_type_specific_function)(
+	struct Computed_value *value);
+/*******************************************************************************
+LAST MODIFIED : 19 February 2003
+
+DESCRIPTION :
+Returns a duplicate of the <value>'s type specific data.
+==============================================================================*/
+
+#define START_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION( \
+	value_type ) \
+Computed_value_type_specific_data * \
+	Computed_value_ ## value_type ## _duplicate_data_type_specific( \
+	struct Computed_value *value) \
+{ \
+	struct Computed_value_ ## value_type ## _type_specific_data \
+		*destination,*source; \
+\
+	ENTER(Computed_value_ ## value_type ## _duplicate_data_type_specific); \
+	/* check arguments */ \
+	ASSERT_IF(value&&(computed_value_ ## value_type ## _type_string== \
+		Computed_value_get_type_id_string(value)),destination,NULL) \
+	{ \
+		source=Computed_value_get_type_specific_data(value); \
+		ASSERT_IF(source,destination,NULL) \
+		if (!ALLOCATE(destination, \
+			struct Computed_value_ ## value_type ## _type_specific_data,1)) \
+		{ \
+			display_message(ERROR_MESSAGE,"Computed_value_" #value_type \
+				"_duplicate_data_type_specific.  Could not ALLOCATE destination"); \
+		} \
+		else
+
+#define END_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION( \
+	value_type ) \
+	} \
+	LEAVE; \
+\
+	return (destination); \
+} /* Computed_value_ ## value_type ## _duplicate_data_type_specific */
 
 typedef int (*Computed_value_multiply_and_accumulate_type_specific_function)(
 	struct Computed_value *value_1,struct Computed_value *value_2,
@@ -129,7 +171,8 @@ PROTOTYPE_COMPUTED_VALUE_IS_TYPE_FUNCTION(value_type) \
 	/* check argument */ \
 	if (value) \
 	{ \
-		if (computed_value_ ## value_type ## _type_string==value->type_string) \
+		if (computed_value_ ## value_type ## _type_string== \
+			Computed_value_get_type_id_string(value)) \
 		{ \
 			return_code=1; \
 		} \
@@ -146,7 +189,7 @@ PROTOTYPE_COMPUTED_VALUE_IS_TYPE_FUNCTION(value_type) \
 
 #define COMPUTED_VALUE_ESTABLISH_METHODS( value, value_type ) \
 /***************************************************************************** \
-LAST MODIFIED : 12 February 2003 \
+LAST MODIFIED : 19 February 2003 \
 \
 DESCRIPTION : \
 Each Computed_value_set_type function should call this macro to establish the \
@@ -156,6 +199,7 @@ some default function. \
 ============================================================================*/ \
 Computed_value_establish_methods(value, \
 	Computed_value_ ## value_type ## _clear_type_specific, \
+	Computed_value_ ## value_type ## _duplicate_data_type_specific, \
 	Computed_value_ ## value_type ## _multiply_and_accumulate_type_specific, \
 	Computed_value_ ## value_type ## _same_sub_type_type_specific)
 
@@ -166,12 +210,14 @@ Friend functions
 int Computed_value_establish_methods(struct Computed_value *value,
 	Computed_value_clear_type_specific_function
 	computed_value_clear_type_specific_function,
+	Computed_value_duplicate_data_type_specific_function
+	computed_value_duplicate_data_type_specific_function,
 	Computed_value_multiply_and_accumulate_type_specific_function
 	computed_value_multiply_and_accumulate_type_specific_function,
 	Computed_value_same_sub_type_type_specific_function
 	computed_value_same_sub_type_type_specific_function);
 /*******************************************************************************
-LAST MODIFIED : 13 February 2003
+LAST MODIFIED : 19 February 2003
 
 DESCRIPTION :
 Sets the methods for the <value>.
@@ -184,6 +230,15 @@ LAST MODIFIED : 12 February 2003
 
 DESCRIPTION :
 Returns the type specific data for the <value>.
+==============================================================================*/
+
+int Computed_value_set_type_specific_information(struct Computed_value *value,
+	char *type_string,void *type_specific_data);
+/*******************************************************************************
+LAST MODIFIED : 19 February 2003
+
+DESCRIPTION :
+Sets the type specific information for the <value>.
 ==============================================================================*/
 
 int Computed_value_clear_type(struct Computed_value *value);

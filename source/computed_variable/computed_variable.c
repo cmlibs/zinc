@@ -758,6 +758,38 @@ Returns the type specific data for the <variable>.
 	return (data);
 } /* Computed_variable_get_type_specific_data */
 
+int Computed_variable_set_type_specific_information(
+	struct Computed_variable *variable,char *type_string,
+	void *type_specific_data)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2003
+
+DESCRIPTION :
+Sets the type specific information for the <variable>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_variable_set_type_specific_information);
+	return_code=0;
+	/* check arguments */
+	if (variable&&type_string&&type_specific_data)
+	{
+		variable->type_specific_data=type_specific_data;
+		variable->type_string=type_string;
+		return_code=0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_variable_set_type_specific_information.  "
+			"Invalid argument(s).  %p %p %p",variable,type_string,type_specific_data);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_variable_set_type_specific_information */
+
 int Computed_variable_clear_type(struct Computed_variable *variable)
 /*******************************************************************************
 LAST MODIFIED : 10 February 2003

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value.c
 
-LAST MODIFIED : 14 February 2003
+LAST MODIFIED : 19 February 2003
 
 DESCRIPTION :
 A module intended to replace general/value .  Testing and developing in
@@ -26,7 +26,7 @@ Module methods
 --------------
 */
 /*???DB.  Have put here because in general should not know definition of
-	struct Computed_variable (may need for special ones like derivative?) */
+	struct Computed_value */
 
 static char computed_value_FE_value_type_string[]="FE_value";
 
@@ -45,6 +45,12 @@ static START_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(FE_value)
 	return_code=1;
 }
 END_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(FE_value)
+
+static START_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(FE_value)
+{
+	destination->fe_value=source->fe_value;
+}
+END_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(FE_value)
 
 static START_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	FE_value)
@@ -90,6 +96,45 @@ static START_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
 	return_code=1;
 }
 END_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
+
+static START_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(
+	FE_value_vector)
+{
+	FE_value *destination_value,*source_value;
+	int number_of_values;
+
+	if ((0<(number_of_values=source->number_of_fe_values))&&
+		(source_value=source->fe_value_vector))
+	{
+		if (ALLOCATE(destination_value,FE_value,number_of_values))
+		{
+			destination->fe_value_vector=destination_value;
+			while (number_of_values>0)
+			{
+				*destination_value= *source_value;
+				destination_value++;
+				source_value++;
+				number_of_values--;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_value_FE_value_vector_duplicate_data_type_specific.  "
+				"Could not allocate <fe_value_vector>");
+			DEALLOCATE(destination);
+		}
+	}
+	else
+	{
+		destination->fe_value_vector=(FE_value *)NULL;
+	}
+	if (destination)
+	{
+		destination->number_of_fe_values=source->number_of_fe_values;
+	}
+}
+END_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
 
 static START_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	FE_value_vector)
@@ -171,6 +216,46 @@ static START_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
 	return_code=1;
 }
 END_COMPUTED_VALUE_CLEAR_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
+
+static START_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(
+	FE_value_matrix)
+{
+	FE_value *destination_value,*source_value;
+	int number_of_values;
+
+	if ((0<(number_of_values=(source->number_of_rows)*
+		(source->number_of_columns)))&&(source_value=source->fe_value_matrix))
+	{
+		if (ALLOCATE(destination_value,FE_value,number_of_values))
+		{
+			destination->fe_value_matrix=destination_value;
+			while (number_of_values>0)
+			{
+				*destination_value= *source_value;
+				destination_value++;
+				source_value++;
+				number_of_values--;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_value_FE_value_matrix_duplicate_data_type_specific.  "
+				"Could not allocate <fe_value_matrix>");
+			DEALLOCATE(destination);
+		}
+	}
+	else
+	{
+		destination->fe_value_matrix=(FE_value *)NULL;
+	}
+	if (destination)
+	{
+		destination->number_of_rows=source->number_of_rows;
+		destination->number_of_columns=source->number_of_columns;
+	}
+}
+END_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
 
 static START_COMPUTED_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	FE_value_matrix)
@@ -259,7 +344,7 @@ Module types
 */
 struct Computed_value
 /*******************************************************************************
-LAST MODIFIED : 13 February 2003
+LAST MODIFIED : 19 February 2003
 
 DESCRIPTION :
 A value that knows what type it is.
@@ -285,6 +370,8 @@ A value that knows what type it is.
 		- CREATE(Computed_value) */
 	Computed_value_clear_type_specific_function
 		computed_value_clear_type_specific_function;
+	Computed_value_duplicate_data_type_specific_function
+		computed_value_duplicate_data_type_specific_function;
 	Computed_value_multiply_and_accumulate_type_specific_function
 		computed_value_multiply_and_accumulate_type_specific_function;
 	Computed_value_same_sub_type_type_specific_function
@@ -302,12 +389,14 @@ Friend functions
 int Computed_value_establish_methods(struct Computed_value *value,
 	Computed_value_clear_type_specific_function
 	computed_value_clear_type_specific_function,
+	Computed_value_duplicate_data_type_specific_function
+	computed_value_duplicate_data_type_specific_function,
 	Computed_value_multiply_and_accumulate_type_specific_function
 	computed_value_multiply_and_accumulate_type_specific_function,
 	Computed_value_same_sub_type_type_specific_function
 	computed_value_same_sub_type_type_specific_function)
 /*******************************************************************************
-LAST MODIFIED : 13 February 2003
+LAST MODIFIED : 19 February 2003
 
 DESCRIPTION :
 Sets the methods for the <value>.
@@ -322,6 +411,8 @@ Sets the methods for the <value>.
 	{
 		value->computed_value_clear_type_specific_function=
 			computed_value_clear_type_specific_function;
+		value->computed_value_duplicate_data_type_specific_function=
+			computed_value_duplicate_data_type_specific_function;
 		value->computed_value_multiply_and_accumulate_type_specific_function=
 			computed_value_multiply_and_accumulate_type_specific_function;
 		value->computed_value_same_sub_type_type_specific_function=
@@ -360,9 +451,40 @@ Returns the type specific data for the <value>.
 	return (data);
 } /* Computed_value_get_type_specific_data */
 
+int Computed_value_set_type_specific_information(struct Computed_value *value,
+	char *type_string,void *type_specific_data)
+/*******************************************************************************
+LAST MODIFIED : 19 February 2003
+
+DESCRIPTION :
+Sets the type specific information for the <value>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_value_set_type_specific_information);
+	return_code=0;
+	/* check arguments */
+	if (value&&type_string&&type_specific_data)
+	{
+		value->type_specific_data=type_specific_data;
+		value->type_string=type_string;
+		return_code=0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_value_set_type_specific_information.  "
+			"Invalid argument(s).  %p %p %p",value,type_string,type_specific_data);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_value_set_type_specific_information */
+
 int Computed_value_clear_type(struct Computed_value *value)
 /*******************************************************************************
-LAST MODIFIED : 13 February 2003
+LAST MODIFIED : 19 February 2003
 
 DESCRIPTION :
 Used internally by DESTROY and Computed_value_set_type_*() functions to
@@ -399,6 +521,7 @@ to ensure that the value is not left in an invalid state.
 		/* clear all methods */
 		Computed_value_establish_methods(value,
 			(Computed_value_clear_type_specific_function)NULL,
+			(Computed_value_duplicate_data_type_specific_function)NULL,
 			(Computed_value_multiply_and_accumulate_type_specific_function)NULL,
 			(Computed_value_same_sub_type_type_specific_function)NULL);
 	}
@@ -418,7 +541,7 @@ Global functions
 */
 struct Computed_value *CREATE(Computed_value)(void)
 /*******************************************************************************
-LAST MODIFIED : 12 February 2003
+LAST MODIFIED : 19 February 2003
 
 DESCRIPTION :
 Creates an empty value with no type.  Each type of value has its own "set_type"
@@ -436,6 +559,7 @@ function.
 		/* initialise methods */
 		Computed_value_establish_methods(value,
 			(Computed_value_clear_type_specific_function)NULL,
+			(Computed_value_duplicate_data_type_specific_function)NULL,
 			(Computed_value_multiply_and_accumulate_type_specific_function)NULL,
 			(Computed_value_same_sub_type_type_specific_function)NULL);
 		/* initialise access_count */
@@ -479,6 +603,51 @@ Frees memory/deaccess objects for Computed_value at <*value_address>.
 
 	return (return_code);
 } /* DESTROY(Computed_value) */
+
+struct Computed_value *Computed_value_duplicate(struct Computed_value *value)
+/*******************************************************************************
+LAST MODIFIED : 19 February 2003
+
+DESCRIPTION :
+Returns a copy of the <value>.
+==============================================================================*/
+{
+	struct Computed_value *duplicate;
+
+	ENTER(Computed_value_duplicate);
+	duplicate=(struct Computed_value *)NULL;
+	if (value)
+	{
+		if (ALLOCATE(duplicate,struct Computed_value,1))
+		{
+			/* initialise data */
+			duplicate->type_string=value->type_string;
+			duplicate->type_specific_data=
+				(value->computed_value_duplicate_data_type_specific_function)(value);
+			/* initialise methods */
+			Computed_value_establish_methods(duplicate,
+				value->computed_value_clear_type_specific_function,
+				value->computed_value_duplicate_data_type_specific_function,
+				value->computed_value_multiply_and_accumulate_type_specific_function,
+				value->computed_value_same_sub_type_type_specific_function);
+			/* initialise access_count */
+			duplicate->access_count=0;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Computed_value_duplicate.  "
+				"Insufficient memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Computed_value_duplicate.  "
+			"Missing <value>");
+	}
+	LEAVE;
+
+	return (duplicate);
+} /* Computed_value_duplicate */
 
 int Computed_value_same_sub_type(struct Computed_value *value_1,
 	struct Computed_value *value_2)

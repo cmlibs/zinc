@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 28 January 2003
+# LAST MODIFIED : 17 February 2003
 #
 # DESCRIPTION :
 #
@@ -609,7 +609,9 @@ COMPUTED_FIELD_INTERFACE_SRCS = \
 	computed_field/computed_field_window_projection.c
 COMPUTED_VARIABLE_SRCS = \
 	computed_variable/computed_value.c \
-	computed_variable/computed_variable.c
+	computed_variable/computed_value_finite_element.c \
+	computed_variable/computed_variable.c \
+	computed_variable/computed_variable_finite_element.c
 CURVE_SRCS = \
 	curve/control_curve.c
 CURVE_INTERFACE_SRCS = \

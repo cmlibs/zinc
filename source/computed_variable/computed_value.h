@@ -93,6 +93,14 @@ DESCRIPTION :
 Frees memory/deaccess objects for Computed_value at <*value_address>.
 ==============================================================================*/
 
+struct Computed_value *Computed_value_duplicate(struct Computed_value *value);
+/*******************************************************************************
+LAST MODIFIED : 19 February 2003
+
+DESCRIPTION :
+Returns a copy of the <value>.
+==============================================================================*/
+
 int Computed_value_same_sub_type(struct Computed_value *value_1,
 	struct Computed_value *value_2);
 /*******************************************************************************
