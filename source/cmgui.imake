@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 17 December 2001
+XCOMM LAST MODIFIED : 6 March 2002
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -379,6 +379,7 @@ UNEMAP_SRCS = \
 	unemap/acquisition_window.c \
 	unemap/acquisition_work_area.c \
 	unemap/analysis.c \
+	unemap/analysis_calculate.c \
 	unemap/analysis_window.c \
 	unemap/analysis_work_area.c \
 	unemap/bard.c \

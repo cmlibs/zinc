@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 18 Januay 2002 
+LAST MODIFIED : 6 March 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -61,6 +61,8 @@ and the <max_tick_mark>.
 	LEAVE;
 } /* calculate_divisions */
 
+#if defined (OLD_CODE)
+/*???DB.  Moved to analysis_calculate */
 static int calculate_moving_average(float *objective_values,
 	int number_of_objective_values,int objective_values_step,int average_width)
 /*******************************************************************************
@@ -184,17 +186,20 @@ Calculates the moving average of the <objective_values>.
 
 	return (return_code);
 } /* calculate_moving_average */
+#endif /* defined (OLD_CODE) */
 
 /*
 Global functions
 ----------------
 */
+#if defined (OLD_CODE)
+/*???DB.  Split between here and analysis_calculate */
 int calculate_device_objective(struct Device *device,
 	enum Event_detection_algorithm detection,
 	enum Event_detection_objective objective,float *objective_values,
 	int number_of_objective_values,int objective_values_step,int average_width)
 /*******************************************************************************
-LAST MODIFIED : 30 September 2001
+LAST MODIFIED : 31 January 2002
 
 DESCRIPTION :
 Calculates the specified <objective>/<detection> function for the <device>.
@@ -348,7 +353,7 @@ Storing the values in the array (<objective_values> every
 								average_after_value += objective_values_step;
 								average_after += (*average_after_value)-(*objective_value);
 							}
-							for (i=average_width+1;i>0;i--)
+							for (i=average_width;i>0;i--)
 							{
 								temp_value=average_after-average_before;
 								average_before += (*objective_value)-(*save_value);
@@ -362,6 +367,7 @@ Storing the values in the array (<objective_values> every
 								objective_value += objective_values_step;
 								average_after += last_value-(*objective_value);
 							}
+							*objective_value=average_after-average_before;
 						}
 						else
 						{
@@ -538,7 +544,108 @@ Storing the values in the array (<objective_values> every
 
 	return (return_code);
 } /* calculate_device_objective */
+#endif /* defined (OLD_CODE) */
 
+int calculate_device_objective(struct Device *device,
+	enum Event_detection_algorithm detection,
+	enum Event_detection_objective objective,float *objective_values,
+	int number_of_objective_values,int objective_values_step,int average_width)
+/*******************************************************************************
+LAST MODIFIED : 6 March 2002
+
+DESCRIPTION :
+Calculates the specified <objective>/<detection> function for the <device>.
+Storing the values in the array (<objective_values> every
+<objective_values_step>) provided.
+==============================================================================*/
+{
+	float *float_value,*objective_value;
+	int i,number_of_samples,number_of_signals,return_code;
+	short *short_value;
+	struct Signal *signal;
+	struct Signal_buffer *buffer;
+
+	ENTER(calculate_device_objective);
+	number_of_samples=0;
+	return_code=0;
+	if (device&&(signal=device->signal)&&(buffer=signal->buffer)&&
+		(0<(number_of_samples=buffer->number_of_samples))&&
+		(((SHORT_INT_VALUE==buffer->value_type)&&
+		(buffer->signals.short_int_values))||((FLOAT_VALUE==buffer->value_type)&&
+		(buffer->signals.float_values)))&&objective_values&&
+		(number_of_samples<=number_of_objective_values)&&
+		(0<objective_values_step)&&(0<average_width)&&(device->channel))
+	{
+		number_of_signals=signal->buffer->number_of_signals;
+		objective_value=objective_values;
+		switch (buffer->value_type)
+		{
+			case SHORT_INT_VALUE:
+			{
+				short_value=(buffer->signals.short_int_values)+(signal->index);
+				for (i=number_of_samples;i>0;i--)
+				{
+					*objective_value=(float)(*short_value);
+					short_value += number_of_signals;
+					objective_value += objective_values_step;
+				}
+			} break;
+			case FLOAT_VALUE:
+			{
+				float_value=(buffer->signals.float_values)+(signal->index);
+				for (i=number_of_samples;i>0;i--)
+				{
+					*objective_value=(float)(*float_value);
+					float_value += number_of_signals;
+					objective_value += objective_values_step;
+				}
+			} break;
+		}
+		return_code=calculate_time_series_objective(detection,objective,
+			average_width,device->channel->gain,device->channel->offset,
+			number_of_samples,objective_values_step,objective_values);
+	}
+	else
+	{
+		if (device)
+		{
+			if (device->signal)
+			{
+				if (device->signal->buffer)
+				{
+					display_message(ERROR_MESSAGE,"calculate_device_objective.  "
+						"Invalid argument(s).  %d (%d %d) %p %p %p %d %d %d %p",
+						buffer->value_type,SHORT_INT_VALUE,FLOAT_VALUE,
+						buffer->signals.short_int_values,buffer->signals.float_values,
+						objective_values,number_of_objective_values,objective_values_step,
+						number_of_samples,device->channel);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_device_objective.  Missing signal buffer");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"calculate_device_objective.  Missing signal");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"calculate_device_objective.  Missing device");
+		}
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* calculate_device_objective */
+
+#if defined (OLD_CODE)
+/*???DB.  Split between here and analysis_calculate */
 int calculate_device_event_markers(struct Device *device,
 	int start_search,int end_search,enum Event_detection_algorithm detection,
 	float *objective_values,int number_of_objective_values,
@@ -772,6 +879,78 @@ algorithm and the <objective_values>.
 				"calculate_device_event_markers.  Invalid argument(s).  %p %p %d",
 				signal,buffer,number_of_objective_values);
 		}
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* calculate_device_event_markers */
+#endif /* defined (OLD_CODE) */
+
+int calculate_device_event_markers(struct Device *device,
+	int start_search,int end_search,enum Event_detection_algorithm detection,
+	float *objective_values,int number_of_objective_values,
+	int objective_values_step,int number_of_events,int threshold_percentage,
+	int minimum_separation_milliseconds,float level)
+/*******************************************************************************
+LAST MODIFIED : 6 March 2002
+
+DESCRIPTION :
+Calculate the positions of the event markers for a signal/<device>/<device_node>
+based upon the the start and end times, the number of events, the <detection> 
+algorithm and the <objective_values>.
+==============================================================================*/
+{
+	int *events,i,number_of_calculated_events,return_code;
+	struct Event *event,**event_next;
+	struct Signal *signal;
+	struct Signal_buffer *buffer;
+
+	ENTER(calculate_device_event_markers);
+	return_code=0;
+	/* check arguments */
+	signal=(struct Signal *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	if (device&&(signal=device->signal)&&(buffer=signal->buffer))
+	{
+		events=(int *)NULL;
+		number_of_calculated_events=0;
+		if (return_code=calculate_time_series_event_markers(start_search,end_search,
+			detection,objective_values,number_of_objective_values,
+			objective_values_step,number_of_events,threshold_percentage,
+			minimum_separation_milliseconds,level,buffer->frequency,
+			&number_of_calculated_events,&events))
+		{
+			/* free the previous events */
+			destroy_Event_list(&(signal->first_event));
+			i=0;
+			event=(struct Event *)NULL;
+			event_next= &(signal->first_event);
+			while (return_code&&(i<number_of_calculated_events))
+			{
+				if (event=create_Event(events[i],i+1,UNDECIDED,event,
+					(struct Event *)NULL))
+				{
+					*event_next=event;
+					event_next= &(event->next);
+					i++;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_device_event_markers.  Could not allocate event");
+					destroy_Event_list(&(signal->first_event));
+					return_code=0;
+				}
+			}
+			DEALLOCATE(events);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"calculate_device_event_markers.  Invalid argument(s).  %p %p %p",device,
+			signal,buffer);
 		return_code=0;
 	}
 	LEAVE;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.h
 
-LAST MODIFIED : 18 April 2001
+LAST MODIFIED : 1 March 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -17,6 +17,7 @@ DESCRIPTION :
 #include <Xm/Xm.h>
 #endif /* defined (MOTIF) */
 #include "finite_element/finite_element.h"
+#include "unemap/analysis_calculate.h"
 #include "unemap/rig.h"
 #include "unemap/rig_node.h"
 #include "user_interface/user_interface.h"
@@ -54,6 +55,8 @@ OVERLAP = signals overlap vertically
 	OVERLAP_LAYOUT
 }; /* enum Signal_layout */
 
+#if defined (OLD_CODE)
+/*???DB.  Moved to analysis_calculate */
 enum Event_detection_objective
 /*******************************************************************************
 LAST MODIFIED :  April 2001
@@ -91,6 +94,7 @@ NB.  New algorithms need to be added to the end because the detection algorithm
 	EDA_THRESHOLD,
 	EDA_LEVEL
 }; /* enum Event_detection_algorithm */
+#endif /* defined (OLD_CODE) */
 
 enum Datum_type
 /*******************************************************************************
@@ -170,7 +174,6 @@ Information needed for drawing a signal.  Windowing system dependent
 Global functions
 ----------------
 */
-
 int calculate_device_objective(struct Device *device,
 	enum Event_detection_algorithm detection,
 	enum Event_detection_objective objective,float *objective_values,

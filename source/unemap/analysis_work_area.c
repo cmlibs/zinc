@@ -1,9 +1,11 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 18 January 2002
+LAST MODIFIED : 27 March 2002
 
 DESCRIPTION :
+???DB.  Everything or nothing should be using the datum_time_object.  Currently
+	it is used when the datum is dragged, but not when it is calculated.
 ???DB.  Have yet to tie event objective and preprocessor into the event times
 	file
 
@@ -8021,7 +8023,7 @@ update_map_from_manual_time_update
 static void select_trace_1_drawing_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 5 April 2001
+LAST MODIFIED : 27 March 2002
 
 DESCRIPTION :
 ???DB.  Update comment ?
@@ -8268,6 +8270,8 @@ should be done as a callback from the trace_window.
 																	Time_object_set_current_time_privileged(
 																		analysis->datum_time_object,
 																		(double)datum);
+																	Time_object_notify_clients_privileged(
+																		analysis->datum_time_object);
 																} break;
 															}
 														}
@@ -9056,7 +9060,7 @@ should be done as a callback from the trace_window.
 static void select_trace_3_drawing_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 16 January 2002
+LAST MODIFIED : 27 March 2002
 
 DESCRIPTION :
 ???DB.  Change comment ?
@@ -10358,6 +10362,8 @@ should be done as a callback from the trace_window.
 																		Time_object_set_current_time_privileged(
 																			analysis->datum_time_object,
 																			(double)datum);
+																		Time_object_notify_clients_privileged(
+																			analysis->datum_time_object);
 																	} break;
 																}/* switch (moving) */
 																/* update the drawing area 1 of the trace window */
