@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_identity.hpp
 //
-// LAST MODIFIED : 24 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Used when calculating derivatives eg. composition and inverse.
@@ -17,7 +17,7 @@ typedef boost::intrusive_ptr<Function_identity> Function_identity_handle;
 
 class Function_identity : public Function
 //******************************************************************************
-// LAST MODIFIED : 24 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // An identity function for a specified variable.  Used in calculating
@@ -26,6 +26,9 @@ class Function_identity : public Function
 {
 	friend class Function_variable_identity;
 	friend class Function_variable_iterator_representation_atomic_identity;
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		// constructor
 		Function_identity(const Function_variable_handle& variable);
@@ -49,6 +52,8 @@ class Function_identity : public Function
 		Function_identity(const Function_identity&);
 		// assignment
 		Function_identity& operator=(const Function_identity&);
+		// equality
+		bool operator==(const Function&) const;
 	private:
 		Function_variable_handle variable_private;
 };

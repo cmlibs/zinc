@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_function_size_type.cpp
 //
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -69,7 +69,7 @@ static bool
 
 class Function_variable_function_size_type : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -157,10 +157,7 @@ class Function_variable_function_size_type : public Function_variable
 			if (variable_function_size_type=boost::dynamic_pointer_cast<
 				Function_variable_function_size_type,Function_variable>(variable))
 			{
-				if (function()==variable_function_size_type->function())
-				{
-					result=true;
-				}
+				result=equivalent(function(),variable_function_size_type->function());
 			}
 
 			return (result);
@@ -291,7 +288,7 @@ void Function_variable_iterator_representation_atomic_function_size_type::
 bool Function_variable_iterator_representation_atomic_function_size_type::
 	equality(const Function_variable_iterator_representation * representation)
 //******************************************************************************
-// LAST MODIFIED : 25 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -305,14 +302,8 @@ bool Function_variable_iterator_representation_atomic_function_size_type::
 	result=false;
 	if (representation_function_size_type)
 	{
-		if (((0==atomic_variable)&&
-			(0==representation_function_size_type->atomic_variable))||
-			(atomic_variable&&(representation_function_size_type->atomic_variable)&&
-			(*atomic_variable== *(representation_function_size_type->atomic_variable))
-			))
-		{
-			result=true;
-		}
+		result=equivalent(atomic_variable,
+			representation_function_size_type->atomic_variable);
 	}
 
 	return (result);
@@ -418,6 +409,35 @@ Function_variable_handle Function_function_size_type::output()
 		Function_function_size_type_handle(this))));
 }
 
+bool Function_function_size_type::operator==(const Function& function) const
+//******************************************************************************
+// LAST MODIFIED : 13 August 2004
+//
+// DESCRIPTION :
+// Equality operator.
+//==============================================================================
+{
+	bool result;
+
+	result=false;
+	if (this)
+	{
+		try
+		{
+			const Function_function_size_type& function_function_size_type=
+				dynamic_cast<const Function_function_size_type&>(function);
+
+			result=(value_private==function_function_size_type.value_private);
+		}
+		catch (std::bad_cast)
+		{
+			// do nothing
+		}
+	}
+
+	return (result);
+}
+
 Function_size_type Function_function_size_type::value() const
 //******************************************************************************
 // LAST MODIFIED : 25 June 2004
@@ -454,7 +474,7 @@ bool Function_function_size_type::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -467,7 +487,8 @@ bool Function_function_size_type::set_value(
 	result=false;
 	if ((atomic_function_size_type_variable=boost::dynamic_pointer_cast<
 		Function_variable_function_size_type,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_function_size_type_variable->function())&&
+		equivalent(Function_handle(this),
+		atomic_function_size_type_variable->function())&&
 		atomic_value&&(atomic_value->value())&&
 		(std::string("Function_size_type")==(atomic_value->value())->type())&&
 		(value_function_size_type=boost::dynamic_pointer_cast<
@@ -483,14 +504,15 @@ bool Function_function_size_type::set_value(
 Function_handle Function_function_size_type::get_value(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 25 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	Function_handle result(0);
 
-	if (atomic_variable&&(Function_handle(this)==(atomic_variable->function)()))
+	if (atomic_variable&&
+		equivalent(Function_handle(this),(atomic_variable->function)()))
 	{
 		result=Function_handle(new Function_function_size_type(*this));
 	}

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_inverse.hpp
 //
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -16,7 +16,7 @@ typedef boost::intrusive_ptr<Function_inverse> Function_inverse_handle;
 
 class Function_inverse : public Function
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // An inverse of another function.  Evaluates using a Newton-Raphson iteration
@@ -32,6 +32,9 @@ class Function_inverse : public Function
 	friend class Function_variable_iterator_representation_atomic_independent;
 	friend class Function_variable_dependent;
 	friend class Function_variable_dependent_estimate;
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		// constructor
 		Function_inverse(const Function_variable_handle & dependent_variable,
@@ -68,6 +71,8 @@ class Function_inverse : public Function
 		Function_inverse(const Function_inverse&);
 		// assignment
 		Function_inverse& operator=(const Function_inverse&);
+		// equality
+		bool operator==(const Function&) const;
 	private:
 		Function_size_type maximum_iterations_private;
 		Function_variable_handle dependent_variable,independent_variable;

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_intersection.cpp
 //
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -24,7 +24,7 @@ bool intersect_atomic_variable(
 	const std::list<Function_variable_handle>& variables_list,
 	const Function_variable_iterator& atomic_variable_iterator)
 //******************************************************************************
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Determines if (*atomic_variable_iterator) is in all the variables.
@@ -46,8 +46,8 @@ bool intersect_atomic_variable(
 		local_atomic_variable_iterator=
 			(*local_variables_list_iterator)->begin_atomic();
 		while ((local_atomic_variable_iterator!=atomic_variable_iterator)&&
-			!(repeat=(**local_atomic_variable_iterator==
-			**atomic_variable_iterator)))
+			!(repeat=equivalent(*local_atomic_variable_iterator,
+			*atomic_variable_iterator)))
 		{
 			local_atomic_variable_iterator++;
 		}
@@ -60,8 +60,8 @@ bool intersect_atomic_variable(
 				(*local_variables_list_iterator)->begin_atomic();
 			while ((local_atomic_variable_iterator!=
 				(*local_variables_list_iterator)->end_atomic())&&
-				!(intersect=(**local_atomic_variable_iterator==
-				**atomic_variable_iterator)))
+				!(intersect=equivalent(*local_atomic_variable_iterator,
+				*atomic_variable_iterator)))
 			{
 				local_atomic_variable_iterator++;
 			}

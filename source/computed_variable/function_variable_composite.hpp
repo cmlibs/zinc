@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_composite.hpp
 //
-// LAST MODIFIED : 18 March 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // A list of specifiers joined together end on end.  There can be repeats in the
@@ -16,7 +16,7 @@
 
 class Function_variable_composite : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 18 March 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // A composite of other variable(s).
@@ -30,6 +30,9 @@ class Function_variable_composite : public Function_variable
 //==============================================================================
 {
 	friend class Function_variable_iterator_representation_atomic_composite;
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		// constructor
 		Function_variable_composite(const Function_variable_handle& variable_1,

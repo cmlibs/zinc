@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative.cpp
 //
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -67,7 +67,7 @@ class Function_variable_iterator_representation_atomic_derivative:
 
 class Function_variable_derivative : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -106,7 +106,7 @@ class Function_variable_derivative : public Function_variable
 					end_atomic_variable_iterator=
 						function_derivative->dependent_variable_private->end_atomic();
 					while ((atomic_variable_iterator!=end_atomic_variable_iterator)&&
-						(*atomic_variable_iterator!=atomic_dependent_variable))
+						!equivalent(*atomic_variable_iterator,atomic_dependent_variable))
 					{
 						atomic_variable_iterator++;
 					}
@@ -138,7 +138,7 @@ class Function_variable_derivative : public Function_variable
 							atomic_variable_iterator=
 								function_derivative->dependent_variable_private->begin_atomic();
 							while ((atomic_variable_iterator!=end_atomic_variable_iterator)&&
-								(*atomic_variable_iterator!= *variable_iterator_1))
+								!equivalent(*atomic_variable_iterator,*variable_iterator_1))
 							{
 								atomic_variable_iterator++;
 							}
@@ -508,12 +508,9 @@ class Function_variable_derivative : public Function_variable
 			if (variable_derivative=boost::dynamic_pointer_cast<
 				Function_variable_derivative,Function_variable>(variable))
 			{
-				if ((variable_derivative->function()==function_derivative)&&
-					(((0==variable_derivative->atomic_dependent_variable)&&
-					(0==atomic_dependent_variable))||(atomic_dependent_variable&&
-					(variable_derivative->atomic_dependent_variable)&&
-					(*(variable_derivative->atomic_dependent_variable)==
-					*atomic_dependent_variable))))
+				if (equivalent(variable_derivative->function(),function_derivative)&&
+					equivalent(variable_derivative->atomic_dependent_variable,
+					atomic_dependent_variable))
 				{
 					if ((variable_derivative->atomic_independent_variables).size()==
 						atomic_independent_variables.size())
@@ -526,9 +523,7 @@ class Function_variable_derivative : public Function_variable
 						variable_iterator_2=
 							(variable_derivative->atomic_independent_variables).begin();
 						while ((variable_iterator_1!=variable_iterator_1_end)&&
-							(((0== *variable_iterator_1)&&(0== *variable_iterator_2))||
-							((*variable_iterator_1)&&(*variable_iterator_2)&&
-							(**variable_iterator_1== **variable_iterator_2))))
+							equivalent(*variable_iterator_1,*variable_iterator_2))
 						{
 							variable_iterator_1++;
 							variable_iterator_2++;
@@ -1271,7 +1266,7 @@ void Function_variable_iterator_representation_atomic_derivative::decrement()
 bool Function_variable_iterator_representation_atomic_derivative::equality(
 	const Function_variable_iterator_representation * representation)
 //******************************************************************************
-// LAST MODIFIED : 10 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Tests <*this> and <*representation> for equality.
@@ -1286,13 +1281,8 @@ bool Function_variable_iterator_representation_atomic_derivative::equality(
 	result=false;
 	if (representation_derivative)
 	{
-		if (
-			((0==atomic_variable)&&(0==representation_derivative->atomic_variable))||
-			(atomic_variable&&(representation_derivative->atomic_variable)&&
-			(*atomic_variable== *(representation_derivative->atomic_variable))))
-		{
-			result=true;
-		}
+		result=equivalent(atomic_variable,
+			representation_derivative->atomic_variable);
 	}
 
 	return (result);
@@ -1436,10 +1426,61 @@ Function_variable_handle Function_derivative::output()
 		Function_derivative_handle(this))));
 }
 
+bool Function_derivative::operator==(const Function& function) const
+//******************************************************************************
+// LAST MODIFIED : 13 August 2004
+//
+// DESCRIPTION :
+// Equality operator.
+//==============================================================================
+{
+	bool result;
+
+	result=false;
+	if (this)
+	{
+		try
+		{
+			const Function_derivative& function_derivative=
+				dynamic_cast<const Function_derivative&>(function);
+
+			if (equivalent(dependent_variable_private,
+				function_derivative.dependent_variable_private))
+			{
+				std::list<Function_variable_handle>::const_iterator
+					variable_iterator_1,variable_iterator_1_end,variable_iterator_2,
+					variable_iterator_2_end;
+
+				variable_iterator_1=independent_variables_private.begin();
+				variable_iterator_1_end=independent_variables_private.end();
+				variable_iterator_2=
+					function_derivative.independent_variables_private.begin();
+				variable_iterator_2_end=
+					function_derivative.independent_variables_private.end();
+				while ((variable_iterator_1!=variable_iterator_1_end)&&
+					(variable_iterator_2!=variable_iterator_2_end)&&
+					equivalent(*variable_iterator_1,*variable_iterator_2))
+				{
+					variable_iterator_1++;
+					variable_iterator_2++;
+				}
+				result=((variable_iterator_1==variable_iterator_1_end)&&
+					(variable_iterator_2==variable_iterator_2_end));
+			}
+		}
+		catch (std::bad_cast)
+		{
+			// do nothing
+		}
+	}
+
+	return (result);
+}
+
 Function_handle Function_derivative::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1447,9 +1488,9 @@ Function_handle Function_derivative::evaluate(
 	Function_handle result(0);
 	Function_variable_derivative_handle atomic_derivative_variable;
 
-	if ((atomic_derivative_variable=boost::dynamic_pointer_cast<
+	if (this&&(atomic_derivative_variable=boost::dynamic_pointer_cast<
 		Function_variable_derivative,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_derivative_variable->function())&&
+		equivalent(Function_handle(this),atomic_derivative_variable->function())&&
 		(atomic_derivative_variable->is_atomic)()&&
 		(atomic_derivative_variable->atomic_dependent_variable))
 	{
@@ -1465,7 +1506,7 @@ bool Function_derivative::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1477,7 +1518,7 @@ bool Function_derivative::evaluate_derivative(Scalar& derivative,
 	result=false;
 	if ((atomic_variable_derivative=boost::dynamic_pointer_cast<
 		Function_variable_derivative,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_derivative->function())&&
+		equivalent(Function_handle(this),atomic_variable_derivative->function())&&
 		(atomic_variable_derivative->is_atomic)()&&
 		(1==atomic_variable_derivative->number_differentiable())&&
 		(atomic_variable_local=

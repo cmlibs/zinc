@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_union.cpp
 //
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -25,7 +25,7 @@ bool repeat_atomic_variable(
 	const std::list<Function_variable_handle>::iterator& variables_list_iterator,
 	const Function_variable_iterator& atomic_variable_iterator)
 //******************************************************************************
-// LAST MODIFIED : 18 March 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Determines if (*atomic_variable_iterator) appears before it in the union.
@@ -39,7 +39,8 @@ bool repeat_atomic_variable(
 	repeat=false;
 	local_atomic_variable_iterator=(*variables_list_iterator)->begin_atomic();
 	while ((local_atomic_variable_iterator!=atomic_variable_iterator)&&
-		!(repeat=(**local_atomic_variable_iterator== **atomic_variable_iterator)))
+		!(repeat=equivalent(*local_atomic_variable_iterator,
+		*atomic_variable_iterator)))
 	{
 		local_atomic_variable_iterator++;
 	}
@@ -52,8 +53,8 @@ bool repeat_atomic_variable(
 				(*local_variables_list_iterator)->begin_atomic();
 			while ((local_atomic_variable_iterator!=
 				(*local_variables_list_iterator)->end_atomic())&&
-				!(repeat=(**local_atomic_variable_iterator==
-				**atomic_variable_iterator)))
+				!(repeat=equivalent(*local_atomic_variable_iterator,
+				*atomic_variable_iterator)))
 			{
 				local_atomic_variable_iterator++;
 			}

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_element_xi.hpp
 //
-// LAST MODIFIED : 2 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // An element/xi variable.
@@ -18,13 +18,16 @@ typedef boost::intrusive_ptr<Function_variable_element_xi>
 
 class Function_variable_element_xi : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 2 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // An identifier for an element/xi.  The xi index starts at 1.
 //==============================================================================
 {
 	friend class Function_variable_iterator_representation_atomic_element_xi;
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	// inherited
 	public:
 		string_handle get_string_representation();
@@ -33,6 +36,7 @@ class Function_variable_element_xi : public Function_variable
 		std::reverse_iterator<Function_variable_iterator> rbegin_atomic() const;
 		std::reverse_iterator<Function_variable_iterator> rend_atomic() const;
 		virtual Function_size_type number_differentiable();
+		virtual Function_variable_handle operator+=(const Function_variable&);
 	// additional
 	public:
 		virtual Function_size_type number_of_xi() const=0;

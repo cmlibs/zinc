@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_identity.cpp
 //
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 20 August 2004
 //
 // DESCRIPTION :
 //???DB.  Need to be able to get to the variable it wraps so that can do
@@ -84,10 +84,39 @@ Function_variable_handle Function_identity::output()
 		Function_variable_wrapper(Function_handle(this),variable_private)));
 }
 
+bool Function_identity::operator==(const Function& function) const
+//******************************************************************************
+// LAST MODIFIED : 13 August 2004
+//
+// DESCRIPTION :
+// Equality operator.
+//==============================================================================
+{
+	bool result;
+
+	result=false;
+	if (this)
+	{
+		try
+		{
+			const Function_identity& function_identity=
+				dynamic_cast<const Function_identity&>(function);
+
+			result=equivalent(variable_private,function_identity.variable_private);
+		}
+		catch (std::bad_cast)
+		{
+			// do nothing
+		}
+	}
+
+	return (result);
+}
+
 Function_handle Function_identity::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -97,7 +126,7 @@ Function_handle Function_identity::evaluate(
 
 	if ((atomic_identity_variable=boost::dynamic_pointer_cast<
 		Function_variable_wrapper,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_identity_variable->function()))
+		equivalent(Function_handle(this),atomic_identity_variable->function()))
 	{
 		result=(atomic_identity_variable->get_wrapped()->get_value)();
 	}
@@ -109,7 +138,7 @@ bool Function_identity::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 20 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -121,16 +150,14 @@ bool Function_identity::evaluate_derivative(Scalar& derivative,
 	result=false;
 	if ((atomic_variable_identity=boost::dynamic_pointer_cast<
 		Function_variable_wrapper,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_identity->function())&&
+		equivalent(Function_handle(this),atomic_variable_identity->function())&&
 		(1==atomic_variable_identity->number_differentiable())&&
 		(atomic_variable_local=atomic_variable_identity->get_wrapped()))
 	{
 		result=true;
 		if ((1==atomic_independent_variables.size())&&
-			(atomic_independent_variable=boost::dynamic_pointer_cast<
-			Function_variable_wrapper,Function_variable>(
-			atomic_independent_variables.front()))&&
-			(*atomic_variable== *atomic_independent_variable))
+			(atomic_independent_variable=atomic_independent_variables.front())&&
+			equivalent(atomic_variable_local,atomic_independent_variable))
 		{
 			derivative=1;
 		}

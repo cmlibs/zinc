@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_exclusion.hpp
 //
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // One variable, A, excluding another variable, B, ie A intersect not(B).  The
@@ -14,13 +14,16 @@
 
 class Function_variable_exclusion : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Complement with a specified "universe" ie universe intersect not(exclusion)
 //==============================================================================
 {
 	friend class Function_variable_iterator_representation_atomic_exclusion;
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		// constructor
 		Function_variable_exclusion(const Function_variable_handle& universe,

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_composite.cpp
 //
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -263,7 +263,7 @@ Function_variable_composite::Function_variable_composite(
 	std::list<Function_variable_handle>& variables_list):
 	Function_variable(Function_handle(0)),variables_list(0)
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 5 August 2004
 //
 // DESCRIPTION :
 // Constructor.  Needs to "flatten" the <variables_list> ie. expand any
@@ -278,19 +278,22 @@ Function_variable_composite::Function_variable_composite(
 	variable_iterator=variables_list.begin();
 	for (i=variables_list.size();i>0;i--)
 	{
-		Function_variable_composite_handle variable_composite=
-			boost::dynamic_pointer_cast<Function_variable_composite,
-			Function_variable>(*variable_iterator);
+		if (*variable_iterator)
+		{
+			Function_variable_composite_handle variable_composite=
+				boost::dynamic_pointer_cast<Function_variable_composite,
+				Function_variable>(*variable_iterator);
 
-		if (variable_composite)
-		{
-			(this->variables_list).insert((this->variables_list).end(),
-				(variable_composite->variables_list).begin(),
-				(variable_composite->variables_list).end());
-		}
-		else
-		{
-			(this->variables_list).push_back(*variable_iterator);
+			if (variable_composite)
+			{
+				(this->variables_list).insert((this->variables_list).end(),
+					(variable_composite->variables_list).begin(),
+					(variable_composite->variables_list).end());
+			}
+			else
+			{
+				(this->variables_list).push_back(*variable_iterator);
+			}
 		}
 		variable_iterator++;
 	}
@@ -332,7 +335,7 @@ Function_variable_handle Function_variable_composite::clone() const
 
 string_handle Function_variable_composite::get_string_representation()
 //******************************************************************************
-// LAST MODIFIED : 3 March 2004
+// LAST MODIFIED : 5 August 2004
 //
 // DESCRIPTION :
 // ???DB.  Overload << instead of get_string_representation?
@@ -350,7 +353,8 @@ string_handle Function_variable_composite::get_string_representation()
 		out << "composite(";
 		while (i>0)
 		{
-			if (temp_string=(*variable_iterator)->get_string_representation())
+			if ((*variable_iterator)&&
+				(temp_string=(*variable_iterator)->get_string_representation()))
 			{
 				out << *temp_string;
 				delete temp_string;
@@ -466,7 +470,7 @@ Function_size_type Function_variable_composite::number_differentiable()
 bool Function_variable_composite::equality_atomic(
 	const Function_variable_handle& variable) const
 //******************************************************************************
-// LAST MODIFIED : 15 March 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -478,7 +482,25 @@ bool Function_variable_composite::equality_atomic(
 	if (variable_composite=boost::dynamic_pointer_cast<
 		Function_variable_composite,Function_variable>(variable))
 	{
-		result=(variables_list==variable_composite->variables_list);
+		std::list<Function_variable_handle>::const_iterator
+			variable_iterator_1,variable_iterator_1_end,variable_iterator_2,
+			variable_iterator_2_end;
+
+		variable_iterator_1=variables_list.begin();
+		variable_iterator_1_end=variables_list.end();
+		variable_iterator_2=
+			(variable_composite->variables_list).begin();
+		variable_iterator_2_end=
+			(variable_composite->variables_list).end();
+		while ((variable_iterator_1!=variable_iterator_1_end)&&
+			(variable_iterator_2!=variable_iterator_2_end)&&
+			equivalent(*variable_iterator_1,*variable_iterator_2))
+		{
+			variable_iterator_1++;
+			variable_iterator_2++;
+		}
+		result=((variable_iterator_1==variable_iterator_1_end)&&
+			(variable_iterator_2==variable_iterator_2_end));
 	}
 
 	return (result);

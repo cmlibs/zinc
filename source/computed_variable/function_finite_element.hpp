@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.hpp
 //
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -20,12 +20,15 @@ extern "C"
 
 class Function_element : public Function
 //******************************************************************************
-// LAST MODIFIED : 22 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // An identity function whose input/output is and element.
 //==============================================================================
 {
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		// constructor
 		Function_element(struct FE_element *element);
@@ -57,6 +60,8 @@ class Function_element : public Function
 		Function_element(const Function_element&);
 		// assignment
 		Function_element& operator=(const Function_element&);
+		// equality
+		bool operator==(const Function&) const;
 	private:
 		struct FE_element *element_private;
 };
@@ -65,13 +70,16 @@ typedef boost::intrusive_ptr<Function_element> Function_element_handle;
 
 class Function_element_xi : public Function
 //******************************************************************************
-// LAST MODIFIED : 22 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // An identity function whose input/output is element/xi.
 //==============================================================================
 {
 	friend class Function_finite_element;
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		// constructor
 		Function_element_xi(struct FE_element *element,const Vector& xi);
@@ -111,6 +119,8 @@ class Function_element_xi : public Function
 		Function_element_xi(const Function_element_xi&);
 		// assignment
 		Function_element_xi& operator=(const Function_element_xi&);
+		// equality
+		bool operator==(const Function&) const;
 	private:
 		struct FE_element *element_private;
 		Vector xi_private;
@@ -124,7 +134,7 @@ typedef boost::intrusive_ptr<Function_finite_element>
 
 class Function_finite_element : public Function
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // A function for a finite element interpolation field.
@@ -219,6 +229,8 @@ class Function_finite_element : public Function
 		Function_finite_element(const Function_finite_element&);
 		// assignment
 		Function_finite_element& operator=(const Function_finite_element&);
+		// equality
+		bool operator==(const Function&) const;
 	private:
 		Scalar time_private;
 		struct FE_element *element_private;

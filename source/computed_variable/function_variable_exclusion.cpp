@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_exclusion.cpp
 //
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -24,7 +24,7 @@ bool include_atomic_variable(Function_variable_handle universe,
 	Function_variable_handle exclusion,
 	const Function_variable_iterator& atomic_variable_iterator)
 //******************************************************************************
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Determines if (*atomic_variable_iterator) appears in the universe-exclusion.
@@ -37,7 +37,8 @@ bool include_atomic_variable(Function_variable_handle universe,
 	// ignore duplicates in universe
 	local_atomic_variable_iterator=universe->begin_atomic();
 	while ((local_atomic_variable_iterator!=atomic_variable_iterator)&&
-		(include= !(**local_atomic_variable_iterator== **atomic_variable_iterator)))
+		(include= !equivalent(*local_atomic_variable_iterator,
+		*atomic_variable_iterator)))
 	{
 		local_atomic_variable_iterator++;
 	}
@@ -45,7 +46,7 @@ bool include_atomic_variable(Function_variable_handle universe,
 	{
 		local_atomic_variable_iterator=exclusion->begin_atomic();
 		while ((local_atomic_variable_iterator!=exclusion->end_atomic())&&(include=
-			!(**local_atomic_variable_iterator== **atomic_variable_iterator)))
+			!equivalent(*local_atomic_variable_iterator,*atomic_variable_iterator)))
 		{
 			local_atomic_variable_iterator++;
 		}

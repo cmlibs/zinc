@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_function_size_type.hpp
 //
-// LAST MODIFIED : 25 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -19,13 +19,16 @@ typedef boost::intrusive_ptr<Function_function_size_type>
 
 class Function_function_size_type : public Function
 //******************************************************************************
-// LAST MODIFIED : 25 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // An identity function whose input/output is a function_size_type
 //==============================================================================
 {
 	friend class Function_variable_function_size_type;
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		// constructor
 		Function_function_size_type(Function_size_type& value);
@@ -52,6 +55,8 @@ class Function_function_size_type : public Function
 		Function_function_size_type(const Function_function_size_type&);
 		// assignment
 		Function_function_size_type& operator=(const Function_function_size_type&);
+		// equality
+		bool operator==(const Function&) const;
 	private:
 		Function_size_type value_private;
 };

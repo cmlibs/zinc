@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.hpp
 //
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // An abstract class for specifying input/independent and output/dependent
@@ -112,13 +112,16 @@ class Function_variable_iterator:
 
 class Function_variable
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // A specification for an input/independent and/or output/dependent variable of
 // a Function.
 //==============================================================================
 {
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		virtual Function_variable_handle clone() const=0;
 		// if the variable is for a single function, the function is returned,
@@ -166,20 +169,19 @@ class Function_variable
 		//   differentiate (output/dependent) or differentiate with respect to
 		//   (input/independent)
 		virtual Function_size_type number_differentiable();
-		// equality operator
-		virtual bool operator==(const Function_variable&) const;
 		// the norm of the variable.  A negative result means that the norm is not
 		//   defined
 		virtual Scalar norm() const;
 		// a zero handle indicates an error.  -= and += work in place.  - and +
 		//   create new Functions and return their output variables
-		//???DB.  Should these be on Functions?
 		virtual Function_variable_handle operator-(const Function_variable&) const;
 		virtual Function_variable_handle operator-=(const Function_variable&);
 		virtual Function_variable_handle operator+(const Function_variable&) const;
 		virtual Function_variable_handle operator+=(const Function_variable&);
 	private:
 		virtual bool equality_atomic(const Function_variable_handle&) const=0;
+		// equality operator.  To be used in equivalent
+		virtual bool operator==(const Function_variable&) const;
 	protected:
 		// constructors.  Protected so that can't create "plain" Function_variables
 		Function_variable(const Function_handle& function);

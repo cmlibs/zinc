@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.cpp
 //
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // See function_variable.hpp
@@ -164,6 +164,12 @@
 // ???DB.  Stroustrup 281.  If implicit type conversion is desired for all
 //   operands of an operation, the function implementing it must be a nonmember
 //   function taking a const reference argument or a non-reference argument.
+//
+// ???DB.  11 August 2004
+//   Add operator= that copies values
+//   Change evaluate to return a boolean and use get to retrieve the result?
+//   Remove evaluate_derivative? - means less flexibility, what about in
+//     Function_inverse?
 //==============================================================================
 
 //???debug.  See t/37.com

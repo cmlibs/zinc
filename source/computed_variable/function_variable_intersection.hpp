@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_intersection.hpp
 //
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // A intersection of variables.  The list of atomic specifiers [begin_atomic(),
@@ -16,13 +16,16 @@
 
 class Function_variable_intersection : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 19 March 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // A intersection of other variable(s).
 //==============================================================================
 {
 	friend class Function_variable_iterator_representation_atomic_intersection;
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		// constructor
 		Function_variable_intersection(const Function_variable_handle& variable_1,

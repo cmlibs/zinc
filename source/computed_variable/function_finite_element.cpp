@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.cpp
 //
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Finite element types - element, element/xi and finite element field.
@@ -51,6 +51,9 @@ extern "C"
 // module typedefs
 // ===============
 
+typedef boost::intrusive_ptr< Function_matrix<Scalar> >
+	Function_matrix_scalar_handle;
+
 typedef boost::intrusive_ptr< Function_variable_matrix<Scalar> >
 	Function_variable_matrix_scalar_handle;
 
@@ -68,7 +71,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_components>
 class Function_variable_matrix_components :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 15 July 2004
+// LAST MODIFIED : 9 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -154,8 +157,48 @@ class Function_variable_matrix_components :
 
 			return (return_string);
 		};
+		Function_handle get_value()
+		{
+			Function_handle result(0);
+			Function_finite_element_handle function_finite_element;
+
+			if (this&&(function_finite_element=
+				boost::dynamic_pointer_cast<Function_finite_element,Function>(
+				function())))
+			{
+				if (0==row)
+				{
+					Function_size_type i,number_of_components=
+						function_finite_element->number_of_components();
+					Matrix result_matrix(number_of_components,1);
+
+					i=0;
+					while ((i<number_of_components)&&
+						(function_finite_element->component_value)(i+1,result_matrix(i,0)))
+					{
+						i++;
+					}
+					if (i==number_of_components)
+					{
+						result=Function_handle(new Function_matrix<Scalar>(result_matrix));
+					}
+				}
+				else
+				{
+					Matrix result_matrix(1,1);
+
+					if ((function_finite_element->component_value)(row,
+						result_matrix(0,0)))
+					{
+						result=Function_handle(new Function_matrix<Scalar>(result_matrix));
+					}
+				}
+			}
+
+			return (result);
+		};
 		Function_variable_matrix_scalar_handle operator()(
-			Function_size_type row,Function_size_type column)
+			Function_size_type row,Function_size_type column) const
 		{
 			Function_variable_matrix_scalar_handle result(0);
 
@@ -260,7 +303,7 @@ class Function_variable_iterator_representation_atomic_element:
 
 class Function_variable_element : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -338,7 +381,7 @@ class Function_variable_element : public Function_variable
 			if (variable_element=boost::dynamic_pointer_cast<
 				Function_variable_element,Function_variable>(variable))
 			{
-				if ((variable_element->function()==function()))
+				if (equivalent(variable_element->function(),function()))
 				{
 					result=true;
 				}
@@ -481,7 +524,7 @@ void Function_variable_iterator_representation_atomic_element::decrement()
 bool Function_variable_iterator_representation_atomic_element::equality(
 	const Function_variable_iterator_representation * representation)
 //******************************************************************************
-// LAST MODIFIED : 11 April 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Tests <*this> and <*representation> for equality.
@@ -496,13 +539,8 @@ bool Function_variable_iterator_representation_atomic_element::equality(
 	result=false;
 	if (representation_element)
 	{
-		if (
-			((0==atomic_variable)&&(0==representation_element->atomic_variable))||
-			(atomic_variable&&(representation_element->atomic_variable)&&
-			(*atomic_variable== *(representation_element->atomic_variable))))
-		{
-			result=true;
-		}
+		result=equivalent(atomic_variable,
+			representation_element->atomic_variable);
 	}
 
 	return (result);
@@ -1000,7 +1038,7 @@ the <node>.
 class Function_variable_matrix_nodal_values :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 15 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1173,7 +1211,7 @@ class Function_variable_matrix_nodal_values :
 				const_cast<Function_variable_matrix_nodal_values*>(this)))));
 		};
 		Function_variable_matrix_scalar_handle operator()(
-			Function_size_type row,Function_size_type column)
+			Function_size_type row,Function_size_type column) const
 		{
 			Function_variable_matrix_scalar_handle result(0);
 
@@ -1274,7 +1312,7 @@ class Function_variable_matrix_nodal_values :
 				Function_variable_matrix_nodal_values,Function_variable>(variable))
 			{
 				result=
-					(variable_nodal_values->function()==function())&&
+					equivalent(variable_nodal_values->function(),function())&&
 					(variable_nodal_values->component_number==component_number)&&
 					(variable_nodal_values->value_type==value_type)&&
 					(variable_nodal_values->version==version)&&
@@ -1648,7 +1686,7 @@ void Function_variable_iterator_representation_atomic_nodal_values::increment()
 						while ((component_iterator!=component_end)&&
 							((!(variable_finite_element=boost::dynamic_pointer_cast<
 							Function_variable_matrix_components,Function_variable>(
-							*component_iterator)))||(atomic_variable->function()!=
+							*component_iterator)))||!equivalent(atomic_variable->function(),
 							variable_finite_element->function())))
 						{
 							component_iterator++;
@@ -1757,7 +1795,7 @@ void Function_variable_iterator_representation_atomic_nodal_values::increment()
 
 void Function_variable_iterator_representation_atomic_nodal_values::decrement()
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Decrements the iterator to the next atomic variable.  The decrementing order
@@ -1829,7 +1867,7 @@ void Function_variable_iterator_representation_atomic_nodal_values::decrement()
 							while ((component_iterator!=component_begin)&&
 								((!(variable_finite_element=boost::dynamic_pointer_cast<
 								Function_variable_matrix_components,Function_variable>(
-								*component_iterator)))||(atomic_variable->function()!=
+								*component_iterator)))||!equivalent(atomic_variable->function(),
 								variable_finite_element->function())))
 							{
 								component_iterator--;
@@ -1837,7 +1875,7 @@ void Function_variable_iterator_representation_atomic_nodal_values::decrement()
 							}
 							if ((variable_finite_element=boost::dynamic_pointer_cast<
 								Function_variable_matrix_components,Function_variable>(
-								*component_iterator))&&(atomic_variable->function()==
+								*component_iterator))&&equivalent(atomic_variable->function(),
 								variable_finite_element->function()))
 							{
 								atomic_variable->component_number=component_number;
@@ -2092,7 +2130,7 @@ void Function_variable_iterator_representation_atomic_nodal_values::decrement()
 bool Function_variable_iterator_representation_atomic_nodal_values::equality(
 	const Function_variable_iterator_representation * representation)
 //******************************************************************************
-// LAST MODIFIED : 31 March 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Tests <*this> and <*representation> for equality.
@@ -2107,13 +2145,8 @@ bool Function_variable_iterator_representation_atomic_nodal_values::equality(
 	result=false;
 	if (representation_nodal_values)
 	{
-		if (((0==atomic_variable)&&
-			(0==representation_nodal_values->atomic_variable))||
-			(atomic_variable&&(representation_nodal_values->atomic_variable)&&
-			(*atomic_variable== *(representation_nodal_values->atomic_variable))))
-		{
-			result=true;
-		}
+		result=equivalent(atomic_variable,
+			representation_nodal_values->atomic_variable);
 	}
 
 	return (result);
@@ -2260,6 +2293,35 @@ Function_variable_handle Function_element::output()
 		Function_element_handle(this))));
 }
 
+bool Function_element::operator==(const Function& function) const
+//******************************************************************************
+// LAST MODIFIED : 13 August 2004
+//
+// DESCRIPTION :
+// Equality operator.
+//==============================================================================
+{
+	bool result;
+
+	result=false;
+	if (this)
+	{
+		try
+		{
+			const Function_element& function_element=
+				dynamic_cast<const Function_element&>(function);
+
+			result=(element_private==function_element.element_private);
+		}
+		catch (std::bad_cast)
+		{
+			// do nothing
+		}
+	}
+
+	return (result);
+}
+
 Function_size_type Function_element::dimension()
 //******************************************************************************
 // LAST MODIFIED : 8 April 2004
@@ -2308,7 +2370,7 @@ bool Function_element::evaluate_derivative(Scalar&,Function_variable_handle,
 bool Function_element::set_value(Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2319,8 +2381,8 @@ bool Function_element::set_value(Function_variable_handle atomic_variable,
 	result=false;
 	if ((atomic_element_variable=boost::dynamic_pointer_cast<
 		Function_variable_element,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_element_variable->function())&&atomic_value&&
-		(atomic_value->value()))
+		equivalent(Function_handle(this),atomic_element_variable->function())&&
+		atomic_value&&(atomic_value->value()))
 	{
 		Function_variable_value_element_handle value_element;
 
@@ -2343,7 +2405,7 @@ bool Function_element::set_value(Function_variable_handle atomic_variable,
 Function_handle Function_element::get_value(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 30 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2353,7 +2415,7 @@ Function_handle Function_element::get_value(
 
 	if ((atomic_variable_element=boost::dynamic_pointer_cast<
 		Function_variable_element,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_element->function()))
+		equivalent(Function_handle(this),atomic_variable_element->function()))
 	{
 		result=Function_handle(new Function_element(*this));
 	}
@@ -2491,6 +2553,42 @@ Function_variable_handle Function_element_xi::output()
 		Function_element_xi_handle(this))));
 }
 
+bool Function_element_xi::operator==(const Function& function) const
+//******************************************************************************
+// LAST MODIFIED : 13 August 2004
+//
+// DESCRIPTION :
+// Equality operator.
+//==============================================================================
+{
+	bool result;
+
+	result=false;
+	if (this)
+	{
+		try
+		{
+			const Function_element_xi& function_element_xi=
+				dynamic_cast<const Function_element_xi&>(function);
+			Function_size_type i;
+
+			result=((element_private==function_element_xi.element_private)&&
+				((i=xi_private.size())==function_element_xi.xi_private.size()));
+			while (result&&(i>0))
+			{
+				i--;
+				result=(xi_private[i]==function_element_xi.xi_private[i]);
+			}
+		}
+		catch (std::bad_cast)
+		{
+			// do nothing
+		}
+	}
+
+	return (result);
+}
+
 Function_variable_handle Function_element_xi::element()
 //******************************************************************************
 // LAST MODIFIED : 19 July 2004
@@ -2589,7 +2687,7 @@ bool Function_element_xi::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2602,7 +2700,7 @@ bool Function_element_xi::evaluate_derivative(Scalar& derivative,
 	if ((atomic_dependent_variable=boost::dynamic_pointer_cast<
 		Function_variable_element_xi_element_xi,Function_variable>(
 		atomic_variable))&&
-		(Function_handle(this)==atomic_dependent_variable->function())&&
+		equivalent(Function_handle(this),atomic_dependent_variable->function())&&
 		(1==atomic_dependent_variable->number_differentiable()))
 	{
 		result=true;
@@ -2610,7 +2708,7 @@ bool Function_element_xi::evaluate_derivative(Scalar& derivative,
 			(atomic_independent_variable=boost::dynamic_pointer_cast<
 			Function_variable_element_xi_element_xi,Function_variable>(
 			atomic_independent_variables.front()))&&
-			(*atomic_dependent_variable== *atomic_independent_variable))
+			equivalent(atomic_dependent_variable,atomic_independent_variable))
 		{
 			derivative=1;
 		}
@@ -2626,7 +2724,7 @@ bool Function_element_xi::evaluate_derivative(Scalar& derivative,
 bool Function_element_xi::set_value(Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2638,7 +2736,7 @@ bool Function_element_xi::set_value(Function_variable_handle atomic_variable,
 	if ((atomic_element_xi_variable=boost::dynamic_pointer_cast<
 		Function_variable_element_xi_element_xi,Function_variable>(
 		atomic_variable))&&
-		(Function_handle(this)==atomic_element_xi_variable->function())&&
+		equivalent(Function_handle(this),atomic_element_xi_variable->function())&&
 		atomic_value&&(atomic_value->value()))
 	{
 		Function_variable_value_element_handle value_element;
@@ -2677,7 +2775,7 @@ bool Function_element_xi::set_value(Function_variable_handle atomic_variable,
 Function_handle Function_element_xi::get_value(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2688,7 +2786,7 @@ Function_handle Function_element_xi::get_value(
 	if ((atomic_variable_element_xi=boost::dynamic_pointer_cast<
 		Function_variable_element_xi_element_xi,Function_variable>(
 		atomic_variable))&&
-		(Function_handle(this)==atomic_variable_element_xi->function()))
+		equivalent(Function_handle(this),atomic_variable_element_xi->function()))
 	{
 		if (atomic_variable_element_xi->xi_private)
 		{
@@ -2696,7 +2794,7 @@ Function_handle Function_element_xi::get_value(
 
 			if (atomic_variable_element_xi->get_xi(result_matrix(0,0)))
 			{
-				result=Function_handle(new Function_matrix(result_matrix));
+				result=Function_handle(new Function_matrix<Scalar>(result_matrix));
 			}
 		}
 		else
@@ -2857,6 +2955,35 @@ Function_variable_handle Function_finite_element::output()
 {
 	return (Function_variable_handle(new Function_variable_matrix_components(
 		Function_finite_element_handle(this))));
+}
+
+bool Function_finite_element::operator==(const Function& function) const
+//******************************************************************************
+// LAST MODIFIED : 13 August 2004
+//
+// DESCRIPTION :
+// Equality operator.
+//==============================================================================
+{
+	bool result;
+
+	result=false;
+	if (this)
+	{
+		try
+		{
+			const Function_finite_element& function_finite_element=
+				dynamic_cast<const Function_finite_element&>(function);
+
+			result=(field_private==function_finite_element.field_private);
+		}
+		catch (std::bad_cast)
+		{
+			// do nothing
+		}
+	}
+
+	return (result);
 }
 
 Function_variable_handle Function_finite_element::component(
@@ -3344,7 +3471,7 @@ bool Function_finite_element::component_value(Function_size_type number,
 Function_handle Function_finite_element::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -3359,7 +3486,8 @@ Function_handle Function_finite_element::evaluate(
 		int element_dimension;
 
 		xi_coordinates=(FE_value *)NULL;
-		if ((Function_handle(this)==atomic_variable_finite_element->function())&&
+		if (equivalent(Function_handle(this),
+			atomic_variable_finite_element->function())&&
 			(0<atomic_variable_finite_element->row)&&field_private&&
 			(atomic_variable_finite_element->row<=number_of_components())&&
 			((node_private&&!element_private)||(!node_private&&element_private&&
@@ -3384,7 +3512,7 @@ Function_handle Function_finite_element::evaluate(
 				Matrix result_matrix(1,1);
 
 				result_matrix(0,0)=(Scalar)fe_value;
-				result=Function_handle(new Function_matrix(result_matrix));
+				result=Function_handle(new Function_matrix<Scalar>(result_matrix));
 			}
 		}
 	}
@@ -3435,8 +3563,8 @@ class Function_finite_element_check_derivative_functor
 
 				if ((variable_element_xi_handle=boost::dynamic_pointer_cast<
 					Function_variable_element_xi_finite_element,Function_variable>(
-					variable))&&(function_finite_element==
-					variable_element_xi_handle->function())&&
+					variable))&&equivalent(
+					variable_element_xi_handle->function(),function_finite_element)&&
 					(variable_element_xi_handle->xi_private))
 				{
 					// not checking order of derivative against order of polynomial
@@ -3444,8 +3572,8 @@ class Function_finite_element_check_derivative_functor
 				}
 				else if ((variable_nodal_values_handle=
 					boost::dynamic_pointer_cast<Function_variable_matrix_nodal_values,
-					Function_variable>(variable))&&(function_finite_element==
-					variable_nodal_values_handle->function())&&
+					Function_variable>(variable))&&equivalent(
+					variable_nodal_values_handle->function(),function_finite_element)&&
 					(component_number==variable_nodal_values_handle->component_number))
 				{
 					if (nodal_values_variable)
@@ -3622,7 +3750,7 @@ static int nodal_value_calculate_component_values(
 	int *number_of_nodal_values_address,int **numbers_of_component_values_address,
 	FE_value ****component_values_address)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2004
+LAST MODIFIED : 6 August 2004
 
 DESCRIPTION :
 Calculate the component values for the derivatives of the specified components
@@ -3831,8 +3959,8 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 							{
 								zero_vector(i,0)=(Scalar)0;
 							}
-							if (!((variable->set_value)(
-								Function_matrix_handle(new Function_matrix(zero_vector)))))
+							if (!((variable->set_value)(Function_matrix_scalar_handle(
+								new Function_matrix<Scalar>(zero_vector)))))
 							{
 								return_code=0;
 							}
@@ -3852,8 +3980,8 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 							Function_size_type number_of_values=(Function_size_type)
 								(element_field_number_of_specified_nodal_values[i]);
 							Matrix unit_vector_values(number_of_values,1);
-							Function_matrix_handle unit_vector(new Function_matrix(
-								unit_vector_values));
+							Function_matrix_scalar_handle unit_vector(
+								new Function_matrix<Scalar>(unit_vector_values));
 							Function_variable_matrix_nodal_values_handle variable(new
 								Function_variable_matrix_nodal_values(
 								function_finite_element,component_number,
@@ -3992,7 +4120,7 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 				setting temporary values */
 			for (i=0;i<number_of_element_field_nodes;i++)
 			{
-				element_field_saved_nodal_values[i]=Function_matrix_handle(0);
+				element_field_saved_nodal_values[i]=Function_matrix_scalar_handle(0);
 			}
 		}
 		else
@@ -4354,7 +4482,7 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // ???DB.  Throw an exception for failure?
@@ -4370,7 +4498,7 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 	if ((atomic_variable_element_xi=boost::dynamic_pointer_cast<
 		Function_variable_element_xi_finite_element,Function_variable>(
 		atomic_variable))&&
-		(Function_handle(this)==atomic_variable_element_xi->function()))
+		equivalent(Function_handle(this),atomic_variable_element_xi->function()))
 	{
 		// fall back to Function_element_xi::evaluate_derivative
 		Function_element_xi_handle local_function_element_xi(
@@ -4390,7 +4518,8 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 	}
 	else if ((atomic_variable_finite_element=boost::dynamic_pointer_cast<
 		Function_variable_matrix_components,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_finite_element->function())&&
+		equivalent(Function_handle(this),
+		atomic_variable_finite_element->function())&&
 		(0<atomic_variable_finite_element->row)&&field_private&&
 		(atomic_variable_finite_element->row<=number_of_components())&&
 		!node_private&&element_private&&(0<(local_number_of_xi=number_of_xi()))&&
@@ -4485,8 +4614,8 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 										{
 											zero_vector(j,0)=(Scalar)0;
 										}
-										if (!((variable->set_value)(Function_matrix_handle(
-											new Function_matrix(zero_vector)))))
+										if (!((variable->set_value)(Function_matrix_scalar_handle(
+											new Function_matrix<Scalar>(zero_vector)))))
 										{
 											result=false;
 										}
@@ -4502,8 +4631,9 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 
 									// set the nodal_values_variable to 1
 									one_vector(0,0)=(Scalar)1;
-									if ((nodal_values_variable->set_value)(Function_matrix_handle(
-										new Function_matrix(one_vector))))
+									if ((nodal_values_variable->set_value)(
+										Function_matrix_scalar_handle(
+										new Function_matrix<Scalar>(one_vector))))
 									{
 										// need to use FE_element_field_values_set_no_modify because
 										//   after changing the nodal values to all zeros except one
@@ -4540,7 +4670,8 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 									setting temporary values */
 								for (i=0;i<number_of_element_field_nodes;i++)
 								{
-									element_field_saved_nodal_values[i]=Function_matrix_handle(0);
+									element_field_saved_nodal_values[i]=
+										Function_matrix_scalar_handle(0);
 								}
 							}
 							else
@@ -4750,8 +4881,8 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 									{
 										zero_vector(j,0)=(Scalar)0;
 									}
-									if (!((variable->set_value)(
-										Function_matrix_handle(new Function_matrix(zero_vector)))))
+									if (!((variable->set_value)(Function_matrix_scalar_handle(
+										new Function_matrix<Scalar>(zero_vector)))))
 									{
 										result=false;
 									}
@@ -4767,8 +4898,9 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 
 								// set the nodal_values_variable to 1
 								one_vector(0,0)=(Scalar)1;
-								if ((nodal_values_variable->set_value)(Function_matrix_handle(
-									new Function_matrix(one_vector))))
+								if ((nodal_values_variable->set_value)(
+									Function_matrix_scalar_handle(
+									new Function_matrix<Scalar>(one_vector))))
 								{
 									FE_value fe_value,*xi_coordinates;
 									Function_size_type j;
@@ -4828,7 +4960,8 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 								setting temporary values */
 							for (i=0;i<number_of_element_field_nodes;i++)
 							{
-								element_field_saved_nodal_values[i]=Function_matrix_handle(0);
+								element_field_saved_nodal_values[i]=
+									Function_matrix_scalar_handle(0);
 							}
 						}
 						else
@@ -4969,7 +5102,7 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 	}
 	else if ((atomic_variable_nodal_values=boost::dynamic_pointer_cast<
 		Function_variable_matrix_nodal_values,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_nodal_values->function()))
+		equivalent(Function_handle(this),atomic_variable_nodal_values->function()))
 	{
 		Function_variable_matrix_nodal_values_handle atomic_independent_variable;
 
@@ -4978,7 +5111,7 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 			(atomic_independent_variable=boost::dynamic_pointer_cast<
 			Function_variable_matrix_nodal_values,Function_variable>(
 			atomic_independent_variables.front()))&&
-			(*atomic_variable_nodal_values== *atomic_independent_variable))
+			equivalent(atomic_variable_nodal_values,atomic_independent_variable))
 		{
 			derivative=1;
 		}
@@ -4995,7 +5128,7 @@ bool Function_finite_element::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -5009,7 +5142,7 @@ bool Function_finite_element::set_value(
 	if ((atomic_variable_element_xi=boost::dynamic_pointer_cast<
 		Function_variable_element_xi_finite_element,Function_variable>(
 		atomic_variable))&&
-		(Function_handle(this)==atomic_variable_element_xi->function()))
+		equivalent(Function_handle(this),atomic_variable_element_xi->function()))
 	{
 		Function_variable_value_element_handle value_element;
 		Function_variable_value_scalar_handle value_scalar;
@@ -5042,7 +5175,8 @@ bool Function_finite_element::set_value(
 	}
 	else if ((atomic_variable_finite_element=boost::dynamic_pointer_cast<
 		Function_variable_matrix_components,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_finite_element->function()))
+		equivalent(Function_handle(this),
+			atomic_variable_finite_element->function()))
 	{
 		Function_variable_value_scalar_handle value_scalar;
 
@@ -5056,7 +5190,7 @@ bool Function_finite_element::set_value(
 	}
 	else if ((atomic_variable_nodal_values=boost::dynamic_pointer_cast<
 		Function_variable_matrix_nodal_values,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_nodal_values->function()))
+		equivalent(Function_handle(this),atomic_variable_nodal_values->function()))
 	{
 		Function_variable_value_scalar_handle value_scalar;
 
@@ -5082,7 +5216,7 @@ bool Function_finite_element::set_value(
 Function_handle Function_finite_element::get_value(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -5095,7 +5229,7 @@ Function_handle Function_finite_element::get_value(
 	if ((atomic_variable_element_xi=boost::dynamic_pointer_cast<
 		Function_variable_element_xi_finite_element,Function_variable>(
 		atomic_variable))&&
-		(Function_handle(this)==atomic_variable_element_xi->function()))
+		equivalent(Function_handle(this),atomic_variable_element_xi->function()))
 	{
 		// fall back to Function_element_xi::get_value
 		Function_element_xi_handle local_function_element_xi(
@@ -5115,18 +5249,19 @@ Function_handle Function_finite_element::get_value(
 	}
 	else if ((atomic_variable_finite_element=boost::dynamic_pointer_cast<
 		Function_variable_matrix_components,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_finite_element->function()))
+		equivalent(Function_handle(this),
+		atomic_variable_finite_element->function()))
 	{
 		Matrix result_matrix(1,1);
 
 		if ((atomic_variable_finite_element->get_entry)(result_matrix(0,0)))
 		{
-			result=Function_handle(new Function_matrix(result_matrix));
+			result=Function_handle(new Function_matrix<Scalar>(result_matrix));
 		}
 	}
 	else if ((atomic_variable_nodal_values=boost::dynamic_pointer_cast<
 		Function_variable_matrix_nodal_values,Function_variable>(atomic_variable))&&
-		(Function_handle(this)==atomic_variable_nodal_values->function()))
+		equivalent(Function_handle(this),atomic_variable_nodal_values->function()))
 	{
 		Scalar value;
 
@@ -5138,7 +5273,7 @@ Function_handle Function_finite_element::get_value(
 			Matrix result_matrix(1,1);
 
 			result_matrix(0,0)=value;
-			result=Function_handle(new Function_matrix(result_matrix));
+			result=Function_handle(new Function_matrix<Scalar>(result_matrix));
 		}
 	}
 

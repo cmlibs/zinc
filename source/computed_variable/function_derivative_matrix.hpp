@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.hpp
 //
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -20,7 +20,7 @@ typedef boost::intrusive_ptr<Function_derivative_matrix>
 
 class Function_derivative_matrix : public Function
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -30,6 +30,9 @@ class Function_derivative_matrix : public Function
 	friend class Function_variable_dependent;
 	friend Function_handle Function_variable::evaluate_derivative(
 		std::list<Function_variable_handle>& independent_variables);
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	// inherited
 	public:
 		string_handle get_string_representation();
@@ -72,6 +75,8 @@ class Function_derivative_matrix : public Function
 		Function_derivative_matrix& operator=(const Function_derivative_matrix&);
 		// destructor
 		virtual ~Function_derivative_matrix();
+		// equality
+		bool operator==(const Function&) const;
 	private:
 		//???DB.  Should be Function_variable rather Function_variable_handle
 		//  because when Function_variable changes derivative matrix doesn't
