@@ -21039,6 +21039,7 @@ not node-based are ignored.
 										}
 									}
 									DEALLOCATE(blending_matrix);
+									DEALLOCATE(inherited_basis_arguments);
 								}
 								else
 								{
