@@ -18642,6 +18642,7 @@ Computed_field wrapper for each FE_field in the manager.
 			case MANAGER_CHANGE_DELETE(FE_field):
 			{
 				/* do nothing; this can never happen as must destroy Computed field before FE_field */
+				return_code=1;
 #if defined (OLD_CODE)
 				fe_field=message->object_changed;
 				if ((field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
