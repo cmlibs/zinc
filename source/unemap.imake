@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 1 March 2000
+XCOMM LAST MODIFIED : 9 March 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -604,6 +604,7 @@ transfer :
 	tar -cvf - \
 	unemap.make unemap.c version.h \
 	unemap/WildC unemap/WildH unemap/WildUil \
+	unemap_hardware_service/WildC unemap_hardware_service/WildH unemap_hardware_service/WildUil \
 	unemap/utilities/WildC unemap/utilities/WildH unemap/utilities/WildUil \
 	command/parser.c command/parser.h \
 	general/WildC generalWildH general/WildUil \
