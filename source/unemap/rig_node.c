@@ -7659,7 +7659,7 @@ numbers to the end of the legal number range (INT_MAX).
 	element_group = (struct GROUP(FE_element) *) NULL;
 	data.node_manager = (struct MANAGER(FE_node) *)NULL;
 	data.element_manager = (struct MANAGER(FE_element) *)NULL;
-	if(exnode_string&&exelem_string&&fe_field_manager&&node_manager,element_manager&&
+	if(exnode_string&&exelem_string&&fe_field_manager&&node_manager&&element_manager&&
 		node_group_manager&&data_group_manager&&element_group_manager&&basis_manager)
 	{
 		/* for now, can only change identifiers of nodes/elements if there's only ONE*/	
