@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 26 July 2002
+LAST MODIFIED : 13 August 2002
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -13031,7 +13031,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 static int gfx_edit_spectrum(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 13 August 2002
 
 DESCRIPTION :
 Executes a GFX EDIT SPECTRUM command.
@@ -13041,46 +13041,38 @@ Invokes the graphical spectrum group editor.
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Spectrum *spectrum;
-	static struct Modifier_entry option_table[]=
-	{
-		{NULL,NULL,NULL,set_Spectrum},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 
 	ENTER(gfx_edit_spectrum);
 	USE_PARAMETER(dummy_to_be_modified);
-	/* check arguments */
-	if (state)
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		/* initialize defaults */
+		spectrum = (struct Spectrum *)NULL;
+		option_table = CREATE(Option_table)();
+		Option_table_add_entry(option_table, (char *)NULL, &spectrum,
+			command_data->spectrum_manager, set_Spectrum);
+		if (return_code = Option_table_multi_parse(option_table, state))
 		{
-			/* initialize defaults */
-			spectrum=(struct Spectrum *)NULL;
-			(option_table[0]).to_be_modified= &spectrum;
-			(option_table[0]).user_data=command_data->spectrum_manager;
-			if (return_code=process_multiple_options(state,option_table))
-			{
-				return_code=bring_up_spectrum_editor_dialog(
-					&(command_data->spectrum_editor_dialog),
-					User_interface_get_application_shell(command_data->user_interface),
-					command_data->spectrum_manager,spectrum,command_data->user_interface,
-					command_data->glyph_list,
-					command_data->graphical_material_manager,command_data->light_manager,
-					command_data->texture_manager,command_data->scene_manager);
-			} /* parse error, help */
-		}
-		else
+			return_code = bring_up_spectrum_editor_dialog(
+				&(command_data->spectrum_editor_dialog),
+				User_interface_get_application_shell(command_data->user_interface),
+				command_data->spectrum_manager, spectrum,command_data->user_interface,
+				command_data->glyph_list,
+				command_data->graphical_material_manager, command_data->light_manager,
+				command_data->texture_manager, command_data->scene_manager);
+		} /* parse error, help */
+		DESTROY(Option_table)(&option_table);
+		if (spectrum)
 		{
-			display_message(ERROR_MESSAGE,"gfx_edit_spectrum.  "
-				"Missing command_data");
-			return_code=0;
+			DEACCESS(Spectrum)(&spectrum);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_edit_spectrum.  "
-			"Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"gfx_edit_spectrum.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
