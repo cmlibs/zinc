@@ -530,11 +530,11 @@ DESCRIPTION :
 		/*mcnz=mc_iso_surface->dimension[2]+2;*/
 		for (index=0;index<mc_iso_surface->n_scalar_fields+6;index++)
 		{
-			for (ii=x_min;ii<=x_max;ii++)
+			for (kk=z_min;kk<=z_max;kk++)
 			{
 				for (jj=y_min;jj<=y_max;jj++)
 				{
-					for (kk=z_min;kk<=z_max;kk++)
+					for (ii=x_min;ii<=x_max;ii++)
 					{
 						/* step through non_null cells, add vertex lists of any new triangle
 							vertices in cell or pointing to forward cells */
@@ -588,14 +588,13 @@ else
 											for (m=0;m<v->n_triangle_ptrs;m++)
 											{
 												/* if the pointed to cell is less than the current it
-													must have been visited already.  Note that the sense
-													of increasing index has been reversed as we step
-													fastest in x */
-												if ((v->triangle_ptrs[m]->cell_ptr->index[2]+
+													must have been visited already.  Changed to
+												   step fastest in z */
+												if ((v->triangle_ptrs[m]->cell_ptr->index[0]+
 													v->triangle_ptrs[m]->cell_ptr->index[1]*mcnx+
-													v->triangle_ptrs[m]->cell_ptr->index[0]*mcnx*mcny<
-													mc_cell->index[2]+mc_cell->index[1]*mcnx+
-													mc_cell->index[0]*mcnx*mcny)&&!prior_cell)
+													v->triangle_ptrs[m]->cell_ptr->index[2]*mcnx*mcny<
+													mc_cell->index[0]+mc_cell->index[1]*mcnx+
+													mc_cell->index[2]*mcnx*mcny)&&!prior_cell)
 												{
 													prior_cell=1;
 													/* check vertex index sensible */
@@ -795,11 +794,11 @@ Add mc_triangle to mc_cell list and add new vertex if unique
 	for (n=0;n<3;n++)
 	{
 		found=0;
-		for (ii=i_min;ii<=i_max;ii++)
+		for (kk=k_min;kk<=k_max;kk++)
 		{
 			for (jj=j_min;jj<=j_max;jj++)
 			{
-				for (kk=k_min;kk<=k_max;kk++)
+				for (ii=i_min;ii<=i_max;ii++)
 				{
 					if ((NULL !=mc_iso_surface->mc_cells[ii+mcnx*jj+mcnx*mcny*kk])&&
 						!found)
@@ -3797,20 +3796,20 @@ printVT(t);
 */
 	if (t->grid_spacing)
 	{
-			for (i=0;i<nx;i++)
+		for(k=0;k<nz;k++)
+		{
+			val[2]=t->grid_spacing[k+nx+ny];
+			for (j=0;j<ny;j++)
 			{
-		val[0]=t->grid_spacing[i];
-		for (j=0;j<ny;j++)
-			{
-			val[1]=t->grid_spacing[j+nx];
-			for(k=0;k<nz;k++)
-			{
-				val[2]=t->grid_spacing[k+nx+ny];
-				for (m=0;m<3;m++)
+				val[1]=t->grid_spacing[j+nx];
+				for (i=0;i<nx;i++)
 				{
-					t->coordinate_field->vector[3*(i+nx*j+nx*ny*k)+m]=
-						val[m]*
-						(t->ximax[m]-t->ximin[m]) + t->ximin[m];
+					val[0]=t->grid_spacing[i];
+					for (m=0;m<3;m++)
+					{
+						t->coordinate_field->vector[3*(i+nx*j+nx*ny*k)+m]=
+							val[m]*
+							(t->ximax[m]-t->ximin[m]) + t->ximin[m];
 				}
 			}
 		}
@@ -3818,34 +3817,34 @@ printVT(t);
 	}
 	else /* regular spacing */
 	{
-			for (i=0;i<nx;i++)
-			{
-		val[0]=(double) i;
-		for (j=0;j<ny;j++)
+		for(k=0;k<nz;k++)
 		{
-			val[1]=(double) j;
-			for(k=0;k<nz;k++)
+			val[2]=(double) k;
+			for (j=0;j<ny;j++)
 			{
-				val[2]=(double) k;
-				for (m=0;m<3;m++)
+				val[1]=(double) j;
+				for (i=0;i<nx;i++)
 				{
-					t->coordinate_field->vector[3*(i+nx*j+nx*ny*k)+m]=
-						val[m]/((double) t->dimension[m])*
-						(t->ximax[m]-t->ximin[m]) + t->ximin[m];
-/*???debug */
-/*printf("%g ",t->coordinate_field->vector[3*(i+nx*j+nx*ny*k)+m]);*/
+					val[0]=(double) i;
+					for (m=0;m<3;m++)
+					{
+						t->coordinate_field->vector[3*(i+nx*j+nx*ny*k)+m]=
+							val[m]/((double) t->dimension[m])*
+							(t->ximax[m]-t->ximin[m]) + t->ximin[m];
+						/*???debug */
+						/*printf("%g ",t->coordinate_field->vector[3*(i+nx*j+nx*ny*k)+m]);*/
+					}
+					/*???debug */
+					/*printf("\n");*/
 				}
-/*???debug */
-/*printf("\n");*/
 			}
 		}
-			}
 	}
-	for (i=0;i<nx;i++)
+	for (k=0;k<nz;k++)
 	{
 		for (j=0;j<ny;j++)
 		{
-			for (k=0;k<nz;k++)
+			for (i=0;i<nx;i++)
 			{
 				node=t->global_texture_node_list[ i + j*nx + k*nx*ny ];
 				t->scalar_field->scalar[i + j*nx + k*nx*ny]=0;
@@ -4838,11 +4837,11 @@ Fills mcubes detail map 0: leave same 1+: increase trianglular resolution
 		{
 			dim[i]=texture->dimension[i];
 		}
-		for (i=0;i<mc_iso_surface->dimension[0];i++)
+		for (k=0;k<mc_iso_surface->dimension[2];k++)
 		{
 			for (j=0;j<mc_iso_surface->dimension[1];j++)
 			{
-				for (k=0;k<mc_iso_surface->dimension[2];k++)
+				for (i=0;i<mc_iso_surface->dimension[0];i++)
 				{
 					(mc_iso_surface->detail_map)[(i+1)+(j+1)*mcnx+(k+1)*mcnx*mcny]=
 						((texture->texture_cell_list)[i+j*dim[0]+k*dim[0]*dim[1]])->detail;

@@ -519,10 +519,10 @@ Frees the memory for the volume texture and sets <*texture_address> to NULL.
 						{
 							DEACCESS(Graphical_material)(&((*cell)->material));
 							DEACCESS(Environment_map)(&((*cell)->env_map));
-							DEALLOCATE(*cell);
 						}
 						cell++;
 					}
+					DEALLOCATE(*texture->texture_cell_list);
 					DEALLOCATE(texture->texture_cell_list);
 				}
 				if (node=texture->global_texture_node_list)
@@ -535,10 +535,10 @@ Frees the memory for the volume texture and sets <*texture_address> to NULL.
 						{
 							DEACCESS(Graphical_material)(&((*node)->material));
 							DEACCESS(Graphical_material)(&((*node)->dominant_material));
-							DEALLOCATE(*node);
 						}
 						node++;
 					}
+					DEALLOCATE(*texture->global_texture_node_list);
 					DEALLOCATE(texture->global_texture_node_list);
 				}
 				if (texture->node_groups)
@@ -723,10 +723,11 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 	struct VT_node_group **destination_node_groups,**node_groups,
 		**source_node_groups;
 	struct VT_scalar_field *clip_field,*clip_field2,*scalar_field;
-	struct VT_texture_cell **destination_texture_cell,**source_texture_cell,
-		**texture_cell_list;
+	struct VT_texture_cell **destination_texture_cell,*destination_cell_block,
+		**source_texture_cell,**texture_cell_list;
 	struct VT_texture_curve *destination_curve,*source_curve,**texture_curve_list;
-	struct VT_texture_node **destination_node,**source_node,**texture_node_list;
+	struct VT_texture_node **destination_node,*destination_node_block,
+		**source_node,**texture_node_list;
 	struct VT_vector_field *coordinate_field;
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(VT_volume_texture,name));
@@ -855,14 +856,14 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 							i--;
 						}
 						destination_texture_cell=texture_cell_list;
-						i=n_cells;
-						while (return_code&&(i>0))
+						i=0;
+						if (ALLOCATE(destination_cell_block,struct VT_texture_cell,n_cells))
 						{
-							if (*source_texture_cell)
+							while (return_code&&(i<n_cells))
 							{
-								if (ALLOCATE(*destination_texture_cell,struct VT_texture_cell,
-									1))
+								if (*source_texture_cell)
 								{
+									*destination_texture_cell = destination_cell_block+i;
 									(*destination_texture_cell)->index=
 										(*source_texture_cell)->index;
 									if ((*source_texture_cell)->material)
@@ -909,7 +910,7 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 							}
 							source_texture_cell++;
 							destination_texture_cell++;
-							i--;
+							i++;
 						}
 					}
 					else
@@ -1035,13 +1036,14 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 								i--;
 							}
 							destination_node=texture_node_list;
-							i=n_nodes;
-							while (return_code&&(i>0))
+							i=0;
+							if (ALLOCATE(destination_node_block,struct VT_texture_node,n_nodes))
 							{
-								if (*source_node)
+								while (return_code&&(i<n_nodes))
 								{
-									if (ALLOCATE(*destination_node,struct VT_texture_node,1))
+									if (*source_node)
 									{
+										*destination_node = destination_node_block+i;
 										(*destination_node)->index=(*source_node)->index;
 										if ((*source_node)->material)
 										{
@@ -1085,16 +1087,16 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 												(*source_node)->cm_node_identifier[j];
 										}
 									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(VT_volume_texture,name).  Insufficient memory for texture node");
-										return_code=0;
-									}
+									source_node++;
+									destination_node++;
+									i++;
 								}
-								source_node++;
-								destination_node++;
-								i--;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"MANAGER_COPY_WITHOUT_IDENTIFIER(VT_volume_texture,name).  Insufficient memory for texture node");
+								return_code=0;
 							}
 						}
 						else
@@ -1990,11 +1992,11 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 																DEACCESS(Environment_map)(
 																	&((*destination_texture_cell)->env_map));
 															}
-															DEALLOCATE(*destination_texture_cell);
 														}
 														destination_texture_cell++;
 														i--;
 													}
+													DEALLOCATE(*destination->texture_cell_list);
 													DEALLOCATE(destination->texture_cell_list);
 												}
 												destination->texture_cell_list=texture_cell_list;
@@ -2023,11 +2025,11 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 																DEACCESS(Graphical_material)(
 																	&((*destination_node)->dominant_material));
 															}
-															DEALLOCATE(*destination_node);
 														}
 														destination_node++;
 														i--;
 													}
+													DEALLOCATE(*destination->global_texture_node_list);
 													DEALLOCATE(destination->global_texture_node_list);
 												}
 												destination->global_texture_node_list=texture_node_list;
@@ -2186,11 +2188,11 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 							DEACCESS(Environment_map)(
 								&((*destination_texture_cell)->env_map));
 						}
-						DEALLOCATE(*destination_texture_cell);
 					}
 					destination_texture_cell++;
 					i--;
 				}
+				DEALLOCATE(*texture_cell_list);
 				DEALLOCATE(texture_cell_list);
 			}
 			if (texture_node_list)
@@ -2210,11 +2212,11 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 							DEACCESS(Graphical_material)(
 								&((*destination_node)->dominant_material));
 						}
-						DEALLOCATE(*destination_node);
 					}
 					destination_node++;
 					i--;
 				}
+				DEALLOCATE(*texture_node_list);
 				DEALLOCATE(texture_node_list);
 			}
 			if (scalar_field)
@@ -2821,9 +2823,9 @@ nodal_values
 	int number_of_env_maps;
 	struct Environment_map **index_to_env_map,*env_map;
 	struct VT_node_group **node_groups,*node_group;
-	struct VT_texture_cell *cell,**cell_list;
+	struct VT_texture_cell *cell,*cell_block,**cell_list;
 	struct VT_texture_curve *curve,*curve_next;
-	struct VT_texture_node *node,**node_list;
+	struct VT_texture_node *node,*node_block,**node_list;
 
 	ENTER(read_volume_texture_from_file);
 #if defined (DEBUG)
@@ -2877,9 +2879,9 @@ printf("deallocated curves\n");
 				}
 #endif /* defined (OLD_CODE) */
 				DEACCESS(Environment_map)(&(*cell_list)->env_map);
-				DEALLOCATE(*cell_list);
 				cell_list++;
 			}
+			DEALLOCATE(*texture->texture_cell_list);
 			DEALLOCATE(texture->texture_cell_list);
 		}
 #if defined (DEBUG)
@@ -2895,9 +2897,9 @@ printf("deallocated cells\n");
 			{
 				DEACCESS(Graphical_material)(&((*node_list)->material));
 				DEACCESS(Graphical_material)(&((*node_list)->dominant_material));
-				DEALLOCATE(*node_list);
 				node_list++;
 			}
+			DEALLOCATE(*texture->global_texture_node_list);
 			DEALLOCATE(texture->global_texture_node_list);
 		}
 #if defined (DEBUG)
@@ -3043,7 +3045,9 @@ printf("number_of_materials=%d\n",number_of_materials);
 					ALLOCATE(texture->coordinate_field->vector,double,3*n_nodes)&&
 					ALLOCATE(texture->mc_iso_surface,struct MC_iso_surface,1)&&
 					ALLOCATE(cell_list,struct VT_texture_cell *,n_cells)&&
-					ALLOCATE(node_list,struct VT_texture_node *,n_nodes))
+					ALLOCATE(node_list,struct VT_texture_node *,n_nodes)&&
+					ALLOCATE(cell_block,struct VT_texture_cell,n_cells)&&
+					ALLOCATE(node_block,struct VT_texture_node,n_nodes))
 				{
 					texture->mc_iso_surface->n_scalar_fields=0;
 					texture->mc_iso_surface->n_triangles=0;
@@ -3103,9 +3107,10 @@ printf("det_map = %p\n", texture->mc_iso_surface->detail_map);
 					texture->texture_cell_list=cell_list;
 					texture->global_texture_node_list=node_list;
 					i=0;
-					while ((i<n_cells)&&ALLOCATE(cell,struct VT_texture_cell,1)&&
+					while ((i<n_cells)&&
 						(1==fscanf(in_file,"%d",&index)))
 					{
+						cell=cell_block+i;
 						cell_list[i]=cell;
 						/* tempoarily set cop */
 						(cell->cop)[0]=0.5;
@@ -3145,9 +3150,10 @@ printf("det_map = %p\n", texture->mc_iso_surface->detail_map);
 								scalar_value));
 						}
 						i=0;
-						while ((i<n_nodes)&&ALLOCATE(node,struct VT_texture_node,1)&&
+						while ((i<n_nodes)&&
 							(1==fscanf(in_file,"%d",&index)))
 						{
+							node=node_block+i;
 							node_list[i]=node;
 							node->active=0;
 							node->node_type=0;
@@ -3620,9 +3626,9 @@ printf("deallocated curves\n");
 				}
 #endif /* defined (OLD_CODE) */
 				DEACCESS(Environment_map)(&(*cell_list)->env_map);
-				DEALLOCATE(*cell_list);
 				cell_list++;
 			}
+			DEALLOCATE(*texture->texture_cell_list);
 			DEALLOCATE(texture->texture_cell_list);
 		}
 #if defined (DEBUG)
@@ -3636,9 +3642,9 @@ printf("deallocated cells\n");
 			for (i=n_nodes;i>0;i--)
 			{
 				DEACCESS(Graphical_material)(&((*node_list)->material));
-				DEALLOCATE(*node_list);
 				node_list++;
 			}
+			DEALLOCATE(*texture->global_texture_node_list);
 			DEALLOCATE(texture->global_texture_node_list);
 		}
 #if defined (DEBUG)

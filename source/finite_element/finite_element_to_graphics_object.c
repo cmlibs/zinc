@@ -7777,8 +7777,8 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 		number_of_volume_texture_nodes,return_code,*shape_type;
 	struct MC_cell **mc_cell;
 	struct MC_iso_surface *mc_iso_surface;
-	struct VT_texture_cell *cell,**cell_list;
-	struct VT_texture_node *node,**node_list;
+	struct VT_texture_cell *cell,*cell_block,**cell_list;
+	struct VT_texture_node *node,*node_block,**node_list;
 	struct VT_volume_texture *volume_texture;
 
 	ENTER(create_iso_surfaces_from_FE_element);
@@ -7851,6 +7851,10 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 				ALLOCATE(cell_list,struct VT_texture_cell *,
 					number_of_volume_texture_cells)&&
 				ALLOCATE(node_list,struct VT_texture_node *,
+					number_of_volume_texture_nodes) &&
+				ALLOCATE(cell_block,struct VT_texture_cell,
+					number_of_volume_texture_cells) &&
+				ALLOCATE(node_block,struct VT_texture_node,
 					number_of_volume_texture_nodes))
 				/*???DB.  Not freeing properly */
 			{
@@ -7886,9 +7890,9 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 				volume_texture->mc_iso_surface=mc_iso_surface;
 				/* set the cell values */
 				i=0;
-				while ((i<number_of_volume_texture_cells)&&ALLOCATE(cell,
-					struct VT_texture_cell,1))
+				while (i<number_of_volume_texture_cells)
 				{
+					cell=cell_block+i;
 					cell_list[i]=cell;
 					(cell->cop)[0]=0.5;
 					(cell->cop)[1]=0.5;
@@ -7908,13 +7912,13 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 					xi[1]=0;
 					xi[2]=0;
 					return_code=1;
-					while (return_code&&(i<number_of_volume_texture_nodes)&&
-						ALLOCATE(node,struct VT_texture_node,1))
+					while (return_code&&(i<number_of_volume_texture_nodes))
 					{
 						if (Computed_field_evaluate_in_element(scalar_field,
 							element,xi,time,/*top_level_element*/(struct FE_element *)NULL,
 							&scalar_value,(FE_value *)NULL))
 						{
+							node=node_block+i;
 							node_list[i]=node;
 							(node->cop)[0]=0.5;
 							(node->cop)[1]=0.5;
