@@ -768,7 +768,7 @@ static int acquired_socket_callback(
 	)
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 /*******************************************************************************
-LAST MODIFIED : 25 January 2002
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
 Called when there is input on the acquired socket.
@@ -782,11 +782,15 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	struct Unemap_crate *crate;
 	unsigned char message_header[2+sizeof(long)];
 	unsigned long number_of_samples;
+#if !(defined (BACKGROUND_SAVING) && defined (MOTIF))
+	int return_code;
+#endif /* !(defined (BACKGROUND_SAVING) && defined (MOTIF)) */
 
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
 	ENTER(acquired_socket_callback_process);
 #else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 	ENTER(acquired_socket_callback);
+	return_code=0;
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (DEBUG)
 	/*???debug */
@@ -990,9 +994,9 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	printf("leave acquired_socket_callback\n");
 #endif /* defined (DEBUG) */
 	LEAVE;
+#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 
 	return (return_code);
-#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 } /* acquired_socket_callback */
 #endif /* defined (USE_SOCKETS) */
 

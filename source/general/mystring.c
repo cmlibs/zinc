@@ -1,7 +1,7 @@
 /******************************************************************************
 FILE : mystring.c
 
-LAST MODIFIED : 10 January 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Function definitions for some general purpose string functions.
@@ -13,9 +13,7 @@ Function definitions for some general purpose string functions.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if defined (UNIX)
 #include <ctype.h>
-#endif /* defined (UNIX) */
 #include "general/debug.h"
 #include "general/mystring.h"
 /*???DB.  Would like to move memory management out of Greg's debug.h */

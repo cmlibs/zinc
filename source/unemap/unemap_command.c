@@ -73,7 +73,6 @@ Data required for Unemap commands.
 	struct Time_keeper *default_time_keeper;
 #else /* defined (NOT_ACQUISITION_ONLY) */
 	struct Page_window *page_window;
-	struct Rig *acquisition_rig;
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 }; /* struct Unemap_command_data */
 
@@ -122,7 +121,6 @@ window -- but only if unemap system window is run as a sub-application.
 } /* Unemap_system_window_destroy_in_unemap_command_data */
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 
-#if defined (MOTIF)
 static int execute_command_unemap_open(struct Parse_state *state,
 	void *dummy_to_be_modified, void *unemap_command_data_void)
 /*******************************************************************************
@@ -294,7 +292,6 @@ Executes a UNEMAP OPEN command.
 
 	return (return_code);
 } /* execute_command_unemap_open */
-#endif /* defined (MOTIF) */
 
 /*
 Global functions
@@ -340,12 +337,11 @@ struct Unemap_command_data *CREATE(Unemap_command_data)(
 	struct System_window *unemap_system_window,
 	struct Time_keeper *default_time_keeper
 #else /* defined (NOT_ACQUISITION_ONLY) */
-	struct Page_window *page_window,
-	struct Rig *acquisition_rig
+	struct Page_window *page_window
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2002
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
 Creates a Unemap_command_data structure containing pointers to the passed
@@ -377,7 +373,7 @@ will be destroyed with it.
 #endif /* defined (UNEMAP_USE_3D) */
 		default_time_keeper
 #else /* defined (NOT_ACQUISITION_ONLY) */
-		page_window && acquisition_rig
+		page_window
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 		)
 	{
@@ -424,8 +420,7 @@ will be destroyed with it.
 			unemap_command_data->unemap_system_window = unemap_system_window;
 			unemap_command_data->unemap_system_window_destroyable = 0;
 #else /* defined (NOT_ACQUISITION_ONLY) */
-			unemap_command_data->page_window = page_window;
-			unemap_command_data->acquisition_rig = acquisition_rig;
+			unemap_command_data->page_window=page_window;
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 		}
 		else

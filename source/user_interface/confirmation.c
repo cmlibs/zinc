@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : confirmation.c
 
-LAST MODIFIED : 9 July 1999
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
 Routines for waiting for user input.
@@ -11,6 +11,9 @@ Routines for waiting for user input.
 #include <sys/stat.h>
 #include <unistd.h>
 #endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
+#include <direct.h>
+#endif /* defined (WIN32_SYSTEM) */
 #include <stdio.h>
 #include <string.h>
 #if defined (MOTIF)

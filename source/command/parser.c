@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.c
 
-LAST MODIFIED : 18 September 2000
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
 A module for supporting command parsing.
@@ -17,6 +17,7 @@ A module for supporting command parsing.
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/mystring.h"

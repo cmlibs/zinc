@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : filedir.c
 
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
 Routines for opening files using Motif widgets.
@@ -813,7 +813,7 @@ void open_file_and_read(
 #endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
 Expects a pointer to a File_open_data structure as the <client_data>.  Displays
@@ -821,10 +821,10 @@ a list of the file names matching the <filter>.  After the user selects a file
 name the <file_operation> is performed on the file with the <arguments>.
 ==============================================================================*/
 {
-	struct File_open_data *file_open_data;
 #if defined (MOTIF)
 	char *shell_title,*temp_string;
 	MrmType selection_class;
+	struct File_open_data *file_open_data;
 	Widget file_selection_child,parent;
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
@@ -1059,7 +1059,7 @@ void open_file_and_write(
 #endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
 Expects a pointer to a File_open_data structure as the <client_data> (MOTIF).
@@ -1068,7 +1068,6 @@ The <file_operation> with the <user_arguments> and the output directed to the
 specified file.
 ==============================================================================*/
 {
-	struct File_open_data *file_open_data;
 #if defined (MOTIF)
 #if defined (OLD_CODE)
 	char first;
@@ -1076,6 +1075,7 @@ specified file.
 	char *label,*print_command,*shell_title;
 	MrmType selection_class;
 	static char *printer_command=(char *)NULL;
+	struct File_open_data *file_open_data;
 #if defined (OLD_CODE)
 	static char *uid_file_names[]=
 	{

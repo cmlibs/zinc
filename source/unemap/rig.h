@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.h
 
-LAST MODIFIED : 10 February 2002
+LAST MODIFIED : 19 June 2002
 
 DESCRIPTION :
 Contains data and function descriptions for measurement rigs.
@@ -134,19 +134,106 @@ DESCRIPTION :
 /*???DB.  Forward declaration */
 struct Device;
 
+#if defined (DEVICE_EXPRESSIONS)
+/*???DB.  Forward declaration */
+struct Device_expression;
+
+enum Device_expression_operator_type
+/*******************************************************************************
+LAST MODIFIED : 17 June 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	DEVICE_EXPRESSION_ADD_OPERATOR,
+	DEVICE_EXPRESSION_DIVIDE_OPERATOR,
+	DEVICE_EXPRESSION_MULTIPLY_OPERATOR,
+	DEVICE_EXPRESSION_SUBTRACT_OPERATOR
+}; /* enum Device_expression_operator_type */
+
+struct Device_binary_operation
+/*******************************************************************************
+LAST MODIFIED : 19 June 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	enum Device_expression_operator_type type;
+	struct Device_expression *first,*second;
+}; /* struct Device_binary_operation */
+
+enum Device_expression_type
+/*******************************************************************************
+LAST MODIFIED : 19 June 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	DEVICE_EXPRESSION_DEVICE,
+	DEVICE_EXPRESSION_EXPRESSION,
+	DEVICE_EXPRESSION_REAL
+}; /* enum Device_expression_type */
+
+struct Device_expression
+/*******************************************************************************
+LAST MODIFIED : 19 June 2002
+
+DESCRIPTION :
+An arithmetic expression involving devices and real coefficients.
+==============================================================================*/
+{
+	enum Device_expression_type type;
+	union
+	{
+		float coefficient;
+		struct Device *device;
+		struct Device_binary_operation *binary;
+	} expression;
+}; /* struct Device_expression */
+
+enum Auxiliary_device_type
+/*******************************************************************************
+LAST MODIFIED : 19 June 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	AUXILIARY_DEVICE_CHANNEL,
+	AUXILIARY_DEVICE_EXPRESSION,
+	AUXILIARY_DEVICE_SUM
+}; /* enum Auxiliary_device_type */
+#endif /* defined (DEVICE_EXPRESSIONS) */
+
 struct Auxiliary_properties
 /*******************************************************************************
-LAST MODIFIED : 27 July 1999
+LAST MODIFIED : 19 June 2002
 
 DESCRIPTION :
 If <number_of_electrodes> is non-positive then the auxiliary is an external
 device measured on a single channel.  Otherwise the auxiliary is a linear
 combination of electrodes.
+???DB.  What about the binary configuration file?
 ==============================================================================*/
 {
-	float *electrode_coefficients;
-	int number_of_electrodes;
-	struct Device **electrodes;
+#if defined (DEVICE_EXPRESSIONS)
+	enum Auxiliary_device_type type;
+	union
+	{
+		struct
+		{
+			char *device_expression_string;
+			struct Device_expression *device_expression;
+		} expression;
+		struct
+		{
+#endif /* defined (DEVICE_EXPRESSIONS) */
+			float *electrode_coefficients;
+			int number_of_electrodes;
+			struct Device **electrodes;
+#if defined (DEVICE_EXPRESSIONS)
+		} sum;
+	}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 }; /* struct Auxiliary_properties */
 
 struct Interpolation_function
@@ -544,6 +631,46 @@ LAST MODIFIED : 4 May 1992
 DESCRIPTION :
 This function frees the memory associated with the fields of <**device>, frees
 the memory for <**device> and changes <*device> to NULL.
+==============================================================================*/
+
+struct Device_expression *parse_device_expression_string(
+	char *device_expression_string,int number_of_devices,struct Device **devices);
+/*******************************************************************************
+LAST MODIFIED : 18 June 2002
+
+DESCRIPTION :
+Parses the <device_expression_string> to create a device expression and returns
+it.
+==============================================================================*/
+
+int destroy_Device_expression(struct Device_expression **expression_address);
+/*******************************************************************************
+LAST MODIFIED : 18 June 2002
+
+DESCRIPTION :
+Destroys a device expression.
+==============================================================================*/
+
+int calculate_channel_number_list(struct Device_expression *expression,
+	int *number_of_channels_address,int **channel_numbers_address);
+/*******************************************************************************
+LAST MODIFIED : 18 June 2002
+
+DESCRIPTION :
+From the device <expression>, calculate the <channel_numbers> whose values are
+needed in order to evaluate the expression.  The order of the <channel_numbers>
+and the values need to be passed in the same order to
+<evaluate_Device_expression>.
+==============================================================================*/
+
+int evaluate_Device_expression(struct Device_expression *expression,
+	float *channel_values,float *result);
+/*******************************************************************************
+LAST MODIFIED : 18 June 2002
+
+DESCRIPTION :
+Evaluates the <expression> using the <channel_values>.  The values should be for
+and in the order of the channels returned by <calculate_channel_number_list>.
 ==============================================================================*/
 
 struct Signal *get_Device_signal(struct Device *device);

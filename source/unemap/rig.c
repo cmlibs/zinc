@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 11 June 2002
+LAST MODIFIED : 19 June 2002
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -359,6 +359,294 @@ the memory for <**device> and changes <*device> to NULL.
 
 	return (return_code);
 } /* destroy_Device */
+
+#if defined (DEVICE_EXPRESSIONS)
+struct Device_expression *parse_device_expression_string(
+	char *device_expression_string,int number_of_devices,struct Device **devices)
+/*******************************************************************************
+LAST MODIFIED : 19 June 2002
+
+DESCRIPTION :
+Parses the <device_expression_string> to create a device expression and returns
+it.
+???DB.  Add expression (keep sum) as an auxiliary type and enclose device names
+	in <> ?
+==============================================================================*/
+{
+	char *first,*first_copy,*second,*second_copy;
+	enum Device_expression_operator_type operator;
+	enum Device_expression_type first_type,second_type;
+	int count,first_length,level,return_code,second_length;
+	struct Device_expression *expression;
+
+	ENTER(parse_device_expression_string);
+	expression=(struct Device_expression *)NULL;
+	/* check arguments */
+	if (device_expression_string&&((0==number_of_devices)||(devices&&
+		(0<number_of_devices))))
+	{
+		return_code=1;
+		/* find the start of the first operand */
+		count=0;
+		sscanf(device_expression_string," %n",&count);
+		first=device_expression_string+count;
+		first_length=0;
+		second=first;
+		second_length=0;
+		switch (*first)
+		{
+			case '+': case '-':
+			{
+				/* skip unary operators */
+				count=0;
+				sscanf(second,"%*[+-]%n",&count);
+				second += count;
+				first_length += count;
+			} break;
+			case '(':
+			{
+				/* find matching ) */
+				level=0;
+				do
+				{
+					count=0;
+					sscanf(second,"%*[^()]%n",&count);
+					second += count;
+					switch (*second)
+					{
+						case '(':
+						{
+							level++;
+							second++;
+						} break;
+						case ')':
+						{
+							level--;
+							second++;
+						} break;
+						case '/0':
+						{
+							return_code=0;
+						} break;
+					}
+				} while (return_code&&(level>=0));
+			} break;
+			case '\0': case '/': case '*': case ')':
+			{
+				/* error */
+				/*???DB.  What if part of device name? */
+				return_code=0;
+			} break;
+		}
+		if (return_code)
+		{
+			/* find binary operator */
+			count=0;
+			sscanf(second,"%*[^+-(]%n",&count);
+			if (('+'==second[count-1])||('-'==second[count-1]))
+			{
+				if ((count>0)&&(('*'==second[count-1])||('/'==second[count-1])))
+				{
+					if ('*'==second[count-1])
+					{
+						operator=DEVICE_EXPRESSION_MULTIPLY_OPERATOR;
+					}
+					else
+					{
+						operator=DEVICE_EXPRESSION_DIVIDE_OPERATOR;
+					}
+					second += count;
+				}
+				else
+				{
+					if ('+'==second[count])
+					{
+						operator=DEVICE_EXPRESSION_ADD_OPERATOR;
+					}
+					else
+					{
+						operator=DEVICE_EXPRESSION_SUBTRACT_OPERATOR;
+					}
+					second += count+1;
+				}
+			}
+			else
+			{
+				count=0;
+				sscanf(second,"%*[^*/(]%n",&count);
+				switch (second[count])
+				{
+					case '*':
+					{
+						operator=DEVICE_EXPRESSION_MULTIPLY_OPERATOR;
+						second += count+1;
+					} break;
+					case '/':
+					{
+						operator=DEVICE_EXPRESSION_DIVIDE_OPERATOR;
+						second += count+1;
+					} break;
+					case '\0':
+					{
+						second=(char *)NULL;
+					} break;
+					default:
+					{
+						second=(char *)NULL;
+					} break;
+				}
+			}
+			if (return_code)
+			{
+				if (second)
+				{
+					ALLOCATE(first_copy,char,second-first);
+					ALLOCATE(second_copy,char,strlen(second)+1);
+					if (first_copy&&second_copy)
+					{
+						strncpy(first_copy,first,second-first-1);
+						first_copy[second-first-1]='/0';
+						strcpy(second_copy,second);
+						if (ALLOCATE(expression,struct Device_expression,1)&&
+							ALLOCATE(expression->binary,struct Device_binary_operation,1))
+						{
+							expression->type=DEVICE_EXPRESSION_EXPRESSION;
+							(expression->expression).binary->type=operator;
+							/*???DB.  To be done */
+						}
+						else
+						{
+							DEALLOCATE(expression);
+						}
+					}
+					DEALLOCATE(first_copy);
+					DEALLOCATE(second_copy);
+				}
+				else
+				{
+					/* determine expression type */
+					if ('('== *first)
+					{
+						/* an expression enclosed in brackets.  Remove the brackets */
+						second=first+strlen(first);
+						do
+						{
+							second--;
+						} while (isspace(*second));
+						if (')'==second)
+						{
+							if (ALLOCATE(first_copy,char,second-first))
+							{
+								strncpy(first_copy,first+1,second-first-1);
+								first_copy[second-first-1]='\0';
+								expression=parse_device_expression_string(first_copy,
+									number_of_devices,devices);
+								DEALLOCATE(first_copy);
+							}
+						}
+					}
+					else
+					{
+						/* check for a device or a float */
+						/*???DB.  To be done */
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"parse_device_expression_string.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (expression);
+} /* parse_device_expression_string */
+
+int destroy_Device_expression(struct Device_expression **expression_address)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2002
+
+DESCRIPTION :
+Destroys a device expression.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(destroy_Device_expression);
+	return_code=0;
+	/* check arguments */
+	if (expression_address)
+	{
+		return_code=1;
+		if (*expression)
+		{
+			/*???DB.  To be done */
+			*expression_address=(struct Device_expression *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"destroy_Device_expression.  Invalid argument");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* destroy_Device_expression */
+
+int calculate_channel_number_list(struct Device_expression *expression,
+	int *number_of_channels_address,int **channel_numbers_address)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2002
+
+DESCRIPTION :
+From the device <expression>, calculate the <channel_numbers> whose values are
+needed in order to evaluate the expression.  The order of the <channel_numbers>
+and the values need to be passed in the same order to
+<evaluate_Device_expression>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(calculate_channel_number_list);
+	return_code=0;
+	/* check arguments */
+	if (number_of_channels_address&&channel_numbers_address)
+	{
+		return_code=1;
+		if (expression)
+		{
+			/*???DB.  To be done */
+		}
+		else
+		{
+			*number_of_channels_address=0;
+			*channel_numbers_address=(int *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"calculate_channel_number_list.  Invalid argument(s).  %p %p",
+			number_of_channels_address,channel_numbers_address);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* calculate_channel_number_list */
+
+int evaluate_Device_expression(struct Device_expression *expression,
+	float *channel_values,float *result)
+/*******************************************************************************
+LAST MODIFIED : 18 June 2002
+
+DESCRIPTION :
+Evaluates the <expression> using the <channel_values>.  The values should be for
+and in the order of the channels returned by <calculate_channel_number_list>.
+==============================================================================*/
+#endif /* defined (DEVICE_EXPRESSIONS) */
 
 struct Signal *get_Device_signal(struct Device *device)
 /*******************************************************************************

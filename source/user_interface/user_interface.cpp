@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : user_interface.c
 
-LAST MODIFIED : 28 March 2002
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
 Functions for opening and closing the user interface.
@@ -1682,13 +1682,12 @@ Returns the application shell widget
 } /* User_interface_get_screen_height */
 #endif /* defined (MOTIF) */
 
-#if defined (MOTIF)
 int User_interface_get_widget_spacing(struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
-Returns the application shell widget
+Returns the widget spacing.
 ==============================================================================*/
 {
 	int widget_spacing;
@@ -1708,7 +1707,6 @@ Returns the application shell widget
 
 	return (widget_spacing);
 } /* User_interface_get_widget_spacing */
-#endif /* defined (MOTIF) */
 
 #if defined (WIN32_USER_INTERFACE)
 HINSTANCE User_interface_get_instance(struct User_interface *user_interface)

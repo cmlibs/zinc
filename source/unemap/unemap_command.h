@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_command.h
 
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
 Functions and for executing unemap commands.
@@ -11,7 +11,11 @@ unemap.c.
 #if !defined (UNEMAP_COMMAND_H)
 #define UNEMAP_COMMAND_H
 #include "time/time_keeper.h"
+#if defined (NOT_ACQUISITION_ONLY)
 #include "unemap/system_window.h"
+#else /* defined (NOT_ACQUISITION_ONLY) */
+#include "unemap/page_window.h"
+#endif /* defined (NOT_ACQUISITION_ONLY) */
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/user_interface.h"
 
@@ -73,8 +77,7 @@ struct Unemap_command_data *CREATE(Unemap_command_data)(
 	struct System_window *unemap_system_window,
 	struct Time_keeper *default_time_keeper
 #else /* defined (NOT_ACQUISITION_ONLY) */
-	struct Page_window *page_window,
-	struct Rig *acquisition_rig
+	struct Page_window *page_window
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 	);
 /*******************************************************************************

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : event_dispatcher.c
 
-LAST MODIFIED : 4 March 2002
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
 This provides an object which interfaces between a event_dispatcher and Cmgui
@@ -9,7 +9,9 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
 #include <math.h>
 #include <stdio.h>
 #include <fcntl.h>
+#if defined (UNIX)
 #include <sys/time.h>
+#endif /* defined (UNIX) */
 #if defined (USE_XTAPP_CONTEXT)
 #include <Xm/Xm.h>
 #endif /* defined (USE_XTAPP_CONTEXT) */
@@ -939,6 +941,7 @@ DESCRIPTION :
 	return (timeout_callback);
 } /* Event_dispatcher_add_timeout_callback_at_time */
 #else /* defined (USE_XTAPP_CONTEXT) */
+#if !defined (WIN32_USER_INTERFACE)
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback_at_time(
 	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
 	Event_dispatcher_timeout_function *timeout_function, void *user_data)
@@ -1016,6 +1019,7 @@ DESCRIPTION :
 
 	return (timeout_callback);
 } /* Event_dispatcher_add_file_descriptor_timeout_callback */
+#endif /* !defined (WIN32_USER_INTERFACE) */
 #endif /* defined (USE_XTAPP_CONTEXT) */
 
 int Event_dispatcher_remove_timeout_callback(
@@ -1196,14 +1200,14 @@ DESCRIPTION :
 
 int Event_dispatcher_do_one_event(struct Event_dispatcher *event_dispatcher)
 /*******************************************************************************
-LAST MODIFIED : 4 March 2002
+LAST MODIFIED : 22 July 2002
 
 DESCRIPTION :
 
 ==============================================================================*/
 {
 	int return_code;
-#if ! defined (USE_XTAPP_CONTEXT)
+#if !defined (USE_XTAPP_CONTEXT) && !defined (WIN32_USER_INTERFACE)
 	int callback_code, select_code;
 	fd_set read_set;
 	struct timeval timeofday, timeout, *timeout_ptr;
@@ -1211,7 +1215,7 @@ DESCRIPTION :
 	struct Event_dispatcher_file_descriptor_handler *file_descriptor_callback;
 	struct Event_dispatcher_idle_callback *idle_callback;
 	struct Event_dispatcher_timeout_callback *timeout_callback;
-#endif /* ! defined (USE_XTAPP_CONTEXT) */
+#endif /* ! defined (USE_XTAPP_CONTEXT) && !defined (WIN32_USER_INTERFACE) */
 
 	ENTER(Event_dispatcher_do_one_event);
 
