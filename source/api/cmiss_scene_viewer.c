@@ -241,7 +241,7 @@ fail.
 #endif /* create_Cmiss_scene_viewer_gtk */
 
 int Cmiss_scene_viewer_get_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
-	double *near, double *far)
+	double *near_plane, double *far_plane)
 /*******************************************************************************
 LAST MODIFIED : 13 September 2002
 
@@ -257,7 +257,7 @@ clip plane in the <scene_viewer>.
 	if (scene_viewer)
 	{
 		return_code = Scene_viewer_get_viewing_volume(scene_viewer,
-		  &left, &right, &bottom, &top, near, far);
+		  &left, &right, &bottom, &top, near_plane, far_plane);
 	}
 	else
 	{
@@ -271,7 +271,7 @@ clip plane in the <scene_viewer>.
 } /* Cmiss_scene_viewer_get_near_and_far_plane */
 
 int Cmiss_scene_viewer_set_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
-	double near, double far)
+	double near_plane, double far_plane)
 /*******************************************************************************
 LAST MODIFIED : 13 September 2002
 
@@ -290,7 +290,7 @@ clip plane in the <scene_viewer>.
 			&left, &right, &bottom, &top, &old_near, &old_far))
 		{
 			return_code = Scene_viewer_set_viewing_volume(scene_viewer,
-				left, right, bottom, top, near, far);
+				left, right, bottom, top, near_plane, far_plane);
 		}
 	}
 	else
