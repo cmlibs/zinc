@@ -217,6 +217,7 @@ FULL_DECLARE_LIST_TYPE(Scene_picked_object);
 Module functions
 ----------------
 */
+
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Scene_object,position,int,compare_int)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Scene)
@@ -507,6 +508,12 @@ Responds to changes in the time object.
 				return_code=1;
 			} break;
 			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+			{
+				GT_element_group_changed(scene_object->gt_element_group);
+				GT_element_group_time_changed(scene_object->gt_element_group);
+				Scene_object_changed_internal(scene_object);
+				return_code=1;
+			} break;
 			case SCENE_OBJECT_SCENE:
 			{
 				/* Nothing to do currently */
@@ -580,6 +587,8 @@ visible.
 		if (g_VISIBLE==scene_object->visibility)
 		{
 			Scene_object_changed_external(scene_object);
+			Scene_update_time_behaviour_with_gt_element_group(scene_object->scene,
+				gt_element_group);
 		}
 		return_code=1;
 	}
@@ -2008,7 +2017,7 @@ DESCRIPTION :
 
 	ENTER(Scene_object_update_time_behaviour);
 	/* check arguments */
-	if (scene_object && (time_object = (struct Time_object *)time_object_void))
+	if (scene_object)
 	{
 		switch (scene_object->type)
 		{
@@ -2020,12 +2029,26 @@ DESCRIPTION :
 				{
 					if(!Scene_object_has_time(scene_object))
 					{
+						if (!(time_object = (struct Time_object *)time_object_void))
+						{
+							
+						}
 						Scene_object_set_time_object(scene_object, time_object);
 					}
 				}
 				return_code=1;
 			} break;
 			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+			{
+				if(GT_element_group_has_multiple_times(scene_object->gt_element_group))
+				{
+					if(!Scene_object_has_time(scene_object))
+					{
+						Scene_object_set_time_object(scene_object, time_object);
+					}
+				}
+				return_code=1;
+			} break;
 			case SCENE_OBJECT_SCENE:
 			{
 				/* Nothing to do currently */
@@ -3573,7 +3596,8 @@ Changes the Time_object referenced by <scene_object>.
 	ENTER(Scene_object_set_time_object);
 	if (scene_object&&time)
 	{
-		if (scene_object->type == SCENE_OBJECT_GRAPHICS_OBJECT)
+		if ((scene_object->type == SCENE_OBJECT_GRAPHICS_OBJECT)
+			|| (scene_object->type == SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP))
 		{
 			REACCESS(Time_object)(&(scene_object->time_object),time);
 			Time_object_add_callback(time, Scene_object_time_update_callback,
@@ -6788,7 +6812,6 @@ compiles the display lists of objects that will be executed in the scene.
 Note that lights are not included in the scene and must be handled separately!
 ==============================================================================*/
 {
-	float glyph_time;
 	int fast_changing,return_code;
 
 	ENTER(compile_Scene);
@@ -6814,10 +6837,10 @@ Note that lights are not included in the scene and must be handled separately!
 			FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
 				compile_Graphical_material,(void *)NULL,
 				scene->graphical_material_manager);
-			/* compile glyphs */
+			/* compile glyphs when used by the glyph set
 			glyph_time = 0.0;
 			FOR_EACH_OBJECT_IN_LIST(GT_object)(compile_GT_object,&glyph_time,
-				scene->glyph_list);
+				scene->glyph_list); */
 			/* compile objects in the scene */
 			FOR_EACH_OBJECT_IN_LIST(Scene_object)(compile_Scene_object,
 				NULL,scene->scene_object_list);
@@ -7534,6 +7557,79 @@ Scene_object has a Time_object.
 			{
 				display_message(ERROR_MESSAGE,
 					"Scene_update_time_behaviour.  Unable to find Scene_object for graphics_object");
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_update_time_behaviour.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_update_time_behaviour */
+
+int Scene_update_time_behaviour_with_gt_element_group(struct Scene *scene,
+	struct GT_element_group *element_group)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+If the <element_group> has more than one time, this function ensures that the
+Scene_object has a Time_object.
+==============================================================================*/
+{
+	char *element_group_name, *time_object_name;
+	int return_code;
+	struct Scene_object *scene_object;
+	struct Time_object *time;
+	
+	ENTER(Scene_update_time_behaviour);
+	/* check arguments */
+	if (scene&&element_group)
+	{
+		/* Ensure the Scene object has a time object if the graphics
+			object has more than one time */
+		if(GT_element_group_has_multiple_times(element_group))
+		{
+			if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+				Scene_object_has_graphical_element_group,
+				(void *)element_group,scene->scene_object_list))
+			{
+				if(!Scene_object_has_time(scene_object))
+				{
+					if(GET_NAME(GT_element_group)(element_group,&element_group_name)
+						&& ALLOCATE(time_object_name, char, strlen(element_group_name)
+						+ strlen(scene->name) + 5))
+					{
+						sprintf(time_object_name, "%s_in_%s", element_group_name,
+							scene->name);
+						if(time = CREATE(Time_object)(time_object_name))
+						{
+							Scene_object_set_time_object(scene_object, time);
+							Time_object_set_time_keeper(time, scene->default_time_keeper);
+							Time_object_add_callback(time, Scene_time_update_callback,
+								scene);
+						}
+						DEALLOCATE(time_object_name);
+						DEALLOCATE(element_group_name);
+					}
+				}
+				else
+				{
+					time = Scene_object_get_time_object(scene_object);
+				}
+				return_code=FOR_EACH_OBJECT_IN_LIST(Scene_object)(
+					Scene_object_update_time_behaviour, (void *)time,
+					scene->scene_object_list);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_update_time_behaviour.  Unable to find Scene_object for element_group");
 				return_code=0;
 			}
 		}

@@ -24,7 +24,7 @@ appearance of graphical finite element groups.
 #include "finite_element/finite_element_to_streamlines.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/element_group_settings.h"
-/*#include "graphics/graphics_object.h"*/
+#include "graphics/graphics_object.h"
 #include "graphics/scene.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -561,6 +561,8 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			}
 			if (settings->glyph)
 			{
+				GT_object_remove_callback(settings->glyph, GT_element_settings_glyph_change,
+					(void *)settings);
 				DEACCESS(GT_object)(&(settings->glyph));
 			}
 			if (settings->orientation_scale_field)
@@ -714,6 +716,8 @@ Note: destination->access_count is not changed by COPY.
 		{
 			if (destination->glyph)
 			{
+				GT_object_remove_callback(destination->glyph, 
+					GT_element_settings_glyph_change, (void *)destination);
 				DEACCESS(GT_object)(&(destination->glyph));
 			}
 			if (destination->orientation_scale_field)
@@ -1601,7 +1605,14 @@ finite_element/finite_element_to_graphics object for explanation of how the
 		((!orientation_scale_field)||Computed_field_is_orientation_scale_capable(
 			orientation_scale_field,(void *)NULL)))
 	{
+		if (settings->glyph)
+		{
+			GT_object_remove_callback(settings->glyph, GT_element_settings_glyph_change,
+				(void *)settings);
+		}
 		REACCESS(GT_object)(&(settings->glyph),glyph);
+		GT_object_add_callback(settings->glyph, GT_element_settings_glyph_change,
+				(void *)settings);
 		settings->glyph_centre[0]=glyph_centre[0];
 		settings->glyph_centre[1]=glyph_centre[1];
 		settings->glyph_centre[2]=glyph_centre[2];
@@ -2557,6 +2568,38 @@ Returns 1 if the <settings> use any embedded_fields.
 	return (return_code);
 } /* GT_element_settings_has_embedded_field */
 
+int GT_element_settings_has_multiple_times(
+	struct GT_element_settings *settings,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Returns 1 if the <settings> depends on time.
+==============================================================================*/
+{
+	int return_code;
+	
+	ENTER(GT_element_settings_has_multiple_times);
+	USE_PARAMETER(dummy_void);
+	if (settings)
+	{
+		return_code = 0;
+		if (settings->glyph && (1 < GT_object_get_number_of_times(settings->glyph)))
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_has_multiple_times.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_has_multiple_times */
+
 int GT_element_settings_remove_graphics_object_if_embedded_field(
 	struct GT_element_settings *settings,void *dummy_void)
 /*******************************************************************************
@@ -2846,6 +2889,66 @@ due to a change in elements.
 
 	return (return_code);
 } /* GT_element_settings_element_change */
+
+int GT_element_settings_time_change(
+	struct GT_element_settings *settings,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Notifies the <settings> that time has changed.
+==============================================================================*/
+{
+	int return_code;
+	
+	ENTER(GT_element_settings_time_change);
+	USE_PARAMETER(dummy_void);
+	if (settings)
+	{
+		return_code = 1;
+		if (settings->glyph && (1 < GT_object_get_number_of_times(settings->glyph)))
+		{
+			GT_object_changed(settings->glyph);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_time_change.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_time_change */
+
+int GT_element_settings_glyph_change(
+	struct GT_object *glyph,void *settings_void)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000 (None Tree Hill Day)
+
+DESCRIPTION :
+Notifies the <settings> that the glyph used has changed.
+==============================================================================*/
+{
+	int return_code;
+	struct GT_element_settings *settings;
+	
+	ENTER(GT_element_settings_glyph_change);
+	if (glyph && (settings = (struct GT_element_settings *)settings_void))
+	{
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_glyph_change.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_glyph_change */
 
 int GT_element_settings_uses_dimension(struct GT_element_settings *settings,
 	void *dimension_void)
@@ -5510,6 +5613,10 @@ graphics_object is compiled.
 		if (settings->graphics_object && settings->visibility)
 		{
 			return_code=compile_GT_object(settings->graphics_object,time_void);
+			if (return_code && settings->glyph)
+			{
+				return_code=compile_GT_object(settings->glyph,time_void);
+			}
 		}
 		else
 		{
@@ -6016,7 +6123,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->visibility=0;
 						}
-						if ((struct GT_object *)NULL==settings->glyph)
+						if (settings->glyph)
+						{
+							GT_object_add_callback(settings->glyph, GT_element_settings_glyph_change,
+								(void *)settings);
+						}
+						else
 						{
 							display_message(WARNING_MESSAGE,
 								"No glyph specified for node_points");
@@ -6210,7 +6322,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->visibility=0;
 						}
-						if ((struct GT_object *)NULL==settings->glyph)
+						if (settings->glyph)
+						{
+							GT_object_add_callback(settings->glyph, GT_element_settings_glyph_change,
+								(void *)settings);
+						}
+						else
 						{
 							display_message(WARNING_MESSAGE,
 								"No glyph specified for data_points");
@@ -7196,7 +7313,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								xi_discretization_mode_string));
 						GT_element_settings_set_use_element_type(settings,
 							Use_element_type_from_string(use_element_type_string));
-						if ((struct GT_object *)NULL==settings->glyph)
+						if (settings->glyph)
+						{
+							GT_object_add_callback(settings->glyph, GT_element_settings_glyph_change,
+								(void *)settings);
+						}
+						else
 						{
 							display_message(WARNING_MESSAGE,
 								"No glyph specified for element_points");

@@ -3007,6 +3007,20 @@ pointed to by <time_void>.
 				if (graphics_object->display_list ||
 					(graphics_object->display_list=glGenLists(1)))
 				{
+					/* Some objects need to compile components first */
+					switch (graphics_object->object_type)
+					{
+						case g_GLYPH_SET:
+						{
+							struct GT_glyph_set *glyph_set;
+
+							/* Use first time to compile glyph object */
+							if (glyph_set=(graphics_object->gu.gt_glyph_set)[0])
+							{
+								compile_GT_object(glyph_set->glyph, time_void);
+							}
+						}
+					}
 					glNewList(graphics_object->display_list,GL_COMPILE);
 					if ((GRAPHICS_SELECT_ON == graphics_object->select_mode) ||
 						(GRAPHICS_DRAW_SELECTED == graphics_object->select_mode))
@@ -4835,22 +4849,15 @@ Sets the default_material of a GT_object.
 	ENTER(set_GT_object_default_material);
 	if (graphics_object)
 	{
-		if (material)
+		/* SAB Allow NULL material as this is what is required in glyphs where
+			the material changes with the data */
+		if (material != graphics_object->default_material)
 		{
-			if (material != graphics_object->default_material)
-			{
-				REACCESS(Graphical_material)(&(graphics_object->default_material),
-					material);
-				GT_object_changed(graphics_object);
-			}
-			return_code=1;
+			REACCESS(Graphical_material)(&(graphics_object->default_material),
+				material);
+			GT_object_changed(graphics_object);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_GT_object_default_material.  Invalid material object");
-			return_code=0;
-		}
+	  return_code=1;
 	}
 	else
 	{
@@ -4947,26 +4954,18 @@ Sets the spectrum of a GT_object.
 	ENTER(set_GT_object_Spectrum);
 	if (graphics_object)
 	{
-		if (spectrum=(struct Spectrum *)spectrum_void)
+		spectrum=(struct Spectrum *)spectrum_void;
+		if (spectrum != graphics_object->spectrum)
 		{
-			if (spectrum != graphics_object->spectrum)
+			ACCESS(Spectrum)(spectrum);
+			if (graphics_object->spectrum)
 			{
-				ACCESS(Spectrum)(spectrum);
-				if (graphics_object->spectrum)
-				{
-					DEACCESS(Spectrum)(&graphics_object->spectrum);
-				}
-				graphics_object->spectrum=spectrum;
-				GT_object_changed(graphics_object);
+				DEACCESS(Spectrum)(&graphics_object->spectrum);
 			}
-			return_code=1;
+			graphics_object->spectrum=spectrum;
+			GT_object_changed(graphics_object);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_GT_object_Spectrum.  Invalid spectrum object");
-			return_code=0;
-		}
+		return_code=1;
 	}
 	else
 	{

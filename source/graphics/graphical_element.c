@@ -1082,6 +1082,36 @@ objects interested in this GT_element_group will be notified that is has changed
 	return (return_code);
 } /* GT_element_group_changed */
 
+int GT_element_group_time_changed(struct GT_element_group *gt_element_group)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Invalidate any components of a GT_element group that depend on time
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_group_time_changed);
+
+	if (gt_element_group)
+	{
+		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+			GT_element_settings_time_change,NULL,
+			gt_element_group->list_of_settings);		
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_time_changed. Invalid GT_element_group");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_time_changed */
+
 int GT_element_group_add_callback(struct GT_element_group *gt_element_group, 
 	GT_element_group_callback callback, void *user_data)
 /*******************************************************************************
@@ -2273,6 +2303,41 @@ if the group contains any settings using embedded fields.
 
 	return (return_code);
 } /* GT_element_group_has_embedded_fields */
+
+int GT_element_group_has_multiple_times(struct GT_element_group *gt_element_group)
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Returns true if <gt_element_group> contains settings which depend on time.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_group_has_multiple_times);
+	if (gt_element_group)
+	{
+		if(FIRST_OBJECT_IN_LIST_THAT(GT_element_settings)(
+			GT_element_settings_has_multiple_times,NULL,
+			gt_element_group->list_of_settings))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_has_multiple_times.  Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_has_multiple_times */
 
 int compile_GT_element_group(struct GT_element_group *gt_element_group,
 	float time)

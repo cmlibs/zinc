@@ -1480,7 +1480,7 @@ DESCRIPTION :
 	/* checking arguments */
 	if (triangle_list&&vertex_list&&iso_env_map&&
 		((!texturemap_coord)&&(!texturemap_index)||(texturemap_coord&&texturemap_index))
-		&&(0<n_rep)&&(0<n_iso_polys)&&default_material)
+		&&(0<n_rep)&&(0<n_iso_polys))
 	{
 #if defined (OPENGL_API)
 		if (!(iso_poly_material&&(last_material=iso_poly_material[0])))

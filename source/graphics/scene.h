@@ -1217,6 +1217,16 @@ If the graphics_object has more than one time, this function ensures that the
 corresponding Scene_objects in this scene have a Time_object.
 ==============================================================================*/
 
+int Scene_update_time_behaviour_with_gt_element_group(struct Scene *scene,
+  struct GT_element_group *element_group);
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+If the <element_group> has more than one time, this function ensures that the
+Scene_object has a Time_object.
+==============================================================================*/
+
 int Scene_set_time_behaviour(struct Scene *scene, char *scene_object_name,
 	char *time_object_name, struct Time_keeper *time_keeper);
 /*******************************************************************************

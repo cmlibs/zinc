@@ -744,6 +744,15 @@ DESCRIPTION :
 Returns 1 if the <settings> use any embedded_fields.
 ==============================================================================*/
 
+int GT_element_settings_has_multiple_times(
+	struct GT_element_settings *settings,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Returns 1 if the <settings> depends on time.
+==============================================================================*/
+
 int GT_element_settings_remove_graphics_object_if_embedded_field(
 	struct GT_element_settings *settings,void *dummy_void);
 /*******************************************************************************
@@ -821,6 +830,24 @@ LAST MODIFIED : 10 September 1998
 DESCRIPTION :
 Deaccesses any graphics_object in <settings> if it would have to be rebuilt
 due to a change in elements.
+==============================================================================*/
+
+int GT_element_settings_time_change(
+	struct GT_element_settings *settings,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Notifies the <settings> that time has changed.
+==============================================================================*/
+
+int GT_element_settings_glyph_change(
+	struct GT_object *glyph,void *settings_void);
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000 (None Tree Hill Day)
+
+DESCRIPTION :
+Notifies the <settings> that the glyph used has changed.
 ==============================================================================*/
 
 int GT_element_settings_uses_dimension(struct GT_element_settings *settings,

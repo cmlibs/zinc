@@ -3568,14 +3568,8 @@ can be exported with only vertex positions changed.
 	/* check arguments */
 	if (in_file&&texture&&graphical_material_manager)
 	{
-		/* set default material */
-		default_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-			"default",graphical_material_manager);
-		if (!default_material)
-		{
-			default_material=FIRST_OBJECT_IN_MANAGER_THAT(Graphical_material)(NULL,
-				NULL,graphical_material_manager);
-		}
+		/* default material is NULL so that it gets controlled by the graphics_object above */
+		default_material=(struct Graphical_material *)NULL;
 		scanned_material=default_material;
 		/* set modes */
 		texture->hollow_mode_on=0;

@@ -360,6 +360,23 @@ DESCRIPTION :
 Wrapper for accessing the list of settings in <gt_element_group>.
 ==============================================================================*/
 
+int GT_element_group_changed(struct GT_element_group *gt_element_group);
+/*******************************************************************************
+LAST MODIFIED : 6 July 1999
+
+DESCRIPTION :
+External modules that change a GT_element_group should call this routine so that
+objects interested in this GT_element_group will be notified that is has changed.
+==============================================================================*/
+
+int GT_element_group_time_changed(struct GT_element_group *gt_element_group);
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Invalidate any components of a GT_element group that depend on time
+==============================================================================*/
+
 int GT_element_group_clear_changed(struct GT_element_group *gt_element_group);
 /*******************************************************************************
 LAST MODIFIED : 17 June 1998
@@ -390,6 +407,14 @@ Returns true if <gt_element_group> contains settings which use embedded fields w
 are affected by the <changed_node> or <changed_element>.
 If <changed_node> and <changed_element> are both NULL then this returns true 
 if the group contains any settings using embedded fields.
+==============================================================================*/
+
+int GT_element_group_has_multiple_times(struct GT_element_group *gt_element_group);
+/*******************************************************************************
+LAST MODIFIED : 25 October 2000
+
+DESCRIPTION :
+Returns true if <gt_element_group> contains settings which depend on time.
 ==============================================================================*/
 
 int compile_GT_element_group(struct GT_element_group *gt_element_group,
