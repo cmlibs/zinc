@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.h
 
-LAST MODIFIED : 10 April 2001
+LAST MODIFIED : 2 May 2001
 
 DESCRIPTION :
 Utilities for handling images.
@@ -21,22 +21,20 @@ Global types
 */
 enum Image_file_format
 /*******************************************************************************
-LAST MODIFIED : 12 October 2000
+LAST MODIFIED : 2 May 2001
 
 DESCRIPTION :
 Enumerator for specifying the image file format.
-Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the
-list for automatic creation of choose_enumerator widgets.
+Note: the first value will be 0 by the ANSI standard, with each subsequent entry
+incremented by 1. This pattern is expected by the ENUMERATOR macros.
+Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 ==============================================================================*/
 {
-	UNKNOWN_IMAGE_FILE_FORMAT,
-	IMAGE_FILE_FORMAT_BEFORE_FIRST,
 	POSTSCRIPT_FILE_FORMAT,
 	RAW_FILE_FORMAT,
 	RGB_FILE_FORMAT,
 	TIFF_FILE_FORMAT,
-	YUV_FILE_FORMAT,
-	IMAGE_FILE_FORMAT_AFTER_LAST
+	YUV_FILE_FORMAT
 }; /* enum Image_file_format */
 
 enum Image_orientation
