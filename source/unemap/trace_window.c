@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 27 June 2001
+LAST MODIFIED :  18 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -11864,19 +11864,18 @@ static int move_Cardiac_interval_markers(struct Trace_window_area_1 *trace_area_
 	int x_pointer,enum Trace_moving_status moving,int *times,GC marker_graphics_context,
 	float frequency,int start_analysis_interval,unsigned int working_button)
 /*******************************************************************************
-LAST MODIFIED : 11 April 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION : Move the indviudal cardiac interval markers.
 ==============================================================================*/
 {	
-	Boolean owner_events;
 	char time_string[20];	
 	Cursor cursor;			
 	int axes_bottom,axes_height,axes_left,axes_right,axes_top,axes_width,
-		keyboard_mode,marker,pointer_mode,pointer_x,pointer_y,previous_marker,
+		marker,pointer_x,pointer_y,previous_marker,
 		return_code,time;
 	Pixmap pixel_map;		
-	Window confine_to,working_window;
+	Window working_window;
 	XEvent xevent;
 
 	ENTER(move_Cardiac_interval_markers);
@@ -11889,109 +11888,101 @@ DESCRIPTION : Move the indviudal cardiac interval markers.
 		axes_bottom=axes_top+(trace_area_1->axes_height)-1;
 		axes_height=trace_area_1->axes_height;	
 		/* grab the pointer */
-		cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);
-		owner_events=True;
-		pointer_mode=GrabModeAsync;
-		keyboard_mode=GrabModeAsync;
-		confine_to=None;
-		if (GrabSuccess==XtGrabPointer(trace_area_1->drawing_area,
-			owner_events,
-			ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
-			pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
-		{			
-			XWarpPointer(display,None,None,0,0,0,0,
-				initial_marker-x_pointer,0);					
-			pointer_x=initial_marker;
-			marker=initial_marker;
-			working_window=XtWindow(trace_area_1->drawing_area);
-			pixel_map=trace_area_1->drawing->pixel_map;
-			while (TRACE_MOVING_NONE!=moving)
-			{
+		cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);		
+		/* set the cursor */
+		XDefineCursor(display,XtWindow(trace_area_1->drawing_area),cursor);
+		XmUpdateDisplay(trace_area_1->drawing_area);		
+		XWarpPointer(display,None,None,0,0,0,0,
+			initial_marker-x_pointer,0);					
+		pointer_x=initial_marker;
+		marker=initial_marker;
+		working_window=XtWindow(trace_area_1->drawing_area);
+		pixel_map=trace_area_1->drawing->pixel_map;
+		while (TRACE_MOVING_NONE!=moving)
+		{
 				
-				XNextEvent(display,&xevent);
-				switch (xevent.type)
-				{
-					case MotionNotify:									
-					{																
-						previous_marker=marker;																	
-						/* reduce the number of motion events displayed */
-						while (True==XCheckMaskEvent(display,ButtonMotionMask,&xevent));
-						pointer_x=xevent.xmotion.x;
-						pointer_y=xevent.xmotion.y;									 											
-						if((xevent.xmotion.window==working_window)&&
-							(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
-						{										
-							if (pointer_x<axes_left)
+			XNextEvent(display,&xevent);
+			switch (xevent.type)
+			{
+				case MotionNotify:									
+				{																
+					previous_marker=marker;																	
+					/* reduce the number of motion events displayed */
+					while (True==XCheckMaskEvent(display,ButtonMotionMask,&xevent));
+					pointer_x=xevent.xmotion.x;
+					pointer_y=xevent.xmotion.y;									 											
+					if((xevent.xmotion.window==working_window)&&
+						(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
+					{										
+						if (pointer_x<axes_left)
+						{
+							marker=axes_left;
+						}
+						else
+						{
+							if (pointer_x>axes_right)
 							{
-								marker=axes_left;
+								marker=axes_right;
 							}
 							else
 							{
-								if (pointer_x>axes_right)
-								{
-									marker=axes_right;
-								}
-								else
-								{
-									marker=pointer_x;
-								}
-							}	
-							reconcile_Cardiac_interval_and_marker(&marker,interval,x_scale,
-								moving,axes_left,start_analysis_interval);
-							limit_Cardiac_markers(&marker,moving,interval,axes_left,
-								start_analysis_interval,x_scale);
-							if (marker!=previous_marker)
-							{
-								alter_Cardiac_interval_box(working_window,display,pixel_map,
-									marker_graphics_context,moving,marker,previous_marker,
-									axes_top,axes_bottom,axes_height);
-							}	/* if (marker!=previous_marker)	*/
-						}
-					} break;
-					case ButtonRelease:
-					{									
-						/* clear the exisitng marker */												
-						XDrawLine(display,pixel_map,marker_graphics_context,marker,
-							axes_top+1,marker,axes_bottom);
-						XDrawLine(display,working_window,marker_graphics_context,
-							marker,axes_top+1,marker,axes_bottom);						
+								marker=pointer_x;
+							}
+						}	
 						reconcile_Cardiac_interval_and_marker(&marker,interval,x_scale,
-								moving,axes_left,start_analysis_interval);
-						if (moving==TRACE_MOVING_CARDIAC_PT_TIME)
-						{																					
-							/*write in the new time */
-							time=(int)((float)((times)[interval->peak_or_trough_time])*1000./frequency);
-							sprintf(time_string,"%d",time);
-							write_marker_time(time_string,marker,axes_left,
-								axes_width,axes_top,signal_drawing_information->font,
-								(signal_drawing_information->graphics_context).	potential_time_colour_text,
-								display,trace_area_1->drawing_area,trace_area_1->drawing);
-						} 																																
-						/* draw the new marker */
-						XDrawLine(display,pixel_map,marker_graphics_context,
-							marker,axes_top+1,marker,axes_bottom);
-						XDrawLine(display,working_window,marker_graphics_context,
-							marker,axes_top+1,marker,axes_bottom);	
-						moving=TRACE_MOVING_NONE;																										
-					}break;
-					case ButtonPress:
-					{									
-						if (xevent.xbutton.button==working_button)
-						{						
-							display_message(ERROR_MESSAGE,
-								"move_Cardiac_interval_markers. Unexpected button press\n");
-							moving=TRACE_MOVING_NONE;
-						}
-					} break;
-					default:
-					{								
-						XtDispatchEvent(&xevent);
+							moving,axes_left,start_analysis_interval);
+						limit_Cardiac_markers(&marker,moving,interval,axes_left,
+							start_analysis_interval,x_scale);
+						if (marker!=previous_marker)
+						{
+							alter_Cardiac_interval_box(working_window,display,pixel_map,
+								marker_graphics_context,moving,marker,previous_marker,
+								axes_top,axes_bottom,axes_height);
+						}	/* if (marker!=previous_marker)	*/
 					}
+				} break;
+				case ButtonRelease:
+				{									
+					/* clear the exisitng marker */												
+					XDrawLine(display,pixel_map,marker_graphics_context,marker,
+						axes_top+1,marker,axes_bottom);
+					XDrawLine(display,working_window,marker_graphics_context,
+						marker,axes_top+1,marker,axes_bottom);						
+					reconcile_Cardiac_interval_and_marker(&marker,interval,x_scale,
+						moving,axes_left,start_analysis_interval);
+					if (moving==TRACE_MOVING_CARDIAC_PT_TIME)
+					{																					
+						/*write in the new time */
+						time=(int)((float)((times)[interval->peak_or_trough_time])*1000./frequency);
+						sprintf(time_string,"%d",time);
+						write_marker_time(time_string,marker,axes_left,
+							axes_width,axes_top,signal_drawing_information->font,
+							(signal_drawing_information->graphics_context).	potential_time_colour_text,
+							display,trace_area_1->drawing_area,trace_area_1->drawing);
+					} 																																
+					/* draw the new marker */
+					XDrawLine(display,pixel_map,marker_graphics_context,
+						marker,axes_top+1,marker,axes_bottom);
+					XDrawLine(display,working_window,marker_graphics_context,
+						marker,axes_top+1,marker,axes_bottom);	
+					moving=TRACE_MOVING_NONE;																										
+				}break;
+				case ButtonPress:
+				{									
+					if (xevent.xbutton.button==working_button)
+					{						
+						display_message(ERROR_MESSAGE,
+							"move_Cardiac_interval_markers. Unexpected button press\n");
+						moving=TRACE_MOVING_NONE;
+					}
+				} break;
+				default:
+				{								
+					XtDispatchEvent(&xevent);
 				}
 			}
-			/* release the pointer */
-			XtUngrabPointer(trace_area_1->drawing_area,CurrentTime);
-		}
+		}		
+		XUndefineCursor(display,XtWindow(trace_area_1->drawing_area));
 		XFreeCursor(display,cursor);
 	}
 	else
@@ -12010,17 +12001,16 @@ static int move_Cardiac_interval_box(struct Trace_window_area_1 *trace_area_1,
 	int x_pointer,enum Trace_moving_status moving,int start_analysis_interval,
 	int end_analysis_interval,struct Signal_buffer *buffer,unsigned int working_button)
 /*******************************************************************************
-LAST MODIFIED : 11 April 2001 
+LAST MODIFIED : 18 December 2001 
 
 DESCRIPTION : move the entire cardiac interval box.
 ==============================================================================*/
 {	
-	Boolean owner_events;
 	Cursor cursor;			
 	int axes_bottom,axes_height,axes_left,axes_right,axes_top,axes_width,
-		interval_time,interval_time_prev,keyboard_mode,pointer_mode,pointer_x,
+		interval_time,interval_time_prev,pointer_x,
 		pointer_y,return_code,previous_x_pos,x_pos,interval_diff;	
-	Window confine_to,working_window;
+	Window working_window;
 	XEvent xevent;
 
 	ENTER(move_Cardiac_interval_box);
@@ -12035,97 +12025,88 @@ DESCRIPTION : move the entire cardiac interval box.
 		axes_height=trace_area_1->axes_height;	
 		/* grab the pointer */
 		/* need to change to the square thing */
-		cursor=XCreateFontCursor(display,XC_dotbox);
-		owner_events=True;
-		pointer_mode=GrabModeAsync;
-		keyboard_mode=GrabModeAsync;
-		confine_to=None;
-		if (GrabSuccess==XtGrabPointer(trace_area_1->drawing_area,
-			owner_events,
-			ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
-			pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
-		{													
-			x_pos=x_pointer;
-			working_window=XtWindow(trace_area_1->drawing_area);		
-			while (TRACE_MOVING_NONE!=moving)
+		cursor=XCreateFontCursor(display,XC_dotbox);	
+		XDefineCursor(display,XtWindow(trace_area_1->drawing_area),cursor);
+		XmUpdateDisplay(trace_area_1->drawing_area);		
+		x_pos=x_pointer;
+		working_window=XtWindow(trace_area_1->drawing_area);		
+		while (TRACE_MOVING_NONE!=moving)
+		{
+			XNextEvent(display,&xevent);
+			switch (xevent.type)
 			{
-				XNextEvent(display,&xevent);
-				switch (xevent.type)
-				{
-					case MotionNotify:									
-					{																
-						previous_x_pos=x_pos;																	
-						/* reduce the number of motion events displayed */
-						while (True==XCheckMaskEvent(display,ButtonMotionMask,&xevent));
-						pointer_x=xevent.xmotion.x;
-						pointer_y=xevent.xmotion.y;									 											
-						if((xevent.xmotion.window==working_window)&&
-							(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
-						{										
+				case MotionNotify:									
+				{																
+					previous_x_pos=x_pos;																	
+					/* reduce the number of motion events displayed */
+					while (True==XCheckMaskEvent(display,ButtonMotionMask,&xevent));
+					pointer_x=xevent.xmotion.x;
+					pointer_y=xevent.xmotion.y;									 											
+					if((xevent.xmotion.window==working_window)&&
+						(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
+					{										
 
-							if (pointer_x<axes_left)
+						if (pointer_x<axes_left)
+						{
+							x_pos=axes_left;
+						}
+						else
+						{
+							if (pointer_x>axes_right)
 							{
-								x_pos=axes_left;
+								x_pos=axes_right;
 							}
 							else
 							{
-								if (pointer_x>axes_right)
-								{
-									x_pos=axes_right;
-								}
-								else
-								{
-									x_pos=pointer_x;
-								}
-							}																										  							
-							if (x_pos!=previous_x_pos)
-							{								
-								/* clear old */ 							
-								draw_Cardiac_interval_box(interval,end_analysis_interval,
-									start_analysis_interval,axes_top,axes_height,axes_left,
-									axes_width,trace_area_1->drawing_area,trace_area_1->drawing,
-									signal_drawing_information,buffer);
-								/* alter interval */							
-								interval_time=SCALE_X(x_pos,axes_left,start_analysis_interval,1/x_scale);
-								interval_time_prev=SCALE_X(previous_x_pos,axes_left,
-									start_analysis_interval,1/x_scale);
-								interval_diff=interval_time-interval_time_prev;
-								limit_Cardiac_marker_box(&interval_diff,moving,interval,
-									buffer->start,buffer->end);																			 
-								interval->start_time+=interval_diff;
-								interval->peak_or_trough_time+=interval_diff;
-								interval->end_time+=interval_diff;
-								/* draw new */
-								draw_Cardiac_interval_box(interval,end_analysis_interval,
-									start_analysis_interval,axes_top,axes_height,axes_left,
-									axes_width,trace_area_1->drawing_area,trace_area_1->drawing,
-									signal_drawing_information,buffer);
-							}/* (x_pos!=previous_x_pos)	*/
+								x_pos=pointer_x;
+							}
+						}																										  							
+						if (x_pos!=previous_x_pos)
+						{								
+							/* clear old */ 							
+							draw_Cardiac_interval_box(interval,end_analysis_interval,
+								start_analysis_interval,axes_top,axes_height,axes_left,
+								axes_width,trace_area_1->drawing_area,trace_area_1->drawing,
+								signal_drawing_information,buffer);
+							/* alter interval */							
+							interval_time=SCALE_X(x_pos,axes_left,start_analysis_interval,1/x_scale);
+							interval_time_prev=SCALE_X(previous_x_pos,axes_left,
+								start_analysis_interval,1/x_scale);
+							interval_diff=interval_time-interval_time_prev;
+							limit_Cardiac_marker_box(&interval_diff,moving,interval,
+								buffer->start,buffer->end);																			 
+							interval->start_time+=interval_diff;
+							interval->peak_or_trough_time+=interval_diff;
+							interval->end_time+=interval_diff;
+							/* draw new */
+							draw_Cardiac_interval_box(interval,end_analysis_interval,
+								start_analysis_interval,axes_top,axes_height,axes_left,
+								axes_width,trace_area_1->drawing_area,trace_area_1->drawing,
+								signal_drawing_information,buffer);
+						}/* (x_pos!=previous_x_pos)	*/
 
-						}
-					} break;
-					case ButtonRelease:
-					{	
-						moving=TRACE_MOVING_NONE;																										
-					}break;
-					case ButtonPress:
-					{									
-						if (xevent.xbutton.button==working_button)
-						{							
-							display_message(ERROR_MESSAGE,
-								"move_Cardiac_interval_box. Unexpected button press\n");
-							moving=TRACE_MOVING_NONE;
-						}
-					} break;
-					default:
-					{								
-						XtDispatchEvent(&xevent);
 					}
+				} break;
+				case ButtonRelease:
+				{	
+					moving=TRACE_MOVING_NONE;																										
+				}break;
+				case ButtonPress:
+				{									
+					if (xevent.xbutton.button==working_button)
+					{							
+						display_message(ERROR_MESSAGE,
+							"move_Cardiac_interval_box. Unexpected button press\n");
+						moving=TRACE_MOVING_NONE;
+					}
+				} break;
+				default:
+				{								
+					XtDispatchEvent(&xevent);
 				}
 			}
-			/* release the pointer */
-			XtUngrabPointer(trace_area_1->drawing_area,CurrentTime);
 		}
+		XUndefineCursor(display,XtWindow(trace_area_1->drawing_area));
 		XFreeCursor(display,cursor);
 	}
 	else

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 11 December 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -6635,16 +6635,13 @@ enum Moving_status
 static void select_analysis_interval(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 January 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 The callback for modifying the analysis interval in the analysis interval
 drawing area.
 ==============================================================================*/
-{
-	Boolean owner_events;
-	int keyboard_mode,pointer_mode;
-	Window confine_to;
+{	
 	char event_interval_changed,number_string[20],search_interval_changed;
 	Cursor cursor;
 	Display *display;
@@ -6756,500 +6753,492 @@ drawing area.
 						signal_drawing_package=analysis->signal_drawing_package;
 						display_start_time_field=
 							get_Signal_drawing_package_display_start_time_field(
-							signal_drawing_package);
+								signal_drawing_package);
 						display_end_time_field=
 							get_Signal_drawing_package_display_end_time_field(
-							signal_drawing_package);
+								signal_drawing_package);
 						signal_field=get_Signal_drawing_package_signal_field(
 							signal_drawing_package);
-#endif /* defined (UNEMAP_USE_NODES)*/
-						/* grab the pointer */
-						owner_events=True;
-						pointer_mode=GrabModeAsync;
-						keyboard_mode=GrabModeAsync;
-						confine_to=None;
-
-						if (GrabSuccess==XtGrabPointer(interval->drawing_area,owner_events,
-							ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
-							pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
-						{ 
-							box_range=right_box-left_box;
-							minimum_box_range=2*pointer_sensitivity+1;
-							working_window=XtWindow(interval->drawing_area);
-							pixel_map=interval->drawing->pixel_map;
-							initial_potential_time=potential_time;
-							switch (moving)
+#endif /* defined (UNEMAP_USE_NODES)*/										
+						/* set the cursor */
+						XDefineCursor(display,XtWindow(interval->drawing_area),
+							cursor);
+						XmUpdateDisplay(interval->drawing_area);
+						box_range=right_box-left_box;
+						minimum_box_range=2*pointer_sensitivity+1;
+						working_window=XtWindow(interval->drawing_area);
+						pixel_map=interval->drawing->pixel_map;
+						initial_potential_time=potential_time;
+						switch (moving)
+						{
+							case MOVING_POTENTIAL_TIME_MARKER:
 							{
-								case MOVING_POTENTIAL_TIME_MARKER:
-								{
-									XWarpPointer(display,None,None,0,0,0,0,
-										potential_time-pointer_x,0);
-									pointer_x=potential_time;
-									/* clear the potential time */
-									sprintf(number_string,"%d",
-										(int)((float)(times[analysis->potential_time])*1000./
+								XWarpPointer(display,None,None,0,0,0,0,
+									potential_time-pointer_x,0);
+								pointer_x=potential_time;
+								/* clear the potential time */
+								sprintf(number_string,"%d",
+									(int)((float)(times[analysis->potential_time])*1000./
 										frequency));
-									length=strlen(number_string);
-									XTextExtents(font,number_string,length,&direction,&ascent,
-										&descent,&bounds);
-									x_string=pointer_x+(bounds.lbearing-bounds.rbearing+1)/2;
-									if (x_string+bounds.rbearing>=axes_right)
-									{
-										x_string=axes_right-bounds.rbearing;
-									}
-									if (x_string-bounds.lbearing<axes_left)
-									{
-										x_string=axes_left+bounds.lbearing;
-									}
-									y_string=axes_top-descent;
-									XDrawString(display,pixel_map,potential_time_colour_text,
-										x_string,y_string,number_string,length);
-									XDrawString(display,working_window,potential_time_colour,
-										x_string,y_string,number_string,length);
-								} break;
-								case MOVING_LEFT:
+								length=strlen(number_string);
+								XTextExtents(font,number_string,length,&direction,&ascent,
+									&descent,&bounds);
+								x_string=pointer_x+(bounds.lbearing-bounds.rbearing+1)/2;
+								if (x_string+bounds.rbearing>=axes_right)
 								{
-									XWarpPointer(display,None,None,0,0,0,0,left_box-pointer_x,0);
-									pointer_x=left_box;
-								} break;
-								case MOVING_RIGHT:
+									x_string=axes_right-bounds.rbearing;
+								}
+								if (x_string-bounds.lbearing<axes_left)
 								{
-									XWarpPointer(display,None,None,0,0,0,0,right_box-pointer_x,0);
-									pointer_x=right_box;
-								} break;
-							}
-							while (moving!=MOVING_NONE)
+									x_string=axes_left+bounds.lbearing;
+								}
+								y_string=axes_top-descent;
+								XDrawString(display,pixel_map,potential_time_colour_text,
+									x_string,y_string,number_string,length);
+								XDrawString(display,working_window,potential_time_colour,
+									x_string,y_string,number_string,length);
+							} break;
+							case MOVING_LEFT:
 							{
-								XNextEvent(display,&xevent);
-								switch (xevent.type)
+								XWarpPointer(display,None,None,0,0,0,0,left_box-pointer_x,0);
+								pointer_x=left_box;
+							} break;
+							case MOVING_RIGHT:
+							{
+								XWarpPointer(display,None,None,0,0,0,0,right_box-pointer_x,0);
+								pointer_x=right_box;
+							} break;
+						}
+						while (moving!=MOVING_NONE)
+						{
+							XNextEvent(display,&xevent);
+							switch (xevent.type)
+							{
+								case MotionNotify:
 								{
-									case MotionNotify:
+									previous_left_box=left_box;
+									previous_right_box=right_box;
+									previous_pointer_x=pointer_x;
+									previous_potential_time=potential_time;
+									/* reduce the number of motion events displayed */
+									while (XCheckMaskEvent(display,ButtonMotionMask,&xevent));
+									pointer_x=xevent.xmotion.x;
+									pointer_y=xevent.xmotion.y;
+									if ((xevent.xmotion.window==working_window)&&
+										(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
 									{
-										previous_left_box=left_box;
-										previous_right_box=right_box;
-										previous_pointer_x=pointer_x;
-										previous_potential_time=potential_time;
-										/* reduce the number of motion events displayed */
-										while (XCheckMaskEvent(display,ButtonMotionMask,&xevent));
-										pointer_x=xevent.xmotion.x;
-										pointer_y=xevent.xmotion.y;
-										if ((xevent.xmotion.window==working_window)&&
-											(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
+										switch (moving)
 										{
-											switch (moving)
+											case MOVING_POTENTIAL_TIME_MARKER:
 											{
-												case MOVING_POTENTIAL_TIME_MARKER:
+												if (pointer_x<axes_left)
 												{
-													if (pointer_x<axes_left)
-													{
-														pointer_x=axes_left;
-														potential_time=axes_left;
-													}
-													else
-													{
-														if (pointer_x>axes_right)
-														{
-															pointer_x=axes_right;
-															potential_time=axes_right;
-														}
-														else
-														{
-															potential_time=pointer_x;
-														}
-													}
-												} break;
-												case MOVING_LEFT:
-												{
-													if (pointer_x<axes_left)
-													{
-														left_box=axes_left;
-													}
-													else
-													{
-														if (pointer_x>(temp=right_box-minimum_box_range))
-														{
-															left_box=temp;
-														}
-														else
-														{
-															left_box=pointer_x;
-														}
-													}
-												} break;
-												case MOVING_RIGHT:
+													pointer_x=axes_left;
+													potential_time=axes_left;
+												}
+												else
 												{
 													if (pointer_x>axes_right)
 													{
-														right_box=axes_right;
+														pointer_x=axes_right;
+														potential_time=axes_right;
 													}
 													else
 													{
-														if (pointer_x<(temp=left_box+minimum_box_range))
-														{
-															right_box=temp;
-														}
-														else
-														{
-															right_box=pointer_x;
-														}
+														potential_time=pointer_x;
 													}
-												} break;
-												case MOVING_BOX:
+												}
+											} break;
+											case MOVING_LEFT:
+											{
+												if (pointer_x<axes_left)
 												{
-													if (pointer_x<axes_left)
+													left_box=axes_left;
+												}
+												else
+												{
+													if (pointer_x>(temp=right_box-minimum_box_range))
 													{
-														pointer_x=axes_left;
-														left_box=axes_left;
-														right_box=left_box+box_range;
+														left_box=temp;
 													}
 													else
 													{
-														if (pointer_x>axes_right)
+														left_box=pointer_x;
+													}
+												}
+											} break;
+											case MOVING_RIGHT:
+											{
+												if (pointer_x>axes_right)
+												{
+													right_box=axes_right;
+												}
+												else
+												{
+													if (pointer_x<(temp=left_box+minimum_box_range))
+													{
+														right_box=temp;
+													}
+													else
+													{
+														right_box=pointer_x;
+													}
+												}
+											} break;
+											case MOVING_BOX:
+											{
+												if (pointer_x<axes_left)
+												{
+													pointer_x=axes_left;
+													left_box=axes_left;
+													right_box=left_box+box_range;
+												}
+												else
+												{
+													if (pointer_x>axes_right)
+													{
+														pointer_x=axes_right;
+														right_box=axes_right;
+														left_box=right_box-box_range;
+													}
+													else
+													{
+														left_box=left_box+pointer_x-previous_pointer_x;
+														if (left_box<axes_left)
 														{
-															pointer_x=axes_right;
-															right_box=axes_right;
-															left_box=right_box-box_range;
+															left_box=axes_left;
+															right_box=left_box+box_range;
 														}
 														else
 														{
-															left_box=left_box+pointer_x-previous_pointer_x;
- 															if (left_box<axes_left)
+															right_box=left_box+box_range;
+															if (right_box>axes_right)
 															{
-																left_box=axes_left;
-																right_box=left_box+box_range;
+																right_box=axes_right;
+																left_box=right_box-box_range;
 															}
-															else
+														}
+													}
+												}
+											} break;
+										}
+										if ((left_box!=previous_left_box)||
+											(right_box!=previous_right_box))
+										{
+											/* clear the old box */
+											draw_interval_box(previous_left_box,axes_top,
+												previous_right_box-previous_left_box+1,
+												interval->axes_height,interval,
+												analysis->signal_drawing_information,
+												analysis->user_interface);
+											/* draw the new box */
+											draw_interval_box(left_box,axes_top,
+												right_box-left_box+1,interval->axes_height,interval,
+												analysis->signal_drawing_information,
+												analysis->user_interface);
+										}
+										if (potential_time!=previous_potential_time)
+										{
+											/* clear the old marker */
+											XDrawLine(display,pixel_map,potential_time_colour,
+												previous_potential_time,axes_top,
+												previous_potential_time,axes_bottom);
+											XDrawLine(display,working_window,potential_time_colour,
+												previous_potential_time,axes_top,
+												previous_potential_time,axes_bottom);
+											/* draw the new marker */
+											XDrawLine(display,pixel_map,potential_time_colour,
+												potential_time,axes_top,potential_time,axes_bottom);
+											XDrawLine(display,working_window,potential_time_colour,
+												potential_time,axes_top,potential_time,axes_bottom);
+										}
+									}
+								} break;
+								case ButtonPress:
+								{
+									if (xevent.xbutton.button==working_button)
+									{
+										display_message(ERROR_MESSAGE,
+											"select_analysis_interval.  Unexpected button press");
+										moving=MOVING_NONE;
+									}
+								} break;
+								case ButtonRelease:
+								{
+									if (xevent.xbutton.button==working_button)
+									{
+										if (xevent.xbutton.window==working_window)
+										{
+											switch (moving)
+											{
+												case MOVING_LEFT: case MOVING_BOX: case MOVING_RIGHT:
+												{
+													if ((left_box!=interval->left_box)||
+														(right_box!=interval->right_box))
+													{
+														if (left_box!=interval->left_box)
+														{
+															buffer->start=SCALE_X(left_box,axes_left,0,
+																1/x_scale);
+															interval->left_box=left_box;
+#if defined (UNEMAP_USE_NODES)
+															time_index=buffer->start;
+																/*get the start time,update the display_start_time_field */
+															get_FE_field_time_FE_value(signal_field,time_index,
+																&start_time);
+															set_FE_field_FE_value_value(display_start_time_field,0,
+																start_time);
+#endif /* defined (UNEMAP_USE_NODES)*/
+														}
+														if (right_box!=interval->right_box)
+														{
+															buffer->end=SCALE_X(right_box,axes_left,0,
+																1/x_scale);
+															interval->right_box=right_box;
+#if defined (UNEMAP_USE_NODES)
+															time_index=buffer->end;
+																/*get the end time,update the display_end_time_field */
+															get_FE_field_time_FE_value(signal_field,time_index,&end_time);
+															set_FE_field_FE_value_value(display_end_time_field,0,end_time);
+#endif /* defined (UNEMAP_USE_NODES)*/
+														}
+														/* update the search interval */
+														temp=analysis->end_search_interval-
+															analysis->start_search_interval;
+														search_interval_changed=0;
+														if (buffer->start>analysis->start_search_interval)
+														{
+															search_interval_changed=1;
+															if (analysis->search_interval_divisions)
 															{
-																right_box=left_box+box_range;
-																if (right_box>axes_right)
+																for (i=analysis->number_of_events-2;i>=0;i--)
 																{
-																	right_box=axes_right;
-																	left_box=right_box-box_range;
+																	(analysis->search_interval_divisions)[i] +=
+																		(buffer->start)-
+																		(analysis->start_search_interval);
 																}
 															}
+															analysis->start_search_interval=buffer->start;
+															analysis->end_search_interval=
+																analysis->start_search_interval+temp;
 														}
-													}
-												} break;
-											}
-											if ((left_box!=previous_left_box)||
-												(right_box!=previous_right_box))
-											{
-												/* clear the old box */
-												draw_interval_box(previous_left_box,axes_top,
-													previous_right_box-previous_left_box+1,
-													interval->axes_height,interval,
-													analysis->signal_drawing_information,
-													analysis->user_interface);
-												/* draw the new box */
-												draw_interval_box(left_box,axes_top,
-													right_box-left_box+1,interval->axes_height,interval,
-													analysis->signal_drawing_information,
-													analysis->user_interface);
-											}
-											if (potential_time!=previous_potential_time)
-											{
-												/* clear the old marker */
-												XDrawLine(display,pixel_map,potential_time_colour,
-													previous_potential_time,axes_top,
-													previous_potential_time,axes_bottom);
-												XDrawLine(display,working_window,potential_time_colour,
-													previous_potential_time,axes_top,
-													previous_potential_time,axes_bottom);
-												/* draw the new marker */
-												XDrawLine(display,pixel_map,potential_time_colour,
-													potential_time,axes_top,potential_time,axes_bottom);
-												XDrawLine(display,working_window,potential_time_colour,
-													potential_time,axes_top,potential_time,axes_bottom);
-											}
-										}
-									} break;
-									case ButtonPress:
-									{
-										if (xevent.xbutton.button==working_button)
-										{
-											display_message(ERROR_MESSAGE,
-												"select_analysis_interval.  Unexpected button press");
-											moving=MOVING_NONE;
-										}
-									} break;
-									case ButtonRelease:
-									{
-										if (xevent.xbutton.button==working_button)
-										{
-											if (xevent.xbutton.window==working_window)
-											{
-												switch (moving)
-												{
-													case MOVING_LEFT: case MOVING_BOX: case MOVING_RIGHT:
-													{
-														if ((left_box!=interval->left_box)||
-															(right_box!=interval->right_box))
+														if (buffer->end<analysis->end_search_interval)
 														{
-															if (left_box!=interval->left_box)
+															search_interval_changed=1;
+															if (analysis->search_interval_divisions)
 															{
-																buffer->start=SCALE_X(left_box,axes_left,0,
-																	1/x_scale);
-																interval->left_box=left_box;
-#if defined (UNEMAP_USE_NODES)
-																time_index=buffer->start;
-																/*get the start time,update the display_start_time_field */
-																get_FE_field_time_FE_value(signal_field,time_index,
-																	&start_time);
-																set_FE_field_FE_value_value(display_start_time_field,0,
-																	start_time);
-#endif /* defined (UNEMAP_USE_NODES)*/
+																for (i=analysis->number_of_events-2;i>=0;i--)
+																{
+																	(analysis->search_interval_divisions)[i] +=
+																		(buffer->end)-
+																		(analysis->end_search_interval);
+																}
 															}
-															if (right_box!=interval->right_box)
+															analysis->end_search_interval=buffer->end;
+															analysis->start_search_interval=
+																analysis->end_search_interval-temp;
+															if (buffer->start>analysis->
+																start_search_interval)
 															{
-																buffer->end=SCALE_X(right_box,axes_left,0,
-																	1/x_scale);
-																interval->right_box=right_box;
-#if defined (UNEMAP_USE_NODES)
-																time_index=buffer->end;
-																/*get the end time,update the display_end_time_field */
-																get_FE_field_time_FE_value(signal_field,time_index,&end_time);
-																set_FE_field_FE_value_value(display_end_time_field,0,end_time);
-#endif /* defined (UNEMAP_USE_NODES)*/
-															}
-															/* update the search interval */
-															temp=analysis->end_search_interval-
-																analysis->start_search_interval;
-															search_interval_changed=0;
-															if (buffer->start>analysis->start_search_interval)
-															{
-																search_interval_changed=1;
 																if (analysis->search_interval_divisions)
 																{
-																	for (i=analysis->number_of_events-2;i>=0;i--)
+																	for (i=analysis->number_of_events-2;i>=0;
+																			 i--)
 																	{
-																		(analysis->search_interval_divisions)[i] +=
-																			(buffer->start)-
+																		(analysis->search_interval_divisions)[
+																			i] += (buffer->start)-
 																			(analysis->start_search_interval);
+																		if ((analysis->search_interval_divisions)[
+																			i]>buffer->end)
+																		{
+																			(analysis->search_interval_divisions)[
+																				i]=buffer->end;
+																		}
 																	}
 																}
 																analysis->start_search_interval=buffer->start;
-																analysis->end_search_interval=
-																	analysis->start_search_interval+temp;
 															}
-															if (buffer->end<analysis->end_search_interval)
-															{
-																search_interval_changed=1;
-																if (analysis->search_interval_divisions)
-																{
-																	for (i=analysis->number_of_events-2;i>=0;i--)
-																	{
-																		(analysis->search_interval_divisions)[i] +=
-																			(buffer->end)-
-																			(analysis->end_search_interval);
-																	}
-																}
-																analysis->end_search_interval=buffer->end;
-																analysis->start_search_interval=
-																	analysis->end_search_interval-temp;
-																if (buffer->start>analysis->
-																	start_search_interval)
-																{
-																	if (analysis->search_interval_divisions)
-																	{
-																		for (i=analysis->number_of_events-2;i>=0;
-																			i--)
-																		{
-																			(analysis->search_interval_divisions)[
-																				i] += (buffer->start)-
-																				(analysis->start_search_interval);
-																			if ((analysis->search_interval_divisions)[
-																				i]>buffer->end)
-																			{
-																				(analysis->search_interval_divisions)[
-																					i]=buffer->end;
-																			}
-																		}
-																	}
-																	analysis->start_search_interval=buffer->start;
-																}
-															}
-															if ((trace=analysis->trace)&&
-																((EDA_LEVEL==analysis->detection)||
+														}
+														if ((trace=analysis->trace)&&
+															((EDA_LEVEL==analysis->detection)||
 																(EDA_THRESHOLD==analysis->detection)))
-															{
+														{
 																/* update the highlight event interval */
-																	/*???DB.  Should be in
-																		trace_change_display_interval ? */
-																temp=trace->area_3.edit.last_data-
-																	trace->area_3.edit.first_data;
-																event_interval_changed=0;
+															/*???DB.  Should be in
+																trace_change_display_interval ? */
+															temp=trace->area_3.edit.last_data-
+																trace->area_3.edit.first_data;
+															event_interval_changed=0;
+															if (buffer->start>
+																trace->area_3.edit.first_data)
+															{
+																event_interval_changed=1;
+																trace->area_3.edit.first_data=buffer->start;
+																trace->area_3.edit.last_data=
+																	analysis->trace->area_3.edit.first_data+
+																	temp;
+															}
+															if (buffer->end<trace->area_3.edit.last_data)
+															{
+																event_interval_changed=1;
+																trace->area_3.edit.last_data=buffer->end;
+																trace->area_3.edit.first_data=
+																	trace->area_3.edit.last_data-temp;
 																if (buffer->start>
 																	trace->area_3.edit.first_data)
 																{
-																	event_interval_changed=1;
 																	trace->area_3.edit.first_data=buffer->start;
-																	trace->area_3.edit.last_data=
-																		analysis->trace->area_3.edit.first_data+
-																		temp;
-																}
-																if (buffer->end<trace->area_3.edit.last_data)
-																{
-																	event_interval_changed=1;
-																	trace->area_3.edit.last_data=buffer->end;
-																	trace->area_3.edit.first_data=
-																		trace->area_3.edit.last_data-temp;
-																	if (buffer->start>
-																		trace->area_3.edit.first_data)
-																	{
-																		trace->area_3.edit.first_data=buffer->start;
-																	}
-																}
-																if (event_interval_changed)
-																{
-																	redraw_trace_3_drawing_area((Widget)NULL,
-																		(XtPointer)trace,(XtPointer)NULL);
 																}
 															}
-															if (search_interval_changed)
+															if (event_interval_changed)
 															{
-#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
-																if (EDA_INTERVAL==analysis->detection)
-																{
-																	/* free the event memory */
-																	destroy_all_events(analysis->rig);
-																	XtSetSensitive(analysis->window->file_menu.
-																		save_times_button,False);
-																	XtSetSensitive(
-																		analysis->window->map_menu.
-																		single_activation_button,
-																		False);
-																	XtSetSensitive(
-																		analysis->window->map_menu.
-																		multiple_activation_button,
-																		False);
-																	analysis->calculate_events=0;
-																}
-#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
-																trace_change_search_interval(analysis->trace);
-																if ((
-#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
-																	((EDA_INTERVAL==analysis->detection)&&
-																	((SINGLE_ACTIVATION==analysis->map_type)||
-																	(MULTIPLE_ACTIVATION==analysis->map_type)))||
-#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
-																	(INTEGRAL==analysis->map_type))&&
-																	(analysis->mapping_window)&&
-																	(map=analysis->mapping_window->map))
-																{
-																	analysis->map_type=NO_MAP_FIELD;
-																	map->colour_option=HIDE_COLOUR;
-																	map->contours_option=HIDE_CONTOURS;
-																	map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
-																	/* clear the colour map */
-																	map->activation_front= -1;
-																	update_mapping_drawing_area(
-																		analysis->mapping_window,2);
-																	update_mapping_colour_or_auxili(
-																		analysis->mapping_window);
-																	XtSetSensitive(analysis->mapping_window->
-																		animate_button,False);
-																}
+																redraw_trace_3_drawing_area((Widget)NULL,
+																	(XtPointer)trace,(XtPointer)NULL);
 															}
-															trace_change_display_interval(analysis->trace);
-															update_signals_drawing_area(analysis->window);
 														}
-													} break;
-													case MOVING_POTENTIAL_TIME_MARKER:
+														if (search_interval_changed)
+														{
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+															if (EDA_INTERVAL==analysis->detection)
+															{
+																/* free the event memory */
+																destroy_all_events(analysis->rig);
+																XtSetSensitive(analysis->window->file_menu.
+																	save_times_button,False);
+																XtSetSensitive(
+																	analysis->window->map_menu.
+																	single_activation_button,
+																	False);
+																XtSetSensitive(
+																	analysis->window->map_menu.
+																	multiple_activation_button,
+																	False);
+																analysis->calculate_events=0;
+															}
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+															trace_change_search_interval(analysis->trace);
+															if ((
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+																((EDA_INTERVAL==analysis->detection)&&
+																	((SINGLE_ACTIVATION==analysis->map_type)||
+																		(MULTIPLE_ACTIVATION==analysis->map_type)))||
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+																(INTEGRAL==analysis->map_type))&&
+																(analysis->mapping_window)&&
+																(map=analysis->mapping_window->map))
+															{
+																analysis->map_type=NO_MAP_FIELD;
+																map->colour_option=HIDE_COLOUR;
+																map->contours_option=HIDE_CONTOURS;
+																map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
+																/* clear the colour map */
+																map->activation_front= -1;
+																update_mapping_drawing_area(
+																	analysis->mapping_window,2);
+																update_mapping_colour_or_auxili(
+																	analysis->mapping_window);
+																XtSetSensitive(analysis->mapping_window->
+																	animate_button,False);
+															}
+														}
+														trace_change_display_interval(analysis->trace);
+														update_signals_drawing_area(analysis->window);
+													}
+												} break;
+												case MOVING_POTENTIAL_TIME_MARKER:
+												{
+													if (potential_time!=initial_potential_time)
 													{
-														if (potential_time!=initial_potential_time)
-														{
-															/* clear the cursor */
-															XDrawLine(display,pixel_map,
-																potential_time_colour,
-																potential_time,axes_top,
-																potential_time,axes_bottom);
-															XDrawLine(display,working_window,
-																potential_time_colour,
-																potential_time,axes_top,
-																potential_time,axes_bottom);
+														/* clear the cursor */
+														XDrawLine(display,pixel_map,
+															potential_time_colour,
+															potential_time,axes_top,
+															potential_time,axes_bottom);
+														XDrawLine(display,working_window,
+															potential_time_colour,
+															potential_time,axes_top,
+															potential_time,axes_bottom);
 
-															/* update time objects */
-															/* This conversion to time_keeper time should
-																be much more robust.  The frequency is not
-																guaranteed to divide the potential time and
-																this takes no account of time transformations */
-															analysis->analysis_update_flags |=
-																ANALYSIS_INTERVAL_NO_POTENTIAL_ERASE;
-															potential_time=SCALE_X(potential_time,
-																axes_left,0,1/x_scale);
-															Time_keeper_request_new_time(
-																Time_object_get_time_keeper(
+														/* update time objects */
+														/* This conversion to time_keeper time should
+															 be much more robust.  The frequency is not
+															 guaranteed to divide the potential time and
+															 this takes no account of time transformations */
+														analysis->analysis_update_flags |=
+															ANALYSIS_INTERVAL_NO_POTENTIAL_ERASE;
+														potential_time=SCALE_X(potential_time,
+															axes_left,0,1/x_scale);
+														Time_keeper_request_new_time(
+															Time_object_get_time_keeper(
 																analysis->potential_time_object),
-																((double)times[potential_time]*1000.0/
+															((double)times[potential_time]*1000.0/
 																frequency));
-														}
-														else
-														{
-															/* rewrite the potential time */
-															XDrawString(display,pixel_map,
-																potential_time_colour_text,
-																x_string,y_string,number_string,length);
-															XDrawString(display,working_window,
-																potential_time_colour,
-																x_string,y_string,number_string,length);
-														}
-													} break;
-												}
+													}
+													else
+													{
+														/* rewrite the potential time */
+														XDrawString(display,pixel_map,
+															potential_time_colour_text,
+															x_string,y_string,number_string,length);
+														XDrawString(display,working_window,
+															potential_time_colour,
+															x_string,y_string,number_string,length);
+													}
+												} break;
 											}
-											else
-											{
-												if ((left_box!=interval->left_box)||
-													(right_box!=interval->right_box))
-												{
-													/* clear the new box */
-													draw_interval_box(left_box,axes_top,
-														right_box-left_box+1,
-														interval->axes_height,interval,
-														analysis->signal_drawing_information,
-														analysis->user_interface);
-													/* draw the old box */
-													draw_interval_box(interval->left_box,axes_top,
-														interval->right_box-interval->left_box+1,
-														interval->axes_height,interval,
-														analysis->signal_drawing_information,
-														analysis->user_interface);
-												}
-												if (potential_time!=initial_potential_time)
-												{
-													/* clear the new marker */
-													XDrawLine(display,pixel_map,potential_time_colour,
-														potential_time,axes_top,potential_time,axes_bottom);
-													XDrawLine(display,working_window,
-														potential_time_colour,
-														potential_time,axes_top,potential_time,axes_bottom);
-													/* draw the initial marker */
-													XDrawLine(display,pixel_map,potential_time_colour,
-														initial_potential_time,axes_top,
-														initial_potential_time,axes_bottom);
-													XDrawLine(display,working_window,
-														potential_time_colour,
-														initial_potential_time,axes_top,
-														initial_potential_time,axes_bottom);
-													XDrawString(display,pixel_map,
-														potential_time_colour_text,
-														x_string,y_string,number_string,length);
-													XDrawString(display,working_window,
-														potential_time_colour,
-														x_string,y_string,number_string,length);
-												}
-											}
-											moving=MOVING_NONE;
 										}
-									} break;
-									default:
-									{
-										XtDispatchEvent(&xevent);
+										else
+										{
+											if ((left_box!=interval->left_box)||
+												(right_box!=interval->right_box))
+											{
+												/* clear the new box */
+												draw_interval_box(left_box,axes_top,
+													right_box-left_box+1,
+													interval->axes_height,interval,
+													analysis->signal_drawing_information,
+													analysis->user_interface);
+												/* draw the old box */
+												draw_interval_box(interval->left_box,axes_top,
+													interval->right_box-interval->left_box+1,
+													interval->axes_height,interval,
+													analysis->signal_drawing_information,
+													analysis->user_interface);
+											}
+											if (potential_time!=initial_potential_time)
+											{
+												/* clear the new marker */
+												XDrawLine(display,pixel_map,potential_time_colour,
+													potential_time,axes_top,potential_time,axes_bottom);
+												XDrawLine(display,working_window,
+													potential_time_colour,
+													potential_time,axes_top,potential_time,axes_bottom);
+												/* draw the initial marker */
+												XDrawLine(display,pixel_map,potential_time_colour,
+													initial_potential_time,axes_top,
+													initial_potential_time,axes_bottom);
+												XDrawLine(display,working_window,
+													potential_time_colour,
+													initial_potential_time,axes_top,
+													initial_potential_time,axes_bottom);
+												XDrawString(display,pixel_map,
+													potential_time_colour_text,
+													x_string,y_string,number_string,length);
+												XDrawString(display,working_window,
+													potential_time_colour,
+													x_string,y_string,number_string,length);
+											}
+										}
+										moving=MOVING_NONE;
 									}
+								} break;
+								default:
+								{
+									XtDispatchEvent(&xevent);
 								}
 							}
-							/* release the pointer */
-							XtUngrabPointer(interval->drawing_area,CurrentTime);
 						}
+						XUndefineCursor(display,XtWindow(interval->drawing_area));
 						XFreeCursor(display,cursor);
 					}
 				}
@@ -7482,16 +7471,15 @@ LAST MODIFIED 22 November 2001
 DESCRIPTION : moves the Electrical_imaging_event <event> in response to mouse 
 event.
 ==============================================================================*/
-{									
-	Boolean owner_events;	
+{										
 	char time_string[20];		
 	Cursor cursor;	
 	GC graphics_context;
 	int axes_bottom,axes_left,axes_right,axes_top,axes_width,
-		keyboard_mode,marker,pointer_mode,pointer_x,pointer_y,previous_marker,
+		marker,pointer_x,pointer_y,previous_marker,
 		return_code,time;
 	Pixmap pixel_map;
-	Window confine_to,working_window;
+	Window working_window;
 	XEvent xevent;
 
 	ENTER(move_Electrical_imaging_event_marker);	
@@ -7506,108 +7494,99 @@ event.
 		axes_bottom=axes_top+(trace_area_3->axes_height)-1;	
 		/* grab the pointer */
 		cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);
-		owner_events=True;
-		pointer_mode=GrabModeAsync;
-		keyboard_mode=GrabModeAsync;
-		confine_to=None;
-		if (GrabSuccess==XtGrabPointer(trace_area_3->drawing_area,
-			owner_events,
-			ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
-			pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
-		{			
-			XWarpPointer(display,None,None,0,0,0,0,
-				initial_marker-x_pointer,0);					
-			pointer_x=initial_marker;
-			marker=initial_marker;
-			working_window=XtWindow(trace_area_3->drawing_area);
-			pixel_map=trace_area_3->drawing->pixel_map;
-			while (TRACE_MOVING_NONE!=moving)
-			{				
-				XNextEvent(display,&xevent);
-				switch (xevent.type)
-				{
-					case MotionNotify:									
-					{																					
-						previous_marker=marker;																	
-						/* reduce the number of motion events displayed */
-						while (True==XCheckMaskEvent(display,ButtonMotionMask,&xevent));
-						pointer_x=xevent.xmotion.x;
-						pointer_y=xevent.xmotion.y;									 											
-						if((xevent.xmotion.window==working_window)&&
-							(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
-						{										
-							if (pointer_x<axes_left)
+		XDefineCursor(display,XtWindow(trace_area_3->drawing_area),cursor);
+		XmUpdateDisplay(trace_area_3->drawing_area);
+		XWarpPointer(display,None,None,0,0,0,0,
+			initial_marker-x_pointer,0);					
+		pointer_x=initial_marker;
+		marker=initial_marker;
+		working_window=XtWindow(trace_area_3->drawing_area);
+		pixel_map=trace_area_3->drawing->pixel_map;
+		while (TRACE_MOVING_NONE!=moving)
+		{				
+			XNextEvent(display,&xevent);
+			switch (xevent.type)
+			{
+				case MotionNotify:									
+				{																					
+					previous_marker=marker;																	
+					/* reduce the number of motion events displayed */
+					while (True==XCheckMaskEvent(display,ButtonMotionMask,&xevent));
+					pointer_x=xevent.xmotion.x;
+					pointer_y=xevent.xmotion.y;									 											
+					if((xevent.xmotion.window==working_window)&&
+						(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
+					{										
+						if (pointer_x<axes_left)
+						{
+							marker=axes_left;
+						}
+						else
+						{
+							if (pointer_x>axes_right)
 							{
-								marker=axes_left;
+								marker=axes_right;
 							}
 							else
 							{
-								if (pointer_x>axes_right)
-								{
-									marker=axes_right;
-								}
-								else
-								{
-									marker=pointer_x;
-								}
-							}	
-							reconcile_Electrical_imaging_event_marker(&marker,event,x_scale,
-								axes_left,start_analysis_interval);
-							if (marker!=previous_marker)
-							{							
-								/* clear the old marker */
-								XDrawLine(display,pixel_map,graphics_context,
-									previous_marker,axes_top+1,previous_marker,axes_bottom);
-								XDrawLine(display,working_window,graphics_context,
-									previous_marker,axes_top+1,previous_marker,axes_bottom);		
-								/* draw the new marker */
-								XDrawLine(display,pixel_map,graphics_context,marker,
-									axes_top+1,marker,axes_bottom);
-								XDrawLine(display,working_window,graphics_context,
-									marker,axes_top+1,marker,axes_bottom);
-							}	/* if (marker!=previous_marker)	*/
-						}
-					} break;
-					case ButtonRelease:
-					{							
-						/*event->time, marker always reconciled when moved, so don't need */
-						/* to clear, reconcile, draw the marker again. I think! */
-											
-						/*write in the new time (&set flag),so last-selected/current event is */
-						/*labelled */
-						time=(int)((float)((times)[event->time])
-							*1000./frequency+0.5);
-						sprintf(time_string,"%d",time);
-						write_marker_time(time_string,marker,axes_left,
-							axes_width,axes_top,signal_drawing_information->font,
-							graphics_context,display,trace_area_3->drawing_area,
-							trace_area_3->drawing);
-						event->is_current_event=1;
-						moving=TRACE_MOVING_NONE;												
-						/*if we have a map, update it */
-						if(mapping&&mapping->map)
-						{
-							update_map_from_manual_time_update(mapping);						
-						}				 
-					}break;
-					case ButtonPress:
-					{													
-						if (xevent.xbutton.button==working_button)
-						{						
-							display_message(ERROR_MESSAGE,
-								"move_Electrical_imaging_event_marker. Unexpected button press\n");
-							moving=TRACE_MOVING_NONE;
-						}
-					} break;
-					default:
-					{															
-						XtDispatchEvent(&xevent);
+								marker=pointer_x;
+							}
+						}	
+						reconcile_Electrical_imaging_event_marker(&marker,event,x_scale,
+							axes_left,start_analysis_interval);
+						if (marker!=previous_marker)
+						{							
+							/* clear the old marker */
+							XDrawLine(display,pixel_map,graphics_context,
+								previous_marker,axes_top+1,previous_marker,axes_bottom);
+							XDrawLine(display,working_window,graphics_context,
+								previous_marker,axes_top+1,previous_marker,axes_bottom);		
+							/* draw the new marker */
+							XDrawLine(display,pixel_map,graphics_context,marker,
+								axes_top+1,marker,axes_bottom);
+							XDrawLine(display,working_window,graphics_context,
+								marker,axes_top+1,marker,axes_bottom);
+						}	/* if (marker!=previous_marker)	*/
 					}
+				} break;
+				case ButtonRelease:
+				{							
+					/*event->time, marker always reconciled when moved, so don't need */
+					/* to clear, reconcile, draw the marker again. I think! */
+											
+					/*write in the new time (&set flag),so last-selected/current event is */
+					/*labelled */
+					time=(int)((float)((times)[event->time])
+						*1000./frequency+0.5);
+					sprintf(time_string,"%d",time);
+					write_marker_time(time_string,marker,axes_left,
+						axes_width,axes_top,signal_drawing_information->font,
+						graphics_context,display,trace_area_3->drawing_area,
+						trace_area_3->drawing);
+					event->is_current_event=1;
+					moving=TRACE_MOVING_NONE;												
+					/*if we have a map, update it */
+					if(mapping&&mapping->map)
+					{
+						update_map_from_manual_time_update(mapping);						
+					}				 
+				}break;
+				case ButtonPress:
+				{													
+					if (xevent.xbutton.button==working_button)
+					{						
+						display_message(ERROR_MESSAGE,
+							"move_Electrical_imaging_event_marker. Unexpected button press\n");
+						moving=TRACE_MOVING_NONE;
+					}
+				} break;
+				default:
+				{															
+					XtDispatchEvent(&xevent);
 				}
 			}
-			/* release the pointer */
-			XtUngrabPointer(trace_area_3->drawing_area,CurrentTime);
 		}
+		XUndefineCursor(display,XtWindow(trace_area_3->drawing_area));
 		XFreeCursor(display,cursor);
 	}
 	else
@@ -7868,8 +7847,7 @@ area.
 ???DB.  This should be in trace_window.c and the analysis_work_area calls
 should be done as a callback from the trace_window.
 ==============================================================================*/
-{
-	Boolean owner_events;
+{	
 	char edit_box;
 	Cursor cursor;
 	Display *display;
@@ -7878,8 +7856,8 @@ should be done as a callback from the trace_window.
 	float frequency,x_scale;
 	int axes_bottom,axes_left,axes_right,axes_top,axes_width,box_range,
 		datum,*divisions,end_analysis_interval,event_number,i,initial_marker,
-		keyboard_mode,left_box,left_edit_box,marker,minimum_box_range,
-		number_of_events,pointer_mode,pointer_sensitivity,pointer_x,pointer_y,
+		left_box,left_edit_box,marker,minimum_box_range,
+		number_of_events,pointer_sensitivity,pointer_x,pointer_y,
 		potential_time,*previous_divisions,previous_left_box,previous_left_edit_box,
 		previous_marker,previous_pointer_x,previous_right_box,
 		previous_right_edit_box,right_box,right_edit_box,start_analysis_interval,
@@ -7897,7 +7875,7 @@ should be done as a callback from the trace_window.
 	struct Trace_window_area_1 *trace_area_1;
 	struct User_interface *user_interface;
 	unsigned int working_button;
-	Window confine_to,working_window;
+	Window working_window;
 	XButtonEvent *button_event;
 	XEvent xevent;
 	XmDrawingAreaCallbackStruct *callback;
@@ -7984,171 +7962,163 @@ should be done as a callback from the trace_window.
 								if ((MOVING_DATUM_MARKER==moving)||
 									(MOVING_POTENTIAL_TIME_MARKER==moving))
 								{
-									/* grab the pointer */
-									cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);
-									owner_events=True;
-									pointer_mode=GrabModeAsync;
-									keyboard_mode=GrabModeAsync;
-									confine_to=None;
-									if (GrabSuccess==XtGrabPointer(trace_area_1->drawing_area,
-										owner_events,
-										ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
-										pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
+								
+									cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);								
+									/* change the cursor */
+									XDefineCursor(display,XtWindow(trace_area_1->drawing_area),cursor);
+									XmUpdateDisplay(trace_area_1->drawing_area);
+									XWarpPointer(display,None,None,0,0,0,0,
+										initial_marker-pointer_x,0);
+									pointer_x=initial_marker;
+									marker=initial_marker;
+									working_window=XtWindow(trace_area_1->drawing_area);
+									pixel_map=trace_area_1->drawing->pixel_map;
+									while (MOVING_NONE!=moving)
 									{
-										XWarpPointer(display,None,None,0,0,0,0,
-											initial_marker-pointer_x,0);
-										pointer_x=initial_marker;
-										marker=initial_marker;
-										working_window=XtWindow(trace_area_1->drawing_area);
-										pixel_map=trace_area_1->drawing->pixel_map;
-										while (MOVING_NONE!=moving)
+										XNextEvent(display,&xevent);
+										switch (xevent.type)
 										{
-											XNextEvent(display,&xevent);
-											switch (xevent.type)
+											case MotionNotify:
 											{
-												case MotionNotify:
+												previous_marker=marker;
+												/* reduce the number of motion events displayed */
+												while (True==XCheckMaskEvent(display,ButtonMotionMask,
+													&xevent));
+												pointer_x=xevent.xmotion.x;
+												pointer_y=xevent.xmotion.y;
+												if ((xevent.xmotion.window==working_window)&&
+													(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
 												{
-													previous_marker=marker;
-													/* reduce the number of motion events displayed */
-													while (True==XCheckMaskEvent(display,ButtonMotionMask,
-														&xevent));
-													pointer_x=xevent.xmotion.x;
-													pointer_y=xevent.xmotion.y;
-													if ((xevent.xmotion.window==working_window)&&
-														(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
+													if (pointer_x<axes_left)
 													{
-														if (pointer_x<axes_left)
+														marker=axes_left;
+													}
+													else
+													{
+														if (pointer_x>axes_right)
 														{
-															marker=axes_left;
+															marker=axes_right;
 														}
 														else
 														{
-															if (pointer_x>axes_right)
-															{
-																marker=axes_right;
-															}
-															else
-															{
-																marker=pointer_x;
-															}
+															marker=pointer_x;
 														}
-														if (marker!=previous_marker)
+													}
+													if (marker!=previous_marker)
+													{
+														/* clear the old marker */
+														XDrawLine(display,pixel_map,
+															marker_graphics_context,previous_marker,
+															axes_top,previous_marker,axes_bottom);
+														XDrawLine(display,working_window,
+															marker_graphics_context,previous_marker,
+															axes_top,previous_marker,axes_bottom);
+														/* draw the new marker */
+														XDrawLine(display,pixel_map,
+															marker_graphics_context,marker,axes_top,marker,
+															axes_bottom);
+														XDrawLine(display,working_window,
+															marker_graphics_context,marker,axes_top,
+															marker,axes_bottom);
+													}
+												}
+											} break;
+											case ButtonPress:
+											{
+												if (xevent.xbutton.button==working_button)
+												{
+													display_message(ERROR_MESSAGE,
+														"select_trace_1_drawing_area.  Unexpected button press");
+													moving=MOVING_NONE;
+												}
+											} break;
+											case ButtonRelease:
+											{
+												if (xevent.xbutton.button==working_button)
+												{
+													if (xevent.xbutton.window==working_window)
+													{
+														if (marker!=initial_marker)
 														{
-															/* clear the old marker */
+															switch (moving)
+															{
+																case MOVING_DATUM_MARKER:
+																{
+																	datum=SCALE_X(marker,axes_left,
+																		start_analysis_interval,1/x_scale);
+																} break;
+																case MOVING_POTENTIAL_TIME_MARKER:
+																{
+																	potential_time=SCALE_X(marker,axes_left,
+																		start_analysis_interval,1/x_scale);
+																} break;
+															}
+
 															XDrawLine(display,pixel_map,
-																marker_graphics_context,previous_marker,
-																axes_top,previous_marker,axes_bottom);
-															XDrawLine(display,working_window,
-																marker_graphics_context,previous_marker,
-																axes_top,previous_marker,axes_bottom);
-															/* draw the new marker */
-															XDrawLine(display,pixel_map,
-																marker_graphics_context,marker,axes_top,marker,
-																axes_bottom);
+																marker_graphics_context,marker,axes_top,
+																marker,axes_bottom);
 															XDrawLine(display,working_window,
 																marker_graphics_context,marker,axes_top,
 																marker,axes_bottom);
-														}
-													}
-												} break;
-												case ButtonPress:
-												{
-													if (xevent.xbutton.button==working_button)
-													{
-														display_message(ERROR_MESSAGE,
-											"select_trace_1_drawing_area.  Unexpected button press");
-														moving=MOVING_NONE;
-													}
-												} break;
-												case ButtonRelease:
-												{
-													if (xevent.xbutton.button==working_button)
-													{
-														if (xevent.xbutton.window==working_window)
-														{
-															if (marker!=initial_marker)
-															{
-																switch (moving)
-																{
-																	case MOVING_DATUM_MARKER:
-																	{
-																		datum=SCALE_X(marker,axes_left,
-																			start_analysis_interval,1/x_scale);
-																	} break;
-																	case MOVING_POTENTIAL_TIME_MARKER:
-																	{
-																		potential_time=SCALE_X(marker,axes_left,
-																			start_analysis_interval,1/x_scale);
-																	} break;
-																}
-
-																XDrawLine(display,pixel_map,
-																	marker_graphics_context,marker,axes_top,
-																	marker,axes_bottom);
-																XDrawLine(display,working_window,
-																	marker_graphics_context,marker,axes_top,
-																	marker,axes_bottom);
 																/* update time objects */
-																switch (moving)
-																{
-																	case MOVING_POTENTIAL_TIME_MARKER:
-																	{
-																		/*???SAB.  This conversion to time_keeper
-																			time should be much more robust.  The
-																			frequency is not guaranteed to divide the
-																			potential time and this takes no account
-																			of time transformations */
-																		analysis->trace_update_flags |=
-																			TRACE_1_NO_POTENTIAL_ERASE;
-																		Time_keeper_request_new_time(
-																			Time_object_get_time_keeper(
-																			analysis->potential_time_object),
-																			((double)times[potential_time]*1000.0/
-																			frequency));
-																	} break;
-																	case MOVING_DATUM_MARKER:
-																	{
-																		analysis->trace_update_flags |=
-																			TRACE_1_NO_DATUM_ERASE;
-																		Time_object_set_current_time_privileged(
-																			analysis->datum_time_object,
-																			(double)datum);
-																	} break;
-																}
-															}
-														}
-														else
-														{
-															if (marker!=initial_marker)
+															switch (moving)
 															{
-																/* clear the old marker */
-																XDrawLine(display,pixel_map,
-																	marker_graphics_context,marker,axes_top,
-																	marker,axes_bottom);
-																XDrawLine(display,working_window,
-																	marker_graphics_context,marker,axes_top,
-																	marker,axes_bottom);
-																/* draw the new marker */
-																XDrawLine(display,pixel_map,
-																	marker_graphics_context,initial_marker,
-																	axes_top,initial_marker,axes_bottom);
-																XDrawLine(display,working_window,
-																	marker_graphics_context,initial_marker,
-																	axes_top,initial_marker,axes_bottom);
+																case MOVING_POTENTIAL_TIME_MARKER:
+																{
+																	/*???SAB.  This conversion to time_keeper
+																		time should be much more robust.  The
+																		frequency is not guaranteed to divide the
+																		potential time and this takes no account
+																		of time transformations */
+																	analysis->trace_update_flags |=
+																		TRACE_1_NO_POTENTIAL_ERASE;
+																	Time_keeper_request_new_time(
+																		Time_object_get_time_keeper(
+																			analysis->potential_time_object),
+																		((double)times[potential_time]*1000.0/
+																			frequency));
+																} break;
+																case MOVING_DATUM_MARKER:
+																{
+																	analysis->trace_update_flags |=
+																		TRACE_1_NO_DATUM_ERASE;
+																	Time_object_set_current_time_privileged(
+																		analysis->datum_time_object,
+																		(double)datum);
+																} break;
 															}
 														}
-														moving=MOVING_NONE;
 													}
-												} break;
-												default:
-												{
-													XtDispatchEvent(&xevent);
+													else
+													{
+														if (marker!=initial_marker)
+														{
+																/* clear the old marker */
+															XDrawLine(display,pixel_map,
+																marker_graphics_context,marker,axes_top,
+																marker,axes_bottom);
+															XDrawLine(display,working_window,
+																marker_graphics_context,marker,axes_top,
+																marker,axes_bottom);
+																/* draw the new marker */
+															XDrawLine(display,pixel_map,
+																marker_graphics_context,initial_marker,
+																axes_top,initial_marker,axes_bottom);
+															XDrawLine(display,working_window,
+																marker_graphics_context,initial_marker,
+																axes_top,initial_marker,axes_bottom);
+														}
+													}
+													moving=MOVING_NONE;
 												}
+											} break;
+											default:
+											{
+												XtDispatchEvent(&xevent);
 											}
 										}
-										/* release the pointer */
-										XtUngrabPointer(trace_area_1->drawing_area,CurrentTime);
 									}
+									XUndefineCursor(display,XtWindow(trace_area_1->drawing_area));
 									XFreeCursor(display,cursor);
 								}
 								else
@@ -8218,8 +8188,8 @@ should be done as a callback from the trace_window.
 															((temp*number_of_events)/box_range)+1;
 														if ((temp<=(((event_number-1)*box_range)/
 															number_of_events)+pointer_sensitivity)||(temp>=
-															((event_number*box_range)/number_of_events)-
-															pointer_sensitivity))
+																((event_number*box_range)/number_of_events)-
+																pointer_sensitivity))
 														{
 															moving=MOVING_NONE;
 														}
@@ -8251,7 +8221,7 @@ should be done as a callback from the trace_window.
 										}
 										while (event&&(pointer_x>(initial_marker=
 											SCALE_X(event->time,start_analysis_interval,
-											axes_left,x_scale))+pointer_sensitivity))
+												axes_left,x_scale))+pointer_sensitivity))
 										{
 											event=event->next;
 										}
@@ -8301,205 +8271,498 @@ should be done as a callback from the trace_window.
 										(MOVING_BOX==moving))
 									{
 										event_number=analysis->event_number;
-										number_of_events=analysis->number_of_events;
-										/* grab the pointer */
-										owner_events=True;
-										pointer_mode=GrabModeAsync;
-										keyboard_mode=GrabModeAsync;
-										confine_to=None;
-										if (GrabSuccess==XtGrabPointer(trace_area_1->drawing_area,
-											owner_events,
-											ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
-											pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
+										number_of_events=analysis->number_of_events;									
+										/*change the cursor*/
+										XDefineCursor(display,XtWindow(trace_area_1->drawing_area),cursor);
+										XmUpdateDisplay(trace_area_1->drawing_area);
+										minimum_box_range=2*pointer_sensitivity+1;
+										working_window=XtWindow(trace_area_1->drawing_area);
+										while (moving!=MOVING_NONE)
 										{
-											minimum_box_range=2*pointer_sensitivity+1;
-											working_window=XtWindow(trace_area_1->drawing_area);
-											while (moving!=MOVING_NONE)
+											XNextEvent(display,&xevent);
+											switch (xevent.type)
 											{
-												XNextEvent(display,&xevent);
-												switch (xevent.type)
+												case MotionNotify:
 												{
-													case MotionNotify:
+													previous_left_box=left_box;
+													previous_right_box=right_box;
+													previous_left_edit_box=left_edit_box;
+													previous_right_edit_box=right_edit_box;
+													temp_divisions=previous_divisions;
+													previous_divisions=divisions;
+													divisions=temp_divisions;
+													previous_pointer_x=pointer_x;
+													/* reduce the number of motion events displayed */
+													while (True==XCheckMaskEvent(display,
+														ButtonMotionMask,&xevent));
+													pointer_x=xevent.xmotion.x;
+													pointer_y=xevent.xmotion.y;
+													if ((xevent.xmotion.window==working_window)&&
+														(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
 													{
-														previous_left_box=left_box;
-														previous_right_box=right_box;
-														previous_left_edit_box=left_edit_box;
-														previous_right_edit_box=right_edit_box;
-														temp_divisions=previous_divisions;
-														previous_divisions=divisions;
-														divisions=temp_divisions;
-														previous_pointer_x=pointer_x;
-														/* reduce the number of motion events displayed */
-														while (True==XCheckMaskEvent(display,
-															ButtonMotionMask,&xevent));
-														pointer_x=xevent.xmotion.x;
-														pointer_y=xevent.xmotion.y;
-														if ((xevent.xmotion.window==working_window)&&
-															(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
+														switch (moving)
 														{
-															switch (moving)
+															case MOVING_LEFT:
 															{
-																case MOVING_LEFT:
+																if (pointer_x<axes_left)
 																{
-																	if (pointer_x<axes_left)
-																	{
-																		left_box=axes_left;
-																	}
-																	else
-																	{
-																		if (pointer_x>
-																			(temp=right_box-minimum_box_range))
-																		{
-																			left_box=temp;
-																		}
-																		else
-																		{
-																			left_box=pointer_x;
-																		}
-																	}
-																	if (divisions)
-																	{
-																		for (i=number_of_events-2;i>=0;i--)
-																		{
-																			if (left_box>previous_divisions[i])
-																			{
-																				divisions[i]=left_box;
-																			}
-																			else
-																			{
-																				divisions[i]=previous_divisions[i];
-																			}
-																		}
-																	}
-																} break;
-																case MOVING_RIGHT:
-																{
-																	if (pointer_x>axes_right)
-																	{
-																		right_box=axes_right;
-																	}
-																	else
-																	{
-																		if (pointer_x<
-																			(temp=left_box+minimum_box_range))
-																		{
-																			right_box=temp;
-																		}
-																		else
-																		{
-																			right_box=pointer_x;
-																		}
-																	}
-																	if (divisions)
-																	{
-																		for (i=number_of_events-2;i>=0;i--)
-																		{
-																			if (right_box<previous_divisions[i])
-																			{
-																				divisions[i]=right_box;
-																			}
-																			else
-																			{
-																				divisions[i]=previous_divisions[i];
-																			}
-																		}
-																	}
-																} break;
-																case MOVING_BOX:
-																{
-																	if (pointer_x<axes_left)
-																	{
-																		pointer_x=axes_left;
-																		left_box=axes_left;
-																		right_box=left_box+box_range;
-																	}
-																	else
-																	{
-																		if (pointer_x>axes_right)
-																		{
-																			pointer_x=axes_right;
-																			right_box=axes_right;
-																			left_box=right_box-box_range;
-																		}
-																		else
-																		{
-																			left_box=
-																				left_box+pointer_x-previous_pointer_x;
-																			right_box=left_box+box_range;
-																			if (left_box<axes_left)
-																			{
-																				left_box=axes_left;
-																				right_box=left_box+box_range;
-																			}
-																			else
-																			{
-																				if (right_box>axes_right)
-																				{
-																					right_box=axes_right;
-																					left_box=right_box-box_range;
-																				}
-																			}
-																		}
-																	}
-																	if (divisions)
-																	{
-																		for (i=number_of_events-2;i>=0;i--)
-																		{
-																			divisions[i]=previous_divisions[i]-
-																				left_box-previous_left_box;
-																		}
-																	}
-																} break;
-															}
-															if ((left_box!=previous_left_box)||
-																(right_box!=previous_right_box))
-															{
-																if (divisions)
-																{
-																	if (event_number>1)
-																	{
-																		left_edit_box=divisions[event_number-2];
-																	}
-																	else
-																	{
-																		left_edit_box=left_box;
-																	}
-																	if (event_number<number_of_events)
-																	{
-																		right_edit_box=divisions[event_number-1];
-																	}
-																	else
-																	{
-																		right_edit_box=right_box;
-																	}
+																	left_box=axes_left;
 																}
 																else
 																{
-																	width=right_box-left_box;
-																	left_edit_box=left_box+((event_number-1)*
-																		width)/number_of_events;
-																	right_edit_box=left_box+(event_number*width)/
-																		number_of_events;
+																	if (pointer_x>
+																		(temp=right_box-minimum_box_range))
+																	{
+																		left_box=temp;
+																	}
+																	else
+																	{
+																		left_box=pointer_x;
+																	}
 																}
-																if (EDA_INTERVAL==detection)
+																if (divisions)
 																{
-																	/* clear the old box */
-																	width=previous_right_box-previous_left_box,
+																	for (i=number_of_events-2;i>=0;i--)
+																	{
+																		if (left_box>previous_divisions[i])
+																		{
+																			divisions[i]=left_box;
+																		}
+																		else
+																		{
+																			divisions[i]=previous_divisions[i];
+																		}
+																	}
+																}
+															} break;
+															case MOVING_RIGHT:
+															{
+																if (pointer_x>axes_right)
+																{
+																	right_box=axes_right;
+																}
+																else
+																{
+																	if (pointer_x<
+																		(temp=left_box+minimum_box_range))
+																	{
+																		right_box=temp;
+																	}
+																	else
+																	{
+																		right_box=pointer_x;
+																	}
+																}
+																if (divisions)
+																{
+																	for (i=number_of_events-2;i>=0;i--)
+																	{
+																		if (right_box<previous_divisions[i])
+																		{
+																			divisions[i]=right_box;
+																		}
+																		else
+																		{
+																			divisions[i]=previous_divisions[i];
+																		}
+																	}
+																}
+															} break;
+															case MOVING_BOX:
+															{
+																if (pointer_x<axes_left)
+																{
+																	pointer_x=axes_left;
+																	left_box=axes_left;
+																	right_box=left_box+box_range;
+																}
+																else
+																{
+																	if (pointer_x>axes_right)
+																	{
+																		pointer_x=axes_right;
+																		right_box=axes_right;
+																		left_box=right_box-box_range;
+																	}
+																	else
+																	{
+																		left_box=
+																			left_box+pointer_x-previous_pointer_x;
+																		right_box=left_box+box_range;
+																		if (left_box<axes_left)
+																		{
+																			left_box=axes_left;
+																			right_box=left_box+box_range;
+																		}
+																		else
+																		{
+																			if (right_box>axes_right)
+																			{
+																				right_box=axes_right;
+																				left_box=right_box-box_range;
+																			}
+																		}
+																	}
+																}
+																if (divisions)
+																{
+																	for (i=number_of_events-2;i>=0;i--)
+																	{
+																		divisions[i]=previous_divisions[i]-
+																			left_box-previous_left_box;
+																	}
+																}
+															} break;
+														}
+														if ((left_box!=previous_left_box)||
+															(right_box!=previous_right_box))
+														{
+															if (divisions)
+															{
+																if (event_number>1)
+																{
+																	left_edit_box=divisions[event_number-2];
+																}
+																else
+																{
+																	left_edit_box=left_box;
+																}
+																if (event_number<number_of_events)
+																{
+																	right_edit_box=divisions[event_number-1];
+																}
+																else
+																{
+																	right_edit_box=right_box;
+																}
+															}
+															else
+															{
+																width=right_box-left_box;
+																left_edit_box=left_box+((event_number-1)*
+																	width)/number_of_events;
+																right_edit_box=left_box+(event_number*width)/
+																	number_of_events;
+															}
+															if (EDA_INTERVAL==detection)
+															{
+																/* clear the old box */
+																width=previous_right_box-previous_left_box,
 																	draw_search_box(previous_left_box,axes_top,
 																		width,trace_area_1->axes_height,detection,
 																		number_of_events,previous_divisions,
 																		trace_area_1->drawing_area,
 																		trace_area_1->drawing,
 																		signal_drawing_information);
-																	draw_highlight_event_box(
-																		previous_left_edit_box,axes_top,
-																		previous_right_edit_box-
-																		previous_left_edit_box,
+																draw_highlight_event_box(
+																	previous_left_edit_box,axes_top,
+																	previous_right_edit_box-
+																	previous_left_edit_box,
+																	trace_area_1->axes_height,detection,
+																	trace_area_1->drawing_area,
+																	trace_area_1->drawing,
+																	signal_drawing_information);
+																/* draw the new box */
+																width=right_box-left_box;
+																draw_search_box(left_box,axes_top,width,
+																	trace_area_1->axes_height,detection,
+																	number_of_events,divisions,
+																	trace_area_1->drawing_area,
+																	trace_area_1->drawing,
+																	signal_drawing_information);
+																draw_highlight_event_box(left_edit_box,
+																	axes_top,right_edit_box-left_edit_box,
+																	trace_area_1->axes_height,detection,
+																	trace_area_1->drawing_area,
+																	trace_area_1->drawing,
+																	signal_drawing_information);
+															}
+															else
+															{
+																if (edit_box)
+																{
+																	/* clear the old box */
+																	draw_highlight_event_box(previous_left_box,
+																		axes_top,
+																		previous_right_box-previous_left_box,
 																		trace_area_1->axes_height,detection,
 																		trace_area_1->drawing_area,
 																		trace_area_1->drawing,
 																		signal_drawing_information);
 																	/* draw the new box */
+																	draw_highlight_event_box(left_box,axes_top,
+																		right_box-left_box,
+																		trace_area_1->axes_height,detection,
+																		trace_area_1->drawing_area,
+																		trace_area_1->drawing,
+																		signal_drawing_information);
+																}
+																else
+																{
+																	/* clear the old box */
+																	draw_search_box(previous_left_box,axes_top,
+																		previous_right_box-previous_left_box,
+																		trace_area_1->axes_height,detection,
+																		number_of_events,previous_divisions,
+																		trace_area_1->drawing_area,
+																		trace_area_1->drawing,
+																		signal_drawing_information);
+																	/* draw the new box */
+																	draw_search_box(left_box,axes_top,
+																		right_box-left_box,
+																		trace_area_1->axes_height,detection,
+																		number_of_events,divisions,
+																		trace_area_1->drawing_area,
+																		trace_area_1->drawing,
+																		signal_drawing_information);
+																}
+															}
+														}
+													}
+												} break;
+												case ButtonPress:
+												{
+													if (xevent.xbutton.button==working_button)
+													{
+														display_message(ERROR_MESSAGE,
+															"select_trace_1_drawing_area.  Unexpected button press");
+														moving=MOVING_NONE;
+													}
+												} break;
+												case ButtonRelease:
+												{
+													if (xevent.xbutton.button==working_button)
+													{
+														if (xevent.xbutton.window==working_window)
+														{
+															if ((EDA_INTERVAL==detection)||!edit_box)
+															{
+																if ((left_box!=trace_area_1->enlarge.
+																	left_box)||(right_box!=trace_area_1->
+																		enlarge.right_box))
+																{
+																	if (left_box!=trace_area_1->enlarge.
+																		left_box)
+																	{
+																		temp=SCALE_X(left_box,axes_left,
+																			start_analysis_interval,1/x_scale);
+																		if (analysis->search_interval_divisions)
+																		{
+																			if (MOVING_BOX==moving)
+																			{
+																				temp_2=temp-
+																					analysis->start_search_interval;
+																				for (i=number_of_events-2;
+																						 i>=0;i--)
+																				{
+																					(analysis->
+																						search_interval_divisions)[i] +=
+																						temp_2;
+																				}
+																			}
+																			else
+																			{
+																				/* must be MOVING_LEFT */
+																				i=0;
+																				while ((i<number_of_events-1)&&
+																					((analysis->
+																						search_interval_divisions)[i]<temp))
+																				{
+																					(analysis->
+																						search_interval_divisions)[i]=
+																						temp;
+																					i++;
+																				}
+																			}
+																		}
+																		analysis->start_search_interval=temp;
+																		trace_area_1->enlarge.left_box=left_box;
+																	}
+																	if (right_box!=
+																		trace_area_1->enlarge.right_box)
+																	{
+																		temp=SCALE_X(right_box,axes_left,
+																			start_analysis_interval,1/x_scale);
+																		if (analysis->search_interval_divisions)
+																		{
+																			/* have already done adjusting (above)
+																				 for MOVING_BOX */
+																			if (MOVING_BOX!=moving)
+																			{
+																				/* must be MOVING_RIGHT */
+																				i=number_of_events-2;
+																				while ((i>=0)&&((analysis->
+																					search_interval_divisions)[i]>temp))
+																				{
+																					(analysis->
+																						search_interval_divisions)[i]=
+																						temp;
+																					i--;
+																				}
+																			}
+																		}
+																		analysis->end_search_interval=temp;
+																		trace_area_1->enlarge.right_box=right_box;
+																	}
+																	if (divisions&&
+																		(trace_area_1->enlarge.divisions))
+																	{
+																		for (i=number_of_events-2;i>=0;i--)
+																		{
+																			(trace_area_1->enlarge.divisions)[i]=
+																				divisions[i];
+																		}
+																	}
+																	if (EDA_INTERVAL==detection)
+																	{
+																		if (analysis->search_interval_divisions)
+																		{
+																			temp=analysis->start_search_interval;
+																			temp_2=(analysis->end_search_interval)-
+																				temp;
+																			if (event_number>1)
+																			{
+																				trace_area_1->enlarge.left_edit_box=
+																					(trace_area_1->enlarge.left_box)+
+																					(((analysis->
+																						search_interval_divisions)[
+																							event_number-2]-temp)*
+																						((trace_area_1->enlarge.right_box)-
+																							(trace_area_1->enlarge.left_box)))/
+																					temp_2;
+																			}
+																			else
+																			{
+																				trace_area_1->enlarge.left_edit_box=
+																					trace_area_1->enlarge.left_box;
+																			}
+																			if (event_number<number_of_events)
+																			{
+																				trace_area_1->enlarge.right_edit_box=
+																					(trace_area_1->enlarge.left_box)+
+																					(((analysis->
+																						search_interval_divisions)[
+																							event_number-1]-temp)*
+																						((trace_area_1->enlarge.right_box)-
+																							(trace_area_1->enlarge.left_box)))/
+																					temp_2;
+																			}
+																			else
+																			{
+																				trace_area_1->enlarge.right_edit_box=
+																					trace_area_1->enlarge.right_box;
+																			}
+																		}
+																		else
+																		{
+																			trace_area_1->enlarge.left_edit_box=
+																				(trace_area_1->enlarge.left_box)+
+																				((event_number-1)*
+																					((trace_area_1->enlarge.right_box)-
+																						(trace_area_1->enlarge.left_box)))/
+																				number_of_events;
+																			trace_area_1->enlarge.right_edit_box=
+																				(trace_area_1->enlarge.left_box)+
+																				(event_number*
+																					((trace_area_1->enlarge.right_box)-
+																						(trace_area_1->enlarge.left_box)))/
+																				number_of_events;
+																		}
+																	}
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+																	if (EDA_INTERVAL==detection)
+																	{
+																		/* clear the present markers */
+																		draw_all_markers(0,0,analysis);
+																		destroy_all_events(analysis->rig);
+																	}
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+																	if ((
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+																		((EDA_INTERVAL==analysis->detection)&&
+																			((SINGLE_ACTIVATION==analysis->map_type)||
+																				(MULTIPLE_ACTIVATION==
+																					analysis->map_type)))||
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+																		(INTEGRAL==analysis->map_type))&&
+																		(analysis->mapping_window)&&
+																		(map=analysis->mapping_window->map))
+																	{
+																		/* update the mapping window */
+																		analysis->map_type=NO_MAP_FIELD;
+																		map->colour_option=HIDE_COLOUR;
+																		map->contours_option=HIDE_CONTOURS;
+																		map->electrodes_label_type=
+																			SHOW_ELECTRODE_NAMES;
+																		/* clear the colour map */
+																		map->activation_front= -1;
+																		update_mapping_drawing_area(
+																			analysis->mapping_window,2);
+																		update_mapping_colour_or_auxili(
+																			analysis->mapping_window);
+																		XtSetSensitive(analysis
+																			->mapping_window->animate_button,
+																			False);
+																	}
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+																	if (EDA_INTERVAL==detection)
+																	{
+																		XtSetSensitive(analysis->window->
+																			file_menu.save_times_button,False);
+																		XtSetSensitive(analysis->window->map_menu.
+																			single_activation_button,False);
+																		XtSetSensitive(analysis->window->map_menu.
+																			multiple_activation_button,False);
+																		analysis->calculate_events=0;
+																	}
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+																}
+															}
+															else
+															{
+																if ((left_box!=
+																	trace_area_1->enlarge.left_edit_box)||
+																	(right_box!=
+																		trace_area_1->enlarge.right_edit_box))
+																{
+																	if (left_box!=
+																		trace_area_1->enlarge.left_edit_box)
+																	{
+																		analysis->trace->area_3.edit.first_data=
+																			SCALE_X(left_box,axes_left,
+																				start_analysis_interval,1/x_scale);
+																		trace_area_1->enlarge.left_edit_box=
+																			left_box;
+																	}
+																	if (right_box!=
+																		trace_area_1->enlarge.right_edit_box)
+																	{
+																		analysis->trace->area_3.edit.last_data=
+																			SCALE_X(right_box,axes_left,
+																				start_analysis_interval,1/x_scale);
+																		trace_area_1->enlarge.right_edit_box=
+																			right_box;
+																	}
+																}
+															}
+															if (EDA_INTERVAL==detection)
+															{
+																trace_update_edit_interval(analysis->trace);
+															}
+															redraw_trace_3_drawing_area((Widget)NULL,
+																(XtPointer)(analysis->trace),
+																(XtPointer)NULL);
+															trace_update_signal_controls(analysis->trace);
+														}
+														else
+														{
+															if ((EDA_INTERVAL==detection)||!edit_box)
+															{
+																if ((left_box!=trace_area_1->enlarge.
+																	left_box)||(right_box!=trace_area_1->
+																		enlarge.right_box))
+																{
+																	/* clear the new box */
 																	width=right_box-left_box;
 																	draw_search_box(left_box,axes_top,width,
 																		trace_area_1->axes_height,detection,
@@ -8507,354 +8770,28 @@ should be done as a callback from the trace_window.
 																		trace_area_1->drawing_area,
 																		trace_area_1->drawing,
 																		signal_drawing_information);
-																	draw_highlight_event_box(left_edit_box,
-																		axes_top,right_edit_box-left_edit_box,
+																	if (EDA_INTERVAL==detection)
+																	{
+																		draw_highlight_event_box(left_edit_box,
+																			axes_top,right_edit_box-left_edit_box,
+																			trace_area_1->axes_height,detection,
+																			trace_area_1->drawing_area,
+																			trace_area_1->drawing,
+																			signal_drawing_information);
+																	}
+																	/* draw the old box */
+																	draw_search_box(
+																		trace_area_1->enlarge.left_box,axes_top,
+																		trace_area_1->enlarge.right_box-
+																		trace_area_1->enlarge.left_box,
 																		trace_area_1->axes_height,detection,
+																		number_of_events,
+																		trace_area_1->enlarge.divisions,
 																		trace_area_1->drawing_area,
 																		trace_area_1->drawing,
 																		signal_drawing_information);
-																}
-																else
-																{
-																	if (edit_box)
+																	if (EDA_INTERVAL==detection)
 																	{
-																		/* clear the old box */
-																		draw_highlight_event_box(previous_left_box,
-																			axes_top,
-																			previous_right_box-previous_left_box,
-																			trace_area_1->axes_height,detection,
-																			trace_area_1->drawing_area,
-																			trace_area_1->drawing,
-																			signal_drawing_information);
-																		/* draw the new box */
-																		draw_highlight_event_box(left_box,axes_top,
-																			right_box-left_box,
-																			trace_area_1->axes_height,detection,
-																			trace_area_1->drawing_area,
-																			trace_area_1->drawing,
-																			signal_drawing_information);
-																	}
-																	else
-																	{
-																		/* clear the old box */
-																		draw_search_box(previous_left_box,axes_top,
-																			previous_right_box-previous_left_box,
-																			trace_area_1->axes_height,detection,
-																			number_of_events,previous_divisions,
-																			trace_area_1->drawing_area,
-																			trace_area_1->drawing,
-																			signal_drawing_information);
-																		/* draw the new box */
-																		draw_search_box(left_box,axes_top,
-																			right_box-left_box,
-																			trace_area_1->axes_height,detection,
-																			number_of_events,divisions,
-																			trace_area_1->drawing_area,
-																			trace_area_1->drawing,
-																			signal_drawing_information);
-																	}
-																}
-															}
-														}
-													} break;
-													case ButtonPress:
-													{
-														if (xevent.xbutton.button==working_button)
-														{
-															display_message(ERROR_MESSAGE,
-											"select_trace_1_drawing_area.  Unexpected button press");
-															moving=MOVING_NONE;
-														}
-													} break;
-													case ButtonRelease:
-													{
-														if (xevent.xbutton.button==working_button)
-														{
-															if (xevent.xbutton.window==working_window)
-															{
-																if ((EDA_INTERVAL==detection)||!edit_box)
-																{
-																	if ((left_box!=trace_area_1->enlarge.
-																		left_box)||(right_box!=trace_area_1->
-																		enlarge.right_box))
-																	{
-																		if (left_box!=trace_area_1->enlarge.
-																			left_box)
-																		{
-																			temp=SCALE_X(left_box,axes_left,
-																				start_analysis_interval,1/x_scale);
-																			if (analysis->search_interval_divisions)
-																			{
-																				if (MOVING_BOX==moving)
-																				{
-																					temp_2=temp-
-																						analysis->start_search_interval;
-																					for (i=number_of_events-2;
-																						i>=0;i--)
-																					{
-																						(analysis->
-																							search_interval_divisions)[i] +=
-																							temp_2;
-																					}
-																				}
-																				else
-																				{
-																					/* must be MOVING_LEFT */
-																					i=0;
-																					while ((i<number_of_events-1)&&
-																						((analysis->
-																						search_interval_divisions)[i]<temp))
-																					{
-																						(analysis->
-																							search_interval_divisions)[i]=
-																							temp;
-																						i++;
-																					}
-																				}
-																			}
-																			analysis->start_search_interval=temp;
-																			trace_area_1->enlarge.left_box=left_box;
-																		}
-																		if (right_box!=
-																			trace_area_1->enlarge.right_box)
-																		{
-																			temp=SCALE_X(right_box,axes_left,
-																				start_analysis_interval,1/x_scale);
-																			if (analysis->search_interval_divisions)
-																			{
-																				/* have already done adjusting (above)
-																					for MOVING_BOX */
-																				if (MOVING_BOX!=moving)
-																				{
-																					/* must be MOVING_RIGHT */
-																					i=number_of_events-2;
-																					while ((i>=0)&&((analysis->
-																						search_interval_divisions)[i]>temp))
-																					{
-																						(analysis->
-																							search_interval_divisions)[i]=
-																							temp;
-																						i--;
-																					}
-																				}
-																			}
-																			analysis->end_search_interval=temp;
-																			trace_area_1->enlarge.right_box=right_box;
-																		}
-																		if (divisions&&
-																			(trace_area_1->enlarge.divisions))
-																		{
-																			for (i=number_of_events-2;i>=0;i--)
-																			{
-																				(trace_area_1->enlarge.divisions)[i]=
-																					divisions[i];
-																			}
-																		}
-																		if (EDA_INTERVAL==detection)
-																		{
-																			if (analysis->search_interval_divisions)
-																			{
-																				temp=analysis->start_search_interval;
-																				temp_2=(analysis->end_search_interval)-
-																					temp;
-																				if (event_number>1)
-																				{
-																					trace_area_1->enlarge.left_edit_box=
-																						(trace_area_1->enlarge.left_box)+
-																						(((analysis->
-																						search_interval_divisions)[
-																						event_number-2]-temp)*
-																						((trace_area_1->enlarge.right_box)-
-																						(trace_area_1->enlarge.left_box)))/
-																						temp_2;
-																				}
-																				else
-																				{
-																					trace_area_1->enlarge.left_edit_box=
-																						trace_area_1->enlarge.left_box;
-																				}
-																				if (event_number<number_of_events)
-																				{
-																					trace_area_1->enlarge.right_edit_box=
-																						(trace_area_1->enlarge.left_box)+
-																						(((analysis->
-																						search_interval_divisions)[
-																						event_number-1]-temp)*
-																						((trace_area_1->enlarge.right_box)-
-																						(trace_area_1->enlarge.left_box)))/
-																						temp_2;
-																				}
-																				else
-																				{
-																					trace_area_1->enlarge.right_edit_box=
-																						trace_area_1->enlarge.right_box;
-																				}
-																			}
-																			else
-																			{
-																				trace_area_1->enlarge.left_edit_box=
-																					(trace_area_1->enlarge.left_box)+
-																					((event_number-1)*
-																					((trace_area_1->enlarge.right_box)-
-																					(trace_area_1->enlarge.left_box)))/
-																					number_of_events;
-																				trace_area_1->enlarge.right_edit_box=
-																					(trace_area_1->enlarge.left_box)+
-																					(event_number*
-																					((trace_area_1->enlarge.right_box)-
-																					(trace_area_1->enlarge.left_box)))/
-																					number_of_events;
-																			}
-																		}
-#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
-																		if (EDA_INTERVAL==detection)
-																		{
-																			/* clear the present markers */
-																			draw_all_markers(0,0,analysis);
-																			destroy_all_events(analysis->rig);
-																		}
-#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
-																		if ((
-#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
-																			((EDA_INTERVAL==analysis->detection)&&
-																			((SINGLE_ACTIVATION==analysis->map_type)||
-																			(MULTIPLE_ACTIVATION==
-																			analysis->map_type)))||
-#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
-																			(INTEGRAL==analysis->map_type))&&
-																			(analysis->mapping_window)&&
-																			(map=analysis->mapping_window->map))
-																		{
-																			/* update the mapping window */
-																			analysis->map_type=NO_MAP_FIELD;
-																			map->colour_option=HIDE_COLOUR;
-																			map->contours_option=HIDE_CONTOURS;
-																			map->electrodes_label_type=
-																				SHOW_ELECTRODE_NAMES;
-																			/* clear the colour map */
-																			map->activation_front= -1;
-																			update_mapping_drawing_area(
-																				analysis->mapping_window,2);
-																			update_mapping_colour_or_auxili(
-																				analysis->mapping_window);
-																			XtSetSensitive(analysis
-																				->mapping_window->animate_button,
-																				False);
-																		}
-#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
-																		if (EDA_INTERVAL==detection)
-																		{
-																			XtSetSensitive(analysis->window->
-																				file_menu.save_times_button,False);
-																			XtSetSensitive(analysis->window->map_menu.
-																				single_activation_button,False);
-																			XtSetSensitive(analysis->window->map_menu.
-																				multiple_activation_button,False);
-																			analysis->calculate_events=0;
-																		}
-#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
-																	}
-																}
-																else
-																{
-																	if ((left_box!=
-																		trace_area_1->enlarge.left_edit_box)||
-																		(right_box!=
-																		trace_area_1->enlarge.right_edit_box))
-																	{
-																		if (left_box!=
-																			trace_area_1->enlarge.left_edit_box)
-																		{
-																			analysis->trace->area_3.edit.first_data=
-																				SCALE_X(left_box,axes_left,
-																				start_analysis_interval,1/x_scale);
-																			trace_area_1->enlarge.left_edit_box=
-																				left_box;
-																		}
-																		if (right_box!=
-																			trace_area_1->enlarge.right_edit_box)
-																		{
-																			analysis->trace->area_3.edit.last_data=
-																				SCALE_X(right_box,axes_left,
-																				start_analysis_interval,1/x_scale);
-																			trace_area_1->enlarge.right_edit_box=
-																				right_box;
-																		}
-																	}
-																}
-																if (EDA_INTERVAL==detection)
-																{
-																	trace_update_edit_interval(analysis->trace);
-																}
-																redraw_trace_3_drawing_area((Widget)NULL,
-																	(XtPointer)(analysis->trace),
-																	(XtPointer)NULL);
-																trace_update_signal_controls(analysis->trace);
-															}
-															else
-															{
-																if ((EDA_INTERVAL==detection)||!edit_box)
-																{
-																	if ((left_box!=trace_area_1->enlarge.
-																		left_box)||(right_box!=trace_area_1->
-																		enlarge.right_box))
-																	{
-																		/* clear the new box */
-																		width=right_box-left_box;
-																		draw_search_box(left_box,axes_top,width,
-																			trace_area_1->axes_height,detection,
-																			number_of_events,divisions,
-																			trace_area_1->drawing_area,
-																			trace_area_1->drawing,
-																			signal_drawing_information);
-																		if (EDA_INTERVAL==detection)
-																		{
-																			draw_highlight_event_box(left_edit_box,
-																				axes_top,right_edit_box-left_edit_box,
-																				trace_area_1->axes_height,detection,
-																				trace_area_1->drawing_area,
-																				trace_area_1->drawing,
-																				signal_drawing_information);
-																		}
-																		/* draw the old box */
-																		draw_search_box(
-																			trace_area_1->enlarge.left_box,axes_top,
-																			trace_area_1->enlarge.right_box-
-																			trace_area_1->enlarge.left_box,
-																			trace_area_1->axes_height,detection,
-																			number_of_events,
-																			trace_area_1->enlarge.divisions,
-																			trace_area_1->drawing_area,
-																			trace_area_1->drawing,
-																			signal_drawing_information);
-																		if (EDA_INTERVAL==detection)
-																		{
-																			draw_highlight_event_box(
-																				trace_area_1->enlarge.left_edit_box,
-																				axes_top,
-																				trace_area_1->enlarge.right_edit_box-
-																				trace_area_1->enlarge.left_edit_box,
-																				trace_area_1->axes_height,detection,
-																				trace_area_1->drawing_area,
-																				trace_area_1->drawing,
-																				signal_drawing_information);
-																		}
-																	}
-																}
-																else
-																{
-																	if ((left_box!=
-																		trace_area_1->enlarge.left_edit_box)||
-																		(right_box!=
-																		trace_area_1->enlarge.right_edit_box))
-																	{
-																		/* clear the new box */
-																		draw_highlight_event_box(left_box,axes_top,
-																			right_box-left_box,
-																			trace_area_1->axes_height,detection,
-																			trace_area_1->drawing_area,
-																			trace_area_1->drawing,
-																			signal_drawing_information);
 																		draw_highlight_event_box(
 																			trace_area_1->enlarge.left_edit_box,
 																			axes_top,
@@ -8867,18 +8804,42 @@ should be done as a callback from the trace_window.
 																	}
 																}
 															}
-															moving=MOVING_NONE;
+															else
+															{
+																if ((left_box!=
+																	trace_area_1->enlarge.left_edit_box)||
+																	(right_box!=
+																		trace_area_1->enlarge.right_edit_box))
+																{
+																	/* clear the new box */
+																	draw_highlight_event_box(left_box,axes_top,
+																		right_box-left_box,
+																		trace_area_1->axes_height,detection,
+																		trace_area_1->drawing_area,
+																		trace_area_1->drawing,
+																		signal_drawing_information);
+																	draw_highlight_event_box(
+																		trace_area_1->enlarge.left_edit_box,
+																		axes_top,
+																		trace_area_1->enlarge.right_edit_box-
+																		trace_area_1->enlarge.left_edit_box,
+																		trace_area_1->axes_height,detection,
+																		trace_area_1->drawing_area,
+																		trace_area_1->drawing,
+																		signal_drawing_information);
+																}
+															}
 														}
-													} break;
-													default:
-													{
-														XtDispatchEvent(&xevent);
+														moving=MOVING_NONE;
 													}
+												} break;
+												default:
+												{
+													XtDispatchEvent(&xevent);
 												}
 											}
-											/* release the pointer */
-											XtUngrabPointer(trace_area_1->drawing_area,CurrentTime);
 										}
+										XUndefineCursor(display,XtWindow(trace_area_1->drawing_area));
 										XFreeCursor(display,cursor);
 									}
 								}
@@ -8921,7 +8882,6 @@ The callback for moving the event marker in the trace edit drawing area.
 should be done as a callback from the trace_window.
 ==============================================================================*/
 {
-	Boolean owner_events;
 	char number_string[20],number_string2[20];
 	Cursor cursor;
 	Display *display;
@@ -8929,9 +8889,9 @@ should be done as a callback from the trace_window.
 	float frequency,initial_value,new_max,new_min,signal_max,signal_min,x_scale,y_scale;
 	int ascent,axes_bottom,axes_left,axes_right,axes_top,axes_width,datum,descent,
 		device_number,direction,drawing_height,drawing_width,end_analysis_interval,
-		event_number,event_time,first_data,i,initial_marker,keyboard_mode,
+		event_number,event_time,first_data,i,initial_marker,
 		last_data,length,length2,marker,number_of_columns,number_of_rows,
-		pointer_mode,pointer_sensitivity,pointer_x,pointer_y,potential_time,
+		pointer_sensitivity,pointer_x,pointer_y,potential_time,
 		previous_marker,signals_axes_height,signals_axes_left,
 		signals_axes_top,signals_axes_width,start_analysis_interval,*times,
 		x_axis_y_marker,xpos,x_string,x_string2,y_limit,ypos,y_string,y_string2;
@@ -8953,7 +8913,7 @@ should be done as a callback from the trace_window.
 	struct Trace_window_area_3 *trace_area_3;
 	struct User_interface *user_interface;
 	unsigned int working_button;
-	Window confine_to,signals_window,working_window;
+	Window signals_window,working_window;
 	XButtonEvent *button_event;
 	XCharStruct bounds;
 	XEvent xevent;
@@ -9143,7 +9103,7 @@ should be done as a callback from the trace_window.
 												device=analysis->rig->devices;
 												current_region=get_Rig_current_region(analysis->rig);
 												for (i=(analysis->highlight)-device;i>0;
-													i--)
+														 i--)
 												{
 													if (!current_region||(current_region==
 														(*device)->description->region))
@@ -9285,7 +9245,7 @@ should be done as a callback from the trace_window.
 												default:
 												{
 													display_message(ERROR_MESSAGE,
-													"select_trace_3_drawing_area.  Invalid event status");
+														"select_trace_3_drawing_area.  Invalid event status");
 													marker_graphics_context=(signal_drawing_information->
 														graphics_context).undecided_colour;
 													marker_graphics_context_text=
@@ -9330,7 +9290,7 @@ should be done as a callback from the trace_window.
 												else
 												{
 													display_message(ERROR_MESSAGE,
-												"select_trace_1_drawing_area.  Could not create event");
+														"select_trace_1_drawing_area.  Could not create event");
 												}
 											}
 											else
@@ -9413,7 +9373,7 @@ should be done as a callback from the trace_window.
 												device=analysis->rig->devices;
 												current_region=get_Rig_current_region(analysis->rig);
 												for (i=(analysis->highlight)-device;i>0;
-													i--)
+														 i--)
 												{
 													if (!current_region||(current_region==
 														(*device)->description->region))
@@ -9486,39 +9446,39 @@ should be done as a callback from the trace_window.
 															{
 																event_graphics_context=
 																	(signal_drawing_information->
-																	graphics_context).accepted_colour;
+																		graphics_context).accepted_colour;
 																event_graphics_context_text=
 																	(signal_drawing_information->
-																	graphics_context).accepted_colour_text;
+																		graphics_context).accepted_colour_text;
 															} break;
 															case REJECTED:
 															{
 																event_graphics_context=
 																	(signal_drawing_information->
-																	graphics_context).rejected_colour;
+																		graphics_context).rejected_colour;
 																event_graphics_context_text=
 																	(signal_drawing_information->
-																	graphics_context).rejected_colour_text;
+																		graphics_context).rejected_colour_text;
 															} break;
 															case UNDECIDED:
 															{
 																event_graphics_context=
 																	(signal_drawing_information->
-																	graphics_context).undecided_colour;
+																		graphics_context).undecided_colour;
 																event_graphics_context_text=
 																	(signal_drawing_information->
-																	graphics_context).undecided_colour_text;
+																		graphics_context).undecided_colour_text;
 															} break;
 															default:
 															{
 																display_message(ERROR_MESSAGE,
-													"select_trace_3_drawing_area.  Invalid event status");
+																	"select_trace_3_drawing_area.  Invalid event status");
 																event_graphics_context=
 																	(signal_drawing_information->
-																	graphics_context).undecided_colour;
+																		graphics_context).undecided_colour;
 																event_graphics_context_text=
 																	(signal_drawing_information->
-																	graphics_context).undecided_colour_text;
+																		graphics_context).undecided_colour_text;
 															} break;
 														}
 													}
@@ -9530,7 +9490,7 @@ should be done as a callback from the trace_window.
 														(pointer_x<=axes_left+pointer_sensitivity))
 													{
 														/* determine if the positive or the negative y axis
-															has been selected */
+															 has been selected */
 														signal_min=trace_area_3_device->signal_display_minimum;
 														signal_max=trace_area_3_device->signal_display_maximum;
 														if (signal_max==signal_min)
@@ -9569,7 +9529,7 @@ should be done as a callback from the trace_window.
 																moving=SCALING_Y_AXIS_NEGATIVE;
 																marker_graphics_context=
 																	(signal_drawing_information->
-																	graphics_context).scaling_signal_colour;
+																		graphics_context).scaling_signal_colour;
 															}
 															else
 															{
@@ -9597,74 +9557,36 @@ should be done as a callback from the trace_window.
 									(SCALING_Y_AXIS_POSITIVE==moving))
 								{
 									/* grab the pointer */
-									cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);
-									owner_events=True;
-									pointer_mode=GrabModeAsync;
-									keyboard_mode=GrabModeAsync;
-									confine_to=None;
-									if (GrabSuccess==XtGrabPointer(trace_area_3->drawing_area,
-										owner_events,
-										ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
-										pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
+									cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);								
+									/* set the cursor */
+									XDefineCursor(display,XtWindow(trace_area_3->drawing_area),cursor);
+									XmUpdateDisplay(trace_area_3->drawing_area);						
+									working_window=XtWindow(trace_area_3->drawing_area);
+									pixel_map=trace_area_3->drawing->pixel_map;
+									switch (moving)
 									{
-										working_window=XtWindow(trace_area_3->drawing_area);
-										pixel_map=trace_area_3->drawing->pixel_map;
-										switch (moving)
+										case MOVING_DATUM_MARKER:
+										case MOVING_EVENT_MARKER:
 										{
-											case MOVING_DATUM_MARKER:
-											case MOVING_EVENT_MARKER:
+											XWarpPointer(display,None,None,0,0,0,0,
+												initial_marker-pointer_x,0);
+											pointer_x=initial_marker;
+											marker=initial_marker;
+											if (current_event)
 											{
-												XWarpPointer(display,None,None,0,0,0,0,
-													initial_marker-pointer_x,0);
-												pointer_x=initial_marker;
-												marker=initial_marker;
-												if (current_event)
-												{
-													/* clear the delay time */
-													sprintf(number_string,"%d",
-														(int)((float)(times[current_event->time]-
-														times[datum])*1000./frequency));
-													length=strlen(number_string);
-													XTextExtents(font,number_string,length,&direction,
-														&ascent,&descent,&bounds);
-													x_string=SCALE_X(current_event->time,first_data,
-														axes_left,x_scale)+(bounds.lbearing-
-														bounds.rbearing+1)/2;
-													if (x_string+bounds.rbearing>=axes_left+axes_width)
-													{
-														x_string=axes_left+axes_width-bounds.rbearing;
-													}
-													if (x_string-bounds.lbearing<axes_left)
-													{
-														x_string=axes_left+bounds.lbearing;
-													}
-													y_string=axes_top-descent;
-													XDrawString(display,pixel_map,
-														event_graphics_context_text,x_string,y_string,
-														number_string,length);
-													XDrawString(display,working_window,
-														event_graphics_context,x_string,y_string,
-														number_string,length);
-												}
-											} break;
-											case MOVING_POTENTIAL_TIME_MARKER:
-											{
-												XWarpPointer(display,None,None,0,0,0,0,
-													initial_marker-pointer_x,0);
-												pointer_x=initial_marker;
-												marker=initial_marker;
-												/* clear the time */
+												/* clear the delay time */
 												sprintf(number_string,"%d",
-													(int)((float)(times[potential_time])*1000./
-													frequency));
+													(int)((float)(times[current_event->time]-
+														times[datum])*1000./frequency));
 												length=strlen(number_string);
 												XTextExtents(font,number_string,length,&direction,
 													&ascent,&descent,&bounds);
-												x_string=initial_marker+
-													(bounds.lbearing-bounds.rbearing+1)/2;
-												if (x_string+bounds.rbearing>=axes_right)
+												x_string=SCALE_X(current_event->time,first_data,
+													axes_left,x_scale)+(bounds.lbearing-
+														bounds.rbearing+1)/2;
+												if (x_string+bounds.rbearing>=axes_left+axes_width)
 												{
-													x_string=axes_right-bounds.rbearing;
+													x_string=axes_left+axes_width-bounds.rbearing;
 												}
 												if (x_string-bounds.lbearing<axes_left)
 												{
@@ -9672,701 +9594,262 @@ should be done as a callback from the trace_window.
 												}
 												y_string=axes_top-descent;
 												XDrawString(display,pixel_map,
-													marker_graphics_context_text,x_string,y_string,
+													event_graphics_context_text,x_string,y_string,
 													number_string,length);
 												XDrawString(display,working_window,
-													marker_graphics_context,x_string,y_string,
+													event_graphics_context,x_string,y_string,
 													number_string,length);
-												/* clear the potential */
-												if (signal&&(channel=trace_area_3_device->channel))
-												{
-													switch (buffer->value_type)
-													{
-														case SHORT_INT_VALUE:
-														{
-															sprintf(number_string2,"%.3g",
-																((float)(buffer->signals.short_int_values)
-																[potential_time*(buffer->number_of_signals)+
-																(signal->index)]-(channel->offset))*
-																(channel->gain));
-														} break;
-														case FLOAT_VALUE:
-														{
-															sprintf(number_string2,"%.3g",
-																((buffer->signals.float_values)
-																[potential_time*(buffer->number_of_signals)+
-																(signal->index)]-(channel->offset))*
-																(channel->gain));
-														} break;
-													}
-													length2=strlen(number_string2);
-													XTextExtents(font,number_string2,length2,&direction,
-														&ascent,&descent,&bounds);
-													x_string2=axes_left-bounds.rbearing-4;
-													y_string2=axes_top-descent;
-													XDrawString(display,pixel_map,
-														marker_graphics_context_text,x_string2,y_string2,
-														number_string2,length2);
-													XDrawString(display,working_window,
-														marker_graphics_context,x_string2,y_string2,
-														number_string2,length2);
-												}
-											} break;
-											case SCALING_Y_AXIS_POSITIVE:
-											case SCALING_Y_AXIS_NEGATIVE:
-											{
-												marker=initial_marker;
-												/* draw a horizontal line */
-												XDrawLine(display,pixel_map,marker_graphics_context,
-													axes_left,initial_marker,axes_right,initial_marker);
-												XDrawLine(display,working_window,
-													marker_graphics_context,axes_left,initial_marker,
-													axes_right,initial_marker);
-											} break;
-										}
-										while (MOVING_NONE!=moving)
+											}
+										} break;
+										case MOVING_POTENTIAL_TIME_MARKER:
 										{
-											XNextEvent(display,&xevent);
-											switch (xevent.type)
+											XWarpPointer(display,None,None,0,0,0,0,
+												initial_marker-pointer_x,0);
+											pointer_x=initial_marker;
+											marker=initial_marker;
+											/* clear the time */
+											sprintf(number_string,"%d",
+												(int)((float)(times[potential_time])*1000./
+													frequency));
+											length=strlen(number_string);
+											XTextExtents(font,number_string,length,&direction,
+												&ascent,&descent,&bounds);
+											x_string=initial_marker+
+												(bounds.lbearing-bounds.rbearing+1)/2;
+											if (x_string+bounds.rbearing>=axes_right)
 											{
-												case MotionNotify:
+												x_string=axes_right-bounds.rbearing;
+											}
+											if (x_string-bounds.lbearing<axes_left)
+											{
+												x_string=axes_left+bounds.lbearing;
+											}
+											y_string=axes_top-descent;
+											XDrawString(display,pixel_map,
+												marker_graphics_context_text,x_string,y_string,
+												number_string,length);
+											XDrawString(display,working_window,
+												marker_graphics_context,x_string,y_string,
+												number_string,length);
+											/* clear the potential */
+											if (signal&&(channel=trace_area_3_device->channel))
+											{
+												switch (buffer->value_type)
 												{
-													previous_marker=marker;
-													/* reduce the number of motion events displayed */
-													while (XCheckMaskEvent(display,ButtonMotionMask,
-														&xevent));
-													pointer_x=xevent.xmotion.x;
-													pointer_y=xevent.xmotion.y;
-													switch (moving)
+													case SHORT_INT_VALUE:
 													{
-														case MOVING_EVENT_MARKER:
-														case MOVING_DATUM_MARKER:
-														case MOVING_POTENTIAL_TIME_MARKER:
-														{
-															if ((xevent.xmotion.window==working_window)&&
-																(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
-															{
-																if (pointer_x<axes_left)
-																{
-																	marker=axes_left;
-																}
-																else
-																{
-																	if (pointer_x>axes_right)
-																	{
-																		marker=axes_right;
-																	}
-																	else
-																	{
-																		marker=pointer_x;
-																	}
-																}
-																if (marker!=previous_marker)
-																{
-																	/* clear the old marker */
-																	XDrawLine(display,pixel_map,
-																		marker_graphics_context,previous_marker,
-																		axes_top,previous_marker,axes_bottom);
-																	XDrawLine(display,working_window,
-																		marker_graphics_context,previous_marker,
-																		axes_top,previous_marker,axes_bottom);
-																	/* draw the new marker */
-																	XDrawLine(display,pixel_map,
-																		marker_graphics_context,marker,axes_top,
-																		marker,axes_bottom);
-																	XDrawLine(display,working_window,
-																		marker_graphics_context,marker,axes_top,
-																		marker,axes_bottom);
-																}
-															}
-														} break;
-														case SCALING_Y_AXIS_NEGATIVE:
-														{
-															if (xevent.xmotion.window==working_window)
-															{
-																if (pointer_y<y_limit)
-																{
-																	marker=y_limit;
-																}
-																else
-																{
-																	if (pointer_y>axes_bottom)
-																	{
-																		marker=axes_bottom;
-																	}
-																	else
-																	{
-																		marker=pointer_y;
-																	}
-																}
-																if (marker!=previous_marker)
-																{
-																	/* clear the old marker */
-																	XDrawLine(display,pixel_map,
-																		marker_graphics_context,axes_left,
-																		previous_marker,axes_right,previous_marker);
-																	XDrawLine(display,working_window,
-																		marker_graphics_context,axes_left,
-																		previous_marker,axes_right,previous_marker);
-																	/* draw the new marker */
-																	XDrawLine(display,pixel_map,
-																		marker_graphics_context,axes_left,marker,
-																		axes_right,marker);
-																	XDrawLine(display,working_window,
-																		marker_graphics_context,axes_left,marker,
-																		axes_right,marker);
-																}
-															}
-														} break;
-														case SCALING_Y_AXIS_POSITIVE:
-														{
-															if (xevent.xmotion.window==working_window)
-															{
-																if (pointer_y>y_limit)
-																{
-																	marker=y_limit;
-																}
-																else
-																{
-																	if (pointer_y<axes_top)
-																	{
-																		marker=axes_top;
-																	}
-																	else
-																	{
-																		marker=pointer_y;
-																	}
-																}
-																if (marker!=previous_marker)
-																{
-																	/* clear the old marker */
-																	XDrawLine(display,pixel_map,
-																		marker_graphics_context,axes_left,
-																		previous_marker,axes_right,previous_marker);
-																	XDrawLine(display,working_window,
-																		marker_graphics_context,axes_left,
-																		previous_marker,axes_right,previous_marker);
-																	/* draw the new marker */
-																	XDrawLine(display,pixel_map,
-																		marker_graphics_context,axes_left,marker,
-																		axes_right,marker);
-																	XDrawLine(display,working_window,
-																		marker_graphics_context,axes_left,marker,
-																		axes_right,marker);
-																}
-															}
-														} break;
-													}
-												} break;
-												case ButtonPress:
+														sprintf(number_string2,"%.3g",
+															((float)(buffer->signals.short_int_values)
+																[potential_time*(buffer->number_of_signals)+
+																	(signal->index)]-(channel->offset))*
+															(channel->gain));
+													} break;
+													case FLOAT_VALUE:
+													{
+														sprintf(number_string2,"%.3g",
+															((buffer->signals.float_values)
+																[potential_time*(buffer->number_of_signals)+
+																	(signal->index)]-(channel->offset))*
+															(channel->gain));
+													} break;
+												}
+												length2=strlen(number_string2);
+												XTextExtents(font,number_string2,length2,&direction,
+													&ascent,&descent,&bounds);
+												x_string2=axes_left-bounds.rbearing-4;
+												y_string2=axes_top-descent;
+												XDrawString(display,pixel_map,
+													marker_graphics_context_text,x_string2,y_string2,
+													number_string2,length2);
+												XDrawString(display,working_window,
+													marker_graphics_context,x_string2,y_string2,
+													number_string2,length2);
+											}
+										} break;
+										case SCALING_Y_AXIS_POSITIVE:
+										case SCALING_Y_AXIS_NEGATIVE:
+										{
+											marker=initial_marker;
+											/* draw a horizontal line */
+											XDrawLine(display,pixel_map,marker_graphics_context,
+												axes_left,initial_marker,axes_right,initial_marker);
+											XDrawLine(display,working_window,
+												marker_graphics_context,axes_left,initial_marker,
+												axes_right,initial_marker);
+										} break;
+									}
+									while (MOVING_NONE!=moving)
+									{
+										XNextEvent(display,&xevent);
+										switch (xevent.type)
+										{
+											case MotionNotify:
+											{
+												previous_marker=marker;
+												/* reduce the number of motion events displayed */
+												while (XCheckMaskEvent(display,ButtonMotionMask,
+													&xevent));
+												pointer_x=xevent.xmotion.x;
+												pointer_y=xevent.xmotion.y;
+												switch (moving)
 												{
-													if (xevent.xbutton.button==working_button)
+													case MOVING_EVENT_MARKER:
+													case MOVING_DATUM_MARKER:
+													case MOVING_POTENTIAL_TIME_MARKER:
 													{
-														display_message(ERROR_MESSAGE,
-											"select_trace_3_drawing_area.  Unexpected button press");
-														moving=MOVING_NONE;
-													}
-												} break;
-												case ButtonRelease:
-												{
-													if (xevent.xbutton.button==working_button)
-													{
-														if (xevent.xbutton.window==working_window)
+														if ((xevent.xmotion.window==working_window)&&
+															(pointer_y>=axes_top)&&(pointer_y<=axes_bottom))
 														{
-															if (marker==initial_marker)
+															if (pointer_x<axes_left)
 															{
-																switch (moving)
-																{
-																	case SCALING_Y_AXIS_POSITIVE:
-																	case SCALING_Y_AXIS_NEGATIVE:
-																	{
-																		/* clear the horizontal line */
-																		XDrawLine(display,pixel_map,
-																			marker_graphics_context,axes_left,
-																			initial_marker,axes_right,initial_marker);
-																		XDrawLine(display,working_window,
-																			marker_graphics_context,axes_left,
-																			initial_marker,axes_right,initial_marker);
-																	} break;
-																	case MOVING_DATUM_MARKER:
-																	{
-																		if (event)
-																		{
-																			/* draw the new delay time */
-																			sprintf(number_string,"%d",
-																				(int)((float)(times[event->time]-
-																					times[datum])*1000./frequency));
-																			length=strlen(number_string);
-																			XTextExtents(font,number_string,length,
-																				&direction,&ascent,&descent,&bounds);
-																			x_string=SCALE_X(event->time,first_data,
-																				axes_left,x_scale)+
-																				(bounds.lbearing-bounds.rbearing+1)/2;
-																			if (x_string+bounds.rbearing>=
-																				axes_left+axes_width)
-																			{
-																				x_string=axes_left+axes_width-
-																					bounds.rbearing;
-																			}
-																			if (x_string-bounds.lbearing<axes_left)
-																			{
-																				x_string=axes_left+bounds.lbearing;
-																			}
-																			y_string=axes_top-descent;
-																			XDrawString(display,pixel_map,
-																				event_graphics_context_text,x_string,
-																				y_string,number_string,length);
-																			XDrawString(display,working_window,
-																				event_graphics_context,x_string,
-																				y_string,number_string,length);
-																		}
-																	} break;
-																	case MOVING_POTENTIAL_TIME_MARKER:
-																	{
-																		/* write the time */
-																		sprintf(number_string,"%d",
-																			(int)((float)(times[potential_time])*
-																			1000./frequency));
-																		length=strlen(number_string);
-																		XTextExtents(font,number_string,length,
-																			&direction,&ascent,&descent,&bounds);
-																		x_string=initial_marker+
-																			(bounds.lbearing-bounds.rbearing+1)/2;
-																		if (x_string+bounds.rbearing>=axes_right)
-																		{
-																			x_string=axes_right-bounds.rbearing;
-																		}
-																		if (x_string-bounds.lbearing<axes_left)
-																		{
-																			x_string=axes_left+bounds.lbearing;
-																		}
-																		y_string=axes_top-descent;
-																		XDrawString(display,pixel_map,
-																			marker_graphics_context_text,
-																			x_string,y_string,number_string,length);
-																		XDrawString(display,working_window,
-																			marker_graphics_context,
-																			x_string,y_string,number_string,length);
-																		if (signal&&channel)
-																		{
-																			/* write the potential */
-																			switch (buffer->value_type)
-																			{
-																				case SHORT_INT_VALUE:
-																				{
-																					sprintf(number_string2,"%.3g",
-																						((float)(buffer->signals.
-																						short_int_values)[potential_time*
-																						(buffer->number_of_signals)+
-																						(signal->index)]-(channel->offset))*
-																						(channel->gain));
-																				} break;
-																				case FLOAT_VALUE:
-																				{
-																					sprintf(number_string2,"%.3g",
-																						((buffer->signals.float_values)
-																						[potential_time*
-																						(buffer->number_of_signals)+
-																						(signal->index)]-(channel->offset))*
-																						(channel->gain));
-																				} break;
-																			}
-																			length2=strlen(number_string2);
-																			XTextExtents(font,number_string2,length2,
-																				&direction,&ascent,&descent,&bounds);
-																			x_string2=axes_left-bounds.rbearing-4;
-																			y_string2=axes_top-descent;
-																			XDrawString(display,pixel_map,
-																				marker_graphics_context_text,x_string2,
-																				y_string2,number_string2,length2);
-																			XDrawString(display,working_window,
-																				marker_graphics_context,x_string2,
-																				y_string2,number_string2,length2);
-																		}
-																	} break;
-																}
+																marker=axes_left;
 															}
 															else
 															{
-																start_analysis_interval=buffer->start;
-																end_analysis_interval=buffer->end;
-																/* clear the old markers */
-																trace_area_1= &(analysis->trace->area_1);
-																switch (moving)
+																if (pointer_x>axes_right)
 																{
-																	case MOVING_EVENT_MARKER:
-																	{
-																		draw_event_marker(event,event_number,
-																			datum,times,frequency,ENLARGE_AREA_DETAIL,
-																			start_analysis_interval,
-																			end_analysis_interval,
-																			highlight_device->signal_display_minimum,
-																			highlight_device->signal_display_maximum,
-																			trace_area_1->axes_left,
-																			trace_area_1->axes_top,
-																			trace_area_1->axes_width,
-																			trace_area_1->axes_height,
-																			XtWindow(trace_area_1->drawing_area),
-																			trace_area_1->drawing->pixel_map,
-																			signal_drawing_information,
-																			user_interface);
-																	} break;
-																}
-																/* clear the signals drawing area */
-																if ((analysis->window)&&(analysis->rig)&&
-																	(signals= &(analysis->window->signals)))
-																{
-																	signals_axes_left=signals->axes_left;
-																	signals_axes_top=signals->axes_top;
-																	signals_axes_width=signals->axes_width;
-																	signals_axes_height=signals->axes_height;
-																	signals_window=
-																		XtWindow(signals->drawing_area);
-																	signals_pixel_map=signals->drawing->pixel_map;
-																	drawing_width=signals->drawing->width;
-																	drawing_height=signals->drawing->height;
-																	number_of_rows=signals->number_of_rows;
-																	number_of_columns=signals->number_of_columns;
-																	switch (moving)
-																	{
-																		case MOVING_EVENT_MARKER:
-																		case SCALING_Y_AXIS_POSITIVE:
-																		case SCALING_Y_AXIS_NEGATIVE:
-																		{
-																			device_number=0;
-																			device=analysis->rig->devices;
-																			current_region=get_Rig_current_region(
-																				analysis->rig);
-#if defined (UNEMAP_USE_NODES)
-																			rig_node_order_info=
-																				get_Analysis_window_rig_node_order_info(
-																					analysis->window);
-																			device_number=
-																				get_FE_node_order_info_current_node_number(
-																						rig_node_order_info);
-#else
-																			for (i=(analysis->highlight)-device;i>0;
-																				i--)
-																			{
-																				if (!current_region||(current_region==
-																					(*device)->description->region))
-																				{
-																					device_number++;
-																				}
-																				device++;
-																			}
-#endif /* defined (UNEMAP_USE_NODES) */
-																			switch (signals->layout)
-																			{
-																				case SEPARATE_LAYOUT:
-																				{
-																					xpos=((device_number/number_of_rows)*
-																						drawing_width)/number_of_columns;
-																					ypos=((device_number%number_of_rows)*
-																						drawing_height)/number_of_rows;
-																				} break;
-																				case OVERLAP_LAYOUT:
-																				{
-																					xpos=((device_number/number_of_rows)*
-																						drawing_width)/number_of_columns;
-																					ypos=((device_number%number_of_rows)*
-																						drawing_height)/(number_of_rows+3);
-																				} break;
-																			}
-																			if (MOVING_EVENT_MARKER==moving)
-																			{
-																				xpos += signals_axes_left;
-																				ypos += signals_axes_top;
-																				draw_event_marker(event,event_number,
-																					datum,times,frequency,
-																					SIGNAL_AREA_DETAIL,
-																					start_analysis_interval,
-																					end_analysis_interval,
-																					highlight_device->signal_display_minimum,
-																					highlight_device->signal_display_maximum,xpos,
-																					ypos,signals_axes_width,
-																					signals_axes_height,signals_window,
-																					signals_pixel_map,
-																					signal_drawing_information,
-																					user_interface);
-																			}
-																		} break;
-																	}
+																	marker=axes_right;
 																}
 																else
 																{
-																	signals=(struct Signals_area *)NULL;
-																}
-																/* change the values */
-																switch (moving)
-																{
-																	case MOVING_EVENT_MARKER:
-																	{
-																		event->time=SCALE_X(marker,axes_left,
-																			first_data,1/x_scale);
-																		initial_marker=SCALE_X(event->time,
-																			first_data,axes_left,x_scale);
-																	} break;
-																	case MOVING_DATUM_MARKER:
-																	{
-																		datum=SCALE_X(marker,axes_left,first_data,
-																			1/x_scale);
-																	} break;
-																	case MOVING_POTENTIAL_TIME_MARKER:
-																	{
-																		potential_time=SCALE_X(marker,axes_left,
-																			first_data,1/x_scale);
-																	} break;
-																	case SCALING_Y_AXIS_POSITIVE:
-																	{
-																		new_max=initial_value+
-																			(float)(x_axis_y_marker-axes_top)*
-																			(float)(marker-x_axis_y_marker)/(y_scale*
-																			(float)(initial_marker-x_axis_y_marker));
-#if defined (UNEMAP_USE_NODES)
-																		signal_drawing_package=
-																			analysis->signal_drawing_package;
-																		signal_maximum_field=
-																			get_Signal_drawing_package_signal_maximum_field(
-																			signal_drawing_package);
-																		/* set the new signal_maximum*/
-																		component.number=0;
-																		component.field = signal_maximum_field;	
-							 /*??JW should be copying out of and into node with MANAGER_MODIFY */
-																		set_FE_nodal_FE_value_value(
-																			analysis->highlight_rig_node,
-																			&component,0,FE_NODAL_VALUE,new_max);
-#endif /*	defined (UNEMAP_USE_NODES) */
-																		highlight_device->signal_display_maximum=new_max;
-																		if (highlight_device!=trace_area_3_device)
-																		{
-																			trace_area_3_device->signal_display_maximum=
-																				highlight_device->signal_display_maximum;
-																		}
-																	} break;
-																	case SCALING_Y_AXIS_NEGATIVE:
-																	{
-																		new_min=	initial_value+
-																			(float)(x_axis_y_marker-axes_bottom)*
-																			(float)(marker-x_axis_y_marker)/(y_scale*
-																			(float)(initial_marker-x_axis_y_marker));
-#if defined (UNEMAP_USE_NODES)
-																		signal_drawing_package=
-																			analysis->signal_drawing_package;
-																		signal_minimum_field=
-																			get_Signal_drawing_package_signal_minimum_field(
-																			signal_drawing_package);
-																		/* set the new signal_minimum*/
-																		component.number=0;
-																		component.field = signal_minimum_field;
-	/*??JW should be copying out of and into node with MANAGER_MODIFY */
-																		set_FE_nodal_FE_value_value(
-																			analysis->highlight_rig_node,&component,0,
-																			FE_NODAL_VALUE,new_min);
-#endif /*	defined (UNEMAP_USE_NODES) */
-																		highlight_device->signal_display_minimum=new_min;
-																		if (highlight_device!=trace_area_3_device)
-																		{
-																			trace_area_3_device->signal_display_minimum=
-																				highlight_device->signal_display_minimum;
-																		}
-																	} break;
-																}
-																/* draw the new markers */
-																/* update drawing area 3 */
-																switch (moving)
-																{
-																	case MOVING_POTENTIAL_TIME_MARKER:
-																	case MOVING_DATUM_MARKER:
-																	{
-																		XDrawLine(display,pixel_map,
-																			marker_graphics_context,
-																			marker,axes_top,marker,axes_bottom);
-																		XDrawLine(display,working_window,
-																			marker_graphics_context,
-																			marker,axes_top,marker,axes_bottom);
-																	} break;
-																	case MOVING_EVENT_MARKER:
-																	{
-																		if (marker!=initial_marker)
-																		{
-																			XDrawLine(display,pixel_map,
-																				marker_graphics_context,
-																				marker,axes_top,marker,axes_bottom);
-																			XDrawLine(display,working_window,
-																				marker_graphics_context,
-																				marker,axes_top,marker,axes_bottom);
-																			XDrawLine(display,pixel_map,
-																				marker_graphics_context,initial_marker,
-																				axes_top,initial_marker,axes_bottom);
-																			XDrawLine(display,working_window,
-																				marker_graphics_context,initial_marker,
-																				axes_top,initial_marker,axes_bottom);
-																		}
-																	} break;
-																	case SCALING_Y_AXIS_NEGATIVE:
-																	case SCALING_Y_AXIS_POSITIVE:
-																	{
-																		redraw_trace_3_drawing_area((Widget)NULL,
-																			(XtPointer)(analysis->trace),
-																			(XtPointer)NULL);
-																	} break;
-																}
-																/* update time objects */
-																switch (moving)
-																{
-																	case MOVING_POTENTIAL_TIME_MARKER:
-																	{
-																		analysis->trace_update_flags |=
-																			TRACE_3_NO_POTENTIAL_ERASE;
-																		/* this conversion to time_keeper time
-																			should be much more robust.  The frequency
-																			is not guaranteed to divide the potential
-																			time and this takes no account of time
-																			transformations */
-																		Time_keeper_request_new_time(
-																			Time_object_get_time_keeper(
-																			analysis->potential_time_object),
-																			((double)times[potential_time]*1000.0/
-																			frequency));
-																	} break;
-																	case MOVING_DATUM_MARKER:
-																	{
-																		analysis->trace_update_flags |=
-																			TRACE_3_NO_DATUM_ERASE;
-																		Time_object_set_current_time_privileged(
-																			analysis->datum_time_object,
-																			(double)datum);
-																	} break;
-
-																}
-																/* update the drawing area 1 of the trace
-																	window */
-																switch (moving)
-																{
-																	case MOVING_EVENT_MARKER:
-																	{
-																		draw_event_marker(event,event_number,datum,
-																			times,frequency,ENLARGE_AREA_DETAIL,
-																			start_analysis_interval,
-																			end_analysis_interval,
-																			highlight_device->signal_display_minimum,
-																			highlight_device->signal_display_maximum,
-																			trace_area_1->axes_left,
-																			trace_area_1->axes_top,
-																			trace_area_1->axes_width,
-																			trace_area_1->axes_height,
-																			XtWindow(trace_area_1->drawing_area),
-																			trace_area_1->drawing->pixel_map,
-																			signal_drawing_information,
-																			user_interface);
-																	} break;
-																	case SCALING_Y_AXIS_NEGATIVE:
-																	case SCALING_Y_AXIS_POSITIVE:
-																	{
-																		redraw_trace_1_drawing_area((Widget)NULL,
-																			(XtPointer)(analysis->trace),
-																			(XtPointer)NULL);
-																	} break;
-																}
-																if (signals)
-																{
-																	switch (moving)
-																	{
-																		case MOVING_EVENT_MARKER:
-																		{
-																			draw_event_marker(event,event_number,
-																				datum,times,frequency,
-																				SIGNAL_AREA_DETAIL,
-																				start_analysis_interval,
-																				end_analysis_interval,
-																				highlight_device->signal_display_minimum,
-																				highlight_device->signal_display_maximum,xpos,
-																				ypos,signals_axes_width,
-																				signals_axes_height,signals_window,
-																				signals_pixel_map,
-																				signal_drawing_information,
-																				user_interface);
-																		} break;
-																		case SCALING_Y_AXIS_NEGATIVE:
-																		case SCALING_Y_AXIS_POSITIVE:
-																		{
-																			XFillRectangle(display,signals_pixel_map,
-																				(signal_drawing_information->
-																				graphics_context).
-																				background_drawing_colour,xpos,ypos,
-																				signals->signal_width,
-																				signals->signal_height);
-#if defined (UNEMAP_USE_NODES)
-																			draw_signal(
-																				analysis->highlight_rig_node,
-																				analysis->signal_drawing_package,
-																				(struct Device *)NULL,
-																				SIGNAL_AREA_DETAIL,1,0,
-																				&start_analysis_interval,
-																				&end_analysis_interval,xpos,ypos,
-																				signals->signal_width,
-																				signals->signal_height,
-																				signals_pixel_map,&signals_axes_left,
-																				&signals_axes_top,&signals_axes_width,
-																				&signals_axes_height,
-																				signal_drawing_information,
-																				user_interface);
-#else
-																			draw_signal(
-																				(struct FE_node *)NULL,
-																				(struct Signal_drawing_package *)NULL,
-																				highlight_device,
-																				SIGNAL_AREA_DETAIL,1,0,
-																				&start_analysis_interval,
-																				&end_analysis_interval,xpos,ypos,
-																				signals->signal_width,
-																				signals->signal_height,
-																				signals_pixel_map,&signals_axes_left,
-																				&signals_axes_top,&signals_axes_width,
-																				&signals_axes_height,
-																				signal_drawing_information,
-																				user_interface);
-#endif /* defined (UNEMAP_USE_NODES)*/
-																			draw_device_markers(highlight_device,
-																				start_analysis_interval,
-																				end_analysis_interval,datum,1,
-																				potential_time,1,SIGNAL_AREA_DETAIL,0,
-																				signals_axes_left,signals_axes_top,
-																				signals_axes_width,signals_axes_height,
-																				(Window)NULL,signals_pixel_map,
-																				signal_drawing_information,
-																				user_interface);
-																			XCopyArea(display,signals_pixel_map,
-																				signals_window,
-																				(signal_drawing_information->
-																				graphics_context).copy,xpos,ypos,
-																				signals->signal_width,
-																				signals->signal_height,xpos,ypos);
-																		} break;
-																	}
-																	/* clear the interval drawing area */
-																	switch (moving)
-																	{
-																		case SCALING_Y_AXIS_NEGATIVE:
-																		case SCALING_Y_AXIS_POSITIVE:
-																		{
-																			update_interval_drawing_area(
-																				analysis->window);
-																		} break;
-																	}
+																	marker=pointer_x;
 																}
 															}
+															if (marker!=previous_marker)
+															{
+																/* clear the old marker */
+																XDrawLine(display,pixel_map,
+																	marker_graphics_context,previous_marker,
+																	axes_top,previous_marker,axes_bottom);
+																XDrawLine(display,working_window,
+																	marker_graphics_context,previous_marker,
+																	axes_top,previous_marker,axes_bottom);
+																/* draw the new marker */
+																XDrawLine(display,pixel_map,
+																	marker_graphics_context,marker,axes_top,
+																	marker,axes_bottom);
+																XDrawLine(display,working_window,
+																	marker_graphics_context,marker,axes_top,
+																	marker,axes_bottom);
+															}
+														}
+													} break;
+													case SCALING_Y_AXIS_NEGATIVE:
+													{
+														if (xevent.xmotion.window==working_window)
+														{
+															if (pointer_y<y_limit)
+															{
+																marker=y_limit;
+															}
+															else
+															{
+																if (pointer_y>axes_bottom)
+																{
+																	marker=axes_bottom;
+																}
+																else
+																{
+																	marker=pointer_y;
+																}
+															}
+															if (marker!=previous_marker)
+															{
+																/* clear the old marker */
+																XDrawLine(display,pixel_map,
+																	marker_graphics_context,axes_left,
+																	previous_marker,axes_right,previous_marker);
+																XDrawLine(display,working_window,
+																	marker_graphics_context,axes_left,
+																	previous_marker,axes_right,previous_marker);
+																/* draw the new marker */
+																XDrawLine(display,pixel_map,
+																	marker_graphics_context,axes_left,marker,
+																	axes_right,marker);
+																XDrawLine(display,working_window,
+																	marker_graphics_context,axes_left,marker,
+																	axes_right,marker);
+															}
+														}
+													} break;
+													case SCALING_Y_AXIS_POSITIVE:
+													{
+														if (xevent.xmotion.window==working_window)
+														{
+															if (pointer_y>y_limit)
+															{
+																marker=y_limit;
+															}
+															else
+															{
+																if (pointer_y<axes_top)
+																{
+																	marker=axes_top;
+																}
+																else
+																{
+																	marker=pointer_y;
+																}
+															}
+															if (marker!=previous_marker)
+															{
+																/* clear the old marker */
+																XDrawLine(display,pixel_map,
+																	marker_graphics_context,axes_left,
+																	previous_marker,axes_right,previous_marker);
+																XDrawLine(display,working_window,
+																	marker_graphics_context,axes_left,
+																	previous_marker,axes_right,previous_marker);
+																/* draw the new marker */
+																XDrawLine(display,pixel_map,
+																	marker_graphics_context,axes_left,marker,
+																	axes_right,marker);
+																XDrawLine(display,working_window,
+																	marker_graphics_context,axes_left,marker,
+																	axes_right,marker);
+															}
+														}
+													} break;
+												}
+											} break;
+											case ButtonPress:
+											{
+												if (xevent.xbutton.button==working_button)
+												{
+													display_message(ERROR_MESSAGE,
+														"select_trace_3_drawing_area.  Unexpected button press");
+													moving=MOVING_NONE;
+												}
+											} break;
+											case ButtonRelease:
+											{
+												if (xevent.xbutton.button==working_button)
+												{
+													if (xevent.xbutton.window==working_window)
+													{
+														if (marker==initial_marker)
+														{
 															switch (moving)
 															{
-																case MOVING_EVENT_MARKER:
+																case SCALING_Y_AXIS_POSITIVE:
+																case SCALING_Y_AXIS_NEGATIVE:
+																{
+																	/* clear the horizontal line */
+																	XDrawLine(display,pixel_map,
+																		marker_graphics_context,axes_left,
+																		initial_marker,axes_right,initial_marker);
+																	XDrawLine(display,working_window,
+																		marker_graphics_context,axes_left,
+																		initial_marker,axes_right,initial_marker);
+																} break;
+																case MOVING_DATUM_MARKER:
 																{
 																	if (event)
 																	{
 																		/* draw the new delay time */
 																		sprintf(number_string,"%d",
 																			(int)((float)(times[event->time]-
-																			times[datum])*1000./frequency));
+																				times[datum])*1000./frequency));
 																		length=strlen(number_string);
 																		XTextExtents(font,number_string,length,
 																			&direction,&ascent,&descent,&bounds);
@@ -10388,72 +9871,65 @@ should be done as a callback from the trace_window.
 																			event_graphics_context_text,x_string,
 																			y_string,number_string,length);
 																		XDrawString(display,working_window,
-																			event_graphics_context,x_string,y_string,
-																			number_string,length);
+																			event_graphics_context,x_string,
+																			y_string,number_string,length);
 																	}
 																} break;
-															}
-														}
-														else
-														{
-															switch (moving)
-															{
-																case MOVING_DATUM_MARKER:
-																case MOVING_EVENT_MARKER:
 																case MOVING_POTENTIAL_TIME_MARKER:
 																{
-																	if (marker!=initial_marker)
+																	/* write the time */
+																	sprintf(number_string,"%d",
+																		(int)((float)(times[potential_time])*
+																			1000./frequency));
+																	length=strlen(number_string);
+																	XTextExtents(font,number_string,length,
+																		&direction,&ascent,&descent,&bounds);
+																	x_string=initial_marker+
+																		(bounds.lbearing-bounds.rbearing+1)/2;
+																	if (x_string+bounds.rbearing>=axes_right)
 																	{
-																		/* clear the new marker */
-																		XDrawLine(display,pixel_map,
-																			marker_graphics_context,marker,axes_top,
-																			marker,axes_bottom);
-																		XDrawLine(display,working_window,
-																			marker_graphics_context,marker,axes_top,
-																			marker,axes_bottom);
-																		/* draw the old marker */
-																		XDrawLine(display,pixel_map,
-																			marker_graphics_context,initial_marker,
-																			axes_top,initial_marker,axes_bottom);
-																		XDrawLine(display,working_window,
-																			marker_graphics_context,initial_marker,
-																			axes_top,initial_marker,axes_bottom);
+																		x_string=axes_right-bounds.rbearing;
 																	}
-																	/* redraw the time */
-																	if ((MOVING_EVENT_MARKER==moving)&&
-																		(event!=current_event))
+																	if (x_string-bounds.lbearing<axes_left)
 																	{
-																		/* draw the new delay time */
-																		sprintf(number_string,"%d",
-																			(int)((float)(times[event->time]-
-																			times[datum])*1000./frequency));
-																		length=strlen(number_string);
-																		XTextExtents(font,number_string,length,
-																			&direction,&ascent,&descent,&bounds);
-																		x_string=SCALE_X(event->time,first_data,
-																			axes_left,x_scale)+
-																			(bounds.lbearing-bounds.rbearing+1)/2;
-																		if (x_string+bounds.rbearing>=
-																			axes_left+axes_width)
-																		{
-																			x_string=axes_left+axes_width-
-																				bounds.rbearing;
-																		}
-																		if (x_string-bounds.lbearing<axes_left)
-																		{
-																			x_string=axes_left+bounds.lbearing;
-																		}
-																		y_string=axes_top-descent;
+																		x_string=axes_left+bounds.lbearing;
 																	}
+																	y_string=axes_top-descent;
 																	XDrawString(display,pixel_map,
-																		marker_graphics_context_text,x_string,
-																		y_string,number_string,length);
+																		marker_graphics_context_text,
+																		x_string,y_string,number_string,length);
 																	XDrawString(display,working_window,
-																		marker_graphics_context,x_string,y_string,
-																		number_string,length);
-																	if (MOVING_POTENTIAL_TIME_MARKER==moving)
+																		marker_graphics_context,
+																		x_string,y_string,number_string,length);
+																	if (signal&&channel)
 																	{
-																		/* redraw the value */
+																		/* write the potential */
+																		switch (buffer->value_type)
+																		{
+																			case SHORT_INT_VALUE:
+																			{
+																				sprintf(number_string2,"%.3g",
+																					((float)(buffer->signals.
+																						short_int_values)[potential_time*
+																							(buffer->number_of_signals)+
+																							(signal->index)]-(channel->offset))*
+																					(channel->gain));
+																			} break;
+																			case FLOAT_VALUE:
+																			{
+																				sprintf(number_string2,"%.3g",
+																					((buffer->signals.float_values)
+																						[potential_time*
+																							(buffer->number_of_signals)+
+																							(signal->index)]-(channel->offset))*
+																					(channel->gain));
+																			} break;
+																		}
+																		length2=strlen(number_string2);
+																		XTextExtents(font,number_string2,length2,
+																			&direction,&ascent,&descent,&bounds);
+																		x_string2=axes_left-bounds.rbearing-4;
+																		y_string2=axes_top-descent;
 																		XDrawString(display,pixel_map,
 																			marker_graphics_context_text,x_string2,
 																			y_string2,number_string2,length2);
@@ -10462,31 +9938,507 @@ should be done as a callback from the trace_window.
 																			y_string2,number_string2,length2);
 																	}
 																} break;
+															}
+														}
+														else
+														{
+															start_analysis_interval=buffer->start;
+															end_analysis_interval=buffer->end;
+																/* clear the old markers */
+															trace_area_1= &(analysis->trace->area_1);
+															switch (moving)
+															{
+																case MOVING_EVENT_MARKER:
+																{
+																	draw_event_marker(event,event_number,
+																		datum,times,frequency,ENLARGE_AREA_DETAIL,
+																		start_analysis_interval,
+																		end_analysis_interval,
+																		highlight_device->signal_display_minimum,
+																		highlight_device->signal_display_maximum,
+																		trace_area_1->axes_left,
+																		trace_area_1->axes_top,
+																		trace_area_1->axes_width,
+																		trace_area_1->axes_height,
+																		XtWindow(trace_area_1->drawing_area),
+																		trace_area_1->drawing->pixel_map,
+																		signal_drawing_information,
+																		user_interface);
+																} break;
+															}
+																/* clear the signals drawing area */
+															if ((analysis->window)&&(analysis->rig)&&
+																(signals= &(analysis->window->signals)))
+															{
+																signals_axes_left=signals->axes_left;
+																signals_axes_top=signals->axes_top;
+																signals_axes_width=signals->axes_width;
+																signals_axes_height=signals->axes_height;
+																signals_window=
+																	XtWindow(signals->drawing_area);
+																signals_pixel_map=signals->drawing->pixel_map;
+																drawing_width=signals->drawing->width;
+																drawing_height=signals->drawing->height;
+																number_of_rows=signals->number_of_rows;
+																number_of_columns=signals->number_of_columns;
+																switch (moving)
+																{
+																	case MOVING_EVENT_MARKER:
+																	case SCALING_Y_AXIS_POSITIVE:
+																	case SCALING_Y_AXIS_NEGATIVE:
+																	{
+																		device_number=0;
+																		device=analysis->rig->devices;
+																		current_region=get_Rig_current_region(
+																			analysis->rig);
+#if defined (UNEMAP_USE_NODES)
+																		rig_node_order_info=
+																			get_Analysis_window_rig_node_order_info(
+																				analysis->window);
+																		device_number=
+																			get_FE_node_order_info_current_node_number(
+																				rig_node_order_info);
+#else
+																		for (i=(analysis->highlight)-device;i>0;
+																				 i--)
+																		{
+																			if (!current_region||(current_region==
+																				(*device)->description->region))
+																			{
+																				device_number++;
+																			}
+																			device++;
+																		}
+#endif /* defined (UNEMAP_USE_NODES) */
+																		switch (signals->layout)
+																		{
+																			case SEPARATE_LAYOUT:
+																			{
+																				xpos=((device_number/number_of_rows)*
+																					drawing_width)/number_of_columns;
+																				ypos=((device_number%number_of_rows)*
+																					drawing_height)/number_of_rows;
+																			} break;
+																			case OVERLAP_LAYOUT:
+																			{
+																				xpos=((device_number/number_of_rows)*
+																					drawing_width)/number_of_columns;
+																				ypos=((device_number%number_of_rows)*
+																					drawing_height)/(number_of_rows+3);
+																			} break;
+																		}
+																		if (MOVING_EVENT_MARKER==moving)
+																		{
+																			xpos += signals_axes_left;
+																			ypos += signals_axes_top;
+																			draw_event_marker(event,event_number,
+																				datum,times,frequency,
+																				SIGNAL_AREA_DETAIL,
+																				start_analysis_interval,
+																				end_analysis_interval,
+																				highlight_device->signal_display_minimum,
+																				highlight_device->signal_display_maximum,xpos,
+																				ypos,signals_axes_width,
+																				signals_axes_height,signals_window,
+																				signals_pixel_map,
+																				signal_drawing_information,
+																				user_interface);
+																		}
+																	} break;
+																}
+															}
+															else
+															{
+																signals=(struct Signals_area *)NULL;
+															}
+																/* change the values */
+															switch (moving)
+															{
+																case MOVING_EVENT_MARKER:
+																{
+																	event->time=SCALE_X(marker,axes_left,
+																		first_data,1/x_scale);
+																	initial_marker=SCALE_X(event->time,
+																		first_data,axes_left,x_scale);
+																} break;
+																case MOVING_DATUM_MARKER:
+																{
+																	datum=SCALE_X(marker,axes_left,first_data,
+																		1/x_scale);
+																} break;
+																case MOVING_POTENTIAL_TIME_MARKER:
+																{
+																	potential_time=SCALE_X(marker,axes_left,
+																		first_data,1/x_scale);
+																} break;
+																case SCALING_Y_AXIS_POSITIVE:
+																{
+																	new_max=initial_value+
+																		(float)(x_axis_y_marker-axes_top)*
+																		(float)(marker-x_axis_y_marker)/(y_scale*
+																			(float)(initial_marker-x_axis_y_marker));
+#if defined (UNEMAP_USE_NODES)
+																	signal_drawing_package=
+																		analysis->signal_drawing_package;
+																	signal_maximum_field=
+																		get_Signal_drawing_package_signal_maximum_field(
+																			signal_drawing_package);
+																	/* set the new signal_maximum*/
+																	component.number=0;
+																	component.field = signal_maximum_field;	
+																	/*??JW should be copying out of and into node with MANAGER_MODIFY */
+																	set_FE_nodal_FE_value_value(
+																		analysis->highlight_rig_node,
+																		&component,0,FE_NODAL_VALUE,new_max);
+#endif /*	defined (UNEMAP_USE_NODES) */
+																	highlight_device->signal_display_maximum=new_max;
+																	if (highlight_device!=trace_area_3_device)
+																	{
+																		trace_area_3_device->signal_display_maximum=
+																			highlight_device->signal_display_maximum;
+																	}
+																} break;
+																case SCALING_Y_AXIS_NEGATIVE:
+																{
+																	new_min=	initial_value+
+																		(float)(x_axis_y_marker-axes_bottom)*
+																		(float)(marker-x_axis_y_marker)/(y_scale*
+																			(float)(initial_marker-x_axis_y_marker));
+#if defined (UNEMAP_USE_NODES)
+																	signal_drawing_package=
+																		analysis->signal_drawing_package;
+																	signal_minimum_field=
+																		get_Signal_drawing_package_signal_minimum_field(
+																			signal_drawing_package);
+																	/* set the new signal_minimum*/
+																	component.number=0;
+																	component.field = signal_minimum_field;
+																	/*??JW should be copying out of and into node with MANAGER_MODIFY */
+																	set_FE_nodal_FE_value_value(
+																		analysis->highlight_rig_node,&component,0,
+																		FE_NODAL_VALUE,new_min);
+#endif /*	defined (UNEMAP_USE_NODES) */
+																	highlight_device->signal_display_minimum=new_min;
+																	if (highlight_device!=trace_area_3_device)
+																	{
+																		trace_area_3_device->signal_display_minimum=
+																			highlight_device->signal_display_minimum;
+																	}
+																} break;
+															}
+																/* draw the new markers */
+																/* update drawing area 3 */
+															switch (moving)
+															{
+																case MOVING_POTENTIAL_TIME_MARKER:
+																case MOVING_DATUM_MARKER:
+																{
+																	XDrawLine(display,pixel_map,
+																		marker_graphics_context,
+																		marker,axes_top,marker,axes_bottom);
+																	XDrawLine(display,working_window,
+																		marker_graphics_context,
+																		marker,axes_top,marker,axes_bottom);
+																} break;
+																case MOVING_EVENT_MARKER:
+																{
+																	if (marker!=initial_marker)
+																	{
+																		XDrawLine(display,pixel_map,
+																			marker_graphics_context,
+																			marker,axes_top,marker,axes_bottom);
+																		XDrawLine(display,working_window,
+																			marker_graphics_context,
+																			marker,axes_top,marker,axes_bottom);
+																		XDrawLine(display,pixel_map,
+																			marker_graphics_context,initial_marker,
+																			axes_top,initial_marker,axes_bottom);
+																		XDrawLine(display,working_window,
+																			marker_graphics_context,initial_marker,
+																			axes_top,initial_marker,axes_bottom);
+																	}
+																} break;
 																case SCALING_Y_AXIS_NEGATIVE:
 																case SCALING_Y_AXIS_POSITIVE:
 																{
-																	/* clear the horizontal line */
-																	XDrawLine(display,pixel_map,
-																		marker_graphics_context,axes_left,marker,
-																		axes_right,marker);
-																	XDrawLine(display,working_window,
-																		marker_graphics_context,axes_left,marker,
-																		axes_right,marker);
+																	redraw_trace_3_drawing_area((Widget)NULL,
+																		(XtPointer)(analysis->trace),
+																		(XtPointer)NULL);
 																} break;
 															}
+																/* update time objects */
+															switch (moving)
+															{
+																case MOVING_POTENTIAL_TIME_MARKER:
+																{
+																	analysis->trace_update_flags |=
+																		TRACE_3_NO_POTENTIAL_ERASE;
+																	/* this conversion to time_keeper time
+																		 should be much more robust.  The frequency
+																		 is not guaranteed to divide the potential
+																		 time and this takes no account of time
+																		 transformations */
+																	Time_keeper_request_new_time(
+																		Time_object_get_time_keeper(
+																			analysis->potential_time_object),
+																		((double)times[potential_time]*1000.0/
+																			frequency));
+																} break;
+																case MOVING_DATUM_MARKER:
+																{
+																	analysis->trace_update_flags |=
+																		TRACE_3_NO_DATUM_ERASE;
+																	Time_object_set_current_time_privileged(
+																		analysis->datum_time_object,
+																		(double)datum);
+																} break;
+
+															}
+																/* update the drawing area 1 of the trace
+																	 window */
+															switch (moving)
+															{
+																case MOVING_EVENT_MARKER:
+																{
+																	draw_event_marker(event,event_number,datum,
+																		times,frequency,ENLARGE_AREA_DETAIL,
+																		start_analysis_interval,
+																		end_analysis_interval,
+																		highlight_device->signal_display_minimum,
+																		highlight_device->signal_display_maximum,
+																		trace_area_1->axes_left,
+																		trace_area_1->axes_top,
+																		trace_area_1->axes_width,
+																		trace_area_1->axes_height,
+																		XtWindow(trace_area_1->drawing_area),
+																		trace_area_1->drawing->pixel_map,
+																		signal_drawing_information,
+																		user_interface);
+																} break;
+																case SCALING_Y_AXIS_NEGATIVE:
+																case SCALING_Y_AXIS_POSITIVE:
+																{
+																	redraw_trace_1_drawing_area((Widget)NULL,
+																		(XtPointer)(analysis->trace),
+																		(XtPointer)NULL);
+																} break;
+															}
+															if (signals)
+															{
+																switch (moving)
+																{
+																	case MOVING_EVENT_MARKER:
+																	{
+																		draw_event_marker(event,event_number,
+																			datum,times,frequency,
+																			SIGNAL_AREA_DETAIL,
+																			start_analysis_interval,
+																			end_analysis_interval,
+																			highlight_device->signal_display_minimum,
+																			highlight_device->signal_display_maximum,xpos,
+																			ypos,signals_axes_width,
+																			signals_axes_height,signals_window,
+																			signals_pixel_map,
+																			signal_drawing_information,
+																			user_interface);
+																	} break;
+																	case SCALING_Y_AXIS_NEGATIVE:
+																	case SCALING_Y_AXIS_POSITIVE:
+																	{
+																		XFillRectangle(display,signals_pixel_map,
+																			(signal_drawing_information->
+																				graphics_context).
+																			background_drawing_colour,xpos,ypos,
+																			signals->signal_width,
+																			signals->signal_height);
+#if defined (UNEMAP_USE_NODES)
+																		draw_signal(
+																			analysis->highlight_rig_node,
+																			analysis->signal_drawing_package,
+																			(struct Device *)NULL,
+																			SIGNAL_AREA_DETAIL,1,0,
+																			&start_analysis_interval,
+																			&end_analysis_interval,xpos,ypos,
+																			signals->signal_width,
+																			signals->signal_height,
+																			signals_pixel_map,&signals_axes_left,
+																			&signals_axes_top,&signals_axes_width,
+																			&signals_axes_height,
+																			signal_drawing_information,
+																			user_interface);
+#else
+																		draw_signal(
+																			(struct FE_node *)NULL,
+																			(struct Signal_drawing_package *)NULL,
+																			highlight_device,
+																			SIGNAL_AREA_DETAIL,1,0,
+																			&start_analysis_interval,
+																			&end_analysis_interval,xpos,ypos,
+																			signals->signal_width,
+																			signals->signal_height,
+																			signals_pixel_map,&signals_axes_left,
+																			&signals_axes_top,&signals_axes_width,
+																			&signals_axes_height,
+																			signal_drawing_information,
+																			user_interface);
+#endif /* defined (UNEMAP_USE_NODES)*/
+																		draw_device_markers(highlight_device,
+																			start_analysis_interval,
+																			end_analysis_interval,datum,1,
+																			potential_time,1,SIGNAL_AREA_DETAIL,0,
+																			signals_axes_left,signals_axes_top,
+																			signals_axes_width,signals_axes_height,
+																			(Window)NULL,signals_pixel_map,
+																			signal_drawing_information,
+																			user_interface);
+																		XCopyArea(display,signals_pixel_map,
+																			signals_window,
+																			(signal_drawing_information->
+																				graphics_context).copy,xpos,ypos,
+																			signals->signal_width,
+																			signals->signal_height,xpos,ypos);
+																	} break;
+																}
+																/* clear the interval drawing area */
+																switch (moving)
+																{
+																	case SCALING_Y_AXIS_NEGATIVE:
+																	case SCALING_Y_AXIS_POSITIVE:
+																	{
+																		update_interval_drawing_area(
+																			analysis->window);
+																	} break;
+																}
+															}
 														}
-														moving=MOVING_NONE;
+														switch (moving)
+														{
+															case MOVING_EVENT_MARKER:
+															{
+																if (event)
+																{
+																	/* draw the new delay time */
+																	sprintf(number_string,"%d",
+																		(int)((float)(times[event->time]-
+																			times[datum])*1000./frequency));
+																	length=strlen(number_string);
+																	XTextExtents(font,number_string,length,
+																		&direction,&ascent,&descent,&bounds);
+																	x_string=SCALE_X(event->time,first_data,
+																		axes_left,x_scale)+
+																		(bounds.lbearing-bounds.rbearing+1)/2;
+																	if (x_string+bounds.rbearing>=
+																		axes_left+axes_width)
+																	{
+																		x_string=axes_left+axes_width-
+																			bounds.rbearing;
+																	}
+																	if (x_string-bounds.lbearing<axes_left)
+																	{
+																		x_string=axes_left+bounds.lbearing;
+																	}
+																	y_string=axes_top-descent;
+																	XDrawString(display,pixel_map,
+																		event_graphics_context_text,x_string,
+																		y_string,number_string,length);
+																	XDrawString(display,working_window,
+																		event_graphics_context,x_string,y_string,
+																		number_string,length);
+																}
+															} break;
+														}
 													}
-												} break;
-												default:
-												{
-													XtDispatchEvent(&xevent);
+													else
+													{
+														switch (moving)
+														{
+															case MOVING_DATUM_MARKER:
+															case MOVING_EVENT_MARKER:
+															case MOVING_POTENTIAL_TIME_MARKER:
+															{
+																if (marker!=initial_marker)
+																{
+																	/* clear the new marker */
+																	XDrawLine(display,pixel_map,
+																		marker_graphics_context,marker,axes_top,
+																		marker,axes_bottom);
+																	XDrawLine(display,working_window,
+																		marker_graphics_context,marker,axes_top,
+																		marker,axes_bottom);
+																	/* draw the old marker */
+																	XDrawLine(display,pixel_map,
+																		marker_graphics_context,initial_marker,
+																		axes_top,initial_marker,axes_bottom);
+																	XDrawLine(display,working_window,
+																		marker_graphics_context,initial_marker,
+																		axes_top,initial_marker,axes_bottom);
+																}
+																/* redraw the time */
+																if ((MOVING_EVENT_MARKER==moving)&&
+																	(event!=current_event))
+																{
+																	/* draw the new delay time */
+																	sprintf(number_string,"%d",
+																		(int)((float)(times[event->time]-
+																			times[datum])*1000./frequency));
+																	length=strlen(number_string);
+																	XTextExtents(font,number_string,length,
+																		&direction,&ascent,&descent,&bounds);
+																	x_string=SCALE_X(event->time,first_data,
+																		axes_left,x_scale)+
+																		(bounds.lbearing-bounds.rbearing+1)/2;
+																	if (x_string+bounds.rbearing>=
+																		axes_left+axes_width)
+																	{
+																		x_string=axes_left+axes_width-
+																			bounds.rbearing;
+																	}
+																	if (x_string-bounds.lbearing<axes_left)
+																	{
+																		x_string=axes_left+bounds.lbearing;
+																	}
+																	y_string=axes_top-descent;
+																}
+																XDrawString(display,pixel_map,
+																	marker_graphics_context_text,x_string,
+																	y_string,number_string,length);
+																XDrawString(display,working_window,
+																	marker_graphics_context,x_string,y_string,
+																	number_string,length);
+																if (MOVING_POTENTIAL_TIME_MARKER==moving)
+																{
+																	/* redraw the value */
+																	XDrawString(display,pixel_map,
+																		marker_graphics_context_text,x_string2,
+																		y_string2,number_string2,length2);
+																	XDrawString(display,working_window,
+																		marker_graphics_context,x_string2,
+																		y_string2,number_string2,length2);
+																}
+															} break;
+															case SCALING_Y_AXIS_NEGATIVE:
+															case SCALING_Y_AXIS_POSITIVE:
+															{
+																/* clear the horizontal line */
+																XDrawLine(display,pixel_map,
+																	marker_graphics_context,axes_left,marker,
+																	axes_right,marker);
+																XDrawLine(display,working_window,
+																	marker_graphics_context,axes_left,marker,
+																	axes_right,marker);
+															} break;
+														}
+													}
+													moving=MOVING_NONE;
 												}
+											} break;
+											default:
+											{
+												XtDispatchEvent(&xevent);
 											}
 										}
-										/* release the pointer */
-										XtUngrabPointer(trace_area_3->drawing_area,CurrentTime);
-									}
+									}									
+									XUndefineCursor(display,XtWindow(trace_area_3->drawing_area));
 									XFreeCursor(display,cursor);
 								}
 							}
@@ -10499,7 +10451,7 @@ should be done as a callback from the trace_window.
 #if defined (UNEMAP_USE_NODES)
 					analysis->highlight_rig_node,analysis->signal_drawing_package
 #else
-					 *(analysis->highlight)
+					*(analysis->highlight)
 #endif /* defined (UNEMAP_USE_NODES)*/
 					);
 			}
@@ -16575,14 +16527,13 @@ analysis work area.
 void analysis_select_auxiliary_drawi(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 26 December 1996
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 The callback for selecting a device in the analysis work area (signals drawing
 area, mapping drawing area, colour bar or auxiliary devices drawing area).
 ==============================================================================*/
 {
-	Boolean owner_events;
 	char value_string[11];
 	Cursor cursor;
 	Display *display;
@@ -16590,8 +16541,8 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 	float x_scale;
 	GC graphics_context;
 	int ascent,auxiliary_number,*auxiliary_x,*auxiliary_y,colour_bar_left,
-		colour_bar_right,descent,direction,keyboard_mode,marker_bottom,marker_top,
-		pointer_mode,pointer_sensitivity,pointer_x,pointer_y,previous_spectrum,
+		colour_bar_right,descent,direction,marker_bottom,marker_top,
+		pointer_sensitivity,pointer_x,pointer_y,previous_spectrum,
 		spectrum,spectrum_bound,spectrum_initial,spectrum_left,spectrum_right,
 		string_length,text_x,text_y,widget_spacing;
 	struct Analysis_work_area *analysis;
@@ -16604,7 +16555,7 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 	XEvent xevent;
 	XFontStruct *font;
 	XmDrawingAreaCallbackStruct *callback;
-	Window confine_to,working_window;
+	Window working_window;
 
 	ENTER(analysis_select_auxiliary_drawi);
 	USE_PARAMETER(widget);
@@ -16637,7 +16588,7 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 								x_scale=SCALE_FACTOR(map->maximum_value-map->minimum_value,
 									colour_bar_right-colour_bar_left);
 								/* check if the start or the end of the colour bar has been
-									selected */
+									 selected */
 								if ((pointer_y>=((map->colour_bar_top)-pointer_sensitivity))&&
 									(pointer_y<=((map->colour_bar_bottom)+pointer_sensitivity)))
 								{
@@ -16676,192 +16627,182 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 									}
 									if ((MOVING_LEFT==moving)||(MOVING_RIGHT==moving))
 									{
-										cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);
-										/* grab the pointer */
-										owner_events=True;
-										pointer_mode=GrabModeAsync;
-										keyboard_mode=GrabModeAsync;
-										confine_to=None;
-										if (GrabSuccess==XtGrabPointer(
-											mapping->colour_or_auxiliary_drawing_area,owner_events,
-											ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
-											pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
+										cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);								
+										/* set the cursor */
+										XDefineCursor(display,XtWindow(mapping->colour_or_auxiliary_drawing_area),cursor);
+										XmUpdateDisplay(mapping->colour_or_auxiliary_drawing_area);									
+										working_window=XtWindow(
+											mapping->colour_or_auxiliary_drawing_area);
+										/* move the pointer to the correct place */
+										XWarpPointer(display,None,None,0,0,0,0,
+											spectrum-pointer_x,0);
+										pointer_x=spectrum;
+										spectrum_initial=spectrum;
+										/* clear the marker */
+										marker_bottom=map->colour_bar_top;
+										marker_top=marker_bottom-widget_spacing;
+										graphics_context=(map->drawing_information->
+											graphics_context).spectrum_marker_colour;
+										font=map->drawing_information->font;
+										XDrawLine(display,drawing->pixel_map,graphics_context,
+											spectrum,marker_top,spectrum,marker_bottom);
+										switch (moving)
 										{
-											working_window=XtWindow(
-												mapping->colour_or_auxiliary_drawing_area);
-											/* move the pointer to the correct place */
-											XWarpPointer(display,None,None,0,0,0,0,
-												spectrum-pointer_x,0);
-											pointer_x=spectrum;
-											spectrum_initial=spectrum;
-											/* clear the marker */
-											marker_bottom=map->colour_bar_top;
-											marker_top=marker_bottom-widget_spacing;
-											graphics_context=(map->drawing_information->
-												graphics_context).spectrum_marker_colour;
-											font=map->drawing_information->font;
-											XDrawLine(display,drawing->pixel_map,graphics_context,
-												spectrum,marker_top,spectrum,marker_bottom);
-											switch (moving)
+											case MOVING_LEFT:
 											{
-												case MOVING_LEFT:
+												/* write the minimum value */
+												sprintf(value_string,"%.4g",map->contour_minimum);
+												string_length=strlen(value_string);
+												XTextExtents(font,value_string,string_length,
+													&direction,&ascent,&descent,&bounds);
+												text_x=spectrum_left-bounds.rbearing;
+												if (text_x+bounds.lbearing<colour_bar_left)
 												{
-													/* write the minimum value */
-													sprintf(value_string,"%.4g",map->contour_minimum);
-													string_length=strlen(value_string);
-													XTextExtents(font,value_string,string_length,
-														&direction,&ascent,&descent,&bounds);
-													text_x=spectrum_left-bounds.rbearing;
-													if (text_x+bounds.lbearing<colour_bar_left)
-													{
-														text_x=colour_bar_left-bounds.lbearing;
-													}
-													text_y=widget_spacing+ascent;
-												} break;
-												case MOVING_RIGHT:
-												{
-													/* write the maximum value */
-													sprintf(value_string,"%.4g",map->contour_maximum);
-													string_length=strlen(value_string);
-													XTextExtents(font,value_string,string_length,
-														&direction,&ascent,&descent,&bounds);
-													text_x=spectrum_right-bounds.lbearing;
-													if (text_x+bounds.rbearing>colour_bar_right)
-													{
-														text_x=colour_bar_right-bounds.rbearing;
-													}
-													text_y=widget_spacing+ascent;
-												} break;
-											}
-											XDrawString(display,drawing->pixel_map,
-												(map->drawing_information->graphics_context).
-												background_drawing_colour,text_x,text_y,value_string,
-												string_length);
-											XDrawString(display,working_window,
-												(map->drawing_information->graphics_context).
-												background_drawing_colour,text_x,text_y,value_string,
-												string_length);
-											/*???DB.  What about problem with text and GCs on
-												RS6000 ? */
-											while (moving!=MOVING_NONE)
+													text_x=colour_bar_left-bounds.lbearing;
+												}
+												text_y=widget_spacing+ascent;
+											} break;
+											case MOVING_RIGHT:
 											{
-												XNextEvent(display,&xevent);
-												switch (xevent.type)
+												/* write the maximum value */
+												sprintf(value_string,"%.4g",map->contour_maximum);
+												string_length=strlen(value_string);
+												XTextExtents(font,value_string,string_length,
+													&direction,&ascent,&descent,&bounds);
+												text_x=spectrum_right-bounds.lbearing;
+												if (text_x+bounds.rbearing>colour_bar_right)
 												{
-													case MotionNotify:
+													text_x=colour_bar_right-bounds.rbearing;
+												}
+												text_y=widget_spacing+ascent;
+											} break;
+										}
+										XDrawString(display,drawing->pixel_map,
+											(map->drawing_information->graphics_context).
+											background_drawing_colour,text_x,text_y,value_string,
+											string_length);
+										XDrawString(display,working_window,
+											(map->drawing_information->graphics_context).
+											background_drawing_colour,text_x,text_y,value_string,
+											string_length);
+										/*???DB.  What about problem with text and GCs on
+											RS6000 ? */
+										while (moving!=MOVING_NONE)
+										{
+											XNextEvent(display,&xevent);
+											switch (xevent.type)
+											{
+												case MotionNotify:
+												{
+													previous_spectrum=spectrum;
+													/* reduce the number of motion events displayed */
+													while (XCheckMaskEvent(display,ButtonMotionMask,
+														&xevent));
+													pointer_x=xevent.xmotion.x;
+													pointer_y=xevent.xmotion.y;
+													if (xevent.xmotion.window==working_window)
 													{
-														previous_spectrum=spectrum;
-														/* reduce the number of motion events displayed */
-														while (XCheckMaskEvent(display,ButtonMotionMask,
-															&xevent));
-														pointer_x=xevent.xmotion.x;
-														pointer_y=xevent.xmotion.y;
-														if (xevent.xmotion.window==working_window)
+														switch (moving)
 														{
-															switch (moving)
+															case MOVING_LEFT:
 															{
-																case MOVING_LEFT:
+																if (pointer_x<colour_bar_left)
 																{
-																	if (pointer_x<colour_bar_left)
-																	{
-																		spectrum=colour_bar_left;
-																	}
-																	else
-																	{
-																		if (pointer_x>spectrum_bound)
-																		{
-																			spectrum=spectrum_bound;
-																		}
-																		else
-																		{
-																			spectrum=pointer_x;
-																		}
-																	}
-																} break;
-																case MOVING_RIGHT:
-																{
-																	if (pointer_x>colour_bar_right)
-																	{
-																		spectrum=colour_bar_right;
-																	}
-																	else
-																	{
-																		if (pointer_x<spectrum_bound)
-																		{
-																			spectrum=spectrum_bound;
-																		}
-																		else
-																		{
-																			spectrum=pointer_x;
-																		}
-																	}
-																} break;
-															}
-															if (spectrum!=previous_spectrum)
-															{
-																/* redraw the marker */
-																XDrawLine(display,working_window,
-																	graphics_context,previous_spectrum,marker_top,
-																	previous_spectrum,marker_bottom);
-																XDrawLine(display,working_window,
-																	graphics_context,spectrum,marker_top,spectrum,
-																	marker_bottom);
-															}
-														}
-													} break;
-													case ButtonPress:
-													{
-														if (xevent.xbutton.button==working_button)
-														{
-															display_message(ERROR_MESSAGE,
-									"analysis_select_auxiliary_drawi.  Unexpected button press");
-															moving=MOVING_NONE;
-														}
-													} break;
-													case ButtonRelease:
-													{
-														if (xevent.xbutton.button==working_button)
-														{
-															if (xevent.xbutton.window==working_window)
-															{
-																if (spectrum!=spectrum_initial)
-																{
-																	/* recalculate value start or end of colour
-																		bar */
-																	switch (moving)
-																	{
-																		case MOVING_LEFT:
-																		{
-																			map->contour_minimum=(map->minimum_value)+
-																				(float)(spectrum-colour_bar_left)/
-																				x_scale;
-
-																		} break;
-																		case MOVING_RIGHT:
-																		{
-																			map->contour_maximum=(map->minimum_value)+
-																				(float)(spectrum-colour_bar_left)/
-																				x_scale;
-																		} break;
-																	}
-																		update_mapping_drawing_area(mapping,0);
+																	spectrum=colour_bar_left;
 																}
-															}
-															update_mapping_colour_or_auxili(mapping);
-															/* redraw the marker */
-															moving=MOVING_NONE;
+																else
+																{
+																	if (pointer_x>spectrum_bound)
+																	{
+																		spectrum=spectrum_bound;
+																	}
+																	else
+																	{
+																		spectrum=pointer_x;
+																	}
+																}
+															} break;
+															case MOVING_RIGHT:
+															{
+																if (pointer_x>colour_bar_right)
+																{
+																	spectrum=colour_bar_right;
+																}
+																else
+																{
+																	if (pointer_x<spectrum_bound)
+																	{
+																		spectrum=spectrum_bound;
+																	}
+																	else
+																	{
+																		spectrum=pointer_x;
+																	}
+																}
+															} break;
 														}
-													} break;
-													default:
-													{
-														XtDispatchEvent(&xevent);
+														if (spectrum!=previous_spectrum)
+														{
+																/* redraw the marker */
+															XDrawLine(display,working_window,
+																graphics_context,previous_spectrum,marker_top,
+																previous_spectrum,marker_bottom);
+															XDrawLine(display,working_window,
+																graphics_context,spectrum,marker_top,spectrum,
+																marker_bottom);
+														}
 													}
+												} break;
+												case ButtonPress:
+												{
+													if (xevent.xbutton.button==working_button)
+													{
+														display_message(ERROR_MESSAGE,
+															"analysis_select_auxiliary_drawi.  Unexpected button press");
+														moving=MOVING_NONE;
+													}
+												} break;
+												case ButtonRelease:
+												{
+													if (xevent.xbutton.button==working_button)
+													{
+														if (xevent.xbutton.window==working_window)
+														{
+															if (spectrum!=spectrum_initial)
+															{
+																/* recalculate value start or end of colour
+																	 bar */
+																switch (moving)
+																{
+																	case MOVING_LEFT:
+																	{
+																		map->contour_minimum=(map->minimum_value)+
+																			(float)(spectrum-colour_bar_left)/
+																			x_scale;
+
+																	} break;
+																	case MOVING_RIGHT:
+																	{
+																		map->contour_maximum=(map->minimum_value)+
+																			(float)(spectrum-colour_bar_left)/
+																			x_scale;
+																	} break;
+																}
+																update_mapping_drawing_area(mapping,0);
+															}
+														}
+														update_mapping_colour_or_auxili(mapping);
+														/* redraw the marker */
+														moving=MOVING_NONE;
+													}
+												} break;
+												default:
+												{
+													XtDispatchEvent(&xevent);
 												}
 											}
-											/* release the pointer */
-											XtUngrabPointer(
-												mapping->colour_or_auxiliary_drawing_area,CurrentTime);
-										}
+										}									
+										XUndefineCursor(display,XtWindow(mapping->colour_or_auxiliary_drawing_area));
 										XFreeCursor(display,cursor);
 									}
 								}
@@ -16876,9 +16817,9 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 									auxiliary_y=map->auxiliary_y;
 									while ((auxiliary_number<map->number_of_auxiliary)&&
 										((pointer_x< *auxiliary_x-pointer_sensitivity)||
-										(pointer_x> *auxiliary_x+pointer_sensitivity)||
-										(pointer_y< *auxiliary_y-pointer_sensitivity)||
-										(pointer_y> *auxiliary_y+pointer_sensitivity)))
+											(pointer_x> *auxiliary_x+pointer_sensitivity)||
+											(pointer_y< *auxiliary_y-pointer_sensitivity)||
+											(pointer_y> *auxiliary_y+pointer_sensitivity)))
 									{
 										auxiliary_number++;
 										auxiliary_x++;

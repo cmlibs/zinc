@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : acquisition_window.c
 
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -613,14 +613,13 @@ enum Moving_status
 static void select_acquisition_drawing_area(Widget widget,
 	XtPointer acquisition_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 The callback for modifying the acquisition interval in the acquisition drawing
 area.
 ==============================================================================*/
-{
-	Boolean owner_events;
+{	
 	char number_string[7];
 	Cursor cursor;
 	Display *display;
@@ -628,14 +627,14 @@ area.
 	float frequency,time;
 	GC acquisition_interval_colour,acquisition_interval_colour_tex;
 	int acquire,ascent,axes_left,axes_right,descent,direction,end,height,
-		keyboard_mode,pointer_mode,pointer_sensitivity,pointer_x,pointer_y,
+		pointer_sensitivity,pointer_x,pointer_y,
 		previous_acquire,previous_end,string_length,text_x,text_y,widget_spacing,
 		width;
 	Pixmap pixel_map;
 	struct Acquisition_window *acquisition;
 	struct Drawing_2d *drawing;
 	unsigned int working_button;
-	Window confine_to,working_window;
+	Window working_window;
 	XButtonEvent *button_event;
 	XCharStruct bounds;
 	XEvent xevent;
@@ -697,304 +696,214 @@ area.
 					}
 					if (MOVING_NONE!=moving)
 					{
-						cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);
-						/* grab the pointer */
-						owner_events=True;
-						pointer_mode=GrabModeAsync;
-						keyboard_mode=GrabModeAsync;
-						confine_to=None;
-						if (GrabSuccess==XtGrabPointer(acquisition->drawing_area,
-							owner_events,ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
-							pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
+						cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);					
+						/* set the cursor */
+						XDefineCursor(display,XtWindow(acquisition->drawing_area),cursor);
+						XmUpdateDisplay(acquisition->drawing_area);
+						width=drawing->width;
+						height=drawing->height;
+						axes_left=widget_spacing;
+						axes_right=width-widget_spacing;
+						working_window=XtWindow(acquisition->drawing_area);
+						pixel_map=acquisition->drawing->pixel_map;
+						/* clear the time for the acquire point */
+						time=(float)(acquisition->acquire_time-acquisition->start_time)/
+							frequency;
+						sprintf(number_string,"%.3f",time);
+						string_length=strlen(number_string);
+						XTextExtents(font,number_string,string_length,&direction,&ascent,
+							&descent,&bounds);
+						text_x=acquire-(bounds.rbearing+bounds.lbearing)/2;
+						if (text_x+bounds.rbearing>width-widget_spacing)
 						{
-							width=drawing->width;
-							height=drawing->height;
-							axes_left=widget_spacing;
-							axes_right=width-widget_spacing;
-							working_window=XtWindow(acquisition->drawing_area);
-							pixel_map=acquisition->drawing->pixel_map;
-							/* clear the time for the acquire point */
-							time=(float)(acquisition->acquire_time-acquisition->start_time)/
-								frequency;
-							sprintf(number_string,"%.3f",time);
-							string_length=strlen(number_string);
-							XTextExtents(font,number_string,string_length,&direction,&ascent,
-								&descent,&bounds);
-							text_x=acquire-(bounds.rbearing+bounds.lbearing)/2;
-							if (text_x+bounds.rbearing>width-widget_spacing)
+							text_x=width-widget_spacing-bounds.rbearing;
+						}
+						if (text_x+bounds.lbearing<widget_spacing)
+						{
+							text_x=widget_spacing-bounds.lbearing;
+						}
+						text_y=height-widget_spacing-descent;
+						XDrawString(display,pixel_map,acquisition_interval_colour_tex,
+							text_x,text_y,number_string,string_length);
+						XDrawString(display,working_window,acquisition_interval_colour,
+							text_x,text_y,number_string,string_length);
+						/* clear the time for the end point */
+						time=(float)(acquisition->end_time-acquisition->start_time)/
+							frequency;
+						sprintf(number_string,"%.3f",time);
+						string_length=strlen(number_string);
+						XTextExtents(font,number_string,string_length,&direction,&ascent,
+							&descent,&bounds);
+						text_x=end-(bounds.rbearing+bounds.lbearing)/2;
+						if (text_x+bounds.rbearing>width-widget_spacing)
+						{
+							text_x=width-widget_spacing-bounds.rbearing;
+						}
+						if (text_x+bounds.lbearing<widget_spacing)
+						{
+							text_x=widget_spacing-bounds.lbearing;
+						}
+						text_y=widget_spacing+ascent;
+						XDrawString(display,pixel_map,acquisition_interval_colour_tex,
+							text_x,text_y,number_string,string_length);
+						XDrawString(display,working_window,acquisition_interval_colour,
+							text_x,text_y,number_string,string_length);
+						while (moving!=MOVING_NONE)
+						{
+							XNextEvent(display,&xevent);
+							switch (xevent.type)
 							{
-								text_x=width-widget_spacing-bounds.rbearing;
-							}
-							if (text_x+bounds.lbearing<widget_spacing)
-							{
-								text_x=widget_spacing-bounds.lbearing;
-							}
-							text_y=height-widget_spacing-descent;
-							XDrawString(display,pixel_map,acquisition_interval_colour_tex,
-								text_x,text_y,number_string,string_length);
-							XDrawString(display,working_window,acquisition_interval_colour,
-								text_x,text_y,number_string,string_length);
-							/* clear the time for the end point */
-							time=(float)(acquisition->end_time-acquisition->start_time)/
-								frequency;
-							sprintf(number_string,"%.3f",time);
-							string_length=strlen(number_string);
-							XTextExtents(font,number_string,string_length,&direction,&ascent,
-								&descent,&bounds);
-							text_x=end-(bounds.rbearing+bounds.lbearing)/2;
-							if (text_x+bounds.rbearing>width-widget_spacing)
-							{
-								text_x=width-widget_spacing-bounds.rbearing;
-							}
-							if (text_x+bounds.lbearing<widget_spacing)
-							{
-								text_x=widget_spacing-bounds.lbearing;
-							}
-							text_y=widget_spacing+ascent;
-							XDrawString(display,pixel_map,acquisition_interval_colour_tex,
-								text_x,text_y,number_string,string_length);
-							XDrawString(display,working_window,acquisition_interval_colour,
-								text_x,text_y,number_string,string_length);
-							while (moving!=MOVING_NONE)
-							{
-								XNextEvent(display,&xevent);
-								switch (xevent.type)
+								case MotionNotify:
 								{
-									case MotionNotify:
+									previous_acquire=acquire;
+									previous_end=end;
+									/* reduce the number of motion events displayed */
+									while (XCheckMaskEvent(display,ButtonMotionMask,&xevent));
+									pointer_x=xevent.xmotion.x;
+									pointer_y=xevent.xmotion.y;
+									if (xevent.xmotion.window==working_window)
 									{
-										previous_acquire=acquire;
-										previous_end=end;
-										/* reduce the number of motion events displayed */
-										while (XCheckMaskEvent(display,ButtonMotionMask,&xevent));
-										pointer_x=xevent.xmotion.x;
-										pointer_y=xevent.xmotion.y;
-										if (xevent.xmotion.window==working_window)
+										switch (moving)
 										{
-											switch (moving)
+											case MOVING_END:
 											{
-												case MOVING_END:
+												if (pointer_x>axes_right)
 												{
-													if (pointer_x>axes_right)
-													{
-														end=axes_right;
-													}
-													else
-													{
-														if (pointer_x<axes_left)
-														{
-															end=axes_left;
-														}
-														else
-														{
-															end=pointer_x;
-														}
-													}
-													if (end<acquire)
-													{
-														acquire=end;
-													}
-												} break;
-												case MOVING_ACQUIRE:
-												{
-													if (pointer_x>axes_right)
-													{
-														acquire=axes_right;
-													}
-													else
-													{
-														if (pointer_x<axes_left)
-														{
-															acquire=axes_left;
-														}
-														else
-														{
-															acquire=pointer_x;
-														}
-													}
-													if (end<acquire)
-													{
-														end=acquire;
-													}
-												} break;
-											}
-											if (acquire!=previous_acquire)
-											{
-												/* clear the previous acquire marker */
-												XDrawLine(display,pixel_map,acquisition_interval_colour,
-													previous_acquire,(acquisition->marker_centre)+1,
-													previous_acquire,acquisition->marker_bottom);
-												XDrawLine(display,working_window,
-													acquisition_interval_colour,
-													previous_acquire,(acquisition->marker_centre)+1,
-													previous_acquire,acquisition->marker_bottom);
-												/* draw the new acquire marker */
-												XDrawLine(display,pixel_map,acquisition_interval_colour,
-													acquire,(acquisition->marker_centre)+1,
-													acquire,acquisition->marker_bottom);
-												XDrawLine(display,working_window,
-													acquisition_interval_colour,
-													acquire,(acquisition->marker_centre)+1,
-													acquire,acquisition->marker_bottom);
-											}
-											if (end!=previous_end)
-											{
-												/* clear the previous end marker */
-												XDrawLine(display,pixel_map,acquisition_interval_colour,
-													previous_end,acquisition->marker_top,
-													previous_end,(acquisition->marker_centre)-1);
-												XDrawLine(display,working_window,
-													acquisition_interval_colour,
-													previous_end,acquisition->marker_top,
-													previous_end,(acquisition->marker_centre)-1);
-												/* redraw the interval */
-												if (end<previous_end)
-												{
-													XDrawLine(display,pixel_map,
-														acquisition_interval_colour,
-														end+1,acquisition->marker_centre,
-														previous_end,acquisition->marker_centre);
-													XDrawLine(display,working_window,
-														acquisition_interval_colour,
-														end+1,acquisition->marker_centre,
-														previous_end,acquisition->marker_centre);
+													end=axes_right;
 												}
 												else
 												{
-													XDrawLine(display,pixel_map,
-														acquisition_interval_colour,
-														previous_end+1,acquisition->marker_centre,
-														end,acquisition->marker_centre);
-													XDrawLine(display,working_window,
-														acquisition_interval_colour,
-														previous_end+1,acquisition->marker_centre,
-														end,acquisition->marker_centre);
+													if (pointer_x<axes_left)
+													{
+														end=axes_left;
+													}
+													else
+													{
+														end=pointer_x;
+													}
 												}
-												/* draw the new end marker */
-												XDrawLine(display,pixel_map,acquisition_interval_colour,
-													end,acquisition->marker_top,
-													end,(acquisition->marker_centre)-1);
+												if (end<acquire)
+												{
+													acquire=end;
+												}
+											} break;
+											case MOVING_ACQUIRE:
+											{
+												if (pointer_x>axes_right)
+												{
+													acquire=axes_right;
+												}
+												else
+												{
+													if (pointer_x<axes_left)
+													{
+														acquire=axes_left;
+													}
+													else
+													{
+														acquire=pointer_x;
+													}
+												}
+												if (end<acquire)
+												{
+													end=acquire;
+												}
+											} break;
+										}
+										if (acquire!=previous_acquire)
+										{
+											/* clear the previous acquire marker */
+											XDrawLine(display,pixel_map,acquisition_interval_colour,
+												previous_acquire,(acquisition->marker_centre)+1,
+												previous_acquire,acquisition->marker_bottom);
+											XDrawLine(display,working_window,
+												acquisition_interval_colour,
+												previous_acquire,(acquisition->marker_centre)+1,
+												previous_acquire,acquisition->marker_bottom);
+											/* draw the new acquire marker */
+											XDrawLine(display,pixel_map,acquisition_interval_colour,
+												acquire,(acquisition->marker_centre)+1,
+												acquire,acquisition->marker_bottom);
+											XDrawLine(display,working_window,
+												acquisition_interval_colour,
+												acquire,(acquisition->marker_centre)+1,
+												acquire,acquisition->marker_bottom);
+										}
+										if (end!=previous_end)
+										{
+											/* clear the previous end marker */
+											XDrawLine(display,pixel_map,acquisition_interval_colour,
+												previous_end,acquisition->marker_top,
+												previous_end,(acquisition->marker_centre)-1);
+											XDrawLine(display,working_window,
+												acquisition_interval_colour,
+												previous_end,acquisition->marker_top,
+												previous_end,(acquisition->marker_centre)-1);
+											/* redraw the interval */
+											if (end<previous_end)
+											{
+												XDrawLine(display,pixel_map,
+													acquisition_interval_colour,
+													end+1,acquisition->marker_centre,
+													previous_end,acquisition->marker_centre);
 												XDrawLine(display,working_window,
 													acquisition_interval_colour,
-													end,acquisition->marker_top,
-													end,(acquisition->marker_centre)-1);
-											}
-										}
-									} break;
-									case ButtonPress:
-									{
-										if (xevent.xbutton.button==working_button)
-										{
-											display_message(ERROR_MESSAGE,
-									"select_acquisition_drawing_area.  Unexpected button press");
-											moving=MOVING_NONE;
-										}
-									} break;
-									case ButtonRelease:
-									{
-										if (xevent.xbutton.button==working_button)
-										{
-											if (xevent.xbutton.window==working_window)
-											{
-												if (acquire!=acquisition->acquire_point)
-												{
-													acquisition->acquire_time=SCALE_X(acquire,
-														acquisition->start_point,acquisition->start_time,
-														SCALE_FACTOR(axes_right-axes_left,
-														MAXIMUM_NUMBER_OF_SAMPLES));
-													acquisition->acquire_point=
-														SCALE_X(acquisition->acquire_time,
-														acquisition->start_time,acquisition->start_point,
-														SCALE_FACTOR(MAXIMUM_NUMBER_OF_SAMPLES,
-														axes_right-axes_left));
-													if (acquire!=acquisition->acquire_point)
-													{
-														previous_acquire=acquire;
-														acquire=acquisition->acquire_point;
-														/* clear the previous acquire marker */
-														XDrawLine(display,pixel_map,
-															acquisition_interval_colour,
-															previous_acquire,(acquisition->marker_centre)+1,
-															previous_acquire,acquisition->marker_bottom);
-														XDrawLine(display,working_window,
-															acquisition_interval_colour,
-															previous_acquire,(acquisition->marker_centre)+1,
-															previous_acquire,acquisition->marker_bottom);
-														/* draw the new acquire marker */
-														XDrawLine(display,pixel_map,
-															acquisition_interval_colour,
-															acquire,(acquisition->marker_centre)+1,
-															acquire,acquisition->marker_bottom);
-														XDrawLine(display,working_window,
-															acquisition_interval_colour,
-															acquire,(acquisition->marker_centre)+1,
-															acquire,acquisition->marker_bottom);
-													}
-												}
-												if (end!=acquisition->end_point)
-												{
-													acquisition->end_time=SCALE_X(end,
-														acquisition->start_point,acquisition->start_time,
-														SCALE_FACTOR(axes_right-axes_left,
-														MAXIMUM_NUMBER_OF_SAMPLES));
-													acquisition->end_point=SCALE_X(acquisition->end_time,
-														acquisition->start_time,acquisition->start_point,
-														SCALE_FACTOR(MAXIMUM_NUMBER_OF_SAMPLES,
-														axes_right-axes_left));
-													if (end!=acquisition->end_point)
-													{
-														previous_end=end;
-														end=acquisition->end_point;
-														/* clear the previous end marker */
-														XDrawLine(display,pixel_map,
-															acquisition_interval_colour,
-															previous_end,acquisition->marker_top,
-															previous_end,(acquisition->marker_centre)-1);
-														XDrawLine(display,working_window,
-															acquisition_interval_colour,
-															previous_end,acquisition->marker_top,
-															previous_end,(acquisition->marker_centre)-1);
-														/* redraw the interval */
-														if (end<previous_end)
-														{
-															XDrawLine(display,pixel_map,
-																acquisition_interval_colour,
-																end+1,acquisition->marker_centre,
-																previous_end,acquisition->marker_centre);
-															XDrawLine(display,working_window,
-																acquisition_interval_colour,
-																end+1,acquisition->marker_centre,
-																previous_end,acquisition->marker_centre);
-														}
-														else
-														{
-															XDrawLine(display,pixel_map,
-																acquisition_interval_colour,
-																previous_end+1,acquisition->marker_centre,
-																end,acquisition->marker_centre);
-															XDrawLine(display,working_window,
-																acquisition_interval_colour,
-																previous_end+1,acquisition->marker_centre,
-																end,acquisition->marker_centre);
-														}
-														/* draw the new end marker */
-														XDrawLine(display,pixel_map,
-															acquisition_interval_colour,
-															end,acquisition->marker_top,
-															end,(acquisition->marker_centre)-1);
-														XDrawLine(display,working_window,
-															acquisition_interval_colour,
-															end,acquisition->marker_top,
-															end,(acquisition->marker_centre)-1);
-													}
-												}
+													end+1,acquisition->marker_centre,
+													previous_end,acquisition->marker_centre);
 											}
 											else
 											{
+												XDrawLine(display,pixel_map,
+													acquisition_interval_colour,
+													previous_end+1,acquisition->marker_centre,
+													end,acquisition->marker_centre);
+												XDrawLine(display,working_window,
+													acquisition_interval_colour,
+													previous_end+1,acquisition->marker_centre,
+													end,acquisition->marker_centre);
+											}
+											/* draw the new end marker */
+											XDrawLine(display,pixel_map,acquisition_interval_colour,
+												end,acquisition->marker_top,
+												end,(acquisition->marker_centre)-1);
+											XDrawLine(display,working_window,
+												acquisition_interval_colour,
+												end,acquisition->marker_top,
+												end,(acquisition->marker_centre)-1);
+										}
+									}
+								} break;
+								case ButtonPress:
+								{
+									if (xevent.xbutton.button==working_button)
+									{
+										display_message(ERROR_MESSAGE,
+											"select_acquisition_drawing_area.  Unexpected button press");
+										moving=MOVING_NONE;
+									}
+								} break;
+								case ButtonRelease:
+								{
+									if (xevent.xbutton.button==working_button)
+									{
+										if (xevent.xbutton.window==working_window)
+										{
+											if (acquire!=acquisition->acquire_point)
+											{
+												acquisition->acquire_time=SCALE_X(acquire,
+													acquisition->start_point,acquisition->start_time,
+													SCALE_FACTOR(axes_right-axes_left,
+														MAXIMUM_NUMBER_OF_SAMPLES));
+												acquisition->acquire_point=
+													SCALE_X(acquisition->acquire_time,
+														acquisition->start_time,acquisition->start_point,
+														SCALE_FACTOR(MAXIMUM_NUMBER_OF_SAMPLES,
+															axes_right-axes_left));
 												if (acquire!=acquisition->acquire_point)
 												{
 													previous_acquire=acquire;
 													acquire=acquisition->acquire_point;
-													/* clear the new acquire marker */
+													/* clear the previous acquire marker */
 													XDrawLine(display,pixel_map,
 														acquisition_interval_colour,
 														previous_acquire,(acquisition->marker_centre)+1,
@@ -1003,7 +912,7 @@ area.
 														acquisition_interval_colour,
 														previous_acquire,(acquisition->marker_centre)+1,
 														previous_acquire,acquisition->marker_bottom);
-													/* draw the old acquire marker */
+													/* draw the new acquire marker */
 													XDrawLine(display,pixel_map,
 														acquisition_interval_colour,
 														acquire,(acquisition->marker_centre)+1,
@@ -1013,11 +922,22 @@ area.
 														acquire,(acquisition->marker_centre)+1,
 														acquire,acquisition->marker_bottom);
 												}
+											}
+											if (end!=acquisition->end_point)
+											{
+												acquisition->end_time=SCALE_X(end,
+													acquisition->start_point,acquisition->start_time,
+													SCALE_FACTOR(axes_right-axes_left,
+														MAXIMUM_NUMBER_OF_SAMPLES));
+												acquisition->end_point=SCALE_X(acquisition->end_time,
+													acquisition->start_time,acquisition->start_point,
+													SCALE_FACTOR(MAXIMUM_NUMBER_OF_SAMPLES,
+														axes_right-axes_left));
 												if (end!=acquisition->end_point)
 												{
 													previous_end=end;
 													end=acquisition->end_point;
-													/* clear the new end marker */
+													/* clear the previous end marker */
 													XDrawLine(display,pixel_map,
 														acquisition_interval_colour,
 														previous_end,acquisition->marker_top,
@@ -1049,7 +969,7 @@ area.
 															previous_end+1,acquisition->marker_centre,
 															end,acquisition->marker_centre);
 													}
-													/* draw the old end marker */
+													/* draw the new end marker */
 													XDrawLine(display,pixel_map,
 														acquisition_interval_colour,
 														end,acquisition->marker_top,
@@ -1060,65 +980,136 @@ area.
 														end,(acquisition->marker_centre)-1);
 												}
 											}
-											/* write the acquire time */
-											time=(float)(acquisition->acquire_time-
-												acquisition->start_time)/frequency;
-											sprintf(number_string,"%.3f",time);
-											string_length=strlen(number_string);
-											XTextExtents(font,number_string,string_length,&direction,
-												&ascent,&descent,&bounds);
-											text_x=acquire-(bounds.rbearing+bounds.lbearing)/2;
-											if (text_x+bounds.rbearing>width-widget_spacing)
-											{
-												text_x=width-widget_spacing-bounds.rbearing;
-											}
-											if (text_x+bounds.lbearing<widget_spacing)
-											{
-												text_x=widget_spacing-bounds.lbearing;
-											}
-											text_y=height-widget_spacing-descent;
-											XDrawString(display,pixel_map,
-												acquisition_interval_colour_tex,
-												text_x,text_y,number_string,string_length);
-											XDrawString(display,working_window,
-												acquisition_interval_colour,text_x,
-												text_y,number_string,string_length);
-											/* write the end time */
-											time=(float)(acquisition->end_time-
-												acquisition->start_time)/frequency;
-											sprintf(number_string,"%.3f",time);
-											string_length=strlen(number_string);
-											XTextExtents(font,number_string,string_length,
-												&direction,&ascent,&descent,&bounds);
-											text_x=end-(bounds.rbearing+bounds.lbearing)/2;
-											width=drawing->width;
-											if (text_x+bounds.rbearing>width-widget_spacing)
-											{
-												text_x=width-widget_spacing-bounds.rbearing;
-											}
-											if (text_x+bounds.lbearing<widget_spacing)
-											{
-												text_x=widget_spacing-bounds.lbearing;
-											}
-											text_y=widget_spacing+ascent;
-											XDrawString(display,pixel_map,
-												acquisition_interval_colour_tex,
-												text_x,text_y,number_string,string_length);
-											XDrawString(display,working_window,
-												acquisition_interval_colour,
-												text_x,text_y,number_string,string_length);
-											moving=MOVING_NONE;
 										}
-									} break;
-									default:
-									{
-										XtDispatchEvent(&xevent);
+										else
+										{
+											if (acquire!=acquisition->acquire_point)
+											{
+												previous_acquire=acquire;
+												acquire=acquisition->acquire_point;
+												/* clear the new acquire marker */
+												XDrawLine(display,pixel_map,
+													acquisition_interval_colour,
+													previous_acquire,(acquisition->marker_centre)+1,
+													previous_acquire,acquisition->marker_bottom);
+												XDrawLine(display,working_window,
+													acquisition_interval_colour,
+													previous_acquire,(acquisition->marker_centre)+1,
+													previous_acquire,acquisition->marker_bottom);
+												/* draw the old acquire marker */
+												XDrawLine(display,pixel_map,
+													acquisition_interval_colour,
+													acquire,(acquisition->marker_centre)+1,
+													acquire,acquisition->marker_bottom);
+												XDrawLine(display,working_window,
+													acquisition_interval_colour,
+													acquire,(acquisition->marker_centre)+1,
+													acquire,acquisition->marker_bottom);
+											}
+											if (end!=acquisition->end_point)
+											{
+												previous_end=end;
+												end=acquisition->end_point;
+												/* clear the new end marker */
+												XDrawLine(display,pixel_map,
+													acquisition_interval_colour,
+													previous_end,acquisition->marker_top,
+													previous_end,(acquisition->marker_centre)-1);
+												XDrawLine(display,working_window,
+													acquisition_interval_colour,
+													previous_end,acquisition->marker_top,
+													previous_end,(acquisition->marker_centre)-1);
+												/* redraw the interval */
+												if (end<previous_end)
+												{
+													XDrawLine(display,pixel_map,
+														acquisition_interval_colour,
+														end+1,acquisition->marker_centre,
+														previous_end,acquisition->marker_centre);
+													XDrawLine(display,working_window,
+														acquisition_interval_colour,
+														end+1,acquisition->marker_centre,
+														previous_end,acquisition->marker_centre);
+												}
+												else
+												{
+													XDrawLine(display,pixel_map,
+														acquisition_interval_colour,
+														previous_end+1,acquisition->marker_centre,
+														end,acquisition->marker_centre);
+													XDrawLine(display,working_window,
+														acquisition_interval_colour,
+														previous_end+1,acquisition->marker_centre,
+														end,acquisition->marker_centre);
+												}
+												/* draw the old end marker */
+												XDrawLine(display,pixel_map,
+													acquisition_interval_colour,
+													end,acquisition->marker_top,
+													end,(acquisition->marker_centre)-1);
+												XDrawLine(display,working_window,
+													acquisition_interval_colour,
+													end,acquisition->marker_top,
+													end,(acquisition->marker_centre)-1);
+											}
+										}
+										/* write the acquire time */
+										time=(float)(acquisition->acquire_time-
+											acquisition->start_time)/frequency;
+										sprintf(number_string,"%.3f",time);
+										string_length=strlen(number_string);
+										XTextExtents(font,number_string,string_length,&direction,
+											&ascent,&descent,&bounds);
+										text_x=acquire-(bounds.rbearing+bounds.lbearing)/2;
+										if (text_x+bounds.rbearing>width-widget_spacing)
+										{
+											text_x=width-widget_spacing-bounds.rbearing;
+										}
+										if (text_x+bounds.lbearing<widget_spacing)
+										{
+											text_x=widget_spacing-bounds.lbearing;
+										}
+										text_y=height-widget_spacing-descent;
+										XDrawString(display,pixel_map,
+											acquisition_interval_colour_tex,
+											text_x,text_y,number_string,string_length);
+										XDrawString(display,working_window,
+											acquisition_interval_colour,text_x,
+											text_y,number_string,string_length);
+										/* write the end time */
+										time=(float)(acquisition->end_time-
+											acquisition->start_time)/frequency;
+										sprintf(number_string,"%.3f",time);
+										string_length=strlen(number_string);
+										XTextExtents(font,number_string,string_length,
+											&direction,&ascent,&descent,&bounds);
+										text_x=end-(bounds.rbearing+bounds.lbearing)/2;
+										width=drawing->width;
+										if (text_x+bounds.rbearing>width-widget_spacing)
+										{
+											text_x=width-widget_spacing-bounds.rbearing;
+										}
+										if (text_x+bounds.lbearing<widget_spacing)
+										{
+											text_x=widget_spacing-bounds.lbearing;
+										}
+										text_y=widget_spacing+ascent;
+										XDrawString(display,pixel_map,
+											acquisition_interval_colour_tex,
+											text_x,text_y,number_string,string_length);
+										XDrawString(display,working_window,
+											acquisition_interval_colour,
+											text_x,text_y,number_string,string_length);
+										moving=MOVING_NONE;
 									}
+								} break;
+								default:
+								{
+									XtDispatchEvent(&xevent);
 								}
 							}
-							/* release the pointer */
-							XtUngrabPointer(acquisition->drawing_area,CurrentTime);
-						}
+						}						
+						XUndefineCursor(display,XtWindow(acquisition->drawing_area));
 						XFreeCursor(display,cursor);
 					}
 				}
