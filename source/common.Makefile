@@ -162,7 +162,7 @@ ifeq ($(SYSNAME),Linux)
       # LINK = egcs -shared -L/usr/X11R6/lib -v */
       # LINK = gcc -L/usr/X11R6/lib -v */
    else # STATIC_LINK) != true
-      LINK = gcc -static -L/usr/X11R6/lib
+      LINK = gcc -static
       # LINK = g++ --no-demangle -rdynamic -L/usr/X11R6/lib*/
    endif # STATIC_LINK) != true
    ifneq ($(DEBUG),true)

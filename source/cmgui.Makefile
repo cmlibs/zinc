@@ -432,13 +432,14 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
          USER_INTERFACE_INC += -I/usr/local/Mesa-5.0/include
       endif
       USER_INTERFACE_INC += -I/usr/X11R6/include
+      X_LIB = /usr/X11R6/lib
+      USER_INTERFACE_LIB += -L$(X_LIB)
       #On Linux I am statically linking many of the libraries always to
       #reduce the version dependencies.
 
-	   #Mandrake 8.2 static libs are incompatible, this works around it by
+      #Mandrake 8.2 static libs are incompatible, this works around it by
       #comparing the size of the symbols and forcing Xmu to preload its
       #version if they differ in size.  Older greps don't have -o option.
-      X_LIB = /usr/X11R6/lib
       Xm_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXm.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
       Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
       ifneq ($(Xm_XeditRes),)
@@ -465,6 +466,10 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
    endif # SYSNAME == Linux
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
+   ifeq ($(SYSNAME),Linux)
+      X_LIB = /usr/X11R6/lib
+      USER_INTERFACE_LIB += -L$(X_LIB)
+   endif
    ifneq ($(SYSNAME),win32)
       #USE_GTK2 = true
       ifeq ($(USE_GTK2),true)
@@ -476,10 +481,7 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
          endif # $(STATIC_LINK) != true
       else # $(USE_GTK2) == true
          USER_INTERFACE_INC +=  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
-         USER_INTERFACE_LIB +=  -lgtkgl -L/usr/local/Mesa-5.0/lib -lGLU -lGL -lgtk -lgdk -lgmodule -lglib -ldl -lXext -lX11
-         ifeq ($(SYSNAME:IRIX%=),)
-            USER_INTERFACE_LIB += -lXi
-         endif # SYSNAME == IRIX%=
+         USER_INTERFACE_LIB +=  -lgtkgl -L/usr/local/Mesa-5.0/lib -lGLU -lGL -lgtk -lgdk -lgmodule -lglib -ldl -lXi -lXext -lX11
       endif # $(USE_GTK2) == true
    else # $(SYSNAME) != win32
       # SAB It seems that ld currently requires (version 2.13.90 20021005) the 
