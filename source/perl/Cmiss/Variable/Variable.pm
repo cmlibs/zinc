@@ -83,6 +83,57 @@ sub string_convert
 	get_type(shift);
 }
 
+#???DB.  Replaced with composition computed variable
+#sub set_source
+#{
+#	my ($self, %args) = @_;
+#	my ($independent,$source);
+
+#	$independent=$args{independent};
+#	if ($independent)
+#	{
+#		$source=$args{source};
+#		#if no source then are clearing the setting
+#		if ($source)
+#		{
+#			set_source_variable($self,$independent,$source);
+#		}
+#		else
+#		{
+#			set_source_variable($self,$independent);
+#		}
+#	}
+#	else
+#	{
+#		croak "Missing independent";
+#	}
+#}
+
+sub evaluate_derivative
+{
+	my ($self, %args) = @_;
+	my ($independent,$values);
+
+	$independent=$args{independent};
+	if ($independent)
+	{
+		$values=$args{values};
+		#if no source then are clearing the setting
+		if ($values)
+		{
+			evaluate_derivative_variable($self,$independent,$values);
+		}
+		else
+		{
+			evaluate_derivative_variable($self,$independent);
+		}
+	}
+	else
+	{
+		croak "Missing independent";
+	}
+}
+
 require XSLoader;
 XSLoader::load('Cmiss::Variable', $VERSION);
 

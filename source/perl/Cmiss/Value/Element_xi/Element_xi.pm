@@ -61,19 +61,24 @@ Cmiss::require_library('cmgui_computed_variable');
 sub new
 {
 	my ($class, %arg) = @_;
-	my ($element,$xi,$objref);
+	my ($dimension,$element,$xi,$objref);
 
+	$dimension=$arg{dimension};
+	if (!$dimension)
+	{
+		$dimension=0;
+	}
 	$element=$arg{element};
 	if ($element)
 	{
 		$xi=$arg{xi};
 		if ($xi)
 		{
-			$objref=create($element, $xi);
+			$objref=create($dimension, $element, $xi);
 		}
 		else
 		{
-			$objref=create($element);
+			$objref=create($dimension, $element);
 		}
 	}
 	else

@@ -63,6 +63,7 @@ get_type(Cmiss::Variable cmiss_variable)
 Cmiss::Value
 evaluate(Cmiss::Variable variable,...)
 	PPCODE:
+		RETVAL=(Cmiss_value_id)NULL;
 		if (1==items%2)
 		{
 			int i;
@@ -93,6 +94,7 @@ evaluate(Cmiss::Variable variable,...)
 					else
 					{
 						DESTROY_LIST(Cmiss_variable_value)(&values);
+						Perl_croak(aTHX_ "Evaluate.  Invalid arguments");
 					}
 				}
 				if (values&&(RETVAL=CREATE(Cmiss_value)()))
@@ -113,6 +115,123 @@ evaluate(Cmiss::Variable variable,...)
 				}
 				DESTROY_LIST(Cmiss_variable_value)(&values);
 			}
+		}
+		if (RETVAL)
+		{
+			char *class_string,*type_id_string;
+
+			EXTEND(SP,1);
+			PUSHs(sv_newmortal());
+			class_string=(char *)NULL;
+			if (type_id_string=Cmiss_value_get_type_id_string(RETVAL))
+			{
+				if (class_string=(char *)malloc(strlen(type_id_string)+15))
+				{
+					strcpy(class_string,"Cmiss::Value::");
+					strcat(class_string,type_id_string);
+				}
+			}
+			if (class_string)
+			{
+				sv_setref_pv(ST(0), class_string, (void*)RETVAL);
+				free(class_string);
+			}
+			else
+			{
+				sv_setref_pv(ST(0), "Cmiss::Value", (void*)RETVAL);
+			}
+			XSRETURN(1);
+		}
+		else
+		{
+			XSRETURN_UNDEF;
+		}
+
+Cmiss::Value
+evaluate_derivative_variable(Cmiss::Variable variable=(Cmiss_variable_id)NULL, \
+	AV *independent_variables_array=(AV *)NULL, \
+	AV *variable_value_array=(AV *)NULL)
+	PPCODE:
+		RETVAL=(Cmiss_value_id)NULL;
+		if (variable&&independent_variables_array)
+		{
+			int i,number_of_items,order;
+			IV tmp_IV;
+			Cmiss_variable_id *independent_variables;
+			struct Cmiss_variable_value *variable_value;
+			struct LIST(Cmiss_variable_value) *values;
+
+			order=av_len(independent_variables_array)+1;
+			number_of_items=0;
+			if (variable_value_array)
+			{
+				number_of_items=av_len(variable_value_array)+1;
+			}
+			if ((0<order)&&(0==number_of_items%2))
+			{
+				if (independent_variables=(Cmiss_variable_id *)malloc(order*
+					sizeof(Cmiss_variable_id)))
+				{
+					i=0;
+					while ((i<order)&&sv_derived_from(
+						AvARRAY(independent_variables_array)[i],"Cmiss::Variable"))
+					{
+						tmp_IV=SvIV((SV*)(SvRV(AvARRAY(independent_variables_array)[i])));
+						independent_variables[i]=INT2PTR(Cmiss__Variable,tmp_IV);
+						i++;
+					}
+					if ((i==order)&&(values=CREATE_LIST(Cmiss_variable_value)()))
+					{
+						i=0;
+						while (values&&(i<number_of_items)&&sv_derived_from(
+							AvARRAY(variable_value_array)[i],"Cmiss::Variable")&&
+							sv_derived_from(AvARRAY(variable_value_array)[i+1],
+							"Cmiss::Value")&&(variable_value=CREATE(Cmiss_variable_value)(
+							INT2PTR(Cmiss__Variable,SvIV((SV *)SvRV(
+							AvARRAY(variable_value_array)[i]))),INT2PTR(Cmiss__Value,
+							SvIV((SV *)SvRV(AvARRAY(variable_value_array)[i+1]))))))
+						{
+							if (ADD_OBJECT_TO_LIST(Cmiss_variable_value)(variable_value,
+								values))
+							{
+								i += 2;
+							}
+							else
+							{
+								DESTROY(Cmiss_variable_value)(&variable_value);
+								DESTROY_LIST(Cmiss_variable_value)(&values);
+							}
+						}
+						if (independent_variables&&(RETVAL=CREATE(Cmiss_value)()))
+						{
+							ACCESS(Cmiss_value)(RETVAL);
+							if (!Cmiss_variable_evaluate_derivative(variable,order,
+								independent_variables,values,RETVAL))
+							{
+								DEACCESS(Cmiss_value)(&RETVAL);
+							}
+						}
+						else
+						{
+							DESTROY_LIST(Cmiss_variable_value)(&values);
+							Perl_croak(aTHX_ "Evaluate.  Invalid variable-value pairs");
+						}
+						DESTROY_LIST(Cmiss_variable_value)(&values);
+					}
+					free(independent_variables);
+				}
+			}
+			else
+			{
+				DESTROY_LIST(Cmiss_variable_value)(&values);
+				Perl_croak(aTHX_ "Evaluate_derivative.  "
+					"No derivative variables or do not have variable-value pairs");
+			}
+		}
+		else
+		{
+			Perl_croak(aTHX_ "Evaluate_derivative.  "
+				"Missing variable or derivative variables");
 		}
 		if (RETVAL)
 		{

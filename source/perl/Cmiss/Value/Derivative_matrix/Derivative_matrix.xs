@@ -4,7 +4,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "computed_variable/computed_variable_finite_element.h"
+#include "computed_variable/computed_value_derivative_matrix.h"
+#include "computed_variable/computed_value_matrix.h"
 #include "general/debug.h"
 #include "typemap.h"
 

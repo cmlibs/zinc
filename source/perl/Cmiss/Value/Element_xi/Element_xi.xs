@@ -11,24 +11,39 @@ MODULE = Cmiss::Value::Element_xi		PACKAGE = Cmiss::Value::Element_xi		PREFIX = 
 PROTOTYPES: DISABLE
 
 Cmiss::Value
-create(Cmiss::FE_element element=(struct FE_element *)NULL,AV *xi_array=(AV *)NULL)
+create(int dimension=0,Cmiss::FE_element element=(struct FE_element *)NULL, \
+	AV *xi_array=(AV *)NULL)
 	CODE:
-		if (element&&(RETVAL=CREATE(Cmiss_value)()))
+		if ((element||(0<dimension))&&(RETVAL=CREATE(Cmiss_value)()))
 		{
 			FE_value *xi;
-			int i,number_of_xi;
+			int i,local_dimension,number_of_xi;
 
 			ACCESS(Cmiss_value)(RETVAL);
 			if (xi_array&&(0<(number_of_xi=av_len(xi_array)+1)))
 			{
-				if ((get_FE_element_dimension(element)==number_of_xi)&&
+				if (element)
+				{
+					local_dimension=get_FE_element_dimension(element);
+					if ((0<dimension)&&(dimension!=local_dimension))
+					{
+						/* error */
+						local_dimension=0;
+					}
+				}
+				else
+				{
+					local_dimension=dimension;
+				}
+				if ((local_dimension==number_of_xi)&&
 					(xi=(FE_value *)malloc(number_of_xi*sizeof(FE_value))))
 				{
 					for (i=0;i<number_of_xi;i++)
 					{
 						xi[i]=(FE_value)SvNV(AvARRAY(xi_array)[i]);
 					}
-					if (!Cmiss_value_element_xi_set_type(RETVAL,element,xi))
+					if (!Cmiss_value_element_xi_set_type(RETVAL,local_dimension,element,
+						xi))
 					{
 						free(xi);
 						DEACCESS(Cmiss_value)(&RETVAL);
@@ -41,7 +56,8 @@ create(Cmiss::FE_element element=(struct FE_element *)NULL,AV *xi_array=(AV *)NU
 			}
 			else
 			{
-				if (!Cmiss_value_element_xi_set_type(RETVAL,element,(FE_value *)NULL))
+				if (!Cmiss_value_element_xi_set_type(RETVAL,dimension,element,
+					(FE_value *)NULL))
 				{
 					DEACCESS(Cmiss_value)(&RETVAL);
 				}
@@ -60,16 +76,16 @@ get_type(Cmiss::Value cmiss_value)
 		if (RETVAL=newSVpv("[",0))
 		{
 			char *element_name;
-			int i,number_of_xi;
+			int dimension,i,number_of_xi;
 			FE_value *xi;
 			struct FE_element *element;
 
 			element_name=(char *)NULL;
-			if (Cmiss_value_element_xi_get_type(cmiss_value,&element,&xi)&&element
-				&&FE_element_to_any_element_string(element,&element_name)&&
+			if (Cmiss_value_element_xi_get_type(cmiss_value,&number_of_xi,&element,
+				&xi)&&element&&FE_element_to_any_element_string(element,&element_name)&&
 				(RETVAL=newSVpv(element_name,0)))
 			{
-				if (0<(number_of_xi=get_FE_element_dimension(element)))
+				if (0<number_of_xi)
 				{
 					sv_catpvf(RETVAL,", xi=[%g",xi[0]);
 					if (number_of_xi<8)

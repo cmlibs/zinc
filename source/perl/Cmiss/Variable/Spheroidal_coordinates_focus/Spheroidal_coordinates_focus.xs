@@ -3,15 +3,15 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "computed_variable/computed_variable_finite_element.h"
+#include "computed_variable/computed_variable_coordinates.h"
 #include "typemap.h"
 
-MODULE = Cmiss::Variable::Element_xi  PACKAGE = Cmiss::Variable::Element_xi  PREFIX = Cmiss_variable_element_xi_
+MODULE = Cmiss::Variable::Spheroidal_coordinates_focus  PACKAGE = Cmiss::Variable::Spheroidal_coordinates_focus  PREFIX = Cmiss_variable_spheroidal_coordinates_focus_
 
 PROTOTYPES: DISABLE
 
 Cmiss::Variable
-create(int dimension=0,char *name=(char *)NULL)
+create(char *name)
 	CODE:
 		/* the result, in Perl, is a reference to a stash (which is a pointer to the
 			Cmiss_variable structure).  This means that don't need to worry about
@@ -22,7 +22,7 @@ create(int dimension=0,char *name=(char *)NULL)
 			name))
 		{
 			ACCESS(Cmiss_variable)(RETVAL);
-			if (!Cmiss_variable_element_xi_set_type(RETVAL,dimension))
+			if (!Cmiss_variable_spheroidal_coordinates_focus_set_type(RETVAL))
 			{
 				DEACCESS(Cmiss_variable)(&RETVAL);
 			}

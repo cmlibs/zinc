@@ -72,7 +72,7 @@ Cmiss::require_library('cmgui_computed_variable');
 sub new
 {
 	my ($class, %arg) = @_;
-	my ($objref,$value)
+	my ($objref,$value);
 
 	$value=$arg{value};
 	if ($value)

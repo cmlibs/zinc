@@ -3,7 +3,7 @@
 #include "XSUB.h"
 
 #include <string.h>
-#include "computed_variable/computed_variable.h"
+#include "computed_variable/computed_variable_derivative.h"
 #include "typemap.h"
 
 MODULE = Cmiss::Variable::Derivative  PACKAGE = Cmiss::Variable::Derivative  PREFIX = Cmiss_variable_derivative_

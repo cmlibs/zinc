@@ -1,4 +1,4 @@
-package Cmiss::Variable::Element_xi;
+package Cmiss::Variable::Prolate_spheroidal_to_rectangular_cartesian;
 
 use 5.006;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Cmiss::Variable Exporter);
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 
-# This allows declaration	use Cmiss::Variable::Element_xi ':all';
+# This allows declaration	use Cmiss::Variable::Prolate_spheroidal_to_rectangular_cartesian ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
@@ -37,7 +37,7 @@ sub AUTOLOAD {
     my $constname;
     our $AUTOLOAD;
     ($constname = $AUTOLOAD) =~ s/.*:://;
-    croak "&Cmiss::Variable::Element_xi::constant not defined" if $constname eq 'constant';
+    croak "&Cmiss::Variable::Prolate_spheroidal_to_rectangular_cartesian::constant not defined" if $constname eq 'constant';
     my ($error, $val) = constant($constname);
     if ($error) { croak $error; }
     {
@@ -53,24 +53,16 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
-use Cmiss;
-Cmiss::require_library('cmgui_computed_variable');
-
 # Named argument
 sub new
 {
 	my ($class, %arg) = @_;
-	my ($dimension,$name,$objref);
+	my ($name,$objref);
 
-	$dimension=$arg{dimension};
-	if (!$dimension)
-	{
-		$dimension=0;
-	}
 	$name=$arg{name};
 	if ($name)
 	{
-		$objref=create($dimension,$name);
+		$objref=create($name);
 		if ($objref)
 		{
 			bless $objref,$class;
@@ -101,7 +93,7 @@ sub new
 #}
 
 require XSLoader;
-XSLoader::load('Cmiss::Variable::Element_xi', $VERSION);
+XSLoader::load('Cmiss::Variable::Prolate_spheroidal_to_rectangular_cartesian', $VERSION);
 
 # Preloaded methods go here.
 
@@ -113,22 +105,22 @@ __END__
 
 =head1 NAME
 
-Cmiss::Variable::Element_xi - Perl extension for Cmiss element/xi variables
+Cmiss::Variable::Prolate_spheroidal_to_rectangular_cartesian - Perl extension for Cmiss prolate_spheroidal_to_rectangular_cartesian variables
 
 =head1 SYNOPSIS
 
-  use Cmiss::Variable::Element_xi;
+  use Cmiss::Variable::Prolate_spheroidal_to_rectangular_cartesian;
 
 =head1 ABSTRACT
 
-  This should be the abstract for Cmiss::Variable::Element_xi.
+  This should be the abstract for Cmiss::Variable::Prolate_spheroidal_to_rectangular_cartesian.
   The abstract is used when making PPD (Perl Package Description) files.
   If you don't want an ABSTRACT you should also edit Makefile.PL to
   remove the ABSTRACT_FROM option.
 
 =head1 DESCRIPTION
 
-Stub documentation for Cmiss::Variable::Element_xi, created by h2xs. It looks like
+Stub documentation for Cmiss::Variable::Prolate_spheroidal_to_rectangular_cartesian, created by h2xs. It looks like
 the author of the extension was negligent enough to leave the stub
 unedited.
 
