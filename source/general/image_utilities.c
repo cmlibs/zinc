@@ -3496,8 +3496,8 @@ the second the denominator.
 																	{
 																		byte_count= *strip_byte_count;
 																		if ((0==fseek(tiff_file,*strip_offset,
-																			SEEK_SET))&&(new_strip=realloc(strip,
-																			byte_count*sizeof(unsigned char)))&&
+																			SEEK_SET))&&(REALLOCATE(new_strip,strip,
+																			unsigned char,byte_count))&&
 																			(byte_count==fread(new_strip,
 																			sizeof(unsigned char),byte_count,
 																			tiff_file)))
