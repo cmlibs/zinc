@@ -3740,8 +3740,14 @@ fclose(timefile);
 			/*???debug */
 			printf("WARNING: No polygons generated \n");
 #endif /* defined (DEBUG) */
-			mc_iso_surface->compiled_vertex_list=NULL;
-			mc_iso_surface->compiled_triangle_list=NULL;
+			if (mc_iso_surface->compiled_vertex_list)
+			{
+				DEALLOCATE(mc_iso_surface->compiled_vertex_list);
+			}
+			if (mc_iso_surface->compiled_triangle_list)
+			{
+				DEALLOCATE(mc_iso_surface->compiled_triangle_list);
+			}
 			mc_iso_surface->n_triangles=0;
 			mc_iso_surface->n_vertices=0;
 		}
