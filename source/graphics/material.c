@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 5 August 2002
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -1059,7 +1059,7 @@ Returns true if the <material> uses a texture in the <texture_list>.
 int Graphical_material_Texture_change(struct Graphical_material *material,
 	void *texture_change_data_void)
 /*******************************************************************************
-LAST MODIFIED : 13 March 2002
+LAST MODIFIED : 5 August 2002
 
 DESCRIPTION :
 If the <material> uses a texture in the <changed_texture_list>, marks the
@@ -1079,7 +1079,10 @@ go directly from texture to material.
 		if (material->texture && IS_OBJECT_IN_LIST(Texture)(material->texture,
 			texture_change_data->changed_texture_list))
 		{
-			material->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
+			if (material->compile_status != GRAPHICS_NOT_COMPILED)
+			{
+				material->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
+			}
 			ADD_OBJECT_TO_LIST(Graphical_material)(material,
 				texture_change_data->changed_material_list);
 		}
