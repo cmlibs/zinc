@@ -1835,7 +1835,7 @@ static int Scene_picked_object_get_nearest_element_point(
 	struct Scene_picked_object *scene_picked_object,
 	void *nearest_element_point_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element_point, the "nearest" value is
@@ -1848,7 +1848,7 @@ created to store the nearest point; it is up to the calling function to manage
 and destroy it once returned.
 ==============================================================================*/
 {
-	int element_point_number,face_number,return_code,
+	int element_point_number,face_number,i,return_code,
 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Element_discretization element_discretization;
 	struct Element_point_ranges *element_point_ranges;
@@ -1861,6 +1861,7 @@ and destroy it once returned.
 	struct Scene_object *scene_object;
 	struct Scene_picked_object_get_nearest_element_point_data
 		*nearest_element_point_data;
+	Triple xi;
 
 	ENTER(Scene_picked_object_get_nearest_element_point);
 	if (scene_picked_object&&(nearest_element_point_data=
@@ -1911,8 +1912,23 @@ and destroy it once returned.
 						&top_level_element,element_point_ranges_identifier.number_in_xi))
 					{
 						element_point_ranges_identifier.element=element;
+						element_point_ranges_identifier.top_level_element=top_level_element;
 						element_point_ranges_identifier.xi_discretization_mode=
 							GT_element_settings_get_xi_discretization_mode(settings);
+						if (XI_DISCRETIZATION_EXACT_XI==
+							element_point_ranges_identifier.xi_discretization_mode)
+						{
+							for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+							{
+								element_point_ranges_identifier.number_in_xi[i]=1;
+							}
+						}
+						GT_element_settings_get_seed_xi(settings,xi);
+						/*???RC temporary, hopefully */
+						for (i=0;i<3;i++)
+						{
+							element_point_ranges_identifier.exact_xi[i]=xi[i];
+						}
 						if (element_point_ranges=CREATE(Element_point_ranges)(
 							&element_point_ranges_identifier))
 						{
@@ -1984,14 +2000,14 @@ static int Scene_picked_object_get_picked_element_points(
 	struct Scene_picked_object *scene_picked_object,
 	void *picked_element_points_list_void)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element_point, it is converted into
 an Element_point_ranges and added to the <picked_element_points_list>.
 ==============================================================================*/
 {
-	int element_point_number,face_number,return_code,
+	int element_point_number,face_number,i,return_code,
 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Element_discretization element_discretization;
 	struct Element_point_ranges *element_point_ranges;
@@ -2002,6 +2018,7 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
 	struct Scene_object *scene_object;
+	Triple xi;
 
 	ENTER(Scene_picked_object_get_picked_element_points);
 	if (scene_picked_object&&picked_element_points_list_void)
@@ -2041,8 +2058,23 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 					&top_level_element,element_point_ranges_identifier.number_in_xi))
 				{
 					element_point_ranges_identifier.element=element;
+					element_point_ranges_identifier.top_level_element=top_level_element;
 					element_point_ranges_identifier.xi_discretization_mode=
 						GT_element_settings_get_xi_discretization_mode(settings);
+					if (XI_DISCRETIZATION_EXACT_XI==
+						element_point_ranges_identifier.xi_discretization_mode)
+					{
+						for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+						{
+							element_point_ranges_identifier.number_in_xi[i]=1;
+						}
+					}
+					GT_element_settings_get_seed_xi(settings,xi);
+					/*???RC temporary, hopefully */
+					for (i=0;i<3;i++)
+					{
+						element_point_ranges_identifier.exact_xi[i]=xi[i];
+					}
 					if (element_point_ranges=CREATE(Element_point_ranges)(
 						&element_point_ranges_identifier))
 					{
