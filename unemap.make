@@ -245,7 +245,7 @@ utilities : $(SOURCE_PATH)/unemap_sgi.make $(SOURCE_PATH)/unemap_sgi64.make forc
 		$(MAKE) -f unemap_sgi.make utilities; \
 	else \
 		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgi.make utilities; \
-	fi \
+	fi ; \
 	if [ -f unemap_sgi64.make ]; then \
 		$(MAKE) -f unemap_sgi64.make utilities; \
 	else \
