@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_window_projection.c
 
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 6 October 2000
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -48,6 +48,58 @@ struct Computed_field_window_projection_type_specific_data
 };
 
 static char computed_field_window_projection_type_string[] = "window_projection";
+
+static char *Computed_field_window_projection_type_string(
+	enum Computed_field_window_projection_type projection_type)
+/*******************************************************************************
+LAST MODIFIED : 6 October 2000
+
+DESCRIPTION :
+Returns a string label for the <projection_type>, used in widgets and parsing.
+NOTE: Calling function must not deallocate returned string.
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Computed_field_window_projection_type_string);
+	switch (projection_type)
+	{
+		case NDC_PROJECTION:
+		{
+			return_string="ndc_projection";
+		} break;
+		case TEXTURE_PROJECTION:
+		{
+			return_string="texture_projection";
+		} break;
+		case VIEWPORT_PROJECTION:
+		{
+			return_string="viewport_projection";
+		} break;
+		case INVERSE_NDC_PROJECTION:
+		{
+			return_string="inverse_ndc_projection";
+		} break;
+		case INVERSE_TEXTURE_PROJECTION:
+		{
+			return_string="inverse_texture_projection";
+		} break;
+		case INVERSE_VIEWPORT_PROJECTION:
+		{
+			return_string="inverse_viewport_projection";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_window_projection_type_string.  "
+				"Unknown projection type");
+			return_string=(char *)NULL;
+		}
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Computed_field_window_projection_type_string */
 
 int Computed_field_is_type_window_projection(struct Computed_field *field)
 /*******************************************************************************
@@ -897,7 +949,7 @@ Not implemented yet.
 static int list_Computed_field_window_projection(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 6 October 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -912,45 +964,23 @@ DESCRIPTION :
 		field->type_specific_data))
 	{
 		return_code = 1;
+		display_message(INFORMATION_MESSAGE,"    source field : %s\n",
+			field->source_fields[0]->name);
 		if (GET_NAME(Graphics_window)(data->graphics_window, &window_name))
 		{
 			display_message(INFORMATION_MESSAGE,"    window : %s\n",
 				window_name);
 			DEALLOCATE(window_name);
 		}
-		display_message(INFORMATION_MESSAGE,"    pane_number : %d\n",
+		display_message(INFORMATION_MESSAGE,"    pane number : %d\n",
 			data->pane_number + 1);
-		switch(data->projection_type)
-		{
-			case NDC_PROJECTION:
-			{
-				display_message(INFORMATION_MESSAGE,"    ndc_projection\n",
-					data->pane_number);				
-			} break;
-			case TEXTURE_PROJECTION:
-			{
-				display_message(INFORMATION_MESSAGE,"    texture_projection\n",
-					data->pane_number);				
-			} break;
-			case VIEWPORT_PROJECTION:
-			{
-				display_message(INFORMATION_MESSAGE,"    viewport_projection\n",
-					data->pane_number);				
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"list_Computed_field_window_projection.  "
-					"Unknown projection type.");
-				return_code = 0;
-			} break;
-		}
+		display_message(INFORMATION_MESSAGE,"    projection type : %s\n",
+			Computed_field_window_projection_type_string(data->projection_type));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_window_projection.  "
-			"Invalid arguments.");
+			"list_Computed_field_window_projection.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -961,7 +991,7 @@ DESCRIPTION :
 static int list_Computed_field_window_projection_commands(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 6 October 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -976,6 +1006,8 @@ DESCRIPTION :
 		field->type_specific_data))
 	{
 		return_code = 1;
+		display_message(INFORMATION_MESSAGE," field %s",
+			field->source_fields[0]->name);
 		if (GET_NAME(Graphics_window)(data->graphics_window, &window_name))
 		{
 			display_message(INFORMATION_MESSAGE," window %s",
@@ -984,37 +1016,13 @@ DESCRIPTION :
 		}
 		display_message(INFORMATION_MESSAGE," pane_number %d",
 			data->pane_number + 1);
-		switch(data->projection_type)
-		{
-			case NDC_PROJECTION:
-			{
-				display_message(INFORMATION_MESSAGE," ndc_projection",
-					data->pane_number);				
-			} break;
-			case TEXTURE_PROJECTION:
-			{
-				display_message(INFORMATION_MESSAGE," texture_projection",
-					data->pane_number);				
-			} break;
-			case VIEWPORT_PROJECTION:
-			{
-				display_message(INFORMATION_MESSAGE," viewport_projection",
-					data->pane_number);				
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"list_Computed_field_window_projection_commands.  "
-					"Unknown projection type.");
-				return_code = 0;
-			} break;
-		}
+		display_message(INFORMATION_MESSAGE," %s",
+			Computed_field_window_projection_type_string(data->projection_type));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_window_projection_commands.  "
-			"Invalid arguments.");
+			"list_Computed_field_window_projection_commands.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
