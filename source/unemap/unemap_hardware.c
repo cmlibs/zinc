@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 13 September 2002
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -1612,6 +1612,13 @@ DESCRIPTION :
 									ni_card->hardware_buffer_size=0;
 									ni_card->input_mode=0;
 									ni_card->polarity=0;
+									if (((PCI6031E_AD_DA==ni_card->type)||
+										(PCI6033E_AD==ni_card->type)||
+										(PXI6031E_AD_DA==ni_card->type))&&(gain<(float)2))
+									{
+										/* lowest gain not used for 16 bit */
+										gain=(float)2;
+									}
 									ni_card->gain=(i16)gain;
 									/* initially the filter setting is undefined */
 									ni_card->anti_aliasing_filter_taps= -1;
@@ -2181,1182 +2188,6 @@ DESCRIPTION :
 	return (return_code);
 } /* search_for_NI_cards */
 #endif /* defined (NI_DAQ) */
-
-#if defined (OLD_CODE)
-#if defined (NI_DAQ)
-static int search_for_NI_cards(void)
-/*******************************************************************************
-LAST MODIFIED : 9 August 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	float gain;
-	int return_code,*stimulator_card_indices;
-	i16 card_code,card_number,input_mode,polarity,status;
-	struct NI_card *ni_card;
-#if defined (UNEMAP_2V1) || defined (UNEMAP_2V2)
-	char word[81];
-	int i,j;
-	i16 GA0_setting,GA1_setting;
-	unsigned char shift_registers[10];
-	unsigned short shift_register;
-	u16 sampling_interval;
-#endif /* defined (UNEMAP_2V1) || defined (UNEMAP_2V2) */
-
-	ENTER(search_for_NI_cards);
-	return_code=1;
-	if (!module_NI_CARDS)
-	{
-		module_NI_CARDS=(struct NI_card *)NULL;
-		module_number_of_NI_CARDS=0;
-		module_number_of_stimulators=0;
-		module_stimulator_NI_CARD_indices=(int *)NULL;
-		card_number=1;
-		/*???DB.  Moved from unemap_configure begin */
-		/* default configuration */
-		filter_increment_output_line=5;
-#if defined (UNEMAP_1V1)
-		chip_select_line_UnEmap1vx=0;
-		up_down_line_UnEmap1vx=4;
-		led_line_UnEmap1vx=2;
-		id_line_1_UnEmap1vx=6;
-		id_line_2_UnEmap1vx=3;
-		id_line_3_UnEmap1vx=7;
-#endif /* defined (UNEMAP_1V1) */
-#if defined (UNEMAP_2V1) || defined (UNEMAP_2V2)
-		battery_good_input_line_UnEmap2vx=0;
-		battery_A_line_UnEmap2v1=2;
-		gain_0_output_line_UnEmap2vx=7;
-		gain_1_output_line_UnEmap2vx=3;
-		shift_register_clock_output_line_UnEmap2vx=6;
-		shift_register_data_output_line_UnEmap2vx=4;
-		shift_register_strobe_output_line_UnEmap2vx=1;
-		GA0_setting=0;
-		GA1_setting=0;
-		shift_registers[0]=(unsigned char)0x79;
-		shift_registers[1]=(unsigned char)0x0;
-		BattA_setting_UnEmap2vx=0;
-		for (i=2;i<10;i++)
-		{
-			shift_registers[i]=(unsigned char)0xff;
-		}
-		tol_settling=(float)1.;
-		settling_step_max=20;
-#endif /* defined (UNEMAP_2V1) || defined (UNEMAP_2V2) */
-		initial_antialiasing_filter_frequency=(float)200;
-		input_mode=1;
-		polarity=0;
-		gain=(float)1;
-		sampling_interval=0;
-		/*???debug */
-		{
-			FILE *digital_io_lines;
-
-			if (digital_io_lines=fopen_UNEMAP_HARDWARE("digital.txt","r"))
-			{
-#if defined (UNEMAP_1V1)
-				if (1==fscanf(digital_io_lines," cs = %hd ",
-					&chip_select_line_UnEmap1vx))
-				{
-					if (1==fscanf(digital_io_lines," u/d = %hd ",&up_down_line_UnEmap1vx))
-					{
-						if (1==fscanf(digital_io_lines," inc = %hd ",
-							&filter_increment_output_line))
-						{
-							if (1==fscanf(digital_io_lines," led = %hd ",&led_line_UnEmap1vx))
-							{
-								if (1==fscanf(digital_io_lines," id1 = %hd ",&
-									id_line_1_UnEmap1vx))
-								{
-									if (1==fscanf(digital_io_lines," id2 = %hd ",
-										&id_line_2_UnEmap1vx))
-									{
-										if (1==fscanf(digital_io_lines," id3 = %hd ",
-											&id_line_3_UnEmap1vx))
-										{
-											if (1==fscanf(digital_io_lines," filter = %f ",
-												&initial_antialiasing_filter_frequency))
-											{
-												if (1==fscanf(digital_io_lines," gain = %f ",&gain))
-												{
-													/* gain should be 1,2,5,10,20,50 or 100 */
-													if (gain<2)
-													{
-														gain=(float)1;
-													}
-													else
-													{
-														if (gain<4)
-														{
-															gain=(float)2;
-														}
-														else
-														{
-															if (gain<8)
-															{
-																gain=(float)5;
-															}
-															else
-															{
-																if (gain<15)
-																{
-																	gain=(float)10;
-																}
-																else
-																{
-																	if (gain<35)
-																	{
-																		gain=(float)20;
-																	}
-																	else
-																	{
-																		if (gain<75)
-																		{
-																			gain=(float)50;
-																		}
-																		else
-																		{
-																			gain=(float)100;
-																		}
-																	}
-																}
-															}
-														}
-													}
-													if (1==fscanf(digital_io_lines,
-														" input_mode = %hd ",&input_mode))
-													{
-														if (input_mode< -1)
-														{
-															input_mode= -1;
-														}
-														else
-														{
-															if (input_mode>2)
-															{
-																input_mode=2;
-															}
-														}
-														if (1==fscanf(digital_io_lines,
-															" polarity = %hd ",&polarity))
-														{
-															if (polarity<0)
-															{
-																polarity=0;
-															}
-															else
-															{
-																if (polarity>1)
-																{
-																	polarity=1;
-																}
-															}
-														}
-														else
-														{
-															display_message(ERROR_MESSAGE,
-														"search_for_NI_cards.  Could not read polarity");
-														}
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-													"search_for_NI_cards.  Could not read input_mode");
-													}
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-												"search_for_NI_cards.  Could not read gain");
-												}
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-	"search_for_NI_cards.  Could not read initial_antialiasing_filter_frequency");
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"search_for_NI_cards.  Could not read id_line_3");
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"search_for_NI_cards.  Could not read id_line_2");
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"search_for_NI_cards.  Could not read id_line_1");
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"search_for_NI_cards.  Could not read led_line");
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"search_for_NI_cards.  Could not read increment_line");
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"search_for_NI_cards.  Could not read up_down_line");
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"search_for_NI_cards.  Could not read chip_select_line");
-				}
-				fclose(digital_io_lines);
-				/*???debug */
-				{
-					FILE *unemap_debug;
-
-					if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-					{
-						fprintf(unemap_debug,"chip_select_line=%d\n",
-							chip_select_line_UnEmap1vx);
-						fprintf(unemap_debug,"up_down_line=%d\n",up_down_line_UnEmap1vx);
-						fprintf(unemap_debug,"increment_line=%d\n",
-							filter_increment_output_line);
-						fprintf(unemap_debug,"led_line=%d\n",led_line_UnEmap1vx);
-						fprintf(unemap_debug,"id_line_1=%d\n",id_line_1_UnEmap1vx);
-						fprintf(unemap_debug,"id_line_2=%d\n",id_line_2_UnEmap1vx);
-						fprintf(unemap_debug,"id_line_3=%d\n",id_line_3_UnEmap1vx);
-						fprintf(unemap_debug,"antialiasing_filter_frequency=%g\n",
-							initial_antialiasing_filter_frequency);
-						fprintf(unemap_debug,"gain=%g\n",gain);
-						fprintf(unemap_debug,"input_mode=");
-						switch (input_mode)
-						{
-							case -1:
-							{
-								fprintf(unemap_debug,"none\n");
-							} break;
-							case 0:
-							{
-								fprintf(unemap_debug,"differential\n");
-							} break;
-							case 1:
-							{
-								fprintf(unemap_debug,"referenced single-ended\n");
-							} break;
-							case 2:
-							{
-								fprintf(unemap_debug,"non-referenced single-ended\n");
-							} break;
-						}
-						fprintf(unemap_debug,"polarity=");
-						switch (polarity)
-						{
-							case 0:
-							{
-								fprintf(unemap_debug,"bipolar\n");
-							} break;
-							case 1:
-							{
-								fprintf(unemap_debug,"unipolar\n");
-							} break;
-						}
-						fclose(unemap_debug);
-					}
-				}
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-#endif /* defined (UNEMAP_1V1) */
-#if defined (UNEMAP_2V1) || defined (UNEMAP_2V2)
-				fscanf(digital_io_lines," %[^=]",word);
-				i=strlen(word);
-				while ((i>0)&&(isspace(word[i-1])))
-				{
-					i--;
-				}
-				word[i]='\0';
-				if (0==strcmp("BattGood",word))
-				{
-					fscanf(digital_io_lines," = %hd ",&battery_good_input_line_UnEmap2vx);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("Rstrobe",word))
-				{
-					fscanf(digital_io_lines," = %hd ",
-						&shift_register_strobe_output_line_UnEmap2vx);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("GA1",word))
-				{
-					fscanf(digital_io_lines," = %hd ",&gain_1_output_line_UnEmap2vx);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("Rdata",word))
-				{
-					fscanf(digital_io_lines," = %hd ",
-						&shift_register_data_output_line_UnEmap2vx);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("FINC",word))
-				{
-					fscanf(digital_io_lines," = %hd ",&filter_increment_output_line);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("RCLK",word))
-				{
-					fscanf(digital_io_lines," = %hd ",
-						&shift_register_clock_output_line_UnEmap2vx);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("GA0",word))
-				{
-					fscanf(digital_io_lines," = %hd ",&gain_0_output_line_UnEmap2vx);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("filter",word))
-				{
-					fscanf(digital_io_lines," = %f ",
-						&initial_antialiasing_filter_frequency);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("gain",word))
-				{
-					fscanf(digital_io_lines," = %f ",&gain);
-					/* gain should be 1,2,5,10,20,50 or 100 */
-					if (gain<2)
-					{
-						gain=(float)1;
-					}
-					else
-					{
-						if (gain<4)
-						{
-							gain=(float)2;
-						}
-						else
-						{
-							if (gain<8)
-							{
-								gain=(float)5;
-							}
-							else
-							{
-								if (gain<15)
-								{
-									gain=(float)10;
-								}
-								else
-								{
-									if (gain<35)
-									{
-										gain=(float)20;
-									}
-									else
-									{
-										if (gain<75)
-										{
-											gain=(float)50;
-										}
-										else
-										{
-											gain=(float)100;
-										}
-									}
-								}
-							}
-						}
-					}
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("input_mode",word))
-				{
-					fscanf(digital_io_lines," = %hd ",&input_mode);
-					if (input_mode< -1)
-					{
-						input_mode= -1;
-					}
-					else
-					{
-						if (input_mode>2)
-						{
-							input_mode=2;
-						}
-					}
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("polarity",word))
-				{
-					fscanf(digital_io_lines," = %hd ",&polarity);
-					if (polarity<0)
-					{
-						polarity=0;
-					}
-					else
-					{
-						if (polarity>1)
-						{
-							polarity=1;
-						}
-					}
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("GA0 setting",word))
-				{
-					fscanf(digital_io_lines," = %hd ",&GA0_setting);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("GA1 setting",word))
-				{
-					fscanf(digital_io_lines," = %hd ",&GA1_setting);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("shift registers",word))
-				{
-					fscanf(digital_io_lines," = ");
-					j=0;
-					while ((j<10)&&(1==fscanf(digital_io_lines,"%2hx",&shift_register)))
-					{
-						shift_registers[j]=(unsigned char)shift_register;
-						j++;
-					}
-					if (j<10)
-					{
-						display_message(ERROR_MESSAGE,
-							"search_for_NI_cards.  Could not read shift registers");
-					}
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("settling magnitude",word))
-				{
-					fscanf(digital_io_lines," = %f ",&tol_settling);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("relay power on",word))
-				{
-					fscanf(digital_io_lines," = %d ",&relay_power_on_UnEmap2vx);
-					if (relay_power_on_UnEmap2vx)
-					{
-						shift_registers[0] &= (unsigned char)0xe7;
-					}
-					else
-					{
-						shift_registers[0] |= (unsigned char)0x18;
-					}
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("number of valid ni channels",word))
-				{
-					fscanf(digital_io_lines," = %d ",&number_of_valid_ni_channels);
-					if (number_of_valid_ni_channels<1)
-					{
-						number_of_valid_ni_channels=1;
-					}
-					else
-					{
-						if (number_of_valid_ni_channels>NUMBER_OF_CHANNELS_ON_NI_CARD)
-						{
-							number_of_valid_ni_channels=NUMBER_OF_CHANNELS_ON_NI_CARD;
-						}
-					}
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("BattA",word))
-				{
-					fscanf(digital_io_lines," = %hd ",&battery_A_line_UnEmap2v1);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("BattA setting",word))
-				{
-					fscanf(digital_io_lines," = %hd ",&BattA_setting_UnEmap2vx);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("sampling interval",word))
-				{
-					fscanf(digital_io_lines," = %hd ",&sampling_interval);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				if (0==strcmp("max settling steps",word))
-				{
-					fscanf(digital_io_lines," = %d ",&settling_step_max);
-					fscanf(digital_io_lines," %[^=]",word);
-					i=strlen(word);
-					while ((i>0)&&(isspace(word[i-1])))
-					{
-						i--;
-					}
-					word[i]='\0';
-				}
-				fclose(digital_io_lines);
-				/*???debug */
-				{
-					FILE *unemap_debug;
-
-					if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-					{
-						fprintf(unemap_debug,"battery_good_input_line=%d\n",
-							battery_good_input_line_UnEmap2vx);
-						fprintf(unemap_debug,"shift_register_strobe_output_line=%d\n",
-							shift_register_strobe_output_line_UnEmap2vx);
-						fprintf(unemap_debug,"gain_1_output_line=%d\n",
-							gain_1_output_line_UnEmap2vx);
-						fprintf(unemap_debug,"shift_register_data_output_line=%d\n",
-							shift_register_data_output_line_UnEmap2vx);
-						fprintf(unemap_debug,"filter_increment_output_line=%d\n",
-							filter_increment_output_line);
-						fprintf(unemap_debug,"shift_register_clock_output_line=%d\n",
-							shift_register_clock_output_line_UnEmap2vx);
-						fprintf(unemap_debug,"gain_0_output_line=%d\n",
-							gain_0_output_line_UnEmap2vx);
-						fprintf(unemap_debug,"antialiasing_filter_frequency=%g\n",
-							initial_antialiasing_filter_frequency);
-						fprintf(unemap_debug,"gain=%g\n",gain);
-						fprintf(unemap_debug,"input_mode=");
-						switch (input_mode)
-						{
-							case -1:
-							{
-								fprintf(unemap_debug,"none\n");
-							} break;
-							case 0:
-							{
-								fprintf(unemap_debug,"differential\n");
-							} break;
-							case 1:
-							{
-								fprintf(unemap_debug,"referenced single-ended\n");
-							} break;
-							case 2:
-							{
-								fprintf(unemap_debug,"non-referenced single-ended\n");
-							} break;
-						}
-						fprintf(unemap_debug,"polarity=");
-						switch (polarity)
-						{
-							case 0:
-							{
-								fprintf(unemap_debug,"bipolar\n");
-							} break;
-							case 1:
-							{
-								fprintf(unemap_debug,"unipolar\n");
-							} break;
-						}
-						fprintf(unemap_debug,"GA0 setting=");
-						if (GA0_setting)
-						{
-							fprintf(unemap_debug,"on\n");
-						}
-						else
-						{
-							fprintf(unemap_debug,"off\n");
-						}
-						fprintf(unemap_debug,"GA1 setting=");
-						if (GA1_setting)
-						{
-							fprintf(unemap_debug,"on\n");
-						}
-						else
-						{
-							fprintf(unemap_debug,"off\n");
-						}
-						fprintf(unemap_debug,"shift registers=");
-						for (j=0;j<10;j++)
-						{
-							fprintf(unemap_debug,"%02x",
-								(unsigned short)shift_registers[j]);
-						}
-						fprintf(unemap_debug,"\n");
-						fprintf(unemap_debug,"settling_magnitude=%g\n",tol_settling);
-						fprintf(unemap_debug,"relay_power_on=%d\n",
-							relay_power_on_UnEmap2vx);
-						fprintf(unemap_debug,"number_of_valid_ni_channels=%d\n",
-							number_of_valid_ni_channels);
-						fprintf(unemap_debug,"battery_A_line=%d\n",
-							battery_A_line_UnEmap2v1);
-						fprintf(unemap_debug,"BattA setting=");
-						if (BattA_setting_UnEmap2vx)
-						{
-							fprintf(unemap_debug,"on\n");
-						}
-						else
-						{
-							fprintf(unemap_debug,"off\n");
-						}
-						fprintf(unemap_debug,"sampling interval=%d\n",sampling_interval);
-						fprintf(unemap_debug,"max settling steps=%d\n",settling_step_max);
-						fclose(unemap_debug);
-					}
-				}
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-#endif /* defined (UNEMAP_2V1) || defined (UNEMAP_2V2) */
-			}
-		}
-		/*???DB.  Moved from unemap_configure end */
-		while (return_code&&(0==Init_DA_Brds(card_number,&card_code)))
-		{
-			if ((PCI6031E_DEVICE_CODE==card_code)||
-				(PCI6033E_DEVICE_CODE==card_code)||
-				(PXI6031E_DEVICE_CODE==card_code)||
-				(PXI6071E_DEVICE_CODE==card_code))
-			{
-				/* make sure that not mixing 12-bit and 16-bit */
-				if ((0==module_number_of_NI_CARDS)||((PXI6071E_DEVICE_CODE==card_code)&&
-					(PXI6071E_AD_DA==(module_NI_CARDS[0]).type))||
-					((PXI6071E_DEVICE_CODE!=card_code)&&
-					(PXI6071E_AD_DA!=(module_NI_CARDS[0]).type)))
-				{
-					if (REALLOCATE(ni_card,module_NI_CARDS,struct NI_card,
-						module_number_of_NI_CARDS+1))
-					{
-						module_NI_CARDS=ni_card;
-						ni_card += module_number_of_NI_CARDS;
-						ni_card->device_number=card_number;
-						/*???DB.  Change to switch when swap to constants */
-						if (PCI6031E_DEVICE_CODE==card_code)
-						{
-							ni_card->type=PCI6031E_AD_DA;
-						}
-						else
-						{
-							if (PCI6033E_DEVICE_CODE==card_code)
-							{
-								ni_card->type=PCI6033E_AD;
-							}
-							else
-							{
-								if (PXI6031E_DEVICE_CODE==card_code)
-								{
-									ni_card->type=PXI6031E_AD_DA;
-								}
-								else
-								{
-									ni_card->type=PXI6071E_AD_DA;
-								}
-							}
-						}
-						if ((PCI6031E_AD_DA==ni_card->type)||
-							(PXI6031E_AD_DA==ni_card->type)||(PXI6071E_AD_DA==ni_card->type))
-						{
-							if (REALLOCATE(stimulator_card_indices,
-								module_stimulator_NI_CARD_indices,int,
-								module_number_of_stimulators+1))
-							{
-								module_stimulator_NI_CARD_indices=stimulator_card_indices;
-								module_stimulator_NI_CARD_indices[module_number_of_stimulators]=
-									module_number_of_NI_CARDS;
-								module_number_of_stimulators++;
-							}
-						}
-						ni_card->memory_object=(HGLOBAL)NULL;
-						ni_card->hardware_buffer=(i16 *)NULL;
-						ni_card->time_base=0;
-						ni_card->sampling_interval=sampling_interval;
-						ni_card->hardware_buffer_size=0;
-						ni_card->input_mode=0;
-						ni_card->polarity=0;
-						ni_card->gain=(i16)gain;
-						/* initially the filter setting is undefined */
-						ni_card->anti_aliasing_filter_taps= -1;
-#if defined (UNEMAP_2V1) || defined (UNEMAP_2V2)
-						(ni_card->unemap_2vx).isolate_mode=(unsigned char)0x0;
-						(ni_card->unemap_2vx).gain_output_line_0=(unsigned char)0x0;
-						(ni_card->unemap_2vx).gain_output_line_1=(unsigned char)0x0;
-						for (i=9;i>=0;i--)
-						{
-							((ni_card->unemap_2vx).shift_register)[i]=
-								(unsigned char)0x0;
-						}
-#endif /* defined (UNEMAP_2V1) || defined (UNEMAP_2V2) */
-						/*???DB.  Moved from unemap_configure begin */
-						ni_card->input_mode=input_mode;
-						ni_card->polarity=polarity;
-#if defined (UNEMAP_2V1) || defined (UNEMAP_2V2)
-						for (j=0;j<10;j++)
-						{
-							(ni_card->unemap_2vx).shift_register[j]=shift_registers[j];
-						}
-						for (j=0;j<8;j++)
-						{
-							(ni_card->unemap_2vx).stimulate_channels[j]=shift_registers[j+2];
-						}
-#endif /* defined (UNEMAP_2V1) || defined (UNEMAP_2V2) */
-						if (0<=input_mode)
-						{
-							/* configure the card */
-							status=AI_Clear(ni_card->device_number);
-							/* analog input */
-							status=AI_Configure(ni_card->device_number,
-								/* all channels */(i16)(-1),input_mode,
-								/* ignored (input range) */(i16)0,polarity,
-								/* do not drive AISENSE to ground */(i16)0);
-						}
-						if (0==status)
-						{
-							/* digital I/O */
-							/* start counter used for digital I/O timing */
-							GPCTR_Control(ni_card->device_number,DIGITAL_IO_COUNTER,ND_RESET);
-							GPCTR_Set_Application(ni_card->device_number,DIGITAL_IO_COUNTER,
-								ND_SIMPLE_EVENT_CNT);
-							GPCTR_Change_Parameter(ni_card->device_number,DIGITAL_IO_COUNTER,
-								ND_SOURCE,ND_INTERNAL_20_MHZ);
-							GPCTR_Control(ni_card->device_number,DIGITAL_IO_COUNTER,
-								ND_PROGRAM);
-							/* configure digital I/O lines */
-#if defined (UNEMAP_1V1)
-							status=DIG_Line_Config(ni_card->device_number,0,
-								chip_select_line_UnEmap1vx,(i16)1);
-							if (0==status)
-							{
-								status=DIG_Line_Config(ni_card->device_number,0,
-									up_down_line_UnEmap1vx,(i16)1);
-								if (0==status)
-								{
-									status=DIG_Line_Config(ni_card->device_number,0,
-										filter_increment_output_line,(i16)1);
-									if (0==status)
-									{
-										status=DIG_Line_Config(ni_card->device_number,0,
-											led_line_UnEmap1vx,(i16)1);
-										if (0==status)
-										{
-											status=DIG_Line_Config(ni_card->device_number,0,
-												id_line_1_UnEmap1vx,(i16)0);
-											if (0==status)
-											{
-												status=DIG_Line_Config(ni_card->device_number,0,
-													id_line_2_UnEmap1vx,(i16)0);
-												if (0==status)
-												{
-													status=DIG_Line_Config(ni_card->device_number,0,
-														id_line_3_UnEmap1vx,(i16)0);
-													if (0==status)
-													{
-														/* set cs high to disable programming */
-														status=DIG_Out_Line(ni_card->device_number,0,
-															chip_select_line_UnEmap1vx,(i16)1);
-														if (0==status)
-														{
-															/* set the led on */
-															status=DIG_Out_Line(ni_card->device_number,0,
-																led_line_UnEmap1vx,(i16)1);
-															if (0==status)
-															{
-																i16 state;
-
-																/* read the analog front-end card id */
-																status=DIG_In_Line(ni_card->device_number,0,
-																	id_line_1_UnEmap1vx,&state);
-																if (0==status)
-																{
-																	status=DIG_In_Line(ni_card->device_number,0,
-																		id_line_2_UnEmap1vx,&state);
-																	if (0==status)
-																	{
-																		status=DIG_In_Line(ni_card->device_number,0,
-																			id_line_3_UnEmap1vx,&state);
-																		if (0==status)
-																		{
-																		}
-																		else
-																		{
-																			display_message(ERROR_MESSAGE,
-						"search_for_NI_cards.  DIG_In_Line failed for id_line_3_UnEmap1vx");
-																		}
-																	}
-																	else
-																	{
-																		display_message(ERROR_MESSAGE,
-						"search_for_NI_cards.  DIG_In_Line failed for id_line_2_UnEmap1vx");
-																	}
-																}
-																else
-																{
-																	display_message(ERROR_MESSAGE,
-						"search_for_NI_cards.  DIG_In_Line failed for id_line_1_UnEmap1vx");
-																}
-															}
-															else
-															{
-																display_message(ERROR_MESSAGE,
-						"search_for_NI_cards.  DIG_Out_Line failed for led_line_UnEmap1vx");
-															}
-														}
-														else
-														{
-															display_message(ERROR_MESSAGE,
-		"search_for_NI_cards.  DIG_Out_Line failed for chip_select_line_UnEmap1vx");
-														}
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-				"search_for_NI_cards.  DIG_Line_Config failed for id_line_3_UnEmap1vx");
-													}
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-				"search_for_NI_cards.  DIG_Line_Config failed for id_line_2_UnEmap1vx");
-												}
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-				"search_for_NI_cards.  DIG_Line_Config failed for id_line_1_UnEmap1vx");
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-				"search_for_NI_cards.  DIG_Line_Config failed for led_line_UnEmap1vx");
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-"search_for_NI_cards.  DIG_Line_Config failed for filter_increment_output_line");
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-		"search_for_NI_cards.  DIG_Line_Config failed for up_down_line_UnEmap1vx");
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-"search_for_NI_cards.  DIG_Line_Config failed for chip_select_line_UnEmap1vx");
-							}
-#endif /* defined (UNEMAP_1V1) */
-#if defined (UNEMAP_2V1) || defined (UNEMAP_2V2)
-							status=DIG_Line_Config(ni_card->device_number,0,
-								battery_good_input_line_UnEmap2vx,(i16)0);
-							if (0==status)
-							{
-								status=DIG_Line_Config(ni_card->device_number,0,
-									filter_increment_output_line,(i16)1);
-								if (0==status)
-								{
-									status=DIG_Line_Config(ni_card->device_number,0,
-										gain_0_output_line_UnEmap2vx,(i16)1);
-									if (0==status)
-									{
-										status=DIG_Line_Config(ni_card->device_number,0,
-											gain_1_output_line_UnEmap2vx,(i16)1);
-										if (0==status)
-										{
-											status=DIG_Line_Config(ni_card->device_number,0,
-												shift_register_clock_output_line_UnEmap2vx,(i16)1);
-											if (0==status)
-											{
-												status=DIG_Line_Config(ni_card->device_number,0,
-													shift_register_data_output_line_UnEmap2vx,(i16)1);
-												if (0==status)
-												{
-													status=DIG_Line_Config(ni_card->device_number,0,
-														shift_register_strobe_output_line_UnEmap2vx,(i16)1);
-													if (0==status)
-													{
-														if (0==module_number_of_NI_CARDS)
-														{
-															status=DIG_Line_Config(ni_card->device_number,0,
-																battery_A_line_UnEmap2v1,(i16)1);
-															if (0==status)
-															{
-																if (BattA_setting_UnEmap2vx)
-																{
-																	DIG_Out_Line(ni_card->device_number,(i16)0,
-																		battery_A_line_UnEmap2v1,(i16)1);
-																}
-																else
-																{
-																	DIG_Out_Line(ni_card->device_number,(i16)0,
-																		battery_A_line_UnEmap2v1,(i16)0);
-																}
-															}
-															/* set master high */
-															set_shift_register(ni_card,
-																Master_SHIFT_REGISTER_UnEmap2v1,1,0);
-														}
-														else
-														{
-															status=DIG_Line_Config(ni_card->device_number,0,
-																battery_A_line_UnEmap2v1,(i16)0);
-															/* set master low */
-															set_shift_register(ni_card,
-																Master_SHIFT_REGISTER_UnEmap2v1,0,0);
-														}
-														if (0==status)
-														{
-															/* set cs high to disable filter programming */
-															set_shift_register(ni_card,
-																FCS_SHIFT_REGISTER_UnEmap2vx,1,0);
-															/* set the led */
-															if (BattA_setting_UnEmap2vx)
-															{
-																set_shift_register(ni_card,
-																	PC_LED_SHIFT_REGISTER_UnEmap2vx,1,1);
-															}
-															else
-															{
-																set_shift_register(ni_card,
-																	PC_LED_SHIFT_REGISTER_UnEmap2vx,0,1);
-															}
-															/* set the gain on the signal conditioning card */
-															if (GA0_setting)
-															{
-																(ni_card->unemap_2vx).gain_output_line_0=
-																	(unsigned char)0x1;
-																DIG_Out_Line(ni_card->device_number,(i16)0,
-																	gain_0_output_line_UnEmap2vx,(i16)1);
-															}
-															else
-															{
-																(ni_card->unemap_2vx).gain_output_line_0=
-																	(unsigned char)0x0;
-																DIG_Out_Line(ni_card->device_number,(i16)0,
-																	gain_0_output_line_UnEmap2vx,(i16)0);
-															}
-															if (GA1_setting)
-															{
-																(ni_card->unemap_2vx).gain_output_line_1=
-																	(unsigned char)0x1;
-																DIG_Out_Line(ni_card->device_number,(i16)0,
-																	gain_1_output_line_UnEmap2vx,(i16)1);
-															}
-															else
-															{
-																(ni_card->unemap_2vx).gain_output_line_1=
-																	(unsigned char)0x0;
-																DIG_Out_Line(ni_card->device_number,(i16)0,
-																	gain_1_output_line_UnEmap2vx,(i16)0);
-															}
-															/* make sure that the card is in isolate mode */
-															(ni_card->unemap_2vx).isolate_mode=
-																(unsigned char)0x0;
-														}
-														else
-														{
-															display_message(ERROR_MESSAGE,
-	"search_for_NI_cards.  DIG_Line_Config failed for battery_A_line_UnEmap2v1");
-														}
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-"search_for_NI_cards.  DIG_Line_Config failed for shift_register_strobe_output_line_UnEmap2vx");
-													}
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-"search_for_NI_cards.  DIG_Line_Config failed for shift_register_data_output_line_UnEmap2vx");
-												}
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-"search_for_NI_cards.  DIG_Line_Config failed for shift_register_clock_output_line_UnEmap2vx");
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-				"search_for_NI_cards.  DIG_Line_Config failed for gain_1_output_line_UnEmap2vx");
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-"search_for_NI_cards.  DIG_Line_Config failed for gain_0_output_line_UnEmap2vx");
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-"search_for_NI_cards.  DIG_Line_Config failed for filter_increment_output_line");
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-"search_for_NI_cards.  DIG_Line_Config failed for battery_good_input_line_UnEmap2vx");
-							}
-#endif /* defined (UNEMAP_2V1) || defined (UNEMAP_2V2) */
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"search_for_NI_cards.  AI_Configure failed");
-						}
-						/*???DB.  Moved from unemap_configure end */
-						module_number_of_NI_CARDS++;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"search_for_NI_cards.  Could not allocate ni_cards");
-						module_number_of_NI_CARDS=0;
-						DEALLOCATE(module_NI_CARDS);
-						return_code=0;
-					}
-				}
-				else
-				{
-					if (0==PXI6071E_DEVICE_CODE)
-					{
-						display_message(WARNING_MESSAGE,
-"Cannot mix 12-bit and 16-bit cards.  12-bit card, device number %d, ignored",
-							card_number);
-					}
-					else
-					{
-						display_message(WARNING_MESSAGE,
-"Cannot mix 12-bit and 16-bit cards.  16-bit card, device number %d, ignored",
-							card_number);
-					}
-				}
-			}
-			card_number++;
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* search_for_NI_cards */
-#endif /* defined (NI_DAQ) */
-#endif /* defined (OLD_CODE) */
 
 #if defined (NI_DAQ)
 static void scrolling_callback_NI(HWND handle,UINT message,WPARAM wParam,
@@ -7373,7 +6204,7 @@ int unemap_configure(float sampling_frequency_slave,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 4 September 2002
 
 DESCRIPTION :
 Configures the hardware for sampling at the specified
@@ -7516,7 +6347,7 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 					i=0;
 					while (all_12_bit_ADs&&(i<module_number_of_NI_CARDS))
 					{
-						if (PXI6071E_AD_DA==module_NI_CARDS[i].type)
+						if (PXI6071E_AD_DA!=module_NI_CARDS[i].type)
 						{
 							all_12_bit_ADs=0;
 						}
@@ -12335,7 +11166,7 @@ The sampling frequency is assigned to <*frequency>.
 int unemap_set_gain(int channel_number,float pre_filter_gain,
 	float post_filter_gain)
 /*******************************************************************************
-LAST MODIFIED : 9 August 1999
+LAST MODIFIED : 13 September 2002
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -12346,19 +11177,24 @@ then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
 function applies to the group of all channels.  Otherwise, the function fails.
 
 Sets the gain before the band pass filter and the gain after the band pass
-filter to the specified values.
+filter to the specified values.  If the <pre_filter_gain> or the
+<post_filter_gain> is outside the available range, then the other gain will be
+adjusted to try and achieve the product <pre_filter_gain>*<post_filter_gain>.
 
-For UnEmap_1V2, there is no gain before the filter (<pre_filter_gain> ignored).
+For UnEmap_1V2, there is no gain before the filter.
 For UnEmap_2V1 and UnEmap_2V2, the gain before the filter can be 1, 2, 4 or 8.
 
 For UnEmap_1V2, the post filter gain can be 10, 20, 50, 100, 200, 500 or 1000
-(fixed gain of 10)
+(fixed gain of 10).
 For UnEmap_2V1 and UnEmap_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 550 or 1100 (fixed gain of 11).
+For the 16-bit NI cards, the lowest gain is not used because the input range for
+it is +/-10V and the output range for the SCU is +/-5V.
 ==============================================================================*/
 {
 	int return_code;
 #if defined (NI_DAQ)
+	float local_post_filter_gain,local_pre_filter_gain;
 	int card_number,i;
 	i16 gain;
 	struct NI_card *ni_card;
@@ -12367,200 +11203,269 @@ For UnEmap_2V1 and UnEmap_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 
 	ENTER(unemap_set_gain);
 	return_code=0;
-#if defined (NI_DAQ)
-	/* check configuration */
-	if (search_for_NI_cards()&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+	if ((0<pre_filter_gain)&&(0<post_filter_gain))
 	{
-		if ((0<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-			NUMBER_OF_CHANNELS_ON_NI_CARD))
+#if defined (NI_DAQ)
+		/* check configuration */
+		if (search_for_NI_cards()&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 		{
-			return_code=1;
-			if (0==channel_number)
+			if ((0<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
+				NUMBER_OF_CHANNELS_ON_NI_CARD))
 			{
-				card_number= -1;
-			}
-			else
-			{
-				card_number=(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
-			}
-			ni_card=module_NI_CARDS;
-			for (i=0;i<module_number_of_NI_CARDS;i++)
-			{
-				if ((-1==card_number)||(i==card_number))
+				return_code=1;
+				if (0==channel_number)
 				{
-					switch (ni_card->unemap_hardware_version)
+					card_number= -1;
+				}
+				else
+				{
+					card_number=(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
+				}
+				ni_card=module_NI_CARDS;
+				for (i=0;i<module_number_of_NI_CARDS;i++)
+				{
+					if ((-1==card_number)||(i==card_number))
 					{
-						case UnEmap_1V2:
+						switch (ni_card->unemap_hardware_version)
 						{
-							if (post_filter_gain<15)
+							case UnEmap_1V2:
 							{
-								gain=1;
-							}
-							else
-							{
-								if (post_filter_gain<35)
+								local_post_filter_gain=pre_filter_gain*post_filter_gain;
+								if (local_post_filter_gain<15)
 								{
-									gain=2;
+									switch (ni_card->type)
+									{
+										case PCI6031E_AD_DA:
+										case PCI6033E_AD:
+										case PXI6031E_AD_DA:
+										{
+											/* lowest gain not used for 16 bit */
+											gain=2;
+										} break;
+										default:
+										{
+											gain=1;
+										} break;
+									}
 								}
 								else
 								{
-									if (post_filter_gain<75)
+									if (local_post_filter_gain<35)
 									{
-										gain=5;
+										gain=2;
 									}
 									else
 									{
-										if (post_filter_gain<150)
+										if (local_post_filter_gain<75)
 										{
-											gain=10;
+											gain=5;
 										}
 										else
 										{
-											if (post_filter_gain<350)
+											if (local_post_filter_gain<150)
 											{
-												gain=20;
+												gain=10;
 											}
 											else
 											{
-												if (post_filter_gain<750)
+												if (local_post_filter_gain<350)
 												{
-													gain=50;
+													gain=20;
 												}
 												else
 												{
-													gain=100;
+													if (local_post_filter_gain<750)
+													{
+														gain=50;
+													}
+													else
+													{
+														gain=100;
+													}
 												}
 											}
 										}
 									}
 								}
-							}
-							if (gain!=ni_card->gain)
-							{
-								set_NI_gain(ni_card,gain);
-								ni_card->gain=gain;
-							}
-						} break;
-						case UnEmap_2V1:
-						case UnEmap_2V2:
-						{
-							if (pre_filter_gain<1.5)
-							{
-								GA0_setting=0;
-								GA1_setting=0;
-							}
-							else
-							{
-								if (pre_filter_gain<3)
+								if (gain!=ni_card->gain)
 								{
-									GA0_setting=1;
+									set_NI_gain(ni_card,gain);
+									ni_card->gain=gain;
+								}
+							} break;
+							case UnEmap_2V1:
+							case UnEmap_2V2:
+							{
+								if (pre_filter_gain<1.5)
+								{
+									GA0_setting=0;
+									GA1_setting=0;
+									local_pre_filter_gain=1;
+								}
+								else
+								{
+									if (pre_filter_gain<3)
+									{
+										GA0_setting=1;
+										GA1_setting=0;
+										local_pre_filter_gain=2;
+									}
+									else
+									{
+										if (pre_filter_gain<6)
+										{
+											GA0_setting=0;
+											GA1_setting=1;
+											local_pre_filter_gain=4;
+										}
+										else
+										{
+											GA0_setting=1;
+											GA1_setting=1;
+											local_pre_filter_gain=8;
+										}
+									}
+								}
+								local_post_filter_gain=(pre_filter_gain*post_filter_gain)/
+									local_pre_filter_gain;
+								if (local_post_filter_gain<16)
+								{
+									switch (ni_card->type)
+									{
+										case PCI6031E_AD_DA:
+										case PCI6033E_AD:
+										case PXI6031E_AD_DA:
+										{
+											/* lowest gain not used for 16 bit */
+											gain=2;
+										} break;
+										default:
+										{
+											gain=1;
+										} break;
+									}
+								}
+								else
+								{
+									if (local_post_filter_gain<38)
+									{
+										gain=2;
+									}
+									else
+									{
+										if (local_post_filter_gain<82)
+										{
+											gain=5;
+										}
+										else
+										{
+											if (local_post_filter_gain<165)
+											{
+												gain=10;
+											}
+											else
+											{
+												if (local_post_filter_gain<385)
+												{
+													gain=20;
+												}
+												else
+												{
+													if (local_post_filter_gain<825)
+													{
+														gain=50;
+													}
+													else
+													{
+														gain=100;
+													}
+												}
+											}
+										}
+									}
+								}
+								local_pre_filter_gain=(pre_filter_gain*post_filter_gain)/
+									local_post_filter_gain;
+								if (local_pre_filter_gain<1.5)
+								{
+									GA0_setting=0;
 									GA1_setting=0;
 								}
 								else
 								{
-									if (pre_filter_gain<6)
-									{
-										GA0_setting=0;
-										GA1_setting=1;
-									}
-									else
+									if (local_pre_filter_gain<3)
 									{
 										GA0_setting=1;
-										GA1_setting=1;
-									}
-								}
-							}
-							if (post_filter_gain<16)
-							{
-								gain=1;
-							}
-							else
-							{
-								if (post_filter_gain<38)
-								{
-									gain=2;
-								}
-								else
-								{
-									if (post_filter_gain<82)
-									{
-										gain=5;
+										GA1_setting=0;
 									}
 									else
 									{
-										if (post_filter_gain<165)
+										if (local_pre_filter_gain<6)
 										{
-											gain=10;
+											GA0_setting=0;
+											GA1_setting=1;
 										}
 										else
 										{
-											if (post_filter_gain<385)
-											{
-												gain=20;
-											}
-											else
-											{
-												if (post_filter_gain<825)
-												{
-													gain=50;
-												}
-												else
-												{
-													gain=100;
-												}
-											}
+											GA0_setting=1;
+											GA1_setting=1;
 										}
 									}
 								}
-							}
-							if (GA0_setting)
-							{
-								(ni_card->unemap_2vx).gain_output_line_0=(unsigned char)0x1;
-								DIG_Out_Line(ni_card->device_number,(i16)0,
-									gain_0_output_line_UnEmap2vx,(i16)1);
-							}
-							else
-							{
-								(ni_card->unemap_2vx).gain_output_line_0=(unsigned char)0x0;
-								DIG_Out_Line(ni_card->device_number,(i16)0,
-									gain_0_output_line_UnEmap2vx,(i16)0);
-							}
-							if (GA1_setting)
-							{
-								(ni_card->unemap_2vx).gain_output_line_1=(unsigned char)0x1;
-								DIG_Out_Line(ni_card->device_number,(i16)0,
-									gain_1_output_line_UnEmap2vx,(i16)1);
-							}
-							else
-							{
-								(ni_card->unemap_2vx).gain_output_line_1=(unsigned char)0x0;
-								DIG_Out_Line(ni_card->device_number,(i16)0,
-									gain_1_output_line_UnEmap2vx,(i16)0);
-							}
-							if (gain!=ni_card->gain)
-							{
-								set_NI_gain(ni_card,gain);
-								ni_card->gain=gain;
-							}
-						} break;
+								if (GA0_setting)
+								{
+									(ni_card->unemap_2vx).gain_output_line_0=(unsigned char)0x1;
+									DIG_Out_Line(ni_card->device_number,(i16)0,
+										gain_0_output_line_UnEmap2vx,(i16)1);
+								}
+								else
+								{
+									(ni_card->unemap_2vx).gain_output_line_0=(unsigned char)0x0;
+									DIG_Out_Line(ni_card->device_number,(i16)0,
+										gain_0_output_line_UnEmap2vx,(i16)0);
+								}
+								if (GA1_setting)
+								{
+									(ni_card->unemap_2vx).gain_output_line_1=(unsigned char)0x1;
+									DIG_Out_Line(ni_card->device_number,(i16)0,
+										gain_1_output_line_UnEmap2vx,(i16)1);
+								}
+								else
+								{
+									(ni_card->unemap_2vx).gain_output_line_1=(unsigned char)0x0;
+									DIG_Out_Line(ni_card->device_number,(i16)0,
+										gain_1_output_line_UnEmap2vx,(i16)0);
+								}
+								if (gain!=ni_card->gain)
+								{
+									set_NI_gain(ni_card,gain);
+									ni_card->gain=gain;
+								}
+							} break;
+						}
 					}
+					ni_card++;
 				}
-				ni_card++;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"unemap_set_gain.  Invalid channel_number.  %d",channel_number);
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"unemap_set_gain.  Invalid channel_number.  %d",channel_number);
+				"unemap_set_gain.  Invalid configuration.  %d %p %d",
+				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 		}
+#endif /* defined (NI_DAQ) */
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"unemap_set_gain.  Invalid configuration.  %d %p %d",
-			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+		display_message(ERROR_MESSAGE,"unemap_set_gain.  Invalid gain(s).  %g %g",
+			pre_filter_gain,post_filter_gain);
 	}
-#endif /* defined (NI_DAQ) */
 	LEAVE;
 
 	return (return_code);
@@ -14204,8 +13109,8 @@ Intended for diagnostic use only.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-"unemap_get_card_state.  Invalid argument(s).  %d %p %p %p %p %p %p %p %p %p %p %p %p %p",
+		display_message(ERROR_MESSAGE,"unemap_get_card_state.  "
+			"Invalid argument(s).  %d %p %p %p %p %p %p %p %p %p %p %p %p %p",
 			channel_number,battA_state,battGood_state,filter_frequency,filter_taps,
 			shift_registers,GA0_state,GA1_state,NI_gain,input_mode,polarity,
 			tol_settling,sampling_interval,settling_step_max);
