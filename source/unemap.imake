@@ -988,6 +988,7 @@ CALCULATE_EVENTS_SRCS = \
 	general/mystring.c \
 	general/postscript.c \
 	unemap/analysis.c \
+	unemap/analysis_calculate.c \
 	unemap/interpolate.c \
 	unemap/rig.c \
 	unemap/rig_node.c \
