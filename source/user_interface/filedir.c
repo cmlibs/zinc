@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : filedir.c
 
-LAST MODIFIED : 9 June 2002
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
 Routines for opening files using Motif widgets.
@@ -43,6 +43,14 @@ the default button.
 #endif /* defined (MOTIF) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+
+/*
+Code switchs
+------------
+*/
+/* if a file selection dialog changes directory then when the dialog is opened
+	again it starts in the changed directory */
+#define REMEMBER_LAST_DIRECTORY_FOR_FILE_SELECTION
 
 /*
 Module variables
@@ -258,10 +266,10 @@ Reads the selected file in the user specified way.
 					XmStringGetLtoR(callback_data->value,XmSTRING_DEFAULT_CHARSET,
 						&file_name);
 					busy_cursor_off(file_open_data->selection_shell,
-						file_open_data->user_interface );
+						file_open_data->user_interface);
 					/* perform the operation */
 					if ((file_open_data->operation)(file_name,
-							file_open_data->arguments))
+						file_open_data->arguments))
 					{
 						/* close the file selection box */
 						XtUnmanageChild(file_open_data->selection);
@@ -829,7 +837,7 @@ void open_file_and_read(
 #endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 9 June 2003
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
 Expects a pointer to a File_open_data structure as the <client_data>.  Displays
@@ -973,6 +981,23 @@ name the <file_operation> is performed on the file with the <arguments>.
 						/* get the file list */
 						file_open_data->file_list=XmFileSelectionBoxGetChild(
 							file_open_data->selection,XmDIALOG_LIST);
+#if defined (REMEMBER_LAST_DIRECTORY_FOR_FILE_SELECTION)
+						/* replace the file name filter */
+						if ((file_open_data->filter_extension)&&ALLOCATE(temp_string,char,
+							strlen(file_open_data->filter_extension)+2))
+						{
+							strcpy(temp_string,"*");
+							strcat(temp_string,file_open_data->filter_extension);
+							XmFileSelectionDoSearch(file_open_data->selection,
+								XmStringCreate(temp_string,XmSTRING_DEFAULT_CHARSET));
+							DEALLOCATE(temp_string);
+						}
+						else
+						{
+							XmFileSelectionDoSearch(file_open_data->selection,
+								XmStringCreate("*",XmSTRING_DEFAULT_CHARSET));
+						}
+#endif /* defined (REMEMBER_LAST_DIRECTORY_FOR_FILE_SELECTION) */
 					}
 					else
 					{
@@ -1001,6 +1026,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 			{
 				XtSetSensitive(widget,False);
 			}
+#if !defined (REMEMBER_LAST_DIRECTORY_FOR_FILE_SELECTION)
 			/* replace the file name filter */
 			if ((file_open_data->filter_extension)&&ALLOCATE(temp_string,char,
 				strlen(file_open_data->filter_extension)+2))
@@ -1016,6 +1042,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 				XmFileSelectionDoSearch(file_open_data->selection,
 					XmStringCreate("*",XmSTRING_DEFAULT_CHARSET));
 			}
+#endif /* !defined (REMEMBER_LAST_DIRECTORY_FOR_FILE_SELECTION) */
 			busy_cursor_on(file_open_data->selection_shell,
 				file_open_data->user_interface );
 			/* manage the file selection box to pop it up */
