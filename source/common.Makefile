@@ -272,7 +272,7 @@ ifeq ($(SYSNAME),win32)
    # CC = gcc -c -mno-cygwin -fnative-struct */
    CC = gcc -c -mno-cygwin -mms-bitfields
    # CC = gcc -c -mno-cygwin -mms-bitfields -D_LIB -D_MT -D_FILE_OFFSET_BITS=64
-   CPP = gcc -c
+   CPP = gcc -c -mno-cygwin -mms-bitfields
    CPP_FLAGS =
    FORTRAN = f77 -c
    MAKEDEPEND = gcc -MM -MG
