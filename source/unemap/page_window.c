@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 16 May 2002
+LAST MODIFIED : 24 May 2002
 
 DESCRIPTION :
 
@@ -83,6 +83,8 @@ TO DO:
 
 /*#define NO_SCROLLING_WINDOW_UPDATE*/
 
+#define GET_DC_ONCE
+
 #define BACKGROUND_SAVING
 
 #include <stddef.h>
@@ -153,7 +155,7 @@ DESCRIPTION :
 
 struct Page_window
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 24 May 2002
 
 DESCRIPTION :
 The page window object.
@@ -299,6 +301,9 @@ The page window object.
 	int test_checkbox_height,test_checkbox_width;
 	int all_devices_menu_width,control_menu_width,current_device_menu_width;
 	HWND scrolling_area;
+#if defined (GET_DC_ONCE)
+	HDC scrolling_area_device_context;
+#endif /* defined (GET_DC_ONCE) */
 	HBRUSH fill_brush;
 #if defined (OLD_CODE)
 	HINSTANCE instance;
@@ -1459,7 +1464,11 @@ current device
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 		scrolling_area=page_window->scrolling_area;
+#if defined (GET_DC_ONCE)
+		device_context=page_window->scrolling_area_device_context;
+#else /* defined (GET_DC_ONCE) */
 		device_context=GetDC(scrolling_area);
+#endif /* defined (GET_DC_ONCE) */
 		GetClientRect(scrolling_area,&fill_rectangle);
 		width=(fill_rectangle.right)+1;
 		height=(fill_rectangle.bottom)+1;
@@ -1655,7 +1664,11 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 		window=page_window->scrolling_area;
+#if defined (GET_DC_ONCE)
+		device_context=page_window->scrolling_area_device_context;
+#else /* defined (GET_DC_ONCE) */
 		device_context=GetDC(window);
+#endif /* defined (GET_DC_ONCE) */
 		GetClientRect(window,&drawing_rectangle);
 			/*???DB.  Seems to return a nonzero on success (not TRUE) */
 		height=drawing_rectangle.bottom;
@@ -1869,7 +1882,11 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 		window=page_window->scrolling_area;
+#if defined (GET_DC_ONCE)
+		device_context=page_window->scrolling_area_device_context;
+#else /* defined (GET_DC_ONCE) */
 		device_context=GetDC(window);
+#endif /* defined (GET_DC_ONCE) */
 		GetClientRect(window,&drawing_rectangle);
 			/*???DB.  Seems to return a nonzero on success (not TRUE) */
 		height=drawing_rectangle.bottom;
@@ -2886,7 +2903,7 @@ DESCRIPTION :
 static LRESULT CALLBACK Page_window_scrolling_area_class_proc(HWND window,
 	UINT message_identifier,WPARAM first_message,LPARAM second_message)
 /*******************************************************************************
-LAST MODIFIED : 26 April 1999
+LAST MODIFIED : 24 May 2002
 
 DESCRIPTION :
 ???DB.  Should return 0 if it processes the message.
@@ -2920,6 +2937,9 @@ DESCRIPTION :
 			page_window->fill_brush=CreateSolidBrush(0x00ffffff);
 			/* set the data */
 			SetWindowLong(window,0,(LONG)page_window);
+#if defined (GET_DC_ONCE)
+			page_window->scrolling_area_device_context=GetDC(window);
+#endif /* defined (GET_DC_ONCE) */
 			/* set the experiment checkbox */
 			CheckDlgButton(page_window->window,EXPERIMENT_CHECKBOX,BST_UNCHECKED);
 			EnableWindow(page_window->experiment_checkbox,TRUE);
@@ -2936,6 +2956,9 @@ DESCRIPTION :
 			struct Page_window *page_window;
 
 			page_window=(struct Page_window *)GetWindowLong(window,0);
+#if defined (GET_DC_ONCE)
+			ReleaseDC(window,page_window->scrolling_area_device_context);
+#endif /* defined (GET_DC_ONCE) */
 			destroy_Page_window(&page_window);
 			PostQuitMessage(0);
 			return_code=0;

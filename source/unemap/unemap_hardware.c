@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 23 May 2002
+LAST MODIFIED : 27 May 2002
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -221,10 +221,58 @@ unemap.*.numberOfSamples: 100000
 			called again before the previous call returns
 1.2.26 Is it to do with the length of time the callback takes?  Tried changing
 			the scrolling rate, unemap_configure in start_experiment from 25Hz to 1Hz.
-			unemap_ni crashed using NT on C:  No
-???DB.  Check that GetDC is not adding some sort of lock that needs releasing
+			unemap_ni crashed using NT on C:
+1.2.27 24 May 2002.  ReleaseDC needs to be called for each GetDC for a common
+			DC.  I am using a private DC because of the CS_OWNDC style in
+			RegisterClassEx.  CS_OWNDC is so that you should only need to GET_DC_ONCE.
+			So I implemented this.  unemap_ni OK with NT on C:
+1.2.27.1 25 May 2002.  Changed to unemap with unemap_hardware_service, 7 6071Es
+				100000 samples, 1 kHz and UNEMAP_OS_MEMORY_MB set to 13 (was 22).  After
+				scrolling for a while, it crashed NT when I tried to stop sampling
+1.2.27.2 25 May 2002.  Back to unemap_ni, now with 7 6071Es, 100000 samples,
+				1 kHz and UNEMAP_OS_MEMORY_MB set to 13.  After scrolling for a while,
+				it crashed NT when I tried to stop sampling.  After scrolling for a
+				while, it crashed NT when I clicked on the acquisition window title bar
+				(might have been a double click which takes to full screen)
+1.2.27.3 25 May 2002.  Back to unemap_ni, now with 1 6071E, 300000 samples,
+				1 kHz and UNEMAP_OS_MEMORY_MB set to 13.  After clicking Experiment
+				there were some messages
+				The system is running low on virtual memory ...
+				SCAN_Start failed.  -10810.  0.  9658880
+				SCAN_Start failed.  -10447.  0.  8450560
+				SCAN_Start failed.  -10447.  0.  7846400
+				SCAN_Start failed.  -10447.  0.  7544320
+				NB
+				-10447 is a memPageLockError
+				-10810 is an internalDriverError
+				Still working.  Maximum number of samples 115520 (text widget shows
+				11152 because not wide enough).  Something is wrong with what I wrote
+				down - shouldn't be all zeros for second number, third number should
+				be bigger.
+				OK after scrolling overnight - double click title bar, start/stop
+				sampling
+1.2.27.3 26 May 2002.  unemap with unemap_hardware_service, 1 6071E, 300000
+				samples, 1 kHz and UNEMAP_OS_MEMORY_MB set to 13.  Was able to get a
+				bigger sample buffer (150920), but was able to get same when retried
+				1.2.27
+1.2.27.4 26 May 2002.  SCAN_Start is clearly locking the buffer into physical
+				memory.  So, why am I using GlobalAlloc and GlobalLock?  SCAN_Start
+				requires the buffer to be 4 byte aligned.  GlobalAlloc guarantees 8 byte
+				aligned.  Should I be using GMEM_FIXED instead of GMEM_MOVEABLE?  Then
+				wouldn't need GlobalLock.  Set up and defined USE_GMEM_FIXED.
+				unemap_ni.exe with 7 6071Es, 300000 samples, 1 kHz and
+				UNEMAP_OS_MEMORY_MB set to 13 crashed using NT on C:  
+1.2.27.5 27 May 2002.  Changed back to unemap_ni_24may02.exe
+1.2.27.6 27 May 2002.  Set up and defined USE_MALLOC.
+				unemap_ni.exe with 7 6071Es, 300000 samples, 1 kHz and
+				UNEMAP_OS_MEMORY_MB set to 13
+???DB.  Locking memory twice?
+	Try GMEM_FIXED
+	Try malloc
+???DB.  Can exception handling (Visual C/C++) be used to stop NT from crashing
+	and localize the problem?
 ???DB.  Previous problems solved by NI
-1 /* turn off the end of buffer interrupts */
+1 turn off the end of buffer interrupts
 	status=AO_Change_Parameter((module_NI_CARDS[i]).device_number,
 		da_channel,ND_LINK_COMPLETE_INTERRUPTS,ND_OFF);
 2 "I hope that your trip to England is going well! OK, do you ever have one of
@@ -262,11 +310,7 @@ NO_BATT_GOOD_WATCH - no thread watching BattGood
 3.2 Just deconfigure and configure again if different?  DONE
 ==============================================================================*/
 
-/*#define NO_SCROLLING_BODY 1*/
-/*#define SCROLLING_UPDATE_BUFFER_POSITION_AND_SIZE_ONLY 1*/
-/*#define NO_MODULE_SCROLLING_CALLBACK 1*/
-
-/*#define UNEMAP_THREAD_SAFE*/
+#define USE_MALLOC
 
 #define SYNCHRONOUS_STIMULATION 1
 /*#define DA_INTERRUPTS_OFF 1*/
@@ -7758,9 +7802,21 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 								hardware_buffer_size)*sizeof(i16)),(DWORD)MEM_COMMIT,
 								(DWORD)PAGE_READWRITE))
 #else /* defined (USE_VIRTUAL_LOCK) */
+#if defined (USE_GMEM_FIXED)
+							if ((module_NI_CARDS[i]).memory_object=GlobalAlloc(GMEM_FIXED,
+								(DWORD)(((module_NI_CARDS[i]).hardware_buffer_size)*
+								sizeof(i16))))
+#else /* defined (USE_GMEM_FIXED) */
+#if defined (USE_MALLOC)
+							if ((module_NI_CARDS[i]).memory_object=
+								malloc(((module_NI_CARDS[i]).hardware_buffer_size)*
+								sizeof(i16)))
+#else /* defined (USE_MALLOC) */
 							if ((module_NI_CARDS[i]).memory_object=GlobalAlloc(GMEM_MOVEABLE,
 								(DWORD)(((module_NI_CARDS[i]).hardware_buffer_size)*
 								sizeof(i16))))
+#endif /* defined (USE_MALLOC) */
+#endif /* defined (USE_GMEM_FIXED) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 							{
 #if defined (USE_VIRTUAL_LOCK)
@@ -7768,8 +7824,18 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 									(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
 									sizeof(i16))))
 #else /* defined (USE_VIRTUAL_LOCK) */
+#if defined (USE_GMEM_FIXED)
+								if ((module_NI_CARDS[i]).hardware_buffer=
+									(i16 *)((module_NI_CARDS[i]).memory_object))
+#else /* defined (USE_GMEM_FIXED) */
+#if defined (USE_MALLOC)
+								if ((module_NI_CARDS[i]).hardware_buffer=
+									(i16 *)((module_NI_CARDS[i]).memory_object))
+#else /* defined (USE_MALLOC) */
 								if ((module_NI_CARDS[i]).hardware_buffer=
 									(i16 *)GlobalLock((module_NI_CARDS[i]).memory_object))
+#endif /* defined (USE_MALLOC) */
+#endif /* defined (USE_GMEM_FIXED) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 								{
 									/* working from "Building Blocks" section, p.3-25 (pdf 65) in
@@ -7958,8 +8024,12 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 													(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
 													sizeof(i16)),(DWORD)MEM_RELEASE);
 #else /* defined (USE_VIRTUAL_LOCK) */
+#if defined (USE_MALLOC)
+												free((module_NI_CARDS[i]).memory_object);
+#else /* defined (USE_MALLOC) */
 												GlobalUnlock((module_NI_CARDS[i]).memory_object);
 												GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 												DAQ_DB_Config((module_NI_CARDS[i]).device_number,
 													/* disable */(i16)0);
@@ -7978,8 +8048,12 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 												(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
 												sizeof(i16)),(DWORD)MEM_RELEASE);
 #else /* defined (USE_VIRTUAL_LOCK) */
+#if defined (USE_MALLOC)
+											free((module_NI_CARDS[i]).memory_object);
+#else /* defined (USE_MALLOC) */
 											GlobalUnlock((module_NI_CARDS[i]).memory_object);
 											GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 											DAQ_DB_Config((module_NI_CARDS[i]).device_number,
 												/* disable */(i16)0);
@@ -7997,8 +8071,12 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 											(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
 											sizeof(i16)),(DWORD)MEM_RELEASE);
 #else /* defined (USE_VIRTUAL_LOCK) */
+#if defined (USE_MALLOC)
+										free((module_NI_CARDS[i]).memory_object);
+#else /* defined (USE_MALLOC) */
 										GlobalUnlock((module_NI_CARDS[i]).memory_object);
 										GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 									}
 								}
@@ -8012,7 +8090,11 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 										sizeof(i16)),(DWORD)MEM_RELEASE);
 #else /* defined (USE_VIRTUAL_LOCK) */
 										"unemap_configure.  GlobalLock failed.  %d",i);
+#if defined (USE_MALLOC)
+									free((module_NI_CARDS[i]).memory_object);
+#else /* defined (USE_MALLOC) */
 									GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 									status=1;
 								}
@@ -8023,7 +8105,11 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 #if defined (USE_VIRTUAL_LOCK)
 									"unemap_configure.  VirtualAlloc failed.  %d",i);
 #else /* defined (USE_VIRTUAL_LOCK) */
+#if defined (USE_MALLOC)
+									"unemap_configure.  malloc failed.  %d",i);
+#else /* defined (USE_MALLOC) */
 									"unemap_configure.  GlobalAlloc failed.  %d",i);
+#endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 								status=1;
 							}
@@ -8075,8 +8161,12 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 									(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
 									sizeof(i16)),(DWORD)MEM_RELEASE);
 #else /* defined (USE_VIRTUAL_LOCK) */
+#if defined (USE_MALLOC)
+								free((module_NI_CARDS[i]).memory_object);
+#else /* defined (USE_MALLOC) */
 								GlobalUnlock((module_NI_CARDS[i]).memory_object);
 								GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 								DAQ_DB_Config((module_NI_CARDS[i]).device_number,
 								/* disable */(i16)0);
@@ -8134,8 +8224,12 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 								(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
 								sizeof(i16)),(DWORD)MEM_RELEASE);
 #else /* defined (USE_VIRTUAL_LOCK) */
+#if defined (USE_MALLOC)
+							free((module_NI_CARDS[i]).memory_object);
+#else /* defined (USE_MALLOC) */
 							GlobalUnlock((module_NI_CARDS[i]).memory_object);
 							GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 							DAQ_DB_Config((module_NI_CARDS[i]).device_number,
 							/* disable */(i16)0);
@@ -8271,8 +8365,12 @@ hardware.
 					(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
 					sizeof(i16)),(DWORD)MEM_RELEASE);
 #else /* defined (USE_VIRTUAL_LOCK) */
+#if defined (USE_MALLOC)
+				free((module_NI_CARDS[i]).memory_object);
+#else /* defined (USE_MALLOC) */
 				GlobalUnlock((module_NI_CARDS[i]).memory_object);
 				GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 				/* turn off double buffering */
 				status=DAQ_DB_Config((module_NI_CARDS[i]).device_number,
@@ -8924,8 +9022,12 @@ Starts the sampling.
 					(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
 					sizeof(i16)),(DWORD)MEM_RELEASE);
 #else /* defined (USE_VIRTUAL_LOCK) */
+#if defined (USE_MALLOC)
+				free((module_NI_CARDS[i]).memory_object);
+#else /* defined (USE_MALLOC) */
 				GlobalUnlock((module_NI_CARDS[i]).memory_object);
 				GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 #endif /* defined (RECONFIGURE_FOR_START_SAMPLING_1) */
 #if defined (RECONFIGURE_FOR_START_SAMPLING_2)
