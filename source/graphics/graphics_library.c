@@ -12,7 +12,6 @@ Functions for interfacing with the graphics library.
 #if defined (MOTIF)
 #include <X11/Xlib.h>
 #include <GL/glu.h>
-#include <GL/glut.h>
 #include <GL/glx.h>
 #endif /* defined (MOTIF) */
 #endif /* defined (OPENGL_API) */
