@@ -19,6 +19,14 @@ int gettimeofday(struct timeval *time, void *timezone)
   time->tv_usec = (gettime - (time->tv_sec*1000)) * 1000;
   return 0;
 }
+
+clock_t times(struct tms *buffer)
+{
+  clock_t gettime;
+  
+  gettime = timeGetTime();
+  return gettime;
+}
 #else /* defined (WIN32_SYSTEM) */
 /* Declare something so that this file will compile */
 int dummy;

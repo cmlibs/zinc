@@ -9,7 +9,6 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
 #include <math.h>
 #include <stdio.h>
 #include <general/time.h>
-#include <sys/times.h>
 
 #include "general/compare.h"
 #include "general/debug.h"
