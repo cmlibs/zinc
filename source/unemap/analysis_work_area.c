@@ -4081,11 +4081,6 @@ signals.
 						(buffer->frequency);
 					map->end_time=map->start_time;
 				}
-				else
-				{
-					map->start_time=0;
-					map->end_time=0;
-				}
 			}
 			else
 			{
@@ -4217,11 +4212,6 @@ analysing the signals.
 					(float)((buffer->times)[analysis->potential_time])*1000./
 					(buffer->frequency);
 				map->end_time=map->start_time;
-			}
-			else
-			{
-				map->start_time=0;
-				map->end_time=0;
 			}
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
@@ -4428,11 +4418,6 @@ for analysing the signals.
 					(buffer->frequency);
 				map->end_time=map->start_time;
 			}
-			else
-			{
-				map->start_time=0;
-				map->end_time=0;
-			}
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
@@ -4587,11 +4572,6 @@ for analysing the signals.  <bdf>!=0 reads bdf files, else reads edf files
 					(float)((buffer->times)[analysis->potential_time])*1000./
 					(buffer->frequency);
 				map->end_time=map->start_time;
-			}
-			else
-			{
-				map->start_time=0;
-				map->end_time=0;
 			}
 #if defined (UNEMAP_USE_3D)
 			/* put the rig into nodes */
@@ -4968,11 +4948,6 @@ for analysing the signals.
 					(buffer->frequency);
 				map->end_time=map->start_time;
 			}
-			else
-			{
-				map->start_time=0;
-				map->end_time=0;
-			}
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
@@ -5182,11 +5157,6 @@ for analysing the signals.
 					(float)((buffer->times)[analysis->potential_time])*1000./
 					(buffer->frequency);
 				map->end_time=map->start_time;
-			}
-			else
-			{
-				map->start_time=0;
-				map->end_time=0;
 			}
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
