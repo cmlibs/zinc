@@ -115,6 +115,7 @@ ifeq ($(SYSNAME:IRIX%=),)
    CC = cc -c
    CPP = CC -c
    FORTRAN = f77 -c
+   MAKEDEPEND = makedepend
    CPREPROCESS = cc -P
    # LINK = cc
    # Must use C++ linker for XML */
@@ -154,6 +155,7 @@ ifeq ($(SYSNAME),Linux)
    CC = gcc -c
    CPP = g++ -c
    FORTRAN = g77 -c -fno-second-underscore
+   MAKEDEPEND = gcc -MM -MG
    CPREPROCESS = gcc -E -P
    ifeq ($(DYNAMIC_GL_LINUX),true)
       LINK = gcc
@@ -187,6 +189,7 @@ ifeq ($(SYSNAME),AIX)
    CC = xlc -c
    CPP = xlc -qnolm -c
    FORTRAN = f77 -c
+   MAKEDEPEND = makedepend
    CPREPROCESS = 
    LINK = xlc
    ifneq ($(DEBUG),true)
@@ -214,6 +217,7 @@ ifeq ($(SYSNAME),win32)
    CC = gcc -c -mno-cygwin -mms-bitfields
    CPP = gcc -c
    FORTRAN = f77 -c
+   MAKEDEPEND = makedepend
    CPREPROCESS = 
    LINK = gcc -mno-cygwin -fnative-struct -mms-bitfields
    ifeq ($(filter-out CONSOLE_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
@@ -245,12 +249,12 @@ DSO_LINK = $(LINK) $(ALL_FLAGS) -shared
 .MAKEOPTS : -r
 
 .SUFFIXES :
-.SUFFIXES : .o .c .cpp .f .uil .uidh
+.SUFFIXES : .o .c .d .cpp .f .uil .uidh
 ifeq ($(SYSNAME),win32)
 .SUFFIXES : .res .rc
 endif # SYSNAME == win32
 
-.c.o: 
+%.o: %.c %.d 
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
@@ -279,7 +283,7 @@ else # CMISS_ROOT_DEFINED
 	esac ;
 endif # CMISS_ROOT_DEFINED
 
-.cpp.o:
+%.o: %.cpp %.d
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
@@ -308,7 +312,7 @@ else # CMISS_ROOT_DEFINED
 	esac ;
 endif # CMISS_ROOT_DEFINED)
 
-.f.o: 
+%.o: %.f %.d
 	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
@@ -330,6 +334,36 @@ else # CMISS_ROOT_DEFINED
 	  set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) $(TARGET_TYPE_FLAGS) -o $(OBJECT_PATH)/$*.o $(SOURCE_DIRECTORY_INC) $*.f ;; \
 	esac ;
 endif # CMISS_ROOT_DEFINED
+
+%.d : %.c
+	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
+		mkdir -p $(OBJECT_PATH)/$(*D); \
+	fi
+	@set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $<  | \
+	sed -e 's%^.*\.o%$*.o $*.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g' > $(OBJECT_PATH)/$*.d ;
+ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
+   # Fix up the uidh references
+	sed "s%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g" $(OBJECT_PATH)/$*.d > $(OBJECT_PATH)/$*.d2
+	mv $(OBJECT_PATH)/$*.d2 $(OBJECT_PATH)/$*.d
+endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
+
+%.d : %.cpp
+	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
+		mkdir -p $(OBJECT_PATH)/$(*D); \
+	fi
+	@set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $<  | \
+	sed -e 's%^.*\.o%$*.o $*.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g' > $(OBJECT_PATH)/$*.d ;
+ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
+   # Fix up the uidh references
+	sed "s%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g" $(OBJECT_PATH)/$*.d > $(OBJECT_PATH)/$*.d2
+	mv $(OBJECT_PATH)/$*.d2 $(OBJECT_PATH)/$*.d
+endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
+
+%.d: %.f
+	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
+		mkdir -p $(OBJECT_PATH)/$(*D); \
+	fi
+	touch $(OBJECT_PATH)/$@
 
 ifeq ($(USER_INTERFACE),WIN32_USER_INTERFACE)
 .rc.res:
