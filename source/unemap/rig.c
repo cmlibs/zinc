@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 18 February 2000
+LAST MODIFIED : 29 June 2000
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -18,12 +18,14 @@ Contains function definitions for measurement rigs.
 #if defined (WIN32)
 #include <float.h>
 #endif /* defined (WIN32) */
+#include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "unemap/interpolate.h"
 #include "unemap/rig.h"
+#include "unemap/unemap_package.h"
 #include "user_interface/message.h"
 
 /*
@@ -688,7 +690,11 @@ Counts the number of items in a page list.
 } /* number_in_Page_list */
 
 struct Region *create_Region(char *name,enum Region_type type,int number,
-	int number_of_devices)
+	int number_of_devices
+#if defined (UNEMAP_USE_NODES)
+	,struct Unemap_package *unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+														 )
 /*******************************************************************************
 LAST MODIFIED : 8 October 1997
 
@@ -731,6 +737,13 @@ and NULL if unsuccessful.
 		}
 		region->number=number;
 		region->number_of_devices=number_of_devices;
+#if defined (UNEMAP_USE_NODES)
+		region->unemap_package=ACCESS(Unemap_package)(unemap_package);
+		region->rig_node_group=(struct GROUP(FE_node) *)NULL;
+		region->map_3d_package=(struct Map_3d_package *)NULL;
+		region->electrode_position_field=(struct FE_field *)NULL;
+		region->map_electrode_position_field=(struct FE_field *)NULL;
+#endif /* defined (UNEMAP_USE_NODES) */
 	}
 	else
 	{
@@ -744,7 +757,7 @@ and NULL if unsuccessful.
 
 int destroy_Region(struct Region **region)
 /*******************************************************************************
-LAST MODIFIED : 8 October 1997
+LAST MODIFIED : 17 July 2000 
 
 DESCRIPTION :
 This function frees the memory associated with the fields of <**region>, frees
@@ -753,11 +766,51 @@ the devices in the device list.
 ==============================================================================*/
 {
 	int return_code;
-
+#if defined (UNEMAP_USE_NODES)
+	struct FE_field *temp_field=(struct FE_field *)NULL;
+	struct MANAGER(Computed_field) *computed_field_manager=
+		(struct MANAGER(Computed_field) *)NULL;	
+	struct MANAGER(FE_field) *fe_field_manager=
+		(struct MANAGER(FE_field) *)NULL;	
+	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
+	struct Region *the_region=(struct Region *)NULL;		
+#endif /* defined (UNEMAP_USE_NODES)*/
 	ENTER(destroy_Region);
 	return_code=1;
 	if (*region)
 	{
+#if defined (UNEMAP_USE_NODES)
+		the_region=*region;
+		unemap_package=the_region->unemap_package;
+		if(the_region&&unemap_package)
+		{
+			/* following will deaccess the rig_node_group */
+			free_unemap_package_rig_node_group(unemap_package,&(the_region->rig_node_group));
+			computed_field_manager=get_unemap_package_Computed_field_manager(unemap_package);
+			fe_field_manager=get_unemap_package_FE_field_manager(unemap_package);
+			if(the_region->electrode_position_field)
+			{
+				temp_field=the_region->electrode_position_field;
+				DEACCESS(FE_field)(&temp_field);
+				destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+					the_region->electrode_position_field);
+				the_region->electrode_position_field=(struct FE_field *)NULL;
+			}	
+			if(the_region->map_electrode_position_field)
+			{
+				temp_field=the_region->map_electrode_position_field;
+				DEACCESS(FE_field)(&temp_field);
+				destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+					the_region->map_electrode_position_field);
+				the_region->map_electrode_position_field=(struct FE_field *)NULL;
+			}			
+		}
+		DEACCESS(GROUP(FE_node))(&((*region)->rig_node_group));
+		DEACCESS(Map_3d_package)(&((*region)->map_3d_package));
+		DEACCESS(FE_field)(&((*region)->electrode_position_field));
+		DEACCESS(FE_field)(&((*region)->map_electrode_position_field));
+		DEACCESS(Unemap_package)(&((*region)->unemap_package));	
+#endif
 		DEALLOCATE((*region)->name);
 		DEALLOCATE(*region);
 		*region=(struct Region *)NULL;
@@ -766,6 +819,249 @@ the devices in the device list.
 
 	return (return_code);
 } /* destroy_Region */
+
+#if defined (UNEMAP_USE_NODES)
+struct Unemap_package *get_Region_unemap_package(struct Region *region)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Gets  unemap_package of <region> 
+==============================================================================*/
+{
+	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
+
+	ENTER(get_Region_unemap_package);
+	if(region)
+	{
+		unemap_package=region->unemap_package;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_Region_unemap_package."
+			" invalid arguments");	
+	}
+	LEAVE;
+	return (unemap_package);
+}/* get_Region_unemap_package*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+#if defined (UNEMAP_USE_NODES)
+struct GROUP(FE_node) *get_Region_rig_node_group(struct Region *region)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Gets  rig_node_group of <region> 
+==============================================================================*/
+{
+	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
+
+	ENTER(get_Region_rig_node_group);
+	if(region)
+	{
+		rig_node_group=region->rig_node_group;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_Region_rig_node_group."
+			" invalid arguments");	
+	}
+	LEAVE;
+	return (rig_node_group);
+}/* get_Region_rig_node_group*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+#if defined (UNEMAP_USE_NODES)
+int set_Region_rig_node_group(struct Region *region,
+	struct GROUP(FE_node) *rig_node_group)
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Sets (and accesses) rig_node_group of <region> to <rig_node_group>
+==============================================================================*/
+{
+	int return_code;
+	ENTER(set_Region_rig_node_group);
+	if(region&&rig_node_group)
+	{
+		return_code =1;	
+		REACCESS(GROUP(FE_node))(&(region->rig_node_group),rig_node_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_Region_rig_node_group."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_Region_rig_node_group*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+#if defined (UNEMAP_USE_NODES)
+struct Map_3d_package *get_Region_map_3d_package(struct Region *region)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Gets  Map_3d_package  of <region> 
+==============================================================================*/
+{
+	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
+
+	ENTER(get_Region_map_3d_package);
+	if(region)
+	{
+		map_3d_package=region->map_3d_package;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_Region_map_3d_package."
+			" invalid arguments");
+	}
+	LEAVE;
+	return (map_3d_package);
+}/* get_Region_map_3d_package*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+#if defined (UNEMAP_USE_NODES)
+int set_Region_map_3d_package(struct Region *region,struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Sets (and accesses) map_info_3 of <region> to <map_3d_package>
+==============================================================================*/
+{
+	int return_code;
+	ENTER(set_Region_map_3d_package);
+	/* map_3d_package can be NULL*/
+	if(region)
+	{
+		return_code =1;	
+		REACCESS(Map_3d_package)(&(region->map_3d_package),map_3d_package);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_Region_map_3d_package."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_Region_map_3d_package*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_field *get_Region_electrode_position_field(struct Region *region)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Gets  electrode_position_field  of <region> 
+==============================================================================*/
+{
+	struct FE_field *electrode_position_field=(struct FE_field *)NULL;
+
+	ENTER(get_Region_electrode_position_field);
+	if(region)
+	{
+		electrode_position_field=region->electrode_position_field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_Region_electrode_position_field."
+			" invalid arguments");
+	}
+	LEAVE;
+	return (electrode_position_field);
+}/* set_Region_electrode_position_field*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+#if defined (UNEMAP_USE_NODES)
+int set_Region_electrode_position_field(struct Region *region,
+	struct FE_field *electrode_position_field)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Sets (and accesses) electrode_position_field of <region> to <electrode_position_field>
+==============================================================================*/
+{
+	int return_code;
+	ENTER(set_Region_electrode_position_field);
+	if(region&&electrode_position_field)
+	{
+		return_code =1;	
+		REACCESS(FE_field)(&(region->electrode_position_field),electrode_position_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_Region_electrode_position_field."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_Region_electrode_position_field*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_field *get_Region_map_electrode_position_field(struct Region *region)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Gets  map_electrode_position_field  of <region> 
+==============================================================================*/
+{
+	struct FE_field *map_electrode_position_field=(struct FE_field *)NULL;
+
+	ENTER(get_Region_map_electrode_position_field);
+	if(region)
+	{
+		map_electrode_position_field=region->map_electrode_position_field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_Region_map_electrode_position_field."
+			" invalid arguments");
+	}
+	LEAVE;
+	return (map_electrode_position_field);
+}/* set_Region_map_electrode_position_field*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+#if defined (UNEMAP_USE_NODES)
+int set_Region_map_electrode_position_field(struct Region *region,
+	struct FE_field *map_electrode_position_field)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Sets (and accesses) map_electrode_position_field of <region> to 
+<map_electrode_position_field>
+==============================================================================*/
+{
+	int return_code;
+	ENTER(set_Region_map_electrode_position_field);
+	if(region&&map_electrode_position_field)
+	{
+		return_code =1;	
+		REACCESS(FE_field)(&(region->map_electrode_position_field),map_electrode_position_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_Region_map_electrode_position_field."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_Region_map_electrode_position_field*/
+#endif /* defined (UNEMAP_USE_NODES)*/
 
 struct Region_list_item *create_Region_list_item(struct Region *region,
 	struct Region_list_item *next)
@@ -821,13 +1117,119 @@ destroys the regions in the list.  <**list> is set to NULL.
 	return (return_code);
 } /* destroy_Region_list */
 
+struct Region *get_Region_list_item_region(
+	struct Region_list_item *region_list_item)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Gets  Region  of <region_list_item> 
+==============================================================================*/
+{
+	struct Region *region=(struct Region *)NULL;
+
+	ENTER(get_Region_list_item_region);
+	if(region_list_item)
+	{
+		region=region_list_item->region;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_Region_list_item_region."
+			" invalid arguments");
+	}
+	LEAVE;
+	return (region);
+}/* set_Region_list_item_region*/
+
+int set_Region_list_item_region(struct Region_list_item *region_list_item,
+	struct Region *region)
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Sets region of <region_list_item> 
+==============================================================================*/
+{
+	int return_code;
+	ENTER(set_Region_list_item_region);
+	if(region)
+	{
+		return_code =1;	
+		region_list_item->region=region;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_Region_list_item_region."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_Region_list_item_region*/
+
+struct Region_list_item *get_Region_list_item_next(
+	struct Region_list_item *region_list_item)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Gets next  of <region_list_item> 
+==============================================================================*/
+{
+	struct Region_list_item *next=(struct Region_list_item *)NULL;
+
+	ENTER(get_Region_list_item_next);
+	if(region_list_item)
+	{
+		next=region_list_item->next;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_Region_list_item_next."
+			" invalid arguments");
+	}
+	LEAVE;
+	return (next);
+}/* set_Region_list_item_next*/
+
+int set_Region_list_item_next(struct Region_list_item *region_list_item,
+	struct Region_list_item *next)
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Sets next of <region_list_item> to 
+==============================================================================*/
+{
+	int return_code;
+	ENTER(set_Region_list_item_next);
+	if(region_list_item)
+	{
+		return_code =1;	
+		region_list_item->next=next;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_Region_list_item_next."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_Region_list_item_next*/
+
 struct Rig *create_Rig(char *name,enum Monitoring_status monitoring,
 	enum Experiment_status experiment,int number_of_devices,
 	struct Device **devices,struct Page_list_item *page_list,
 	int number_of_regions,struct Region_list_item *region_list,
-	struct Region *current_region)
+	struct Region *current_region
+#if defined (UNEMAP_USE_NODES)
+	,struct Unemap_package *unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+											 )
 /*******************************************************************************
-LAST MODIFIED : 1 January 1997
+LAST MODIFIED : 26 June 2000 
 
 DESCRIPTION :
 This function allocates memory for a rig and initializes the fields to
@@ -862,6 +1264,10 @@ NULL if unsuccessful.
 			rig->number_of_regions=number_of_regions;
 			rig->region_list=region_list;
 			rig->current_region=current_region;
+#if defined (UNEMAP_USE_NODES)
+			rig->unemap_package=ACCESS(Unemap_package)(unemap_package);
+			rig->all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;			
+#endif /* defined (UNEMAP_USE_NODES) */
 			rig->signal_file_name=(char *)NULL;
 #if defined (OLD_CODE)
 ???DB.  Only read calibration when doing acquisition */
@@ -890,9 +1296,13 @@ NULL if unsuccessful.
 struct Rig *create_standard_Rig(char *name,enum Region_type region_type,
 	enum Monitoring_status monitoring,enum Experiment_status experiment,
 	int number_of_rows,int *electrodes_in_row,int number_of_regions,
-	int number_of_auxiliary_inputs,float sock_focus)
+	int number_of_auxiliary_inputs,float sock_focus
+#if defined (UNEMAP_USE_NODES)
+	,struct Unemap_package *unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+	)
 /*******************************************************************************
-LAST MODIFIED : 27 July 1999
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 This function is a specialized version of create_Rig (in rig.c).  It creates a
@@ -980,7 +1390,11 @@ combinations of electrodes).
 					/* create the region */
 					sprintf(region_name+7,"%d",region_number+1);
 					if ((region=create_Region(region_name,region_type,region_number,
-						electrodes_in_region))&&(*region_item=create_Region_list_item(
+						electrodes_in_region
+#if defined (UNEMAP_USE_NODES)
+						,unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+						))&&(*region_item=create_Region_list_item(
 						region,(struct Region_list_item *)NULL)))
 					{
 						switch (region_type)
@@ -1107,7 +1521,11 @@ combinations of electrodes).
 						/* create the rig */
 						rig=create_Rig(name,monitoring,experiment,number_of_devices,devices,
 							(struct Page_list_item *)NULL,number_of_regions,region_list,
-							(struct Region *)NULL);
+							(struct Region *)NULL
+#if defined (UNEMAP_USE_NODES)
+							,unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+							);
 					}
 					else
 					{
@@ -1185,11 +1603,22 @@ memory for <**rig> and changes <*rig> to NULL.
 			device++;
 			number_of_devices--;
 		}
+#if defined (UNEMAP_USE_NODES)	
+		/*free up the package dependent things in the rig*/
+		if(((*rig)->all_devices_rig_node_group)&&((*rig)->unemap_package))
+		{
+			/* following will deaccess the rig_node_group */
+			free_unemap_package_rig_node_group((*rig)->unemap_package,
+				&((*rig)->all_devices_rig_node_group));
+		}	
+		DEACCESS(Unemap_package)(&((*rig)->unemap_package));
+#endif
 		destroy_Page_list(&((*rig)->page_list));
 		destroy_Region_list(&((*rig)->region_list));
 		DEALLOCATE((*rig)->devices);
 		DEALLOCATE((*rig)->signal_file_name);
-		DEALLOCATE(*rig);
+		DEALLOCATE(*rig);	
+
 		*rig=(struct Rig *)NULL;
 	}
 	LEAVE;
@@ -1197,10 +1626,192 @@ memory for <**rig> and changes <*rig> to NULL.
 	return (return_code);
 } /* destroy_Rig */
 
-struct Rig *read_configuration(FILE *input_file,enum Rig_file_type file_type,
-	enum Region_type rig_type)
+#if defined (UNEMAP_USE_NODES)
+struct Unemap_package *get_Rig_unemap_package(struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 28 July 1999
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Gets  unemap_package of <rig> 
+==============================================================================*/
+{
+	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
+
+	ENTER(get_Rig_unemap_package);
+	if(rig)
+	{
+		unemap_package=rig->unemap_package;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_Rig_unemap_package."
+			" invalid arguments");	
+	}
+	LEAVE;
+	return (unemap_package);
+}/* get_Rig_unemap_package*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+#if defined (UNEMAP_USE_NODES)
+struct GROUP(FE_node) *get_Rig_all_devices_rig_node_group(struct Rig *rig)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Gets  all_devices_rig_node_group of <rig> 
+==============================================================================*/
+{
+	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
+
+	ENTER(get_Rig_all_devices_rig_node_group);
+	if(rig)
+	{	
+		rig_node_group=rig->all_devices_rig_node_group;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_Rig_all_devices_rig_node_group."
+			" invalid arguments");	
+	}
+	LEAVE;
+	return (rig_node_group);
+}/* get_Rig_all_devices_rig_node_group*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+#if defined (UNEMAP_USE_NODES)
+int set_Rig_all_devices_rig_node_group(struct Rig *rig,
+	struct GROUP(FE_node) *rig_node_group)
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Sets (and accesses) all_devices_rig_node_group of <rig> to <rig_node_group>
+==============================================================================*/
+{
+	int return_code;
+	ENTER(set_Rig_all_devices_rig_node_group);
+	if(rig&&rig_node_group)
+	{
+		return_code =1;	
+		REACCESS(GROUP(FE_node))(&(rig->all_devices_rig_node_group),rig_node_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_Rig_all_devices_rig_node_group."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_Rig_all_devices_rig_node_group*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+struct Region *get_Rig_current_region(struct Rig *rig)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Gets  current_region of <rig> 
+==============================================================================*/
+{
+	struct Region *region=(struct Region *)NULL;
+
+	ENTER(get_Rig_current_region);
+	if(rig)
+	{	
+		region=rig->current_region;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_Rig_current_region."
+			" invalid arguments");	
+	}
+	LEAVE;
+	return (region);
+}/* get_Rig_current_region*/
+
+int set_Rig_current_region(struct Rig *rig,struct Region *region)
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Sets  current_region of <rig> to <region>
+==============================================================================*/
+{
+	int return_code;
+	ENTER(set_Rig_current_region);
+	if(rig)
+	{
+		return_code =1;	
+		rig->current_region=region;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_Rig_current_region."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_Rig_current_region*/
+
+struct Region_list_item *get_Rig_region_list(struct Rig *rig)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Gets  region_list of <rig> struct Region_list_item *
+==============================================================================*/
+{
+	struct Region_list_item *region_list=(struct Region_list_item *)NULL;
+
+	ENTER(get_Rig_region_list);
+	if(rig)
+	{	
+		region_list=rig->region_list;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_Rig_region_list."
+			" invalid arguments");	
+	}
+	LEAVE;
+	return (region_list);
+}/* get_Rig_region_list*/
+
+int set_Rig_region_list(struct Rig *rig,struct Region_list_item *region_list)
+/*******************************************************************************
+LAST MODIFIED : 27 June 2000
+
+DESCRIPTION :
+Sets  region_list of <rig> to <region>
+==============================================================================*/
+{
+	int return_code;
+	ENTER(set_Rig_region_list);
+	if(rig)
+	{
+		return_code =1;	
+		rig->region_list=region_list;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_Rig_region_list."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_Rig_region_list*/
+
+struct Rig *read_configuration(FILE *input_file,enum Rig_file_type file_type,
+	enum Region_type rig_type
+#if defined (UNEMAP_USE_NODES)
+	,struct Unemap_package *unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+       )
+/*******************************************************************************
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 Assumes that the <input_file> has been opened, the <file_type> (binary or text)
@@ -1231,7 +1842,11 @@ pointer to the rig if successful and NULL if unsuccessful.
 		/* create the rig */
 		if (rig=create_Rig((char *)NULL,MONITORING_OFF,EXPERIMENT_OFF,0,
 			(struct Device **)NULL,(struct Page_list_item *)NULL,0,
-			(struct Region_list_item *)NULL,(struct Region *)NULL))
+			(struct Region_list_item *)NULL,(struct Region *)NULL
+#if defined (UNEMAP_USE_NODES)
+			,unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+			))
 		{
 			/* choose between the file types */
 			switch (file_type)
@@ -1265,8 +1880,11 @@ pointer to the rig if successful and NULL if unsuccessful.
 							fscanf(input_file,"%*[ :\n]");
 							/* create the region */
 							if ((*region_item_address=create_Region_list_item(create_Region(
-								(char *)NULL,region_type,number_of_regions,0),
-								(struct Region_list_item *)NULL))&&
+								(char *)NULL,region_type,number_of_regions,0
+#if defined (UNEMAP_USE_NODES)
+								,unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+								),(struct Region_list_item *)NULL))&&
 								((*region_item_address)->region))
 							{
 								number_of_regions++;
@@ -1935,8 +2553,11 @@ pointer to the rig if successful and NULL if unsuccessful.
 							}
 							/* create the region */
 							if ((*region_item_address=create_Region_list_item(create_Region(
-								(char *)NULL,region_type,region_number,0),
-								(struct Region_list_item *)NULL))&&
+								(char *)NULL,region_type,region_number,0
+#if defined (UNEMAP_USE_NODES)
+								,unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+                ),(struct Region_list_item *)NULL))&&
 								((*region_item_address)->region))
 							{
 								/* read the region name */
@@ -2511,9 +3132,13 @@ This function reads in the characteristics of the acquisition channels for the
 	return (return_code);
 } /* read_calibration_file */
 
-int read_configuration_file(char *file_name,void *rig_pointer)
+int read_configuration_file(char *file_name,void *rig_pointer
+#if defined (UNEMAP_USE_NODES)					
+		 ,struct Unemap_package *unemap_package
+#endif /* defined (UNEMAP_USE_NODES) */
+	)
 /*******************************************************************************
-LAST MODIFIED : 28 July 1999
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 This function reads in a rig configuration from the named file, automatically
@@ -2580,7 +3205,11 @@ the specified configuration and returns a pointer to it.
 	}
 	if (input_file)
 	{
-		if (rig=read_configuration(input_file,file_type,rig_type))
+		if (rig=read_configuration(input_file,file_type,rig_type
+#if defined (UNEMAP_USE_NODES)
+			,unemap_package
+#endif /* defined (UNEMAP_USE_NODES) */
+			))
 		{
 #if defined (OLD_CODE)
 ???DB.  Only read calibration when doing acquisition */
@@ -4038,9 +4667,13 @@ the memory for <**buffer> and changes <*buffer> to NULL.
 	return (return_code);
 } /* destroy_Signal_buffer */
 
-int read_signal_file(FILE *input_file,struct Rig **rig_pointer)
+int read_signal_file(FILE *input_file,struct Rig **rig_pointer
+#if defined (UNEMAP_USE_NODES)
+			,struct Unemap_package *unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+			)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 This function reads in a rig configuration and an interval of signal data from
@@ -4076,7 +4709,11 @@ the <input_file>.
 				(TORSO==rig_type))
 			{
 				/* read the the configuration file */
-				if (rig=read_configuration(input_file,BINARY,rig_type))
+				if (rig=read_configuration(input_file,BINARY,rig_type
+#if defined (UNEMAP_USE_NODES)
+					,unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+					))
 				{
 					/* read the number of signals */
 					if (1==BINARY_FILE_READ((char *)&number_of_signals,sizeof(int),1,
@@ -4122,9 +4759,9 @@ the <input_file>.
 											{
 												fread_result=BINARY_FILE_READ((char *)buffer->signals.
 													float_values,sizeof(float),
-													number_of_samples*number_of_signals,input_file);											
+													number_of_samples*number_of_signals,input_file);
 												/* check signal values.  If it's not a valid float, set
-													 it to 0  */																								
+													 it to 0  */																						
 												buffer_value=buffer->signals.float_values;
 												for (i=0;i<number_of_samples*number_of_signals;i++)
 												{			
@@ -4147,11 +4784,11 @@ the <input_file>.
 													{
 														*buffer_value=0.0;
 														display_message(ERROR_MESSAGE,
-															"read_signal_file.Signal value is infinite or not a number. "
+															"read_signal_file. signal value is infinite or not a number "
 															"Set to 0 ");
 													}
 													buffer_value++;
-												}											
+												}							
 											} break;
 										}
 										if (fread_result==number_of_samples*number_of_signals)

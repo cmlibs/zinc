@@ -215,7 +215,7 @@ The callback for redrawing part of the drawing area in trace area 2.
 									end_analysis_interval=buffer->end;
 									/* draw the active signal */
 									draw_signal(
-										(struct FE_node *)NULL,(struct Draw_package *)NULL,device,
+										(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,device,
 										EDIT_AREA_DETAIL,1,0,&start_analysis_interval,
 										&end_analysis_interval,0,0,trace_area_2->drawing->width,
 										trace_area_2->drawing->height,
@@ -6262,7 +6262,7 @@ Calculates the processed device.
 				if ((trace->highlight)&&(*(trace->highlight))&&
 					(device= **(trace->highlight))&&(device->signal)&&
 					(device->signal->buffer)&&extract_signal_information(
-					(struct FE_node *)NULL,(struct Draw_package *)NULL,device,1,0,
+					(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,device,1,0,
 					(device->signal->buffer->number_of_samples)-1,
 					(int *)NULL,&number_of_samples,&times,&values,&signals_status,&name,
 					&highlight,&minimum,&maximum)&&(0<number_of_samples)&&
@@ -6378,7 +6378,7 @@ Calculates the processed device.
 				if ((trace->highlight)&&(*(trace->highlight))&&
 					(device= **(trace->highlight))&&(device->signal)&&
 					(event=device->signal->first_event)&&extract_signal_information(
-					(struct FE_node *)NULL,(struct Draw_package *)NULL,device,1,1,0,
+					(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,device,1,1,0,
 					(int *)NULL,&number_of_samples,&times,&values,
 					(enum Event_signal_status **)NULL,&name,(int *)NULL,
 					(float *)NULL,(float *)NULL)&&(0<number_of_samples)&&
@@ -7095,7 +7095,7 @@ Calculates the processed device.
 							trace->real_device_1,trace->imaginary_device_1,processed_device,
 							(struct Device *)NULL);
 						extract_signal_information((struct FE_node *)NULL,
-							(struct Draw_package *)NULL,device,1,1,0,(int *)NULL,
+							(struct Signal_drawing_package *)NULL,device,1,1,0,(int *)NULL,
 							&number_of_samples,(float **)NULL,(float **)NULL,
 							(enum Event_signal_status **)NULL,(char **)NULL,(int *)NULL,
 							(float *)NULL,(float *)NULL);
@@ -7455,7 +7455,7 @@ The callback for redrawing part of the drawing area in trace area 1.
 									start_analysis_interval=buffer->start;
 									end_analysis_interval=buffer->end;
 									draw_signal(
-										(struct FE_node *)NULL,(struct Draw_package *)NULL,device,
+										(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,device,
 										ENLARGE_AREA_DETAIL,1,0,&start_analysis_interval,
 										&end_analysis_interval,0,0,trace_area_1->drawing->width,
 										trace_area_1->drawing->height,
@@ -7599,7 +7599,7 @@ The callback for redrawing part of the drawing area in trace area 1.
 									end_analysis_interval=buffer->end;
 									/* draw the active signal */
 									draw_signal(
-										(struct FE_node *)NULL,(struct Draw_package *)NULL,device,
+										(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,device,
 										EDIT_AREA_DETAIL,1,0,&start_analysis_interval,
 										&end_analysis_interval,0,0,trace_area_1->drawing->width,
 										trace_area_1->drawing->height,
@@ -7621,7 +7621,7 @@ The callback for redrawing part of the drawing area in trace area 1.
 									end_analysis_interval=buffer->end;
 									/* draw the active signal */
 									draw_signal((struct FE_node *)NULL,
-										(struct Draw_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
+										(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
 										&start_analysis_interval,&end_analysis_interval,0,0,
 										trace_area_1->drawing->width,trace_area_1->drawing->height,
 										trace_area_1->drawing->pixel_map,&axes_left,&axes_top,
@@ -7828,7 +7828,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 										trace->processed_device->signal_maximum=
 											device->signal_maximum;
 										draw_signal((struct FE_node *)NULL,
-											(struct Draw_package *)NULL,trace->processed_device,
+											(struct Signal_drawing_package *)NULL,trace->processed_device,
 											EDIT_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
 											trace_area_3->drawing->width,
 											trace_area_3->drawing->height,
@@ -7839,7 +7839,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 									else
 									{
 										draw_signal((struct FE_node *)NULL,
-											(struct Draw_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
+											(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
 											&first_data,&last_data,0,0,trace_area_3->drawing->width,
 											trace_area_3->drawing->height,
 											trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
@@ -8045,7 +8045,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 											}
 										}
 										draw_signal((struct FE_node *)NULL,
-											(struct Draw_package *)NULL,device,EDIT_AREA_DETAIL,
+											(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,
 											number_of_data_intervals,current_data_interval,
 											first_data_array,last_data_array,0,0,
 											trace_area_3->drawing->width,
@@ -8086,7 +8086,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 									signal_height=((trace_area_3->drawing->height)-1)/2;
 									/* draw the real/amplitude signal */
 									draw_signal((struct FE_node *)NULL,
-										(struct Draw_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
+										(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
 										&start_analysis_interval,&end_analysis_interval,0,0,
 										trace_area_3->drawing->width,signal_height,
 										trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
@@ -8094,7 +8094,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 										user_interface);
 									/* draw the imaginary/phase signal */
 									draw_signal((struct FE_node *)NULL,
-										(struct Draw_package *)NULL,trace->imaginary_device_1,
+										(struct Signal_drawing_package *)NULL,trace->imaginary_device_1,
 										EDIT_AREA_DETAIL,1,0,&start_analysis_interval,
 										&end_analysis_interval,0,signal_height,
 										trace_area_3->drawing->width,signal_height,
@@ -8129,7 +8129,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 									signal_height=trace_area_3->drawing->height;
 									/* draw the power spectrum */
 									draw_signal((struct FE_node *)NULL,
-										(struct Draw_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
+										(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
 										&start_analysis_interval,&end_analysis_interval,0,0,
 										trace_area_3->drawing->width,signal_height,
 										trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
@@ -8154,7 +8154,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 									signal_height=trace_area_3->drawing->height;
 									/* draw the signal */
 									draw_signal((struct FE_node *)NULL,
-										(struct Draw_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
+										(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
 										&start_analysis_interval,&end_analysis_interval,0,0,
 										trace_area_3->drawing->width,signal_height,
 										trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
@@ -8590,7 +8590,7 @@ Updates the selectability of the signal controls.
 #endif
 					}
 					/* ghost/unghost the next and previous buttons */
-					if (current_region=rig->current_region)
+					if (get_Rig_current_region(rig))
 					{
 						device=rig->devices;
 						device_number=0;

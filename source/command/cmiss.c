@@ -22402,7 +22402,24 @@ Executes a UNEMAP OPEN command.
 					{
 						if (system=create_System_window(shell,close_emap,
 							command_data->default_time_keeper,command_data->user_interface,
-							command_data->unemap_package))
+							command_data->unemap_package,	
+							command_data->element_point_ranges_selection,
+							command_data->element_selection,
+							command_data->node_selection,
+							command_data->data_selection,
+							command_data->texture_manager,
+							command_data->interactive_tool_manager,
+							command_data->scene_manager,
+							command_data->light_model_manager,
+							command_data->light_manager,
+							command_data->spectrum_manager,
+							command_data->graphical_material_manager,
+							command_data->data_manager,
+							command_data->glyph_list,						
+							command_data->default_graphical_material,
+							command_data->computed_field_package,
+							command_data->default_light,
+							command_data->default_light_model))
 						{
 							command_data->unemap_system_window=system;
 							create_Shell_list_item(&(system->window_shell),

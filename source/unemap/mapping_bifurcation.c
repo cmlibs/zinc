@@ -1298,7 +1298,7 @@ to the drawing or writes to a postscript file.
 					two_pi=2*pi;
 				}
 				/* determine the number of map regions */
-				if (current_region=rig->current_region)
+				if (current_region=get_Rig_current_region(rig))
 				{
 					number_of_regions=1;
 				}
@@ -1662,7 +1662,7 @@ to the drawing or writes to a postscript file.
 												}
 												else
 												{
-													current_region=rig->current_region;
+													current_region=get_Rig_current_region(rig);
 												}
 												/* interpolate data */
 												if (!(current_region->interpolation_function))
@@ -1689,7 +1689,7 @@ to the drawing or writes to a postscript file.
 												}
 												else
 												{
-													current_region=rig->current_region;
+													current_region=get_Rig_current_region(rig);
 												}
 												/* interpolate data */
 												if (function=current_region->interpolation_function)
@@ -2084,7 +2084,7 @@ to the drawing or writes to a postscript file.
 												}
 												else
 												{
-													current_region=rig->current_region;
+													current_region=get_Rig_current_region(rig);
 												}
 												/* interpolate data */
 												if (!(function=current_region->interpolation_function))
@@ -2145,7 +2145,7 @@ to the drawing or writes to a postscript file.
 												}
 												else
 												{
-													current_region=rig->current_region;
+													current_region=get_Rig_current_region(rig);
 												}
 												/* interpolate data */
 												if (function=current_region->interpolation_function)
@@ -3035,7 +3035,7 @@ to the drawing or writes to a postscript file.
 								}
 								else
 								{
-									current_region=rig->current_region;
+									current_region=get_Rig_current_region(rig);
 								}
 								/* draw fibres */
 								pixel_left=((region_number/number_of_rows)*
@@ -3841,7 +3841,7 @@ It should not be called until draw_map has been called.
 			{
 				if (rig= *(map->rig_pointer))
 				{
-					if (current_region=rig->current_region)
+					if (current_region=get_Rig_current_region(rig))
 					{
 						number_of_regions=1;
 					}
@@ -4040,7 +4040,7 @@ It should not be called until draw_map has been called.
 			{
 				if (rig= *(map->rig_pointer))
 				{
-					current_region=rig->current_region;
+					current_region=get_Rig_current_region(rig);
 					/* count the auxiliary_devices */
 					number_of_auxiliary=0;
 					number_of_devices=rig->number_of_devices;

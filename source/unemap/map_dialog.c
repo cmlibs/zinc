@@ -1,11 +1,12 @@
 /*******************************************************************************
 FILE : map_dialog.c
 
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 18 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
 #include <stddef.h>
+#include <stdio.h>
 #if defined (MOTIF)
 #include <X11/Intrinsic.h>
 #include <X11/Shell.h>

@@ -36222,28 +36222,32 @@ DESCRIPTION :Debug function. May be naughty.
 	return(access_count);
 }
 
-int free_node_and_element_and_data_groups(struct GROUP(FE_node) *node_group,
+int free_node_and_element_and_data_groups(struct GROUP(FE_node) **a_node_group,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element))	*element_group_manager,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager )
 /*******************************************************************************
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
-Given a node group, frees it and it's asscoiated element and data groups
+Given a <node_group>, frees it's asscoiated element and data groups
+Deaccesses the <node_group> and attempts to remove it from the manager.
+(i.e assumes the <node_group> has been accessed somewhere)
 ==============================================================================*/
 {
 	int return_code;	
 	char *group_name;
-	struct GROUP(FE_node) *data_group,*temp_node_group;
-	struct GROUP(FE_element) *element_group;
-	struct FE_node *node_to_destroy;
-	struct FE_element *element_to_destroy;
+	struct GROUP(FE_node) *data_group=(struct GROUP(FE_node) *)NULL;
+	struct GROUP(FE_node) *temp_node_group=(struct GROUP(FE_node) *)NULL;
+	struct GROUP(FE_node) *node_group=(struct GROUP(FE_node) *)NULL;
+	struct GROUP(FE_element) *element_group=(struct GROUP(FE_element) *)NULL;
+	struct FE_node *node_to_destroy=(struct FE_node *)NULL;
+	struct FE_element *element_to_destroy=(struct FE_element *)NULL;
 
 	ENTER(free_node_and_element_and_data_groups);
-	if(node_group)
+	if(node_group=*a_node_group)
 	{
 		return_code=1;		
 		GET_NAME(GROUP(FE_node))(node_group,&group_name);	 
@@ -36304,14 +36308,24 @@ Given a node group, frees it and it's asscoiated element and data groups
 			display_message(ERROR_MESSAGE,"free_node_and_element_and_data_groups."
 			" Failed to free groups");
 		}
-
+		
 		temp_node_group=node_group;
 		DEACCESS(GROUP(FE_node))(&temp_node_group);
+		
 		if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(node_group))
 		{
-			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(node_group,
-				node_group_manager);
+			if(REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(node_group,
+				node_group_manager))
+			{
+				node_group=(struct GROUP(FE_node) *)NULL;
+				return_code=1;
+			}
+			else
+			{
+				return_code=0;
+			}
 		}
+		*a_node_group=node_group;
 		DEALLOCATE(group_name);				
 	}
 	else

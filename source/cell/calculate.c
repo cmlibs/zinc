@@ -817,8 +817,12 @@ Calculates the cell window.
             saved_buffers[number_of_saved_buffers-1]=buffer;
             /* set up the devices */
             if (ALLOCATE(devices,struct Device *,number_of_devices)&&
-              (region=create_Region("cell",PATCH,0,0))&&(region_list=
-                create_Region_list_item(region,
+              (region=create_Region("cell",PATCH,0,0
+#if defined (UNEMAP_USE_NODES)
+									/*??JW maybe should pass down from above?*/
+									,(struct Unemap_package *)NULL
+#endif /* defined (UNEMAP_USE_NODES) */
+								))&&(region_list=create_Region_list_item(region,
                   (struct Region_list_item *)NULL)))
             {
               device_number=0;
@@ -1017,7 +1021,12 @@ Calculates the cell window.
                 if (calculate_rig=create_Rig("cell",MONITORING_OFF,
                   EXPERIMENT_OFF,
                   number_of_devices,devices,(struct Page_list_item *)NULL,0,
-                  region_list,(struct Region *)NULL))
+                  region_list,(struct Region *)NULL
+#if defined (UNEMAP_USE_NODES)
+									/*??JW maybe should pass down from above?*/
+									,(struct Unemap_package *)NULL
+#endif /* defined (UNEMAP_USE_NODES) */
+										))
                 {
                   /* register the callbacks */
                   /* the focus callback on the analysis window requires

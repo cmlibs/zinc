@@ -19,9 +19,12 @@ DESCRIPTION :
 #include "graphics/graphics_window.h"
 #include "graphics/graphical_element.h"
 #include "graphics/element_group_settings.h"
+#include "interaction/interactive_tool.h"
+#include "selection/element_point_ranges_selection.h"
+#include "selection/element_selection.h"  
+#include "selection/node_selection.h"
 #endif
 #include "unemap/drawing_2d.h"
-#include "unemap/rig.h"
 #include "user_interface/user_interface.h"
 
 /*
@@ -165,12 +168,47 @@ DESCRIPTION :
 	VARIABLE_THICKNESS
 }; /* enum Contour_thickness */
 
+#if defined (UNEMAP_USE_NODES)
+struct Map_3d_package	
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION : Information specific to each individual 3d map.
+??JW possibly scene and scene_viewer should be moved here from 
+map_drawing_information.
+==============================================================================*/
+{	
+	char *fit_name;
+	enum Electrodes_option electrodes_option;
+	FE_value electrode_size;
+	/* a flag  */
+	int colour_electrodes_with_signal;
+	int access_count,number_of_contours,number_of_map_columns,number_of_map_rows;
+	struct GT_element_settings **contour_settings;
+	struct FE_field *map_position_field,*map_fit_field;	
+	struct FE_node_order_info *node_order_info;	
+	struct GROUP(FE_element) *element_group;
+	struct GROUP(FE_node) *node_group;		
+	struct GT_object *electrode_glyph;	
+	struct GT_object *torso_arm_labels;/*FOR AJP*/
+	struct MANAGER(Computed_field) *computed_field_manager;
+	struct MANAGER(FE_element) *element_manager;
+	struct MANAGER(FE_field) *fe_field_manager;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_element))	*element_group_manager;	
+	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;  
+};
+#endif /* defined (UNEMAP_USE_NODES) */
+
 struct Map_drawing_information
 /*******************************************************************************
-LAST MODIFIED : 27 September 1999
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
 Information needed for drawing a map.  Windowing system dependent
+This information is common to all maps.
+??JW possibly scene and scene_viewer should be moved to map_drawing_information
+from here.
 ==============================================================================*/
 {
 #if defined (MOTIF)
@@ -200,6 +238,34 @@ Information needed for drawing a map.  Windowing system dependent
 	XColor *spectrum_rgb;
 	XFontStruct *font;
 #endif /* defined (MOTIF) */
+#if defined (UNEMAP_USE_NODES)
+	/* These are for the map 3d graphics */
+	/* Flag to record if done "view all" on scene*/
+	int viewed_scene; 
+	struct Colour *background_colour;
+	struct Colour *electrode_colour;
+	struct Colour *no_interpolation_colour;
+	struct Element_point_ranges_selection *element_point_ranges_selection;
+	struct FE_element_selection *element_selection;
+	struct FE_node_selection *data_selection,*node_selection; 
+	struct Light *light;	
+	struct Light_model *light_model;	
+	struct Scene *scene;	
+	struct Scene_viewer *scene_viewer;
+	struct Graphical_material *map_graphical_material;
+	struct Graphical_material *electrode_graphical_material;
+	struct Time_keeper *time_keeper;	
+	struct Computed_field_package *computed_field_package;
+	struct LIST(GT_object) *glyph_list;
+	struct MANAGER(Texture) *texture_manager;
+	struct MANAGER(Scene) *scene_manager;
+	struct MANAGER(Light_model) *light_model_manager;
+	struct MANAGER(Light) *light_manager;
+	struct MANAGER(Spectrum) *spectrum_manager;
+	struct MANAGER(Graphical_material) *graphical_material_manager;
+	struct MANAGER(FE_node) *data_manager;	
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;		
+#endif /* defined (UNEMAP_USE_NODES) */
 	struct User_interface *user_interface;
 }; /* struct Map_drawing_information */
 
@@ -341,6 +407,19 @@ DESCRIPTION:
 Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 ==============================================================================*/
 
+#if defined (UNEMAP_USE_NODES)
+int map_remove_torso_arms(struct Map *map);
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Removes the torso arms from the scene.
+??JW perhaps should have a scene and scene_viewer in each Map_3d_package,
+and do Scene_remove_graphics_object in the DESTROY Map_3d_package
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+#if defined (UNEMAP_USE_NODES)
 int draw_map_3d(struct Map *map);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2000
@@ -348,6 +427,7 @@ LAST MODIFIED : 15 May 2000
 DESCRIPTION :
 This function draws the <map> in as a 3D CMGUI scene.
 ==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES)*/
 
 int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing);
 /*******************************************************************************
@@ -371,11 +451,27 @@ This function draws the colour bar or the auxiliary inputs in the <drawing>.
 struct Map_drawing_information *create_Map_drawing_information(
 	struct User_interface *user_interface
 #if defined (UNEMAP_USE_NODES) 
-	,struct Unemap_package *unemap_package
+	,struct Element_point_ranges_selection *element_point_ranges_selection,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection,
+	struct FE_node_selection *data_selection,
+	struct MANAGER(Texture) *texture_manager,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	struct MANAGER(Scene) *scene_manager,
+	struct MANAGER(Light_model) *light_model_manager,
+	struct MANAGER(Light) *light_manager,
+	struct MANAGER(Spectrum) *spectrum_manager,
+	struct MANAGER(Graphical_material) *graphical_material_manager,
+	struct MANAGER(FE_node) *data_manager,
+	struct LIST(GT_object) *glyph_list,
+	struct Graphical_material *graphical_material,
+	struct Computed_field_package *computed_field_package,
+	struct Light *light,
+	struct Light_model *light_model
 #endif /* defined (UNEMAP_USE_NODES) */
        );
 /*******************************************************************************
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -387,4 +483,531 @@ LAST MODIFIED : 21 June 1997
 
 DESCRIPTION :
 ==============================================================================*/
+
+#if defined (UNEMAP_USE_NODES)
+PROTOTYPE_OBJECT_FUNCTIONS(Map_3d_package);
+
+struct Map_3d_package *CREATE(Map_3d_package)(	int number_of_map_rows,
+	int number_of_map_columns,
+	char *fit_name,
+	struct FE_node_order_info *node_order_info,
+	struct FE_field *map_position_field,struct FE_field *map_fit_field,
+	struct GROUP(FE_node) *node_group,struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(GROUP(FE_element))	*element_group_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct MANAGER(GROUP(FE_node)) *node_group_manager, 
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(Computed_field) *computed_field_manager);
+/*******************************************************************************
+LAST MODIFIED : 8 September 1999
+
+DESCRIPTION:
+Create and  and set it's components 
+==============================================================================*/
+
+int DESTROY(Map_3d_package)(struct Map_3d_package **map_3d_package_address);
+/*******************************************************************************
+LAST MODIFIED : 8 September 1999
+
+DESCRIPTION :
+Frees the memory for the Map_3d_package and sets <*package_address>
+to NULL.
+==============================================================================*/
+
+int free_map_3d_package_map_contours(struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 7 July 2000
+
+DESCRIPTION :
+Frees the array of map contour GT_element_settings stored in the <map_3d_package>
+==============================================================================*/
+
+struct GT_object *get_map_3d_package_electrode_glyph(
+	struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the map_electrode_glyph for map_3d_package 
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+
+int set_map_3d_package_electrode_glyph(struct Map_3d_package *map_3d_package,
+	struct GT_object *electrode_glyph);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Sets the <electrode_glyph>  for <map_3d_package>
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+
+struct GT_object *get_map_3d_package_torso_arm_labels(
+	struct Map_3d_package *map_3d_package);/*FOR AJP*/
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the map_torso_arm_labels for map_3d_package 
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+
+int set_map_3d_package_torso_arm_labels(struct Map_3d_package *map_3d_package,
+	struct GT_object *torso_arm_labels);/*FOR AJP*/
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Sets the torso_arm_labels  for map_3d_package
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+
+FE_value get_map_3d_package_electrode_size(struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 8 May 2000
+
+DESCRIPTION :
+gets the map_electrode_size for map_3d_package 
+==============================================================================*/
+
+int set_map_3d_package_electrode_size(struct Map_3d_package *map_3d_package,
+	FE_value electrode_size);
+/*******************************************************************************
+LAST MODIFIED : 8 May 2000
+
+DESCRIPTION :
+Sets the electrode_size  for map_3d_package 
+==============================================================================*/
+
+enum Electrodes_option get_map_3d_package_electrodes_option(
+	struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the map_electrodes_option for map_3d_package 
+==============================================================================*/
+
+int set_map_3d_package_electrodes_option(struct Map_3d_package *map_3d_package,
+	enum Electrodes_option electrodes_option);
+/*******************************************************************************
+LAST MODIFIED :  5 July 2000
+
+DESCRIPTION :
+Sets the electrodes_option  for map_3d_package
+==============================================================================*/
+
+int get_map_3d_package_colour_electrodes_with_signal(
+	struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the map_colour_electrodes_with_signal for map_3d_package 
+==============================================================================*/
+
+int set_map_3d_package_colour_electrodes_with_signal(
+	struct Map_3d_package *map_3d_package,int colour_electrodes_with_signal);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Sets the colour_electrodes_with_signal  for map_3d_package 
+==============================================================================*/
+
+
+int get_map_3d_package_number_of_map_rows(	struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the number_of_map_rows for map_3d_package 
+Returns -1 on error
+==============================================================================*/
+
+int get_map_3d_package_number_of_map_columns(struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the number_of_map_columns for map_3d_package
+Returns -1 on error
+==============================================================================*/
+
+int get_map_3d_package_contours(struct Map_3d_package *map_3d_package,
+	int *number_of_contours,struct GT_element_settings ***contour_settings);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the <number_of_contours> and <contour_settings> for map_3d_package 
+==============================================================================*/
+
+int set_map_3d_package_contours(struct Map_3d_package *map_3d_package,
+	int number_of_contours,struct GT_element_settings **contour_settings);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+sets the <number_of_contours> and <contour_settings> for map_3d_package 
+==============================================================================*/
+
+char *get_map_3d_package_fit_name(struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the fit_name for map_3d_package 
+==============================================================================*/
+
+struct FE_node_order_info *get_map_3d_package_node_order_info(
+	struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the node_order_info for map_3d_package 
+==============================================================================*/
+
+struct FE_field *get_map_3d_package_position_field(struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 8 July 2000
+
+DESCRIPTION :
+gets the map_position_field for map_3d_package 
+==============================================================================*/
+
+struct FE_field *get_map_3d_package_fit_field(struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : September 8 1999
+
+DESCRIPTION :
+gets the map_fit_field for map_3d_package
+==============================================================================*/
+
+struct GROUP(FE_node) *get_map_3d_package_node_group(struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the node_group for map_3d_package 
+==============================================================================*/
+
+struct GROUP(FE_element) *get_map_3d_package_element_group(
+	struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the element_group for map_3d_package
+==============================================================================*/
+
+int set_map_3d_package_element_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_element) *map_element_group);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+Sets the element_group for map_3d_package
+==============================================================================*/
+
+int get_map_drawing_information_viewed_scene(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets the viewed_scene flag of the <map_drawing_information>
+==============================================================================*/
+
+int set_map_drawing_information_viewed_scene(
+struct Map_drawing_information *map_drawing_information,int scene_viewed);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+sets the viewed_scene flag of the <map_drawing_information>
+ to 1 if <scene_viewed> >0,
+0 if <scene_viewed> = 0.
+==============================================================================*/
+
+struct Colour *get_map_drawing_information_background_colour(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the Colour of the <map_drawing_information>.
+==============================================================================*/
+
+int set_map_drawing_information_background_colour(
+	struct Map_drawing_information *map_drawing_information,
+	struct Colour *background_colour);
+/*******************************************************************************
+LAST MODIFIED : 14 July  2000
+
+DESCRIPTION :
+Sets the Colour of the <map_drawing_information>.
+==============================================================================*/
+
+struct Colour *get_map_drawing_information_no_interpolation_colour(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets the no_interpolation_colour of the <map_drawing_information>.
+==============================================================================*/
+
+struct MANAGER(Light) *get_map_drawing_information_Light_manager(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets a manager of the <map_drawing_information>.
+==============================================================================*/
+
+struct MANAGER(Texture) *get_map_drawing_information_Texture_manager(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets a manager of the <map_drawing_information>.
+==============================================================================*/
+
+struct MANAGER(Scene) *get_map_drawing_information_Scene_manager(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets a manager of the <map_drawing_information>.
+==============================================================================*/
+
+struct MANAGER(Light_model) *get_map_drawing_information_Light_model_manager(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets a manager of the <map_drawing_information>.
+==============================================================================*/
+
+struct MANAGER(Graphical_material) 
+		 *get_map_drawing_information_Graphical_material_manager(
+			 struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets a manager of the <map_drawing_information>.
+==============================================================================*/
+
+struct Light *get_map_drawing_information_light(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the Light of the <map_drawing_information>.
+==============================================================================*/
+
+int set_map_drawing_information_light(
+	struct Map_drawing_information *map_drawing_information,struct Light *light);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the Light of the <map_drawing_information>.
+==============================================================================*/
+
+struct Light_model *get_map_drawing_information_light_model(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the Light_model of the <map_drawing_information>.
+==============================================================================*/
+
+int set_map_drawing_information_light_model(
+	struct Map_drawing_information *map_drawing_information,
+	struct Light_model *light_model);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the Light_model of the <map_drawing_information>.
+==============================================================================*/
+
+struct Scene_viewer *get_map_drawing_information_scene_viewer(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the Scene_viewer of the <map_drawing_information>.
+==============================================================================*/
+
+int set_map_drawing_information_scene_viewer(
+	struct Map_drawing_information *map_drawing_information,
+	struct Scene_viewer *scene_viewer);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the Scene_viewer of the <map_drawing_information>.
+==============================================================================*/
+
+struct Scene *get_map_drawing_information_scene(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the Scene of the <map_drawing_information>.
+==============================================================================*/
+
+int set_map_drawing_information_scene(
+	struct Map_drawing_information *map_drawing_information,
+	struct Scene *scene);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the Scene of the <map_drawing_information>.
+==============================================================================*/
+
+struct User_interface *get_map_drawing_information_user_interface(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the User_interface of the <map_drawing_information>.
+==============================================================================*/
+
+int set_map_drawing_information_user_interface(
+	struct Map_drawing_information *map_drawing_information,
+	struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the User_interface of the <map_drawing_information>.
+==============================================================================*/
+
+struct Graphical_material *get_map_drawing_information_map_graphical_material(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the map_graphical_material of the <map_drawing_information>.
+==============================================================================*/
+
+int set_map_drawing_information_map_graphical_material(
+	struct Map_drawing_information *map_drawing_information,
+	struct Graphical_material *map_graphical_material);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the map_graphical_material of the <map_drawing_information>.
+==============================================================================*/
+
+struct Graphical_material *get_map_drawing_information_electrode_graphical_material(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 14 July  2000
+
+DESCRIPTION :
+gets the electrode_graphical_material of the <map_drawing_information>.
+==============================================================================*/
+
+struct Computed_field_package *get_map_drawing_information_computed_field_package(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED :  14 July  2000
+
+DESCRIPTION :
+gets the Computed_field_package of the <map_drawing_information>.
+==============================================================================*/
+
+int set_map_drawing_information_computed_field_package(
+	struct Map_drawing_information *map_drawing_information,
+	struct Computed_field_package *computed_field_package);
+/*******************************************************************************
+LAST MODIFIED : 14 July  2000
+
+DESCRIPTION :
+Sets the Computed_field_package of the <map_drawing_information>.
+==============================================================================*/
+
+struct Time_keeper *get_map_drawing_information_time_keeper(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the Time_keeper of the <map_drawing_information>.
+==============================================================================*/
+
+int set_map_drawing_information_time_keeper(
+	struct Map_drawing_information *map_drawing_information,
+	struct Time_keeper *time_keeper);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the Time_keeper of the <map_drawing_information>.
+==============================================================================*/
+
+int map_drawing_information_make_map_scene(
+	struct Map_drawing_information *map_drawing_information,
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+Creates the map_drawing_information scene, if isn't already present.
+==============================================================================*/	
+
+struct MANAGER(Spectrum) *get_map_drawing_information_spectrum_manager(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets the spectrum_manager of the <map_drawing_information>.
+==============================================================================*/
+
+struct LIST(GT_object) *get_map_drawing_information_glyph_list(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+gets the glyph_list of the <map_drawing_information>.
+==============================================================================*/
+
+int map_drawing_information_align_scene(
+	struct Map_drawing_information *map_drawing_information); /*FOR AJP*/
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION : Aligns the <package> scene so that the largest cardinal dimension 
+component of the scene is the scene viewer's up vector, and the viewer is 
+looking along the scene's smallest cardinal dimension component towards the 
+centre of the scene. Eg if a scene is 100 by 30 by 150 (in x,y,z)
+then we'd look along the y axis, with the z axis as the up vector. 
+
+cf Scene_viewer_view_all.
+Should be in Scene_viewer? RC doesn't think so.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES)*/
+
 #endif /* !defined (MAPPING_H) */

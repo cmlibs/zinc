@@ -181,9 +181,8 @@ The analysis window object.
 	Widget close_button;
 	struct Interval_area interval;
 	struct Signals_area signals;
-	struct Rig **rig;	
-	struct GROUP(FE_node) **rig_node_group;	
-	struct Draw_package **draw_package;
+	struct Rig **rig;
+	struct Signal_drawing_package **signal_drawing_package;
 	struct Analysis_window **address;
 	int *datum,*event_number,*number_of_events;
 	int *potential_time;
@@ -264,8 +263,7 @@ DESCRIPTION :
 
 struct Analysis_window *create_Analysis_window(
 	struct Analysis_window **address,Widget activation,Widget parent,
-	struct Rig **rig,struct GROUP(FE_node) **rig_node_group,
-	struct Draw_package **draw_package,
+	struct Rig **rig,struct Signal_drawing_package **signal_drawing_package,
 	struct Device ***highlight,int *datum,int *event_number,
 	int *number_of_events,int *potential_time,
 	enum Event_detection_algorithm *detection,int *threshold,
@@ -321,8 +319,7 @@ int draw_all_signals(struct Rig *rig,int datum,int potential_time,
 	struct Signals_area *signals,enum Signal_layout layout,
 	float signal_aspect_ratio,int signal_overlap_spacing,
 	struct Signal_drawing_information *signal_drawing_information,
-	struct User_interface *user_interface,struct GROUP(FE_node) *rig_node_group,
-	struct Draw_package *draw_package);
+	struct User_interface *user_interface,struct Signal_drawing_package *signal_drawing_package);
 /*******************************************************************************
 LAST MODIFIED : 17 June 1999
 

@@ -42,8 +42,7 @@ DESCRIPTION :
 	/* raw rig contains the data that has been read from the file and rig contains
 		the processed (filtered, beat averaged, ...) data */
 	struct Rig *raw_rig,*rig;
-	struct GROUP(FE_node) *rig_node_group;	
-	struct Draw_package *draw_package;
+	struct Signal_drawing_package *signal_drawing_package;
 	int datum;
 	struct Device **highlight;
 	char calculate_events;

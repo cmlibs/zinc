@@ -116,6 +116,7 @@ DESCRIPTION :
 	Widget element_group_editor_dialog;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 	struct Unemap_package *unemap_package;
+	
 }; /* struct Cmiss_command_data */
 
 /*

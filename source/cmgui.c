@@ -598,7 +598,6 @@ Main program for the CMISS Graphical User Interface
 	struct CM_field_information cm_field_information;
 	struct Cmiss_command_data command_data;
 	struct Colour ambient_colour,default_colour;
-	struct Colour no_interpolation_colour={0.65,0.65,0.65};
 	struct Computed_field *computed_field;
 	struct Command_window *command_window;
 	struct Coordinate_system rect_coord_system,temp_coordinate_system;
@@ -1083,26 +1082,7 @@ Main program for the CMISS Graphical User Interface
 		command_data.fe_field_manager,command_data.element_group_manager,
 		command_data.node_manager,command_data.data_group_manager,
 		command_data.node_group_manager,command_data.basis_manager,
-		command_data.element_manager,command_data.element_point_ranges_selection,
-		command_data.element_selection,command_data.node_selection,
-		command_data.data_selection,
-		computed_field_manager,
-		command_data.texture_manager,command_data.interactive_tool_manager,
-		command_data.scene_manager,
-		command_data.light_model_manager,command_data.light_manager,
-		command_data.spectrum_manager,command_data.graphical_material_manager,
-		command_data.data_manager,command_data.glyph_list,&no_interpolation_colour);	
-	set_unemap_package_background_colour(command_data.unemap_package,
-		&(command_data.background_colour));
-	set_unemap_package_light(command_data.unemap_package,command_data.default_light);
-	set_unemap_package_light_model(command_data.unemap_package,
-		command_data.default_light_model);
-	set_unemap_package_user_interface(command_data.unemap_package,
-		command_data.user_interface);
-	set_unemap_package_map_graphical_material(command_data.unemap_package,
-		command_data.default_graphical_material);	
-	set_unemap_package_computed_field_package(command_data.unemap_package,
-		command_data.computed_field_package);
+		command_data.element_manager,computed_field_manager);
 #endif /* defined (UNEMAP) */
 #if defined (MIRAGE)
 /*	command_data.digitiser_window_manager=CREATE(MANAGER(Digitiser_window))();*/
@@ -1479,10 +1459,6 @@ Main program for the CMISS Graphical User Interface
 					Scene_enable_time_behaviour(command_data.default_scene,
 						command_data.default_time_keeper);
 				}
-#if defined (UNEMAP)
-				set_unemap_package_time_keeper(command_data.unemap_package,
-					command_data.default_time_keeper);
-#endif
 			}
 			if (return_code)
 			{

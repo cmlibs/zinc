@@ -1612,7 +1612,12 @@ for (i=0;i<16;i++)
 						electrodes_in_row[index]=8;
 					}
 					if (rig=create_standard_Rig("Beekeeper EEG",PATCH,MONITORING_OFF,
-						EXPERIMENT_OFF,number_of_rows,electrodes_in_row,1,0,(float)1))
+						EXPERIMENT_OFF,number_of_rows,electrodes_in_row,1,0,(float)1
+#if defined (UNEMAP_USE_NODES)
+						/*??JW perhaps we should pass this down from above*/
+						,(struct Unemap_package *)NULL
+#endif /* defined (UNEMAP_USE_NODES) */
+						))
 					{
 						rig->current_region=rig->region_list->region;
 						/* set calibration */

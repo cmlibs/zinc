@@ -129,6 +129,8 @@ Associate the mapping window with the acquisition work area
 ==============================================================================*/
 {
 	int maintain_aspect_ratio;
+	struct Map_drawing_information *drawing_information=
+		(struct Map_drawing_information *)NULL;
 	struct Spectrum *spectrum=(struct Spectrum *)NULL;
 	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
@@ -144,12 +146,13 @@ Associate the mapping window with the acquisition work area
 	USE_PARAMETER(spectrum_manager);
 #endif /* defined (UNEMAP_USE_NODES) */
 	if ((system=(struct System_window *)system_window)&&
-		(user_interface=system->user_interface))
+		(user_interface=system->user_interface)&&(drawing_information=
+			system->map_drawing_information))
 	{
 		/* if the mapping window is open */
 		if (system->mapping.open)
 		{
-			if (system->map_drawing_information->maintain_aspect_ratio)
+			if (drawing_information->maintain_aspect_ratio)
 			{
 				maintain_aspect_ratio=1;
 			}
@@ -157,10 +160,10 @@ Associate the mapping window with the acquisition work area
 			{
 				maintain_aspect_ratio=0;
 			}
-
 #if defined (UNEMAP_USE_NODES)	
-			spectrum=system->map_drawing_information->spectrum;			
-			if(spectrum_manager=get_unemap_package_spectrum_manager(system->unemap_package))
+			spectrum=system->map_drawing_information->spectrum;		
+			if(spectrum_manager=get_map_drawing_information_spectrum_manager
+				(drawing_information))
 			{
 				if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
 				{
@@ -309,7 +312,11 @@ Opens the windows associated with the acquisition work area.
 			{
 				/* read in the default rig configuration */
 				if (read_configuration_file(default_configuration_file_name,
-					&(system->acquisition.rig)))
+					&(system->acquisition.rig)
+#if defined (UNEMAP_USE_NODES)
+					,system->unemap_package
+#endif /* defined (UNEMAP_USE_NODES) */
+					 ))
 				{
 					read_default_configuration=1;
 				}
@@ -541,6 +548,8 @@ Associate the mapping window with the analysis work area
 ==============================================================================*/
 {
 	int maintain_aspect_ratio;
+	struct Map_drawing_information *drawing_information
+		=(struct Map_drawing_information *)NULL;
 	struct System_window *system;
 	struct User_interface *user_interface;
 	struct Spectrum *spectrum=(struct Spectrum *)NULL;
@@ -555,12 +564,13 @@ Associate the mapping window with the analysis work area
 	USE_PARAMETER(spectrum_manager);
 #endif /* !defined (UNEMAP_USE_NODES) */
 	if ((system=(struct System_window *)system_window)&&
-		(user_interface=system->user_interface))
+		(user_interface=system->user_interface)&&
+		(drawing_information=system->map_drawing_information))
 	{
 		/* if the mapping window is open */
 		if (system->mapping.open)
 		{
-			if (system->map_drawing_information->maintain_aspect_ratio)
+			if (drawing_information->maintain_aspect_ratio)
 			{
 				maintain_aspect_ratio=1;
 			}
@@ -574,7 +584,8 @@ Associate the mapping window with the analysis work area
 
 				spectrum=system->map_drawing_information->spectrum;
 #if defined (UNEMAP_USE_NODES)				
-				if(spectrum_manager=get_unemap_package_spectrum_manager(system->unemap_package))
+				if(spectrum_manager=get_map_drawing_information_spectrum_manager
+					(drawing_information))
 				{
 					if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
 					{
@@ -764,6 +775,8 @@ Opens the windows associated with the mapping work area.
 	{
 		{"system_window_structure",(XtPointer)NULL}
 	};	
+	struct Map_drawing_information *drawing_information
+		=(struct Map_drawing_information *)NULL;	
 	struct Spectrum *spectrum=(struct Spectrum *)NULL;
 	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
@@ -777,7 +790,8 @@ Opens the windows associated with the mapping work area.
 	USE_PARAMETER(spectrum_manager);
 #endif /*defined (UNEMAP_USE_NODES) */
 	if ((system=(struct System_window *)system_window)&&
-		(user_interface=system->user_interface))
+		(user_interface=system->user_interface)&&(drawing_information=
+			system->map_drawing_information))
 	{
 		/* register the callbacks */
 			/*???DB.  Used by more than set of uid files so has to be in global
@@ -791,7 +805,7 @@ Opens the windows associated with the mapping work area.
 			if (MrmSUCCESS==MrmRegisterNames(identifier_list,
 				XtNumber(identifier_list)))
 			{
-				if (system->map_drawing_information->maintain_aspect_ratio)
+				if (drawing_information->maintain_aspect_ratio)
 				{
 					maintain_aspect_ratio=1;
 				}
@@ -821,8 +835,9 @@ Opens the windows associated with the mapping work area.
 							}
 						}
 #if defined (UNEMAP_USE_NODES)	
-						spectrum=system->map_drawing_information->spectrum;
-						if(spectrum_manager=get_unemap_package_spectrum_manager(system->unemap_package))
+						spectrum=drawing_information->spectrum;
+						if(spectrum_manager=get_map_drawing_information_spectrum_manager
+							(drawing_information))
 						{
 							if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
 							{
@@ -855,7 +870,7 @@ Opens the windows associated with the mapping work area.
 								"open_mapping_work_area . Spectrum_manager not present");
 						}
 #else
-						Spectrum_set_simple_type(system->map_drawing_information->spectrum,
+						Spectrum_set_simple_type(drawing_information->spectrum,
 							BLUE_TO_RED_SPECTRUM);
 #endif /* defined (UNEMAP_USE_NODES) */
 
@@ -903,9 +918,10 @@ Opens the windows associated with the mapping work area.
 								}
 							}
 						}
-						spectrum=system->map_drawing_information->spectrum;
+						spectrum=drawing_information->spectrum;
 #if defined (UNEMAP_USE_NODES)				
-						if(spectrum_manager=get_unemap_package_spectrum_manager(system->unemap_package))
+						if(spectrum_manager=get_map_drawing_information_spectrum_manager
+							(drawing_information))
 						{
 							if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
 							{
@@ -1090,7 +1106,27 @@ Close emap environment.
 
 struct System_window *create_System_window(Widget shell,
 	XtCallbackProc close_button_callback,struct Time_keeper *time_keeper,
-	struct User_interface *user_interface,struct Unemap_package *unemap_package)
+	struct User_interface *user_interface,struct Unemap_package *unemap_package
+#if defined (UNEMAP_USE_NODES) 
+	,struct Element_point_ranges_selection *element_point_ranges_selection,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection,
+	struct FE_node_selection *data_selection,
+	struct MANAGER(Texture) *texture_manager,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	struct MANAGER(Scene) *scene_manager,
+	struct MANAGER(Light_model) *light_model_manager,
+	struct MANAGER(Light) *light_manager,
+	struct MANAGER(Spectrum) *spectrum_manager,
+	struct MANAGER(Graphical_material) *graphical_material_manager,
+	struct MANAGER(FE_node) *data_manager,
+	struct LIST(GT_object) *glyph_list,
+	struct Graphical_material *graphical_material,
+	struct Computed_field_package *computed_field_package,
+	struct Light *light,
+	struct Light_model *light_model
+#endif /* defined (UNEMAP_USE_NODES) */
+	)
 /*******************************************************************************
 LAST MODIFIED : 11 February 2000
 
@@ -1271,7 +1307,12 @@ pointer to the created structure if successful and NULL if unsuccessful.
 	/* check arguments */
 	if (user_interface
 #if defined (UNEMAP_USE_NODES)
-		&&unemap_package		
+		&&unemap_package&&element_point_ranges_selection&&element_selection&&
+		node_selection&&data_selection&&texture_manager&&
+		  interactive_tool_manager&&scene_manager&&light_model_manager&&
+	    light_manager&&spectrum_manager&&graphical_material_manager&&
+	    data_manager&&glyph_list&&graphical_material&&
+			computed_field_package&&light&&light_model
 #endif /* defined (UNEMAP_USE_NODES) */
 		)
 	{
@@ -1291,9 +1332,20 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				system->map_drawing_information=
 					create_Map_drawing_information(user_interface
 #if defined (UNEMAP_USE_NODES)
-						,unemap_package
+						,element_point_ranges_selection,element_selection,
+						node_selection,data_selection,texture_manager,
+						interactive_tool_manager,scene_manager,light_model_manager,
+						light_manager,spectrum_manager,graphical_material_manager,
+						data_manager,glyph_list,graphical_material,
+						computed_field_package,light,light_model
 #endif /* defined (UNEMAP_USE_NODES) */										 
-						 );
+						 );	
+#if defined (UNEMAP_USE_NODES)
+				set_map_drawing_information_user_interface(system->map_drawing_information,
+					user_interface);
+				set_map_drawing_information_time_keeper(system->map_drawing_information,
+					time_keeper);
+#endif /* defined (UNEMAP_USE_NODES) */		
 				system->configuration_directory=(char *)NULL;
 				system->configuration_file_extension=(char *)NULL;
 				system->postscript_file_extension=(char *)NULL;

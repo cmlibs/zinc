@@ -268,11 +268,11 @@ Main program for unemap
 #if defined (NOT_ACQUISITION_ONLY)
 	struct Unemap_package *unemap_package;
 #if defined (UNEMAP_USE_NODES)
-	float default_light_direction[3]={0.0,-0.5,-1.0};
-	struct Colour no_interpolation_colour={0.65,0.65,0.65};
+	float default_light_direction[3]={0.0,-0.5,-1.0};	
 	struct Colour ambient_colour,default_colour;	
 	struct Computed_field *computed_field=(struct Computed_field *)NULL;
-	struct Computed_field_package *computed_field_package=(struct Computed_field_package *)NULL;
+	struct Computed_field_package *computed_field_package=
+		(struct Computed_field_package *)NULL;
 	struct Coordinate_system rect_coord_system;
 	struct Element_point_ranges_selection *element_point_ranges_selection=
 		(struct Element_point_ranges_selection *)NULL;
@@ -310,7 +310,7 @@ Main program for unemap
 		(struct MANAGER(Light_model) *)NULL;
 	struct MANAGER(Scene) *scene_manager=(struct MANAGER(Scene) *)NULL;
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
-	struct MANAGER(Texture) *texture_manager=(struct MANAGER(Texture) *)NULL;
+	struct MANAGER(Texture) *texture_manager=(struct MANAGER(Texture) *)NULL;	
 	struct Node_tool *node_tool=(struct Node_tool *)NULL;
 	struct Transform_tool *transform_tool=(struct Transform_tool *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -811,22 +811,12 @@ Main program for unemap
 
 		/* interactive_tools */
 		node_tool=CREATE(Node_tool)(interactive_tool_manager,node_manager,
-			/*data_manager*/0,node_selection,computed_field_package);
+			/*data_manager*/0,node_selection,computed_field_package,
+			default_graphical_material);
 		transform_tool=CREATE(Transform_tool)(interactive_tool_manager);
 		unemap_package=CREATE(Unemap_package)(fe_field_manager,
 			element_group_manager,node_manager,data_group_manager,node_group_manager,
-			fe_basis_manager,element_manager,element_point_ranges_selection,
-			element_selection,node_selection,data_selection,computed_field_manager,
-			texture_manager,interactive_tool_manager,
-			scene_manager,light_model_manager,light_manager,
-			spectrum_manager,graphical_material_manager,data_manager,
-			glyph_list,&no_interpolation_colour);
-		set_unemap_package_map_graphical_material(unemap_package,default_graphical_material);		
-		set_unemap_package_computed_field_package(unemap_package,computed_field_package);
-		set_unemap_package_time_keeper(unemap_package,time_keeper);
-		set_unemap_package_light(unemap_package,default_light);
-		set_unemap_package_light_model(unemap_package,default_light_model);
-		set_unemap_package_user_interface(unemap_package,&user_interface);
+			fe_basis_manager,element_manager,computed_field_manager);	
 		/* FE_element_field_info manager */
 		/*???DB.  To be done */
 		all_FE_element_field_info=CREATE_LIST(FE_element_field_info)();
@@ -837,7 +827,16 @@ Main program for unemap
 		unemap_package=(struct Unemap_package *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
 		if (system=create_System_window(user_interface.application_shell,
-			exit_unemap,time_keeper,&user_interface,unemap_package))
+			exit_unemap,time_keeper,&user_interface,unemap_package
+#if defined (UNEMAP_USE_NODES)
+			,element_point_ranges_selection,element_selection,node_selection,
+			data_selection,texture_manager,interactive_tool_manager,scene_manager,
+			light_model_manager,light_manager,spectrum_manager,
+			graphical_material_manager,data_manager,glyph_list,
+			default_graphical_material,computed_field_package,default_light,
+			default_light_model
+#endif /* defined (UNEMAP_USE_NODES) */
+			))
 #else /* defined (NOT_ACQUISITION_ONLY) */
 		page_window=(struct Page_window *)NULL;
 		if (open_Page_window(&page_window,
@@ -854,6 +853,10 @@ Main program for unemap
 			5,".sig",&user_interface))
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 		{
+#if defined (UNEMAP_USE_NODES)
+			
+		
+#endif /* defined (UNEMAP_USE_NODES) */
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (MOTIF)
 			create_Shell_list_item(&(system->window_shell),&user_interface);

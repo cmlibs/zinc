@@ -67,7 +67,27 @@ Close emap environment.
 
 struct System_window *create_System_window(Widget shell,
 	XtCallbackProc close_button_callback,struct Time_keeper *time_keeper,
-	struct User_interface *user_interface,struct Unemap_package *unemap_package);
+	struct User_interface *user_interface,struct Unemap_package *unemap_package
+#if defined (UNEMAP_USE_NODES) 
+	,struct Element_point_ranges_selection *element_point_ranges_selection,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection,
+	struct FE_node_selection *data_selection,
+	struct MANAGER(Texture) *texture_manager,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	struct MANAGER(Scene) *scene_manager,
+	struct MANAGER(Light_model) *light_model_manager,
+	struct MANAGER(Light) *light_manager,
+	struct MANAGER(Spectrum) *spectrum_manager,
+	struct MANAGER(Graphical_material) *graphical_material_manager,
+	struct MANAGER(FE_node) *data_manager,
+	struct LIST(GT_object) *glyph_list,
+	struct Graphical_material *graphical_material,
+	struct Computed_field_package *computed_field_package,
+	struct Light *light,
+	struct Light_model *light_model
+#endif /* defined (UNEMAP_USE_NODES) */
+	);
 /*******************************************************************************
 LAST MODIFIED : 27 April 1999
 

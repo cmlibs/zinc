@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 11 February 2000
+LAST MODIFIED : 29 June 2000
 
 DESCRIPTION :
 ===========================================================================*/
@@ -31,9 +31,6 @@ DESCRIPTION :
 #include "unemap/analysis_window.h"
 #include "unemap/analysis_window.uidh"
 #include "unemap/rig.h"
-#if defined (UNEMAP_USE_NODES)
-#include "unemap/rig_node.h"
-#endif /* defined (UNEMAP_USE_NODES) */
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/printer.h"
@@ -1651,7 +1648,7 @@ Writes the PostScript for drawing either <all> the signals from the
 		display=analysis->user_interface->display;
 		first_data=buffer->start;
 		last_data=buffer->end;
-		current_region=rig->current_region;
+		current_region=get_Rig_current_region(rig);	 
 		if (open_printer(&printer,analysis->user_interface))
 		{
 			if (XGetWindowAttributes(display,
@@ -1748,7 +1745,7 @@ Writes the PostScript for drawing either <all> the signals from the
 								(float)signal_height_pixel);
 							/* print the signal */
 							draw_signal(
-								(struct FE_node *)NULL,(struct Draw_package *)NULL,*device,
+								(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
 								PRINTER_DETAIL,1,0,&first_data,&last_data,0,signal_height_pixel,
 								signal_width_pixel,signal_height_pixel,(Pixmap)NULL,&axes_left,
 								&axes_top,&axes_width,&axes_height,
@@ -2293,14 +2290,14 @@ The callback for redrawing part of an analysis drawing area.
 #undef UNEMAP_USE_NODES
 #endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
 #if defined (UNEMAP_USE_NODES)
-									/* use rig_node_group and draw_package */
-									draw_all_signals((struct Rig *)NULL,*(analysis->datum),
+									/* use rig_node_group and signal_drawing_package */
+									draw_all_signals(*(analysis->rig),*(analysis->datum),
 										*(analysis->potential_time),signals,signals->layout,
 										analysis->signal_aspect_ratio,
 										analysis->signal_overlap_spacing,
 										analysis->signal_drawing_information,
-										analysis->user_interface,*(analysis->rig_node_group),
-										*(analysis->draw_package));
+										analysis->user_interface,
+										*(analysis->signal_drawing_package));
 #else /* defined (UNEMAP_USE_NODES) */
 									/* use rig */
 									draw_all_signals(*(analysis->rig),*(analysis->datum),
@@ -2308,8 +2305,8 @@ The callback for redrawing part of an analysis drawing area.
 										analysis->signal_aspect_ratio,
 										analysis->signal_overlap_spacing,
 										analysis->signal_drawing_information,
-										analysis->user_interface,(struct GROUP(FE_node) *)NULL,
-										(struct Draw_package *)NULL);
+										analysis->user_interface,
+										(struct Signal_drawing_package *)NULL);
 #endif /* defined (UNEMAP_USE_NODES) */
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #define UNEMAP_USE_NODES 1
@@ -2424,19 +2421,19 @@ The callback for resizing an analysis drawing area.
 #undef UNEMAP_USE_NODES
 #endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
 #if defined (UNEMAP_USE_NODES)
-							/* use rig_node_group and draw_package */
-							draw_all_signals((struct Rig *)NULL,*(analysis->datum),
+							/* use rig_node_group and signal_drawing_package */
+							draw_all_signals(*(analysis->rig),*(analysis->datum),
 								*(analysis->potential_time),signals,signals->layout,
 								analysis->signal_aspect_ratio,analysis->signal_overlap_spacing,
 								analysis->signal_drawing_information,analysis->user_interface,
-								*(analysis->rig_node_group),*(analysis->draw_package));
+								*(analysis->signal_drawing_package));
 #else /* defined (UNEMAP_USE_NODES) */
 							/* use rig */
 							draw_all_signals(*(analysis->rig),*(analysis->datum),
 								*(analysis->potential_time),signals,signals->layout,
 								analysis->signal_aspect_ratio,analysis->signal_overlap_spacing,
 								analysis->signal_drawing_information,analysis->user_interface,
-								(struct GROUP(FE_node) *)NULL,(struct Draw_package *)NULL);
+								(struct Signal_drawing_package *)NULL);
 #endif /* defined (UNEMAP_USE_NODES) */
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #define UNEMAP_USE_NODES 1
@@ -2569,7 +2566,7 @@ The callback for redrawing part of an analysis interval drawing area.
 										first_data=0;
 										last_data=buffer->number_of_samples-1;
 										draw_signal(
-											(struct FE_node *)NULL,(struct Draw_package *)NULL,
+											(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
 											highlight_device,
 											INTERVAL_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
 											attributes.width,attributes.height,
@@ -2728,7 +2725,7 @@ The callback for resizing an analysis interval drawing area.
 							{
 								first_data=0;
 								last_data=buffer->number_of_samples-1;
-								draw_signal((struct FE_node *)NULL,(struct Draw_package *)NULL,
+								draw_signal((struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
 									highlight_device,INTERVAL_AREA_DETAIL,1,0,&first_data,
 									&last_data,0,0,attributes.width,attributes.height,
 									interval->drawing->pixel_map,&(interval->axes_left),
@@ -3302,8 +3299,7 @@ DESCRIPTION :
 
 struct Analysis_window *create_Analysis_window(
 	struct Analysis_window **address,Widget activation,Widget parent,
-	struct Rig **rig,struct GROUP(FE_node) **rig_node_group,
-	struct Draw_package **draw_package,
+	struct Rig **rig,struct Signal_drawing_package **signal_drawing_package,
 	struct Device ***highlight,int *datum,int *event_number,
 	int *number_of_events,int *potential_time,
 	enum Event_detection_algorithm *detection,int *threshold,
@@ -3505,8 +3501,7 @@ returned.
 				analysis->address=address;
 				analysis->activation=activation;
 				analysis->rig=rig;
-				analysis->rig_node_group=rig_node_group;
-				analysis->draw_package=draw_package;
+				analysis->signal_drawing_package=signal_drawing_package;
 				analysis->highlight=highlight;
 				analysis->datum=datum;
 				analysis->event_number=event_number;
@@ -3899,19 +3894,19 @@ The callback for redrawing the analysis drawing area.
 #undef UNEMAP_USE_NODES
 #endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
 #if defined (UNEMAP_USE_NODES)
-		/* use rig_node_group and draw_package */
-		draw_all_signals((struct Rig *)NULL,*(analysis->datum),
+		/* use rig_node_group and signal_drawing_package */
+		draw_all_signals(*(analysis->rig),*(analysis->datum),
 			*(analysis->potential_time),signals,signals->layout,
 			analysis->signal_aspect_ratio,analysis->signal_overlap_spacing,
 			analysis->signal_drawing_information,analysis->user_interface,
-			*(analysis->rig_node_group),*(analysis->draw_package));
+			*(analysis->signal_drawing_package));
 #else /* defined (UNEMAP_USE_NODES) */
 		/* use rig */
 		draw_all_signals(*(analysis->rig),*(analysis->datum),
 			*(analysis->potential_time),signals,signals->layout,
 			analysis->signal_aspect_ratio,analysis->signal_overlap_spacing,
 			analysis->signal_drawing_information,analysis->user_interface,
-			(struct GROUP(FE_node) *)NULL,(struct Draw_package *)NULL);
+			(struct Signal_drawing_package *)NULL);
 #endif /* defined (UNEMAP_USE_NODES) */
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #define UNEMAP_USE_NODES 1
@@ -3965,7 +3960,7 @@ The function for redrawing the analysis interval drawing area.
 			/* draw all of the active signal */
 			first_data=0;
 			last_data=buffer->number_of_samples-1;
-			draw_signal((struct FE_node *)NULL,(struct Draw_package *)NULL,
+			draw_signal((struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
 				*highlight_device,INTERVAL_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
 				interval->drawing->width,interval->drawing->height,
 				interval->drawing->pixel_map,&(interval->axes_left),
@@ -4010,8 +4005,8 @@ The function for redrawing the analysis interval drawing area.
 #if defined (OLD_CODE)
 				XtSetSensitive(interval->accelerator.reject_button,False);
 #endif
-			}
-			if (current_region=(*(analysis->rig))->current_region)
+			}			
+			if(current_region=get_Rig_current_region(*(analysis->rig)))
 			{
 				device_number=0;
 				device=(*(analysis->rig))->devices;
@@ -4081,8 +4076,7 @@ int draw_all_signals(struct Rig *rig,int datum,int potential_time,
 	struct Signals_area *signals,enum Signal_layout layout,
 	float signal_aspect_ratio,int signal_overlap_spacing,
 	struct Signal_drawing_information *signal_drawing_information,
-	struct User_interface *user_interface,struct GROUP(FE_node) *rig_node_group,
-	struct Draw_package *draw_package)
+	struct User_interface *user_interface,struct Signal_drawing_package *signal_drawing_package)
 /*******************************************************************************
 LAST MODIFIED : 6 December 1999
 
@@ -4090,8 +4084,8 @@ DESCRIPTION :
 This function draws all the signals for the <signal_event_list> in the <drawing>
 using the <graphics_context>.
 
-Pass either <rig > or (<rig_node_group> and <draw_package> ).  If pass
-<rig_node_group> and <draw_package>, then we create an array of pointers to the
+Pass either <rig > or (<rig_node_group> and <signal_drawing_package> ).  If pass
+<rig_node_group> and <signal_drawing_package>, then we create an array of pointers to the
 nodes, in an FE_node_order_info, so can increment through nodes similar
 to rig->devices. This is not ideal, but is done for compatibility with the
 rig->devices approach. ??JW Do differently when have removed rig->devices
@@ -4100,7 +4094,7 @@ Should use GROUP NEXT operator (when it's ready!)
 {
 	int axes_height,axes_left,axes_top,axes_width,drawing_height,drawing_width,
 		first_data,i,j,last_data,number_of_columns,number_of_rows,number_of_signals,
-		return_code,signal_height,signal_width,xpos,ypos;
+		return_code,signal_height,signal_width,using_rig_node_group,xpos,ypos;
 	struct Drawing_2d *drawing;
 	struct Device **device;
 	struct Region *current_region;
@@ -4111,6 +4105,7 @@ Should use GROUP NEXT operator (when it's ready!)
 	struct FE_field *field;
 	struct FE_node *node;
 	struct FE_node_order_info *node_order_info;
+	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
 
 	ENTER(draw_all_signals);
@@ -4133,17 +4128,17 @@ Should use GROUP NEXT operator (when it's ready!)
 		XFillRectangle(user_interface->display,pixel_map,
 			(signal_drawing_information->graphics_context).background_drawing_colour,
 			0,0,drawing_width,drawing_height);
-		/* check that rig is set XOR both the draw_package and  the rig_node_group
-			are set, */
+		using_rig_node_group=0;
+		/* check that rig is set OR both the signal_drawing_package and  the rig are set, */
 		/* OR everything is NULL */
-		if ((!rig_node_group&&!draw_package)||((rig_node_group&&draw_package)&&
-			!rig))
+		if ((!rig&&!signal_drawing_package)||(rig&&!signal_drawing_package)||(rig&&signal_drawing_package))
 		{
 			number_of_signals=0;
 			return_code=1;
-			if (rig_node_group) /* must extract info from node group */
+			if (signal_drawing_package) /* must extract info from rig's node group */
 			{
 #if defined (UNEMAP_USE_NODES)
+				using_rig_node_group=1;
 				/* create an array of pointers to the nodes, in node_order_info */
 				/* so can increment through nodes similar to devices. */
 				/* should use GROUP NEXT operator (when it's ready!) */
@@ -4152,7 +4147,15 @@ Should use GROUP NEXT operator (when it's ready!)
 					node_order_info=CREATE(FE_node_order_info)(0);
 				}
 				if (node_order_info)
-				{
+				{	
+					if (current_region=get_Rig_current_region(rig))
+					{	
+						rig_node_group=get_Region_rig_node_group(current_region);						
+					}
+					else
+					{
+						rig_node_group=get_Rig_all_devices_rig_node_group(rig);
+					}
 					if (return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
 						fill_FE_node_order_info,(void *)node_order_info,
 						rig_node_group))
@@ -4164,7 +4167,7 @@ Should use GROUP NEXT operator (when it's ready!)
 						first_data=0;
 						/* time is stored at signal field.  For moment, assume only 1 signal
 							per node */
-						field=get_Draw_package_signal_field(draw_package);
+						field=get_Signal_drawing_package_signal_field(signal_drawing_package);
 						last_data=get_FE_field_number_of_times(field)-1;
 					}
 				}
@@ -4178,11 +4181,11 @@ Should use GROUP NEXT operator (when it's ready!)
 			}
 			else if (rig&&(device=rig->devices)&&(*device)&&
 				(buffer=get_Device_signal_buffer(*device)))
-			{
+			{				
 				first_data=buffer->start;
 				last_data=buffer->end;
-				/* determine the number of signals */
-				if (current_region=rig->current_region)
+				/* determine the number of signals */		
+				if(current_region=get_Rig_current_region(rig))
 				{
 					number_of_signals=current_region->number_of_devices;
 				}
@@ -4224,8 +4227,9 @@ Should use GROUP NEXT operator (when it's ready!)
 						signals->signal_width=signal_width;
 						signals->signal_height=signal_height;
 						/* Draw each signal */
-						/* if using rig, skip the devices not in the current region */
-						if ((rig)&&(current_region))
+						/* if using rig, (not rig_node_group) skip the devices not in the*/
+						/* current region */
+						if ((!using_rig_node_group)&&(current_region))
 						{
 							while ((*device)->description->region!=current_region)
 							{
@@ -4238,9 +4242,9 @@ Should use GROUP NEXT operator (when it's ready!)
 						ypos=0;
 						draw_signal(
 #if defined (UNEMAP_USE_NODES)
-							node,draw_package,(struct Device *)NULL,
+							node,signal_drawing_package,(struct Device *)NULL,
 #else /* defined (UNEMAP_USE_NODES) */
-							(struct FE_node *)NULL,(struct Draw_package *)NULL,*device,
+							(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
 #endif /* defined (UNEMAP_USE_NODES) */
 							SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
 							signal_width,signal_height,pixel_map,&axes_left,&axes_top,
@@ -4250,9 +4254,9 @@ Should use GROUP NEXT operator (when it's ready!)
 						signals->axes_top=axes_top;
 						signals->axes_width=axes_width;
 						signals->axes_height=axes_height;
-						/*if using rig, draw_device_markers, and inc device pointer */
-						/* write code rig_node based draw_device_markers later */
-						if (rig)
+						/*if using rig,(not rig_node_group) draw_device_markers, and inc */
+						/* device pointer write code rig_node based draw_device_markers later */
+						if(!using_rig_node_group)
 						{
 							draw_device_markers(*device,first_data,last_data,datum,1,
 								potential_time,1,SIGNAL_AREA_DETAIL,0,axes_left,axes_top,
@@ -4271,9 +4275,9 @@ Should use GROUP NEXT operator (when it's ready!)
 						number_of_signals--;
 						while (number_of_signals>0)
 						{
-							/* skip the devices not in the current region */
-							/* if using rig, skip the devices not in the current region */
-							if ((rig)&&(current_region))
+							/* if using rig,(not rig_node_group) skip the devices not */
+							/*in the current region */
+							if ((!using_rig_node_group)&&(current_region))
 							{
 								while ((*device)->description->region!=current_region)
 								{
@@ -4294,17 +4298,18 @@ Should use GROUP NEXT operator (when it's ready!)
 							}
 							draw_signal(
 #if defined (UNEMAP_USE_NODES)
-								node,draw_package,(struct Device *)NULL,
+								node,signal_drawing_package,(struct Device *)NULL,
 #else /* defined (UNEMAP_USE_NODES) */
-								(struct FE_node *)NULL,(struct Draw_package *)NULL,*device,
+								(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
 #endif /* defined (UNEMAP_USE_NODES) */
 								SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
 								signal_width,signal_height,pixel_map,&axes_left,&axes_top,
 								&axes_width,&axes_height,signal_drawing_information,
 								user_interface);
-							/*if using rig, draw_device_markers, and inc device pointer */
-							/* write code rig_node based draw_device_markers later */
-							if (rig)
+							/*if using rig,( not rig_node_group) draw_device_markers, */
+							/* and inc device pointer. write code rig_node based */
+							/*draw_device_markers later */
+							if (!using_rig_node_group)
 							{
 								draw_device_markers(*device,first_data,last_data,datum,1,
 									potential_time,1,SIGNAL_AREA_DETAIL,0,axes_left,axes_top,
@@ -4354,9 +4359,9 @@ Should use GROUP NEXT operator (when it's ready!)
 						ypos=0;
 						draw_signal(
 #if defined (UNEMAP_USE_NODES)
-							node,draw_package,(struct Device *)NULL,
+							node,signal_drawing_package,(struct Device *)NULL,
 #else /* defined (UNEMAP_USE_NODES) */
-							(struct FE_node *)NULL,(struct Draw_package *)NULL,*device,
+							(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
 #endif /* defined (UNEMAP_USE_NODES) */
 							SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
 							signal_width,signal_height,pixel_map,&axes_left,&axes_top,
@@ -4366,7 +4371,7 @@ Should use GROUP NEXT operator (when it's ready!)
 						signals->axes_top=axes_top;
 						signals->axes_width=axes_width;
 						signals->axes_height=axes_height;
-						if (rig)
+						if(!using_rig_node_group)					
 						{
 							/* for rig based, get next device */
 							device++;
@@ -4396,15 +4401,15 @@ Should use GROUP NEXT operator (when it's ready!)
 							}
 							draw_signal(
 #if defined (UNEMAP_USE_NODES)
-								node,draw_package,(struct Device *)NULL,
+								node,signal_drawing_package,(struct Device *)NULL,
 #else /* defined (UNEMAP_USE_NODES) */
-								(struct FE_node *)NULL,(struct Draw_package *)NULL,*device,
+								(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
 #endif /* defined (UNEMAP_USE_NODES) */
 								SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
 								signal_width,signal_height,pixel_map,&axes_left,&axes_top,
 								&axes_width,&axes_height,signal_drawing_information,
 								user_interface);
-							if (rig)
+							if(!using_rig_node_group)							
 							{
 								/* for rig based, get next device */
 								device++;
@@ -4421,7 +4426,7 @@ Should use GROUP NEXT operator (when it's ready!)
 						}
 						/* have to draw the markers separately because the signals
 							 overlap */
-						if (rig)
+						if(!using_rig_node_group)
 						{
 							/* for rig based */
 							device=rig->devices;
@@ -4445,7 +4450,7 @@ Should use GROUP NEXT operator (when it's ready!)
 						ypos=axes_top;
 						while (number_of_signals>0)
 						{
-							if (rig)
+							if(!using_rig_node_group)
 							{
 								draw_device_markers(*device,first_data,last_data,datum,1,
 									potential_time,1,SIGNAL_AREA_DETAIL,0,xpos,ypos,axes_width,
@@ -4464,7 +4469,7 @@ Should use GROUP NEXT operator (when it's ready!)
 							{
 								ypos=axes_top+(i*drawing_height)/(number_of_rows+3);
 							}
-							if (rig)
+							if(!using_rig_node_group)
 							{
 								/* for rig based, get next device */
 								device++;
@@ -4488,7 +4493,7 @@ Should use GROUP NEXT operator (when it's ready!)
 					} break;
 				} /* switch */
 			}	/* if (number_of_signals>0)*/
-		} /* if ((!rig_node_group&&!draw_package)|| */
+		} /* if ((!rig_node_group&&!signal_drawing_package)|| */
 		else
 		{
 			display_message(ERROR_MESSAGE,"draw_all_signals. Invalid arguments");
@@ -4526,6 +4531,7 @@ Updates the analysis region menu to be consistent with the current rig.
 #define NUMBER_OF_ATTRIBUTES 2
 	Arg attributes[NUMBER_OF_ATTRIBUTES];
 	struct Region_list_item *region_item;
+	struct Region *region=(struct Region *)NULL;
 	struct Rig *rig;
 	Window analysis_menu_window;
 
@@ -4582,8 +4588,8 @@ Updates the analysis region menu to be consistent with the current rig.
 							analysis->region_pull_down_menu,"All regions",attributes,
 							NUMBER_OF_ATTRIBUTES))
 						{
-							XtManageChild(*regions);
-							if (!(rig->current_region))
+							XtManageChild(*regions);							
+							if(!get_Rig_current_region(rig))
 							{
 								current_region= *regions;
 							}
@@ -4594,23 +4600,23 @@ Updates the analysis region menu to be consistent with the current rig.
 							return_code=0;
 						}
 					}
-					region_item=rig->region_list;
+					region_item=get_Rig_region_list(rig);
 					while (region_item&&return_code)
 					{
+						region=get_Region_list_item_region(region_item);
 						XtSetArg(attributes[0],XmNlabelString,
-							(XtPointer)XmStringCreate(
-							region_item->region->name,XmSTRING_DEFAULT_CHARSET));
+							(XtPointer)XmStringCreate(region->name,XmSTRING_DEFAULT_CHARSET));
 						if (*regions=XmCreatePushButtonGadget(
-							analysis->region_pull_down_menu,region_item->region->name,
+							analysis->region_pull_down_menu,region->name,
 							attributes,NUMBER_OF_ATTRIBUTES))
 						{
-							XtManageChild(*regions);
-							if ((rig->current_region==region_item->region)||
-								((!current_region)&&(!(rig->current_region))))
+							XtManageChild(*regions);						
+							if ((get_Rig_current_region(rig)==region)||
+								((!current_region)&&(!(get_Rig_current_region(rig)))))
 							{
 								current_region= *regions;
 							}
-							region_item=region_item->next;
+							region_item=get_Region_list_item_next(region_item);
 							regions++;
 						}
 						else
@@ -4701,7 +4707,7 @@ Highlights/dehighlights the <device> in the <signals> area.
 			ypos+signals->axes_top,signals->axes_width,signals->axes_height,
 			(Window)NULL,signals->drawing->pixel_map,signal_drawing_information,
 			user_interface);
-		draw_signal((struct FE_node *)NULL,(struct Draw_package *)NULL,device,
+		draw_signal((struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,device,
 			SIGNAL_AREA_DETAIL,1,0,&start_data,&end_data,xpos,ypos,
 			signals->signal_width,signals->signal_height,signals->drawing->pixel_map,
 			&axes_left,&axes_top,&axes_width,&axes_height,signal_drawing_information,

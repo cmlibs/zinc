@@ -82,12 +82,12 @@ required.
 	signal_imaginary_values=(float *)NULL;
 	/* check the arguments */
 	if (signal_real&&extract_signal_information((struct FE_node *)NULL,
-		(struct Draw_package *)NULL,signal_real,1,1,0,(int *)NULL,
+		(struct Signal_drawing_package *)NULL,signal_real,1,1,0,(int *)NULL,
 		&number_of_data_points,&times,&signal_real_values,
 		(enum Event_signal_status **)NULL,(char **)NULL,(int *)NULL,(float *)NULL,
 		(float *)NULL)&&(0<number_of_data_points)&&
 		(!signal_imaginary||(signal_imaginary&&extract_signal_information(
-		(struct FE_node *)NULL,(struct Draw_package *)NULL,signal_real,1,1,0,
+		(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,signal_real,1,1,0,
 		(int *)NULL,&number_of_data_points_imaginary,(float **)NULL,
 		&signal_imaginary_values,(enum Event_signal_status **)NULL,(char **)NULL,
 		(int *)NULL,(float *)NULL,(float *)NULL)&&(number_of_data_points==

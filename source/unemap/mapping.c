@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 29 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -962,10 +962,10 @@ Updates the colour map being used for map.
 			!((SINGLE_ACTIVATION== *(map->type))&&(0<=map->activation_front)&&
 			(map->activation_front<number_of_spectrum_colours)))
 		{
-
 #if defined (UNEMAP_USE_NODES)	
 			spectrum=map->drawing_information->spectrum;
-			if(spectrum_manager=get_unemap_package_spectrum_manager(map->unemap_package))
+			if(spectrum_manager=
+				get_map_drawing_information_spectrum_manager(drawing_information))
 			{
 				if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
 				{
@@ -1597,10 +1597,10 @@ Updates the colour map being used for map.
 		{
 			XStoreColors(display,colour_map,spectrum_rgb,number_of_spectrum_colours);
 		}
-
 #if defined (UNEMAP_USE_NODES)	
 		spectrum=map->drawing_information->spectrum;
-		if(spectrum_manager=get_unemap_package_spectrum_manager(map->unemap_package))
+		if(spectrum_manager=
+			get_map_drawing_information_spectrum_manager(drawing_information))
 		{
 			if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
 			{
@@ -2212,14 +2212,14 @@ and the field_order_info.
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-struct GROUP(FE_node) *interpolation_function_to_node_group(
+static struct GROUP(FE_node) *interpolation_function_to_node_group(
 	struct FE_node_order_info **the_node_order_info,
 	struct FE_field_order_info **the_field_order_info,
 	struct Interpolation_function *function,struct Unemap_package *package,
 	char *name,FE_value sock_lambda,FE_value sock_focus,FE_value torso_major_r,
-	FE_value torso_minor_r,FE_value patch_z,int region_number,int rig_node_group_number)
+	FE_value torso_minor_r,FE_value patch_z,struct Region *region)
 /*******************************************************************************
-LAST MODIFIED : 14 June 2000
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Constructs a node group from the <function> and <package>
@@ -2260,6 +2260,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 	struct MANAGER(GROUP(FE_element))	*element_group_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	struct Map_3d_package *map_3d_package;
 
 	ENTER(interpolation_function_to_node_group);
 	node_order_info =(struct FE_node_order_info *)NULL;	
@@ -2268,6 +2269,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 	field_order_info = (struct FE_field_order_info *)NULL;
 	map_position_field= (struct FE_field *)NULL;
 	map_fit_field= (struct FE_field *)NULL;
+	map_3d_package=(struct Map_3d_package *)NULL;
 	if (function&&package&&name)
 	{		
 		last_node_number=1;
@@ -2631,10 +2633,19 @@ i.e sock is a hemisphere, torso is a cylinder.
 			map_position_field=get_FE_field_order_info_field(field_order_info,0);
 			/* 2nd field is map fit*/
 			map_fit_field=get_FE_field_order_info_field(field_order_info,1);
-			/* store map info to use next time and so can free it */	
-			set_unemap_package_map_info(package,region_number,rig_node_group_number,
-				number_of_rows,number_of_columns,region_type,name,node_order_info,
-				map_position_field,map_fit_field,interpolation_node_group);					
+			/* store map info to use next time and so can free it */
+			/* Create the new Map_3d_package*/
+			map_3d_package=CREATE(Map_3d_package)(number_of_rows,number_of_columns,
+				name,node_order_info,map_position_field,map_fit_field,
+				interpolation_node_group,
+				get_unemap_package_FE_field_manager(package),
+				get_unemap_package_element_group_manager(package),
+				get_unemap_package_node_manager(package),
+				get_unemap_package_data_group_manager(package),
+				get_unemap_package_node_group_manager(package),
+				get_unemap_package_element_manager(package),
+				get_unemap_package_Computed_field_manager(package));	
+			set_Region_map_3d_package(region,map_3d_package);
 		} /* if(node_order_info=CREATE(FE */
 		else
 		{			 
@@ -2672,8 +2683,7 @@ static struct GROUP(FE_element) *make_fit_elements(char *group_name,
 	struct MANAGER(GROUP(FE_element))	*element_group_manager,
 	struct MANAGER(FE_basis) *basis_manager,
 	struct MANAGER(FE_element) *element_manager,enum Region_type region_type,
-	int number_of_rows,int number_of_columns,struct Unemap_package *package,
-	int region_number)
+	int number_of_rows,int number_of_columns,struct Region *region)
 /*******************************************************************************
 LAST MODIFIED : 13 June 2000
 
@@ -2695,6 +2705,7 @@ DESCRIPTION :
 	struct FE_node **element_nodes;
 	struct FE_field *field;
 	struct FE_element_field_component **components;
+	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
 	struct Standard_node_to_element_map **standard_node_map;
 	void **scale_factor_set_identifiers,**temp_scale_factor_set_identifiers;
 	int linear_lagrange_basis_type[4]=
@@ -2712,8 +2723,8 @@ DESCRIPTION :
 	
 	ENTER(make_fit_elements);
 	element_group=(struct GROUP(FE_element) *)NULL;
-	if (basis_manager&&element_manager)
-	{	
+	if (basis_manager&&element_manager&&(map_3d_package=get_Region_map_3d_package(region)))
+	{			
 		return_code=1;
 		number_of_nodes=4;
 		/* Arrange the nodes into an array,where the 1st number_of_columns+1 nodes
@@ -3245,11 +3256,9 @@ DESCRIPTION :
 				}
 			}
 		}
-
 		if (return_code)
 		{
-			set_unemap_package_map_element_group(package,element_group,
-				region_number);
+			set_map_3d_package_element_group(map_3d_package,element_group);
 		}
 		else
 		{
@@ -3557,9 +3566,9 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 static int make_fit_node_and_element_groups(
 	struct Interpolation_function *function,struct Unemap_package *package,
 	char *name,FE_value sock_lambda,FE_value sock_focus,FE_value torso_major_r,
-	FE_value torso_minor_r,FE_value patch_z,int region_number,int rig_node_group_number)
+	FE_value torso_minor_r,FE_value patch_z,int region_number,struct Region *region)
 /*******************************************************************************
-LAST MODIFIED : 14 June 2000
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Given the <function> and <package>, determines if  identical node and element 
@@ -3577,6 +3586,7 @@ interpolation_function_to_node_group and make_fit_elements
 	int string_error =0;
 	struct FE_node_order_info *node_order_info;
 	struct FE_field_order_info *field_order_info;	
+	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
 	ENTER(make_fit_node_and_element_groups);
 	node_order_info = (struct FE_node_order_info *)NULL;
 	field_order_info = (struct FE_field_order_info *)NULL;	
@@ -3614,38 +3624,40 @@ interpolation_function_to_node_group and make_fit_elements
 			append_string(&fit_name,region_num_string,&string_error);
 			/* check if the function properties are the same as the last one, i.e */
 			/* identical node and element groups should already exist */
-			if((get_unemap_package_map_number_of_map_rows(package,region_number)
-				==function->number_of_rows)&&
-				(get_unemap_package_map_number_of_map_columns(package,region_number)
-				==function->number_of_columns)&&
-				(get_unemap_package_map_region_type(package,region_number)
-				==function->region_type)&&
-				(!strcmp(get_unemap_package_map_fit_name(package,region_number),
-				fit_name)))
+			map_3d_package=get_Region_map_3d_package(region);
+			if(map_3d_package&&(get_map_3d_package_number_of_map_rows(map_3d_package)
+				  ==function->number_of_rows)&&
+				 (get_map_3d_package_number_of_map_columns(map_3d_package)
+				  ==function->number_of_columns)&&(region->type
+				  ==function->region_type)&&
+				(!strcmp(get_map_3d_package_fit_name(map_3d_package),fit_name)))
 			{
 				/* just have to alter the nodal values */
-				change_fit_node_group_values(get_unemap_package_map_node_order_info(
-					package,region_number),get_unemap_package_map_fit_field(package,region_number),
-					function,fit_name,get_unemap_package_node_group_manager(package),
+				change_fit_node_group_values(get_map_3d_package_node_order_info(map_3d_package),
+					get_map_3d_package_fit_field(map_3d_package),function,fit_name,
+					get_unemap_package_node_group_manager(package),
 					get_unemap_package_element_group_manager(package),
 					get_unemap_package_node_manager(package));
 			}
 			else
 			{				
-				/* free the old map */								
-				free_unemap_package_map_info(package,region_number);
+				if(map_3d_package)
+				{
+					/*this will do a deaccess*/
+					set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
+				}
 				/* rebuild  map & node and element groups */	
 				interpolation_function_to_node_group(
 					&node_order_info,&field_order_info,
 					function,package,fit_name,sock_lambda,sock_focus,torso_major_r,
-					torso_minor_r,patch_z,region_number,rig_node_group_number);
+					torso_minor_r,patch_z,region);
 				make_fit_elements(fit_name,node_order_info,
 					field_order_info,
 					get_unemap_package_element_group_manager(package),
 					get_unemap_package_basis_manager(package),
 					get_unemap_package_element_manager(package),
 					function->region_type,function->number_of_rows,
-					function->number_of_columns,package,region_number);
+					function->number_of_columns,region);
 				DESTROY(FE_field_order_info)(&field_order_info);
 			}
 		}/* if(ALLOCATE( */
@@ -3669,132 +3681,14 @@ interpolation_function_to_node_group and make_fit_elements
  
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
-#if defined(OLD_COLD)
-#if defined (UNEMAP_USE_NODES)
-static int map_3d_window(struct Unemap_package *unemap_package)
-/*******************************************************************************
-LAST MODIFIED : September 2 1999
-
-DESCRIPTION :
-Creates a 3d window for the map, using info in the unemap_package
-??JW At some stage need to set up callbacks to destoy it. Do this when it's
-been embedded in the mapping Xwindow.
-==============================================================================*/
-{ 
-	char *name="Mapping";
-	int return_code;	
-	struct Graphics_window *window;
-	struct Colour *background_colour;	
-	struct Light *light;	
-	struct Light_model *light_model;	
-	struct Scene *scene;	
-	struct User_interface *user_interface;
-	struct MANAGER(Graphics_window) *graphics_window_manager;
-	struct MANAGER(Texture) *texture_manager;
-	struct MANAGER(Scene) *scene_manager;
-	struct MANAGER(Light_model) *light_model_manager;
-	struct MANAGER(Light) *light_manager;
-
-	ENTER(map_3d_window);
-	if(unemap_package&&(graphics_window_manager=
-		get_unemap_package_Graphics_window_manager(unemap_package))
-		 &&(light_manager=get_unemap_package_Light_manager(unemap_package))
-		&&(texture_manager=get_unemap_package_Texture_manager(unemap_package))
-		&&(scene_manager=get_unemap_package_Scene_manager(unemap_package))
-		&&(light_model_manager=get_unemap_package_Light_model_manager(unemap_package))
-		&&(background_colour=get_unemap_package_background_colour(unemap_package))
-		&&(light=get_unemap_package_light(unemap_package))
-		&&(light_model=get_unemap_package_light_model(unemap_package))
-		&&(scene=get_unemap_package_scene(unemap_package))
-		&&(user_interface=get_unemap_package_user_interface(unemap_package)))
-	{	
-		/* Don't make a new window if already have one */
-		if(!get_unemap_package_window(unemap_package))
-		{				
-			if (window=CREATE(Graphics_window)(name,SCENE_VIEWER_DOUBLE_BUFFER,
-				background_colour,light_manager,light,light_model_manager,
-				light_model,scene_manager,scene,texture_manager,
-				unemap_package->interactive_tool_manager,
-				user_interface))
-			{
-				/*perturb the lines, so we can see the contours */
-				Graphics_window_set_perturb_lines(window,1);
-				set_unemap_package_window(unemap_package,window);
-				if (!ADD_OBJECT_TO_MANAGER(Graphics_window)(window,
-					graphics_window_manager))
-				{
-					DESTROY(Graphics_window)(&window);
-				}
-			}			
-		} /* if(!get_unemap_package_window( */
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,"map_3d_window."
-			" Invalid argument(s)");
-		return_code=0;
-	}
-	return_code=1;
-	LEAVE;
-	return(return_code);
-}/* map_3d_window */
-#endif /* #if defined (UNEMAP_USE_NODES) */
-#endif /* defined(OLD_COLD) */
-
-#if defined (OLD_CODE)
-#if defined (UNEMAP_USE_NODES)
-static int map_graphics_hide_lines(struct Scene *scene,
-	struct GROUP(FE_element) *element_group)
-/*******************************************************************************
-LAST MODIFIED : 3 September 1999
-
-DESCRIPTION :
-Removes all line settings from the graphical finite element for
-<element_group> on <scene>. Regenerates the GFE but does not update the scene.
-==============================================================================*/
-{
-	int return_code;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *settings;
-
-	ENTER(map_graphics_hide_lines);
-	if (scene&&element_group)
-	{
-		if (gt_element_group=Scene_get_graphical_element_group(scene,element_group))
-		{
-			return_code=1;
-			while (return_code&&(settings=first_settings_in_GT_element_group_that(
-				gt_element_group,GT_element_settings_type_matches,
-				(void *)GT_ELEMENT_SETTINGS_LINES)))
-			{
-				return_code=GT_element_group_remove_settings(gt_element_group,settings);
-			}
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"map_graphics_hide_lines.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* map_graphics_hide_lines */
-#endif /* #if defined (UNEMAP_USE_NODES) */
-#endif /* defined (OLD_CODE) */
-
 #if defined (UNEMAP_USE_NODES)
 static int map_draw_constant_thickness_contours(struct Scene *scene,
-	struct Unemap_package *package,struct Computed_field *data_field,
+	struct Map_drawing_information *map_drawing_information,
+	struct Computed_field *data_field,
 	int number_of_contours,FE_value contour_minimum,FE_value contour_maximum,
-	int map_number)
+	struct Region *region)
 /*******************************************************************************
-LAST MODIFIED : 17 May 2000
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
 Removes any existing contours, draw <number_of_contours> map contours, evenly 
@@ -3809,6 +3703,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 	struct GROUP(FE_element) *element_group;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings **contour_settings,**old_contour_settings;
+	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
 	FE_value contour_step,contour_value;
 
 	ENTER(map_make_surfaces);
@@ -3819,68 +3714,73 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 	default_selected_material=(struct Graphical_material *)NULL;
 	graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
 	element_group=(struct GROUP(FE_element) *)NULL;
-	if((!number_of_contours)||(data_field&&scene))
-	{		
-		element_group=get_unemap_package_map_element_group(package,map_number);
-		graphical_material_manager=get_unemap_package_Graphical_material_manager(package);
-		gt_element_group=Scene_get_graphical_element_group(scene,element_group);
-		default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
-		("default_selected",graphical_material_manager);
-
-		/* do nothing if the number of contours is the same */		
-		get_unemap_package_map_contours(package,map_number,&old_number_of_contours,
-			&old_contour_settings);
-		if(number_of_contours!=old_number_of_contours)
-		{	
-			/* create material for the contour, so can colour it black, indep of the  */
-			/* map surface (default) material*/
-			if(!(contour_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
-				("contour",graphical_material_manager)))		
-				if (contour_material=CREATE(Graphical_material)(
-					"contour"))
-			{
-				colour.red=0.0;
-				colour.green=0.0;
-				colour.blue=0.0;
-				Graphical_material_set_ambient(contour_material,&colour);
-				Graphical_material_set_diffuse(contour_material,&colour);			
-				ADD_OBJECT_TO_MANAGER(Graphical_material)(contour_material,
-					graphical_material_manager);
-			}
-			/* remove the old contour settings from the gt_element_group */
-			if(old_number_of_contours)
-			{					
-				for(i=0;i<old_number_of_contours;i++)
+	if((!number_of_contours)||(data_field&&scene&&map_drawing_information&&region))
+	{			
+		map_3d_package=get_Region_map_3d_package(region);		
+		/*non-current regions will have had map_3d_package set to NULL by */
+		/* set_Region_map_3d_package(NULL) in draw_map_3d */
+		if(map_3d_package)
+		{
+			element_group=get_map_3d_package_element_group(map_3d_package);
+			graphical_material_manager=get_map_drawing_information_Graphical_material_manager(
+				map_drawing_information);
+			gt_element_group=Scene_get_graphical_element_group(scene,element_group);
+			default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
+				("default_selected",graphical_material_manager);
+			/* do nothing if the number of contours is the same */		
+			get_map_3d_package_contours(map_3d_package,&old_number_of_contours,
+				&old_contour_settings);
+			if(number_of_contours!=old_number_of_contours)
+			{	
+				/* create material for the contour, so can colour it black, indep of the  */
+				/* map surface (default) material*/
+				if(!(contour_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
+					("contour",graphical_material_manager)))		
+					if (contour_material=CREATE(Graphical_material)(
+						"contour"))
+					{
+						colour.red=0.0;
+						colour.green=0.0;
+						colour.blue=0.0;
+						Graphical_material_set_ambient(contour_material,&colour);
+						Graphical_material_set_diffuse(contour_material,&colour);			
+						ADD_OBJECT_TO_MANAGER(Graphical_material)(contour_material,
+							graphical_material_manager);
+					}
+				/* remove the old contour settings from the gt_element_group */
+				if(old_number_of_contours)
 				{					
-					GT_element_group_remove_settings(gt_element_group,old_contour_settings[i]);
-				}		
-			}
-			free_unemap_package_map_contours(package,map_number);
-			if(number_of_contours)
-			{
-				/* calculate the contour intervals */
-				contour_value=contour_minimum;
-				contour_step=(contour_maximum-contour_minimum)/(number_of_contours-1);
-				/* allocate, define and set the contours */
-				ALLOCATE(contour_settings,struct GT_element_settings *,number_of_contours);
-				for(i=0;i<number_of_contours;i++)
+					for(i=0;i<old_number_of_contours;i++)
+					{					
+						GT_element_group_remove_settings(gt_element_group,old_contour_settings[i]);
+					}		
+				}
+				free_map_3d_package_map_contours(map_3d_package);
+				if(number_of_contours)
 				{
-					contour_settings[i]=CREATE(GT_element_settings)
-						(GT_ELEMENT_SETTINGS_ISO_SURFACES);
-					GT_element_settings_set_material(contour_settings[i],contour_material);
-					GT_element_settings_set_selected_material(contour_settings[i],
-						default_selected_material);
-					GT_element_settings_set_iso_surface_parameters(contour_settings[i],
-						data_field,contour_value);
-					GT_element_group_add_settings(gt_element_group,contour_settings[i],0);		
-					contour_value+=contour_step;
-				}			
-				GT_element_group_build_graphics_objects(gt_element_group,
-					(struct FE_element *)NULL,(struct FE_node *)NULL);
-			}	
-			set_unemap_package_map_contours(package,map_number,number_of_contours,
-					contour_settings);
-		}
+					/* calculate the contour intervals */
+					contour_value=contour_minimum;
+					contour_step=(contour_maximum-contour_minimum)/(number_of_contours-1);
+					/* allocate, define and set the contours */
+					ALLOCATE(contour_settings,struct GT_element_settings *,number_of_contours);
+					for(i=0;i<number_of_contours;i++)
+					{
+						contour_settings[i]=CREATE(GT_element_settings)
+							(GT_ELEMENT_SETTINGS_ISO_SURFACES);
+						GT_element_settings_set_material(contour_settings[i],contour_material);
+						GT_element_settings_set_selected_material(contour_settings[i],
+							default_selected_material);
+						GT_element_settings_set_iso_surface_parameters(contour_settings[i],
+							data_field,contour_value);
+						GT_element_group_add_settings(gt_element_group,contour_settings[i],0);		
+						contour_value+=contour_step;
+					}			
+					GT_element_group_build_graphics_objects(gt_element_group,
+						(struct FE_element *)NULL,(struct FE_node *)NULL);
+				}	
+				set_map_3d_package_contours(map_3d_package,number_of_contours,contour_settings);
+			}
+		}		
 	}
 	else
 	{
@@ -3892,30 +3792,33 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 	return(return_code);
 }/* map_draw_constant_thickness_contours */
 #endif /* #if defined (UNEMAP_USE_NODES) */
-	
+
 #if defined (UNEMAP_USE_NODES)
 /* proportion of the contour that is blacked. 1000=1, 100=0.1  */
 #define CONTOUR_PROPORTION 100
 static int map_draw_contours(struct Map *map,	struct Spectrum *spectrum,
-	struct Unemap_package *package,struct Computed_field *data_field,
-	int number_of_regions)
+	struct Unemap_package *package,struct Computed_field *data_field)
 /*******************************************************************************
-LAST MODIFIED : 22 May 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
 Draws (or erases) the map contours
 ==============================================================================*/
 {
-	int number_of_constant_contours,number_of_variable_contours,region_number,
-		return_code,rig_node_group_number;
+	int number_of_constant_contours,number_of_variable_contours,return_code;
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct Scene *scene=(struct Scene *)NULL;
+	struct Rig *rig=(struct Rig *)NULL;
+	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
+	struct Region_list_item *region_item=(struct Region_list_item *)NULL;	
+	struct Region *region=(struct Region *)NULL;
 
 	ENTER(map_draw_contours); 
 	/*data_field can be NULL*/
-	if(map&&&package&&spectrum&&
-		(spectrum_manager=get_unemap_package_spectrum_manager(package))&&
-		(scene=get_unemap_package_scene(package)))
+	if(map&&&package&&spectrum&&(map->rig_pointer)&&(rig= *(map->rig_pointer))&&
+		(map->drawing_information)&&(spectrum_manager=
+			get_map_drawing_information_spectrum_manager(map->drawing_information))&&
+		(scene=get_map_drawing_information_scene(map->drawing_information)))
 	{
 		/* Show the contours */	
 		if((map->contours_option==SHOW_CONTOURS)&&
@@ -3943,19 +3846,21 @@ Draws (or erases) the map contours
 		/* draw/remove VARIABLE_THICKNESS contours*/
 		Spectrum_overlay_contours(spectrum_manager,spectrum,
 			number_of_variable_contours,CONTOUR_PROPORTION);
-		for (region_number=0;region_number<number_of_regions;region_number++)
-		{	
-			/* first is all devices node group */
-			rig_node_group_number=region_number+1;
-			if(unemap_package_rig_node_group_has_electrodes(package,
-				rig_node_group_number))
-			{									
+		region_item=get_Rig_region_list(rig);
+		while(region_item)
+		{
+			region=get_Region_list_item_region(region_item);			
+			rig_node_group=get_Region_rig_node_group(region);
+			if(rig_node_group&&
+				(unemap_package_rig_node_group_has_electrodes(package,rig_node_group)))
+			{			
 				/* draw/remove CONSTANT_THICKNESS contours */
-				map_draw_constant_thickness_contours(scene,package,data_field,
+				map_draw_constant_thickness_contours(scene,map->drawing_information,data_field,
 					number_of_constant_contours,map->contour_minimum,
-					map->contour_maximum,region_number);
-			}											
-		}
+					map->contour_maximum,region);					
+			}				
+			region_item=get_Region_list_item_next(region_item);
+		}/* while(region_item)*/
 	}
 	else
 	{	
@@ -3969,7 +3874,7 @@ Draws (or erases) the map contours
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-static int map_show_surfaces(struct Scene *scene,
+static int map_show_surface(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Spectrum *spectrum,struct Computed_field *data_field,
@@ -4041,7 +3946,7 @@ Also applies <number_of_contours> contours to surface.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"map_show_surfaces. CREATE(GT_element_settings) failed ");
+									"map_show_surface. CREATE(GT_element_settings) failed ");
 								return_code=0;
 							}
 						}
@@ -4073,14 +3978,14 @@ Also applies <number_of_contours> contours to surface.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"map_show_surfaces. MANAGER_MODIFY failed ");
+									"map_show_surface. MANAGER_MODIFY failed ");
 								return_code=0;
 							}
 						}
 						else
 						{	
 							display_message(ERROR_MESSAGE,
-							"map_show_surfaces. Couldn't copy material ");							
+							"map_show_surface. Couldn't copy material ");							
 							return_code=0;
 						}																
 					}/* if(!(data_field&&spectrum))	*/			
@@ -4120,14 +4025,14 @@ Also applies <number_of_contours> contours to surface.
 							else
 							{	
 								display_message(ERROR_MESSAGE,
-									"map_show_surfaces.MANAGER_MODIFY failed ");
+									"map_show_surface.MANAGER_MODIFY failed ");
 								return_code=0;
 							}
 						}
 						else
 						{	
 							display_message(ERROR_MESSAGE,
-							"map_show_surfaces. Couldn't copy material ");							
+							"map_show_surface. Couldn't copy material ");							
 							return_code=0;
 						}		
 					}/* if(data_field&&spectrum) */
@@ -4159,14 +4064,14 @@ Also applies <number_of_contours> contours to surface.
 								material,material_copy,graphical_material_manager))							
 							{	
 								display_message(ERROR_MESSAGE,
-									"map_show_surfaces.MANAGER_MODIFY failed ");
+									"map_show_surface.MANAGER_MODIFY failed ");
 								return_code=0;
 							}	
 						}				
 						else
 						{	
 							display_message(ERROR_MESSAGE,
-								"map_show_surfaces. Couldn't copy material ");							
+								"map_show_surface. Couldn't copy material ");							
 							return_code=0;
 						}		
 					}	
@@ -4186,7 +4091,7 @@ Also applies <number_of_contours> contours to surface.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"map_show_surfaces. CREATE(GT_element_settings) failed ");
+						"map_show_surface. CREATE(GT_element_settings) failed ");
 					return_code=0;
 				}
 			}/* if (old_settings=first_settings_in_GT_element_group_that */
@@ -4194,14 +4099,14 @@ Also applies <number_of_contours> contours to surface.
 		else
 		{	
 			display_message(ERROR_MESSAGE,
-						"map_show_surfaces. no gt_element_group or default_material ");
+						"map_show_surface. no gt_element_group or default_material ");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"map_show_surfaces.  Invalid argument(s)");
+			"map_show_surface.  Invalid argument(s)");
 		return_code=0;
 	}	
 	if(new_settings)
@@ -4215,7 +4120,7 @@ Also applies <number_of_contours> contours to surface.
 	LEAVE;
 
 	return (return_code);
-} /* map_show_surfaces */
+} /* map_show_surface */
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
@@ -4228,19 +4133,20 @@ Also applies <number_of_contours> contours to surface.
 /*this is for FOR AJPs p117_m8c1_modified.signal*/
 #define FIT_TORSO_MAJOR_R 100.0
 #define FIT_TORSO_MINOR_R 50.0
-
 #define FIT_PATCH_Z 0.0
-static int make_and_add_map_electrode_position_field(int region_number,
-	enum Region_type region_type,struct Unemap_package *unemap_package)
+static int make_and_add_map_electrode_position_field(
+	struct Unemap_package *unemap_package,
+	struct GROUP(FE_node) *rig_node_group,struct Region *region)
 /*******************************************************************************
-LAST MODIFIED : 20 April 2000
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
-makes maps electrode position field, and adds to the nodes in the rig node group.
+makes maps electrode position field, and adds to the nodes in the <rig_node_group>
 <electrode_position_field> used to match the created map_electode_position field
 ==============================================================================*/
 {
 	enum FE_field_type field_type;
+	enum Region_type region_type;
 	enum Value_type time_value_type,value_type;
 	char **component_names;
 	char *field_name=(char *)NULL;
@@ -4257,11 +4163,13 @@ makes maps electrode position field, and adds to the nodes in the rig node group
 	struct FE_field *map_position_field=(struct FE_field *)NULL;
 	struct FE_field *indexer_field=(struct FE_field *)NULL;				 
 	struct MANAGER(FE_field) *field_manager=(struct MANAGER(FE_field) *)NULL;
+	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
 
 	ENTER(make_and_add_map_electrode_position_fields);
-	if(unemap_package)
+	if(unemap_package&&rig_node_group&&region)
 	{
 		return_code=1;
+		region_type=region->type;
 		/* compose the field name*/
 		switch(region_type)
 		{
@@ -4294,15 +4202,15 @@ makes maps electrode position field, and adds to the nodes in the rig node group
 				strcpy(field_name,region_type_str);
 				strcat(field_name,position_str);					
 				/* get the map position field,  */
-				map_position_field=get_unemap_package_map_position_field(
-					unemap_package,region_number);
+				map_3d_package=get_Region_map_3d_package(region);
+				map_position_field=get_map_3d_package_position_field(map_3d_package);
 				field_manager=get_unemap_package_FE_field_manager(unemap_package);	
 				/* assemble all info for get_FE_field_manager_matched_field */
 				/* ??JW what if map_position_field hasn't been created?  */
 				if((get_FE_field_CM_field_information(map_position_field,&field_info))&&
-				(coordinate_system=get_FE_field_coordinate_system(map_position_field))&&
-				(number_of_components=get_FE_field_number_of_components(map_position_field))&&
-				(ALLOCATE(component_names,char *,number_of_components)))
+					(coordinate_system=get_FE_field_coordinate_system(map_position_field))&&
+					(number_of_components=get_FE_field_number_of_components(map_position_field))&&
+					(ALLOCATE(component_names,char *,number_of_components)))
 				{	
 					number_of_times=get_FE_field_number_of_times(map_position_field);
 					value_type=get_FE_field_value_type(map_position_field);
@@ -4332,22 +4240,21 @@ makes maps electrode position field, and adds to the nodes in the rig node group
 						number_of_times,time_value_type)))
 					{
 						struct FE_field *old_map_electrode_position_field;
-
 						old_map_electrode_position_field=
-							get_unemap_package_map_electrode_position_field(unemap_package,
-								region_number);
+							get_Region_map_electrode_position_field(region);
 						if(old_map_electrode_position_field!=map_electrode_position_field)
 						{								
 							/* add it to the unemap package,so can use it later */
-							set_unemap_package_map_electrode_position_field(unemap_package,
+							set_Region_map_electrode_position_field(region,
 								map_electrode_position_field);
 							/* add a map_electrode_position_field to the nodes. */
-							rig_node_group_add_map_electrode_position_field(region_number, 
-								unemap_package,map_electrode_position_field);							
+							rig_node_group_add_map_electrode_position_field(unemap_package,
+								rig_node_group,map_electrode_position_field);							
 							/* Set the lambda/r/z to match  the fitted surface's. Should really*/
 							/* do vice versa, ie  set surface to electrodes */
-							rig_node_group_set_map_electrode_position_lambda_r(region_number,
-								unemap_package,FIT_SOCK_LAMBDA,FIT_TORSO_MAJOR_R,FIT_TORSO_MINOR_R);
+							rig_node_group_set_map_electrode_position_lambda_r(unemap_package,
+								rig_node_group,region,FIT_SOCK_LAMBDA,FIT_TORSO_MAJOR_R,
+								FIT_TORSO_MINOR_R);
 						}
 					}/* if (ADD_OBJECT_TO_MANAGER(FE_field) */
 					else
@@ -4358,14 +4265,14 @@ makes maps electrode position field, and adds to the nodes in the rig node group
 						DESTROY(FE_field)(&map_electrode_position_field);					
 					}
 				}
-					  else
-						{
-							display_message(ERROR_MESSAGE,"make_and_add_map_electrode_position_fields."
-								"error getting field info ");
-							return_code=0;
-							DESTROY(FE_field)(&map_electrode_position_field);			
-						}
-						DEALLOCATE(component_names);	
+				else
+				{
+					display_message(ERROR_MESSAGE,"make_and_add_map_electrode_position_fields."
+						"error getting field info ");
+					return_code=0;
+					DESTROY(FE_field)(&map_electrode_position_field);			
+				}
+				DEALLOCATE(component_names);	
 			}/* if(ALLOCATE(field_name,char,string_length)) */
 			else
 			{	
@@ -4388,21 +4295,22 @@ makes maps electrode position field, and adds to the nodes in the rig node group
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)	
-static struct GT_object *map_get_map_electrodes_glyph(struct Unemap_package *package,
-	int map_number,enum Electrodes_marker_type electrodes_marker_type)
+static struct GT_object *map_get_map_electrodes_glyph(
+	struct Map_drawing_information *drawing_information,
+	struct Map_3d_package *map_3d_package,enum Electrodes_marker_type electrodes_marker_type)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2000
+LAST MODIFIED : 17 Julyy 2000
 
 DESCRIPTION :
 Gets  and returns a <glyph> for the map electrode, based upon <electrodes_marker_type>
-Also sets the glyph in the unemap_package <package>
+Also sets the glyph in the <map_3d_package>
 ==============================================================================*/
 {	
 	struct GT_object *glyph;
 
 	ENTER(map_get_map_electrodes_glyph);
 	glyph=(struct GT_object *)NULL;
-	if(package)
+	if(drawing_information)
 	{
 		/* match the names to the marker types. Maybe store the marker types ??JW*/
 		/* see also map_update_map_electrodes */					
@@ -4411,17 +4319,17 @@ Also sets the glyph in the unemap_package <package>
 			case CIRCLE_ELECTRODE_MARKER:
 			{	
 				glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("sphere",
-					get_unemap_package_glyph_list(package));
+					get_map_drawing_information_glyph_list(drawing_information));
 			}break;
 			case PLUS_ELECTRODE_MARKER:
 			{	
 				glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("cross",
-					get_unemap_package_glyph_list(package));
+					get_map_drawing_information_glyph_list(drawing_information));
 			}break;
 			case SQUARE_ELECTRODE_MARKER:
 			{
 				glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("diamond",
-					get_unemap_package_glyph_list(package));
+					get_map_drawing_information_glyph_list(drawing_information));
 			}break;
 			case HIDE_ELECTRODE_MARKER:
 			{
@@ -4435,7 +4343,7 @@ Also sets the glyph in the unemap_package <package>
 		}	
 		if(glyph)
 		{		
-			set_unemap_package_map_electrode_glyph(package,glyph,map_number);
+			set_map_3d_package_electrode_glyph(map_3d_package,glyph);
 		}
 	}
 	else
@@ -4580,8 +4488,8 @@ Sets the <time> of the time field.
 #endif /* (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-static int map_show_map_electrodes(struct Unemap_package *package,int map_number,
-	struct GT_object *glyph,struct Map *map,FE_value time)
+static int map_show_map_electrodes(struct Unemap_package *package,
+	struct GT_object *glyph,struct Map *map,FE_value time,struct Region *region)
 /*******************************************************************************
 LAST MODIFIED : 8 May 2000 
 
@@ -4590,7 +4498,7 @@ Construct the settings and build the graphics objects for the glyphs.
 ==============================================================================*/
 {
 	char *group_name;
-	int return_code,rig_node_group_number;
+	int return_code;
 	struct Computed_field *computed_coordinate_field,*computed_field,*label_field,
 		*orientation_scale_field;
 	struct FE_field *map_electrode_position_field,*field;
@@ -4602,6 +4510,9 @@ Construct the settings and build the graphics objects for the glyphs.
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct MANAGER(GROUP(FE_element))	*element_group_manager;
+	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
+	struct Map_drawing_information *drawing_information=
+		(struct Map_drawing_information *)NULL;
 	struct Scene *scene;	
 	Triple glyph_centre,glyph_size,glyph_scale_factors;
 
@@ -4622,26 +4533,23 @@ Construct the settings and build the graphics objects for the glyphs.
 	graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
 	field=(struct FE_field *)NULL;
 	computed_field=(struct Computed_field *)NULL;
-	if (package&&glyph&&(electrode_material=
-		get_unemap_package_electrode_graphical_material(package))&&
-		(scene=get_unemap_package_scene(package))&&
+	if (map&&(drawing_information=map->drawing_information)&&
+		region&&package&&glyph&&(electrode_material=
+		get_map_drawing_information_electrode_graphical_material(drawing_information))&&
+		(scene=get_map_drawing_information_scene(drawing_information))&&
 		(computed_field_manager=
 			get_unemap_package_Computed_field_manager(package))&&
 		(element_group_manager=
 			get_unemap_package_element_group_manager(package))&&
-		(rig_node_group_number=
-			get_unemap_package_map_rig_node_group_number(package,map_number))&&
-		(rig_node_group=
-			get_unemap_package_rig_node_group(package,rig_node_group_number))&&
+		(rig_node_group=get_Region_rig_node_group(region))&&
 		(map_electrode_position_field=
-			get_unemap_package_map_electrode_position_field(package,map_number)))
+		  get_Region_map_electrode_position_field(region)))
 	{		
 		return_code=0;							
 		GET_NAME(GROUP(FE_node))(rig_node_group,&group_name);	 
 		rig_element_group=
 			FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
 			(group_name,element_group_manager);
-
 		if (rig_element_group&&(gt_element_group=Scene_get_graphical_element_group(
 			scene,rig_element_group)))
 		{	
@@ -4652,7 +4560,7 @@ Construct the settings and build the graphics objects for the glyphs.
 				if (settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_NODE_POINTS))
 				{						
 					graphical_material_manager=
-						get_unemap_package_Graphical_material_manager(package);
+						get_map_drawing_information_Graphical_material_manager(drawing_information);
 					default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER
 						(Graphical_material,name)("default_selected",graphical_material_manager);
 					GT_element_settings_set_selected_material(settings,default_selected_material);
@@ -4724,12 +4632,11 @@ Construct the settings and build the graphics objects for the glyphs.
 					/* add the settings to the group */
 					if (GT_element_group_add_settings(gt_element_group,settings,1))
 					{
-						set_unemap_package_map_electrode_size(package,map->electrodes_marker_size,
-							map_number);
-						set_unemap_package_map_electrodes_option(package,map->electrodes_option,
-							map_number);
-						set_unemap_package_map_colour_electrodes_with_signal(package,
-							map->colour_electrodes_with_signal,map_number);
+            map_3d_package=get_Region_map_3d_package(region);
+           set_map_3d_package_electrode_size(map_3d_package,map->electrodes_marker_size);
+            set_map_3d_package_electrodes_option(map_3d_package,map->electrodes_option);
+            set_map_3d_package_colour_electrodes_with_signal(map_3d_package,
+							map->colour_electrodes_with_signal);
 						GT_element_group_build_graphics_objects(gt_element_group,
 							(struct FE_element *)NULL,(struct FE_node *)NULL);
 						return_code=1;
@@ -4760,28 +4667,29 @@ Construct the settings and build the graphics objects for the glyphs.
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-static int map_remove_map_electrode_glyphs(struct Unemap_package *package,int map_number)
+static int map_remove_map_electrode_glyphs(
+	struct Map_drawing_information *drawing_information,
+	struct Unemap_package *package,
+  struct Map_3d_package *map_3d_package,struct GROUP(FE_node) *rig_node_group)
 /*******************************************************************************
 LAST MODIFIED : 22 October 1999
 
 DESCRIPTION :
-Removes the map electrode glyphs , for each node in the rig_node_group 
-referenced by <map_number>. 
+Removes the map electrode glyphs , for each node in the rig_node_group
+in <region>
 ==============================================================================*/
 {
-	int return_code,rig_node_group_number;
+	int return_code;
+  
 	ENTER(map_remove_map_electrode_glyphs);
-	if(package)
-	{
-		rig_node_group_number=
-			get_unemap_package_map_rig_node_group_number(package,map_number);
-		if(rig_node_group_number>0)
-		{		
-			free_unemap_package_rig_node_group_glyphs(package,rig_node_group_number);	
-			set_unemap_package_map_electrode_glyph(package,(struct GT_object *)NULL,
-				map_number);
-		}
-	}
+	if(package&&rig_node_group&&drawing_information)
+  {		    
+    free_unemap_package_rig_node_group_glyphs(drawing_information,package,rig_node_group);
+    if(map_3d_package)
+    {
+	    set_map_3d_package_electrode_glyph(map_3d_package,(struct GT_object *)NULL);
+    }
+  }
 	else
 	{
 		display_message(ERROR_MESSAGE,
@@ -4794,36 +4702,34 @@ referenced by <map_number>.
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-static int map_update_map_electrodes(struct Unemap_package *package,int map_number,
-	struct Map *map,FE_value time)
+static int map_update_map_electrodes(struct Unemap_package *package,
+	struct Region *region,struct Map *map,FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 9 May 2000
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
 if necessary,create glyphs for the map electrodes, for each node in the 
-rig_node_group referenced by <map_number>. Glyph type taken from 
+rig_node_group in <region>. Glyph type taken from 
 <electrodes_marker_type>
 ==============================================================================*/
 {
 	int return_code;		
-	struct GT_object *electrode_glyph;	
-	
-	ENTER(map_update_map_electrodes);	 
-	electrode_glyph=(struct GT_object *)NULL;
-	
-	if(package)
+	struct GT_object *electrode_glyph=(struct GT_object *)NULL;
+	struct Map_3d_package *map_3d_info=(struct Map_3d_package *)NULL;
+	ENTER(map_update_map_electrodes);	 		
+	if(package&&region&&map)
 	{	
 		/* get the glyph*/
-		if(!(electrode_glyph=get_unemap_package_map_electrode_glyph
-			(package,map_number)))
+		if((map_3d_info=get_Region_map_3d_package(region))&&
+			!(electrode_glyph=get_map_3d_package_electrode_glyph(map_3d_info)))
 		{
-			electrode_glyph=map_get_map_electrodes_glyph(package,map_number,
-				map->electrodes_marker_type);	
+			electrode_glyph=map_get_map_electrodes_glyph(map->drawing_information,
+				map_3d_info,map->electrodes_marker_type);	
 		}
 		/* glyph can be NULL for no markers */		
 		if(electrode_glyph)		
 		{
-			map_show_map_electrodes(package,map_number,electrode_glyph,map,time);
+			map_show_map_electrodes(package,electrode_glyph,map,time,region);
 			if(map->colour_electrodes_with_signal)
 			{
 				map_update_electrode_colour_from_time(package,time);
@@ -4842,31 +4748,27 @@ rig_node_group referenced by <map_number>. Glyph type taken from
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-static int map_remove_map_electrodes_if_changed(struct Unemap_package *unemap_package,
-	struct Map *map,int number_of_regions)
+static int map_electrodes_properties_changed(struct Map *map,
+	struct Map_3d_package *map_3d_package)
 /*******************************************************************************
-LAST MODIFIED : 9 May 2000
+LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
-removes the maps elecrodes, if they've changed.
+returns 1 if the <map_3d_package>s electrode properties have changed, 0 if they
+haven't
 ==============================================================================*/
 {
 	char *electrode_glyph_name;
-	int region_number,return_code,rig_node_group_number;
+	int return_code;
 	struct GT_object *electrode_glyph;
 
-	ENTER(map_remove_map_electrodes_if_changed);	
+	ENTER(map_electrodes_properties_changed);	
  	electrode_glyph=(struct GT_object *)NULL;	
 	electrode_glyph_name=(char *)NULL;
-	if(unemap_package)
+	if(map&&map_3d_package)
 	{
-		return_code=1;
-		/* must remove all maps electrodes at once, as they all use the same */
-		/* time computed field. Therefore detect if the first map's electrode*/
-		/* exists and has changed. If it has, change remove the lot.*/
-		region_number=0;
-		if(electrode_glyph=get_unemap_package_map_electrode_glyph
-			(unemap_package,region_number))
+		return_code=0;		
+		if(electrode_glyph=get_map_3d_package_electrode_glyph(map_3d_package))
 		{			
 			/* match the names to the marker types. Maybe store the marker types ??JW*/
 			/*??JW maybe we should just store a flag to indicate that the electrode has*/
@@ -4883,92 +4785,118 @@ removes the maps elecrodes, if they've changed.
 				((!strcmp(electrode_glyph_name,"diamond"))&&
 					(map->electrodes_marker_type!=SQUARE_ELECTRODE_MARKER)))||
 				/* electrode size changed*/
-				(map->electrodes_marker_size!=
-					get_unemap_package_map_electrode_size(unemap_package,region_number))||
+				(map->electrodes_marker_size!=				
+					get_map_3d_package_electrode_size(map_3d_package))||
 				/* electrode option changed*/
 				(map->electrodes_option!=
-					get_unemap_package_map_electrodes_option(unemap_package,region_number))||
+					get_map_3d_package_electrodes_option(map_3d_package))||
 				/* colour_electrodes_with_signal flag has changed */
 				(map->colour_electrodes_with_signal!=
-					get_unemap_package_map_colour_electrodes_with_signal
-					 (unemap_package,region_number)))
-			{	
-				for (region_number=0;region_number<number_of_regions;region_number++)
-				{
-					/* first is all devices node group */
-					rig_node_group_number=region_number+1;
-					if(unemap_package_rig_node_group_has_electrodes(unemap_package,
-						rig_node_group_number))
-					{
-						map_remove_map_electrode_glyphs(unemap_package,region_number);
-					}
-				}
-				free_unemap_package_time_computed_fields(unemap_package);
+					get_map_3d_package_colour_electrodes_with_signal(map_3d_package)))
+			{					
+				return_code=1;
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"map_remove_map_electrodes_if_changed.  Invalid argument(s)");
+			"map_electrodes_properties_changed.  Invalid argument(s)");
 		return_code=0;
 	} 	
 	LEAVE;
 	return(return_code);
-}/* map_remove_map_electrodes_if_changed */
+}/* map_electrodes_properties_changed */
 #endif /* UNEMAP_USE_NODES */
 
 #if defined (UNEMAP_USE_NODES)
 static int map_draw_map_electrodes(struct Unemap_package *unemap_package,
-	struct Map *map,int number_of_regions,FE_value time)
+	struct Map *map,FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED :  11 July 2000
 
 DESCRIPTION :
-Removes the map electrodes if they've changed, then redraws them.
+Removes the map electrodes if they've changed, then redraws them for the current
+region(s)
 ==============================================================================*/
 {
-	int region_number,return_code,rig_node_group_number;
+	int display_all_regions,electrodes_properties_changed,return_code;
+  struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
+  struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
+	struct Map_drawing_information *drawing_information=
+		(struct Map_drawing_information *)NULL;
+	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
+	struct Region *region=(struct Region *)NULL;
+	struct Region *current_region=(struct Region *)NULL;
+	struct Rig *rig=(struct Rig *)NULL;
 
 	ENTER(map_draw_map_electrodes);
-	return_code=0;
-	if(unemap_package&&map&&(number_of_regions>0))
-	{		
-		return_code=map_remove_map_electrodes_if_changed(unemap_package,map,
-			number_of_regions);
-		/*re loop through regions and and draw electrodes, now we have the changes to the*/
-		/* spectrum (map->drawing_information->spectrum) */
-		for (region_number=0;region_number<number_of_regions;region_number++)
+	if(unemap_package&&map&&(drawing_information=map->drawing_information)&&
+		(map->rig_pointer)&&(rig= *(map->rig_pointer)))
+	{	
+		return_code=1;
+		display_all_regions=0;
+		electrodes_properties_changed=0;
+		current_region=get_Rig_current_region(rig);
+		/*if current_region NULL, displayong all regions*/
+		if(!current_region)
 		{
-			/* first is all devices node group */
-			rig_node_group_number=region_number+1;
-			if(unemap_package_rig_node_group_has_electrodes(unemap_package,
-				rig_node_group_number))
+			display_all_regions=1;
+		}		
+		region_item=get_Rig_region_list(rig);
+		/* work through all regions */
+		while(region_item)
+		{						
+			region=get_Region_list_item_region(region_item);
+			rig_node_group=get_Region_rig_node_group(region);
+			map_3d_package=get_Region_map_3d_package(region);
+			if(map_3d_package)
 			{
-				map_update_map_electrodes(unemap_package,region_number,map,time);
-			}					
-		}
+				electrodes_properties_changed=
+					map_electrodes_properties_changed(map,map_3d_package);
+			}
+			else
+			{
+				electrodes_properties_changed=0;
+			}
+			/* remove undisplayed or changed electrodes */
+			if(electrodes_properties_changed||(!display_all_regions||
+				(region!=current_region)))
+			{									
+				map_remove_map_electrode_glyphs(drawing_information,
+					unemap_package,map_3d_package,rig_node_group);
+			}
+			/* draw current electrodes */
+			if(rig_node_group&&map_3d_package&&
+				(unemap_package_rig_node_group_has_electrodes(unemap_package,
+					rig_node_group))&&((region==current_region)||display_all_regions))
+			{
+				map_update_map_electrodes(unemap_package,region,map,time);
+			}		
+			region_item=get_Region_list_item_next(region_item);
+		}/* while(region_item)*/		
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"map_draw_map_electrodes.  Invalid argument(s)");	
+		display_message(ERROR_MESSAGE,"map_draw_map_electrodes. Invalid argument(s)");
+		return_code=0;
 	}
 	LEAVE;
 	return(return_code);
-}/* map_draw_map_electrodes */
-#endif /* UNEMAP_USE_NODES */
+}/* map_draw_map_electrodes*/
+#endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-int draw_torso_arm_labels(struct Unemap_package *package,int map_number)/*FOR AJP*/
+static int draw_torso_arm_labels(struct Map_drawing_information *drawing_information,
+	struct Region *region)/*FOR AJP*/
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
 Creates a pair of arm labels, and adds to the scene.
 ==============================================================================*/
 {	
-	int return_code,rig_node_group_number;
+	int return_code;
 	char **labels;
 	char *left =(char *)NULL;
 	char *right =(char *)NULL;
@@ -4978,27 +4906,30 @@ Creates a pair of arm labels, and adds to the scene.
 	struct GT_object *glyph=(struct GT_object *)NULL;
 	struct GT_object*graphics_object=(struct GT_object *)NULL;
 	struct LIST(GT_object) *glyph_list=(struct LIST(GT_object) *)NULL;
+	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
 	Triple *axis1_list=(Triple *)NULL;
 	Triple *axis2_list=(Triple *)NULL;
 	Triple *axis3_list=(Triple *)NULL;
 	Triple *point_list=(Triple *)NULL;
 
 	ENTER(draw_torso_arm_labels);
-	if(package)
+	if(region&&drawing_information)
 	{				
 		return_code=1;
 		/*??JW should probably maintain a list of graphics_objects, and*/
 		/*search in this list, as CMGUI does*/
-		if((!(graphics_object=get_unemap_package_map_torso_arm_labels(package,map_number)))&&
-			 (rig_node_group_number=get_unemap_package_map_rig_node_group_number
-				 (package,map_number))&&get_rig_node_group_map_electrode_position_min_max(
-				get_unemap_package_rig_node_group(package,rig_node_group_number),
-				get_unemap_package_map_electrode_position_field(package,map_number),
+		if((map_3d_package=get_Region_map_3d_package(region))&&
+			(!(graphics_object=
+				get_map_3d_package_torso_arm_labels(map_3d_package)))&&
+			  get_rig_node_group_map_electrode_position_min_max(
+				get_Region_rig_node_group(region),
+				get_Region_map_electrode_position_field(region),
 				&min_x,&max_x,&min_y,&max_y,&min_z,&max_z))
 		{				
 			if ((graphical_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
-				("default",get_unemap_package_Graphical_material_manager(package)))&&
-				(glyph_list=get_unemap_package_glyph_list(package))&&
+				("default",
+				get_map_drawing_information_Graphical_material_manager(drawing_information)))&&
+				(glyph_list=get_map_drawing_information_glyph_list(drawing_information))&&
 				(glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",glyph_list))&&
 				ALLOCATE(point_list,Triple,2)&&ALLOCATE(axis1_list,Triple,2)&&
 				ALLOCATE(axis2_list,Triple,2)&&ALLOCATE(axis3_list,Triple,2)&&
@@ -5056,9 +4987,10 @@ Creates a pair of arm labels, and adds to the scene.
 				{
 					if (GT_OBJECT_ADD(GT_glyph_set)(graphics_object,/*time*/0.0,glyph_set))
 					{										
-						Scene_add_graphics_object(get_unemap_package_scene(package),
-							graphics_object,0,graphics_object->name,/*fast_changing*/0);
-						set_unemap_package_map_torso_arm_labels(package,graphics_object,map_number);	
+						Scene_add_graphics_object(get_map_drawing_information_scene
+							(drawing_information),graphics_object,0,
+							graphics_object->name,/*fast_changing*/0);
+						set_map_3d_package_torso_arm_labels(map_3d_package,graphics_object);	
 					}
 					else
 					{	
@@ -5090,36 +5022,144 @@ Creates a pair of arm labels, and adds to the scene.
 #endif /* UNEMAP_USE_NODES */
 
 #if defined (UNEMAP_USE_NODES)
-int draw_map_3d(struct Map *map)
+static int map_remove_all_electrodes(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
-This function draws the <map> in as a 3D CMGUI scene.
+removes all the electrode glyphs used by the map, but DOESN'T  remove the 
+time computed fields used by the glyphs.
+==============================================================================*/
+{
+	int return_code;
+	struct Rig *rig=(struct Rig *)NULL;
+	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
+	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
+	struct Region *region=(struct Region *)NULL;
+	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
+	struct Map_drawing_information *drawing_information
+		=(struct Map_drawing_information *)NULL;
+	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
+
+	ENTER(map_remove_all_electrodes);
+	if(map&&(map->rig_pointer)&&(rig= *(map->rig_pointer))&&
+		(unemap_package=map->unemap_package)&&
+		(drawing_information=map->drawing_information))
+	{
+		region_item=get_Rig_region_list(rig);
+		return_code=1;
+		while(region_item)
+		{
+			region=get_Region_list_item_region(region_item);
+			rig_node_group=get_Region_rig_node_group(region);
+			map_3d_package=get_Region_map_3d_package(region);
+			if(rig_node_group&&map_3d_package&&
+				(unemap_package_rig_node_group_has_electrodes(unemap_package,
+					rig_node_group)))
+			{
+				map_remove_map_electrode_glyphs(drawing_information,
+					unemap_package,map_3d_package,
+					rig_node_group);
+			}
+			region_item=get_Region_list_item_next(region_item);
+		}/* while(region_item)*/
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,"map_remove_all_electrodes. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* map_remove_all_electrodes */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int map_remove_torso_arms(struct Map *map)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+Removes the torso arms from the scene.
+??JW perhaps should have a scene and scene_viewer in each Map_3d_package,
+and do Scene_remove_graphics_object in the DESTROY Map_3d_package
+==============================================================================*/
+{
+	int return_code;
+	struct Rig *rig=(struct Rig *)NULL;
+	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
+	struct Region *region=(struct Region *)NULL;
+	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
+	struct Map_drawing_information *drawing_information
+		=(struct Map_drawing_information *)NULL;
+	
+	ENTER(map_remove_torso_arms);
+	if(map&&(map->rig_pointer)&&(rig= *(map->rig_pointer))&&
+		(drawing_information=map->drawing_information))
+	{
+		region_item=get_Rig_region_list(rig);
+		return_code=1;
+		while(region_item)
+		{
+			region=get_Region_list_item_region(region_item);			
+			map_3d_package=get_Region_map_3d_package(region);
+			if(map_3d_package&&(map_3d_package->torso_arm_labels))
+			{
+				Scene_remove_graphics_object(drawing_information->scene,
+					map_3d_package->torso_arm_labels);
+			}
+			region_item=get_Region_list_item_next(region_item);
+		}/* while(region_item)*/
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,"map_remove_torso_arms. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* map_remove_torso_arms */
+#endif /* defined (UNEMAP_USE_NODES) */
+	
+#if defined (UNEMAP_USE_NODES)
+int draw_map_3d(struct Map *map)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+This function draws the <map> in as a 3D CMGUI scene, for the current region(s).
+Removes 3d drawing for non-current region(s).
+
 ==============================================================================*/
 {
 	FE_value time;
 	struct FE_field *fit_field=(struct FE_field *)NULL;
 	struct Computed_field *data_field=(struct Computed_field *)NULL;
 	float frame_time,minimum, maximum;
-	int number_of_regions,range_set,region_number,return_code,rig_node_group_number;
+	int display_all_regions,range_set,region_number,return_code;
 	enum Map_type map_type;
-	char undecided_accepted;		
+	char undecided_accepted;
+	struct Map_drawing_information *drawing_information=
+		(struct Map_drawing_information *)NULL;
 	struct Rig *rig=(struct Rig *)NULL;
 	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
-	struct Region *current_region;
+	struct Region *current_region=(struct Region *)NULL;
+	struct Region *region=(struct Region *)NULL;
 	struct Interpolation_function *function=(struct Interpolation_function *)NULL;
 	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
 	struct Scene *scene=(struct Scene *)NULL;
 	struct Spectrum *spectrum=(struct Spectrum *)NULL;
 	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
 	struct GROUP(FE_element) *element_group=(struct GROUP(FE_element) *)NULL;
+	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
 
 	ENTER(draw_map_3d);	
-	if(map)
+	if(map&&(drawing_information=map->drawing_information))
 	{	
 		range_set=0;
+		display_all_regions=0;
 		unemap_package=map->unemap_package;
 		if (map->type)
 		{
@@ -5129,200 +5169,198 @@ This function draws the <map> in as a 3D CMGUI scene.
 		{
 			map_type=NO_MAP_FIELD;
 		}
-		spectrum=map->drawing_information->spectrum;
-		spectrum_manager=get_unemap_package_spectrum_manager(unemap_package);
-		if (map->rig_pointer)
-		{		
-			if (rig= *(map->rig_pointer))
-			{	
-				return_code=1;				
-				undecided_accepted=map->undecided_accepted;			
-				frame_time=map->frame_start_time;
-				/* determine the number of map regions */													
-				if (current_region=rig->current_region)
-				{
-					number_of_regions=1;
+		spectrum=drawing_information->spectrum;
+		spectrum_manager=get_map_drawing_information_spectrum_manager(drawing_information);
+		if ((map->rig_pointer)&&(rig= *(map->rig_pointer)))
+		{					
+			return_code=1;				
+			undecided_accepted=map->undecided_accepted;			
+			frame_time=map->frame_start_time; 
+			current_region=get_Rig_current_region(rig);				
+			/*if current_region NULL, displaying all regions*/
+			if(!current_region)
+			{
+				display_all_regions=1;
+			}		
+			if (map_type!=NO_MAP_FIELD)
+			{						
+				scene=get_map_drawing_information_scene(drawing_information);
+				region_item=get_Rig_region_list(rig);						
+				while(region_item)
+				{						
+					region=get_Region_list_item_region(region_item);
+					rig_node_group=get_Region_rig_node_group(region);
+					map_3d_package=get_Region_map_3d_package(region);				
+					/* free everything except the current region(s) map_3d_package*/
+					if((region!=current_region)&&(!display_all_regions))
+					{						
+						/*remove the torso arms from the scene */
+						/*??JW  perhaps should maintain a list of GT_objects cf CMGUI.*/
+						/* Arms show be temporary anyway*//*FOR AJP*/
+							if(map_3d_package&&(map_3d_package->torso_arm_labels)
+								&&(drawing_information->scene))
+							{
+								Scene_remove_graphics_object(drawing_information->scene,
+									map_3d_package->torso_arm_labels);
+							}	
+							/*this will do a deaccess*/
+							set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
+							drawing_information->viewed_scene=0;							
+					}
+					/*draw the current region(s) */
+					else if(((region==current_region)||display_all_regions)&&
+						(unemap_package_rig_node_group_has_electrodes(unemap_package,
+							rig_node_group)))
+					{
+						if (function=calculate_interpolation_functio(map_type,rig,region,
+							map->event_number,frame_time,map->datum,map->start_search_interval,
+							map->end_search_interval,undecided_accepted,
+							map->finite_element_mesh_rows,
+							map->finite_element_mesh_columns,map->membrane_smoothing,
+							map->plate_bending_smoothing))
+						{
+							/* Now we have the interpolation_function struct */
+							/* make the node and element groups from it.*/
+							/* 1st node_group is 'all_devices_node_group */							
+							make_fit_node_and_element_groups(function,unemap_package,rig->name,
+								FIT_SOCK_LAMBDA,FIT_SOCK_FOCUS,FIT_TORSO_MAJOR_R,FIT_TORSO_MINOR_R,
+								FIT_PATCH_Z,region_number,region);	
+							destroy_Interpolation_function(&function);
+							/* get map_3d_package again, it may have changed */
+							map_3d_package=get_Region_map_3d_package(region);
+							/* Show the map element surface */														
+							element_group=get_map_3d_package_element_group(map_3d_package);
+							/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
+							if((map->interpolation_type==NO_INTERPOLATION)||
+								(map->colour_option==HIDE_COLOUR))
+							{
+								/* No Spectrum or computed field used.*/
+								map_show_surface(scene,element_group,
+									get_map_drawing_information_map_graphical_material
+									(drawing_information),
+									get_map_drawing_information_Graphical_material_manager
+									(drawing_information),
+									(struct Spectrum *)NULL,(struct Computed_field *)NULL,
+									get_map_drawing_information_no_interpolation_colour
+									(drawing_information));
+							}
+							else /* BICUBIC interpolation  */
+							{
+								/* Get the map "fit" field, to use for the surface */
+								fit_field=get_map_3d_package_fit_field(map_3d_package);
+								data_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+									Computed_field_is_read_only_with_fe_field,(void *)(fit_field),
+									get_unemap_package_Computed_field_manager(unemap_package));
+								map_show_surface(scene,element_group,
+									get_map_drawing_information_map_graphical_material
+									(drawing_information),
+									get_map_drawing_information_Graphical_material_manager
+									(drawing_information),
+									spectrum,data_field,(struct Colour*)NULL);
+							}
+							if(!get_map_drawing_information_viewed_scene(drawing_information))
+							{														
+								/* make the map_electrode_position_field, add to the rig nodes*/
+								make_and_add_map_electrode_position_field(unemap_package,
+									rig_node_group,region);
+							}
+						}/* if (function=calculate_interpolation_functio */
+						/*draw the arms  */				
+						if(region->type==TORSO)/*FOR AJP*/
+						{
+							draw_torso_arm_labels(map->drawing_information,region);
+						}
+					}/* if(unemap_package_rig_node_group_has_electrodes */					
+					region_item=get_Region_list_item_next(region_item);
+				} /* while */
+				/* Alter the spectrum */
+				time=map->frame_start_time/1000;/* ms to s*/						
+				/* spectrum range changed and fixed */
+				if(map->fixed_range)
+				{		
+					if(map->range_changed)
+					{
+						map->range_changed=0;	
+						minimum=map->minimum_value;
+						maximum=map->maximum_value;	
+						range_set=1;
+					}
 				}
 				else
-				{
-					number_of_regions=rig->number_of_regions;
-				}
-				
-				if (map_type!=NO_MAP_FIELD)
-				{						
-					scene=get_unemap_package_scene(unemap_package);
-					region_item=rig->region_list;	
-					for (region_number=0;region_number<number_of_regions;region_number++)
-					{
-						if (number_of_regions>1)
-						{
-							current_region=region_item->region;
-						}
-						else
-						{
-							current_region=rig->current_region;
-						}												
-						rig_node_group_number=region_number+1;						
-						if(unemap_package_rig_node_group_has_electrodes(unemap_package,
-							rig_node_group_number))
-						{
-							if (function=calculate_interpolation_functio(map_type,rig,current_region,
-								map->event_number,frame_time,map->datum,map->start_search_interval,
-								map->end_search_interval,undecided_accepted,
-								map->finite_element_mesh_rows,
-								map->finite_element_mesh_columns,map->membrane_smoothing,
-								map->plate_bending_smoothing))
-							{
-								/* Now we have the interpolation_function struct */
-								/* make the node and element groups from it.*/
-								/* 1st node_group is 'all_devices_node_group */							
-								make_fit_node_and_element_groups(function,unemap_package,rig->name,
-									FIT_SOCK_LAMBDA,FIT_SOCK_FOCUS,FIT_TORSO_MAJOR_R,FIT_TORSO_MINOR_R,
-									FIT_PATCH_Z,region_number,rig_node_group_number);	
-								destroy_Interpolation_function(&function);
-								/* Show the map element surface */						
-								element_group=get_unemap_package_map_element_group
-									(unemap_package,region_number);
-								/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
-								if((map->interpolation_type==NO_INTERPOLATION)||
-									(map->colour_option==HIDE_COLOUR))
-								{
-									/* No Spectrum or computed field used.*/
-									map_show_surfaces(scene,element_group,
-										get_unemap_package_map_graphical_material(unemap_package),
-										get_unemap_package_Graphical_material_manager(unemap_package),
-										(struct Spectrum *)NULL,(struct Computed_field *)NULL,
-										get_unemap_package_no_interpolation_colour(unemap_package));
-								}
-								else /* BICUBIC interpolation  */
-								{
-									/* Get the map "fit" field, to use for the surface */
-									fit_field=get_unemap_package_map_fit_field(unemap_package,
-										region_number);
-									data_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-										Computed_field_is_read_only_with_fe_field,(void *)(fit_field),
-										get_unemap_package_Computed_field_manager(unemap_package));
-									map_show_surfaces(scene,element_group,
-										get_unemap_package_map_graphical_material(unemap_package),
-										get_unemap_package_Graphical_material_manager(unemap_package),
-										spectrum,data_field,(struct Colour*)NULL);
-								}
-								if(!get_unemap_package_viewed_scene(unemap_package))
-								{														
-									/* make the map_electrode_position_field, add to the rig nodes*/
-									make_and_add_map_electrode_position_field(region_number,
-										current_region->type,unemap_package);
-								}
-							}/* if (function=calculate_interpolation_functio */
-							/*draw the arms  */				
-							if(current_region->type==TORSO)/*FOR AJP*/
-							{
-								draw_torso_arm_labels(unemap_package,region_number);
-							}
-						}/* if(unemap_package_rig_node_group_has_electrodes */					
-						region_item=region_item->next;
-					} /* for (region_number=0; */
-					/* Alter the spectrum */
-					time=map->frame_start_time/1000;/* ms to s*/						
-					/* spectrum range changed and fixed */
-					if(map->fixed_range)
-					{		
-						if(map->range_changed)
-						{
-							map->range_changed=0;	
-							minimum=map->minimum_value;
-							maximum=map->maximum_value;	
-							range_set=1;
-						}
+					/* spectrum range automatic */
+				{		
+					/* NO_INTERPOLATION-map range comes from the signals (i.e electrodes) */
+					if(map->interpolation_type==NO_INTERPOLATION)
+					{													
+						get_rig_node_group_signal_min_max_at_time(
+							get_Rig_all_devices_rig_node_group(rig),								
+							get_unemap_package_signal_field(unemap_package),
+							get_unemap_package_signal_status_field(unemap_package),
+							time,&minimum,&maximum);
+						range_set=1;
 					}
-					else
-						/* spectrum range automatic */
-					{		
-						/* NO_INTERPOLATION-map range comes from the signals (i.e electrodes) */
-						if(map->interpolation_type==NO_INTERPOLATION)
-						{													
-							get_rig_node_group_signal_min_max_at_time(
-								get_unemap_package_rig_node_group(unemap_package,0),/*0=all devices */
-								get_unemap_package_signal_field(unemap_package),
-								get_unemap_package_signal_status_field(unemap_package),
-								time,&minimum,&maximum);
-							range_set=1;
-						}
-						else 
-							/* BICUBIC map range comes from the fitted surface, but NOT the*/
-							/*signals(electrodes) */
-						{		
-							/* remove the electrode glyphs, so only get range from surface(s)*/
-							/* electrodes added below. This is a little inefficient, as must then */
-							/* re-add electrodes. Also need to remove the time computed fields */
-							/* used by the glyphs */
-							for (region_number=0;region_number<number_of_regions;region_number++)
-							{		
-								/*1st is all devices nodes group */
-								rig_node_group_number=region_number+1;
-								if(unemap_package_rig_node_group_has_electrodes(unemap_package,
-									rig_node_group_number))
-								{
-									map_remove_map_electrode_glyphs(unemap_package,region_number);
-								}
-							}
-							free_unemap_package_time_computed_fields(unemap_package);
-							Scene_get_data_range_for_spectrum(scene,spectrum,&minimum,&maximum,
-								&range_set);														
-						}
-						map->minimum_value=minimum;
-						map->maximum_value=maximum;	
-						map->contour_minimum=minimum;
-						map->contour_maximum=maximum;
-						map->range_changed=0;
-					}	/* if(map->fixed_range) */
-					if(range_set)
+					else 
+						/* BICUBIC map range comes from the fitted surface, but NOT the*/
+						/*signals(electrodes) */
 					{
-						map->range_changed=0;					
-						if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+						/* remove the electrode glyphs, so only get range from surface(s)*/
+						/* Electrodes added below. This is a little inefficient, as must then */
+						/* re-add electrodes. */
+						map_remove_all_electrodes(map);
+						Scene_get_data_range_for_spectrum(scene,spectrum,&minimum,&maximum,
+							&range_set);														
+					}
+					map->minimum_value=minimum;
+					map->maximum_value=maximum;	
+					map->contour_minimum=minimum;
+					map->contour_maximum=maximum;
+					map->range_changed=0;
+				}	/* if(map->fixed_range) */
+				if(range_set)
+				{
+					map->range_changed=0;					
+					if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+					{
+						if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+							("spectrum_modify_temp"))
 						{
-							if (spectrum_to_be_modified_copy=CREATE(Spectrum)
-								("spectrum_modify_temp"))
-							{
-								MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
-									(spectrum_to_be_modified_copy,spectrum);
-								Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,
-									minimum,maximum);						
-								MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
-									spectrum_to_be_modified_copy,spectrum_manager);
-								DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"draw_map_3d.  Could not create spectrum copy.");
-								return_code=0;
-							}
+							MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+								(spectrum_to_be_modified_copy,spectrum);
+							Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,
+								minimum,maximum);						
+							MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+								spectrum_to_be_modified_copy,spectrum_manager);
+							DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"draw_map_3d.  Spectrum is not in manager!");
+								"draw_map_3d.  Could not create spectrum copy.");
 							return_code=0;
-						}				
-					}	
-					map_draw_map_electrodes(unemap_package,map,number_of_regions,time);
-					map_draw_contours(map,spectrum,unemap_package,data_field,
-						number_of_regions);				
-					/* First time the scene's viewed  do "view_all"*/
-					if(!get_unemap_package_viewed_scene(unemap_package))
-					{						
-						/* unemap_package_align_scene does Scene_viewer_view_all */
-						if(unemap_package_align_scene(unemap_package))
-						{																			
-							/* perturb the lines(for the contours) */
-							Scene_viewer_set_perturb_lines(get_unemap_package_scene_viewer
-								(unemap_package),1);
-							set_unemap_package_viewed_scene(unemap_package,1);
 						}
 					}
-				}/* if (map_type!=NO_MAP_FIELD) */				
-			}/* if (rig= *(map->rig_pointer)) */		
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"draw_map_3d.  Spectrum is not in manager!");
+						return_code=0;
+					}				
+				}					
+				map_draw_map_electrodes(unemap_package,map,time);
+				map_draw_contours(map,spectrum,unemap_package,data_field);
+				/* First time the scene's viewed  do "view_all"*/
+				if(!get_map_drawing_information_viewed_scene(drawing_information))				
+				{						
+					/* unemap_package_align_scene does Scene_viewer_view_all */				
+					if(map_drawing_information_align_scene(drawing_information))
+					{																			
+						/* perturb the lines(for the contours) */
+						Scene_viewer_set_perturb_lines(get_map_drawing_information_scene_viewer
+							(drawing_information),1);
+						set_map_drawing_information_viewed_scene(drawing_information,1);
+					}
+				}
+			}/* if (map_type!=NO_MAP_FIELD) */									
 		}/* if (map->rig_pointer) */
 	}
 	else
@@ -5489,6 +5527,7 @@ to the drawing or writes to a postscript file.
 	struct Region *current_region=(struct Region *)NULL;
 	struct Region	*maximum_region=(struct Region *)NULL;
 	struct Region *minimum_region=(struct Region *)NULL;
+	struct Region *region=(struct Region *)NULL;
 	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
 	struct Rig *rig=(struct Rig *)NULL;
 	struct Signal *signal=(struct Signal *)NULL;
@@ -5610,8 +5649,8 @@ to the drawing or writes to a postscript file.
 				pi_over_2=2*atan(1);
 				pi=2*pi_over_2;
 				two_pi=2*pi;
-				/* determine the number of map regions */
-				if (current_region=rig->current_region)
+				/* determine the number of map regions */				
+				if(current_region=get_Rig_current_region(rig))
 				{
 					number_of_regions=1;
 				}
@@ -6094,10 +6133,11 @@ to the drawing or writes to a postscript file.
 						}
 						else
 						{
-							region_item=rig->region_list;
+							region_item=get_Rig_region_list(rig);
 							for (i=0;i<number_of_regions;i++)
 							{
-								switch (region_item->region->type)
+								region=get_Region_list_item_region(region_item);
+								switch (region->type)
 								{
 									case SOCK:
 									{
@@ -6124,7 +6164,7 @@ to the drawing or writes to a postscript file.
 										max_x[i]=pi;
 									} break;
 								}
-								region_item=region_item->next;
+								region_item=get_Region_list_item_next(region_item);
 							}
 						}
 #if defined (OLD_CODE)
@@ -6576,19 +6616,19 @@ to the drawing or writes to a postscript file.
 													min_f=1;
 													max_f=0;
 													maximum_region=(struct Region *)NULL;
-													minimum_region=(struct Region *)NULL;													
+													minimum_region=(struct Region *)NULL;	
 													/* for each region */
-													region_item=rig->region_list;
+													region_item=get_Rig_region_list(rig);
 													for (region_number=0;region_number<number_of_regions;
 														region_number++)
 													{
 														if (number_of_regions>1)
 														{
-															current_region=region_item->region;
+															current_region=get_Region_list_item_region(region_item);
 														}
 														else
 														{
-															current_region=rig->current_region;
+															current_region=get_Rig_current_region(rig);
 														}
 														/* interpolate data */
 														if ((0!=stretch_x[region_number])&&
@@ -6888,7 +6928,7 @@ to the drawing or writes to a postscript file.
 															}
 															destroy_Interpolation_function(&function);
 														}
-														region_item=region_item->next;
+														region_item=get_Region_list_item_next(region_item);
 													}/*	for (region_number=0;region_number<number_of_regions */
 													frame->maximum_region=maximum_region;
 													frame->minimum_region=minimum_region;
@@ -7501,17 +7541,17 @@ to the drawing or writes to a postscript file.
 										maximum_region=(struct Region *)NULL;
 										minimum_region=(struct Region *)NULL;
 										/* for each region */
-										region_item=rig->region_list;
+										region_item=get_Rig_region_list(rig);
 										for (region_number=0;region_number<number_of_regions;
 											region_number++)
 										{
 											if (number_of_regions>1)
 											{
-												current_region=region_item->region;
+												current_region=get_Region_list_item_region(region_item);
 											}
 											else
 											{
-												current_region=rig->current_region;
+												current_region=get_Rig_current_region(rig);
 											}
 											/* find maximum and minimum electrodes for region */
 											electrode=map->electrodes;
@@ -7560,7 +7600,7 @@ to the drawing or writes to a postscript file.
 												screen_y++;
 												electrode_value++;
 											}
-											region_item=region_item->next;
+											region_item=get_Region_list_item_next(region_item);
 										}
 										frame->maximum_region=maximum_region;
 										frame->minimum_region=minimum_region;
@@ -7776,17 +7816,17 @@ to the drawing or writes to a postscript file.
 								} break;
 							}
 							/* for each region */
-							region_item=rig->region_list;
+							region_item=get_Rig_region_list(rig);
 							for (region_number=0;region_number<number_of_regions;
 								region_number++)
 							{
 								if (number_of_regions>1)
 								{
-									current_region=region_item->region;
+									current_region=get_Region_list_item_region(region_item);
 								}
 								else
 								{
-									current_region=rig->current_region;
+									current_region=get_Rig_current_region(rig);
 								}
 								if ((SOCK==current_region->type)&&
 									(0!=stretch_x[region_number])&&(0!=stretch_y[region_number]))
@@ -8164,7 +8204,7 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 										y_pixel += fibre_spacing;
 									}
 								}
-								region_item=region_item->next;
+								region_item=get_Region_list_item_next(region_item);
 							}
 						}
 						/* draw the landmarks */
@@ -8174,17 +8214,17 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 							graphics_context=(drawing_information->graphics_context).spectrum,
 							XSetForeground(display,graphics_context,
 								drawing_information->landmark_colour);
-							region_item=rig->region_list;
+							region_item=get_Rig_region_list(rig);
 							for (region_number=0;region_number<number_of_regions;
 								region_number++)
 							{
 								if (number_of_regions>1)
 								{
-									current_region=region_item->region;
+									current_region=get_Region_list_item_region(region_item);
 								}
 								else
 								{
-									current_region=rig->current_region;
+									current_region=get_Rig_current_region(rig);
 								}
 								switch (current_region->type)
 								{
@@ -8258,7 +8298,7 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 											stretch_x[region_number]),y_pixel-5);
 									} break;
 								}
-								region_item=region_item->next;
+								region_item=get_Region_list_item_next(region_item);
 							}
 						}
 						/* draw the extrema */
@@ -8274,17 +8314,17 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 									(drawing_information->graphics_context).spectrum,
 								XSetForeground(display,graphics_context,
 									drawing_information->landmark_colour);
-								region_item=rig->region_list;
+								region_item=get_Rig_region_list(rig);
 								for (region_number=0;region_number<number_of_regions;
 									region_number++)
 								{
 									if (number_of_regions>1)
 									{
-										current_region=region_item->region;
+										current_region=get_Region_list_item_region(region_item);
 									}
 									else
 									{
-										current_region=rig->current_region;
+										current_region=get_Rig_current_region(rig);
 									}
 									if (frame->maximum_region==current_region)
 									{
@@ -8427,7 +8467,7 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 												x_string,y_string,name,name_length);
 										}
 									}
-									region_item=region_item->next;
+									region_item=get_Region_list_item_next(region_item);
 								}
 							}
 							else
@@ -8994,7 +9034,7 @@ It should not be called until draw_map has been called.
 			{
 				if (rig= *(map->rig_pointer))
 				{
-					current_region=rig->current_region;
+          current_region=get_Rig_current_region(rig);				  
 					/* count the auxiliary_devices */
 					number_of_auxiliary=0;
 					number_of_devices=rig->number_of_devices;
@@ -9151,11 +9191,27 @@ extern Visual *default_visual;
 struct Map_drawing_information *create_Map_drawing_information(
 	struct User_interface *user_interface
 #if defined (UNEMAP_USE_NODES) 
-	,struct Unemap_package *unemap_package
+	,struct Element_point_ranges_selection *element_point_ranges_selection,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection,
+	struct FE_node_selection *data_selection,	
+	struct MANAGER(Texture) *texture_manager,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	struct MANAGER(Scene) *scene_manager,
+	struct MANAGER(Light_model) *light_model_manager,
+	struct MANAGER(Light) *light_manager,
+	struct MANAGER(Spectrum) *spectrum_manager,
+	struct MANAGER(Graphical_material) *graphical_material_manager,
+	struct MANAGER(FE_node) *data_manager,
+	struct LIST(GT_object) *glyph_list,
+	struct Graphical_material *graphical_material,
+	struct Computed_field_package *computed_field_package,
+	struct Light *light,
+	struct Light_model *light_model
 #endif /* defined (UNEMAP_USE_NODES) */
       )
 /*******************************************************************************
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -9290,7 +9346,12 @@ DESCRIPTION :
 	/* check arguments */
 	if ((user_interface)
 #if defined (UNEMAP_USE_NODES)		 
-      &&(unemap_package)		 
+      &&element_point_ranges_selection&&
+	    element_selection&&node_selection&&data_selection&&texture_manager&&
+		  interactive_tool_manager&&scene_manager&&light_model_manager&&
+	    light_manager&&spectrum_manager&&graphical_material_manager&&
+	    data_manager&&glyph_list&&graphical_material&&
+			computed_field_package&&light&&light_model	 
 #endif /* defined (UNEMAP_USE_NODES) */
      )
 	{
@@ -9314,9 +9375,80 @@ visual=default_visual;
 			map_drawing_information->number_of_spectrum_colours=MAX_SPECTRUM_COLOURS;
 			map_drawing_information->colour_map=colour_map;
 			map_drawing_information->spectrum=CREATE(Spectrum)("mapping_spectrum");
-#if defined (UNEMAP_USE_NODES)      
-		 if (!ADD_OBJECT_TO_MANAGER(Spectrum)(map_drawing_information->spectrum,
-				get_unemap_package_spectrum_manager(unemap_package)))
+#if defined (UNEMAP_USE_NODES)  
+      map_drawing_information->element_point_ranges_selection=
+			  element_point_ranges_selection;
+			map_drawing_information->element_selection=element_selection;
+			map_drawing_information->node_selection=node_selection;
+			map_drawing_information->data_selection=data_selection;
+      /* for the cmgui graphics window */
+			map_drawing_information->viewed_scene=0; 
+			map_drawing_information->no_interpolation_colour=create_Colour(0.65,0.65,0.65);
+			map_drawing_information->background_colour=create_Colour(0,0,0);
+			map_drawing_information->light=(struct Light *)NULL;			
+			map_drawing_information->light_model=(struct Light_model *)NULL;			
+			map_drawing_information->scene=(struct Scene *)NULL;
+			map_drawing_information->scene_viewer=(struct Scene_viewer *)NULL;			
+			map_drawing_information->user_interface=(struct User_interface *)NULL;		
+			map_drawing_information->computed_field_package=(struct Computed_field_package *)NULL;
+			map_drawing_information->time_keeper = (struct Time_keeper *)NULL;	
+			map_drawing_information->map_graphical_material=(struct Graphical_material *)NULL;
+      /* create an electrode material*/
+			if (map_drawing_information->electrode_graphical_material=
+			  CREATE(Graphical_material)("electrode"))
+			{									
+				if(map_drawing_information->electrode_colour =create_Colour(1,0,0))
+				{
+					Graphical_material_set_ambient(
+						map_drawing_information->electrode_graphical_material,
+						map_drawing_information->electrode_colour);
+					Graphical_material_set_diffuse(
+            map_drawing_information->electrode_graphical_material,
+						map_drawing_information->electrode_colour);				
+					ACCESS(Graphical_material)
+						(map_drawing_information->electrode_graphical_material);
+					if (!ADD_OBJECT_TO_MANAGER(Graphical_material)
+						(map_drawing_information->electrode_graphical_material,
+						graphical_material_manager))
+					{
+						DEACCESS(Graphical_material)
+		         (&map_drawing_information->electrode_graphical_material);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"create_Map_drawing_information.  failed to create electrode_colour");
+					map_drawing_information->electrode_graphical_material=
+					 (struct Graphical_material *)NULL;
+					map_drawing_information->electrode_colour=(struct Colour *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"create_Map_drawing_information. failed to createelectrode_graphical_material");
+				map_drawing_information->electrode_graphical_material=
+				 (struct Graphical_material *)NULL;
+			}
+      map_drawing_information->light_manager=light_manager;
+			map_drawing_information->texture_manager=texture_manager;
+			map_drawing_information->interactive_tool_manager=interactive_tool_manager;
+			map_drawing_information->scene_manager=scene_manager;
+			map_drawing_information->light_model_manager=light_model_manager;		
+			map_drawing_information->spectrum_manager=spectrum_manager;
+			map_drawing_information->graphical_material_manager=graphical_material_manager;
+			map_drawing_information->data_manager=data_manager;
+			map_drawing_information->glyph_list=glyph_list; /* like a manager, so don't access*/
+			set_map_drawing_information_map_graphical_material(map_drawing_information,
+				graphical_material);		
+      set_map_drawing_information_computed_field_package(map_drawing_information,
+			  computed_field_package);		
+		  set_map_drawing_information_light(map_drawing_information,light);
+		  set_map_drawing_information_light_model(map_drawing_information,
+			  light_model);
+		  if (!ADD_OBJECT_TO_MANAGER(Spectrum)(map_drawing_information->spectrum,
+				map_drawing_information->spectrum_manager))
 
        {
 			   display_message(ERROR_MESSAGE,"create_Map_drawing_information. "
@@ -9511,7 +9643,7 @@ DESCRIPTION :
 	if (map_drawing_information_address&&
 		(map_drawing_information= *map_drawing_information_address)&&
 		(map_drawing_information->user_interface))
-	{
+	{		
 		display=map_drawing_information->user_interface->display;
 		XFreeGC(display,(map_drawing_information->graphics_context).
 			background_drawing_colour);
@@ -9539,6 +9671,19 @@ DESCRIPTION :
 			map_drawing_information->number_of_spectrum_colours,planes);
 		DEALLOCATE(map_drawing_information->spectrum_colours);
 		DEALLOCATE(map_drawing_information->spectrum_rgb);
+#if defined (UNEMAP_USE_NODES) 	
+		destroy_Colour(&map_drawing_information->no_interpolation_colour);
+		destroy_Colour(&map_drawing_information->background_colour);		
+		destroy_Colour(&map_drawing_information->electrode_colour);
+		DEACCESS(Light)(&map_drawing_information->light);
+		DEACCESS(Light_model)(&map_drawing_information->light_model);
+		/* creation/destruction handled elsewhere. No access count to access*/
+		map_drawing_information->scene_viewer=(struct Scene_viewer *)NULL;
+		DEACCESS(Scene)(&map_drawing_information->scene);				
+		DEACCESS(Graphical_material)(&map_drawing_information->map_graphical_material);	
+		DEACCESS(Graphical_material)(&map_drawing_information->electrode_graphical_material);	
+		DEACCESS(Time_keeper)(&map_drawing_information->time_keeper);	
+#endif /* defined (UNEMAP_USE_NODES) */
 		DEALLOCATE(*map_drawing_information_address);
 		return_code=1;
 	}
@@ -9551,3 +9696,1774 @@ DESCRIPTION :
 	return (return_code);
 } /* destroy_Map_drawing_information */
 
+#if defined (UNEMAP_USE_NODES)
+DECLARE_OBJECT_FUNCTIONS(Map_3d_package)
+
+struct Map_3d_package *CREATE(Map_3d_package)(int number_of_map_rows,
+	int number_of_map_columns,
+	char *fit_name,
+	struct FE_node_order_info *node_order_info,
+	struct FE_field *map_position_field,struct FE_field *map_fit_field,
+	struct GROUP(FE_node) *node_group,struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(GROUP(FE_element))	*element_group_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct MANAGER(GROUP(FE_node)) *node_group_manager, 
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(Computed_field) *computed_field_manager)
+/*******************************************************************************
+LAST MODIFIED : 8 September 1999
+
+DESCRIPTION:
+Create and  and set it's components 
+==============================================================================*/
+{
+	int string_length;
+	struct Map_3d_package *map_3d_package;
+
+	ENTER(CREATE(Map_3d_package));
+	if(fit_name&&node_order_info&&map_position_field&&map_fit_field)
+	{
+		if (ALLOCATE(map_3d_package,struct Map_3d_package,1))
+		{
+			string_length = strlen(fit_name);	
+			string_length++;			
+			if(ALLOCATE(map_3d_package->fit_name,char,string_length))
+			{	
+				strcpy(map_3d_package->fit_name,fit_name);
+				map_3d_package->number_of_map_rows=number_of_map_rows;
+				map_3d_package->number_of_map_columns=number_of_map_columns;
+				map_3d_package->number_of_contours=0;
+				map_3d_package->contour_settings=(struct GT_element_settings **)NULL;
+				map_3d_package->node_order_info=ACCESS(FE_node_order_info)
+					(node_order_info);
+				map_3d_package->map_position_field=ACCESS(FE_field)(map_position_field);			
+				map_3d_package->map_fit_field=ACCESS(FE_field)(map_fit_field);
+				map_3d_package->node_group=ACCESS(GROUP(FE_node))(node_group);
+				map_3d_package->fe_field_manager=fe_field_manager;
+				map_3d_package->element_group=(struct GROUP(FE_element) *)NULL;
+				map_3d_package->element_group_manager=element_group_manager;
+				map_3d_package->node_manager=node_manager;
+				map_3d_package->data_group_manager=data_group_manager;
+				map_3d_package->node_group_manager=node_group_manager; 
+				map_3d_package->element_manager=element_manager;
+				map_3d_package->computed_field_manager=computed_field_manager;
+				map_3d_package->electrode_glyph=(struct GT_object *)NULL;
+				map_3d_package->torso_arm_labels=(struct GT_object *)NULL;/*FOR AJP*/
+				map_3d_package->electrode_size=0;
+				map_3d_package->electrodes_option=HIDE_ELECTRODES;
+				map_3d_package->colour_electrodes_with_signal=1;
+				map_3d_package->access_count=0.0;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"CREATE(Map_3d_package)."
+					"Out of memory");	
+				if (map_3d_package)
+				{
+					DEALLOCATE(map_3d_package);
+				}		
+			}			
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"CREATE(Map_3d_package).  Not enough memory");
+			if (map_3d_package)
+			{
+				DEALLOCATE(map_3d_package);
+			}
+		}
+	}
+	LEAVE;
+	return (map_3d_package);	
+}
+
+int free_map_3d_package_map_contours(struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 7 July 2000
+
+DESCRIPTION :
+Frees the array of map contour GT_element_settings stored in the <map_3d_package>
+==============================================================================*/
+{
+	int i,number_of_contours,return_code;	
+
+	ENTER(free_map_3d_package_map_contours);
+	if(map_3d_package)
+	{
+		return_code=1;
+		number_of_contours=map_3d_package->number_of_contours;
+		if(number_of_contours)
+		{					
+			for(i=0;i<number_of_contours;i++)
+			{										
+				DEACCESS(GT_element_settings)(&(map_3d_package->contour_settings[i]));
+			}								
+			DEALLOCATE(map_3d_package->contour_settings);
+			map_3d_package->contour_settings=(struct GT_element_settings **)NULL;
+		}	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"free_map_3d_package_map_contours Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+}/*free_map_3d_package_map_contours */
+
+int DESTROY(Map_3d_package)(struct Map_3d_package **map_3d_package_address)
+/*******************************************************************************
+LAST MODIFIED : 8 September 1999
+
+DESCRIPTION :
+Frees the memory for the Map_3d_package and sets <*package_address>
+to NULL.
+==============================================================================*/
+{
+	int return_code,success;
+	struct FE_field *temp_field;
+	struct Map_3d_package *map_3d_package;
+	struct FE_element *element_to_destroy;
+	struct GROUP(FE_element) *map_element_group,*temp_map_element_group;
+	struct MANAGER(FE_field) *fe_field_manager;
+	struct MANAGER(GROUP(FE_element))	*element_group_manager;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager; 
+	struct MANAGER(FE_element) *element_manager;
+	struct MANAGER(Computed_field) *computed_field_manager;
+
+	ENTER(DESTROY(Map_3d_package));
+	if ((map_3d_package_address)&&(map_3d_package= *map_3d_package_address))
+	{
+		element_manager=map_3d_package->element_manager;
+		element_group_manager=map_3d_package->element_group_manager;
+		node_manager=map_3d_package->node_manager;
+		data_group_manager=map_3d_package->data_group_manager;
+		node_group_manager=map_3d_package->node_group_manager;
+		fe_field_manager=map_3d_package->fe_field_manager;
+		computed_field_manager=map_3d_package->computed_field_manager;
+		return_code=1;
+		/* electrode_glyph*/
+		DEACCESS(GT_object)(&(map_3d_package->electrode_glyph));
+		/* torso_arm_labels*/
+		DEACCESS(GT_object)(&(map_3d_package->torso_arm_labels));/*FOR AJP*/
+		/* node_order_info */
+		DEACCESS(FE_node_order_info)(&(map_3d_package->node_order_info));
+		/*element_group */
+		success=1;
+		/* contours*/
+		free_map_3d_package_map_contours(map_3d_package);
+		map_element_group=map_3d_package->element_group;
+		while(success&&(element_to_destroy=FIRST_OBJECT_IN_GROUP_THAT(FE_element)
+			((GROUP_CONDITIONAL_FUNCTION(FE_element) *)NULL, NULL,map_element_group)))
+		{
+			success = REMOVE_OBJECT_FROM_GROUP(FE_element)(
+				element_to_destroy,map_element_group);				
+			if (FE_element_can_be_destroyed(element_to_destroy))
+			{				
+				success = REMOVE_OBJECT_FROM_MANAGER(FE_element)(element_to_destroy,
+					element_manager);					
+			}					
+		}		
+		temp_map_element_group=map_element_group;
+		DEACCESS(GROUP(FE_element))(&temp_map_element_group);
+		if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_element)(map_element_group))
+		{
+			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(map_element_group,
+				element_group_manager);
+		}
+		/* map_group */
+		free_node_and_element_and_data_groups(&(map_3d_package->node_group),
+			element_manager,element_group_manager,node_manager,
+			data_group_manager,node_group_manager);
+		/* computed_fields */
+		remove_computed_field_from_manager_given_FE_field(
+			computed_field_manager,map_3d_package->map_fit_field);		
+		remove_computed_field_from_manager_given_FE_field(computed_field_manager,
+			map_3d_package->map_position_field);		
+		/* map_fit_field */
+		if(map_3d_package->map_fit_field)
+		{
+			temp_field=map_3d_package->map_fit_field; 		
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				map_3d_package->map_fit_field);
+			map_3d_package->map_fit_field=(struct FE_field *)NULL;
+		}
+		/* map_position_field */
+		if(map_3d_package->map_position_field)
+		{
+			temp_field=map_3d_package->map_position_field; 		
+			DEACCESS(FE_field)(&temp_field);
+			destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				map_3d_package->map_position_field);
+			map_3d_package->map_position_field=(struct FE_field *)NULL;
+		}
+		DEALLOCATE(map_3d_package->contour_settings);
+		/* fit_name */
+		DEALLOCATE(map_3d_package->fit_name);
+		DEALLOCATE(*map_3d_package_address);
+	}
+	else
+	{
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(map_3d_package) */
+
+struct GT_object *get_map_3d_package_electrode_glyph(
+	struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the map_electrode_glyph for map_3d_package 
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+{
+	struct GT_object *electrode_glyph;
+
+	ENTER(get_map_3d_package_electrode_glyph);
+	if(map_3d_package)	
+	{
+		electrode_glyph=map_3d_package->electrode_glyph;		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_electrode_glyph."
+			" invalid arguments");
+		electrode_glyph=(struct GT_object *)NULL;
+	}
+	LEAVE;
+	return (electrode_glyph);	
+} /* get_map_3d_package_electrode_glyph */
+
+int set_map_3d_package_electrode_glyph(struct Map_3d_package *map_3d_package,
+	struct GT_object *electrode_glyph)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Sets the <electrode_glyph>  for <map_3d_package>
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_3d_package_electrode_glyph);
+	if(map_3d_package)
+	{		
+		return_code =1;
+		REACCESS(GT_object)
+			(&(map_3d_package->electrode_glyph),electrode_glyph);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_3d_package_electrode_glyph ."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_3d_package_electrode_glyph */
+
+struct GT_object *get_map_3d_package_torso_arm_labels(
+	struct Map_3d_package *map_3d_package)/*FOR AJP*/
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the map_torso_arm_labels for map_3d_package <map_number> 
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+{
+	struct GT_object *torso_arm_labels;
+
+	ENTER(get_map_3d_package_torso_arm_labels);
+	if(map_3d_package)	
+	{
+		torso_arm_labels=map_3d_package->torso_arm_labels;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_torso_arm_labels."
+			" invalid arguments");
+		torso_arm_labels=(struct GT_object *)NULL;
+	}
+	LEAVE;
+	return (torso_arm_labels);	
+} /* get_map_3d_package_torso_arm_labels */
+
+int set_map_3d_package_torso_arm_labels(struct Map_3d_package *map_3d_package,
+	struct GT_object *torso_arm_labels)/*FOR AJP*/
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Sets the torso_arm_labels  for map_3d_package
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_3d_package_torso_arm_labels);
+	if(map_3d_package&&torso_arm_labels)
+	{		
+		return_code =1;
+		REACCESS(GT_object)
+			(&(map_3d_package->torso_arm_labels),torso_arm_labels);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_3d_package_torso_arm_labels ."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_3d_package_torso_arm_labels */
+
+FE_value get_map_3d_package_electrode_size(struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 8 May 2000
+
+DESCRIPTION :
+gets the map_electrode_size for map_3d_package <map_number> 
+==============================================================================*/
+{
+	FE_value electrode_size;
+
+	ENTER(get_map_3d_package_electrode_size);
+	if(map_3d_package)	
+	{	
+		electrode_size=map_3d_package->electrode_size;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_electrode_size."
+			" invalid arguments");
+		electrode_size=0;
+	}
+	LEAVE;
+	return (electrode_size);	
+} /* get_map_3d_package_electrode_size */
+
+int set_map_3d_package_electrode_size(struct Map_3d_package *map_3d_package,
+	FE_value electrode_size)
+/*******************************************************************************
+LAST MODIFIED : 8 May 2000
+
+DESCRIPTION :
+Sets the electrode_size  for map_3d_package <map_number> 
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_3d_package_electrode_size);
+	if(map_3d_package)
+	{		
+		return_code =1;
+		map_3d_package->electrode_size=electrode_size;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_3d_package_electrode_size ."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_3d_package_electrode_size */
+
+
+enum Electrodes_option get_map_3d_package_electrodes_option(
+	struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2000
+
+DESCRIPTION :
+gets the map_electrodes_option for map_3d_package <map_number> 
+==============================================================================*/
+{
+	enum Electrodes_option electrodes_option;
+
+	ENTER(get_map_3d_package_electrodes_option);
+	if(map_3d_package)	
+	{	
+		electrodes_option=map_3d_package->electrodes_option;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_electrodes_option."
+			" invalid arguments");
+		electrodes_option=HIDE_ELECTRODES;
+	}
+	LEAVE;
+	return (electrodes_option);	
+} /* get_map_3d_package_electrodes_option */
+
+int set_map_3d_package_electrodes_option(struct Map_3d_package *map_3d_package,
+	enum Electrodes_option electrodes_option)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Sets the electrodes_option  for map_3d_package <map_number> 
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_3d_package_electrodes_option);
+	if(map_3d_package)
+	{		
+		return_code =1;
+		map_3d_package->electrodes_option=electrodes_option;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_3d_package_electrodes_option ."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_3d_package_electrodes_option */
+
+int get_map_3d_package_colour_electrodes_with_signal(
+	struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the map_colour_electrodes_with_signal for map_3d_package 
+==============================================================================*/
+{
+	int colour_electrodes_with_signal;
+
+	ENTER(get_map_3d_package_colour_electrodes_with_signal);
+	if(map_3d_package)	
+	{		
+		colour_electrodes_with_signal=
+			map_3d_package->colour_electrodes_with_signal;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_colour_electrodes_with_signal."
+			" invalid arguments");
+		colour_electrodes_with_signal=HIDE_ELECTRODES;
+	}
+	LEAVE;
+	return (colour_electrodes_with_signal);	
+} /* get_map_3d_package_colour_electrodes_with_signal */
+
+int set_map_3d_package_colour_electrodes_with_signal(
+	struct Map_3d_package *map_3d_package,int colour_electrodes_with_signal)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+Sets the colour_electrodes_with_signal  for map_3d_package 
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_3d_package_colour_electrodes_with_signal);
+	if(map_3d_package)
+	{		
+		return_code =1;
+		map_3d_package->colour_electrodes_with_signal=
+			colour_electrodes_with_signal;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_map_3d_package_colour_electrodes_with_signal ."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_3d_package_colour_electrodes_with_signal */
+
+int get_map_3d_package_number_of_map_rows(	struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the number_of_map_rows for map_3d_package 
+Returns -1 on error
+==============================================================================*/
+{
+	int number_of_map_rows;
+
+	ENTER(get_map_3d_package_number_of_map_rows);		
+	if(map_3d_package)	
+	{		
+		number_of_map_rows=map_3d_package->number_of_map_rows;			
+	}	
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_number_of_map_rows."
+			" invalid arguments");
+		number_of_map_rows=-1;
+	}
+	LEAVE;
+	return (number_of_map_rows);
+} /* get_map_3d_package_number_of_map_rows */
+
+int get_map_3d_package_number_of_map_columns(struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the number_of_map_columns for map_3d_package
+Returns -1 on error
+==============================================================================*/
+{
+	int number_of_map_columns;
+
+	ENTER(get_map_3d_package_number_of_map_columns);
+	if(map_3d_package)	
+	{	
+		number_of_map_columns=map_3d_package->number_of_map_columns;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_number_of_map_columns."
+				" invalid arguments");
+		number_of_map_columns=-1;
+	}
+	LEAVE;
+	return (number_of_map_columns);
+} /* get_map_3d_package_number_of_map_columns */
+
+int get_map_3d_package_contours(struct Map_3d_package *map_3d_package,
+	int *number_of_contours,struct GT_element_settings ***contour_settings)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+gets the <number_of_contours> and <contour_settings> for map_3d_package 
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_map_3d_package_contours);
+	return_code=1;
+	if(map_3d_package)	
+	{				
+		*number_of_contours=map_3d_package->number_of_contours;
+		*contour_settings=map_3d_package->contour_settings;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_contours."
+			" invalid arguments");
+		return_code=0; /* No map_3d_package */
+		*number_of_contours=0;
+		*contour_settings=(struct GT_element_settings **)NULL;
+	}
+	LEAVE;
+	return (return_code);
+} /* get_map_3d_package_contours */
+
+int set_map_3d_package_contours(struct Map_3d_package *map_3d_package,
+	int number_of_contours,struct GT_element_settings **contour_settings)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+sets the <number_of_contours> and <contour_settings> for map_3d_package 
+==============================================================================*/
+{
+	int i,return_code;
+
+	ENTER(set_map_3d_package_contours)
+	return_code=0;
+	if(map_3d_package)	
+	{
+	
+		return_code=1;	
+		map_3d_package->number_of_contours=number_of_contours;
+		map_3d_package->contour_settings=contour_settings;	
+		for(i=0;i<number_of_contours;i++)
+		{			
+			map_3d_package->contour_settings[i]=
+				ACCESS(GT_element_settings)(contour_settings[i]);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_3d_package_contours."
+			" invalid arguments");	
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_3d_package_contours */
+
+char *get_map_3d_package_fit_name(struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the fit_name for map_3d_package 
+==============================================================================*/
+{
+	char *fit_name;
+
+	ENTER(get_map_3d_package_fit_name);
+	if(map_3d_package)			
+	{	
+		fit_name=map_3d_package->fit_name;		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_fit_name."
+				" invalid arguments");
+		fit_name=(char *)NULL;
+	}
+	LEAVE;
+	return (fit_name);
+} /* get_map_3d_package_fit_name */
+
+struct FE_node_order_info *get_map_3d_package_node_order_info(
+	struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the node_order_info for map_3d_package 
+==============================================================================*/
+{
+	struct FE_node_order_info *node_order_info;
+
+	ENTER(get_map_3d_package_node_order_info);	
+	if(map_3d_package)	
+	{	
+		node_order_info=map_3d_package->node_order_info;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_node_order_info."
+				" invalid arguments");
+		node_order_info=(struct FE_node_order_info *)NULL;
+	}
+	LEAVE;
+	return (node_order_info);
+} /* get_map_3d_package_node_order_info */
+
+struct FE_field *get_map_3d_package_position_field(struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the map_position_field for map_3d_package 
+==============================================================================*/
+{
+	struct FE_field *map_position_field;
+
+	ENTER(get_map_3d_package_position_field);	
+	if(map_3d_package)		
+	{	
+		map_position_field=map_3d_package->map_position_field;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_position_field."
+				" invalid arguments");
+		map_position_field=(struct FE_field *)NULL;
+	}
+	LEAVE;
+	return (map_position_field);
+} /* get_map_3d_package_position_field */
+
+struct FE_field *get_map_3d_package_fit_field(struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : September 8 1999
+
+DESCRIPTION :
+gets the map_fit_field for map_3d_package
+==============================================================================*/
+{
+	struct FE_field *map_fit_field;
+
+	ENTER(get_map_3d_package_fit_field);
+	if(map_3d_package)	
+	{	
+		map_fit_field=map_3d_package->map_fit_field;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_fit_field."
+				" invalid arguments");
+		map_fit_field=(struct FE_field *)NULL;
+	}
+	LEAVE;
+	return (map_fit_field);
+} /* get_map_3d_package_fit_field */
+
+struct GROUP(FE_node) *get_map_3d_package_node_group(struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the node_group for map_3d_package 
+==============================================================================*/
+{
+	struct GROUP(FE_node) *map_node_group;
+
+	ENTER(get_map_3d_package_node_group);
+	if(map_3d_package)	
+	{		
+		map_node_group=map_3d_package->node_group;		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_node_group."
+			" invalid arguments");
+		map_node_group=(struct GROUP(FE_node) *)NULL;
+	}
+	LEAVE;
+	return (map_node_group);	
+}/* get_map_3d_package_node_group */
+
+struct GROUP(FE_element) *get_map_3d_package_element_group(
+	struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the element_group for map_3d_package
+==============================================================================*/
+{
+	struct GROUP(FE_element) *map_element_group;
+
+	ENTER(get_map_3d_package_element_group);
+	if(map_3d_package)
+	{				
+		map_element_group=map_3d_package->element_group;	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_3d_package_element_group."
+			" invalid arguments");
+		map_element_group=(struct GROUP(FE_element) *)NULL;
+	}
+	LEAVE;
+	return (map_element_group);	
+}/* get_map_3d_package_element_group */
+
+int set_map_3d_package_element_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_element) *map_element_group)
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+Sets the element_group for map_3d_package
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_3d_package_element_group);
+	if(map_3d_package)
+	{		
+		return_code =1;
+		REACCESS(GROUP(FE_element))
+			(&(map_3d_package->element_group),map_element_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_3d_package_element_group."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+}/* set_map_3d_package_element_group */
+
+int get_map_drawing_information_viewed_scene(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets the viewed_scene flag of the <map_drawing_information>
+==============================================================================*/
+{
+	int viewed_scene;
+
+	ENTER(get_map_drawing_information_viewed_scene)
+	if(map_drawing_information)
+	{
+		viewed_scene=map_drawing_information->viewed_scene;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_viewed_scene."
+			" invalid arguments");
+		viewed_scene=0;
+	}
+	LEAVE;
+	return(viewed_scene);
+}/* get_map_drawing_information_viewed_scene */
+
+int set_map_drawing_information_viewed_scene(
+struct Map_drawing_information *map_drawing_information,int scene_viewed)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+sets the viewed_scene flag of the <map_drawing_information>
+ to 1 if <scene_viewed> >0,
+0 if <scene_viewed> = 0.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_drawing_information_viewed_scene)
+	if(map_drawing_information&&(scene_viewed>-1))
+	{
+		if(scene_viewed)
+		{
+			/* scene has been viewed */
+			map_drawing_information->viewed_scene=1;
+		}
+		else
+		{
+			/* scene hasn't been viewed */
+			map_drawing_information->viewed_scene=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_drawing_information_viewed_scene."
+			" invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_map_drawing_information_viewed_scene */
+
+struct Colour *get_map_drawing_information_background_colour(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the Colour of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct Colour *background_colour;
+	ENTER(get_map_drawing_information_background_colour);
+	if(map_drawing_information)
+	{
+		background_colour=map_drawing_information->background_colour;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_background_colour."
+				" invalid arguments");
+		background_colour = (struct Colour *)NULL;
+	}
+	LEAVE;
+	return (background_colour);
+} /* get_map_drawing_information_background_colour */
+
+int set_map_drawing_information_background_colour(
+	struct Map_drawing_information *map_drawing_information,
+	struct Colour *background_colour)
+/*******************************************************************************
+LAST MODIFIED : 14 July  2000
+
+DESCRIPTION :
+Sets the Colour of the <map_drawing_information>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_drawing_information_background_colour);
+	if(map_drawing_information)
+	{
+		return_code =1;
+		map_drawing_information->background_colour->red=background_colour->red;
+		map_drawing_information->background_colour->green=background_colour->green;
+		map_drawing_information->background_colour->blue=background_colour->blue;
+		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_drawing_information_background_colour."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_drawing_information_background_colour */
+
+struct Colour *get_map_drawing_information_no_interpolation_colour(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets the no_interpolation_colour of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct Colour *no_interpolation_colour;
+
+	ENTER(get_map_drawing_information_no_interpolation_colour)
+	if(map_drawing_information)
+	{
+		no_interpolation_colour=map_drawing_information->no_interpolation_colour;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_no_interpolation_colour."
+			" invalid arguments");
+		no_interpolation_colour=(struct Colour *)NULL;
+	}
+	LEAVE;
+	return(no_interpolation_colour);
+}/* get_map_drawing_information_no_interpolation_colour */
+
+struct MANAGER(Light) *get_map_drawing_information_Light_manager(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets a manager of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct MANAGER(Light) *light_manager;
+
+	ENTER(get_map_drawing_information_Light_manager);
+	if(map_drawing_information)
+	{
+		light_manager=map_drawing_information->light_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_Light_manager."
+			" invalid arguments");
+		light_manager = (struct MANAGER(Light) *)NULL;
+	}
+	LEAVE;
+	return(light_manager);
+}/* get_map_drawing_information_Light_manager */
+
+struct MANAGER(Texture) *get_map_drawing_information_Texture_manager(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets a manager of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct MANAGER(Texture) *texture_manager;
+
+	ENTER(get_map_drawing_information_Texture_manager);
+	if(map_drawing_information)
+	{
+		texture_manager=map_drawing_information->texture_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_Texture_manager."
+			" invalid arguments");
+		texture_manager = (struct MANAGER(Texture) *)NULL;
+	}
+	LEAVE;
+	return(texture_manager);
+}/* get_map_drawing_information_Texture_manager */
+
+struct MANAGER(Scene) *get_map_drawing_information_Scene_manager(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets a manager of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct MANAGER(Scene) *scene_manager;
+
+	ENTER(get_map_drawing_information_Scene_manager);
+	if(map_drawing_information)
+	{
+		scene_manager=map_drawing_information->scene_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_Scene_manager."
+			" invalid arguments");
+		scene_manager = (struct MANAGER(Scene) *)NULL;
+	}
+	LEAVE;
+	return(scene_manager);
+}/* get_map_drawing_information_Scene_manager */
+
+struct MANAGER(Light_model) *get_map_drawing_information_Light_model_manager(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets a manager of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct MANAGER(Light_model) *light_model_manager;
+
+	ENTER(get_map_drawing_information_Light_model_manager);
+	if(map_drawing_information)
+	{
+		light_model_manager=map_drawing_information->light_model_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_Light_model_manager."
+			" invalid arguments");
+		light_model_manager = (struct MANAGER(Light_model) *)NULL;
+	}
+	LEAVE;
+	return(light_model_manager);
+}/* get_map_drawing_information_Light_model_manager */
+
+struct MANAGER(Graphical_material) 
+		 *get_map_drawing_information_Graphical_material_manager(
+			 struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets a manager of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct MANAGER(Graphical_material) *graphical_material_manager;
+
+	ENTER(get_map_drawing_information_Graphical_material_manager);
+	if(map_drawing_information)
+	{
+		graphical_material_manager=map_drawing_information->graphical_material_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_Graphical_material_manager."
+			" invalid arguments");
+		graphical_material_manager = (struct MANAGER(Graphical_material) *)NULL;
+	}
+	LEAVE;
+	return(graphical_material_manager);
+}/* get_map_drawing_information_Graphical_material_manager */
+
+struct Light *get_map_drawing_information_light(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the Light of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct Light *light;
+	ENTER(get_map_drawing_information_light);
+	if(map_drawing_information)
+	{
+		light=map_drawing_information->light;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_light."
+				" invalid arguments");
+		light = (struct Light *)NULL;
+	}
+	LEAVE;
+	return (light);
+} /* get_map_drawing_information_light */
+
+int set_map_drawing_information_light(
+	struct Map_drawing_information *map_drawing_information,struct Light *light)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the Light of the <map_drawing_information>.
+==============================================================================*/
+
+{
+	int return_code;
+
+	ENTER(set_map_drawing_information_light);
+	if(map_drawing_information)
+	{
+		return_code =1;	
+		REACCESS(Light)(&(map_drawing_information->light),light);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_drawing_information_light."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_drawing_information_light */
+
+struct Light_model *get_map_drawing_information_light_model(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the Light_model of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct Light_model *light_model;
+	ENTER(get_map_drawing_information_light_model);
+	if(map_drawing_information)
+	{
+		light_model=map_drawing_information->light_model;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_light_model."
+				" invalid arguments");
+		light_model = (struct Light_model *)NULL;
+	}
+	LEAVE;
+	return (light_model);
+} /* get_map_drawing_information_light_model */
+
+int set_map_drawing_information_light_model(
+	struct Map_drawing_information *map_drawing_information,
+	struct Light_model *light_model)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the Light_model of the <map_drawing_information>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_drawing_information_light_model);
+	if(map_drawing_information)
+	{
+		return_code =1;	
+		REACCESS(Light_model)(&(map_drawing_information->light_model),light_model);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_drawing_information_light_model."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_drawing_information_light_model */
+
+struct Scene_viewer *get_map_drawing_information_scene_viewer(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the Scene_viewer of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct Scene_viewer *scene_viewer;
+	ENTER(get_map_drawing_information_scene_viewer);
+	if(map_drawing_information)
+	{
+		scene_viewer=map_drawing_information->scene_viewer;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_scene_viewer."
+				" invalid arguments");
+		scene_viewer = (struct Scene_viewer *)NULL;
+	}
+	LEAVE;
+	return (scene_viewer);
+} /* get_map_drawing_information_scene_viewer */
+
+int set_map_drawing_information_scene_viewer(
+	struct Map_drawing_information *map_drawing_information,
+	struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the Scene_viewer of the <map_drawing_information>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_drawing_information_scene_viewer);
+	if(map_drawing_information)
+	{
+		return_code =1;	
+		map_drawing_information->scene_viewer=scene_viewer;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_drawing_information_scene_viewer."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_drawing_information_scene_viewer */
+
+struct Scene *get_map_drawing_information_scene(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the Scene of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct Scene *scene;
+	ENTER(get_map_drawing_information_scene);
+	if(map_drawing_information)
+	{
+		scene=map_drawing_information->scene;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_scene."
+				" invalid arguments");
+		scene = (struct Scene *)NULL;
+	}
+	LEAVE;
+	return (scene);
+} /* get_map_drawing_information_scene */
+
+int set_map_drawing_information_scene(
+	struct Map_drawing_information *map_drawing_information,
+	struct Scene *scene)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the Scene of the <map_drawing_information>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_drawing_information_scene);
+	if(map_drawing_information)
+	{
+		return_code =1;	
+		REACCESS(Scene)(&(map_drawing_information->scene),scene);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_drawing_information_scene."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_drawing_information_scene */
+
+struct User_interface *get_map_drawing_information_user_interface(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the User_interface of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct User_interface *user_interface;
+	ENTER(get_map_drawing_information_user_interface);
+	if(map_drawing_information)
+	{
+		user_interface=map_drawing_information->user_interface;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_user_interface."
+				" invalid arguments");
+		user_interface = (struct User_interface *)NULL;
+	}
+	LEAVE;
+	return (user_interface);
+} /* get_map_drawing_information_user_interface */
+
+int set_map_drawing_information_user_interface(
+	struct Map_drawing_information *map_drawing_information,
+	struct User_interface *user_interface)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the User_interface of the <map_drawing_information>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_drawing_information_user_interface);
+	if(map_drawing_information)
+	{
+		return_code =1;	
+		/* don't ACCESS as there's only ever one user_interface */
+		map_drawing_information->user_interface=user_interface;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_drawing_information_user_interface."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_drawing_information_user_interface */
+
+struct Graphical_material *get_map_drawing_information_map_graphical_material(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the map_graphical_material of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct Graphical_material *map_graphical_material;
+	ENTER(get_map_drawing_information_map_graphical_material);
+	if(map_drawing_information)
+	{
+		map_graphical_material=map_drawing_information->map_graphical_material;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_map_graphical_material."
+				" invalid arguments");
+		map_graphical_material = (struct Graphical_material *)NULL;
+	}
+	LEAVE;
+	return (map_graphical_material);
+} /* get_map_drawing_information_map_graphical_material */
+
+int set_map_drawing_information_map_graphical_material(
+	struct Map_drawing_information *map_drawing_information,
+	struct Graphical_material *map_graphical_material)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the map_graphical_material of the <map_drawing_information>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_drawing_information_map_graphical_material);
+	if(map_drawing_information)
+	{
+		return_code =1;		
+		REACCESS(Graphical_material)
+			(&(map_drawing_information->map_graphical_material),map_graphical_material);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_drawing_information_map_graphical_material."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_drawing_information_map_graphical_material */
+
+struct Graphical_material *get_map_drawing_information_electrode_graphical_material(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED : 14 July  2000
+
+DESCRIPTION :
+gets the electrode_graphical_material of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct Graphical_material *electrode_graphical_material;
+	ENTER(get_map_drawing_information_electrode_graphical_material);
+	if(map_drawing_information)
+	{
+		electrode_graphical_material=
+			map_drawing_information->electrode_graphical_material;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_electrode_graphical_material."
+				" invalid arguments");
+		electrode_graphical_material = (struct Graphical_material *)NULL;
+	}
+	LEAVE;
+	return (electrode_graphical_material);
+} /* get_map_drawing_information_electrode_graphical_material */
+
+struct Computed_field_package *get_map_drawing_information_computed_field_package(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED :  14 July  2000
+
+DESCRIPTION :
+gets the Computed_field_package of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct Computed_field_package *computed_field_package;
+	ENTER(get_map_drawing_information_computed_field_package);
+	if(map_drawing_information)
+	{
+		computed_field_package=map_drawing_information->computed_field_package;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_computed_field_package."
+				" invalid arguments");
+		computed_field_package = (struct Computed_field_package *)NULL;
+	}
+	LEAVE;
+	return (computed_field_package);
+} /* get_map_drawing_information_computed_field_package */
+
+int set_map_drawing_information_computed_field_package(
+	struct Map_drawing_information *map_drawing_information,
+	struct Computed_field_package *computed_field_package)
+/*******************************************************************************
+LAST MODIFIED : 14 July  2000
+
+DESCRIPTION :
+Sets the Computed_field_package of the <map_drawing_information>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_drawing_information_computed_field_package);
+	if(map_drawing_information)
+	{
+		return_code =1;
+		/* don't ACCESS as only one*/
+		map_drawing_information->computed_field_package=computed_field_package;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_drawing_information_computed_field_package."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_drawing_information_computed_field_package */
+
+struct Time_keeper *get_map_drawing_information_time_keeper(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED :  14 July 2000
+
+DESCRIPTION :
+gets the Time_keeper of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct Time_keeper *time_keeper;
+	ENTER(get_map_drawing_information_time_keeper);
+	if(map_drawing_information)
+	{
+		time_keeper=map_drawing_information->time_keeper;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_time_keeper."
+				" invalid arguments");
+		time_keeper = (struct Time_keeper *)NULL;
+	}
+	LEAVE;
+	return (time_keeper);
+} /* get_map_drawing_information_time_keeper */
+
+int set_map_drawing_information_time_keeper(
+	struct Map_drawing_information *map_drawing_information,
+	struct Time_keeper *time_keeper)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+Sets the Time_keeper of the <map_drawing_information>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_map_drawing_information_time_keeper);
+	if(map_drawing_information)
+	{
+		return_code =1;			
+		REACCESS(Time_keeper)(&(map_drawing_information->time_keeper),time_keeper);		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_map_drawing_information_time_keeper."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_map_drawing_information_time_keeper */
+
+int map_drawing_information_make_map_scene(
+	struct Map_drawing_information *map_drawing_information,
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+Creates the map_drawing_information scene, if isn't already present.
+==============================================================================*/	
+{
+	int return_code;
+	struct Scene *map_scene;
+
+	ENTER(map_drawing_information_make_map_scene);
+	map_scene=(struct Scene *)NULL;
+	if(map_drawing_information&&package)
+	{
+		/* create the map scene, if haven't already got one */	
+		if(!(map_drawing_information->scene))
+		{
+			if (map_scene=CREATE(Scene)("map"))
+			{
+				Scene_enable_graphics(map_scene,map_drawing_information->glyph_list,
+					map_drawing_information->graphical_material_manager,
+					map_drawing_information->map_graphical_material,
+					map_drawing_information->light_manager,
+					map_drawing_information->spectrum_manager,
+					map_drawing_information->spectrum,
+					map_drawing_information->texture_manager);
+
+				Scene_set_graphical_element_mode(map_scene,GRAPHICAL_ELEMENT_EMPTY,
+					Computed_field_package_get_computed_field_manager(
+					map_drawing_information->computed_field_package),
+					package->element_manager,
+					package->element_group_manager,
+					package->fe_field_manager,
+					package->node_manager,
+					package->node_group_manager,
+					map_drawing_information->data_manager,
+					package->data_group_manager,
+					map_drawing_information->element_point_ranges_selection,
+					map_drawing_information->element_selection,
+					map_drawing_information->node_selection,
+					map_drawing_information->data_selection,
+					map_drawing_information->user_interface);
+				
+				/*???RC.  May want to use functions to modify default_scene here */
+				/* eg. to add model lights, etc. */
+				/* ACCESS so can never be destroyed */
+				/*???RC.  Should be able to change: eg. gfx set default scene NAME */
+				if (ADD_OBJECT_TO_MANAGER(Scene)(map_scene,
+					map_drawing_information->scene_manager))
+				{
+					Scene_enable_time_behaviour(map_scene,
+						map_drawing_information->time_keeper);
+					set_map_drawing_information_scene(map_drawing_information,map_scene);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"map_drawing_information_make_map_spectrum_and_scene."
+						" couldn't add map to scene");
+					return_code =0;
+				}
+			}			
+		
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"map_drawing_information_make_map_spectrum_and_scene."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return(return_code);
+}/* map_drawing_information_make_map_scene */
+
+struct MANAGER(Spectrum) *get_map_drawing_information_spectrum_manager(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION :
+gets the spectrum_manager of the <map_drawing_information>.
+==============================================================================*/
+{
+	struct MANAGER(Spectrum) *spectrum_manager;
+	ENTER(get_map_drawing_information_spectrum_manager);
+	if(map_drawing_information)
+	{
+		spectrum_manager=map_drawing_information->spectrum_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_spectrum_manager."
+				" invalid arguments");
+		spectrum_manager = (struct MANAGER(Spectrum) *)NULL;
+	}
+	LEAVE;
+	return (spectrum_manager);
+} /* get_map_drawing_information_ spectrum_manager*/
+
+struct LIST(GT_object) *get_map_drawing_information_glyph_list(
+	struct Map_drawing_information *map_drawing_information)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+gets the glyph_list of the <map_drawing_information>
+==============================================================================*/
+{
+	struct LIST(GT_object) *glyph_list;
+	ENTER(get_map_drawing_information_glyph_list);
+	if(map_drawing_information)
+	{
+		glyph_list=map_drawing_information->glyph_list;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_map_drawing_information_glyph_list."
+				" invalid arguments");
+		glyph_list = (struct LIST(GT_object) *)NULL;
+	}
+	LEAVE;
+	return (glyph_list);
+} /* get_map_drawing_information_glyph_list */
+
+int map_drawing_information_align_scene(
+	struct Map_drawing_information *map_drawing_information) /*FOR AJP*/
+/*******************************************************************************
+LAST MODIFIED : 14 July 2000
+
+DESCRIPTION : Aligns the <package> scene so that the largest cardinal dimension 
+component of the scene is the scene viewer's up vector, and the viewer is 
+looking along the scene's smallest cardinal dimension component towards the 
+centre of the scene. Eg if a scene is 100 by 30 by 150 (in x,y,z)
+then we'd look along the y axis, with the z axis as the up vector. 
+
+cf Scene_viewer_view_all.
+Should be in Scene_viewer? RC doesn't think so.
+==============================================================================*/
+{
+	double centre[3],clip_factor,diff[3],dist,eye[3],lookat[3],max,min,
+		radius,size[3],up[3];
+	int i,max_index,min_index,return_code,width_factor;
+	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)NULL;
+	/*not using middle at the moment, but may want to in future*/
+#if defined (NEW_CODE)
+	double middle;
+	int middle_index
+#endif /* defined (NEW_CODE)*/
+
+	ENTER(map_drawing_information_align_scene);
+	if (map_drawing_information&&(scene_viewer=
+		get_map_drawing_information_scene_viewer(map_drawing_information)))
+	{							
+		if(Scene_get_graphics_range(Scene_viewer_get_scene(scene_viewer),
+			&centre[0],&centre[1],&centre[2],&size[0],&size[1],&size[2]))
+		{	
+			radius=0.5*sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);		
+			/* enlarge radius to keep image within edge of window */
+			/*???RC width_factor should be read in from defaults file */
+			width_factor=1.05;
+			radius *= width_factor;
+			/*???RC clip_factor should be read in from defaults file: */
+			clip_factor = 10.0;		
+			if((Scene_viewer_set_view_simple(scene_viewer,centre[0],centre[1],
+				centre[2],radius,40,clip_factor*radius))&&
+			/*now done the equiv of Scene_viewer_view_all,&  have size[0],&size[1],&size[2] */
+			(Scene_viewer_get_lookat_parameters(scene_viewer,
+				&eye[0],&eye[1],&eye[2],&lookat[0],&lookat[1],&lookat[2],&up[0],&up[1],
+				&up[2])))
+			{
+				/* get,min,middle,max component of the scene size*/		
+				min=size[0];
+				max=size[0];		
+				min_index=0;
+				max_index=0;				
+				for(i=0;i<3;i++)
+				{
+					if(size[i]>max)
+					{
+						max=size[i];
+						max_index=i;
+					}
+					if(size[i]<min)
+					{
+						min=size[i];
+						min_index=i;
+					}	
+				}
+				/*not using middle at the moment, but may want to in future*/
+#if defined (NEW_CODE)
+				middle=size[0];
+				middle_index=0;
+				for(i=0;i<3;i++)
+				{
+					if((size[i]<max)&&(size[i]>min))
+					{
+						middle=size[i];
+						middle_index=i;
+					}
+				}		
+#endif /*defined (NEW_CODE)	 */		
+				/*clear up vector */
+				for(i=0;i<3;i++)
+				{
+					up[i]=0;				
+				}
+				/*set the up vector to be the max size component*/
+				up[max_index]=1;
+				/* get the dist of eye pt from centre pt (after Scene_viewer_set_view_simple ) */
+				/* (centre[] and lookat[] are the same)*/
+				diff[0]=eye[0]-centre[0];
+				diff[1]=eye[1]-centre[1];
+				diff[2]=eye[2]-centre[2];
+				dist=sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]);
+				/*clear eye pt*/
+				for(i=0;i<3;i++)
+				{			
+					eye[i]=0;
+				}		
+				/*set eye pt to be along the min size component,dist from the centre */	
+				/*-ve sign so look at the front of torso meshes - they seem to be aligned this way*/
+				eye[min_index]=-dist;
+				return_code=Scene_viewer_set_lookat_parameters(scene_viewer,
+					eye[0],eye[1],eye[2],centre[0],centre[1],centre[2],up[0],up[1],up[2]);
+			}
+			else
+			{	
+				display_message(ERROR_MESSAGE,
+					"map_drawing_information_align_scene. Scene_viewer_set_view_simple failed");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"map_drawing_information_align_scene. could not get graphics range");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"map_drawing_information_align_scene.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /*map_drawing_information_align_scene  */
+#endif /* defined (UNEMAP_USE_NODES) */

@@ -4315,17 +4315,19 @@ LAST MODIFIED : 17 August 1999
 DESCRIPTION :Debug function. May be naughty.
 ==============================================================================*/
 
-int free_node_and_element_and_data_groups(struct GROUP(FE_node) *node_group,
+int free_node_and_element_and_data_groups(struct GROUP(FE_node) **a_node_group,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element))	*element_group_manager,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager );
 /*******************************************************************************
-LAST MODIFIED : August 27 1999
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
-Given a node group, frees it and it's asscoiated element and data groups
+Given a <node_group>, frees it's asscoiated element and data groups
+Deaccesses the <node_group> and attempts to remove it from the manager.
+(i.e assumes the <node_group> has been accessed somewhere)
 ==============================================================================*/
 
 #endif /* !defined (FINITE_ELEMENT_H) */

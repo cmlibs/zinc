@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 29 June 2000
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -45,7 +45,6 @@ DESCRIPTION :
 #include "unemap/rig_node.h"
 #endif /* defined (UNEMAP_USE_NODES) */
 #include "unemap/setup_dialog.h"
-#include "unemap/unemap_package.h"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/printer.h"
@@ -214,6 +213,7 @@ necessary.
 		number_of_mesh_columns,number_of_mesh_rows,recalculate;
 	struct Map *map;
 	struct Map_dialog *map_dialog;
+	struct Map_drawing_information *drawing_information;
 	struct Map_frame *frame;
 	struct Mapping_window *mapping;
 	struct Signal_buffer *buffer;
@@ -228,7 +228,7 @@ necessary.
 	USE_PARAMETER(spectrum_manager);
 #endif/* defined (UNEMAP_USE_NODES)*/
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(map=mapping->map)&&
-		(map_dialog=mapping->map_dialog))
+		(map_dialog=mapping->map_dialog)&&(drawing_information=map->drawing_information))
 	{
 		map_settings_changed=0;
 		recalculate=0;
@@ -243,24 +243,6 @@ necessary.
 		{
 			map->fixed_range=0;
 		}
-#if defined (OLD_CODE)
-		if (XmToggleButtonGadgetGetState(map_dialog->show_colour_toggle))
-		{
-			if (map->colour_option!=SHOW_COLOUR)
-			{
-				map_settings_changed=1;
-				map->colour_option=SHOW_COLOUR;
-			}
-		}
-		else
-		{
-			if (map->colour_option!=HIDE_COLOUR)
-			{
-				map_settings_changed=1;
-				map->colour_option=HIDE_COLOUR;
-			}
-		}
-#endif /* defined (OLD_CODE) */			
 		XtVaGetValues(map_dialog->spectrum.type_option_menu,
 			XmNmenuHistory,&option_widget,
 			NULL);
@@ -279,9 +261,10 @@ necessary.
 				map_settings_changed=1;
 				map->colour_option=SHOW_COLOUR;
 			}
-			spectrum=map->drawing_information->spectrum;
+			spectrum=drawing_information->spectrum;
 #if defined (UNEMAP_USE_NODES)				
-			if(spectrum_manager=get_unemap_package_spectrum_manager(map->unemap_package))
+			if(spectrum_manager=get_map_drawing_information_spectrum_manager
+				(drawing_information))
 			{
 				if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
 				{
@@ -1768,7 +1751,11 @@ Creates a new rig using the values specified in the setup dialog.
 				(rig=create_standard_Rig(rig_name /*??? enter name ? */,
 				region_type,MONITORING_OFF,EXPERIMENT_OFF,setup->number_of_rows,
 				number_in_row,setup->number_of_regions,
-				setup->number_of_auxiliary_devices,30. /*??? enter focus ? */)))
+				setup->number_of_auxiliary_devices,30./*??? enter focus ? */
+#if defined (UNEMAP_USE_NODES)		
+				,mapping->map->unemap_package
+#endif /* defined (UNEMAP_USE_NODES) */
+					)))
 			{
 				/* destroy the present rig */
 				destroy_Rig(map_rig_pointer);
@@ -1885,40 +1872,43 @@ the mapping_area of the <mapping_window>.
 #if defined (UNEMAP_USE_NODES)
 static int Mapping_window_make_drawing_area_3d(struct Mapping_window *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 29 May 2000
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
-Removes the Scene_viewer, if any, and replaces it with a 2-D XmDrawingArea in
+Removes the  2-D XmDrawingArea if any, and replaces it with a Scene_viewer,
 the mapping_area of the <mapping_window>.
 ==============================================================================*/
 {
 	int return_code;
-	struct Unemap_package *unemap_package;
+	struct Map_drawing_information *drawing_information=
+		(struct Map_drawing_information *)NULL;
+	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
 
 	ENTER(Mapping_window_make_drawing_area_3d);
 	if (mapping_window&&mapping_window->mapping_area&&
-		(unemap_package=mapping_window->map->unemap_package))
+		(unemap_package=mapping_window->map->unemap_package)&&
+		(drawing_information=mapping_window->map->drawing_information))
 	{	 
 		XtUnmanageChild(mapping_window->mapping_area_2d);				
-		unemap_package_make_map_scene(unemap_package,
-			mapping_window->map->drawing_information->spectrum);	
+		map_drawing_information_make_map_scene(drawing_information,unemap_package);	
 		if (!mapping_window->scene_viewer)
 		{
 			mapping_window->scene_viewer=
 				CREATE(Scene_viewer)(mapping_window->mapping_area_3d,
-					get_unemap_package_background_colour(unemap_package),
+					get_map_drawing_information_background_colour(drawing_information),
 					SCENE_VIEWER_DOUBLE_BUFFER,
-					get_unemap_package_Light_manager(unemap_package),
-					get_unemap_package_light(unemap_package),
-					get_unemap_package_Light_model_manager(unemap_package),
-					get_unemap_package_light_model(unemap_package),
-					get_unemap_package_Scene_manager(unemap_package),
-					get_unemap_package_scene(unemap_package),
-					get_unemap_package_Texture_manager(unemap_package),
-					get_unemap_package_user_interface(unemap_package));
-			set_unemap_package_scene_viewer(unemap_package,mapping_window->scene_viewer);
+					get_map_drawing_information_Light_manager(drawing_information),
+					get_map_drawing_information_light(drawing_information),
+					get_map_drawing_information_Light_model_manager(drawing_information),
+					get_map_drawing_information_light_model(drawing_information),
+					get_map_drawing_information_Scene_manager(drawing_information),
+					get_map_drawing_information_scene(drawing_information),
+					get_map_drawing_information_Texture_manager(drawing_information),
+					get_map_drawing_information_user_interface(drawing_information));
+			set_map_drawing_information_scene_viewer(drawing_information,
+				mapping_window->scene_viewer);
 		}
-		set_unemap_package_viewed_scene(unemap_package,0);
+		set_map_drawing_information_viewed_scene(drawing_information,0);
 		XtManageChild(mapping_window->mapping_area_3d);
 		return_code=1;
 	}
@@ -2062,7 +2052,7 @@ Finds the id of the mapping file read button.
 
 static int mapping_read_configuration_file(char *file_name,void *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 25 July 1999
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Reads in the configuration file and makes the mapping window consistent with the
@@ -2077,17 +2067,23 @@ new rig.
 	ENTER(mapping_read_configuration_file);
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(mapping->map))
 	{
+#if defined (UNEMAP_USE_NODES)
+		unemap_package = mapping->map->unemap_package;
+#endif /* defined (UNEMAP_USE_NODES) */		
 		/* destroy the existing configuration */
 		destroy_Rig(mapping->map->rig_pointer);
 		/* read the configuration file */
 		if (return_code=read_configuration_file(file_name,
-			(void *)(mapping->map->rig_pointer)))
+			(void *)(mapping->map->rig_pointer)
+#if defined (UNEMAP_USE_NODES)			
+			,unemap_package
+#endif /* defined (UNEMAP_USE_NODES) */
+			 ))
 		{
 #if defined (UNEMAP_USE_NODES)
-			/* read the configuration file into nodes */
-			unemap_package = mapping->map->unemap_package;		
-			file_read_config_FE_node_group(file_name,unemap_package);
-#endif
+			/* read the configuration file into nodes */		
+			file_read_config_FE_node_group(file_name,unemap_package,*(mapping->map->rig_pointer));
+#endif /* defined (UNEMAP_USE_NODES) */
 			/* unghost the save configuration and set default configuration buttons */
 			XtSetSensitive(mapping->file_menu.save_configuration_button,True);
 			XtSetSensitive(mapping->file_menu.set_default_configuration_button,True);
@@ -4746,6 +4742,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 	int number_of_regions,return_code;
 #define NUMBER_OF_ATTRIBUTES 2
 	Arg attributes[NUMBER_OF_ATTRIBUTES];
+	struct Region *region=(struct Region *)NULL;
 	struct Region_list_item *region_item;
 	struct Rig *rig;
 	Window mapping_menu_window;
@@ -4804,7 +4801,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 							NUMBER_OF_ATTRIBUTES))
 						{
 							XtManageChild(*regions);
-							if (!(rig->current_region))
+							if (!(get_Rig_current_region(rig)))
 							{
 								current_region= *regions;
 							}
@@ -4815,23 +4812,24 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 							return_code=0;
 						}
 					}
-					region_item=rig->region_list;
+					region_item=get_Rig_region_list(rig);
 					while (region_item&&return_code)
 					{
+						region=get_Region_list_item_region(region_item);
 						XtSetArg(attributes[0],XmNlabelString,
 							(XtPointer)XmStringCreate(
-							region_item->region->name,XmSTRING_DEFAULT_CHARSET));
+							region->name,XmSTRING_DEFAULT_CHARSET));
 						if (*regions=XmCreatePushButtonGadget(
-							mapping->region_pull_down_menu,region_item->region->name,
+							mapping->region_pull_down_menu,region->name,
 							attributes,NUMBER_OF_ATTRIBUTES))
 						{
 							XtManageChild(*regions);
-							if ((rig->current_region==region_item->region)||
-								((!current_region)&&(!(rig->current_region))))
+							if ((get_Rig_current_region(rig)==region)||
+								((!current_region)&&(!(get_Rig_current_region(rig)))))
 							{
 								current_region= *regions;
 							}
-							region_item=region_item->next;
+							region_item=get_Region_list_item_next(region_item);
 							regions++;
 						}
 						else
@@ -4844,7 +4842,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 
 #if defined (OLD_CODE)
 						/* update projection choice */
-						if ((rig->current_region)&&(SOCK==rig->current_region->type))
+						if ((get_Rig_current_region(rig))&&(SOCK==rig->current_region->type))
 						{
 							XtManageChild(mapping->projection_choice);
 							XtVaSetValues(mapping->region_choice,
@@ -4899,7 +4897,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 									/* set the projection choice */
 									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
 										&current_projection,NULL);
-									if ((current_projection!=mapping->projection_cylinder)									
+									if ((current_projection!=mapping->projection_cylinder)
 										&&(current_projection!=mapping->projection_3d))
 									{
 										XtVaSetValues(mapping->projection_choice,

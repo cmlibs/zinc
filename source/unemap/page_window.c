@@ -3932,7 +3932,12 @@ Called to start experiment on the <page_window>.
 				page_window->user_interface))
 			{
 				read_configuration_file(acquisition_rig_filename,
-					page_window->rig_address);
+					page_window->rig_address
+#if defined (UNEMAP_USE_NODES)
+					/*??JW perhaps should pass down from somewhere? */
+					,(struct Unemap_package *)NULL
+#endif /* defined (UNEMAP_USE_NODES) */
+					);
 			}
 			if (!(*(page_window->rig_address)))
 			{
@@ -3950,7 +3955,12 @@ Called to start experiment on the <page_window>.
 					}
 					if (!(*(page_window->rig_address)=create_standard_Rig("default",PATCH,
 						MONITORING_OFF,EXPERIMENT_OFF,number_of_rows,electrodes_in_row,1,0,
-						(float)1)))
+						(float)1
+#if defined (UNEMAP_USE_NODES)
+						/*??JWperhaps we should pass this down from above*/
+						,(struct Unemap_package *)NULL
+#endif /* defined (UNEMAP_USE_NODES) */
+						)))
 					{
 						display_message(ERROR_MESSAGE,
 							"start_experiment.  Error creating default rig");

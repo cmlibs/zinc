@@ -517,6 +517,7 @@ GRAPHICS_SRCS = \
  	graphics/texture.c \
  	graphics/transform_tool.c
 INTERACTION_SRCS = \
+	interaction/interaction_graphics.c \
 	interaction/interaction_volume.c \
 	interaction/interactive_tool.c \
 	interaction/interactive_toolbar_widget.c \

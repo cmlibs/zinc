@@ -2568,7 +2568,7 @@ the <objective_values>.
 } /* calculate_device_event_markers */
 
 int draw_signal(struct FE_node *device_node,
-	struct Draw_package *draw_package,struct Device *device,
+	struct Signal_drawing_package *signal_drawing_package,struct Device *device,
 	enum Signal_detail detail,int number_of_data_intervals,
 	int current_data_interval,int *first_data,int *last_data,int x_pos,int y_pos,
 	int width,int height,Pixmap pixel_map,int *axes_left,int *axes_top,
@@ -2641,7 +2641,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 			}
 			i=0;
 			while ((i<number_of_data_intervals)&&extract_signal_information(
-				device_node,draw_package,device,0,first_data[i],last_data[i],
+				device_node,signal_drawing_package,device,0,first_data[i],last_data[i],
 				number_of_signals+i,number_of_points+i,times+i,signals_values+i,
 				signals_status+i,name+i,highlight+i,signals_minimum+i,
 				signals_maximum+i))
@@ -2767,11 +2767,11 @@ NB.  0<=current_data_interval<number_of_data_intervals
 					/*read_event_settings_and_signal_status_FE_node_group */
 					/* These max and min are  scaled and offset (by channel_gain,*/
 					/* channel_offset) values*/
-					component.field=get_Draw_package_signal_minimum_field(draw_package); 
+					component.field=get_Signal_drawing_package_signal_minimum_field(signal_drawing_package); 
 					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
 						signal_minimum);
 					component.number=0;
-					component.field=get_Draw_package_signal_maximum_field(draw_package); 
+					component.field=get_Signal_drawing_package_signal_maximum_field(signal_drawing_package); 
 					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
 						signal_maximum);
 				}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 29 June 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -140,9 +140,6 @@ DESCRIPTION :
 #include "unemap/interpolate.h"
 #include "unemap/mapping_work_area.h"
 #include "unemap/neurosoft.h"
-#if defined (UNEMAP_USE_NODES)
-#include "unemap/rig_node.h"
-#endif /* defined (UNEMAP_USE_NODES) */
 #include "unemap/trace_window.h"
 #include "unemap/unemap_package.h"
 #include "user_interface/confirmation.h"
@@ -533,8 +530,8 @@ continuation.  Display the map.
 		{
 			analysis->map_type_changed=0;
 		}
-		analysis->map_type=map_type;
-		current_region=rig->current_region;
+		analysis->map_type=map_type;	
+		current_region=get_Rig_current_region(rig);
 		no_event=1;
 		no_undecided=1;
 		no_accepted=1;
@@ -771,9 +768,6 @@ analysis work area.
 {
 	char found;
 	int number_of_devices;
-#if defined (UNEMAP_USE_NODES)
-	int rig_node_group_count;
-#endif /* defined (UNEMAP_USE_NODES) */
 	struct Device **highlight;
 	struct Analysis_window *analysis_window;
 	struct Analysis_work_area *analysis;
@@ -802,14 +796,7 @@ analysis work area.
 					if (selected_region== *region)
 					{
 						/* update the analysis rig */
-						current_region=(struct Region *)NULL;
-#if defined (UNEMAP_USE_NODES)
-						/*??JW getting the rig_node_groups from the unemap_package */
-						/*should we store elsewhere, eg at analysis?*/
-						/* first (0th) rig node group is all_devices */
-						analysis->rig_node_group=
-							get_unemap_package_rig_node_group(analysis->unemap_package,0);
-#endif /* defined (UNEMAP_USE_NODES) */						 
+						current_region=(struct Region *)NULL;					 
 						found=1;
 					}
 					else
@@ -819,35 +806,23 @@ analysis work area.
 				}
 				if (!found)
 				{
-#if defined (UNEMAP_USE_NODES)
-					rig_node_group_count=0;
-#endif /* defined (UNEMAP_USE_NODES) */
-					region_item=rig->region_list;
+					region_item=get_Rig_region_list(rig);
 					while (region_item&&(selected_region!= *region))
 					{
-						region_item=region_item->next;
+						region_item=get_Region_list_item_next(region_item);
 						region++;
-#if defined (UNEMAP_USE_NODES)
-						rig_node_group_count++; 
-#endif /* defined (UNEMAP_USE_NODES) */
 					}								
 					if (region_item)
 					{
 						found=1;
 						/* update the analysis rig */
-						current_region=region_item->region;
-#if defined (UNEMAP_USE_NODES)
-						/* rig_node_group_count+1 as 0 is all_devices */
-						analysis->rig_node_group=
-							get_unemap_package_rig_node_group(analysis->unemap_package,
-							rig_node_group_count+1);
-#endif /* defined (UNEMAP_USE_NODES) */
+						current_region=get_Region_list_item_region(region_item);
 					}
 				}
 				if (found)
 				{
-					analysis_window->current_region=selected_region;
-					rig->current_region=current_region;
+					analysis_window->current_region=selected_region;					
+					set_Rig_current_region(rig,current_region);
 					/* update the highlight device */
 					if ((*(analysis->highlight))&&(current_region)&&
 						((*(analysis->highlight))->description->region!=current_region))
@@ -1007,8 +982,8 @@ DESCRIPTION :
 				axes_width=signals->axes_width;
 				axes_height=signals->axes_height;
 				xpos=axes_left;
-				ypos=axes_top;
-				current_region=rig->current_region;
+				ypos=axes_top;				
+				current_region=get_Rig_current_region(rig);
 				while (number_of_devices>0)
 				{
 					if (!current_region||(current_region==(*device)->description->region))
@@ -2161,7 +2136,7 @@ Called when the "Save interval" button is clicked.
 
 static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 11 February 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -2187,7 +2162,7 @@ Sets up the analysis work area for analysing a set of signals.
 	struct Trace_window *trace;
 	XmString new_dialog_title,old_dialog_title,value_xmstring;
 #if defined (UNEMAP_USE_NODES)
-	struct FE_field *field;
+	struct FE_field *field;	
 #endif /* defined (UNEMAP_USE_NODES) */
 
 	ENTER(analysis_read_signal_file);
@@ -2212,7 +2187,21 @@ Sets up the analysis work area for analysing a set of signals.
 			{
 				destroy_Signal_buffer(&buffer);
 			}
-			destroy_Rig(&(analysis->rig));
+#if defined (UNEMAP_USE_NODES)
+			if (analysis->mapping_window->map)
+			{
+				map_remove_torso_arms(analysis->mapping_window->map);
+			}
+#endif /* defined (UNEMAP_USE_NODES)*/		
+			destroy_Rig(&(analysis->rig));			
+#if defined (UNEMAP_USE_NODES)		
+			if (analysis->signal_drawing_package)
+			{
+				DEACCESS(Signal_drawing_package)(&(analysis->signal_drawing_package));
+			}						
+			free_unemap_package_time_computed_fields(analysis->unemap_package);
+			free_unemap_package_rig_fields(analysis->unemap_package);		
+#endif /* defined (UNEMAP_USE_NODES)*/		
 		}
 		/* initialize the new analysis */
 		analysis->datum=0;
@@ -2228,59 +2217,25 @@ Sets up the analysis work area for analysing a set of signals.
 				map->colour_option=HIDE_COLOUR;
 				map->contours_option=HIDE_CONTOURS;
 				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+#if defined (UNEMAP_USE_NODES)
+				if(map->drawing_information)
+				{
+					set_map_drawing_information_viewed_scene(map->drawing_information,0);
+				}
+#endif /* defined (UNEMAP_USE_NODES)*/	
 			}
 		}
 		/* get the analysis window title */
 		XtVaGetValues(analysis->window->window,
 			XmNdialogTitle,&old_dialog_title,
 			NULL);
-#if defined (UNEMAP_USE_NODES)
-		/* read the signal file into nodes */
-			/*???DB.  Would be better to be another callback from the same button ? */
-		if (analysis->draw_package)
-		{
-			DEACCESS(Draw_package)(&(analysis->draw_package));
-		}
-		if (analysis->rig_node_group=file_read_signal_FE_node_group(file_name,
-			analysis->unemap_package))
-		{
-			ACCESS(Unemap_package)(analysis->unemap_package);
-			/* create the draw_package, store it, set it up */
-			if(!analysis->draw_package)
-			{
-				analysis->draw_package=CREATE(Draw_package)();
-				ACCESS(Draw_package)(analysis->draw_package);
-			}
-			field=get_unemap_package_device_name_field(analysis->unemap_package);
-			set_Draw_package_device_name_field(analysis->draw_package,field);
-			field=get_unemap_package_device_type_field(analysis->unemap_package);
-			set_Draw_package_device_type_field(analysis->draw_package,field);
-			field=get_unemap_package_channel_number_field(analysis->unemap_package);
-			set_Draw_package_channel_number_field(analysis->draw_package,field);
-			field=get_unemap_package_signal_field(analysis->unemap_package);
-			set_Draw_package_signal_field(analysis->draw_package,field);
-			field=get_unemap_package_channel_offset_field(analysis->unemap_package);
-			set_Draw_package_channel_offset_field(analysis->draw_package,field);
-			field=get_unemap_package_channel_gain_field(analysis->unemap_package);
-			set_Draw_package_channel_gain_field(analysis->draw_package,field);
-			field=get_unemap_package_signal_minimum_field(analysis->unemap_package);
-			set_Draw_package_signal_minimum_field(analysis->draw_package,field);
-			field=get_unemap_package_signal_maximum_field(analysis->unemap_package);
-			set_Draw_package_signal_maximum_field(analysis->draw_package,field);
-			field=get_unemap_package_signal_status_field(analysis->unemap_package);
-			set_Draw_package_signal_status_field(analysis->draw_package,field);
-			/* for the moment assuming only one signal per node, ie only one
-				signal_field */
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"analysis_read_signal_file. file_read_signal_FE_node_group failed ");
-		}
-#endif /* defined (UNEMAP_USE_NODES) */
 		/* open the input file */
 		if ((input_file=fopen(file_name,"rb"))&&
-			(read_signal_file(input_file,&(analysis->rig)))&&(rig=analysis->rig)&&
+			(read_signal_file(input_file,&(analysis->rig)
+#if defined (UNEMAP_USE_NODES)
+			 ,analysis->unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+			))&&(rig=analysis->rig)&&
 			(rig->devices)&&(*(rig->devices))&&
 			(buffer=get_Device_signal_buffer(*(rig->devices))))
 		{
@@ -2870,6 +2825,46 @@ Sets up the analysis work area for analysing a set of signals.
 				analysis->trace->open=0;
 			}
 		}
+#if defined (UNEMAP_USE_NODES)
+		/* read the signal file into nodes */
+		/*???DB.  Would be better to be another callback from the same button ? */
+		if (file_read_signal_FE_node_group(file_name,
+			analysis->unemap_package,analysis->rig))
+		{
+			ACCESS(Unemap_package)(analysis->unemap_package);
+			/* create the signal_drawing_package, store it, set it up */
+			if(!analysis->signal_drawing_package)
+			{
+				analysis->signal_drawing_package=CREATE(Signal_drawing_package)();
+				ACCESS(Signal_drawing_package)(analysis->signal_drawing_package);
+			}
+			field=get_unemap_package_device_name_field(analysis->unemap_package);
+			set_Signal_drawing_package_device_name_field(analysis->signal_drawing_package,field);
+			field=get_unemap_package_device_type_field(analysis->unemap_package);
+			set_Signal_drawing_package_device_type_field(analysis->signal_drawing_package,field);
+			field=get_unemap_package_channel_number_field(analysis->unemap_package);
+			set_Signal_drawing_package_channel_number_field(analysis->signal_drawing_package,field);
+			field=get_unemap_package_signal_field(analysis->unemap_package);
+			set_Signal_drawing_package_signal_field(analysis->signal_drawing_package,field);
+			field=get_unemap_package_channel_offset_field(analysis->unemap_package);
+			set_Signal_drawing_package_channel_offset_field(analysis->signal_drawing_package,field);
+			field=get_unemap_package_channel_gain_field(analysis->unemap_package);
+			set_Signal_drawing_package_channel_gain_field(analysis->signal_drawing_package,field);
+			field=get_unemap_package_signal_minimum_field(analysis->unemap_package);
+			set_Signal_drawing_package_signal_minimum_field(analysis->signal_drawing_package,field);
+			field=get_unemap_package_signal_maximum_field(analysis->unemap_package);
+			set_Signal_drawing_package_signal_maximum_field(analysis->signal_drawing_package,field);
+			field=get_unemap_package_signal_status_field(analysis->unemap_package);
+			set_Signal_drawing_package_signal_status_field(analysis->signal_drawing_package,field);
+			/* for the moment assuming only one signal per node, ie only one
+				signal_field */
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"analysis_read_signal_file. file_read_signal_FE_node_group failed ");
+		}
+#endif /* defined (UNEMAP_USE_NODES) */	
 		update_analysis_window_menu(analysis->window);
 		update_mapping_window_menu(analysis->mapping_window);
 		/* update the drawing areas */
@@ -2969,7 +2964,11 @@ signals.
 					XmNdialogTitle,&old_dialog_title,
 					NULL);
 				if ((signal_input_file=fopen(signal_file_name,"rb"))&&
-					read_signal_file(signal_input_file,&(analysis->rig)))
+					read_signal_file(signal_input_file,&(analysis->rig)
+#if defined (UNEMAP_USE_NODES)
+						,analysis->unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+						))
 				{
 					return_code=1;
 					rig=analysis->rig;
@@ -4397,7 +4396,11 @@ the user for the Neurosoft signal file.
 		/* clear the existing Neurosoft rig */
 		destroy_Rig(&neurosoft_rig);
 		/* read the rig configuration */
-		if (read_configuration_file(file_name,&neurosoft_rig))
+		if (read_configuration_file(file_name,&neurosoft_rig
+#if defined (UNEMAP_USE_NODES)			
+			,analysis->unemap_package
+#endif /* defined (UNEMAP_USE_NODES) */
+				)) 
 		{
 			/* prompt the user for the name of the signal file */
 			if (!(analysis->neurosoft_signal_file_data))
@@ -4605,7 +4608,11 @@ the user for the CardioMapp signal file.
 		/* clear the existing Neurosoft rig */
 		destroy_Rig(&cardiomapp_rig);
 		/* read the rig configuration */
-		if (read_configuration_file(file_name,&cardiomapp_rig))
+		if (read_configuration_file(file_name,&cardiomapp_rig
+#if defined (UNEMAP_USE_NODES)			
+			,analysis->unemap_package
+#endif /* defined (UNEMAP_USE_NODES) */
+			 ))
 		{
 			/* prompt the user for the name of the signal file */
 			if (!(analysis->cardiomapp_signal_file_data))
@@ -4912,8 +4919,8 @@ DESCRIPTION :
 				{
 					highlight--;
 					i=highlight-(devices=rig->devices);
-					while ((i>=0)&&(rig->current_region)&&
-						(rig->current_region!=(*highlight)->description->region))
+					while ((i>=0)&&(get_Rig_current_region(rig))&&
+						(get_Rig_current_region(rig)!=(*highlight)->description->region))
 					{
 						highlight--;
 						i--;
@@ -4922,8 +4929,8 @@ DESCRIPTION :
 					{
 						i=(rig->number_of_devices)-1;
 						highlight=devices+i;
-						while ((i>0)&&(rig->current_region)&&
-							(rig->current_region!=(*highlight)->description->region))
+						while ((i>0)&&(get_Rig_current_region(rig))&&
+							(get_Rig_current_region(rig)!=(*highlight)->description->region))
 						{
 							highlight--;
 							i--;
@@ -4966,8 +4973,8 @@ DESCRIPTION :
 						highlight--;
 						devices=rig->devices;
 						i=highlight-devices;
-						while ((i>0)&&(rig->current_region)&&
-							(rig->current_region!=(*highlight)->description->region))
+						while ((i>0)&&(get_Rig_current_region(rig))&&
+							(get_Rig_current_region(rig)!=(*highlight)->description->region))
 						{
 							highlight--;
 							i--;
@@ -5042,8 +5049,8 @@ DESCRIPTION :
 					devices=rig->devices;
 					highlight++;
 					i=(rig->number_of_devices)-(highlight-devices)-1;
-					while ((i>=0)&&(rig->current_region)&&
-						(rig->current_region!=(*highlight)->description->region))
+					while ((i>=0)&&(get_Rig_current_region(rig))&&
+						(get_Rig_current_region(rig)!=(*highlight)->description->region))
 					{
 						highlight++;
 						i--;
@@ -5052,8 +5059,8 @@ DESCRIPTION :
 					{
 						i=(rig->number_of_devices)-1;
 						highlight=devices;
-						while ((i>0)&&(rig->current_region)&&
-							(rig->current_region!=(*highlight)->description->region))
+						while ((i>0)&&(get_Rig_current_region(rig))&&
+							(get_Rig_current_region(rig)!=(*highlight)->description->region))
 						{
 							highlight++;
 							i--;
@@ -5096,8 +5103,8 @@ DESCRIPTION :
 						highlight++;
 						devices=rig->devices;
 						i=(rig->number_of_devices)-(highlight-devices)-1;
-						while ((i>0)&&(rig->current_region)&&
-							(rig->current_region!=(*highlight)->description->region))
+						while ((i>0)&&(get_Rig_current_region(rig))&&
+							(get_Rig_current_region(rig)!=(*highlight)->description->region))
 						{
 							highlight++;
 							i--;
@@ -5458,7 +5465,7 @@ set to automatic and reorder the devices if this is required.
 				{
 					/* clear the present markers */
 					signals_area= &(analysis->window->signals);
-					current_region=rig->current_region;
+					current_region=get_Rig_current_region(rig);
 					highlight=rig->devices;
 					highlight_number=0;
 					while (*highlight!=highlight_device)
@@ -5600,8 +5607,8 @@ set to automatic and reorder the devices if this is required.
 						sizeof(struct Device *),sort_devices_by_event_time);
 					/* update highlight */
 					if (highlight)
-					{
-						current_region=rig->current_region;
+					{						
+						current_region=get_Rig_current_region(rig);
 						highlight=rig->devices;
 						while (*highlight!=highlight_device)
 						{
@@ -5714,8 +5721,8 @@ set to automatic and reorder the devices if this is required.
 							sizeof(struct Device *),sort_devices_by_event_time);
 						/* update highlight */
 						if (highlight)
-						{
-							current_region=rig->current_region;
+						{							
+							current_region=get_Rig_current_region(rig);
 							highlight=rig->devices;
 							while (*highlight!=highlight_device)
 							{
@@ -5920,8 +5927,8 @@ Sets the order in which signals are displayed and edited to event.
 					sizeof(struct Device *),sort_devices_by_event_time);
 				/* update highlight */
 				if (highlight)
-				{
-					current_region=rig->current_region;
+				{					
+					current_region=get_Rig_current_region(rig);
 					device_number=0;
 					highlight=rig->devices;
 					while (*highlight!=highlight_device)
@@ -5990,8 +5997,8 @@ Sets the order in which signals are displayed and edited to channel.
 					sizeof(struct Device *),sort_devices_by_number);
 				/* update highlight */
 				if (highlight)
-				{
-					current_region=rig->current_region;
+				{					
+					current_region=get_Rig_current_region(rig);
 					device_number=0;
 					highlight=rig->devices;
 					while (*highlight!=highlight_device)
@@ -8372,8 +8379,8 @@ should be done as a callback from the trace_window.
 												number_of_rows=signals->number_of_rows;
 												number_of_columns=signals->number_of_columns;
 												device_number=0;
-												device=analysis->rig->devices;
-												current_region=analysis->rig->current_region;
+												device=analysis->rig->devices;												
+												current_region=get_Rig_current_region(analysis->rig);
 												for (i=(analysis->highlight)-device;i>0;
 													i--)
 												{
@@ -8642,8 +8649,8 @@ should be done as a callback from the trace_window.
 												number_of_rows=signals->number_of_rows;
 												number_of_columns=signals->number_of_columns;
 												device_number=0;
-												device=analysis->rig->devices;
-												current_region=analysis->rig->current_region;
+												device=analysis->rig->devices;											
+												current_region=get_Rig_current_region(analysis->rig);
 												for (i=(analysis->highlight)-device;i>0;
 													i--)
 												{
@@ -9272,8 +9279,8 @@ should be done as a callback from the trace_window.
 																		{
 																			device_number=0;
 																			device=analysis->rig->devices;
-																			current_region=
-																				analysis->rig->current_region;
+																			current_region=get_Rig_current_region(
+																				analysis->rig);
 																			for (i=(analysis->highlight)-device;i>0;
 																				i--)
 																			{
@@ -9519,7 +9526,7 @@ should be done as a callback from the trace_window.
 																				signals->signal_height);
 																			draw_signal(
 																				(struct FE_node *)NULL,
-																				(struct Draw_package *)NULL,
+																				(struct Signal_drawing_package *)NULL,
 																				highlight_device,
 																				SIGNAL_AREA_DETAIL,1,0,
 																				&start_analysis_interval,
@@ -9591,7 +9598,7 @@ should be done as a callback from the trace_window.
 																		map->maximum_value -= datum_change;
 																		map->minimum_value -= datum_change;
 																		map->contour_minimum -= datum_change;
-																		region_item=analysis->rig->region_list;
+																		region_item=get_Rig_region_list(analysis->rig);
 																		while (region_item)
 																		{
 																			if (interpolation_function=region_item->
@@ -9609,7 +9616,8 @@ should be done as a callback from the trace_window.
 																					f++;
 																				}
 																			}
-																			region_item=region_item->next;
+																			region_item=
+																				get_Region_list_item_next(region_item);
 																		}
 																		update_mapping_colour_or_auxili(mapping);
 																		if (SHOW_ELECTRODE_VALUES==
@@ -9847,8 +9855,9 @@ Duplicates the raw rig, except that
 	struct Device_list_item *device_item,**device_item_address,*device_list,
 		*raw_device_item;
 	struct Page_list_item **page_item_address,*raw_page_item;
-	struct Region *raw_region,*region;
-	struct Region_list_item *raw_region_item,*region_item,**region_item_address;
+	struct Region *raw_region,*region,*the_region;
+	struct Region_list_item *list,*raw_region_item,*region_item,**region_item_address,
+		*the_region_item;
 	struct Rig *rig;
 	struct Signal *signal;
 	struct Signal_buffer *raw_signal_buffer,*signal_buffer;
@@ -9860,7 +9869,11 @@ Duplicates the raw rig, except that
 	{
 		if (rig=create_Rig(raw_rig->name,raw_rig->monitoring,raw_rig->experiment,0,
 			(struct Device **)NULL,(struct Page_list_item *)NULL,0,
-			(struct Region_list_item *)NULL,(struct Region *)NULL))
+			(struct Region_list_item *)NULL,(struct Region *)NULL
+#if defined (UNEMAP_USE_NODES)
+			,get_Rig_unemap_package(raw_rig)
+#endif /* defined (UNEMAP_USE_NODES) */
+			))      
 		{
 			if (raw_rig->signal_file_name)
 			{
@@ -9919,32 +9932,36 @@ Duplicates the raw rig, except that
 					} break;
 				}
 				/* duplicate the regions */
-				rig->region_list=(struct Region_list_item *)NULL;
-				rig->current_region=(struct Region *)NULL;
-				rig->number_of_regions=0;
-				region_item_address= &(rig->region_list);
-				raw_region_item=raw_rig->region_list;
+				set_Rig_region_list(rig,(struct Region_list_item *)NULL);
+				set_Rig_current_region(rig,(struct Region *)NULL);
+				rig->number_of_regions=0;				
+				list=get_Rig_region_list(rig);
+				region_item_address=&list;
+				raw_region_item=get_Rig_region_list(raw_rig);
 				while (rig&&raw_region_item)
 				{
-					if (raw_region=raw_region_item->region)
+					if (raw_region=get_Region_list_item_region(raw_region_item))
 					{
 						if ((*region_item_address=create_Region_list_item(create_Region(
-							raw_region->name,raw_region->type,raw_region->number,0),
-							(struct Region_list_item *)NULL))&&
-							((*region_item_address)->region))
+							raw_region->name,raw_region->type,raw_region->number,0
+#if defined (UNEMAP_USE_NODES)
+							,get_Rig_unemap_package(raw_rig)
+#endif /* defined (UNEMAP_USE_NODES) */
+							),(struct Region_list_item *)NULL))&&
+							(the_region=get_Region_list_item_region(*region_item_address)))
 						{
 							switch (raw_region->type)
 							{
 								case SOCK:
 								{
-									((*region_item_address)->region->properties).sock.focus=
+									(the_region->properties).sock.focus=
 										(raw_region->properties).sock.focus;
 									if (raw_linear_transformation=
 										(raw_region->properties).sock.linear_transformation)
 									{
 										if (ALLOCATE(linear_transformation,Linear_transformation,1))
 										{
-											((*region_item_address)->region->properties).sock.
+											(the_region->properties).sock.
 												linear_transformation=linear_transformation;
 											linear_transformation->translate_x=
 												raw_linear_transformation->translate_x;
@@ -9973,13 +9990,14 @@ Duplicates the raw rig, except that
 							}
 							if (rig)
 							{
-								if (raw_region==raw_rig->current_region)
+								if (raw_region==get_Rig_current_region(raw_rig))
 								{
-									rig->current_region=(*region_item_address)->region;
+									set_Rig_current_region(rig,the_region);
 								}
-								region_item_address= &((*region_item_address)->next);
+								the_region_item=get_Region_list_item_next(*region_item_address);
+								region_item_address= &(the_region_item);
 								(rig->number_of_regions)++;
-								raw_region_item=raw_region_item->next;
+								raw_region_item=get_Region_list_item_next(raw_region_item);
 							}
 						}
 						else
@@ -10041,11 +10059,12 @@ Duplicates the raw rig, except that
 										if ((*raw_device)->description->region)
 										{
 											region_number=(*raw_device)->description->region->number;
-											region_item=rig->region_list;
-											while (region_item&&(region=region_item->region)&&
+											region_item=get_Rig_region_list(rig);
+											while (region_item&&(region=
+												get_Region_list_item_region(region_item))&&
 												(region_number!=region->number))
 											{
-												region_item=region_item->next;
+												region_item=get_Region_list_item_next(region_item);
 											}
 											if (!region_item)
 											{
@@ -10507,8 +10526,8 @@ value at the potential time.
 			(buffer=get_Device_signal_buffer(*device)))
 		{
 			potential_time=analysis->potential_time;
-			buffer_offset=buffer->number_of_signals;
-			current_region=rig->current_region;
+			buffer_offset=buffer->number_of_signals;			
+			current_region=get_Rig_current_region(rig);
 			/* run through all the signals */
 			for (i=rig->number_of_devices;i>0;i--)
 			{
@@ -10623,8 +10642,8 @@ same as the range for the current signal.
 			channel_offset=highlight->channel->offset;
 			minimum=channel_gain*((float)(highlight->signal_minimum)-channel_offset);
 			maximum=channel_gain*((float)(highlight->signal_maximum)-channel_offset);
-			/* run through all the signals */
-			current_region=rig->current_region;
+			/* run through all the signals */			
+			current_region=get_Rig_current_region(rig);
 			for (i=rig->number_of_devices;i>0;i--)
 			{
 				/* for the electrodes in the current region */
@@ -10689,7 +10708,11 @@ Reads in a signals file and adds the signals to the devices in the current rig.
 			temp_rig=(struct Rig *)NULL;
 			input_file=(FILE *)NULL;
 			if ((input_file=fopen(file_name,"rb"))&&
-				read_signal_file(input_file,&(temp_rig)))
+				read_signal_file(input_file,&(temp_rig)
+#if defined (UNEMAP_USE_NODES)
+			 ,analysis->unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+				))
 			{
 				/* assume that analysis is not done on overlay signals, so don't read
 					the event detection settings (see analysis_read_signal_file) */
@@ -11201,8 +11224,8 @@ DESCRIPTION :
 					{
 						signals= &(analysis->window->signals);
 						/* determine the number of the highlighted signal */
-						device=rig->devices;
-						current_region=rig->current_region;
+						device=rig->devices;						
+						current_region=get_Rig_current_region(rig);
 						device_number=0;
 						for (i=highlight-device;i>0;i--)
 						{
@@ -11294,8 +11317,8 @@ DESCRIPTION :
 					{
 						signals= &(analysis->window->signals);
 						/* determine the number of the highlighted signal */
-						device=rig->devices;
-						current_region=rig->current_region;
+						device=rig->devices;						
+						current_region=get_Rig_current_region(rig);
 						device_number=0;
 						for (i=highlight-device;i>0;i--)
 						{
@@ -13101,8 +13124,8 @@ else
 		(*(analysis->rig->devices))&&
 		(buffer=get_Device_signal_buffer(*(analysis->rig->devices)))&&
 		(device||device_number||electrode_number||auxiliary_number))
-	{
-		current_region=analysis->rig->current_region;
+	{		
+		current_region=get_Rig_current_region(analysis->rig);
 		if (analysis->window)
 		{
 			signals= &(analysis->window->signals);
@@ -13525,22 +13548,22 @@ analysis work area.
 				}
 				if (!found)
 				{
-					region_item=rig->region_list;
+					region_item=get_Rig_region_list(rig);
 					while (region_item&&(selected_region!= *region))
 					{
-						region_item=region_item->next;
+						region_item=get_Region_list_item_next(region_item);
 						region++;
 					}
 					if (region_item)
 					{
 						found=1;
 						/* update the analysis rig */
-						current_region=region_item->region;
+						current_region=get_Region_list_item_region(region_item);
 					}
 				}
 				if (found)
-				{
-					rig->current_region=current_region;
+				{					
+					set_Rig_current_region(rig,current_region);
 					mapping->current_region=selected_region;
 					/* update the highlight device */
 					if ((*(analysis->highlight))&&(current_region)&&
@@ -14242,10 +14265,7 @@ Creates the windows associated with the analysis work area.
 		)
 	{
 		analysis->unemap_package=package;
-		analysis->draw_package=(struct Draw_package *)NULL;
-#if defined (UNEMAP_USE_NODES)
-		analysis->rig_node_group=(struct GROUP(FE_node) *)NULL;
-#endif /* defined (UNEMAP_USE_NODES) */
+		analysis->signal_drawing_package=(struct Signal_drawing_package *)NULL;
 		analysis->activation=activation;
 		analysis->map_type=NO_MAP_FIELD;
 		analysis->map_type_changed=0;
@@ -14362,7 +14382,7 @@ Creates the windows associated with the analysis work area.
 						/* create the analysis window */
 						if (create_Analysis_window(&(analysis->window),activation,
 							analysis->window_shell,&(analysis->rig),
-							&(analysis->rig_node_group),&(analysis->draw_package),
+							&(analysis->signal_drawing_package),
 							&(analysis->highlight),&(analysis->datum),
 							&(analysis->event_number),&(analysis->number_of_events),
 							&(analysis->potential_time),&(analysis->detection),

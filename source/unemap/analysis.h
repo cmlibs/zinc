@@ -184,7 +184,7 @@ the <objective_values>.
 ==============================================================================*/
 
 int draw_signal(struct FE_node *device_node,
-	struct Draw_package *draw_package,struct Device *device,
+	struct Signal_drawing_package *signal_drawing_package,struct Device *device,
 	enum Signal_detail detail,int number_of_data_intervals,
 	int current_data_interval,int *first_data,int *last_data,int x_pos,int y_pos,
 	int width,int height,Pixmap pixel_map,int *axes_left,int *axes_top,

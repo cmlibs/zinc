@@ -144,11 +144,21 @@ Reads in a rig configuration from a Bard electrode file.
 				number_of_devices=number_of_electrodes+8;
 				/* allocate storage for the rig */
 				if ((ALLOCATE(device,struct Device *,number_of_devices))&&
-					(region=create_Region("Bard",PATCH,0,number_of_devices))&&
+					(region=create_Region("Bard",PATCH,0,number_of_devices
+#if defined (UNEMAP_USE_NODES)
+						/*??JW do we need to pass this down from above?*/
+						,(struct Unemap_package *)NULL
+#endif /* defined (UNEMAP_USE_NODES) */
+					))&&
 					(region_item=create_Region_list_item(region,
 					(struct Region_list_item *)NULL))&&(rig=create_Rig("Bard",
 					MONITORING_OFF,EXPERIMENT_OFF,number_of_devices,device,
-					(struct Page_list_item *)NULL,1,region_item,region)))
+					(struct Page_list_item *)NULL,1,region_item,region
+#if defined (UNEMAP_USE_NODES)
+						/*??JW do we need to pass this down from above?*/
+						,(struct Unemap_package *)NULL
+#endif /* defined (UNEMAP_USE_NODES) */
+					)))
 				{
 					/* read in the electrode information */
 					return_code=1;
