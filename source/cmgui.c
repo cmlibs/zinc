@@ -1730,7 +1730,7 @@ Main program for the CMISS Graphical User Interface
 									set_display_message_function(WARNING_MESSAGE,
 										display_warning_message,command_window);
 #if defined (PERL_INTERPRETER)
-									/*redirect_interpreter_output(&return_code);*/
+									redirect_interpreter_output(&return_code);
 #endif /* defined (PERL_INTERPRETER) */
 								}
 
