@@ -2844,6 +2844,7 @@ printf("deallocated curves\n");
 			for (i=n_cells;i>0;i--)
 			{
 				DEACCESS(Graphical_material)(&((*cell_list)->material));
+#if defined (OLD_CODE)
 				if ((*cell_list)->env_map)
 				{
 					for (j=0;j<6;j++)
@@ -2855,6 +2856,8 @@ printf("deallocated curves\n");
 						}
 					}
 				}
+#endif /* defined (OLD_CODE) */
+				DEACCESS(Environment_map)(&(*cell_list)->env_map);
 				DEALLOCATE(*cell_list);
 				cell_list++;
 			}
@@ -3170,6 +3173,7 @@ printf("isovalue = %lf\n",texture->isovalue);
 							texture->closed_surface=0;
 							texture->decimation=0;
 							/* load any curves if present */
+							temp_string = (char *)NULL;
 							while (read_string(in_file,"s",&temp_string)&&!feof(in_file))
 							{
 #if defined (DEBUG)
@@ -3215,6 +3219,7 @@ printf("number_of_env_maps=%d\n",number_of_env_maps);
 												i++;
 											}
 										}
+										DEALLOCATE(index_to_env_map);
 									}
 								}
 								if (0==strcmp(temp_string,"Projection_centres"))
@@ -3235,14 +3240,15 @@ printf("number_of_env_maps=%d\n",number_of_env_maps);
 								if (0==strcmp(temp_string,"Active_nodes"))
 								{
 #if defined (DEBUG)
-/*???debug */
-printf("Reading active nodes\n");
+									/*???debug */
+									printf("Reading active nodes\n");
 #endif /* defined (DEBUG) */
 									do
 									{
 										fscanf(in_file, "%d", &i);
 										fscanf(in_file, "%lf", &(node_list[i]->scalar_value));
 										node_list[i]->active = 1;
+										DEALLOCATE(temp_string);
 										read_string(in_file,"s",&temp_string);
 									} while (0!=strcmp(temp_string,"End_of_active_nodes"));
 								}
@@ -3445,6 +3451,10 @@ printf("Reading nodal values\n");
 printf("generating initial isosurface\n");
 							generate_isosurface(texture);
 #endif /* defined (OLD_CODE) */
+							if (temp_string)
+							{
+								DEALLOCATE(temp_string);
+							}
 							return_code=1;
 						}
 						else
@@ -3578,6 +3588,7 @@ printf("deallocated curves\n");
 			for (i=n_cells;i>0;i--)
 			{
 				DEACCESS(Graphical_material)(&((*cell_list)->material));
+#if defined (OLD_CODE)
 				if ((*cell_list)->env_map)
 				{
 					for (j=0;j<6;j++)
@@ -3589,6 +3600,8 @@ printf("deallocated curves\n");
 						}
 					}
 				}
+#endif /* defined (OLD_CODE) */
+				DEACCESS(Environment_map)(&(*cell_list)->env_map);
 				DEALLOCATE(*cell_list);
 				cell_list++;
 			}
