@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 20 August 2003
+LAST MODIFIED : 3 October 2003
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -5004,7 +5004,7 @@ DESCRIPTION :
 					battery_good_input_line_UnEmap2vx,&state))&&!state)
 				{
 					display_message(INFORMATION_MESSAGE,
-						"Setting power off because of BattGood line");
+						"Setting power off because of BattGood line\n");
 					unemap_set_power(0);
 				}
 			}
