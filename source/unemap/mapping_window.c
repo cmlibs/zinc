@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 6 May 2002
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -126,7 +126,7 @@ Finds the id of the mapping map button.
 
 static void mapping_window_update_time_limits(struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2002
+LAST MODIFIED : 6 May 2002
 
 DESCRIPTION :
 Sets the minimum and maximum of the time_keeper to relate to the current map
@@ -147,15 +147,17 @@ Sets the minimum and maximum of the time_keeper to relate to the current map
 			{
 				case POTENTIAL:
 				{
-					switch(map->interpolation_type)
+					switch (map->interpolation_type)
 					{
 						case BICUBIC_INTERPOLATION:
-						{	
+						{
 							Time_keeper_set_minimum(Time_object_get_time_keeper(
-								mapping->potential_time_object), map->start_time/1000.0);
+								mapping->potential_time_object),(map->start_time)/1000.0-
+								0.5/(buffer->frequency));
 							Time_keeper_set_maximum(Time_object_get_time_keeper(
-								mapping->potential_time_object), map->end_time/1000.0);
-						}break;
+								mapping->potential_time_object),(map->end_time)/1000.0+
+								0.5/(buffer->frequency));
+						} break;
 						case NO_INTERPOLATION:
 						case DIRECT_INTERPOLATION:
 						default:
@@ -168,19 +170,40 @@ Sets the minimum and maximum of the time_keeper to relate to the current map
 								mapping->potential_time_object),
 								(float)buffer->times[*(map->end_search_interval)]/
 								buffer->frequency);
-						}break;					
-					}/*switch(map->interpolation_type)*/
+						} break;
+					}/*switch (map->interpolation_type)*/
 				} break;
 				case SINGLE_ACTIVATION:
 				{
+#if defined (NEW_CODE)
+/*???DB.  Shouldn't start_time, end_time and number_of_frames be updated? */
+					if (map->drawing_information)
+					{
+						map->number_of_frames=
+							map->drawing_information->number_of_spectrum_colours;
+					}
+					else
+					{
+						map->number_of_frames=1;
+						display_message(ERROR_MESSAGE,"mapping_window_update_time_limits.  "
+							"Missing map drawing information");
+					}
+					map->start_time=(map->minimum_value)/1000.0+
+						(float)(buffer->times[*(map->datum)])/(buffer->frequency);
+					map->end_time=(map->maximum_value)/1000.0+
+						(float)(buffer->times[*(map->datum)])/(buffer->frequency);
 					Time_keeper_set_minimum(Time_object_get_time_keeper(
-						mapping->potential_time_object),
-						map->minimum_value / 1000.0 + (float)buffer->times[*(map->datum)]
-						/ buffer->frequency);
+						mapping->potential_time_object),map->start_time);
 					Time_keeper_set_maximum(Time_object_get_time_keeper(
-						mapping->potential_time_object),
-						map->maximum_value / 1000.0 + (float)buffer->times[*(map->datum)]
-						/ buffer->frequency );
+						mapping->potential_time_object),map->end_time);
+#else /* defined (NEW_CODE) */
+					Time_keeper_set_minimum(Time_object_get_time_keeper(
+						mapping->potential_time_object),(map->minimum_value)/1000.0+
+						((float)(buffer->times)[*(map->datum)]-0.5)/(buffer->frequency));
+					Time_keeper_set_maximum(Time_object_get_time_keeper(
+						mapping->potential_time_object),(map->maximum_value)/1000.0+
+						((float)(buffer->times)[*(map->datum)]+0.5)/(buffer->frequency));
+#endif /* defined (NEW_CODE) */
 				} break;
 				default:
 				{
@@ -199,19 +222,19 @@ Sets the minimum and maximum of the time_keeper to relate to the current map
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"mapping_window_update_time_limits.  Invalid_argurment(s)");
+			"mapping_window_update_time_limits.  Invalid argument(s)");
 	}
 	LEAVE;
 } /* mapping_window_update_time_limits */
 
 static int update_movie_frames_information(struct Mapping_window *mapping,
-int *recalculate,	char *map_settings_changed)
+	int *recalculate,char *map_settings_changed)
 /*******************************************************************************
 LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
-For for map in <mapping>, dealing with precalculated movies, update the number 
-of frames, map dialog information, etc. and set <recalculate> 
+For for map in <mapping>, dealing with precalculated movies, update the number
+of frames, map dialog information, etc. and set <recalculate>
 <map_settings_changed>
 ==============================================================================*/
 {
@@ -226,7 +249,7 @@ of frames, map dialog information, etc. and set <recalculate>
 	map=(struct Map *)NULL;
 	map_dialog=(struct Map_dialog *)NULL;
 	buffer=(struct Signal_buffer *)NULL;
-	if(mapping&&(map_dialog=mapping->map_dialog)&&(map=mapping->map))
+	if (mapping&&(map_dialog=mapping->map_dialog)&&(map=mapping->map))
 	{
 		return_code=1;
 		XtVaGetValues((map_dialog->animation).number_of_frames_text,
@@ -344,7 +367,7 @@ of frames, map dialog information, etc. and set <recalculate>
 		if (number_of_frames!=map->number_of_frames)
 		{
 			map->number_of_frames=number_of_frames;
-		}	
+		}
 		/* no animation if only one frame*/
 		if (1<number_of_frames)
 		{
@@ -375,12 +398,14 @@ of frames, map dialog information, etc. and set <recalculate>
 		map_dialog->frame_number=frame_number;
 	}
 	else
-	{	
-		display_message(ERROR_MESSAGE,"update_movie_frames_information.  Invalid_argurment(s)");
+	{
+		display_message(ERROR_MESSAGE,"update_movie_frames_information.  "
+			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	
+	return (return_code);
 }/* update_movie_frames_information */
 
 int mapping_window_stop_time_keeper(struct Mapping_window *mapping)
@@ -397,19 +422,20 @@ If the <mapping> has a time keeper, stop it .
 	ENTER(mapping_window_stop_time_keeper);
 	time_keeper=(struct Time_keeper *)NULL;
 	return_code=0;
-	if(mapping)
+	if (mapping)
 	{
 		return_code=1;
-	
+
 		/*stop the time keeper and get rid of the editor widget*/
-		if((mapping->potential_time_object)&&
+		if ((mapping->potential_time_object)&&
 			(time_keeper=Time_object_get_time_keeper(mapping->potential_time_object)))
 		{
-			Time_keeper_stop(time_keeper);						
-		}				
+			Time_keeper_stop(time_keeper);
+		}
 	}
 	LEAVE;
-	return(return_code);
+	
+	return (return_code);
 }/* mapping_window_stop_time_keeper */
 
 int mapping_window_kill_time_keeper_editor(struct Mapping_window *mapping)
@@ -422,14 +448,14 @@ If the <mapping> has a time keeper, stop it and destroy it's editor widget.
 {
 	int return_code;
 
-	ENTER(mapping_window_kill_time_keeper_editor);	
-	if(mapping)
+	ENTER(mapping_window_kill_time_keeper_editor);
+	if (mapping)
 	{
 		return_code=1;
-		if(mapping->time_editor_dialog)
+		if (mapping->time_editor_dialog)
 		{
 			/*stop the time keeper and get rid of the editor widget*/
-			mapping_window_stop_time_keeper(mapping);			
+			mapping_window_stop_time_keeper(mapping);
 			time_editor_dialog_destroy(mapping->time_editor_dialog);
 		}
 	}
@@ -440,7 +466,8 @@ If the <mapping> has a time keeper, stop it and destroy it's editor widget.
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	
+	return (return_code);
 }/* mapping_window_kill_time_keeper_editor */
 
 static void update_map_from_dialog(Widget widget,XtPointer mapping_window,
@@ -504,9 +531,9 @@ necessary.
 		if (option_widget==map_dialog->spectrum.type_option.none)
 		{
 			if (map->colour_option!=HIDE_COLOUR)
-			{				
+			{
 				map_settings_changed=1;
-				map->colour_option=HIDE_COLOUR;				
+				map->colour_option=HIDE_COLOUR;
 			}
 		}
 		else
@@ -539,8 +566,8 @@ necessary.
 			}
 			if (spectrum_simple_type != Spectrum_get_simple_type(spectrum))
 			{
-#if defined (UNEMAP_USE_3D)				
-				if(spectrum_manager=get_map_drawing_information_spectrum_manager
+#if defined (UNEMAP_USE_3D)
+				if (spectrum_manager=get_map_drawing_information_spectrum_manager
 					(drawing_information))
 				{
 					if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
@@ -555,23 +582,23 @@ necessary.
 #endif /* defined (UNEMAP_USE_3D) */
 							Spectrum_set_simple_type(spectrum_to_be_modified_copy,
 								spectrum_simple_type);
-							map_settings_changed = 1;	
+							map_settings_changed = 1;
 							recalculate=2;
-#if defined (UNEMAP_USE_3D)	
+#if defined (UNEMAP_USE_3D)
 							MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
 								spectrum_to_be_modified_copy,spectrum_manager);
-							DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+							DESTROY(Spectrum)(&spectrum_to_be_modified_copy);
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								" update_map_from_dialog. Could not create spectrum copy.");				
+								" update_map_from_dialog. Could not create spectrum copy.");
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							" update_map_from_dialog. Spectrum is not in manager!");		
+							" update_map_from_dialog. Spectrum is not in manager!");
 					}
 				}
 				else
@@ -601,13 +628,13 @@ necessary.
 			}
 		}
 		if (map->interpolation_type!=interpolation_type)
-		{		
+		{
 			/*time keeper editor may now be invalid, eg when moving from direct to*/
 			/* bicubic maps, so get rid of it ??JW may wish to decied to leave it for some */
 			/*transitions of interpolation_type and map->type*/
-			mapping_window_kill_time_keeper_editor(mapping);					
+			mapping_window_kill_time_keeper_editor(mapping);
 			map->interpolation_type=interpolation_type;
-			map_settings_changed=1;			
+			map_settings_changed=1;
 			if (recalculate<2)
 			{
 				recalculate=2;
@@ -698,10 +725,10 @@ necessary.
 				{
 					contour_thickness=VARIABLE_THICKNESS;
 				}
-			}		
+			}
 			map->contour_thickness=contour_thickness;
 			map_settings_changed=1;
-			recalculate=2;		
+			recalculate=2;
 		}
 		value_string=(char *)NULL;
 		XtVaGetValues((map_dialog->range.maximum_value),
@@ -853,7 +880,7 @@ necessary.
 			{
 				if (option_widget==map_dialog->electrodes.marker_type.square)
 				{
-					electrodes_marker_type=SQUARE_ELECTRODE_MARKER;					
+					electrodes_marker_type=SQUARE_ELECTRODE_MARKER;
 				}
 				else
 				{
@@ -978,28 +1005,28 @@ necessary.
 		}
 		if (POTENTIAL== *(map->type))
 		{
-			switch(map->interpolation_type)
+			switch (map->interpolation_type)
 			{
 				case BICUBIC_INTERPOLATION:
-				{				
+				{
 					update_movie_frames_information(mapping,&recalculate,
-						&map_settings_changed);					
-				}break; /*case BICUBIC_INTERPOLATION:*/
+						&map_settings_changed);
+				} break; /*case BICUBIC_INTERPOLATION:*/
 				case NO_INTERPOLATION:
 				case DIRECT_INTERPOLATION:
 				default:
 				{
-					if(ELECTRICAL_IMAGING==(*map->analysis_mode))
-					{	
+					if (ELECTRICAL_IMAGING==(*map->analysis_mode))
+					{
 						XtSetSensitive(mapping->animate_button,False);
 						XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
 						XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
-						XtSetSensitive(mapping->print_menu.animate_jpg_button,False);					
+						XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
 					}
 					else
 					{
-						if(map->projection_type==THREED_PROJECTION)
-						{	
+						if (map->projection_type==THREED_PROJECTION)
+						{
 							/*not sure what we're going to do with 3D movies yet*/
 							/*for now make them behave like bicubic 2D movies */
 							update_movie_frames_information(mapping,&recalculate,
@@ -1012,8 +1039,8 @@ necessary.
 							XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
 							XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
 						}
-					}				
-				}break;
+					}
+				} break;
 			}/*switch (map->interpolation_type) */
 		}	/* if (POTENTIAL== *(map->type)) */
 		if (MULTIPLE_ACTIVATION== *(map->type))
@@ -1034,21 +1061,21 @@ necessary.
 			}
 		}
 		if (map_settings_changed)
-		{	
+		{
 			/* there's more than one map, so we'll need to recalculate them */
-			if(*map->first_eimaging_event&&
+			if (*map->first_eimaging_event&&
 					(ELECTRICAL_IMAGING==*map->analysis_mode))
 			{
 				recalculate=2;
-			}	
-#if defined (UNEMAP_USE_3D)		
+			}
+#if defined (UNEMAP_USE_3D)
 			set_map_drawing_information_electrodes_accepted_or_rejected(
 				map->drawing_information,1);
 #endif
 			ensure_map_projection_type_matches_region_type(map);
 			update_mapping_drawing_area(mapping,recalculate);
 			update_mapping_colour_or_auxili(mapping);
-			mapping_window_update_time_limits(mapping);			
+			mapping_window_update_time_limits(mapping);
 			/*the time can have changed so update the time_keeper*/
 			time_keeper=Time_object_get_time_keeper(mapping->potential_time_object);
 			Time_keeper_request_new_time(time_keeper,map->start_time/1000.0);
@@ -1121,11 +1148,11 @@ DESCRIPTION :
 Dims the map dialog electrode label menu if we've hidden the electrode markers,
 as if not showinf markers, not showing labels either.
 ==============================================================================*/
-{			
+{
 	struct Map_dialog *map_dialog;
 	struct Mapping_window *mapping;
 	Widget option_widget;
-	ENTER(update_dialog_elec_options);	
+	ENTER(update_dialog_elec_options);
 	map_dialog=(struct Map_dialog *)NULL;
 	mapping=(struct Mapping_window *)NULL;
 	USE_PARAMETER(call_data);
@@ -1135,11 +1162,11 @@ as if not showinf markers, not showing labels either.
 	{
 		XtVaGetValues(map_dialog->electrodes.marker_type_menu,XmNmenuHistory,
 			&option_widget,NULL);
-		if(option_widget==map_dialog->electrodes.marker_type.none)
+		if (option_widget==map_dialog->electrodes.marker_type.none)
 		{
 			/* If hiding the marker, hiding the label too, so dim the label select*/
 			XtSetSensitive(map_dialog->electrodes.label_menu,False);
-		}		
+		}
 		else
 		{
 			XtSetSensitive(map_dialog->electrodes.label_menu,True);
@@ -1298,7 +1325,7 @@ Finds the id of the interactive_tool_form
 		mapping->map3d_interactive_tool_form= *widget_id;
 #else
 		USE_PARAMETER(widget_id);
-		USE_PARAMETER(mapping);	
+		USE_PARAMETER(mapping);
 #endif /* defined (UNEMAP_USE_3D) */
 	}
 	else
@@ -1324,8 +1351,8 @@ Finds the id of the viewing
 	USE_PARAMETER(call_data);
 	if (mapping=(struct Mapping_window *)mapping_window)
 	{
-#if defined (UNEMAP_USE_3D)	
-		mapping->map3d_viewing_form= *widget_id;				
+#if defined (UNEMAP_USE_3D)
+		mapping->map3d_viewing_form= *widget_id;
 #else
 		USE_PARAMETER(widget_id);
 		USE_PARAMETER(mapping);
@@ -1484,9 +1511,12 @@ Draws a frame in the activation map animation.
 					XStoreColors(display,colour_map,spectrum_rgb,
 						number_of_spectrum_colours);
 					/* show the map boundary */
-					colour.pixel=drawing_information->boundary_colour;
-					colour.flags=DoRed|DoGreen|DoBlue;
-					XStoreColor(display,colour_map,&colour);
+					if (drawing_information->boundary_colour)
+					{
+						colour.pixel=drawing_information->boundary_colour;
+						colour.flags=DoRed|DoGreen|DoBlue;
+						XStoreColor(display,colour_map,&colour);
+					}
 				}
 				(map->activation_front)++;
 				if (map->activation_front<number_of_spectrum_colours)
@@ -1504,8 +1534,8 @@ Draws a frame in the activation map animation.
 						update_mapping_colour_or_auxili(mapping);
 					}
 					else
-					{					
-						(void)update_colour_map_unemap(map,drawing);		
+					{
+						(void)update_colour_map_unemap(map,drawing);
 					}
 				}
 			}
@@ -1538,7 +1568,7 @@ Draws a frame in the activation map animation.
 			{
 				if (POTENTIAL== *(map->type))
 				{
-					switch(map->interpolation_type)
+					switch (map->interpolation_type)
 					{
 						case BICUBIC_INTERPOLATION:
 						{
@@ -1547,8 +1577,9 @@ Draws a frame in the activation map animation.
 							if (map->sub_map_number<map->number_of_sub_maps)
 							{
 								(void)XtAppAddTimeOut(
-									mapping->user_interface->application_context,(long unsigned)100,
-									draw_activation_animation_frame,mapping_window);
+									mapping->user_interface->application_context,
+									(long unsigned)100,draw_activation_animation_frame,
+									mapping_window);
 							}
 							else
 							{
@@ -1557,7 +1588,7 @@ Draws a frame in the activation map animation.
 								XtSetSensitive(mapping->animate_button,True);
 								update_mapping_drawing_area(mapping,0);
 							}
-						}break;
+						} break;
 						case NO_INTERPOLATION:
 						case DIRECT_INTERPOLATION:
 						default:
@@ -1569,8 +1600,9 @@ Draws a frame in the activation map animation.
 							if (*(map->potential_time)< *(map->end_search_interval))
 							{
 								(void)XtAppAddTimeOut(
-									mapping->user_interface->application_context,(long unsigned)10,
-									draw_activation_animation_frame,mapping_window);
+									mapping->user_interface->application_context,
+									(long unsigned)10,draw_activation_animation_frame,
+									mapping_window);
 							}
 							else
 							{
@@ -1581,8 +1613,8 @@ Draws a frame in the activation map animation.
 								update_mapping_colour_or_auxili(mapping);
 								/*???DB.  What about the trace window ? */
 							}
-						}break;
-					}/*switch(map->interpolation_type) */
+						} break;
+					}/*switch (map->interpolation_type) */
 				}/* if (POTENTIAL== *(map->type)) */
 			}
 		}
@@ -1640,33 +1672,33 @@ Starts the activation map animation.
 					case POTENTIAL:
 					{
 						map->activation_front= 0;
-						switch(map->interpolation_type)
+						switch (map->interpolation_type)
 						{
 							case BICUBIC_INTERPOLATION:
 							{
 								/* Jump to the start of the animated sequence */
 								Time_keeper_request_new_time(time_keeper,
 									map->start_time/1000.0);
-							}break;
+							} break;
 							case NO_INTERPOLATION:
 							case DIRECT_INTERPOLATION:
 							default:
-							{											
+							{
 								Time_keeper_request_new_time(time_keeper,
-									map->start_time/1000.0);					
-							}break;
+									map->start_time/1000.0);
+							} break;
 						}/* map->interpolation_type */
 					} break;
 					case SINGLE_ACTIVATION:
-					{				 
-						map->activation_front= 0;
+					{
+						map->activation_front=0;
 						Time_keeper_request_new_time(time_keeper,
-							map->minimum_value / 1000.0 + (float)buffer->times[*(map->datum)]
-							/ buffer->frequency);
+							(map->minimum_value)/1000.0+
+							(float)(buffer->times[*(map->datum)])/(buffer->frequency));
 					} break;
 					case MULTIPLE_ACTIVATION:
 					{
-						map->activation_front= *(map->datum);		
+						map->activation_front= *(map->datum);
 						Time_keeper_request_new_time(time_keeper,
 							(float)buffer->times[*(map->start_search_interval)]/
 							buffer->frequency);
@@ -1711,7 +1743,6 @@ Starts the activation map animation.
 			}
 			/* only one animation at a time */
 			XtSetSensitive(mapping->animate_button,False);
-
 			draw_activation_animation_frame(mapping_window,(XtIntervalId *)NULL);
 		}
 	}
@@ -1813,7 +1844,7 @@ Creates a new rig using the values specified in the setup dialog.
 				region_type,MONITORING_OFF,EXPERIMENT_OFF,setup->number_of_rows,
 				number_in_row,setup->number_of_regions,
 				setup->number_of_auxiliary_devices,30./*??? enter focus ? */
-#if defined (UNEMAP_USE_3D)		
+#if defined (UNEMAP_USE_3D)
 				,mapping->map->unemap_package
 #endif /* defined (UNEMAP_USE_3D) */
 					)))
@@ -1912,10 +1943,10 @@ the mapping_area of the <mapping_window>.
 	ENTER(Mapping_window_make_drawing_area_2d);
 	if (mapping_window&&mapping_window->mapping_area)
 	{
-#if defined (UNEMAP_USE_3D)			
+#if defined (UNEMAP_USE_3D)
 		XtUnmanageChild(mapping_window->mapping_area_3d);
-#endif /* defined (UNEMAP_USE_3D) */			
-		XtManageChild(mapping_window->mapping_area_2d);		
+#endif /* defined (UNEMAP_USE_3D) */
+		XtManageChild(mapping_window->mapping_area_2d);
 		return_code=1;
 	}
 	else
@@ -1951,18 +1982,18 @@ toolbar to match the selection.
 		{
 			mapping_window->interactive_tool=interactive_tool;
 			if (interactive_tool == mapping_window->transform_tool)
-			{				
+			{
 				Scene_viewer_set_input_mode(mapping_window->scene_viewer,
-					SCENE_VIEWER_TRANSFORM);			
+					SCENE_VIEWER_TRANSFORM);
 				interactive_tool=mapping_window->transform_tool;
 			}
 			else
 			{
 				Scene_viewer_set_input_mode(mapping_window->scene_viewer,
-					SCENE_VIEWER_SELECT);			
-			}		
+					SCENE_VIEWER_SELECT);
+			}
 			Scene_viewer_set_interactive_tool(mapping_window->scene_viewer,
-				interactive_tool);		
+				interactive_tool);
 			return_code=1;
 		}
 		else
@@ -2031,9 +2062,9 @@ the mapping_area of the <mapping_window>.
 	if (mapping_window&&mapping_window->mapping_area&&
 		(unemap_package=mapping_window->map->unemap_package)&&
 		(drawing_information=mapping_window->map->drawing_information))
-	{	 
-		XtUnmanageChild(mapping_window->mapping_area_2d);				
-		map_drawing_information_make_map_scene(drawing_information,unemap_package);	
+	{
+		XtUnmanageChild(mapping_window->mapping_area_2d);
+		map_drawing_information_make_map_scene(drawing_information,unemap_package);
 		if (!mapping_window->scene_viewer)
 		{
 			mapping_window->scene_viewer=
@@ -2206,35 +2237,35 @@ new rig.
 ==============================================================================*/
 {
 	int return_code;
-	struct Mapping_window *mapping;	
+	struct Mapping_window *mapping;
 #if defined (UNEMAP_USE_3D)
 	struct FE_node_order_info *all_devices_node_order_info;
-	struct Unemap_package *unemap_package;		
+	struct Unemap_package *unemap_package;
 #endif
 	ENTER(mapping_read_configuration_file);
 #if defined (UNEMAP_USE_3D)
 	all_devices_node_order_info=(struct FE_node_order_info *)NULL;
-#endif/* defined (UNEMAP_USE_3D) */		
+#endif/* defined (UNEMAP_USE_3D) */
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(mapping->map))
 	{
 #if defined (UNEMAP_USE_3D)
 		unemap_package = mapping->map->unemap_package;
-#endif /* defined (UNEMAP_USE_3D) */		
+#endif /* defined (UNEMAP_USE_3D) */
 		/* destroy the existing configuration */
 		destroy_Rig(mapping->map->rig_pointer);
 		/* read the configuration file */
 		if (return_code=read_configuration_file(file_name,
 			(void *)(mapping->map->rig_pointer)
-#if defined (UNEMAP_USE_3D)			
+#if defined (UNEMAP_USE_3D)
 			,unemap_package
 #endif /* defined (UNEMAP_USE_3D) */
-			 ))
+			))
 		{
 #if defined (UNEMAP_USE_3D)
 			convert_config_rig_to_nodes(*(mapping->map->rig_pointer),
 				&all_devices_node_order_info);
 			/* not needed */
-			DEACCESS(FE_node_order_info)(&all_devices_node_order_info);		
+			DEACCESS(FE_node_order_info)(&all_devices_node_order_info);
 #endif /* defined (UNEMAP_USE_3D) */
 			/* unghost the save configuration and set default configuration buttons */
 			XtSetSensitive(mapping->file_menu.save_configuration_button,True);
@@ -2409,7 +2440,7 @@ Write the electrode values for the current map to a file.
 	int i,j,number_of_electrodes,return_code;
 	struct Device **electrode;
 	struct Map *map;
-	struct Mapping_window *mapping;	
+	struct Mapping_window *mapping;
 	struct Sub_map *sub_map;
 
 	ENTER(write_electrode_values_file);
@@ -2417,7 +2448,7 @@ Write the electrode values for the current map to a file.
 	/*check we have at least one sub map. Multiple sub maps dealt with below*/
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(map=mapping->map)&&
 		(map->sub_map)&&(map->type)&&file_name)
-	{	
+	{
 		if ((0<(number_of_electrodes=map->number_of_electrodes))&&
 			(electrode=map->electrodes)&&
 			(value=(*(map->sub_map))->electrode_value)&&
@@ -2449,27 +2480,27 @@ Write the electrode values for the current map to a file.
 						fprintf(output_file,",Unknown\n");
 					} break;
 				}
-				if(*(map->type)==POTENTIAL)
-				{					
+				if (*(map->type)==POTENTIAL)
+				{
 					for (i=0;i<number_of_electrodes;i++)
 					{
 						/* write the electrode name*/
 						fprintf(output_file,"%s,",(*electrode)->description->name);
 						/*for all the sub maps*/
-						for(j=0;j<map->number_of_sub_maps;j++)
+						for (j=0;j<map->number_of_sub_maps;j++)
 						{
 							sub_map=map->sub_map[j];
-							/* write value */							
+							/* write value */
 							fprintf(output_file,"%g ",sub_map->electrode_value[i]);
 							/* write time  */
 							fprintf(output_file,"%g",sub_map->frame_time);
-							if(j<(map->number_of_sub_maps-1))
+							if (j<(map->number_of_sub_maps-1))
 							{
 								fprintf(output_file,",");
 							}
 						}
 						fprintf(output_file,"\n");
-						electrode++;					
+						electrode++;
 					}
 				}
 				else
@@ -2760,7 +2791,7 @@ This is a member of the mapping projection choice menu
 static void identify_mapping_projection_ham(Widget *widget_id,
 	XtPointer mapping_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED :  2 June 2000 
+LAST MODIFIED :  2 June 2000
 
 DESCRIPTION :
 Finds the id of the mapping projection hammer button.
@@ -2786,7 +2817,7 @@ This is a member of the mapping projection choice menu
 static void identify_mapping_projection_pol(Widget *widget_id,
 	XtPointer mapping_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 2 June 2000 
+LAST MODIFIED : 2 June 2000
 
 DESCRIPTION :
 Finds the id of the mapping projection polar button.
@@ -2812,7 +2843,7 @@ This is a member of the mapping projection choice menu
 static void identify_mapping_projection_pat(Widget *widget_id,
 	XtPointer mapping_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 2 June 2000 
+LAST MODIFIED : 2 June 2000
 
 DESCRIPTION :
 Finds the id of the mapping projection patch button.
@@ -3136,13 +3167,13 @@ Sets the animation buttons of the mapping window based upon map information
 {
 	int return_code;
 	struct Map *map;
-	
+
 	ENTER(mapping_window_set_animation_buttons);
 	return_code=0;
-	if(mapping)
+	if (mapping)
 	{
 		return_code=1;
-		if ((map=mapping->map)&&(map->type)&&	
+		if ((map=mapping->map)&&(map->type)&&
 			(ELECTRICAL_IMAGING!=(*map->analysis_mode))&&
 			((SINGLE_ACTIVATION== *(map->type)||
 			((MULTIPLE_ACTIVATION== *(map->type))&&
@@ -3150,23 +3181,24 @@ Sets the animation buttons of the mapping window based upon map information
 			((POTENTIAL== *(map->type))&&
 			((NO_INTERPOLATION==map->interpolation_type)||
 			(DIRECT_INTERPOLATION==map->interpolation_type))))))
-		{							
+		{
 			XtSetSensitive(mapping->animate_button,True);
 			XtSetSensitive(mapping->print_menu.animate_rgb_button,True);
 			XtSetSensitive(mapping->print_menu.animate_tiff_button,True);
-			XtSetSensitive(mapping->print_menu.animate_jpg_button,True);			
+			XtSetSensitive(mapping->print_menu.animate_jpg_button,True);
 		}
 		else
 		{
 			XtSetSensitive(mapping->animate_button,False);
 			XtSetSensitive(mapping->print_menu.animate_rgb_button,False);
 			XtSetSensitive(mapping->print_menu.animate_tiff_button,False);
-			XtSetSensitive(mapping->print_menu.animate_jpg_button,False);	
+			XtSetSensitive(mapping->print_menu.animate_jpg_button,False);
 			/*stop the time keeper and get rid of the editor widget*/
 			mapping_window_kill_time_keeper_editor(mapping);
 		}
 	}
 	LEAVE;
+	
 	return (return_code);
 } /* mapping_window_set_animation_buttons */
 
@@ -3218,8 +3250,8 @@ The callback for redrawing part of a mapping drawing area.
 									XFillRectangle(display,drawing->pixel_map,(mapping->map->
 										drawing_information->graphics_context).
 										background_drawing_colour,0,0,drawing->width,
-										drawing->height);							
-									/* draw the map */				
+										drawing->height);
+									/* draw the map */
 									draw_map(mapping->map,2/*recalculate*/,drawing);
 									update_mapping_colour_or_auxili(mapping);
 									/* set the sensitivity of the save electrode values button */
@@ -3347,7 +3379,7 @@ The callback for resizing a mapping drawing area.
 								background_drawing_colour,0,0,drawing->width,drawing->height);
 							/* redraw the map */
 
-							if(mapping->map->activation_front==0)
+							if (mapping->map->activation_front==0)
 							{
 								/*playing a movie*/
 								draw_map(mapping->map,2,drawing);
@@ -3432,16 +3464,16 @@ Sets the projection to be the Hammer projection.
 		{
 			if (mapping->map->projection_type!=HAMMER_PROJECTION)
 			{
-#if defined (UNEMAP_USE_3D)		
+#if defined (UNEMAP_USE_3D)
 				set_map_drawing_information_electrodes_accepted_or_rejected(
 					mapping->map->drawing_information,1);
 #endif
-				mapping->map->projection_type=HAMMER_PROJECTION;	
+				mapping->map->projection_type=HAMMER_PROJECTION;
 				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
 				/*need to regenerate maps if change projection type*/
 				XtSetSensitive(mapping->animate_button,False);
-			}	
+			}
 		}
 		else
 		{
@@ -3477,11 +3509,11 @@ Sets the projection to be the polar projection.
 		{
 			if (mapping->map->projection_type!=POLAR_PROJECTION)
 			{
-#if defined (UNEMAP_USE_3D)		
+#if defined (UNEMAP_USE_3D)
 				set_map_drawing_information_electrodes_accepted_or_rejected(
 					mapping->map->drawing_information,1);
 #endif
-				mapping->map->projection_type=POLAR_PROJECTION;				
+				mapping->map->projection_type=POLAR_PROJECTION;
 				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
 				mapping_window_set_animation_buttons(mapping);
@@ -3506,7 +3538,7 @@ static void set_projection_patch(Widget *widget_id,XtPointer client_data,
 LAST MODIFIED : 2 June 2000
 
 DESCRIPTION :
-There isn't actually a patch projection type, this is the X callback to do the 
+There isn't actually a patch projection type, this is the X callback to do the
 drawing
 ???DB.  MIXED ?
 ==============================================================================*/
@@ -3519,11 +3551,11 @@ drawing
 	if (mapping=(struct Mapping_window *)client_data)
 	{
 		if (mapping->map)
-		{	
-#if defined (UNEMAP_USE_3D)		
+		{
+#if defined (UNEMAP_USE_3D)
 				set_map_drawing_information_electrodes_accepted_or_rejected(
 					mapping->map->drawing_information,1);
-#endif	
+#endif
 			/*must set the rojection_type to something*/
 			mapping->map->projection_type=CYLINDRICAL_PROJECTION;
 			Mapping_window_make_drawing_area_2d(mapping);
@@ -3563,11 +3595,11 @@ Sets the projection to be the cylinder projection.
 		{
 			if (mapping->map->projection_type!=CYLINDRICAL_PROJECTION)
 			{
-#if defined (UNEMAP_USE_3D)		
+#if defined (UNEMAP_USE_3D)
 				set_map_drawing_information_electrodes_accepted_or_rejected(
 					mapping->map->drawing_information,1);
 #endif
-				mapping->map->projection_type=CYLINDRICAL_PROJECTION;				
+				mapping->map->projection_type=CYLINDRICAL_PROJECTION;
 				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
 				mapping_window_set_animation_buttons(mapping);
@@ -3607,11 +3639,11 @@ Sets the projection to be the 3D projection.
 		{
 			if (mapping->map->projection_type!=THREED_PROJECTION)
 			{
-#if defined (UNEMAP_USE_3D)		
+#if defined (UNEMAP_USE_3D)
 				set_map_drawing_information_electrodes_accepted_or_rejected(
 					mapping->map->drawing_information,1);
 #endif
-				mapping->map->projection_type=THREED_PROJECTION;			
+				mapping->map->projection_type=THREED_PROJECTION;
 				Mapping_window_make_drawing_area_3d(mapping);
 				update_mapping_drawing_area(mapping,2);
 				/*need to regenerate maps if change projection type*/
@@ -3817,13 +3849,13 @@ and frees the memory for the mapping window.
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
 	if (mapping=(struct Mapping_window *)client_data)
-	{	
+	{
 #if defined (UNEMAP_USE_3D)
-		if(mapping->scene_viewer)
+		if (mapping->scene_viewer)
 		{
 			DESTROY(Scene_viewer)(&(mapping->scene_viewer));
 		}
-#if defined (NEW_CODE)	
+#if defined (NEW_CODE)
 		/*??JW should really do this, but at the moment CMGUI doesn't destroy */
 		/* the mapping window, so deaccess never gets called. See ACCESS */
 		DEACCESS(Interactive_tool)(&(mapping->transform_tool));
@@ -3932,7 +3964,7 @@ mapping_window.
 								page_height=postscript_page_width*pixel_aspect_ratio*
 									(float)(mapping->map_drawing->height)/
 									(float)(mapping->map_drawing->width);
-								set_postscript_display_transfor(0,0.85*postscript_page_height-
+								set_postscript_display_transfor (0,0.85*postscript_page_height-
 									page_height,postscript_page_width,page_height,0,0,
 									(float)(mapping->map_drawing->width),
 									(float)(mapping->map_drawing->height));
@@ -3942,7 +3974,7 @@ mapping_window.
 								page_width=0.85*postscript_page_height*
 									(float)(mapping->map_drawing->width)/(pixel_aspect_ratio*
 									(float)(mapping->map_drawing->height));
-								set_postscript_display_transfor(
+								set_postscript_display_transfor (
 									(postscript_page_width-page_width)/2,0,page_width,
 									0.85*postscript_page_height,0,0,
 									(float)(mapping->map_drawing->width),
@@ -3951,7 +3983,7 @@ mapping_window.
 						}
 						else
 						{
-							set_postscript_display_transfor(0,0,postscript_page_width,
+							set_postscript_display_transfor (0,0,postscript_page_width,
 								0.85*postscript_page_height,0,0,
 								(float)(mapping->map_drawing->width),
 								(float)(mapping->map_drawing->height));
@@ -3959,7 +3991,7 @@ mapping_window.
 						/* draw the map to the postscript page */
 						draw_map(map,0,mapping->map_drawing);
 						/* set the area of the postscript page for the colour bar */
-						set_postscript_display_transfor(0,0.9*postscript_page_height,
+						set_postscript_display_transfor (0,0.9*postscript_page_height,
 							postscript_page_width,0.1*postscript_page_height,0,0,
 							(float)(mapping->colour_or_auxiliary_drawing->width),
 							(float)(mapping->colour_or_auxiliary_drawing->height));
@@ -3982,7 +4014,7 @@ mapping_window.
 								page_height=postscript_page_width*pixel_aspect_ratio*
 									(float)(mapping->map_drawing->height)/
 									(float)(mapping->map_drawing->width);
-								set_postscript_display_transfor(0,postscript_page_height-
+								set_postscript_display_transfor (0,postscript_page_height-
 									page_height,postscript_page_width,page_height,0,0,
 									(float)(mapping->map_drawing->width),
 									(float)(mapping->map_drawing->height));
@@ -3992,7 +4024,7 @@ mapping_window.
 								page_width=postscript_page_height*
 									(float)(mapping->map_drawing->width)/(pixel_aspect_ratio*
 									(float)(mapping->map_drawing->height));
-								set_postscript_display_transfor(
+								set_postscript_display_transfor (
 									(postscript_page_width-page_width)/2,0,page_width,
 									postscript_page_height,0,0,
 									(float)(mapping->map_drawing->width),
@@ -4001,7 +4033,7 @@ mapping_window.
 						}
 						else
 						{
-							set_postscript_display_transfor(0,0,postscript_page_width,
+							set_postscript_display_transfor (0,0,postscript_page_width,
 								postscript_page_height,0,0,(float)(mapping->map_drawing->width),
 								(float)(mapping->map_drawing->height));
 						}
@@ -4225,41 +4257,41 @@ mapping_window.
 			{
 				if (POTENTIAL== *(map->type))
 				{
-					switch(map->interpolation_type)
+					switch (map->interpolation_type)
 					{
 						case BICUBIC_INTERPOLATION:
 						{
 							number_of_frames=map->number_of_sub_maps;
 							map->activation_front=map->sub_map_number;
 							map->sub_map_number=0;
-						}break;
+						} break;
 						case NO_INTERPOLATION:
 						case DIRECT_INTERPOLATION:
 						default:
-						{	
+						{
 							number_of_frames= *(map->end_search_interval)-
 								*(map->start_search_interval);
 							map->activation_front= *(map->potential_time);
 							*(map->potential_time)= *(map->start_search_interval);
-						}break;						
-					}/*switch(map->interpolation_type)*/
+						} break;
+					}/*switch (map->interpolation_type)*/
 				}
 			}
-		}			
+		}
 		number_of_digits=0;
-		i=number_of_frames;	
+		i=number_of_frames;
 		/* Confirm (possibly lengthy) frame writing */
 		sprintf(number_str,"%d",number_of_frames-1);
-		strcpy(warning_str,"Writing ");			
+		strcpy(warning_str,"Writing ");
 		strcat(warning_str,number_str);
 		strcat(warning_str," map frames.");
 			strcpy(question_str,"Could take some time. Do you want to do this? (A completion message will appear.)");
-		if(confirmation_question_yes_no(warning_str,question_str,
-#if defined (MOTIF)				
+		if (confirmation_question_yes_no(warning_str,question_str,
+#if defined (MOTIF)
 			(Widget)(NULL),
 #endif /* defined (MOTIF) */
 			drawing_information->user_interface))
-		{			
+		{
 			do
 			{
 				i /= 10;
@@ -4337,9 +4369,12 @@ mapping_window.
 							XStoreColors(display,colour_map,spectrum_rgb,
 								number_of_spectrum_colours);
 							/* show the map boundary */
-							colour.pixel=drawing_information->boundary_colour;
-							colour.flags=DoRed|DoGreen|DoBlue;
-							XStoreColor(display,colour_map,&colour);
+							if (drawing_information->boundary_colour)
+							{
+								colour.pixel=drawing_information->boundary_colour;
+								colour.flags=DoRed|DoGreen|DoBlue;
+								XStoreColor(display,colour_map,&colour);
+							}
 						}
 						(map->activation_front)++;
 					}
@@ -4356,13 +4391,13 @@ mapping_window.
 						{
 							if (POTENTIAL== *(map->type))
 							{
-								switch(map->interpolation_type)
-								{	
+								switch (map->interpolation_type)
+								{
 									case BICUBIC_INTERPOLATION:
 									{
 										update_mapping_drawing_area(mapping,0);
 										(map->sub_map_number)++;
-									}break;
+									} break;
 									case NO_INTERPOLATION:
 									case DIRECT_INTERPOLATION:
 									default:
@@ -4371,7 +4406,7 @@ mapping_window.
 										update_mapping_colour_or_auxili(mapping);
 										/*???DB.  What about the trace window ? */
 										(*(map->potential_time))++;
-									}break;
+									} break;
 								}/* map->interpolation_type */
 							}
 						}
@@ -4408,13 +4443,13 @@ mapping_window.
 				DEALLOCATE(temp_file_name);
 				busy_cursor_off((Widget)NULL,drawing_information->user_interface);
 				/* write success message */
-				strcpy(success_str," Map frames ");						
-				strcat(success_str," successfully written .");	
+				strcpy(success_str," Map frames ");
+				strcat(success_str," successfully written .");
 				confirmation_information_ok("Success!",success_str,
-#if defined (MOTIF)				
+#if defined (MOTIF)
 					(Widget)(NULL),
 #endif /* defined (MOTIF) */
-					drawing_information->user_interface);	
+					drawing_information->user_interface);
 			}
 			else
 			{
@@ -4462,7 +4497,7 @@ mapping_window.
 					}
 				}
 			}
-		}/* if(confirmation_question_yes_no */
+		}/* if (confirmation_question_yes_no */
 	}
 	else
 	{
@@ -4471,6 +4506,7 @@ mapping_window.
 		return_code=0;
 	}
 	LEAVE;
+
 	return (return_code);
 } /* write_map_animation_files */
 
@@ -4558,7 +4594,7 @@ DESCRIPTION :
 				{
 					minimum_value = get_Spectrum_minimum(spectrum);
 					maximum_value = get_Spectrum_maximum(spectrum);
-					if ((minimum_value != mapping->map->minimum_value) 
+					if ((minimum_value != mapping->map->minimum_value)
 						|| (maximum_value != mapping->map->maximum_value))
 					{
 						mapping->map->minimum_value = minimum_value;
@@ -4618,7 +4654,7 @@ static struct Mapping_window *create_Mapping_window(
 	struct Map_drawing_information *map_drawing_information,
 	struct User_interface *user_interface
 #if defined (UNEMAP_USE_3D)
-	,struct MANAGER(Interactive_tool) *interactive_tool_manager 
+	,struct MANAGER(Interactive_tool) *interactive_tool_manager
 #endif /*  defined (UNEMAP_USE_3D) */
 	)
 /*******************************************************************************
@@ -4690,7 +4726,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 			{"identify_mapping_region_place_h",
 				(XtPointer)identify_mapping_region_place_h},
 			{"identify_mapping_projection_cho",
-				(XtPointer)identify_mapping_projection_cho},	
+				(XtPointer)identify_mapping_projection_cho},
 			{"identify_mapping_projection_cyl",
 				(XtPointer)identify_mapping_projection_cyl},
 			{"identify_mapping_projection_ham",
@@ -4751,7 +4787,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 			{"mapping_rig",(XtPointer)NULL},
 			{"identifying_colour",(XtPointer)NULL}
 		};
-#if defined (UNEMAP_USE_3D)		
+#if defined (UNEMAP_USE_3D)
 	struct Callback_data callback;
 	struct Interactive_tool *node_tool;
 #endif
@@ -4759,7 +4795,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 	Widget child_widget;
 
 	ENTER(create_Mapping_window);
-#if defined (UNEMAP_USE_3D)		
+#if defined (UNEMAP_USE_3D)
 	node_tool=(struct Interactive_tool *)NULL;
 #endif
 	if (map_drawing_information&&
@@ -4772,7 +4808,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 		{
 			/* allocate memory */
 			if (ALLOCATE(mapping,struct Mapping_window,1))
-			{	
+			{
 #if defined (UNEMAP_USE_3D)
 				/* set up interactive tools*/
 				mapping->interactive_tool_manager=interactive_tool_manager;
@@ -4782,7 +4818,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				mapping->transform_tool=ACCESS(Interactive_tool)(
 					FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
 						"transform_tool",mapping->interactive_tool_manager));
-#else				
+#else
 				mapping->transform_tool=FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,
 					name)("transform_tool",mapping->interactive_tool_manager);
 #endif /* defined (NEW_CODE)	*/
@@ -4819,7 +4855,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				mapping->region_pull_down_menu=(Widget)NULL;
 				mapping->number_of_regions=0;
 				mapping->regions=(Widget *)NULL;
-				mapping->potential_time_object=(struct Time_object *)NULL;	
+				mapping->potential_time_object=(struct Time_object *)NULL;
 				mapping->print_button=(Widget)NULL;
 				(mapping->print_menu).postscript_button=(Widget)NULL;
 				(mapping->print_menu).rgb_button=(Widget)NULL;
@@ -4848,7 +4884,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				mapping->spectrum_manager_callback_id=
 					MANAGER_REGISTER(Spectrum)(mapping_window_spectrum_change,
 					(void *)mapping,get_map_drawing_information_spectrum_manager(
-					mapping->map->drawing_information));			
+					mapping->map->drawing_information));
 #endif /* defined (UNEMAP_USE_3D) */
 				/* register the callbacks */
 				if ((MrmSUCCESS==MrmRegisterNamesInHierarchy(mapping_window_hierarchy,
@@ -4897,7 +4933,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 						if (MrmSUCCESS==MrmFetchWidget(mapping_window_hierarchy,
 							"mapping_window",parent,&(mapping->window),&mapping_window_class))
 						{
-							/* other Xt stuff set up in */						
+							/* other Xt stuff set up in */
 							widget_spacing=user_interface->widget_spacing;
 							/* set the height and background colour of the interval drawing
 								area */
@@ -4975,13 +5011,13 @@ the created mapping window.  If unsuccessful, NULL is returned.
 								XmNmarginWidth,0,
 								NULL);
 							update_mapping_window_menu(mapping);
-#if defined (UNEMAP_USE_3D)													
+#if defined (UNEMAP_USE_3D)
 							/* create the subwidgets with default values */
 							if (mapping->interactive_toolbar_widget=
 								create_interactive_toolbar_widget(
 								mapping->map3d_interactive_tool_form,interactive_tool_manager,
 								INTERACTIVE_TOOLBAR_VERTICAL))
-							{	
+							{
 								/* add tools to toolbar*/
 								add_interactive_tool_to_interactive_toolbar_widget(
 									mapping->transform_tool,
@@ -5373,7 +5409,7 @@ the interpolation functions are also recalculated.
 		/* clear the map drawing area */
 		XFillRectangle(drawing_information->user_interface->display,
 			drawing->pixel_map,(drawing_information->graphics_context).
-			background_drawing_colour,0,0,drawing->width,drawing->height);		
+			background_drawing_colour,0,0,drawing->width,drawing->height);
 		/* draw the map */
 		draw_map(mapping->map,recalculate,drawing);
 		XCopyArea(drawing_information->user_interface->display,
@@ -5387,6 +5423,7 @@ the interpolation functions are also recalculated.
 		return_code=0;
 	}
 	LEAVE;
+	
 	return (return_code);
 } /* update_mapping_drawing_area_2d */
 
@@ -5404,29 +5441,29 @@ Calls draw_map_3d or update_mapping_drawing_area_2d depending upon
 	ENTER(update_mapping_drawing_area);
 	if (mapping)
 	{
-#if defined (UNEMAP_USE_3D) 
+#if defined (UNEMAP_USE_3D)
 		/* 3d map for 3d projection */
 		if ((mapping->map)&&(THREED_PROJECTION==mapping->map->projection_type))
-		{			
+		{
 			return_code=draw_map(mapping->map,recalculate,mapping->map_drawing);
 		}
 		else
 		{
 			return_code=update_mapping_drawing_area_2d(mapping,recalculate);
-		}	
+		}
 #else /* defined (UNEMAP_USE_3D) */
 		/* old, 2d map */
 		update_mapping_drawing_area_2d(mapping,recalculate);
-#endif /* defined (UNEMAP_USE_3D) */	
+#endif /* defined (UNEMAP_USE_3D) */
 		/* set the sensitivity of the save electrode values button */
-		update_mapping_window_file_menu(mapping);	
+		update_mapping_window_file_menu(mapping);
 	}
 	else
-	{		
+	{
 		return_code=0;
 	}
 	LEAVE;
-	
+
 	return (return_code);
 } /* update_mapping_drawing_area */
 
@@ -5584,7 +5621,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 					}
 
 					if (return_code)
-					{				
+					{
 						XtManageChild(mapping->projection_choice);
 						XtVaSetValues(mapping->region_choice,
 							XmNleftWidget,mapping->projection_choice,
@@ -5596,23 +5633,23 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 						XtSetSensitive(mapping->projection_polar,False);
 						XtSetSensitive(mapping->projection_3d,False);
 						XtSetSensitive(mapping->projection_patch,False);
-#if defined (UNEMAP_USE_3D)	
+#if defined (UNEMAP_USE_3D)
 						/*all use 3d*/
 						XtSetSensitive(mapping->projection_3d,True);
 #endif /*	defined (UNEMAP_USE_3D)	*/
-						if(rig->current_region)
+						if (rig->current_region)
 						{
-							switch(rig->current_region->type)
+							switch (rig->current_region->type)
 							{
 								case SOCK:
 								{
 									XtSetSensitive(mapping->projection_hammer,True);
-									XtSetSensitive(mapping->projection_polar,True);								
+									XtSetSensitive(mapping->projection_polar,True);
 									/* set the projection choic */
 									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
 										&current_projection,NULL);
 									if ((current_projection!=mapping->projection_hammer)&&
-#if defined (UNEMAP_USE_3D)	
+#if defined (UNEMAP_USE_3D)
 										(current_projection!=mapping->projection_3d)&&
 #endif /*	defined (UNEMAP_USE_3D)	*/
 										(current_projection!=mapping->projection_polar))
@@ -5621,15 +5658,15 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 											XmNmenuHistory,mapping->projection_hammer,
 											NULL);
 									}
-								}break;
+								} break;
 								case TORSO:
 								{
-									XtSetSensitive(mapping->projection_cylinder,True);									
+									XtSetSensitive(mapping->projection_cylinder,True);
 									/* set the projection choice */
 									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
 										&current_projection,NULL);
 									if ((current_projection!=mapping->projection_cylinder)
-#if defined (UNEMAP_USE_3D)	
+#if defined (UNEMAP_USE_3D)
 										&&(current_projection!=mapping->projection_3d)
 #endif /*	defined (UNEMAP_USE_3D)	*/
 											)
@@ -5638,10 +5675,10 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 											XmNmenuHistory,mapping->projection_cylinder,
 											NULL);
 									}
-								}break;
+								} break;
 								case PATCH:
-								{									
-									XtSetSensitive(mapping->projection_patch,True);								
+								{
+									XtSetSensitive(mapping->projection_patch,True);
 									/* set the projection choice */
 									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
 										&current_projection,NULL);
@@ -5655,9 +5692,9 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 											XmNmenuHistory,mapping->projection_patch,
 											NULL);
 									}
-								}break;
-							}/* switch(rig->current_region->type) */ 
-						}/*  if(rig->current_region) */
+								} break;
+							}/* switch (rig->current_region->type) */
+						}/*  if (rig->current_region) */
 						else
 						/*This is a mixed rig */
 						{
@@ -5665,13 +5702,13 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 							region_item=get_Rig_region_list(rig);
 							while (region_item)
 							{
-								the_current_region=get_Region_list_item_region(region_item);													
-								switch(the_current_region->type)
-								{	
+								the_current_region=get_Region_list_item_region(region_item);
+								switch (the_current_region->type)
+								{
 									case SOCK:
 									{
 										XtSetSensitive(mapping->projection_hammer,True);
-										XtSetSensitive(mapping->projection_polar,True);											
+										XtSetSensitive(mapping->projection_polar,True);
 										/* set the projection choice */
 										XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
 											&current_projection,NULL);
@@ -5684,11 +5721,11 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 											XtVaSetValues(mapping->projection_choice,
 												XmNmenuHistory,mapping->projection_hammer,
 												NULL);
-										}										
-									}break;
+										}
+									} break;
 									case PATCH:
 									{
-										XtSetSensitive(mapping->projection_patch,True);										
+										XtSetSensitive(mapping->projection_patch,True);
 										/* set the projection choice */
 										XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
 											&current_projection,NULL);
@@ -5701,11 +5738,11 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 											XtVaSetValues(mapping->projection_choice,
 												XmNmenuHistory,mapping->projection_patch,
 												NULL);
-										}										
-									}break;
+										}
+									} break;
 									case TORSO:
 									{
-										XtSetSensitive(mapping->projection_cylinder,True);											
+										XtSetSensitive(mapping->projection_cylinder,True);
 										/* set the projection choice */
 										XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
 											&current_projection,NULL);
@@ -5718,10 +5755,10 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 											XtVaSetValues(mapping->projection_choice,
 												XmNmenuHistory,mapping->projection_cylinder,
 												NULL);
-										}																		
-									}break;																								
-								}	/* switch(type)	*/
-								region_item=get_Region_list_item_next(region_item);	
+										}
+									} break;
+								}	/* switch (type)	*/
+								region_item=get_Region_list_item_next(region_item);
 							} /* while */
 						}
 
@@ -5790,7 +5827,7 @@ int update_map_from_manual_time_update(struct Mapping_window *mapping)
 LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
-Sets recalculate and map->interpolation_type from 
+Sets recalculate and map->interpolation_type from
 map->draw_map_on_manual_time_update, and update the map.
 Reset map->interpolation_type to it's initial value.
 Note: 3D maps always fully recalculate on manual time updates.
@@ -5802,11 +5839,11 @@ Note: 3D maps always fully recalculate on manual time updates.
 
 	ENTER(update_map_from_manual_time_update);
 	map=(struct Map *)NULL;
-	if(mapping&&(map=mapping->map))
+	if (mapping&&(map=mapping->map))
 	{
 		return_code=1;
-		interpolation=map->interpolation_type;							
-		if((map->draw_map_on_manual_time_update)||
+		interpolation=map->interpolation_type;
+		if ((map->draw_map_on_manual_time_update)||
 			(map->projection_type==THREED_PROJECTION))
 		{
 			recalculate=2;
@@ -5815,7 +5852,7 @@ Note: 3D maps always fully recalculate on manual time updates.
 		{
 			recalculate=1;
 			map->interpolation_type=NO_INTERPOLATION;
-		}												
+		}
 		update_mapping_drawing_area(mapping,recalculate);
 		update_mapping_colour_or_auxili(mapping);
 		map->interpolation_type=interpolation;
@@ -5827,7 +5864,8 @@ Note: 3D maps always fully recalculate on manual time updates.
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	
+	return (return_code);
 }/* update_map_from_manual_time_update */
 
 int highlight_electrode_or_auxiliar(struct Device *device,
@@ -5864,7 +5902,7 @@ window.
 
 	ENTER(highlight_electrode_or_auxiliar);
 	device_name=(char *)NULL;
-	name=(char *)NULL;	
+	name=(char *)NULL;
 #if defined (UNEMAP_USE_NODES)
 	channel_number_field=(struct FE_field *)NULL;
 	device_name_field=(struct FE_field *)NULL;
@@ -5885,7 +5923,7 @@ window.
 		spectrum_pixels=drawing_information->spectrum_colours;
 		map_type= *(map->type);
 #if defined (UNEMAP_USE_NODES)
-		if(device_node)
+		if (device_node)
 		{
 			device_name_field=get_unemap_package_device_name_field(map->unemap_package);
 			highlight_field=get_unemap_package_highlight_field(map->unemap_package);
@@ -5902,13 +5940,13 @@ window.
 		}
 		else
 #endif /* defined (UNEMAP_USE_NODES) */
-		{	
+		{
 			device_name=device->description->name;
 			device_highlighted=device->highlight;
 			/* i.e an auxiliary device*/
-			if(device->channel)			
+			if (device->channel)
 			{
-				device_channel_number=device->channel->number;			
+				device_channel_number=device->channel->number;
 			}
 			else
 			{
@@ -5921,31 +5959,31 @@ window.
 			&&map->electrodes_marker_type!=HIDE_ELECTRODE_MARKER)
 		{
 			/* loop through sub maps */
-			for(j=0;j<map->number_of_sub_maps;j++)
+			for (j=0;j<map->number_of_sub_maps;j++)
 			{
 				sub_map=map->sub_map[j];
 
 				f_value=(sub_map->electrode_value)[electrode_number];
 				switch (map->electrodes_label_type)
-				{	
+				{
 					case HIDE_ELECTRODE_LABELS:
 					{
 						electrode_drawn=1;
 						/*do nothing at the moment*/
-					}break;
+					} break;
 					case SHOW_ELECTRODE_NAMES:
 					{
 						electrode_drawn=1;
 						name=device_name;
-					}break;
+					} break;
 					case SHOW_CHANNEL_NUMBERS:
 					{
-						electrode_drawn=1;				
+						electrode_drawn=1;
 						sprintf(value_string,"%d",device_channel_number);
 						name=value_string;
-					}break;
+					} break;
 					case SHOW_ELECTRODE_VALUES:
-					{				
+					{
 						electrode_drawn=(map->electrode_drawn)[electrode_number];
 						if (electrode_drawn)
 						{
@@ -5959,12 +5997,12 @@ window.
 								name=(char *)NULL;
 							}
 						}
-					}break;	
+					} break;
 					default:
 					{
 						name=(char *)NULL;
 					} break;
-				}/* switch */	
+				}/* switch */
 				if (device_highlighted)
 				{
 					graphics_context=(drawing_information->graphics_context).
@@ -5982,9 +6020,9 @@ window.
 					else
 					{
 						min_f=map->minimum_value;
-						max_f=map->maximum_value;				
-						if(map->colour_electrodes_with_signal)
-						{					
+						max_f=map->maximum_value;
+						if (map->colour_electrodes_with_signal)
+						{
 							graphics_context=(drawing_information->graphics_context).spectrum;
 							if (f_value<=min_f)
 							{
@@ -6011,12 +6049,12 @@ window.
 							}
 						}
 						else
-						{				
+						{
 							graphics_context=(drawing_information->graphics_context).
 								unhighlighted_colour;
 						}
 					}
-				}			
+				}
 				if (electrode_drawn)
 				{
 					/* draw marker */
@@ -6114,8 +6152,8 @@ window.
 						(drawing_information->graphics_context).copy,xmin,ymin,xmax-xmin+1,
 						ymax-ymin+1,xmin,ymin);
 					return_code=1;
-				}	
-			}/* for(j=0;j<map->number_of_sub_maps;j++)*/
+				}
+			}/* for (j=0;j<map->number_of_sub_maps;j++)*/
 		}
 		if ((NO_MAP_FIELD==map_type)&&(auxiliary_number>=0)&&
 			(mapping->colour_or_auxiliary_drawing_area)&&
@@ -6184,7 +6222,7 @@ window.
 			return_code=1;
 		}
 #if defined (UNEMAP_USE_NODES)
-		if(device_name)
+		if (device_name)
 		{
 			DEALLOCATE(device_name);
 		}
