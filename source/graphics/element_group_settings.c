@@ -180,7 +180,7 @@ struct Element_point_ranges_select_in_graphics_object_data
 static int Element_point_ranges_select_in_graphics_object(
 	struct Element_point_ranges *element_point_ranges,void *select_data_void)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 If <settings> is of type GT_ELEMENT_SETTINGS_ELEMENT_POINTS and has a graphics
@@ -211,7 +211,11 @@ graphics_object.
 			&element_point_ranges_identifier))
 		{
 			element=element_point_ranges_identifier.element;
-			if (GT_element_settings_uses_FE_element(settings,element,element_group))
+			/* special handling for cell_corners which are always calculated on
+				 tpo_level_elements */
+			if (GT_element_settings_uses_FE_element(settings,element,element_group)||
+				((XI_DISCRETIZATION_CELL_CORNERS==settings->xi_discretization_mode)&&
+					(CM_ELEMENT==element->cm.type)))
 			{
 				top_level_element=(struct FE_element *)NULL;
 				top_level_number_in_xi[0]=settings->discretization.number_in_xi1;
@@ -4196,7 +4200,7 @@ Makes a copy of the settings and puts it in the list_of_settings.
 static int FE_element_to_graphics_object(struct FE_element *element,
 	void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 June 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Converts a finite element into a graphics object with the supplied settings.
@@ -4204,13 +4208,14 @@ Converts a finite element into a graphics object with the supplied settings.
 {
 	FE_value initial_xi[3];
 	float time;
-	int dimension,draw_element,draw_selected,edit_mode,i,name_selected,
+	int base_grid_offset,dimension,draw_element,draw_selected,edit_mode,
+		grid_offset_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],i,name_selected,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		number_of_xi_points,process,return_code,
-		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],*use_number_in_xi;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
-	struct FE_element *top_level_element;
+	struct FE_element *top_level_element,*use_element;
 	struct FE_field *native_discretization_field;
 	struct GT_element_settings *settings;
 	struct GT_element_settings_to_graphics_object_data *settings_to_object_data;
@@ -4453,18 +4458,66 @@ Converts a finite element into a graphics object with the supplied settings.
 							settings->xi_discretization_mode,dimension,number_in_xi,
 							element_point_ranges_identifier.exact_xi,&number_of_xi_points))
 						{
+							FE_value element_to_top_level[9];
+							int number_in_xi1,*point_numbers;
+
+							if ((XI_DISCRETIZATION_CELL_CORNERS==
+								settings->xi_discretization_mode)&&
+								(CM_ELEMENT != element->cm.type)&&
+								((1==dimension)||(2==dimension))&&
+								(use_element=FE_element_get_top_level_element_conversion(
+									element,top_level_element,
+									settings_to_object_data->element_group,settings->face,
+									element_to_top_level))&&
+								(use_element==top_level_element)&&
+								calculate_grid_field_offsets(dimension,
+									get_FE_element_dimension(use_element),top_level_number_in_xi,
+									element_to_top_level,number_in_xi,&base_grid_offset,
+									grid_offset_in_xi)&&
+								ALLOCATE(point_numbers,int,number_of_xi_points))
+							{
+								/* convert xi positions to be on top_level_element */
+								convert_xi_points_from_element_to_parent(number_of_xi_points,
+									xi_points,dimension,get_FE_element_dimension(use_element),
+									element_to_top_level);
+								/* convert element_point_numbers to be for top_level_element */
+								if (1==dimension)
+								{
+									for (i=0;i < number_of_xi_points;i++)
+									{
+										point_numbers[i] = base_grid_offset + grid_offset_in_xi[0]*i;
+									}
+								}
+								else
+								{
+									number_in_xi1=number_in_xi[0]+1;
+									for (i=0;i < number_of_xi_points;i++)
+									{
+										point_numbers[i] = base_grid_offset +
+											grid_offset_in_xi[0]*(i % number_in_xi1) +
+											grid_offset_in_xi[1]*(i / number_in_xi1);
+									}
+								}
+								use_number_in_xi=top_level_number_in_xi;
+							}
+							else
+							{
+								use_element=element;
+								use_number_in_xi=number_in_xi;
+								point_numbers=(int *)NULL;
+							}
 							if (edit_mode)
 							{
 								if (!FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
-									element->cm.number,
+									use_element->cm.number,
 									settings_to_object_data->removed_primitives))
 								{
 									struct Selected_graphic *removed_primitive;
 
 									GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_glyph_set)(
-										settings->graphics_object,time,element->cm.number);
+										settings->graphics_object,time,use_element->cm.number);
 									removed_primitive=
-										CREATE(Selected_graphic)(element->cm.number);
+										CREATE(Selected_graphic)(use_element->cm.number);
 									if (!ADD_OBJECT_TO_LIST(Selected_graphic)(removed_primitive,
 										settings_to_object_data->removed_primitives))
 									{
@@ -4473,14 +4526,15 @@ Converts a finite element into a graphics object with the supplied settings.
 								}
 							}
 							ranges=(struct Multi_range *)NULL;
-							element_point_ranges_identifier.element=element;
+							element_point_ranges_identifier.element=use_element;
 							element_point_ranges_identifier.top_level_element=
 								top_level_element;
 							element_point_ranges_identifier.xi_discretization_mode=
 								settings->xi_discretization_mode;
 							for (i=0;i<dimension;i++)
 							{
-								element_point_ranges_identifier.number_in_xi[i]=number_in_xi[i];
+								element_point_ranges_identifier.number_in_xi[i]=
+									use_number_in_xi[i];
 							}
 							if (element_point_ranges=FIND_BY_IDENTIFIER_IN_LIST(
 								Element_point_ranges,identifier)(
@@ -4491,13 +4545,13 @@ Converts a finite element into a graphics object with the supplied settings.
 							}
 							/* NOT an error if no glyph_set produced == empty selection */
 							if (glyph_set=create_GT_glyph_set_from_FE_element(
-								element,top_level_element,
+								use_element,top_level_element,
 								settings_to_object_data->rc_coordinate_field,
 								number_of_xi_points,xi_points,
 								settings->glyph,settings->glyph_centre,settings->glyph_size,
 								settings_to_object_data->wrapper_orientation_scale_field,
 								settings->glyph_scale_factors,settings->data_field,
-								settings->label_field,settings->select_mode,ranges))
+								settings->label_field,settings->select_mode,ranges,point_numbers))
 							{
 								if (!GT_OBJECT_ADD(GT_glyph_set)(
 									settings->graphics_object,time,glyph_set))
@@ -4505,6 +4559,10 @@ Converts a finite element into a graphics object with the supplied settings.
 									DESTROY(GT_glyph_set)(&glyph_set);
 									return_code=0;
 								}
+							}
+							if (point_numbers)
+							{
+								DEALLOCATE(point_numbers);
 							}
 							DEALLOCATE(xi_points);
 						}
