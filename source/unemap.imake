@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 15 September 2000
+XCOMM LAST MODIFIED : 6 October 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -53,6 +53,7 @@ PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities
 #define RatioSignalsTarget unemap/ratio_signals64
 #define RegisterTarget unemap/register64
 #define Sig2textTarget unemap/sig2text64
+#define TestDelauneyTarget unemap/test_delauney64
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware64
 #define Tuff2sigTarget unemap/tuff2sig64
 #define UniqueChannelsTarget unemap/unique_channels64
@@ -90,6 +91,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 #define RatioSignalsTarget unemap/ratio_signals_optimised
 #define RegisterTarget unemap/register_optimised
 #define Sig2textTarget unemap/sig2text_optimised
+#define TestDelauneyTarget unemap/test_delauney_optimised
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_optimised
 #define Tuff2sigTarget unemap/tuff2sig_optimised
 #define UniqueChannelsTarget unemap/unique_channels_optimised
@@ -127,6 +129,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define RatioSignalsTarget unemap/ratio_signals_nodes
 #define RegisterTarget unemap/register_nodes
 #define Sig2textTarget unemap/sig2text_nodes
+#define TestDelauneyTarget unemap/test_delauney_nodes
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_nodes
 #define Tuff2sigTarget unemap/tuff2sig_nodes
 #define UniqueChannelsTarget unemap/unique_channels_nodes
@@ -164,6 +167,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define RatioSignalsTarget unemap/ratio_signals_3d
 #define RegisterTarget unemap/register_3d
 #define Sig2textTarget unemap/sig2text_3d
+#define TestDelauneyTarget unemap/test_delauney_3d
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_3d
 #define Tuff2sigTarget unemap/tuff2sig_3d
 #define UniqueChannelsTarget unemap/unique_channels_3d
@@ -202,6 +206,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define RatioSignalsTarget unemap/ratio_signals32
 #define RegisterTarget unemap/register32
 #define Sig2textTarget unemap/sig2text32
+#define TestDelauneyTarget unemap/test_delauney32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
 #define Tuff2sigTarget unemap/tuff2sig32
 #define UniqueChannelsTarget unemap/unique_channels32
@@ -236,6 +241,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define RatioSignalsTarget unemap/ratio_signals32
 #define RegisterTarget unemap/register32
 #define Sig2textTarget unemap/sig2text32
+#define TestDelauneyTarget unemap/test_delauney32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
 #define Tuff2sigTarget unemap/tuff2sig32
 #define UniqueChannelsTarget unemap/unique_channels32
@@ -279,6 +285,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define RatioSignalsTarget unemap/ratio_signals_linux_nodes
 #define RegisterTarget unemap/register_linux_nodes
 #define Sig2textTarget unemap/sig2text_linux_nodes
+#define TestDelauneyTarget unemap/test_delauney_linux_nodes
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_nodes
 #define Tuff2sigTarget unemap/tuff2sig_linux_nodes
 #define UniqueChannelsTarget unemap/unique_channels_linux_nodes
@@ -317,6 +324,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_nodes_g
 #define RatioSignalsTarget unemap/ratio_signals_linux_3d
 #define RegisterTarget unemap/register_linux_3d
 #define Sig2textTarget unemap/sig2text_linux_3d
+#define TestDelauneyTarget unemap/test_delauney_linux_3d
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_3d
 #define Tuff2sigTarget unemap/tuff2sig_linux_3d
 #define UniqueChannelsTarget unemap/unique_channels_linux_3d
@@ -352,6 +360,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_g
 #define RatioSignalsTarget unemap/ratio_signals_linux
 #define RegisterTarget unemap/register_linux
 #define Sig2textTarget unemap/sig2text_linux
+#define TestDelauneyTarget unemap/test_delauney_linux
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux
 #define Tuff2sigTarget unemap/tuff2sig_linux
 #define UniqueChannelsTarget unemap/unique_channels_linux
@@ -856,8 +865,8 @@ ChangeCalibrationTarget ChangeChannelsTarget ChangeConfigurationTarget \
 ChangeEventsTarget ChangeFrequencyTarget CombineSignalsTarget \
 DifferenceSignalsTarget ExtractSignalTarget Img2sigTarget MakePlaqueTarget \
 OpticalSignalsTarget Plt2cnfgTarget Posdat2sigTarget RatioSignalsTarget \
-RegisterTarget Sig2textTarget TestUnemapHardwareTarget Tuff2sigTarget \
-UniqueChannelsTarget
+RegisterTarget Sig2textTarget TestDelauneyTarget TestUnemapHardwareTarget \
+Tuff2sigTarget UniqueChannelsTarget
 
 AFFINE_SRCS = \
 	unemap/utilities/affine.c \
@@ -1107,6 +1116,15 @@ SIG2TEXT_SRCS = \
 	user_interface/message.c
 
 BuildNormalTarget(Sig2textTarget,$(UTILITIES_PATH),SIG2TEXT_SRCS,SIG2TEXT_OBJSA,SIG2TEXT_OBJSB,SIG2TEXT_OBJS,$(LIB)) 
+
+TEST_DELAUNEY_SRCS = \
+	unemap/utilities/test_delauney.c \
+	general/debug.c \
+	general/mystring.c \
+	unemap/delauney.c \
+	user_interface/message.c
+
+BuildNormalTarget(TestDelauneyTarget,$(UTILITIES_PATH),TEST_DELAUNEY_SRCS,TEST_DELAUNEY_OBJSA,TEST_DELAUNEY_OBJSB,TEST_DELAUNEY_OBJS,$(LIB)) 
 
 TEST_UNEMAP_HARDWARE_SRCS = \
 	unemap/utilities/test_unemap_hardware.c \
