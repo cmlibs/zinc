@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : user_interface.h
 
-LAST MODIFIED : 24 July 2002
+LAST MODIFIED : 28 February 2005
 
 DESCRIPTION :
 Function definitions for the user interface.
@@ -23,7 +23,7 @@ Function definitions for the user interface.
 	/*???DB.  Contains lots of convenience macros */
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (GTK_USER_INTERFACE)
-#include "gtk/gtk.h"
+#include <gtk/gtk.h>
 #endif /* defined (GTK_USER_INTERFACE) */
 #include "general/machine.h"
 
