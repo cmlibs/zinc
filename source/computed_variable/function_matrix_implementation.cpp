@@ -236,35 +236,37 @@ Function_size_type Function_matrix<Value_type>::number_of_columns() const
 EXPORT template<typename Value_type>
 boost::intrusive_ptr< Function_matrix<Value_type> >
 	Function_matrix<Value_type>::solve(
-	const boost::intrusive_ptr< Function_matrix<Value_type> >& rhs)
+	const boost::intrusive_ptr< Function_matrix<Value_type> >&)
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 14 September 2004
 //
 // DESCRIPTION :
 // A x = B
 // n by n  n by m  n by m
 //==============================================================================
 {
-	boost::intrusive_ptr< Function_matrix<Value_type> > result(0);
-	Function_size_type number_of_rhss,size_A;
-
-	if (this&&(0<(size_A=number_of_rows()))&&(number_of_columns()==size_A)&&
-		rhs&&(rhs->number_of_rows()==size_A)&&
-		(0<(number_of_rhss=rhs->number_of_columns())))
-	{
-		ublas::matrix<Value_type,ublas::column_major>
-			A(size_A,size_A),X(size_A,number_of_rhss);
-		std::vector<int> ipiv(size_A);
-
-		A=values;
-		X=rhs->values;
-		lapack::gesv(A,ipiv,X);
-		result=boost::intrusive_ptr< Function_matrix<Value_type> >(
-			new Function_matrix<Value_type>(X));
-	}
-
-	return (result);
+	return (0);
 }
+
+template<>
+boost::intrusive_ptr< Function_matrix<Scalar> >
+	Function_matrix<Scalar>::solve(
+	const boost::intrusive_ptr< Function_matrix<Scalar> >&);
+
+EXPORT template<typename Value_type>
+bool Function_matrix<Value_type>::determinant(Value_type&)
+//******************************************************************************
+// LAST MODIFIED : 14 September 2004
+//
+// DESCRIPTION :
+// Zero for a non-square matrix.
+//==============================================================================
+{
+	return (0);
+}
+
+template<>
+bool Function_matrix<Scalar>::determinant(Scalar&);
 
 EXPORT template<typename Value_type>
 Function_handle Function_matrix<Value_type>::evaluate(

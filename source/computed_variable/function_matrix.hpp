@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix.hpp
 //
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 14 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -15,7 +15,7 @@
 EXPORT template<typename Value_type>
 class Function_matrix : public Function
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 14 September 2004
 //
 // DESCRIPTION :
 // An identity function whose input/output is a matrix
@@ -52,6 +52,8 @@ class Function_matrix : public Function
 		// solve a system of linear equations
 		boost::intrusive_ptr< Function_matrix<Value_type> > solve(
 			const boost::intrusive_ptr< Function_matrix<Value_type> >&);
+		// calculate the determinant (zero for non-square matrix)
+		virtual bool determinant(Value_type&);
 	private:
 		virtual Function_handle evaluate(Function_variable_handle atomic_variable);
 		virtual bool evaluate_derivative(Scalar& derivative,
