@@ -61,241 +61,6 @@ Module functions
 ----------------
 */
 
-static int check_xi_limits(int change_xi, struct FE_element **element,
-	int element_dimension, FE_value *xi,struct Computed_field *coordinate_field, FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Check the xi limits when the element reaches the interface. If on an element
-boundary the element is changed and therefore this function should only be
-called if the integration has indicated that the direction changes element.
-==============================================================================*/
-{
-	enum FE_element_shape_type shape_type1, shape_type2, shape_type3;
-	int face_index,return_code,xi_linkage_number;
-	struct FE_element_shape *element_shape;
-
-	ENTER(check_xi_limits);
-	USE_PARAMETER(coordinate_field);
-	USE_PARAMETER(time);
-	return_code=1;
-	get_FE_element_shape(*element, &element_shape);
-	get_FE_element_shape_xi_shape_type(element_shape,
-		0, &shape_type1);
-	get_FE_element_shape_xi_shape_type(element_shape,
-		1, &shape_type2);
-	if ((1==change_xi)&&(xi[0]<=0.0))
-	{
-		if (POLYGON_SHAPE==shape_type1)
-		{
-			/* Polygon */
-			xi[0]=xi[0]+1;
-		}
-		else
-		{
-			/* Line */
-			/*???SAB.  Could be improved to check shape->faces for the face */
-			if (POLYGON_SHAPE==shape_type2)
-			{
-				face_index=0;
-			}
-			else
-			{
-				face_index=0;
-			}
-			return_code=FE_element_change_to_adjacent_element(element,
-				element_dimension,xi,face_index);
-		}
-	}
-	else
-	{
-		if ((1==change_xi)&&(xi[0]>=1.0))
-		{
-			if (POLYGON_SHAPE==shape_type1)
-			{
-				/* Polygon */
-				xi[0]=xi[0]-1;
-			}
-			else
-			{
-				/* Line */
-				/* SAB Could be improved to check shape->faces for the face */
-				if (POLYGON_SHAPE==shape_type2)
-				{
-					face_index=1;
-				}
-				else
-				{
-					face_index=1;
-				}
-				return_code=FE_element_change_to_adjacent_element(element,
-					element_dimension,xi,face_index);
-			}
-		}
-	}
-	if ((2==change_xi)&&(xi[1]<=0))
-	{
-		if (POLYGON_SHAPE==shape_type2)
-		{
-			/* Polygon */
-			get_FE_element_shape_xi_linkage_number(
-				element_shape, /*xi_number1*/0, /*xi_number2*/1,
-				&xi_linkage_number);
-			if (xi_linkage_number)
-			{
-				/* radial xi */
-				/* Crude */
-				xi[1]= -xi[1];
-				if (xi[0]<0.5)
-				{
-					xi[0] += 0.5;
-				}
-				else
-				{
-					xi[0] -= 0.5;
-				}
-			}
-			else
-			{
-				/* circumferential xi */
-				/* Not done yet */
-				return_code=0;
-			}
-		}
-		else
-		{
-			/* Line */
-			/* SAB Could be improved to check shape->faces for the face */
-			if (POLYGON_SHAPE==shape_type1)
-			{
-				get_FE_element_shape_xi_linkage_number(
-					element_shape, /*xi_number1*/0, /*xi_number2*/2,
-					&face_index);
-			}
-			else
-			{
-				face_index=2;
-			}
-			return_code=FE_element_change_to_adjacent_element(element,
-				element_dimension,xi,face_index);
-		}
-	}
-	else
-	{
-		if ((2==change_xi)&&(xi[1]>=1.0))
-		{
-			if (POLYGON_SHAPE==shape_type2)
-			{
-				/* Polygon */
-				get_FE_element_shape_xi_linkage_number(
-					element_shape, /*xi_number1*/0, /*xi_number2*/1,
-					&xi_linkage_number);
-				if (xi_linkage_number)
-				{
-					/* radial xi */
-					/* Assumes faces are stored in order of increasing xi0 */
-					face_index=(int)floor(xi[0]*(FE_value)xi_linkage_number);
-					return_code=FE_element_change_to_adjacent_element(element,
-						element_dimension,xi,face_index);
-				}
-				else
-				{
-					/* circumferential xi */
-					/* Not done yet */
-					return_code = 0;
-				}
-			}
-			else
-			{
-				/* Line */
-				/* SAB Could be improved to check shape->faces for the face */
-				if (POLYGON_SHAPE==shape_type1)
-				{
-					get_FE_element_shape_xi_linkage_number(
-						element_shape, /*xi_number1*/0, /*xi_number2*/2,
-						&face_index);
-					face_index++;
-				}
-				else
-				{
-					face_index=3;
-				}
-				return_code=FE_element_change_to_adjacent_element(element,
-				element_dimension,xi,face_index);
-			}
-		}
-	}
-	if (element_dimension >= 3)
-	{
-		get_FE_element_shape_xi_shape_type(element_shape,
-			2, &shape_type3);
-		if ((3==change_xi)&&(xi[2]<=0))
-		{
-			if (POLYGON_SHAPE==shape_type3)
-			{
-				/* Polygon */
-				/* Not done yet */
-				return_code=0;
-			}
-			else
-			{
-				/* Line */
-				/* SAB Could be improved to check shape->faces for the
-					face, now it assumes the order of the faces, all other faces first,
-					then xi3 = 0 and then xi3 = 1 */
-				if (POLYGON_SHAPE==shape_type1)
-				{
-					get_FE_element_shape_xi_linkage_number(
-						element_shape, /*xi_number1*/0, /*xi_number2*/1,
-						&face_index);
-				}
-				else
-				{
-					face_index=4;
-				}
-				return_code=FE_element_change_to_adjacent_element(element,
-				element_dimension,xi,face_index);
-			}
-		}
-		else
-		{
-			if ((3==change_xi)&&(xi[2]>=1.0))
-			{
-				if (POLYGON_SHAPE==shape_type3)
-				{
-					/* Polygon */
-					/* Not done yet */
-					return_code=0;
-				}
-				else
-				{
-					/* Line */
-					/* SAB Could be improved to check shape->faces for the
-						face, now it assumes the order of the faces, all other faces first,
-						then xi3 = 0 and then xi3 = 1 */
-					if (POLYGON_SHAPE==shape_type1)
-					{
-						get_FE_element_shape_xi_linkage_number(
-							element_shape, /*xi_number1*/0, /*xi_number2*/1,
-							&face_index);
-						face_index++;
-					}
-					else
-					{
-						face_index=5;
-					}
-					return_code=FE_element_change_to_adjacent_element(element,
-				element_dimension,xi,face_index);
-				}
-			}
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* check_xi_limits */
-
 static int calculate_delta_xi(int vector_dimension,FE_value *vector,
 	int element_dimension, FE_value *dx_dxi, FE_value *delta_xi)
 /*******************************************************************************
@@ -386,97 +151,6 @@ calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 				"Underdetermined systems not implemented.");
 			return_code = 0;
 		}
-#if defined (OLD_CODE)
-		switch (element_dimension)
-		{
-			case 2:
-			{
-				switch (vector_dimension)
-				{
-					case 2:
-					{
-						a[0] = dx_dxi[0];
-						a[1] = dx_dxi[1];
-						a[2] = dx_dxi[2];
-						a[3] = dx_dxi[3];
-						
-						atb[0] = vector[0];
-						atb[1] = vector[1];
-						if (LU_decompose(element_dimension, a, index, &d) &&
-							LU_backsubstitute(element_dimension, a, index, atb))
-						{
-							delta_xi[0] = atb[0];
-							delta_xi[1] = atb[1];
-						}
-						else
-						{
-							/* Probably singular system, we can't track any more */
-							delta_xi[0] = 0;
-							delta_xi[1] = 0;
-						}
-						delta_xi[2] = 0;
-					} break;
-					case 3:
-					{
-						/* Overdetermined system */
-						/* Solve A transpose A x = A transpose b */
-						a[0] = dx_dxi[0] * dx_dxi[0] + dx_dxi[2] * dx_dxi[2] + dx_dxi[4] * dx_dxi[4];
-						a[1] = dx_dxi[0] * dx_dxi[1] + dx_dxi[2] * dx_dxi[3] + dx_dxi[4] * dx_dxi[5];
-						a[2] = a[1];
-						a[3] = dx_dxi[1] * dx_dxi[1] + dx_dxi[3] * dx_dxi[3] + dx_dxi[5] * dx_dxi[5];
-						
-						atb[0] = dx_dxi[0] * vector[0] + dx_dxi[2] * vector[1] + dx_dxi[4] * vector[2];
-						atb[1] = dx_dxi[1] * vector[0] + dx_dxi[3] * vector[1] + dx_dxi[5] * vector[2];
-						
-						if (LU_decompose(element_dimension, a, index, &d) &&
-							LU_backsubstitute(element_dimension, a, index, atb))
-						{
-							delta_xi[0] = atb[0];
-							delta_xi[1] = atb[1];
-						}
-						else
-						{
-							/* Probably singular system, we can't track any more */
-							delta_xi[0] = 0;
-							delta_xi[1] = 0;
-						}
-						delta_xi[2] = 0;
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"calculate_delta_xi.  Unsupported number of components in vector field.");
-						return_code = 0;
-					} break;
-				}
-			} break;
-			case 3:
-			{
-				if (invert_FE_value_matrix3(dx_dxi, dxi_dx))
-				{
-					delta_xi[0] =
-						vector[0]*dxi_dx[0] + vector[1]*dxi_dx[1] + vector[2]*dxi_dx[2];
-					delta_xi[1] =
-						vector[0]*dxi_dx[3] + vector[1]*dxi_dx[4] + vector[2]*dxi_dx[5];
-					delta_xi[2] =
-						vector[0]*dxi_dx[6] + vector[1]*dxi_dx[7] + vector[2]*dxi_dx[8];
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"calculate_delta_xi.  Could not invert dx/dxi");
-					return_code = 0;
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"calculate_delta_xi.  Unsupported element dimension");
-				return_code = 0;
-			} break;
-		}
-#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -488,89 +162,34 @@ calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 	return (return_code);
 } /* calculate_delta_xi */
 
-static FE_value find_valid_portion( FE_value *xiA, FE_value *xiB, int *change_element )
-{
-	FE_value new_proportion, proportion;
-
-	*change_element = 0;
-
-	proportion = 1.0;
-	if ( xiB[0] < 0.0 )
-	{
-		proportion = ( 0.0 - xiA[0] ) / ( xiB[0] - xiA[0] );
-		*change_element = 1;
-	}
-	if ( xiB[0] > 1.0 )
-	{
-		proportion = ( 1.0 - xiA[0] ) / ( xiB[0] - xiA[0] );
-		*change_element = 1;
-	}
-
-	if ( xiB[1] < 0.0 )
-	{
-		new_proportion = ( 0.0 - xiA[1] ) / ( xiB[1] - xiA[1] );
-		if ( new_proportion < proportion )
-		{
-			proportion = new_proportion;
-			*change_element = 2;
-		}
-	}
-	if ( xiB[1] > 1.0 )
-	{
-		new_proportion = ( 1.0 - xiA[1] ) / ( xiB[1] - xiA[1] );
-		if ( new_proportion < proportion )
-		{
-			proportion = new_proportion;
-			*change_element = 2;
-		}
-	}
-
-	if ( xiB[2] < 0.0 )
-	{
-		new_proportion = ( 0.0 - xiA[2] ) / ( xiB[2] - xiA[2] );
-		if ( new_proportion < proportion )
-		{
-			proportion = new_proportion;
-			*change_element = 3;
-		}
-	}
-	if ( xiB[2] > 1.0 )
-	{
-		new_proportion = ( 1.0 - xiA[2] ) / ( xiB[2] - xiA[2] );
-		if ( new_proportion < proportion )
-		{
-			proportion = new_proportion;
-			*change_element = 3;
-		}
-	}
-
-	return( proportion );
-} /* find_valid_portion */
-
 static int update_adaptive_imp_euler(struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	struct FE_element *element,FE_value *xi,FE_value time,FE_value *point,
-	FE_value *step_size,FE_value *total_stepped,int *change_element)
+	struct FE_element **element,FE_value *xi,FE_value time,FE_value *point,
+	FE_value *step_size,FE_value *total_stepped, int *keep_tracking)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 14 January 2004
 
 DESCRIPTION :
 Update the xi coordinates using the <stream_vector_field> with adaptive step
-size control and the improved euler method.  <change_element> indicates whether
-an element boundary has been reached and therefore the element should be
-changed. The function updates the <total_stepped>.
+size control and the improved euler method.  The function updates the <total_stepped>.
 If <reverse_track> is true, the reverse of vector field is tracked.
 ==============================================================================*/
 {
-	int element_dimension,return_code,vector_dimension;
-	FE_value deltaxi[3],deltaxiA[3],
-		deltaxiC[3], deltaxiD[3], deltaxiE[3], dxdxi[9], error,
-		proportion, tolerance, vector[9], xiA[3], xiB[3], xiC[3],
-		xiD[3], xiE[3], xiF[3];
+	int element_dimension,face_number,i,return_code,vector_dimension;
+	FE_value deltaxi[MAXIMUM_ELEMENT_XI_DIMENSIONS],deltaxiA[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		deltaxiC[MAXIMUM_ELEMENT_XI_DIMENSIONS], deltaxiD[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		deltaxiE[MAXIMUM_ELEMENT_XI_DIMENSIONS], 
+		dxdxi[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS], error, fraction,
+		increment_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], local_step_size, tolerance, 
+		vector[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS], 
+		xiA[MAXIMUM_ELEMENT_XI_DIMENSIONS], xiB[MAXIMUM_ELEMENT_XI_DIMENSIONS], 
+		xiC[MAXIMUM_ELEMENT_XI_DIMENSIONS], xiD[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		xiE[MAXIMUM_ELEMENT_XI_DIMENSIONS], xiF[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		xi_face[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 
 	ENTER(update_adaptive_imp_euler);
 	/* clear coordinates in case fewer than 3 components */
-	element_dimension = get_FE_element_dimension(element);
+	element_dimension = get_FE_element_dimension(*element);
 	/* It is expected that the coordinate dimension and vector dimension match,
 		the vector field may have extra components related to the cross directions */
 	vector_dimension = Computed_field_get_number_of_components(coordinate_field);
@@ -578,15 +197,18 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 	point[1]=0.0;
 	point[2]=0.0;
 	tolerance=1.0e-4;
-	return_code=Computed_field_evaluate_in_element(coordinate_field,element,xi,
+	error=1.0;
+	local_step_size = *step_size;
+	return_code=Computed_field_evaluate_in_element(coordinate_field,*element,xi,
 		time,(struct FE_element *)NULL,point,dxdxi)&&
 		Computed_field_evaluate_in_element(stream_vector_field,
-		element,xi,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
+		*element,xi,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 	if (reverse_track)
 	{
-		vector[0] = -vector[0];
-		vector[1] = -vector[1];
-		vector[2] = -vector[2];
+		for (i = 0 ; i < vector_dimension ; i++)
+		{
+			vector[i] = -vector[i];
+		}
 	}
 	if (return_code)
 	{
@@ -595,27 +217,38 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 	}
 	if (return_code)
 	{
-		if (*step_size == 0.0)
+		if (local_step_size == 0.0)
 		{
 			/* This is the first step, set the step_size to make the
 			 magnitude of deltaxi 0.01 */
-			*step_size=1.0e-2/sqrt(deltaxi[0]*deltaxi[0]+deltaxi[1]*deltaxi[1]
+			local_step_size=1.0e-2/sqrt(deltaxi[0]*deltaxi[0]+deltaxi[1]*deltaxi[1]
 				+deltaxi[2]*deltaxi[2]);
 			
 		}
 		/* whole step */
-		xiA[0]=xi[0]+(*step_size)*deltaxi[0];
-		xiA[1]=xi[1]+(*step_size)*deltaxi[1];
-		xiA[2]=xi[2]+(*step_size)*deltaxi[2];
-		return_code=Computed_field_evaluate_in_element(coordinate_field,element,xiA,
-			time,(struct FE_element *)NULL,point,dxdxi)&&
-			Computed_field_evaluate_in_element(stream_vector_field,
-			element,xiA,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
-		if (reverse_track)
+		for (i = 0 ; i < element_dimension ; i++)
 		{
-			vector[0] = -vector[0];
-			vector[1] = -vector[1];
-			vector[2] = -vector[2];
+			xiA[i] = xi[i];
+			increment_xi[i] = local_step_size * deltaxi[i];
+		}
+		return_code = FE_element_xi_increment_within_element(*element, xiA, increment_xi, &fraction,
+		   &face_number, xi_face);
+		/* If an element boundary is reached then xiA will automatically be on this boundary.
+			We want to go to the same location with the more accurate xiB integration so 
+			leave the step size alone and adjust the stepsize after xiB */
+		if (return_code)
+		{
+			return_code=Computed_field_evaluate_in_element(coordinate_field, *element, xiA,
+				time,(struct FE_element *)NULL,point,dxdxi)&&
+				Computed_field_evaluate_in_element(stream_vector_field,
+				*element,xiA,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
+			if (reverse_track)
+			{
+				for (i = 0 ; i < vector_dimension ; i++)
+				{
+					vector[i] = -vector[i];
+				}
+			}
 		}
 		if (return_code)
 		{
@@ -624,26 +257,57 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		}
 		if (return_code)
 		{
-			xiB[0]=xi[0]+(*step_size)*(deltaxi[0]+deltaxiA[0])/2.0;
-			xiB[1]=xi[1]+(*step_size)*(deltaxi[1]+deltaxiA[1])/2.0;
-			xiB[2]=xi[2]+(*step_size)*(deltaxi[2]+deltaxiA[2])/2.0;
+			for (i = 0 ; i < element_dimension ; i++)
+			{
+				xiB[i] = xi[i];
+				increment_xi[i] = local_step_size*(deltaxi[i]+deltaxiA[i])/2.0;
+			}
+			return_code = FE_element_xi_increment_within_element(*element, xiB,
+				increment_xi, &fraction, &face_number, xi_face);
+		}
+		if (face_number != -1)
+		{
+			if (0.0 == fraction)
+			{
+				/* Don't go into the loop, so set error and xiF */
+				error = 0.0;
+				local_step_size = 0.0;
+				for (i = 0 ; i < element_dimension ; i++)
+				{
+					xiF[i] = xiB[i];
+				}
+			}
+			else
+			{
+				/* Reduce the step to the fraction that was successful plus a bit 
+					to make it likely that the more accurate integration below will
+					still reach the boundary */
+				local_step_size *= (fraction + 0.001);
+			}
 		}
 	}
-	error=1.0;
 	while ((error>tolerance)&&return_code)
 	{
-		xiC[0]=xi[0]+(*step_size)*deltaxi[0]/2.0;
-		xiC[1]=xi[1]+(*step_size)*deltaxi[1]/2.0;
-		xiC[2]=xi[2]+(*step_size)*deltaxi[2]/2.0;
-		return_code=Computed_field_evaluate_in_element(coordinate_field,element,xiC,
-			time,(struct FE_element *)NULL,point,dxdxi)&&
-			Computed_field_evaluate_in_element(stream_vector_field,
-			element,xiC,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
-		if (reverse_track)
+		for (i = 0 ; i < element_dimension ; i++)
 		{
-			vector[0] = -vector[0];
-			vector[1] = -vector[1];
-			vector[2] = -vector[2];
+			xiC[i] = xi[i];
+			increment_xi[i] = local_step_size*deltaxi[i]/2.0;
+		}
+		return_code = FE_element_xi_increment_within_element(*element, xiC,
+			increment_xi, &fraction, &face_number, xi_face);
+		if (return_code)
+		{
+			return_code=Computed_field_evaluate_in_element(coordinate_field,*element,xiC,
+				time,(struct FE_element *)NULL,point,dxdxi)&&
+				Computed_field_evaluate_in_element(stream_vector_field,
+				*element,xiC,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
+			if (reverse_track)
+			{
+				for (i = 0 ; i < vector_dimension ; i++)
+				{
+					vector[i] = -vector[i];
+				}
+			}
 		}
 		if (return_code)
 		{
@@ -652,18 +316,26 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		}
 		if (return_code)
 		{
-			xiD[0]=xi[0]+(*step_size)*(deltaxi[0]+deltaxiC[0])/4.0;
-			xiD[1]=xi[1]+(*step_size)*(deltaxi[1]+deltaxiC[1])/4.0;
-			xiD[2]=xi[2]+(*step_size)*(deltaxi[2]+deltaxiC[2])/4.0;
-			return_code=Computed_field_evaluate_in_element(coordinate_field,element,
+			for (i = 0 ; i < element_dimension ; i++)
+			{
+				xiD[i] = xi[i];
+				increment_xi[i] = local_step_size*(deltaxi[i]+deltaxiC[i])/4.0;
+			}
+			return_code = FE_element_xi_increment_within_element(*element, xiD,
+				increment_xi, &fraction, &face_number, xi_face);
+		}
+		if (return_code)
+		{
+			return_code=Computed_field_evaluate_in_element(coordinate_field,*element,
 				xiD,time,(struct FE_element *)NULL,point,dxdxi)&&
-				Computed_field_evaluate_in_element(stream_vector_field,element,
+				Computed_field_evaluate_in_element(stream_vector_field,*element,
 				xiD,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 			if (reverse_track)
 			{
-				vector[0] = -vector[0];
-				vector[1] = -vector[1];
-				vector[2] = -vector[2];
+				for (i = 0 ; i < vector_dimension ; i++)
+				{
+					vector[i] = -vector[i];
+				}
 			}
 		}
 		if (return_code)
@@ -673,18 +345,26 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		}
 		if (return_code)
 		{
-			xiE[0]=xiD[0]+(*step_size)*deltaxiD[0]/2.0;
-			xiE[1]=xiD[1]+(*step_size)*deltaxiD[1]/2.0;
-			xiE[2]=xiD[2]+(*step_size)*deltaxiD[2]/2.0;
-			return_code=Computed_field_evaluate_in_element(coordinate_field,element,
+			for (i = 0 ; i < element_dimension ; i++)
+			{
+				xiE[i] = xiD[i];
+				increment_xi[i] = local_step_size*deltaxiD[i]/2.0;
+			}
+			return_code = FE_element_xi_increment_within_element(*element, xiE,
+				increment_xi, &fraction, &face_number, xi_face);
+		}
+		if (return_code)
+		{
+			return_code=Computed_field_evaluate_in_element(coordinate_field,*element,
 				xiE,time,(struct FE_element *)NULL,point,dxdxi)&&
-				Computed_field_evaluate_in_element(stream_vector_field,element,
+				Computed_field_evaluate_in_element(stream_vector_field,*element,
 				xiE,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
 			if (reverse_track)
 			{
-				vector[0] = -vector[0];
-				vector[1] = -vector[1];
-				vector[2] = -vector[2];
+				for (i = 0 ; i < vector_dimension ; i++)
+				{
+					vector[i] = -vector[i];
+				}
 			}
 		}
 		if (return_code)
@@ -694,12 +374,24 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		}
 		if (return_code)
 		{
-			xiF[0]=xiD[0]+(*step_size)*(deltaxiD[0]+deltaxiE[0])/4.0;
-			xiF[1]=xiD[1]+(*step_size)*(deltaxiD[1]+deltaxiE[1])/4.0;
-			xiF[2]=xiD[2]+(*step_size)*(deltaxiD[2]+deltaxiE[2])/4.0;
+			for (i = 0 ; i < element_dimension ; i++)
+			{
+				xiF[i] = xiD[i];
+				increment_xi[i] = local_step_size*(deltaxiD[i]+deltaxiE[i])/4.0;
+			}
+			return_code = FE_element_xi_increment_within_element(*element, xiF,
+				increment_xi, &fraction, &face_number, xi_face);
+			if (face_number != -1)
+			{
+				/* Reduce the step size to that which was actually taken */
+				local_step_size *= (0.5 + fraction / 2.0);
+			}
+		}
+		if (return_code)
+		{
 			error=sqrt((xiF[0]-xiB[0])*(xiF[0]-xiB[0])+
 				(xiF[1]-xiB[1])*(xiF[1]-xiB[1])+(xiF[2]-xiB[2])*(xiF[2]-xiB[2]));
-			if (((*step_size)*sqrt(deltaxiC[0]*deltaxiC[0]+
+			if ((local_step_size*sqrt(deltaxiC[0]*deltaxiC[0]+
 				deltaxiC[1]*deltaxiC[1]+deltaxiC[2]*deltaxiC[2]))<1.0e-3)
 			{
 				error=0.0;
@@ -707,7 +399,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 		}
 		if ((error>tolerance)&&return_code)
 		{
-			*step_size /= 2.0;
+			local_step_size /= 2.0;
 			xiB[0]=xiD[0];
 			xiB[1]=xiD[1];
 			xiB[2]=xiD[2];
@@ -715,86 +407,34 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 	}
 	if (return_code)
 	{
-		/* is the whole integration within the element ? */
-		if ((xiF[0]<0.0)||(xiF[0]>1.0)||(xiF[1]<0.0)||(xiF[1]>1.0)||(xiF[2]<0.0)||
-			(xiF[2]>1.0))
+		*total_stepped += local_step_size;
+		if (face_number != -1)
 		{
-			/* was the first part of the double step all inside the element... */
-			if ((xiD[0]<0.0)||(xiD[0]>1.0)||(xiD[1]<0.0)||(xiD[1]>1.0)||
-				(xiD[2]<0.0)||(xiD[2]>1.0))
+			/* The last increment should have been the most accurate, if
+				it wants to change then change element if we can */
+			return_code = FE_element_change_to_adjacent_element(element,
+				xiF, (FE_value *)NULL, &face_number, xi_face);
+			if (face_number == -1)
 			{
-				/* else interpolate the first part */
-				proportion=find_valid_portion(xi,xiD,change_element);
-				*total_stepped += (*step_size)*0.5*proportion;
-				xi[0]=xi[0]+proportion*(*step_size)*(deltaxi[0]+deltaxiC[0])/4.0;
-				xi[1]=xi[1]+proportion*(*step_size)*(deltaxi[1]+deltaxiC[1])/4.0;
-				xi[2]=xi[2]+proportion*(*step_size)*(deltaxi[2]+deltaxiC[2])/4.0;
-			}
-			else
-			{
-				/* then interpolate the second part */
-				proportion=find_valid_portion(xiD,xiF,change_element);
-				*total_stepped += (*step_size)*0.5*(1.0+proportion);
-				xi[0]=xiD[0]+proportion*(*step_size)*(deltaxiD[0]+deltaxiE[0])/4.0;
-				xi[1]=xiD[1]+proportion*(*step_size)*(deltaxiD[1]+deltaxiE[1])/4.0;
-				xi[2]=xiD[2]+proportion*(*step_size)*(deltaxiD[2]+deltaxiE[2])/4.0;
-			}
-			/*???RC the proportion returned by find_valid_portion, when plugged into
-				the above formulae can leave xi slightly inside the element, even when
-				change element is indicated. Hence make sure calculation leaves xi
-				exactly on the boundary. */
-			switch (*change_element)
-			{
-				case 1:
-				{
-					/* xi[0] outside 0 to 1 range */
-					if (xi[0]>0.5)
-					{
-						xi[0]=1.0;
-					}
-					else
-					{
-						xi[0]=0.0;
-					}
-				} break;
-				case 2:
-				{
-					/* xi[1] outside 0 to 1 range */
-					if (xi[1]>0.5)
-					{
-						xi[1]=1.0;
-					}
-					else
-					{
-						xi[1]=0.0;
-					}
-				} break;
-				case 3:
-				{
-					/* xi[2] outside 0 to 1 range */
-					if (xi[2]>0.5)
-					{
-						xi[2]=1.0;
-					}
-					else
-					{
-						xi[2]=0.0;
-					}
-				} break;
+				/* There is no adjacent element */
+				*keep_tracking = 0;
 			}
 		}
 		else
 		{
-			*change_element=0;
-			*total_stepped += *step_size;
+			/* Update the global step_size */
 			if (error<tolerance/10.0)
 			{
-				*step_size *= 2.0;
+				local_step_size *= 2.0;
 			}
-			xi[0]=xiF[0];
-			xi[1]=xiF[1];
-			xi[2]=xiF[2];
+			*step_size = local_step_size;
 		}
+	}
+	if (return_code)
+	{
+		xi[0]=xiF[0];
+		xi[1]=xiF[1];
+		xi[2]=xiF[2];
 	}
 	LEAVE;
 
@@ -814,8 +454,10 @@ translation in world coordinates is non NULL the xi coordinates are updated
 accurate if small), also ensuring that the element is updated.
 ==============================================================================*/
 {
-	FE_value deltaxi[3],dxdxi[9],magnitude,point[3],proportion,xiA[3];
-	int change_element,return_code;
+	FE_value deltaxi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+	   dxdxi[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS],
+	   point[MAXIMUM_ELEMENT_XI_DIMENSIONS],xiA[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int return_code;
 
 	ENTER(update_interactive_streampoint);
 	/* check the arguments */
@@ -839,64 +481,7 @@ accurate if small), also ensuring that the element is updated.
 					deltaxi[1] = 0.002*CMGUI_RANDOM(FE_value) - 0.001;
 					deltaxi[2] = 0.002*CMGUI_RANDOM(FE_value) - 0.001;
 				}
-				return_code=0;
-				while (!return_code)
-				{
-#if defined (DEBUG)
-					/*???debug */
-					printf("update interactive streampoint.  deltaxi %f %f %f\n",
-						deltaxi[0], deltaxi[1], deltaxi[2] );
-					printf("update interactive streampoint.  xi %f %f %f\n",
-						xi[0], xi[1], xi[2] );
-					/*???debug end */
-#endif /* defined (DEBUG) */
-					xiA[0]=xi[0]+deltaxi[0];
-					xiA[1]=xi[1]+deltaxi[1];
-					xiA[2]=xi[2]+deltaxi[2];
-					if ((xiA[0]<0.0)||(xiA[0]>1.0)||(xiA[1]<0.0)||(xiA[1]>1.0)||
-						(xiA[2]<0.0)||(xiA[2]>1.0))
-					{
-						proportion=find_valid_portion(xi,xiA,&change_element);
-						xi[0] += proportion*deltaxi[0];
-						xi[1] += proportion*deltaxi[1];
-						xi[2] += proportion*deltaxi[2];
-					}
-					else
-					{
-						change_element=0;
-						xi[0]=xiA[0];
-						xi[1]=xiA[1];
-						xi[2]=xiA[2];
-						return_code=1;
-					}
-					if (change_element)
-					{
-						if (check_xi_limits(change_element,element,/*element_dimension*/3,
-								 xi,coordinate_field,time))
-						{
-							return_code=1;
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE,
-								"update_interactive_streampoint.  Reducing step magnitude");
-							magnitude=sqrt(deltaxi[0]*deltaxi[0]+
-								deltaxi[1]*deltaxi[1]+deltaxi[2]*deltaxi[2]);
-							if (magnitude>1.0)
-							{
-								deltaxi[0] /= 10.*magnitude;
-								deltaxi[1] /= 10.*magnitude;
-								deltaxi[2] /= 10.*magnitude;
-							}
-							else
-							{
-								deltaxi[0] /= 10.;
-								deltaxi[1] /= 10.;
-								deltaxi[2] /= 10.;
-							}
-						}
-					}
-				}
+				return_code = FE_element_xi_increment(element, xiA, deltaxi);
 			}
 			else
 			{
@@ -974,14 +559,14 @@ following way:
 {
 	FE_value angle,coordinates[3],cos_angle,curl[3],curl_component,data_value,
 		displacement[3],dv_dxi[9],dv_dx[9],dx_dxi[9],dxi_dx[9],magnitude,normal[3],
-		normal2[3],old_normal[3],previous_curl_component,previous_total_stepped,
-		sin_angle,step_size,stream_vector_values[9],temp,total_stepped,vector[3],
-		vector_magnitude;
+		normal2[3],old_normal[3],previous_curl_component,previous_total_stepped_A,
+		previous_total_stepped_B,sin_angle,step_size,stream_vector_values[9],
+		temp,total_stepped,vector[3],vector_magnitude;
 	GTDATA *stream_datum,*tmp_stream_data;
-	int allocated_number_of_points,change_element,element_dimension,
+	int add_point,allocated_number_of_points,element_dimension,
 		i,keep_tracking,number_of_coordinate_components,
-		previous_change_element,
 		number_of_stream_vector_components,return_code;
+	struct FE_element *previous_element_A, *previous_element_B;
 	Triple *stream_point,*stream_vector,*stream_normal,*tmp_triples;
 
 	ENTER(track_streamline_from_FE_element);
@@ -1029,11 +614,11 @@ following way:
 			stream_normal= *stream_normals;
 			stream_datum= *stream_data;
 			i=0;
-			previous_change_element=0;
-			keep_tracking=1;
-			while (keep_tracking)
+			add_point = 1;
+			keep_tracking = 1;
+			while (return_code && add_point)
 			{
-				while (keep_tracking&&(i<allocated_number_of_points))
+				while (return_code && add_point && (i<allocated_number_of_points))
 				{
 					/* evaluate the coordinate and stream_vector fields */
 					switch (number_of_stream_vector_components)
@@ -1047,7 +632,7 @@ following way:
 							/* need derivatives of coordinate_field and stream_vector_field
 								for calculation of curl. Calculate coordinates first, since
 								may be required for evaluating the stream_vector_field. */
-							keep_tracking=Computed_field_evaluate_in_element(coordinate_field,
+							return_code=Computed_field_evaluate_in_element(coordinate_field,
 								*element,xi,time,(struct FE_element *)NULL,coordinates,dx_dxi)&&
 								Computed_field_evaluate_in_element(stream_vector_field,
 								*element,xi,time,(struct FE_element *)NULL,stream_vector_values,
@@ -1062,7 +647,7 @@ following way:
 								evaluate stream_vector_field first, since in many cases it will
 								force a calculation of the coordinate field with derivatives,
 								thus saving the coordinates from being recalculated */
-							keep_tracking=Computed_field_evaluate_in_element(
+							return_code=Computed_field_evaluate_in_element(
 							   stream_vector_field,*element,xi,time,(struct FE_element *)NULL,
 							   stream_vector_values,(FE_value *)NULL)&&
 							   Computed_field_evaluate_in_element(coordinate_field,*element,
@@ -1086,9 +671,9 @@ following way:
 						vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2])))
 					{
 						/* streamline is not going anywhere */
-						keep_tracking=0;
+						add_point = 0;
 					}
-					if (keep_tracking)
+					if (add_point)
 					{
 						/* get vector, normal and normal2 - latter are unit vectors normal
 							 to the streamline - normal is in lateral direction across sheet,
@@ -1144,7 +729,7 @@ following way:
 										display_message(ERROR_MESSAGE,
 											"track_streamline_from_FE_element.  "
 											"Incompatible element dimension and vector components.");
-										keep_tracking = 0;
+										return_code = 0;
 									}
 								}
 							} break;
@@ -1171,7 +756,7 @@ following way:
 										if (0.0==total_stepped)
 										{
 											angle = 0.0;
-											previous_total_stepped = 0.0;
+											previous_total_stepped_A = 0.0;
 											/* get normal2 = a vector not co-linear with stream vector */
 											normal2[0]=0.0;
 											normal2[1]=0.0;
@@ -1203,7 +788,7 @@ following way:
 										{
 											/* get angle from average curl along segment of streamline */
 											angle = 0.5*(previous_curl_component + curl_component)
-												* (total_stepped - previous_total_stepped);
+												* (total_stepped - previous_total_stepped_A);
 											if (reverse_track)
 											{
 												angle = -angle;
@@ -1329,7 +914,7 @@ following way:
 										display_message(ERROR_MESSAGE,
 											"track_streamline_from_FE_element.  "
 											"Incompatible element dimension and vector components.");
-										keep_tracking = 0;
+										return_code = 0;
 									}
 								}
 							} break;
@@ -1338,7 +923,7 @@ following way:
 								display_message(ERROR_MESSAGE,
 									"track_streamline_from_FE_element.  "
 									"Unsupported number of element dimension.");
-								keep_tracking = 0;
+								return_code = 0;
 							}
 						}
 						/* calculate data */
@@ -1361,7 +946,7 @@ following way:
 									display_message(ERROR_MESSAGE,
 										"track_streamline_from_FE_element.  "
 										"Error calculating data field");
-									keep_tracking = 0;
+									return_code = 0;
 								}
 							} break;
 							case STREAM_TRAVEL_SCALAR:
@@ -1379,7 +964,7 @@ following way:
 							{
 								display_message(ERROR_MESSAGE,
 									"track_streamline_from_FE_element.  Unknown data type");
-								keep_tracking = 0;
+								return_code = 0;
 							} break;
 						}
 						/* set point, normal and data */
@@ -1401,40 +986,39 @@ following way:
 							stream_datum++;
 						}
 						i++;
-						previous_total_stepped=total_stepped;
-						/* perform the tracking, changing elements as necessary */
-						if (total_stepped<length)
+						if (keep_tracking && (total_stepped<length))
 						{
-							keep_tracking=update_adaptive_imp_euler(coordinate_field,
-								stream_vector_field,reverse_track,*element,xi,time,coordinates,
-								&step_size,&total_stepped,&change_element);
-							if (keep_tracking&&change_element)
+							/* perform the tracking, changing elements as necessary */
+							if (total_stepped + step_size > length)
 							{
-								if (previous_change_element==change_element)
-								{
-									/* trapped between two elements with opposing directions */
-									/*???debug*/
-									printf("track_streamline_from_FE_element.  "
-										"trapped between two elements with opposing directions\n");
-									keep_tracking = 0;
-								}
-								else
-								{
-									keep_tracking=check_xi_limits(change_element,element,
-										element_dimension,xi,coordinate_field,time);
-								}
+								step_size = length - total_stepped;
 							}
-							previous_change_element=change_element;
+							previous_total_stepped_B = previous_total_stepped_A;
+							previous_total_stepped_A = total_stepped;
+							previous_element_B = previous_element_A;
+							previous_element_A = *element;
+							return_code=update_adaptive_imp_euler(coordinate_field,
+								stream_vector_field,reverse_track,element,xi,time,coordinates,
+								&step_size,&total_stepped,&keep_tracking);
+							/* If we haven't gone anywhere and are changing back to the previous
+								element then we are stuck */
+							if ((total_stepped == previous_total_stepped_B) && 
+								(*element == previous_element_B))
+							{
+								printf("track_streamline_from_FE_element.  "
+									"trapped between two elements with opposing directions\n");
+								add_point = 0;
+							}
 						}
 						else
 						{
-							keep_tracking = 0;
+							add_point = 0;
 						}
 					}
 				}
-				if (keep_tracking||(i<allocated_number_of_points))
+				if (add_point||(i<allocated_number_of_points))
 				{
-					if (keep_tracking)
+					if (add_point)
 					{
 						/* allocate 100 more spaces for points, normals and data */
 						allocated_number_of_points += 100;
@@ -1491,7 +1075,7 @@ following way:
 					{
 						display_message(ERROR_MESSAGE,
 							"track_streamline_from_FE_element.  Could not reallocate");
-						keep_tracking=0;
+						return_code=0;
 					}
 				}
 			}
@@ -2161,7 +1745,7 @@ created with the given timestamp.
 ==============================================================================*/
 {
 	FE_value coordinates[3],step_size,total_stepped;
-	int change_element,index,number_of_points,previous_change_element,return_code;
+	int keep_tracking,index,number_of_points,return_code;
 	struct GT_pointset *pointset;
 	struct Streampoint *point2;
 	Triple *particle_positions;
@@ -2228,7 +1812,7 @@ created with the given timestamp.
 	{
 		total_stepped=0;
 		step_size=step;
-		previous_change_element=0;
+		keep_tracking=1;
 		while (return_code&&(total_stepped<step))
 		{
 			if (total_stepped+step_size>step)
@@ -2236,25 +1820,11 @@ created with the given timestamp.
 				step_size=step-total_stepped;
 			}
 			return_code=update_adaptive_imp_euler(coordinate_field,
-				stream_vector_field,/*reverse_track*/0,point->element,point->xi,
-				time,coordinates,&step_size,&total_stepped,&change_element);
+				stream_vector_field,/*reverse_track*/0,&(point->element),point->xi,
+				time,coordinates,&step_size,&total_stepped,&keep_tracking);
 			(*((point->pointlist)[point->index]))[0]=coordinates[0];
 			(*((point->pointlist)[point->index]))[1]=coordinates[1];
 			(*((point->pointlist)[point->index]))[2]=coordinates[2];
-			if (return_code&&change_element)
-			{
-				if (change_element==previous_change_element)
-				{
-					/* trapped between two elements with opposing directions */
-					return_code=0;
-				}
-				else
-				{
-					return_code=check_xi_limits(change_element,&(point->element),
-						/*element_dimension*/3,point->xi,coordinate_field,time);
-				}
-			}
-			previous_change_element=change_element;
 		}
 		if (total_stepped)
 		{

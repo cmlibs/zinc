@@ -4751,27 +4751,38 @@ Given  <component_number>  and <nodal_value_type> of <field> at a
 <node> in an <element>, set the  corresponding scale_factor to <scale_factor>.
 ==============================================================================*/
 
-int FE_element_change_to_adjacent_element(struct FE_element **element,
-	int element_dimension, FE_value *xi, int face_index);
+int FE_element_xi_increment_within_element(struct FE_element *element, FE_value *xi,
+	FE_value *increment, FE_value *fraction, int *face_number, FE_value *xi_face);
 /*******************************************************************************
-LAST MODIFIED : 18 December 2003
+LAST MODIFIED : 20 January 2004
 
 DESCRIPTION :
-For changing between elements when at the interface between elements. Swaps
-to the neighbouring element from <element> across the <face_index>, overwriting
-<element> to point to the new location and attempting to update the <xi> to 
-the corresponding location in the new <element>.
-This function used to use a Computed_field coordinate_field for resolving 
-problems when crossing polygon sides, however if you place cubes with
-inconsistent xis on the faces this function will get the wrong <xi>.  Either
-it could return all the possible xi locations or it could use an FE_field and
-time to resolve which one is correct but that is really expensive.
+Adds the <increment> to <xi>.  If this moves <xi> outside of the element, then
+the step is limited to take <xi> to the boundary, <face_number> is set to be
+the limiting face, <fraction> is updated with the fraction of the <increment>
+actually used, the <increment> is updated to contain the part not used,
+the <xi_face> are calculated for that face and the <xi> are changed to be
+on the boundary of the element.
+==============================================================================*/
+
+int FE_element_change_to_adjacent_element(struct FE_element **element_address,
+	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face);
+/*******************************************************************************
+LAST MODIFIED : 20 January 2004
+
+DESCRIPTION :
+Steps into the adjacent element through face <face_number>, updating the 
+<element_address> location.
+If <xi> is not NULL then the <xi_face> coordinates are converted to an xi
+location in the new element.
+If <increment> is not NULL then it is converted into an equvalent increment
+in the new element.
 ==============================================================================*/
 
 int FE_element_xi_increment(struct FE_element **element_address,FE_value *xi,
 	FE_value *increment);
 /*******************************************************************************
-LAST MODIFIED : 30 July 2003
+LAST MODIFIED : 21 January 2004
 
 DESCRIPTION :
 Adds the <increment> to <xi> changing to another element if necessary.
