@@ -835,7 +835,11 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 		{
 			if (0==scene_object->access_count)
 			{
-				if(scene_object->child_scene)
+				if (scene_object->transformation)
+				{
+					DEALLOCATE(scene_object->transformation);
+				}
+				if (scene_object->child_scene)
 				{
 					DEACCESS(Scene)(&(scene_object->child_scene));
 				}
