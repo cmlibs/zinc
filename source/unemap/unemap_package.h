@@ -68,9 +68,9 @@ the node and element groups need to be regenerated, or just have the values chan
 	struct Map_info **maps_info;
 	/* these are for the cmgui graphics window */
 	int viewed_scene; /* flag to record if done "view all" on scene*/
-	struct Colour no_interpolation_colour; /* should this and below be be in struct Map ?*/
+	struct Colour *no_interpolation_colour; /* should this and below be be in struct Map ?*/
 	struct Graphics_window *window; /*or Map_drawing_information?  */
-	struct Colour background_colour;
+	struct Colour *background_colour;
 	struct Light *light;	
 	struct Light_model *light_model;	
 	struct Scene *scene;	
@@ -715,7 +715,7 @@ gets the Colour of the unemap package.
 ==============================================================================*/
 
 int set_unemap_package_background_colour(struct Unemap_package *package,
-	struct Colour background_colour);
+	struct Colour *background_colour);
 /*******************************************************************************
 LAST MODIFIED : September 2 1999
 

@@ -451,9 +451,9 @@ The fields are filed in with set_unemap_package_fields()
 			package->rig_node_groups=(struct GROUP(FE_node) **)NULL;								
 			/* for the cmgui graphics window */
 			package->viewed_scene=0; 
-			package->no_interpolation_colour=*create_Colour(0.65,0.65,0.65);
+			package->no_interpolation_colour=create_Colour(0.65,0.65,0.65);
 			package->window=(struct Graphics_window *)NULL;
-			package->background_colour=*create_Colour(0,0,0);
+			package->background_colour=create_Colour(0,0,0);
 			package->light=(struct Light *)NULL;			
 			package->light_model=(struct Light_model *)NULL;			
 			package->scene=(struct Scene *)NULL;		
@@ -509,6 +509,8 @@ to NULL.
 		{
 			DEACCESS(FE_field)(&(package->electrode_position_fields[count]));		
 		}
+		destroy_Colour(&package->no_interpolation_colour);
+		destroy_Colour(&package->background_colour);
 		package->number_of_electrode_position_fields=0;	
 		DEACCESS(FE_field)(&(package->device_name_field));
 		DEACCESS(FE_field)(&(package->device_type_field));
@@ -613,7 +615,7 @@ gets the no_interpolation_colour of the unemap package.
 	ENTER(get_unemap_package_no_interpolation_colour)
 	if(package)
 	{
-		no_interpolation_colour=&(package->no_interpolation_colour);
+		no_interpolation_colour=package->no_interpolation_colour;
 	}
 	else
 	{
@@ -2656,7 +2658,7 @@ gets the Colour of the unemap package.
 	ENTER(get_unemap_package_background_colour);
 	if(package)
 	{
-		background_colour=&package->background_colour;
+		background_colour=package->background_colour;
 	}
 	else
 	{
@@ -2669,7 +2671,7 @@ gets the Colour of the unemap package.
 } /* get_unemap_package_background_colour */
 
 int set_unemap_package_background_colour(struct Unemap_package *package,
-	struct Colour background_colour)
+	struct Colour *background_colour)
 /*******************************************************************************
 LAST MODIFIED : September 2 1999
 
@@ -2682,8 +2684,10 @@ Sets the Colour of the unemap package.
 	ENTER(set_unemap_package_background_colour);
 	if(package)
 	{
-		return_code =1;		
-		package->background_colour=background_colour;
+		return_code =1;
+		package->background_colour->red=background_colour->red;
+		package->background_colour->green=background_colour->green;
+		package->background_colour->blue=background_colour->blue;
 		
 	}
 	else
