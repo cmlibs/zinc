@@ -21,8 +21,6 @@ DESCRIPTION: The following code implement histogram equalization operation
 #define my_Min(x,y) ((x) <= (y) ? (x) : (y))
 #define my_Max(x,y) ((x) <= (y) ? (y) : (x))
 
-extern float roundf(float x);
-
 struct Computed_field_histogram_equalize_package
 /*******************************************************************************
 LAST MODIFIED : 17 February 2004
@@ -399,7 +397,7 @@ Perform a median filter operation on the image cache.
 			        }
                                 for (i = 0 ; i < storage_size / image->depth ; i++)
 				{
-                                         YVal = (int)(roundf(number_of_bins* *(data_index + k)));
+                                         YVal = (int)(floor(number_of_bins* *(data_index + k) + 0.5));
 					 histogram[YVal] += 1;
 					 data_index += image->depth;
 					 result_index += image->depth;
@@ -427,7 +425,7 @@ Perform a median filter operation on the image cache.
 						data_index -= image->depth;
 						result_index -= image->depth;
 						/*equalize the kth component*/
-						V = (FE_value)(normalize_map[(int)(roundf(number_of_bins* *(data_index + k)))]);
+						V = (FE_value)(normalize_map[(int)(floor(number_of_bins* *(data_index + k) + 0.5))]);
 						V = my_Min(number_of_bins,my_Max(0.0, V));
 						result_index[k] = V/number_of_bins;
 					}
