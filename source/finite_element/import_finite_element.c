@@ -4723,6 +4723,10 @@ It is up to the user to DEALLOCATE <group_name>.
 				}
 				fclose(input_file);
 			}
+			else
+			{
+				return_code=0;
+			}
 			/* read in the element file */
 			if(return_code)
 			{
