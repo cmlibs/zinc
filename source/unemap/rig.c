@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 04 May 2001
+LAST MODIFIED : 18 July 2001
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -10,6 +10,7 @@ Contains function definitions for measurement rigs.
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 /*ieeefp.h doesn't exist for Linux. Needed for finite() for Irix*/
 /*finite() in math.h in Linux */
 #if defined (NOT_ANSI)
@@ -1964,7 +1965,7 @@ struct Rig *read_configuration(FILE *input_file,enum Rig_file_type file_type,
 #endif /* defined (UNEMAP_USE_3D)*/
        )
 /*******************************************************************************
-LAST MODIFIED : 28 September 2000
+LAST MODIFIED : 18 July 2001
 
 DESCRIPTION :
 Assumes that the <input_file> has been opened, the <file_type> (binary or text)
@@ -2214,14 +2215,15 @@ pointer to the rig if successful and NULL if unsuccessful.
 																						{
 																							coefficient *= sign;
 																							/* trim leading space */
-																							while (' '== *name)
+																							while (isspace(*name))
 																							{
 																								name++;
 																							}
 																							/* trim trailing space */
 																							string_length=strlen(name);
 																							while ((0<string_length)&&
-																								(' '==name[string_length-1]))
+																								(isspace(name[string_length-
+																								1])))
 																							{
 																								string_length--;
 																							}

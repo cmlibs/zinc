@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 20 June 2001
+LAST MODIFIED : 18 July 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -107,6 +107,7 @@ DESCRIPTION :
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 #if defined (MOTIF)
 #include <X11/Intrinsic.h>
 #include <X11/Xlib.h>
@@ -3056,7 +3057,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 24 May 2001
+LAST MODIFIED : 18 July 2001
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -3711,13 +3712,13 @@ signals.
 										device_name_end=device_line_position+device_line_length;
 									}
 									*device_name_end='\0';
-									while (' '== *device_line_position)
+									while (isspace(*device_line_position))
 									{
 										device_line_position++;
 									}
 									device_name_length=device_name_end-device_line_position;
 									while ((device_name_end>device_line_position)&&
-										(' '== *(device_name_end-1)))
+										(isspace(*(device_name_end-1))))
 									{
 										device_name_end--;
 									}

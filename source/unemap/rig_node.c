@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.c
 
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 18 July 2001
 
 DESCRIPTION :
 Essentially the same functionality as rig.c, but using nodes and fields to store
@@ -11,6 +11,7 @@ the rig and signal information. rather than special structures.
 #include <string.h>
 #include <math.h>
 #include <limits.h>
+#include <ctype.h>
 /*ieeefp.h doesn't exist for Linux. Needed for finite() for Irix. */
 /*finite() in math.h in Linux */
 #if defined (NOT_ANSI)
@@ -856,7 +857,7 @@ static struct FE_node *read_text_config_FE_node(FILE *input_file,
 	enum Config_node_type	config_node_type,int node_number,int read_order_number,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
-LAST MODIFIED : 21 July 2000
+LAST MODIFIED : 18 July 2001
 
 DESCRIPTION :
 Reads a node  from a text configuration file, using the template node created in
@@ -973,14 +974,14 @@ cf read_FE_node() in import_finite_element.c
 										{
 											coefficient *= sign;
 											/* trim leading space */
-											while (' '== *electrode_name)
+											while (isspace(*electrode_name))
 											{
 												electrode_name++;
 											}
 											/* trim trailing space */
 											string_length=strlen(electrode_name);
 											while ((0<string_length)&&
-												(' '==electrode_name[string_length-1]))
+												(isspace(electrode_name[string_length-1])))
 											{
 												string_length--;
 											}
