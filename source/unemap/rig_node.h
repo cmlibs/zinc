@@ -77,10 +77,10 @@ unemap_package struct. If a field is set to NULL, then it isn't drawn.
 	struct FE_field *device_type_field;	
 #if  defined (UNEMAP_USE_NODES)
 	struct FE_field *display_end_time_field;
-	struct FE_field *display_start_time_field;
+	struct FE_field *display_start_time_field;	
+	struct FE_field *highlight_field;	
 #endif /* defined (UNEMAP_USE_NODES) */
 	struct FE_field *read_order_field;
-	struct FE_field *highlight_field;	
 	struct FE_field *channel_gain_field;
 	struct FE_field *channel_offset_field; 
 	struct FE_field *signal_field;	
@@ -940,4 +940,32 @@ Returns whether the <first> rig_node_sort has a smaller (< 0), the same (0) or a
 larger (> 0) event_time than the <second> device.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_3D) 
+struct FE_node *find_rig_node_given_device(struct Device *device,
+	struct GROUP(FE_node) *rig_node_group,struct FE_field *device_name_field);
+/*******************************************************************************
+LAST MODIFIED : 26 September 2000
+
+DESCRIPTION :
+Given a <device>, finds the corresponding FE_node in <rig_node_group>.
+Currently matches the names.
+Does by matching the names. Therefore assume's device/node names are unique.
+If they're not, you'll get the first match.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+struct Device *find_device_given_rig_node(struct FE_node *node,
+	struct FE_field *device_name_field,struct Rig *rig);
+/*******************************************************************************
+LAST MODIFIED : 26 September 2000
+
+DESCRIPTION :
+Given a <node>, finds the corresponding Device in <rig>.
+Currently matches the names.
+Does by matching the names. Therefore assume's device/node names are unique.
+If they're not, you'll get the first match.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
 #endif /* #if !defined (RIG_NODE_H) */

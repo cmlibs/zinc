@@ -923,7 +923,8 @@ The fields of the field_order_info are named using the node_type, therefore
 beware of name clashes if loading multiple rigs of the same node_type.
 Also returns the created electrode_position_field.
 ==============================================================================*/
-{		
+{	
+#if defined (UNEMAP_USE_NODES)	
   #define AUXILIARY_NUM_CONFIG_FIELDS 5 /*,device_name_field,*/
 	/* device_type_field channel_number,read_order_field, highlight_field */
   #define PATCH_NUM_CONFIG_FIELDS 6 /* electrode_position_field,*/ 
@@ -935,6 +936,16 @@ Also returns the created electrode_position_field.
   #define TORSO_NUM_CONFIG_FIELDS 6/* electrode_position_field,*/ 
   /*device_name_field,device_type_field,channel_number,read_order_field,*/
 	/*highlight_field */
+#else
+  #define AUXILIARY_NUM_CONFIG_FIELDS 4 /*,device_name_field,*/
+	/* device_type_field channel_number,read_order_field */
+  #define PATCH_NUM_CONFIG_FIELDS 5 /* electrode_position_field,*/ 
+	/*device_name_field,device_type_field,channel_number,read_order_field,*/		
+  #define SOCK_NUM_CONFIG_FIELDS 5 /* electrode_position_field,*/
+	/*device_name_field,device_type_field,channel_number,read_order_field,*/
+  #define TORSO_NUM_CONFIG_FIELDS 5/* electrode_position_field,*/ 
+  /*device_name_field,device_type_field,channel_number,read_order_field,*/
+#endif /* (UNEMAP_USE_NODES) */
 
 	char *electrode_name;
 	char *rig_type_str;
@@ -946,7 +957,9 @@ Also returns the created electrode_position_field.
 	struct FE_field *device_type_field;
 	struct FE_field *the_electrode_position_field;
 	struct FE_field *read_order_field;
+#if  defined (UNEMAP_USE_NODES)
 	struct FE_field *highlight_field;
+#endif /*  defined (UNEMAP_USE_NODES) */
 	struct FE_field_order_info *the_field_order_info;
 	struct FE_node *node;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -970,11 +983,13 @@ Also returns the created electrode_position_field.
 	char *channel_number_component_names[1]=
 	{
 		"channel number"
-	};	
+	};
+#if  defined (UNEMAP_USE_NODES)	
 	char *highlight_component_names[1]=
 	{
 		"highlight"
 	};		
+#endif /*  defined (UNEMAP_USE_NODES)*/
 	char *read_order_component_names[1]=
 	{
 		"read order"
@@ -1008,13 +1023,15 @@ Also returns the created electrode_position_field.
 		{
 			FE_NODAL_VALUE
 		}
-	};		
+	};
+#if  defined (UNEMAP_USE_NODES)		
 	enum FE_nodal_value_type *highlight_components_nodal_value_types[1]=
 	{
 		{
 			FE_NODAL_VALUE
 		}
-	};			
+	};
+#endif /*  defined (UNEMAP_USE_NODES)	*/
 	enum FE_nodal_value_type *read_order_components_nodal_value_types[1]=
 	{
 		{
@@ -1029,8 +1046,10 @@ Also returns the created electrode_position_field.
 		  electrode_components_number_of_versions[3]={1,1,1};
 	int channel_number_components_number_of_derivatives[1]={0},
 	  channel_number_components_number_of_versions[1]={1};
+#if  defined (UNEMAP_USE_NODES)
 	int highlight_components_number_of_derivatives[1]={0},
-	  highlight_components_number_of_versions[1]={1};	
+	  highlight_components_number_of_versions[1]={1};
+#endif /*  defined (UNEMAP_USE_NODES) */
 	int read_order_components_number_of_derivatives[1]={0},
 	  read_order_components_number_of_versions[1]={1};
 	
@@ -1041,7 +1060,9 @@ Also returns the created electrode_position_field.
 		electrode_name =(char *)NULL;
 		rig_type_str =(char *)NULL;	
 		channel_number_field=(struct FE_field *)NULL;	
+#if  defined (UNEMAP_USE_NODES)
 		highlight_field=(struct FE_field *)NULL;
+#endif /* defined (UNEMAP_USE_NODES) */
 		read_order_field=(struct FE_field *)NULL;
 		device_name_field=(struct FE_field *)NULL;
 		device_type_field=(struct FE_field *)NULL;			
@@ -1305,7 +1326,8 @@ Also returns the created electrode_position_field.
 					display_message(ERROR_MESSAGE,
 						"create_config_template_node. Could not retrieve read order field");
 					success=0;
-				}	
+				}
+#if  defined (UNEMAP_USE_NODES)	
 				/* set up the info needed to create the highlight field */			
 				set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
 				coordinate_system.type=NOT_APPLICABLE;				
@@ -1331,7 +1353,7 @@ Also returns the created electrode_position_field.
 						"create_config_template_node. Could not retrieve highlight field");
 					success=0;
 				}			
-		
+#endif /*  defined (UNEMAP_USE_NODES) */
 			} /* if(success) */		
 		}	
 		else
@@ -1363,7 +1385,10 @@ Also returns the created electrode_position_field.
 static struct FE_node *set_config_FE_node(FILE *input_file,
 	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
 	enum Config_node_type	config_node_type,int node_number,int read_order_number,
-	int highlight,struct FE_field_order_info *field_order_info,char *name,
+#if  defined (UNEMAP_USE_NODES)
+	int highlight,
+#endif /* defined (UNEMAP_USE_NODES) */
+	struct FE_field_order_info *field_order_info,char *name,
 	int channel_number,FE_value xpos,FE_value ypos,FE_value zpos)
 /*******************************************************************************
 LAST MODIFIED : 24 July 2000
@@ -1435,6 +1460,7 @@ create_config_template_node, and the field_order_info.
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
 						FE_NODAL_VALUE,read_order_number);	
+#if  defined (UNEMAP_USE_NODES)	
 					/* 6th field contains highlight */
 					component.field=get_FE_field_order_info_field(
 						field_order_info,field_number);
@@ -1442,6 +1468,7 @@ create_config_template_node, and the field_order_info.
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
 						FE_NODAL_VALUE,highlight);
+#endif /*  defined (UNEMAP_USE_NODES) */
 				} break;
 				case TORSO_ELECTRODE_TYPE:
 				{
@@ -1482,7 +1509,8 @@ create_config_template_node, and the field_order_info.
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,read_order_number);	
+						FE_NODAL_VALUE,read_order_number);
+#if  defined (UNEMAP_USE_NODES)		
 					/* 6th field contains highlight */
 					component.field=get_FE_field_order_info_field(
 						field_order_info,field_number);
@@ -1490,6 +1518,7 @@ create_config_template_node, and the field_order_info.
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
 						FE_NODAL_VALUE,highlight);
+#endif /*  defined (UNEMAP_USE_NODES)	*/
 				} break;		
 				case PATCH_ELECTRODE_TYPE:
 				{	 
@@ -1529,6 +1558,7 @@ create_config_template_node, and the field_order_info.
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
 						FE_NODAL_VALUE,read_order_number);	
+#if  defined (UNEMAP_USE_NODES)	
 					/* 6th field contains highlight */
 					component.field=get_FE_field_order_info_field(
 						field_order_info,field_number);
@@ -1536,6 +1566,7 @@ create_config_template_node, and the field_order_info.
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
 						FE_NODAL_VALUE,highlight);
+#endif /*  defined (UNEMAP_USE_NODES)	*/
 				} break;
 				case AUXILIARY_TYPE:
 				{					
@@ -1566,7 +1597,8 @@ create_config_template_node, and the field_order_info.
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,read_order_number);	
+						FE_NODAL_VALUE,read_order_number);
+#if  defined (UNEMAP_USE_NODES)		
 					/* 5th field contains highlight */
 					component.field=get_FE_field_order_info_field(
 						field_order_info,field_number);
@@ -1574,6 +1606,7 @@ create_config_template_node, and the field_order_info.
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
 						FE_NODAL_VALUE,highlight);
+#endif /*  defined (UNEMAP_USE_NODES)	*/
 				} break;
 			}	/* switch() */
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
@@ -1816,7 +1849,10 @@ cf read_FE_node() in import_finite_element.c
 			if (success)
 			{
 				if (!(node=set_config_FE_node(input_file,template_node,node_manager,
-					config_node_type,node_number,read_order_number,0/*highlight*/,
+					config_node_type,node_number,read_order_number,
+#if  defined (UNEMAP_USE_NODES)
+					0/*highlight*/,
+#endif /* defined (UNEMAP_USE_NODES)*/
 					field_order_info,name,channel_number,xpos,ypos,zpos)))
 				{		
 					display_message(ERROR_MESSAGE,
@@ -1936,7 +1972,10 @@ cf read_FE_node() in import_finite_element.c
 			if (success)
 			{
 				if (!(node=set_config_FE_node(input_file,template_node,node_manager,
-					config_node_type,node_number,read_order_number,0/*highlight*/,
+					config_node_type,node_number,read_order_number,
+#if  defined (UNEMAP_USE_NODES)
+					0/*highlight*/,
+#endif /*  defined (UNEMAP_USE_NODES) */
 					field_order_info,name,channel_number,xpos,ypos,zpos)))
 				{
 					display_message(ERROR_MESSAGE,
@@ -7347,3 +7386,112 @@ larger (> 0) event_time than the <second> device.
 	return (return_code);
 } /*sort_rig_node_sorts_by_event_time(  */
 #endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_3D)
+struct FE_node *find_rig_node_given_device(struct Device *device,
+	struct GROUP(FE_node) *rig_node_group,struct FE_field *device_name_field)
+/*******************************************************************************
+LAST MODIFIED : 26 September 2000
+
+DESCRIPTION :
+Given a <device>, finds the corresponding FE_node in <rig_node_group>.
+Does by matching the names. Therefore assume's device/node names are unique.
+If they're not, you'll get the first match.
+==============================================================================*/
+{
+	char *name;
+	struct Device_description *description;
+	struct FE_node *rig_node;
+	struct FE_field_and_string_data field_and_string_data;
+	
+	ENTER(find_rig_node_given_device);
+	rig_node=(struct FE_node *)NULL;
+	name=(char *)NULL;
+	description=(struct Device_description *)NULL;
+	if(device_name_field&&rig_node_group&&device&&(description=
+		get_Device_description(device))&&(name=get_Device_description_name(description)))
+	{
+		field_and_string_data.fe_field=device_name_field;
+		field_and_string_data.string=name;
+		rig_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_has_FE_field_and_string_data,
+			(void *)(&field_and_string_data),rig_node_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"find_rig_node_given_device. Invalid argument");
+	}
+ LEAVE;
+ return(rig_node);
+}/* find_rig_node_given_device */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+struct Device *find_device_given_rig_node(struct FE_node *node,
+	struct FE_field *device_name_field,struct Rig *rig)
+/*******************************************************************************
+LAST MODIFIED : 26 September 2000
+
+DESCRIPTION :
+Given a <node>, finds the corresponding Device in <rig>.
+Currently matches the names.
+Does by matching the names. Therefore assume's device/node names are unique.
+If they're not, you'll get the first match.
+==============================================================================*/
+{
+	char *device_name,*nodal_name;
+	int i,number_of_devices,success;
+	struct Device *device;	
+	struct Device_description *description;
+ 
+	ENTER(find_device_given_rig_node);
+	device_name=(char *)NULL;
+	nodal_name=(char *)NULL;
+	device=(struct Device *)NULL;
+	description=(struct Device_description *)NULL;
+	success=0;
+	if(device_name_field&&rig&&rig->devices)
+	{	
+		if (FE_field_is_defined_at_node(device_name_field,node))
+		{
+			success=get_FE_nodal_string_value(node,device_name_field,0,0,FE_NODAL_VALUE,&nodal_name);
+			if(!success)
+			{
+				display_message(WARNING_MESSAGE,"find_rig_node_given_device. " 
+					"field not defined at node");							
+			}
+		}
+		if(success)
+		{	
+			device=*(rig->devices);
+			number_of_devices=rig->number_of_devices;
+			success=0;
+			i=0;
+			while((!success)&&(i<number_of_devices))
+			{					
+				description=get_Device_description(device);
+				device_name=get_Device_description_name(description);
+				if(!strcmp(device_name,nodal_name))
+				{
+					success=1;
+				}
+				else
+				{
+					device++;
+					i++;
+				} /* if(!strcmp(required_stri */
+			}/* while(!success)&&(i<number_of_devices)*/ 
+			if(!success)
+			{
+				device=(struct Device *)NULL;
+			}
+		}/* if(success) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"find_rig_node_given_devic. Invalid argument");
+	}
+ LEAVE;
+ return(device);
+}/* find_device_given_rig_node */
+#endif /* defined (UNEMAP_USE_3D) */
+

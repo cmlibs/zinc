@@ -146,7 +146,6 @@ DESCRIPTION :
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-
 /*
 Module constants
 ----------------
@@ -2994,7 +2993,6 @@ Sets up the analysis work area for analysing a set of signals.
 		return_code=0;
 	}
 	LEAVE;
-
 	return (return_code);
 } /* analysis_read_signal_file */
 
@@ -4863,11 +4861,11 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 								(signal_number<signals->number_of_signals))
 							{
 #if defined (UNEMAP_USE_NODES)
-								highlight_analysis_device_node((event->state)&ControlMask,
+								highlight_analysis_device_node((event->state)&ShiftMask,
 									(struct FE_node *)NULL,&signal_number,(int *)NULL,
 									(int *)NULL,analysis);
 #else
-								highlight_analysis_device((event->state)&ControlMask,
+								highlight_analysis_device((event->state)&ShiftMask,
 									(struct Device **)NULL,&signal_number,(int *)NULL,
 									(int *)NULL,analysis);
 #endif /*  defined (UNEMAP_USE_NODES) */
@@ -15235,11 +15233,11 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 										auxiliary_y++;
 									}
 #if defined (UNEMAP_USE_NODES)
-									highlight_analysis_device_node((button_event->state)&ControlMask,
+									highlight_analysis_device_node((button_event->state)&ShiftMask,
 										(struct FE_node *)NULL,(int *)NULL,(int *)NULL,
 										&auxiliary_number,analysis);
 #else
-									highlight_analysis_device((button_event->state)&ControlMask,
+									highlight_analysis_device((button_event->state)&ShiftMask,
 										(struct Device **)NULL,(int *)NULL,(int *)NULL,
 										&auxiliary_number,analysis);
 #endif /*  defined (UNEMAP_USE_NODES) */
@@ -15322,11 +15320,11 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 								electrode_drawn++;
 							}
 #if defined (UNEMAP_USE_NODES)
-							highlight_analysis_device_node((event->state)&ControlMask,
+							highlight_analysis_device_node((event->state)&ShiftMask,
 								(struct FE_node *)NULL,(int *)NULL,&electrode_number,
 								(int *)NULL,analysis);
 #else
-							highlight_analysis_device((event->state)&ControlMask,
+							highlight_analysis_device((event->state)&ShiftMask,
 								(struct Device **)NULL,(int *)NULL,&electrode_number,
 								(int *)NULL,analysis);
 #endif /*  defined (UNEMAP_USE_NODES) */

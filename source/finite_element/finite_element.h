@@ -894,6 +894,18 @@ c.f.  FE_field_order_info. Also store a current node, so can iterate, etc
 	int access_count;
 }; /* FE_node_order_info */ 
 
+struct FE_field_and_string_data
+/*******************************************************************************
+LAST MODIFIED : 26 September 2000
+
+DESCRIPTION :
+Used by FE_node_has_FE_field_and_string_data
+==============================================================================*/
+{
+	struct FE_field *fe_field;
+	char *string;	
+};
+
 /*
 Global variables
 ----------------
@@ -1336,6 +1348,16 @@ LAST MODIFIED : 28 April 1999
 DESCRIPTION :
 Returns true if <node> conatins a field which depends on the changed_element
 of changed_node in the <data_void>.
+==============================================================================*/
+
+int FE_node_has_FE_field_and_string_data(struct FE_node *node,void *data_void);
+/*******************************************************************************
+LAST MODIFIED : 26 September 2000
+
+DESCRIPTION :
+Returns true(1) if the <data_void>->fe_field is define at the <node> AND
+the nodal string at <node>,<data_void>->fe_field is equal to <data_void>->string.
+Otherwise returns false (0)
 ==============================================================================*/
 
 int FE_node_is_in_list(struct FE_node *node,void *node_list_void);

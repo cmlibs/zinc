@@ -69,10 +69,10 @@ The fields are filed in with set_unemap_package_fields()
 #if defined (UNEMAP_USE_NODES)
 			package->display_end_time_field=(struct FE_field *)NULL;
 			package->display_start_time_field=(struct FE_field *)NULL;
+			package->highlight_field=(struct FE_field *)NULL;
 #endif /* defined (UNEMAP_USE_NODES)*/
 			package->channel_number_field=(struct FE_field *)NULL;
-			package->read_order_field=(struct FE_field *)NULL;
-			package->highlight_field=(struct FE_field *)NULL;
+			package->read_order_field=(struct FE_field *)NULL;			
 			package->signal_field=(struct FE_field *)NULL;
 			package->signal_minimum_field=(struct FE_field *)NULL;
 			package->signal_maximum_field=(struct FE_field *)NULL;	
@@ -126,9 +126,9 @@ to NULL.
 #if defined (UNEMAP_USE_NODES)
 		DEACCESS(FE_field)(&(package->display_start_time_field));
 		DEACCESS(FE_field)(&(package->display_end_time_field));
-#endif /* defined (UNEMAP_USE_NODES)*/
-		DEACCESS(FE_field)(&(package->read_order_field));
 		DEACCESS(FE_field)(&(package->highlight_field));
+#endif /* defined (UNEMAP_USE_NODES)*/
+		DEACCESS(FE_field)(&(package->read_order_field));		
 		DEACCESS(FE_field)(&(package->signal_field));
 		DEACCESS(FE_field)(&(package->signal_minimum_field));
 		DEACCESS(FE_field)(&(package->signal_maximum_field));	
@@ -481,7 +481,7 @@ Sets the field of the unemap package.
 } /* set_unemap_package_read_order_field */
 #endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_3D)
+#if defined (UNEMAP_USE_NODES)
 struct FE_field *get_unemap_package_highlight_field(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -533,7 +533,7 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_highlight_field */
-#endif /* defined (UNEMAP_USE_3D)*/
+#endif /* defined (UNEMAP_USE_NODES)*/
 
 #if defined (UNEMAP_USE_3D)
 struct FE_field *get_unemap_package_signal_field(
@@ -1524,17 +1524,6 @@ Frees the <unemap_package> rig's computed and fe fields
 				unemap_package->display_end_time_field=(struct FE_field *)NULL;
 			}
 		}	
-#endif /* defined (UNEMAP_USE_NODES) */
-		if(unemap_package->read_order_field)
-		{
-			temp_field=unemap_package->read_order_field;
-			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->read_order_field))
-			{
-				unemap_package->read_order_field=(struct FE_field *)NULL;
-			}
-		}		
 		if(unemap_package->highlight_field)
 		{
 			temp_field=unemap_package->highlight_field;
@@ -1545,6 +1534,17 @@ Frees the <unemap_package> rig's computed and fe fields
 				unemap_package->highlight_field=(struct FE_field *)NULL;
 			}
 		}	
+#endif /* defined (UNEMAP_USE_NODES) */
+		if(unemap_package->read_order_field)
+		{
+			temp_field=unemap_package->read_order_field;
+			DEACCESS(FE_field)(&temp_field);
+			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				unemap_package->read_order_field))
+			{
+				unemap_package->read_order_field=(struct FE_field *)NULL;
+			}
+		}				
 		if(unemap_package->signal_field)
 		{
 			temp_field=unemap_package->signal_field;

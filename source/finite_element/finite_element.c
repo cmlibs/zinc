@@ -10885,6 +10885,51 @@ of changed_node in the <data_void>.
 	return (return_code);
 } /* FE_node_has_embedded_element */
 
+int FE_node_has_FE_field_and_string_data(struct FE_node *node,void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 26 September 2000
+
+DESCRIPTION :
+Returns true(1) if the <data_void>->fe_field is define at the <node> AND
+the nodal string at <node>,<data_void>->fe_field is equal to <data_void>->string.
+Otherwise returns false (0)
+==============================================================================*/
+{
+	int return_code;	
+	struct FE_field_and_string_data *field_and_string_data;
+	struct FE_field *fe_field;
+	char *required_string,*field_string;
+
+	ENTER(FE_node_has_FE_field_and_string_data);
+	field_and_string_data=(struct FE_field_and_string_data *)NULL;
+	fe_field=(struct FE_field *)NULL;
+	required_string=(char *)NULL;
+	field_string=(char *)NULL;	
+	return_code=0;
+	if (node&&(field_and_string_data=(struct FE_field_and_string_data *)data_void))
+	{
+		fe_field=field_and_string_data->fe_field;
+		required_string=field_and_string_data->string;
+		if (FE_field_is_defined_at_node(fe_field,node))
+		{
+			if(get_FE_nodal_string_value(node,fe_field,0,0,FE_NODAL_VALUE,&field_string))
+			{
+				if(!strcmp(required_string,field_string))
+				{
+					return_code=1;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"FE_node_has_FE_field_and_string_data.  Invalid argument(s)");	
+	}
+	LEAVE;
+
+	return (return_code);
+} /*FE_node_has_FE_field_and_string_data */
+
 int FE_node_is_in_list(struct FE_node *node,void *node_list_void)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000

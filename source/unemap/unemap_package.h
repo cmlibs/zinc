@@ -53,9 +53,9 @@ element,nodes, fields when they are no longer required.
 #if defined (UNEMAP_USE_NODES) 
 	struct FE_field *display_end_time_field;
 	struct FE_field *display_start_time_field;
+	struct FE_field *highlight_field;
 #endif /* defined (UNEMAP_USE_NODES) */
 	struct FE_field *read_order_field;
-	struct FE_field *highlight_field;
 	struct FE_field *signal_field;
 	struct FE_field *signal_minimum_field;
 	struct FE_field *signal_maximum_field;

@@ -466,6 +466,14 @@ This function frees the memory associated with the fields of <**description>,
 frees the memory for <**description> and changes <*description> to NULL.
 ==============================================================================*/
 
+char *get_Device_description_name(struct Device_description *description);
+/*******************************************************************************
+LAST MODIFIED : 26 September 2000
+
+DESCRIPTION :
+Returns the name used by the Device_description <description>.
+==============================================================================*/
+
 struct Channel *create_Channel(int number,float offset,float gain);
 /*******************************************************************************
 LAST MODIFIED : 9 September 1992
@@ -511,6 +519,14 @@ LAST MODIFIED : 24 August 200
 
 DESCRIPTION :
 Returns the signal used by the <device>.
+==============================================================================*/
+
+struct Device_description *get_Device_description(struct Device *device);
+/*******************************************************************************
+LAST MODIFIED : 26 September 2000
+
+DESCRIPTION :
+Returns the Device_description used by the <device>.
 ==============================================================================*/
 
 struct Signal_buffer *get_Device_signal_buffer(struct Device *device);
