@@ -44,20 +44,17 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #include <stdio.h>
 #endif /* defined (DEBUG) */
 
-#if ! defined (AIX)
-/* SAB 28 July 2004
+/* SAB 2 June 2004
 	These calls should be available in every system with GLX 1.3 or greater
 	but on the SGI the original code seems to work better with movies and
-	with grabbing frames off the screen.  Hopefully this will settle down at
-	some point.  The SGI allows the creation of the correct Pbuffer using GLX commands
+	with grabbing frames off the screen.  This is done by trying the SGI versions
+	first on these machines.  
+	The SGI allows the creation of the correct Pbuffer using GLX commands
 	and then generates a bad alloc error when I try to make it current.
-	The code should still run on an older GLX even if it is compiled on a GLX 1.3.
-   On hpc1 this code compiles but no valid pbuffers can be created for any FBConfigs
-   returned and so I have disabled it.
-	SAB 26 March 2004 I found a parameter on the AIX Xserver to select the
-	level of pbuffer allocation and changed this to -pbuffer 2 but it didn't help,
-	still no pbuffers (to get a FB you need to make GLX_DOUBLEBUFFER GL_TRUE or DONT_CARE,
-	then you get GLXBadFBConfig errors which seems wrong given that GLX just gave them out). */
+	The code should still run on an older GLX even if it is compiled on a GLX 1.3 by
+	falling through to section 4.
+	On AIX pbuffers now appear to be working with the new GLX code so I have
+	enabled them. */
 /*???DB.  The old version of GLX (glx.h 1999/12/11), has GLX_VERSION_1_3
 	defined, but doesn't define GLX_PBUFFER_WIDTH, GLX_PBUFFER_HEIGHT and
 	GLX_RGBA_BIT */
@@ -66,7 +63,6 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #define USE_GLX_PBUFFER 1
 #define USE_GLX_FBCONFIG 1
 #endif /* defined (GLX_VERSION_1_3) */
-#endif /* ! defined (SGI) && ! defined (AIX) */
 #if ! defined (SGI)
 /* Despite being in the Mesa headers we do not want to use the SGI FB extensions on systems
    other than SGI, the GLX versions are preferable. */
@@ -2380,7 +2376,7 @@ DESCRIPTION :
 {
 	struct Graphics_buffer *buffer;
 
-	ENTER(create_Graphics_buffer_X3d);
+	ENTER(create_Graphics_buffer_offscreen);
 
 	if (buffer = CREATE(Graphics_buffer)(graphics_buffer_package))
 	{
@@ -2402,21 +2398,21 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
-			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
+			display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen.  "
 				"Unable to create offscreen graphics buffer.");				
 			buffer = (struct Graphics_buffer *)NULL;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
+		display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen.  "
 			"Unable to create generic Graphics_buffer.");				
 		buffer = (struct Graphics_buffer *)NULL;
 	}
 	LEAVE;
 
 	return (buffer);
-} /* create_Graphics_buffer_X3d */
+} /* create_Graphics_buffer_offscreen */
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)
@@ -2430,7 +2426,7 @@ DESCRIPTION :
 {
 	struct Graphics_buffer *buffer;
 
-	ENTER(create_Graphics_buffer_X3d);
+	ENTER(create_Graphics_buffer_offscreen_from_buffer);
 
 	if (buffer = CREATE(Graphics_buffer)(buffer_to_match->package))
 	{
@@ -2448,21 +2444,21 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
-			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
-				"Unable to create X3d graphics buffer.");				
+			display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen_from_buffer.  "
+				"Unable to create offscreen_from_buffer graphics buffer.");				
 			buffer = (struct Graphics_buffer *)NULL;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
+		display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen_from_buffer.  "
 			"Unable to create generic Graphics_buffer.");				
 		buffer = (struct Graphics_buffer *)NULL;
 	}
 	LEAVE;
 
 	return (buffer);
-} /* create_Graphics_buffer_X3d */
+} /* create_Graphics_buffer_offscreen_from_buffer */
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 
 #if defined (MOTIF)
@@ -2522,7 +2518,7 @@ DESCRIPTION :
 {
 	struct Graphics_buffer *buffer;
 
-	ENTER(create_Graphics_buffer_X3d);
+	ENTER(create_Graphics_buffer_X3d_from_buffer);
 
 	if (buffer = CREATE(Graphics_buffer)(buffer_to_match->package))
 	{
@@ -2534,21 +2530,21 @@ DESCRIPTION :
 			buffer_to_match);
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
-			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
+			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d_from_buffer.  "
 				"Unable to create X3d graphics buffer.");				
 			buffer = (struct Graphics_buffer *)NULL;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
+		display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d_from_buffer.  "
 			"Unable to create generic Graphics_buffer.");				
 		buffer = (struct Graphics_buffer *)NULL;
 	}
 	LEAVE;
 
 	return (buffer);
-} /* create_Graphics_buffer_X3d */
+} /* create_Graphics_buffer_X3d_from_buffer */
 #endif /* defined (MOTIF) */
 
 #if defined (GTK_USER_INTERFACE)
