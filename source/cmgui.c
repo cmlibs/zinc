@@ -1748,7 +1748,6 @@ Main program for the CMISS Graphical User Interface
 					}
 					if(!batch_mode)
 					{
-						/* DESTROY(Command_window)(&command_data.command_window); */
 						/* user interface loop */						
 						return_code=application_main_loop(&user_interface);						
 						/*???DB.  Need better way to stop error handling because
@@ -1800,6 +1799,7 @@ Main program for the CMISS Graphical User Interface
 				}
 				if(!no_display)
 				{
+					DESTROY(Command_window)(&command_data.command_window);
 					/* close the user interface */
 					close_user_interface(&user_interface);
 					DESTROY(Machine_information)(&user_interface.local_machine_info);
