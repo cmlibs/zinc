@@ -7587,7 +7587,7 @@ Scene_object has a Time_object.
 	struct Scene_object *scene_object;
 	struct Time_object *time;
 	
-	ENTER(Scene_update_time_behaviour);
+	ENTER(Scene_update_time_behaviour_with_gt_element_group);
 	/* check arguments */
 	if (scene&&element_group)
 	{
@@ -7629,7 +7629,8 @@ Scene_object has a Time_object.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Scene_update_time_behaviour.  Unable to find Scene_object for element_group");
+					"Scene_update_time_behaviour_with_gt_element_group.  "
+					"Unable to find Scene_object for element_group");
 				return_code=0;
 			}
 		}
@@ -7637,13 +7638,14 @@ Scene_object has a Time_object.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_update_time_behaviour.  Invalid argument(s)");
+			"Scene_update_time_behaviour_with_gt_element_group.  "
+			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_update_time_behaviour */
+} /* Scene_update_time_behaviour_with_gt_element_group */
 
 int Scene_set_time_behaviour(struct Scene *scene, char *scene_object_name,
 	char *time_object_name, struct Time_keeper *time_keeper)
