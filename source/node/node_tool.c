@@ -541,6 +541,8 @@ stored in the <edit_info>.
 			coordinates[0]=0.0;
 			coordinates[1]=0.0;
 			coordinates[2]=0.0;
+			/* If the field we are changing isn't defined at this node then we
+				don't complain and just do nothing */
 			if (Computed_field_is_defined_at_node(edit_info->coordinate_field,node)&&
 				Computed_field_evaluate_at_node(edit_info->coordinate_field,
 					node,coordinates))
@@ -561,10 +563,6 @@ stored in the <edit_info>.
 						}
 					}
 				}
-			}
-			else
-			{
-				return_code=0;
 			}
 			/* always clear caches of evaluated fields */
 			Computed_field_clear_cache(edit_info->coordinate_field);
