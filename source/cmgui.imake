@@ -991,8 +991,6 @@ transfer :
 	dof3/WildC dof3/WildH dof3/WildUil \
 	element/WildC element/WildH element/WildUil \
 	general/WildC general/WildH general/WildUil \
-	graphics/Makefile graphics/WildC graphics/WildH graphics/WildRc graphics/WildUil \
-	graphics/WildCpp graphics/marchg.dat graphics/mcubes.dat \
 	help/WildC help/WildH help/WildUil \
 	io_devices/WildC io_devices/WildCpp io_devices/WildH io_devices/WildUil \
 	link/WildC link/WildH link/WildUil \
@@ -1027,6 +1025,8 @@ transfer :
 	tar -cvf - \
 	command/WildC command/WildH command/WildRc command/WildUil \
 	finite_element/WildC finite_element/WildH finite_element/WildUil \
+	graphics/Makefile graphics/WildC graphics/WildH graphics/WildRc graphics/WildUil \
+	graphics/WildCpp graphics/marchg.dat graphics/mcubes.dat \
 	html_widget/WildXbm html_widget/WildC html_widget/WildH html_widget/Makefile \
 	html_widget/WildMms \
 	socket/WildC socket/WildH \
