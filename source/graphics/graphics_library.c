@@ -1060,9 +1060,6 @@ and <height> according to the storage type.  'MakeCurrent' the desired source
 before calling this routine.
 ==============================================================================*/
 {
-#if defined (OPENGL_API)
-	GLenum read_buffer;
-#endif /* defined (OPENGL_API) */
 	int return_code;
 
 	ENTER(Graphics_library_read_pixels);
@@ -1072,7 +1069,6 @@ before calling this routine.
 		/* Make sure we get it from the front for a double buffer,
 			has no effect on a single buffer, keep the old read
 			buffer so we can set it back after reading */
-		glGetIntegerv(GL_READ_BUFFER,(GLint *)(&read_buffer));
 		glReadBuffer(GL_FRONT);
 		switch(storage)
 		{
@@ -1115,7 +1111,6 @@ before calling this routine.
 				return_code=0;
 			} break;
 		}
-		glReadBuffer(read_buffer);
 #else /* defined (OPENGL_API) */
 		return_code=0;
 #endif /* defined (OPENGL_API) */
