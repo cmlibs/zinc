@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_finite_element.hpp
 //
-// LAST MODIFIED : 12 November 2003
+// LAST MODIFIED : 15 December 2003
 //
 // DESCRIPTION :
 // Finite element types - element/xi and finite element field.
@@ -11,6 +11,7 @@
 
 #include <list>
 #include "computed_variable/variable.hpp"
+#include "computed_variable/variable_vector.hpp"
 extern "C"
 {
 #include "finite_element/finite_element.h"
@@ -18,7 +19,7 @@ extern "C"
 
 class Variable_element_xi : public Variable
 //******************************************************************************
-// LAST MODIFIED : 10 November 2003
+// LAST MODIFIED : 15 December 2003
 //
 // DESCRIPTION :
 // An identity variable whose input/output is element/xi.
@@ -35,7 +36,7 @@ class Variable_element_xi : public Variable
 		// destructor
 		~Variable_element_xi();
 		// get the number of scalars in the result
-		Variable_size_type size();
+		Variable_size_type size() const;
 		// get the scalars in the result
 		Vector *scalars();
 		// input specifiers
@@ -43,8 +44,10 @@ class Variable_element_xi : public Variable
 		Variable_input_handle input_element();
 		Variable_input_handle input_xi();
 		Variable_input_handle input_xi(Variable_size_type);
-		Variable_input_handle input_xi(
-			const boost::numeric::ublas::vector<Variable_size_type>);
+		Variable_input_handle input_xi(const ublas::vector<Variable_size_type>);
+		virtual Variable_handle operator-(const Variable&) const;
+		virtual Variable_handle operator-=(const Variable&);
+		virtual Variable_handle clone() const;
 	private:
 		Variable_handle evaluate_local();
 		void evaluate_derivative_local(Matrix& matrix,
@@ -68,7 +71,7 @@ typedef Variable_element_xi * Variable_element_xi_handle;
 
 class Variable_finite_element : public Variable
 //******************************************************************************
-// LAST MODIFIED : 12 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 // A variable for a finite element interpolation field.
@@ -88,7 +91,7 @@ class Variable_finite_element : public Variable
 		// destructor
 		~Variable_finite_element();
 		// get the number of scalars in the result
-		Variable_size_type size();
+		Variable_size_type size() const;
 		// get the scalars in the result
 		Vector *scalars();
 		// input specifiers
@@ -96,8 +99,7 @@ class Variable_finite_element : public Variable
 		Variable_input_handle input_element();
 		Variable_input_handle input_xi();
 		Variable_input_handle input_xi(Variable_size_type);
-		Variable_input_handle input_xi(
-			const boost::numeric::ublas::vector<Variable_size_type>);
+		Variable_input_handle input_xi(const ublas::vector<Variable_size_type>);
 		Variable_input_handle input_nodal_values();
 		Variable_input_handle input_nodal_values(struct FE_node *node,
 			enum FE_nodal_value_type value_type,int version);
@@ -105,6 +107,7 @@ class Variable_finite_element : public Variable
 		Variable_input_handle input_nodal_values(
 			enum FE_nodal_value_type value_type);
 		Variable_input_handle input_nodal_values(int version);
+		virtual Variable_handle clone() const;
 	private:
 		Variable_handle evaluate_local();
 		void evaluate_derivative_local(Matrix& matrix,

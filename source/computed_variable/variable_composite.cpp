@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_composite.cpp
 //
-// LAST MODIFIED : 24 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -106,6 +106,16 @@ Variable_composite::~Variable_composite()
 //==============================================================================
 {
 	// do nothing
+}
+
+Variable_handle Variable_composite::clone() const
+//******************************************************************************
+// LAST MODIFIED : 8 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (Variable_composite_handle(new Variable_composite(*this)));
 }
 
 class Variable_composite_evaluate_functor
@@ -364,7 +374,7 @@ Variable_handle Variable_composite::evaluate_derivative(
 
 class Variable_composite_calculate_size_functor
 //******************************************************************************
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 // A unary function (functor) for calculating the size of a composite variable.
@@ -376,7 +386,7 @@ class Variable_composite_calculate_size_functor
 		{
 			size=0;
 		};
-		int operator() (Variable_handle& variable)
+		int operator() (const Variable_handle& variable)
 		{
 			size += variable->size();
 
@@ -386,20 +396,20 @@ class Variable_composite_calculate_size_functor
 		Variable_size_type& size;
 };
 
-Variable_size_type Variable_composite::size()
+Variable_size_type Variable_composite::size() const
 //******************************************************************************
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	Variable_size_type size;
+	Variable_size_type result;
 
 	// get the specified values
 	std::for_each(variables_list.begin(),variables_list.end(),
-		Variable_composite_calculate_size_functor(size));
+		Variable_composite_calculate_size_functor(result));
 
-	return (size);
+	return (result);
 }
 
 Vector *Variable_composite::scalars()

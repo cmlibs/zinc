@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_coordinates.hpp
 //
-// LAST MODIFIED : 20 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 // Implements variables which transform between coordinate systems.
@@ -14,7 +14,7 @@
 
 class Variable_prolate_spheroidal_to_rectangular_cartesian : public Variable
 //******************************************************************************
-// LAST MODIFIED : 20 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 // Converts from prolate spheroidal to rectangular cartesian.
@@ -33,7 +33,7 @@ class Variable_prolate_spheroidal_to_rectangular_cartesian : public Variable
 		// destructor
 		~Variable_prolate_spheroidal_to_rectangular_cartesian();
 		// get the number of scalars in the result
-		Variable_size_type size();
+		Variable_size_type size() const;
 		// get the scalars in the result
 		Vector *scalars();
 		// input specifier
@@ -42,6 +42,7 @@ class Variable_prolate_spheroidal_to_rectangular_cartesian : public Variable
 		Variable_input_handle input_mu();
 		Variable_input_handle input_theta();
 		Variable_input_handle input_focus();
+		virtual Variable_handle clone() const;
 	private:
 		Variable_handle evaluate_local();
 		void evaluate_derivative_local(Matrix& matrix,

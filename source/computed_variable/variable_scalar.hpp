@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_scalar.hpp
 //
-// LAST MODIFIED : 24 October 2003
+// LAST MODIFIED : 15 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -13,7 +13,7 @@
 
 class Variable_scalar : public Variable
 //******************************************************************************
-// LAST MODIFIED : 24 October 2003
+// LAST MODIFIED : 15 December 2003
 //
 // DESCRIPTION :
 // An identity variable whose input/output is a scalar
@@ -30,11 +30,15 @@ class Variable_scalar : public Variable
 		// destructor
 		~Variable_scalar();
 		// get the number of scalars in the result
-		Variable_size_type size();
+		Variable_size_type size() const;
 		// get the scalars in the result
 		Vector *scalars();
 		// input specifier
 		Variable_input_handle input_value();
+		virtual Scalar norm() const;
+		virtual Variable_handle operator-(const Variable&) const;
+		virtual Variable_handle operator-=(const Variable&);
+		virtual Variable_handle clone() const;
 	private:
 		Variable_handle evaluate_local();
 		void evaluate_derivative_local(Matrix& matrix,

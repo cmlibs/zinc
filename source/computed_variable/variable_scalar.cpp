@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_scalar.cpp
 //
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 15 December 2003
 //
 // DESCRIPTION :
 //???DB.  Should be template?
@@ -117,7 +117,7 @@ Variable_scalar& Variable_scalar::operator=(
 	return (*this);
 }
 
-Variable_size_type Variable_scalar::size()
+Variable_size_type Variable_scalar::size() const
 //******************************************************************************
 // LAST MODIFIED : 24 October 2003
 //
@@ -166,6 +166,86 @@ Variable_input_handle Variable_scalar::input_value()
 {
 	return (Variable_input_handle(new Variable_input_scalar_value(
 		Variable_scalar_handle(this))));
+}
+
+Scalar Variable_scalar::norm() const
+//******************************************************************************
+// LAST MODIFIED : 11 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Scalar result;
+
+	result=value;
+	if (result<0)
+	{
+		result= -result;
+	}
+
+	return (result);
+}
+
+Variable_handle Variable_scalar::operator-(const Variable& second) const
+//******************************************************************************
+// LAST MODIFIED : 15 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Variable_scalar_handle result(0);
+
+	try
+	{
+		const Variable_scalar& second_scalar=
+			dynamic_cast<const Variable_scalar&>(second);
+
+		if (this&&(result=Variable_scalar_handle(new Variable_scalar(*this))))
+		{
+			result->value -= second_scalar.value;
+		}
+	}
+	catch (std::bad_cast)
+	{
+		// do nothing
+	}
+
+	return (result);
+}
+
+Variable_handle Variable_scalar::operator-=(const Variable& second)
+//******************************************************************************
+// LAST MODIFIED : 15 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	try
+	{
+		const Variable_scalar& second_scalar=
+			dynamic_cast<const Variable_scalar&>(second);
+
+		if (this)
+		{
+			value -= second_scalar.value;
+		}
+	}
+	catch (std::bad_cast)
+	{
+		// do nothing
+	}
+
+	return (Variable_scalar_handle(this));
+}
+
+Variable_handle Variable_scalar::clone() const
+//******************************************************************************
+// LAST MODIFIED : 8 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (Variable_scalar_handle(new Variable_scalar(*this)));
 }
 
 Variable_handle Variable_scalar::evaluate_local()

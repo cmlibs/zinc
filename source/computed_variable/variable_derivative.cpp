@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_derivative.cpp
 //
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -115,7 +115,7 @@ class Variable_derivative_calculate_size_functor
 		{
 			size=0;
 		};
-		int operator() (Variable_input_handle& input)
+		int operator() (const Variable_input_handle& input)
 		{
 			size += (size+dependent_variable_size)*(input->size());
 			return (0);
@@ -125,7 +125,7 @@ class Variable_derivative_calculate_size_functor
 		Variable_size_type dependent_variable_size;
 };
 
-Variable_size_type Variable_derivative::size()
+Variable_size_type Variable_derivative::size() const
 //******************************************************************************
 // LAST MODIFIED : 14 November 2003
 //
@@ -149,6 +149,16 @@ Vector *Variable_derivative::scalars()
 //==============================================================================
 {
 	return (evaluate_local()->scalars());
+}
+
+Variable_handle Variable_derivative::clone() const
+//******************************************************************************
+// LAST MODIFIED : 8 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (Variable_derivative_handle(new Variable_derivative(*this)));
 }
 
 Variable_handle Variable_derivative::evaluate_local()

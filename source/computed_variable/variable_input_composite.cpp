@@ -10,6 +10,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <typeinfo>
+#include <iostream>
 
 //???DB.  Put in include?
 //???DB.  With smart pointers?

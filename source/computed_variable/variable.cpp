@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable.cpp
 //
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 18 December 2003
 //
 // DESCRIPTION :
 //
@@ -128,6 +128,18 @@
 //   Overload << instead of get_string_representation?
 //   Need get_string_representation for inputs to do
 //     Variable_derivative::get_string_representation_local() properly?
+//
+// ???DB.  04Dec03
+//   Need a result type method for variables?  Need type method for inputs?
+//   Have Variable_output/result as well as Variable_input?  Merge?  Came from
+//     Inverse
+//   Do handles/smart pointers need to be set to 0 in destructors (to decrease
+//     access count)?
+//
+// ???DB.  11Dec03
+//   Would like to use const on methods more (means that <this> is not changed
+//     (eg. virtual Variable_handle clone() const=0), but prevented because of
+//     instrusive smart pointer
 //==============================================================================
 
 #include <algorithm>
@@ -150,6 +162,7 @@ template<class Assertion,class Exception>inline void Assert(
 #include "computed_variable/variable.hpp"
 #include "computed_variable/variable_composite.hpp"
 #include "computed_variable/variable_derivative_matrix.hpp"
+#include "computed_variable/variable_input_composite.hpp"
 #include "computed_variable/variable_input_composite.hpp"
 
 // class Variable_input_value
@@ -306,19 +319,6 @@ void intrusive_ptr_release(Variable *variable)
 	}
 }
 #endif // defined (USE_INTRUSIVE_SMART_POINTER)
-
-#if defined (OLD_CODE)
-Variable::size_type Variable::size()
-//******************************************************************************
-// LAST MODIFIED : 23 October 2003
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	//???DB.  Define for each derived type
-	return (0);
-}
-#endif
 
 class Variable_get_input_value
 //******************************************************************************
@@ -604,7 +604,7 @@ Variable_handle Variable::evaluate_derivative(
 	std::list<Variable_input_handle>& independent_variables,
 	std::list<Variable_input_value_handle>& values)
 //******************************************************************************
-// LAST MODIFIED : 25 November 2003
+// LAST MODIFIED : 18 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -668,6 +668,8 @@ Variable_handle Variable::evaluate_derivative(
 		std::for_each(input_composite_iterator,input_composite->end(),
 			evaluate_derivative_functor);
 		*input_iterator=input_composite;
+		// need to set independent_variables because evaluate_derivative copies
+		derivative->independent_variables=independent_variables;
 	}
 
 	return (derivative);
@@ -742,13 +744,59 @@ int Variable::set_input_value(const Variable_input_handle& input,
 	return (set_input_value_local(input,value));
 }
 
+Scalar Variable::norm() const
+//******************************************************************************
+// LAST MODIFIED : 4 December 2003
+//
+// DESCRIPTION :
+// Calculates the norm of <this>.  A negative result means that the norm is not
+// defined.
+//
+// This is the default and returns a negative Scalar.
+//==============================================================================
+{
+	return ((Scalar)-1);
+}
+
+Variable_handle Variable::operator-(const Variable&) const
+//******************************************************************************
+// LAST MODIFIED : 6 December 2003
+//
+// DESCRIPTION :
+// This is the default and returns a zero handle (failure).
+//==============================================================================
+{
+	return (Variable_handle(0));
+}
+
+Variable_handle Variable::operator-=(const Variable&)
+//******************************************************************************
+// LAST MODIFIED : 6 December 2003
+//
+// DESCRIPTION :
+// This is the default and returns a zero handle (failure).
+//==============================================================================
+{
+	return (Variable_handle(0));
+}
+
 string_handle Variable::get_string_representation()
 //******************************************************************************
-// LAST MODIFIED : 18 September 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	// return the result of the local get_string_representation
-	return ((get_string_representation_local)());
+	string_handle return_string;
+
+	if (this)
+	{
+		return_string=(get_string_representation_local)();
+	}
+	else
+	{
+		return_string=new std::string;
+	}
+
+	return (return_string);
 }

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_coordinates.cpp
 //
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 // Implements variables which transform between coordinate systems.
@@ -116,8 +116,8 @@ typedef Variable_input_prolate_spheroidal_to_rectangular_cartesian *
 // global classes
 // ==============
 
-// class Variable_vector
-// ---------------------
+// class Variable_prolate_spheroidal_to_rectangular_cartesian
+// ----------------------------------------------------------
 
 Variable_prolate_spheroidal_to_rectangular_cartesian::
 	Variable_prolate_spheroidal_to_rectangular_cartesian(const Scalar lambda,
@@ -173,6 +173,7 @@ Variable_prolate_spheroidal_to_rectangular_cartesian::
 }
 
 Variable_size_type Variable_prolate_spheroidal_to_rectangular_cartesian::size()
+	const
 //******************************************************************************
 // LAST MODIFIED : 20 November 2003
 //
@@ -267,6 +268,18 @@ Variable_input_handle Variable_prolate_spheroidal_to_rectangular_cartesian::
 		false,false,false,true)));
 }
 
+Variable_handle Variable_prolate_spheroidal_to_rectangular_cartesian::clone()
+	const
+//******************************************************************************
+// LAST MODIFIED : 8 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (Variable_prolate_spheroidal_to_rectangular_cartesian_handle(
+		new Variable_prolate_spheroidal_to_rectangular_cartesian(*this)));
+}
+
 Variable_handle Variable_prolate_spheroidal_to_rectangular_cartesian::
 	evaluate_local()
 //******************************************************************************
@@ -297,7 +310,7 @@ void Variable_prolate_spheroidal_to_rectangular_cartesian::
 	evaluate_derivative_local(Matrix& matrix,
 	std::list<Variable_input_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 21 November 2003
+// LAST MODIFIED : 7 December 2003
 //
 // DESCRIPTION :
 // ???DB.  Currently up to and including order 2 derivatives in prolate
@@ -339,9 +352,9 @@ void Variable_prolate_spheroidal_to_rectangular_cartesian::
 		double aa1,aa2,a1,a2,a3,a4,a5,a6,a7,a8,a9;
 		Variable_size_type input_size,matrix_number_of_columns=matrix.size2(),
 			number_of_columns;
-		boost::numeric::ublas::matrix<Variable_size_type>
+		ublas::matrix<Variable_size_type>
 			derivative_indices(matrix_number_of_columns,4);
-		boost::numeric::ublas::vector<Variable_size_type> derivative_mapping(4);
+		ublas::vector<Variable_size_type> derivative_mapping(4);
 
 		independent_variable_iterator=independent_variables.begin();
 		number_of_columns=0;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new_input_composite.h
 
-LAST MODIFIED : 20 October 2003
+LAST MODIFIED : 23 December 2003
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new_input composite objects.
@@ -20,9 +20,9 @@ extern "C" {
 #endif /* __cplusplus */
 
 Cmiss_variable_new_input_id Cmiss_variable_new_input_composite_create(
-	Cmiss_variable_new_input_value_list_id inputs);
+	Cmiss_variable_new_input_list_id inputs);
 /*******************************************************************************
-LAST MODIFIED : 20 October 2003
+LAST MODIFIED : 23 December 2003
 
 DESCRIPTION :
 Creates a Cmiss_variable_new_input composite with the supplied <inputs>.

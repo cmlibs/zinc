@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_vector.cpp
 //
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 15 December 2003
 //
 // DESCRIPTION :
 //???DB.  Should be template?
@@ -31,7 +31,7 @@ template<class Assertion,class Exception>inline void Assert(
 
 class Variable_input_vector_values : public Variable_input
 //******************************************************************************
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 7 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -46,7 +46,7 @@ class Variable_input_vector_values : public Variable_input
 			indices[0]=index;
 		};
 		Variable_input_vector_values(const Variable_vector_handle& variable_vector,
-			const boost::numeric::ublas::vector<Variable_size_type>& indices):
+			const ublas::vector<Variable_size_type>& indices):
 			variable_vector(variable_vector),indices(indices){};
 		~Variable_input_vector_values(){};
 		Variable_size_type size()
@@ -95,7 +95,7 @@ class Variable_input_vector_values : public Variable_input
 		};
 	private:
 		Variable_vector_handle variable_vector;
-		boost::numeric::ublas::vector<Variable_size_type> indices;
+		ublas::vector<Variable_size_type> indices;
 };
 
 #if defined (USE_INTRUSIVE_SMART_POINTER)
@@ -171,8 +171,7 @@ Scalar& Variable_vector::operator[](Variable_size_type i)
 	return (values[i]);
 }
 
-#if defined (NEW_CODE)
-const Scalar& Variable_vector::operator[](Variable_size_type i) const
+const Scalar Variable_vector::operator[](Variable_size_type i) const
 //******************************************************************************
 // LAST MODIFIED : 9 November 2003
 //
@@ -182,9 +181,8 @@ const Scalar& Variable_vector::operator[](Variable_size_type i) const
 {
 	return (values[i]);
 }
-#endif // defined (NEW_CODE)
 
-Variable_size_type Variable_vector::size()
+Variable_size_type Variable_vector::size() const
 //******************************************************************************
 // LAST MODIFIED : 24 October 2003
 //
@@ -229,9 +227,9 @@ Variable_input_handle Variable_vector::input_values(Variable_size_type index)
 }
 
 Variable_input_handle Variable_vector::input_values(
-	const boost::numeric::ublas::vector<Variable_size_type> indices)
+	const ublas::vector<Variable_size_type> indices)
 //******************************************************************************
-// LAST MODIFIED : 24 October 2003
+// LAST MODIFIED : 7 December 2003
 //
 // DESCRIPTION :
 // Returns the values input for a vector.
@@ -239,6 +237,102 @@ Variable_input_handle Variable_vector::input_values(
 {
 	return (Variable_input_handle(new Variable_input_vector_values(
 		Variable_vector_handle(this),indices)));
+}
+
+Scalar Variable_vector::norm() const
+//******************************************************************************
+// LAST MODIFIED : 11 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Scalar result;
+	Variable_size_type i,number_of_values;
+
+	result=0;
+	if (this&&(0<(number_of_values=values.size())))
+	{
+		for (i=0;i<number_of_values;i++)
+		{
+			result += values[i]*values[i];
+		}
+		result=sqrt(result);
+	}
+
+	return (result);
+}
+
+Variable_handle Variable_vector::operator-(const Variable& second) const
+//******************************************************************************
+// LAST MODIFIED : 12 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Variable_vector_handle result(0);
+
+	try
+	{
+		const Variable_vector& second_vector=
+			dynamic_cast<const Variable_vector&>(second);
+		Variable_size_type i,number_of_values;
+
+		number_of_values=second_vector.values.size();
+		if (this&&(values.size()==number_of_values)&&
+			(result=Variable_vector_handle(new Variable_vector(*this))))
+		{
+			for (i=0;i<number_of_values;i++)
+			{
+				(result->values)[i] -= (second_vector.values)[i];
+			}
+		}
+	}
+	catch (std::bad_cast)
+	{
+		// do nothing
+	}
+
+	return (result);
+}
+
+Variable_handle Variable_vector::operator-=(const Variable& second)
+//******************************************************************************
+// LAST MODIFIED : 15 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	try
+	{
+		const Variable_vector& second_vector=
+			dynamic_cast<const Variable_vector&>(second);
+		Variable_size_type i,number_of_values;
+
+		number_of_values=second_vector.values.size();
+		if (this&&(values.size()==number_of_values))
+		{
+			for (i=0;i<number_of_values;i++)
+			{
+				values[i] -= (second_vector.values)[i];
+			}
+		}
+	}
+	catch (std::bad_cast)
+	{
+		// do nothing
+	}
+
+	return (Variable_vector_handle(this));
+}
+
+Variable_handle Variable_vector::clone() const
+//******************************************************************************
+// LAST MODIFIED : 8 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (Variable_vector_handle(new Variable_vector(*this)));
 }
 
 Variable_handle Variable_vector::evaluate_local()
@@ -303,7 +397,7 @@ void Variable_vector::evaluate_derivative_local(Matrix& matrix,
 Variable_handle Variable_vector::get_input_value_local(
 	const Variable_input_handle& input)
 //******************************************************************************
-// LAST MODIFIED : 5 November 2003
+// LAST MODIFIED : 7 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -329,8 +423,7 @@ Variable_handle Variable_vector::get_input_value_local(
 		else
 		{
 			Variable_size_type i,index,number_of_values=this->size();
-			boost::numeric::ublas::vector<Scalar>
-				selected_values(number_of_input_values);
+			ublas::vector<Scalar> selected_values(number_of_input_values);
 
 			for (i=0;i<number_of_input_values;i++)
 			{

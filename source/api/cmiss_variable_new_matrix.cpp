@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new_matrix.cpp
 
-LAST MODIFIED : 26 November 2003
+LAST MODIFIED : 12 December 2003
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new matrix object.
@@ -84,7 +84,7 @@ Gets the <*number_of_rows_address> and <*number_of_columns_address> for the
 #if defined (USE_SMART_POINTER)
 	Variable_matrix_handle *variable_matrix_handle_address;
 #else /* defined (USE_SMART_POINTER) */
-	Variable_derivative_matrix *variable_matrix_address;
+	Variable_matrix *variable_matrix_address;
 #endif /* defined (USE_SMART_POINTER) */
 
 	return_code=0;
@@ -223,6 +223,102 @@ Returns the values input made up of the specified indices for the
 			input_values
 #endif /* defined (USE_SMART_POINTER) */
 			);
+	}
+
+	return (result);
+}
+
+Cmiss_variable_new_id Cmiss_variable_new_matrix_solve(
+	Cmiss_variable_new_id variable_matrix,Cmiss_variable_new_id variable_rhs)
+/*******************************************************************************
+LAST MODIFIED : 12 December 2003
+
+DESCRIPTION :
+Returns the solution of the linear system <variable_matrix>*x=<variable_rhs>.
+<variable_rhs> should be a matrix or a vector.
+==============================================================================*/
+{
+	Cmiss_variable_new_id result;
+#if defined (USE_SMART_POINTER)
+	Variable_handle *variable_matrix_handle_address;
+	Variable_handle *variable_rhs_handle_address;
+#else
+	Variable *variable_matrix_address;
+#endif /* defined (USE_SMART_POINTER) */
+	Variable_matrix_handle variable_matrix_handle;
+	Variable_handle variable_rhs_handle;
+
+	result=0;
+	if (
+#if defined (USE_SMART_POINTER)
+		(variable_matrix_handle_address=
+		reinterpret_cast<Variable_handle *>(variable_matrix))&&
+		(*variable_matrix_handle_address)&&
+		(variable_matrix_handle=boost::dynamic_pointer_cast<Variable_matrix,
+		Variable>(*variable_matrix_handle_address))&&
+		(variable_rhs_handle_address=
+		reinterpret_cast<Variable_handle *>(variable_rhs))&&
+		(variable_rhs_handle= *variable_rhs_handle_address)
+#else /* defined (USE_SMART_POINTER) */
+		(variable_matrix_address=
+		reinterpret_cast<Variable *>(variable_matrix))&&
+		(variable_matrix_handle=dynamic_cast<Variable_matrix *>(
+		variable_matrix_address))&&
+		(variable_rhs_address=reinterpret_cast<Variable *>(variable_rhs))
+#endif /* defined (USE_SMART_POINTER) */
+		)
+	{
+		Variable_matrix_handle variable_matrix_rhs_handle;
+		Variable_vector_handle variable_vector_rhs_handle;
+
+		if (variable_matrix_rhs_handle=
+#if defined (USE_SMART_POINTER)
+			boost::dynamic_pointer_cast<Variable_matrix,Variable>(variable_rhs_handle)
+#else /* defined (USE_SMART_POINTER) */
+			dynamic_cast<Variable_matrix *>(variable_rhs_handle)
+#endif /* defined (USE_SMART_POINTER) */
+			)
+		{
+			result=reinterpret_cast<Cmiss_variable_new_id>(
+#if defined (USE_SMART_POINTER)
+				new Variable_handle(
+#endif /* defined (USE_SMART_POINTER) */
+				variable_matrix_handle->solve(variable_matrix_rhs_handle)
+#if defined (USE_SMART_POINTER)
+				)
+#endif /* defined (USE_SMART_POINTER) */
+				);
+		}
+		else if (variable_vector_rhs_handle=
+#if defined (USE_SMART_POINTER)
+			boost::dynamic_pointer_cast<Variable_vector,Variable>(variable_rhs_handle)
+#else /* defined (USE_SMART_POINTER) */
+			dynamic_cast<Variable_vector *>(variable_rhs_handle)
+#endif /* defined (USE_SMART_POINTER) */
+			)
+		{
+			result=reinterpret_cast<Cmiss_variable_new_id>(
+#if defined (USE_SMART_POINTER)
+				new Variable_handle(
+#endif /* defined (USE_SMART_POINTER) */
+				variable_matrix_handle->solve(variable_vector_rhs_handle)
+#if defined (USE_SMART_POINTER)
+				)
+#endif /* defined (USE_SMART_POINTER) */
+				);
+		}
+		else
+		{
+			result=reinterpret_cast<Cmiss_variable_new_id>(
+#if defined (USE_SMART_POINTER)
+				new Variable_handle(
+#endif /* defined (USE_SMART_POINTER) */
+				variable_matrix_handle->solve(variable_rhs_handle)
+#if defined (USE_SMART_POINTER)
+				)
+#endif /* defined (USE_SMART_POINTER) */
+				);
+		}
 	}
 
 	return (result);

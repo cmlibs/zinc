@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_matrix.cpp
 //
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 12 December 2003
 //
 // DESCRIPTION :
 //???DB.  Should be template?
@@ -20,6 +20,13 @@ template<class Assertion,class Exception>inline void Assert(
 	if (Assert_on&&!(assertion)) throw exception;
 }
 
+// to use lapack with ublas
+#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
+#include <boost/numeric/bindings/traits/std_vector.hpp>
+#include <boost/numeric/bindings/lapack/gesv.hpp>
+
+namespace lapack = boost::numeric::bindings::lapack;
+
 #include "computed_variable/variable_matrix.hpp"
 #include "computed_variable/variable_vector.hpp"
 
@@ -31,7 +38,7 @@ template<class Assertion,class Exception>inline void Assert(
 
 class Variable_input_matrix_values : public Variable_input
 //******************************************************************************
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 7 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -48,9 +55,8 @@ class Variable_input_matrix_values : public Variable_input
 			indices[0].second=column;
 		};
 		Variable_input_matrix_values(const Variable_matrix_handle& variable_matrix,
-			const boost::numeric::ublas::vector<
-			std::pair<Variable_size_type,Variable_size_type> >& indices):
-			variable_matrix(variable_matrix),indices(indices){};
+			const ublas::vector< std::pair<Variable_size_type,Variable_size_type> >&
+			indices):variable_matrix(variable_matrix),indices(indices){};
 		~Variable_input_matrix_values(){};
 		Variable_size_type size()
 		{
@@ -98,8 +104,7 @@ class Variable_input_matrix_values : public Variable_input
 		};
 	private:
 		Variable_matrix_handle variable_matrix;
-		boost::numeric::ublas::vector<
-			std::pair<Variable_size_type,Variable_size_type> > indices;
+		ublas::vector< std::pair<Variable_size_type,Variable_size_type> > indices;
 };
 
 #if defined (USE_INTRUSIVE_SMART_POINTER)
@@ -164,7 +169,18 @@ Variable_matrix::~Variable_matrix()
 	// do nothing
 }
 
-Variable_size_type Variable_matrix::size()
+Scalar& Variable_matrix::operator()(Variable_size_type row,
+	Variable_size_type column)
+//******************************************************************************
+// LAST MODIFIED : 10 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (values(row,column));
+}
+
+Variable_size_type Variable_matrix::size() const
 //******************************************************************************
 // LAST MODIFIED : 24 October 2003
 //
@@ -204,7 +220,7 @@ Vector *Variable_matrix::scalars()
 
 Variable_matrix_handle Variable_matrix::sub_matrix(Variable_size_type row_low,
 	Variable_size_type row_high,Variable_size_type column_low,
-	Variable_size_type column_high)
+	Variable_size_type column_high) const
 //******************************************************************************
 // LAST MODIFIED : 6 November 2003
 //
@@ -240,7 +256,7 @@ Variable_matrix_handle Variable_matrix::sub_matrix(Variable_size_type row_low,
 	return (result);
 }
 
-Variable_size_type Variable_matrix::number_of_rows()
+Variable_size_type Variable_matrix::number_of_rows() const
 //******************************************************************************
 // LAST MODIFIED : 6 November 2003
 //
@@ -250,7 +266,7 @@ Variable_size_type Variable_matrix::number_of_rows()
 	return (values.size1());
 }
 
-Variable_size_type Variable_matrix::number_of_columns()
+Variable_size_type Variable_matrix::number_of_columns() const
 //******************************************************************************
 // LAST MODIFIED : 6 November 2003
 //
@@ -258,6 +274,102 @@ Variable_size_type Variable_matrix::number_of_columns()
 //==============================================================================
 {
 	return (values.size2());
+}
+
+Variable_vector_handle Variable_matrix::solve(const Variable_handle& variable)
+//******************************************************************************
+// LAST MODIFIED : 12 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Vector *variable_scalars=0;
+	Variable_vector_handle result(0);
+
+	if (variable&&(variable_scalars=variable->scalars()))
+	{
+		Variable_size_type n_rows;
+
+		n_rows=number_of_rows();
+		if ((0<n_rows)&&(0<number_of_columns())&&(variable_scalars->size()==n_rows))
+		{
+			Matrix rhs(n_rows,1);
+			std::vector<int> ipiv(n_rows);
+			Variable_size_type i;
+
+			for (i=0;i<n_rows;i++)
+			{
+				rhs(i,0)=(*variable_scalars)[i];
+			}
+			lapack::gesv(values,ipiv,rhs);
+			for (i=0;i<n_rows;i++)
+			{
+				(*variable_scalars)[i]=rhs(i,0);
+			}
+			result=Variable_vector_handle(new Variable_vector(*variable_scalars));
+		}
+		delete variable_scalars;
+	}
+
+	return (result);
+}
+
+Variable_matrix_handle Variable_matrix::solve(const Variable_matrix_handle& rhs)
+//******************************************************************************
+// LAST MODIFIED : 7 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Variable_matrix_handle result(0);
+	Variable_size_type n_columns,n_rows;
+
+	n_rows=number_of_rows();
+	n_columns=number_of_columns();
+	if ((0<n_rows)&&(0<n_columns)&&rhs&&(rhs->number_of_columns()==n_rows))
+	{
+		Matrix answer(n_rows,n_columns);
+		std::vector<int> ipiv(n_rows);
+
+		answer=rhs->values;
+		lapack::gesv(values,ipiv,answer);
+		result=Variable_matrix_handle(new Variable_matrix(answer));
+	}
+
+	return (result);
+}
+
+Variable_vector_handle Variable_matrix::solve(const Variable_vector_handle& rhs)
+//******************************************************************************
+// LAST MODIFIED : 12 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Variable_vector_handle result(0);
+	Variable_size_type n_rows;
+
+	n_rows=number_of_rows();
+	if ((0<n_rows)&&(0<number_of_columns())&&rhs&&(rhs->size()==n_rows))
+	{
+		Matrix answer(n_rows,1);
+		std::vector<int> ipiv(n_rows);
+		Variable_size_type i;
+		Vector vector_answer(n_rows);
+
+		for (i=0;i<n_rows;i++)
+		{
+			answer(i,0)=(*rhs)[i];
+		}
+		lapack::gesv(values,ipiv,answer);
+		for (i=0;i<n_rows;i++)
+		{
+			vector_answer[i]=answer(i,0);
+		}
+		result=Variable_vector_handle(new Variable_vector(vector_answer));
+	}
+
+	return (result);
 }
 
 Variable_input_handle Variable_matrix::input_values()
@@ -286,10 +398,10 @@ Variable_input_handle Variable_matrix::input_values(Variable_size_type row,
 }
 
 Variable_input_handle Variable_matrix::input_values(
-	const boost::numeric::ublas::vector<
-	std::pair<Variable_size_type,Variable_size_type> > indices)
+	const ublas::vector< std::pair<Variable_size_type,Variable_size_type> >
+	indices)
 //******************************************************************************
-// LAST MODIFIED : 23 October 2003
+// LAST MODIFIED : 7 December 2003
 //
 // DESCRIPTION :
 // Returns the values input for a matrix.
@@ -297,6 +409,16 @@ Variable_input_handle Variable_matrix::input_values(
 {
 	return (Variable_input_handle(new Variable_input_matrix_values(
 		Variable_matrix_handle(this),indices)));
+}
+
+Variable_handle Variable_matrix::clone() const
+//******************************************************************************
+// LAST MODIFIED : 8 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (Variable_matrix_handle(new Variable_matrix(*this)));
 }
 
 Variable_handle Variable_matrix::evaluate_local()

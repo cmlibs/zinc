@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_derivative.hpp
 //
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -13,13 +13,13 @@
 
 class Variable_derivative : public Variable
 //******************************************************************************
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 // A derivative of another variable.
 //==============================================================================
 {
-	// so that Variable_derivative_matrix::Variable_derivative_matrix can do thes
+	// so that Variable_derivative_matrix::Variable_derivative_matrix can do the
 	//   merging of independent_variables instead of
 	//   Variable_derivative::evaluate_derivative_local
 	friend class Variable_derivative_matrix;
@@ -34,7 +34,7 @@ class Variable_derivative : public Variable
 		// destructor
 		~Variable_derivative();
 		// get the number of scalars in the result
-		Variable_size_type size();
+		Variable_size_type size() const;
 		// get the scalars in the result
 		Vector *scalars();
 		// input specifier - use dependent variable inputs
@@ -42,6 +42,7 @@ class Variable_derivative : public Variable
 		virtual Variable_handle evaluate_derivative(
 			std::list<Variable_input_handle>& independent_variables,
 			std::list<Variable_input_value_handle>& values);
+		virtual Variable_handle clone() const;
 	private:
 		Variable_handle evaluate_local();
 		void evaluate_derivative_local(Matrix& matrix,

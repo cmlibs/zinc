@@ -64,6 +64,16 @@ Returns the values input made up of the specified indices for the
 <column_indices> is NULL then the input refers to all values.
 ==============================================================================*/
 
+Cmiss_variable_new_id Cmiss_variable_new_matrix_solve(
+	Cmiss_variable_new_id variable_matrix,Cmiss_variable_new_id variable_rhs);
+/*******************************************************************************
+LAST MODIFIED : 11 December 2003
+
+DESCRIPTION :
+Returns the solution of the linear system <variable_matrix>*x=<variable_rhs>.
+<variable_rhs> should be a matrix or a vector.
+==============================================================================*/
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

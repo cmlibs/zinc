@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_composite.hpp
 //
-// LAST MODIFIED : 24 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -13,7 +13,7 @@
 
 class Variable_composite : public Variable
 //******************************************************************************
-// LAST MODIFIED : 24 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 // A composite of other variable(s).
@@ -34,7 +34,7 @@ class Variable_composite : public Variable
 		// destructor
 		~Variable_composite();
 		// get the number of scalars in the result
-		Variable_size_type size();
+		Variable_size_type size() const;
 		// get the scalars in the result
 		Vector *scalars();
 		// input specifier - use inputs for variables in list
@@ -45,6 +45,7 @@ class Variable_composite : public Variable
 		virtual Variable_handle evaluate_derivative(
 			std::list<Variable_input_handle>& independent_variables,
 			std::list<Variable_input_value_handle>& values);
+		virtual Variable_handle clone() const;
 	private:
 		Variable_handle evaluate_local();
 		void evaluate_derivative_local(Matrix& matrix,

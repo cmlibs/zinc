@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable.hpp
 //
-// LAST MODIFIED : 21 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 // Variable's are expressions that are constructed for:
@@ -56,8 +56,11 @@ typedef double Scalar;
 #include "boost/numeric/ublas/vector.hpp"
 #include "boost/numeric/ublas/io.hpp"
 
-typedef boost::numeric::ublas::matrix<Scalar> Matrix;
-typedef boost::numeric::ublas::vector<Scalar> Vector;
+namespace ublas = boost::numeric::ublas;
+
+// use column_major so that can use lapack=boost::numeric::bindings::lapack
+typedef ublas::matrix<Scalar,ublas::column_major> Matrix;
+typedef ublas::vector<Scalar> Vector;
 
 #include "computed_variable/variable_input.hpp"
 
@@ -82,7 +85,6 @@ class Variable_input_value
 // An input/value pair.
 //==============================================================================
 {
-	// can be used by any function
 	public:
 		// constructor
 		Variable_input_value(Variable_input_handle& input,Variable_handle& value);
@@ -96,8 +98,6 @@ class Variable_input_value
 		Variable_input_handle input() const;
 		// get value
 		Variable_handle value() const;
-	// can be used by member functions and friends of the class, and can be used
-	//   by member functions and friends of a derived class
 	private:
 		Variable_input_handle input_data;
 		Variable_handle value_data;
@@ -124,7 +124,7 @@ typedef std::string * string_handle;
 
 class Variable
 //******************************************************************************
-// LAST MODIFIED : 21 November 2003
+// LAST MODIFIED : 11 December 2003
 //
 // DESCRIPTION :
 //???DB.  Almost all the public methods could be non-pure virtual so that have
@@ -144,17 +144,11 @@ class Variable
 			//  pointers
 		virtual ~Variable();
 		// get the number of scalars in the result
-		virtual Variable_size_type size()=0;
+		virtual Variable_size_type size() const =0;
 		// get the scalars in the result
 		virtual Vector *scalars()=0;
 		// evaluate method which does the general work and then calls the virtual
-		//   private evaluate.  const means that does not change <this> and so can
-		//   be called for constants
-		//
-		//   Made virtual so that operators can overload it.
-			//???DB.  Get rid of comments about protected/private?  Not so worried
-			//  about secrecy as about not having to re-compile users when change
-			//  private/protected
+		//   private evaluate.  Made virtual so that operators can overload it.
 			//???DB.  Change into a () operator ?
 		virtual Variable_handle evaluate(std::list<Variable_input_value_handle>&
 			values);
@@ -167,10 +161,8 @@ class Variable
 			//  derive from Variable handle
 			//???DB.  Means that we need run-time type checking (bad)?
 		// evaluate derivative method which does the general work and then calls the
-		//   virtual private evaluate derivative.  const means that does not change
-		//   <this> and so can be called for constants
-		//
-		//   Made virtual so that operators can overload it.
+		//   virtual private evaluate derivative.  Made virtual so that operators
+		//   can overload it.
 		virtual Variable_handle evaluate_derivative(
 			std::list<Variable_input_handle>& independent_variables,
 			std::list<Variable_input_value_handle>& values);
@@ -186,6 +178,12 @@ class Variable
 			//???DB.  Is there any general work?  Should this be (non-pure) virtual
 			//  and have no private method?
 		string_handle get_string_representation();
+		// the norm of a variable.  A negative result means that the norm is not
+		//   defined
+		virtual Scalar norm() const;
+		virtual Variable_handle operator-(const Variable&) const;
+		virtual Variable_handle operator-=(const Variable&);
+		virtual Variable_handle clone() const=0;
 	protected:
 		// constructor.  Protected so that can't create "plain" Variables
 		Variable();

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_finite_element.cpp
 //
-// LAST MODIFIED : 28 November 2003
+// LAST MODIFIED : 15 December 2003
 //
 // DESCRIPTION :
 // Finite element types - element/xi and finite element field.
@@ -38,7 +38,7 @@ extern "C"
 
 class Variable_input_element_xi : public Variable_input
 //******************************************************************************
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 7 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -60,7 +60,7 @@ class Variable_input_element_xi : public Variable_input
 		}
 		Variable_input_element_xi(
 			const Variable_finite_element_handle& variable_finite_element,
-			const boost::numeric::ublas::vector<Variable_size_type>& indices):
+			const ublas::vector<Variable_size_type>& indices):
 			element(false),xi(true),indices(indices),variable_element_xi(),
 			variable_finite_element(variable_finite_element){}
 		Variable_input_element_xi(
@@ -76,7 +76,7 @@ class Variable_input_element_xi : public Variable_input
 		}
 		Variable_input_element_xi(
 			const Variable_element_xi_handle& variable_element_xi,
-			const boost::numeric::ublas::vector<Variable_size_type>& indices):
+			const ublas::vector<Variable_size_type>& indices):
 			element(false),xi(true),indices(indices),
 			variable_element_xi(variable_element_xi),variable_finite_element(){}
 		~Variable_input_element_xi(){};
@@ -139,7 +139,7 @@ class Variable_input_element_xi : public Variable_input
 		};
 	private:
 		bool element,xi;
-		boost::numeric::ublas::vector<Variable_size_type> indices;
+		ublas::vector<Variable_size_type> indices;
 		Variable_element_xi_handle variable_element_xi;
 		Variable_finite_element_handle variable_finite_element;
 };
@@ -513,7 +513,7 @@ Variable_element_xi::~Variable_element_xi()
 	DEACCESS(FE_element)(&element);
 }
 
-Variable_size_type Variable_element_xi::size()
+Variable_size_type Variable_element_xi::size() const
 //******************************************************************************
 // LAST MODIFIED : 7 November 2003
 //
@@ -582,9 +582,9 @@ Variable_input_handle Variable_element_xi::input_xi(Variable_size_type index)
 }
 
 Variable_input_handle Variable_element_xi::input_xi(
-	const boost::numeric::ublas::vector<Variable_size_type> indices)
+	const ublas::vector<Variable_size_type> indices)
 //******************************************************************************
-// LAST MODIFIED : 10 November 2003
+// LAST MODIFIED : 7 December 2003
 //
 // DESCRIPTION :
 // Returns the xi input.
@@ -592,6 +592,128 @@ Variable_input_handle Variable_element_xi::input_xi(
 {
 	return (Variable_input_handle(new Variable_input_element_xi(
 		Variable_element_xi_handle(this),indices)));
+}
+
+Variable_handle Variable_element_xi::operator-(const Variable& second)
+	const
+//******************************************************************************
+// LAST MODIFIED : 15 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Variable_element_xi_handle result(0);
+
+	try
+	{
+		const Variable_vector& second_vector=
+			dynamic_cast<const Variable_vector&>(second);
+		Variable_size_type i,number_of_values;
+
+		number_of_values=second_vector.size();
+		if (this&&(xi.size()==number_of_values)&&(0<number_of_values))
+		{
+			FE_value *increment_array,*xi_array;
+
+			increment_array=new FE_value[number_of_values];
+			xi_array=new FE_value[number_of_values];
+			if (increment_array&&xi_array)
+			{
+				struct FE_element *increment_element;
+				for (i=0;i<number_of_values;i++)
+				{
+					increment_array[i]=(FE_value)second_vector[i];
+					xi_array[i]=(FE_value)xi[i];
+				}
+				increment_element=element;
+				if (FE_element_xi_increment(&increment_element,xi_array,
+					increment_array))
+				{
+					if (result=Variable_element_xi_handle(new Variable_element_xi(
+						increment_element,xi)))
+					{
+						for (i=0;i<number_of_values;i++)
+						{
+							(result->xi)[i]=(Scalar)(xi_array[i]);
+						}
+					}
+				}
+			}
+			delete [] increment_array;
+			delete [] xi_array;
+		}
+	}
+	catch (std::bad_cast)
+	{
+		// do nothing
+	}
+
+	return (result);
+}
+
+Variable_handle Variable_element_xi::operator-=(const Variable& second)
+//******************************************************************************
+// LAST MODIFIED : 15 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	try
+	{
+		const Variable_vector& second_vector=
+			dynamic_cast<const Variable_vector&>(second);
+		Variable_size_type i,number_of_values;
+
+		number_of_values=second_vector.size();
+		if (this&&(xi.size()==number_of_values)&&(0<number_of_values))
+		{
+			FE_value *increment_array,*xi_array;
+
+			increment_array=new FE_value[number_of_values];
+			xi_array=new FE_value[number_of_values];
+			if (increment_array&&xi_array)
+			{
+				struct FE_element *increment_element;
+				for (i=0;i<number_of_values;i++)
+				{
+					increment_array[i]=(FE_value)second_vector[i];
+					xi_array[i]=(FE_value)xi[i];
+				}
+				increment_element=element;
+				if (FE_element_xi_increment(&increment_element,xi_array,
+					increment_array))
+				{
+					if (element)
+					{
+						DEACCESS(FE_element)(&element);
+					}
+					element=ACCESS(FE_element)(increment_element);
+					for (i=0;i<number_of_values;i++)
+					{
+						xi[i]=(Scalar)(xi_array[i]);
+					}
+				}
+			}
+			delete [] increment_array;
+			delete [] xi_array;
+		}
+	}
+	catch (std::bad_cast)
+	{
+		// do nothing
+	}
+
+	return (Variable_element_xi_handle(this));
+}
+
+Variable_handle Variable_element_xi::clone() const
+//******************************************************************************
+// LAST MODIFIED : 8 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (Variable_element_xi_handle(new Variable_element_xi(*this)));
 }
 
 Variable_handle Variable_element_xi::evaluate_local()
@@ -657,7 +779,7 @@ void Variable_element_xi::evaluate_derivative_local(Matrix& matrix,
 Variable_handle Variable_element_xi::get_input_value_local(
 	const Variable_input_handle& input)
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 7 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -694,8 +816,7 @@ Variable_handle Variable_element_xi::get_input_value_local(
 			else
 			{
 				Variable_size_type i,index,number_of_values=this->size();
-				boost::numeric::ublas::vector<Scalar>
-					selected_values(number_of_input_values);
+				ublas::vector<Scalar> selected_values(number_of_input_values);
 
 				for (i=0;i<number_of_input_values;i++)
 				{
@@ -1005,7 +1126,7 @@ Variable_finite_element::~Variable_finite_element()
 	DEACCESS(FE_node)(&node);
 }
 
-Variable_size_type Variable_finite_element::size()
+Variable_size_type Variable_finite_element::size() const
 //******************************************************************************
 // LAST MODIFIED : 7 November 2003
 //
@@ -1090,9 +1211,9 @@ Variable_input_handle Variable_finite_element::input_xi(
 }
 
 Variable_input_handle Variable_finite_element::input_xi(
-	const boost::numeric::ublas::vector<Variable_size_type> indices)
+	const ublas::vector<Variable_size_type> indices)
 //******************************************************************************
-// LAST MODIFIED : 10 November 2003
+// LAST MODIFIED : 7 December 2003
 //
 // DESCRIPTION :
 // Returns the xi input.
@@ -1163,6 +1284,16 @@ Variable_input_handle Variable_finite_element::input_nodal_values(int version)
 {
 	return (Variable_input_handle(new Variable_input_nodal_values(
 		Variable_finite_element_handle(this),version)));
+}
+
+Variable_handle Variable_finite_element::clone() const
+//******************************************************************************
+// LAST MODIFIED : 8 December 2003
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (Variable_finite_element_handle(new Variable_finite_element(*this)));
 }
 
 Variable_handle Variable_finite_element::evaluate_local()
@@ -1976,7 +2107,7 @@ NB.  xi_1 is varying slowest (xi_n fastest)
 
 class Variable_finite_element_check_derivative_functor
 //******************************************************************************
-// LAST MODIFIED : 12 November 2003
+// LAST MODIFIED : 7 December 2003
 //
 // DESCRIPTION :
 //
@@ -1993,7 +2124,7 @@ class Variable_finite_element_check_derivative_functor
 			Variable_finite_element_handle variable_finite_element,
 			bool& zero_derivative,
 			Variable_input_nodal_values_handle& nodal_values_input,
-			boost::numeric::ublas::vector<Variable_input_element_xi_handle>::iterator
+			ublas::vector<Variable_input_element_xi_handle>::iterator
 			element_xi_input_iterator,Variable_size_type& number_of_columns):
 			first(true),zero_derivative(zero_derivative),
 			variable_finite_element(variable_finite_element),
@@ -2067,7 +2198,7 @@ class Variable_finite_element_check_derivative_functor
 		bool& zero_derivative;
 		Variable_finite_element_handle variable_finite_element;
 		Variable_input_nodal_values_handle& nodal_values_input;
-		boost::numeric::ublas::vector<Variable_input_element_xi_handle>::iterator
+		ublas::vector<Variable_input_element_xi_handle>::iterator
 			element_xi_input_iterator;
 		Variable_size_type& number_of_columns;
 };
@@ -2075,7 +2206,7 @@ class Variable_finite_element_check_derivative_functor
 void Variable_finite_element::evaluate_derivative_local(Matrix& matrix,
 	std::list<Variable_input_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 7 December 2003
 //
 // DESCRIPTION :
 // ???DB.  Throw an exception for failure?
@@ -2085,7 +2216,7 @@ void Variable_finite_element::evaluate_derivative_local(Matrix& matrix,
 	Variable_size_type derivative_order=independent_variables.size(),
 		number_of_columns,number_of_components;
 	Variable_input_nodal_values_handle nodal_values_input(0);
-	boost::numeric::ublas::vector<Variable_input_element_xi_handle>
+	ublas::vector<Variable_input_element_xi_handle>
 		element_xi_inputs(derivative_order);
 
 	// matrix is zero'd on entry
@@ -2162,7 +2293,7 @@ void Variable_finite_element::evaluate_derivative_local(Matrix& matrix,
 					FE_value **derivative_component_values=(FE_value **)NULL,
 						*value_address_1,*value_address_2;
 					Variable_size_type column_number,i;
-					boost::numeric::ublas::vector<Variable_size_type>
+					ublas::vector<Variable_size_type>
 						derivative_independent_values(derivative_order+1);
 					int j;
 					Scalar component_value;
