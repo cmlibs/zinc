@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -66,7 +66,7 @@ Module types
 */
 struct Graphics_window
 /*******************************************************************************
-LAST MODIFIED : 9 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Contains information for a graphics window.
@@ -81,7 +81,7 @@ Contains information for a graphics window.
 		view_all_button,time_edit_form,time_edit_widget,perspective_button,
 		layout_option,layout_menu,orthographic_form,ortho_up_option,
 		ortho_up_menu,ortho_front_button,
-		interactive_tool_form,interactive_tool_widget;
+		interactive_toolbar_form,interactive_toolbar_widget;
 	Widget window_shell,main_window;
 	/* scene_viewers and their parameters: */
 	enum Graphics_window_layout_mode layout_mode;
@@ -103,6 +103,8 @@ Contains information for a graphics window.
 	/* current pane for commands affecting view. First pane is 0 internally, but
 		 user should be presented with this value+1, so the first pane is 1 */
 	int current_pane;
+	int antialias_mode;
+	int perturb_lines;
 	enum Scene_viewer_input_mode input_mode;
 	/*???DB.  Do these belong here ? */
 	/* time parameters for animation */
@@ -192,7 +194,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
         Graphics_window,ortho_front_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,interactive_tool_form)
+        Graphics_window,interactive_toolbar_form)
 
 static int axis_name_to_axis_number(char *axis_name)
 /*******************************************************************************
@@ -578,41 +580,79 @@ Keep in case a use is found for it.
 	LEAVE;
 } /* Graphics_window_destroy_CB */
 
-static void Graphics_window_update_interactive_tool(Widget widget,
-        void *graphics_window_void,void *interactive_tool_void)
+static int Graphics_window_set_interactive_tool(
+	struct Graphics_window *graphics_window,
+	struct Interactive_tool *interactive_tool)
 /*******************************************************************************
-LAST MODIFIED : 9 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
-Callback for change of interactive tool.
+Sets the <interactive_tool> in use in the <graphics_window>. Updates the
+toolbar to match the selection.
 ==============================================================================*/
 {
-	int pane_no;
-	struct Graphics_window *graphics_window;
-	struct Interactive_tool *interactive_tool;
+	int pane_no,return_code;
 
-	ENTER(Graphics_window_update_interactive_tool);
-	USE_PARAMETER(widget);
-	if (graphics_window=(struct Graphics_window *)graphics_window_void)
+	ENTER(Graphics_window_set_interactive_tool);
+	if (graphics_window)
 	{
-		interactive_tool=(struct Interactive_tool *)interactive_tool_void;
-		if (interactive_tool != graphics_window->interactive_tool)
+		if (interactive_toolbar_widget_set_current_interactive_tool(
+			graphics_window->interactive_toolbar_widget,interactive_tool))
 		{
 			graphics_window->interactive_tool=interactive_tool;
-			for (pane_no=0;(pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES);pane_no++)
-			{
-				Scene_viewer_set_interactive_tool(
-					graphics_window->scene_viewer[pane_no],interactive_tool);
-			}
 			if (interactive_tool == graphics_window->transform_tool)
 			{
 				Graphics_window_set_input_mode(graphics_window,SCENE_VIEWER_TRANSFORM);
+				/* transform_tool is just a placeholder for transform mode so pass
+					 NULL to the scene_viewers */
+				interactive_tool=(struct Interactive_tool *)NULL;
 			}
 			else
 			{
 				Graphics_window_set_input_mode(graphics_window,SCENE_VIEWER_SELECT);
 			}
+			for (pane_no=0;(pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES);pane_no++)
+			{
+				Scene_viewer_set_interactive_tool(
+					graphics_window->scene_viewer[pane_no],interactive_tool);
+			}
+			return_code=1;
 		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Graphics_window_set_interactive_tool.  Could not update toolbar");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_set_interactive_tool.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphics_window_set_interactive_tool */
+
+static void Graphics_window_update_interactive_tool(Widget widget,
+	void *graphics_window_void,void *interactive_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Called when a new tool is chosen in the interactive_toolbar_widget.
+==============================================================================*/
+{
+	struct Graphics_window *graphics_window;
+
+	ENTER(Graphics_window_update_interactive_tool);
+	USE_PARAMETER(widget);
+	if (graphics_window=(struct Graphics_window *)graphics_window_void)
+	{
+		Graphics_window_set_interactive_tool(graphics_window,
+			(struct Interactive_tool *)interactive_tool_void);
 	}
 	else
 	{
@@ -1776,104 +1816,103 @@ Parser commands for modifying the overlay scene of the current pane of the
 	return (return_code);
 } /* modify_Graphics_window_overlay */
 
-int Graphics_window_set_line_draw_mode(struct Graphics_window *window,
-	int perturb_lines_flag)
+int Graphics_window_set_antialias_mode(struct Graphics_window *graphics_window,
+	int antialias_mode)
 /*******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
-Sets if the <graphics_window> perturbs lines or not, using <perturb_lines_flag>
+Sets the number of times the images is oversampled to antialias the image. Only
+certain values are supported 0/1 = off, 2, 4 & 8 are on.
+==============================================================================*/
+{
+	int pane_no,return_code;
+
+	ENTER(Graphics_window_set_antialias_mode);
+	if (graphics_window)
+	{
+		if (1==antialias_mode)
+		{
+			antialias_mode=0;
+		}
+		return_code=1;
+		for (pane_no=0;(pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES)&&return_code;
+			pane_no++)
+		{
+			return_code=Scene_viewer_set_antialias_mode(
+				graphics_window->scene_viewer[pane_no],antialias_mode);
+		}
+		if (return_code)
+		{
+			graphics_window->antialias_mode=antialias_mode;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_set_antialias_mode.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* Graphics_window_set_antialias_mode */
+
+int Graphics_window_set_perturb_lines(struct Graphics_window *graphics_window,
+	int perturb_lines)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Sets if the <graphics_window> perturbs lines or not, using <perturb_lines>
 (1==TRUE,0==FALSE)
 ==============================================================================*/
 {
 	int pane_no,return_code;
 
-	ENTER(Graphics_window_set_line_draw_mode);
-	if (window)
+	ENTER(Graphics_window_set_perturb_lines);
+	if (graphics_window)
 	{
-		/*  perturb lines */
-		if (perturb_lines_flag)
-		{
-			for (pane_no=0;pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES;
-					 pane_no++)
-			{
-				Scene_viewer_set_line_draw_mode(window->scene_viewer[pane_no],1);
-			}		
-		}
-		/* don't perturb lines */
-		else
-		{
-			for (pane_no=0;pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES;
-					 pane_no++)
-			{
-				Scene_viewer_set_line_draw_mode(window->scene_viewer[pane_no],0);
-			}		
-		}
 		return_code=1;
+		for (pane_no=0;(pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES)&&return_code;
+			pane_no++)
+		{
+			return_code=Scene_viewer_set_perturb_lines(
+				graphics_window->scene_viewer[pane_no],perturb_lines);
+		}
+		if (return_code)
+		{
+			graphics_window->perturb_lines=perturb_lines;
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphics_window_set_line_draw_mode.  Invalid argument(s)");
+			"Graphics_window_set_perturb_lines.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	return (return_code);
-} /* Graphics_window_set_line_draw_mode */
+} /* Graphics_window_set_perturb_lines */
 
 static int modify_Graphics_window_set(struct Parse_state *state,
 	void *window_void,void *modify_graphics_window_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 November 1998
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Parser commands for setting simple parameters applicable to the whole <window>.
 ==============================================================================*/
 {
-	char no_antialias_flag,no_input_flag,normal_lines_flag,perturb_lines_flag,
-		select_flag,transform_flag,fast_transparency_flag,slow_transparency_flag;
+	char fast_transparency_flag,slow_transparency_flag,*tool_name,**tool_names;
 	double std_view_angle;
 	enum Scene_viewer_transparency_mode transparency_mode;
-	int antialias,current_pane,i,layered_transparency,pane_no,redraw,return_code;
-	struct Graphics_window *window;
+	int antialias_mode,current_pane,i,layered_transparency,number_of_tools,
+		pane_no,perturb_lines,redraw,return_code;
+	struct Graphics_window *graphics_window;
+	struct Interactive_tool *interactive_tool;
 	struct Modify_graphics_window_data *modify_graphics_window_data;
-	static struct Modifier_entry
-		antialias_option_table[]=
-		{
-			{"antialias",NULL,NULL,set_int_positive},
-			{"no_antialias",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		input_option_table[]=
-		{
-			{"no_input",NULL,NULL,set_char_flag},
-			{"select",NULL,NULL,set_char_flag},
-			{"transform",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		perturb_lines_option_table[]=
-		{
-			{"perturb_lines",NULL,NULL,set_char_flag},
-			{"normal_lines",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		transparency_mode_option_table[]=
-		{
-			{"fast_transparency",NULL,NULL,set_char_flag},
-			{"layered_transparency",NULL,NULL,set_int_positive},
-			{"slow_transparency",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{NULL,NULL,NULL,NULL},
-			{"current_pane",NULL,NULL,set_int},
-			{NULL,NULL,NULL,NULL},
-			{NULL,NULL,NULL,NULL},
-			{"std_view_angle",NULL,NULL,set_double},
-			{NULL,NULL,NULL,NULL},
-			{NULL,NULL,NULL,NULL}
-		};
+	struct Option_table *antialias_option_table,*option_table,
+		*transparency_option_table;
 
 	ENTER(modify_Graphics_window_set);
 	if (state)
@@ -1886,168 +1925,114 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 			if (state->current_token)
 			{
 				/* get defaults from scene_viewer for first pane of window */
-				if (window=(struct Graphics_window *)window_void)
+				if (graphics_window=(struct Graphics_window *)window_void)
 				{
-					current_pane=window->current_pane+1;
-					std_view_angle=window->std_view_angle;
+					current_pane=graphics_window->current_pane+1;
+					std_view_angle=graphics_window->std_view_angle;
+					interactive_tool=graphics_window->interactive_tool;
+					antialias_mode=graphics_window->antialias_mode;
+					perturb_lines=graphics_window->perturb_lines;
 				}
 				else
 				{
 					current_pane=1;
 					std_view_angle=40.0;
+					interactive_tool=(struct Interactive_tool *)NULL;
+					antialias_mode=0;
+					perturb_lines=0;
 				}
-				no_input_flag=0;
-				select_flag=0;
-				transform_flag=0;
-				antialias=0;
-				no_antialias_flag=0;
-				perturb_lines_flag=0;
-				normal_lines_flag=0;
 				fast_transparency_flag=0;
 				slow_transparency_flag=0;
 				layered_transparency = 0;
-				i=0;
+
+				option_table=CREATE(Option_table)();
 				/* antialias/no_antialias */
-				(antialias_option_table[0]).to_be_modified= &antialias;
-				(antialias_option_table[1]).to_be_modified= &no_antialias_flag;
-				(option_table[i]).user_data=antialias_option_table;
-				i++;
+				antialias_option_table=CREATE(Option_table)();
+				Option_table_add_entry(antialias_option_table,"antialias",
+					&antialias_mode,(void *)NULL,set_int_positive);
+				Option_table_add_entry(antialias_option_table,"no_antialias",
+					&antialias_mode,(void *)NULL,unset_int_switch);
+				Option_table_add_suboption_table(option_table,antialias_option_table);
 				/* current_pane */
-				(option_table[i]).to_be_modified= &current_pane;
-				i++;
-				/* input_mode: no_input/select/transform */
-				(input_option_table[0]).to_be_modified= &no_input_flag;
-				(input_option_table[1]).to_be_modified= &select_flag;
-				(input_option_table[2]).to_be_modified= &transform_flag;
-				(option_table[i]).user_data=input_option_table;
-				i++;
-				/* perturb_lines|normal_lines */
-				(perturb_lines_option_table[0]).to_be_modified= &perturb_lines_flag;
-				(perturb_lines_option_table[1]).to_be_modified= &normal_lines_flag;
-				(option_table[i]).user_data=perturb_lines_option_table;
-				i++;
-				/* std_view_angle */
-				(option_table[i]).to_be_modified= &std_view_angle;
-				i++;
-				/* fast_transparency|slow_transparency */
-				(transparency_mode_option_table[0]).to_be_modified=
-					&fast_transparency_flag;
-				(transparency_mode_option_table[1]).to_be_modified=
-					&layered_transparency;
-				(transparency_mode_option_table[2]).to_be_modified=
-					&slow_transparency_flag;
-				(option_table[i]).user_data=transparency_mode_option_table;
-				i++;
-				if (return_code=process_multiple_options(state,option_table))
+				Option_table_add_entry(option_table,"current_pane",
+					&current_pane,(void *)NULL,set_int);
+				/* transform|other tools. tool_names not deallocated until later */
+				tool_name=(char *)NULL;
+				if (tool_names=interactive_tool_manager_get_tool_names(
+					modify_graphics_window_data->interactive_tool_manager,
+					&number_of_tools,interactive_tool,&tool_name))
 				{
-					if ((1>current_pane)||(current_pane>window->number_of_panes))
+					Option_table_add_enumerator(option_table,number_of_tools,
+						tool_names,&tool_name);
+				}
+				/* perturb_lines|normal_lines */
+				Option_table_add_switch(option_table,"perturb_lines","normal_lines",
+					&perturb_lines);
+				/* std_view_angle */
+				Option_table_add_entry(option_table,"std_view_angle",
+					&std_view_angle,(void *)NULL,set_double);
+				/* fast_transparency|slow_transparency */
+				transparency_option_table=CREATE(Option_table)();
+				Option_table_add_entry(transparency_option_table,"fast_transparency",
+					&fast_transparency_flag,(void *)NULL,set_char_flag);
+				Option_table_add_entry(transparency_option_table,
+					"layered_transparency",&layered_transparency,(void *)NULL,
+					set_int_positive);
+				Option_table_add_entry(transparency_option_table,"slow_transparency",
+					&slow_transparency_flag,(void *)NULL,set_char_flag);
+				Option_table_add_suboption_table(option_table,
+					transparency_option_table);
+				if (return_code=Option_table_multi_parse(option_table,state))
+				{
+					if ((1>current_pane)||(current_pane>graphics_window->number_of_panes))
 					{
-						display_message(WARNING_MESSAGE,
-							"current_pane may be from 1 to %d",window->number_of_panes);
-						current_pane=window->current_pane+1;
-					}
-					if (1<(no_input_flag+select_flag+transform_flag))
-					{
-						display_message(WARNING_MESSAGE,
-							"Only one of no_input/select/transform");
-						no_input_flag=0;
-						select_flag=0;
-						transform_flag=0;
-					}
-					if (antialias&&no_antialias_flag)
-					{
-						display_message(ERROR_MESSAGE,
-							"Only one of antialias/no_antialias");
-						antialias=0;
-						no_antialias_flag=0;
-					}
-					if (perturb_lines_flag&&normal_lines_flag)
-					{
-						display_message(ERROR_MESSAGE,
-							"Only one of perturb_lines/normal_lines");
-						perturb_lines_flag=0;
-						normal_lines_flag=0;
+						display_message(WARNING_MESSAGE,"current_pane may be from 1 to %d",
+							graphics_window->number_of_panes);
+						current_pane=graphics_window->current_pane+1;
 					}
 					if (fast_transparency_flag&&slow_transparency_flag&&
 						 layered_transparency)
 					{
-						display_message(ERROR_MESSAGE,
-							"Only one of fast_transparency/slow_transparency/layered_transparency");
+						display_message(ERROR_MESSAGE,"Only one of "
+							"fast_transparency/slow_transparency/layered_transparency");
 						fast_transparency_flag=0;
 						slow_transparency_flag=0;
 						layered_transparency=0;
 					}
-					if (window)
+					if (graphics_window)
 					{
 						redraw=0;
 						/* user deals with pane numbers one higher than internally */
 						current_pane -= 1;
-						if (current_pane != window->current_pane)
+						if (current_pane != graphics_window->current_pane)
 						{
-							Graphics_window_set_current_pane(window,current_pane);
+							Graphics_window_set_current_pane(graphics_window,current_pane);
 						}
-						if (no_input_flag)
+						if (interactive_tool=
+							FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
+								tool_name,graphics_window->interactive_tool_manager))
 						{
-							Graphics_window_set_input_mode(window,SCENE_VIEWER_NO_INPUT);
+							Graphics_window_set_interactive_tool(graphics_window,
+								interactive_tool);
 						}
-						if (select_flag)
+						if (std_view_angle != graphics_window->std_view_angle)
 						{
-							Graphics_window_set_input_mode(window,SCENE_VIEWER_SELECT);
+							Graphics_window_set_std_view_angle(graphics_window,
+								std_view_angle);
 						}
-						if (transform_flag)
+						if (antialias_mode != graphics_window->antialias_mode)
 						{
-							Graphics_window_set_input_mode(window,SCENE_VIEWER_TRANSFORM);
-						}
-						if (std_view_angle != window->std_view_angle)
-						{
-							Graphics_window_set_std_view_angle(window,std_view_angle);
-						}
-						/*???DB.  Make into Graphics_window functions ? */
-						if (antialias)
-						{
-							for (pane_no=0;pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES;
-								pane_no++)
-							{
-								Scene_viewer_set_antialias_mode(window->scene_viewer[pane_no],
-									antialias);
-							}
+							Graphics_window_set_antialias_mode(graphics_window,
+								antialias_mode);
 							redraw=1;
 						}
-						if (no_antialias_flag)
+						if (perturb_lines != graphics_window->perturb_lines)
 						{
-							for (pane_no=0;pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES;
-								pane_no++)
-							{
-								Scene_viewer_set_antialias_mode(window->scene_viewer[pane_no],
-									0);
-							}
+							Graphics_window_set_perturb_lines(graphics_window,perturb_lines);
 							redraw=1;
 						}
-						Graphics_window_set_line_draw_mode(window,perturb_lines_flag);
-						redraw=1;
-#if defined (OLD_CODE)
-						if (perturb_lines_flag)
-						{
-							for (pane_no=0;pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES;
-								pane_no++)
-							{
-								Scene_viewer_set_line_draw_mode(window->scene_viewer[pane_no],
-									1);
-							}
-							redraw=1;
-						}
-						if (normal_lines_flag)
-						{
-							for (pane_no=0;pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES;
-								pane_no++)
-							{
-								Scene_viewer_set_line_draw_mode(window->scene_viewer[pane_no],
-									0);
-							}
-							redraw=1;
-						}
-#endif
-						if (fast_transparency_flag||slow_transparency_flag||layered_transparency)
+						if (fast_transparency_flag||slow_transparency_flag||
+							layered_transparency)
 						{
 							if (fast_transparency_flag)
 							{
@@ -2061,23 +2046,23 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 							{
 								transparency_mode=SCENE_VIEWER_SLOW_TRANSPARENCY;
 							}
-							
 							for (pane_no=0;pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES;
 								pane_no++)
 							{
 								Scene_viewer_set_transparency_mode(
-									window->scene_viewer[pane_no],transparency_mode);
+									graphics_window->scene_viewer[pane_no],transparency_mode);
 								if (layered_transparency)
 								{
 									Scene_viewer_set_transparency_layers(
-										window->scene_viewer[pane_no],layered_transparency);
+										graphics_window->scene_viewer[pane_no],
+										layered_transparency);
 								}
 							}
 							redraw=1;
 						}
 						if (redraw)
 						{
-							Graphics_window_update_now(window);
+							Graphics_window_update_now(graphics_window);
 						}
 					}
 					else
@@ -2087,6 +2072,15 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 						return_code=0;
 					}
 				}
+				if (tool_names)
+				{
+					for (i=0;i<number_of_tools;i++)
+					{
+						DEALLOCATE(tool_names[i]);
+					}
+					DEALLOCATE(tool_names);
+				}
+				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
@@ -2491,48 +2485,6 @@ view angle, interest point etc.
 	return (return_code);
 } /* modify_Graphics_window_view */
 
-static Widget Graphics_window_make_transform_tool_button(
-	void *graphics_window_void,Widget parent)
-/*******************************************************************************
-LAST MODIFIED : 9 May 2000
-
-DESCRIPTION :
-Fetches a ToggleButton with an appropriate icon for the interactive tool
-and as a child of <parent>.
-==============================================================================*/
-{
-	MrmType transform_tool_dialog_class;
-	struct Graphics_window *graphics_window;
-	Widget widget;
-
-	ENTER(Graphics_window_make_transform_tool_button);
-	widget=(Widget)NULL;
-	if ((graphics_window=(struct Graphics_window *)graphics_window_void)&&parent)
-	{
-		if (MrmSUCCESS == MrmFetchWidget(graphics_window_hierarchy,
-			"transform_tool_button",parent,&widget,&transform_tool_dialog_class))
-		{
-			XtVaSetValues(widget,
-				XmNuserData,graphics_window->transform_tool,NULL);
-		}
-		else
-		{
-			display_message(WARNING_MESSAGE,
-				"Graphics_window_make_transform_tool_button.  "
-				"Could not fetch widget");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_make_transform_tool_button.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (widget);
-} /* Graphics_window_make_transform_tool_button */
-
 /*
 Global functions
 ----------------
@@ -2550,7 +2502,7 @@ struct Graphics_window *CREATE(Graphics_window)(char *name,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION:
 Creates a Graphics_window object, window shell and widgets. Returns a pointer
@@ -2598,7 +2550,7 @@ will be printed on the windows title bar.
 		{"gwin_id_ortho_front_btn",(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,ortho_front_button)},
 		{"gwin_id_interactive_tool_form",(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,interactive_tool_form)},
+			DIALOG_IDENTIFY(graphics_window,interactive_toolbar_form)},
 		{"gwin_destroy_CB",(XtPointer)Graphics_window_destroy_CB},
 		{"gwin_view_all_btn_CB",
 			(XtPointer)Graphics_window_view_all_button_CB},
@@ -2649,12 +2601,9 @@ will be printed on the windows title bar.
 				/* I have accessed the time_keeper further down */
 				graphics_window->time_keeper = Scene_get_default_time_keeper(scene);
 				graphics_window->interactive_tool_manager=interactive_tool_manager;
-				graphics_window->transform_tool=CREATE(Interactive_tool)(
-					"transform_tool","Transform tool",
-					(Interactive_event_handler *)NULL,
-					Graphics_window_make_transform_tool_button,
-					(Interactive_tool_bring_up_dialog_function *)NULL,
-					(void *)graphics_window);
+				graphics_window->transform_tool=ACCESS(Interactive_tool)(
+					FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
+						"transform_tool",graphics_window->interactive_tool_manager));
 				graphics_window->interactive_tool=graphics_window->transform_tool;
 				graphics_window->user_interface=user_interface;
 				graphics_window->default_viewing_height=400;
@@ -2669,6 +2618,8 @@ will be printed on the windows title bar.
 					graphics_window->scene_viewer[pane_no]=(struct Scene_viewer *)NULL;
 				}
 				graphics_window->current_pane=0;
+				graphics_window->antialias_mode=0;
+				graphics_window->perturb_lines=0;
 				/* the input_mode set here is changed below */
 				graphics_window->input_mode=SCENE_VIEWER_NO_INPUT;
 				/* read default settings from Cmgui defaults file */
@@ -2695,8 +2646,8 @@ will be printed on the windows title bar.
 				graphics_window->ortho_up_option=(Widget)NULL;
 				graphics_window->ortho_up_menu=(Widget)NULL;
 				graphics_window->ortho_front_button=(Widget)NULL;
-				graphics_window->interactive_tool_form=(Widget)NULL;
-				graphics_window->interactive_tool_widget=(Widget)NULL;
+				graphics_window->interactive_toolbar_form=(Widget)NULL;
+				graphics_window->interactive_toolbar_widget=(Widget)NULL;
 				graphics_window->ortho_up_axis=0;
 				graphics_window->ortho_front_axis=0;
 				/* create a shell for the window */
@@ -2772,19 +2723,19 @@ will be printed on the windows title bar.
 							{
 								init_widgets=1;
 								/* create the subwidgets with default values */
-								if (graphics_window->interactive_tool_widget=
+								if (graphics_window->interactive_toolbar_widget=
 									create_interactive_toolbar_widget(
-										graphics_window->interactive_tool_form,
+										graphics_window->interactive_toolbar_form,
 										interactive_tool_manager))
 								{
-									/* add tools to toolbar, starting with transform */
-									interactive_toolbar_widget_add_interactive_tool(
-										graphics_window->interactive_tool_widget,
-										graphics_window->transform_tool);
 									FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
 										add_interactive_tool_to_interactive_toolbar_widget,
-										(void *)graphics_window->interactive_tool_widget,
+										(void *)graphics_window->interactive_toolbar_widget,
 										interactive_tool_manager);
+									/* make sure the transform_tool is currently set */
+									interactive_toolbar_widget_set_current_interactive_tool(
+										graphics_window->interactive_toolbar_widget,
+										graphics_window->transform_tool);
 								}
 								else
 								{
@@ -2818,7 +2769,7 @@ will be printed on the windows title bar.
 										&callback);
 									callback.procedure=Graphics_window_update_interactive_tool;
 									interactive_toolbar_widget_set_callback(
-										graphics_window->interactive_tool_widget,&callback);
+										graphics_window->interactive_toolbar_widget,&callback);
 									/* create four Scene_viewers */
 									viewing_area[0]=graphics_window->viewing_area1;
 									viewing_area[1]=graphics_window->viewing_area2;
@@ -3025,7 +2976,7 @@ Graphics_window_destroy_CB.
 			DEACCESS(Time_keeper)(&(graphics_window->time_keeper));
 		}
 		DEALLOCATE(graphics_window->name);
-		DESTROY(Interactive_tool)(&(graphics_window->transform_tool));
+		DEACCESS(Interactive_tool)(&(graphics_window->transform_tool));
 		DEALLOCATE(*graphics_window_address);
 		return_code=1;
 	}
@@ -4855,7 +4806,7 @@ current layout_mode, the function adjusts the view in all the panes tied to
 
 int list_Graphics_window(struct Graphics_window *window,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 28 September 1999
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Writes the properties of the <window> to the command window.
@@ -5050,9 +5001,11 @@ Writes the properties of the <window> to the command window.
 			}
 		}
 		/* settings */
-		display_message(INFORMATION_MESSAGE,
-			"  Input mode: %s\n",Scene_viewer_input_mode_string(
-				Scene_viewer_get_input_mode(scene_viewer)));
+		if (GET_NAME(Interactive_tool)(window->interactive_tool,&name))
+		{
+			display_message(INFORMATION_MESSAGE,"  Interactive tool: %s\n",name);
+			DEALLOCATE(name);
+		}
 		transparency_mode = Scene_viewer_get_transparency_mode(scene_viewer);
 		display_message(INFORMATION_MESSAGE,
 			"  Transparency mode: %s\n",Scene_viewer_transparency_mode_string(
@@ -5066,7 +5019,7 @@ Writes the properties of the <window> to the command window.
 			"  Current pane: %d\n",window->current_pane+1);
 		display_message(INFORMATION_MESSAGE,
 			"  Standard view angle: %g degrees\n",window->std_view_angle);
-		Scene_viewer_get_line_draw_mode(window->scene_viewer[0],&perturb_lines);
+		Scene_viewer_get_perturb_lines(window->scene_viewer[0],&perturb_lines);
 		if (perturb_lines)
 		{
 			display_message(INFORMATION_MESSAGE,"  perturbed lines: on\n");
@@ -5102,7 +5055,7 @@ Writes the properties of the <window> to the command window.
 int list_Graphics_window_commands(struct Graphics_window *window,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Writes the commands for creating the <window> and establishing the views in it
@@ -5267,6 +5220,8 @@ to the command window.
 			viewport_mode=Scene_viewer_get_viewport_mode(scene_viewer);
 			display_message(INFORMATION_MESSAGE," %s",
 				Scene_viewer_viewport_mode_string(viewport_mode));
+
+
 			Scene_viewer_get_NDC_info(scene_viewer,
 				&NDC_left,&NDC_top,&NDC_width,&NDC_height);
 			display_message(INFORMATION_MESSAGE," ndc_placement %g %g %g %g",
@@ -5300,13 +5255,16 @@ to the command window.
 		/* settings */
 		display_message(INFORMATION_MESSAGE,
 			"gfx modify window %s set",window->name);
-		display_message(INFORMATION_MESSAGE," %s",Scene_viewer_input_mode_string(
-			Scene_viewer_get_input_mode(scene_viewer)));
+		if (GET_NAME(Interactive_tool)(window->interactive_tool,&name))
+		{
+			display_message(INFORMATION_MESSAGE," %s",name);
+			DEALLOCATE(name);
+		}
 		display_message(INFORMATION_MESSAGE,
 			" current_pane %d",window->current_pane+1);
 		display_message(INFORMATION_MESSAGE,
 			" std_view_angle %g",window->std_view_angle);
-		Scene_viewer_get_line_draw_mode(window->scene_viewer[0],&perturb_lines);
+		Scene_viewer_get_perturb_lines(window->scene_viewer[0],&perturb_lines);
 		if (perturb_lines)
 		{
 			display_message(INFORMATION_MESSAGE," perturb_lines");
@@ -5323,11 +5281,10 @@ to the command window.
 		else
 		{
 			display_message(INFORMATION_MESSAGE," no_antialias");
-		}	
+		}
 		transparency_mode = Scene_viewer_get_transparency_mode(scene_viewer);
-		display_message(INFORMATION_MESSAGE,
-			" %s",Scene_viewer_transparency_mode_string(
-			transparency_mode));
+		display_message(INFORMATION_MESSAGE," %s",
+			Scene_viewer_transparency_mode_string(transparency_mode));
 		if (transparency_mode == SCENE_VIEWER_LAYERED_TRANSPARENCY)
 		{
 			display_message(INFORMATION_MESSAGE,

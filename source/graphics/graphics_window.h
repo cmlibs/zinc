@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.h
 
-LAST MODIFIED : 11 April 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Interface file for opening and closing and working a CMISS 3D display window.
@@ -63,13 +63,14 @@ DECLARE_MANAGER_TYPES(Graphics_window);
 
 struct Modify_graphics_window_data
 /*******************************************************************************
-LAST MODIFIED : 6 October 1998
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Structure to pass to modify_Graphics_window.
 ==============================================================================*/
 {
 	struct MANAGER(Graphics_window) *graphics_window_manager;
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct MANAGER(Light) *light_manager;
 	struct MANAGER(Light_model) *light_model_manager;
 	struct MANAGER(Scene) *scene_manager;
@@ -427,13 +428,23 @@ Parser commands for modifying graphics windows - views, lighting, etc.
 See comments with struct Modify_graphics_window_data;
 ==============================================================================*/
 
-int Graphics_window_set_line_draw_mode(struct Graphics_window *window,
-	int perturb_lines_flag);
+int Graphics_window_set_antialias_mode(struct Graphics_window *graphics_window,
+	int antialias_mode);
 /*******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
-Sets if the <graphics_window> perturbs lines or not, using <perturb_lines_flag>
+Sets the number of times the images is oversampled to antialias the image. Only
+certain values are supported 0/1 = off, 2, 4 & 8 are on.
+==============================================================================*/
+
+int Graphics_window_set_perturb_lines(struct Graphics_window *graphics_window,
+	int perturb_lines);
+/*******************************************************************************
+LAST MODIFIED :13 June 2000
+
+DESCRIPTION :
+Sets if the <graphics_window> perturbs lines or not, using <perturb_lines>
 (1==TRUE,0==FALSE)
 ==============================================================================*/
 
