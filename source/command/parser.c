@@ -1751,27 +1751,26 @@ NB
 	{
 		if (ALLOCATE(state,struct Parse_state,1))
 		{
-			/* create 2 command_string copies: one for working, one to go in state */
 			/*???RC trim_string not used as trailing whitespace may be in a quote */
-			if (ALLOCATE(working_string,char,strlen(command_string)+1)&&
-				ALLOCATE(state->command_string,char,strlen(command_string)+1))
+			if (ALLOCATE(working_string,char,strlen(command_string)+1))
 			{
+				/* Replace the %z1% variables and $variables in the working_string */
 				strcpy(working_string,command_string);
-				strcpy(state->command_string,command_string);
-				token_source=working_string;
-				tokens=(char **)NULL;
-				allocated_tokens=0;
-				number_of_tokens=0;
-				return_code=1;
-				still_tokenising=1;
-				while (still_tokenising)
+				parse_variable(&working_string);
+				if (ALLOCATE(state->command_string,char,strlen(working_string)+1))
 				{
-					if (extract_token(&token_source,&next_token))
+					strcpy(state->command_string,working_string);
+					token_source=working_string;
+					tokens=(char **)NULL;
+					allocated_tokens=0;
+					number_of_tokens=0;
+					return_code=1;
+					still_tokenising=1;
+					while (still_tokenising)
 					{
-						if (next_token)
+						if (extract_token(&token_source,&next_token))
 						{
-							/* convert variables into numbers */
-							if (parse_variable(&next_token))
+							if (next_token)
 							{
 								if (number_of_tokens == allocated_tokens)
 								{
@@ -1790,60 +1789,60 @@ NB
 									tokens[number_of_tokens]=next_token;
 									number_of_tokens++;
 								}
+								else
+								{
+									DEALLOCATE(next_token);
+									still_tokenising=0;
+								}
 							}
 							else
 							{
-								return_code=0;
-							}
-							if (!return_code)
-							{
-								DEALLOCATE(next_token);
+								/* successful end of tokenising */
 								still_tokenising=0;
 							}
 						}
 						else
 						{
-							/* successful end of tokenising */
-							still_tokenising=0;
+							/* tokenising failed */
+							return_code=still_tokenising=0;
+						}
+					}
+					if (return_code)
+					{
+						state->tokens=tokens;
+						state->number_of_tokens=number_of_tokens;
+						state->current_index=0;
+						if (tokens)
+						{
+							state->current_token=tokens[0];
+						}
+						else
+						{
+							state->current_token=(char *)NULL;
 						}
 					}
 					else
 					{
-						/* tokenising failed */
-						return_code=still_tokenising=0;
-					}
-				}
-				if (return_code)
-				{
-					state->tokens=tokens;
-					state->number_of_tokens=number_of_tokens;
-					state->current_index=0;
-					if (tokens)
-					{
-						state->current_token=tokens[0];
-					}
-					else
-					{
-						state->current_token=(char *)NULL;
+						/* clean up any memory allocated for tokens */
+						if (tokens)
+						{
+							for (i=0;i<number_of_tokens;i++)
+							{
+								DEALLOCATE(tokens[i]);
+							}
+							DEALLOCATE(tokens);
+						}
+						DEALLOCATE(state->command_string);
 					}
 				}
 				else
 				{
-					/* clean up any memory allocated for tokens */
-					if (tokens)
-					{
-						for (i=0;i<number_of_tokens;i++)
-						{
-							DEALLOCATE(tokens[i]);
-						}
-						DEALLOCATE(tokens);
-					}
-					DEALLOCATE(state->command_string);
+					return_code=0;
 				}
 			}
 			else
 			{
-				return_code=0;
+					return_code=0;
 			}
 			DEALLOCATE(working_string);
 			if (!return_code)
@@ -2165,16 +2164,17 @@ if it exists.
 		/* try to find a $ */
 		while (return_code && (begin=strchr(*token,'$')))
 		{
-			if ((begin == *token) || ((begin > *token + 2) &&
-				(!strncmp(begin - 2, "//", 2))))
+			if ((begin == *token)
+				|| ((begin > *token + 1) && (!strncmp(begin - 1, " ", 1)))
+				|| ((begin > *token + 2) && (!strncmp(begin - 2, "//", 2))))
 			{
 				begin++;
 				/* look for the end of this token */
-				if (!(end=strchr(begin,'/')))
+				if (!(end=strpbrk(begin,"/ ")))
 				{
 					end = begin + strlen(begin);
 				}
-				if ((*end == 0) || (!(strncmp(end, "//", 2))))
+				if ((*end == 0) || (!(strncmp(end, " ", 1))) || (!(strncmp(end, "//", 2))))
 				{
 					if (ALLOCATE(var_name, char, end - begin))
 					{
@@ -2187,7 +2187,12 @@ if it exists.
 								strlen(*token) - (end - begin)))
 							{
 								index = new_token;
-								if ((begin - *token - 3) > 0)
+								if ((begin > *token + 2) && (!strncmp(begin - 2, " ", 1)))
+								{
+									strncpy(index, *token, begin - *token - 1);
+									index += begin - *token - 1;
+								}
+								else if ((begin > *token + 3) && (!strncmp(begin - 3, "//", 2)))
 								{
 									strncpy(index, *token, begin - *token - 3);
 									index += begin - *token - 3;
@@ -2197,7 +2202,12 @@ if it exists.
 									strncpy(index, variable->value, strlen(variable->value));
 									index += strlen(variable->value);
 								}
-								if (strlen(end) > 2)
+								if (!(strncmp(end, " ", 1)))
+								{
+									strcpy(index, end);
+									index += strlen(end);
+								}
+								else if (!(strncmp(end, "//", 2)))
 								{
 									strcpy(index, end + 2);
 									index += strlen(end + 2);
