@@ -282,10 +282,11 @@ Evaluate the fields cache at the node.
 			/* The values from the first source field are inverted in the
 				second source field to get element_xi which is evaluated with
 				the third source field */
-			if (return_code = Computed_field_find_element_xi(field->source_fields[1],
+			if ((return_code = Computed_field_find_element_xi(field->source_fields[1],
 				field->source_fields[0]->values,
 				field->source_fields[0]->number_of_components,
 				&compose_element, compose_xi, data->element_group, /*propagate_field*/1))
+				&& compose_element)
 			{
 				/* calculate the third source_field at this new location */
 				return_code=Computed_field_evaluate_cache_in_element(
@@ -295,6 +296,16 @@ Evaluate the fields cache at the node.
 				for (i=0;i<field->number_of_components;i++)
 				{
 					field->values[i]=field->source_fields[2]->values[i];
+				}
+			}
+			else
+			{
+				/* Actually don't fail here, just make the values constant so that
+					people can compose outside the valid range */
+				return_code = 1;
+				for (i=0;i<field->number_of_components;i++)
+				{
+					field->values[i]=0.5;
 				}
 			}
 		}
