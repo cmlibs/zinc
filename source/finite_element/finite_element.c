@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 9 November 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -24819,7 +24819,7 @@ values - like in the .exelem files.
 
 int merge_FE_element(struct FE_element *destination,struct FE_element *source)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 9 November 2000
 
 DESCRIPTION :
 Merges the fields in <destination> with those from <source>, leaving the
@@ -24844,44 +24844,46 @@ combined fields in <destination>.
 	Value_storage *values_storage;
 
 	ENTER(merge_FE_element);
-	if (source&&destination)
+	if (source && destination)
 	{
 		/* check the element shape for consistency */
 			/*???DB.  If things are set up properly, non-equality should imply that
 				they're different */
-		if (source->shape == destination->shape)
+		if (source->shape && (source->shape == destination->shape))
 		{
 			return_code=1;
-			/* check faces are consistent if defined for both source and
-				 destination */
-			/* set_FE_element_shape should ensure following is true */
-			if (source->faces && destination->faces)
+			/* check faces are consistent if both source and destination have them */
+			if (0 < source->shape->number_of_faces)
 			{
-				source_face = source->faces;
-				destination_face = destination->faces;
-				i = source->shape->number_of_faces;
-				while ((0 < i) && return_code)
+				/* Note set_FE_element_shape should ensure following is true */
+				if (source->faces && destination->faces)
 				{
-					if ((!(*source_face)) || (!(*destination_face)) ||
-						(*source_face == *destination_face))
+					source_face = source->faces;
+					destination_face = destination->faces;
+					i = source->shape->number_of_faces;
+					while ((0 < i) && return_code)
 					{
-						source_face++;
-						destination_face++;
-						i--;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"merge_FE_element.  Faces do not match");
-						return_code=0;
+						if ((!(*source_face)) || (!(*destination_face)) ||
+							(*source_face == *destination_face))
+						{
+							source_face++;
+							destination_face++;
+							i--;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"merge_FE_element.  Faces do not match");
+							return_code=0;
+						}
 					}
 				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"merge_FE_element.  Missing source or destination faces");
-				return_code=0;
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"merge_FE_element.  Missing source or destination faces");
+					return_code=0;
+				}
 			}
 			if (return_code)
 			{
@@ -25308,7 +25310,7 @@ combined fields in <destination>.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"merge_FE_element.  Inconsistent element shape");
+				"merge_FE_element.  Inconsistent or missing element shape(s)");
 			return_code=0;
 		}
 	}
