@@ -200,38 +200,50 @@ A function for executing a command under linux.  The printf form of arguments is
 used.
 ==============================================================================*/
 {
-	char *host,*user;
+	char *connection;
 	int return_code;
 	va_list ap;
 
 	ENTER(linux_execute);
 	return_code=0;
 	va_start(ap,format);
-#if defined (OLD_CODE)
-	if ((user=getenv("PF_CMISS_USER"))&&(host=getenv("PF_CMISS_HOST")))
+	if (connection=getenv("PF_CMISS_CONNECTION"))
 	{
-#if defined (WIN32)
-		sprintf(command_string,"rsh %s -l %s setenv DISPLAY :0.0;",host,user);
-		vsprintf(command_string+strlen(command_string),format,ap);
-#else /* defined (WIN32) */
-		sprintf(command_string,"ssh -1 %s -l %s 'setenv DISPLAY :0.0;",host,user);
-		vsprintf(command_string+strlen(command_string),format,ap);
-		sprintf(command_string+strlen(command_string)," '");
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
+//		sprintf(command_string,"\"c:\\program files\\putty\\plink\" %s setenv DISPLAY :3.0;",host);
+//		sprintf(command_string,"\"c:\\program files\\putty\\plink\" %s setenv DISPLAY esu48:0.0;",host);
+		strcpy(command_string, connection);
+	}
+	else
+	{
+		strcpy(command_string, "");
+	}
 
-#endif /* defined (WIN32) */
-#else /* defined (OLD_CODE) */
+#if ! defined (WIN32)
+	if (connection)
 	{
-		vsprintf(command_string,format,ap);
-#endif /* defined (OLD_CODE) */
+		sprintf(command_string+strlen(command_string)," '");
+	}
+#endif /* ! defined (WIN32) */
+
+		vsprintf(command_string+strlen(command_string),format,ap);
+
+#if ! defined (WIN32)
+	if (connection)
+	{
+		sprintf(command_string+strlen(command_string)," '");
+	}
+#endif /* ! defined (WIN32) */
+
+#if defined (DEBUG)
 		printf (command_string);
 		printf ("\n");
-		if (-1!=system(command_string))
-		{
-			return_code=1;
-		}
+#endif /* defined (DEBUG) */
+
+	if (-1!=system(command_string))
+	{
+		return_code=1;
 	}
+
 	va_end(ap);
 	LEAVE;
 
@@ -1567,6 +1579,25 @@ successful.
 	if (ALLOCATE(working_path, char, strlen(photoface_local_path) + 100))
 	{
 		/* Create a new directory */
+#if defined (WIN32)
+		pf_job_id = rand();
+		sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+			pf_job_id);
+		while (!CreateDirectory(working_path, NULL))
+		{
+			if (ERROR_ALREADY_EXISTS == GetLastError())
+			{
+				/* Try another directory */
+				pf_job_id = rand();
+				sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+					pf_job_id);
+			}
+			else
+			{
+				return_code = PF_OPEN_FILE_FAILURE_RC;
+			}
+		}
+#else /* defined (WIN32) */
 		pf_job_id = random() / 2386;
 		sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
 			pf_job_id);
@@ -1584,6 +1615,7 @@ successful.
 				return_code = PF_OPEN_FILE_FAILURE_RC;
 			}
 		}
+#endif /* defined (WIN32) */
 		if (PF_SUCCESS_RC == return_code)
 		{
 			/* Create a new pf_job data file */
@@ -1640,13 +1672,26 @@ This routine cleans up the working directory and destroys the specified job.
 		&& ALLOCATE(working_path2, char, strlen(photoface_local_path) + 100))
 	{
 		/* Look for the correct working directory */
-		sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+		sprintf(working_path, "%sworking/job%06d", photoface_local_path,
 			pf_job_id);
-		if ((0 == stat(working_path, &stat_buffer)) && 
-			S_ISDIR(stat_buffer.st_mode))
+		if (0 == stat(working_path, &stat_buffer))
 		{
 			/* Lock it or wait */
 			strcat(working_path, PF_LOCK_DIRNAME);
+#if defined (WIN32)
+			while (!CreateDirectory(working_path, NULL))
+			{
+				if (ERROR_ALREADY_EXISTS == GetLastError())
+				{
+					/* Wait */
+					Sleep(2000);
+				}
+				else
+				{
+					return_code = PF_OPEN_FILE_FAILURE_RC;
+				}
+			}
+#else /* defined (WIN32) */
 			while (mkdir (working_path, S_IRWXU))
 			{
 				if (EEXIST == errno)
@@ -1659,6 +1704,7 @@ This routine cleans up the working directory and destroys the specified job.
 					return_code = PF_OPEN_FILE_FAILURE_RC;
 				}
 			}
+#endif /* defined (WIN32) */
 			if (PF_SUCCESS_RC == return_code)
 			{
 				sprintf(working_path2, "%sworking/job%06dx", photoface_local_path,
@@ -1667,8 +1713,13 @@ This routine cleans up the working directory and destroys the specified job.
 				rename(working_path, working_path2);
 
 				/* Delete the directory */
+#if defined (WIN32)
+				sprintf(working_path2, "rmdir /s /q %sworking/job%06dx", photoface_local_path,
+					pf_job_id);
+#else /* defined (WIN32) */
 				sprintf(working_path2, "rm -r %sworking/job%06dx", photoface_local_path,
 					pf_job_id);
+#endif /* defined (WIN32) */
 				system(working_path2);
 			}
 		}
@@ -1717,13 +1768,27 @@ giving this process exclusive access.
 	if (ALLOCATE(working_path, char, strlen(photoface_local_path) + 100))
 	{
 		/* Look for the correct working directory */
-		sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+		sprintf(working_path, "%sworking/job%06d", photoface_local_path,
 			pf_job_id);
-		if ((0 == stat(working_path, &stat_buffer)) && 
-			S_ISDIR(stat_buffer.st_mode))
+		if (0 == stat(working_path, &stat_buffer))
 		{
 			/* Lock it or wait */
+			strcat(working_path, "/");
 			strcat(working_path, PF_LOCK_DIRNAME);
+#if defined (WIN32)
+			while (!CreateDirectory(working_path, NULL))
+			{
+				if (ERROR_ALREADY_EXISTS == GetLastError())
+				{
+					/* Wait */
+					Sleep(2000);
+				}
+				else
+				{
+					return_code = PF_OPEN_FILE_FAILURE_RC;
+				}
+			}
+#else /* defined (WIN32) */
 			while (mkdir (working_path, S_IRWXU))
 			{
 				if (EEXIST == errno)
@@ -1737,6 +1802,7 @@ giving this process exclusive access.
 					return_code = PF_OPEN_FILE_FAILURE_RC;
 				}
 			}
+#endif /* defined (WIN32) */
 			if (PF_SUCCESS_RC == return_code)
 			{
 				/* Allocate a Pf_job structure */
@@ -1826,8 +1892,7 @@ the memory associated with it and unlocks the access to that job.
 		{
 			/* Look for the correct working directory */
 			sprintf(working_path, "%s/%s", pf_job->working_path, PF_LOCK_DIRNAME);
-			if ((0 == stat(working_path, &stat_buffer)) && 
-				S_ISDIR(stat_buffer.st_mode))
+			if (0 == stat(working_path, &stat_buffer))
 			{
 				/* Save the data for the pf_job */
 				sprintf(working_path, "%s/%s", 
@@ -1856,7 +1921,11 @@ the memory associated with it and unlocks the access to that job.
 
 				/* Unlock the directory */
 				printf("Removing lock %s\n", working_path);
+#if defined (WIN32)
+				RemoveDirectory(working_path);
+#else /* defined (WIN32) */
 				rmdir(working_path);
+#endif /* defined (WIN32) */
 			}
 			else
 			{
@@ -2136,7 +2205,7 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 									sleep(10);
 #endif /* defined (WIN32) */
 									if (linux_execute("%sbin/cmgui_control 'open comfile %s/pf_setup_main.com exec'",
-										photoface_remote_path, pf_job->working_path))
+										photoface_remote_path, pf_job->remote_working_path))
 									{
 										return_code=PF_SUCCESS_RC;
 									}
