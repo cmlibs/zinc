@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 4 November 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -34,18 +34,19 @@ Module types
 */
 struct Pacing_window
 /*******************************************************************************
-LAST MODIFIED : 4 November 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 The window associated with the set up button.
 ==============================================================================*/
 {
-	char *decrement_threshold_pairs_string,pacing,*pacing_electrodes,response;
+	char *decrement_threshold_pairs_string,pacing,*pacing_electrodes,response,
+		*return_electrodes;
 	float basic_cycle_length,control_voltage,*decrement_threshold_pairs,
 		*pacing_voltages,s2_delay,s2_delay_change,s2_delay_change_factor,
 		s2_resolution,s2_s1_pause;
-	int number_of_pacing_channels,number_of_s1,
-		number_of_decrement_threshold_pairs,*pacing_channels,
+	int number_of_pacing_channels,number_of_return_channels,number_of_s1,
+		number_of_decrement_threshold_pairs,*pacing_channels,*return_channels,
 		total_number_of_s1_pacing_voltages;
 	struct Pacing_window **address;
 	struct Rig **rig_address;
@@ -57,6 +58,7 @@ The window associated with the set up button.
 	Widget decrement_threshold_pairs_form,decrement_threshold_pairs_value;
 	Widget number_of_s1_form,number_of_s1_value;
 	Widget pacing_electrodes_form,pacing_electrodes_value;
+	Widget return_electrodes_form,return_electrodes_value;
 	Widget s2_delay_form,s2_delay_value;
 	Widget s2_delay_change_form,s2_delay_change_value;
 	Widget s2_delay_change_factor_form,s2_delay_change_factor_value;
@@ -83,133 +85,205 @@ static MrmHierarchy pacing_window_hierarchy;
 Module functions
 ----------------
 */
+static int set_channels_from_string(char *electrodes,struct Rig *rig,
+	int number_of_restricted_channels,int *restricted_channels,
+	char **electrodes_result_address,int *number_of_channels_address,
+	int **channels_address)
+/*******************************************************************************
+LAST MODIFIED : 11 November 2001
+
+DESCRIPTION :
+Parses the <electrodes> string to get the channels for the <rig>.
+==============================================================================*/
+{
+	char *electrodes_result,*electrodes_result_temp;
+	int channel_number,*channels,*channels_temp,electrodes_result_length,found,i,
+		j,number_of_channels,number_of_characters,number_of_devices,
+		number_of_stimulators,position,*restricted_stimulators,return_code;
+	struct Device **device;
+
+	ENTER(set_channels_from_string);
+	return_code=0;
+	/* check arguments */
+	if (electrodes&&rig&&electrodes_result_address&&number_of_channels_address&&
+		channels_address)
+	{
+		return_code=1;
+		DEALLOCATE(*electrodes_result_address);
+		DEALLOCATE(*channels_address);
+		*number_of_channels_address=0;
+		if ((0<number_of_restricted_channels)&&restricted_channels&&
+			unemap_get_number_of_stimulators(&number_of_stimulators)&&
+			(0<number_of_stimulators)&&ALLOCATE(restricted_stimulators,int,
+			number_of_stimulators))
+		{
+			for (i=0;i<number_of_stimulators;i++)
+			{
+				restricted_stimulators[i]=0;
+			}
+			for (i=0;i<number_of_restricted_channels;i++)
+			{
+				j=number_of_stimulators;
+				while ((j>0)&&
+					!unemap_channel_valid_for_stimulator(j,restricted_channels[i]))
+				{
+					j--;
+				}
+				if (j>0)
+				{
+					restricted_stimulators[j-1]=1;
+				}
+			}
+		}
+		else
+		{
+			number_of_stimulators=0;
+			restricted_stimulators=(int *)NULL;
+		}
+		channels=(int *)NULL;
+		number_of_channels=0;
+		electrodes_result=(char *)NULL;
+		electrodes_result_length=0;
+		position=0;
+		number_of_characters=0;
+		sscanf(electrodes+position,"%*[ ,]%n",&number_of_characters);
+		if (0<number_of_characters)
+		{
+			position=number_of_characters;
+		}
+		while (return_code&&electrodes[position])
+		{
+			number_of_characters=0;
+			sscanf(electrodes+position,"%*[^ ,]%n",&number_of_characters);
+			if (0<number_of_characters)
+			{
+				device=rig->devices;
+				number_of_devices=rig->number_of_devices;
+				found=0;
+				while (!found&&(0<number_of_devices))
+				{
+					if ((ELECTRODE==(*device)->description->type)&&
+						(number_of_characters==strlen((*device)->description->name))&&
+						(0==strncmp(electrodes+position,(*device)->description->name,
+						number_of_characters)))
+					{
+						found=1;
+					}
+					else
+					{
+						device++;
+						number_of_devices--;
+					}
+				}
+				if (found)
+				{
+					/* check that don't already have channel */
+					i=0;
+					while ((i<number_of_channels)&&(channels[i]!=
+						(*device)->channel->number))
+					{
+						i++;
+					}
+					if (i>=number_of_channels)
+					{
+						channel_number=(*device)->channel->number;
+						/* check that not restricted */
+						if (restricted_stimulators)
+						{
+							i=0;
+							while ((i<number_of_stimulators)&&!(restricted_stimulators[i]&&
+								unemap_channel_valid_for_stimulator(i+1,channel_number)))
+							{
+								i++;
+							}
+						}
+						else
+						{
+							i=0;
+						}
+						if (i==number_of_stimulators)
+						{
+							if (REALLOCATE(channels_temp,channels,int,number_of_channels+1)&&
+								REALLOCATE(electrodes_result_temp,electrodes_result,char,
+								electrodes_result_length+number_of_characters+2))
+							{
+								channels=channels_temp;
+								channels[number_of_channels]=channel_number;
+								number_of_channels++;
+								electrodes_result=electrodes_result_temp;
+								if (number_of_channels>1)
+								{
+									electrodes_result[electrodes_result_length]=',';
+									electrodes_result_length++;
+								}
+								strncpy(electrodes_result+electrodes_result_length,
+									electrodes+position,number_of_characters);
+								electrodes_result_length += number_of_characters;
+								electrodes_result[electrodes_result_length]='\0';
+							}
+							else
+							{
+								if (channels_temp)
+								{
+									channels=channels_temp;
+								}
+								return_code=0;
+							}
+						}
+					}
+				}
+				position += number_of_characters;
+				number_of_characters=0;
+				sscanf(electrodes+position,"%*[ ,]%n",&number_of_characters);
+				if (0<number_of_characters)
+				{
+					position += number_of_characters;
+				}
+			}
+			else
+			{
+				return_code=0;
+			}
+		}
+		DEALLOCATE(restricted_stimulators);
+		*number_of_channels_address=number_of_channels;
+		*channels_address=channels;
+		*electrodes_result_address=electrodes_result;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_channels_from_string.  Invalid argument(s).  %p %p %p %p %p",
+			electrodes,rig,electrodes_result_address,number_of_channels_address,
+			channels_address);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_channels_from_string */
+
 static int set_pacing_channels_from_string(struct Pacing_window *pacing_window,
 	char *pacing_electrodes)
 /*******************************************************************************
-LAST MODIFIED : 4 November 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 Parses the <pacing_electrodes> string to get the pacing channels for the
 <pacing_window>.
 ==============================================================================*/
 {
-	char *pacing_electrodes_result,*pacing_electrodes_result_temp;
-	int found,i,number_of_characters,number_of_devices,number_of_pacing_channels,
-		*pacing_channels,*pacing_channels_temp,pacing_electrodes_result_length,
-		position,return_code;
-	struct Device **device;
-	struct Rig *rig;
+	int return_code;
 
 	ENTER(set_pacing_channels_from_string);
 	return_code=0;
 	/* check arguments */
-	if (pacing_window&&pacing_electrodes)
+	if (pacing_window&&pacing_electrodes&&(pacing_window->rig_address))
 	{
-		return_code=1;
-		DEALLOCATE(pacing_window->pacing_electrodes);
-		DEALLOCATE(pacing_window->pacing_channels);
-		pacing_window->number_of_pacing_channels=0;
-		if ((pacing_window->rig_address)&&(rig= *(pacing_window->rig_address)))
-		{
-			pacing_channels=(int *)NULL;
-			number_of_pacing_channels=0;
-			pacing_electrodes_result=(char *)NULL;
-			pacing_electrodes_result_length=0;
-			position=0;
-			number_of_characters=0;
-			sscanf(pacing_electrodes+position,"%*[ ,]%n",&number_of_characters);
-			if (0<number_of_characters)
-			{
-				position=number_of_characters;
-			}
-			while (return_code&&pacing_electrodes[position])
-			{
-				number_of_characters=0;
-				sscanf(pacing_electrodes+position,"%*[^ ,]%n",&number_of_characters);
-				if (0<number_of_characters)
-				{
-					device=rig->devices;
-					number_of_devices=rig->number_of_devices;
-					found=0;
-					while (!found&&(0<number_of_devices))
-					{
-						if ((ELECTRODE==(*device)->description->type)&&
-							(number_of_characters==strlen((*device)->description->name))&&
-							(0==strncmp(pacing_electrodes+position,
-							(*device)->description->name,number_of_characters)))
-						{
-							found=1;
-						}
-						else
-						{
-							device++;
-							number_of_devices--;
-						}
-					}
-					if (found)
-					{
-						/* check that don't already have channel */
-						i=0;
-						while ((i<number_of_pacing_channels)&&(pacing_channels[i]!=
-							(*device)->channel->number))
-						{
-							i++;
-						}
-						if (i>=number_of_pacing_channels)
-						{
-							if (REALLOCATE(pacing_channels_temp,pacing_channels,int,
-								number_of_pacing_channels+1)&&
-								REALLOCATE(pacing_electrodes_result_temp,
-								pacing_electrodes_result,char,
-								pacing_electrodes_result_length+number_of_characters+2))
-							{
-								pacing_channels=pacing_channels_temp;
-								pacing_channels[number_of_pacing_channels]=
-									(*device)->channel->number;
-								number_of_pacing_channels++;
-								pacing_electrodes_result=pacing_electrodes_result_temp;
-								if (number_of_pacing_channels>1)
-								{
-									pacing_electrodes_result[pacing_electrodes_result_length]=',';
-									pacing_electrodes_result_length++;
-								}
-								strncpy(pacing_electrodes_result+
-									pacing_electrodes_result_length,pacing_electrodes+position,
-									number_of_characters);
-								pacing_electrodes_result_length += number_of_characters;
-								pacing_electrodes_result[pacing_electrodes_result_length]='\0';
-							}
-							else
-							{
-								if (pacing_channels_temp)
-								{
-									pacing_channels=pacing_channels_temp;
-								}
-								return_code=0;
-							}
-						}
-					}
-					position += number_of_characters;
-					number_of_characters=0;
-					sscanf(pacing_electrodes+position,"%*[ ,]%n",&number_of_characters);
-					if (0<number_of_characters)
-					{
-						position += number_of_characters;
-					}
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			pacing_window->number_of_pacing_channels=number_of_pacing_channels;
-			pacing_window->pacing_channels=pacing_channels;
-			pacing_window->pacing_electrodes=pacing_electrodes_result;
-		}
-		else
-		{
-			return_code=0;
-		}
+		return_code=set_channels_from_string(pacing_electrodes,
+			*(pacing_window->rig_address),pacing_window->number_of_return_channels,
+			pacing_window->return_channels,&(pacing_window->pacing_electrodes),
+			&(pacing_window->number_of_pacing_channels),
+			&(pacing_window->pacing_channels));
 	}
 	else
 	{
@@ -221,6 +295,40 @@ Parses the <pacing_electrodes> string to get the pacing channels for the
 
 	return (return_code);
 } /* set_pacing_channels_from_string */
+
+static int set_return_channels_from_string(struct Pacing_window *pacing_window,
+	char *return_electrodes)
+/*******************************************************************************
+LAST MODIFIED : 11 November 2001
+
+DESCRIPTION :
+Parses the <return_electrodes> string to get the return channels for the
+<pacing_window>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_return_channels_from_string);
+	return_code=0;
+	/* check arguments */
+	if (pacing_window&&return_electrodes&&(pacing_window->rig_address))
+	{
+		return_code=set_channels_from_string(return_electrodes,
+			*(pacing_window->rig_address),pacing_window->number_of_pacing_channels,
+			pacing_window->pacing_channels,&(pacing_window->return_electrodes),
+			&(pacing_window->number_of_return_channels),
+			&(pacing_window->return_channels));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_return_channels_from_string.  Invalid argument(s).  %p %p",
+			pacing_window,return_electrodes);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_return_channels_from_string */
 
 static int set_decrement_threshold_pairs_from_string(
 	struct Pacing_window *pacing_window,char *decrement_threshold_pairs_string)
@@ -537,6 +645,108 @@ Called when the pacing electrodes widget is changed.
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
+static void id_pacing_return_electrodes_for(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 11 November 2001
+
+DESCRIPTION :
+Finds the id of the return electrodes form in the pacing window.
+==============================================================================*/
+{
+	struct Pacing_window *pacing_window;
+
+	ENTER(id_pacing_return_electrodes_for);
+	USE_PARAMETER(call_data);
+	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+	{
+		pacing_window->return_electrodes_form= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_pacing_return_electrodes_for.  Missing pacing_window_structure");
+	}
+	LEAVE;
+} /* id_pacing_return_electrodes_for */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void id_pacing_return_electrodes_val(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 11 November 2001
+
+DESCRIPTION :
+Finds the id of the return_ electrodes value in the pacing window.
+==============================================================================*/
+{
+	struct Pacing_window *pacing_window;
+
+	ENTER(id_pacing_return_electrodes_val);
+	USE_PARAMETER(call_data);
+	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+	{
+		pacing_window->return_electrodes_value= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_pacing_return_electrodes_val.  Missing pacing_window_structure");
+	}
+	LEAVE;
+} /* id_pacing_return_electrodes_val */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void ch_pacing_return_electrodes_val(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 11 November 2001
+
+DESCRIPTION :
+Called when the return electrodes widget is changed.
+==============================================================================*/
+{
+	char *new_value,*return_electrodes;
+	struct Pacing_window *pacing_window;
+	XmAnyCallbackStruct *text_data
+
+	ENTER(ch_pacing_return_electrodes_val);
+	USE_PARAMETER(widget_id);
+	if ((text_data=(XmAnyCallbackStruct *)call_data)&&
+		((XmCR_ACTIVATE==text_data->reason)||
+		(XmCR_LOSING_FOCUS==text_data->reason)))
+	{
+		if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+		{
+			if (!(pacing_window->pacing))
+			{
+				XtVaGetValues(pacing_window->return_electrodes_value,
+					XmNvalue,&new_value,
+					NULL);
+				set_return_channels_from_string(pacing_window,new_value);
+			}
+			if (!(return_electrodes=pacing_window->return_electrodes))
+			{
+				return_electrodes="";
+			}
+			XtVaSetValues(pacing_window->return_electrodes_value,
+				XmNcursorPosition,strlen(return_electrodes),
+				XmNvalue,return_electrodes,
+				NULL);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"ch_pacing_return_electrodes_val.  Missing pacing_window_structure");
+		}
+	}
+	LEAVE;
+} /* ch_pacing_return_electrodes_val */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
 static void id_pacing_control_voltage_form(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
@@ -783,7 +993,7 @@ Finds the id of the basic cycle length pace button in the pacing window.
 static void ch_pacing_basic_cycle_length_pa(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 November 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 Called when the basic cycle length pace button is toggled.
@@ -828,6 +1038,14 @@ Called when the basic cycle length pace button is toggled.
 					pacing_window->number_of_pacing_channels,
 					pacing_window->pacing_channels,number_of_pacing_voltages,
 					voltages_per_second,pacing_voltages,(unsigned int)0);
+				for (i=0;i<pacing_window->number_of_return_channels;i++)
+				{
+					unemap_set_channel_stimulating((pacing_window->return_channels)[i],1);
+				}
+				unemap_load_voltage_stimulating(
+					pacing_window->number_of_return_channels,
+					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+					(unsigned int)0);
 				/* start pacing */
 				unemap_start_stimulating();
 				pacing_window->pacing=1;
@@ -845,6 +1063,10 @@ Called when the basic cycle length pace button is toggled.
 			for (i=0;i<pacing_window->number_of_pacing_channels;i++)
 			{
 				unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],0);
+			}
+			for (i=0;i<pacing_window->number_of_return_channels;i++)
+			{
+				unemap_set_channel_stimulating((pacing_window->return_channels)[i],0);
 			}
 			pacing_window->pacing=0;
 			/* set control sensitivity */
@@ -1428,7 +1650,7 @@ Finds the id of the restitution time pace button in the pacing window.
 static void ch_pacing_restitution_time_pace(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 November 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 Called when the restitution time pace button is toggled.
@@ -1508,12 +1730,21 @@ Called when the restitution time pace button is toggled.
 					pacing_window->number_of_pacing_channels,
 					pacing_window->pacing_channels,number_of_pacing_voltages,
 					voltages_per_second,pacing_voltages,(unsigned int)1);
+				for (i=0;i<pacing_window->number_of_return_channels;i++)
+				{
+					unemap_set_channel_stimulating((pacing_window->return_channels)[i],1);
+				}
+				unemap_load_voltage_stimulating(
+					pacing_window->number_of_return_channels,
+					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+					(unsigned int)0);
 				/* start pacing */
 				unemap_start_stimulating();
 				pacing_window->pacing=1;
 				/* print information to standard out */
 				printf("Restitution Pacing on with\n");
 				printf("BCL = %g ms\n",pacing_window->basic_cycle_length);
+				printf("Number of S1 stimulations = %d\n",pacing_window->number_of_s1);
 				printf("Initial S2 delay = %g ms\n",pacing_window->s2_delay);
 				printf("Initial S2 delay change = %g ms\n",
 					pacing_window->s2_delay_change);
@@ -1533,6 +1764,10 @@ Called when the restitution time pace button is toggled.
 			for (i=0;i<pacing_window->number_of_pacing_channels;i++)
 			{
 				unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],0);
+			}
+			for (i=0;i<pacing_window->number_of_return_channels;i++)
+			{
+				unemap_set_channel_stimulating((pacing_window->return_channels)[i],0);
 			}
 			/* set control sensitivity */
 			XtSetSensitive(pacing_window->restitution_time_yes_button,False);
@@ -1587,7 +1822,7 @@ Finds the id of the restitution time yes button in the pacing window.
 static void ac_pacing_restitution_time_yes(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 November 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 Called when the restitution time yes button is pressed.
@@ -1671,6 +1906,10 @@ Called when the restitution time yes button is pressed.
 				pacing_window->number_of_pacing_channels,
 				pacing_window->pacing_channels,number_of_pacing_voltages,
 				voltages_per_second,pacing_voltages,(unsigned int)1);
+			unemap_load_voltage_stimulating(
+				pacing_window->number_of_return_channels,
+				pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+				(unsigned int)0);
 			/* start pacing */
 			unemap_start_stimulating();
 		}
@@ -1687,6 +1926,10 @@ Called when the restitution time yes button is pressed.
 			for (i=0;i<pacing_window->number_of_pacing_channels;i++)
 			{
 				unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],0);
+			}
+			for (i=0;i<pacing_window->number_of_return_channels;i++)
+			{
+				unemap_set_channel_stimulating((pacing_window->return_channels)[i],0);
 			}
 			/* print information to standard out */
 			printf("Restitution Pacing off\n");
@@ -1733,7 +1976,7 @@ Finds the id of the restitution time no button in the pacing window.
 static void ac_pacing_restitution_time_no(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 November 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 Called when the restitution time no button is pressed.
@@ -1817,6 +2060,10 @@ Called when the restitution time no button is pressed.
 				pacing_window->number_of_pacing_channels,
 				pacing_window->pacing_channels,number_of_pacing_voltages,
 				voltages_per_second,pacing_voltages,(unsigned int)1);
+			unemap_load_voltage_stimulating(
+				pacing_window->number_of_return_channels,
+				pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+				(unsigned int)0);
 			/* start pacing */
 			unemap_start_stimulating();
 		}
@@ -1833,6 +2080,10 @@ Called when the restitution time no button is pressed.
 			for (i=0;i<pacing_window->number_of_pacing_channels;i++)
 			{
 				unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],0);
+			}
+			for (i=0;i<pacing_window->number_of_return_channels;i++)
+			{
+				unemap_set_channel_stimulating((pacing_window->return_channels)[i],0);
 			}
 			/* print information to standard out */
 			printf("Restitution Pacing off\n");
@@ -2095,7 +2346,7 @@ Finds the id of the restitution curve pace button in the pacing window.
 static void ch_pacing_restitution_curve_pac(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 November 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 Called when the restitution curve pace button is toggled.
@@ -2104,7 +2355,8 @@ Called when the restitution curve pace button is toggled.
 	Boolean status;
 	float *pacing_voltages,s2_delay,voltages_per_second;
 	int i,j,k,last,number_of_pacing_voltages,number_of_s1_pacing_voltages,
-		number_of_s2_pacing_voltages,number_of_s2_s1_pacing_voltages,return_code;
+		number_of_s2_pacing_voltages,number_of_s2_s1_pacing_voltages,return_code,
+		s2_delay_count;
 	struct Pacing_window *pacing_window;
 
 	ENTER(ch_pacing_restitution_curve_pac);
@@ -2117,6 +2369,10 @@ Called when the restitution curve pace button is toggled.
 		{
 			return_code=0;
 			/* print information to standard out */
+			printf("Restitution Curve Pacing start with\n");
+			printf("BCL = %g ms\n",pacing_window->basic_cycle_length);
+			printf("Number of S1 stimulations = %d\n",pacing_window->number_of_s1);
+			printf("S2 resolution = %g ms\n",pacing_window->s2_resolution);
 			printf("S2-S1 pause = %g ms\n",pacing_window->s2_s1_pause);
 			for (i=0;i<pacing_window->number_of_decrement_threshold_pairs;i++)
 			{
@@ -2143,6 +2399,7 @@ Called when the restitution curve pace button is toggled.
 				return_code=1;
 				i=0;
 				last=0;
+				s2_delay_count=0;
 				while (return_code&&(last||
 					(i<pacing_window->number_of_decrement_threshold_pairs)))
 				{
@@ -2158,7 +2415,8 @@ Called when the restitution curve pace button is toggled.
 							number_of_s2_pacing_voltages))
 						{
 							/* print information to standard out */
-							printf("S2 delay = %g ms\n",s2_delay);
+							s2_delay_count++;
+							printf("%d) S2 delay = %g ms\n",s2_delay_count,s2_delay);
 							pacing_window->pacing_voltages=pacing_voltages;
 							pacing_voltages += number_of_pacing_voltages;
 							number_of_pacing_voltages += number_of_s2_s1_pacing_voltages+
@@ -2217,6 +2475,8 @@ Called when the restitution curve pace button is toggled.
 					i++;
 				}
 			}
+			/* print information to standard out */
+			printf("Restitution Curve Pacing finish\n");
 			if (return_code&&(0<number_of_pacing_voltages))
 			{
 				/* set control sensitivity */
@@ -2232,6 +2492,14 @@ Called when the restitution curve pace button is toggled.
 					pacing_window->number_of_pacing_channels,
 					pacing_window->pacing_channels,number_of_pacing_voltages,
 					voltages_per_second,pacing_window->pacing_voltages,(unsigned int)1);
+				for (i=0;i<pacing_window->number_of_return_channels;i++)
+				{
+					unemap_set_channel_stimulating((pacing_window->return_channels)[i],1);
+				}
+				unemap_load_voltage_stimulating(
+					pacing_window->number_of_return_channels,
+					pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+					(unsigned int)0);
 				/* start pacing */
 				unemap_start_stimulating();
 				pacing_window->pacing=1;
@@ -2249,6 +2517,10 @@ Called when the restitution curve pace button is toggled.
 			for (i=0;i<pacing_window->number_of_pacing_channels;i++)
 			{
 				unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],0);
+			}
+			for (i=0;i<pacing_window->number_of_return_channels;i++)
+			{
+				unemap_set_channel_stimulating((pacing_window->return_channels)[i],0);
 			}
 			pacing_window->pacing=0;
 			/* set control sensitivity */
@@ -2304,7 +2576,7 @@ static struct Pacing_window *create_Pacing_window(
 #endif /* defined (MOTIF) */
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 4 November 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 Allocates the memory for a pacing window.  Retrieves the necessary widgets and
@@ -2312,7 +2584,7 @@ initializes the appropriate fields.
 ==============================================================================*/
 {
 #if defined (MOTIF)
-	char *decrement_threshold_pairs_string,*pacing_electrodes;
+	char *decrement_threshold_pairs_string,*pacing_electrodes,*return_electrodes;
 	MrmType pacing_window_class;
 	static MrmRegisterArg callback_list[]={
 		{"close_Pacing_window",(XtPointer)close_Pacing_window},
@@ -2321,6 +2593,12 @@ initializes the appropriate fields.
 		{"id_pacing_electrodes_form",(XtPointer)id_pacing_electrodes_form},
 		{"id_pacing_electrodes_value",(XtPointer)id_pacing_electrodes_value},
 		{"ch_pacing_electrodes_value",(XtPointer)ch_pacing_electrodes_value},
+		{"id_pacing_return_electrodes_for",
+		(XtPointer)id_pacing_return_electrodes_for},
+		{"id_pacing_return_electrodes_val",
+		(XtPointer)id_pacing_return_electrodes_val},
+		{"ch_pacing_return_electrodes_val",
+		(XtPointer)ch_pacing_return_electrodes_val},
 		{"id_pacing_control_voltage_form",
 		(XtPointer)id_pacing_control_voltage_form},
 		{"id_pacing_control_voltage_value",
@@ -2396,6 +2674,8 @@ initializes the appropriate fields.
 #define XmCRestitutionNumberOfS1 "RestitutionNumberOfS1"
 #define XmNrestitutionPacingElectrodes "restitutionPacingElectrodes"
 #define XmCRestitutionPacingElectrodes "RestitutionPacingElectrodes"
+#define XmNrestitutionReturnElectrodes "restitutionReturnElectrodes"
+#define XmCRestitutionReturnElectrodes "RestitutionReturnElectrodes"
 #define XmNrestitutionS2Delay "restitutionS2Delay"
 #define XmCRestitutionS2Delay "RestitutionS2Delay"
 #define XmNrestitutionS2DelayChange "restitutionS2DelayChange"
@@ -2493,6 +2773,18 @@ initializes the appropriate fields.
 			""
 		},
 	};
+	static XtResource return_electrodes_resources[]=
+	{
+		{
+			XmNrestitutionReturnElectrodes,
+			XmCRestitutionReturnElectrodes,
+			XmRString,
+			sizeof(String),
+			0,
+			XmRString,
+			""
+		},
+	};
 	static XtResource decrement_threshold_pairs_resources[]=
 	{
 		{
@@ -2528,6 +2820,9 @@ initializes the appropriate fields.
 				pacing_window->number_of_pacing_channels=0;
 				pacing_window->pacing_channels=(int *)NULL;
 				pacing_window->pacing_electrodes=(char *)NULL;
+				pacing_window->number_of_return_channels=0;
+				pacing_window->return_channels=(int *)NULL;
+				pacing_window->return_electrodes=(char *)NULL;
 				pacing_window->number_of_decrement_threshold_pairs=0;
 				pacing_window->decrement_threshold_pairs=(float *)NULL;
 				pacing_window->decrement_threshold_pairs_string=(char *)NULL;
@@ -2547,6 +2842,8 @@ initializes the appropriate fields.
 				pacing_window->number_of_s1_value=(Widget)NULL;
 				pacing_window->pacing_electrodes_form=(Widget)NULL;
 				pacing_window->pacing_electrodes_value=(Widget)NULL;
+				pacing_window->return_electrodes_form=(Widget)NULL;
+				pacing_window->return_electrodes_value=(Widget)NULL;
 				pacing_window->s2_delay_form=(Widget)NULL;
 				pacing_window->s2_delay_value=(Widget)NULL;
 				pacing_window->s2_delay_change_form=(Widget)NULL;
@@ -2570,6 +2867,13 @@ initializes the appropriate fields.
 				/* NB.  XtVaGetApplicationResources does not allocate memory for
 					pacing_electrodes, so it does not need to be free'd */
 				set_pacing_channels_from_string(pacing_window,pacing_electrodes);
+				return_electrodes=(char *)NULL;
+				XtVaGetApplicationResources(user_interface->application_shell,
+					&return_electrodes,return_electrodes_resources,
+					XtNumber(return_electrodes_resources),NULL);
+				/* NB.  XtVaGetApplicationResources does not allocate memory for
+					return_electrodes, so it does not need to be free'd */
+				set_return_channels_from_string(pacing_window,return_electrodes);
 				decrement_threshold_pairs_string=(char *)NULL;
 				XtVaGetApplicationResources(user_interface->application_shell,
 					&decrement_threshold_pairs_string,decrement_threshold_pairs_resources,
@@ -2683,7 +2987,7 @@ struct Pacing_window *open_Pacing_window(
 #endif /* defined (MOTIF) */
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 4 November 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 If the pacing window does not exist, it is created.  The pacing window is
@@ -2692,7 +2996,8 @@ opened.
 {
 	struct Pacing_window *pacing_window;
 #if defined (MOTIF)
-	char *decrement_threshold_pairs_string,*pacing_electrodes,value_string[20];
+	char *decrement_threshold_pairs_string,*pacing_electrodes,
+		*return_electrodes,value_string[20];
 #endif /* defined (MOTIF) */
 
 	ENTER(open_pacing_window);
@@ -2715,6 +3020,16 @@ opened.
 			XtVaSetValues(pacing_window->pacing_electrodes_value,
 				XmNcursorPosition,strlen(pacing_electrodes),
 				XmNvalue,pacing_electrodes,
+				NULL);
+#endif /* defined (MOTIF) */
+#if defined (MOTIF)
+			if (!(return_electrodes=pacing_window->return_electrodes))
+			{
+				return_electrodes="";
+			}
+			XtVaSetValues(pacing_window->return_electrodes_value,
+				XmNcursorPosition,strlen(return_electrodes),
+				XmNvalue,return_electrodes,
 				NULL);
 #endif /* defined (MOTIF) */
 			if (pacing_window->basic_cycle_length<=0)
@@ -2875,7 +3190,7 @@ opened.
 
 int destroy_Pacing_window(struct Pacing_window **pacing_window_address)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2001
+LAST MODIFIED : 11 November 2001
 
 DESCRIPTION :
 If the <address> field of the pacing window is not NULL, <*address> is set to
@@ -2910,6 +3225,8 @@ pacing window and frees the memory associated with the pacing window.
 			DEALLOCATE(pacing_window->pacing_voltages);
 			DEALLOCATE(pacing_window->pacing_channels);
 			DEALLOCATE(pacing_window->pacing_electrodes);
+			DEALLOCATE(pacing_window->return_channels);
+			DEALLOCATE(pacing_window->return_electrodes);
 			DEALLOCATE(pacing_window->decrement_threshold_pairs_string);
 			DEALLOCATE(pacing_window->decrement_threshold_pairs);
 			DEALLOCATE(pacing_window);

@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : pacing_window.uil
 !
-!LAST MODIFIED : 4 November 2001
+!LAST MODIFIED : 11 November 2001
 !
 !DESCRIPTION :
 !The widgets/gadgets for the pacing window in the acquisition work area.
@@ -15,6 +15,9 @@ procedure
 	id_pacing_electrodes_form;
 	id_pacing_electrodes_value;
 	ch_pacing_electrodes_value;
+	id_pacing_return_electrodes_for;
+	id_pacing_return_electrodes_val;
+	ch_pacing_return_electrodes_val;
 	id_pacing_control_voltage_form;
 	id_pacing_control_voltage_value;
 	ch_pacing_control_voltage_value;
@@ -79,11 +82,14 @@ object
 		controls
 			{
 			XmForm pacing_electrodes_form;
-			XmSeparator pacing_electrodes_separator;
+			XmForm pacing_return_electrodes_form;
+			XmSeparator pacing_return_electrodes_separa;
 			XmForm pacing_control_voltage_form;
 			XmSeparator pacing_control_voltage_separato;
 			XmForm pacing_basic_cycle_control_form;
 			XmSeparator pacing_basic_cycle_control_sepa;
+			XmForm pacing_settings_form;
+			XmSeparator pacing_settings_separator;
 			XmForm pacing_restitution_time_form;
 			XmSeparator pacing_restitution_time_separat;
 			XmForm pacing_restitution_curve_form;
@@ -170,7 +176,82 @@ object
 				};
 			};
 		};
-	pacing_electrodes_separator: XmSeparator
+	pacing_return_electrodes_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = XmForm pacing_electrodes_form;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel pacing_return_electrodes_label;
+			XmTextField pacing_return_electrodes_value;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_return_electrodes_for(pacing_window_structure);
+				};
+			};
+		};
+	pacing_return_electrodes_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Return electrodes");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	pacing_return_electrodes_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmLabel pacing_return_electrodes_label;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_return_electrodes_val(pacing_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				ch_pacing_return_electrodes_val(pacing_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				ch_pacing_return_electrodes_val(pacing_window_structure);
+				};
+			};
+		};
+	pacing_return_electrodes_separa: XmSeparator
 		{
 		arguments
 			{
@@ -181,7 +262,7 @@ object
 			XmNrightOffset = 0;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopOffset = widget_spacing;
-			XmNtopWidget = XmForm pacing_electrodes_form;
+			XmNtopWidget = XmForm pacing_return_electrodes_form;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		};
@@ -197,7 +278,7 @@ object
 			XmNrightOffset = widget_spacing;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopOffset = widget_spacing;
-			XmNtopWidget = XmSeparator pacing_electrodes_separator;
+			XmNtopWidget = XmSeparator pacing_return_electrodes_separa;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		controls
@@ -414,7 +495,7 @@ object
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		};
-	pacing_restitution_time_form: XmForm
+	pacing_settings_form: XmForm
 		{
 		arguments
 			{
@@ -431,20 +512,17 @@ object
 			};
 		controls
 			{
-			XmLabel pacing_restitution_time_label;
+			XmLabel pacing_settings_label;
 			XmForm pacing_number_of_s1_form;
 			XmForm pacing_s2_resolution_form;
 			XmForm pacing_s2_delay_form;
-			XmForm pacing_s2_delay_change_form;
-			XmForm pacing_s2_delay_factor_form;
-			XmForm pacing_pace_yes_no_form;
 			};
 		};
-	pacing_restitution_time_label: XmLabel
+	pacing_settings_label: XmLabel
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Restitution time");
+			XmNlabelString = compound_string("Pacing");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_END;
 			XmNleftAttachment = XmATTACH_FORM;
@@ -467,7 +545,7 @@ object
 			XmNrightOffset = widget_spacing;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopOffset = widget_spacing;
-			XmNtopWidget = XmLabel pacing_restitution_time_label;
+			XmNtopWidget = XmLabel pacing_settings_label;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		controls
@@ -680,6 +758,59 @@ object
 				};
 			};
 		};
+	pacing_settings_separator: XmSeparator
+		{
+		arguments
+			{
+			XmNseparatorType = XmSINGLE_LINE;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = XmForm pacing_settings_form;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		};
+	pacing_restitution_time_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = XmSeparator pacing_settings_separator;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel pacing_restitution_time_label;
+			XmForm pacing_s2_delay_change_form;
+			XmForm pacing_s2_delay_factor_form;
+			XmForm pacing_pace_yes_no_form;
+			};
+		};
+	pacing_restitution_time_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Restitution time");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		};
 	pacing_s2_delay_change_form: XmForm
 		{
 		arguments
@@ -692,7 +823,7 @@ object
 			XmNrightOffset = widget_spacing;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopOffset = widget_spacing;
-			XmNtopWidget = XmForm pacing_s2_delay_form;
+			XmNtopWidget = XmLabel pacing_restitution_time_label;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		controls
