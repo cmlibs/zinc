@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 16 March 2001
+LAST MODIFIED : 27 March 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -1620,7 +1620,7 @@ First checks <element_group> not already in scene.
 static void Scene_element_group_change(
 	struct MANAGER_MESSAGE(GROUP(FE_element)) *message,void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 27 March 2001
 
 DESCRIPTION :
 Element group manager change callback. Adds/removes graphical element groups
@@ -1648,11 +1648,11 @@ from <scene> in response to manager messages.
 						scene->element_group_manager);
 				}
 				/* remove GT_element_groups for unmanaged element groups */
-				while (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+				while (scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
 					Scene_object_has_unmanaged_element_group,
-					(void *)scene->element_group_manager,scene->scene_object_list))
+					(void *)scene->element_group_manager, scene->scene_object_list))
 				{
-					Scene_remove_Scene_object_private(scene,scene_object);
+					Scene_remove_Scene_object_private(scene, scene_object);
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(GROUP(FE_element)):
@@ -1669,7 +1669,12 @@ from <scene> in response to manager messages.
 				/* remove any graphical element group renditions for the deleted
 					 element_group from scene  */
 				element_group = message->object_changed;
-				Scene_remove_graphical_element_group(scene, element_group);
+				while (scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+					Scene_object_has_element_group, (void *)element_group,
+					scene->scene_object_list))
+				{
+					Scene_remove_Scene_object_private(scene, scene_object);
+				}
 			} break;
 			case MANAGER_CHANGE_OBJECT(GROUP(FE_element)):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_element)):
