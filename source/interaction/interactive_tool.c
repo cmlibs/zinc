@@ -465,7 +465,7 @@ char **interactive_tool_manager_get_tool_names(
 	int *number_of_tools,struct Interactive_tool *current_interactive_tool,
 	char **current_tool_name)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 2 October 2000
 
 DESCRIPTION :
 Returns an array of strings containing the names of the tools - suitable for
@@ -482,47 +482,50 @@ Up to calling function to deallocate the returned array AND the strings in it.
 	tool_names=(char **)NULL;
 	if (interactive_tool_manager&&number_of_tools&&current_tool_name)
 	{
-		*number_of_tools=
-			NUMBER_IN_MANAGER(Interactive_tool)(interactive_tool_manager);
-		if (ALLOCATE(tool_names,char *,*number_of_tools))
+		if (0<(*number_of_tools=
+			NUMBER_IN_MANAGER(Interactive_tool)(interactive_tool_manager)))
 		{
-			for (i=0;i< *number_of_tools;i++)
+			if (ALLOCATE(tool_names,char *,*number_of_tools))
 			{
-				tool_names[i]=(char *)NULL;
-			}
-			tool_name=tool_names;
-			if (FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
-				Interactive_tool_name_to_array,(void *)&tool_name,
-				interactive_tool_manager))
-			{
-				*current_tool_name = tool_names[0];
-				for (i=1;i<(*number_of_tools);i++)
+				for (i=0;i< *number_of_tools;i++)
 				{
-					if (FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(tool_names[i],
-						interactive_tool_manager) == current_interactive_tool)
+					tool_names[i]=(char *)NULL;
+				}
+				tool_name=tool_names;
+				if (FOR_EACH_OBJECT_IN_MANAGER(Interactive_tool)(
+					Interactive_tool_name_to_array,(void *)&tool_name,
+					interactive_tool_manager))
+				{
+					*current_tool_name = tool_names[0];
+					for (i=1;i<(*number_of_tools);i++)
 					{
-						*current_tool_name = tool_names[i];
+						if (FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
+							tool_names[i],interactive_tool_manager) ==
+							current_interactive_tool)
+						{
+							*current_tool_name = tool_names[i];
+						}
+					}
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,
+						"interactive_tool_manager_get_tool_names.  Failed");
+					for (i=0;i<(*number_of_tools);i++)
+					{
+						if (tool_name[i])
+						{
+							DEALLOCATE(tool_names[i]);
+						}
+						DEALLOCATE(tool_names);
 					}
 				}
 			}
 			else
 			{
 				display_message(WARNING_MESSAGE,
-					"interactive_tool_manager_get_tool_names.  Failed");
-				for (i=0;i<(*number_of_tools);i++)
-				{
-					if (tool_name[i])
-					{
-						DEALLOCATE(tool_names[i]);
-					}
-					DEALLOCATE(tool_names);
-				}
+					"interactive_tool_manager_get_tool_names.  Not enough memory");
 			}
-		}
-		else
-		{
-			display_message(WARNING_MESSAGE,
-				"interactive_tool_manager_get_tool_names.  Not enough memory");
 		}
 	}
 	else
