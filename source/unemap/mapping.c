@@ -10607,7 +10607,7 @@ Draw the fibres
 		mu_1,mu_2,mu_3,mu_4,pi,pi_over_2,sin_mu_hat,sin_theta_hat,*stretch_x,
 		*stretch_y,theta,theta_1,theta_2,theta_3,theta_4,two_pi,xi_1,xi_2,x_screen,
 		x_screen_left,x_screen_step,y_screen,y_screen_top,y_screen_step;
-	int *draw_region_number,fibre_iteration,fibre_spacing,i,j,k,l,map_width,
+	int *draw_region_number,fibre_iteration,fibre_spacing,i,j,k,l,
 		map_x_offset,map_y_offset,number_of_regions,pixel_left,pixel_top,
 		region_number,return_code,screen_region_height,screen_region_width,*start_x,
 		*start_y,temp_region_number,x_pixel,y_pixel;
@@ -10634,7 +10634,6 @@ Draw the fibres
 		draw_region_number=map->draw_region_number;
 		map_x_offset=sub_map->x_offset;
 		map_y_offset=sub_map->y_offset;
-		map_width=sub_map->width;
 		start_x=sub_map->start_x;
 		start_y=sub_map->start_y;
 		min_x=sub_map->min_x;
@@ -13386,9 +13385,8 @@ Construct a colour map image for colour map or contours or  values  in the
 <sub_map> frame, using interpolation.
 ==============================================================================*/
 {
-	enum Map_type map_type;
 	char valid_u_and_v;
-	float frame_time,f_approx,*max_x,*max_y,*min_x,*min_y,*pixel_value,*stretch_x,
+	float f_approx,*max_x,*max_y,*min_x,*min_y,*pixel_value,*stretch_x,
 		*stretch_y,u,v,*x_mesh,*y_mesh,x_screen,x_screen_left,x_screen_step,
 		y_screen,y_screen_top,y_screen_step,*value_data,*weight_data,*x_data,
 		*y_data;
@@ -13427,16 +13425,7 @@ Construct a colour map image for colour map or contours or  values  in the
 		max_y=sub_map->max_y;
 		start_x=sub_map->start_x;
 		start_y=sub_map->start_y;
-		if (map->type)
-		{
-			map_type= *(map->type);
-		}
-		else
-		{
-			map_type=NO_MAP_FIELD;
-		}
 		rig= *(map->rig_pointer);
-		frame_time=sub_map->frame_time;
 		frame=&(sub_map->frame);
 		pixel_value=frame->pixel_values;
 		/* interpolate data */
