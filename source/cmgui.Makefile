@@ -1166,7 +1166,9 @@ endif # SYSNAME == win32
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
 	$(LINK) -o $(BIN_TARGET) $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES) ; \
-	rm $(BIN_PATH)/$(BIN_TARGET) ; \
+	if [ -f $(BIN_PATH)/$(BIN_TARGET) ]; then \
+		rm $(BIN_PATH)/$(BIN_TARGET) ; \
+	fi ; \
 	cp $(BIN_TARGET) $(BIN_PATH)/$(BIN_TARGET)
 
 # Force is a dummy rule used to ensure some objects are made every time as the
