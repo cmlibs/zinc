@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 17 May 2000
+LAST MODIFIED : 24 May 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -32,6 +32,7 @@ Functions for executing cmiss commands.
 #include "data/node_transform.h"
 #include "data/sync_2d_3d.h"
 #include "element/element_creator.h"
+#include "element/element_point_viewer.h"
 #include "finite_element/computed_field.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
@@ -863,7 +864,7 @@ with tick marks and labels for showing the scale of a spectrum.
 static int gfx_create_cylinders(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2000
+LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
 Executes a GFX CREATE CYLINDERS command.
@@ -934,7 +935,7 @@ Executes a GFX CREATE CYLINDERS command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
@@ -942,7 +943,7 @@ Executes a GFX CREATE CYLINDERS command.
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
@@ -961,7 +962,7 @@ Executes a GFX CREATE CYLINDERS command.
 			/* radius_scalar */
 			set_radius_field_data.computed_field_package=
 				command_data->computed_field_package;
-			set_radius_field_data.conditional_function=Computed_field_has_1_component;
+			set_radius_field_data.conditional_function=Computed_field_is_scalar;
 			set_radius_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"radius_scalar",&radius_field,
 				&set_radius_field_data,set_Computed_field_conditional);
@@ -1282,7 +1283,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
@@ -1290,7 +1291,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
@@ -2001,7 +2002,7 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[i]).to_be_modified= &coordinate_field;
 			(option_table[i]).user_data= &set_coordinate_field_data;
@@ -2272,7 +2273,7 @@ Executes a GFX CREATE MORE_FLOW_PARTICLES command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[i]).to_be_modified= &coordinate_field;
 			(option_table[i]).user_data= &set_coordinate_field_data;
@@ -2477,7 +2478,7 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
@@ -3149,7 +3150,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
@@ -3157,7 +3158,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
@@ -3173,8 +3174,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 			/* iso_scalar */
 			set_scalar_field_data.computed_field_package=
 				command_data->computed_field_package;
-			set_scalar_field_data.conditional_function=
-				Computed_field_has_1_component;
+			set_scalar_field_data.conditional_function=Computed_field_is_scalar;
 			set_scalar_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"iso_scalar",&scalar_field,
 				&set_scalar_field_data,set_Computed_field_conditional);
@@ -3204,7 +3204,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 			set_surface_data_density_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_surface_data_density_field_data.conditional_function=
-				Computed_field_has_1_to_4_components;
+				Computed_field_has_up_to_4_numerical_components;
 			set_surface_data_density_field_data.conditional_function_user_data=
 				(void *)NULL;
 			Option_table_add_entry(option_table,"surface_data_density",
@@ -3742,7 +3742,7 @@ Executes a GFX CREATE LINES command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
@@ -3750,7 +3750,7 @@ Executes a GFX CREATE LINES command.
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
@@ -4318,6 +4318,83 @@ Executes a GFX CREATE DATA_VIEWER command.
 } /* gfx_create_data_viewer */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
+static int gfx_create_element_point_viewer(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 18 April 2000
+
+DESCRIPTION :
+Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+
+	ENTER(gfx_create_element_point_viewer);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				display_message(ERROR_MESSAGE,"Unknown option: %s",current_token);
+				display_parse_state_location(state);
+				return_code=0;
+			}
+			else
+			{
+				return_code=1;
+			}
+		}
+		else
+		{
+			if (command_data=(struct Cmiss_command_data *)command_data_void)
+			{
+				if (command_data->element_point_viewer)
+				{
+					return_code=Element_point_viewer_bring_window_to_front(
+						command_data->element_point_viewer);
+				}
+				else
+				{
+					if (command_data->element_point_viewer=CREATE(Element_point_viewer)(
+						&(command_data->element_point_viewer),
+						command_data->element_manager,
+						command_data->element_point_ranges_selection,
+						command_data->computed_field_package,
+						command_data->fe_field_manager,
+						command_data->user_interface))
+					{
+						return_code=1;
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_create_element_point_viewer.  Missing command_data");
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_create_element_point_viewer.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_create_element_point_viewer */
+
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_node_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -4406,7 +4483,7 @@ Executes a GFX CREATE NODE_POINTS command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
@@ -4414,7 +4491,7 @@ Executes a GFX CREATE NODE_POINTS command.
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
@@ -4679,7 +4756,7 @@ Executes a GFX CREATE DATA_POINTS command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
@@ -4687,7 +4764,7 @@ Executes a GFX CREATE DATA_POINTS command.
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
@@ -5827,7 +5904,7 @@ Executes a GFX CREATE STREAMLINES command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
@@ -5835,7 +5912,7 @@ Executes a GFX CREATE STREAMLINES command.
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
@@ -6228,7 +6305,7 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
@@ -6236,7 +6313,7 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
@@ -6604,7 +6681,7 @@ Executes a GFX CREATE SURFACES command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
@@ -6612,7 +6689,7 @@ Executes a GFX CREATE SURFACES command.
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
@@ -6648,7 +6725,7 @@ Executes a GFX CREATE SURFACES command.
 			set_texture_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_texture_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_texture_coordinate_field_data.conditional_function_user_data=
 				(void *)NULL;
 			Option_table_add_entry(option_table,"texture_coordinates",
@@ -7373,7 +7450,7 @@ Executes a GFX CREATE TEXMAP command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			(option_table[1]).to_be_modified= &coordinate_field;
 			(option_table[1]).user_data=&set_coordinate_field_data;
@@ -7988,7 +8065,7 @@ Executes a GFX CREATE VOLUMES command.
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
-				Computed_field_has_1_to_3_components;
+				Computed_field_has_up_to_3_numerical_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
@@ -7996,7 +8073,7 @@ Executes a GFX CREATE VOLUMES command.
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
-				Computed_field_has_at_least_1_component;
+				Computed_field_has_numerical_components;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
@@ -8004,7 +8081,7 @@ Executes a GFX CREATE VOLUMES command.
 			set_displacement_map_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_displacement_map_field_data.conditional_function=
-				Computed_field_has_1_to_4_components;
+				Computed_field_has_up_to_4_numerical_components;
 			set_displacement_map_field_data.conditional_function_user_data=
 				(void *)NULL;
 			Option_table_add_entry(option_table,"displacement_map_field",
@@ -8031,7 +8108,7 @@ Executes a GFX CREATE VOLUMES command.
 			set_blur_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_blur_field_data.conditional_function=
-				Computed_field_has_1_to_4_components;
+				Computed_field_has_up_to_4_numerical_components;
 			set_blur_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"smooth_field",
 				&blur_field,&set_blur_field_data,set_Computed_field_conditional);
@@ -8042,7 +8119,7 @@ Executes a GFX CREATE VOLUMES command.
 			set_surface_data_density_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_surface_data_density_field_data.conditional_function=
-				Computed_field_has_1_to_4_components;
+				Computed_field_has_up_to_4_numerical_components;
 			set_surface_data_density_field_data.conditional_function_user_data=
 				(void *)NULL;
 			Option_table_add_entry(option_table,"surface_data_density",
@@ -8929,7 +9006,7 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 static int execute_command_gfx_create(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 24 May 2000
 
 DESCRIPTION :
 Executes a GFX CREATE command.
@@ -9036,6 +9113,8 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_element_group);
 				Option_table_add_entry(option_table,"element_creator",NULL,
 					command_data_void,gfx_create_element_creator);
+				Option_table_add_entry(option_table,"element_point_viewer",NULL,
+					command_data_void,gfx_create_element_point_viewer);
 				Option_table_add_entry(option_table,"element_points",NULL,
 					command_data_void,gfx_create_element_points);
 #if defined (MIRAGE)
@@ -9118,7 +9197,7 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_window);
 				Option_table_add_entry(option_table,"3d_digitizer",NULL,
 					command_data_void,gfx_create_3d_digitizer);
-				return_code=Option_table_multi_parse(option_table,state);
+				return_code=Option_table_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
 			else
@@ -16421,7 +16500,7 @@ Executes a GFX READ command.
 static int execute_command_gfx_select(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
 Executes a GFX SELECT command.
@@ -16434,7 +16513,7 @@ Executes a GFX SELECT command.
 	struct Cmiss_command_data *command_data;
 	struct Element_point_ranges *element_point_ranges;
 	struct FE_element *element;
-	struct FE_element_select_grid_field_ranges_data select_grid_points_data;
+	struct FE_element_grid_to_Element_point_ranges_list_data grid_to_list_data;
 	struct FE_field *grid_field;
 	struct FE_node *node;
 	struct Multi_range *data_ranges,*element_ranges,*face_ranges,
@@ -16659,19 +16738,35 @@ Executes a GFX SELECT command.
 				{
 					if (grid_field)
 					{
-						Element_point_ranges_selection_begin_cache(
-							command_data->element_point_ranges_selection);
-						/* inefficient: go through every element in manager */
-						select_grid_points_data.element_point_ranges_selection=
-							command_data->element_point_ranges_selection;
-						select_grid_points_data.grid_field=grid_field;
-						select_grid_points_data.ranges=grid_point_ranges;
-						FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							FE_element_select_grid_field_ranges,
-							(void *)&select_grid_points_data,
-							command_data->element_manager);
-						Element_point_ranges_selection_end_cache(
-							command_data->element_point_ranges_selection);
+						if (grid_to_list_data.element_point_ranges_list=
+							CREATE(LIST(Element_point_ranges))())
+						{
+							grid_to_list_data.grid_fe_field=grid_field;
+							grid_to_list_data.grid_value_ranges=grid_point_ranges;
+							/* inefficient: go through every element in manager */
+							FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+								FE_element_grid_to_Element_point_ranges_list,
+								(void *)&grid_to_list_data,command_data->element_manager);
+							if (0<NUMBER_IN_LIST(Element_point_ranges)(
+								grid_to_list_data.element_point_ranges_list))
+							{
+								Element_point_ranges_selection_begin_cache(
+									command_data->element_point_ranges_selection);
+								FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+									Element_point_ranges_select,
+									(void *)command_data->element_point_ranges_selection,
+									grid_to_list_data.element_point_ranges_list);
+								Element_point_ranges_selection_end_cache(
+									command_data->element_point_ranges_selection);
+							}
+							DESTROY(LIST(Element_point_ranges))(
+								&(grid_to_list_data.element_point_ranges_list));
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"execute_command_gfx_select.  "
+								"Could not create grid_point list");
+						}
 					}
 					else
 					{
@@ -16822,7 +16917,7 @@ Executes a GFX SELECT command.
 static int execute_command_gfx_unselect(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
 Executes a GFX UNSELECT command.
@@ -16835,7 +16930,7 @@ Executes a GFX UNSELECT command.
 	struct Cmiss_command_data *command_data;
 	struct Element_point_ranges *element_point_ranges;
 	struct FE_element *element;
-	struct FE_element_select_grid_field_ranges_data unselect_grid_points_data;
+	struct FE_element_grid_to_Element_point_ranges_list_data grid_to_list_data;
 	struct FE_field *grid_field;
 	struct FE_node *node;
 	struct Multi_range *data_ranges,*element_ranges,*face_ranges,
@@ -17073,19 +17168,35 @@ Executes a GFX UNSELECT command.
 				{
 					if (grid_field)
 					{
-						Element_point_ranges_selection_begin_cache(
-							command_data->element_point_ranges_selection);
-						/* inefficient: go through every element in manager */
-						unselect_grid_points_data.element_point_ranges_selection=
-							command_data->element_point_ranges_selection;
-						unselect_grid_points_data.grid_field=grid_field;
-						unselect_grid_points_data.ranges=grid_point_ranges;
-						FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							FE_element_unselect_grid_field_ranges,
-							(void *)&unselect_grid_points_data,
-							command_data->element_manager);
-						Element_point_ranges_selection_end_cache(
-							command_data->element_point_ranges_selection);
+						if (grid_to_list_data.element_point_ranges_list=
+							CREATE(LIST(Element_point_ranges))())
+						{
+							grid_to_list_data.grid_fe_field=grid_field;
+							grid_to_list_data.grid_value_ranges=grid_point_ranges;
+							/* inefficient: go through every element in manager */
+							FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+								FE_element_grid_to_Element_point_ranges_list,
+								(void *)&grid_to_list_data,command_data->element_manager);
+							if (0<NUMBER_IN_LIST(Element_point_ranges)(
+								grid_to_list_data.element_point_ranges_list))
+							{
+								Element_point_ranges_selection_begin_cache(
+									command_data->element_point_ranges_selection);
+								FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+									Element_point_ranges_unselect,
+									(void *)command_data->element_point_ranges_selection,
+									grid_to_list_data.element_point_ranges_list);
+								Element_point_ranges_selection_end_cache(
+									command_data->element_point_ranges_selection);
+							}
+							DESTROY(LIST(Element_point_ranges))(
+								&(grid_to_list_data.element_point_ranges_list));
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"execute_command_gfx_unselect.  "
+								"Could not create grid_point list");
+						}
 					}
 					else
 					{
