@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix_vector.h
 
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 6 April 2001
 
 DESCRIPTION:
 Code for performing vector calculations - normalize, dot product etc. -, and
@@ -105,6 +105,14 @@ LAST MODIFIED : 28 January 1998
 
 DESCRIPTION :
 Copies the contents of m rows x n columns matrix <a> to <a_copy>.
+==============================================================================*/
+
+int identity_matrix(int n, double *a);
+/*******************************************************************************
+LAST MODIFIED : 6 April 2001
+
+DESCRIPTION :
+Set matrix <a> to the <n> x <n> identity.
 ==============================================================================*/
 
 int multiply_matrix(int m,int s,int n,double *a,double *b,double *c);

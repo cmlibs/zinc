@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix_vector.c
 
-LAST MODIFIED : 27 November 2000
+LAST MODIFIED : 6 April 2001
 
 DESCRIPTION:
 Code for performing vector calculations - normalize, dot product etc. -, and
@@ -43,7 +43,7 @@ const double identity_matrix4[16]=
 
 int cross_product3(double *a,double *b,double *result)
 /*******************************************************************************
-LAST MODIFIED : 28 January 1998
+LAST MODIFIED : 6 March 2001
 
 DESCRIPTION :
 Returns in <result> the cross product of the two vectors = a (x) b.
@@ -52,16 +52,17 @@ Returns in <result> the cross product of the two vectors = a (x) b.
 	int return_code;
 
 	ENTER(cross_product3);
-	if (a&&b&&result)
+	if (a && b && result)
 	{
 		result[0] = a[1]*b[2] - a[2]*b[1];
 		result[1] = a[2]*b[0] - a[0]*b[2];
 		result[2] = a[0]*b[1] - a[1]*b[0];
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"cross_product3.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -129,10 +130,10 @@ is zero, v is converted to unit vector [1,0,0].
 {
 	double length;
 
-	ENTER(normalize_vector3);
+	ENTER(normalize3);
 	if (v)
 	{
-		if (0<(length=sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])))
+		if (0 < (length = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])))
 		{
 			v[0] /= length;
 			v[1] /= length;
@@ -140,20 +141,20 @@ is zero, v is converted to unit vector [1,0,0].
 		}
 		else
 		{
-			v[0]=1.0;
-			v[1]=0.0;
-			v[2]=0.0;
+			v[0] = 1.0;
+			v[1] = 0.0;
+			v[2] = 0.0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"normalize3.  Missing vector");
-		length=0.0;
+		display_message(ERROR_MESSAGE, "normalize3.  Missing vector");
+		length = 0.0;
 	}
 	LEAVE;
 
 	return (length);
-} /* normalize_vector3 */
+} /* normalize3 */
 
 int normalize_float3(float vector[3])
 /*******************************************************************************
@@ -303,6 +304,48 @@ Copies the contents of m rows x n columns matrix <a> to <a_copy>.
 
 	return (return_code);
 } /* copy_matrix */
+
+int identity_matrix(int n, double *a)
+/*******************************************************************************
+LAST MODIFIED : 6 April 2001
+
+DESCRIPTION :
+Set matrix <a> to the <n> x <n> identity.
+==============================================================================*/
+{
+	double *value;
+	int i, j, return_code;
+
+	ENTER(identity_matrix);
+	if ((0<n) && a)
+	{
+		value = a;
+		for (i = 0; i < n; i++)
+		{
+			for (j = 0; j < n; j++)
+			{
+				if (i == j)
+				{
+					*value = 1.0;
+				}
+				else
+				{
+					*value = 0.0;
+				}
+				value++;
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "identity_matrix.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* identity_matrix */
 
 int multiply_matrix(int m,int s,int n,double *a,double *b,double *c)
 /*******************************************************************************
