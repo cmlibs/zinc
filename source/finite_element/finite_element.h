@@ -2597,6 +2597,26 @@ Returns the first coordinate field defined over <element>, recursively getting
 it from its first parent if it has no node scale field information.
 ==============================================================================*/
 
+int FE_element_is_top_level_in_Multi_range(struct FE_element *element,
+	void *multi_range_void);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Conditional function returning true if <element> is a CM_ELEMENT whose number
+is in the <multi_range>.
+==============================================================================*/
+
+int FE_element_is_not_top_level_in_Multi_range(struct FE_element *element,
+	void *multi_range_void);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Conditional function returning true if <element> is either not a CM_ELEMENT
+or whose number is NOT in the <multi_range>.
+==============================================================================*/
+
 int add_FE_element_line_number_to_Multi_range(struct FE_element *element,
 	void *multi_range_void);
 /*******************************************************************************
@@ -2633,6 +2653,24 @@ LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Returns true if <element> is in <element_group>.
+==============================================================================*/
+
+int FE_element_is_in_list(struct FE_element *element,void *element_list_void);
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Returns true if <element> is in <element_list>.
+==============================================================================*/
+
+int FE_element_has_all_top_level_parents_in_list(
+	struct FE_element *element,void *element_list_void);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns true if <element> is a top_level_element in <element_list>, or all its
+top_level_parents are in the list.
 ==============================================================================*/
 
 int add_FE_element_and_faces_to_group(struct FE_element *element,
@@ -2839,6 +2877,15 @@ LAST MODIFIED : 26 August 199
 
 DESCRIPTION :
 Outputs the name of the <element_group>.
+==============================================================================*/
+
+int FE_element_group_intersects_list(struct GROUP(FE_element) *element_group,
+	void *element_list_void);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns true if <element_group> contains any elements in <element_list>.
 ==============================================================================*/
 
 int theta_increasing_in_xi1(struct FE_element_field_component *component,
@@ -3720,6 +3767,32 @@ LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 Iterator function for adding <element> to <element_list> if not currently in it.
+==============================================================================*/
+
+struct FE_element_list_conditional_data
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Data for passing to ensure_FE_element_is_in_list_conditional.
+==============================================================================*/
+{
+	struct LIST(FE_element) *element_list;
+	LIST_CONDITIONAL_FUNCTION(FE_element) *function;
+	void *user_data;
+}; /* FE_element_list_conditional_data */
+
+int ensure_FE_element_is_in_list_conditional(struct FE_element *element,
+	void *list_conditional_data_void);
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Iterator function for adding <element> to a list - if not already in it - if a
+conditional function with user_data is true.
+The element_list, conditional function and user_data are passed in a
+struct FE_element_list_conditional_data * in the second argument.
+Warning: Must not be iterating over the list being added to!
 ==============================================================================*/
 
 int ensure_FE_element_is_not_in_list(struct FE_element *element,

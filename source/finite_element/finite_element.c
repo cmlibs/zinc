@@ -13759,7 +13759,7 @@ Returns true if <node_group> contains any nodes in <node_list>.
 	else
 	{
 		display_message(WARNING_MESSAGE,
-			"FE_node_group_intersects_list.  Invalid node group");
+			"FE_node_group_intersects_list.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -22982,6 +22982,66 @@ it from its first parent if it has no node scale field information.
 	return (field);
 } /* get_FE_element_default_coordinate_field */
 
+int FE_element_is_top_level_in_Multi_range(struct FE_element *element,
+	void *multi_range_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Conditional function returning true if <element> is a CM_ELEMENT whose number
+is in the <multi_range>.
+==============================================================================*/
+{
+	int return_code;
+	struct Multi_range *multi_range;
+
+	ENTER(FE_element_is_top_level_in_Multi_range);
+	if (element&&(multi_range=(struct Multi_range *)multi_range_void))
+	{
+		return_code = (CM_ELEMENT == element->cm.type) &&
+			Multi_range_is_value_in_range(multi_range,element->cm.number);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_is_top_level_in_Multi_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_is_top_level_in_Multi_range */
+
+int FE_element_is_not_top_level_in_Multi_range(struct FE_element *element,
+	void *multi_range_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Conditional function returning true if <element> is either not a CM_ELEMENT
+or whose number is NOT in the <multi_range>.
+==============================================================================*/
+{
+	int return_code;
+	struct Multi_range *multi_range;
+
+	ENTER(FE_element_is_not_top_level_in_Multi_range);
+	if (element&&(multi_range=(struct Multi_range *)multi_range_void))
+	{
+		return_code = (CM_ELEMENT != element->cm.type) ||
+			(!Multi_range_is_value_in_range(multi_range,element->cm.number));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_is_not_top_level_in_Multi_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_is_not_top_level_in_Multi_range */
+
 int add_FE_element_line_number_to_Multi_range(struct FE_element *element,
 	void *multi_range_void)
 /*******************************************************************************
@@ -23123,6 +23183,106 @@ Returns true if <element> is in <element_group>.
 
 	return (return_code);
 } /* FE_element_is_in_group */
+
+int FE_element_is_in_list(struct FE_element *element,void *element_list_void)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Returns true if <element> is in <element_list>.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_element) *element_list;
+
+	ENTER(FE_element_is_in_list);
+	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
+	{
+		return_code=IS_OBJECT_IN_LIST(FE_element)(element,element_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_is_in_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_is_in_list */
+
+static int FE_element_parent_has_top_level_parent_not_in_list(
+	struct FE_element_parent *element_parent,void *element_list_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns true if the parent element referred to by the <element_parent> is
+top_level and NOT in the <element_list> or is not top_level and has a parent
+element that is not in the <element_list>.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_element) *element_list;
+
+	ENTER(FE_element_parent_has_top_level_parent_not_in_list);
+	if (element_parent&&element_parent->parent&&
+		(element_list=(struct LIST(FE_element) *)element_list_void))
+	{
+		return_code = !FE_element_has_all_top_level_parents_in_list(
+			element_parent->parent,element_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_parent_has_top_level_parent_not_in_list.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* FE_element_parent_has_top_level_parent_not_in_list */
+
+int FE_element_has_all_top_level_parents_in_list(
+	struct FE_element *element,void *element_list_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns true if <element> is a top_level_element in <element_list>, or all its
+top_level_parents are in the list.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_element) *element_list;
+
+	ENTER(FE_element_has_all_top_level_parents_in_list);
+	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
+	{
+		if (CM_ELEMENT==element->cm.type)
+		{
+			return_code=IS_OBJECT_IN_LIST(FE_element)(element,element_list);
+		}
+		else
+		{
+			/* satisfied if cannot find a single parent that does not match this
+				 criteria */
+			return_code = (struct FE_element_parent *)NULL ==
+				FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+					FE_element_parent_has_top_level_parent_not_in_list,
+					(void *)element_list,element->parent_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_has_all_top_level_parents_in_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_has_all_top_level_parents_in_list */
 
 int add_FE_element_and_faces_to_group(struct FE_element *element,
 	struct GROUP(FE_element) *element_group)
@@ -23535,13 +23695,121 @@ Notes:
 	return (return_code);
 } /* remove_FE_element_and_faces_from_group */
 
+static int FE_element_parent_has_other_parent(
+	struct FE_element_parent *element_parent,void *first_parent_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns true if the parent element referred to by the <element_parent> is
+of the same CM_element_type as first_parent_void yet not the same.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element *first_parent;
+
+	ENTER(FE_element_parent_has_other_parent);
+	if (element_parent&&element_parent->parent&&
+		(first_parent=(struct FE_element *)first_parent_void))
+	{
+		return_code = ((element_parent->parent->cm.type == first_parent->cm.type)&&
+			(element_parent->parent != first_parent))||
+			FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+				FE_element_parent_has_other_parent,first_parent_void,
+				element_parent->parent->parent_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_parent_has_other_parent.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* FE_element_parent_has_other_parent */
+
+int FE_element_has_other_parent_or_can_be_destroyed(struct FE_element *element,
+	struct FE_element *first_parent)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns true if a different parent of the same CM_element_type as <first_parent>
+can be found for <element>, or <element> itself can be destroyed.
+Notes:
+- Faces do not access their parents - see CREATE(FE_element_parent).
+- Called by FE_element_can_be_destroyed to ensure that all faces and lines in
+  it can either be destroyed with it or left on there own due to the presence
+  of other parent elements.
+- This function is recursive.
+==============================================================================*/
+{
+	int i,parent_access_count,return_code;
+	struct FE_element **face;
+
+	ENTER(FE_element_has_other_parent_or_can_be_destroyed);
+	if (element&&element->shape)
+	{
+		if (FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+			FE_element_parent_has_other_parent,(void *)first_parent,
+			element->parent_list))
+		{
+			return_code=1;
+		}
+		else
+		{
+			/* valid access count is 1 from manager and 1 from each parent */
+			parent_access_count=
+				NUMBER_IN_LIST(FE_element_parent)(element->parent_list);
+			if ((1+parent_access_count)==element->access_count)
+			{
+				/* ensure all faces (and their faces) satisfy this function too */
+				return_code=1;
+				if (face=element->faces)
+				{
+					for (i=element->shape->number_of_faces;(0<i)&&return_code;i--)
+					{
+						if (*face)
+						{
+							return_code=FE_element_has_other_parent_or_can_be_destroyed(
+								*face,first_parent);
+						}
+					}
+					face++;
+				}
+			}
+			else
+			{
+				if (parent_access_count >= element->access_count)
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_element_has_other_parent_or_can_be_destroyed.  "
+						"Access count of %d is less sum of manager(1) and parents(%d)",
+						element->access_count,parent_access_count);
+				}
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_has_other_parent_or_can_be_destroyed.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_has_other_parent_or_can_be_destroyed */
+
 int FE_element_can_be_destroyed(struct FE_element *element)
 /*******************************************************************************
-LAST MODIFIED : 29 April 1999
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Returns true if the <element> is only accessed by its manager (ie. starting
-access count of 1) and its parents, and that the same is true for its faces.
+access count of 1) and its parents, and that either all its faces have other
+parents or can themselves be destroyed.
 Notes:
 - Faces do not access their parents - see CREATE(FE_element_parent).
 - Ensure this function returns true before passing the element to
@@ -23559,7 +23827,8 @@ Notes:
 		parent_access_count=NUMBER_IN_LIST(FE_element_parent)(element->parent_list);
 		if ((1+parent_access_count)==element->access_count)
 		{
-			/* ensure all faces (and their faces) can be destroyed too */
+			/* ensure all faces (and their faces) either have another parent to
+				 hang around with, or can be destroyed with this element */
 			return_code=1;
 			if (face=element->faces)
 			{
@@ -23567,10 +23836,8 @@ Notes:
 				{
 					if (*face)
 					{
-						if (!FE_element_can_be_destroyed(*face))
-						{
-							return_code=0;
-						}
+						return_code=
+							FE_element_has_other_parent_or_can_be_destroyed(*face,element);
 					}
 					face++;
 				}
@@ -23601,7 +23868,7 @@ Notes:
 int remove_FE_element_and_faces_from_manager(struct FE_element *element,
 	struct MANAGER(FE_element) *element_manager)
 /*******************************************************************************
-LAST MODIFIED : 16 April 1999
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Removes <element> and all its faces that are not shared with other elements in
@@ -23632,12 +23899,23 @@ Notes:
 		/* get faces to remove themselves */
 		if (face=element->faces)
 		{
-			for (i=element->shape->number_of_faces;(0<i)&&return_code;i--)
+			for (i=0;(i<element->shape->number_of_faces)&&return_code;i++)
 			{
 				if (*face)
 				{
-					return_code=
-						remove_FE_element_and_faces_from_manager(*face,element_manager);
+					/* either leave the face with another parent, or remove it from
+						 the manager */
+					if (FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+						FE_element_parent_has_other_parent,(void *)element,
+						(*face)->parent_list))
+					{
+						set_FE_element_face(element,i,(struct FE_element *)NULL);
+					}
+					else
+					{
+						return_code=
+							remove_FE_element_and_faces_from_manager(*face,element_manager);
+					}
 				}
 				face++;
 			}
@@ -25024,6 +25302,35 @@ Outputs the name of the <element_group>.
 
 	return (return_code);
 } /* list_group_FE_element_name */
+
+int FE_element_group_intersects_list(struct GROUP(FE_element) *element_group,
+	void *element_list_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns true if <element_group> contains any elements in <element_list>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_group_intersects_list);
+	if (element_group&&element_list_void)
+	{
+		return_code = (struct FE_element *)NULL !=
+			FIRST_OBJECT_IN_GROUP_THAT(FE_element)(FE_element_is_in_list,
+				element_list_void,element_group);
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,
+			"FE_element_group_intersects_list.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_group_intersects_list */
 
 #if defined (OLD_CODE)
 int theta_increasing_in_xi1(struct FE_element_field_component *component,
@@ -32353,6 +32660,57 @@ Iterator function for adding <element> to <element_list> if not currently in it.
 
 	return (return_code);
 } /* ensure_FE_element_is_in_list */
+
+int ensure_FE_element_is_in_list_conditional(struct FE_element *element,
+	void *list_conditional_data_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Iterator function for adding <element> to a list - if not already in it - if a
+conditional function with user_data is true.
+The element_list, conditional function and user_data are passed in a
+struct FE_element_list_conditional_data * in the second argument.
+Warning: Must not be iterating over the list being added to!
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element_list_conditional_data *list_conditional_data;
+
+	ENTER(ensure_FE_element_is_in_list_conditional);
+	if (element&&(list_conditional_data=
+		(struct FE_element_list_conditional_data *)list_conditional_data_void)&&
+		list_conditional_data->element_list&&list_conditional_data->function)
+	{
+		if ((list_conditional_data->function)(element,
+			list_conditional_data->user_data))
+		{
+			if (!IS_OBJECT_IN_LIST(FE_element)(element,
+				list_conditional_data->element_list))
+			{
+				return_code=ADD_OBJECT_TO_LIST(FE_element)(element,
+					list_conditional_data->element_list);
+			}
+			else
+			{
+				return_code=1;
+			}
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ensure_FE_element_is_in_list_conditional.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* ensure_FE_element_is_in_list_conditional */
 
 int ensure_FE_element_is_not_in_list(struct FE_element *element,
 	void *element_list_void)
