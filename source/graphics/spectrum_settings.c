@@ -2209,45 +2209,59 @@ passed in render data.
 				((data_component<=settings->maximum)||settings->extend_above))
 			{
 				/* first get value (normalised 0 to 1) from type */
-				switch (settings->settings_type)
+				if (settings->maximum != settings->minimum)
 				{
-					case SPECTRUM_LINEAR:
+					switch (settings->settings_type)
 					{
-						value=(data_component-settings->minimum)/
-							(settings->maximum-settings->minimum);
-					} break;
-					case SPECTRUM_LOG:
-					{
-						if (settings->exaggeration<0)
+						case SPECTRUM_LINEAR:
 						{
-							value=1.0-log(1-settings->exaggeration*
-								(settings->maximum-data_component)/
-								(settings->maximum-settings->minimum))/
-								log(1-settings->exaggeration);
-						}
-						else
+							value=(data_component-settings->minimum)/
+								(settings->maximum-settings->minimum);
+						} break;
+						case SPECTRUM_LOG:
 						{
-							value=log(1+settings->exaggeration*
-								(data_component-settings->minimum)/
-								(settings->maximum-settings->minimum))/
-								log(1+settings->exaggeration);
-						}
-					} break;
-					default:
+							if (settings->exaggeration<0)
+							{
+								value=1.0-log(1-settings->exaggeration*
+									(settings->maximum-data_component)/
+									(settings->maximum-settings->minimum))/
+									log(1-settings->exaggeration);
+							}
+							else
+							{
+								value=log(1+settings->exaggeration*
+									(data_component-settings->minimum)/
+									(settings->maximum-settings->minimum))/
+									log(1+settings->exaggeration);
+							}
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"Spectrum_settings_activate.  Unknown type");
+							return_code=0;
+						} break;
+					}
+					/* ensure 0 - 1 */
+					if (value>1.0)
 					{
-						display_message(ERROR_MESSAGE,
-							"Spectrum_settings_activate.  Unknown type");
-						return_code=0;
-					} break;
+						value=1.0;
+					}
+					if (value<0.0)
+					{
+						value=0.0;
+					}
 				}
-				/* ensure 0 - 1 */
-				if (value>1.0)
+				else
 				{
-					value=1.0;
-				}
-				if (value<0.0)
-				{
-					value=0.0;
+					if (data_component <= settings->minimum)
+					{
+						value = 0.0;
+					}
+					else
+					{
+						value = 1.0;
+					}
 				}
 				/* reverse the direction if necessary */
 				if (settings->reverse)
