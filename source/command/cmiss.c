@@ -9979,7 +9979,7 @@ Executes an ATTACH command.
 			option_table = CREATE(Option_table)();
 			Option_table_add_entry(option_table,"end_detection", &end_detection, 
 				NULL, set_char_flag);
-			Option_table_add_entry(option_table,"perl_action", &perl_action, NULL,
+			Option_table_add_entry(option_table,"perl_action", &perl_action, (void *)1,
 				set_name);
 			Option_table_add_entry(option_table,"start_detection", &start_detection,
 				NULL, set_char_flag);
@@ -10055,7 +10055,28 @@ Executes a DETACH command.
 					if (device=FIND_BY_IDENTIFIER_IN_LIST(Io_device, name)
 						(current_token,command_data->device_list))
 					{
-						return_code=shift_Parse_state(state,1);
+						if (REMOVE_OBJECT_FROM_LIST(Io_device)(device,
+							command_data->device_list))
+						{
+							if (DESTROY(Io_device)(&device))
+							{
+								return_code = 1;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"execute_command_detach.  Unable to destroy device %s.",
+									current_token);
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"execute_command_detach.  Unable to remove device %s.",
+								current_token);
+							return_code=0;
+						}
 					}
 					else
 					{
@@ -10087,8 +10108,6 @@ Executes a DETACH command.
 		}
 		if (return_code)
 		{
-			REMOVE_OBJECT_FROM_LIST(Io_device)(device, command_data->device_list);
-			DESTROY(Io_device)(&device);
 		}
 	}
 	else
