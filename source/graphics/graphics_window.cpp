@@ -2274,7 +2274,7 @@ view angle, interest point etc.
 					distorting_relative_viewport_flag))
 				{
 					display_message(WARNING_MESSAGE,
-						"Only one of absolute_viewport/distoring_relative_viewport/relative_viewport");
+						"Only one of absolute_viewport/distorting_relative_viewport/relative_viewport");
 					absolute_viewport_flag=0;
 					distorting_relative_viewport_flag=0;
 					relative_viewport_flag=0;
