@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 18 February 2000
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -3798,9 +3798,8 @@ LAST MODIFIED : 31 December 1996
 
 DESCRIPTION :
 This function allocates memory for a signal buffer to hold the specified
-<value_type>, <number_of_signals> and <number_of_samples>.  It initializes the
-fields to specified values.  It returns a pointer to the created signal buffer
-if successful and NULL if unsuccessful.
+<value_type>, <number_of_signals> and <number_of_samples>.  It returns a pointer
+to the created signal buffer if successful and NULL if unsuccessful.
 ==============================================================================*/
 {
 	struct Signal_buffer *buffer;
@@ -3859,6 +3858,146 @@ if successful and NULL if unsuccessful.
 
 	return (buffer);
 } /* create_Signal_buffer */
+
+struct Signal_buffer *reallocate_Signal_buffer(
+	struct Signal_buffer *signal_buffer,enum Signal_value_type value_type,
+	int number_of_signals,int number_of_samples,float frequency)
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+This function reallocates memory for a signal <buffer> to hold the specified
+<value_type>, <number_of_signals> and <number_of_samples>.  It returns a pointer
+to the created signal buffer if successful and NULL if unsuccessful.
+==============================================================================*/
+{
+	float *float_values;
+	int *new_times,*times;
+	short int *short_int_values;
+	struct Signal_buffer *buffer;
+
+	ENTER(reallocate_Signal_buffer);
+	/* check arguments */
+	if (((SHORT_INT_VALUE==value_type)||(FLOAT_VALUE==value_type))&&
+		(number_of_signals>0)&&(number_of_samples>0)&&(frequency>0))
+	{
+		if (buffer=signal_buffer)
+		{
+			if (number_of_samples!=buffer->number_of_samples)
+			{
+				ALLOCATE(new_times,int,number_of_samples);
+				times=new_times;
+			}
+			else
+			{
+				new_times=(int *)NULL;
+				times=buffer->times;
+			}
+			if (times)
+			{
+				if ((value_type!=buffer->value_type)||
+					(number_of_signals!=buffer->number_of_signals)||
+					(number_of_samples!=buffer->number_of_samples))
+				{
+					if (SHORT_INT_VALUE==value_type)
+					{
+						if (SHORT_INT_VALUE==buffer->value_type)
+						{
+							float_values=(float *)NULL;
+							REALLOCATE(short_int_values,buffer->signals.short_int_values,
+								short int,number_of_samples*number_of_signals);
+						}
+						else
+						{
+							float_values=(float *)NULL;
+							REALLOCATE(short_int_values,buffer->signals.float_values,
+								short int,number_of_samples*number_of_signals);
+						}
+					}
+					else
+					{
+						if (SHORT_INT_VALUE==buffer->value_type)
+						{
+							REALLOCATE(float_values,buffer->signals.short_int_values,float,
+								number_of_samples*number_of_signals);
+							short_int_values=(short int *)NULL;
+						}
+						else
+						{
+							REALLOCATE(float_values,buffer->signals.float_values,float,
+								number_of_samples*number_of_signals);
+							short_int_values=(short int *)NULL;
+						}
+					}
+				}
+				else
+				{
+					if (SHORT_INT_VALUE==value_type)
+					{
+						float_values=(float *)NULL;
+						short_int_values=buffer->signals.short_int_values;
+					}
+					else
+					{
+						float_values=buffer->signals.float_values;
+						short_int_values=(short int *)NULL;
+					}
+				}
+				if (float_values||short_int_values)
+				{
+					buffer->number_of_signals=number_of_signals;
+					buffer->number_of_samples=number_of_samples;
+					buffer->frequency=frequency;
+					buffer->start=0;
+					buffer->end=number_of_samples-1;
+					buffer->value_type=value_type;
+					if (new_times)
+					{
+						DEALLOCATE(buffer->times);
+						buffer->times=new_times;
+					}
+					if (SHORT_INT_VALUE==value_type)
+					{
+						buffer->signals.short_int_values=short_int_values;
+					}
+					else
+					{
+						buffer->signals.float_values=float_values;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"reallocate_Signal_buffer.  Could not allocate signals");
+					DEALLOCATE(new_times);
+					buffer=(struct Signal_buffer *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"reallocate_Signal_buffer.  Could not allocate times");
+				buffer=(struct Signal_buffer *)NULL;
+			}
+		}
+		else
+		{
+			buffer=create_Signal_buffer(value_type,number_of_signals,
+				number_of_samples,frequency);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"reallocate_Signal_buffer.  Invalid argument(s).  %d (%d %d) %d %d %g",
+			value_type,SHORT_INT_VALUE,FLOAT_VALUE,number_of_signals,
+			number_of_samples,frequency);
+		buffer=(struct Signal_buffer *)NULL;
+	}
+	LEAVE;
+
+	return (buffer);
+} /* reallocate_Signal_buffer */
 
 int destroy_Signal_buffer(struct Signal_buffer **buffer)
 /*******************************************************************************

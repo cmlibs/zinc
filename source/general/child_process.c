@@ -185,7 +185,10 @@ isn't recieved in the <timeout> limit then the function returns NULL.
 				if (return_string)
 				{
 					flags = fcntl (child_process->stdout_filedes, F_GETFL);
-					flags &= FNDELAY;
+					/*???DB.  Wouldn't compile at home.  O_NDELAY is equivalent to
+						FNDELAY */
+/*					flags &= FNDELAY;*/
+					flags &= O_NDELAY;
 					fcntl (child_process->stdout_filedes, F_SETFL, flags);
 					timeout_struct.tv_sec = timeout;
 					timeout_struct.tv_usec = 10000;

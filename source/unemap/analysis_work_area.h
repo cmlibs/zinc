@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.h
 
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -28,7 +28,7 @@ Global types
 */
 struct Analysis_work_area
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -53,7 +53,6 @@ DESCRIPTION :
 	int potential_time;
 	int minimum_separation,threshold;
 	float level;
-	int level_width;
 	enum Datum_type datum_type;
 	enum Edit_order edit_order;
 	enum Signal_order signal_order;
@@ -71,7 +70,7 @@ DESCRIPTION :
 	char *configuration_file_extension,*postscript_file_extension;
 	/* user settings */
 	char *events_file_extension;
-	int gradient_average_width;
+	int average_width;
 	Pixel identifying_colour;
 	/* these flags ensure that when the next update occurs the XOR graphics are
 		drawn correctly */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -687,7 +687,7 @@ Finds the id of the analysis file save times button.
 static int write_times_undecided_accepted(char *file_name,
 	void *analysis_window)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -767,7 +767,7 @@ DESCRIPTION :
 								frequency);
 							/* write the level */
 							fprintf(output_file,"level : %g, width : %d\n",
-								*(analysis->level),*(analysis->level_width));
+								*(analysis->level),*(analysis->average_width));
 						} break;
 						case EDA_THRESHOLD:
 						{
@@ -914,7 +914,7 @@ DESCRIPTION :
 static int write_times_undecided_rejected(char *file_name,
 	void *analysis_window)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -995,7 +995,7 @@ DESCRIPTION :
 								frequency);
 							/* write the level */
 							fprintf(output_file,"level : %g, width : %d\n",
-								*(analysis->level),*(analysis->level_width));
+								*(analysis->level),*(analysis->average_width));
 						} break;
 						case EDA_THRESHOLD:
 						{
@@ -3291,7 +3291,7 @@ struct Analysis_window *create_Analysis_window(
 	struct Device ***highlight,int *datum,int *event_number,
 	int *number_of_events,int *potential_time,
 	enum Event_detection_algorithm *detection,int *threshold,
-	int *minimum_separation,float *level,int *level_width,
+	int *minimum_separation,float *level,int *average_width,
 	Pixel identifying_colour,enum Signal_order order,enum Signal_layout layout,
 	int *start_search_interval,int **search_interval_divisions,
 	int *end_search_interval,int screen_height,
@@ -3300,7 +3300,7 @@ struct Analysis_window *create_Analysis_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 This function allocates the memory for an analysis window and sets the fields
@@ -3501,7 +3501,7 @@ returned.
 				analysis->threshold=threshold;
 				analysis->minimum_separation=minimum_separation;
 				analysis->level=level;
-				analysis->level_width=level_width;
+				analysis->average_width=average_width;
 				analysis->start_search_interval=start_search_interval;
 				analysis->search_interval_divisions=search_interval_divisions;
 				analysis->end_search_interval=end_search_interval;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : biosense2sig.c
 
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 24 February 2000
 
 DESCRIPTION :
 Converts a a Biosense location and activation time file to a signal file.
@@ -95,7 +95,7 @@ named file.
 							if (!((1==BINARY_FILE_WRITE((char *)&temp_int,sizeof(int),1,
 								output_file))&&(1==BINARY_FILE_WRITE((char *)&(analysis->level),
 								sizeof(float),1,output_file))&&(1==BINARY_FILE_WRITE(
-								(char *)&(analysis->level_width),sizeof(int),1,output_file))))
+								(char *)&(analysis->average_width),sizeof(int),1,output_file))))
 							{
 								return_code=0;
 								display_message(ERROR_MESSAGE,

@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : trace_window.uil
 !
-!LAST MODIFIED : 5 January 2000
+!LAST MODIFIED : 22 February 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the trace window in the analysis work area.
@@ -62,7 +62,8 @@ procedure
 	identify_trace_enlarge_events_u;
 	increment_number_of_events;
 	identify_trace_enlarge_level_va;
-	identify_trace_enlarge_level_wi;
+	identify_trace_enlarge_averagew;
+	change_average_width;
 	identify_trace_enlarge_thresh_s;
 	change_threshold;
 	identify_trace_enlarge_thresh_l;
@@ -119,6 +120,8 @@ procedure
 	set_edit_order_device;
 	identify_edit_order_beat_button;
 	set_edit_order_beat;
+	identify_trace_edit_objective_t;
+	change_edit_objective_toggle;
 	identify_trace_frequency_menu;
 	identify_trace_frequency_choice;
 	identify_amplitude_phase_button;
@@ -535,7 +538,7 @@ object
 			XmOptionMenu trace_enlarge_datum_choice;
 			XmForm trace_enlarge_events_number;
 			XmTextField trace_enlarge_level_value;
-			XmTextField trace_enlarge_level_width;
+			XmTextField trace_enlarge_average_width;
 			XmScrollBar trace_enlarge_threshold_scroll;
 			XmLabel trace_enlarge_threshold_label;
 			XmScrollBar trace_enlarge_separation_scroll;
@@ -646,6 +649,40 @@ object
 				};
 			};
 		};
+	trace_enlarge_average_width: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmOptionMenu trace_enlarge_detection_choice;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNmarginHeight = 5;
+			XmNhighlightThickness = 0;
+!			XmNmappedWhenManaged = false;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_trace_enlarge_averagew(trace_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				change_average_width(trace_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				change_average_width(trace_window_structure);
+				};
+			};
+		};
 	trace_enlarge_objective_choice: XmOptionMenu
 		{
 		arguments
@@ -654,7 +691,7 @@ object
 			XmNmarginWidth = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmOptionMenu trace_enlarge_detection_choice;
+			XmNleftWidget = XmTextField trace_enlarge_average_width;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
@@ -966,7 +1003,7 @@ object
 			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmOptionMenu trace_enlarge_detection_choice;
+			XmNleftWidget = XmTextField trace_enlarge_average_width;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
@@ -981,32 +1018,6 @@ object
 			MrmNcreateCallback = procedures
 				{
 				identify_trace_enlarge_level_va(trace_window_structure);
-				};
-			};
-		};
-	trace_enlarge_level_width: XmTextField
-		{
-		arguments
-			{
-			XmNcolumns = 8;
-			XmNfontList = button_font;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmTextField trace_enlarge_level_value;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			XmNmarginHeight = 5;
-			XmNhighlightThickness = 0;
-!			XmNmappedWhenManaged = false;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_trace_enlarge_level_wi(trace_window_structure);
 				};
 			};
 		};
@@ -1599,6 +1610,7 @@ object
 			XmPushButton trace_edit_accept_button;
 			XmPushButton trace_edit_reject_button;
 			XmOptionMenu trace_edit_order_choice;
+			XmToggleButton trace_edit_objective_toggle;
 !OLD_CODE begin
 !?????DB.  A bit of a hack to get accelerators for previous, next, accept and
 !?????  reject.  Required because Motif is so restrictive.
@@ -1937,6 +1949,37 @@ object
 			MrmNcreateCallback = procedures
 				{
 				identify_trace_edit_order_choic(trace_window_structure);
+				};
+			};
+		};
+	trace_edit_objective_toggle: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Objective");
+			XmNfontList = button_font;
+			XmNsensitive = true;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmOptionMenu trace_edit_order_choice;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_trace_edit_objective_t(trace_window_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				change_edit_objective_toggle(trace_window_structure);
 				};
 			};
 		};

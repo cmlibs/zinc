@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -920,7 +920,7 @@ struct System_window *create_System_window(Widget shell,
 	XtCallbackProc close_button_callback,struct Time_keeper *time_keeper,
 	struct User_interface *user_interface,struct Unemap_package *unemap_package)
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 This function allocates the memory for a system window structure.  It then
@@ -1022,7 +1022,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 			XmCGradientAverageWidth,
 			XmRInt,
 			sizeof(int),
-			XtOffsetOf(System_window_settings,analysis.gradient_average_width),
+			XtOffsetOf(System_window_settings,analysis.average_width),
 			XmRString,
 			"6"
 		},
@@ -1185,7 +1185,6 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				/* retrieve the settings */
 				XtVaGetApplicationResources(user_interface->application_shell,
 					system,resources,XtNumber(resources),NULL);
-				system->analysis.level_width=system->analysis.gradient_average_width;
 				if (system->configuration_file_extension)
 				{
 					if (0<strlen(system->configuration_file_extension))

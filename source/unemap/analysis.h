@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.h
 
-LAST MODIFIED : 11 January 2000
+LAST MODIFIED : 15 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -140,6 +140,7 @@ Information needed for drawing a signal.  Windowing system dependent
 Global functions
 ----------------
 */
+#if defined (OLD_CODE)
 int calculate_device_event_markers(struct Device *device,int start_search,
 	int end_search,enum Event_detection_algorithm detection,
 	enum Event_detection_objective objective,int number_of_events,
@@ -151,6 +152,34 @@ LAST MODIFIED : 30 November 1999
 DESCRIPTION :
 Calculate the positions of the event markers for a signal/<device> based upon
 the the start and end times, the number of events and the search algorithm.
+==============================================================================*/
+#endif /* defined (OLD_CODE) */
+
+int calculate_device_objective(struct Device *device,
+	enum Event_detection_algorithm detection,
+	enum Event_detection_objective objective,float *objective_values,
+	int number_of_objective_values,int objective_values_step,int average_width);
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+Calculates the specified <objective>/<detection> function for the <device>.
+Storing the values in the array (<objective_values> every
+<objective_values_step>) provided.
+==============================================================================*/
+
+int calculate_device_event_markers(struct Device *device,int start_search,
+	int end_search,enum Event_detection_algorithm detection,
+	float *objective_values,int number_of_objective_values,
+	int objective_values_step,int number_of_events,int threshold_percentage,
+	int minimum_separation_milliseconds,float level);
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+Calculate the positions of the event markers for a signal/<device> based upon
+the the start and end times, the number of events, the <detection> algorithm and
+the <objective_values>.
 ==============================================================================*/
 
 int draw_signal(struct FE_node *device_node,

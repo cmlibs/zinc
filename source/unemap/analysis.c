@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 11 January 2000
+LAST MODIFIED : 15 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -64,6 +64,7 @@ and the <max_tick_mark>.
 Global functions
 ----------------
 */
+#if defined (OLD_CODE)
 int calculate_device_event_markers(struct Device *device,int start_search,
 	int end_search,enum Event_detection_algorithm detection,
 	enum Event_detection_objective objective,int number_of_events,
@@ -1881,6 +1882,617 @@ the the start and end times, the number of events and the search algorithm.
 
 	return (return_code);
 } /* calculate_device_event_markers */
+#endif /* defined (OLD_CODE) */
+
+int calculate_device_objective(struct Device *device,
+	enum Event_detection_algorithm detection,
+	enum Event_detection_objective objective,float *objective_values,
+	int number_of_objective_values,int objective_values_step,int average_width)
+/*******************************************************************************
+LAST MODIFIED : 22 February 2000
+
+DESCRIPTION :
+Calculates the specified <objective>/<detection> function for the <device>.
+Storing the values in the array (<objective_values> every
+<objective_values_step>) provided.
+==============================================================================*/
+{
+	float average_after,*average_after_value,average_before,first_value,
+		*float_value,last_value,objective_maximum,objective_minimum,
+		*objective_value,*save_value,*save_values,scale,signal_maximum,
+		signal_minimum,temp_value;
+	int i,number_of_samples,number_of_signals,return_code;
+	short *short_value;
+	struct Signal *signal;
+	struct Signal_buffer *buffer;
+
+	ENTER(calculate_device_objective);
+	number_of_samples=0;
+	return_code=0;
+	if (device&&(signal=device->signal)&&(buffer=signal->buffer)&&
+		(0<(number_of_samples=buffer->number_of_samples))&&
+		(((SHORT_INT_VALUE==buffer->value_type)&&
+		(buffer->signals.short_int_values))||((FLOAT_VALUE==buffer->value_type)&&
+		(buffer->signals.float_values)))&&objective_values&&
+		(number_of_samples<=number_of_objective_values)&&(0<objective_values_step)&&
+		(0<average_width))
+	{
+		if (ALLOCATE(save_values,float,average_width))
+		{
+			number_of_signals=signal->buffer->number_of_signals;
+			objective_value=objective_values;
+			switch (buffer->value_type)
+			{
+				case SHORT_INT_VALUE:
+				{
+					short_value=(buffer->signals.short_int_values)+(signal->index);
+					signal_maximum=(float)(*short_value);
+					signal_minimum=signal_maximum;
+					for (i=number_of_samples;i>0;i--)
+					{
+						*objective_value=(float)(*short_value);
+						if (*objective_value>signal_maximum)
+						{
+							signal_maximum= *objective_value;
+						}
+						else
+						{
+							if (*objective_value<signal_minimum)
+							{
+								signal_minimum= *objective_value;
+							}
+						}
+						short_value += number_of_signals;
+						objective_value += objective_values_step;
+					}
+				} break;
+				case FLOAT_VALUE:
+				{
+					float_value=(buffer->signals.float_values)+(signal->index);
+					signal_maximum= *float_value;
+					signal_minimum=signal_maximum;
+					for (i=number_of_samples;i>0;i--)
+					{
+						*objective_value=(float)(*float_value);
+						if (*objective_value>signal_maximum)
+						{
+							signal_maximum= *objective_value;
+						}
+						else
+						{
+							if (*objective_value<signal_minimum)
+							{
+								signal_minimum= *objective_value;
+							}
+						}
+						float_value += number_of_signals;
+						objective_value += objective_values_step;
+					}
+				} break;
+			}
+			/* calculate objective function */
+			objective_value=objective_values;
+			switch (detection)
+			{
+				case EDA_INTERVAL:
+				case EDA_THRESHOLD:
+				{
+					first_value=objective_values[0];
+					last_value=
+						objective_values[(number_of_samples-1)*objective_values_step];
+					save_value=save_values;
+					for (i=average_width;i>0;i--)
+					{
+						*save_value=first_value;
+						save_value++;
+					}
+					save_value=save_values;
+					average_before=first_value*(float)average_width;
+					average_after=0;
+					if (average_width<number_of_samples)
+					{
+						for (i=average_width;i>0;i--)
+						{
+							objective_value += objective_values_step;
+							average_after += *objective_value;
+						}
+						objective_value=objective_values;
+						average_after_value=objective_value+
+							(average_width*objective_values_step);
+						for (i=number_of_samples-average_width-1;i>0;i--)
+						{
+							temp_value=average_after-average_before;
+							average_before += (*objective_value)-(*save_value);
+							*save_value= *objective_value;
+							save_value++;
+							if (save_value-save_values>=average_width)
+							{
+								save_value=save_values;
+							}
+							*objective_value=temp_value;
+							objective_value += objective_values_step;
+							average_after_value += objective_values_step;
+							average_after += (*average_after_value)-(*objective_value);
+						}
+						for (i=average_width+1;i>0;i--)
+						{
+							temp_value=average_after-average_before;
+							average_before += (*objective_value)-(*save_value);
+							*save_value= *objective_value;
+							save_value++;
+							if (save_value-save_values>=average_width)
+							{
+								save_value=save_values;
+							}
+							*objective_value=temp_value;
+							objective_value += objective_values_step;
+							average_after += last_value-(*objective_value);
+						}
+					}
+					else
+					{
+						for (i=number_of_samples-1;i>0;i--)
+						{
+							objective_value += objective_values_step;
+							average_after += *objective_value;
+						}
+						average_after +=
+							last_value*(float)(average_width-(number_of_samples-1));
+						objective_value=objective_values;
+						for (i=number_of_samples;i>0;i--)
+						{
+							temp_value=average_after-average_before;
+							average_before += (*objective_value)-first_value;
+							*objective_value=temp_value;
+							objective_value += objective_values_step;
+							average_after += last_value-(*objective_value);
+						}
+					}
+					switch (objective)
+					{
+						case ABSOLUTE_SLOPE:
+						{
+							objective_value=objective_values;
+							objective_minimum=0;
+							objective_maximum=0;
+							for (i=number_of_samples;i>0;i--)
+							{
+								if (*objective_value<0)
+								{
+									*objective_value= -(*objective_value);
+								}
+								if (*objective_value>objective_maximum)
+								{
+									objective_maximum= *objective_value;
+								}
+								objective_value += objective_values_step;
+							}
+						} break;
+						case NEGATIVE_SLOPE:
+						{
+							objective_value=objective_values;
+							objective_minimum= -(*objective_value);
+							objective_maximum=objective_minimum;
+							for (i=number_of_samples;i>0;i--)
+							{
+								*objective_value= -(*objective_value);
+								if (*objective_value>objective_maximum)
+								{
+									objective_maximum= *objective_value;
+								}
+								else
+								{
+									if (*objective_value<objective_minimum)
+									{
+										objective_minimum= *objective_value;
+									}
+								}
+								objective_value += objective_values_step;
+							}
+						} break;
+						case POSITIVE_SLOPE:
+						{
+							objective_value=objective_values;
+							objective_minimum= *objective_value;
+							objective_maximum=objective_minimum;
+							for (i=number_of_samples;i>0;i--)
+							{
+								if (*objective_value>objective_maximum)
+								{
+									objective_maximum= *objective_value;
+								}
+								else
+								{
+									if (*objective_value<objective_minimum)
+									{
+										objective_minimum= *objective_value;
+									}
+								}
+								objective_value += objective_values_step;
+							}
+						} break;
+					}
+					if (signal_maximum==signal_minimum)
+					{
+						signal_minimum -= 1;
+						signal_maximum += 1;
+					}
+					if (objective_maximum==objective_minimum)
+					{
+						objective_value=objective_values;
+						for (i=number_of_samples;i>0;i--)
+						{
+							*objective_value=signal_minimum;
+							objective_value += objective_values_step;
+						}
+					}
+					else
+					{
+						objective_value=objective_values;
+						scale=(signal_maximum-signal_minimum)/
+							(objective_maximum-objective_minimum);
+						for (i=number_of_samples;i>0;i--)
+						{
+							*objective_value=signal_minimum+
+								scale*((*objective_value)-objective_minimum);
+							objective_value += objective_values_step;
+						}
+					}
+				} break;
+				case EDA_LEVEL:
+				{
+					/* take absolute value */
+					for (i=number_of_samples;i>0;i--)
+					{
+						if (*objective_value<0)
+						{
+							*objective_value= -(*objective_value);
+						}
+						objective_value += objective_values_step;
+					}
+					/* take moving average */
+					objective_value=objective_values;
+					first_value=objective_values[0];
+					last_value=
+						objective_values[(number_of_samples-1)*objective_values_step];
+					save_value=save_values;
+					for (i=average_width;i>0;i--)
+					{
+						*save_value=first_value;
+						save_value++;
+					}
+					save_value=save_values;
+					average_before=first_value*(float)average_width;
+					average_after=0;
+					if (average_width<number_of_samples)
+					{
+						for (i=average_width;i>0;i--)
+						{
+							objective_value += objective_values_step;
+							average_after += *objective_value;
+						}
+						objective_value=objective_values;
+						average_after_value=objective_value+
+							(average_width*objective_values_step);
+						for (i=number_of_samples-average_width-1;i>0;i--)
+						{
+							temp_value=average_after+(*objective_value)+average_before;
+							average_before += (*objective_value)-(*save_value);
+							*save_value= *objective_value;
+							save_value++;
+							if (save_value-save_values>=average_width)
+							{
+								save_value=save_values;
+							}
+							*objective_value=temp_value;
+							objective_value += objective_values_step;
+							average_after_value += objective_values_step;
+							average_after += (*average_after_value)-(*objective_value);
+						}
+						for (i=average_width+1;i>0;i--)
+						{
+							temp_value=average_after+(*objective_value)+average_before;
+							average_before += (*objective_value)-(*save_value);
+							*save_value= *objective_value;
+							save_value++;
+							if (save_value-save_values>=average_width)
+							{
+								save_value=save_values;
+							}
+							*objective_value=temp_value;
+							objective_value += objective_values_step;
+							average_after += last_value-(*objective_value);
+						}
+					}
+					else
+					{
+						for (i=number_of_samples-1;i>0;i--)
+						{
+							objective_value += objective_values_step;
+							average_after += *objective_value;
+						}
+						average_after +=
+							last_value*(float)(average_width-(number_of_samples-1));
+						objective_value=objective_values;
+						for (i=number_of_samples;i>0;i--)
+						{
+							temp_value=average_after+(*objective_value)+average_before;
+							average_before += (*objective_value)-first_value;
+							*objective_value=temp_value;
+							objective_value += objective_values_step;
+							average_after += last_value-(*objective_value);
+						}
+					}
+					objective_value=objective_values;
+					temp_value=(float)(2*average_width+1);
+					for (i=number_of_samples;i>0;i--)
+					{
+						*objective_value /= temp_value;
+						objective_value += objective_values_step;
+					}
+				} break;
+			}
+			DEALLOCATE(save_values);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"calculate_device_objective.  Could not allocate save_values");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"calculate_device_objective.  Invalid argument(s).  %p %d %d %d",
+			objective_values,number_of_objective_values,objective_values_step,
+			number_of_samples);
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* calculate_device_objective */
+
+int calculate_device_event_markers(struct Device *device,int start_search,
+	int end_search,enum Event_detection_algorithm detection,
+	float *objective_values,int number_of_objective_values,
+	int objective_values_step,int number_of_events,int threshold_percentage,
+	int minimum_separation_milliseconds,float level)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+Calculate the positions of the event markers for a signal/<device> based upon
+the the start and end times, the number of events, the <detection> algorithm and
+the <objective_values>.
+==============================================================================*/
+{
+	float maximum_objective,minimum_objective,*objective_value,threshold;
+	int event_number,interval_end,maximum,minimum_separation,no_maximum,present,
+		return_code;
+	struct Event *event,**event_next;
+	struct Signal *signal;
+	struct Signal_buffer *buffer;
+
+	ENTER(calculate_device_event_markers);
+	signal=(struct Signal *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	if ((0<=start_search)&&(start_search<=end_search)&&device&&
+		(signal=device->signal)&&(buffer=signal->buffer)&&
+		(end_search<buffer->number_of_samples)&&
+		(((SHORT_INT_VALUE==buffer->value_type)&&
+		(buffer->signals.short_int_values))||((FLOAT_VALUE==buffer->value_type)&&
+		(buffer->signals.float_values)))&&(((EDA_INTERVAL==detection)&&
+		(0<number_of_events))||((EDA_LEVEL==detection)&&(0<=level))||
+		((EDA_THRESHOLD==detection)&&(0<=threshold_percentage)&&
+		(threshold_percentage<=100)&&(0<minimum_separation_milliseconds)))&&
+		objective_values&&(0<objective_values_step)&&(buffer->number_of_samples<=
+		number_of_objective_values))
+	{
+		/* free the previous events */
+		destroy_Event_list(&(signal->first_event));
+		objective_value=objective_values+(start_search*objective_values_step);
+		switch (detection)
+		{
+			case EDA_INTERVAL:
+			{
+				present=start_search;
+				event=(struct Event *)NULL;
+				event_next= &(signal->first_event);
+				event_number=1;
+				no_maximum=0;
+				do
+				{
+					maximum_objective= *objective_value;
+					maximum=present;
+					interval_end=SCALE_X(event_number,0,start_search,
+						SCALE_FACTOR(number_of_events,end_search-start_search));
+					while (present<interval_end)
+					{
+						present++;
+						objective_value += objective_values_step;
+						if ((maximum_objective< *objective_value)||no_maximum)
+						{
+							maximum_objective= *objective_value;;
+							maximum=present;
+							no_maximum=0;
+						}
+					}
+					if (event=create_Event(maximum,event_number,UNDECIDED,event,
+						(struct Event *)NULL))
+					{
+						*event_next=event;
+						event_next= &(event->next);
+						event_number++;
+						no_maximum=1;
+					}
+				}
+				while (event&&(event_number<=number_of_events));
+				if (event_number>number_of_events)
+				{
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_device_event_markers.  Could not allocate event");
+					destroy_Event_list(&(signal->first_event));
+					return_code=0;
+				}
+			} break;
+			case EDA_LEVEL:
+			{
+				present=start_search;
+				while ((present<end_search)&&(*objective_value<level))
+				{
+					present++;
+					objective_value += objective_values_step;
+				}
+				if (present<end_search)
+				{
+					/* found event */
+					if (event=create_Event(present,1,UNDECIDED,(struct Event *)NULL,
+						(struct Event *)NULL))
+					{
+						signal->first_event=event;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"calculate_device_event_markers.  Could not allocate event");
+						destroy_Event_list(&(signal->first_event));
+						return_code=0;
+					}
+				}
+			} break;
+			case EDA_THRESHOLD:
+			{
+				minimum_separation=(int)(((float)minimum_separation_milliseconds*
+					(buffer->frequency))/1000.);
+				/* determine the maximum */
+				present=start_search;
+				maximum_objective= *objective_value;
+				minimum_objective=maximum_objective;
+				while (present<end_search)
+				{
+					present++;
+					objective_value += objective_values_step;
+					if (maximum_objective< *objective_value)
+					{
+						maximum_objective= *objective_value;
+					}
+					if (*objective_value<minimum_objective)
+					{
+						minimum_objective= *objective_value;
+					}
+				}
+				threshold=(threshold_percentage*maximum_objective+
+					(100-threshold_percentage)*minimum_objective)/100;
+				/* determine the events */
+				present=start_search;
+				objective_value=objective_values+(start_search*objective_values_step);
+				if (*objective_value>=threshold)
+				{
+					maximum_objective= *objective_value;
+					maximum=present;
+					no_maximum=0;
+				}
+				else
+				{
+					maximum=start_search-1;
+					no_maximum=1;
+				}
+				event_number=1;
+				event=(struct Event *)NULL;
+				event_next= &(signal->first_event);
+				return_code=1;
+				while (return_code&&(present<end_search))
+				{
+					present++;
+					objective_value += objective_values_step;
+					if (*objective_value>=threshold)
+					{
+						if (!no_maximum&&(maximum>=start_search)&&
+							(minimum_separation<present-maximum))
+						{
+							if (event=create_Event(maximum,event_number,UNDECIDED,event,
+								(struct Event *)NULL))
+							{
+								*event_next=event;
+								event_next= &(event->next);
+								event_number++;
+								maximum=present;
+								maximum_objective= *objective_value;
+							}
+							else
+							{
+								return_code=0;
+								display_message(ERROR_MESSAGE,
+									"calculate_device_event_markers.  Could not allocate event");
+								destroy_Event_list(&(signal->first_event));
+								return_code=0;
+							}
+						}
+						else
+						{
+							if ((maximum_objective< *objective_value)||no_maximum)
+							{
+								maximum=present;
+								maximum_objective= *objective_value;
+								no_maximum=0;
+							}
+						}
+					}
+				}
+				if (return_code&&(maximum>=start_search))
+				{
+					if (event=create_Event(maximum,event_number,UNDECIDED,event,
+						(struct Event *)NULL))
+					{
+						*event_next=event;
+						event_next= &(event->next);
+						event_number++;
+					}
+					else
+					{
+						return_code=0;
+						display_message(ERROR_MESSAGE,
+							"calculate_device_event_markers.  Could not allocate event");
+						destroy_Event_list(&(signal->first_event));
+						return_code=0;
+					}
+				}
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+			"calculate_device_event_markers.  Invalid event detection algorithm");
+				return_code=0;
+			} break;
+		}
+	}
+	else
+	{
+		if (buffer)
+		{
+			display_message(ERROR_MESSAGE,
+				"calculate_device_event_markers.  Invalid argument(s).  %p %p %d %d",
+				signal,buffer,buffer->number_of_samples,number_of_objective_values);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"calculate_device_event_markers.  Invalid argument(s).  %p %p %d",
+				signal,buffer,number_of_objective_values);
+		}
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* calculate_device_event_markers */
 
 int draw_signal(struct FE_node *device_node,
 	struct Draw_package *draw_package,struct Device *device,
@@ -2546,7 +3158,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 								case UNDECIDED:
 								{
 									graphics_context=(signal_drawing_information->
-										graphics_context). signal_undecided_colour;
+										graphics_context).signal_undecided_colour;
 								} break;
 							}
 						}

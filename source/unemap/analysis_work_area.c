@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -49,12 +49,13 @@ DESCRIPTION :
 	- retain constant beat width version by having that when the number of
 		intervals is changed, it goes to constant width intervals
 		DONE
-	- be able to reject beats by rejecting the corresponding events (the nth
-		event corresponds to the nth beat)
-???DB.  What is the correspondence between beats and events?
+	- be able to reject beats by rejecting the corresponding events (the first
+		event in the beat)
+		DONE
 	- allow event editing in beat averaging
 	- save search/edit intervals when apply (for reset)
 	- add an "Overlay beats" check box
+		DONE
 5 Intended method of use
 	- read signal file
 	- pick a signal to use to determine the averaging intervals
@@ -87,9 +88,20 @@ DESCRIPTION :
 		from option menus
 	- increase the maximum number of beats to average over
 		DONE
-		???DB.  Linux version crashes when go past 9
 	- start_search_interval and end_search_interval assume no missing samples
 	- not updating beat window properly when reset (maybe others as well)
+
+???DB.  Displaying event detection objective
+1 Modify calculate_device_event_markers and processed_device(?) so that
+	processed_device (if passed) is filled with the objective function by 
+	calculate_device_event_markers.
+2 How to display objective?
+	Would be nice to have on same graph, but won't have same y-scale and not
+	another signal for highlight device (can't use overlay in draw_signal).
+	Always display processed device for event calculation (copy highlight_device
+	in?)
+	Could have another pane, but getting too many panes and objective not close
+	enough to signal.
 ==============================================================================*/
 #include <stddef.h>
 #include <stdlib.h>
@@ -1014,16 +1026,19 @@ DESCRIPTION :
 static void set_detection_interval(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 15 December 1999
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 Sets the detection algorithm to interval.
 ==============================================================================*/
 {
 	Dimension left_margin;
+	enum Event_detection_algorithm detection_old;
 	int widget_spacing;
 	struct Analysis_work_area *analysis;
+	struct Device *processed_device;
 	struct Enlarge_area *enlarge;
+	struct Signal_buffer *processed_buffer;
 	Widget child_widget;
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 	struct Map *map;
@@ -1073,7 +1088,6 @@ Sets the detection algorithm to interval.
 				XtUnmanageChild(enlarge->minimum_separation_label);
 				XtUnmanageChild(enlarge->all_current_choice);
 				XtUnmanageChild(enlarge->level_value);
-				XtUnmanageChild(enlarge->level_width);
 				XtManageChild(enlarge->number_of_events_form);
 				XtManageChild(enlarge->objective_choice);
 				enlarge->calculate_all_events=1;
@@ -1108,9 +1122,30 @@ Sets the detection algorithm to interval.
 				False);
 			analysis->calculate_events=0;
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+			detection_old=analysis->detection;
 			analysis->detection=EDA_INTERVAL;
 			if (analysis->trace)
 			{
+				if (EDA_THRESHOLD!=detection_old)
+				{
+					if ((processed_device=analysis->trace->processed_device)&&
+						(processed_device->signal)&&
+						(processed_buffer=processed_device->signal->buffer)&&
+						(processed_device->channel))
+					{
+						/* calculate objective function */
+						calculate_device_objective(processed_device,analysis->detection,
+							analysis->objective,((processed_buffer->signals).float_values)+
+							(processed_device->signal->next->index),
+							processed_buffer->number_of_samples,
+							processed_buffer->number_of_signals,analysis->average_width);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_detection_interval.  Missing processed_device");
+					}
+				}
 				trace_update_edit_interval(analysis->trace);
 				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)(analysis->trace),
 					(XtPointer)NULL);
@@ -1131,7 +1166,7 @@ Sets the detection algorithm to interval.
 static void set_detection_level(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 15 December 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Sets the detection algorithm to level.
@@ -1140,7 +1175,9 @@ Sets the detection algorithm to level.
 	Dimension left_margin;
 	int widget_spacing;
 	struct Analysis_work_area *analysis;
+	struct Device *processed_device;
 	struct Enlarge_area *enlarge;
+	struct Signal_buffer *processed_buffer;
 	Widget child_widget;
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 	struct Map *map;
@@ -1164,7 +1201,7 @@ Sets the detection algorithm to level.
 					XmNmenuHistory,enlarge->detection.level_button,
 					NULL);
 				XtVaSetValues(enlarge->calculate_button,
-					XmNleftWidget,enlarge->level_width,
+					XmNleftWidget,enlarge->level_value,
 					NULL);
 				child_widget=XmOptionLabelGadget(enlarge->datum_choice);
 				XtVaGetValues(child_widget,
@@ -1192,7 +1229,6 @@ Sets the detection algorithm to level.
 				XtUnmanageChild(enlarge->number_of_events_form);
 				XtUnmanageChild(enlarge->objective_choice);
 				XtManageChild(enlarge->level_value);
-				XtManageChild(enlarge->level_width);
 				enlarge->calculate_all_events=1;
 				if (analysis->event_number>analysis->number_of_events)
 				{
@@ -1241,6 +1277,29 @@ Sets the detection algorithm to level.
 			analysis->detection=EDA_LEVEL;
 			if (analysis->trace)
 			{
+				if ((processed_device=analysis->trace->processed_device)&&
+					(processed_device->signal)&&
+					(processed_buffer=processed_device->signal->buffer)&&
+					(processed_device->channel))
+				{
+					/* calculate objective function */
+					calculate_device_objective(processed_device,analysis->detection,
+						analysis->objective,((processed_buffer->signals).float_values)+
+						(processed_device->signal->next->index),
+						processed_buffer->number_of_samples,
+						processed_buffer->number_of_signals,analysis->average_width);
+					if (True==XmToggleButtonGadgetGetState((analysis->trace->area_3).
+						edit.objective_toggle))
+					{
+						redraw_trace_3_drawing_area((Widget)NULL,
+							(XtPointer)(analysis->trace),(XtPointer)NULL);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_detection_level.  Missing processed_device");
+				}
 				/* draw the search and edit interval boxes */
 				draw_search_box(enlarge->left_box,analysis->trace->area_1.axes_top,
 					enlarge->right_box-enlarge->left_box,
@@ -1269,16 +1328,19 @@ Sets the detection algorithm to level.
 static void set_detection_threshold(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 15 December 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Sets the detection algorithm to threshold.
 ==============================================================================*/
 {
 	Dimension left_margin,right_margin;
+	enum Event_detection_algorithm detection_old;
 	int widget_spacing;
 	struct Analysis_work_area *analysis;
+	struct Device *processed_device;
 	struct Enlarge_area *enlarge;
+	struct Signal_buffer *processed_buffer;
 	Widget child_widget;
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 	struct Map *map;
@@ -1327,7 +1389,6 @@ Sets the detection algorithm to threshold.
 						NULL);
 				}
 				XtUnmanageChild(enlarge->level_value);
-				XtUnmanageChild(enlarge->level_width);
 				XtUnmanageChild(enlarge->number_of_events_form);
 				XtManageChild(enlarge->threshold_scroll);
 				XtManageChild(enlarge->threshold_label);
@@ -1379,9 +1440,36 @@ Sets the detection algorithm to threshold.
 				True);
 			analysis->calculate_events=0;
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+			detection_old=analysis->detection;
 			analysis->detection=EDA_THRESHOLD;
 			if (analysis->trace)
 			{
+				if (EDA_INTERVAL!=detection_old)
+				{
+					if ((processed_device=analysis->trace->processed_device)&&
+						(processed_device->signal)&&
+						(processed_buffer=processed_device->signal->buffer)&&
+						(processed_device->channel))
+					{
+						/* calculate objective function */
+						calculate_device_objective(processed_device,analysis->detection,
+							analysis->objective,((processed_buffer->signals).float_values)+
+							(processed_device->signal->next->index),
+							processed_buffer->number_of_samples,
+							processed_buffer->number_of_signals,analysis->average_width);
+						if (True==XmToggleButtonGadgetGetState((analysis->trace->area_3).
+							edit.objective_toggle))
+						{
+							redraw_trace_3_drawing_area((Widget)NULL,
+								(XtPointer)(analysis->trace),(XtPointer)NULL);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_detection_threshold.  Missing processed_device");
+					}
+				}
 				/* draw the search and edit interval boxes */
 				draw_search_box(enlarge->left_box,analysis->trace->area_1.axes_top,
 					enlarge->right_box-enlarge->left_box,
@@ -1410,7 +1498,7 @@ Sets the detection algorithm to threshold.
 static void set_objective_absolute_slope(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Sets the objective for the detection algorithm to absolute slope.
@@ -1418,6 +1506,8 @@ Sets the objective for the detection algorithm to absolute slope.
 {
 	struct Analysis_work_area *analysis;
 	struct Enlarge_area *enlarge;
+	struct Device *processed_device;
+	struct Signal_buffer *processed_buffer;
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 	struct Map *map;
 	struct Mapping_window *mapping;
@@ -1439,6 +1529,20 @@ Sets the objective for the detection algorithm to absolute slope.
 				XtVaSetValues(enlarge->objective_choice,
 					XmNmenuHistory,enlarge->objective.absolute_slope_button,
 					NULL);
+			}
+			if ((analysis->trace)&&
+				(processed_device=analysis->trace->processed_device)&&
+				(processed_device->signal)&&(processed_device->signal->next)&&
+				(processed_buffer=processed_device->signal->next->buffer))
+			{
+				/* calculate objective function */
+				calculate_device_objective(processed_device,analysis->detection,
+					analysis->objective,((processed_buffer->signals).float_values)+
+					(processed_device->signal->next->index),
+					processed_buffer->number_of_samples,
+					processed_buffer->number_of_signals,analysis->average_width);
+				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)(analysis->trace),
+					(XtPointer)NULL);
 			}
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 			/* clear the present markers */
@@ -1479,7 +1583,7 @@ Sets the objective for the detection algorithm to absolute slope.
 static void set_objective_positive_slope(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Sets the objective for the detection algorithm to positive slope.
@@ -1487,6 +1591,8 @@ Sets the objective for the detection algorithm to positive slope.
 {
 	struct Analysis_work_area *analysis;
 	struct Enlarge_area *enlarge;
+	struct Device *processed_device;
+	struct Signal_buffer *processed_buffer;
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 	struct Map *map;
 	struct Mapping_window *mapping;
@@ -1508,6 +1614,20 @@ Sets the objective for the detection algorithm to positive slope.
 				XtVaSetValues(enlarge->objective_choice,
 					XmNmenuHistory,enlarge->objective.positive_slope_button,
 					NULL);
+			}
+			if ((analysis->trace)&&
+				(processed_device=analysis->trace->processed_device)&&
+				(processed_device->signal)&&(processed_device->signal->next)&&
+				(processed_buffer=processed_device->signal->next->buffer))
+			{
+				/* calculate objective function */
+				calculate_device_objective(processed_device,analysis->detection,
+					analysis->objective,((processed_buffer->signals).float_values)+
+					(processed_device->signal->next->index),
+					processed_buffer->number_of_samples,
+					processed_buffer->number_of_signals,analysis->average_width);
+				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)(analysis->trace),
+					(XtPointer)NULL);
 			}
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 			/* clear the present markers */
@@ -1548,7 +1668,7 @@ Sets the objective for the detection algorithm to positive slope.
 static void set_objective_negative_slope(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Sets the objective for the detection algorithm to negative slope.
@@ -1556,6 +1676,8 @@ Sets the objective for the detection algorithm to negative slope.
 {
 	struct Analysis_work_area *analysis;
 	struct Enlarge_area *enlarge;
+	struct Device *processed_device;
+	struct Signal_buffer *processed_buffer;
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 	struct Map *map;
 	struct Mapping_window *mapping;
@@ -1577,6 +1699,20 @@ Sets the objective for the detection algorithm to negative slope.
 				XtVaSetValues(enlarge->objective_choice,
 					XmNmenuHistory,enlarge->objective.negative_slope_button,
 					NULL);
+			}
+			if ((analysis->trace)&&
+				(processed_device=analysis->trace->processed_device)&&
+				(processed_device->signal)&&(processed_device->signal->next)&&
+				(processed_buffer=processed_device->signal->next->buffer))
+			{
+				/* calculate objective function */
+				calculate_device_objective(processed_device,analysis->detection,
+					analysis->objective,((processed_buffer->signals).float_values)+
+					(processed_device->signal->next->index),
+					processed_buffer->number_of_samples,
+					processed_buffer->number_of_signals,analysis->average_width);
+				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)(analysis->trace),
+					(XtPointer)NULL);
 			}
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 			/* clear the present markers */
@@ -1691,7 +1827,7 @@ named file.
 							if (!((1==BINARY_FILE_WRITE((char *)&temp_int,sizeof(int),1,
 								output_file))&&(1==BINARY_FILE_WRITE((char *)&(analysis->level),
 								sizeof(float),1,output_file))&&(1==BINARY_FILE_WRITE(
-								(char *)&(analysis->level_width),sizeof(int),1,output_file))))
+								(char *)&(analysis->average_width),sizeof(int),1,output_file))))
 							{
 								return_code=0;
 								display_message(ERROR_MESSAGE,
@@ -1903,7 +2039,7 @@ Called when the "Save interval" button is clicked.
 
 static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -1917,9 +2053,9 @@ Sets up the analysis work area for analysing a set of signals.
 	enum Signal_order signal_order;
 	FILE *input_file;
 	float level;
-	int buffer_end,buffer_start,datum,end_search_interval,event_number,event_time,
-		i,level_width,minimum_separation,number_of_events,potential_time,
-		return_code,start_search_interval,threshold,temp_int;
+	int average_width,buffer_end,buffer_start,datum,end_search_interval,
+		event_number,event_time,i,minimum_separation,number_of_events,
+		potential_time,return_code,start_search_interval,threshold,temp_int;
 	struct Analysis_work_area *analysis;
 	struct Device **device;
 	struct Event *event,**event_address;
@@ -2046,12 +2182,12 @@ Sets up the analysis work area for analysing a set of signals.
 			{
 				return_code=1;
 				level=analysis->level;
-				level_width=analysis->level_width;
+				average_width=analysis->average_width;
 				if (EDA_LEVEL==detection)
 				{
 					if (!((1==BINARY_FILE_READ((char *)&temp_int,sizeof(int),1,
 						input_file))&&(1==BINARY_FILE_READ((char *)&level,sizeof(float),1,
-						input_file))&&(1==BINARY_FILE_READ((char *)&level_width,
+						input_file))&&(1==BINARY_FILE_READ((char *)&average_width,
 						sizeof(int),1,input_file))))
 					{
 						return_code=0;
@@ -2096,9 +2232,9 @@ Sets up the analysis work area for analysing a set of signals.
 					{
 						level=0;
 					}
-					if (level_width<0)
+					if (average_width<0)
 					{
-						level_width=0;
+						average_width=0;
 					}
 					if (number_of_events<1)
 					{
@@ -2188,10 +2324,10 @@ Sets up the analysis work area for analysing a set of signals.
 								NULL);
 						}
 						/* set the level width */
-						if (level_width!=analysis->level_width)
+						if (average_width!=analysis->average_width)
 						{
-							sprintf(value_string,"%d",level_width);
-							XtVaSetValues(trace->area_1.enlarge.level_width,
+							sprintf(value_string,"%d",average_width);
+							XtVaSetValues(trace->area_1.enlarge.average_width,
 								XmNvalue,value_string,
 								NULL);
 						}
@@ -2278,7 +2414,7 @@ Sets up the analysis work area for analysing a set of signals.
 					analysis->threshold=threshold;
 					analysis->minimum_separation=minimum_separation;
 					analysis->level=level;
-					analysis->level_width=level_width;
+					analysis->average_width=average_width;
 					analysis->datum_type=datum_type;
 					analysis->edit_order=edit_order;
 					analysis->number_of_events=number_of_events;
@@ -2548,7 +2684,7 @@ Sets up the analysis work area for analysing a set of signals.
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
-				&(analysis->level_width),&(analysis->start_search_interval),
+				&(analysis->average_width),&(analysis->start_search_interval),
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
 				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
@@ -2633,7 +2769,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -2644,11 +2780,11 @@ signals.
 		end_of_line,*signal_file_name,*temp_string,value_string[10];
 	FILE *input_file,*signal_input_file;
 	float end_search_float,frequency,level,start_search_float,temp_float;
-	int analysis_number_of_events,bisect_left,bisect_right,datum,
+	int analysis_number_of_events,average_width,bisect_left,bisect_right,datum,
 		comma_separated_table,device_line_length,device_name_length,
-		end_search_interval,event_number,event_time,i,level_width,
-		minimum_separation,next_accepted_event_number,next_accepted_event_time,
-		number_of_devices,number_of_events,previous_accepted_event_number,
+		end_search_interval,event_number,event_time,i,minimum_separation,
+		next_accepted_event_number,next_accepted_event_time,number_of_devices,
+		number_of_events,previous_accepted_event_number,
 		previous_accepted_event_time,return_code,start_search_interval,threshold,
 		*times;
 	struct Analysis_work_area *analysis;
@@ -2776,7 +2912,7 @@ signals.
 												&start_search_float,&end_search_float))
 											{
 												if (2==fscanf(input_file,"level : %f, width : %d\n",
-													&level,&level_width))
+													&level,&average_width))
 												{
 													if (analysis->trace)
 													{
@@ -2790,17 +2926,17 @@ signals.
 																NULL);
 														}
 														/* set the level width */
-														if (level_width!=analysis->level_width)
+														if (average_width!=analysis->average_width)
 														{
-															sprintf(value_string,"%d",level_width);
+															sprintf(value_string,"%d",average_width);
 															XtVaSetValues(
-																analysis->trace->area_1.enlarge.level_width,
+																analysis->trace->area_1.enlarge.average_width,
 																XmNvalue,value_string,
 																NULL);
 														}
 													}
 													analysis->level=level;
-													analysis->level_width=level_width;
+													analysis->average_width=average_width;
 													/* read the number of activations being input */
 													if (1!=fscanf(input_file,"number of events : %d\n\n",
 														&number_of_events))
@@ -3480,7 +3616,7 @@ signals.
 							&(analysis->potential_time),&(analysis->event_number),
 							&(analysis->number_of_events),&(analysis->threshold),
 							&(analysis->minimum_separation),&(analysis->level),
-							&(analysis->level_width),&(analysis->start_search_interval),
+							&(analysis->average_width),&(analysis->start_search_interval),
 							&(analysis->search_interval_divisions),
 							&(analysis->end_search_interval),
 							analysis->user_interface->screen_width,
@@ -3728,7 +3864,7 @@ analysing the signals.
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
-				&(analysis->level_width),&(analysis->start_search_interval),
+				&(analysis->average_width),&(analysis->start_search_interval),
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
 				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
@@ -3935,7 +4071,7 @@ for analysing the signals.
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
-				&(analysis->level_width),&(analysis->start_search_interval),
+				&(analysis->average_width),&(analysis->start_search_interval),
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
 				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
@@ -4087,7 +4223,7 @@ for analysing the signals.
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
-				&(analysis->level_width),&(analysis->start_search_interval),
+				&(analysis->average_width),&(analysis->start_search_interval),
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
 				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
@@ -4295,7 +4431,7 @@ for analysing the signals.
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
-				&(analysis->level_width),&(analysis->start_search_interval),
+				&(analysis->average_width),&(analysis->start_search_interval),
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
 				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
@@ -4470,7 +4606,7 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 									&(analysis->potential_time),&(analysis->event_number),
 									&(analysis->number_of_events),&(analysis->threshold),
 									&(analysis->minimum_separation),&(analysis->level),
-									&(analysis->level_width),&(analysis->start_search_interval),
+									&(analysis->average_width),&(analysis->start_search_interval),
 									&(analysis->search_interval_divisions),
 									&(analysis->end_search_interval),
 									analysis->user_interface->screen_width,
@@ -5155,7 +5291,7 @@ Adds the hot key handler to the widget.
 static void calculate_all_event_markers(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Calculate the positions of all event markers, recalculate the datum if this is
@@ -5163,9 +5299,10 @@ set to automatic and reorder the devices if this is required.
 ==============================================================================*/
 {
 	char *value_string;
-	float level;
-	int datum,gradient_average_width,highlight_number,minimum_separation,
-		number_of_devices,threshold_percentage,xpos,ypos;
+	float level,*objective_values;
+	int average_width,datum,highlight_number,minimum_separation,number_of_devices,
+		number_of_objective_values,objective_values_step,threshold_percentage,xpos,
+		ypos;
 	struct Analysis_work_area *analysis;
 	struct Device **device,**highlight,*highlight_device;
 	struct Event *event;
@@ -5243,7 +5380,7 @@ set to automatic and reorder the devices if this is required.
 						"calculate_all_event_markers.  Invalid highlight");
 				}
 			}
-			gradient_average_width=analysis->gradient_average_width;
+			average_width=analysis->average_width;
 			switch (analysis->detection)
 			{
 				case EDA_LEVEL:
@@ -5270,24 +5407,24 @@ set to automatic and reorder the devices if this is required.
 						XmNvalue,global_temp_string,
 						NULL);
 					value_string=(char *)NULL;
-					XtVaGetValues(analysis->trace->area_1.enlarge.level_width,
+					XtVaGetValues(analysis->trace->area_1.enlarge.average_width,
 						XmNvalue,&value_string,
 						NULL);
-					if (1==sscanf(value_string,"%d",&gradient_average_width))
+					if (1==sscanf(value_string,"%d",&average_width))
 					{
-						if (gradient_average_width<0)
+						if (average_width<0)
 						{
-							gradient_average_width=0;
+							average_width=0;
 						}
 					}
 					else
 					{
-						gradient_average_width=analysis->level_width;
+						average_width=analysis->average_width;
 					}
-					analysis->level_width=gradient_average_width;
+					analysis->average_width=average_width;
 					XtFree(value_string);
-					sprintf(global_temp_string,"%d",gradient_average_width);
-					XtVaSetValues(analysis->trace->area_1.enlarge.level_width,
+					sprintf(global_temp_string,"%d",average_width);
+					XtVaSetValues(analysis->trace->area_1.enlarge.average_width,
 						XmNvalue,global_temp_string,
 						NULL);
 				} break;
@@ -5304,6 +5441,7 @@ set to automatic and reorder the devices if this is required.
 			}
 			if (analysis->trace->area_1.enlarge.calculate_all_events)
 			{
+#if defined (OLD_CODE)
 				/* for each device/signal calculate the event markers */
 				busy_cursor_on((Widget)NULL,analysis->user_interface);
 				device=rig->devices;
@@ -5316,7 +5454,7 @@ set to automatic and reorder the devices if this is required.
 							analysis->start_search_interval,analysis->end_search_interval,
 							analysis->detection,analysis->objective,
 							analysis->number_of_events,threshold_percentage,
-							minimum_separation,level,gradient_average_width);
+							minimum_separation,level,average_width);
 					}
 					device++;
 					number_of_devices--;
@@ -5402,16 +5540,145 @@ set to automatic and reorder the devices if this is required.
 						analysis->trace->area_1.enlarge.all_current.current_button,
 						NULL);
 				}
+#endif /* defined (OLD_CODE) */
+				if ((analysis->trace)&&(analysis->trace->processed_device)&&
+					(analysis->trace->processed_device->signal)&&
+					(analysis->trace->processed_device->signal->buffer)&&
+					(analysis->trace->processed_device->signal->next)&&
+					(objective_values=analysis->trace->processed_device->signal->
+					buffer->signals.float_values)&&(0<(objective_values_step=analysis->
+					trace->processed_device->signal->buffer->number_of_signals))&&
+					(0<(number_of_objective_values=analysis->trace->processed_device->
+					signal->buffer->number_of_samples)))
+				{
+					objective_values +=
+						analysis->trace->processed_device->signal->next->index;
+					/* for each device/signal calculate the event markers */
+					busy_cursor_on((Widget)NULL,analysis->user_interface);
+					device=rig->devices;
+					number_of_devices=rig->number_of_devices;
+					while (number_of_devices>0)
+					{
+						if ((*device)->signal->status!=REJECTED)
+						{
+							calculate_device_objective(*device,analysis->detection,
+								analysis->objective,objective_values,number_of_objective_values,
+								objective_values_step,average_width);
+							calculate_device_event_markers(*device,
+								analysis->start_search_interval,analysis->end_search_interval,
+								analysis->detection,objective_values,number_of_objective_values,
+								objective_values_step,analysis->number_of_events,
+								threshold_percentage,minimum_separation,level);
+						}
+						device++;
+						number_of_devices--;
+					}
+					busy_cursor_off((Widget)NULL,analysis->user_interface);
+					/*??? calculate the event times */
+					/* reorder the signals if required */
+					if (EVENT_ORDER==analysis->signal_order)
+					{
+						/* save highlighted device */
+						if (highlight=analysis->highlight)
+						{
+							highlight_device= *highlight;
+						}
+						/* sort devices */
+	/*					qsort((void *)(rig->devices),rig->number_of_devices,
+							sizeof(struct Device *),sort_devices_by_event_time);*/
+						heapsort((void *)(rig->devices),rig->number_of_devices,
+							sizeof(struct Device *),sort_devices_by_event_time);
+						/* update highlight */
+						if (highlight)
+						{
+							current_region=rig->current_region;
+							highlight=rig->devices;
+							while (*highlight!=highlight_device)
+							{
+								highlight++;
+							}
+							analysis->highlight=highlight;
+						}
+						/* determine the datum */
+						if (AUTOMATIC_DATUM==analysis->datum_type)
+						{
+							if ((device=rig->devices)&&
+								(event=(*device)->signal->first_event))
+							{
+								analysis->datum=event->time;
+							}
+						}
+						/* redraw the signals */
+						trace_change_signal(analysis->trace);
+						update_signals_drawing_area(analysis->window);
+					}
+					else
+					{
+						/* determine the datum */
+						if (AUTOMATIC_DATUM==analysis->datum_type)
+						{
+							if (device=rig->devices)
+							{
+								buffer=(*device)->signal->buffer;
+								datum=(buffer->times)[buffer->number_of_samples-1]+1;
+								number_of_devices=rig->number_of_devices;
+								while (number_of_devices>0)
+								{
+									if ((event=(*device)->signal->first_event)&&
+										(event->time<datum))
+									{
+										datum=event->time;
+									}
+									device++;
+									number_of_devices--;
+								}
+								if (datum<=(buffer->times)[buffer->number_of_samples-1])
+								{
+									analysis->datum=datum;
+									/*??? update the datum markers */
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"calculate_all_event_markers.  Could not find datum");
+								}
+							}
+						}
+						if (highlight=analysis->highlight)
+						{
+							/* put the correct objective in the trace window */
+							calculate_device_objective(*highlight,analysis->detection,
+								analysis->objective,objective_values,number_of_objective_values,
+								objective_values_step,average_width);
+						}
+						/* draw the event markers */
+						draw_all_markers(1,0,analysis);
+					}
+					if (EDA_THRESHOLD==analysis->detection)
+					{
+						/* change to calculating events for the current device only */
+						analysis->trace->area_1.enlarge.calculate_all_events=0;
+						XtVaSetValues(analysis->trace->area_1.enlarge.all_current_choice,
+							XmNmenuHistory,
+							analysis->trace->area_1.enlarge.all_current.current_button,
+							NULL);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_all_event_markers.  Invalid processed_device");
+				}
 			}
 			else
 			{
 				if (highlight_device)
 				{
+#if defined (OLD_CODE)
 					calculate_device_event_markers(highlight_device,
 						analysis->start_search_interval,analysis->end_search_interval,
 						analysis->detection,analysis->objective,analysis->number_of_events,
-						threshold_percentage,minimum_separation,level,
-						gradient_average_width);
+						threshold_percentage,minimum_separation,level,average_width);
 					draw_device_markers(highlight_device,buffer->start,buffer->end,
 						analysis->datum,0,analysis->potential_time,0,SIGNAL_AREA_DETAIL,0,
 						xpos,ypos,signals_area->axes_width,signals_area->axes_height,
@@ -5419,6 +5686,37 @@ set to automatic and reorder the devices if this is required.
 						signals_area->drawing->pixel_map,
 						analysis->signal_drawing_information,analysis->user_interface);
 					trace_draw_markers(0,0,analysis->trace);
+#endif /* defined (OLD_CODE) */
+					if ((analysis->trace)&&(analysis->trace->processed_device)&&
+						(analysis->trace->processed_device->signal)&&
+						(analysis->trace->processed_device->signal->buffer)&&
+						(objective_values=analysis->trace->processed_device->signal->
+						buffer->signals.float_values)&&(0<(objective_values_step=analysis->
+						trace->processed_device->signal->buffer->number_of_signals))&&
+						(0<(number_of_objective_values=analysis->trace->processed_device->
+						signal->buffer->number_of_samples)))
+					{
+						calculate_device_objective(highlight_device,analysis->detection,
+							analysis->objective,objective_values,number_of_objective_values,
+							objective_values_step,average_width);
+						calculate_device_event_markers(highlight_device,
+							analysis->start_search_interval,analysis->end_search_interval,
+							analysis->detection,objective_values,number_of_objective_values,
+							objective_values_step,analysis->number_of_events,
+							threshold_percentage,minimum_separation,level);
+						draw_device_markers(highlight_device,buffer->start,buffer->end,
+							analysis->datum,0,analysis->potential_time,0,SIGNAL_AREA_DETAIL,0,
+							xpos,ypos,signals_area->axes_width,signals_area->axes_height,
+							XtWindow(signals_area->drawing_area),
+							signals_area->drawing->pixel_map,
+							analysis->signal_drawing_information,analysis->user_interface);
+						trace_draw_markers(0,0,analysis->trace);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"calculate_all_event_markers.  Invalid processed_device");
+					}
 				}
 			}
 			/* update the mapping window */
@@ -10653,15 +10951,16 @@ Reads in a signals file and adds the signals to the devices in the current rig.
 static void analysis_accept_signal(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 28 December 1999
+LAST MODIFIED : 15 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	char *value_string;
-	float level;
-	int device_number,gradient_average_width,i,minimum_separation,
-		threshold_percentage,xpos,ypos;
+	float level,*objective_values;
+	int average_width,device_number,i,minimum_separation,
+		number_of_objective_values,objective_values_step,threshold_percentage,xpos,
+		ypos;
 	struct Analysis_work_area *analysis;
 	struct Device **device,**highlight;
 	struct Mapping_window *mapping;
@@ -10685,7 +10984,7 @@ DESCRIPTION :
 				if ((analysis->calculate_events)&&(REJECTED==signal->status))
 				{
 					/* calculate events for the device */
-					gradient_average_width=analysis->gradient_average_width;
+					average_width=analysis->average_width;
 					switch (analysis->detection)
 					{
 						case EDA_LEVEL:
@@ -10712,24 +11011,24 @@ DESCRIPTION :
 								XmNvalue,global_temp_string,
 								NULL);
 							value_string=(char *)NULL;
-							XtVaGetValues(analysis->trace->area_1.enlarge.level_width,
+							XtVaGetValues(analysis->trace->area_1.enlarge.average_width,
 								XmNvalue,&value_string,
 								NULL);
-							if (1==sscanf(value_string,"%d",&gradient_average_width))
+							if (1==sscanf(value_string,"%d",&average_width))
 							{
-								if (gradient_average_width<0)
+								if (average_width<0)
 								{
-									gradient_average_width=0;
+									average_width=0;
 								}
 							}
 							else
 							{
-								gradient_average_width=analysis->level_width;
+								average_width=analysis->average_width;
 							}
-							analysis->level_width=gradient_average_width;
+							analysis->average_width=average_width;
 							XtFree(value_string);
-							sprintf(global_temp_string,"%d",gradient_average_width);
-							XtVaSetValues(analysis->trace->area_1.enlarge.level_width,
+							sprintf(global_temp_string,"%d",average_width);
+							XtVaSetValues(analysis->trace->area_1.enlarge.average_width,
 								XmNvalue,global_temp_string,
 								NULL);
 						} break;
@@ -10744,11 +11043,35 @@ DESCRIPTION :
 								NULL);
 						} break;
 					}
+#if defined (OLD_CODE)
 					calculate_device_event_markers(*highlight,
 						analysis->start_search_interval,analysis->end_search_interval,
 						analysis->detection,analysis->objective,analysis->number_of_events,
-						threshold_percentage,minimum_separation,level,
-						gradient_average_width);
+						threshold_percentage,minimum_separation,level,average_width);
+#endif /* defined (OLD_CODE) */
+					if ((analysis->trace)&&(analysis->trace->processed_device)&&
+						(analysis->trace->processed_device->signal)&&
+						(analysis->trace->processed_device->signal->buffer)&&
+						(objective_values=analysis->trace->processed_device->signal->
+						buffer->signals.float_values)&&(0<(objective_values_step=analysis->
+						trace->processed_device->signal->buffer->number_of_signals))&&
+						(0<(number_of_objective_values=analysis->trace->processed_device->
+						signal->buffer->number_of_samples)))
+					{
+						calculate_device_objective(*highlight,analysis->detection,
+							analysis->objective,objective_values,number_of_objective_values,
+							objective_values_step,average_width);
+						calculate_device_event_markers(*highlight,
+							analysis->start_search_interval,analysis->end_search_interval,
+							analysis->detection,objective_values,number_of_objective_values,
+							objective_values_step,analysis->number_of_events,
+							threshold_percentage,minimum_separation,level);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"analysis_accept_signal.  Invalid processed_device");
+					}
 					/* draw the events */
 					if (analysis->window)
 					{
@@ -10988,7 +11311,7 @@ DESCRIPTION :
 static void trace_analysis_mode_apply(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Applies the current analysis mode settings to all signals.
@@ -10996,14 +11319,14 @@ Applies the current analysis mode settings to all signals.
 {
 	float beat_width,*imaginary_value,*processed_value,*real_value,*value,
 		value_end,value_start,*value_1,*value_2;
-	int average_end,average_start,average_width=5,
-		/*???DB.  average_width should be analysis->gradient_average_width */
-		*beat_count,*beat_counts,beat_end,beat_number,beat_start,buffer_offset_1,
-		buffer_offset_2,*divisions,end,high_pass,i,j,low_pass,notch,max_times,
-		number_of_beats,number_of_samples,*processed_time,start,start_time,*time,
-		transform_buffer_offset,transform_number_of_samples;
+	int average_end,average_start,average_width,*beat_count,*beat_counts,beat_end,
+		beat_number,beat_start,buffer_offset_1,buffer_offset_2,*divisions,end,
+		high_pass,i,j,low_pass,notch,max_times,number_of_beats,number_of_samples,
+		*processed_time,start,start_time,*time,transform_buffer_offset,
+		transform_number_of_samples;
 	struct Analysis_work_area *analysis;
 	struct Device **device,*highlight;
+	struct Event *event;
 	struct Map *map;
 	struct Mapping_window *mapping;
 	struct Rig *rig;
@@ -11017,6 +11340,7 @@ Applies the current analysis mode settings to all signals.
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
 		(rig=analysis->rig)&&(trace=analysis->trace))
 	{
+		average_width=analysis->average_width;
 		switch (trace->analysis_mode)
 		{
 			case BEAT_AVERAGING:
@@ -11242,6 +11566,7 @@ Applies the current analysis mode settings to all signals.
 							{
 								if ((*device)->signal)
 								{
+									event=(*device)->signal->first_event;
 									beat_count=beat_counts;
 									for (i=max_times;i>0;i--)
 									{
@@ -11269,24 +11594,34 @@ Applies the current analysis mode settings to all signals.
 										{
 											beat_end=end;
 										}
-										processed_value=(buffer->signals).float_values+
-											((*device)->signal->index);
-										value=processed_value+(beat_start*buffer_offset_1);
-										beat_count=beat_counts;
-										for (i=beat_end-beat_start;i>0;i--)
+										/* check if the beat has been rejected by checking the
+											status of the first event in the beat interval */
+										while (event&&(event->time<beat_start))
 										{
-											if (0< *beat_count)
+											event=event->next;
+										}
+										if (!event||(event->time>beat_end)||
+											(REJECTED!=event->status))
+										{
+											processed_value=(buffer->signals).float_values+
+												((*device)->signal->index);
+											value=processed_value+(beat_start*buffer_offset_1);
+											beat_count=beat_counts;
+											for (i=beat_end-beat_start;i>0;i--)
 											{
-												*processed_value += *value;
+												if (0< *beat_count)
+												{
+													*processed_value += *value;
+												}
+												else
+												{
+													*processed_value= *value;
+												}
+												(*beat_count)++;
+												beat_count++;
+												processed_value += buffer_offset_1;
+												value += buffer_offset_1;
 											}
-											else
-											{
-												*processed_value= *value;
-											}
-											(*beat_count)++;
-											beat_count++;
-											processed_value += buffer_offset_1;
-											value += buffer_offset_1;
 										}
 									}
 									processed_value=(buffer->signals).float_values+
@@ -13719,7 +14054,7 @@ Creates the windows associated with the analysis work area.
 							&(analysis->event_number),&(analysis->number_of_events),
 							&(analysis->potential_time),&(analysis->detection),
 							&(analysis->threshold),&(analysis->minimum_separation),
-							&(analysis->level),&(analysis->level_width),
+							&(analysis->level),&(analysis->average_width),
 							analysis->identifying_colour,analysis->signal_order,
 							SEPARATE_LAYOUT,&(analysis->start_search_interval),
 							&(analysis->search_interval_divisions),

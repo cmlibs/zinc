@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.h
 
-LAST MODIFIED : 14 January 2000
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -94,7 +94,7 @@ The area of the trace window where the enlarged signal is drawn.
 	Widget minimum_separation_scroll;
 	Widget minimum_separation_label;
 	Widget level_value;
-	Widget level_width;
+	Widget average_width;
 	Widget all_current_choice;
 	struct
 	{
@@ -110,7 +110,7 @@ The area of the trace window where the enlarged signal is drawn.
 
 struct Edit_area
 /*******************************************************************************
-LAST MODIFIED : 23 April 1996
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 The area of the trace window where the event time is edited.
@@ -136,13 +136,14 @@ The area of the trace window where the event time is edited.
 		Widget device_button;
 		Widget beat_button;
 	} order;
+	Widget objective_toggle;
 	/* data interval being displayed */
 	int first_data,last_data;
 }; /* struct Edit_area */
 
 struct Event_detection
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 The information for detecting events.
@@ -153,7 +154,7 @@ The information for detecting events.
 	enum Datum_type *datum_type;
 	enum Edit_order *edit_order;
 	float *level;
-	int *datum,*event_number,*level_width,*minimum_separation,*number_of_events,
+	int *average_width,*datum,*event_number,*minimum_separation,*number_of_events,
 		*potential_time,*threshold;
 	/* search interval display information */
 	int *end_search_interval,**search_interval_divisions,*start_search_interval;
@@ -494,7 +495,7 @@ int open_trace_window(struct Trace_window **trace_address,Widget parent,
 	enum Event_detection_objective *objective,enum Datum_type *datum_type,
 	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
-	int *threshold,int *minimum_separation,float *level,int *level_width,
+	int *threshold,int *minimum_separation,float *level,int *average_width,
 	int *start_search_interval,int **search_interval_divisions,
 	int *end_search_interval,int screen_width,int screen_height,
 	struct Signal_drawing_information *signal_drawing_information,

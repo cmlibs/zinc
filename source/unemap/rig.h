@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.h
 
-LAST MODIFIED : 28 July 1999
+LAST MODIFIED : 18 February 2000
 
 DESCRIPTION :
 Contains data and function descriptions for measurement rigs.
@@ -726,9 +726,20 @@ LAST MODIFIED : 31 August 1993
 
 DESCRIPTION :
 This function allocates memory for a signal buffer to hold the specified
-<value_type>, <number_of_signals> and <number_of_samples>.  It initializes the
-fields to specified values.  It returns a pointer to the created signal buffer
-if successful and NULL if unsuccessful.
+<value_type>, <number_of_signals> and <number_of_samples>.  It returns a pointer
+to the created signal buffer if successful and NULL if unsuccessful.
+==============================================================================*/
+
+struct Signal_buffer *reallocate_Signal_buffer(
+	struct Signal_buffer *signal_buffer,enum Signal_value_type value_type,
+	int number_of_signals,int number_of_samples,float frequency);
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+This function reallocates memory for a signal <buffer> to hold the specified
+<value_type>, <number_of_signals> and <number_of_samples>.  It returns a pointer
+to the created signal buffer if successful and NULL if unsuccessful.
 ==============================================================================*/
 
 int destroy_Signal_buffer(struct Signal_buffer **buffer);

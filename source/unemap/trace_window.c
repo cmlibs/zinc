@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 14 January 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -382,11 +382,14 @@ Sets the analysis mode to event detection.
 			/* go back to constant width divisions */
 			DEALLOCATE(*(trace->event_detection.search_interval_divisions));
 			DEALLOCATE(trace->area_1.enlarge.divisions);
+#if defined (OLD_CODE)
 			redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
 				(XtPointer)NULL);
 			redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
 				(XtPointer)NULL);
 			trace_update_signal_controls(trace);
+#endif /* defined (OLD_CODE) */
+			trace_change_signal(trace);
 		}
 	}
 	else
@@ -1807,10 +1810,10 @@ Saves the id of the trace enlarge level value.
 	LEAVE;
 } /* identify_trace_enlarge_level_va */
 
-static void identify_trace_enlarge_level_wi(Widget *widget_id,
+static void identify_trace_enlarge_averagew(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 Saves the id of the trace enlarge level width.
@@ -1818,19 +1821,102 @@ Saves the id of the trace enlarge level width.
 {
 	struct Trace_window *trace;
 
-	ENTER(identify_trace_enlarge_level_wi);
+	ENTER(identify_trace_enlarge_averagew);
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_1.enlarge.level_width= *widget_id;
+		trace->area_1.enlarge.average_width= *widget_id;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_trace_enlarge_level_wi.  Missing trace_window");
+			"identify_trace_enlarge_averagew.  Missing trace_window");
 	}
 	LEAVE;
-} /* identify_trace_enlarge_level_wi */
+} /* identify_trace_enlarge_averagew */
+
+static void change_average_width(Widget *widget_id,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 23 February 2000
+
+DESCRIPTION :
+Called when the average width is changed by the level width text field.
+==============================================================================*/
+{
+	char *value_string;
+	int average_width;
+	struct Device *processed_device;
+	struct Signal_buffer *processed_buffer;
+	struct Trace_window *trace;
+	XmAnyCallbackStruct *any_data;
+
+	ENTER(change_average_width);
+	USE_PARAMETER(widget_id);
+	if ((any_data=(XmAnyCallbackStruct *)call_data)&&
+		((XmCR_ACTIVATE==any_data->reason)||(XmCR_LOSING_FOCUS==any_data->reason)))
+	{
+		if ((trace=(struct Trace_window *)trace_window)&&
+			((trace->event_detection).average_width))
+		{
+			value_string=(char *)NULL;
+			XtVaGetValues(trace->area_1.enlarge.average_width,
+				XmNvalue,&value_string,
+				NULL);
+			if (1==sscanf(value_string,"%d",&average_width))
+			{
+				if (average_width<0)
+				{
+					average_width=0;
+				}
+				if (average_width!= *((trace->event_detection).average_width))
+				{
+					if ((processed_device=trace->processed_device)&&
+						(processed_device->signal)&&
+						(processed_buffer=processed_device->signal->buffer)&&
+						(processed_device->channel))
+					{
+						/* calculate objective function */
+						calculate_device_objective(processed_device,
+							*((trace->event_detection).detection),
+							*((trace->event_detection).objective),
+							((processed_buffer->signals).float_values)+
+							(processed_device->signal->next->index),
+							processed_buffer->number_of_samples,
+							processed_buffer->number_of_signals,average_width);
+						if (True==XmToggleButtonGadgetGetState((trace->area_3).edit.
+							objective_toggle))
+						{
+							redraw_trace_3_drawing_area((Widget)NULL,trace_window,
+								(XtPointer)NULL);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"change_average_width.  Missing processed_device");
+					}
+				}
+			}
+			else
+			{
+				average_width= *((trace->event_detection).average_width);
+			}
+			*((trace->event_detection).average_width)=average_width;
+			XtFree(value_string);
+			sprintf(global_temp_string,"%d",average_width);
+			XtVaSetValues(trace->area_1.enlarge.average_width,
+				XmNvalue,global_temp_string,
+				NULL);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"change_average_width.  Missing trace_window");
+		}
+	}
+	LEAVE;
+} /* change_average_width */
 
 static void identify_trace_enlarge_thresh_s(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
@@ -3219,6 +3305,46 @@ Sets the event editing order to beat.
 	LEAVE;
 } /* set_edit_order_beat */
 
+static void identify_trace_edit_objective_t(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2000
+
+DESCRIPTION :
+Saves the id of the trace edit objective toggle.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_trace_edit_objective_t);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_3.edit.objective_toggle= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_trace_edit_objective_t.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_trace_edit_objective_t */
+
+void change_edit_objective_toggle(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2000
+
+DESCRIPTION :
+Called when the objective toggle is changed.
+==============================================================================*/
+{
+	ENTER(change_edit_objective_toggle);
+	USE_PARAMETER(call_data);
+	redraw_trace_3_drawing_area(widget,trace_window,(XtPointer)NULL);
+	LEAVE;
+} /* change_edit_objective_toggle */
+
 static void identify_trace_frequency_menu(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
@@ -4515,14 +4641,14 @@ static struct Trace_window *create_Trace_window(
 	enum Event_detection_objective *objective,enum Datum_type *datum_type,
 	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
-	int *threshold,int *minimum_separation,float *level,int *level_width,
+	int *threshold,int *minimum_separation,float *level,int *average_width,
 	int *start_search_interval,int **search_interval_divisions,
 	int *end_search_interval,int screen_height,
 		/*???DB.  height of interval drawing area ? */
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 5 January 2000
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 This function allocates the memory for an trace window and sets the fields to
@@ -4603,8 +4729,9 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)identify_trace_enlarge_events_u},
 		{"identify_trace_enlarge_level_va",
 			(XtPointer)identify_trace_enlarge_level_va},
-		{"identify_trace_enlarge_level_wi",
-			(XtPointer)identify_trace_enlarge_level_wi},
+		{"identify_trace_enlarge_averagew",
+			(XtPointer)identify_trace_enlarge_averagew},
+		{"change_average_width",(XtPointer)change_average_width},
 		{"identify_trace_enlarge_thresh_s",
 			(XtPointer)identify_trace_enlarge_thresh_s},
 		{"change_threshold",(XtPointer)change_threshold},
@@ -4704,6 +4831,9 @@ the created trace window.  If unsuccessful, NULL is returned.
 		{"identify_edit_order_beat_button",
 			(XtPointer)identify_edit_order_beat_button},
 		{"set_edit_order_beat",(XtPointer)set_edit_order_beat},
+		{"identify_trace_edit_objective_t",
+			(XtPointer)identify_trace_edit_objective_t},
+		{"change_edit_objective_toggle",(XtPointer)change_edit_objective_toggle},
 		{"identify_trace_frequency_menu",(XtPointer)identify_trace_frequency_menu},
 		{"identify_trace_frequency_choice",
 			(XtPointer)identify_trace_frequency_choice},
@@ -4839,7 +4969,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_1.enlarge.minimum_separation_scroll=(Widget)NULL;
 				trace->area_1.enlarge.minimum_separation_label=(Widget)NULL;
 				trace->area_1.enlarge.level_value=(Widget)NULL;
-				trace->area_1.enlarge.level_width=(Widget)NULL;
+				trace->area_1.enlarge.average_width=(Widget)NULL;
 				trace->area_1.enlarge.all_current_choice=(Widget)NULL;
 				trace->area_1.enlarge.calculate_all_events=1;
 				trace->area_1.enlarge.all_current.all_button=(Widget)NULL;
@@ -4887,6 +5017,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_3.edit.order_choice=(Widget)NULL;
 				trace->area_3.edit.order.device_button=(Widget)NULL;
 				trace->area_3.edit.order.beat_button=(Widget)NULL;
+				trace->area_3.edit.objective_toggle=(Widget)NULL;
 				trace->area_3.frequency_domain.menu=(Widget)NULL;
 				trace->area_3.frequency_domain.display_mode_choice=(Widget)NULL;
 				trace->area_3.frequency_domain.display_mode.amplitude_phase_button=
@@ -4942,7 +5073,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->event_detection.threshold=threshold;
 				trace->event_detection.minimum_separation=minimum_separation;
 				trace->event_detection.level=level;
-				trace->event_detection.level_width=level_width;
+				trace->event_detection.average_width=average_width;
 				trace->event_detection.start_search_interval=start_search_interval;
 				trace->event_detection.search_interval_divisions=
 					search_interval_divisions;
@@ -4961,7 +5092,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				if (
 					(frequency_domain_buffer_1=create_Signal_buffer(FLOAT_VALUE,2,1,1))&&
 					(frequency_domain_buffer_2=create_Signal_buffer(FLOAT_VALUE,2,1,1))&&
-					(processed_buffer=create_Signal_buffer(FLOAT_VALUE,1,1,1)))
+					(processed_buffer=create_Signal_buffer(FLOAT_VALUE,2,1,1)))
 				{
 					if ((real_channel_1=create_Channel(0,0,1))&&
 						(imaginary_channel_1=create_Channel(1,0,1))&&
@@ -4974,8 +5105,9 @@ the created trace window.  If unsuccessful, NULL is returned.
 							frequency_domain_buffer_1,UNDECIDED,0))&&(real_signal_2=
 							create_Signal(0,frequency_domain_buffer_2,UNDECIDED,0))&&
 							(imaginary_signal_2=create_Signal(1,frequency_domain_buffer_2,
-							UNDECIDED,0))&&(processed_signal=create_Signal(0,processed_buffer,
-							UNDECIDED,0)))
+							UNDECIDED,0))&&(processed_signal=create_Signal(0,
+							processed_buffer,UNDECIDED,1))&&(processed_signal->next=
+							create_Signal(1,processed_buffer,REJECTED,2)))
 						{
 							if ((real_description_1=create_Device_description("Re",AUXILIARY,
 								(struct Region *)NULL))&&(imaginary_description_1=
@@ -5033,6 +5165,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 									destroy_Signal(&imaginary_signal_1);
 									destroy_Signal(&real_signal_2);
 									destroy_Signal(&imaginary_signal_2);
+									destroy_Signal(&(processed_signal->next));
 									destroy_Signal(&processed_signal);
 									destroy_Channel(&real_channel_1);
 									destroy_Channel(&imaginary_channel_1);
@@ -5073,6 +5206,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								destroy_Signal(&imaginary_signal_1);
 								destroy_Signal(&real_signal_2);
 								destroy_Signal(&imaginary_signal_2);
+								destroy_Signal(&(processed_signal->next));
 								destroy_Signal(&processed_signal);
 								destroy_Channel(&real_channel_1);
 								destroy_Channel(&imaginary_channel_1);
@@ -5105,6 +5239,10 @@ the created trace window.  If unsuccessful, NULL is returned.
 										if (imaginary_signal_2)
 										{
 											destroy_Signal(&imaginary_signal_2);
+											if (processed_signal)
+											{
+												destroy_Signal(&processed_signal);
+											}
 										}
 									}
 								}
@@ -5578,8 +5716,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 								XmNvalue,value_string,
 								NULL);
 							/* set the level width */
-							sprintf(value_string,"%d",*level_width);
-							XtVaSetValues(trace->area_1.enlarge.level_width,
+							sprintf(value_string,"%d",*average_width);
+							XtVaSetValues(trace->area_1.enlarge.average_width,
 								XmNvalue,value_string,
 								NULL);
 							/* adjust the enlarge datum choice */
@@ -5665,7 +5803,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 										XmNmenuHistory,
 										trace->area_1.enlarge.detection.level_button,NULL);
 									XtVaSetValues(trace->area_1.enlarge.calculate_button,
-										XmNleftWidget,trace->area_1.enlarge.level_width,
+										XmNleftWidget,trace->area_1.enlarge.level_value,
 										NULL);
 									if (left_margin>widget_spacing)
 									{
@@ -5715,7 +5853,6 @@ the created trace window.  If unsuccessful, NULL is returned.
 									}
 									XtUnmanageChild(trace->area_1.enlarge.number_of_events_form);
 									XtUnmanageChild(trace->area_1.enlarge.level_value);
-									XtUnmanageChild(trace->area_1.enlarge.level_width);
 								} break;
 								default:
 								{
@@ -6055,7 +6192,7 @@ Global functions
 */
 int trace_process_device(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 14 January 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Calculates the processed device.
@@ -6071,7 +6208,112 @@ Calculates the processed device.
 		{
 			case EVENT_DETECTION:
 			{
-				/* nothing to do */
+				char *name;
+				enum Event_signal_status *signals_status;
+				float maximum,minimum,processed_frequency,*processed_value,*time_float,
+					*times,*value,*values;
+				int buffer_offset,highlight,i,number_of_samples,*processed_time;
+				struct Device *device,*processed_device;
+				struct Signal *signal_next,*signal_next_new;
+				struct Signal_buffer *processed_buffer;
+
+				values=(float *)NULL;
+				times=(float *)NULL;
+				signals_status=(enum Event_signal_status *)NULL;
+				name=(char *)NULL;
+				if ((trace->highlight)&&(*(trace->highlight))&&
+					(device= **(trace->highlight))&&extract_signal_information(
+					(struct FE_node *)NULL,(struct Draw_package *)NULL,device,1,1,0,
+					(int *)NULL,&number_of_samples,&times,&values,&signals_status,&name,
+					&highlight,&minimum,&maximum)&&(0<number_of_samples)&&
+					(processed_device=trace->processed_device)&&
+					(processed_device->signal)&&
+					(processed_buffer=processed_device->signal->buffer)&&
+					(processed_device->channel))
+				{
+					if (signal_next=processed_device->signal->next)
+					{
+						signal_next_new=(struct Signal *)NULL;
+					}
+					else
+					{
+						signal_next_new=create_Signal(1,processed_buffer,REJECTED,2);
+						signal_next=signal_next_new;
+					}
+					if (signal_next)
+					{
+						processed_frequency=(float)number_of_samples/
+							(times[number_of_samples-1]-times[0]);
+						if (processed_buffer=reallocate_Signal_buffer(processed_buffer,
+							FLOAT_VALUE,2,number_of_samples,processed_frequency))
+						{
+							processed_device->signal->buffer=processed_buffer;
+							processed_device->signal->next=signal_next;
+							signal_next->buffer=processed_buffer;
+							/* copy the values */
+							time_float=times;
+							value=values;
+							processed_time=processed_buffer->times;
+							processed_value=((processed_buffer->signals).float_values)+
+								(processed_device->signal->index);
+							buffer_offset=processed_buffer->number_of_signals;
+							processed_device->channel->offset=device->channel->offset;
+							processed_device->channel->gain=device->channel->gain;
+							processed_device->signal_maximum=maximum;
+							processed_device->signal_minimum=minimum;
+							for (i=number_of_samples;i>0;i--)
+							{
+								*processed_value= *value;
+								processed_value += buffer_offset;
+								value++;
+								*processed_time=(int)((*time_float)*processed_frequency+0.5);
+								processed_time++;
+								time_float++;
+							}
+							DEALLOCATE(processed_device->description->name);
+							processed_device->description->name=name;
+							processed_device->description->type=device->description->type;
+							processed_device->highlight=highlight;
+							processed_device->signal->status=signals_status[0];
+							/* calculate objective function */
+							calculate_device_objective(processed_device,
+								*((trace->event_detection).detection),
+								*((trace->event_detection).objective),
+								((processed_buffer->signals).float_values)+
+								(processed_device->signal->next->index),
+								processed_buffer->number_of_samples,
+								processed_buffer->number_of_signals,
+								*((trace->event_detection).average_width));
+							trace->valid_processing=1;
+						}
+						else
+						{
+							if (signal_next_new)
+							{
+								destroy_Signal(&signal_next_new);
+							}
+							DEALLOCATE(name);
+							display_message(ERROR_MESSAGE,
+								"trace_process_device.  Could not reallocate processed buffer");
+							trace->valid_processing=0;
+						}
+					}
+					else
+					{
+						DEALLOCATE(name);
+						display_message(ERROR_MESSAGE,
+							"trace_process_device.  Could not allocate objective signal");
+						trace->valid_processing=0;
+					}
+				}
+				else
+				{
+					trace->valid_processing=0;
+				}
+				DEALLOCATE(signals_status);
+				DEALLOCATE(values);
+				DEALLOCATE(times);
+				/* put the signal and the objective function in the processed device */
 				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
 					(XtPointer)NULL);
 				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
@@ -6079,6 +6321,7 @@ Calculates the processed device.
 			} break;
 			case BEAT_AVERAGING:
 			{
+				char *name;
 				float *averaged_value,beat_width,processed_frequency,*processed_value,
 					*time_float,*times,*value,value_end,*values,value_start;
 				int average_end,average_start,average_width,*beat_count,*beat_counts,
@@ -6086,17 +6329,18 @@ Calculates the processed device.
 					max_times,number_of_beats,number_of_samples,*processed_time,start,
 					start_time,*time;
 				struct Device *device,*processed_device;
+				struct Event *event;
 				struct Signal_buffer *processed_buffer;
 
 				values=(float *)NULL;
 				times=(float *)NULL;
-				average_width=5;
-					/*???DB.  average_width should be analysis->gradient_average_width */
+				average_width= *((trace->event_detection).average_width);
 				if ((trace->highlight)&&(*(trace->highlight))&&
-					(device= **(trace->highlight))&&extract_signal_information(
+					(device= **(trace->highlight))&&(device->signal)&&
+					(event=device->signal->first_event)&&extract_signal_information(
 					(struct FE_node *)NULL,(struct Draw_package *)NULL,device,1,1,0,
 					(int *)NULL,&number_of_samples,&times,&values,
-					(enum Event_signal_status **)NULL,(char **)NULL,(int *)NULL,
+					(enum Event_signal_status **)NULL,&name,(int *)NULL,
 					(float *)NULL,(float *)NULL)&&(0<number_of_samples)&&
 					(processed_device=trace->processed_device)&&
 					(processed_device->signal)&&(processed_device->channel)&&
@@ -6104,6 +6348,7 @@ Calculates the processed device.
 				{
 					/* allow room for the beat averaged signal to be stored after the
 						signal */
+#if defined (OLD_CODE)
 					if (2*number_of_samples!=processed_buffer->number_of_samples)
 					{
 						if (REALLOCATE(processed_time,processed_buffer->times,int,
@@ -6119,8 +6364,6 @@ Calculates the processed device.
 						else
 						{
 							DEALLOCATE(processed_time);
-							display_message(ERROR_MESSAGE,
-								"trace_process_device.  Could not allocate processed buffer");
 							trace->valid_processing=0;
 						}
 					}
@@ -6131,6 +6374,15 @@ Calculates the processed device.
 						trace->valid_processing=1;
 					}
 					if (trace->valid_processing)
+#endif /* defined (OLD_CODE) */
+					if (processed_device->signal->next)
+					{
+						destroy_Signal(&(processed_device->signal->next));
+					}
+					processed_frequency=(float)number_of_samples/
+						(times[number_of_samples-1]-times[0]);
+					if (processed_buffer=reallocate_Signal_buffer(processed_buffer,
+						FLOAT_VALUE,1,2*number_of_samples,processed_frequency))
 					{
 						/* copy the values */
 						time_float=times;
@@ -6143,11 +6395,6 @@ Calculates the processed device.
 						processed_device->channel->gain=1;
 						processed_device->signal_maximum=0;
 						processed_device->signal_minimum=1;
-						processed_frequency=(float)number_of_samples/
-							(times[number_of_samples-1]-times[0]);
-						processed_buffer->frequency=processed_frequency;
-						processed_buffer->start=0;
-						processed_buffer->end=number_of_samples-1;
 						for (i=number_of_samples;i>0;i--)
 						{
 							*processed_value= *value;
@@ -6283,6 +6530,7 @@ Calculates the processed device.
 									time++;
 								}
 								beat_end=start-1;
+								event=device->signal->first_event;
 								for (beat_number=1;beat_number<=number_of_beats;beat_number++)
 								{
 									beat_start=beat_end+1;
@@ -6302,25 +6550,34 @@ Calculates the processed device.
 									{
 										beat_end=end;
 									}
-									/* store the beat averaged signal after the signal */
-									averaged_value=((processed_buffer->signals).float_values)+
-										number_of_samples;
-									value=((processed_buffer->signals).float_values)+beat_start;
-									beat_count=beat_counts;
-									for (i=beat_end-beat_start;i>0;i--)
+									/* check if the beat has been rejected by checking the status
+										of the first event in the beat interval */
+									while (event&&(event->time<beat_start))
 									{
-										if (0< *beat_count)
+										event=event->next;
+									}
+									if (!event||(event->time>beat_end)||(REJECTED!=event->status))
+									{
+										/* store the beat averaged signal after the signal */
+										averaged_value=((processed_buffer->signals).float_values)+
+											number_of_samples;
+										value=((processed_buffer->signals).float_values)+beat_start;
+										beat_count=beat_counts;
+										for (i=beat_end-beat_start;i>0;i--)
 										{
-											*averaged_value += *value;
+											if (0< *beat_count)
+											{
+												*averaged_value += *value;
+											}
+											else
+											{
+												*averaged_value= *value;
+											}
+											(*beat_count)++;
+											beat_count++;
+											averaged_value++;
+											value++;
 										}
-										else
-										{
-											*averaged_value= *value;
-										}
-										(*beat_count)++;
-										beat_count++;
-										averaged_value++;
-										value++;
 									}
 								}
 								/* store the beat averaged signal after the signal */
@@ -6343,14 +6600,23 @@ Calculates the processed device.
 								processed_buffer->start=number_of_samples;
 								processed_buffer->end=number_of_samples+max_times-1;
 								DEALLOCATE(beat_counts);
+								trace->valid_processing=1;
 							}
 							else
 							{
 								trace->valid_processing=0;
+								DEALLOCATE(name);
 								display_message(ERROR_MESSAGE,
 									"trace_process_device.  Could not allocate beat_counts");
 							}
 						}
+					}
+					else
+					{
+						trace->valid_processing=0;
+						DEALLOCATE(name);
+						display_message(ERROR_MESSAGE,
+							"trace_process_device.  Could not reallocate processed buffer");
 					}
 				}
 				else
@@ -6492,11 +6758,19 @@ Calculates the processed device.
 				float *imaginary_value,*imaginary_value_2,*real_value,*real_value_2,x,
 					x_2,y,y_2;
 				int buffer_offset,buffer_offset_2,i,*time;
+				struct Device *processed_device;
 				struct Signal_buffer *buffer;
 
 				/* recalculate cross correlation */
-				if ((trace->correlation.device_1)&&(trace->correlation.device_2))
+				if ((processed_device=trace->processed_device)&&
+					(processed_device->signal)&&(processed_device->signal->buffer)&&
+					(trace->correlation.device_1)&&(trace->correlation.device_2))
 				{
+					if (processed_device->signal->next)
+					{
+						destroy_Signal(&(processed_device->signal->next));
+						processed_device->signal->buffer->number_of_signals=1;
+					}
 					/* recalculate FFT */
 						/*???DB.  Data window ? */
 					if ((trace->valid_processing=fourier_transform(SQUARE_WINDOW,
@@ -6537,13 +6811,13 @@ Calculates the processed device.
 						}
 						/* transform back */
 						trace->valid_processing=inverse_fourier_transform(
-							trace->real_device_1,trace->imaginary_device_1,
-							trace->processed_device,(struct Device *)NULL);
+							trace->real_device_1,trace->imaginary_device_1,processed_device,
+							(struct Device *)NULL);
 						/* undo "wrap-around" order so that have negative and positive
 							lags */
-						buffer=trace->processed_device->signal->buffer;
+						buffer=processed_device->signal->buffer;
 						real_value=((buffer->signals).float_values)+
-							(trace->processed_device->signal->index);
+							(processed_device->signal->index);
 						time=buffer->times;
 						buffer_offset=buffer->number_of_signals;
 						buffer_offset_2=(buffer->number_of_samples)/2;
@@ -6564,12 +6838,19 @@ Calculates the processed device.
 			{
 				float *imaginary_value,*real_value,x,y;
 				int buffer_offset,i;
-				struct Device *device;
+				struct Device *device,*processed_device;
 				struct Signal_buffer *buffer;
 
-				if ((trace->highlight)&&(*(trace->highlight))&&
+				if ((processed_device=trace->processed_device)&&
+					(processed_device->signal)&&(processed_device->signal->buffer)&&
+					(trace->highlight)&&(*(trace->highlight))&&
 					(device= **(trace->highlight))&&(trace->real_device_1))
 				{
+					if (processed_device->signal->next)
+					{
+						destroy_Signal(&(processed_device->signal->next));
+						processed_device->signal->buffer->number_of_signals=1;
+					}
 					/* recalculate FFT */
 						/*???DB.  Data window ? */
 					if (trace->valid_processing=fourier_transform(SQUARE_WINDOW,
@@ -6598,10 +6879,10 @@ Calculates the processed device.
 						/* transform back */
 						trace->valid_processing=inverse_fourier_transform(
 							trace->real_device_1,trace->imaginary_device_1,
-							trace->processed_device,(struct Device *)NULL);
+							processed_device,(struct Device *)NULL);
 						/* auto-correlation is symmetric */
-						trace->processed_device->signal->buffer->end=(trace->
-							processed_device->signal->buffer->number_of_samples)/2-1;
+						processed_device->signal->buffer->end=
+							(processed_device->signal->buffer->number_of_samples)/2-1;
 					}
 				}
 			} break;
@@ -6609,12 +6890,19 @@ Calculates the processed device.
 			{
 				float *imaginary_value,*real_value;
 				int buffer_offset,high_pass,i,low_pass,notch,number_of_samples;
-				struct Device *device;
+				struct Device *device,*processed_device;
 				struct Signal_buffer *buffer;
 
-				if ((trace->highlight)&&(*(trace->highlight))&&
+				if ((processed_device=trace->processed_device)&&
+					(processed_device->signal)&&(processed_device->signal->buffer)&&
+					(trace->highlight)&&(*(trace->highlight))&&
 					(device= **(trace->highlight))&&(trace->real_device_1))
 				{
+					if (processed_device->signal->next)
+					{
+						destroy_Signal(&(processed_device->signal->next));
+						processed_device->signal->buffer->number_of_signals=1;
+					}
 					/* recalculate FFT */
 						/*???DB.  Data window ? */
 					if (trace->valid_processing=fourier_transform(SQUARE_WINDOW,
@@ -6762,14 +7050,14 @@ Calculates the processed device.
 						}
 						/* transform back */
 						trace->valid_processing=inverse_fourier_transform(
-							trace->real_device_1,trace->imaginary_device_1,
-							trace->processed_device,(struct Device *)NULL);
+							trace->real_device_1,trace->imaginary_device_1,processed_device,
+							(struct Device *)NULL);
 						extract_signal_information((struct FE_node *)NULL,
 							(struct Draw_package *)NULL,device,1,1,0,(int *)NULL,
 							&number_of_samples,(float **)NULL,(float **)NULL,
 							(enum Event_signal_status **)NULL,(char **)NULL,(int *)NULL,
 							(float *)NULL,(float *)NULL);
-						trace->processed_device->signal->buffer->end=number_of_samples-1;
+						processed_device->signal->buffer->end=number_of_samples-1;
 					}
 				}
 			} break;
@@ -6903,7 +7191,7 @@ int open_trace_window(struct Trace_window **trace_address,Widget parent,
 	enum Event_detection_objective *objective,enum Datum_type *datum_type,
 	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
-	int *threshold,int *minimum_separation,float *level,int *level_width,
+	int *threshold,int *minimum_separation,float *level,int *average_width,
 	int *start_search_interval,int **search_interval_divisions,
 	int *end_search_interval,int screen_width,int screen_height,
 	struct Signal_drawing_information *signal_drawing_information,
@@ -6932,7 +7220,7 @@ If <*trace_address> is NULL, a trace window with the specified <parent> and
 					trace_window_shell,identifying_colour,analysis_mode,detection,
 					objective,datum_type,edit_order,highlight,rig,datum,potential_time,
 					event_number,number_of_events,threshold,minimum_separation,level,
-					level_width,start_search_interval,search_interval_divisions,
+					average_width,start_search_interval,search_interval_divisions,
 					end_search_interval,screen_height,signal_drawing_information,
 					user_interface))
 				{
@@ -6957,6 +7245,7 @@ If <*trace_address> is NULL, a trace window with the specified <parent> and
 							trace->area_1.beat_averaging.number_of_beats.down_arrow);
 					}
 					*trace_address=trace;
+					trace_change_signal(trace);
 					/* pop up the trace window shell */
 					XtPopup(trace->shell,XtGrabNone);
 					trace->open=1;
@@ -7363,18 +7652,20 @@ The callback for redrawing part of the drawing area in trace area 1.
 void redraw_trace_3_drawing_area(Widget widget,XtPointer trace_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 January 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 The callback for redrawing part of the drawing area in trace area 3.
 ==============================================================================*/
 {
 	Display *display;
-	int axes_height,axes_left,axes_top,axes_width,current_data_interval,
-		edit_start,edit_diff,end_analysis_interval,first_data,*first_data_array,
-		height,i,last_data,*last_data_array,number_of_data_intervals,
-		number_of_events,redraw,signal_height,start_analysis_interval,width;
+	int axes_height,axes_left,axes_top,axes_width,beat_end,beat_start,
+		current_data_interval,edit_start,edit_diff,end_analysis_interval,first_data,
+		*first_data_array,height,i,last_data,*last_data_array,
+		number_of_data_intervals,number_of_events,redraw,signal_height,
+		start_analysis_interval,width;
 	struct Device *device;
+	struct Event *event;
 	struct Signal_buffer *buffer;
 	struct Signal_drawing_information *signal_drawing_information;
 	struct Trace_window *trace;
@@ -7486,13 +7777,33 @@ The callback for redrawing part of the drawing area in trace area 3.
 									/* draw the active signal */
 									first_data=trace_area_3->edit.first_data;
 									last_data=trace_area_3->edit.last_data;
-									draw_signal((struct FE_node *)NULL,
-										(struct Draw_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
-										&first_data,&last_data,0,0,trace_area_3->drawing->width,
-										trace_area_3->drawing->height,
-										trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
-										&axes_width,&axes_height,signal_drawing_information,
-										user_interface);
+									if ((True==XmToggleButtonGadgetGetState((trace->area_3).edit.
+										objective_toggle))&&(trace->processed_device)&&
+										(trace->valid_processing))
+									{
+										trace->processed_device->signal_minimum=
+											device->signal_minimum;
+										trace->processed_device->signal_maximum=
+											device->signal_maximum;
+										draw_signal((struct FE_node *)NULL,
+											(struct Draw_package *)NULL,trace->processed_device,
+											EDIT_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
+											trace_area_3->drawing->width,
+											trace_area_3->drawing->height,
+											trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
+											&axes_width,&axes_height,signal_drawing_information,
+											user_interface);
+									}
+									else
+									{
+										draw_signal((struct FE_node *)NULL,
+											(struct Draw_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
+											&first_data,&last_data,0,0,trace_area_3->drawing->width,
+											trace_area_3->drawing->height,
+											trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
+											&axes_width,&axes_height,signal_drawing_information,
+											user_interface);
+									}
 									trace_area_3->axes_left=axes_left;
 									trace_area_3->axes_top=axes_top;
 									trace_area_3->axes_width=axes_width;
@@ -7534,6 +7845,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 										if (True==XmToggleButtonGadgetGetState((trace->area_3).
 											beat_averaging.overlay_beats_toggle))
 										{
+#if defined (OLD_CODE)
 											if (*((trace->event_detection).search_interval_divisions))
 											{
 												first_data_array[0]=
@@ -7574,6 +7886,103 @@ The callback for redrawing part of the drawing area in trace area 3.
 												number_of_data_intervals++;
 												first_data_array[number_of_events]=buffer->start;
 												last_data_array[number_of_events]=buffer->end;
+											}
+#endif /* defined (OLD_CODE) */
+											if ((trace->highlight)&&(*(trace->highlight))&&
+												(**(trace->highlight))&&
+												((**(trace->highlight))->signal))
+											{
+												event=(**(trace->highlight))->signal->first_event;
+											}
+											else
+											{
+												event=(struct Event *)NULL;
+											}
+											number_of_data_intervals=0;
+											current_data_interval=0;
+											if (*((trace->event_detection).search_interval_divisions))
+											{
+												beat_start=
+													*((trace->event_detection).start_search_interval);
+												for (i=0;i<number_of_events;i++)
+												{
+													if (i<number_of_events-1)
+													{
+														beat_end=(*((trace->event_detection).
+															search_interval_divisions))[i]-1;
+													}
+													else
+													{
+														beat_end=
+															*((trace->event_detection).end_search_interval);
+													}
+													while (event&&(event->time<beat_start))
+													{
+														event=event->next;
+													}
+													if (!event||(event->time>beat_end)||
+														(REJECTED!=event->status))
+													{
+														if (event&&(event->number==
+															*((trace->event_detection).event_number)))
+														{
+															current_data_interval=number_of_data_intervals;
+														}
+														first_data_array[number_of_data_intervals]=
+															beat_start;
+														last_data_array[number_of_data_intervals]=beat_end;
+														number_of_data_intervals++;
+													}
+													beat_start=beat_end+1;
+												}
+											}
+											else
+											{
+												edit_start=
+													*(trace->event_detection.start_search_interval);
+												edit_diff= *(trace->event_detection.
+													end_search_interval)-edit_start;
+												beat_start=edit_start;
+												for (i=0;i<number_of_events;i++)
+												{
+													if (i<number_of_events-1)
+													{
+														beat_end=edit_start+(int)((float)(edit_diff*(i+1))/
+															(float)number_of_events+0.5)-1;
+													}
+													else
+													{
+														beat_end=
+															*((trace->event_detection).end_search_interval);
+													}
+													while (event&&!((beat_start<=event->time)&&
+														(event->time<=beat_end)))
+													{
+														event=event->next;
+													}
+													if (!event||(REJECTED!=event->status))
+													{
+														if (event&&(event->number==
+															*((trace->event_detection).event_number)))
+														{
+															current_data_interval=number_of_data_intervals;
+														}
+														first_data_array[number_of_data_intervals]=
+															beat_start;
+														last_data_array[number_of_data_intervals]=beat_end;
+														number_of_data_intervals++;
+													}
+													beat_start=beat_end+1;
+												}
+											}
+											if ((trace->valid_processing)&&
+												(True==XmToggleButtonGadgetGetState((trace->area_3).
+												beat_averaging.beat_averaging_toggle)))
+											{
+												first_data_array[number_of_data_intervals]=
+													buffer->start;
+												last_data_array[number_of_data_intervals]=buffer->end;
+												number_of_data_intervals++;
 											}
 										}
 										else
@@ -7779,7 +8188,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 
 int trace_change_signal(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 14 January 2000
+LAST MODIFIED : 15 February 2000
 
 DESCRIPTION :
 Called when the "highlighted_device" is changed.
@@ -7796,6 +8205,7 @@ Called when the "highlighted_device" is changed.
 		{
 			case EVENT_DETECTION:
 			{
+				trace_process_device(trace);
 				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
 					(XtPointer)NULL);
 				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
@@ -7883,1029 +8293,6 @@ Called when the "highlighted_device" is changed.
 
 	return (return_code);
 } /* trace_change_signal */
-
-#if defined (OLD_CODE)
-int trace_change_signal(struct Trace_window *trace)
-/*******************************************************************************
-LAST MODIFIED : 13 January 2000
-
-DESCRIPTION :
-Called when the "highlighted_device" is changed.
-???DB.  More work needed.  Pass device/signal ?
-==============================================================================*/
-{
-	char value_string[20];
-	float *averaged_value,beat_width,*imaginary_value,*imaginary_value_2,
-		processed_frequency,*processed_value,*real_value,*real_value_2,*time_float,
-		*times,*value,value_end,*values,value_start,x,x_2,y,y_2;
-	int average_end,average_start,average_width=5,
-		/*???DB.  average_width should be analysis->gradient_average_width */
-		*beat_count,*beat_counts,beat_number,beat_start,beat_end,buffer_offset,
-		buffer_offset_2,*divisions,end,high_pass,i,low_pass,max_times,notch,
-		number_of_beats,number_of_samples,*processed_time,return_code,start,
-		start_time,*time;
-	struct Device *device,*processed_device;
-	struct Signal_buffer *buffer,*processed_buffer;
-
-	ENTER(trace_change_signal);
-	/*???debug */
-	printf("enter trace_change_signal\n");
-	if (trace)
-	{
-		switch (trace->analysis_mode)
-		{
-			case EVENT_DETECTION:
-			{
-				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-			} break;
-			case BEAT_AVERAGING:
-			{
-				values=(float *)NULL;
-				times=(float *)NULL;
-				if ((trace->highlight)&&(*(trace->highlight))&&
-					(device= **(trace->highlight))&&extract_signal_information(
-					(struct FE_node *)NULL,(struct Draw_package *)NULL,device,1,1,0,
-					(int *)NULL,&number_of_samples,&times,&values,
-					(enum Event_signal_status **)NULL,(char **)NULL,(int *)NULL,
-					(float *)NULL,(float *)NULL)&&(0<number_of_samples)&&
-					(processed_device=trace->processed_device)&&
-					(processed_device->signal)&&(processed_device->channel)&&
-					(processed_buffer=processed_device->signal->buffer))
-				{
-					/* allow room for the beat averaged signal to be stored after the
-						signal */
-					if (2*number_of_samples!=processed_buffer->number_of_samples)
-					{
-						if (REALLOCATE(processed_time,processed_buffer->times,int,
-							2*number_of_samples)&&REALLOCATE(value,(processed_buffer->
-							signals).float_values,float,2*number_of_samples))
-						{
-							processed_buffer->times=processed_time;
-							(processed_buffer->signals).float_values=value;
-							processed_buffer->number_of_samples=2*number_of_samples;
-							processed_buffer->number_of_signals=1;
-							trace->valid_processing=1;
-						}
-						else
-						{
-							DEALLOCATE(processed_time);
-							display_message(ERROR_MESSAGE,
-								"trace_change_signal.  Could not allocate processed buffer");
-							trace->valid_processing=0;
-						}
-					}
-					else
-					{
-						processed_time=processed_buffer->times;
-						value=(processed_buffer->signals).float_values;
-						trace->valid_processing=1;
-					}
-					if (trace->valid_processing)
-					{
-						/* copy the values */
-						time_float=times;
-						value=values;
-						processed_time=processed_buffer->times;
-						processed_value=((processed_buffer->signals).float_values)+
-							(trace->processed_device->signal->index);
-						buffer_offset_2=processed_buffer->number_of_signals;
-						processed_device->channel->offset=0;
-						processed_device->channel->gain=1;
-						processed_device->signal_maximum=0;
-						processed_device->signal_minimum=1;
-						processed_frequency=(float)number_of_samples/
-							(times[number_of_samples-1]-times[0]);
-						processed_buffer->frequency=processed_frequency;
-						processed_buffer->start=0;
-						processed_buffer->end=number_of_samples-1;
-						for (i=number_of_samples;i>0;i--)
-						{
-							*processed_value= *value;
-							processed_value += buffer_offset_2;
-							value++;
-							*processed_time=(int)((*time_float)*processed_frequency+0.5);
-							processed_time++;
-							time_float++;
-						}
-						/* do any processing */
-						if (True==XmToggleButtonGadgetGetState((trace->area_3).
-							beat_averaging.baseline_toggle))
-						{
-							start= *(trace->event_detection.start_search_interval);
-							divisions= *(trace->event_detection.search_interval_divisions);
-							end= *(trace->event_detection.end_search_interval);
-							number_of_beats= *(trace->event_detection.number_of_events);
-							beat_start=start;
-							average_start=beat_start-average_width/2;
-							if (average_start<0)
-							{
-								average_start=0;
-							}
-							average_end=average_start+average_width;
-							if (average_end>number_of_samples)
-							{
-								average_end=number_of_samples;
-							}
-							value=((processed_buffer->signals).float_values)+average_start;
-							value_end=0;
-							for (i=average_end-average_start;i>0;i--)
-							{
-								value_end += *value;
-								value++;
-							}
-							value_end /= (float)(average_end-average_start);
-							beat_end=beat_start-1;
-							for (beat_number=1;beat_number<=number_of_beats;beat_number++)
-							{
-								value_start=value_end;
-								beat_start=beat_end+1;
-								if (beat_number<number_of_beats)
-								{
-									if (divisions)
-									{
-										beat_end=divisions[beat_number-1]-1;
-									}
-									else
-									{
-										beat_end=start+(int)((float)((end-start)*beat_number)/
-											(float)number_of_beats+0.5)-1;
-									}
-								}
-								else
-								{
-									beat_end=end;
-								}
-								average_start=beat_end-average_width/2;
-								if (average_start<0)
-								{
-									average_start=0;
-								}
-								average_end=average_start+average_width;
-								if (average_end>number_of_samples)
-								{
-									average_end=number_of_samples;
-								}
-								value=
-									((processed_buffer->signals).float_values)+average_start;
-								value_end=0;
-								for (i=average_end-average_start;i>0;i--)
-								{
-									value_end += *value;
-									value++;
-								}
-								value_end /= (float)(average_end-average_start);
-								value=((processed_buffer->signals).float_values)+beat_start;
-								beat_width=(float)(beat_end-beat_start);
-								for (i=beat_end-beat_start;i>=0;i--)
-								{
-									*value -= ((beat_width-(float)i)*value_end+
-										(float)i*value_start)/beat_width;
-									value++;
-								}
-							}
-						}
-						if (True==XmToggleButtonGadgetGetState((trace->area_3).
-							beat_averaging.beat_averaging_toggle))
-						{
-							start= *(trace->event_detection.start_search_interval);
-							divisions= *(trace->event_detection.search_interval_divisions);
-							end= *(trace->event_detection.end_search_interval);
-							number_of_beats= *(trace->event_detection.number_of_events);
-							beat_start=start;
-							if (divisions)
-							{
-								beat_end=divisions[0];
-								max_times=beat_end-beat_start;
-								if (max_times<end-divisions[number_of_beats-2]+1)
-								{
-									max_times=end-divisions[number_of_beats-2]+1;
-								}
-								for (i=1;i<number_of_beats-1;i++)
-								{
-									if (max_times<divisions[i]-divisions[i-1])
-									{
-										max_times=divisions[i]-divisions[i-1];
-									}
-								}
-							}
-							else
-							{
-								beat_end=beat_start+(end-start)/number_of_beats;
-								max_times=(end-start)/number_of_beats+1;
-							}
-							if (ALLOCATE(beat_counts,int,max_times))
-							{
-								beat_count=beat_counts;
-								for (i=max_times;i>0;i--)
-								{
-									*beat_count=0;
-									beat_count++;
-								}
-								/* store the beat averaged signal after the signal */
-								processed_time=(processed_buffer->times)+number_of_samples;
-								time=(processed_buffer->times)+beat_start;
-								/* averaged beat starts from time 0 */
-								start_time= *time;
-								for (i=max_times;i>0;i--)
-								{
-									*processed_time=(*time)-start_time;
-									processed_time++;
-									time++;
-								}
-								beat_end=start-1;
-								for (beat_number=1;beat_number<=number_of_beats;beat_number++)
-								{
-									beat_start=beat_end+1;
-									if (beat_number<number_of_beats)
-									{
-										if (divisions)
-										{
-											beat_end=divisions[beat_number-1]-1;
-										}
-										else
-										{
-											beat_end=start+(int)((float)((end-start)*beat_number)/
-												(float)number_of_beats+0.5)-1;
-										}
-									}
-									else
-									{
-										beat_end=end;
-									}
-									/* store the beat averaged signal after the signal */
-									averaged_value=((processed_buffer->signals).float_values)+
-										number_of_samples;
-									value=((processed_buffer->signals).float_values)+beat_start;
-									beat_count=beat_counts;
-									for (i=beat_end-beat_start;i>0;i--)
-									{
-										if (0< *beat_count)
-										{
-											*averaged_value += *value;
-										}
-										else
-										{
-											*averaged_value= *value;
-										}
-										(*beat_count)++;
-										beat_count++;
-										averaged_value++;
-										value++;
-									}
-								}
-								/* store the beat averaged signal after the signal */
-								averaged_value=((processed_buffer->signals).float_values)+
-									number_of_samples;
-								beat_count=beat_counts;
-								for (i=max_times;i>0;i--)
-								{
-									if (0< *beat_count)
-									{
-										*averaged_value /= (float)(*beat_count);
-									}
-									else
-									{
-										*averaged_value=(float)0;
-									}
-									averaged_value++;
-									beat_count++;
-								}
-#if defined (OLD_CODE)
-								if (0<beat_start)
-								{
-									averaged_value=(processed_buffer->signals).float_values;
-									value=averaged_value+beat_start;
-									processed_time=processed_buffer->times;
-									time=processed_time+beat_start;
-									/* averaged beat starts from time 0 */
-									start_time= *time;
-									for (i=beat_end-beat_start;i>0;i--)
-									{
-										*averaged_value= *value;
-										*value=0;
-										*processed_time=(*time)-start_time;
-										processed_time++;
-										time++;
-										averaged_value++;
-										value++;
-									}
-								}
-								for (beat_number=1;beat_number<number_of_beats;beat_number++)
-								{
-									beat_start=start+(int)((float)((end-start)*beat_number)/
-										(float)number_of_beats+0.5);
-									beat_end=beat_start+(end-start)/number_of_beats;
-									averaged_value=(processed_buffer->signals).float_values;
-									value=averaged_value+beat_start;
-									for (i=beat_end-beat_start;i>0;i--)
-									{
-										*averaged_value += *value;
-										*value=0;
-										averaged_value++;
-										value++;
-									}
-								}
-								averaged_value=(processed_buffer->signals).float_values;
-								for (i=beat_end-beat_start;i>0;i--)
-								{
-									*averaged_value /= (float)number_of_beats;
-									averaged_value++;
-								}
-								processed_buffer->start=0;
-								processed_buffer->end=beat_end-beat_start-1;
-								processed_buffer->number_of_samples=beat_end-beat_start;
-#endif /* defined (OLD_CODE) */
-								processed_buffer->start=number_of_samples;
-								processed_buffer->end=number_of_samples+max_times-1;
-								DEALLOCATE(beat_counts);
-							}
-							else
-							{
-								trace->valid_processing=0;
-								display_message(ERROR_MESSAGE,
-									"trace_change_signal.  Could not allocate beat_counts");
-							}
-						}
-					}
-				}
-				else
-				{
-					trace->valid_processing=0;
-				}
-				DEALLOCATE(values);
-				DEALLOCATE(times);
-				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-#if defined (OLD_CODE)
-				float channel_gain,channel_offset,*float_value;
-				short int *short_int_value;
-
-				/*???DB.  Doesn't do anything for linear combinations and probably
-					shouldn't */
-				if ((trace->highlight)&&(*(trace->highlight))&&
-					(device= **(trace->highlight))&&(device->signal)&&(device->channel)&&
-					(buffer=device->signal->buffer)&&
-					(0<(number_of_samples=buffer->number_of_samples))&&
-					(processed_device=trace->processed_device)&&
-					(processed_device->signal)&&(processed_device->channel)&&
-					(processed_buffer=processed_device->signal->buffer))
-				{
-					if (number_of_samples!=processed_buffer->number_of_samples)
-					{
-						if (REALLOCATE(processed_time,processed_buffer->times,int,
-							number_of_samples)&&REALLOCATE(value,
-							(processed_buffer->signals).float_values,float,number_of_samples))
-						{
-							processed_buffer->times=processed_time;
-							(processed_buffer->signals).float_values=value;
-							processed_buffer->number_of_samples=number_of_samples;
-							processed_buffer->number_of_signals=1;
-							trace->valid_processing=1;
-						}
-						else
-						{
-							DEALLOCATE(processed_time);
-							display_message(ERROR_MESSAGE,
-								"trace_change_signal.  Could not allocate processed buffer");
-							trace->valid_processing=0;
-						}
-					}
-					else
-					{
-						processed_time=processed_buffer->times;
-						value=(processed_buffer->signals).float_values;
-						trace->valid_processing=1;
-					}
-					if (trace->valid_processing)
-					{
-						/* copy the values */
-						buffer_offset=buffer->number_of_signals;
-						time=buffer->times;
-						value=((processed_buffer->signals).float_values)+
-							(trace->processed_device->signal->index);
-						buffer_offset_2=processed_buffer->number_of_signals;
-						channel_gain=device->channel->gain;
-						channel_offset=device->channel->offset;
-						processed_time=processed_buffer->times;
-						processed_device->channel->offset=0;
-						processed_device->channel->gain=1;
-						processed_device->signal_maximum=0;
-						processed_device->signal_minimum=1;
-						processed_buffer->frequency=buffer->frequency;
-						switch (buffer->value_type)
-						{
-							case SHORT_INT_VALUE:
-							{
-								short_int_value=((buffer->signals).short_int_values)+
-									(device->signal->index);
-								for (i=buffer->number_of_samples;i>0;i--)
-								{
-									*value=
-										channel_gain*((float)(*short_int_value)-channel_offset);
-									value += buffer_offset_2;
-									short_int_value += buffer_offset;
-									*processed_time= *time;
-									processed_time++;
-									time++;
-								}
-							} break;
-							case FLOAT_VALUE:
-							{
-								float_value=((buffer->signals).float_values)+
-									(device->signal->index);
-								for (i=buffer->number_of_samples;i>0;i--)
-								{
-									*value=channel_gain*((*float_value)-channel_offset);
-									value += buffer_offset_2;
-									float_value += buffer_offset;
-									*processed_time= *time;
-									processed_time++;
-									time++;
-								}
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,
-									"trace_change_signal.  Unknown buffer type");
-								trace->valid_processing=0;
-							}
-						}
-						/* do any processing */
-						if (trace->valid_processing)
-						{
-							if (True==XmToggleButtonGadgetGetState((trace->area_3).
-								beat_averaging.baseline_toggle))
-							{
-								start= *(trace->event_detection.start_search_interval);
-								end= *(trace->event_detection.end_search_interval);
-								number_of_beats= *(trace->event_detection.number_of_events);
-								beat_start=start;
-								average_start=beat_start-average_width/2;
-								if (average_start<0)
-								{
-									average_start=0;
-								}
-								average_end=average_start+average_width;
-								if (average_end>number_of_samples)
-								{
-									average_end=number_of_samples;
-								}
-								value=((processed_buffer->signals).float_values)+average_start;
-								value_end=0;
-								for (i=average_end-average_start;i>0;i--)
-								{
-									value_end += *value;
-									value++;
-								}
-								value_end /= (float)(average_end-average_start);
-								beat_end=beat_start-1;
-								for (beat_number=1;beat_number<=number_of_beats;beat_number++)
-								{
-									value_start=value_end;
-									beat_start=beat_end+1;
-									beat_end=start+(int)((float)((end-start)*beat_number)/
-										(float)number_of_beats+0.5);
-									average_start=beat_end-average_width/2;
-									if (average_start<0)
-									{
-										average_start=0;
-									}
-									average_end=average_start+average_width;
-									if (average_end>number_of_samples)
-									{
-										average_end=number_of_samples;
-									}
-									value=
-										((processed_buffer->signals).float_values)+average_start;
-									value_end=0;
-									for (i=average_end-average_start;i>0;i--)
-									{
-										value_end += *value;
-										value++;
-									}
-									value_end /= (float)(average_end-average_start);
-									value=((processed_buffer->signals).float_values)+beat_start;
-									beat_width=(float)(beat_end-beat_start);
-									for (i=beat_end-beat_start;i>=0;i--)
-									{
-										*value -= ((beat_width-(float)i)*value_end+
-											(float)i*value_start)/beat_width;
-										value++;
-									}
-								}
-							}
-							if (True==XmToggleButtonGadgetGetState((trace->area_3).
-								beat_averaging.beat_averaging_toggle))
-							{
-								start= *(trace->event_detection.start_search_interval);
-								end= *(trace->event_detection.end_search_interval);
-								number_of_beats= *(trace->event_detection.number_of_events);
-								beat_start=start;
-								beat_end=beat_start+(end-start)/number_of_beats;
-								if (0<beat_start)
-								{
-									averaged_value=(processed_buffer->signals).float_values;
-									value=averaged_value+beat_start;
-									processed_time=processed_buffer->times;
-									time=processed_time+beat_start;
-									for (i=beat_end-beat_start;i>0;i--)
-									{
-										*averaged_value= *value;
-										*value=0;
-										*processed_time= *time;
-										processed_time++;
-										time++;
-										averaged_value++;
-										value++;
-									}
-								}
-								for (beat_number=1;beat_number<number_of_beats;beat_number++)
-								{
-									beat_start=start+(int)((float)((end-start)*beat_number)/
-										(float)number_of_beats+0.5);
-									beat_end=beat_start+(end-start)/number_of_beats;
-									averaged_value=(processed_buffer->signals).float_values;
-									value=averaged_value+beat_start;
-									for (i=beat_end-beat_start;i>0;i--)
-									{
-										*averaged_value += *value;
-										*value=0;
-										averaged_value++;
-										value++;
-									}
-								}
-								averaged_value=(processed_buffer->signals).float_values;
-								for (i=beat_end-beat_start;i>0;i--)
-								{
-									*averaged_value /= (float)number_of_beats;
-									averaged_value++;
-								}
-								processed_buffer->start=0;
-								processed_buffer->end=beat_end-beat_start-1;
-								processed_buffer->number_of_samples=beat_end-beat_start;
-							}
-						}
-					}
-				}
-				else
-				{
-					trace->valid_processing=0;
-				}
-				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-#endif /* defined (OLD_CODE) */
-			} break;
-			case FREQUENCY_DOMAIN:
-			{
-				if ((trace->highlight)&&(*(trace->highlight))&&
-					(device= **(trace->highlight))&&(trace->real_device_1))
-				{
-					/* recalculate FFT */
-						/*???DB.  Data window ? */
-					if (trace->valid_processing=
-						fourier_transform(trace->frequency_domain.window_type,device,
-						(struct Device *)NULL,trace->real_device_1,
-						trace->imaginary_device_1))
-					{
-						/* remove DC */
-						buffer=trace->real_device_1->signal->buffer;
-						((buffer->signals).float_values)[trace->real_device_1->signal->
-							index]=0.;
-						((buffer->signals).float_values)[trace->imaginary_device_1->signal->
-							index]=0.;
-						switch ((trace->frequency_domain).display_mode)
-						{
-							case REAL_IMAGINARY:
-							{
-								strcpy(trace->real_device_1->description->name,"Re");
-								strcpy(trace->imaginary_device_1->description->name,"Im");
-							} break;
-							case AMPLITUDE_PHASE:
-							{
-								strcpy(trace->real_device_1->description->name,"Am");
-								strcpy(trace->imaginary_device_1->description->name,"Ph");
-								buffer=trace->real_device_1->signal->buffer;
-								real_value=((buffer->signals).float_values)+
-									(trace->real_device_1->signal->index);
-								imaginary_value=((buffer->signals).float_values)+
-									(trace->imaginary_device_1->signal->index);
-								buffer_offset=buffer->number_of_signals;
-								for (i=buffer->number_of_samples;i>0;i--)
-								{
-									x= *real_value;
-									y= *imaginary_value;
-									if ((x!=0)||(y!=0))
-									{
-										*real_value=sqrt(x*x+y*y);
-										*imaginary_value=atan2(y,x);
-									}
-									real_value += buffer_offset;
-									imaginary_value += buffer_offset;
-								}
-								trace->imaginary_device_1->channel->gain=1.;
-							} break;
-						}
-					}
-				}
-				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-			} break;
-			case POWER_SPECTRA:
-			{
-				if ((trace->highlight)&&(*(trace->highlight))&&
-					(device= **(trace->highlight))&&(trace->real_device_1))
-				{
-					/* recalculate FFT */
-						/*???DB.  Data window ? */
-					if (trace->valid_processing=fourier_transform(SQUARE_WINDOW,
-						device,(struct Device *)NULL,trace->real_device_1,
-						trace->imaginary_device_1))
-					{
-						buffer=trace->real_device_1->signal->buffer;
-						if ((trace->power_spectra).maximum_frequency<0)
-						{
-							(trace->power_spectra).maximum_frequency=
-								(float)(buffer->number_of_samples)/(buffer->frequency);
-							sprintf(value_string,"%g",
-								(trace->power_spectra).maximum_frequency);
-							XtVaSetValues(
-								(trace->area_3).power_spectra.maximum_frequency_text_field,
-								XmNvalue,value_string,
-								XmNeditable,True,
-								NULL);
-						}
-						XtVaSetValues(
-							(trace->area_3).power_spectra.maximum_frequency_scroll_bar,
-							XmNvalue,(int)(((trace->power_spectra).maximum_frequency)*
-							(buffer->frequency)*100./(buffer->number_of_samples)+0.5),
-							NULL);
-						if ((trace->power_spectra).minimum_frequency<0)
-						{
-							(trace->power_spectra).minimum_frequency=0.;
-							sprintf(value_string,"%g",
-								(trace->power_spectra).minimum_frequency);
-							XtVaSetValues(
-								(trace->area_3).power_spectra.minimum_frequency_text_field,
-								XmNvalue,value_string,
-								XmNeditable,True,
-								NULL);
-						}
-						XtVaSetValues(
-							(trace->area_3).power_spectra.minimum_frequency_scroll_bar,
-							XmNvalue,(int)(((trace->power_spectra).minimum_frequency)*
-							(buffer->frequency)*100./(buffer->number_of_samples)+0.5),
-							NULL);
-						/* calculate power spectrum */
-						real_value=((buffer->signals).float_values)+
-							(trace->real_device_1->signal->index);
-						imaginary_value=((buffer->signals).float_values)+
-							(trace->imaginary_device_1->signal->index);
-						buffer_offset=buffer->number_of_signals;
-						/* remove DC */
-						*real_value=0.;
-						for (i=buffer->number_of_samples-1;i>0;i--)
-						{
-							real_value += buffer_offset;
-							imaginary_value += buffer_offset;
-							x= *real_value;
-							y= *imaginary_value;
-							*real_value=sqrt(x*x+y*y);
-						}
-					}
-				}
-				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-			} break;
-			case CROSS_CORRELATION:
-			{
-				/* put the signal in the correct time domain */
-				if ((trace->highlight)&&(*(trace->highlight)))
-				{
-					device= **(trace->highlight);
-				}
-				else
-				{
-					device=(struct Device *)NULL;
-				}
-				if (trace->correlation.signal_1_input)
-				{
-					trace->correlation.device_1=device;
-					redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
-						(XtPointer)NULL);
-				}
-				else
-				{
-					trace->correlation.device_2=device;
-					redraw_trace_2_drawing_area((Widget)NULL,(XtPointer)trace,
-						(XtPointer)NULL);
-				}
-				/* recalculate cross correlation */
-				if ((trace->correlation.device_1)&&(trace->correlation.device_2))
-				{
-					/* recalculate FFT */
-						/*???DB.  Data window ? */
-					if ((trace->valid_processing=fourier_transform(SQUARE_WINDOW,
-						trace->correlation.device_1,(struct Device *)NULL,
-						trace->real_device_1,trace->imaginary_device_1))&&
-						(trace->valid_processing=fourier_transform(SQUARE_WINDOW,
-						trace->correlation.device_2,(struct Device *)NULL,
-						trace->real_device_2,trace->imaginary_device_2)))
-					{
-						/* calculate transform_1 * conjugate(transform_2) */
-						buffer=trace->real_device_1->signal->buffer;
-						real_value=((buffer->signals).float_values)+
-							(trace->real_device_1->signal->index);
-						imaginary_value=((buffer->signals).float_values)+
-							(trace->imaginary_device_1->signal->index);
-						buffer_offset=buffer->number_of_signals;
-						buffer=trace->real_device_2->signal->buffer;
-						real_value_2=((buffer->signals).float_values)+
-							(trace->real_device_2->signal->index);
-						imaginary_value_2=((buffer->signals).float_values)+
-							(trace->imaginary_device_2->signal->index);
-						buffer_offset_2=buffer->number_of_signals;
-						/* remove DC */
-						*real_value=0.;
-						*imaginary_value=0.;
-						for (i=buffer->number_of_samples-1;i>0;i--)
-						{
-							real_value += buffer_offset;
-							imaginary_value += buffer_offset;
-							real_value_2 += buffer_offset_2;
-							imaginary_value_2 += buffer_offset_2;
-							x= *real_value;
-							y= *imaginary_value;
-							x_2= *real_value_2;
-							y_2= *imaginary_value_2;
-							*real_value=x*x_2+y*y_2;
-							*imaginary_value=y*x_2-x*y_2;
-						}
-						/* transform back */
-						trace->valid_processing=inverse_fourier_transform(
-							trace->real_device_1,trace->imaginary_device_1,
-							trace->processed_device,(struct Device *)NULL);
-						/* undo "wrap-around" order so that have negative and positive
-							lags */
-						buffer=trace->processed_device->signal->buffer;
-						real_value=((buffer->signals).float_values)+
-							(trace->processed_device->signal->index);
-						time=buffer->times;
-						buffer_offset=buffer->number_of_signals;
-						buffer_offset_2=(buffer->number_of_samples)/2;
-						for (i=buffer_offset_2;i>0;i--)
-						{
-							x= *real_value;
-							*real_value=real_value[buffer_offset_2];
-							real_value[buffer_offset_2]=x;
-							*time -= buffer_offset_2;
-							time[buffer_offset_2] -= buffer_offset_2;
-							real_value += buffer_offset;
-							time++;
-						}
-					}
-				}
-				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-			} break;
-			case AUTO_CORRELATION:
-			{
-				if ((trace->highlight)&&(*(trace->highlight))&&
-					(device= **(trace->highlight))&&(trace->real_device_1))
-				{
-					/* recalculate FFT */
-						/*???DB.  Data window ? */
-					if (trace->valid_processing=fourier_transform(SQUARE_WINDOW,
-						device,(struct Device *)NULL,trace->real_device_1,
-						trace->imaginary_device_1))
-					{
-						/* calculate transform * conjugate(transform) (power spectrum) */
-						buffer=trace->real_device_1->signal->buffer;
-						real_value=((buffer->signals).float_values)+
-							(trace->real_device_1->signal->index);
-						imaginary_value=((buffer->signals).float_values)+
-							(trace->imaginary_device_1->signal->index);
-						buffer_offset=buffer->number_of_signals;
-						/* remove DC */
-						*real_value=0.;
-						*imaginary_value=0.;
-						for (i=buffer->number_of_samples-1;i>0;i--)
-						{
-							real_value += buffer_offset;
-							imaginary_value += buffer_offset;
-							x= *real_value;
-							y= *imaginary_value;
-							*real_value=x*x+y*y;
-							*imaginary_value=0.;
-						}
-						/* transform back */
-						trace->valid_processing=inverse_fourier_transform(
-							trace->real_device_1,trace->imaginary_device_1,
-							trace->processed_device,(struct Device *)NULL);
-						/* auto-correlation is symmetric */
-						trace->processed_device->signal->buffer->end=(trace->
-							processed_device->signal->buffer->number_of_samples)/2-1;
-					}
-				}
-				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-			} break;
-			case FILTERING:
-			{
-				if ((trace->highlight)&&(*(trace->highlight))&&
-					(device= **(trace->highlight))&&(trace->real_device_1))
-				{
-					/* recalculate FFT */
-						/*???DB.  Data window ? */
-					if (trace->valid_processing=fourier_transform(SQUARE_WINDOW,
-						device,(struct Device *)NULL,trace->real_device_1,
-						trace->imaginary_device_1))
-					{
-						/* perform filtering */
-						buffer=trace->real_device_1->signal->buffer;
-						buffer_offset=buffer->number_of_signals;
-						real_value=((buffer->signals).float_values)+
-							(trace->real_device_1->signal->index);
-						imaginary_value=((buffer->signals).float_values)+
-							(trace->imaginary_device_1->signal->index);
-						/* remove DC */
-						*real_value=0.;
-						*imaginary_value=0.;
-						if ((trace->filtering).low_pass_frequency<0)
-						{
-							(trace->filtering).low_pass_frequency=
-								(float)(buffer->number_of_samples)/(buffer->frequency);
-							sprintf(value_string,"%g",(trace->filtering).low_pass_frequency);
-							XtVaSetValues((trace->area_3).filtering.low_pass_text_field,
-								XmNvalue,value_string,
-								XmNeditable,True,
-								NULL);
-						}
-						if ((trace->filtering).high_pass_frequency<0)
-						{
-							(trace->filtering).high_pass_frequency=0.;
-							sprintf(value_string,"%g",(trace->filtering).high_pass_frequency);
-							XtVaSetValues((trace->area_3).filtering.high_pass_text_field,
-								XmNvalue,value_string,
-								XmNeditable,True,
-								NULL);
-						}
-						if ((trace->filtering).notch_frequency<0)
-						{
-							(trace->filtering).notch_frequency=
-								(float)(buffer->number_of_samples)/(buffer->frequency);
-							if ((float)50<(trace->filtering).notch_frequency)
-							{
-								(trace->filtering).notch_frequency=(float)50;
-							}
-							sprintf(value_string,"%g",(trace->filtering).notch_frequency);
-							XtVaSetValues((trace->area_3).filtering.notch_text_field,
-								XmNvalue,value_string,
-								XmNeditable,True,
-								NULL);
-							(trace->filtering).notch_on=0;
-							XtVaSetValues(trace->area_3.filtering.notch_toggle,
-								XmNset,False,
-								NULL);
-						}
-						low_pass=(int)(((trace->filtering).low_pass_frequency)*
-							(buffer->frequency)+0.5);
-						if (low_pass<0)
-						{
-							low_pass=0;
-						}
-						else
-						{
-							if (low_pass>buffer->number_of_samples)
-							{
-								low_pass=buffer->number_of_samples;
-							}
-						}
-						XtVaSetValues((trace->area_3).filtering.low_pass_scroll_bar,
-							XmNvalue,(int)(((trace->filtering).low_pass_frequency)*
-							(buffer->frequency)*100./(buffer->number_of_samples)+0.5),
-							NULL);
-						high_pass=(int)(((trace->filtering).high_pass_frequency)*
-							(buffer->frequency)+0.5);
-						if (high_pass<0)
-						{
-							high_pass=0;
-						}
-						else
-						{
-							if (high_pass>buffer->number_of_samples)
-							{
-								high_pass=buffer->number_of_samples;
-							}
-						}
-						XtVaSetValues((trace->area_3).filtering.high_pass_scroll_bar,
-							XmNvalue,(int)(((trace->filtering).high_pass_frequency)*
-							(buffer->frequency)*100./(buffer->number_of_samples)+0.5),
-							NULL);
-						if ((trace->filtering).notch_on)
-						{
-/*							notch=(int)(((trace->filtering).notch_frequency)*
-								(buffer->frequency)+0.5);*/
-							notch=(int)floor(((trace->filtering).notch_frequency)*
-								(buffer->frequency));
-							if ((notch<0)||(notch>=(buffer->number_of_samples)-1))
-							{
-								notch= -1;
-							}
-						}
-						else
-						{
-							notch= -1;
-						}
-						if (notch>=0)
-						{
-/*							real_value[(notch-1)*buffer_offset]=0;
-							imaginary_value[(notch-1)*buffer_offset]=0;*/
-							real_value[notch*buffer_offset]=0;
-							imaginary_value[notch*buffer_offset]=0;
-							real_value[(notch+1)*buffer_offset]=0;
-							imaginary_value[(notch+1)*buffer_offset]=0;
-						}
-						if (high_pass<low_pass)
-						{
-							for (i=high_pass;i>0;i--)
-							{
-								*real_value=0.;
-								real_value += buffer_offset;
-								*imaginary_value=0.;
-								imaginary_value += buffer_offset;
-							}
-							real_value += (low_pass-high_pass)*buffer_offset;
-							imaginary_value += (low_pass-high_pass)*buffer_offset;
-							for (i=(buffer->number_of_samples)-low_pass-1;i>0;i--)
-							{
-								*real_value=0.;
-								real_value += buffer_offset;
-								*imaginary_value=0.;
-								imaginary_value += buffer_offset;
-							}
-						}
-						else
-						{
-							real_value += low_pass*buffer_offset;
-							imaginary_value += low_pass*buffer_offset;
-							for (i=high_pass-low_pass-2;i>0;i--)
-							{
-								*real_value=0.;
-								real_value += buffer_offset;
-								*imaginary_value=0.;
-								imaginary_value += buffer_offset;
-							}
-						}
-						/* transform back */
-						trace->valid_processing=inverse_fourier_transform(
-							trace->real_device_1,trace->imaginary_device_1,
-							trace->processed_device,(struct Device *)NULL);
-						extract_signal_information((struct FE_node *)NULL,
-							(struct Draw_package *)NULL,device,1,1,0,(int *)NULL,
-							&number_of_samples,(float **)NULL,(float **)NULL,
-							(enum Event_signal_status **)NULL,(char **)NULL,(int *)NULL,
-							(float *)NULL,(float *)NULL);
-						trace->processed_device->signal->buffer->end=number_of_samples-1;
-#if defined (OLD_CODE)
-						buffer=device->signal->buffer;
-						trace->processed_device->signal->buffer->end=
-							(buffer->end)-(buffer->start);
-#endif /* defined (OLD_CODE) */
-					}
-				}
-				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-					(XtPointer)NULL);
-			} break;
-		}
-		trace_update_signal_controls(trace);
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-	/*???debug */
-	printf("leave trace_change_signal\n");
-	LEAVE;
-
-	return (return_code);
-} /* trace_change_signal */
-#endif /* defined (OLD_CODE) */
 
 int trace_change_event(struct Trace_window *trace)
 /*******************************************************************************
