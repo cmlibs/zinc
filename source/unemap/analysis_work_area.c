@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 18 April 2001
+LAST MODIFIED : 04 May 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -14325,7 +14325,7 @@ remain unchanged.
 	return(return_code);
 }/*analysis_get_device_and_numbers*/
 
-#if !defined (UNEMAP_USE_3D)
+/*#if !defined (UNEMAP_USE_3D)*/
 static int highlight_analysis_perform_highlighting(struct Analysis_work_area *analysis,
 	unsigned int multiple_selection,struct Device **new_highlight,
 	int new_device_number,int new_electrode_number,int new_auxiliary_number)
@@ -14575,7 +14575,7 @@ else
 	LEAVE;
 	return(return_code);
 } /*highlight_analysis_perform_highlighting */
-#endif /* not defined (UNEMAP_USE_3D) */
+/*#endif not defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
 static int rig_node_highlight_change(struct FE_node *node,void *change_data_void)
@@ -14988,26 +14988,39 @@ Guts of highlighting happens in highlight_analysis_perform_highlighting
 				*auxiliary_number=new_auxiliary_number;
 			}
 #if defined(UNEMAP_USE_3D)
-			node_selection=get_unemap_package_FE_node_selection(analysis->unemap_package);
-			/* if the multiple_selection flag NOT set, unselect everything */
-			if (!multiple_selection)
-			{
-				FE_node_selection_clear(node_selection);
-			}
-			/*get the rig_node corresponding to the device */
-			device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
-			rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
-			rig_node=find_rig_node_given_device(*new_highlight,rig_node_group,device_name_field);
-			/*trigger the selction callback*/		
-			/* if it wasn't highlighted, highlight it (and vice versa)*/
-			if(!((*new_highlight)->highlight))
-			{
-				FE_node_selection_select_node(node_selection,rig_node);
-			}
-			else
-			{
-				FE_node_selection_unselect_node(node_selection,rig_node);
-			}
+      if (analysis->unemap_package)
+      {
+        node_selection=get_unemap_package_FE_node_selection(
+          analysis->unemap_package);
+        /* if the multiple_selection flag NOT set, unselect everything */
+        if (!multiple_selection)
+        {
+          FE_node_selection_clear(node_selection);
+        }
+        /*get the rig_node corresponding to the device */
+        device_name_field=get_unemap_package_device_name_field(
+          analysis->unemap_package);
+        rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
+        rig_node=find_rig_node_given_device(*new_highlight,rig_node_group,
+          device_name_field);
+        /*trigger the selction callback*/		
+        /* if it wasn't highlighted, highlight it (and vice versa)*/
+        if(!((*new_highlight)->highlight))
+        {
+          FE_node_selection_select_node(node_selection,rig_node);
+        }
+        else
+        {
+          FE_node_selection_unselect_node(node_selection,rig_node);
+        }
+      }
+      else
+      {
+        /*highlight the device */
+        return_code=highlight_analysis_perform_highlighting(analysis,
+          multiple_selection,new_highlight,new_device_number,
+          new_electrode_number,new_auxiliary_number);
+      }
 #else
 			/*highlight the device */
 			return_code=highlight_analysis_perform_highlighting(analysis,
@@ -16409,10 +16422,15 @@ Creates the windows associated with the analysis work area.
 #endif /* defined (UNEMAP_USE_NODES) */
 #if defined (UNEMAP_USE_3D)
 		/* set up callback for selecting nodes/devices */
-		node_selection=get_unemap_package_FE_node_selection(
-			analysis->unemap_package);
-		FE_node_selection_add_callback(node_selection,
-			rig_node_group_node_selection_change,(void *)analysis);
+    if (analysis->unemap_package)
+    {
+      if (node_selection=get_unemap_package_FE_node_selection(
+        analysis->unemap_package))
+      {
+        FE_node_selection_add_callback(node_selection,
+          rig_node_group_node_selection_change,(void *)analysis);
+      }
+    }
 #endif /* defined (UNEMAP_USE_3D) */
 		analysis->activation=activation;
 		analysis->map_type=NO_MAP_FIELD;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 4 March 2001
+LAST MODIFIED : 04 May 2001
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -815,7 +815,14 @@ and NULL if unsuccessful.
 		region->number=number;
 		region->number_of_devices=number_of_devices;
 #if defined (UNEMAP_USE_3D)
-		region->unemap_package=ACCESS(Unemap_package)(unemap_package);
+    if (unemap_package)
+    {
+      region->unemap_package=ACCESS(Unemap_package)(unemap_package);
+    }
+    else
+    {
+      region->unemap_package = (struct Unemap_package *)NULL;
+    }
 		region->rig_node_group=(struct GROUP(FE_node) *)NULL;
 		region->unrejected_node_group=(struct GROUP(FE_node) *)NULL;
 		region->map_3d_package=(struct Map_3d_package *)NULL;
@@ -1403,7 +1410,14 @@ NULL if unsuccessful.
 			rig->region_list=region_list;
 			rig->current_region=current_region;
 #if defined (UNEMAP_USE_3D)
-			rig->unemap_package=ACCESS(Unemap_package)(unemap_package);
+      if (unemap_package)
+      {
+        rig->unemap_package=ACCESS(Unemap_package)(unemap_package);
+      }
+      else
+      {
+        rig->unemap_package = (struct Unemap_package *)NULL;
+      }
 			rig->all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;				
 #endif /* defined (UNEMAP_USE_3D) */
 			rig->signal_file_name=(char *)NULL;
