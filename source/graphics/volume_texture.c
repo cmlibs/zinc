@@ -907,10 +907,10 @@ Syntax: MANAGER_COPY_WITH_IDENTIFIER(VT_volume_texture,name)(destination,source)
 "MANAGER_COPY_WITHOUT_IDENTIFIER(VT_volume_texture,name).  Insufficient memory for texture cell");
 									return_code=0;
 								}
+								source_texture_cell++;
+								destination_texture_cell++;
+								i++;
 							}
-							source_texture_cell++;
-							destination_texture_cell++;
-							i++;
 						}
 					}
 					else
