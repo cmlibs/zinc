@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 21 April 2004
+LAST MODIFIED : 22 April 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -8028,8 +8028,8 @@ beat averaging.
 						draw_search_box(enlarge->left_box,trace->area_1.axes_top,
 							enlarge->right_box-enlarge->left_box,trace->area_1.axes_height,
 							*(trace->event_detection.detection),number_of_events,
-							enlarge->divisions,trace->area_1.drawing_area,trace->area_1.drawing,
-							signal_drawing_information);
+							enlarge->divisions,trace->area_1.drawing_area,
+							trace->area_1.drawing,signal_drawing_information);
 						draw_highlight_event_box(enlarge->left_edit_box,
 							trace->area_1.axes_top,
 							enlarge->right_edit_box-enlarge->left_edit_box,
@@ -13833,7 +13833,7 @@ Updates the potential time marker in the <trace> window.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"trace_draw_potential_time.  Invalid potential_time");
+				"trace_update_pot_time_beat_event.  Invalid potential_time");
 			return_code=0;
 		}
 	}
@@ -13858,7 +13858,7 @@ Beat averaging sharing and event detection
 {
 	int return_code;
 
-	ENTER(trace_draw_potential_time);
+	ENTER(trace_update_potential_time);
 	if (trace)
 	{
 		switch (*trace->analysis_mode)
@@ -13923,7 +13923,7 @@ Updates the datum marker in the <trace> window.
 	XCharStruct bounds;
 	XFontStruct *font;
 
-	ENTER(trace_draw_datum);
+	ENTER(trace_update_datum);
 	if (trace)
 	{
 		switch (*trace->analysis_mode)
@@ -14039,7 +14039,7 @@ Updates the datum marker in the <trace> window.
 							default:
 							{
 								display_message(ERROR_MESSAGE,
-									"trace_draw_datum.  Invalid event status");
+									"trace_update_datum.  Invalid event status");
 								event_graphics_context=
 									(signal_drawing_information->
 										graphics_context).undecided_colour;
@@ -14189,7 +14189,7 @@ Updates the datum marker in the <trace> window.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"trace_draw_datum.  Invalid potential_time");
+						"trace_update_datum.  Invalid potential_time");
 					return_code=0;
 				}
 			} break;
