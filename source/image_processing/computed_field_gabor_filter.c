@@ -390,7 +390,7 @@ DESCRIPTION : Implement image filtering with Gabor filter.
 		return_code = 1;
 		theta = M_PI * ((FE_value)direction[0]/(FE_value)direction[1]);
 
-		radius = (int) ceil(2.5 * sigma);
+		radius = (int) (ceil(2.5 * sigma));
 		filter_size = 1 + 2 * radius;
 
 		kernel_size = 1;
@@ -437,11 +437,11 @@ DESCRIPTION : Implement image filtering with Gabor filter.
 					kernel_step *= filter_size;
 					image_step *= image->sizes[m];
 				}
-				s = cord[0] * cos(theta) + cord[1] * sin(theta);
-				t = -cord[0] * sin(theta) + cord[1] * cos(theta);
+				s = ((FE_value)cord[0]) * cos(theta) + ((FE_value)cord[1]) * sin(theta);
+				t = -((FE_value)cord[0]) * sin(theta) + ((FE_value)cord[1]) * cos(theta);
 				g = 0.64 * pow(2.7, -0.5 * (s*s + 16.0 * t*t)/(sigma*sigma))/ (sigma*sigma);
-				re_kernel[j] = g * cos(6.28 *(cord[0] * frequencies[0] + cord[1] * frequencies[1]));
-				im_kernel[j] = g * sin(6.28 *(cord[0] * frequencies[0] + cord[1] * frequencies[1]));
+				re_kernel[j] = g * cos(6.28 *(((FE_value)cord[0]) * frequencies[0] + ((FE_value)cord[1]) * frequencies[1]));
+				im_kernel[j] = g * sin(6.28 *(((FE_value)cord[0]) * frequencies[0] + ((FE_value)cord[1]) * frequencies[1]));
 			}
 
 			data_index = (FE_value *)image->data;
@@ -474,6 +474,7 @@ DESCRIPTION : Implement image filtering with Gabor filter.
 					max[k] = my_Max(max[k], result_index[k]);
 				}
 			}
+
 			for (i = 0; i < storage_size / image->depth; i++)
 			{
 				for (k = 0; k < image->depth; k++)
