@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.c
 
-LAST MODIFIED : 30 August 2000
+LAST MODIFIED : 18 September 2000
 
 DESCRIPTION :
 A module for supporting command parsing.
@@ -1630,7 +1630,7 @@ entered.
 
 static int extract_token(char **source_address,char **token_address)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1998
+LAST MODIFIED : 18 September 2000
 
 DESCRIPTION :
 On successful return, <*token_address> will point to a newly-allocated string
@@ -1640,111 +1640,94 @@ creating the token.
 The function skips any leading whitespace and stops at the first token delimiter
 (whitespace/=/,/;), comment character (!/#) or end of string. Tokens containing
 any of the above special characters may be produced by enclosing them in single
-or double quotes - but not a mixture of them. Repeating the chosen quote mark
-inside the quote puts one into the final token. The end of source string is a
-valid, automatic end of quote. Note that the quote marks are the start and end
-of the token - the token will not be concatenated with subsequent text.
+or double quotes - but not a mixture of them.
+To allow quote marks to be put in the final string, the function interprets
+\\, \" and \' as \, " and ', respectively.
+Note that the quote mark if used must mark exactly the beginning and end of the
+string; the string is not permitted to end with a NULL character or with a
+non-delimiting character after the end-quote.
 To minimise memory allocation, the function uses the string at <*source_address>
 as working space in which the token is constructed from the source string.
 ==============================================================================*/
 {
-	char quote_mark,*token,*token_destination,*token_source;
-	int return_code,reading_token,token_length;
+	char character,quote_mark,*token,*destination,*source;
+	int return_code,token_length;
 
 	ENTER(extract_token);
 	if (source_address && *source_address && token_address)
 	{
 		return_code=1;
-		token_destination = token_source = *source_address;
+		destination = source = *source_address;
 		/* pass over leading white space and other delimiters */
-		while (*token_source&&(isspace(*token_source)||
-			('=' == *token_source)||(',' == *token_source)||(';' == *token_source)))
+		while ((*source) && (isspace(*source) ||
+			('=' == *source) || (',' == *source) || (';' == *source)))
 		{
-			token_source++;
+			source++;
 		}
-		if (*token_source)
+		if (*source)
 		{
-			reading_token=1;
-			if (('\''== *token_source)||('\"'== *token_source))
+			if (('\''== *source) || ('\"'== *source))
 			{
-				quote_mark= *token_source;
-				/* read token until final quote_mark or end of string, reading repeated
-					 quote_marks as single marks into the token */
-				token_source++;
-				while (reading_token)
+				quote_mark= *source;
+				/* read token until final quote_mark or end of string, ignoring quote
+					 marks after a backslash/escape character */
+				source++;
+				while ((quote_mark != *source) && ('\0' != *source))
 				{
-					if (*token_source)
+					/* replace \\, \" and \' by \, " and ' in token */
+					if (('\\' == *source) && (('\\' == *(source+1)) ||
+						('\"' == *(source+1)) || ('\'' == *(source+1))))
 					{
-						if (quote_mark == *token_source)
-						{
-							/* work out if end of quote or repeared quote to go in token */
-							token_source++;
-							if (quote_mark != *token_source)
-							{
-								/* end of quote */
-								reading_token=0;
-								if (('\0' != *token_source)&&!isspace(*token_source)&&
-									('=' != *token_source)&&(',' != *token_source)&&
-									(';' != *token_source)&&('!' != *token_source)&&
-									('#' != *token_source))
-								{
-									/* string missing delimiter after quote; report error */
-									display_message(ERROR_MESSAGE,
-										"Token missing delimiter after final quote (%c)",
-										quote_mark);
-									return_code=0;
-								}
-							}
-						}
-						if (reading_token)
-						{
-							/* put character in token */
-							*token_destination = *token_source;
-							token_destination++;
-							token_source++;
-						}
+						source++;
 					}
-					else
+					*destination = *source;
+					destination++;
+					source++;
+				}
+				if (quote_mark == *source)
+				{
+					source++;
+					/* ensure there is a valid delimiter after end quote */
+					if (('\0' != *source) && !isspace(*source) &&
+						('=' != *source) && (',' != *source) &&
+						(';' != *source) && ('#' != *source))
 					{
-						/* string ended without final quote; report error */
+						/* string missing delimiter after quote; report error */
 						display_message(ERROR_MESSAGE,
-							"Token missing final quote (%c)",quote_mark);
-						return_code=reading_token=0;
+							"Token missing delimiter after final quote (%c)",quote_mark);
+						return_code=0;
 					}
+				}
+				else
+				{
+					/* string ended without final quote; report error */
+					display_message(ERROR_MESSAGE,
+						"Token missing final quote (%c)",quote_mark);
+					return_code=0;
 				}
 			}
 			else
 			{
-				/* read token until first whitespace/delimiter/comment character */
-				while (reading_token)
+				while (('\0' != (character = *source)) && (!isspace(character)) &&
+					('=' != character) && (',' != character) &&
+					(';' != character) && ('#' != character))
 				{
-					if (('\0' == *token_source)||isspace(*token_source)||
-						('=' == *token_source)||(',' == *token_source)||
-						(';' == *token_source)||('!' == *token_source)||
-						('#' == *token_source))
-					{
-						reading_token=0;
-					}
-					else
-					{
-						/* put character in token */
-						*token_destination = *token_source;
-						token_destination++;
-						token_source++;
-					}
+					*destination = *source;
+					destination++;
+					source++;
 				}
 			}
 		}
 		if (return_code)
 		{
-			if (0<(token_length= token_destination - *source_address))
+			if (0<(token_length= destination - *source_address))
 			{
 				if (ALLOCATE(token,char,token_length+1))
 				{
 					strncpy(token,*source_address,token_length);
 					token[token_length]='\0';
 					*token_address = token;
-					*source_address = token_source;
+					*source_address = source;
 				}
 				else
 				{
