@@ -179,6 +179,12 @@ supported on displays other than SGI will do.
 	static int visattrsRGB_no_depth[] =
 	{
 		GLX_RGBA,
+#if defined (AIX)
+		/* The AIX Xvfb display only has doublebuffered visuals,
+			A preferrable solution would be to check for single or double
+			buffered visuals when only a single buffered visual is required. */
+		GLX_DOUBLEBUFFER,
+#endif /* defined (AIX) */
 		GLX_RED_SIZE, 5,
 		GLX_GREEN_SIZE, 5,
 		GLX_BLUE_SIZE, 5,
@@ -498,7 +504,14 @@ supported on displays other than SGI will do.
 								{
 									if (buffer->context = glXCreateContext(
 											 display, buffer->visual_info,
+#if defined (AIX)
+											 /* While potentially any implementation
+												 may choke on a direct rendering context
+												 only the AIX fails so far */
+											 (GLXContext)NULL , GL_FALSE))
+#else /* defined (AIX) */
 											 (GLXContext)NULL , GL_TRUE))
+#endif /* defined (AIX) */
 									{
 										/* Finished I think, hooray! */
 									}
