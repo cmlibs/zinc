@@ -324,68 +324,84 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			return_code = FE_element_xi_increment_within_element(*element, xiD,
 				increment_xi, &fraction, &face_number, xi_face);
 		}
-		if (return_code)
+		/* If we are really close to the boundary then the extra bit added on
+			above may push us to the boundary in this half step so we should check
+			here.  Steps xi->xiD and xiD->xiF are our final steps so check these */
+		if (face_number == -1)
 		{
-			return_code=Computed_field_evaluate_in_element(coordinate_field,*element,
-				xiD,time,(struct FE_element *)NULL,point,dxdxi)&&
-				Computed_field_evaluate_in_element(stream_vector_field,*element,
-				xiD,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
-			if (reverse_track)
+			if (return_code)
 			{
-				for (i = 0 ; i < vector_dimension ; i++)
+				return_code=Computed_field_evaluate_in_element(coordinate_field,*element,
+					xiD,time,(struct FE_element *)NULL,point,dxdxi)&&
+					Computed_field_evaluate_in_element(stream_vector_field,*element,
+						xiD,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
+				if (reverse_track)
 				{
-					vector[i] = -vector[i];
+					for (i = 0 ; i < vector_dimension ; i++)
+					{
+						vector[i] = -vector[i];
+					}
+				}
+			}
+			if (return_code)
+			{
+				return_code=calculate_delta_xi(vector_dimension,vector,element_dimension,
+					dxdxi,deltaxiD);
+			}
+			if (return_code)
+			{
+				for (i = 0 ; i < element_dimension ; i++)
+				{
+					xiE[i] = xiD[i];
+					increment_xi[i] = local_step_size*deltaxiD[i]/2.0;
+				}
+				return_code = FE_element_xi_increment_within_element(*element, xiE,
+					increment_xi, &fraction, &face_number, xi_face);
+			}
+			if (return_code)
+			{
+				return_code=Computed_field_evaluate_in_element(coordinate_field,*element,
+					xiE,time,(struct FE_element *)NULL,point,dxdxi)&&
+					Computed_field_evaluate_in_element(stream_vector_field,*element,
+						xiE,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
+				if (reverse_track)
+				{
+					for (i = 0 ; i < vector_dimension ; i++)
+					{
+						vector[i] = -vector[i];
+					}
+				}
+			}
+			if (return_code)
+			{
+				return_code=calculate_delta_xi(vector_dimension,vector,element_dimension,
+					dxdxi,deltaxiE);
+			}
+			if (return_code)
+			{
+				for (i = 0 ; i < element_dimension ; i++)
+				{
+					xiF[i] = xiD[i];
+					increment_xi[i] = local_step_size*(deltaxiD[i]+deltaxiE[i])/4.0;
+				}
+				return_code = FE_element_xi_increment_within_element(*element, xiF,
+					increment_xi, &fraction, &face_number, xi_face);
+				if (face_number != -1)
+				{
+					/* Reduce the step size to that which was actually taken */
+					local_step_size *= (0.5 + fraction / 2.0);
 				}
 			}
 		}
-		if (return_code)
+		else
 		{
-			return_code=calculate_delta_xi(vector_dimension,vector,element_dimension,
-				dxdxi,deltaxiD);
-		}
-		if (return_code)
-		{
+			/* Reduce the step size to that which was actually taken */
+			local_step_size *= fraction / 2.0;
 			for (i = 0 ; i < element_dimension ; i++)
 			{
-				xiE[i] = xiD[i];
-				increment_xi[i] = local_step_size*deltaxiD[i]/2.0;
-			}
-			return_code = FE_element_xi_increment_within_element(*element, xiE,
-				increment_xi, &fraction, &face_number, xi_face);
-		}
-		if (return_code)
-		{
-			return_code=Computed_field_evaluate_in_element(coordinate_field,*element,
-				xiE,time,(struct FE_element *)NULL,point,dxdxi)&&
-				Computed_field_evaluate_in_element(stream_vector_field,*element,
-				xiE,time,(struct FE_element *)NULL,vector,(FE_value *)NULL);
-			if (reverse_track)
-			{
-				for (i = 0 ; i < vector_dimension ; i++)
-				{
-					vector[i] = -vector[i];
-				}
-			}
-		}
-		if (return_code)
-		{
-			return_code=calculate_delta_xi(vector_dimension,vector,element_dimension,
-				dxdxi,deltaxiE);
-		}
-		if (return_code)
-		{
-			for (i = 0 ; i < element_dimension ; i++)
-			{
+				/* Copy the values from the half step result */
 				xiF[i] = xiD[i];
-				increment_xi[i] = local_step_size*(deltaxiD[i]+deltaxiE[i])/4.0;
-			}
-			return_code = FE_element_xi_increment_within_element(*element, xiF,
-				increment_xi, &fraction, &face_number, xi_face);
-			if (face_number != -1)
-			{
-				/* Reduce the step size to that which was actually taken */
-				local_step_size *= (0.5 + fraction / 2.0);
-			}
+			}			
 		}
 		if (return_code)
 		{
