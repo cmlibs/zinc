@@ -11,6 +11,7 @@ Functions for performing coordinate transformations.
 #include <stdio.h>
 #include <string.h>
 #include "general/debug.h"
+#include "general/enumerator_private.h"
 #include "general/geometry.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
@@ -820,10 +821,9 @@ spheroidal).
 	return (return_code);
 } /* set_Coordinate_system */
 
-char *Coordinate_system_type_to_string(
-	enum Coordinate_system_type coordinate_system_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Coordinate_system_type)
 /*******************************************************************************
-LAST MODIFIED : 30 August 1999
+LAST MODIFIED : 11 February 2003
 
 DESCRIPTION :
 Returns a pointer to a static string token for the given <type>.
@@ -833,8 +833,8 @@ The calling function must not deallocate the returned string.
 {
 	char *coordinate_system_type_string;
 
-	ENTER(Coordinate_system_type_to_string);
-	switch (coordinate_system_type)
+	ENTER(ENUMERATOR_STRING(Coordinate_system_type));
+	switch (enumerator_value)
 	{
 		case RECTANGULAR_CARTESIAN:
 		{
@@ -874,7 +874,9 @@ The calling function must not deallocate the returned string.
 	LEAVE;
 
 	return (coordinate_system_type_string);
-} /* Coordinate_system_type_to_string */
+} /* ENUMERATOR_STRING(Coordinate_system_type) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Coordinate_system_type)
 
 char *Coordinate_system_string(struct Coordinate_system *coordinate_system)
 /*******************************************************************************
@@ -895,7 +897,7 @@ function.
 	if (coordinate_system)
 	{
 		if (coordinate_system_string=duplicate_string(
-			Coordinate_system_type_to_string(coordinate_system->type)))
+			ENUMERATOR_STRING(Coordinate_system_type)(coordinate_system->type)))
 		{
 			/* need to deal with focus */
 			error=0;
@@ -1088,8 +1090,8 @@ Calculate the <jacobian> if not NULL.
 					{
 						display_message(ERROR_MESSAGE,"convert_Coordinate_system.  "
 							"Conversion from rectangular_cartesian to %s not implemented",
-							Coordinate_system_type_to_string(destination_coordinate_system->
-							type));
+							ENUMERATOR_STRING(Coordinate_system_type)(
+							destination_coordinate_system->type));
 						return_code=0;
 					} break;
 				}
@@ -1129,8 +1131,8 @@ Calculate the <jacobian> if not NULL.
 					{
 						display_message(ERROR_MESSAGE,"convert_Coordinate_system.  "
 							"Conversion from cylindrical_polar to %s not implemented",
-							Coordinate_system_type_to_string(destination_coordinate_system->
-							type));
+							ENUMERATOR_STRING(Coordinate_system_type)(
+							destination_coordinate_system->type));
 						return_code=0;
 					} break;
 				}
@@ -1189,8 +1191,8 @@ Calculate the <jacobian> if not NULL.
 					{
 						display_message(ERROR_MESSAGE,"convert_Coordinate_system.  "
 							"Conversion from spherical_polar to %s not implemented",
-							Coordinate_system_type_to_string(destination_coordinate_system->
-							type));
+							ENUMERATOR_STRING(Coordinate_system_type)(
+							destination_coordinate_system->type));
 						return_code=0;
 					} break;
 				}
@@ -1231,8 +1233,8 @@ Calculate the <jacobian> if not NULL.
 					{
 						display_message(ERROR_MESSAGE,"convert_Coordinate_system.  "
 							"Conversion from prolate_spheroidal to %s not implemented",
-							Coordinate_system_type_to_string(destination_coordinate_system->
-							type));
+							ENUMERATOR_STRING(Coordinate_system_type)(
+							destination_coordinate_system->type));
 						return_code=0;
 					} break;
 				}

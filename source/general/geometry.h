@@ -12,6 +12,7 @@ for performing coordinate transformations.
 #define GEOMETRY_H
 
 
+#include "general/enumerator.h"
 #include "general/object.h"
 #include "command/parser.h"
 
@@ -209,6 +210,8 @@ DESCRIPTION :
 Returns the type of the coordinate system passed to it.
 ==============================================================================*/
 
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Coordinate_system_type);
+
 PROTOTYPE_COPY_OBJECT_FUNCTION(Coordinate_system);
 
 int set_Coordinate_system(struct Parse_state *state,
@@ -220,17 +223,6 @@ DESCRIPTION :
 Currently only allows rectangular cartesian to be set.
 ???RC JW to change to struct Coordinate_system, handle parsing of focus for
 prolate, etc.
-==============================================================================*/
-
-char *Coordinate_system_type_to_string(
-	enum Coordinate_system_type coordinate_system_type);
-/*******************************************************************************
-LAST MODIFIED : 25 January 1999
-
-DESCRIPTION :
-Returns a pointer to a static string token for the given <type>.
-The calling function must not deallocate the returned string.
-*** Must ensure implemented correctly for new Coordinate_system_type ***
 ==============================================================================*/
 
 char *Coordinate_system_string(
