@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 10 October 2003
+LAST MODIFIED : 2 November 2003
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -1281,17 +1281,18 @@ DESCRIPTION :
 							if ((0==scrolling_frequency)&&(0==scrolling_callback_frequency))
 							{
 								return_code=unemap_configure(number_of_channels,
-									channel_numbers,sampling_frequency,number_of_samples_in_buffer,
-									(HWND)NULL,(UINT)0,(Unemap_hardware_callback *)NULL,(void *)NULL,
-									0,0,synchronization_card);
+									channel_numbers,sampling_frequency,
+									number_of_samples_in_buffer,(HWND)NULL,(UINT)0,
+									(Unemap_hardware_callback *)NULL,(void *)NULL,0,0,
+									synchronization_card);
 							}
 							else
 							{
 								return_code=unemap_configure(number_of_channels,
-									channel_numbers,sampling_frequency,number_of_samples_in_buffer,
-									(HWND)NULL,(UINT)0,scrolling_callback,(void *)NULL,
-									scrolling_frequency,scrolling_callback_frequency,
-									synchronization_card);
+									channel_numbers,sampling_frequency,
+									number_of_samples_in_buffer,(HWND)NULL,(UINT)0,
+									scrolling_callback,(void *)NULL,scrolling_frequency,
+									scrolling_callback_frequency,synchronization_card);
 							}
 							if (return_code)
 							{
@@ -3359,7 +3360,7 @@ Global functions
 */
 VOID ServiceStart(DWORD dwArgc,LPTSTR *lpszArgv)
 /*******************************************************************************
-LAST MODIFIED : 27 May 2003
+LAST MODIFIED : 2 November 2003
 
 DESCRIPTION :
 Actual code of the service that does the work.
@@ -3370,7 +3371,9 @@ Actual code of the service that does the work.
 	DWORD dwWait;
 	HANDLE hEvents[2]={NULL,NULL};
 #if defined (USE_UNEMAP_HARDWARE)
+#if defined (OLD_CODE)
 	unsigned long number_of_channels;
+#endif /* defined (OLD_CODE) */
 #endif /* defined (USE_UNEMAP_HARDWARE) */
 #if defined (USE_SOCKETS)
 	int running;
@@ -3402,11 +3405,15 @@ Actual code of the service that does the work.
 	set_display_message_function(WARNING_MESSAGE,display_warning_message,
 		(void *)NULL);
 #if defined (USE_UNEMAP_HARDWARE)
+#if defined (OLD_CODE)
+	/* something else initializes the cards again under W2K.  So wait for
+		connection
 	/* when the NIDAQ DLL is loaded (when the service starts), the NI cards and
 		hence the unemap cards are in an unknown state.  This call to
 		unemap_get_number_of_channels forces a call to search_for_NI_cards which
 		in turn configures the NI cards */
 	unemap_get_number_of_channels(&number_of_channels);
+#endif /* defined (OLD_CODE) */
 #endif /* defined (USE_UNEMAP_HARDWARE) */
 	/* service initialization */
 	hEvents[0]=NULL;
@@ -3583,7 +3590,8 @@ Actual code of the service that does the work.
 																							(last_error=WSAGetLastError())));
 																						if (INVALID_SOCKET!=
 																							calibration_socket)
-																						{																							fromlen=sizeof(from);
+																						{
+																							fromlen=sizeof(from);
 																							do
 																							{
 																								acquired_socket=accept(
