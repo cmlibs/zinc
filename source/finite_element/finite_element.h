@@ -913,14 +913,15 @@ struct FE_element_order_info
 LAST MODIFIED : 10 January 2000
 
 DESCRIPTION :
-Use to pass info about a element group's elements, their number, and their order.
+Use to pass info about a element group's elements, their number, and their
+order.
 c.f.  FE_field_order_info. Also store a current element, so can iterate, etc
 ==============================================================================*/
 {
 	int number_of_elements,current_element_number;
 	struct FE_element **elements;
 	int access_count;
-}; /* FE_element_order_info */ 
+}; /* FE_element_order_info */
 
 struct FE_field_and_string_data
 /*******************************************************************************

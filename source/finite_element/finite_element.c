@@ -3346,7 +3346,7 @@ NB.  xi_1 is varying slowest (xi_n fastest)
 static int polygon_basis_functions(void *type_arguments,
 	FE_value *xi_coordinates,FE_value *function_values)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2001
+LAST MODIFIED : 23 November 2001
 
 SCRIPTION :
 For a polygon
@@ -3394,11 +3394,11 @@ d) the blending matrix is
 	0 0 0 . . . 0 0 0 0 . . . 0  0  0  0 . . .  1  0  0  0 . 0 1 -1
 ==============================================================================*/
 {
-	FE_value basis_function10,basis_function11,save_value,*temp_value,*value,xi,
-		xi_circumferential,*xi_coordinate,xi_power,xi_radial;
-	int *argument,first_polygon_coordinate,i,j,k,number_of_polygon_verticies,
-		number_of_values,number_of_xi_coordinates,offset00,offset01,offset10,
-		offset11,order,polygon_offset,polygon_vertex,return_code;
+	FE_value basis_function10, basis_function11, save_value, *temp_value, *value,
+		xi, xi_circumferential, *xi_coordinate, xi_power, xi_radial;
+	int *argument, i, j, k, number_of_polygon_verticies,
+		number_of_values, number_of_xi_coordinates, offset00, offset01, offset10,
+		offset11, order, polygon_offset, polygon_vertex, return_code;
 
 	ENTER(polygon_basis_functions);
 	if ((argument=(int *)type_arguments)&&(xi_coordinate=xi_coordinates)&&
@@ -3418,7 +3418,7 @@ d) the blending matrix is
 				/* polygon */
 				order= -order;
 				/* need to distinguish between first and second polygon coordinates */
-				if (first_polygon_coordinate=order%2)
+				if (order%2)
 				{
 					/* first polygon coordinate */
 					order /= 2;
@@ -20069,7 +20069,7 @@ int inherit_FE_element_field(struct FE_element *element,struct FE_field *field,
 	FE_value **coordinate_transformation_address,
 	struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 2 September 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 If <field> is NULL, element values are calculated for the coordinate field.
@@ -20084,7 +20084,7 @@ column of the <coordinate_transformation> matrix.
 {
 	FE_value *coordinate_transformation,*coordinate_transformation_value,
 		*face_to_element,*face_to_element_value,*new_coordinate_transformation,
-		*new_coordinate_transformation_value,value;
+		*new_coordinate_transformation_value;
 	int dimension,dimension_minus_1,face_number,field_element_dimension,i,j,k,
 		return_code,transformation_size;
 	struct FE_element *field_element,*parent;
@@ -20485,7 +20485,7 @@ int calculate_FE_element_field_values(struct FE_element *element,
 	struct FE_element_field_values *element_field_values,
 	struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 5 August 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 If <field> is NULL, element values are calculated for the coordinate field.  The
@@ -20495,17 +20495,20 @@ The optional <top_level_element> forces inheritance from it as needed.
 ???DB.  I think that the field=NULL special case should be removed.
 ==============================================================================*/
 {
+#if defined (OLD_CODE)
+	FE_value *sumand;
+	int *inherited_standard_basis_argument, l, polygon_vertex,
+		*standard_basis_argument;
+#endif /* defined (OLD_CODE) */
 	FE_value *basis_function_values,*blending_matrix,*coordinate_transformation,
 		*derivative_value,*inherited_value,*inherited_values,scalar,
-		*second_derivative_value,*sumand,*transformation,*value,**values_address;
+		*second_derivative_value,*transformation,*value,**values_address;
 	int *basis_type,component_number,*component_number_in_xi,element_dimension,
 		*element_value_offsets,field_element_dimension,*grid_offset_in_xi,i,
-		*inherited_standard_basis_argument,j,k,l,maximum_number_of_values,
-		*number_in_xi,number_of_components,number_of_inherited_values,
-		number_of_polygon_verticies,number_of_values,*number_of_values_address,
-		offset,order,*orders,polygon_offset,polygon_vertex,power,return_code,
-		row_size,*standard_basis_argument,*standard_basis_arguments,
-		**standard_basis_arguments_address;
+		j, k, maximum_number_of_values, *number_in_xi, number_of_components,
+		number_of_inherited_values, number_of_polygon_verticies, number_of_values,
+		*number_of_values_address, offset, order, *orders, polygon_offset, power,
+		return_code, row_size, **standard_basis_arguments_address;
 	Standard_basis_function **standard_basis_address;
 	struct FE_basis *previous_basis;
 	struct FE_element *field_element;
@@ -33204,13 +33207,13 @@ Frees the memory for the field and sets <*field_address> to NULL.
 
 int list_FE_field(struct FE_field *field,void *dummy)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Outputs the information contained in <field>.
 ==============================================================================*/
 {
-	char *component_name,line[91],*type_string;
+	char *component_name;
 	int i, number_of_components, return_code;
 
 	ENTER(list_FE_field);
@@ -33219,33 +33222,15 @@ Outputs the information contained in <field>.
 	{
 		return_code=1;
 		/* write the identifier */
-		sprintf(line,"field : %s \n",field->name);
-		display_message(INFORMATION_MESSAGE,line);
-		sprintf(line,"  access count=%d\n",field->access_count);
-		display_message(INFORMATION_MESSAGE,line);
-		if (type_string=ENUMERATOR_STRING(CM_field_type)(field->cm_field_type))
-		{
-			display_message(INFORMATION_MESSAGE,", %s");
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"list_FE_field.  Invalid CM field type");
-			return_code=0;
-		}
-		if (type_string=Coordinate_system_type_to_string(
-			field->coordinate_system.type))
-		{
-			display_message(INFORMATION_MESSAGE,", %s");
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"list_FE_field.  Invalid field coordinate system");
-			return_code=0;
-		}
+		display_message(INFORMATION_MESSAGE, "field : %s\n", field->name);
+		display_message(INFORMATION_MESSAGE,
+			"  access count = %d\n", field->access_count);
+		display_message(INFORMATION_MESSAGE,"  type = %s",
+			ENUMERATOR_STRING(CM_field_type)(field->cm_field_type));
+		display_message(INFORMATION_MESSAGE,"  coordinate system = %s",
+			Coordinate_system_type_to_string(field->coordinate_system.type));
 		number_of_components=field->number_of_components;
-		display_message(INFORMATION_MESSAGE,", #Components=%d\n",
+		display_message(INFORMATION_MESSAGE,", #Components = %d\n",
 			number_of_components);
 		i=0;
 		while (return_code&&(i<number_of_components))
