@@ -335,28 +335,21 @@ else # CMISS_ROOT_DEFINED
 	esac ;
 endif # CMISS_ROOT_DEFINED
 
-%.d : %.c
-	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
-		mkdir -p $(OBJECT_PATH)/$(*D); \
-	fi
-	@set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $<  | \
-	sed -e 's%^.*\.o%$*.o $*.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g' > $(OBJECT_PATH)/$*.d ;
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-   # Fix up the uidh references
-	sed -e 's%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g' $(OBJECT_PATH)/$*.d > $(OBJECT_PATH)/$*.d2
-	mv $(OBJECT_PATH)/$*.d2 $(OBJECT_PATH)/$*.d
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
+$(OBJECT_PATH)/%.c : $(SOURCE_PATH)/%.c
 
-%.d : %.cpp
-	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
+%.d :
+	if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
 		mkdir -p $(OBJECT_PATH)/$(*D); \
 	fi
-	@set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $<  | \
-	sed -e 's%^.*\.o%$*.o $*.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g' > $(OBJECT_PATH)/$*.d ;
+	@stem_name=$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)); \
+   source_name=$(firstword $(wildcard $(SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).c $(SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).cpp $(PRODUCT_SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).c $(PRODUCT_SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).cpp)) ; \
+	set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $${source_name} | \
+	sed -e "s%^.*\.o%$${stem_name}.o $(OBJECT_PATH)/$${stem_name}.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g" > $(OBJECT_PATH)/$${stem_name}.d ;
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    # Fix up the uidh references
-	sed -e 's%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g' $(OBJECT_PATH)/$*.d > $(OBJECT_PATH)/$*.d2
-	mv $(OBJECT_PATH)/$*.d2 $(OBJECT_PATH)/$*.d
+	@stem_name=$(subst $(PRODUCT_OBJECT_PATH),,$(subst $(OBJECT_PATH)/,,$*)); \
+	sed -e 's%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g' $(OBJECT_PATH)/$${stem_name}.d > $(OBJECT_PATH)/$${stem_name}.d2 ; \
+	mv $(OBJECT_PATH)/$${stem_name}.d2 $(OBJECT_PATH)/$${stem_name}.d
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 %.d: %.f
