@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 18 August 2002
+LAST MODIFIED : 4 October 2002
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -1796,7 +1796,7 @@ Finds the id of the mapping set up button.
 static void create_simple_rig_from_dialog(Widget widget,
 	XtPointer mapping_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 23 June 1998
+LAST MODIFIED : 4 October 2002
 
 DESCRIPTION :
 Creates a new rig using the values specified in the setup dialog.
@@ -1868,7 +1868,7 @@ Creates a new rig using the values specified in the setup dialog.
 				/* assign the new rig */
 				*(map_rig_pointer)=rig;
 				/* update the mapping window */
-				update_mapping_drawing_area(mapping,0);
+				update_mapping_drawing_area(mapping,2);
 				update_mapping_colour_or_auxili(mapping);
 				update_mapping_window_menu(mapping);
 				XtSetSensitive(mapping->file_menu.save_configuration_button,True);
