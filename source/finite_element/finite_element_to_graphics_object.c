@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -5778,10 +5778,10 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct GT_object *glyph,Triple glyph_centre,Triple glyph_size,
 	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
 	struct Computed_field *data_field,struct Computed_field *label_field,
-	enum Graphics_select_mode select_mode,struct Multi_range *selected_ranges,
-	int *point_numbers)
+	enum Graphics_select_mode select_mode,int element_selected,
+	struct Multi_range *selected_ranges,int *point_numbers)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -5798,23 +5798,26 @@ the glyph_set, for later colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
-<select_mode> is used in combination with the <selected_ranges> to draw only
-those points with numbers in or out of the given ranges when given value
-GRAPHICS_DRAW_SELECTED or GRAPHICS_DRAW_UNSELECTED. If <selected_ranges> is
-NULL, no numbers are selected.
+<select_mode> is used in combination with the <element_selected> and
+<selected_ranges> to draw only those points with numbers in or out of the given
+ranges when given value GRAPHICS_DRAW_SELECTED or GRAPHICS_DRAW_UNSELECTED.
+If <element_selected> is true, all points are selected, otherwise selection is
+determined from the <selected_ranges>, and if <selected_ranges> is NULL, no
+numbers are selected.
 If <point_numbers> are supplied then points numbers for OpenGL picking are taken
 from this array, otherwise they are sequential, starting at 0.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 ==============================================================================*/
 {
-	char **labels;
+	char **label,**labels;
 	FE_value a[3],b[3],base_size1,base_size2,base_size3,c[3],centre1,centre2,
 		centre3,coordinates[3],orientation_scale[9],scale_factor1,
 		scale_factor2,scale_factor3,size[3],size1,size2,size3,xi[3];
 	GTDATA *data;
-	int i,j,n_data_components,*names,number_of_orientation_scale_components,
-		point_no,point_selected,points_to_draw;
+	int draw_all,i,j,n_data_components,*name,*names,
+		number_of_orientation_scale_components,point_number,point_selected,
+		points_to_draw;
 	struct GT_glyph_set *glyph_set;
 	Triple *axis1,*axis1_list,*axis2,*axis2_list,*axis3,*axis3_list,
 		*point,*point_list;
@@ -5843,15 +5846,32 @@ Note:
 		n_data_components = 0;
 		data=(GTDATA *)NULL;
 		names=(int *)NULL;
-		if ((GRAPHICS_DRAW_SELECTED==select_mode)||
-			(GRAPHICS_DRAW_UNSELECTED==select_mode))
+		if ((GRAPHICS_SELECT_ON==select_mode)||
+			(GRAPHICS_NO_SELECT==select_mode)||
+			((GRAPHICS_DRAW_SELECTED==select_mode)&&element_selected))
+		{
+			points_to_draw=number_of_xi_points;
+		}
+		else if ((GRAPHICS_DRAW_UNSELECTED==select_mode)&&element_selected)
+		{
+			points_to_draw=0;
+		}
+		else
 		{
 			points_to_draw=0;
 			if (selected_ranges)
 			{
 				for (i=0;i<number_of_xi_points;i++)
 				{
-					if (Multi_range_is_value_in_range(selected_ranges,i))
+					if (point_numbers)
+					{
+						point_number=point_numbers[i];
+					}
+					else
+					{
+						point_number=i;
+					}
+					if (Multi_range_is_value_in_range(selected_ranges,point_number))
 					{
 						points_to_draw++;
 					}
@@ -5862,12 +5882,9 @@ Note:
 				points_to_draw=number_of_xi_points-points_to_draw;
 			}
 		}
-		else
-		{
-			points_to_draw=number_of_xi_points;
-		}
 		if (0<points_to_draw)
 		{
+			draw_all = (points_to_draw==number_of_xi_points);
 			if (data_field)
 			{
 				n_data_components = Computed_field_get_number_of_components(data_field);
@@ -5875,14 +5892,16 @@ Note:
 			}
 			if (label_field)
 			{
-				ALLOCATE(labels,char *,points_to_draw);
-				/* clear labels array pointers so new glyph_set not corrupted */
-				for (i=0;i<points_to_draw;i++)
+				if (ALLOCATE(labels,char *,points_to_draw))
 				{
-					labels[i] = (char *)NULL;
+					/* clear labels array pointers so new glyph_set not corrupted */
+					for (i=0;i<points_to_draw;i++)
+					{
+						labels[i] = (char *)NULL;
+					}
 				}
 			}
-			if (GRAPHICS_NO_SELECT!=select_mode)
+			if (GRAPHICS_NO_SELECT != select_mode)
 			{
 				ALLOCATE(names,int,points_to_draw);
 			}
@@ -5912,36 +5931,37 @@ Note:
 				axis1=axis1_list;
 				axis2=axis2_list;
 				axis3=axis3_list;
-				point_no=0;
+				name=names;
+				label=labels;
 				for (i=0;(i<number_of_xi_points)&&glyph_set;i++)
 				{
-					if ((GRAPHICS_DRAW_SELECTED==select_mode)||
-						(GRAPHICS_DRAW_UNSELECTED==select_mode))
+					if (point_numbers)
+					{
+						point_number=point_numbers[i];
+					}
+					else
+					{
+						point_number=i;
+					}
+					if (!draw_all)
 					{
 						if (selected_ranges)
 						{
-							point_selected=Multi_range_is_value_in_range(selected_ranges,i);
+							point_selected=Multi_range_is_value_in_range(selected_ranges,
+								point_number);
 						}
 						else
 						{
 							point_selected=0;
 						}
 					}
-					if ((GRAPHICS_SELECT_ON==select_mode)||
-						(GRAPHICS_NO_SELECT==select_mode)||
+					if (draw_all||
 						((GRAPHICS_DRAW_SELECTED==select_mode)&&point_selected)||
 						((GRAPHICS_DRAW_UNSELECTED==select_mode)&&(!point_selected)))
 					{
 						if (names)
 						{
-							if (point_numbers)
-							{
-								names[point_no]=point_numbers[i];
-							}
-							else
-							{
-								names[point_no]=i;
-							}
+							*name = point_number;
 						}
 						xi[0]=(FE_value)xi_points[i][0];
 						xi[1]=(FE_value)xi_points[i][1];
@@ -5960,10 +5980,9 @@ Note:
 							((!data_field)||Computed_field_evaluate_in_element(
 								data_field,element,xi,top_level_element,data,
 								(FE_value *)NULL))&&
-							((!label_field)||
-								(labels[point_no]=Computed_field_evaluate_as_string_in_element(
-									label_field,/*component_number*/-1,element,xi,
-									top_level_element)))&&
+							((!label_field)||(*label =
+								Computed_field_evaluate_as_string_in_element(label_field,
+									/*component_number*/-1,element,xi,top_level_element)))&&
 							make_glyph_orientation_scale_axes(
 								number_of_orientation_scale_components,orientation_scale,
 								a,b,c,size))
@@ -5991,13 +6010,20 @@ Note:
 							{
 								data+=n_data_components;
 							}
+							if (names)
+							{
+								name++;
+							}
+							if (labels)
+							{
+								label++;
+							}
 						}
 						else
 						{
 							/* error evaluating fields */
 							DESTROY(GT_glyph_set)(&glyph_set);
 						}
-						point_no++;
 					}
 				}
 				/* clear Computed_field caches so elements not accessed */
@@ -7241,7 +7267,7 @@ printf("Warp called: volume1 = %s, volume2 = %s,  element = %d, coordinates = %s
 int element_to_glyph_set(struct FE_element *element,
 	void *element_to_glyph_set_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2000
+LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information about the
@@ -7299,7 +7325,9 @@ fields defined over it.
 						element_to_glyph_set_data->data_field,
 						element_to_glyph_set_data->label_field,
 						element_to_glyph_set_data->select_mode,
-						(struct Multi_range *)NULL,(int *)NULL))
+						/*element_selected*/0,
+						(struct Multi_range *)NULL,
+						/*point_numbers*/(int *)NULL))
 					{
 						if (!GT_OBJECT_ADD(GT_glyph_set)(
 							element_to_glyph_set_data->graphics_object,

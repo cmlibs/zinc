@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -334,10 +334,10 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct GT_object *glyph,Triple glyph_centre,Triple glyph_size,
 	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors,
 	struct Computed_field *data_field,struct Computed_field *label_field,
-	enum Graphics_select_mode select_mode,struct Multi_range *selected_ranges,
-	int *point_numbers);
+	enum Graphics_select_mode select_mode,int element_selected,
+	struct Multi_range *selected_ranges,int *point_numbers);
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -354,10 +354,12 @@ the glyph_set, for later colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
-<select_mode> is used in combination with the <selected_ranges> to draw only
-those points with numbers in or out of the given ranges when given value
-GRAPHICS_DRAW_SELECTED or GRAPHICS_DRAW_UNSELECTED. If <selected_ranges> is
-NULL, no numbers are selected.
+<select_mode> is used in combination with the <element_selected> and
+<selected_ranges> to draw only those points with numbers in or out of the given
+ranges when given value GRAPHICS_DRAW_SELECTED or GRAPHICS_DRAW_UNSELECTED.
+If <element_selected> is true, all points are selected, otherwise selection is
+determined from the <selected_ranges>, and if <selected_ranges> is NULL, no
+numbers are selected.
 If <point_numbers> are supplied then points numbers for OpenGL picking are taken
 from this array, otherwise they are sequential, starting at 0.
 Note:
