@@ -3594,8 +3594,9 @@ can be exported with only vertex positions changed.
 			}
 			*(texture->texture_curve_list)= NULL;
 		}
-/*???debug */
+#if defined (DEBUG)
 printf("deallocated curves\n");
+#endif /* defined (DEBUG) */
 		/* deallocate cells */
 		if (cell_list=texture->texture_cell_list)
 		{
@@ -3623,8 +3624,9 @@ printf("deallocated curves\n");
 			}
 			DEALLOCATE(texture->texture_cell_list);
 		}
-/*???debug */
+#if defined (DEBUG)
 printf("deallocated cells\n");
+#endif /* defined (DEBUG) */
 		/* deallocate nodes */
 		if (node_list=texture->global_texture_node_list)
 		{
@@ -3638,15 +3640,17 @@ printf("deallocated cells\n");
 			}
 			DEALLOCATE(texture->global_texture_node_list);
 		}
-/*???debug */
+#if defined (DEBUG)
 printf("deallocated nodes\n");
+#endif /* defined (DEBUG) */
 		DEALLOCATE(texture->scalar_field->scalar);
 		DEALLOCATE(texture->clip_field->scalar);
 		DEALLOCATE(texture->clip_field2->scalar);
 		DEALLOCATE(texture->coordinate_field->vector);
 		DEALLOCATE(texture->mc_iso_surface);
-/*???debug */
+#if defined (DEBUG)
 printf("deallocated\n");
+#endif /* defined (DEBUG) */
 #if defined (OLD_CODE)
 		/* read in xi ranges */
 		for (i=0;i<3;i++)
@@ -3689,10 +3693,12 @@ printf("%g\n",(texture->ximax)[i]);
 */
 		v_min=0;
 		v_max=0;
-/*???debug */
+#if defined (DEBUG)
+		/* This information is about to be overwritten by the values on the command line */
 printf("texture->ximin = %lf %lf %lf, texture->ximax = %lf %lf %lf\n",
 	texture->ximin[0],texture->ximin[1],texture->ximin[2],texture->ximax[0],
 	texture->ximax[1],texture->ximax[2]);
+#endif /* defined (DEBUG) */
 		/* set all vt data to NULL or 0 apart from isosurface */
 		/* for now use default graphical material */
 		n_cells=0;
