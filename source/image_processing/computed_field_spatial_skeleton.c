@@ -359,22 +359,32 @@ DESCRIPTION : Implement image skeleton extracting.
 ==============================================================================*/
 {
 	char *storage;
-	FE_value *data_index, *result_index, *stencil, *result_index1, face, edge, vertex;
-	int filter_size, filter_step, i, image_step, j, k, *offsets, n,
-		 return_code, stencil_size, storage_size;
-	FE_value *max;
-	int stop_code;
+	FE_value *data_index, *result_index, *stencil,*kernel, *result_index1, face, edge, vertex;
+	int filter_size, filter_step, i, image_step, j, k, *offsets, *k_offsets,
+		 return_code, stencil_size, storage_size, filter_size1, kernel_size;
+	FE_value *max, dist;
+	int radius, m;
 
 	ENTER(Image_cache_skeleton_detection);
 	if (image && (image->dimension > 0) && (image->depth > 0))
 	{
 		return_code = 1;
+		filter_size = thinness;
 		filter_size = 3;
+		
+		radius = 0;
+		for (i =0; i < image->dimension; i++)
+		{
+		        radius = my_Max(radius,image->sizes[i]/20);
+		}
+		filter_size1 = 2 * radius + 1;
 		/* We only need the one stencil as it is just a reordering for the other dimensions */
 		stencil_size = 1;
+		kernel_size = 1;
 		for (i = 0 ; i < image->dimension ; i++)
 		{
 			stencil_size *= filter_size;
+			kernel_size *= filter_size1;
 		}
 		/* Allocate a new storage block for our data */
 		storage_size = image->depth;
@@ -383,7 +393,9 @@ DESCRIPTION : Implement image skeleton extracting.
 			storage_size *= image->sizes[i];
 		}
 		if (ALLOCATE(stencil, FE_value, stencil_size) &&
+		        ALLOCATE(kernel, FE_value, kernel_size) &&
 			ALLOCATE(offsets, int, stencil_size) &&
+			ALLOCATE(k_offsets, int, kernel_size) &&
 			ALLOCATE(max, FE_value, image->depth) &&
 			ALLOCATE(storage, char, storage_size * sizeof(FE_value)) &&
 			ALLOCATE(result_index1, FE_value, storage_size * sizeof(FE_value)))
@@ -403,6 +415,10 @@ DESCRIPTION : Implement image skeleton extracting.
 			for (j = 0 ; j < stencil_size ; j++)
 			{
 				offsets[j] = 0;
+			}
+			for (j = 0 ; j < kernel_size ; j++)
+			{
+				k_offsets[j] = 0;
 			}
 			filter_step = 1;
 			image_step = 1;
@@ -424,6 +440,21 @@ DESCRIPTION : Implement image skeleton extracting.
 				}
 				filter_step *= filter_size;
 				image_step *= image->sizes[i];
+			}
+			for(j = 0; j < kernel_size; j++)
+			{
+			        filter_step = 1;
+				image_step = 1;
+				kernel[j] = 0.0;
+				for(m = 0; m < image->dimension; m++)
+				{
+				        k = ((int)((FE_value)j/((FE_value)filter_step))) % filter_size1;
+					k_offsets[j] += (k - radius) * image_step * image->depth;
+					kernel[j] += (k - radius)*(k - radius);
+					filter_step *= filter_size1;
+					image_step *= image->sizes[m];
+				}
+				kernel[j] = sqrt((FE_value)kernel[j]);
 			}
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
@@ -457,7 +488,7 @@ DESCRIPTION : Implement image skeleton extracting.
 					 {
                                                  for (k=0;k<image->depth;k++)
 						 {
-						          result_index[k] = 3.0;
+						          result_index[k] = 1.0;
 						 }
 					 }
 					 else
@@ -466,7 +497,7 @@ DESCRIPTION : Implement image skeleton extracting.
 						 {
 						          for (k=0;k<image->depth;k++)
 							  {
-							            result_index[k] = 4.0;
+							            result_index[k] = 1.0;
 							  }
 						 }
 						 else
@@ -475,14 +506,14 @@ DESCRIPTION : Implement image skeleton extracting.
 							  {
 							            for (k=0;k<image->depth;k++)
 								    {
-								              result_index[k] = 5.0;
+								              result_index[k] = 1.0;
 								    }
 							  }
 							  else
 							  {
 							            for (k=0;k<image->depth;k++)
 								    {
-								              result_index[k] = 100000.0;
+								              result_index[k] = 3.0;
 								    }
 							  }
 						 }
@@ -498,66 +529,47 @@ DESCRIPTION : Implement image skeleton extracting.
 				result_index1[i] = *result_index;
 
 			}
-                        for (n = 0; n < 10000; n++)
+			for (i = 0 ; i < storage_size / image->depth ; i++)
 			{
-			        for (i = 0; i <(storage_size/image->depth) ; i++)
-		        	{
-				        if (result_index1[i * image->depth] > 0.0 && result_index1[i*image->depth] < 100000.0)
-				        {
-				                for ( j = 0; j < stencil_size; j++)
-				                {
-				                        if ((result_index + offsets[j] >= ((FE_value *)storage)) &&(result_index + offsets[j] < ((FE_value *)storage) + storage_size))
-					                {
-					                        if (j == 4 || j == 10||j==12||j==14||j==16||j==22)
-						                {
-						                        for (k=0; k < image->depth; k++)
-						                        {
-					        		                *(result_index + offsets[j] + k) = my_Min(result_index1[i*image->depth + offsets[j] + k], result_index1[i * image->depth] + 3.0);
-				        			        }
-						                }
-				        			else
-					        		{
-					        		        if (j == 1 || j == 3||j == 5||j==7||j==9||j==11||j == 15|| j == 17||j==19||j==21||j==23||j==25)
-					        		        {
-					        			        for (k=0;k<image->depth;k++)
-					        				*(result_index + offsets[j] + k) = my_Min(result_index1[i*image->depth + offsets[j] + k], result_index1[i * image->depth] + 4.0);
-					        			}
-					        			else
-					        		        {
-					        			         for (k=0;k<image->depth;k++)
-					        				 *(result_index + offsets[j] + k) = my_Min(result_index1[i*image->depth + offsets[j] + k], result_index1[i * image->depth] + 5.0);
-				        			        }
-			        				}
-			        		        }
-		        		        }
-			        	}
-					result_index += image->depth;
-		        	}
-				stop_code = 1;
-			        for (i = (storage_size/image->depth) - 1; i >= 0 ; i--)
-			        {
-				        result_index -= image->depth;
-                                        if ((result_index1[i*image->depth] > 0.0) && (result_index1[i*image->depth] < 100000.0))
-				        {
-				                 for (k = 0; k < image->depth; k++)
-					         {
-					                  result_index1[i*image->depth + k] = 0.0;
-					         }
-				        }
-				        else
-				        {
-				                 for (k = 0; k < image->depth; k++)
-					         {
-					                 result_index1[i*image->depth+k] = result_index[k];
-					         }
-						 if (result_index1[i*image->depth] == 100000.0)
-						 stop_code = 0;
-				        }
-			        }
-				if (stop_code == 1) break;
+				if (result_index1[i*image->depth] == 0.0 ||result_index1[i*image->depth] == 1.0)
+				{
+				        for (k = 0; k< image->depth; k++)
+					{
+					        result_index[k] = 0.0;
+					}
+				}
+				else
+				{
+                                	dist = 10000.0;
+                                	for(j = 0 ; j < kernel_size ; j++)
+					{
+						if((result_index + k_offsets[j] >= ((FE_value *)storage)) && (result_index + k_offsets[j] < ((FE_value *)storage) + storage_size))
+						{
+							if (result_index1[i*image->depth + k_offsets[j]] == 1.0)
+							dist = my_Min(kernel[j],dist);
+						}
+					}
+					for (k = 0; k< image->depth; k++)
+					{
+				        	result_index[k] = dist;
+					}
+				}
+				
+				result_index += image->depth;
 			}
-			for (i = 0; i < storage_size / image->depth; i++)
+                        
+			for (i = storage_size / image->depth - 1; i >= 0; i--)
 			{
+				result_index -= image->depth;
+				if (*result_index == 0.0)
+				{
+					for (k = 0; k < image->depth; k++)
+					{
+				        	result_index1[i * image->depth + k] = 0.0;
+					}
+				}
+				else
+				{
 			        for (k = 0; k < image->depth; k++)
 				{
 				       max[k] = 0.0;
@@ -566,11 +578,11 @@ DESCRIPTION : Implement image skeleton extracting.
 
 				               if ((result_index + offsets[j] >= ((FE_value *)storage)) &&(result_index + offsets[j] < ((FE_value *)storage) + storage_size))
 					       {
-					               max[k] += *(result_index + offsets[j] + k);
+					               max[k] = my_Max(max[k],*(result_index + offsets[j] + k));
 					       }
 				       }
-				       max[k] /= 26.0 ;
-				       if (max[k] < *(result_index + k) - thinness)
+				       /* max[k] /= 26.0 ;*/
+				       if (*(result_index + k)>= (max[k]-thinness))
 				       {
 				               result_index1[i * image->depth + k] = 1.0;
 				       }
@@ -579,15 +591,17 @@ DESCRIPTION : Implement image skeleton extracting.
 				               result_index1[i * image->depth + k] = 0.0;
 				       }
 				}
-				result_index += image->depth;
+				}
 			}
-			for (i = (storage_size / image->depth -1); i >= 0; i--)
+			for (i = 0; i < storage_size / image->depth; i++)
 			{
-			        result_index -= image->depth;
+			        
 				for (k = 0; k < image->depth; k++)
 				{
 				         result_index[k] = result_index1[i * image->depth + k];
 				}
+				result_index += image->depth;
+				
 			}
 			if (return_code)
 			{
@@ -601,6 +615,8 @@ DESCRIPTION : Implement image skeleton extracting.
 			}
 			DEALLOCATE(stencil);
 			DEALLOCATE(offsets);
+			DEALLOCATE(kernel);
+			DEALLOCATE(k_offsets);
 			DEALLOCATE(result_index1);
 			DEALLOCATE(max);
 		}
