@@ -354,7 +354,7 @@ Perform a automatic thresholding operation on the image cache.
 ==============================================================================*/
 {
         char *storage;
-	FE_value *data_index, *result_index, T0, T, T1, T2, T3, *gray_img, *gray1_img, *gray2_img;
+	FE_value *data_index, *result_index, T0, T, T1, T2, *gray_img, *gray1_img, *gray2_img;
 	int i, k, return_code, storage_size, counter, counter1, counter2;
 
 
@@ -407,7 +407,6 @@ Perform a automatic thresholding operation on the image cache.
                                 T += gray_img[i]/counter;
 			}
 			T0 = T;
-			T3 = T;
                         /* perform the initial thresholding by choosing the mean as threshold value*/
 			for (i = 0; i < counter; i++)
 			{
@@ -707,7 +706,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 	ENTER(Computed_field_iteration_threshold_get_command_string);
 	command_string = (char *)NULL;
-	if (field)
+	if (field && (field->type_string==computed_field_iteration_threshold_type_string)
+		&& (data = (struct Computed_field_iteration_threshold_type_specific_data *)
+		field->type_specific_data) )
 	{
 		error = 0;
 		append_string(&command_string,
