@@ -4779,22 +4779,31 @@ DESCRIPTION :
 			the it may have been read in from a file and each triangle and
 			vertex needs to be freed, I have reverse freed them so that the
 			debug checking is as efficient as possible */
-		for (i = 0 ; i < mc_iso_surface->n_vertices ; i++)
+		if (mc_iso_surface->compiled_vertex_list)
 		{
-			if(mc_iso_surface->compiled_vertex_list[mc_iso_surface->n_vertices-i-1]
-				->triangle_ptrs)
+			for (i = 0 ; i < mc_iso_surface->n_vertices ; i++)
 			{
-				DEALLOCATE(mc_iso_surface->compiled_vertex_list[mc_iso_surface->n_vertices-i-1]
-					->triangle_ptrs);
+				if(mc_iso_surface->compiled_vertex_list[mc_iso_surface->n_vertices-i-1]
+					->triangle_ptrs)
+				{
+					DEALLOCATE(mc_iso_surface->compiled_vertex_list[mc_iso_surface->n_vertices-i-1]
+						->triangle_ptrs);
+				}
 			}
 		}
-		for (i = 0 ; i < mc_iso_surface->n_triangles ; i++)
+		if (mc_iso_surface->compiled_triangle_list)
 		{
-			DEALLOCATE(mc_iso_surface->compiled_triangle_list[mc_iso_surface->n_triangles-i-1]);
+			for (i = 0 ; i < mc_iso_surface->n_triangles ; i++)
+			{
+				DEALLOCATE(mc_iso_surface->compiled_triangle_list[mc_iso_surface->n_triangles-i-1]);
+			}
 		}
-		for (i = 0 ; i < mc_iso_surface->n_vertices ; i++)
+		if (mc_iso_surface->compiled_vertex_list)
 		{
-			DEALLOCATE(mc_iso_surface->compiled_vertex_list[mc_iso_surface->n_vertices-i-1]);
+			for (i = 0 ; i < mc_iso_surface->n_vertices ; i++)
+			{
+				DEALLOCATE(mc_iso_surface->compiled_vertex_list[mc_iso_surface->n_vertices-i-1]);
+			}
 		}
 	}
 	/*???SAB. Not sure about this but we need to free this somewhere.  Is this

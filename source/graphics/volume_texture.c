@@ -3815,7 +3815,8 @@ printf("texture->ximin = %lf %lf %lf, texture->ximax = %lf %lf %lf\n",
 					texture->mc_iso_surface->deform=deform;
 				}
 			}
-			if (ALLOCATE(compiled_vertex_list,struct MC_vertex *,n_obj_vertices) &&
+			if (n_obj_vertices>0 && n_obj_triangles>0 &&
+				ALLOCATE(compiled_vertex_list,struct MC_vertex *,n_obj_vertices) &&
 				ALLOCATE(compiled_triangle_list,struct MC_triangle *,n_obj_triangles))
 			{
 				rewind(in_file);
@@ -4308,9 +4309,27 @@ printf("texture->ximin = %lf %lf %lf, texture->ximax = %lf %lf %lf\n",
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-		"read_volume_texture_from_obj_file.  Could not allocate isosurface memory");
-				return_code = 0;
+				if ((n_obj_vertices > 0) && (n_obj_triangles > 0))
+				{
+					display_message(ERROR_MESSAGE,
+						"read_volume_texture_from_obj_file.  Could not allocate isosurface memory");
+					return_code = 0;
+				}
+				else
+				{
+					if (n_obj_vertices <= 0)
+					{
+						display_message(ERROR_MESSAGE,
+							"read_volume_texture_from_obj_file.  No valid vertices parsed from the file.");
+						return_code = 0;
+					}
+					if (n_obj_triangles <= 0)
+					{
+						display_message(ERROR_MESSAGE,
+							"read_volume_texture_from_obj_file.  No valid faces parsed from the file.");
+						return_code = 0;
+					}
+				}
 			}
 			DEALLOCATE(texture_vertices);
 			DEALLOCATE(normal_vertices);
