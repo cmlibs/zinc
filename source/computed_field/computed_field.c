@@ -3539,9 +3539,10 @@ to modify and destroy it.
 
 int Computed_field_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, struct GROUP(FE_element) *search_element_group)
+	FE_value *xi, struct GROUP(FE_element) *search_element_group,
+	int propagate_field)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 22 April 2002
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -3552,26 +3553,63 @@ information from textures (sample_texture computed_field) and then modified and
 then put back into another texture.
 The <search_element_group> is the set of elements from which the chosen element
 will belong.
+If <propagate_field> is set and the field has a find_element_xi_function, it
+is called to undo its field calculation and resume the search on its source
+field. This can be result in less computation, but can fail if the source field
+is multivalued, a common case being when it is in a polar coordinate system
+since valid values may be a multiple of  2*PI out.
+If <propagate_field> is not set or there is no <find_element_xi_function> this
+function searches all elements in <search_element_group> trying to find a point
+at which the field evaluates to the <values>.
 ==============================================================================*/
 {
-	int return_code;
+	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
+	int i, number_of_xi, return_code;
 
 	ENTER(Computed_field_find_element_xi);
-	if (field&&values&&(number_of_values==field->number_of_components)
-		&&element&&xi&&search_element_group)
+	if (field && values && (number_of_values == field->number_of_components) &&
+		element && xi && search_element_group)
 	{
-		if (field->computed_field_find_element_xi_function)
+		if (propagate_field && field->computed_field_find_element_xi_function)
 		{
-			return_code = 
-				field->computed_field_find_element_xi_function(
-					field, values, number_of_values, element, xi,
-					search_element_group);
+			return_code = field->computed_field_find_element_xi_function(
+				field, values, number_of_values, element, xi, search_element_group);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_find_element_xi.  No function defined.");
-			return_code = 0;
+			find_element_xi_data.field = field;
+			find_element_xi_data.values = values;
+			find_element_xi_data.number_of_values = number_of_values;
+			find_element_xi_data.found_number_of_xi = 0;
+			find_element_xi_data.found_derivatives = (FE_value *)NULL;
+			find_element_xi_data.tolerance = 1e-06;
+			if (ALLOCATE(find_element_xi_data.found_values, FE_value,
+				number_of_values))
+			{
+				if (*element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)
+					(Computed_field_iterative_element_conditional,
+						&find_element_xi_data, search_element_group))
+				{
+					number_of_xi = get_FE_element_dimension(*element);
+					for (i = 0 ; i < number_of_xi ; i++)
+					{
+						xi[i] = find_element_xi_data.xi[i];
+					}
+				}
+				/* The search is valid even if the element wasn't found */
+				return_code = 1;
+				DEALLOCATE(find_element_xi_data.found_values);
+				if (find_element_xi_data.found_derivatives)
+				{
+					DEALLOCATE(find_element_xi_data.found_derivatives);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_find_element_xi.  Unable to allocate value memory.");
+				return_code = 0;
+			}
 		}
 	}
 	else

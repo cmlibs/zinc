@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.h
 
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 22 April 2002
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -644,9 +644,10 @@ to modify and destroy it.
 
 int Computed_field_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
-	FE_value *xi, struct GROUP(FE_element) *search_element_group);
+	FE_value *xi, struct GROUP(FE_element) *search_element_group,
+	int propagate_field);
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 22 April 2002
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -657,6 +658,14 @@ information from textures (sample_texture computed_field) and then modified and
 then put back into another texture.
 The <search_element_group> is the set of elements from which the chosen element
 will belong.
+If <propagate_field> is set and the field has a find_element_xi_function, it
+is called to undo its field calculation and resume the search on its source
+field. This can be result in less computation, but can fail if the source field
+is multivalued, a common case being when it is in a polar coordinate system
+since valid values may be a multiple of  2*PI out.
+If <propagate_field> is not set or there is no <find_element_xi_function> this
+function searches all elements in <search_element_group> trying to find a point
+at which the field evaluates to the <values>.
 ==============================================================================*/
 
 int Computed_field_is_find_element_xi_capable(struct Computed_field *field,
