@@ -417,7 +417,7 @@ Perform histogram equalization operation on the image cache.
 				{
                                         for (j = 0; j < number_of_bins; j++)
 			                {
-                                                normalize_map[j] = (int)((FE_value)((map[j] - low) * number_of_bins)/(FE_value)(high - low));
+                                                normalize_map[j] = (int)((((double)(map[j] - low))*number_of_bins)/(high - low));
 			                }
 					/* stretch the histogram*/
                                         for (i = ((storage_size/image->depth) - 1) ; i >= 0 ; i--)
@@ -427,7 +427,7 @@ Perform histogram equalization operation on the image cache.
 						/*equalize the kth component*/
 						V = (FE_value)(normalize_map[(int)(floor(number_of_bins* *(data_index + k) + 0.5))]);
 						V = my_Min(number_of_bins,my_Max(0.0, V));
-						result_index[k] = V / (FE_value)number_of_bins;
+						result_index[k] = V/number_of_bins;
 					}
 				}
 				else
