@@ -1,0 +1,83 @@
+!*******************************************************************************
+! FILE : transform_tool.uil
+!
+! LAST MODIFIED : 12 June 2000
+!
+! DESCRIPTION :
+! Transform interactive tool icon.
+!===============================================================================
+module transform_tool
+	version = 'v1.0'
+
+value
+	black  : color('black',  foreground);
+	blue   : color('blue',   foreground);
+	green  : color('green',  foreground);
+	red    : color('red',    foreground);
+	white  : color('white',  foreground);
+	yellow : color('yellow', foreground);
+	lightgray : color('lightgray', foreground);
+	darkgray  : color('darkgray', foreground);
+	interactive_tool_colour_table:
+		color_table(
+		black='o',
+		red='R',
+		yellow='Y',
+		green='G',
+		white='W',
+		lightgray='+',
+		darkgray='#',
+		foreground color='.',
+		background color=' ');
+
+	transform_tool_icon: icon(color_table=interactive_tool_colour_table,
+			'               .                ',
+			'              .W.               ',
+			'             .WWW.              ',
+			'            ...W...             ',
+			'         ..   .W.   ..          ',
+			'       ....   ...   ....        ',
+			'        ..           ..         ',
+			'       . .    ...    . .        ',
+			'       .    ..WWW..    .        ',
+			'    . .   ..WWWWWWW..   . .     ',
+			'   .. .   .+..WWW..#.   . ..    ',
+			'  .W..... .+++...###. .....W.   ',
+			' .WWWWWW. .++++.####. .WWWWWW.  ',
+			'  .W..... .++++.####. .....W.   ',
+			'   .. .   .++++.####.   . ..    ',
+			'    . .   ..+++.###..   . .     ',
+			'       .    ..+.#..    .        ',
+			'       . .    ...    . .        ',
+			'        ..           ..         ',
+			'       ....   ...   ....        ',
+			'         ..   .W.   ..          ',
+			'            ...W...             ',
+			'             .WWW.              ',
+			'              .W.               ',
+			'               .           .    ',
+			'   .....                  .     ',
+			'     .  . . ..  ...   .. ...    ',
+			'     .  ..    . .  . .    .     ',
+			'     .  .   ... .  .  ..  .     ',
+			'     .  .   . . .  .   .  .     ',
+			'     .  .   .. ..  . ..   . .   ',
+			'                                ');
+
+!*******************************************************************************
+object
+	transform_tool_button: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = transform_tool_icon;
+			XmNindicatorOn = false;
+			XmNhighlightThickness = 0;
+			XmNset = false;
+			XmNspacing = 0;
+			XmNshadowThickness = 2;
+			};
+		};
+!*******************************************************************************
+end module;
