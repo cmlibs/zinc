@@ -424,7 +424,7 @@ but are indirectly connected (e.g. mesh with slit)
 				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+3]=0;
 			}
 			/* +ve xi3 direction */
-			if (adjacent_FE_element(element,3,&number_of_elements,&elements))
+			if (adjacent_FE_element(element,5,&number_of_elements,&elements))
 			{
 				/* Just use the first one */
 				element_ptr=elements[0];
