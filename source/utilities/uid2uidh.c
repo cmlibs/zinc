@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 
 	if(argc != 3 && argc != 5)
 	{
-		printf("Usage: uid2uid64 infile [-64bit infile64bit] outfile\n");
+		printf("Usage: uid2uidh infile outfile\n");
 	}
 	else
 	{
@@ -28,15 +28,6 @@ int main(int argc, char *argv[])
 		if(infile = fopen( argv[index], "r"))
 		{
 			index++;
-			if(argv[index][0] == '-')
-			{
-				if(!strncasecmp(argv[index], "-64bit", 6))
-				{
-					index++;
-					infile64bit = fopen( argv[index], "r");
-					index++;
-				}
-			}
 			if(outfile = fopen( argv[index], "w"))
 			{
 				index++;
@@ -50,8 +41,7 @@ int main(int argc, char *argv[])
 					*dot_ptr = 0;
 				}
 
-				fprintf(outfile, "#if !defined (O64)\n");
-				fprintf(outfile, "static char %s_uid64[] = \"", string_ptr);
+				fprintf(outfile, "static char %s_uidh[] = \"", string_ptr);
 
 				while(!feof(infile))
 				{
@@ -136,86 +126,18 @@ int main(int argc, char *argv[])
 					}
 				}
 				fprintf(outfile, "\";\n");
-				if(infile64bit)
-				{
-					fprintf(outfile, "#else /* !defined (O64) */\n");
-					fprintf(outfile, "static char %s_uid64[] = \"", string_ptr);
-
-					byte_count = 0;
-					data = 0;
-
-					while(!feof(infile64bit))
-					{
-						if(1 == fread(&buffer, sizeof(char), 1, infile64bit))
-						{
-#if defined (DEBUG)
-							printf("%d\n", buffer);
-#endif /* defined (DEBUG) */
-							byte_data = buffer & 255;
-							data += byte_data << (8 * byte_count);
-
-							if(byte_count == 3)
-							{
-								char_data = l64a(data);
-								if(!data)
-								{
-									out_data[0] = '.';
-									out_data[1] = '.';
-									out_data[2] = '.';
-									out_data[3] = '.';
-									out_data[4] = '.';
-									out_data[5] = '.';
-								}
-								else
-								{
-									for( i = 0 ; i < 6 ; i++)
-									{
-										if(char_data[i])
-										{
-											out_data[i] = char_data[i];
-										}
-										else
-										{
-											for ( ; i < 6 ; i++)
-											{
-												out_data[i] = '.';
-											}
-										}
-									}
-								}
-					
-								fwrite(out_data, sizeof(char), 6, outfile);
-#if defined (DEBUG)
-								printf("%c%c%c%c%c%c\n", out_data[0], 
-									out_data[1], out_data[2], out_data[3],
-									out_data[4], out_data[5]);
-#endif /* defined (DEBUG) */
-
-								data = 0;
-								byte_count = 0;
-							}
-							else
-							{
-								byte_count++;
-							}
-						}
-					}
-					fprintf(outfile, "\";\n");
-					fclose(infile64bit);
-				}
-				fprintf(outfile, "#endif /* !defined (O64) */\n");
 				fclose (outfile);
 			}
 			else
 			{
-				fprintf(stderr,"uid2uid64.  Unable to open output file %s\n",
+				fprintf(stderr,"uid2uidh.  Unable to open output file %s\n",
 					argv[index]);
 			}
 			fclose (infile);
 		}
 		else
 		{
-			fprintf(stderr,"uid2uid64.  Unable to open input file %s\n",
+			fprintf(stderr,"uid2uidh.  Unable to open input file %s\n",
 				argv[index]);
 		}
    }
