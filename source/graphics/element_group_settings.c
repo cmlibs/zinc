@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 1 March 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -124,6 +124,193 @@ Module functions
 */
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GT_element_settings,position,int, \
 	compare_int)
+
+static int GT_element_settings_uses_FE_element(
+	struct GT_element_settings *settings,struct FE_element *element,
+	struct GROUP(FE_element) *element_group)
+/*******************************************************************************
+LAST MODIFIED : 22 December 1999
+
+DESCRIPTION :
+GT_element_settings list conditional function returning 1 if the element
+would contribute any graphics generated from the GT_element_settings. The
+<element_group> is provided to allow any checks against parent elements to
+ensure the relevant parent elements are also in the group.
+==============================================================================*/
+{
+	enum CM_element_type cm_element_type;
+	int dimension,return_code;
+
+	ENTER(GT_element_settings_uses_FE_element);
+	if (settings&&element&&element_group)
+	{
+		dimension=GT_element_settings_get_dimension(settings);
+		if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)||
+			(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type))
+		{
+			cm_element_type=Use_element_type_CM_element_type(
+				settings->use_element_type);
+		}
+		else
+		{
+			cm_element_type=CM_ELEMENT_TYPE_INVALID;
+		}
+		return_code=FE_element_can_be_displayed(element,dimension,cm_element_type,
+			settings->exterior,settings->face,element_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_uses_FE_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_uses_FE_element */
+
+struct Element_point_ranges_select_data
+{
+	struct GROUP(FE_element) *element_group;
+	struct GT_element_settings *settings;
+};
+
+static int Element_point_ranges_select(
+	struct Element_point_ranges *element_point_ranges,void *select_data_void)
+/*******************************************************************************
+LAST MODIFIED : 29 February 2000
+
+DESCRIPTION :
+If <settings> is of type GT_ELEMENT_SETTINGS_ELEMENT_POINTS and has a graphics
+object, determines from the identifier of <element_point_ranges>, whether it
+applies to the settings, and if so selects any ranges in it in the
+graphics_object.
+==============================================================================*/
+{
+	FE_value element_to_top_level[9];
+	int dimension,i,matching_identifier,
+		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],return_code,
+		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct Element_point_ranges_identifier element_point_ranges_identifier;
+	struct Element_point_ranges_select_data *select_data;
+	struct FE_element *element,*top_level_element;
+	struct GROUP(FE_element) *element_group;
+	struct GT_element_settings *settings;
+	struct Multi_range *ranges;
+
+	ENTER(Element_point_ranges_select);
+	if (element_point_ranges&&
+		(select_data=(struct Element_point_ranges_select_data *)select_data_void)&&
+		(element_group=select_data->element_group)&&
+		(settings=select_data->settings)&&
+		(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)&&
+		settings->graphics_object)
+	{
+		if (Element_point_ranges_get_identifier(element_point_ranges,
+			&element_point_ranges_identifier))
+		{
+			element=element_point_ranges_identifier.element;
+			if (GT_element_settings_uses_FE_element(settings,element,element_group))
+			{
+				if (top_level_element=FE_element_get_top_level_element_conversion(
+					element,/*check_top_level_element*/(struct FE_element *)NULL,
+					element_group,settings->face,element_to_top_level))
+				{
+					/* get the discretization requested for top-level element, from native
+						 discretization field if not NULL and is element based in element */
+					if (!(settings->native_discretization_field&&
+						FE_element_field_is_grid_based(top_level_element,
+							settings->native_discretization_field)&&
+						get_FE_element_field_grid_map_number_in_xi(top_level_element,
+							settings->native_discretization_field,top_level_number_in_xi)))
+					{
+						top_level_number_in_xi[0]=settings->discretization.number_in_xi1;
+						top_level_number_in_xi[1]=settings->discretization.number_in_xi2;
+						top_level_number_in_xi[2]=settings->discretization.number_in_xi3;
+					}
+					if (get_FE_element_discretization_from_top_level(element,number_in_xi,
+						top_level_element,top_level_number_in_xi,element_to_top_level))
+					{
+						if (element_point_ranges_identifier.xi_discretization_mode ==
+							settings->xi_discretization_mode)
+						{
+							dimension=get_FE_element_dimension(element);
+							matching_identifier=1;
+							for (i=0;(i<dimension)&&matching_identifier;i++)
+							{
+								if (element_point_ranges_identifier.number_in_xi[i] !=
+									number_in_xi[i])
+								{
+									matching_identifier=0;
+								}
+							}
+						}
+						else
+						{
+							matching_identifier=0;
+						}
+						if (matching_identifier)
+						{
+							if (ranges=CREATE(Multi_range)())
+							{
+								if (Multi_range_copy(ranges,Element_point_ranges_get_ranges(
+									element_point_ranges))&&GT_object_select_graphic(
+										settings->graphics_object,element->cm.number,ranges))
+								{
+									return_code=1;
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Element_point_ranges_select.  Could not select ranges");
+									DESTROY(Multi_range)(&ranges);
+									return_code=0;
+								}
+							}
+							return_code=1;
+
+						}
+						else
+						{
+							return_code=1;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"element_to_graphics_object.  "
+							"Error getting discretization");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"element_to_graphics_object.  "
+						"Error getting top_level_element");
+					return_code=0;
+				}
+			}
+			else
+			{
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Element_point_ranges_select.  Could not get identifier");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_ranges_select.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_point_ranges_select */
 
 static int FE_element_select_dimension_1(struct FE_element *element,
 	void *graphics_object_void)
@@ -3163,49 +3350,6 @@ any trivial differences are fixed up in the graphics_obejct.
 	return (return_code);
 } /* GT_element_settings_extract_graphics_object_from_list */
 
-int GT_element_settings_uses_FE_element(struct GT_element_settings *settings,
-	struct FE_element *element,struct GROUP(FE_element) *element_group)
-/*******************************************************************************
-LAST MODIFIED : 22 December 1999
-
-DESCRIPTION :
-GT_element_settings list conditional function returning 1 if the element
-would contribute any graphics generated from the GT_element_settings. The
-<element_group> is provided to allow any checks against parent elements to
-ensure the relevant parent elements are also in the group.
-==============================================================================*/
-{
-	enum CM_element_type cm_element_type;
-	int dimension,return_code;
-
-	ENTER(GT_element_settings_uses_FE_element);
-	if (settings&&element&&element_group)
-	{
-		dimension=GT_element_settings_get_dimension(settings);
-		if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)||
-			(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type))
-		{
-			cm_element_type=Use_element_type_CM_element_type(
-				settings->use_element_type);
-		}
-		else
-		{
-			cm_element_type=CM_ELEMENT_TYPE_INVALID;
-		}
-		return_code=FE_element_can_be_displayed(element,dimension,cm_element_type,
-			settings->exterior,settings->face,element_group);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_settings_uses_FE_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_settings_uses_FE_element */
-
 int GT_element_settings_type_uses_dimension(
 	enum GT_element_settings_type settings_type,int dimension)
 /*******************************************************************************
@@ -3972,18 +4116,19 @@ Makes a copy of the settings and puts it in the list_of_settings.
 static int element_to_graphics_object(struct FE_element *element,
 	void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 1 March 2000
 
 DESCRIPTION :
 Converts a finite element into a graphics object with the supplied settings.
 ==============================================================================*/
 {
-	FE_value element_to_top_level[9],initial_xi[3];
+	FE_value initial_xi[3];
 	float time;
-	int dimension,edit_mode,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+	int dimension,edit_mode,i,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		number_of_xi_points,process,return_code,
 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct Element_discretization *discretization;
+	struct Element_point_ranges *element_point_ranges;
+	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct FE_element *top_level_element;
 	struct FE_field *native_discretization_field;
 	struct GT_element_settings *settings;
@@ -3992,6 +4137,7 @@ Converts a finite element into a graphics object with the supplied settings.
 	struct GT_polyline *polyline;
 	struct GT_surface *surface;
 	struct GT_voltex *voltex;
+	struct Multi_range *ranges;
 	Triple *xi_points;
 
 	ENTER(element_to_graphics_object);
@@ -4023,51 +4169,30 @@ Converts a finite element into a graphics object with the supplied settings.
 		if (process)
 		{
 			/* determine discretization of element for graphic */
-			if (top_level_element=FE_element_get_top_level_element_conversion(
-				element,/*check_top_level_element*/(struct FE_element *)NULL,
-				settings_to_object_data->element_group,settings->face,
-				element_to_top_level))
+			top_level_element=(struct FE_element *)NULL;
+			if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)
 			{
-				if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)
-				{
-					/* element_points always have their own discretization */
-					discretization=&(settings->discretization);
-					native_discretization_field=
-						settings->native_discretization_field;
-				}
-				else
-				{
-					discretization=settings_to_object_data->element_discretization;
-					native_discretization_field=
-						settings_to_object_data->native_discretization_field;
-				}
-				/* get the discretization requested for top-level element, from native
-					 discretization field if not NULL and is element based in element */
-				if (!(native_discretization_field&&
-					FE_element_field_is_grid_based(top_level_element,
-						native_discretization_field)&&
-					get_FE_element_field_grid_map_number_in_xi(top_level_element,
-						native_discretization_field,top_level_number_in_xi)))
-				{
-					top_level_number_in_xi[0]=discretization->number_in_xi1;
-					top_level_number_in_xi[1]=discretization->number_in_xi2;
-					top_level_number_in_xi[2]=discretization->number_in_xi3;
-				}
-				if (!get_FE_element_discretization_from_top_level(element,number_in_xi,
-					top_level_element,top_level_number_in_xi,element_to_top_level))
-				{
-					display_message(ERROR_MESSAGE,"element_to_graphics_object.  "
-						"Error getting discretization");
-					return_code=0;
-				}
+				/* element_points always have their own discretization */
+				top_level_number_in_xi[0]=settings->discretization.number_in_xi1;
+				top_level_number_in_xi[1]=settings->discretization.number_in_xi2;
+				top_level_number_in_xi[2]=settings->discretization.number_in_xi3;
+				native_discretization_field=settings->native_discretization_field;
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"element_to_graphics_object.  "
-					"Error getting top_level_element");
-				return_code=0;
+				top_level_number_in_xi[0]=
+					settings_to_object_data->element_discretization->number_in_xi1;
+				top_level_number_in_xi[1]=
+					settings_to_object_data->element_discretization->number_in_xi2;
+				top_level_number_in_xi[2]=
+					settings_to_object_data->element_discretization->number_in_xi3;
+				native_discretization_field=
+					settings_to_object_data->native_discretization_field;
 			}
-			if (return_code)
+			if (get_FE_element_discretization(element,
+				settings_to_object_data->element_group,settings->face,
+				native_discretization_field,top_level_number_in_xi,&top_level_element,
+				number_in_xi))
 			{
 				dimension=get_FE_element_dimension(element);
 				/* g_element renditions use only one time=0. Must take care. */
@@ -4238,6 +4363,22 @@ Converts a finite element into a graphics object with the supplied settings.
 								GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_glyph_set)(
 									settings->graphics_object,time,element->cm.number);
 							}
+							ranges=(struct Multi_range *)NULL;
+							element_point_ranges_identifier.element=element;
+							element_point_ranges_identifier.xi_discretization_mode=
+								settings->xi_discretization_mode;
+							for (i=0;i<dimension;i++)
+							{
+								element_point_ranges_identifier.number_in_xi[i]=number_in_xi[i];
+							}
+							if (element_point_ranges=FIND_BY_IDENTIFIER_IN_LIST(
+								Element_point_ranges,identifier)(
+									&element_point_ranges_identifier,
+									settings_to_object_data->selected_element_point_ranges_list))
+							{
+								ranges=Element_point_ranges_get_ranges(element_point_ranges);
+							}
+							/* NOT an error if no glyph_set produced == empty selection */
 							if (glyph_set=create_GT_glyph_set_from_FE_element(
 								element,top_level_element,
 								settings_to_object_data->rc_coordinate_field,
@@ -4245,7 +4386,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								settings->glyph,settings->glyph_centre,settings->glyph_size,
 								settings_to_object_data->wrapper_orientation_scale_field,
 								settings->glyph_scale_factors,settings->data_field,
-								settings->label_field,settings->select_mode))
+								settings->label_field,settings->select_mode,ranges))
 							{
 								if (!GT_OBJECT_ADD(GT_glyph_set)(
 									settings->graphics_object,time,glyph_set))
@@ -4253,10 +4394,6 @@ Converts a finite element into a graphics object with the supplied settings.
 									DESTROY(GT_glyph_set)(&glyph_set);
 									return_code=0;
 								}
-							}
-							else
-							{
-								return_code=0;
 							}
 							DEALLOCATE(xi_points);
 						}
@@ -4354,6 +4491,12 @@ Converts a finite element into a graphics object with the supplied settings.
 					} break;
 				}
 			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"element_to_graphics_object.  Could not get discretization");
+				return_code=0;
+			}
 		}
 	}
 	else
@@ -4370,7 +4513,7 @@ Converts a finite element into a graphics object with the supplied settings.
 int GT_element_settings_to_graphics_object(
 	struct GT_element_settings *settings,void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 Creates a GT_object and fills it with the objects described by settings.
@@ -4390,6 +4533,7 @@ The graphics object is stored with with the settings it was created from.
 	struct GT_element_settings_to_graphics_object_data *settings_to_object_data;
 	struct GT_glyph_set *glyph_set;
 	struct Multi_range *subranges;
+	struct Element_point_ranges_select_data element_point_ranges_select_data;
 
 	ENTER(GT_element_settings_to_graphics_object);
 	if (settings&&(settings_to_object_data=
@@ -4560,6 +4704,7 @@ The graphics object is stored with with the settings it was created from.
 					}
 					if (settings->graphics_object)
 					{
+						settings->selected_graphics_changed=1;
 						/* all primitives added at time 0.0 */
 						time=0.0;
 						/* need settings for element_to_graphics_object routine */
@@ -4578,9 +4723,6 @@ The graphics object is stored with with the settings it was created from.
 								if (GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)
 								{
 									node_group=settings_to_object_data->node_group;
-									/*???RC should be elsewhere once selection supported by other
-										types */
-									settings->selected_graphics_changed=1;
 								}
 								else
 								{
@@ -4782,9 +4924,17 @@ The graphics object is stored with with the settings it was created from.
 								FE_element_select_dimension_2,(void *)settings->graphics_object,
 								settings_to_object_data->selected_element_list);
 						} break;
+						case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
+						{
+							element_point_ranges_select_data.element_group=element_group;
+							element_point_ranges_select_data.settings=settings;
+							FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+								Element_point_ranges_select,
+								(void *)&element_point_ranges_select_data,
+								settings_to_object_data->selected_element_point_ranges_list);
+						} break;
 						case GT_ELEMENT_SETTINGS_DATA_POINTS:
 						case GT_ELEMENT_SETTINGS_ISO_SURFACES:
-						case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 						case GT_ELEMENT_SETTINGS_VOLUMES:
 						case GT_ELEMENT_SETTINGS_STREAMLINES:
 						{
@@ -4823,6 +4973,66 @@ The graphics object is stored with with the settings it was created from.
 
 	return (return_code);
 } /* GT_element_settings_to_graphics_object */
+
+int GT_element_settings_selected_element_points_change(
+	struct GT_element_settings *settings,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 28 February 2000
+
+DESCRIPTION :
+Tells <settings> that if the graphics resulting from it depend on the currently
+selected element points, then they should be updated.
+Must call GT_element_settings_to_graphics_object afterwards to complete.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_settings_selected_element_points_change);
+	USE_PARAMETER(dummy_void);
+	if (settings)
+	{
+		return_code=1;
+		if (settings->graphics_object&&
+			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))
+		{
+			switch (settings->select_mode)
+			{
+				case GRAPHICS_SELECT_ON:
+				{
+					/* for efficiency, just request update of selected graphics */
+					settings->selected_graphics_changed=1;
+				} break;
+				case GRAPHICS_NO_SELECT:
+				{
+					/* nothing to do as no names put out with graphic */
+				} break;
+				case GRAPHICS_DRAW_SELECTED:
+				case GRAPHICS_DRAW_UNSELECTED:
+				{
+					/* need to rebuild graphics_object from scratch */
+					DEACCESS(GT_object)(&(settings->graphics_object));
+					settings->graphics_object=(struct GT_object *)NULL;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"GT_element_settings_selected_element_points_change.  "
+						"Unknown select_mode");
+				} break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_selected_element_points_change.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_selected_element_points_change */
 
 int GT_element_settings_selected_elements_change(
 	struct GT_element_settings *settings,void *dummy_void)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 28 February 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -14,6 +14,7 @@ appearance of graphical finite element groups.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "graphics/auxiliary_graphics_types.h"
+#include "graphics/element_point_ranges.h"
 #include "graphics/graphics_object.h"
 #include "general/list.h"
 #include "graphics/material.h"
@@ -119,7 +120,7 @@ Subset of command data passed to g_element modify routines.
 
 struct GT_element_settings_to_graphics_object_data
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 28 February 2000
 
 DESCRIPTION :
 Data required to produce or edit a graphics object for a GT_element_settings
@@ -138,6 +139,7 @@ object.
 	struct FE_element *changed_element;
 	struct FE_node *changed_node;
 	/* for highlighting of selected objects */
+	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
 	struct LIST(FE_element) *selected_element_list;
 	struct LIST(FE_node) *selected_node_list;
 
@@ -1018,6 +1020,17 @@ LAST MODIFIED : 11 June 1998
 DESCRIPTION :
 Creates a GT_object and fills it with the objects described by settings.
 The graphics object is stored with with the settings it was created from.
+==============================================================================*/
+
+int GT_element_settings_selected_element_points_change(
+	struct GT_element_settings *settings,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 28 February 2000
+
+DESCRIPTION :
+Tells <settings> that if the graphics resulting from it depend on the currently
+selected element points, then they should be updated.
+Must call GT_element_settings_to_graphics_object afterwards to complete.
 ==============================================================================*/
 
 int GT_element_settings_selected_elements_change(
