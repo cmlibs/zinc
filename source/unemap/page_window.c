@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 19 November 2000
 
 DESCRIPTION :
 
@@ -3586,9 +3586,6 @@ Updates the settings for the stimulating buttons.
 						EnableWindow(page_window->stimulate_checkbox,TRUE);
 #endif /* defined (WINDOWS) */
 					}
-					/*???debug */
-					printf("update_stimulating_settings.  %d %d\n",stimulator_number,
-						(page_window->number_of_stimulating_channels)[stimulator_number]);
 					if (0<(i=(page_window->number_of_stimulating_channels)[
 						stimulator_number]))
 					{
@@ -4538,8 +4535,6 @@ Called to start a stimulator.
 					}
 					DEALLOCATE(values);
 				}
-				/*???debug */
-				printf("2.  start_stimulator %d\n",return_code);
 				if (return_code)
 				{
 					/* set the channels to stimulating */
@@ -4555,8 +4550,6 @@ Called to start a stimulator.
 				DEALLOCATE(waveform_file_name);
 			}
 		}
-		/*???debug */
-		printf("1.  start_stimulator %d\n",return_code);
 		update_stimulating_settings(page_window);
 	}
 	LEAVE;
