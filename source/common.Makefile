@@ -438,7 +438,7 @@ else # NO_MAKE_DEPEND
 	@stem_name=$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)); \
    source_name=$(firstword $(wildcard $(SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).c $(SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).cpp $(PRODUCT_SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).c $(PRODUCT_SOURCE_PATH)/$(subst $(PRODUCT_OBJECT_PATH)/,,$(subst $(OBJECT_PATH)/,,$*)).cpp)) ; \
 	set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $${source_name} 2> /dev/null | \
-	sed -e "s%^.*\.o%$${stem_name}.o $(OBJECT_PATH)/$${stem_name}.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g" > $(OBJECT_PATH)/$${stem_name}.d ;
+	sed -e "s%^.*\.o%$${stem_name}.o $(OBJECT_PATH)/$${stem_name}.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g;s%/usr/local/.*\.h%%g" > $(OBJECT_PATH)/$${stem_name}.d ;
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    # Fix up the uidh references
 	@stem_name=$(subst $(PRODUCT_OBJECT_PATH),,$(subst $(OBJECT_PATH)/,,$*)); \
