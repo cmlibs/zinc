@@ -1139,7 +1139,7 @@ already) and allows its contents to be modified.
 		minimums = (FE_value *)NULL;
 		maximums = (FE_value *)NULL;
 		element_dimension = 0;
-		number_of_classes = 0;
+		number_of_classes = 10;
 		/* field */
 		set_source_field_data.computed_field_manager =
 			computed_field_fuzzy_clustering_package->computed_field_manager;
