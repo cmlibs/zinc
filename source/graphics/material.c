@@ -504,6 +504,11 @@ be shared by multiple materials using the same program.
 							"LIT	lightContrib, lightContrib;\n"
 
 							"MAD		finalCol, lightContrib.y, fragment.color, state.lightprod[0].ambient;\n"
+							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
+							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
+
+							"#Ambient lighting contribution;\n"
+							"MAD		finalCol, fragment.color, state.lightmodel.ambient, finalCol;\n"
 							, &error);
 
 
@@ -516,9 +521,7 @@ be shared by multiple materials using the same program.
 						}
 
 						append_string(&fragment_program_string, 
-							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
-							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
-							"MAD		result.color.xyz, fragment.color, state.lightmodel.ambient, finalCol;\n"
+							"MOV		result.color.xyz, finalCol;\n"
 							"MOV		result.color.w, state.material.diffuse.w;\n"
 							"END"
 							, &error);
