@@ -42,7 +42,7 @@ struct Computed_field_gabor_filter_type_specific_data
 	/* The std of Gaussian function */
 	double sigma;
 	int *direction;
-	double *frequencies;
+	FE_value *frequencies;
 
 	float cached_time;
 	int element_dimension;
@@ -367,7 +367,7 @@ No special criteria.
 
 
 static int Image_cache_gabor_filter(struct Image_cache *image, double sigma,
-        int *direction, double *frequencies)
+        int *direction, FE_value *frequencies)
 /*******************************************************************************
 LAST MODIFIED : 17 March 2004
 
@@ -793,7 +793,7 @@ Works out whether time influences the field.
 int Computed_field_set_type_gabor_filter(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
-	double sigma, int *direction, double *frequencies,
+	double sigma, int *direction, FE_value *frequencies,
 	int dimension, int *sizes, FE_value *minimums, FE_value *maximums,
 	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
@@ -827,7 +827,7 @@ although its cache may be lost.
 		if (ALLOCATE(source_fields, struct Computed_field *, number_of_source_fields) &&
 			ALLOCATE(data, struct Computed_field_gabor_filter_type_specific_data, 1) &&
 			ALLOCATE(data->direction, int, 2) &&
-			ALLOCATE(data->frequencies, double, 2) &&
+			ALLOCATE(data->frequencies, FE_value, 2) &&
 			(data->image = ACCESS(Image_cache)(CREATE(Image_cache)())) &&
 			Image_cache_update_dimension(
 			data->image, dimension, depth, sizes, minimums, maximums) &&
@@ -889,7 +889,7 @@ although its cache may be lost.
 int Computed_field_get_type_gabor_filter(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
-	double *sigma, int **direction, double **frequencies,
+	double *sigma, int **direction, FE_value **frequencies,
 	int *dimension, int **sizes, FE_value **minimums,
 	FE_value **maximums, int *element_dimension)
 /*******************************************************************************
@@ -911,7 +911,7 @@ parameters defining it are returned.
 		*dimension = data->image->dimension;
 		if (ALLOCATE(*sizes, int, *dimension)
 		        && ALLOCATE(*direction, int, 2)
-			&& ALLOCATE(*frequencies, double, 2)
+			&& ALLOCATE(*frequencies, FE_value, 2)
 			&& ALLOCATE(*minimums, FE_value, *dimension)
 			&& ALLOCATE(*maximums, FE_value, *dimension))
 		{
@@ -964,7 +964,7 @@ already) and allows its contents to be modified.
 	int dim = 2;
 	double sigma;
 	int *direction;
-	double *frequencies;
+	FE_value *frequencies;
 	int dimension, element_dimension, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
 	struct Computed_field_gabor_filter_package
@@ -987,7 +987,7 @@ already) and allows its contents to be modified.
 		minimums = (FE_value *)NULL;
 		maximums = (FE_value *)NULL;
 		direction = (int *)NULL;
-		frequencies = (double *)NULL;
+		frequencies = (FE_value *)NULL;
 		element_dimension = 0;
 		sigma = 1.0;
 		/* field */
@@ -1041,7 +1041,7 @@ already) and allows its contents to be modified.
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
 				/* frequencies */
-				Option_table_add_double_vector_entry(option_table,
+				Option_table_add_FE_value_vector_entry(option_table,
 					"frequencies", frequencies, &dim);
 				/* maximums */
 				Option_table_add_FE_value_vector_entry(option_table,
@@ -1076,7 +1076,7 @@ already) and allows its contents to be modified.
 					{
 						if (!(REALLOCATE(sizes, sizes, int, dimension) &&
 						        REALLOCATE(direction, direction, int, 2) &&
-							REALLOCATE(frequencies, frequencies, double, 2) &&
+							REALLOCATE(frequencies, frequencies, FE_value, 2) &&
 							REALLOCATE(minimums, minimums, FE_value, dimension) &&
 							REALLOCATE(maximums, maximums, FE_value, dimension)))
 						{
@@ -1106,7 +1106,7 @@ already) and allows its contents to be modified.
 				Option_table_add_Computed_field_conditional_entry(option_table,
 					"field", &source_field, &set_source_field_data);
 				/* frequencies */
-				Option_table_add_double_vector_entry(option_table,
+				Option_table_add_FE_value_vector_entry(option_table,
 					"frequencies", frequencies, &dim);
 				/* maximums */
 				Option_table_add_FE_value_vector_entry(option_table,
