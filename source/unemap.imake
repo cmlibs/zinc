@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 4 March 2001
+XCOMM LAST MODIFIED : 9 May 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -619,7 +619,8 @@ GENERAL_SRCS = \
 	general/mystring.c \
 	general/child_process.c \
 	general/value.c \
-	general/postscript.c
+	general/postscript.c \
+	general/statistics.c
 GRAPHICS_SRCS = \
 	graphics/complex.c \
 	graphics/laguer.c \
