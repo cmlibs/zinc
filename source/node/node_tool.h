@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.h
 
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
 Functions for mouse controlled node selection and position and vector editing
@@ -11,7 +11,7 @@ based on input from devices.
 #define NODE_TOOL_H
 
 #include "finite_element/finite_element.h"
-#include "graphics/scene.h"
+#include "graphics/material.h"
 #include "interaction/interactive_tool.h"
 #include "selection/node_selection.h"
 
@@ -46,16 +46,17 @@ struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(FE_node) *node_manager,int use_data,
 	struct FE_node_selection *node_selection,
-	struct Computed_field_package *computed_field_package);
+	struct Computed_field_package *computed_field_package,
+	struct Graphical_material *rubber_band_material);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
 using the <node_selection>.
 The <use_data> flag indicates that <node_manager> and <node_selection>
 refer to data, not nodes, needed since different GT_element_settings types are
-used to represent them. 
+used to represent them.
 ==============================================================================*/
 
 int DESTROY(Node_tool)(struct Node_tool **node_tool_address);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -13,6 +13,7 @@ Scene input.
 #include "graphics/element_group_settings.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
+#include "interaction/interaction_graphics.h"
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
 #include "node/node_tool.h"
@@ -36,7 +37,7 @@ Module types
 
 struct Node_tool
 /*******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
 Object storing all the parameters for converting scene input messages into
@@ -50,6 +51,7 @@ changes in node position and derivatives etc.
 	int use_data;
 	struct FE_node_selection *node_selection;
 	struct Computed_field_package *computed_field_package;
+	struct Graphical_material *rubber_band_material;
 	/* user-settable flags */
 	/* indicates whether node edits can occur with motion_notify events: slower */
 	int motion_update_enabled;
@@ -71,6 +73,7 @@ changes in node position and derivatives etc.
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *gt_element_settings;
 	struct Interaction_volume *last_interaction_volume;
+	struct GT_object *rubber_band;
 }; /* struct Node_tool */
 
 struct FE_node_edit_information
@@ -933,7 +936,7 @@ the new node.
 static void Node_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *node_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -1024,9 +1027,9 @@ release.
 						{
 							FE_node_selection_end_cache(node_tool->node_selection);
 						}
-						node_tool->motion_detected=0;
 						DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 					}
+					node_tool->motion_detected=0;
 				} break;
 				case INTERACTIVE_EVENT_MOTION_NOTIFY:
 				case INTERACTIVE_EVENT_BUTTON_RELEASE:
@@ -1175,29 +1178,54 @@ release.
 							}
 						}
 					}
-					else if ((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
-						(node_tool->motion_detected))
+					else if (node_tool->motion_detected)
 					{
-						/* rubber band select */
+						/* rubber band select - make bounding box out of initial and current
+							 interaction_volumes */
 						if (temp_interaction_volume=create_Interaction_volume_bounding_box(
 							node_tool->last_interaction_volume,interaction_volume))
 						{
-							if (scene_picked_object_list=
-								Scene_pick_objects(scene,temp_interaction_volume))
+							if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 							{
-								if (node_list=Scene_picked_object_list_get_picked_nodes(
-									scene_picked_object_list,node_tool->use_data))
+								if (!node_tool->rubber_band)
 								{
-									FE_node_selection_begin_cache(node_tool->node_selection);
-									FOR_EACH_OBJECT_IN_LIST(FE_node)(
-										FE_node_select_in_FE_node_selection,
-										(void *)(node_tool->node_selection),node_list);
-									FE_node_selection_end_cache(node_tool->node_selection);
-									DESTROY(LIST(FE_node))(&node_list);
+									/* create rubber_band object and put in scene */
+									node_tool->rubber_band=CREATE(GT_object)(
+										"node_tool_rubber_band",g_POLYLINE,
+										node_tool->rubber_band_material);
+									ACCESS(GT_object)(node_tool->rubber_band);
+									Scene_add_graphics_object(scene,node_tool->rubber_band,
+										/*position*/0,"node_tool_rubber_band",
+										/*fast_changing*/1);
 								}
-								DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
+								Interaction_volume_make_polyline_extents(
+									temp_interaction_volume,node_tool->rubber_band);
 							}
-							DESTROY(Interaction_volume)(&temp_interaction_volume);
+							else
+							{
+								Scene_remove_graphics_object(scene,node_tool->rubber_band);
+								DEACCESS(GT_object)(&(node_tool->rubber_band));
+							}
+							if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
+							{
+								if (scene_picked_object_list=
+									Scene_pick_objects(scene,temp_interaction_volume))
+								{
+									if (node_list=Scene_picked_object_list_get_picked_nodes(
+										scene_picked_object_list,node_tool->use_data))
+									{
+										FE_node_selection_begin_cache(node_tool->node_selection);
+										FOR_EACH_OBJECT_IN_LIST(FE_node)(
+											FE_node_select_in_FE_node_selection,
+											(void *)(node_tool->node_selection),node_list);
+										FE_node_selection_end_cache(node_tool->node_selection);
+										DESTROY(LIST(FE_node))(&node_list);
+									}
+									DESTROY(LIST(Scene_picked_object))(
+										&(scene_picked_object_list));
+								}
+								DESTROY(Interaction_volume)(&temp_interaction_volume);
+							}
 						}
 					}
 				} break;
@@ -1335,9 +1363,10 @@ struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(FE_node) *node_manager,int use_data,
 	struct FE_node_selection *node_selection,
-	struct Computed_field_package *computed_field_package)
+	struct Computed_field_package *computed_field_package,
+	struct Graphical_material *rubber_band_material)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
@@ -1352,7 +1381,7 @@ used to represent them.
 
 	ENTER(CREATE(Node_tool));
 	if (interactive_tool_manager&&node_manager&&node_selection&&
-		computed_field_package)
+		computed_field_package&&rubber_band_material)
 	{
 		if (ALLOCATE(node_tool,struct Node_tool,1))
 		{
@@ -1361,6 +1390,8 @@ used to represent them.
 			node_tool->use_data=use_data;
 			node_tool->node_selection=node_selection;
 			node_tool->computed_field_package=computed_field_package;
+			node_tool->rubber_band_material=
+				ACCESS(Graphical_material)(rubber_band_material);
 			node_tool->scene_picked_object=(struct Scene_picked_object *)NULL;
 			node_tool->last_picked_node=(struct FE_node *)NULL;
 			node_tool->gt_element_group=(struct GT_element_group *)NULL;
@@ -1395,6 +1426,7 @@ used to represent them.
 				node_tool->interactive_tool,
 				node_tool->interactive_tool_manager);
 			node_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
+			node_tool->rubber_band=(struct GT_object *)NULL;
 		}
 		else
 		{
@@ -1413,7 +1445,7 @@ used to represent them.
 
 int DESTROY(Node_tool)(struct Node_tool **node_tool_address)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
 Frees and deaccesses objects in the <node_tool> and deallocates the
@@ -1445,6 +1477,8 @@ structure itself.
 		REACCESS(Interaction_volume)(
 			&(node_tool->last_interaction_volume),
 			(struct Interaction_volume *)NULL);
+		REACCESS(GT_object)(&(node_tool->rubber_band),(struct GT_object *)NULL);
+		DEACCESS(Graphical_material)(&(node_tool->rubber_band_material));
 		REACCESS(FE_node)(&(node_tool->template_node),(struct FE_node *)NULL);
 		REACCESS(FE_field)(&(node_tool->coordinate_field),(struct FE_field *)NULL);
 		REACCESS(GROUP(FE_node))(&(node_tool->node_group),

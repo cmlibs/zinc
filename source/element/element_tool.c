@@ -1,18 +1,19 @@
 /*******************************************************************************
 FILE : element_tool.c
 
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
 ==============================================================================*/
 #include "command/command.h"
-#include "general/debug.h"
-#include "interaction/interaction_volume.h"
-#include "interaction/interactive_event.h"
 #include "element/element_tool.h"
 #include "element/element_tool.uidh"
+#include "general/debug.h"
 #include "graphics/scene.h"
+#include "interaction/interaction_graphics.h"
+#include "interaction/interaction_volume.h"
+#include "interaction/interactive_event.h"
 #include "user_interface/message.h"
 
 /*
@@ -32,7 +33,7 @@ Module types
 
 struct Element_tool
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Object storing all the parameters for converting scene input messages into
@@ -42,10 +43,13 @@ changes in node position and derivatives etc.
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct Interactive_tool *interactive_tool;
 	struct FE_element_selection *element_selection;
+	struct Graphical_material *rubber_band_material;
 	/* information about picked element */
 	int picked_element_was_unselected;
+	int motion_detected;
 	struct FE_element *last_picked_element;
 	struct Interaction_volume *last_interaction_volume;
+	struct GT_object *rubber_band;
 }; /* struct Element_tool */
 
 /*
@@ -56,7 +60,7 @@ Module functions
 static void Element_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *element_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -124,15 +128,17 @@ release.
 						}
 						DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 					}
+					element_tool->motion_detected=0;
 					REACCESS(Interaction_volume)(
 						&(element_tool->last_interaction_volume),interaction_volume);
 				} break;
 				case INTERACTIVE_EVENT_MOTION_NOTIFY:
-				{
-					/* do nothing */
-				} break;
 				case INTERACTIVE_EVENT_BUTTON_RELEASE:
 				{
+					if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
+					{
+						element_tool->motion_detected=1;
+					}
 					if (element_tool->last_picked_element)
 					{
 						/* unselect last_picked_element if not just added */
@@ -144,36 +150,65 @@ release.
 								element_tool->last_picked_element);
 						}
 					}
-					else
+					else if (element_tool->motion_detected)
 					{
 						/* rubber band select */
 						if (temp_interaction_volume=create_Interaction_volume_bounding_box(
 							element_tool->last_interaction_volume,interaction_volume))
 						{
-							if (scene_picked_object_list=
-								Scene_pick_objects(scene,temp_interaction_volume))
+							if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 							{
-								if (element_list=Scene_picked_object_list_get_picked_elements(
-									scene_picked_object_list))
+								if (!element_tool->rubber_band)
 								{
-									FE_element_selection_begin_cache(
-										element_tool->element_selection);
-									FOR_EACH_OBJECT_IN_LIST(FE_element)(
-										FE_element_select_in_FE_element_selection,
-										(void *)element_tool->element_selection,element_list);
-									FE_element_selection_end_cache(
-										element_tool->element_selection);
-									DESTROY(LIST(FE_element))(&element_list);
+									/* create rubber_band object and put in scene */
+									element_tool->rubber_band=CREATE(GT_object)(
+										"element_tool_rubber_band",g_POLYLINE,
+										element_tool->rubber_band_material);
+									ACCESS(GT_object)(element_tool->rubber_band);
+									Scene_add_graphics_object(scene,element_tool->rubber_band,
+										/*position*/0,"element_tool_rubber_band",
+										/*fast_changing*/1);
 								}
-								DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
+								Interaction_volume_make_polyline_extents(
+									temp_interaction_volume,element_tool->rubber_band);
+							}
+							else
+							{
+								Scene_remove_graphics_object(scene,element_tool->rubber_band);
+								DEACCESS(GT_object)(&(element_tool->rubber_band));
+							}
+							if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
+							{
+								if (scene_picked_object_list=
+									Scene_pick_objects(scene,temp_interaction_volume))
+								{
+									if (element_list=Scene_picked_object_list_get_picked_elements(
+										scene_picked_object_list))
+									{
+										FE_element_selection_begin_cache(
+											element_tool->element_selection);
+										FOR_EACH_OBJECT_IN_LIST(FE_element)(
+											FE_element_select_in_FE_element_selection,
+											(void *)element_tool->element_selection,element_list);
+										FE_element_selection_end_cache(
+											element_tool->element_selection);
+										DESTROY(LIST(FE_element))(&element_list);
+									}
+									DESTROY(LIST(Scene_picked_object))(
+										&(scene_picked_object_list));
+								}
 							}
 							DESTROY(Interaction_volume)(&temp_interaction_volume);
 						}
 					}
-					REACCESS(FE_element)(&(element_tool->last_picked_element),
-						(struct FE_element *)NULL);
-					REACCESS(Interaction_volume)(&(element_tool->last_interaction_volume),
-						(struct Interaction_volume *)NULL);
+					if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
+					{
+						REACCESS(FE_element)(&(element_tool->last_picked_element),
+							(struct FE_element *)NULL);
+						REACCESS(Interaction_volume)(
+							&(element_tool->last_interaction_volume),
+							(struct Interaction_volume *)NULL);
+					}
 				} break;
 				default:
 				{
@@ -280,9 +315,10 @@ Global functions
 
 struct Element_tool *CREATE(Element_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct FE_element_selection *element_selection)
+	struct FE_element_selection *element_selection,
+	struct Graphical_material *rubber_band_material)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Creates an Element_tool with Interactive_tool in <interactive_tool_manager>.
@@ -292,12 +328,14 @@ Selects elements in <element_selection> in response to interactive_events.
 	struct Element_tool *element_tool;
 
 	ENTER(CREATE(Element_tool));
-	if (interactive_tool_manager&&element_selection)
+	if (interactive_tool_manager&&element_selection&&rubber_band_material)
 	{
 		if (ALLOCATE(element_tool,struct Element_tool,1))
 		{
 			element_tool->interactive_tool_manager=interactive_tool_manager;
 			element_tool->element_selection=element_selection;
+			element_tool->rubber_band_material=
+				ACCESS(Graphical_material)(rubber_band_material);
 			element_tool->interactive_tool=CREATE(Interactive_tool)(
 				"element_tool","Element point tool",
 				Element_tool_interactive_event_handler,
@@ -309,6 +347,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				element_tool->interactive_tool_manager);
 			element_tool->last_picked_element=(struct FE_element *)NULL;
 			element_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
+			element_tool->rubber_band=(struct GT_object *)NULL;
 		}
 		else
 		{
@@ -327,7 +366,7 @@ Selects elements in <element_selection> in response to interactive_events.
 
 int DESTROY(Element_tool)(struct Element_tool **element_tool_address)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Frees and deaccesses objects in the <element_tool> and deallocates the
@@ -346,6 +385,8 @@ structure itself.
 			element_tool->interactive_tool_manager);
 		REACCESS(Interaction_volume)(&(element_tool->last_interaction_volume),
 			(struct Interaction_volume *)NULL);
+		REACCESS(GT_object)(&(element_tool->rubber_band),(struct GT_object *)NULL);
+		DEACCESS(Graphical_material)(&(element_tool->rubber_band_material));
 		DEALLOCATE(*element_tool_address);
 		return_code=1;
 	}

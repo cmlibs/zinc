@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.h
 
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -32,9 +32,10 @@ Global functions
 
 struct Element_tool *CREATE(Element_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct FE_element_selection *element_selection);
+	struct FE_element_selection *element_selection,
+	struct Graphical_material *rubber_band_material);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
 Creates an Element_tool with Interactive_tool in <interactive_tool_manager>.
