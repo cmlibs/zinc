@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 13 May 2004
+LAST MODIFIED : 17 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -9122,7 +9122,7 @@ the name of the cylindrical polar computed field, <z_min> and <z_range>
 #if defined (UNEMAP_USE_3D)
 static int draw_map_3d(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 12 May 2004
+LAST MODIFIED : 17 May 2004
 
 DESCRIPTION :
 This function draws the <map> in as a 3D CMGUI scene, for the current region(s).
@@ -9142,7 +9142,6 @@ Removes 3d drawing for non-current region(s).
 	int default_torso_loaded,delaunay_map,direct_on_smooth_torso,
 		display_all_regions,nodes_rejected_or_accepted,range_set,return_code,*times;
 	enum Map_type map_type;
-	char undecided_accepted;
 	struct Map_drawing_information *drawing_information;
 	struct Rig *rig;
 	struct Region_list_item *region_item;
@@ -9226,7 +9225,6 @@ Removes 3d drawing for non-current region(s).
 			times=buffer->times;
 			frame_time=(int)((float)((times)[*(map->potential_time)])*1000./
 				buffer->frequency);
-			undecided_accepted=map->undecided_accepted;
 			current_region=get_Rig_current_region(rig);
 			/*if current_region NULL, displaying all regions*/
 			if (!current_region)
