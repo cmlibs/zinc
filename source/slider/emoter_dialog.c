@@ -5796,12 +5796,12 @@ in existence, then bring it to the front, otherwise create new one.
 			{
 				if (transformation_scene && transformation_graphics_object_name)
 				{
-					if (transformation_scene_object = Scene_get_Scene_object_by_name(
-						transformation_scene, transformation_graphics_object_name))
+					if (!(transformation_scene_object = Scene_get_Scene_object_by_name(
+						transformation_scene, transformation_graphics_object_name)))
 					{
 						display_message(ERROR_MESSAGE,
-							"gfx_create_emoter.  Unable to find object %s in scene %s",
-							transformation_graphics_object_name, transformation_scene);
+							"gfx_create_emoter.  Unable to find object %s in scene",
+							transformation_graphics_object_name);
 						return_code = 0;
 					}
 				}
