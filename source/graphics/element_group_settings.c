@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 8 May 2001
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -392,6 +392,56 @@ are calculated on the top_level_element in Xi_discretization_mode CELL_CORNERS.
 	return (return_code);
 } /* FE_element_select_graphics_element_points */
 
+static int GT_element_settings_graphics_affected_by_change(
+	struct GT_element_settings *settings,
+	struct LIST(FE_element) *changed_element_list,
+	struct LIST(FE_node) *changed_node_list)
+/*******************************************************************************
+LAST MODIFIED : 28 May 2001
+
+DESCRIPTION :
+Returns true if the graphics for <settings> would have to be rebuilt as a
+result of any element changes in the [optional] <changed_element_list> or
+node changes in the [optional] <changed_node_list>. Note that the
+<changed_element_list> is expected to already contain any elements affected by
+changes in the <changed_node_list>.
+==============================================================================*/
+{
+	int return_code;
+	
+	ENTER(GT_element_settings_graphics_affected_by_change);
+	if (settings)
+	{
+		/* Only node_points directly use nodes */
+		if (changed_node_list && (0 < NUMBER_IN_LIST(FE_node)(changed_node_list)) &&
+			(GT_ELEMENT_SETTINGS_NODE_POINTS == settings->settings_type))
+		{
+			return_code = 1;
+		}
+		/* All settings types except node_points and data_points use elements */
+		else if (changed_element_list &&
+			(0 < NUMBER_IN_LIST(FE_element)(changed_element_list)) &&
+			(GT_ELEMENT_SETTINGS_NODE_POINTS != settings->settings_type) &&
+			(GT_ELEMENT_SETTINGS_DATA_POINTS != settings->settings_type))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_graphics_affected_by_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_graphics_affected_by_change */
+
 /*
 Global functions
 ----------------
@@ -703,7 +753,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 
 int DESTROY(GT_element_settings)(struct GT_element_settings **settings_ptr)
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Frees the memory for the fields of <**settings_ptr>, frees the memory for
@@ -772,6 +822,10 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			if (settings->blur_field)
 			{
 				DEACCESS(Computed_field)(&(settings->blur_field));
+			}
+			if (settings->xi_point_density_field)
+			{
+				DEACCESS(Computed_field)(&(settings->xi_point_density_field));
 			}
 			if (settings->native_discretization_field)
 			{
@@ -2752,7 +2806,7 @@ number is converted to a string and that is compared to the supplied <name>.
 int GT_element_settings_has_embedded_field(
 	struct GT_element_settings *settings,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
 Returns 1 if the <settings> use any embedded_fields.
@@ -2765,18 +2819,23 @@ Returns 1 if the <settings> use any embedded_fields.
 	if (settings)
 	{
 		return_code = 0;
-		if ((settings->coordinate_field &&
-			Computed_field_depends_on_embedded_field(settings->coordinate_field)) ||
-			(settings->orientation_scale_field &&
-				Computed_field_depends_on_embedded_field(
-					settings->orientation_scale_field)) ||
-			(settings->variable_scale_field &&
-				Computed_field_depends_on_embedded_field(
-					settings->variable_scale_field)) ||
-			(settings->data_field &&
-				Computed_field_depends_on_embedded_field(settings->data_field)) ||
-			(settings->label_field &&
-				Computed_field_depends_on_embedded_field(settings->label_field)))
+		/*???RC Only relevent to data_points and node_points at present; hence
+			limit our search to them. Review once we use embedded fields for elements
+			too */
+		if (((GT_ELEMENT_SETTINGS_DATA_POINTS == settings->settings_type) ||
+			(GT_ELEMENT_SETTINGS_NODE_POINTS == settings->settings_type)) &&
+			((settings->coordinate_field &&
+				Computed_field_depends_on_embedded_field(settings->coordinate_field)) ||
+				(settings->orientation_scale_field &&
+					Computed_field_depends_on_embedded_field(
+						settings->orientation_scale_field)) ||
+				(settings->variable_scale_field &&
+					Computed_field_depends_on_embedded_field(
+						settings->variable_scale_field)) ||
+				(settings->data_field &&
+					Computed_field_depends_on_embedded_field(settings->data_field)) ||
+				(settings->label_field &&
+					Computed_field_depends_on_embedded_field(settings->label_field))))
 		{
 			return_code = 1;
 		}
@@ -3009,7 +3068,7 @@ due to a change in element discretization.
 int GT_element_settings_node_change(
 	struct GT_element_settings *settings,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
 Deaccesses any graphics_object in <settings> if it would have to be rebuilt
@@ -3022,24 +3081,61 @@ due to a change in node positions.
 	USE_PARAMETER(dummy_void);
 	if (settings)
 	{
-		if (settings->graphics_object&&
-			(GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type))
+		/* only data_points do not use nodes */
+		if (settings->graphics_object &&
+			(GT_ELEMENT_SETTINGS_DATA_POINTS != settings->settings_type))
 		{
 			DEACCESS(GT_object)(&(settings->graphics_object));
 			settings->graphics_object=(struct GT_object *)NULL;
 		}
-		return_code=1;
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_settings_node_change.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* GT_element_settings_node_change */
+
+int GT_element_settings_node_group_change(
+	struct GT_element_settings *settings,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 25 May 2001
+
+DESCRIPTION :
+Deaccesses any graphics_object in <settings> if it would have to be rebuilt
+due to a change of nodes in the group.
+==============================================================================*/
+{
+	int return_code;
+	
+	ENTER(GT_element_settings_node_group_change);
+	USE_PARAMETER(dummy_void);
+	if (settings)
+	{
+		/* only node_points are affected */
+		if (settings->graphics_object &&
+			(GT_ELEMENT_SETTINGS_NODE_POINTS == settings->settings_type))
+		{
+			DEACCESS(GT_object)(&(settings->graphics_object));
+			settings->graphics_object=(struct GT_object *)NULL;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_node_group_change.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_node_group_change */
 
 int GT_element_settings_data_change(
 	struct GT_element_settings *settings,void *dummy_void)
@@ -3080,7 +3176,7 @@ due to a change in node positions.
 int GT_element_settings_element_change(
 	struct GT_element_settings *settings,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 28 June 1999
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
 Deaccesses any graphics_object in <settings> if it would have to be rebuilt
@@ -3093,14 +3189,13 @@ due to a change in elements.
 	USE_PARAMETER(dummy_void);
 	if (settings)
 	{
-		if (settings->graphics_object&&(
-			GT_element_settings_type_uses_dimension(settings->settings_type,1)||
-			GT_element_settings_type_uses_dimension(settings->settings_type,2)||
-			GT_element_settings_type_uses_dimension(settings->settings_type,3)||
-			GT_element_settings_has_embedded_field(settings, NULL)))
+		if (settings->graphics_object && (
+			GT_element_settings_type_uses_dimension(settings->settings_type,1) ||
+			GT_element_settings_type_uses_dimension(settings->settings_type,2) ||
+			GT_element_settings_type_uses_dimension(settings->settings_type,3)))
 		{
 			DEACCESS(GT_object)(&(settings->graphics_object));
-			settings->graphics_object=(struct GT_object *)NULL;
+			settings->graphics_object = (struct GT_object *)NULL;
 		}
 		return_code=1;
 	}
@@ -4411,7 +4506,7 @@ Makes a copy of the settings and puts it in the list_of_settings.
 static int FE_element_to_graphics_object(struct FE_element *element,
 	void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2001
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Converts a finite element into a graphics object with the supplied settings.
@@ -4419,10 +4514,10 @@ Converts a finite element into a graphics object with the supplied settings.
 {
 	FE_value base_size[3], centre[3], initial_xi[3], scale_factors[3];
 	float time;
-	int draw_element, draw_selected, edit_mode, element_dimension,
+	int draw_element, draw_selected, element_dimension, element_graphics_name,
 		element_selected, i, name_selected,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		number_of_xi_points,process,return_code,
+		number_of_xi_points, return_code,
 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		*top_level_xi_point_numbers,
 		use_element_dimension, *use_number_in_xi;
@@ -4440,164 +4535,144 @@ Converts a finite element into a graphics object with the supplied settings.
 	Triple *xi_points;
 
 	ENTER(FE_element_to_graphics_object);
-	if (element&&(settings_to_object_data=
+	if (element && (settings_to_object_data =
 		(struct GT_element_settings_to_graphics_object_data *)
-		settings_to_object_data_void)
-		&&(settings=settings_to_object_data->settings)
-		&&(settings->graphics_object))
+		settings_to_object_data_void) &&
+		(settings = settings_to_object_data->settings) &&
+		settings->graphics_object)
 	{
-		/* process if settings uses element required */
-		process=GT_element_settings_uses_FE_element(settings,element,
-			settings_to_object_data->element_group);
-		/* edit_mode is when a node or element has changed, not the settings */
-		/* in this mode any previous primitives using the element are wiped first */
-		edit_mode=0;
-		if (process && (settings_to_object_data->changed_element ||
-			settings_to_object_data->changed_node))
+		return_code = 1;
+		/* proceed only if settings uses this element */
+		if (GT_element_settings_uses_FE_element(settings, element,
+			settings_to_object_data->element_group))
 		{
-			/* process in edit_mode only if graphics for element affected by changed
-				 node or element */
-			if (!(edit_mode=((settings_to_object_data->changed_element&&
-				FE_element_or_parent_is_element(element,
-					(void *)settings_to_object_data->changed_element))||
-				(settings_to_object_data->changed_node&&
-					FE_element_or_parent_contains_node(element,
-						(void *)settings_to_object_data->changed_node)))))
+			if ((GRAPHICS_DRAW_SELECTED == settings->select_mode) ||
+				(GRAPHICS_DRAW_UNSELECTED == settings->select_mode))
 			{
-				process=0;
-			}
-			
-		}
-		return_code=1;
-		if (process)
-		{
-			if ((GRAPHICS_DRAW_SELECTED==settings->select_mode)||
-				(GRAPHICS_DRAW_UNSELECTED==settings->select_mode))
-			{
-				draw_selected=(GRAPHICS_DRAW_SELECTED==settings->select_mode);
-				name_selected=IS_OBJECT_IN_LIST(FE_element)(element,
+				draw_selected = (GRAPHICS_DRAW_SELECTED==settings->select_mode);
+				name_selected = IS_OBJECT_IN_LIST(FE_element)(element,
 					settings_to_object_data->selected_element_list);
-				draw_element=((draw_selected&&name_selected)||
-					((!draw_selected)&&(!name_selected)));
+				draw_element = ((draw_selected && name_selected) ||
+					((!draw_selected) && (!name_selected)));
 			}
 			else
 			{
-				draw_element=1;
+				draw_element = 1;
 			}
 			/* determine discretization of element for graphic */
-			top_level_element=(struct FE_element *)NULL;
-			if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)
+			top_level_element = (struct FE_element *)NULL;
+			if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings->settings_type)
 			{
 				/* element_points always have their own discretization */
-				top_level_number_in_xi[0]=settings->discretization.number_in_xi1;
-				top_level_number_in_xi[1]=settings->discretization.number_in_xi2;
-				top_level_number_in_xi[2]=settings->discretization.number_in_xi3;
-				native_discretization_field=settings->native_discretization_field;
+				top_level_number_in_xi[0] = settings->discretization.number_in_xi1;
+				top_level_number_in_xi[1] = settings->discretization.number_in_xi2;
+				top_level_number_in_xi[2] = settings->discretization.number_in_xi3;
+				native_discretization_field = settings->native_discretization_field;
 			}
 			else
 			{
-				top_level_number_in_xi[0]=
+				top_level_number_in_xi[0] =
 					settings_to_object_data->element_discretization->number_in_xi1;
-				top_level_number_in_xi[1]=
+				top_level_number_in_xi[1] =
 					settings_to_object_data->element_discretization->number_in_xi2;
-				top_level_number_in_xi[2]=
+				top_level_number_in_xi[2] =
 					settings_to_object_data->element_discretization->number_in_xi3;
-				native_discretization_field=
+				native_discretization_field =
 					settings_to_object_data->native_discretization_field;
 			}
 			if (get_FE_element_discretization(element,
-				settings_to_object_data->element_group,settings->face,
-				native_discretization_field,top_level_number_in_xi,&top_level_element,
+				settings_to_object_data->element_group, settings->face,
+				native_discretization_field, top_level_number_in_xi, &top_level_element,
 				number_in_xi))
 			{
 				element_dimension = get_FE_element_dimension(element);
-				/* g_element renditions use only one time=0. Must take care. */
-				time=0.0;
+				/* g_element renditions use only one time = 0.0. Must take care. */
+				time = 0.0;
 				switch (settings->settings_type)
 				{
 					case GT_ELEMENT_SETTINGS_LINES:
 					{
-						if (edit_mode)
+						if (settings_to_object_data->edit_mode)
 						{
 							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_polyline)(
-								settings->graphics_object,time,
+								settings->graphics_object, time,
 								CM_element_information_to_graphics_name(element->identifier));
 						}
 						if (draw_element)
 						{
-							if (polyline=create_GT_polyline_from_FE_element(element,
+							if (polyline = create_GT_polyline_from_FE_element(element,
 								settings_to_object_data->rc_coordinate_field,
-								settings->data_field,number_in_xi[0],top_level_element))
+								settings->data_field, number_in_xi[0], top_level_element))
 							{
 								if (!GT_OBJECT_ADD(GT_polyline)(
-									settings->graphics_object,time,polyline))
+									settings->graphics_object, time, polyline))
 								{
 									DESTROY(GT_polyline)(&polyline);
-									return_code=0;
+									return_code = 0;
 								}
 							}
 							else
 							{
-								return_code=0;
+								return_code = 0;
 							}
 						}
 					} break;
 					case GT_ELEMENT_SETTINGS_CYLINDERS:
 					{
-						if (edit_mode)
+						if (settings_to_object_data->edit_mode)
 						{
 							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_surface)(
-								settings->graphics_object,time,
+								settings->graphics_object, time,
 								CM_element_information_to_graphics_name(element->identifier));
 						}
 						if (draw_element)
 						{
-							if (surface=create_cylinder_from_FE_element(element,
+							if (surface = create_cylinder_from_FE_element(element,
 								settings_to_object_data->rc_coordinate_field,
-								settings->data_field,settings->constant_radius,
-								settings->radius_scale_factor,settings->radius_scalar_field,
-								number_in_xi[0],settings_to_object_data->circle_discretization,
+								settings->data_field, settings->constant_radius,
+								settings->radius_scale_factor, settings->radius_scalar_field,
+								number_in_xi[0], settings_to_object_data->circle_discretization,
 								top_level_element))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(
-									settings->graphics_object,time,surface))
+									settings->graphics_object, time, surface))
 								{
 									DESTROY(GT_surface)(&surface);
-									return_code=0;
+									return_code = 0;
 								}
 							}
 							else
 							{
-								return_code=0;
+								return_code = 0;
 							}
 						}
 					} break;
 					case GT_ELEMENT_SETTINGS_SURFACES:
 					{
-						if (edit_mode)
+						if (settings_to_object_data->edit_mode)
 						{
 							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_surface)(
-								settings->graphics_object,time,
+								settings->graphics_object, time,
 								CM_element_information_to_graphics_name(element->identifier));
 						}
 						if (draw_element)
 						{
-							if (surface=create_GT_surface_from_FE_element(element,
+							if (surface = create_GT_surface_from_FE_element(element,
 								settings_to_object_data->rc_coordinate_field,
-								settings->texture_coordinate_field,settings->data_field,
-								number_in_xi[0],number_in_xi[1],
-								/*reverse_normals*/0,top_level_element,settings->render_type))
+								settings->texture_coordinate_field, settings->data_field,
+								number_in_xi[0], number_in_xi[1],
+								/*reverse_normals*/0, top_level_element,settings->render_type))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(
-									settings->graphics_object,time,surface))
+									settings->graphics_object, time, surface))
 								{
 									DESTROY(GT_surface)(&surface);
-									return_code=0;
+									return_code = 0;
 								}
 							}
 							else
 							{
-								return_code=0;
+								return_code = 0;
 							}
 						}
 					} break;
@@ -4609,10 +4684,10 @@ Converts a finite element into a graphics object with the supplied settings.
 							{
 								if (3 == element_dimension)
 								{
-									if (edit_mode)
+									if (settings_to_object_data->edit_mode)
 									{
 										GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_voltex)(
-											settings->graphics_object,time,
+											settings->graphics_object, time,
 											CM_element_information_to_graphics_name(
 												element->identifier));
 									}
@@ -4642,20 +4717,20 @@ Converts a finite element into a graphics object with the supplied settings.
 							{
 								if (2 == element_dimension)
 								{
-									if (edit_mode)
+									if (settings_to_object_data->edit_mode)
 									{
 										GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_polyline)(
-											settings->graphics_object,time,
+											settings->graphics_object, time,
 											CM_element_information_to_graphics_name(
 												element->identifier));
 									}
 									if (draw_element)
 									{
-										return_code=create_iso_lines_from_FE_element(element,
+										return_code = create_iso_lines_from_FE_element(element,
 											settings_to_object_data->rc_coordinate_field,
-											settings->iso_scalar_field,settings->iso_value,
-											settings->data_field,number_in_xi[0],number_in_xi[1],
-											top_level_element,settings->graphics_object,time);
+											settings->iso_scalar_field, settings->iso_value,
+											settings->data_field, number_in_xi[0], number_in_xi[1],
+											top_level_element, settings->graphics_object,time);
 									}
 								}
 								else
@@ -4668,16 +4743,17 @@ Converts a finite element into a graphics object with the supplied settings.
 							{
 								display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
 									"Invalid graphic type for iso_scalar");
-								return_code=0;
+								return_code = 0;
 							} break;
 						}
 					} break;
 					case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 					{
 						/*???RC temporary, hopefully */
-						for (i=0;i<3;i++)
+						for (i = 0; i < 3; i++)
 						{
-							element_point_ranges_identifier.exact_xi[i]=settings->seed_xi[i];
+							element_point_ranges_identifier.exact_xi[i] =
+								settings->seed_xi[i];
 						}
 						if (FE_element_get_xi_points(element,
 							settings->xi_discretization_mode, number_in_xi,
@@ -4686,6 +4762,8 @@ Converts a finite element into a graphics object with the supplied settings.
 							settings->xi_point_density_field,
 							&number_of_xi_points, &xi_points))
 						{
+							element_graphics_name =
+								CM_element_information_to_graphics_name(element->identifier);
 							top_level_xi_point_numbers = (int *)NULL;
 							if (XI_DISCRETIZATION_CELL_CORNERS ==
 								settings->xi_discretization_mode)
@@ -4705,28 +4783,11 @@ Converts a finite element into a graphics object with the supplied settings.
 								use_element = element;
 								use_number_in_xi = number_in_xi;
 							}
-							if (edit_mode)
+							if (settings_to_object_data->edit_mode)
 							{
-								if (!FIND_BY_IDENTIFIER_IN_LIST(Selected_graphic,number)(
-									CM_element_information_to_graphics_name(
-										use_element->identifier),
-									settings_to_object_data->removed_primitives))
-								{
-									struct Selected_graphic *removed_primitive;
-
-									GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_glyph_set)(
-										settings->graphics_object,time,
-										CM_element_information_to_graphics_name(
-											use_element->identifier));
-									removed_primitive=CREATE(Selected_graphic)(
-										CM_element_information_to_graphics_name(
-											use_element->identifier));
-									if (!ADD_OBJECT_TO_LIST(Selected_graphic)(removed_primitive,
-										settings_to_object_data->removed_primitives))
-									{
-										DESTROY(Selected_graphic)(&removed_primitive);
-									}
-								}
+								GT_OBJECT_REMOVE_PRIMITIVES_WITH_AUXILIARY_OBJECT_NAME(
+									GT_glyph_set)(settings->graphics_object, time,
+										element_graphics_name);
 							}
 							ranges = (struct Multi_range *)NULL;
 							element_point_ranges_identifier.element = use_element;
@@ -4770,11 +4831,14 @@ Converts a finite element into a graphics object with the supplied settings.
 									settings->label_field, settings->select_mode,
 									element_selected, ranges, top_level_xi_point_numbers)))
 							{
+								/* set auxiliary_object_name for glyph_set to
+									 element_graphics_name so we can edit */
+								glyph_set->auxiliary_object_name = element_graphics_name;
 								if (!GT_OBJECT_ADD(GT_glyph_set)(
 									settings->graphics_object,time,glyph_set))
 								{
 									DESTROY(GT_glyph_set)(&glyph_set);
-									return_code=0;
+									return_code = 0;
 								}
 							}
 							if (top_level_xi_point_numbers)
@@ -4785,15 +4849,15 @@ Converts a finite element into a graphics object with the supplied settings.
 						}
 						else
 						{
-							return_code=0;
+							return_code = 0;
 						}
 					} break;
 					case GT_ELEMENT_SETTINGS_VOLUMES:
 					{
-						if (edit_mode)
+						if (settings_to_object_data->edit_mode)
 						{
 							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_voltex)(
-								settings->graphics_object,time,
+								settings->graphics_object, time,
 								CM_element_information_to_graphics_name(element->identifier));
 						}
 						if (draw_element)
@@ -4804,7 +4868,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								(struct Clipping *)NULL,element,
 								settings_to_object_data->rc_coordinate_field,
 								settings->data_field,
-								settings->volume_texture,settings->render_type,
+								settings->volume_texture, settings->render_type,
 								settings->displacement_map_field,
 								settings->displacement_map_xi_direction,
 								settings->blur_field))
@@ -4813,7 +4877,7 @@ Converts a finite element into a graphics object with the supplied settings.
 									settings->graphics_object,time,voltex))
 								{
 									DESTROY(GT_voltex)(&voltex);
-									return_code=0;
+									return_code = 0;
 								}
 							}
 						}
@@ -4821,64 +4885,64 @@ Converts a finite element into a graphics object with the supplied settings.
 					case GT_ELEMENT_SETTINGS_STREAMLINES:
 					{
 						/* use local copy of seed_xi since tracking function updates it */
-						initial_xi[0]=settings->seed_xi[0];
-						initial_xi[1]=settings->seed_xi[1];
-						initial_xi[2]=settings->seed_xi[2];
+						initial_xi[0] = settings->seed_xi[0];
+						initial_xi[1] = settings->seed_xi[1];
+						initial_xi[2] = settings->seed_xi[2];
 						if (STREAM_LINE==settings->streamline_type)
 						{
-							if (polyline=create_GT_polyline_streamline_FE_element(element,
-								initial_xi,settings_to_object_data->rc_coordinate_field,
+							if (polyline = create_GT_polyline_streamline_FE_element(element,
+								initial_xi, settings_to_object_data->rc_coordinate_field,
 								settings_to_object_data->wrapper_stream_vector_field,
-								settings->reverse_track,settings->streamline_length,
-								settings->streamline_data_type,settings->data_field))
+								settings->reverse_track, settings->streamline_length,
+								settings->streamline_data_type, settings->data_field))
 							{
 								if (!GT_OBJECT_ADD(GT_polyline)(settings->graphics_object,
-									time,polyline))
+									time, polyline))
 								{
 									DESTROY(GT_polyline)(&polyline);
-									return_code=0;
+									return_code = 0;
 								}
 							}
 							else
 							{
-								return_code=0;
+								return_code = 0;
 							}
 						}
 						else if ((settings->streamline_type == STREAM_RIBBON)||
 							(settings->streamline_type == STREAM_EXTRUDED_RECTANGLE)||
 							(settings->streamline_type == STREAM_EXTRUDED_ELLIPSE))
 						{
-							if (surface=create_GT_surface_streamribbon_FE_element(element,
-								initial_xi,settings_to_object_data->rc_coordinate_field,
+							if (surface = create_GT_surface_streamribbon_FE_element(element,
+								initial_xi, settings_to_object_data->rc_coordinate_field,
 								settings_to_object_data->wrapper_stream_vector_field,
-								settings->reverse_track,settings->streamline_length,
-								settings->streamline_width,settings->streamline_type,
-								settings->streamline_data_type,settings->data_field))
+								settings->reverse_track, settings->streamline_length,
+								settings->streamline_width, settings->streamline_type,
+								settings->streamline_data_type, settings->data_field))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(settings->graphics_object,
 									time,surface))
 								{
 									DESTROY(GT_surface)(&surface);
-									return_code=0;
+									return_code = 0;
 								}
 							}
 							else
 							{
-								return_code=0;
+								return_code = 0;
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
 								"FE_element_to_graphics_object.  Unknown streamline type");
-							return_code=0;
+							return_code = 0;
 						}
 					} break;
 					default:
 					{
 						display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
 							"Unknown element settings type");
-						return_code=0;
+						return_code = 0;
 					} break;
 				}
 			}
@@ -4886,7 +4950,7 @@ Converts a finite element into a graphics object with the supplied settings.
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_element_to_graphics_object.  Could not get discretization");
-				return_code=0;
+				return_code = 0;
 			}
 		}
 	}
@@ -4894,7 +4958,7 @@ Converts a finite element into a graphics object with the supplied settings.
 	{
 		display_message(ERROR_MESSAGE,"FE_element_to_graphics_object.  "
 			"Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -4904,22 +4968,20 @@ Converts a finite element into a graphics object with the supplied settings.
 int GT_element_settings_to_graphics_object(
 	struct GT_element_settings *settings,void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 28 May 2001
 
 DESCRIPTION :
 Creates a GT_object and fills it with the objects described by settings.
 The graphics object is stored with with the settings it was created from.
 ==============================================================================*/
 {
-	char *group_string, *graphics_object_name, *settings_string, *settings_name;
+	char *graphics_object_name, *group_name, *settings_name, *settings_string;
 	FE_value base_size[3], centre[3], scale_factors[3];
 	float time;
 	enum GT_object_type graphics_object_type;
-	int multi_element_voltex, return_code;
+	int build_graphics, multi_element_voltex, return_code;
 	struct Computed_field *coordinate_field;
-	struct FE_element *changed_element, *first_element;
-	struct FE_field *fe_coordinate_field;
-	struct FE_node *changed_node;
+	struct FE_element *first_element;
 	struct GROUP(FE_element) *element_group;
 	struct GT_element_settings_to_graphics_object_data *settings_to_object_data;
 	struct GT_glyph_set *glyph_set;
@@ -4927,58 +4989,63 @@ The graphics object is stored with with the settings it was created from.
 	struct GT_element_settings_select_graphics_data select_data;
 
 	ENTER(GT_element_settings_to_graphics_object);
-	if (settings&&(settings_to_object_data=
+	if (settings && (settings_to_object_data =
 		(struct GT_element_settings_to_graphics_object_data *)
-		settings_to_object_data_void)&&
-		(element_group=settings_to_object_data->element_group)&&
-		(coordinate_field=settings_to_object_data->default_rc_coordinate_field))
+		settings_to_object_data_void) &&
+		(element_group = settings_to_object_data->element_group) &&
+		(coordinate_field = settings_to_object_data->default_rc_coordinate_field))
 	{
-		return_code=1;
+		return_code = 1;
 		/* build only if visible... */
 		if (settings->visibility)
 		{
-			/* ... and either no graphics object, or node/element changed */
-			if (((struct GT_object *)NULL==settings->graphics_object)||
-				settings_to_object_data->changed_element||
-				settings_to_object_data->changed_node)
+			/* ... and either no graphics object and building all new graphics, or
+				 editing graphics and node/element changes affect this settings */
+			if (settings_to_object_data->build_graphics &&
+				((struct GT_object *)NULL == settings->graphics_object))
+			{
+				build_graphics = 1;
+				settings_to_object_data->edit_mode = 0;
+			}
+			else if (settings->graphics_object &&
+				GT_element_settings_graphics_affected_by_change(settings,
+					settings_to_object_data->changed_element_list,
+					settings_to_object_data->changed_node_list))
+			{
+				build_graphics = 1;
+				settings_to_object_data->edit_mode = 1;
+			}
+			else
+			{
+				build_graphics = 0;
+			}
+			if (build_graphics)
 			{
 				/* override the default_coordinate_field with one chosen in settings */
 				if (settings->coordinate_field)
 				{
-					coordinate_field=settings->coordinate_field;
+					coordinate_field = settings->coordinate_field;
 				}
 				/* RC coordinate_field to pass to FE_element_to_graphics_object */
 				if ((settings_to_object_data->rc_coordinate_field=
-					Computed_field_begin_wrap_coordinate_field(coordinate_field))&&
+					Computed_field_begin_wrap_coordinate_field(coordinate_field)) &&
 					((!settings->orientation_scale_field) ||
-						(settings_to_object_data->wrapper_orientation_scale_field=
+						(settings_to_object_data->wrapper_orientation_scale_field =
 							Computed_field_begin_wrap_orientation_scale_field(
 								settings->orientation_scale_field,
-								settings_to_object_data->rc_coordinate_field)))&&
+								settings_to_object_data->rc_coordinate_field))) &&
 					((!settings->stream_vector_field) ||
-						(settings_to_object_data->wrapper_stream_vector_field=
+						(settings_to_object_data->wrapper_stream_vector_field =
 							Computed_field_begin_wrap_orientation_scale_field(
 								settings->stream_vector_field,
 								settings_to_object_data->rc_coordinate_field))))
 				{
-					/*???RC temporary - while voltex and iso_surface not completely
-					converted to Computed_field. Get fe_coordinate_field from
-					coordinate_field */
-					if (Computed_field_is_type_finite_element(coordinate_field))
-					{
-						Computed_field_get_type_finite_element(coordinate_field,
-							&fe_coordinate_field);
-					}
-					else
-					{
-						fe_coordinate_field = (struct FE_field *)NULL;
-					}
 #if defined (DEBUG)
 					/*???debug*/
-					if (settings_string=GT_element_settings_string(settings,
+					if (settings_string = GT_element_settings_string(settings,
 						SETTINGS_STRING_COMPLETE_PLUS))
 					{
-						printf("> building %s\n",settings_string);
+						printf("> building %s\n", settings_string);
 						DEALLOCATE(settings_string);
 					}
 #endif /* defined (DEBUG) */
@@ -4988,12 +5055,12 @@ The graphics object is stored with with the settings it was created from.
 						{
 							case GT_ELEMENT_SETTINGS_LINES:
 							{
-								graphics_object_type=g_POLYLINE;
+								graphics_object_type = g_POLYLINE;
 							} break;
 							case GT_ELEMENT_SETTINGS_CYLINDERS:
 							case GT_ELEMENT_SETTINGS_SURFACES:
 							{
-								graphics_object_type=g_SURFACE;
+								graphics_object_type = g_SURFACE;
 							} break;
 							case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 							{
@@ -5001,33 +5068,33 @@ The graphics object is stored with with the settings it was created from.
 								{
 									case USE_ELEMENTS:
 									{
-										graphics_object_type=g_VOLTEX;
-										if (first_element=FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
-											FE_element_is_top_level,(void *)NULL,element_group))
+										graphics_object_type = g_VOLTEX;
+										if (first_element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
+											FE_element_is_top_level, (void *)NULL, element_group))
 										{
-											if (2==get_FE_element_dimension(first_element))
+											if (2 == get_FE_element_dimension(first_element))
 											{
-												graphics_object_type=g_POLYLINE;
+												graphics_object_type = g_POLYLINE;
 											}
 										}
 									} break;
 									case USE_FACES:
 									{
-										graphics_object_type=g_POLYLINE;
+										graphics_object_type = g_POLYLINE;
 									} break;
 									case USE_LINES:
 									{
 										display_message(ERROR_MESSAGE,
 											"GT_element_settings_to_graphics_object.  "
 											"USE_LINES not supported for iso_scalar");
-										return_code=0;
+										return_code = 0;
 									} break;
 									default:
 									{
 										display_message(ERROR_MESSAGE,
 											"GT_element_settings_to_graphics_object.  "
 											"Unknown use_element_type");
-										return_code=0;
+										return_code = 0;
 									} break;
 								}
 							} break;
@@ -5035,21 +5102,21 @@ The graphics object is stored with with the settings it was created from.
 							case GT_ELEMENT_SETTINGS_DATA_POINTS:
 							case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 							{
-								graphics_object_type=g_GLYPH_SET;
+								graphics_object_type = g_GLYPH_SET;
 							} break;
 							case GT_ELEMENT_SETTINGS_VOLUMES:
 							{
-								graphics_object_type=g_VOLTEX;
+								graphics_object_type = g_VOLTEX;
 							} break;
 							case GT_ELEMENT_SETTINGS_STREAMLINES:
 							{
-								if (STREAM_LINE==settings->streamline_type)
+								if (STREAM_LINE == settings->streamline_type)
 								{
-									graphics_object_type=g_POLYLINE;
+									graphics_object_type = g_POLYLINE;
 								}
 								else
 								{
-									graphics_object_type=g_SURFACE;
+									graphics_object_type = g_SURFACE;
 								}
 							} break;
 							default:
@@ -5057,21 +5124,22 @@ The graphics object is stored with with the settings it was created from.
 								display_message(ERROR_MESSAGE,
 									"GT_element_settings_to_graphics_object.  "
 									"Unknown element settings type");
-								return_code=0;
+								return_code = 0;
 							} break;
 						}
 						if (return_code)
 						{
-							GET_NAME(GROUP(FE_element))(element_group, &group_string);
+							GET_NAME(GROUP(FE_element))(element_group, &group_name);
 							GET_NAME(GT_element_settings)(settings, &settings_name);
-							if ( group_string && settings_name &&
+							if (group_name && settings_name &&
 								ALLOCATE(graphics_object_name, char, strlen(settings_name) + 
-									strlen(group_string) + 4))
+									strlen(group_name) + 4))
 							{
 								sprintf(graphics_object_name, "%s_%s", 
-									group_string, settings_name);
-								settings->graphics_object=CREATE(GT_object)(
-									graphics_object_name,graphics_object_type,settings->material);
+									group_name, settings_name);
+								settings->graphics_object = CREATE(GT_object)(
+									graphics_object_name, graphics_object_type,
+									settings->material);
 								GT_object_set_select_mode(settings->graphics_object,
 									settings->select_mode);
 								if (settings->selected_material)
@@ -5080,8 +5148,6 @@ The graphics object is stored with with the settings it was created from.
 										settings->selected_material);
 								}
 								ACCESS(GT_object)(settings->graphics_object);
-								DEALLOCATE(group_string);
-								DEALLOCATE(settings_name);
 								DEALLOCATE(graphics_object_name);
 							}
 							else
@@ -5089,8 +5155,10 @@ The graphics object is stored with with the settings it was created from.
 								display_message(ERROR_MESSAGE,
 									"GT_element_settings_to_graphics_object.  "
 									"Unable to compile graphics object string name");
-								return_code=0;						
+								return_code = 0;
 							}
+							DEALLOCATE(settings_name);
+							DEALLOCATE(group_name);
 						}
 					}
 					if (settings->graphics_object)
@@ -5100,8 +5168,6 @@ The graphics object is stored with with the settings it was created from.
 						time=0.0;
 						/* need settings for FE_element_to_graphics_object routine */
 						settings_to_object_data->settings=settings;
-						REMOVE_ALL_OBJECTS_FROM_LIST(Selected_graphic)(
-							settings_to_object_data->removed_primitives);
 						switch (settings->settings_type)
 						{
 							case GT_ELEMENT_SETTINGS_NODE_POINTS:
@@ -5109,9 +5175,9 @@ The graphics object is stored with with the settings it was created from.
 							{
 								/* currently all nodes put together in a single GT_glyph_set,
 									 so rebuild all even if editing a single node or element */
-								if (GT_object_has_time(settings->graphics_object,time))
+								if (GT_object_has_time(settings->graphics_object, time))
 								{
-									GT_object_delete_time(settings->graphics_object,time);
+									GT_object_delete_time(settings->graphics_object, time);
 								}
 								base_size[0] = (FE_value)(settings->glyph_size[0]);
 								base_size[1] = (FE_value)(settings->glyph_size[1]);
@@ -5122,7 +5188,7 @@ The graphics object is stored with with the settings it was created from.
 								scale_factors[0] = (FE_value)(settings->glyph_scale_factors[0]);
 								scale_factors[1] = (FE_value)(settings->glyph_scale_factors[1]);
 								scale_factors[2] = (FE_value)(settings->glyph_scale_factors[2]);
-								if (GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)
+								if (GT_ELEMENT_SETTINGS_NODE_POINTS == settings->settings_type)
 								{
 									glyph_set = create_GT_glyph_set_from_FE_node_group(
 										settings_to_object_data->node_group,
@@ -5163,88 +5229,93 @@ The graphics object is stored with with the settings it was created from.
 							case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 							case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 							{
-								return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-									FE_element_to_graphics_object,
-									settings_to_object_data_void,element_group);
+								if (settings_to_object_data->edit_mode)
+								{
+									return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+										FE_element_to_graphics_object,
+										settings_to_object_data_void,
+										settings_to_object_data->changed_element_list);
+								}
+								else
+								{
+									return_code = FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+										FE_element_to_graphics_object,
+										settings_to_object_data_void, element_group);
+								}
 							} break;
 							case GT_ELEMENT_SETTINGS_VOLUMES:
 							{
 								/* does volume texture extend beyond a single element? */
-								if (multi_element_voltex=(settings->volume_texture&&(
-									(settings->volume_texture->ximin[0]<0.0)||
-									(settings->volume_texture->ximin[1]<0.0)||
-									(settings->volume_texture->ximin[2]<0.0)||
-									(settings->volume_texture->ximax[0]>1.0)||
-									(settings->volume_texture->ximax[1]>1.0)||
-									(settings->volume_texture->ximax[2]>1.0))))
+								if (multi_element_voltex = (settings->volume_texture && (
+									(settings->volume_texture->ximin[0] < 0.0) ||
+									(settings->volume_texture->ximin[1] < 0.0) ||
+									(settings->volume_texture->ximin[2] < 0.0) ||
+									(settings->volume_texture->ximax[0] > 1.0) ||
+									(settings->volume_texture->ximax[1] > 1.0) ||
+									(settings->volume_texture->ximax[2] > 1.0))))
 								{
 									/* redraw all voltexes even if one node or element modified */
-									if (GT_object_has_time(settings->graphics_object,time))
+									if (GT_object_has_time(settings->graphics_object, time))
 									{
-										GT_object_delete_time(settings->graphics_object,time);
+										GT_object_delete_time(settings->graphics_object, time);
 									}
-									changed_element=settings_to_object_data->changed_element;
-									changed_node=settings_to_object_data->changed_node;
-									settings_to_object_data->changed_element=
-										(struct FE_element *)NULL;
-									settings_to_object_data->changed_node=(struct FE_node *)NULL;
+									settings_to_object_data->edit_mode = 0;
 								}
 								if (settings->seed_element)
 								{
-									return_code=FE_element_to_graphics_object(
-										settings->seed_element,settings_to_object_data_void);
+									return_code = FE_element_to_graphics_object(
+										settings->seed_element, settings_to_object_data_void);
 								}
 								else
 								{
-									return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-										FE_element_to_graphics_object,
-										settings_to_object_data_void,element_group);
-								}
-								if (multi_element_voltex)
-								{
-									/* restore changed node/element for other settings */
-									settings_to_object_data->changed_element=changed_element;
-									settings_to_object_data->changed_node=changed_node;
+									if (settings_to_object_data->edit_mode &&
+										!multi_element_voltex)
+									{
+										return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+											FE_element_to_graphics_object,
+											settings_to_object_data_void,
+											settings_to_object_data->changed_element_list);
+									}
+									else
+									{
+										return_code = FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+											FE_element_to_graphics_object,
+											settings_to_object_data_void, element_group);
+									}
 								}
 							} break;
 							case GT_ELEMENT_SETTINGS_STREAMLINES:
 							{
 								/* must always regenerate ALL streamlines since they can cross
 									 into other elements */
-								if (GT_object_has_time(settings->graphics_object,time))
+								if (GT_object_has_time(settings->graphics_object, time))
 								{
-									GT_object_delete_time(settings->graphics_object,time);
+									GT_object_delete_time(settings->graphics_object, time);
 								}
-								changed_element=settings_to_object_data->changed_element;
-								changed_node=settings_to_object_data->changed_node;
-								settings_to_object_data->changed_element=
-									(struct FE_element *)NULL;
-								settings_to_object_data->changed_node=(struct FE_node *)NULL;
+								settings_to_object_data->edit_mode = 0;
 								if (settings->seed_element)
 								{
-									return_code=FE_element_to_graphics_object(
-										settings->seed_element,settings_to_object_data_void);
+									return_code = FE_element_to_graphics_object(
+										settings->seed_element, settings_to_object_data_void);
 								}
 								else
 								{
-									return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+									return_code = FOR_EACH_OBJECT_IN_GROUP(FE_element)(
 										FE_element_to_graphics_object,
-										settings_to_object_data_void,element_group);
+										settings_to_object_data_void, element_group);
 								}
-								/* restore changed node/element for other settings */
-								settings_to_object_data->changed_element=changed_element;
-								settings_to_object_data->changed_node=changed_node;
 							} break;
 							default:
 							{
-								return_code=0;
+								return_code = 0;
 							} break;
 						} /* end of switch */
-						if (return_code&&GT_object_has_time(settings->graphics_object,time))
+						if (return_code &&
+							GT_object_has_time(settings->graphics_object, time))
 						{
 							/* set the spectrum in the graphics object - if required */
 							if ((settings->data_field)||
-								((GT_ELEMENT_SETTINGS_STREAMLINES==settings->settings_type)&&
+								((GT_ELEMENT_SETTINGS_STREAMLINES == settings->settings_type) &&
 									(STREAM_NO_DATA != settings->streamline_data_type)))
 							{
 								set_GT_object_Spectrum(settings->graphics_object,
@@ -5257,14 +5328,14 @@ The graphics object is stored with with the settings it was created from.
 						{
 							if (!return_code)
 							{
-								settings_string=GT_element_settings_string(settings,
+								settings_string = GT_element_settings_string(settings,
 									SETTINGS_STRING_COMPLETE_PLUS);
 								display_message(ERROR_MESSAGE,
 									"GT_element_settings_to_graphics_object.  "
 									"Could not build '%s'",settings_string);
 								DEALLOCATE(settings_string);
-								/* set return_code=1, so rest of settings can be built */
-								return_code=1;
+								/* set return_code to 1, so rest of settings can be built */
+								return_code = 1;
 							}
 							DEACCESS(GT_object)(&(settings->graphics_object));
 						}
@@ -5274,7 +5345,7 @@ The graphics object is stored with with the settings it was created from.
 						display_message(ERROR_MESSAGE,
 							"GT_element_settings_to_graphics_object.  "
 							"Could not create graphics object");
-						return_code=0;
+						return_code = 0;
 					}
 					if (settings->stream_vector_field)
 					{
@@ -5294,7 +5365,7 @@ The graphics object is stored with with the settings it was created from.
 					display_message(ERROR_MESSAGE,
 						"GT_element_settings_to_graphics_object.  "
 						"Could not get rc_coordinate_field wrapper");
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			if (settings->selected_graphics_changed)
@@ -5383,18 +5454,20 @@ The graphics object is stored with with the settings it was created from.
 						}
 					}
 				}
-				settings->selected_graphics_changed=0;
+				settings->selected_graphics_changed = 0;
 			}
 		}
 		else
 		{
-			/* Settings are invisible. If node or element changed, make sure there is
-				 no graphics object so rebuilt from scratch when made visible again. */
-			if (settings->graphics_object&&(settings_to_object_data->changed_element||
-				settings_to_object_data->changed_node))
+			/* Settings are invisible. Clear graphics object if node or element
+				 changes affect it so it is rebuilt when made visible again */
+			if (settings->graphics_object &&
+				GT_element_settings_graphics_affected_by_change(settings,
+					settings_to_object_data->changed_element_list,
+					settings_to_object_data->changed_node_list))
 			{
 				DEACCESS(GT_object)(&(settings->graphics_object));
-				settings->graphics_object=(struct GT_object *)NULL;
+				settings->graphics_object = (struct GT_object *)NULL;
 			}
 		}
 	}
@@ -5402,7 +5475,7 @@ The graphics object is stored with with the settings it was created from.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_settings_to_graphics_object.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -5726,284 +5799,246 @@ is put out as a name to identify the object in OpenGL picking.
 	return (return_code);
 } /* GT_element_settings_execute_visible_settings */
 
-int GT_element_settings_computed_field_change(
-	struct GT_element_settings *settings,void *change_data_void)
+int GT_element_settings_Computed_field_change(
+	struct GT_element_settings *settings, void *change_data_void)
 /*******************************************************************************
-LAST MODIFIED : 2 May 2001
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
-Iterator function telling the <settings> that Computed_field <changed_field>
-(or ALL Computed_fields if NULL) has changed. If any fields in the settings
-are or depend on the <changed_field>, then the graphics_object is told its
-display list is not current, so it knowns it must be rebuilt later.
-Note: <change_data_void> must point to a
-struct GT_element_settings_computed_field_change_data ;
+Iterator function telling the <settings> that the computed fields in the
+<changed_field_list> have changed. If any fields in the settings match or are
+dependent on the changed fields, then the graphics_object is cleared for
+rebuilding later.
+Note: <change_data_void> should point to a
+struct GT_element_settings_Computed_field_change_data.
+???RC This depends on list business is pretty expensive. I hope in the long term
+we can sort out these dependencies before the manager message is sent out.
 ==============================================================================*/
 {
-	int rebuild_graphics_object,return_code;
-	struct Computed_field *changed_field,*coordinate_field;
-	struct GT_element_settings_computed_field_change_data *change_data;
+	int rebuild_graphics_object, return_code;
+	struct Computed_field *coordinate_field;
+	struct GT_element_settings_Computed_field_change_data *change_data;
+	struct LIST(Computed_field) *changed_field_list;
 
-	ENTER(GT_element_settings_computed_field_change);
-	if (settings&&(change_data=
-		(struct GT_element_settings_computed_field_change_data *)change_data_void))
+	ENTER(GT_element_settings_Computed_field_change);
+	if (settings && (change_data =
+		(struct GT_element_settings_Computed_field_change_data *)change_data_void)
+		&& (changed_field_list = change_data->changed_field_list))
 	{
-		return_code=1;
-		changed_field=change_data->changed_field;
+		return_code = 1;
 		if (settings->graphics_object)
 		{
-			rebuild_graphics_object=0;
-			if (change_data->changed_field)
+			rebuild_graphics_object = 0;
+			/* determine if the changed_field affects these settings */
+			/* compare geometry settings */
+			/* for all graphic types */
+			/* settings can get default coordinate field from gt_element_group */
+			if (settings->coordinate_field)
 			{
-				/* determine if the changed_field affects these settings */
-				/* compare geometry settings */
-				/* for all graphic types */
-				/* settings can get default coordinate field from gt_element_group */
-				if (settings->coordinate_field)
-				{
-					coordinate_field=settings->coordinate_field;
-				}
-				else
-				{
-					coordinate_field=change_data->default_coordinate_field;
-				}
-				if (Computed_field_depends_on_Computed_field(coordinate_field,
-					changed_field))
-				{
-					rebuild_graphics_object=1;
-				}
-				/* currently for surfaces only */
-				if (settings->texture_coordinate_field&&
-					Computed_field_depends_on_Computed_field(
-						settings->texture_coordinate_field,changed_field))
-				{
-					rebuild_graphics_object=1;
-				}
-				/* for cylinders only */
-				if ((GT_ELEMENT_SETTINGS_CYLINDERS==settings->settings_type)&&
-					settings->radius_scalar_field&&
-					Computed_field_depends_on_Computed_field(
-						settings->radius_scalar_field,changed_field))
-				{
-					rebuild_graphics_object=1;
-				}
-				/* for iso_surfaces only */
-				if ((GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type)&&
-					settings->iso_scalar_field&&
-					Computed_field_depends_on_Computed_field(
-						settings->iso_scalar_field,changed_field))
-				{
-					rebuild_graphics_object=1;
-				}
-				/* for node_points, data_points and element_points only */
-				if (((GT_ELEMENT_SETTINGS_NODE_POINTS == settings->settings_type) ||
-					(GT_ELEMENT_SETTINGS_DATA_POINTS == settings->settings_type) ||
-					(GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings->settings_type)) &&
-					(settings->orientation_scale_field &&
-						Computed_field_depends_on_Computed_field(
-							settings->orientation_scale_field, changed_field)) ||
-					(settings->variable_scale_field &&
-						Computed_field_depends_on_Computed_field(
-							settings->variable_scale_field, changed_field)) ||
-					(settings->label_field &&
-						Computed_field_depends_on_Computed_field(
-							settings->label_field, changed_field)))
-				{
-					rebuild_graphics_object=1;
-				}
-				/* for element_points with a density field only */
-				if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings->settings_type) &&
-					((XI_DISCRETIZATION_CELL_DENSITY ==
-						settings->xi_discretization_mode) ||
-						(XI_DISCRETIZATION_CELL_POISSON ==
-							settings->xi_discretization_mode)) &&
-					Computed_field_depends_on_Computed_field(
-						settings->xi_point_density_field, changed_field))
-				{
-					rebuild_graphics_object = 1;
-				}
-				/* for volumes only */
-				if ((GT_ELEMENT_SETTINGS_VOLUMES==settings->settings_type)&&
-					(settings->displacement_map_field&&
-					Computed_field_depends_on_Computed_field(
-						settings->displacement_map_field,changed_field))||
-					(settings->blur_field&&
-					Computed_field_depends_on_Computed_field(
-						settings->blur_field,changed_field)))
-				{
-					rebuild_graphics_object=1;
-				}
-				/* for streamlines only */
-				if ((GT_ELEMENT_SETTINGS_STREAMLINES==settings->settings_type)&&
-					settings->stream_vector_field&&
-					Computed_field_depends_on_Computed_field(
-						settings->stream_vector_field,changed_field))
-				{
-					rebuild_graphics_object=1;
-				}
-				/* appearance settings for all settings types */
-				if (settings->data_field&&Computed_field_depends_on_Computed_field(
-					settings->data_field,changed_field))
-				{
-					rebuild_graphics_object=1;
-				}
+				coordinate_field = settings->coordinate_field;
 			}
 			else
 			{
-				/* all fields changed, do all graphics objects out of data */
-				rebuild_graphics_object=1;
+				coordinate_field = change_data->default_coordinate_field;
+			}
+
+			if (Computed_field_depends_on_Computed_field_in_list(coordinate_field,
+				changed_field_list))
+			{
+				rebuild_graphics_object = 1;
+			}
+			/* currently for surfaces only */
+			else if (settings->texture_coordinate_field &&
+				Computed_field_depends_on_Computed_field_in_list(
+					settings->texture_coordinate_field, changed_field_list))
+			{
+				rebuild_graphics_object = 1;
+			}
+			/* for cylinders only */
+			else if ((GT_ELEMENT_SETTINGS_CYLINDERS == settings->settings_type) &&
+				settings->radius_scalar_field &&
+				Computed_field_depends_on_Computed_field_in_list(
+					settings->radius_scalar_field, changed_field_list))
+			{
+				rebuild_graphics_object = 1;
+			}
+			/* for iso_surfaces only */
+			else if ((GT_ELEMENT_SETTINGS_ISO_SURFACES == settings->settings_type) &&
+				settings->iso_scalar_field &&
+				Computed_field_depends_on_Computed_field_in_list(
+					settings->iso_scalar_field, changed_field_list))
+			{
+				rebuild_graphics_object = 1;
+			}
+			/* for node_points, data_points and element_points only */
+			else if (((GT_ELEMENT_SETTINGS_NODE_POINTS == settings->settings_type) ||
+				(GT_ELEMENT_SETTINGS_DATA_POINTS == settings->settings_type) ||
+				(GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings->settings_type)) &&
+				(settings->orientation_scale_field &&
+					Computed_field_depends_on_Computed_field_in_list(
+						settings->orientation_scale_field, changed_field_list)) ||
+				(settings->variable_scale_field &&
+					Computed_field_depends_on_Computed_field_in_list(
+						settings->variable_scale_field, changed_field_list)) ||
+				(settings->label_field &&
+					Computed_field_depends_on_Computed_field_in_list(
+						settings->label_field, changed_field_list)))
+			{
+				rebuild_graphics_object = 1;
+			}
+			/* for element_points with a density field only */
+			else if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings->settings_type)
+				&& ((XI_DISCRETIZATION_CELL_DENSITY ==
+					settings->xi_discretization_mode) ||
+					(XI_DISCRETIZATION_CELL_POISSON ==
+						settings->xi_discretization_mode)) &&
+				Computed_field_depends_on_Computed_field_in_list(
+					settings->xi_point_density_field, changed_field_list))
+			{
+				rebuild_graphics_object = 1;
+			}
+			/* for volumes only */
+			else if ((GT_ELEMENT_SETTINGS_VOLUMES == settings->settings_type)&&
+				(settings->displacement_map_field &&
+					Computed_field_depends_on_Computed_field_in_list(
+						settings->displacement_map_field, changed_field_list))||
+				(settings->blur_field &&
+					Computed_field_depends_on_Computed_field_in_list(
+						settings->blur_field, changed_field_list)))
+			{
+				rebuild_graphics_object = 1;
+			}
+			/* for streamlines only */
+			else if ((GT_ELEMENT_SETTINGS_STREAMLINES == settings->settings_type) &&
+				settings->stream_vector_field &&
+				Computed_field_depends_on_Computed_field_in_list(
+					settings->stream_vector_field, changed_field_list))
+			{
+				rebuild_graphics_object = 1;
+			}
+			/* appearance settings for all settings types */
+			else if (settings->data_field &&
+				Computed_field_depends_on_Computed_field_in_list(
+					settings->data_field, changed_field_list))
+			{
+				rebuild_graphics_object = 1;
 			}
 			if (rebuild_graphics_object)
 			{
 				DEACCESS(GT_object)(&(settings->graphics_object));
-				change_data->rebuild_graphics=1;
+				settings->graphics_object = (struct GT_object *)NULL;
+				change_data->rebuild_graphics = 1;
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_element_settings_computed_field_change.  Invalid argument(s)");
-		return_code=0;
+			"GT_element_settings_Computed_field_change.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* GT_element_settings_computed_field_change */
+} /* GT_element_settings_Computed_field_change */
 
-int GT_element_settings_material_change(
-	struct GT_element_settings *settings,void *changed_material_void)
+int GT_element_settings_Graphical_material_change(
+	struct GT_element_settings *settings, void *material_change_data_void)
 /*******************************************************************************
-LAST MODIFIED : 24 March 1999
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
-If <settings> has a graphics object that plots data, and it uses the
-<changed_material>, where NULL means any material, the graphics object display
-list is marked as being not current. This is required since the spectrum
-combines its colour with the material at the time it is compiled - it may not
-update correctly if only the material's display list is recompiled.
+If <settings> has a graphics object that plots data, and it uses any material in
+the <changed_material_list>, the graphics object display list is marked as being
+not current. This is required since the spectrum combines its colour with the
+material at the time it is compiled - it may not update correctly if only the
+material's display list is recompiled.
+If the settings are visible, the changed flag is set.
+Second argument is a struct GT_element_settings_Graphical_material_change_data.
 ==============================================================================*/
 {
 	int return_code;
-	struct Graphical_material *changed_material;
-	
-	ENTER(GT_element_settings_material_change);
-	if (settings)
+	struct GT_element_settings_Graphical_material_change_data
+		*material_change_data;
+
+	ENTER(GT_element_settings_Graphical_material_change);
+	if (settings && (material_change_data =
+		(struct GT_element_settings_Graphical_material_change_data *)
+		material_change_data_void))
 	{
-		return_code=1;
-		changed_material=(struct Graphical_material *)changed_material_void;
-		if ((settings->graphics_object)&&(settings->spectrum)&&
-			((!changed_material)||(changed_material==settings->material)))
+		if (IS_OBJECT_IN_LIST(Graphical_material)(
+			settings->material, material_change_data->changed_material_list) ||
+			IS_OBJECT_IN_LIST(Graphical_material)(settings->selected_material,
+				material_change_data->changed_material_list))
 		{
-			GT_object_changed(settings->graphics_object);
+			if (settings->graphics_object && settings->spectrum)
+			{
+				GT_object_changed(settings->graphics_object);
+			}
+			/* GT_element_group only changed if settings are visible */
+			if (settings->visibility)
+			{
+				material_change_data->changed = 1;
+			}
 		}
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_element_settings_material_change.  Invalid argument(s)");
-		return_code=0;
+			"GT_element_settings_Graphical_material_change.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* GT_element_settings_material_change */
+} /* GT_element_settings_Graphical_material_change */
 
-int GT_element_settings_spectrum_change(
-	struct GT_element_settings *settings,void *changed_spectrum_void)
+int GT_element_settings_Spectrum_change(
+	struct GT_element_settings *settings, void *spectrum_change_data_void)
 /*******************************************************************************
-LAST MODIFIED : 24 March 1999
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
-If <settings> has a graphics object that plots a scalar using <spectrum> --
-or any Spectrum if <changed_spectrum> is NULL -- the graphics object display
-list is marked as being not current.
-???RC could easily get this routine to auto-expand spectrum ranges if each
-spectrum has an internal flag denoting it needs to be auto-expanded.
+If <settings> has a graphics object that plots a scalar using a spectrum in the
+<changed_spectrum_list>, the graphics object display list is marked as being
+not current. If the settings are visible, the changed flag is set.
+Second argument is a struct GT_element_settings_Spectrum_change_data.
 ==============================================================================*/
 {
 	int return_code;
-	struct Spectrum *changed_spectrum;
+	struct GT_element_settings_Spectrum_change_data *spectrum_change_data;
 
-	ENTER(GT_element_settings_spectrum_change);
-	if (settings)
+	ENTER(GT_element_settings_Spectrum_change);
+	if (settings && (spectrum_change_data =
+		(struct GT_element_settings_Spectrum_change_data *)
+		spectrum_change_data_void))
 	{
-		return_code=1;
-		changed_spectrum=(struct Spectrum *)changed_spectrum_void;
-		if ((settings->graphics_object)&&(settings->spectrum)&&
-			((!changed_spectrum)||(changed_spectrum==settings->spectrum)))
+		if (settings->spectrum && IS_OBJECT_IN_LIST(Spectrum)(settings->spectrum,
+			spectrum_change_data->changed_spectrum_list))
 		{
-			GT_object_changed(settings->graphics_object);
+			if (settings->graphics_object)
+			{
+				GT_object_changed(settings->graphics_object);
+			}
+			/* GT_element_group only changed if settings are visible */
+			if (settings->visibility)
+			{
+				spectrum_change_data->changed = 1;
+			}
 		}
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_element_settings_spectrum_change.  Invalid argument(s)");
-		return_code=0;
+			"GT_element_settings_Spectrum_change.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* GT_element_settings_spectrum_change */
-
-int GT_element_settings_uses_material_with_spectrum(
-	struct GT_element_settings *settings,void *material_void)
-/*******************************************************************************
-LAST MODIFIED : 2 September 1998
-
-DESCRIPTION :
-Returns 1 if <settings> plots a scalar field using any spectrum, and has the
-given material, or any material if parameter is NULL.
-==============================================================================*/
-{
-	int return_code;
-	
-	ENTER(GT_element_settings_uses_material_with_spectrum);
-	if (settings)
-	{
-		return_code=(settings->spectrum)&&((!material_void)||
-			((struct Graphical_material *)material_void==settings->material));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_settings_uses_material_with_spectrum.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_settings_uses_material_with_spectrum */
-
-int GT_element_settings_uses_spectrum(
-	struct GT_element_settings *settings,void *spectrum_void)
-/*******************************************************************************
-LAST MODIFIED : 24 March 1999
-
-DESCRIPTION :
-Returns 1 if <settings> plots a data field using the spectrum, or any
-spectrum if parameter is NULL.
-==============================================================================*/
-{
-	int return_code;
-	
-	ENTER(GT_element_settings_uses_spectrum);
-	if (settings)
-	{
-		return_code=(settings->spectrum)&&((!spectrum_void)||
-			((struct Spectrum *)spectrum_void==settings->spectrum));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_settings_uses_spectrum.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_settings_uses_spectrum */
+} /* GT_element_settings_Spectrum_change */
 
 int GT_element_settings_get_visible_graphics_object_range(
 	struct GT_element_settings *settings,void *graphics_object_range_void)
@@ -7329,7 +7364,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_element_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2001
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ELEMENT_POINTS command.
@@ -7393,6 +7428,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					xi_point_density_field = (struct Computed_field *)NULL;
 					GT_element_settings_get_xi_discretization(settings,
 						&xi_discretization_mode, &xi_point_density_field);
+					if (xi_point_density_field)
+					{
+						ACCESS(Computed_field)(xi_point_density_field);
+					}
 					number_of_components = 3;
 					invisible_flag = 0;
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 3 May 2001
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -139,7 +139,7 @@ Subset of command data passed to g_element modify routines.
 
 struct GT_element_settings_to_graphics_object_data
 /*******************************************************************************
-LAST MODIFIED : 6 June 2000
+LAST MODIFIED : 28 May 2001
 
 DESCRIPTION :
 Data required to produce or edit a graphics object for a GT_element_settings
@@ -154,13 +154,16 @@ object.
 	struct Element_discretization *element_discretization;
 	struct FE_field *native_discretization_field;
 	int circle_discretization;
-	/* objects changed which require editing of existing graphics_objects */
-	struct FE_element *changed_element;
-	struct FE_node *changed_node;
-	/* remember list of named primitives removed when editing graphics_object
-		 because of changed_element or changed_node - to prevent removing the
-		 ones they are replaced by if calculated on top_level_element */
-	struct LIST(Selected_graphic) *removed_primitives;
+	/* objects changed which require editing of existing graphics_objects. Note
+		 either or both lists can be NULL */
+	struct LIST(FE_element) *changed_element_list;
+	struct LIST(FE_node) *changed_node_list;
+	/* flag indicating that graphics_objects be build for all visible settings
+		 currently without them */
+	int build_graphics;
+	/* flag indicating we are editing the graphics in question, not building from
+		 scratch */
+	int edit_mode;
 	/* for highlighting of selected objects */
 	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
 	struct LIST(FE_element) *selected_element_list;
@@ -170,9 +173,9 @@ object.
 	struct GT_element_settings *settings;
 };
 
-struct GT_element_settings_computed_field_change_data
+struct GT_element_settings_Computed_field_change_data
 /*******************************************************************************
-LAST MODIFIED : 3 May 1999
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 User data for function GT_element_settings_computed_field_change.
@@ -181,11 +184,13 @@ User data for function GT_element_settings_computed_field_change.
 	/* rebuild_graphics flag should start at 0, and is set if any graphics
 		 objects must be rebuilt as a result of this change */
 	int rebuild_graphics;
-	/* the field that is changed, or NULL for all changed. Also the default
-		 coordinate field for the whole GT_element_group for when not overridden
-		 by settings->coordinate_field */
-	struct Computed_field *changed_field,*default_coordinate_field;
-}; /* struct GT_element_settings_computed_field_change_data */
+	/* the default coordinate field for the whole GT_element_group for when
+		 not overridden by settings->coordinate_field */
+	struct Computed_field *default_coordinate_field;
+	/* the list of fields that have changed; must check if fields in use
+		 depend on them */
+	struct LIST(Computed_field) *changed_field_list;
+}; /* struct GT_element_settings_Computed_field_change_data */
 
 struct GT_element_settings_nearest_node_data
 /*******************************************************************************
@@ -204,6 +209,45 @@ Structure for passing to GT_element_settings_get_nearest_node iterator.
 	struct GT_element_settings *settings;
 	struct LIST(FE_node) *node_list;
 }; /* struct GT_element_settings_get_nearest_node_data */
+
+struct GT_element_settings_Graphical_material_change_data
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+Data to pass to GT_element_settings_Graphical_material_change.
+==============================================================================*/
+{
+	struct LIST(Graphical_material) *changed_material_list;
+	/* flag indicating if the GT_element_group rendition has changed */
+	int changed;
+};
+
+struct GT_element_settings_Spectrum_change_data
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+Data to pass to GT_element_settings_Spectrum_change.
+==============================================================================*/
+{
+	struct LIST(Spectrum) *changed_spectrum_list;
+	/* flag indicating if the GT_element_group rendition has changed */
+	int changed;
+};
+
+struct GT_element_settings_Texture_change_data
+/*******************************************************************************
+LAST MODIFIED : 7 June 2001
+
+DESCRIPTION :
+Data to pass to GT_element_settings_Texture_change.
+==============================================================================*/
+{
+	struct LIST(Texture) *changed_texture_list;
+	/* flag indicating if the GT_element_group rendition has changed */
+	int changed;
+};
 
 /*
 Global functions
@@ -859,13 +903,23 @@ due to a change in element discretization.
 ==============================================================================*/
 
 int GT_element_settings_node_change(
-	struct GT_element_settings *settings,void *dummy_void);
+	struct GT_element_settings *settings, void *dummy_void);
 /*******************************************************************************
-LAST MODIFIED : 10 September 1998
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
 Deaccesses any graphics_object in <settings> if it would have to be rebuilt
 due to a change in node positions.
+==============================================================================*/
+
+int GT_element_settings_node_group_change(
+	struct GT_element_settings *settings, void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 25 May 2001
+
+DESCRIPTION :
+Deaccesses any graphics_object in <settings> if it would have to be rebuilt
+due to a change of nodes in the group.
 ==============================================================================*/
 
 int GT_element_settings_data_change(
@@ -1141,64 +1195,47 @@ graphics_object is executed, while the position of the settings in the list
 is put out as a name to identify the object in OpenGL picking.
 ==============================================================================*/
 
-int GT_element_settings_computed_field_change(
-	struct GT_element_settings *settings,void *change_data_void);
+int GT_element_settings_Computed_field_change(
+	struct GT_element_settings *settings, void *change_data_void);
 /*******************************************************************************
-LAST MODIFIED : 3 May 1999
+LAST MODIFIED : 28 May 2001
 
 DESCRIPTION :
-Iterator function telling the <settings> that Computed_field <changed_field>
-(or ALL Computed_fields if NULL) has changed. If any fields in the settings
-are or depend on the <changed_field>, then the graphics_object is told its
-display list is not current, so it knowns it must be rebuilt later.
-Note: <change_data_void> must point to a
-struct GT_element_settings_computed_field_change_data ;
+Iterator function telling the <settings> that the computed fields in the
+<changed_field_list> have changed. If any fields in the settings match or are
+dependent on the changed fields, then the graphics_object is cleared for
+rebuilding later.
+Note: <change_data_void> should point to a
+struct GT_element_settings_computed_field_change_data.
+???RC This depends on list business is pretty expensive. I hope in the long term
+we can sort out these dependencies before the manager message is sent out.
 ==============================================================================*/
 
-int GT_element_settings_material_change(
-	struct GT_element_settings *settings,void *changed_material_void);
+int GT_element_settings_Graphical_material_change(
+	struct GT_element_settings *settings, void *material_change_data_void);
 /*******************************************************************************
-LAST MODIFIED : 17 June 1998
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
-If <settings> has a graphics object that plots a scalar, and it uses the
-<changed_material>, where NULL means any material, the graphics object display
-list is marked as being not current. This is required since the spectrum
-combines its colour with the material at the time it is compiled - it may not
-update correctly if only the material's display list is recompiled.
+If <settings> has a graphics object that plots data, and it uses any material in
+the <changed_material_list>, the graphics object display list is marked as being
+not current. This is required since the spectrum combines its colour with the
+material at the time it is compiled - it may not update correctly if only the
+material's display list is recompiled.
+If the settings are visible, the changed flag is set.
+Second argument is a struct GT_element_settings_Graphical_material_change_data.
 ==============================================================================*/
 
-int GT_element_settings_spectrum_change(
-	struct GT_element_settings *settings,void *changed_spectrum_void);
+int GT_element_settings_Spectrum_change(
+	struct GT_element_settings *settings, void *spectrum_change_data_void);
 /*******************************************************************************
-LAST MODIFIED : 15 June 1998
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
-If <settings> has a graphics object that plots a scalar using <spectrum> --
-or any Spectrum if <spectrum> is NULL -- the graphics object display list is
-marked as being not current.
-???RC could easily get this routine to auto-expand spectrum ranges if each
-spectrum has an internal flag denoting it needs to be auto-expanded.
-==============================================================================*/
-
-int GT_element_settings_uses_material_with_spectrum(
-	struct GT_element_settings *settings,void *material_void);
-/*******************************************************************************
-LAST MODIFIED : 18 June 1998
-
-DESCRIPTION :
-Returns 1 if <settings> plots a scalar field using any spectrum, and has the
-given material, or any material if parameter is NULL.
-==============================================================================*/
-
-int GT_element_settings_uses_spectrum(
-	struct GT_element_settings *settings,void *spectrum_void);
-/*******************************************************************************
-LAST MODIFIED : 18 June 1998
-
-DESCRIPTION :
-Returns 1 if <settings> plots a scalar field using the spectrum, or any
-spectrum if parameter is NULL.
+If <settings> has a graphics object that plots a scalar using a spectrum in the
+<changed_spectrum_list>, the graphics object display list is marked as being
+not current. If the settings are visible, the changed flag is set.
+Second argument is a struct GT_element_settings_Spectrum_change_data.
 ==============================================================================*/
 
 int GT_element_settings_get_visible_graphics_object_range(
