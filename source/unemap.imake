@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 19 November 2000
+XCOMM LAST MODIFIED : 26 December 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -505,7 +505,9 @@ LIB = -lMrm -lXm -lXt -lX11 -lXpm -lm
 #if defined (IRIX) /* switch OperatingSystem */
 LIB = -lMrm -lXm -lXt -lX11 -lPW -lftn -lm -lpthread
 #elif defined(LINUX) /* switch OperatingSystem */
-LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread
+XCOMM ???DB.  What is g2c for?  Stops linking on my laptop
+XCOMM LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lm -ldl -lXp -lSM -lICE -lpthread
 #endif /* switch OperatingSystem */
 
 #if defined (OLD_CODE)
