@@ -830,8 +830,9 @@ sequential element_xi lookup should now be performed.
 	USE_PARAMETER(cache_ptr);
 	USE_PARAMETER(values);
 	USE_PARAMETER(element);
+	USE_PARAMETER(element_dimension);
 	USE_PARAMETER(xi);
-	USE_PARAMETER(search_element_group);
+	USE_PARAMETER(search_region);
 	USE_PARAMETER(user_interface);
 	USE_PARAMETER(hint_minimums);
 	USE_PARAMETER(hint_maximums);

@@ -55,9 +55,9 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_time.h"
 #include "computed_field/computed_field_update.h"
 #include "computed_field/computed_field_vector_operations.h"
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 #include "computed_field/computed_field_window_projection.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 #include "computed_field/computed_field_wrappers.h"
 #if defined (MOTIF)
 #include "element/element_creator.h"
@@ -10616,9 +10616,9 @@ Executes a GFX EDIT command.
 		if (state->current_token)
 		{
 			option_table = CREATE(Option_table)();
-#if defined (MOTIF)
 			Option_table_add_entry(option_table, "graphics_object", NULL,
 				command_data_void, gfx_edit_graphics_object);
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "scene", NULL,
 				command_data_void, gfx_edit_scene);
 			Option_table_add_entry(option_table, "spectrum", NULL,
@@ -20114,7 +20114,6 @@ Executes a cm (back end) command.
 					}
 				}
 #else /* defined (LINK_CMISS) */
-				USE_PARAMETER(current_token);
 				display_message(ERROR_MESSAGE,"execute_command_cm.	Define LINK_CMISS");
 				return_code=0;
 #endif /* defined (LINK_CMISS) */
@@ -24164,10 +24163,10 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #if defined (MIRAGE)
 		/*	command_data->digitiser_window_manager=CREATE(MANAGER(Digitiser_window))();*/
 #endif /* defined (MIRAGE) */
+#if defined (MOTIF)
 		/* now set up the conversion routines */
 		/*???DB.  Can this be put elsewhere ? */
 		conversion_init();
-#if defined (MOTIF)
 		/* initialize the coordinate widget manager */
 		/*???DB.  Still needs to be turned into a manager */
 		coord_widget_init();

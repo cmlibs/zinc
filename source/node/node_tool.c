@@ -2202,8 +2202,8 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 		{"node_tool_structure",(XtPointer)NULL}
 	};
 	struct Callback_data callback;
-#endif /* defined (MOTIF) */
 	struct Cmiss_region *region;
+#endif /* defined (MOTIF) */
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Node_tool *node_tool;
 
