@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 04 April 2001
+LAST MODIFIED : 9 April 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -15614,7 +15614,7 @@ use node_manager and node_selection.
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct FE_node_selection *node_selection;
-	struct GROUP(FE_node) *modify_node_group, *node_group;
+	struct GROUP(FE_node) *modify_node_group, *from_node_group;
 	struct LIST(FE_node) *node_list;
 	struct MANAGER(FE_node) *node_manager;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
@@ -15646,7 +15646,7 @@ use node_manager and node_selection.
 			all_flag = 0;
 			selected_flag = 0;
 			node_ranges = CREATE(Multi_range)();
-			node_group = (struct GROUP(FE_node) *)NULL;
+			from_node_group = (struct GROUP(FE_node) *)NULL;
 
 			option_table=CREATE(Option_table)();
 			/* add */
@@ -15656,7 +15656,7 @@ use node_manager and node_selection.
 			Option_table_add_entry(option_table, "all", &all_flag,
 				NULL, set_char_flag);
 			/* group */
-			Option_table_add_entry(option_table, "group", &node_group,
+			Option_table_add_entry(option_table, "group", &from_node_group,
 				node_group_manager, set_FE_node_group);
 			/* remove */
 			Option_table_add_entry(option_table, "remove", &remove_flag,
@@ -15704,7 +15704,7 @@ use node_manager and node_selection.
 				/* make list of nodes to add/remove from modify_node_group */
 				if (node_list = FE_node_list_from_all_selected_group_ranges(
 					node_manager, all_flag, node_selection, selected_flag,
-					node_group, node_ranges))
+					from_node_group, node_ranges))
 				{
 					if (0 < NUMBER_IN_LIST(FE_node)(node_list))
 					{
@@ -15712,13 +15712,16 @@ use node_manager and node_selection.
 						if (add_flag)
 						{
 							return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(
-								ensure_FE_node_is_in_group, (void *)node_group, node_list);
+								ensure_FE_node_is_in_group, (void *)modify_node_group,
+								node_list);
 						}
 						else /* remove_flag */
 						{
 							return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(
-								ensure_FE_node_is_not_in_group, (void *)node_group, node_list);
+								ensure_FE_node_is_not_in_group, (void *)modify_node_group,
+								node_list);
 						}
+						MANAGED_GROUP_END_CACHE(FE_node)(modify_node_group);
 					}
 					else
 					{
@@ -15742,9 +15745,9 @@ use node_manager and node_selection.
 				}
 			}
 			DESTROY(Option_table)(&option_table);
-			if (node_group)
+			if (from_node_group)
 			{
-				DEACCESS(GROUP(FE_node))(&node_group);
+				DEACCESS(GROUP(FE_node))(&from_node_group);
 			}
 			DESTROY(Multi_range)(&node_ranges);
 		}
