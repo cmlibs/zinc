@@ -55,7 +55,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	COMPUTED_FIELD_INVALID,
-	COMPUTED_FIELD_CMISS_NUMBER,       /* node/element number as name string */
 	COMPUTED_FIELD_COMPONENT,          /* component of a Computed_field */
 	COMPUTED_FIELD_COMPOSE,            /* compose three Computed_fields in sequence */
 	COMPUTED_FIELD_COMPOSITE,          /* made up of #components scalar fields */
@@ -63,18 +62,14 @@ DESCRIPTION :
 	COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES, /* cube projected from a centre */
 	COMPUTED_FIELD_CURVE_LOOKUP,       /* returns values from control_curve for scalar source field */
 	COMPUTED_FIELD_EDIT_MASK,          /* edit particular components without affecting others */
-	COMPUTED_FIELD_EMBEDDED,           /* maps through element/xi to source field */
 	COMPUTED_FIELD_EXTERNAL,           /* uses an external program to perform computation */
 	COMPUTED_FIELD_FIBRE_AXES,         /* fibre axes: fibre, sheet, normal */
 	COMPUTED_FIELD_FIBRE_SHEET_AXES,   /* fibre axes: sheet,-fibre, normal */
 	COMPUTED_FIELD_MAGNITUDE,          /* sqrt(sum of squared components) */
-	COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME,  /* extracts an array value at the given time */
-	COMPUTED_FIELD_NODE_VALUE,         /* value/deriv/version of fe_field at node */
 	COMPUTED_FIELD_PROJECTION,         /* Projects coordinates through a perspective projection matrix */
 	COMPUTED_FIELD_RC_COORDINATE,      /* converts from other coord systems */
 	COMPUTED_FIELD_RC_VECTOR,          /* converts non-RC vector at coordinate */
 	COMPUTED_FIELD_SUM_COMPONENTS,     /* weighted sum of field components */
-	COMPUTED_FIELD_XI_COORDINATES,     /* element coordinate xi */
 	COMPUTED_FIELD_XI_TEXTURE_COORDINATES, /* continuous coordinates based on xi */
 	COMPUTED_FIELD_2D_STRAIN,          /* wrinkling strain calculation */
 	COMPUTED_FIELD_NEW_TYPES           /* all the new types to which all will be changed */
@@ -281,15 +276,6 @@ and also to prevent copying a field over itself.
 Parts of the program receiving manager messages for Computed_fields should call
 this function with the field=field in use and other_field=modified field to
 determine if the field in use needs updating.
-==============================================================================*/
-
-int Computed_field_depends_on_embedded_field(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 28 April 1999
-
-DESCRIPTION :
-Returns true if the field is of an embedded type or depends on any computed
-fields which are or an embedded type.
 ==============================================================================*/
 
 char *Computed_field_evaluate_as_string_in_element(
@@ -937,18 +923,6 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 
-int Computed_field_set_type_embedded(struct Computed_field *field,
-  struct FE_field *fe_field, struct Computed_field *source_field);
-/*******************************************************************************
-LAST MODIFIED : 23 April 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_EMBEDDED, wrapping the given
-<fe_field>. Makes the number of components the same as in the <fe_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
 int Computed_field_get_type_fibre_axes(struct Computed_field *field,
 	struct Computed_field **fibre_field,struct Computed_field **coordinate_field);
 /*******************************************************************************
@@ -1036,63 +1010,6 @@ DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_MAGNITUDE, which returns a scalar value
 equal to the square root of the sum of the squares of all components in the
 <source_field>. Sets the number of components to 1.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_node_value(struct Computed_field *field,
-	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
-	int *version_number);
-/*******************************************************************************
-LAST MODIFIED : 17 June 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_NODE_VALUE, the fe_field,
-nodal_value_type and version_number it extracts are returned - otherwise an
-error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_node_value(struct Computed_field *field,
-	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
-	int version_number);
-/*******************************************************************************
-LAST MODIFIED : 17 June 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_NODE_VALUE, returning the values for the
-given <nodal_value_type> and <version_number> of <fe_field> at a node.
-Makes the number of components the same as in the <fe_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_node_array_value_at_time(struct Computed_field *field,
-	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
-	int *version_number,struct Computed_field **time_field);
-/*******************************************************************************
-LAST MODIFIED : 28 October 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, the fe_field,
-nodal_value_type and version_number it extracts are returned - otherwise an
-error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_node_array_value_at_time(struct Computed_field *field,
-	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
-	int version_number,struct Computed_field *time_field);
-/*******************************************************************************
-LAST MODIFIED : 28 October 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, 
-returning the values for the
-given <nodal_value_type> and <version_number> of <fe_field> at a node.
-Makes the number of components the same as in the <fe_field>.
-Field automatically takes the coordinate system of the source fe_field. See note
-at start of this file about changing use of coordinate systems.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/

@@ -75,6 +75,13 @@ LAST MODIFIED : 18 July 2000
 DESCRIPTION :
 ==============================================================================*/
 
+int Computed_field_is_type_cmiss_number(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
 int Computed_field_is_read_only_with_fe_field(
 	struct Computed_field *field,void *fe_field_void);
 /*******************************************************************************
@@ -103,6 +110,15 @@ DESCRIPTION :
 Returns true if <field> is a 1 integer component FINITE_ELEMENT wrapper which
 is defined in <element> AND is grid-based.
 Used for choosing field suitable for identifying grid points.
+==============================================================================*/
+
+int Computed_field_depends_on_embedded_field(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 28 April 1999
+
+DESCRIPTION :
+Returns true if the field is of an embedded type or depends on any computed
+fields which are or an embedded type.
 ==============================================================================*/
 
 int remove_computed_field_from_manager_given_FE_field(

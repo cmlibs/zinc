@@ -120,6 +120,8 @@ Copy the type specific data used by this type.
 			{
 				destination->fe_field=ACCESS(FE_field)(source->fe_field);
 			}
+			destination->fe_element_field_values = 
+				(struct FE_element_field_values *)NULL;
 		}
 		else
 		{
@@ -1089,19 +1091,22 @@ DESCRIPTION :
 {
 	char *field_name;
 	int return_code;
+	struct Computed_field_finite_element_type_specific_data *data;
 
 	ENTER(List_Computed_field_finite_element);
-	if (field)
+	if (field && (data = 
+		(struct Computed_field_finite_element_type_specific_data *)
+		field->type_specific_data))
 	{
-		if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+		if (return_code=GET_NAME(FE_field)(data->fe_field,&field_name))
 		{
 			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
 			DEALLOCATE(field_name);
 		}
 		display_message(INFORMATION_MESSAGE,"    CM field type : %s\n",
-			CM_field_type_string(get_FE_field_CM_field_type(field->fe_field)));
+			CM_field_type_string(get_FE_field_CM_field_type(data->fe_field)));
 		display_message(INFORMATION_MESSAGE,"    Value type : %s\n",
-			Value_type_string(get_FE_field_value_type(field->fe_field)));
+			Value_type_string(get_FE_field_value_type(data->fe_field)));
 		return_code = 1;
 	}
 	else
@@ -1125,11 +1130,14 @@ DESCRIPTION :
 {
 	char *field_name;
 	int return_code;
-
+	struct Computed_field_finite_element_type_specific_data *data;
+	
 	ENTER(list_Computed_field_finite_element_commands);
-	if (field)
+	if (field && (data = 
+		(struct Computed_field_finite_element_type_specific_data *)
+		field->type_specific_data))
 	{
-		if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
+		if (return_code=GET_NAME(FE_field)(data->fe_field,&field_name))
 		{
 			display_message(INFORMATION_MESSAGE," fe_field %s",field_name);
 			DEALLOCATE(field_name);
@@ -2611,6 +2619,3737 @@ Converts <field> into type COMPUTED_FIELD_DEFAULT_COORDINATE.
 	return (return_code);
 } /* define_Computed_field_type_default_coordinate */
 
+static char computed_field_cmiss_number_type_string[] = "cmiss_number";
+
+int Computed_field_is_type_cmiss_number(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_cmiss_number);
+	if (field)
+	{
+		return_code = 
+		  (field->type_string == computed_field_cmiss_number_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_cmiss_number.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_cmiss_number */
+
+static int Computed_field_cmiss_number_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_cmiss_number_clear_type_specific);
+	if (field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cmiss_number_clear_type_specific.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_cmiss_number_clear_type_specific */
+
+static void *Computed_field_cmiss_number_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	void *destination
+
+	ENTER(Computed_field_cmiss_number_copy_type_specific);
+	if (field)
+	{
+		destination = (void *)1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cmiss_number_copy_type_specific.  "
+			"Invalid arguments.");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_cmiss_number_copy_type_specific */
+
+#define Computed_field_cmiss_number_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_cmiss_number_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_component_operations_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_component_operations_type_specific_contents_match */
+
+#define Computed_field_cmiss_number_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_cmiss_number_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_cmiss_number_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_cmiss_number_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
+static int Computed_field_cmiss_number_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_cmiss_number_evaluate_cache_at_node);
+	if (field && node)
+	{
+		/* simply convert the node number into an FE_value */
+		field->values[0]=(FE_value)get_FE_node_cm_node_identifier(node);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cmiss_number_evaluate_cache_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_cmiss_number_evaluate_cache_at_node */
+
+static int Computed_field_cmiss_number_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_cmiss_number_evaluate_cache_in_element);
+	USE_PARAMETER(top_level_element);
+	USE_PARAMETER(calculate_derivatives);
+	if (field && element && xi)
+	{
+	  /* simply convert the element number into an FE_value */
+	  field->values[0]=(FE_value)element->cm.number;
+	  /* no derivatives for this type */
+	  field->derivatives_valid=0;
+	  return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cmiss_number_evaluate_cache_in_element.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_cmiss_number_evaluate_cache_in_element */
+
+static char *Computed_field_cmiss_number_evaluate_as_string_at_node(
+	struct Computed_field *field, int component_number, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+{
+	char *return_string,tmp_string[50];
+	int error;
+
+	ENTER(Computed_field_cmiss_number_evaluate_as_string_at_node);
+	return_string=(char *)NULL;
+	if (field&&node&&(component_number >= -1)&&
+		(component_number<field->number_of_components))
+	{
+		error=0;
+		/* put out the cmiss number as a string */
+		sprintf(tmp_string,"%d",get_FE_node_cm_node_identifier(node));
+		append_string(&return_string,tmp_string,&error);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cmiss_number_evaluate_as_string_at_node.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Computed_field_cmiss_number_evaluate_as_string_at_node */
+
+static char *Computed_field_cmiss_number_evaluate_as_string_in_element(
+	struct Computed_field *field,int component_number,
+	struct FE_element *element,FE_value *xi,struct FE_element *top_level_element)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+{
+	char *return_string,tmp_string[50];
+
+	ENTER(Computed_field_cmiss_number_evaluate_as_string_in_element);
+	USE_PARAMETER(top_level_element);
+	return_string=(char *)NULL;
+	if (field&&element&&xi&&(-1<=component_number)&&
+		(component_number < field->number_of_components))
+	{
+	  /* put out the cmiss number as a string */
+	  sprintf(tmp_string,"%d",element->cm.number);
+	  return_string=duplicate_string(tmp_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_cmiss_number_evaluate_as_string_in_element.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Computed_field_cmiss_number_evaluate_as_string_in_element */
+
+#define Computed_field_cmiss_number_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_cmiss_number_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_cmiss_number_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_cmiss_number_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_cmiss_number(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_cmiss_number);
+	if (field)
+	{
+		/* no extra parameters */
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_cmiss_number.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_cmiss_number */
+
+static int list_Computed_field_cmiss_number_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(list_Computed_field_cmiss_number_commands);
+	if (field)
+	{
+		/* no extra parameters */
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_cmiss_number_commands.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_cmiss_number_commands */
+
+int Computed_field_set_type_cmiss_number(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_CMISS_NUMBER with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_set_type_cmiss_number);
+	if (field)
+	{
+		/* 1. make dynamic allocations for any new type-specific data */
+		/* none */
+		/* 2. free current type-specific data */
+		Computed_field_clear_type(field);
+		/* 3. establish the new type */
+		field->type=COMPUTED_FIELD_NEW_TYPES;
+		field->type_string = computed_field_cmiss_number_type_string;
+		field->number_of_components = 1;
+		field->type_specific_data = (void *)1;
+		
+		/* Set all the methods */
+		field->computed_field_clear_type_specific_function =
+			Computed_field_cmiss_number_clear_type_specific;
+		field->computed_field_copy_type_specific_function =
+			Computed_field_cmiss_number_copy_type_specific;
+		field->computed_field_clear_cache_type_specific_function =
+			Computed_field_cmiss_number_clear_cache_type_specific;
+		field->computed_field_type_specific_contents_match_function =
+			Computed_field_cmiss_number_type_specific_contents_match;
+		field->computed_field_is_defined_in_element_function =
+			Computed_field_cmiss_number_is_defined_in_element;
+		field->computed_field_is_defined_at_node_function =
+			Computed_field_cmiss_number_is_defined_at_node;
+		field->computed_field_has_numerical_components_function =
+			Computed_field_cmiss_number_has_numerical_components;
+		field->computed_field_can_be_destroyed_function =
+			Computed_field_cmiss_number_can_be_destroyed;
+		field->computed_field_evaluate_cache_at_node_function =
+			Computed_field_cmiss_number_evaluate_cache_at_node;
+		field->computed_field_evaluate_cache_in_element_function =
+			Computed_field_cmiss_number_evaluate_cache_in_element;
+		field->computed_field_evaluate_as_string_at_node_function =
+			Computed_field_cmiss_number_evaluate_as_string_at_node;
+		field->computed_field_evaluate_as_string_in_element_function =
+			Computed_field_cmiss_number_evaluate_as_string_in_element;
+		field->computed_field_set_values_at_node_function =
+			Computed_field_cmiss_number_set_values_at_node;
+		field->computed_field_set_values_in_element_function =
+			Computed_field_cmiss_number_set_values_in_element;
+		field->computed_field_get_native_discretization_in_element_function =
+			Computed_field_cmiss_number_get_native_discretization_in_element;
+		field->computed_field_find_element_xi_function =
+			Computed_field_cmiss_number_find_element_xi;
+		field->list_Computed_field_function = 
+			list_Computed_field_cmiss_number;
+		field->list_Computed_field_commands_function = 
+			list_Computed_field_cmiss_number_commands;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_cmiss_number.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_cmiss_number */
+
+static int define_Computed_field_type_cmiss_number(struct Parse_state *state,
+	void *field_void,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_CMISS_NUMBER.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field;
+
+	ENTER(define_Computed_field_type_cmiss_number);
+	USE_PARAMETER(dummy_void);
+	if (state&&(field=(struct Computed_field *)field_void))
+	{
+		if (!state->current_token)
+		{
+			return_code=Computed_field_set_type_cmiss_number(field);
+		}
+		else
+		{
+			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
+			{
+				display_message(ERROR_MESSAGE,
+					"Unknown option <%s>",state->current_token);
+				display_parse_state_location(state);
+			}
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_cmiss_number.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_cmiss_number */
+
+static char computed_field_xi_coordinates_type_string[] = "xi_coordinates";
+
+int Computed_field_is_type_xi_coordinates(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_xi_coordinates);
+	if (field)
+	{
+		return_code = 
+		  (field->type_string == computed_field_xi_coordinates_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_xi_coordinates.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_xi_coordinates */
+
+static int Computed_field_xi_coordinates_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_xi_coordinates_clear_type_specific);
+	if (field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_xi_coordinates_clear_type_specific.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_xi_coordinates_clear_type_specific */
+
+static void *Computed_field_xi_coordinates_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	void *destination
+
+	ENTER(Computed_field_xi_coordinates_copy_type_specific);
+	if (field)
+	{
+		destination = (void *)1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_xi_coordinates_copy_type_specific.  "
+			"Invalid arguments.");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_xi_coordinates_copy_type_specific */
+
+#define Computed_field_xi_coordinates_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_xi_coordinates_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_component_operations_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_component_operations_type_specific_contents_match */
+
+#define Computed_field_xi_coordinates_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+static int Computed_field_xi_coordinates_is_defined_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_xi_coordinates_is_defined_at_node);
+	if (field && node)
+	{
+		/* can not be evaluated at nodes */
+		return_code = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_xi_coordinates_is_defined_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_xi_coordinates_is_defined_at_node */
+
+#define Computed_field_xi_coordinates_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_xi_coordinates_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 17 July 2000
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
+#define Computed_field_xi_coordinates_evaluate_cache_at_node \
+	(Computed_field_evaluate_cache_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Cannot evaluate xi at nodes
+==============================================================================*/
+
+static int Computed_field_xi_coordinates_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value *temp;
+	int element_dimension, i, j, return_code;
+
+	ENTER(Computed_field_xi_coordinates_evaluate_cache_in_element);
+	USE_PARAMETER(top_level_element);
+	USE_PARAMETER(calculate_derivatives);
+	if (field && element && xi)
+	{
+		/* returns the values in xi, up to the element_dimension and padded
+			with zeroes */
+		element_dimension=get_FE_element_dimension(element);
+		temp=field->derivatives;
+		for (i=0;i<field->number_of_components;i++)
+		{
+			if (i<element_dimension)
+			{
+				field->values[i]=xi[i];
+			}
+			else
+			{
+				field->values[i]=0.0;
+			}
+			for (j=0;j<element_dimension;j++)
+			{
+				if (i==j)
+				{
+					*temp = 1.0;
+				}
+				else
+				{
+					*temp = 0.0;
+				}
+				temp++;
+			}
+		}
+		/* derivatives are always calculated since they are merely part of
+			the identity matrix */
+		field->derivatives_valid=1;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_xi_coordinates_evaluate_cache_in_element.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_xi_coordinates_evaluate_cache_in_element */
+
+#define Computed_field_xi_coordinates_evaluate_as_string_at_node \
+	(Computed_field_evaluate_as_string_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_xi_coordinates_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_xi_coordinates_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_xi_coordinates_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_xi_coordinates_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_xi_coordinates_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_xi_coordinates(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_xi_coordinates);
+	if (field)
+	{
+		/* no extra parameters */
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_xi_coordinates.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_xi_coordinates */
+
+static int list_Computed_field_xi_coordinates_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(list_Computed_field_xi_coordinates_commands);
+	if (field)
+	{
+		/* no extra parameters */
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_xi_coordinates_commands.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_xi_coordinates_commands */
+
+int Computed_field_set_type_xi_coordinates(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_XI_COORDINATES with the supplied
+fields, <source_field_one> and <source_field_two>.  Sets the number of 
+components equal to the source_fields.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_set_type_xi_coordinates);
+	if (field)
+	{
+		/* 1. make dynamic allocations for any new type-specific data */
+		/* none */
+		/* 2. free current type-specific data */
+		Computed_field_clear_type(field);
+		/* 3. establish the new type */
+		field->type=COMPUTED_FIELD_NEW_TYPES;
+		field->type_string = computed_field_xi_coordinates_type_string;
+		field->number_of_components = 3;
+		field->type_specific_data = (void *)1;
+		
+		/* Set all the methods */
+		field->computed_field_clear_type_specific_function =
+			Computed_field_xi_coordinates_clear_type_specific;
+		field->computed_field_copy_type_specific_function =
+			Computed_field_xi_coordinates_copy_type_specific;
+		field->computed_field_clear_cache_type_specific_function =
+			Computed_field_xi_coordinates_clear_cache_type_specific;
+		field->computed_field_type_specific_contents_match_function =
+			Computed_field_xi_coordinates_type_specific_contents_match;
+		field->computed_field_is_defined_in_element_function =
+			Computed_field_xi_coordinates_is_defined_in_element;
+		field->computed_field_is_defined_at_node_function =
+			Computed_field_xi_coordinates_is_defined_at_node;
+		field->computed_field_has_numerical_components_function =
+			Computed_field_xi_coordinates_has_numerical_components;
+		field->computed_field_can_be_destroyed_function =
+			Computed_field_xi_coordinates_can_be_destroyed;
+		field->computed_field_evaluate_cache_at_node_function =
+			Computed_field_xi_coordinates_evaluate_cache_at_node;
+		field->computed_field_evaluate_cache_in_element_function =
+			Computed_field_xi_coordinates_evaluate_cache_in_element;
+		field->computed_field_evaluate_as_string_at_node_function =
+			Computed_field_xi_coordinates_evaluate_as_string_at_node;
+		field->computed_field_evaluate_as_string_in_element_function =
+			Computed_field_xi_coordinates_evaluate_as_string_in_element;
+		field->computed_field_set_values_at_node_function =
+			Computed_field_xi_coordinates_set_values_at_node;
+		field->computed_field_set_values_in_element_function =
+			Computed_field_xi_coordinates_set_values_in_element;
+		field->computed_field_get_native_discretization_in_element_function =
+			Computed_field_xi_coordinates_get_native_discretization_in_element;
+		field->computed_field_find_element_xi_function =
+			Computed_field_xi_coordinates_find_element_xi;
+		field->list_Computed_field_function = 
+			list_Computed_field_xi_coordinates;
+		field->list_Computed_field_commands_function = 
+			list_Computed_field_xi_coordinates_commands;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_xi_coordinates.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_xi_coordinates */
+
+static int define_Computed_field_type_xi_coordinates(struct Parse_state *state,
+	void *field_void,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_XI_COORDINATES.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field;
+
+	ENTER(define_Computed_field_type_xi_coordinates);
+	USE_PARAMETER(dummy_void);
+	if (state&&(field=(struct Computed_field *)field_void))
+	{
+		if (!state->current_token)
+		{
+			return_code=Computed_field_set_type_xi_coordinates(field);
+		}
+		else
+		{
+			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
+			{
+				display_message(ERROR_MESSAGE,
+					"Unknown option <%s>",state->current_token);
+				display_parse_state_location(state);
+			}
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_xi_coordinates.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_xi_coordinates */
+
+/*******************************************************************************
+COMPUTED_FIELD_TYPE: node_value
+
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Returns the values for the given <nodal_value_type> and <version_number> 
+of <fe_field> at a node.
+Makes the number of components the same as in the <fe_field>.
+==============================================================================*/
+
+struct Computed_field_node_value_type_specific_data
+{
+	struct FE_field *fe_field;
+	enum FE_nodal_value_type nodal_value_type;
+	int version_number;
+};
+
+static char computed_field_node_value_type_string[] = "node_value";
+
+int Computed_field_is_type_node_value(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_node_value);
+	if (field)
+	{
+		return_code = (field->type_string == computed_field_node_value_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_node_value.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_node_value */
+
+static int Computed_field_node_value_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_node_value_type_specific_data *data;
+
+	ENTER(Computed_field_node_value_clear_type_specific);
+	if (field&& (data = 
+		(struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (data->fe_field)
+		{
+			DEACCESS(FE_field)(&(data->fe_field));
+		}
+		
+		DEALLOCATE(field->type_specific_data);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_value_clear_type_specific.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_value_clear_type_specific */
+
+static void *Computed_field_node_value_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	struct Computed_field_node_value_type_specific_data *destination,
+		*source;
+
+	ENTER(Computed_field_node_value_copy_type_specific);
+	if (field && (source = 
+		(struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (ALLOCATE(destination,
+			struct Computed_field_node_value_type_specific_data, 1))
+		{
+			if (source->fe_field)
+			{
+				destination->fe_field=ACCESS(FE_field)(source->fe_field);
+			}
+			destination->nodal_value_type=source->nodal_value_type;
+			destination->version_number=source->version_number;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_node_value_copy_type_specific.  "
+				"Unable to allocate memory.");
+			destination = NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_value_copy_type_specific.  "
+			"Invalid arguments.");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_node_value_copy_type_specific */
+
+#define Computed_field_node_value_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+static int Computed_field_node_value_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_node_value_type_specific_data *data, *other_data;
+
+	ENTER(Computed_field_node_value_type_specific_contents_match);
+	if (field && other_computed_field && (data = 
+		(struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data) && (other_data = 
+		(struct Computed_field_node_value_type_specific_data *)
+		other_computed_field->type_specific_data))
+	{
+		return_code = ((data->fe_field == other_data->fe_field)
+			&& (data->nodal_value_type == other_data->nodal_value_type)
+			&& (data->version_number == other_data->version_number));
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_value_type_specific_contents_match */
+
+int Computed_field_node_value_is_defined_in_element(struct Computed_field *field,
+	struct FE_element *element)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_node_value_is_defined_in_element);
+	if (field && element)
+	{
+	  return_code=0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_value_is_defined_in_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_value_is_defined_in_element */
+
+int Computed_field_node_value_is_defined_at_node(struct Computed_field *field,
+	struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Check the fe_field
+==============================================================================*/
+{
+	int comp_no,return_code;
+	struct Computed_field_node_value_type_specific_data *data;
+	struct FE_field_component fe_field_component;
+
+	ENTER(Computed_field_node_value_is_defined_at_node);
+	if (field && node && (data = 
+		(struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (FE_field_is_defined_at_node(data->fe_field,node))
+		{
+			/* must ensure at least one component of version_number,
+				nodal_value_type defined at node */
+			return_code=0;
+			fe_field_component.field=data->fe_field;
+			for (comp_no=0;(comp_no<field->number_of_components)&&(!return_code);
+				  comp_no++)
+			{
+				fe_field_component.number=comp_no;
+				if (FE_nodal_value_version_exists(node,&fe_field_component,
+					data->version_number,data->nodal_value_type))
+				{
+					return_code=1;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_value_is_defined_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_value_is_defined_at_node */
+
+int Computed_field_node_value_has_numerical_components(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_node_value_type_specific_data *data;
+
+	ENTER(Computed_field_node_value_has_numerical_components);
+	if (field && (data = 
+		(struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data))
+	{
+		return_code=Value_type_is_numeric_simple(
+			get_FE_field_value_type(data->fe_field));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_value_has_numerical_components.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_node_value_has_numerical_components */
+
+int Computed_field_node_value_can_be_destroyed(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_node_value_type_specific_data *data;
+	struct FE_field *temp_fe_field;
+
+	ENTER(Computed_field_node_value_can_be_destroyed);
+	if (field && (data = 
+		(struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data))
+	{
+		/* check the fe_field can be destroyed */
+		temp_fe_field=data->fe_field;
+		DEACCESS(FE_field)(&temp_fe_field);
+		return_code=FE_field_can_be_destroyed(data->fe_field);
+		ACCESS(FE_field)(data->fe_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_value_can_be_destroyed.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_node_value_can_be_destroyed */
+
+static int Computed_field_node_value_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	double double_value;
+	enum Value_type value_type;
+	float float_value;
+	int i, int_value, return_code;
+	struct Computed_field_node_value_type_specific_data *data;
+	struct FE_field_component fe_field_component;
+
+	ENTER(Computed_field_node_value_evaluate_cache_at_node);
+	if (field && node && (data = 
+		(struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data))
+	{
+		return_code = 1;
+		fe_field_component.field=data->fe_field;
+		value_type=get_FE_field_value_type(data->fe_field);
+		for (i=0;(i<field->number_of_components)&&return_code;i++)
+		{
+			fe_field_component.number=i;
+			if (FE_nodal_value_version_exists(node,&fe_field_component,
+				data->version_number,data->nodal_value_type))
+			{
+				switch (value_type)
+				{
+					case DOUBLE_VALUE:
+					{
+						return_code=get_FE_nodal_double_value(node,
+							&fe_field_component,data->version_number,
+							data->nodal_value_type,&double_value);
+						field->values[i] = (FE_value)double_value;
+					} break;
+					case FE_VALUE_VALUE:
+					{
+						return_code=get_FE_nodal_FE_value_value(node,
+							&fe_field_component,data->version_number,
+							data->nodal_value_type,&(field->values[i]));
+					} break;
+					case FLT_VALUE:
+					{
+						return_code=get_FE_nodal_float_value(node,
+							&fe_field_component,data->version_number,
+							data->nodal_value_type,&float_value);
+						field->values[i] = (FE_value)float_value;
+					} break;
+					case INT_VALUE:
+					{
+						return_code=get_FE_nodal_int_value(node,&fe_field_component,
+							data->version_number,data->nodal_value_type,&int_value);
+						field->values[i] = (FE_value)int_value;
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_evaluate_cache_at_node.  "
+							"Unsupported value type %s in node_value field",
+							Value_type_string(value_type));
+						return_code=0;
+					}
+				}
+			}
+			else
+			{
+				/* use 0 for all undefined components */
+				field->values[i]=0.0;
+			}
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_evaluate_cache_at_node.  "
+				"Error evaluating node_value field at node");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_value_evaluate_cache_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_value_evaluate_cache_at_node */
+
+#define Computed_field_node_value_evaluate_cache_in_element \
+   (Computed_field_evaluate_cache_in_element_function)NULL;
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Cannot evaluate node_value in elements
+==============================================================================*/
+
+char *Computed_field_node_value_evaluate_as_string_at_node(struct Computed_field *field,
+	int component_number, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+{
+	char *return_string, *temp_string;
+	int error, i;
+	struct Computed_field_node_value_type_specific_data *data;
+
+	ENTER(Computed_field_node_value_evaluate_as_string_at_node);
+	return_string = (char *)NULL;
+	if (field && node && (data = 
+		(struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (FE_VALUE_VALUE == get_FE_field_value_type(data->fe_field))
+		{
+			/* Then we can just use the default function and therefore use the
+				values if they are already in the cache */
+			return_string = Computed_field_default_evaluate_as_string_at_node(
+				field, component_number, node);
+		}
+		else
+		{
+			if (-1 == component_number)
+			{
+				if (get_FE_nodal_value_as_string(node,data->fe_field,
+					/*component_number*/0,data->version_number,
+					data->nodal_value_type,&return_string))
+				{
+					error=0;
+					for (i=1;i<field->number_of_components;i++)
+					{
+						if (get_FE_nodal_value_as_string(node,data->fe_field,
+							i, data->version_number, data->nodal_value_type,
+							&temp_string))
+						{
+							append_string(&return_string,",",&error);
+							append_string(&return_string,temp_string,&error);
+							DEALLOCATE(temp_string);
+						}
+					}
+				}
+			}
+			else
+			{
+				if (get_FE_nodal_value_as_string(node,data->fe_field,
+					component_number, data->version_number,
+					data->nodal_value_type,&return_string))
+				{
+					error=0;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_value_evaluate_as_string_at_node.  "
+			"Invalid arguments.");
+		return_string = (char *)NULL;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Computed_field_node_value_evaluate_as_string_at_node */
+
+#define Computed_field_node_value_evaluate_as_string_in_element \
+   (Computed_field_evaluate_as_string_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+int Computed_field_node_value_set_values_at_node(struct Computed_field *field,
+	struct FE_node *node,FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Sets the <values> of the computed <field> at <node>.
+==============================================================================*/
+{
+	double double_value;
+	enum Value_type value_type;
+	float float_value;
+	int i,int_value,j,return_code;
+	struct Computed_field_node_value_type_specific_data *data;
+	struct FE_field_component fe_field_component;
+
+	ENTER(Computed_field_node_value_set_values_at_node);
+	if (field&&node&&values && (data = 
+		(struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data))
+	{
+		return_code=1;
+
+		fe_field_component.field=data->fe_field;
+		value_type=get_FE_field_value_type(data->fe_field);
+		for (i=0;(i<field->number_of_components)&&return_code;i++)
+		{
+			fe_field_component.number=i;
+			/* only set nodal value/versions that exist */
+			if (FE_nodal_value_version_exists(node,&fe_field_component,
+				data->version_number,data->nodal_value_type))
+			{
+				switch (value_type)
+				{
+					case DOUBLE_VALUE:
+					{
+						double_value=(double)values[i];
+						return_code=set_FE_nodal_double_value(node,
+							&fe_field_component,j,data->nodal_value_type,double_value);
+					} break;
+					case FE_VALUE_VALUE:
+					{
+						return_code=set_FE_nodal_FE_value_value(node,
+							&fe_field_component,j,data->nodal_value_type,values[i]);
+					} break;
+					case FLT_VALUE:
+					{
+						float_value=(float)values[i];
+						return_code=set_FE_nodal_float_value(node,
+							&fe_field_component,j,data->nodal_value_type,float_value);
+					} break;
+					case INT_VALUE:
+					{
+						int_value=(int)floor(values[i]+0.5);
+						return_code=set_FE_nodal_float_value(node,
+							&fe_field_component,j,data->nodal_value_type,int_value);
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_set_values_at_node.  "
+							"Could not set finite_element field %s at node",field->name);
+						return_code=0;
+					}
+				}
+			}
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_set_values_at_node.  "
+				"Could not set node_value field at node",field->name);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_value_set_values_at_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_value_set_values_at_node */
+
+#define Computed_field_node_value_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+	
+#define Computed_field_node_value_get_native_discretization_in_element \
+   (Computed_field_get_native_discretization_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+#define Computed_field_node_value_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+static int list_Computed_field_node_value(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *field_name;
+	int return_code;
+	struct Computed_field_node_value_type_specific_data *data;
+
+	ENTER(List_Computed_field_node_value);
+	if (field && (data = 
+		(struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (return_code=GET_NAME(FE_field)(data->fe_field,&field_name))
+		{
+			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
+			display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
+				get_FE_nodal_value_type_string(data->nodal_value_type));
+			display_message(INFORMATION_MESSAGE,"    version : %d\n",
+				data->version_number+1);
+			DEALLOCATE(field_name);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_node_value.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_node_value */
+
+static int list_Computed_field_node_value_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *field_name;
+	int return_code;
+	struct Computed_field_node_value_type_specific_data *data;
+
+	ENTER(list_Computed_field_node_value_commands);
+	if (field && (data = 
+		(struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (return_code=GET_NAME(FE_field)(data->fe_field,&field_name))
+		{
+			display_message(INFORMATION_MESSAGE," fe_field %s %s version %d",
+				field_name,
+				get_FE_nodal_value_type_string(data->nodal_value_type),
+				data->version_number+1);
+			DEALLOCATE(field_name);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_node_value_commands.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_node_value_commands */
+
+int Computed_field_set_type_node_value(struct Computed_field *field,
+	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
+	int version_number)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_NODE_VALUE, returning the values for the
+given <nodal_value_type> and <version_number> of <fe_field> at a node.
+Makes the number of components the same as in the <fe_field>.
+Field automatically takes the coordinate system of the source fe_field. See note
+at start of this file about changing use of coordinate systems.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	char **component_names;
+	int i, number_of_components, return_code;
+	struct Computed_field_node_value_type_specific_data *data;
+
+	ENTER(Computed_field_set_type_node_value);
+	if (field&&fe_field)
+	{
+		return_code=1;
+		number_of_components = get_FE_field_number_of_components(fe_field);
+		/* 1. make dynamic allocations for any new type-specific data */
+		if (ALLOCATE(component_names, char *, number_of_components))
+		{
+			for (i = 0 ; i < number_of_components; i++)
+			{
+				if (!(component_names[i]=get_FE_field_component_name(fe_field,i)))
+				{
+					return_code = 0;
+				}
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+		if (return_code &&
+			ALLOCATE(data,struct Computed_field_node_value_type_specific_data, 1))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = computed_field_node_value_type_string;
+			field->number_of_components = number_of_components;
+			field->component_names = component_names;
+			field->type_specific_data = (void *)data;
+			data->fe_field = ACCESS(FE_field)(fe_field);
+			data->nodal_value_type=nodal_value_type;
+			data->version_number=version_number;
+
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_node_value_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_node_value_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_node_value_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_node_value_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_node_value_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_node_value_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_node_value_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_node_value_can_be_destroyed;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_node_value_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_node_value_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_node_value_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_node_value_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_node_value_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_node_value_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_node_value_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_node_value_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_node_value;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_node_value_commands;
+		}
+		else
+		{
+			for (i = 0 ; i < number_of_components ; i++)
+			{
+				if (component_names[i])
+				{
+					DEALLOCATE(component_names[i]);
+				}
+			}
+			DEALLOCATE(component_names);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_node_value.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_node_value */
+
+int Computed_field_get_type_node_value(struct Computed_field *field,
+	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
+	int *version_number)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_NODE_VALUE, the FE_field being
+"wrapped" by it is returned - otherwise an error is reported.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_node_value_type_specific_data *data;
+
+	ENTER(Computed_field_get_type_node_value);
+	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
+		(field->type_string==computed_field_node_value_type_string) 
+		&& (data = (struct Computed_field_node_value_type_specific_data *)
+		field->type_specific_data))
+	{
+		*fe_field=data->fe_field;
+		*nodal_value_type=data->nodal_value_type;
+		*version_number=data->version_number;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_node_value.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_node_value */
+
+static int define_Computed_field_type_node_value(struct Parse_state *state,
+	void *field_void,void *computed_field_finite_element_package_void)
+/*******************************************************************************
+LAST MODIFIED : 19 July 2000
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_NODE_VALUE (if it is not already)
+and allows its contents to be modified.
+==============================================================================*/
+{
+	char *current_token, *nodal_value_type_string;
+	enum FE_nodal_value_type nodal_value_type;
+	int return_code,version_number;
+	static char *nodal_value_type_strings[] =
+	{
+	  "value",
+	  "d/ds1",
+	  "d/ds2",
+	  "d/ds3",
+	  "d2/ds1ds2",
+	  "d2/ds1ds3",
+	  "d2/ds2ds3",
+	  "d3/ds1ds2ds3"
+	};
+	struct Computed_field *field;
+	struct Computed_field_finite_element_package 
+		*computed_field_finite_element_package;
+	struct FE_field *fe_field;
+	struct Option_table *option_table;
+
+	ENTER(define_Computed_field_type_node_value);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_finite_element_package=
+		(struct Computed_field_finite_element_package *)
+		computed_field_finite_element_package_void))
+	{
+		return_code=1;
+		fe_field=(struct FE_field *)NULL;
+		nodal_value_type=FE_NODAL_UNKNOWN;
+		/* user enters version number starting at 1; field stores it as 0 */
+		version_number=1;
+		if (computed_field_node_value_type_string ==
+		  Computed_field_get_type_string(field))
+		{
+			return_code=Computed_field_get_type_node_value(field,&fe_field,
+				&nodal_value_type,&version_number);
+			version_number++;
+		}
+		if (return_code)
+		{
+			/* have ACCESS/DEACCESS because set_FE_field does */
+			if (fe_field)
+			{
+				ACCESS(FE_field)(fe_field);
+			}
+			/* try to handle help first */
+			if (current_token=state->current_token)
+			{
+				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
+				{
+					option_table=CREATE(Option_table)();
+					/* fe_field */
+					Option_table_add_entry(option_table,"fe_field", &fe_field,
+					  &computed_field_finite_element_package->fe_field_manager,
+					  set_FE_field);
+					/* nodal_value_type */
+					nodal_value_type_string=nodal_value_type_strings[0];
+					Option_table_add_enumerator(option_table,
+					  sizeof(nodal_value_type_strings)/sizeof(char *),
+					  nodal_value_type_strings,&nodal_value_type_string);
+					/* version_number */
+					Option_table_add_entry(option_table,"version", &version_number,
+					  NULL, set_int_positive);
+					return_code=Option_table_multi_parse(option_table,state);
+					DESTROY(Option_table)(&option_table);
+				}
+			}
+			/* parse the fe_field if the "fe_field" token is next */
+			if (return_code)
+			{
+				if ((current_token=state->current_token)&&
+					fuzzy_string_compare(current_token,"fe_field"))
+				{
+					option_table=CREATE(Option_table)();
+					/* fe_field */
+					Option_table_add_entry(option_table,"fe_field", &fe_field,
+					  &computed_field_finite_element_package->fe_field_manager,
+					  set_FE_field);
+					if (return_code=Option_table_parse(option_table,state))
+					{
+						if (!fe_field)
+						{
+							display_parse_state_location(state);
+							display_message(ERROR_MESSAGE,"Missing or invalid fe_field");
+							return_code=0;
+						}
+					}
+					DESTROY(Option_table)(&option_table);
+				}
+				else
+				{
+					display_parse_state_location(state);
+					display_message(ERROR_MESSAGE,
+						"Must specify fe_field before other options");
+					return_code=0;
+				}
+			}
+			/* parse the value_type/version number */
+			if (return_code&&state->current_token)
+			{
+			  option_table=CREATE(Option_table)();
+			  /* nodal_value_type */
+			  nodal_value_type_string=nodal_value_type_strings[0];
+			  Option_table_add_enumerator(option_table,
+				 sizeof(nodal_value_type_strings)/sizeof(char *),
+				 nodal_value_type_strings,&nodal_value_type_string);
+			  /* version_number */
+			  Option_table_add_entry(option_table,"version", &version_number,
+				 NULL, set_int_positive);
+			  return_code=Option_table_multi_parse(option_table,state);
+			  DESTROY(Option_table)(&option_table);
+			}
+			if (return_code)
+			{
+				if (nodal_value_type_string == nodal_value_type_strings[0])
+				{
+					nodal_value_type = FE_NODAL_VALUE;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[1])
+				{
+					nodal_value_type = FE_NODAL_D_DS1;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[2])
+				{
+					nodal_value_type = FE_NODAL_D_DS2;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[3])
+				{
+					nodal_value_type = FE_NODAL_D_DS3;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[4])
+				{
+					nodal_value_type = FE_NODAL_D2_DS1DS2;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[5])
+				{
+					nodal_value_type = FE_NODAL_D2_DS1DS3;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[6])
+				{
+					nodal_value_type = FE_NODAL_D2_DS2DS3;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[7])
+				{
+					nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_node_value.  "
+						"Unknown nodal value string.");
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				/* user enters version number starting at 1; field stores it as 0 */
+				if (return_code=Computed_field_set_type_node_value(field,fe_field,
+					nodal_value_type,version_number-1))
+				{
+					Computed_field_set_coordinate_system(field,
+						get_FE_field_coordinate_system(fe_field));
+				}
+			}
+			if (!return_code)
+			{
+				if ((!state->current_token)||
+					(strcmp(PARSER_HELP_STRING,state->current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+				{
+					/* error */
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_node_value.  Failed");
+				}
+			}
+			if (fe_field)
+			{
+				DEACCESS(FE_field)(&fe_field);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_node_value.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_node_value */
+
+/*******************************************************************************
+COMPUTED_FIELD_TYPE: node_array_value_at_time
+
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Returns the values for the given <nodal_value_type> and <version_number> 
+of <fe_field> at a node.
+Makes the number of components the same as in the <fe_field>.
+==============================================================================*/
+
+struct Computed_field_node_array_value_at_time_type_specific_data
+{
+	struct FE_field *fe_field;
+	enum FE_nodal_value_type nodal_value_type;
+	int version_number;
+};
+
+static char computed_field_node_array_value_at_time_type_string[] = "node_array_value_at_time";
+
+int Computed_field_is_type_node_array_value_at_time(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_node_array_value_at_time);
+	if (field)
+	{
+		return_code = (field->type_string == computed_field_node_array_value_at_time_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_node_array_value_at_time.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_node_array_value_at_time */
+
+static int Computed_field_node_array_value_at_time_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_node_array_value_at_time_type_specific_data *data;
+
+	ENTER(Computed_field_node_array_value_at_time_clear_type_specific);
+	if (field&& (data = 
+		(struct Computed_field_node_array_value_at_time_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (data->fe_field)
+		{
+			DEACCESS(FE_field)(&(data->fe_field));
+		}
+		
+		DEALLOCATE(field->type_specific_data);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_array_value_at_time_clear_type_specific.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_array_value_at_time_clear_type_specific */
+
+static void *Computed_field_node_array_value_at_time_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	struct Computed_field_node_array_value_at_time_type_specific_data *destination,
+		*source;
+
+	ENTER(Computed_field_node_array_value_at_time_copy_type_specific);
+	if (field && (source = 
+		(struct Computed_field_node_array_value_at_time_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (ALLOCATE(destination,
+			struct Computed_field_node_array_value_at_time_type_specific_data, 1))
+		{
+			if (source->fe_field)
+			{
+				destination->fe_field=ACCESS(FE_field)(source->fe_field);
+			}
+			destination->nodal_value_type=source->nodal_value_type;
+			destination->version_number=source->version_number;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_node_array_value_at_time_copy_type_specific.  "
+				"Unable to allocate memory.");
+			destination = NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_array_value_at_time_copy_type_specific.  "
+			"Invalid arguments.");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_node_array_value_at_time_copy_type_specific */
+
+#define Computed_field_node_array_value_at_time_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+static int Computed_field_node_array_value_at_time_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_node_array_value_at_time_type_specific_data *data, *other_data;
+
+	ENTER(Computed_field_node_array_value_at_time_type_specific_contents_match);
+	if (field && other_computed_field && (data = 
+		(struct Computed_field_node_array_value_at_time_type_specific_data *)
+		field->type_specific_data) && (other_data = 
+		(struct Computed_field_node_array_value_at_time_type_specific_data *)
+		other_computed_field->type_specific_data))
+	{
+		return_code = ((data->fe_field == other_data->fe_field)
+			&& (data->nodal_value_type == other_data->nodal_value_type)
+			&& (data->version_number == other_data->version_number));
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_array_value_at_time_type_specific_contents_match */
+
+int Computed_field_node_array_value_at_time_is_defined_in_element(struct Computed_field *field,
+	struct FE_element *element)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_node_array_value_at_time_is_defined_in_element);
+	if (field && element)
+	{
+		return_code=0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_array_value_at_time_is_defined_in_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_array_value_at_time_is_defined_in_element */
+
+int Computed_field_node_array_value_at_time_is_defined_at_node(struct Computed_field *field,
+	struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Check the fe_field
+==============================================================================*/
+{
+	int comp_no,return_code;
+	struct Computed_field_node_array_value_at_time_type_specific_data *data;
+	struct FE_field_component fe_field_component;
+
+	ENTER(Computed_field_node_array_value_at_time_is_defined_at_node);
+	if (field && node && (data = 
+		(struct Computed_field_node_array_value_at_time_type_specific_data *)
+		field->type_specific_data))
+	{
+		return_code=0;
+		/* Check the source fields */
+		if (Computed_field_default_is_defined_at_node(field,node))
+		{
+			if (FE_field_is_defined_at_node(data->fe_field,node))
+			{
+				/* must ensure at least one component of version_number,
+					nodal_value_type defined at node */
+				fe_field_component.field=data->fe_field;
+				for (comp_no=0;(comp_no<field->number_of_components)&&(!return_code);
+					  comp_no++)
+				{
+					fe_field_component.number=comp_no;
+					if (FE_nodal_value_version_exists(node,&fe_field_component,
+					data->version_number,data->nodal_value_type))
+					{
+						return_code=1;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_array_value_at_time_is_defined_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_array_value_at_time_is_defined_at_node */
+
+int Computed_field_node_array_value_at_time_has_numerical_components(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_node_array_value_at_time_type_specific_data *data;
+
+	ENTER(Computed_field_node_array_value_at_time_has_numerical_components);
+	if (field && (data = 
+		(struct Computed_field_node_array_value_at_time_type_specific_data *)
+		field->type_specific_data))
+	{
+		return_code=Value_type_is_numeric_simple(
+			get_FE_field_value_type(data->fe_field));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_array_value_at_time_has_numerical_components.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_node_array_value_at_time_has_numerical_components */
+
+int Computed_field_node_array_value_at_time_can_be_destroyed(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_node_array_value_at_time_type_specific_data *data;
+	struct FE_field *temp_fe_field;
+
+	ENTER(Computed_field_node_array_value_at_time_can_be_destroyed);
+	if (field && (data = 
+		(struct Computed_field_node_array_value_at_time_type_specific_data *)
+		field->type_specific_data))
+	{
+		/* check the fe_field can be destroyed */
+		temp_fe_field=data->fe_field;
+		DEACCESS(FE_field)(&temp_fe_field);
+		return_code=FE_field_can_be_destroyed(data->fe_field);
+		ACCESS(FE_field)(data->fe_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_array_value_at_time_can_be_destroyed.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_node_array_value_at_time_can_be_destroyed */
+
+static int Computed_field_node_array_value_at_time_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	enum Value_type value_type;
+	int i, return_code;
+	short short_value;
+	struct Computed_field_node_array_value_at_time_type_specific_data *data;
+	struct FE_field_component fe_field_component;
+
+	ENTER(Computed_field_node_array_value_at_time_evaluate_cache_at_node);
+	if (field && node && (data = 
+		(struct Computed_field_node_array_value_at_time_type_specific_data *)
+		field->type_specific_data))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_node(field, node))
+		{
+			/* 2. Calculate the field */
+			fe_field_component.field=data->fe_field;
+			value_type=get_FE_field_value_type(data->fe_field);
+			for (i=0;(i<field->number_of_components)&&return_code;i++)
+			{
+				fe_field_component.number=i;
+				if (FE_nodal_value_version_exists(node,&fe_field_component,
+					data->version_number,data->nodal_value_type))
+				{
+					switch (value_type)
+					{									
+						case FE_VALUE_ARRAY_VALUE:
+						{										
+							return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
+								&fe_field_component,data->version_number,
+								data->nodal_value_type,/*time*/field->source_fields[0]->values[0],
+								&(field->values[i]));									
+						} break;
+								
+						case SHORT_ARRAY_VALUE:
+						{
+							return_code=get_FE_nodal_short_array_value_at_FE_value_time(
+								node,&fe_field_component,data->version_number,
+								data->nodal_value_type,/*time*/field->source_fields[0]->values[0],
+								&short_value);
+							field->values[i] = (FE_value)short_value;									
+						} break;	
+						case DOUBLE_ARRAY_VALUE: 				
+						case FLT_ARRAY_VALUE:
+						case INT_ARRAY_VALUE:			
+						case UNSIGNED_ARRAY_VALUE:
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_node_array_value_at_time_evaluate_cache_at_node. "
+								"value type %s not yet supported. Write the code!",
+								Value_type_string(value_type));
+							return_code=0;
+						}break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"Computed_field_node_array_value_at_time_evaluate_cache_at_node.  "
+								"Unsupported value type %s in node_value field",
+								Value_type_string(value_type));
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					/* use 0 for all undefined components */
+					field->values[i]=0.0;
+				}
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_node_array_value_at_time_evaluate_cache_at_node.  "
+					"Error evaluating node_value field at node");
+			}
+		  
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_array_value_at_time_evaluate_cache_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_array_value_at_time_evaluate_cache_at_node */
+
+#define Computed_field_node_array_value_at_time_evaluate_cache_in_element \
+   (Computed_field_evaluate_cache_in_element_function)NULL;
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Cannot evaluate node_array_value_at_time in elements
+==============================================================================*/
+
+#define Computed_field_node_array_value_at_time_evaluate_as_string_at_node \
+   Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_node_array_value_at_time_evaluate_as_string_in_element \
+   (Computed_field_evaluate_as_string_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+int Computed_field_node_array_value_at_time_set_values_at_node(struct Computed_field *field,
+	struct FE_node *node,FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Sets the <values> of the computed <field> at <node>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_node_array_value_at_time_set_values_at_node);
+	if (field&&node&&values)
+	{
+		return_code=0;
+
+		display_message(ERROR_MESSAGE,"Computed_field_node_array_value_at_time_set_values_at_node. "
+			" %s not implemented yet. Write the code!",field->name);
+		/* If we ever need to write the code for this, make it so that we set the array */
+		/* values based upon the field->time ONLY if the time correspondes EXACTLY to an*/
+		/* array index. No "taking the nearest one" or anything nasty like that */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_node_array_value_at_time_set_values_at_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_node_array_value_at_time_set_values_at_node */
+
+#define Computed_field_node_array_value_at_time_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+	
+#define Computed_field_node_array_value_at_time_get_native_discretization_in_element \
+   (Computed_field_get_native_discretization_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+#define Computed_field_node_array_value_at_time_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+static int list_Computed_field_node_array_value_at_time(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *field_name;
+	int return_code;
+	struct Computed_field_node_array_value_at_time_type_specific_data *data;
+
+	ENTER(List_Computed_field_node_array_value_at_time);
+	if (field && (data = 
+		(struct Computed_field_node_array_value_at_time_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (return_code=GET_NAME(FE_field)(data->fe_field,&field_name))
+		{
+			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
+			display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
+				get_FE_nodal_value_type_string(data->nodal_value_type));
+			display_message(INFORMATION_MESSAGE,
+				"    time field : %s\n",field->source_fields[0]->name);
+			display_message(INFORMATION_MESSAGE,"    version : %d\n",
+				data->version_number+1);
+			DEALLOCATE(field_name);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_node_array_value_at_time.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_node_array_value_at_time */
+
+static int list_Computed_field_node_array_value_at_time_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *field_name;
+	int return_code;
+	struct Computed_field_node_array_value_at_time_type_specific_data *data;
+
+	ENTER(list_Computed_field_node_array_value_at_time_commands);
+	if (field && (data = 
+		(struct Computed_field_node_array_value_at_time_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (return_code=GET_NAME(FE_field)(data->fe_field,&field_name))
+		{
+			display_message(INFORMATION_MESSAGE," fe_field %s %s time %s version %d",
+				field_name,
+				get_FE_nodal_value_type_string(data->nodal_value_type),
+				field->source_fields[0]->name,data->version_number+1);
+			DEALLOCATE(field_name);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_node_array_value_at_time_commands.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_node_array_value_at_time_commands */
+
+int Computed_field_set_type_node_array_value_at_time(struct Computed_field *field,
+	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
+	int version_number,struct Computed_field *time_field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, returning the values for the
+given <nodal_value_type> and <version_number> of <fe_field> at a node.
+Makes the number of components the same as in the <fe_field>.
+Field automatically takes the coordinate system of the source fe_field. See note
+at start of this file about changing use of coordinate systems.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	char **component_names;
+	int i, number_of_components, number_of_source_fields, return_code;
+	struct Computed_field **source_fields;
+	struct Computed_field_node_array_value_at_time_type_specific_data *data;
+
+	ENTER(Computed_field_set_type_node_array_value_at_time);
+	if (field&&fe_field&&(FE_NODAL_UNKNOWN!=nodal_value_type)&&
+		(0<=version_number)&&time_field&&(1==time_field->number_of_components))
+	{
+		return_code=1;
+		number_of_components = get_FE_field_number_of_components(fe_field);
+		/* 1. make dynamic allocations for any new type-specific data */
+		if (ALLOCATE(component_names, char *, number_of_components))
+		{
+			for (i = 0 ; i < number_of_components; i++)
+			{
+				if (!(component_names[i]=get_FE_field_component_name(fe_field,i)))
+				{
+					return_code = 0;
+				}
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+		number_of_source_fields=1;
+		source_fields = (struct Computed_field **)NULL;
+		if (return_code &&
+			ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields) &&
+			ALLOCATE(data,struct Computed_field_node_array_value_at_time_type_specific_data, 1))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = computed_field_node_array_value_at_time_type_string;
+			field->number_of_components = number_of_components;
+			field->component_names = component_names;
+			source_fields[0]=ACCESS(Computed_field)(time_field);
+			field->source_fields=source_fields;
+			field->number_of_source_fields=number_of_source_fields;
+			field->type_specific_data = (void *)data;
+			data->fe_field = ACCESS(FE_field)(fe_field);
+			data->nodal_value_type=nodal_value_type;
+			data->version_number=version_number;
+
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_node_array_value_at_time_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_node_array_value_at_time_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_node_array_value_at_time_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_node_array_value_at_time_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_node_array_value_at_time_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_node_array_value_at_time_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_node_array_value_at_time_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_node_array_value_at_time_can_be_destroyed;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_node_array_value_at_time_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_node_array_value_at_time_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_node_array_value_at_time_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_node_array_value_at_time_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_node_array_value_at_time_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_node_array_value_at_time_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_node_array_value_at_time_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_node_array_value_at_time_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_node_array_value_at_time;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_node_array_value_at_time_commands;
+		}
+		else
+		{
+			for (i = 0 ; i < number_of_components ; i++)
+			{
+				if (component_names[i])
+				{
+					DEALLOCATE(component_names[i]);
+				}
+			}
+			DEALLOCATE(component_names);
+			DEALLOCATE(source_fields);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_node_array_value_at_time.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_node_array_value_at_time */
+
+int Computed_field_get_type_node_array_value_at_time(struct Computed_field *field,
+	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
+	int *version_number,struct Computed_field **time_field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, the FE_field being
+"wrapped" by it is returned - otherwise an error is reported.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_node_array_value_at_time_type_specific_data *data;
+
+	ENTER(Computed_field_get_type_node_array_value_at_time);
+	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
+		(field->type_string==computed_field_node_array_value_at_time_type_string) 
+		&& (data = (struct Computed_field_node_array_value_at_time_type_specific_data *)
+		field->type_specific_data))
+	{
+		*fe_field=data->fe_field;
+		*nodal_value_type=data->nodal_value_type;
+		*version_number=data->version_number;
+		*time_field=field->source_fields[0];
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_node_array_value_at_time.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_node_array_value_at_time */
+
+static int define_Computed_field_type_node_array_value_at_time(struct Parse_state *state,
+	void *field_void,void *computed_field_finite_element_package_void)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME (if it is not already)
+and allows its contents to be modified.
+==============================================================================*/
+{
+	char *current_token, *nodal_value_type_string;
+	enum FE_nodal_value_type nodal_value_type;
+	int return_code,version_number;
+	static char *nodal_value_type_strings[] =
+	{
+	  "value",
+	  "d/ds1",
+	  "d/ds2",
+	  "d/ds3",
+	  "d2/ds1ds2",
+	  "d2/ds1ds3",
+	  "d2/ds2ds3",
+	  "d3/ds1ds2ds3"
+	};
+	struct Computed_field *field, *time_field;
+	struct Computed_field_finite_element_package 
+		*computed_field_finite_element_package;
+	struct FE_field *fe_field;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_time_field_data;
+
+	ENTER(define_Computed_field_type_node_array_value_at_time);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_finite_element_package=
+		(struct Computed_field_finite_element_package *)
+		computed_field_finite_element_package_void))
+	{
+		return_code=1;
+		fe_field=(struct FE_field *)NULL;
+		nodal_value_type=FE_NODAL_UNKNOWN;
+		/* user enters version number starting at 1; field stores it as 0 */
+		version_number=1;
+		/* get valid parameters for projection field */
+		set_time_field_data.computed_field_manager=
+			computed_field_finite_element_package->computed_field_manager;
+		set_time_field_data.conditional_function=Computed_field_is_scalar;
+		set_time_field_data.conditional_function_user_data=(void *)NULL;
+		time_field = (struct Computed_field *)NULL;
+		if (computed_field_node_array_value_at_time_type_string ==
+		  Computed_field_get_type_string(field))
+		{
+			return_code=Computed_field_get_type_node_array_value_at_time(field,&fe_field,
+				&nodal_value_type,&version_number,&time_field);
+			version_number++;
+		}
+		if (return_code)
+		{
+			/* have ACCESS/DEACCESS because set_FE_field does */
+			if (fe_field)
+			{
+				ACCESS(FE_field)(fe_field);
+			}
+			if (time_field)
+			{
+				ACCESS(Computed_field)(time_field);
+			}
+			/* try to handle help first */
+			if (current_token=state->current_token)
+			{
+				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
+				{
+					option_table=CREATE(Option_table)();
+					/* fe_field */
+					Option_table_add_entry(option_table,"fe_field", &fe_field,
+					  &computed_field_finite_element_package->fe_field_manager,
+					  set_FE_field);
+					/* nodal_value_type */
+					nodal_value_type_string=nodal_value_type_strings[0];
+					Option_table_add_enumerator(option_table,
+					  sizeof(nodal_value_type_strings)/sizeof(char *),
+					  nodal_value_type_strings,&nodal_value_type_string);
+					/* time */
+					Option_table_add_entry(option_table,"time",&time_field,
+						&set_time_field_data,set_Computed_field_conditional);
+					/* version_number */
+					Option_table_add_entry(option_table,"version", &version_number,
+					  NULL, set_int_positive);
+					return_code=Option_table_multi_parse(option_table,state);
+					DESTROY(Option_table)(&option_table);
+				}
+			}
+			/* parse the fe_field if the "fe_field" token is next */
+			if (return_code)
+			{
+				if ((current_token=state->current_token)&&
+					fuzzy_string_compare(current_token,"fe_field"))
+				{
+					option_table=CREATE(Option_table)();
+					/* fe_field */
+					Option_table_add_entry(option_table,"fe_field", &fe_field,
+					  &computed_field_finite_element_package->fe_field_manager,
+					  set_FE_field);
+					if (return_code=Option_table_parse(option_table,state))
+					{
+						if (!fe_field)
+						{
+							display_parse_state_location(state);
+							display_message(ERROR_MESSAGE,"Missing or invalid fe_field");
+							return_code=0;
+						}
+					}
+					DESTROY(Option_table)(&option_table);
+				}
+				else
+				{
+					display_parse_state_location(state);
+					display_message(ERROR_MESSAGE,
+						"Must specify fe_field before other options");
+					return_code=0;
+				}
+			}
+			/* parse the value_type/version number */
+			if (return_code&&state->current_token)
+			{
+			  option_table=CREATE(Option_table)();
+			  /* nodal_value_type */
+			  nodal_value_type_string=nodal_value_type_strings[0];
+			  Option_table_add_enumerator(option_table,
+				 sizeof(nodal_value_type_strings)/sizeof(char *),
+				 nodal_value_type_strings,&nodal_value_type_string);
+			  /* time */
+			  Option_table_add_entry(option_table,"time",&time_field,
+				  &set_time_field_data,set_Computed_field_conditional);
+			  /* version_number */
+			  Option_table_add_entry(option_table,"version", &version_number,
+				 NULL, set_int_positive);
+			  return_code=Option_table_multi_parse(option_table,state);
+			  DESTROY(Option_table)(&option_table);
+			}
+			if (return_code)
+			{
+				if (nodal_value_type_string == nodal_value_type_strings[0])
+				{
+					nodal_value_type = FE_NODAL_VALUE;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[1])
+				{
+					nodal_value_type = FE_NODAL_D_DS1;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[2])
+				{
+					nodal_value_type = FE_NODAL_D_DS2;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[3])
+				{
+					nodal_value_type = FE_NODAL_D_DS3;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[4])
+				{
+					nodal_value_type = FE_NODAL_D2_DS1DS2;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[5])
+				{
+					nodal_value_type = FE_NODAL_D2_DS1DS3;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[6])
+				{
+					nodal_value_type = FE_NODAL_D2_DS2DS3;
+				}
+				else if (nodal_value_type_string == nodal_value_type_strings[7])
+				{
+					nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_node_array_value_at_time.  "
+						"Unknown nodal value string.");
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				/* user enters version number starting at 1; field stores it as 0 */
+				if (return_code=Computed_field_set_type_node_array_value_at_time(field,fe_field,
+					nodal_value_type,version_number-1,time_field))
+				{
+					Computed_field_set_coordinate_system(field,
+						get_FE_field_coordinate_system(fe_field));
+				}
+			}
+			if (!return_code)
+			{
+				if ((!state->current_token)||
+					(strcmp(PARSER_HELP_STRING,state->current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+				{
+					/* error */
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_node_array_value_at_time.  Failed");
+				}
+			}
+			if (fe_field)
+			{
+				DEACCESS(FE_field)(&fe_field);
+			}
+			if (time_field)
+			{
+				DEACCESS(Computed_field)(&time_field);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_node_array_value_at_time.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_node_array_value_at_time */
+
+/*******************************************************************************
+COMPUTED_FIELD_TYPE: embedded
+
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Returns the values for the given <nodal_value_type> and <version_number> 
+of <fe_field> at a node.
+Makes the number of components the same as in the <fe_field>.
+==============================================================================*/
+
+struct Computed_field_embedded_type_specific_data
+{
+	struct FE_field *fe_field;
+	struct FE_element_field_values *fe_element_field_values;
+};
+
+static char computed_field_embedded_type_string[] = "embedded";
+
+int Computed_field_is_type_embedded(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_embedded);
+	if (field)
+	{
+		return_code = (field->type_string == computed_field_embedded_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_embedded.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_embedded */
+
+static int Computed_field_embedded_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_embedded_type_specific_data *data;
+
+	ENTER(Computed_field_embedded_clear_type_specific);
+	if (field&& (data = 
+		(struct Computed_field_embedded_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (data->fe_field)
+		{
+			DEACCESS(FE_field)(&(data->fe_field));
+		}
+		if (data->fe_element_field_values)
+		{
+			DEALLOCATE(data->fe_element_field_values);
+		}
+		
+		DEALLOCATE(field->type_specific_data);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_embedded_clear_type_specific.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_embedded_clear_type_specific */
+
+static void *Computed_field_embedded_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	struct Computed_field_embedded_type_specific_data *destination,
+		*source;
+
+	ENTER(Computed_field_embedded_copy_type_specific);
+	if (field && (source = 
+		(struct Computed_field_embedded_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (ALLOCATE(destination,
+			struct Computed_field_embedded_type_specific_data, 1))
+		{
+			if (source->fe_field)
+			{
+				destination->fe_field=ACCESS(FE_field)(source->fe_field);
+			}
+			destination->fe_element_field_values = 
+				(struct FE_element_field_values *)NULL;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_embedded_copy_type_specific.  "
+				"Unable to allocate memory.");
+			destination = NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_embedded_copy_type_specific.  "
+			"Invalid arguments.");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_embedded_copy_type_specific */
+
+int Computed_field_embedded_clear_cache_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_finite_element_type_specific_data *data;
+
+	ENTER(Computed_field_finite_element_clear_cache_type_specific);
+	if (field && (data = 
+		(struct Computed_field_finite_element_type_specific_data *)
+		field->type_specific_data))
+	{
+		if(data->fe_element_field_values&&data->fe_element_field_values->element)
+		{
+			clear_FE_element_field_values(data->fe_element_field_values);
+			/* clear element to indicate that values are clear */
+			data->fe_element_field_values->element=(struct FE_element *)NULL;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_embedded_clear_cache_type_specific.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_embedded_clear_cache_type_specific */
+
+static int Computed_field_embedded_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_embedded_type_specific_data *data, *other_data;
+
+	ENTER(Computed_field_embedded_type_specific_contents_match);
+	if (field && other_computed_field && (data = 
+		(struct Computed_field_embedded_type_specific_data *)
+		field->type_specific_data) && (other_data = 
+		(struct Computed_field_embedded_type_specific_data *)
+		other_computed_field->type_specific_data))
+	{
+		return_code = (data->fe_field == other_data->fe_field);
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_embedded_type_specific_contents_match */
+
+int Computed_field_embedded_is_defined_in_element(struct Computed_field *field,
+	struct FE_element *element)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_embedded_is_defined_in_element);
+	if (field && element)
+	{
+		return_code=0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_embedded_is_defined_in_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_embedded_is_defined_in_element */
+
+int Computed_field_embedded_is_defined_at_node(struct Computed_field *field,
+	struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Check the fe_field
+==============================================================================*/
+{
+	int comp_no,i,number_of_components,return_code;
+	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct Computed_field_embedded_type_specific_data *data;
+	struct FE_element *element;
+	struct FE_field_component fe_field_component;
+
+	ENTER(Computed_field_embedded_is_defined_at_node);
+	if (field && node && (data = 
+		(struct Computed_field_embedded_type_specific_data *)
+		field->type_specific_data))
+	{
+		return_code = 0;
+		if (FE_field_is_defined_at_node(data->fe_field,node))
+		{
+			return_code=1;
+			fe_field_component.field=data->fe_field;
+			number_of_components=
+				get_FE_field_number_of_components(data->fe_field);
+			for (comp_no=0;(comp_no<number_of_components)&&return_code;comp_no++)
+			{
+				fe_field_component.number=comp_no;
+				if (FE_nodal_value_version_exists(node,&fe_field_component,
+					/*version_number*/0,FE_NODAL_VALUE)&&
+					get_FE_nodal_element_xi_value(node,data->fe_field,comp_no,
+					 /*version_number*/0,FE_NODAL_VALUE,&element,xi))
+				{
+					for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
+					{
+						if (!Computed_field_is_defined_in_element(
+							field->source_fields[i],element))
+						{
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_embedded_is_defined_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_embedded_is_defined_at_node */
+
+int Computed_field_embedded_has_numerical_components(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_embedded_has_numerical_components);
+	if (field)
+	{
+		return_code=Computed_field_has_numerical_components(
+			field->source_fields[0],(void *)NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_embedded_has_numerical_components.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_embedded_has_numerical_components */
+
+int Computed_field_embedded_can_be_destroyed(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_embedded_type_specific_data *data;
+	struct FE_field *temp_fe_field;
+
+	ENTER(Computed_field_embedded_can_be_destroyed);
+	if (field && (data = 
+		(struct Computed_field_embedded_type_specific_data *)
+		field->type_specific_data))
+	{
+		/* check the fe_field can be destroyed */
+		temp_fe_field=data->fe_field;
+		DEACCESS(FE_field)(&temp_fe_field);
+		return_code=FE_field_can_be_destroyed(data->fe_field);
+		ACCESS(FE_field)(data->fe_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_embedded_can_be_destroyed.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_embedded_can_be_destroyed */
+
+static int Computed_field_embedded_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int i, return_code;
+	struct Computed_field_embedded_type_specific_data *data;
+	struct FE_element *element;
+
+	ENTER(Computed_field_embedded_evaluate_cache_at_node);
+	if (field && node && (data = 
+		(struct Computed_field_embedded_type_specific_data *)
+		field->type_specific_data))
+	{
+		return_code = 1;
+		if (get_FE_nodal_element_xi_value(node,
+			data->fe_field, /* component */ 0,
+			/* version */ 0, FE_NODAL_VALUE, &element, xi))
+		{
+			/* now calculate source_fields[0] */
+			if(Computed_field_evaluate_cache_in_element(
+				field->source_fields[0],element,xi,(struct FE_element *)NULL,0))
+			{
+				for (i=0;i<field->number_of_components;i++)
+				{
+					field->values[i] = field->source_fields[0]->values[i];
+				}
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_embedded_evaluate_cache_at_node.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_embedded_evaluate_cache_at_node */
+
+#define Computed_field_embedded_evaluate_cache_in_element \
+   (Computed_field_evaluate_cache_in_element_function)NULL;
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Cannot evaluate embedded in elements
+==============================================================================*/
+
+#define Computed_field_embedded_evaluate_as_string_at_node \
+   Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_embedded_evaluate_as_string_in_element \
+   (Computed_field_evaluate_as_string_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+int Computed_field_embedded_set_values_at_node(struct Computed_field *field,
+	struct FE_node *node,FE_value *values)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Sets the <values> of the computed <field> at <node>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_embedded_set_values_at_node);
+	if (field&&node&&values)
+	{
+		return_code=0;
+
+		display_message(ERROR_MESSAGE,"Computed_field_embedded_set_values_at_node. "
+			" %s not implemented yet. Write the code!",field->name);
+		/* If we ever need to write the code for this, make it so that we set the array */
+		/* values based upon the field->time ONLY if the time correspondes EXACTLY to an*/
+		/* array index. No "taking the nearest one" or anything nasty like that */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_embedded_set_values_at_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_embedded_set_values_at_node */
+
+#define Computed_field_embedded_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+	
+#define Computed_field_embedded_get_native_discretization_in_element \
+   (Computed_field_get_native_discretization_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+#define Computed_field_embedded_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+static int list_Computed_field_embedded(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *field_name;
+	int return_code;
+	struct Computed_field_embedded_type_specific_data *data;
+
+	ENTER(List_Computed_field_embedded);
+	if (field && (data = 
+		(struct Computed_field_embedded_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (return_code=GET_NAME(FE_field)(data->fe_field,&field_name))
+		{
+			display_message(INFORMATION_MESSAGE,"    element_xi fe_field: %s\n",field_name);
+			DEALLOCATE(field_name);
+			display_message(INFORMATION_MESSAGE,
+				"    field : %s\n",field->source_fields[0]->name);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_embedded.  Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_embedded */
+
+static int list_Computed_field_embedded_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *field_name;
+	int return_code;
+	struct Computed_field_embedded_type_specific_data *data;
+
+	ENTER(list_Computed_field_embedded_commands);
+	if (field && (data = 
+		(struct Computed_field_embedded_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (return_code=GET_NAME(FE_field)(data->fe_field,&field_name))
+		{
+			display_message(INFORMATION_MESSAGE," element_xi %s field %s",field_name,
+				field->source_fields[0]->name);
+			DEALLOCATE(field_name);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_embedded_commands.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_embedded_commands */
+
+int Computed_field_set_type_embedded(struct Computed_field *field,
+	struct FE_field *fe_field,struct Computed_field *source_field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_EMBEDDED, wrapping the given
+<fe_field>. Makes the number of components the same as in the <fe_field>.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int number_of_source_fields, return_code;
+	struct Computed_field **source_fields;
+	struct Computed_field_embedded_type_specific_data *data;
+
+	ENTER(Computed_field_set_type_embedded);
+	if (field&&fe_field&&source_field)
+	{
+		return_code=1;
+		number_of_source_fields=1;
+		source_fields = (struct Computed_field **)NULL;
+		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields) &&
+			ALLOCATE(data,struct Computed_field_embedded_type_specific_data, 1))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type=COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = computed_field_embedded_type_string;
+			field->number_of_components = source_field->number_of_components;
+			source_fields[0]=ACCESS(Computed_field)(source_field);
+			field->source_fields=source_fields;
+			field->number_of_source_fields=number_of_source_fields;
+			field->type_specific_data = (void *)data;
+			data->fe_field = ACCESS(FE_field)(fe_field);
+			data->fe_element_field_values = (struct FE_element_field_values *)NULL;
+
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_embedded_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_embedded_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_embedded_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_embedded_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_embedded_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_embedded_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_embedded_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_embedded_can_be_destroyed;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_embedded_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_embedded_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_embedded_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_embedded_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_embedded_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_embedded_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_embedded_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_embedded_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_embedded;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_embedded_commands;
+		}
+		else
+		{
+			DEALLOCATE(source_fields);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_embedded.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_embedded */
+
+int Computed_field_get_type_embedded(struct Computed_field *field,
+	struct FE_field **fe_field, struct Computed_field **source_field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_EMBEDDED, the FE_field being
+"wrapped" by it is returned - otherwise an error is reported.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_embedded_type_specific_data *data;
+
+	ENTER(Computed_field_get_type_embedded);
+	if (field&&(COMPUTED_FIELD_NEW_TYPES==field->type)&&
+		(field->type_string==computed_field_embedded_type_string) 
+		&& (data = (struct Computed_field_embedded_type_specific_data *)
+		field->type_specific_data))
+	{
+		*fe_field=data->fe_field;
+		*source_field=field->source_fields[0];
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_embedded.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_embedded */
+
+static int define_Computed_field_type_embedded(struct Parse_state *state,
+	void *field_void,void *computed_field_finite_element_package_void)
+/*******************************************************************************
+LAST MODIFIED : 23 April 1999
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_EMBEDDED (if it is not already)
+and allows its contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *source_field,*field;
+	struct Computed_field_finite_element_package *computed_field_finite_element_package;
+	struct FE_field *fe_field;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_field_data;
+
+	ENTER(define_Computed_field_type_embedded);
+	if (state&&(field=(struct Computed_field *)field_void)&&
+		(computed_field_finite_element_package=
+			(struct Computed_field_finite_element_package *)
+			computed_field_finite_element_package_void))
+	{
+		return_code=1;
+		fe_field=(struct FE_field *)NULL;
+		source_field=(struct Computed_field *)NULL;
+		if (Computed_field_get_type_string(field)==computed_field_embedded_type_string)
+		{
+			return_code=Computed_field_get_type_embedded(field,&fe_field,&source_field);
+		}
+		else
+		{
+			fe_field=FIRST_OBJECT_IN_MANAGER_THAT(FE_field)(
+				FE_field_has_value_type,(void *)ELEMENT_XI_VALUE,
+				computed_field_finite_element_package->fe_field_manager);
+			source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				Computed_field_has_numerical_components,(void *)NULL,
+				computed_field_finite_element_package->computed_field_manager);
+		}
+		if (return_code)
+		{
+			if (fe_field)
+			{
+				ACCESS(FE_field)(fe_field);
+			}
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
+			option_table=CREATE(Option_table)();
+			/* fe_field */
+			Option_table_add_entry(option_table,"element_xi", &fe_field,
+				&computed_field_finite_element_package->fe_field_manager,
+				set_FE_field);
+			set_field_data.conditional_function=
+				Computed_field_has_numerical_components;
+			set_field_data.conditional_function_user_data=(void *)NULL;
+			set_field_data.computed_field_manager=
+				computed_field_finite_element_package->computed_field_manager;
+			Option_table_add_entry(option_table,"field",&source_field,
+				&set_field_data,set_Computed_field_conditional);
+			return_code=Option_table_multi_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
+			if (return_code)
+			{
+				if (fe_field&&source_field)
+				{
+					return_code=Computed_field_set_type_embedded(field,fe_field,source_field);
+					Computed_field_set_coordinate_system_from_sources(field);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_embedded.  FE_field or source field not selected");
+					return_code=0;
+				}
+			}
+			if (fe_field)
+			{
+				DEACCESS(FE_field)(&fe_field);
+			}
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_embedded.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_embedded */
+
 int Computed_field_is_read_only_with_fe_field(
 	struct Computed_field *field,void *fe_field_void)
 /*******************************************************************************
@@ -2733,6 +6472,45 @@ Used for choosing field suitable for identifying grid points.
 
 	return (return_code);
 } /* Computed_field_is_scalar_integer_grid_in_element */
+
+int Computed_field_depends_on_embedded_field(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Returns true if the field is of an embedded type or depends on any computed
+fields which are or an embedded type.
+==============================================================================*/
+{
+	int i,return_code;
+
+	ENTER(Computed_field_depends_on_embedded_field);
+	if (field)
+	{
+		if (Computed_field_is_type_embedded(field))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code=0;
+			for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
+			{
+				return_code=Computed_field_depends_on_embedded_field(
+					field->source_fields[i]);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_depends_on_embedded_field.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_depends_on_embedded_field */
 
 static int Computed_field_update_fe_field_in_manager(
 	struct Computed_field *computed_field, struct FE_field *fe_field,
@@ -3179,6 +6957,26 @@ automatically wrapped in corresponding computed_fields.
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_default_coordinate_type_string,
 			define_Computed_field_type_default_coordinate,
+			&computed_field_finite_element_package);
+		Computed_field_package_add_type(computed_field_package,
+			computed_field_cmiss_number_type_string,
+			define_Computed_field_type_cmiss_number,
+			&computed_field_finite_element_package);
+		Computed_field_package_add_type(computed_field_package,
+			computed_field_xi_coordinates_type_string,
+			define_Computed_field_type_xi_coordinates,
+			&computed_field_finite_element_package);
+		Computed_field_package_add_type(computed_field_package,
+			computed_field_node_value_type_string,
+			define_Computed_field_type_node_value,
+			&computed_field_finite_element_package);
+		Computed_field_package_add_type(computed_field_package,
+			computed_field_node_array_value_at_time_type_string,
+			define_Computed_field_type_node_array_value_at_time,
+			&computed_field_finite_element_package);
+		Computed_field_package_add_type(computed_field_package,
+			computed_field_embedded_type_string,
+			define_Computed_field_type_embedded,
 			&computed_field_finite_element_package);
 		if (computed_field_finite_element_package.fe_field_manager_callback_id=
 			MANAGER_REGISTER(FE_field)(Computed_field_FE_field_change,

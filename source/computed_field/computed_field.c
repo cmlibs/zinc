@@ -657,19 +657,6 @@ Calls Computed_field_clear_cache before clearing the type.
 			DEALLOCATE(field->component_names);
 		}
 
-		/* for types COMPUTED_FIELD_FINITE_ELEMENT, COMPUTED_FIELD_EMBEDDED,
-			 COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
-		if (field->fe_field)
-		{
-			DEACCESS(FE_field)(&(field->fe_field));
-		}
-
-		/* for types COMPUTED_FIELD_FINITE_ELEMENT, COMPUTED_FIELD_EMBEDDED only */
-		if (field->fe_element_field_values)
-		{
-			DEALLOCATE(field->fe_element_field_values);
-		}
-
 		/* for COMPUTED_FIELD_COMPONENT only */
 		field->component_no=0;
 
@@ -678,10 +665,6 @@ Calls Computed_field_clear_cache before clearing the type.
 		{
 			DEACCESS(GROUP(FE_element))(&field->compose_element_group);
 		}
-
-		/* for COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
-		field->nodal_value_type=FE_NODAL_VALUE;
-		field->version_number=0;
 	
 		/* for COMPUTED_FIELD_XI_TEXTURE_COORDINATES only */
 		if (field->seed_element)
@@ -735,6 +718,7 @@ Calls Computed_field_clear_cache before clearing the type.
 					"Type specific data but no function to clear it.");
 				return_code=0;
 			}
+			field->type_specific_data = (void *)NULL;
 		}
 		field->type_string = (char *)NULL;
 
@@ -837,7 +821,7 @@ field.component referred to by <field_component>.
 	return (return_code);
 } /* Computed_field_wraps_field_component */
 
-static int Computed_field_set_coordinate_system_from_sources(
+int Computed_field_set_coordinate_system_from_sources(
 	struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 3 July 2000
@@ -932,23 +916,12 @@ COMPUTED_FIELD_CONSTANT with 1 component, returning a value of zero.
 
 			field->find_element_xi_cache=(struct Computed_field_find_element_xi_special_cache *)NULL;
 
-			/* for types COMPUTED_FIELD_FINITE_ELEMENT, COMPUTED_FIELD_EMBEDDED,
-				 COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
-			field->fe_field=(struct FE_field *)NULL;
-
-			/* for COMPUTED_FIELD_FINITE_ELEMENT and COMPUTED_FIELD_EMBEDDED only */
-			field->fe_element_field_values=(struct FE_element_field_values *)NULL;
-
 			/* for COMPUTED_FIELD_COMPONENT only */
 			field->component_no=-1;
 
 			/* for COMPUTED_FIELD_COMPOSE only */
 			field->compose_element_group = (struct GROUP(FE_element) *)NULL;
 
-			/* for COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
-			field->nodal_value_type=FE_NODAL_VALUE;
-			field->version_number=0;	
-		
 			/* for COMPUTED_FIELD_XI_TEXTURE_COORDINATES only */
 			field->seed_element = (struct FE_element *)NULL;
 			field->texture_mapping =
@@ -1189,6 +1162,7 @@ functions to check if read_only flag is set.
 				source_fields=(struct Computed_field **)NULL;
 				source_values=(FE_value *)NULL;
 				type_specific_data = NULL;
+				component_names = (char **)NULL;
 				/* 1. make dynamic allocations for any new type-specific data */
 				return_code = 1;
 				if (source->component_names)
@@ -1235,13 +1209,6 @@ functions to check if read_only flag is set.
 						destination->type=source->type;
 
 						destination->component_names = component_names;
-
-						/* for types COMPUTED_FIELD_FINITE_ELEMENT, COMPUTED_FIELD_EMBEDDED,
-							COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
-						if (source->fe_field)
-						{
-							destination->fe_field=ACCESS(FE_field)(source->fe_field);
-						}
 				
 						/* for COMPUTED_FIELD_COMPONENT only */
 						destination->component_no=source->component_no;
@@ -1249,10 +1216,6 @@ functions to check if read_only flag is set.
 						/* for COMPUTED_FIELD_COMPOSE only */
 						REACCESS(GROUP(FE_element))(&destination->compose_element_group,
 							source->compose_element_group);
-
-						/* for COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
-						destination->nodal_value_type=source->nodal_value_type;
-						destination->version_number=source->version_number;
 
 						/* for COMPUTED_FIELD_XI_TEXTURE_COORDINATES only */
 						REACCESS(FE_element)(&destination->seed_element,source->seed_element);
@@ -1686,13 +1649,6 @@ Only certain field types require a special implementation of this function.
 	ENTER(Computed_field_clear_cache);
 	if (field)
 	{
-		if ((COMPUTED_FIELD_EMBEDDED==field->type)&&
-			field->fe_element_field_values&&field->fe_element_field_values->element)
-		{
-			clear_FE_element_field_values(field->fe_element_field_values);
-			/* clear element to indicate that values are clear */
-			field->fe_element_field_values->element=(struct FE_element *)NULL;
-		}
 		if (field->element)
 		{
 			DEACCESS(FE_element)(&field->element);
@@ -1779,13 +1735,6 @@ any other fields, this function is recursively called for them.
 		else
 		{
 			return_code=1;
-			if (field->fe_field)
-			{
-				if (!FE_field_is_defined_in_element(field->fe_field,element))
-				{
-					return_code=0;
-				}
-			}
 			for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
 			{
 				if (!Computed_field_is_defined_in_element(field->source_fields[i],
@@ -1873,8 +1822,7 @@ any other fields, this function is recursively called for them.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	int comp_no,i,return_code;
-	struct FE_field_component fe_field_component;
+	int i,return_code;
 
 	ENTER(Computed_field_is_defined_at_node);
 	return_code=0;
@@ -1907,64 +1855,6 @@ any other fields, this function is recursively called for them.
 		{
 			switch (field->type)
 			{
-				case COMPUTED_FIELD_NODE_VALUE:
-				case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-				{
-					if (FE_field_is_defined_at_node(field->fe_field,node))
-					{
-						/* must ensure at least one component of version_number,
-							nodal_value_type defined at node */
-						return_code=0;
-						fe_field_component.field=field->fe_field;
-						for (comp_no=0;(comp_no<field->number_of_components)&&(!return_code);
-							  comp_no++)
-						{
-							fe_field_component.number=comp_no;
-							if (FE_nodal_value_version_exists(node,&fe_field_component,
-								field->version_number,field->nodal_value_type))
-							{
-								return_code=1;
-							}
-						}
-					}
-				} break;
-				case COMPUTED_FIELD_EMBEDDED:
-				{
-					FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-					int number_of_components;
-					struct FE_element *element;
-
-					if (FE_field_is_defined_at_node(field->fe_field,node))
-					{
-						return_code=1;
-						fe_field_component.field=field->fe_field;
-						number_of_components=
-							get_FE_field_number_of_components(field->fe_field);
-						for (comp_no=0;(comp_no<number_of_components)&&return_code;comp_no++)
-						{
-							fe_field_component.number=comp_no;
-							if (FE_nodal_value_version_exists(node,&fe_field_component,
-								field->version_number,field->nodal_value_type)&&
-								get_FE_nodal_element_xi_value(node,field->fe_field,comp_no,
-									field->version_number,field->nodal_value_type,&element,xi))
-							{
-								for (i=0;(i<field->number_of_source_fields)&&return_code;i++)
-								{
-									if (!Computed_field_is_defined_in_element(
-										field->source_fields[i],element))
-									{
-										return_code=0;
-									}
-								}
-							}
-							else
-							{
-								return_code=0;
-							}
-						}
-					}
-				} break;
-				case COMPUTED_FIELD_CMISS_NUMBER:
 				case COMPUTED_FIELD_COMPONENT:
 				case COMPUTED_FIELD_COMPOSITE:
 				case COMPUTED_FIELD_CONSTANT:
@@ -1990,8 +1880,6 @@ any other fields, this function is recursively called for them.
 				case COMPUTED_FIELD_2D_STRAIN:
 				case COMPUTED_FIELD_FIBRE_AXES:
 				case COMPUTED_FIELD_FIBRE_SHEET_AXES:
-				case COMPUTED_FIELD_XI_COORDINATES:
-				case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
 				{
 					/* can not be evaluated at nodes */
 				} break;
@@ -2137,48 +2025,6 @@ determine if the field in use needs updating.
 
 	return (return_code);
 } /* Computed_field_depends_on_Computed_field */
-
-int Computed_field_depends_on_embedded_field(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 28 April 1999
-
-DESCRIPTION :
-Returns true if the field is of an embedded type or depends on any computed
-fields which are or an embedded type.
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(Computed_field_depends_on_embedded_field);
-	if (field)
-	{
-		switch(field->type)
-		{
-			case COMPUTED_FIELD_EMBEDDED:
-			{
-				return_code=1;
-			} break;
-			default:
-			{
-				return_code=0;
-				for (i=0;(i<field->number_of_source_fields)&&(!return_code);i++)
-				{
-					return_code=Computed_field_depends_on_embedded_field(
-						field->source_fields[i]);
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_depends_on_embedded_field.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_depends_on_embedded_field */
 
 static int Computed_field_evaluate_2D_strain(struct Computed_field *field,
 	int element_dimension)
@@ -2692,7 +2538,7 @@ available.
 	return (return_code);
 } /* Computed_field_evaluate_rc_vector */
 
-static int Computed_field_evaluate_cache_in_element(
+int Computed_field_evaluate_cache_in_element(
 	struct Computed_field *field,struct FE_element *element,FE_value *xi,
 	struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
@@ -2875,13 +2721,6 @@ is avoided.
 									Computed_field_evaluate_cache_in_element(
 										field->source_fields[0],element,xi,top_level_element,0);
 							} break;
-							case COMPUTED_FIELD_EMBEDDED:
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_evaluate_cache_at_element.  "
-									"Cannot evaluate an embedded field in elements");
-								return_code=0;
-							} break;
 							case COMPUTED_FIELD_FIBRE_AXES:
 							case COMPUTED_FIELD_FIBRE_SHEET_AXES:
 							{
@@ -2931,13 +2770,6 @@ is avoided.
 							{
 								return_code=
 									Computed_field_evaluate_2D_strain(field,element_dimension);
-							} break;
-							case COMPUTED_FIELD_CMISS_NUMBER:
-							{
-								/* simply convert the element number into an FE_value */
-								field->values[0]=(FE_value)element->cm.number;
-								/* no derivatives for this type */
-								field->derivatives_valid=0;
 							} break;
 							case COMPUTED_FIELD_COMPONENT:
 							{
@@ -3230,14 +3062,6 @@ is avoided.
 								}
 								field->values[0]=sqrt(field->values[0]);
 							} break;
-							case COMPUTED_FIELD_NODE_VALUE:
-							case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_evaluate_cache_in_element.  "
-									"Cannot evaluate node_value in elements");
-								return_code=0;
-							} break;
 							case COMPUTED_FIELD_PROJECTION:
 							{
 								return_code=Computed_field_evaluate_projection_matrix(field,
@@ -3273,38 +3097,6 @@ is avoided.
 										field->derivatives[j]=sum;
 									}
 								}
-							} break;
-							case COMPUTED_FIELD_XI_COORDINATES:
-							{
-								/* returns the values in xi, up to the element_dimension and padded
-									with zeroes */
-								temp=field->derivatives;
-								for (i=0;i<field->number_of_components;i++)
-								{
-									if (i<element_dimension)
-									{
-										field->values[i]=xi[i];
-									}
-									else
-									{
-										field->values[i]=0.0;
-									}
-									for (j=0;j<element_dimension;j++)
-									{
-										if (i==j)
-										{
-											*temp = 1.0;
-										}
-										else
-										{
-											*temp = 0.0;
-										}
-										temp++;
-									}
-								}
-								/* derivatives are always calculated since they are merely part of
-									the identity matrix */
-								field->derivatives_valid=1;
 							} break;
 							case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
 							{
@@ -3586,38 +3378,29 @@ It is up to the calling function to DEALLOCATE the returned string.
 		}
 		else
 		{
-			if (COMPUTED_FIELD_CMISS_NUMBER==field->type)
+			/* write the component value in %g format */
+			if (Computed_field_evaluate_cache_in_element(field,element,xi,
+				top_level_element,/*calculate_derivatives*/0))
 			{
-				/* put out the cmiss number as a string */
-				sprintf(tmp_string,"%d",element->cm.number);
-				return_string=duplicate_string(tmp_string);
-			}
-			else
-			{
-				/* write the component value in %g format */
-				if (Computed_field_evaluate_cache_in_element(field,element,xi,
-					top_level_element,/*calculate_derivatives*/0))
+				if (-1 == component_number)
 				{
-					if (-1 == component_number)
+					for (i=0;i<field->number_of_components;i++)
 					{
-						for (i=0;i<field->number_of_components;i++)
+						if (0<i)
 						{
-							if (0<i)
-							{
-								sprintf(tmp_string,",%g",field->values[i]);
-							}
-							else
-							{
-								sprintf(tmp_string,"%g",field->values[i]);
-							}
-							append_string(&return_string,tmp_string,&error);
+							sprintf(tmp_string,",%g",field->values[i]);
 						}
+						else
+						{
+							sprintf(tmp_string,"%g",field->values[i]);
+						}
+						append_string(&return_string,tmp_string,&error);
 					}
-					else
-					{
-						sprintf(tmp_string,"%g",field->values[component_number]);
-						return_string=duplicate_string(tmp_string);
-					}
+				}
+				else
+				{
+					sprintf(tmp_string,"%g",field->values[component_number]);
+					return_string=duplicate_string(tmp_string);
 				}
 			}
 		}
@@ -3810,16 +3593,11 @@ fields with the name 'coordinates' are quite pervasive.
 ==============================================================================*/
 {
 	char *temp_string;
-	double double_value;
-	enum Value_type value_type;
 	FE_value sum,*temp;
-	float float_value;
-	int i,int_value,j,k,return_code,total_values;
+	int i,j,k,return_code,total_values;
 	/* For COMPUTED_FIELD_EMBEDDED and COMPUTED_FIELD_COMPOSE only */
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	short short_value;
 	struct FE_element *element;	
-	struct FE_field_component fe_field_component;
 
 	ENTER(Computed_field_evaluate_cache_at_node);
 	if (field&&node)
@@ -3878,11 +3656,6 @@ fields with the name 'coordinates' are quite pervasive.
 								Computed_field_evaluate_cache_at_node(
 									field->source_fields[0],node);
 						} break;
-					case COMPUTED_FIELD_EMBEDDED:
-						{
-							/* Need to evaluate the source field in the element and xi described
-								by the fe_field rather than at the node so I do it down below */
-						} break;
 						default:
 						{
 							/* calculate values of source_fields */
@@ -3905,11 +3678,6 @@ fields with the name 'coordinates' are quite pervasive.
 									"Computed_field_evaluate_cache_at_node.  "
 									"Cannot evaluate gradient at nodes");
 								return_code=0;
-							} break;
-							case COMPUTED_FIELD_CMISS_NUMBER:
-							{
-								/* simply convert the node number into an FE_value */
-								field->values[0]=(FE_value)get_FE_node_cm_node_identifier(node);
 							} break;
 							case COMPUTED_FIELD_COMPONENT:
 							{
@@ -3997,31 +3765,6 @@ fields with the name 'coordinates' are quite pervasive.
 									field->values[i]=field->source_fields[0]->values[i];
 								}
 							} break;
-							case COMPUTED_FIELD_EMBEDDED:
-							{
-								if (get_FE_nodal_element_xi_value(node,
-									field->fe_field, /* component */ 0,
-									/* version */ 0, FE_NODAL_VALUE, &element, xi))
-								{
-									/* now calculate source_fields[0] */
-									if(Computed_field_evaluate_cache_in_element(
-										field->source_fields[0],element,xi,(struct FE_element *)NULL,0))
-									{
-										for (i=0;i<field->number_of_components;i++)
-										{
-											field->values[i] = field->source_fields[0]->values[i];
-										}
-									}
-									else
-									{
-										return_code = 0;
-									}
-								}
-								else
-								{
-									return_code = 0;
-								}
-							} break;
 							case COMPUTED_FIELD_EXTERNAL:
 							{
 								total_values = field->number_of_source_values;
@@ -4094,129 +3837,6 @@ fields with the name 'coordinates' are quite pervasive.
 								}
 								field->values[0]=sqrt(field->values[0]);
 							} break;
-							case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME: 			 
-							{						
-								fe_field_component.field=field->fe_field;
-								value_type=get_FE_field_value_type(field->fe_field);
-								for (i=0;(i<field->number_of_components)&&return_code;i++)
-								{
-									fe_field_component.number=i;
-									if (FE_nodal_value_version_exists(node,&fe_field_component,
-										field->version_number,field->nodal_value_type))
-									{
-										switch (value_type)
-										{									
-											case FE_VALUE_ARRAY_VALUE:
-											{										
-												return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
-													&fe_field_component,field->version_number,
-													field->nodal_value_type,/*time*/field->source_fields[0]->values[0],
-													&(field->values[i]));									
-											} break;
-								
-											case SHORT_ARRAY_VALUE:
-											{
-												return_code=get_FE_nodal_short_array_value_at_FE_value_time(
-													node,&fe_field_component,field->version_number,
-													field->nodal_value_type,/*time*/field->source_fields[0]->values[0],
-													&short_value);
-												field->values[i] = (FE_value)short_value;									
-											} break;	
-											case DOUBLE_ARRAY_VALUE: 				
-											case FLT_ARRAY_VALUE:
-											case INT_ARRAY_VALUE:			
-											case UNSIGNED_ARRAY_VALUE:
-											{
-												display_message(ERROR_MESSAGE,
-													"Computed_field_evaluate_cache_at_node. value type %s "
-													"not yet supported. Write the code!",
-													Value_type_string(value_type));
-												return_code=0;
-											}break;
-											default:
-											{
-												display_message(ERROR_MESSAGE,
-													"Computed_field_evaluate_cache_at_node.  "
-													"Unsupported value type %s in node_value field",
-													Value_type_string(value_type));
-												return_code=0;
-											}
-										}
-									}
-									else
-									{
-										/* use 0 for all undefined components */
-										field->values[i]=0.0;
-									}
-								}
-								if (!return_code)
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_evaluate_cache_at_node.  "
-										"Error evaluating node_value field at node");
-								}
-							} break;
-							case COMPUTED_FIELD_NODE_VALUE:
-							{					
-								fe_field_component.field=field->fe_field;
-								value_type=get_FE_field_value_type(field->fe_field);
-								for (i=0;(i<field->number_of_components)&&return_code;i++)
-								{
-									fe_field_component.number=i;
-									if (FE_nodal_value_version_exists(node,&fe_field_component,
-										field->version_number,field->nodal_value_type))
-									{
-										switch (value_type)
-										{
-											case DOUBLE_VALUE:
-											{
-												return_code=get_FE_nodal_double_value(node,
-													&fe_field_component,field->version_number,
-													field->nodal_value_type,&double_value);
-												field->values[i] = (FE_value)double_value;
-											} break;
-											case FE_VALUE_VALUE:
-											{
-												return_code=get_FE_nodal_FE_value_value(node,
-													&fe_field_component,field->version_number,
-													field->nodal_value_type,&(field->values[i]));
-											} break;
-											case FLT_VALUE:
-											{
-												return_code=get_FE_nodal_float_value(node,
-													&fe_field_component,field->version_number,
-													field->nodal_value_type,&float_value);
-												field->values[i] = (FE_value)float_value;
-											} break;
-											case INT_VALUE:
-											{
-												return_code=get_FE_nodal_int_value(node,&fe_field_component,
-													field->version_number,field->nodal_value_type,&int_value);
-												field->values[i] = (FE_value)int_value;
-											} break;
-											default:
-											{
-												display_message(ERROR_MESSAGE,
-													"Computed_field_evaluate_cache_at_node.  "
-													"Unsupported value type %s in node_value field",
-													Value_type_string(value_type));
-												return_code=0;
-											}
-										}
-									}
-									else
-									{
-										/* use 0 for all undefined components */
-										field->values[i]=0.0;
-									}
-								}
-								if (!return_code)
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_evaluate_cache_at_node.  "
-										"Error evaluating node_value field at node");
-								}
-							} break;				
 							case COMPUTED_FIELD_PROJECTION:
 							{
 								return_code=Computed_field_evaluate_projection_matrix(field,
@@ -4236,13 +3856,6 @@ fields with the name 'coordinates' are quite pervasive.
 									sum += temp[i]*field->source_values[i];
 								}
 								field->values[0]=sum;
-							} break;
-							case COMPUTED_FIELD_XI_COORDINATES:
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_evaluate_cache_at_node.  "
-									"Cannot evaluate xi at nodes");
-								return_code=0;
 							} break;
 							case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
 							{
@@ -4347,7 +3960,7 @@ Some basic field types such as CMISS_NUMBER have special uses in this function.
 It is up to the calling function to DEALLOCATE the returned string.
 ==============================================================================*/
 {
-	char *return_string,tmp_string[50],*temp_string;
+	char *return_string,tmp_string[50];
 	int error,i;
 
 	ENTER(Computed_field_evaluate_as_string_at_node);
@@ -4372,78 +3985,34 @@ It is up to the calling function to DEALLOCATE the returned string.
 		}
 		else
 		{
-			if ((COMPUTED_FIELD_NODE_VALUE==field->type)&&
-				(FE_VALUE_VALUE != get_FE_field_value_type(field->fe_field)))
+			error=0;
+			/* write the component values in %g format, comma separated */
+			if (Computed_field_evaluate_cache_at_node(field,node))
 			{
 				if (-1 == component_number)
 				{
-					if (get_FE_nodal_value_as_string(node,field->fe_field,
-						/*component_number*/0,field->version_number,field->nodal_value_type,
-						&return_string))
+					for (i=0;i<field->number_of_components;i++)
 					{
-						error=0;
-						for (i=1;i<field->number_of_components;i++)
+						if (0<i)
 						{
-							if (get_FE_nodal_value_as_string(node,field->fe_field,
-								i,field->version_number,field->nodal_value_type,&temp_string))
-							{
-								append_string(&return_string,",",&error);
-								append_string(&return_string,temp_string,&error);
-								DEALLOCATE(temp_string);
-							}
+							sprintf(tmp_string,",%g",field->values[i]);
 						}
+						else
+						{
+							sprintf(tmp_string,"%g",field->values[i]);
+						}
+						append_string(&return_string,tmp_string,&error);
 					}
 				}
 				else
 				{
-					if (get_FE_nodal_value_as_string(node,field->fe_field,
-						component_number,field->version_number,field->nodal_value_type,
-						&return_string))
-					{
-						error=0;
-					}
+					sprintf(tmp_string,"%g",field->values[component_number]);
+					append_string(&return_string,tmp_string,&error);
 				}
 			}
 			else
 			{
-				error=0;
-				if (COMPUTED_FIELD_CMISS_NUMBER==field->type)
-				{
-					/* put out the cmiss number as a string */
-					sprintf(tmp_string,"%d",get_FE_node_cm_node_identifier(node));
-					append_string(&return_string,tmp_string,&error);
-				}
-				else
-				{
-					/* write the component values in %g format, comma separated */
-					if (Computed_field_evaluate_cache_at_node(field,node))
-					{
-						if (-1 == component_number)
-						{
-							for (i=0;i<field->number_of_components;i++)
-							{
-								if (0<i)
-								{
-									sprintf(tmp_string,",%g",field->values[i]);
-								}
-								else
-								{
-									sprintf(tmp_string,"%g",field->values[i]);
-								}
-							append_string(&return_string,tmp_string,&error);
-							}
-						}
-						else
-						{
-							sprintf(tmp_string,"%g",field->values[component_number]);
-							append_string(&return_string,tmp_string,&error);
-						}
-					}
-					else
-					{
-						error=1;
-					}
-				}
+				error=1;
 			}
 			if (!return_string)
 			{
@@ -4750,75 +4319,6 @@ should not be managed at the time it is modified by this function.
 						return_code=0;
 					}
 				} break;
-				case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-				{
-					display_message(ERROR_MESSAGE,"Computed_field_set_values_at_node. "
-						" %s not implemented yet. Write the code!",field->name);
-					/*If we ever need to write the code for this, make it so that we set the array */
-					/*values based upon the field->time ONLY if the time correspondes EXACTLY to an*/
-					/* array index. No "tking the nearest one" or anything nasty like that */
-					return_code=0;
-				}break;	
-				case COMPUTED_FIELD_NODE_VALUE:
-				{
-					double double_value;
-					enum Value_type value_type;
-					float float_value;
-					int int_value;
-					struct FE_field_component fe_field_component;
-
-					fe_field_component.field=field->fe_field;
-					value_type=get_FE_field_value_type(field->fe_field);
-					for (i=0;(i<field->number_of_components)&&return_code;i++)
-					{
-						fe_field_component.number=i;
-						/* only set nodal value/versions that exist */
-						if (FE_nodal_value_version_exists(node,&fe_field_component,
-							field->version_number,field->nodal_value_type))
-						{
-							switch (value_type)
-							{
-								case DOUBLE_VALUE:
-								{
-									double_value=(double)values[i];
-									return_code=set_FE_nodal_double_value(node,
-										&fe_field_component,j,field->nodal_value_type,double_value);
-								} break;
-								case FE_VALUE_VALUE:
-								{
-									return_code=set_FE_nodal_FE_value_value(node,
-										&fe_field_component,j,field->nodal_value_type,values[i]);
-								} break;
-								case FLT_VALUE:
-								{
-									float_value=(float)values[i];
-									return_code=set_FE_nodal_float_value(node,
-										&fe_field_component,j,field->nodal_value_type,float_value);
-								} break;
-								case INT_VALUE:
-								{
-									int_value=(int)floor(values[i]+0.5);
-									return_code=set_FE_nodal_float_value(node,
-										&fe_field_component,j,field->nodal_value_type,int_value);
-								} break;
-								default:
-								{
-									display_message(ERROR_MESSAGE,
-										"Computed_field_set_values_at_node.  "
-										"Could not set finite_element field %s at node",field->name);
-									return_code=0;
-								}
-							}
-						}
-					}
-					if (!return_code)
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_set_values_at_node.  "
-							"Could not set node_value field at node",field->name);
-						return_code=0;
-					}
-				} break;			
 				case COMPUTED_FIELD_RC_COORDINATE:
 				{
 					FE_value non_rc_coordinates[3];
@@ -5907,7 +5407,7 @@ DESCRIPTION :
 char *Computed_field_get_component_name(struct Computed_field *field,
 	int component_no)
 /*******************************************************************************
-LAST MODIFIED : 29 October 1999
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns an allocated string containing the name of <component_no> of <field>.
@@ -5925,34 +5425,23 @@ It is up to the calling function to deallocate the returned string.
 	component_name=(char *)NULL;
 	if (field&&(0<=component_no)&&(component_no<field->number_of_components))
 	{
-		switch (field->type)
-		{		 
-			case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-			case COMPUTED_FIELD_NODE_VALUE:
+		if (field->component_names)
+		{
+			if (!(component_name=duplicate_string(
+				field->component_names[component_no])))
 			{
-				component_name=get_FE_field_component_name(field->fe_field,component_no);
-			} break;
-			default:
+				display_message(ERROR_MESSAGE,
+					"Computed_field_get_component_name.  Not enough memory");
+			}					
+		}
+		else
+		{
+			sprintf(temp_name,"%i",component_no+1);
+			if (!(component_name=duplicate_string(temp_name)))
 			{
-				if (field->component_names)
-				{
-					if (!(component_name=duplicate_string(
-						field->component_names[component_no])))
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_get_component_name.  Not enough memory");
-					}					
-				}
-				else
-				{
-					sprintf(temp_name,"%i",component_no+1);
-					if (!(component_name=duplicate_string(temp_name)))
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_get_component_name.  Not enough memory");
-					}
-				}
-			} break;
+				display_message(ERROR_MESSAGE,
+					"Computed_field_get_component_name.  Not enough memory");
+			}
 		}
 	}
 	else
@@ -6095,10 +5584,6 @@ The calling function must not deallocate the returned string.
 		{
 			field_type_string="2D_strain";
 		} break;
-		case COMPUTED_FIELD_CMISS_NUMBER:
-		{
-			field_type_string="cmiss_number";
-		} break;
 		case COMPUTED_FIELD_COMPONENT:
 		{
 			field_type_string="component";
@@ -6127,10 +5612,6 @@ The calling function must not deallocate the returned string.
 		{
 			field_type_string="edit_mask";
 		} break;
-		case COMPUTED_FIELD_EMBEDDED:
-		{
-			field_type_string="embedded";
-		} break;
 		case COMPUTED_FIELD_EXTERNAL:
 		{
 			field_type_string="external";
@@ -6151,14 +5632,6 @@ The calling function must not deallocate the returned string.
 		{
 			field_type_string=field->type_string;
 		} break;
-		case COMPUTED_FIELD_NODE_VALUE:
-		{
-			field_type_string="node_value";
-		} break;
-		case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-		{
-			field_type_string="node_array_value_at_time";
-		} break;
 		case COMPUTED_FIELD_PROJECTION:
 		{
 			field_type_string="projection";
@@ -6174,10 +5647,6 @@ The calling function must not deallocate the returned string.
 		case COMPUTED_FIELD_SUM_COMPONENTS:
 		{
 			field_type_string="sum_components";
-		} break;
-		case COMPUTED_FIELD_XI_COORDINATES:
-		{
-			field_type_string="xi_coordinates";
 		} break;
 		case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
 		{
@@ -6230,24 +5699,7 @@ returned as FE_value when evaluated.
 		}
 		else
 		{
-			switch (field->type)
-			{
-				case COMPUTED_FIELD_EMBEDDED:
-				{
-					return_code=Computed_field_has_numerical_components(
-						field->source_fields[0],(void *)NULL);
-				} break;
-				case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-				case COMPUTED_FIELD_NODE_VALUE:
-				{
-					return_code=Value_type_is_numeric_simple(
-						get_FE_field_value_type(field->fe_field));
-				} break;
-				default:
-				{
-					return_code=1;
-				} break;
-			}
+			return_code=1;
 		}
 	}
 	else
@@ -6687,44 +6139,6 @@ The <coordinate_field>s must have no more than 3 components.
 
 	return (return_code);
 } /* Computed_field_set_type_2D_strain */
-
-int Computed_field_set_type_cmiss_number(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 24 June 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CMISS_NUMBER, which can be evaluated
-as a single component field - ie. the node/element/face/line number is converted
-into an FE_value - or more commonly, is evaluated as a string name.
-Sets the number of components to 1.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_set_type_cmiss_number);
-	if (field)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		/* none */
-		/* 2. free current type-specific data */
-		Computed_field_clear_type(field);
-		/* 3. establish the new type */
-		field->type=COMPUTED_FIELD_CMISS_NUMBER;
-		field->number_of_components=1;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_cmiss_number.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_cmiss_number */
 
 int Computed_field_get_type_component(struct Computed_field *field,
 	struct Computed_field **source_field,int *component_no)
@@ -7423,89 +6837,6 @@ although its cache may be lost.
 	return (return_code);
 } /* Computed_field_set_type_edit_mask */
 
-int Computed_field_get_type_embedded(struct Computed_field *field,
-	struct FE_field **fe_field, struct Computed_field **source_field)
-/*******************************************************************************
-LAST MODIFIED : 23 April 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_EMBEDDED, the FE_field being
-"wrapped" by it is returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_embedded);
-	if (field&&(COMPUTED_FIELD_EMBEDDED==field->type)&&fe_field&&source_field)
-	{
-		*fe_field=field->fe_field;
-		*source_field=field->source_fields[0];
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_embedded.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_embedded */
-
-int Computed_field_set_type_embedded(struct Computed_field *field,
-	struct FE_field *fe_field, struct Computed_field *source_field)
-/*******************************************************************************
-LAST MODIFIED : 23 April 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_EMBEDDED, wrapping the given
-<fe_field>. Makes the number of components the same as in the <fe_field>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int number_of_source_fields, return_code;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_embedded);
-	if (field&&fe_field&&source_field)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_EMBEDDED;
-			field->number_of_components=Computed_field_get_number_of_components(source_field);
-			field->fe_field=ACCESS(FE_field)(fe_field);
-			/* source_fields: 0=field_which_nodes_are_embedded_in */
-			source_fields[0]=ACCESS(Computed_field)(source_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_set_type_embedded.  Not enough memory");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_embedded.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_embedded */
-
 static int Computed_field_get_type_external(struct Computed_field *field,
 	char **filename, int *timeout,
 	int *number_of_source_values, FE_value **source_values,
@@ -8104,186 +7435,6 @@ although its cache may be lost.
 	return (return_code);
 } /* Computed_field_set_type_magnitude */
 
-int Computed_field_get_type_node_array_value_at_time(struct Computed_field *field,
-	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
-	int *version_number,struct Computed_field **time_field)
-/*******************************************************************************
-LAST MODIFIED : 28 October 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, the fe_field,
-nodal_value_type and version_number it extracts are returned - otherwise an
-error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_node_array_value_at_time);
-	if (field&&(COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME==field->type)&&fe_field&&
-		nodal_value_type&&version_number)
-	{
-		*fe_field=field->fe_field;
-		*nodal_value_type=field->nodal_value_type;
-		*version_number=field->version_number;
-		USE_PARAMETER(time_field);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_node_array_value_at_time.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_node_array_value_at_time */
-
-int Computed_field_set_type_node_array_value_at_time(
-	struct Computed_field *field,struct FE_field *fe_field,
-	enum FE_nodal_value_type nodal_value_type,int version_number,
-	struct Computed_field *time_field)
-/*******************************************************************************
-LAST MODIFIED : 23 May 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, 
-returning the values for the
-given <nodal_value_type> and <version_number> of <fe_field> at a node.
-Makes the number of components the same as in the <fe_field>.
-Field automatically takes the coordinate system of the source fe_field. See note
-at start of this file about changing use of coordinate systems.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int return_code,number_of_source_fields;
-	struct Computed_field **source_fields;
-
-	ENTER(Computed_field_set_type_node_array_value_at_time);
-	if (field&&fe_field&&(FE_NODAL_UNKNOWN!=nodal_value_type)&&
-		(0<=version_number)&&time_field&&(1==time_field->number_of_components))
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		number_of_source_fields=1;
-		if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
-		{
-			/* 2. free current type-specific data */
-			Computed_field_clear_type(field);
-			/* 3. establish the new type */
-			field->type=COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME;
-			/* copy the coordinate system from the fe_field */
-			COPY(Coordinate_system)(&(field->coordinate_system),
-				get_FE_field_coordinate_system(fe_field));
-			field->number_of_components = get_FE_field_number_of_components(fe_field);
-			field->fe_field=ACCESS(FE_field)(fe_field);
-			field->nodal_value_type=nodal_value_type;
-			field->version_number=version_number;
-			source_fields[0]=ACCESS(Computed_field)(time_field);
-			field->source_fields=source_fields;
-			field->number_of_source_fields=number_of_source_fields;
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_node_array_value_at_time.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_node_array_value_at_time */
-
-int Computed_field_get_type_node_value(struct Computed_field *field,
-	struct FE_field **fe_field,enum FE_nodal_value_type *nodal_value_type,
-	int *version_number)
-/*******************************************************************************
-LAST MODIFIED : 21 June 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_NODE_VALUE, the fe_field,
-nodal_value_type and version_number it extracts are returned - otherwise an
-error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_get_type_node_value);
-	if (field&&(COMPUTED_FIELD_NODE_VALUE==field->type)&&fe_field&&
-		nodal_value_type&&version_number)
-	{
-		*fe_field=field->fe_field;
-		*nodal_value_type=field->nodal_value_type;
-		*version_number=field->version_number;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_type_node_value.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_get_type_node_value */
-
-int Computed_field_set_type_node_value(struct Computed_field *field,
-	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
-	int version_number)
-/*******************************************************************************
-LAST MODIFIED : 22 May 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_NODE_VALUE, returning the values for the
-given <nodal_value_type> and <version_number> of <fe_field> at a node.
-Makes the number of components the same as in the <fe_field>.
-Field automatically takes the coordinate system of the source fe_field. See note
-at start of this file about changing use of coordinate systems.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_set_type_node_value);
-	if (field&&fe_field&&(FE_NODAL_UNKNOWN!=nodal_value_type)&&
-		(0<=version_number))
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		/* NOTE: no dynamic data for type COMPUTED_FIELD_NODE_VALUE */
-		/* 2. free current type-specific data */
-		Computed_field_clear_type(field);
-		/* 3. establish the new type */
-		field->type=COMPUTED_FIELD_NODE_VALUE;
-		/* copy the coordinate system from the fe_field */
-		COPY(Coordinate_system)(&(field->coordinate_system),
-			get_FE_field_coordinate_system(fe_field));
-		field->number_of_components=get_FE_field_number_of_components(fe_field);
-		field->fe_field=ACCESS(FE_field)(fe_field);
-		field->nodal_value_type=nodal_value_type;
-		field->version_number=version_number;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_node_value.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_node_value */
-
 int Computed_field_get_type_projection(struct Computed_field *field,
 	struct Computed_field **source_field, int *number_of_components,
 	double **projection_matrix)
@@ -8701,45 +7852,6 @@ although its cache may be lost.
 
 	return (return_code);
 } /* Computed_field_set_type_sum_components */
-
-int Computed_field_set_type_xi_coordinates(struct Computed_field *field)
-/*******************************************************************************
-LAST MODIFIED : 24 June 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_XI_COORDINATES, defined only over elements and
-returning the xi that is passed to it.
-Sets the number of components to 3.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-???RC May want the number of components to be user-selectable; for now, stick
-with 3.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_set_type_xi_coordinates);
-	if (field)
-	{
-		/* 1. make dynamic allocations for any new type-specific data */
-		/* none */
-		/* 2. free current type-specific data */
-		Computed_field_clear_type(field);
-		/* 3. establish the new type */
-		field->type=COMPUTED_FIELD_XI_COORDINATES;
-		field->number_of_components=3;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_set_type_xi_coordinates.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_set_type_xi_coordinates */
 
 int Computed_field_get_type_xi_texture_coordinates(struct Computed_field *field,
 	struct FE_element **seed_element)
@@ -9949,49 +9061,6 @@ and allows its contents to be modified.
 	return (return_code);
 } /* define_Computed_field_type_2D_strain */
 
-static int define_Computed_field_type_cmiss_number(struct Parse_state *state,
-	void *field_void,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 24 June 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_CMISS_NUMBER.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field *field;
-
-	ENTER(define_Computed_field_type_cmiss_number);
-	USE_PARAMETER(dummy_void);
-	if (state&&(field=(struct Computed_field *)field_void))
-	{
-		if (!state->current_token)
-		{
-			return_code=Computed_field_set_type_cmiss_number(field);
-		}
-		else
-		{
-			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
-			{
-				display_message(ERROR_MESSAGE,
-					"Unknown option <%s>",state->current_token);
-				display_parse_state_location(state);
-			}
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_cmiss_number.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_cmiss_number */
-
 static int define_Computed_field_type_component(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
@@ -10886,103 +9955,6 @@ edit_mask flags as there are components in the field.
 	return (return_code);
 } /* define_Computed_field_type_edit_mask */
 
-static int define_Computed_field_type_embedded(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 23 April 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_EMBEDDED (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"element_xi",NULL,NULL,set_FE_field},
-		{"field",NULL,NULL,set_Computed_field_conditional},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Computed_field *source_field,*field;
-	struct Computed_field_package *computed_field_package;
-	struct FE_field *fe_field;
-	struct Set_Computed_field_conditional_data set_field_data;
-
-	ENTER(define_Computed_field_type_embedded);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		fe_field=(struct FE_field *)NULL;
-		source_field=(struct Computed_field *)NULL;
-		if (COMPUTED_FIELD_EMBEDDED==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_embedded(field,&fe_field,&source_field);
-		}
-		else
-		{
-			fe_field=FIRST_OBJECT_IN_MANAGER_THAT(FE_field)(
-				FE_field_has_value_type,(void *)ELEMENT_XI_VALUE,
-				computed_field_package->fe_field_manager);
-			source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_package->computed_field_manager);
-		}
-		if (return_code)
-		{
-			if (fe_field)
-			{
-				ACCESS(FE_field)(fe_field);
-			}
-			if (source_field)
-			{
-				ACCESS(Computed_field)(source_field);
-			}
-			(option_table[0]).to_be_modified= &fe_field;
-			(option_table[0]).user_data= computed_field_package->fe_field_manager;
-			set_field_data.conditional_function=
-				Computed_field_has_numerical_components;
-			set_field_data.conditional_function_user_data=(void *)NULL;
-			set_field_data.computed_field_manager=
-				computed_field_package->computed_field_manager;
-			(option_table[1]).to_be_modified= &source_field;
-			(option_table[1]).user_data= &set_field_data;
-			if (return_code=process_multiple_options(state,option_table))
-			{
-				if (fe_field&&source_field)
-				{
-					return_code=Computed_field_set_type_embedded(field,fe_field,source_field);
-					Computed_field_set_coordinate_system_from_sources(field);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_embedded.  FE_field or source field not selected");
-					return_code=0;
-				}
-			}
-			if (fe_field)
-			{
-				DEACCESS(FE_field)(&fe_field);
-			}
-			if (source_field)
-			{
-				DEACCESS(Computed_field)(&source_field);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_embedded.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_embedded */
-
 static int define_Computed_field_type_external(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
@@ -11478,410 +10450,6 @@ and allows its contents to be modified.
 
 	return (return_code);
 } /* define_Computed_field_type_magnitude */
-
-static int define_Computed_field_type_node_value(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 23 June 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_NODE_VALUE (if it is not already)
-and allows its contents to be modified.
-==============================================================================*/
-{
-	char *current_token;
-	enum FE_nodal_value_type fe_nodal_d_ds1,fe_nodal_d_ds2,fe_nodal_d_ds3,
-		fe_nodal_d2_ds1ds2,fe_nodal_d2_ds1ds3,fe_nodal_d2_ds2ds3,
-		fe_nodal_d3_ds1ds2ds3,fe_nodal_value,nodal_value_type;
-	int return_code,version_number;
-	static struct Modifier_entry
-		fe_field_option_table[]=
-		{
-			{"fe_field",NULL,NULL,set_FE_field},
-			{NULL,NULL,NULL,NULL}
-		},
-		nodal_value_type_option_table[]=
-  	{
-			{"value",NULL,NULL,set_enum},
-			{"d/ds1",NULL,NULL,set_enum},
-			{"d/ds2",NULL,NULL,set_enum},
-			{"d/ds3",NULL,NULL,set_enum},
-			{"d2/ds1ds2",NULL,NULL,set_enum},
-			{"d2/ds1ds3",NULL,NULL,set_enum},
-			{"d2/ds2ds3",NULL,NULL,set_enum},
-			{"d3/ds1ds2ds3",NULL,NULL,set_enum},
-			{NULL,NULL,NULL,NULL}
-		},
-		value_type_version_option_table[]=
-		{
-			{NULL,NULL,NULL,NULL},
-			{"version",NULL,NULL,set_int_positive},
-			{NULL,NULL,NULL,NULL}
-		},
-		help_option_table[]=
-		{
-			{"fe_field",NULL,NULL,set_FE_field},
-			{NULL,NULL,NULL,NULL},
-			{"version",NULL,NULL,set_int_positive},
-			{NULL,NULL,NULL,NULL}
-		};
-	struct Computed_field *field;
-	struct Computed_field_package *computed_field_package;
-	struct FE_field *fe_field;
-
-	ENTER(define_Computed_field_type_node_value);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		fe_nodal_value=FE_NODAL_VALUE;
-		nodal_value_type_option_table[0].user_data= &fe_nodal_value;
-		nodal_value_type_option_table[0].to_be_modified= &nodal_value_type;
-		fe_nodal_d_ds1=FE_NODAL_D_DS1;
-		nodal_value_type_option_table[1].user_data= &fe_nodal_d_ds1;
-		nodal_value_type_option_table[1].to_be_modified= &nodal_value_type;
-		fe_nodal_d_ds2=FE_NODAL_D_DS2;
-		nodal_value_type_option_table[2].user_data= &fe_nodal_d_ds2;
-		nodal_value_type_option_table[2].to_be_modified= &nodal_value_type;
-		fe_nodal_d_ds3=FE_NODAL_D_DS3;
-		nodal_value_type_option_table[3].user_data= &fe_nodal_d_ds3;
-		nodal_value_type_option_table[3].to_be_modified= &nodal_value_type;
-		fe_nodal_d2_ds1ds2=FE_NODAL_D2_DS1DS2;
-		nodal_value_type_option_table[4].user_data= &fe_nodal_d2_ds1ds2;
-		nodal_value_type_option_table[4].to_be_modified= &nodal_value_type;
-		fe_nodal_d2_ds1ds3=FE_NODAL_D2_DS1DS3;
-		nodal_value_type_option_table[5].user_data= &fe_nodal_d2_ds1ds3;
-		nodal_value_type_option_table[5].to_be_modified= &nodal_value_type;
-		fe_nodal_d2_ds2ds3=FE_NODAL_D2_DS2DS3;
-		nodal_value_type_option_table[6].user_data= &fe_nodal_d2_ds2ds3;
-		nodal_value_type_option_table[6].to_be_modified= &nodal_value_type;
-		fe_nodal_d3_ds1ds2ds3=FE_NODAL_D3_DS1DS2DS3;
-		nodal_value_type_option_table[7].user_data= &fe_nodal_d3_ds1ds2ds3;
-		nodal_value_type_option_table[7].to_be_modified= &nodal_value_type;
-		fe_field=(struct FE_field *)NULL;
-		nodal_value_type=FE_NODAL_UNKNOWN;
-		/* user enters version number starting at 1; field stores it as 0 */
-		version_number=1;
-		if (COMPUTED_FIELD_NODE_VALUE==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_node_value(field,&fe_field,
-				&nodal_value_type,&version_number);
-			version_number++;
-		}
-		if (return_code)
-		{
-			/* have ACCESS/DEACCESS because set_FE_field does */
-			if (fe_field)
-			{
-				ACCESS(FE_field)(fe_field);
-			}
-			/* try to handle help first */
-			if (current_token=state->current_token)
-			{
-				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
-				{
-					(help_option_table[0]).to_be_modified= &fe_field;
-					(help_option_table[0]).user_data=
-						computed_field_package->fe_field_manager;
-					(help_option_table[1]).user_data= &nodal_value_type_option_table;
-					(help_option_table[2]).to_be_modified= &version_number;
-					return_code=process_multiple_options(state,help_option_table);
-				}
-			}
-			/* parse the fe_field if the "fe_field" token is next */
-			if (return_code)
-			{
-				if ((current_token=state->current_token)&&
-					fuzzy_string_compare(current_token,"fe_field"))
-				{
-					(fe_field_option_table[0]).to_be_modified= &fe_field;
-					(fe_field_option_table[0]).user_data=
-						computed_field_package->fe_field_manager;
-					if (return_code=process_option(state,fe_field_option_table))
-					{
-						if (!fe_field)
-						{
-							display_parse_state_location(state);
-							display_message(ERROR_MESSAGE,"Missing or invalid fe_field");
-							return_code=0;
-						}
-					}
-				}
-				else
-				{
-					display_parse_state_location(state);
-					display_message(ERROR_MESSAGE,
-						"Must specify fe_field before other options");
-					return_code=0;
-				}
-			}
-			/* parse the value_type/version number */
-			if (return_code&&state->current_token)
-			{
-				(value_type_version_option_table[0]).user_data=
-					&nodal_value_type_option_table;
-				(value_type_version_option_table[1]).to_be_modified= &version_number;
-				return_code=
-					process_multiple_options(state,value_type_version_option_table);
-			}
-			if (return_code)
-			{
-				if (FE_NODAL_UNKNOWN != nodal_value_type)
-				{
-					/* user enters version number starting at 1; field stores it as 0 */
-					if (return_code=Computed_field_set_type_node_value(field,fe_field,
-						nodal_value_type,version_number-1))
-					{
-						Computed_field_set_coordinate_system(field,
-							get_FE_field_coordinate_system(fe_field));
-					}
-				}
-				else
-				{
-					display_parse_state_location(state);
-					display_message(ERROR_MESSAGE,"Must specify a value type");
-				}
-			}
-			if (!return_code)
-			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
-				{
-					/* error */
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_node_value.  Failed");
-				}
-			}
-			if (fe_field)
-			{
-				DEACCESS(FE_field)(&fe_field);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_node_value.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_node_value */
-
-static int define_Computed_field_type_node_array_value_at_time(struct Parse_state *state,
-	void *field_void,void *computed_field_package_void)
-/*******************************************************************************
-LAST MODIFIED : 28 October 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME 
-(if it is not already) and allows its contents to be modified.
-==============================================================================*/
-{
-	char *current_token;
-	enum FE_nodal_value_type fe_nodal_d_ds1,fe_nodal_d_ds2,fe_nodal_d_ds3,
-		fe_nodal_d2_ds1ds2,fe_nodal_d2_ds1ds3,fe_nodal_d2_ds2ds3,
-		fe_nodal_d3_ds1ds2ds3,fe_nodal_value,nodal_value_type;
-
-	int return_code,version_number;
-	static struct Modifier_entry
-		fe_field_option_table[]=
-		{
-			{"fe_field",NULL,NULL,set_FE_field},
-			{NULL,NULL,NULL,NULL}
-		},
-		nodal_value_type_option_table[]=
-  	{
-			{"value",NULL,NULL,set_enum},
-			{"d/ds1",NULL,NULL,set_enum},
-			{"d/ds2",NULL,NULL,set_enum},
-			{"d/ds3",NULL,NULL,set_enum},
-			{"d2/ds1ds2",NULL,NULL,set_enum},
-			{"d2/ds1ds3",NULL,NULL,set_enum},
-			{"d2/ds2ds3",NULL,NULL,set_enum},
-			{"d3/ds1ds2ds3",NULL,NULL,set_enum},
-			{NULL,NULL,NULL,NULL}
-		},
-		value_type_version_option_table[]=
-		{
-			{NULL,NULL,NULL,NULL},
-			{"time",NULL,NULL,set_Computed_field_conditional},
-			{"version",NULL,NULL,set_int_positive},
-			{NULL,NULL,NULL,NULL}
-		},
-		help_option_table[]=
-		{
-			{"fe_field",NULL,NULL,set_FE_field},
-			{NULL,NULL,NULL,NULL},
-			{"version",NULL,NULL,set_int_positive},
-			{NULL,NULL,NULL,NULL}
-		};
-	struct Computed_field *field,*time_field;
-	struct Computed_field_package *computed_field_package;
-	struct FE_field *fe_field;
-	struct Set_Computed_field_conditional_data set_time_field_data;
-
-	ENTER(define_Computed_field_type_node_array_value_at_time);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_package=
-			(struct Computed_field_package *)computed_field_package_void))
-	{
-		return_code=1;
-		fe_nodal_value=FE_NODAL_VALUE;
-		nodal_value_type_option_table[0].user_data= &fe_nodal_value;
-		nodal_value_type_option_table[0].to_be_modified= &nodal_value_type;
-		fe_nodal_d_ds1=FE_NODAL_D_DS1;
-		nodal_value_type_option_table[1].user_data= &fe_nodal_d_ds1;
-		nodal_value_type_option_table[1].to_be_modified= &nodal_value_type;
-		fe_nodal_d_ds2=FE_NODAL_D_DS2;
-		nodal_value_type_option_table[2].user_data= &fe_nodal_d_ds2;
-		nodal_value_type_option_table[2].to_be_modified= &nodal_value_type;
-		fe_nodal_d_ds3=FE_NODAL_D_DS3;
-		nodal_value_type_option_table[3].user_data= &fe_nodal_d_ds3;
-		nodal_value_type_option_table[3].to_be_modified= &nodal_value_type;
-		fe_nodal_d2_ds1ds2=FE_NODAL_D2_DS1DS2;
-		nodal_value_type_option_table[4].user_data= &fe_nodal_d2_ds1ds2;
-		nodal_value_type_option_table[4].to_be_modified= &nodal_value_type;
-		fe_nodal_d2_ds1ds3=FE_NODAL_D2_DS1DS3;
-		nodal_value_type_option_table[5].user_data= &fe_nodal_d2_ds1ds3;
-		nodal_value_type_option_table[5].to_be_modified= &nodal_value_type;
-		fe_nodal_d2_ds2ds3=FE_NODAL_D2_DS2DS3;
-		nodal_value_type_option_table[6].user_data= &fe_nodal_d2_ds2ds3;
-		nodal_value_type_option_table[6].to_be_modified= &nodal_value_type;
-		fe_nodal_d3_ds1ds2ds3=FE_NODAL_D3_DS1DS2DS3;
-		nodal_value_type_option_table[7].user_data= &fe_nodal_d3_ds1ds2ds3;
-		nodal_value_type_option_table[7].to_be_modified= &nodal_value_type;
-		fe_field=(struct FE_field *)NULL;
-		nodal_value_type=FE_NODAL_UNKNOWN;
-		time_field=(struct Computed_field *)NULL;
-		/* user enters version number starting at 1; field stores it as 0 */
-		version_number=1;
-		if (COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME==Computed_field_get_type(field))
-		{
-			return_code=Computed_field_get_type_node_array_value_at_time(field,&fe_field,
-				&nodal_value_type,&version_number,&time_field);
-			version_number++;
-		}
-		if (return_code)
-		{
-			/* have ACCESS/DEACCESS because set_FE_field does */
-			if (fe_field)
-			{
-				ACCESS(FE_field)(fe_field);
-			}
-			if (time_field)
-			{
-				ACCESS(Computed_field)(time_field);
-			}
-			/* try to handle help first */
-			if (current_token=state->current_token)
-			{
-				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
-				{
-					(help_option_table[0]).to_be_modified= &fe_field;
-					(help_option_table[0]).user_data=
-						computed_field_package->fe_field_manager;
-					(help_option_table[1]).user_data= &nodal_value_type_option_table;
-					(help_option_table[2]).to_be_modified= &version_number;
-					return_code=process_multiple_options(state,help_option_table);
-				}
-			}
-			/* parse the fe_field if the "fe_field" token is next */
-			if (return_code)
-			{
-				if ((current_token=state->current_token)&&
-					fuzzy_string_compare(current_token,"fe_field"))
-				{
-					(fe_field_option_table[0]).to_be_modified= &fe_field;
-					(fe_field_option_table[0]).user_data=
-						computed_field_package->fe_field_manager;
-					if (return_code=process_option(state,fe_field_option_table))
-					{
-						if (!fe_field)
-						{
-							display_parse_state_location(state);
-							display_message(ERROR_MESSAGE,"Missing or invalid fe_field");
-							return_code=0;
-						}
-					}
-				}
-				else
-				{
-					display_parse_state_location(state);
-					display_message(ERROR_MESSAGE,
-						"Must specify fe_field before other options");
-					return_code=0;
-				}
-			}
-			/* parse the value_type/version number */
-			if (return_code&&state->current_token)
-			{
-				(value_type_version_option_table[0]).user_data=
-					&nodal_value_type_option_table;
-				set_time_field_data.computed_field_manager=
-					computed_field_package->computed_field_manager;
-				set_time_field_data.conditional_function=Computed_field_is_scalar;
-				set_time_field_data.conditional_function_user_data=(void *)NULL;
-				(value_type_version_option_table[1]).to_be_modified= &time_field;
-				(value_type_version_option_table[1]).user_data= &set_time_field_data;
-				(value_type_version_option_table[2]).to_be_modified= &version_number;
-				return_code=
-					process_multiple_options(state,value_type_version_option_table);
-			}
-			if (return_code)
-			{
-				if (FE_NODAL_UNKNOWN != nodal_value_type)
-				{
-					/* user enters version number starting at 1; field stores it as 0 */
-					if (return_code=Computed_field_set_type_node_array_value_at_time(field,fe_field,
-						nodal_value_type,version_number-1,time_field))
-					{
-						Computed_field_set_coordinate_system(field,
-							get_FE_field_coordinate_system(fe_field));
-					}
-				}
-				else
-				{
-					display_parse_state_location(state);
-					display_message(ERROR_MESSAGE,"Must specify a value type");
-				}
-			}
-			if (!return_code)
-			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
-				{
-					/* error */
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_node_array_value_at_time.  Failed");
-				}
-			}
-			if (time_field)
-			{
-				DEACCESS(Computed_field)(&time_field);
-			}
-			if (fe_field)
-			{
-				DEACCESS(FE_field)(&fe_field);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_node_array_value_at_time.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_node_array_value_at_time */
 
 static int define_Computed_field_type_projection(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
@@ -12417,49 +10985,6 @@ there are components in field.
 	return (return_code);
 } /* define_Computed_field_type_sum_components */
 
-static int define_Computed_field_type_xi_coordinates(struct Parse_state *state,
-	void *field_void,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 26 January 1999
-
-DESCRIPTION :
-Converts <field> into type COMPUTED_FIELD_XI_COORDINATES.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field *field;
-
-	ENTER(define_Computed_field_type_xi_coordinates);
-	USE_PARAMETER(dummy_void);
-	if (state&&(field=(struct Computed_field *)field_void))
-	{
-		if (!state->current_token)
-		{
-			return_code=Computed_field_set_type_xi_coordinates(field);
-		}
-		else
-		{
-			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
-			{
-				display_message(ERROR_MESSAGE,
-					"Unknown option <%s>",state->current_token);
-				display_parse_state_location(state);
-			}
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"define_Computed_field_type_xi_coordinates.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* define_Computed_field_type_xi_coordinates */
-
 static int define_Computed_field_type_xi_texture_coordinates(struct Parse_state *state,
 	void *field_void,void *computed_field_package_void)
 /*******************************************************************************
@@ -12578,9 +11103,6 @@ and its parameter fields and values.
 			/* 2D_strain */
 			Option_table_add_entry(option_table,"2D_strain",field_void,
 				computed_field_package_void,define_Computed_field_type_2D_strain);
-			/* cmiss_number */
-			Option_table_add_entry(option_table,"cmiss_number",field_void,
-				(void *)NULL,define_Computed_field_type_cmiss_number);
 			/* component */
 			Option_table_add_entry(option_table,"component",field_void,
 				computed_field_package_void,define_Computed_field_type_component);
@@ -12603,9 +11125,6 @@ and its parameter fields and values.
 			/* edit_mask */
 			Option_table_add_entry(option_table,"edit_mask",field_void,
 				computed_field_package_void,define_Computed_field_type_edit_mask);
-			/* embedded */
-			Option_table_add_entry(option_table,"embedded",field_void,
-				computed_field_package_void,define_Computed_field_type_embedded);
 			/* external */
 			Option_table_add_entry(option_table,"external",field_void,
 				computed_field_package_void,define_Computed_field_type_external);
@@ -12619,13 +11138,6 @@ and its parameter fields and values.
 			/* magnitude */
 			Option_table_add_entry(option_table,"magnitude",field_void,
 				computed_field_package_void,define_Computed_field_type_magnitude);
-			/* node_array_value_at_time */
-			Option_table_add_entry(option_table,"node_array_value_at_time",field_void,
-				computed_field_package_void,
-				define_Computed_field_type_node_array_value_at_time);
-			/* node_value */
-			Option_table_add_entry(option_table,"node_value",field_void,
-				computed_field_package_void,define_Computed_field_type_node_value);
 			/* projection */
 			Option_table_add_entry(option_table,"projection",field_void,
 				computed_field_package_void,define_Computed_field_type_projection);
@@ -12638,9 +11150,6 @@ and its parameter fields and values.
 			/* sum_components */
 			Option_table_add_entry(option_table,"sum_components",field_void,
 				computed_field_package_void,define_Computed_field_type_sum_components);
-			/* xi_coordinates */
-			Option_table_add_entry(option_table,"xi_coordinates",field_void,
-				(void *)NULL,define_Computed_field_type_xi_coordinates);
 			/* xi_texture_coordinates */
 			Option_table_add_entry(option_table,"xi_texture_coordinates",field_void,
 				computed_field_package_void,
@@ -12994,7 +11503,7 @@ Writes the properties of the <field> to the command window.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	char *component_name,*field_name,*temp_string, *curve_name;
+	char *component_name,*temp_string, *curve_name;
 	int i,return_code;
 
 	ENTER(list_Computed_field);
@@ -13125,16 +11634,6 @@ Writes the properties of the <field> to the command window.
 					}
 					display_message(INFORMATION_MESSAGE,"\n");
 				} break;
-				case COMPUTED_FIELD_EMBEDDED:
-				{
-					if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
-					{
-						display_message(INFORMATION_MESSAGE,"    element_xi fe_field: %s\n",field_name);
-						DEALLOCATE(field_name);
-						display_message(INFORMATION_MESSAGE,
-							"    field : %s\n",field->source_fields[0]->name);
-					}
-				} break;
 				case COMPUTED_FIELD_EXTERNAL:
 				{
 					display_message(INFORMATION_MESSAGE,"    external_filename : %s\n",
@@ -13179,32 +11678,6 @@ Writes the properties of the <field> to the command window.
 					display_message(INFORMATION_MESSAGE,
 						"    field : %s\n",field->source_fields[0]->name);
 				} break;
-				case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-				{
-					if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
-					{
-						display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
-						display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
-							get_FE_nodal_value_type_string(field->nodal_value_type));
-						display_message(INFORMATION_MESSAGE,
-							"    time field : %s\n",field->source_fields[0]->name);
-						display_message(INFORMATION_MESSAGE,"    version : %d\n",
-							field->version_number+1);
-						DEALLOCATE(field_name);
-					}
-				} break;
-				case COMPUTED_FIELD_NODE_VALUE:
-				{
-					if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
-					{
-						display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
-						display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
-							get_FE_nodal_value_type_string(field->nodal_value_type));
-						display_message(INFORMATION_MESSAGE,"    version : %d\n",
-							field->version_number+1);
-						DEALLOCATE(field_name);
-					}
-				} break;
 				case COMPUTED_FIELD_PROJECTION:
 				{
 					display_message(INFORMATION_MESSAGE,"    field : %s\n",
@@ -13234,11 +11707,6 @@ Writes the properties of the <field> to the command window.
 						display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 					}
 					display_message(INFORMATION_MESSAGE,"\n");
-				} break;
-				case COMPUTED_FIELD_CMISS_NUMBER:
-				case COMPUTED_FIELD_XI_COORDINATES:
-				{
-					/* no extra parameters */
 				} break;
 				case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
 				{
@@ -13304,7 +11772,7 @@ are created automatically by the program.
 #### Must ensure implemented correctly for new Computed_field_type. ####
 ==============================================================================*/
 {
-	char *command_prefix,*component_name,*field_name,*temp_string, *curve_name;
+	char *command_prefix,*component_name,*temp_string, *curve_name;
 	int i,return_code;
 
 	ENTER(list_Computed_field_commands);
@@ -13416,15 +11884,6 @@ are created automatically by the program.
 							display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 						}
 					} break;
-					case COMPUTED_FIELD_EMBEDDED:
-					{
-						if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
-						{
-							display_message(INFORMATION_MESSAGE," element_xi %s field %s",field_name,
-								field->source_fields[0]->name);
-							DEALLOCATE(field_name);
-						}
-					} break;
 					case COMPUTED_FIELD_EXTERNAL:
 					{
 						display_message(INFORMATION_MESSAGE," number_of_values %d",
@@ -13466,27 +11925,6 @@ are created automatically by the program.
 						display_message(INFORMATION_MESSAGE,
 							" field %s",field->source_fields[0]->name);
 					} break;
-					case COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME:
-					{
-						if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
-						{
-							display_message(INFORMATION_MESSAGE," fe_field %s %s time %s version %d",
-								field_name,get_FE_nodal_value_type_string(field->nodal_value_type),
-								field->source_fields[0]->name,field->version_number+1);
-							DEALLOCATE(field_name);
-						}
-					} break;
-					case COMPUTED_FIELD_NODE_VALUE:
-					{
-						if (return_code=GET_NAME(FE_field)(field->fe_field,&field_name))
-						{
-							display_message(INFORMATION_MESSAGE," fe_field %s %s version %d",
-								field_name,
-								get_FE_nodal_value_type_string(field->nodal_value_type),
-								field->version_number+1);
-							DEALLOCATE(field_name);
-						}
-					} break;
 					case COMPUTED_FIELD_PROJECTION:
 					{
 						display_message(INFORMATION_MESSAGE," field %s number_of_components %d",
@@ -13511,11 +11949,6 @@ are created automatically by the program.
 						{
 							display_message(INFORMATION_MESSAGE," %g",field->source_values[i]);
 						}
-					} break;
-					case COMPUTED_FIELD_CMISS_NUMBER:
-					case COMPUTED_FIELD_XI_COORDINATES:
-					{
-						/* no extra parameters */
 					} break;
 					case COMPUTED_FIELD_XI_TEXTURE_COORDINATES:
 					{
@@ -13642,7 +12075,6 @@ its name matches the contents of the <other_computed_field_void>.
 			&&(field->coordinate_system.type==other_computed_field->coordinate_system.type)
 			/* Ignoring other coordinate_system parameters */
 			&&(field->type==other_computed_field->type)
-			&&(field->fe_field==other_computed_field->fe_field)
 			&&(field->component_no==other_computed_field->component_no)
 			&&(field->seed_element==other_computed_field->seed_element)
 			&&(field->number_of_source_fields==

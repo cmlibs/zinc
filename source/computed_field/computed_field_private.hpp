@@ -112,24 +112,11 @@ DESCRIPTION :
 	 contains all sorts of things we don't want to include in computed_field */
 	struct Computed_field_find_element_xi_special_cache *find_element_xi_cache;
 
-	/* for types COMPUTED_FIELD_FINITE_ELEMENT, COMPUTED_FIELD_EMBEDDED,
-		 COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
-	/* the real FE_field being computed */
-	struct FE_field *fe_field;
-
-	/* for types COMPUTED_FIELD_FINITE_ELEMENT, COMPUTED_FIELD_EMBEDDED only */
-	/* element field values of fe_field in last_element */
-	struct FE_element_field_values *fe_element_field_values;
-
 	/* for COMPUTED_FIELD_COMPONENT only */
 	int component_no;
 
 	/* for COMPUTED_FIELD_COMPOSE only */
 	struct GROUP(FE_element) *compose_element_group;
-
-	/* for COMPUTED_FIELD_NODE_VALUE,COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME only */
-	enum FE_nodal_value_type nodal_value_type;
-	int version_number;
 
 	/* for COMPUTED_FIELD_XI_TEXTURE_COORDINATES only */
 	struct FE_element *seed_element;
@@ -288,12 +275,47 @@ DESCRIPTION :
 Returns 1 if all the source fields are defined at the supplied <node>.
 ==============================================================================*/
 
+int Computed_field_set_coordinate_system_from_sources(
+	struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 3 July 2000
+
+DESCRIPTION :
+Sets the coordinate system of the <field> to match that of it's sources.
+==============================================================================*/
+
 int Computed_field_default_has_numerical_components(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Most computed fields have numerical components so this function returns 1.
+==============================================================================*/
+
+int Computed_field_evaluate_cache_in_element(
+	struct Computed_field *field,struct FE_element *element,FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Calculates the values and derivatives (if <calculate_derivatives> set) of
+<field> at <element>:<xi>, if it is defined over the element. Upon successful
+return values and derivatives of the field are stored in the internal cache for
+the <field>. <xi> is assumed to contain the same number of values as the
+dimension of the element.
+
+The optional <top_level_element> may be supplied for the benefit of this or
+any source fields that may require calculation on it instead of a face or line.
+FIBRE_AXES and GRADIENT are examples of such fields, since they require
+top-level coordinate derivatives. The term "top_level" refers to an ultimate
+parent element for the face or line, eg. the 3-D element parent to 2-D faces.
+If no such top level element is supplied and one is required, then the first
+available parent element will be chosen - if the user requires a top-level
+element in the same group as the face or with the face on the correct side,
+then they should supply the top_level_element here. Once a field has switched
+to being calculated on the top_level_element, all its source fields will be
+too - this should be understood when supplying source fields to such functions.
 ==============================================================================*/
 
 int Computed_field_evaluate_source_fields_cache_at_node(

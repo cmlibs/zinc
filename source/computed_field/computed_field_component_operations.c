@@ -5009,10 +5009,12 @@ already) and allows its contents to be modified.
 				(!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
 			{
-				number_of_offsets=source_field->number_of_components;
 				option_table = CREATE(Option_table)();					
+				/* field */
 				Option_table_add_entry(option_table,"field",&source_field,
 					&set_source_field_data,set_Computed_field_conditional);
+				/* offsets */
+				number_of_offsets=source_field->number_of_components;
 				Option_table_add_entry(option_table,"offsets",offsets,
 					&number_of_offsets,set_FE_value_array);
 				return_code=Option_table_multi_parse(option_table,state);
@@ -5032,11 +5034,7 @@ already) and allows its contents to be modified.
 					}
 
 					option_table = CREATE(Option_table)();
-					/* fields */
-					set_source_field_data.computed_field_manager=
-						computed_field_component_operations_package->computed_field_manager;
-					set_source_field_data.conditional_function=Computed_field_has_numerical_components;
-					set_source_field_data.conditional_function_user_data=(void *)NULL;
+					/* field */
 					Option_table_add_entry(option_table,"field",&source_field,
 						&set_source_field_data,set_Computed_field_conditional);
 					if (return_code=Option_table_parse(option_table,state))
@@ -5073,6 +5071,7 @@ already) and allows its contents to be modified.
 			if (return_code&&state->current_token)
 			{
 				option_table = CREATE(Option_table)();
+				/* offsets */
 				number_of_offsets=source_field->number_of_components;
 				Option_table_add_entry(option_table,"offsets",offsets,
 					&number_of_offsets,set_FE_value_array);
