@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -2004,6 +2004,28 @@ LAST MODIFIED : 1 July 1999
 DESCRIPTION :
 If <field> is NULL, element values are calculated for the coordinate field.
 The optional <top_level_element> forces inheritance from it as needed.
+==============================================================================*/
+
+int calculate_grid_field_offsets(int element_dimension,
+	int top_level_element_dimension,int *top_level_number_in_xi,
+	FE_value *element_to_top_level,int *number_in_xi,int *base_grid_offset,
+	int *grid_offset_in_xi);
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Calculates the factors for converting a grid position on a element of
+<element_dimension> to a top_level_element of <top_level_element_dimension>
+with <top_level_number_in_xi>, given affine transformation
+<element_to_top_level> which has as many rows as <top_level_element_dimension>
+and 1 more column than <element_dimension>, converting xi from element to
+top_level as follows:
+top_level_xi = b + A xi, with b the first column.
+The <number_in_xi> of the element is returned, as is the <base_grid_offset> and
+the <grid_offset_in_xi> which make up the grid point number conversion:
+eg. top_level_grid_point_number = base_grid_offset +
+grid_offset_in_xi[i]*grid_number_in_xi[i] (i summed over element_dimension).
+Sets values appropriately if element_dimension = top_level_element_dimension.
 ==============================================================================*/
 
 int calculate_FE_element_field_values(struct FE_element *element,

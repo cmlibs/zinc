@@ -16027,12 +16027,120 @@ column of the <coordinate_transformation> matrix.
 	return (return_code);
 } /* inherit_FE_element_field */
 
+int calculate_grid_field_offsets(int element_dimension,
+	int top_level_element_dimension,int *top_level_number_in_xi,
+	FE_value *element_to_top_level,int *number_in_xi,int *base_grid_offset,
+	int *grid_offset_in_xi)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Calculates the factors for converting a grid position on a element of
+<element_dimension> to a top_level_element of <top_level_element_dimension>
+with <top_level_number_in_xi>, given affine transformation
+<element_to_top_level> which has as many rows as <top_level_element_dimension>
+and 1 more column than <element_dimension>, converting xi from element to
+top_level as follows:
+top_level_xi = b + A xi, with b the first column.
+The <number_in_xi> of the element is returned, as is the <base_grid_offset> and
+the <grid_offset_in_xi> which make up the grid point number conversion:
+eg. top_level_grid_point_number = base_grid_offset +
+grid_offset_in_xi[i]*grid_number_in_xi[i] (i summed over element_dimension).
+Sets values appropriately if element_dimension = top_level_element_dimension.
+==============================================================================*/
+{
+	FE_value *temp_element_to_top_level;
+	int i,return_code,top_level_grid_offset_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		xi_number;
+
+	ENTER(calculate_grid_field_offsets);
+	if ((0<element_dimension)&&(element_dimension<=top_level_element_dimension)&&
+		(top_level_element_dimension<=MAXIMUM_ELEMENT_XI_DIMENSIONS)&&
+		top_level_number_in_xi&&((element_dimension==top_level_element_dimension)||
+			element_to_top_level)&&number_in_xi&&base_grid_offset&&grid_offset_in_xi)
+	{
+		return_code=1;
+		/* clear offsets */
+		*base_grid_offset = 0;
+		for (i=0;i<element_dimension;i++)
+		{
+			grid_offset_in_xi[i]=0;
+		}
+		/* calculate offset in grid_point_number for adjacent points in each xi
+			 direction on the top_level_element */
+		top_level_grid_offset_in_xi[0]=1;
+		for (i=1;i<top_level_element_dimension;i++)
+		{
+			top_level_grid_offset_in_xi[i]=
+				top_level_grid_offset_in_xi[i-1]*(top_level_number_in_xi[i-1]+1);
+		}
+		if (element_dimension == top_level_element_dimension)
+		{
+			for (i=0;i<top_level_element_dimension;i++)
+			{
+				grid_offset_in_xi[i]=top_level_grid_offset_in_xi[i];
+				number_in_xi[i]=top_level_number_in_xi[i];
+			}
+		}
+		else
+		{
+			temp_element_to_top_level=element_to_top_level;
+			for (i=0;i<top_level_element_dimension;i++)
+			{
+				/* a number in the first column indicates either xi decreasing
+					 or the direction this is a face/line on */
+				if (*temp_element_to_top_level)
+				{
+					*base_grid_offset +=
+						top_level_number_in_xi[i]*top_level_grid_offset_in_xi[i];
+				}
+				/* find out how (if at all) element xi changes with this
+					 field_element xi */
+				for (xi_number=0;xi_number<element_dimension;xi_number++)
+				{
+					if (temp_element_to_top_level[xi_number+1])
+					{
+						number_in_xi[xi_number] = top_level_number_in_xi[i];
+						if (0<temp_element_to_top_level[xi_number+1])
+						{
+							grid_offset_in_xi[xi_number] = top_level_grid_offset_in_xi[i];
+						}
+						else
+						{
+							grid_offset_in_xi[xi_number] = -top_level_grid_offset_in_xi[i];
+						}
+					}
+				}
+				temp_element_to_top_level += (element_dimension+1);
+			}
+		}
+		for (i=0;(i<element_dimension)&&return_code;i++)
+		{
+			if ((0==grid_offset_in_xi[i])||(0==number_in_xi[i]))
+			{
+				display_message(ERROR_MESSAGE,
+					"calculate_grid_field_offsets.  Invalid number_in_xi");
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"calculate_grid_field_offsets.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* calculate_grid_field_offsets */
+
 int calculate_FE_element_field_values(struct FE_element *element,
 	struct FE_field *field,char calculate_derivatives,
 	struct FE_element_field_values *element_field_values,
 	struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 18 October 1999
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 If <field> is NULL, element values are calculated for the coordinate field.  The
@@ -16056,7 +16164,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 		polygon_vertex,power,*reorder_coordinate,*reorder_coordinates,
 		*reorder_value,*reorder_values,return_code,row_size,
 		*standard_basis_argument,*standard_basis_arguments,
-		**standard_basis_arguments_address,xi_number;
+		**standard_basis_arguments_address;
 	Standard_basis_function **standard_basis_address;
 	struct FE_basis *previous_basis;
 	struct FE_element *field_element;
@@ -16286,85 +16394,18 @@ The optional <top_level_element> forces inheritance from it as needed.
 								element_field_values->destroy_standard_basis_arguments=0;
 								if (MAXIMUM_ELEMENT_XI_DIMENSIONS >= field_element_dimension)
 								{
-									int top_level_grid_offset_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-
-									/* get offset of grid index for neighbouring grid points in
-										 each xi direction */
 									component=element_field->components;
 									component_number_in_xi=
 										((*component)->map).element_grid_based.number_in_xi;
-									top_level_grid_offset_in_xi[0]=1;
-									for (i=1;i<field_element_dimension;i++)
+									if (!calculate_grid_field_offsets(element_dimension,
+										field_element_dimension,component_number_in_xi,
+										coordinate_transformation,number_in_xi,
+										&(element_field_values->base_grid_offset),grid_offset_in_xi))
 									{
-										top_level_grid_offset_in_xi[i]=top_level_grid_offset_in_xi[i-1]*
-											(component_number_in_xi[i-1]+1);
-									}
-									if (coordinate_transformation)
-									{
-										/* determine the number of sub elements in each xi direction */
-										/* initially store mapping of xi directions in number_in_xi */
-										component=element_field->components;
-										component_number_in_xi=
-											((*component)->map).element_grid_based.number_in_xi;
-										number_of_values=1;
-										transformation=coordinate_transformation;
-										for (i=0;i<element_dimension;i++)
-										{
-											grid_offset_in_xi[i]=0;
-										}
-										for (i=0;i<field_element_dimension;i++)
-										{
-											/* a number in the first column indicates xi going down or
-												 the direction this is a face/line on */
-											if (*transformation)
-											{
-												element_field_values->base_grid_offset +=
-													component_number_in_xi[i]*
-													top_level_grid_offset_in_xi[i];
-											}
-											/* find out how (if at all) element xi changes with this
-												 field_element xi */
-											for (xi_number=0;xi_number<element_dimension;xi_number++)
-											{
-												if (transformation[xi_number+1])
-												{
-													number_in_xi[xi_number] =
-														component_number_in_xi[i];
-													if (0<transformation[xi_number+1])
-													{
-														grid_offset_in_xi[xi_number]=
-															top_level_grid_offset_in_xi[i];
-													}
-													else
-													{
-														grid_offset_in_xi[xi_number]=
-															-top_level_grid_offset_in_xi[i];
-													}
-												}
-											}
-											transformation += (element_dimension+1);
-										}
-									}
-									else
-									{
-										/* element is the field_element */
-										/* determine the number of sub elements in each xi direction for
-											 the field_element */
-										for (i=0;i<field_element_dimension;i++)
-										{
-											number_in_xi[i]=component_number_in_xi[i];
-											grid_offset_in_xi[i]=top_level_grid_offset_in_xi[i];
-										}
-									}
-									for (i=0;(i<element_dimension)&&return_code;i++)
-									{
-										if (0==grid_offset_in_xi[i])
-										{
-											display_message(ERROR_MESSAGE,
-												"calculate_FE_element_field_values.  "
-												"Zero grid offset in xi");
-											return_code=0;
-										}
+										display_message(ERROR_MESSAGE,
+											"calculate_FE_element_field_values.  "
+											"Could not calculate grid field offsets");
+										return_code=0;
 									}
 								}
 								else
