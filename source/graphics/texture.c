@@ -1743,6 +1743,8 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 					}
 					X3d_movie_remove_callback(texture->movie,
 						Texture_movie_callback, (void *)texture);
+					X3d_movie_remove_destroy_callback(texture->movie,
+						Texture_movie_destroy_callback, (void *)texture);
 #else /* defined (SGI_MOVIE_FILE) */
 					display_message(ERROR_MESSAGE,"DESTROY(Texture).  Movie unavailable but movie pointer found");
 					return_code=0;
@@ -3032,6 +3034,7 @@ texture, and must be given a value.
 			Dm_buffer_get_type(dmbuffer))))
 		{
 			texture->dmbuffer = dmbuffer;
+			texture->movie = movie;
 			DEALLOCATE(texture->image);
 			texture->image = (void *)NULL;
 
