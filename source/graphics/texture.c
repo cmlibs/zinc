@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 16 April 2002
+LAST MODIFIED : 21 August 2002
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -2871,7 +2871,7 @@ int Texture_set_image_block(struct Texture *texture,
 	int left, int bottom, int width, int height, int depth_plane,
 	int source_width_bytes, unsigned char *source_pixels)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2002
+LAST MODIFIED : 21 August 2002
 
 DESCRIPTION :
 Over-writes a block of texels in <texture>. The block is one texel in depth
@@ -2907,7 +2907,8 @@ in size.
 		width_bytes = 4*((texture->width_texels*bytes_per_pixel + 3)/4);
 		copy_width = width*bytes_per_pixel;
 		destination = texture->image +
-			(depth_plane*height + bottom)*width_bytes + left*bytes_per_pixel;
+			(depth_plane*texture->height_texels + bottom)*width_bytes +
+			left*bytes_per_pixel;
 		source = source_pixels;
 		for (i = 0; i < height; i++)
 		{
