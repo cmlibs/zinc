@@ -2958,7 +2958,7 @@ Sets up the analysis work area for analysing a set of signals.
 				component.field=highlight_field;	
 				/*??JW should be copying out of and into node with MANAGER_MODIFY */
 				set_FE_nodal_int_value(rig_node,&component,/*version*/0,FE_NODAL_VALUE,
-					1/*highlight*/);
+					/*time*/0,1/*highlight*/);
 			}
 		} /* if (return_code) */
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -10254,7 +10254,7 @@ should be done as a callback from the trace_window.
 																		/*??JW should be copying out of and into node with MANAGER_MODIFY */
 																		set_FE_nodal_FE_value_value(
 																			analysis->highlight_rig_node,
-																			&component,0,FE_NODAL_VALUE,new_max);
+																			&component,0,FE_NODAL_VALUE,/*time*/0,new_max);
 #endif /*	defined (UNEMAP_USE_NODES) */
 																		highlight_device->signal_display_maximum=new_max;
 																		if (highlight_device!=trace_area_3_device)
@@ -10281,7 +10281,7 @@ should be done as a callback from the trace_window.
 																		/*??JW should be copying out of and into node with MANAGER_MODIFY */
 																		set_FE_nodal_FE_value_value(
 																			analysis->highlight_rig_node,&component,0,
-																			FE_NODAL_VALUE,new_min);
+																			FE_NODAL_VALUE,/*time*/0,new_min);
 #endif /*	defined (UNEMAP_USE_NODES) */
 																		highlight_device->signal_display_minimum=new_min;
 																		if (highlight_device!=trace_area_3_device)
@@ -11496,9 +11496,9 @@ c.f. analysis_set_range_frm_win.
 		/* set the new signal_minimum,signal_maximum*/
 		component.field = signal_minimum_field;	
 		/*??JW should be copying out of and into node with MANAGER_MODIFY */
-		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,minimum);
+		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,/*time*/0,minimum);
 		component.field = signal_maximum_field;
-		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,maximum);
+		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,/*time*/0,maximum);
 		/* update the display */
 		update_signals_drawing_area(analysis->window);
 		update_interval_drawing_area(analysis->window);
@@ -15138,7 +15138,7 @@ DESCRIPTION : iteratively set the highlight_field of the node
 				component.number=0;
 				component.field=set_highlight_iterator->highlight_field;
 				/*??JW should be copying out of and into node with MANAGER_MODIFY */
-				set_FE_nodal_int_value(node,&component,/*version*/0,FE_NODAL_VALUE,
+				set_FE_nodal_int_value(node,&component,/*version*/0,FE_NODAL_VALUE,/*time*/0,
 					set_highlight_iterator->highlight);
 				set_highlight_iterator->count++;
 			}/* if (FE_field_is_defined_at_node*/
@@ -15759,7 +15759,7 @@ c.f update_signal_range_widget_from_highlight_signal
 			component.number=0;
 			component.field = signal_minimum_field;	
 			/*??JW should be copying out of and into node with MANAGER_MODIFY */
-			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,minimum);
+			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,/*time*/0,minimum);
 #else
 			device->signal_display_minimum=minimum;
 #endif /*	defined (UNEMAP_USE_NODES) */
@@ -15834,7 +15834,7 @@ c.f update_signal_range_widget_from_highlight_signal
 			component.number=0;
 			component.field = signal_maximum_field;	
 			/*??JW should be copying out of and into node with MANAGER_MODIFY */
-			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,maximum);
+			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,/*time*/0,maximum);
 #else
 			device->signal_display_maximum=maximum;
 #endif /*	defined (UNEMAP_USE_NODES) */
@@ -16326,7 +16326,7 @@ cf highlight_analysis_device
 				{
 					/* if the device is highlighted */
 					get_FE_nodal_int_value(new_highlight_rig_node,&component,0,
-						FE_NODAL_VALUE,&highlighted);
+						FE_NODAL_VALUE,/*time*/0,&highlighted);
 					if (highlighted)
 					{
 						/* determine whether or not the device is the only highlighted
@@ -16345,7 +16345,7 @@ cf highlight_analysis_device
 							temp_device_rig_node=get_FE_node_order_info_node(
 								all_devices_rig_node_order_info,count);
 							get_FE_nodal_int_value(temp_device_rig_node,&component,
-								0,FE_NODAL_VALUE,&highlighted);
+								0,FE_NODAL_VALUE,/*time*/0,&highlighted);
 							count++;
 							while ((count<number_of_devices)&&(!(highlighted)||
 								(temp_device_rig_node==new_highlight_rig_node)))
@@ -16353,7 +16353,7 @@ cf highlight_analysis_device
 								temp_device_rig_node=get_FE_node_order_info_node(
 									all_devices_rig_node_order_info,count);
 								get_FE_nodal_int_value(temp_device_rig_node,&component,
-									0,FE_NODAL_VALUE,&highlighted);
+									0,FE_NODAL_VALUE,/*time*/0,&highlighted);
 								count++;
 							}
 							/*finished with this */
@@ -16375,7 +16375,7 @@ cf highlight_analysis_device
 							/* dehighlight the selected device */	
 							/*??JW should be copying out of and into node with MANAGER_MODIFY */
 							set_FE_nodal_int_value(new_highlight_rig_node,&component,
-								/*version*/0,FE_NODAL_VALUE,0/*highlight*/);
+								/*version*/0,FE_NODAL_VALUE,/*time*/0,0/*highlight*/);
 							highlight_signal((struct Device *)NULL,new_highlight_rig_node,
 								analysis->signal_drawing_package,new_device_number,0,0,
 								analysis->datum,analysis->potential_time,signals,
@@ -16393,7 +16393,7 @@ cf highlight_analysis_device
 						analysis->highlight_rig_node=new_highlight_rig_node;
 						/*??JW should be copying out of and into node with MANAGER_MODIFY */
 						set_FE_nodal_int_value(new_highlight_rig_node,&component,
-							/*version*/0,FE_NODAL_VALUE,1/*highlight*/);
+							/*version*/0,FE_NODAL_VALUE,/*time*/0,1/*highlight*/);
 						highlight_signal((struct Device *)NULL,new_highlight_rig_node,
 							analysis->signal_drawing_package,new_device_number,
 							0,0,analysis->datum,analysis->potential_time,signals,
@@ -16425,14 +16425,14 @@ cf highlight_analysis_device
 						get_FE_nodal_string_value(old_highlight_rig_node,device_type_field,
 							0,0,FE_NODAL_VALUE,&device_type_string);
 						get_FE_nodal_int_value(old_highlight_rig_node,&component,0,
-							FE_NODAL_VALUE,&highlighted);
+							FE_NODAL_VALUE,/*time*/0,&highlighted);
 						if (!strcmp(device_type_string,"ELECTRODE"))
 						{
 							if (highlighted)
 							{	
 								/*??JW should be copying out of and into node with MANAGER_MODIFY */
 								set_FE_nodal_int_value(old_highlight_rig_node,&component,
-									/*version*/0,FE_NODAL_VALUE,0/*highlight*/);
+									/*version*/0,FE_NODAL_VALUE,/*time*/0,0/*highlight*/);
 								highlight_signal((struct Device *)NULL,old_highlight_rig_node,
 									analysis->signal_drawing_package,old_device_number,
 									0,0,analysis->datum,analysis->potential_time,signals,
@@ -16450,7 +16450,7 @@ cf highlight_analysis_device
 							{
 								/*??JW should be copying out of and into node with MANAGER_MODIFY */
 								set_FE_nodal_int_value(old_highlight_rig_node,&component,
-									/*version*/0,FE_NODAL_VALUE,0/*highlight*/);
+									/*version*/0,FE_NODAL_VALUE,/*time*/0,0/*highlight*/);
 								highlight_signal((struct Device *)NULL,old_highlight_rig_node,
 									analysis->signal_drawing_package,old_device_number,
 									0,0,analysis->datum,analysis->potential_time,signals,
@@ -16501,7 +16501,7 @@ cf highlight_analysis_device
 					{	
 						/*??JW should be copying out of and into node with MANAGER_MODIFY */
 						set_FE_nodal_int_value(new_highlight_rig_node,&component,
-							/*version*/0,FE_NODAL_VALUE,1/*highlight*/);
+							/*version*/0,FE_NODAL_VALUE,/*time*/0,1/*highlight*/);
 						highlight_signal((struct Device *)NULL,new_highlight_rig_node,
 							analysis->signal_drawing_package,new_device_number,
 							0,0,analysis->datum,analysis->potential_time,signals,
@@ -17277,8 +17277,10 @@ Creates the windows associated with the analysis work area.
 		analysis->trace_update_flags=TRACE_FLAGS_CLEAR;
 		analysis->potential_time_object=
 			ACCESS(Time_object)(CREATE(Time_object)("UNEMAP Potential Time"));
+#if defined (UNEMAP_USE_3D)
 		set_unemap_package_potential_time_object(analysis->unemap_package,
 			analysis->potential_time_object);
+#endif /* defined (UNEMAP_USE_3D) */
 		Time_object_set_next_time_function(analysis->potential_time_object,
 			analysis_potential_time_next_time_callback,(void *)analysis);
 		if (time_keeper)

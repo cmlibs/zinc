@@ -4571,6 +4571,7 @@ the mapping_window.
 	return (return_code);
 } /* write_map_animation_jpg_file */
 
+#if defined (UNEMAP_USE_3D)
 static void mapping_window_spectrum_change(
 	struct MANAGER_MESSAGE(Spectrum) *message,void *mapping_void)
 /*******************************************************************************
@@ -4621,11 +4622,13 @@ DESCRIPTION :
 								mapping->colour_or_auxiliary_drawing->width,
 								mapping->colour_or_auxiliary_drawing->height,0,0);
 						}
+#if defined (UNEMAP_USE_3D)
 						if (mapping->map->projection_type==THREED_PROJECTION)
 						{
 							map_draw_contours(mapping->map,spectrum,
 								mapping->map->unemap_package);
 						}
+#endif /* defined (UNEMAP_USE_3D)*/
 					}
 				}
 			} break;
@@ -4644,6 +4647,7 @@ DESCRIPTION :
 	}
 	LEAVE;
 } /* mapping_window_spectrum_change */
+#endif /* defined (UNEMAP_USE_3D)*/
 
 static struct Mapping_window *create_Mapping_window(
 	struct Mapping_window **address,char *open,
@@ -5931,10 +5935,10 @@ window.
 			component.number=0;
 			component.field=highlight_field;
 			get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
-						&device_highlighted);
+						/*time*/0,&device_highlighted);
 			component.field=channel_number_field;
 			get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
-						&device_channel_number);
+						/*time*/0,&device_channel_number);
 		}
 		else
 #endif /* defined (UNEMAP_USE_NODES) */

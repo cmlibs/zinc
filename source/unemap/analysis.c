@@ -981,12 +981,12 @@ NB.  0<=current_data_interval<number_of_data_intervals
 						signal_drawing_package); 
 					/*??JW should be copying out of and into node with MANAGER_MODIFY */
 					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
-						signal_minimum);
+						/*time*/0,signal_minimum);
 					component.number=0;
 					component.field=get_Signal_drawing_package_signal_maximum_field(
 						signal_drawing_package); 
 					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
-						signal_maximum);
+						/*time*/0,signal_maximum);
 				}
 #endif /* defined (UNEMAP_USE_NODES) */
 				/* determine the value tick marks */

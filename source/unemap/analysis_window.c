@@ -2655,14 +2655,14 @@ make it the current node of <node_order_info>
 		set_FE_node_order_info_current_node_number(node_order_info,0);
 		current_node=get_FE_node_order_info_current_node(node_order_info);
 		get_FE_nodal_int_value(current_node,&component,0,FE_NODAL_VALUE,
-			&highlight);
+			/*time*/0,&highlight);
 		while(current_node&&!highlight)
 		{
 			current_node=get_FE_node_order_info_next_node(node_order_info);
 			if(current_node)
 			{
 				get_FE_nodal_int_value(current_node,&component,0,FE_NODAL_VALUE,
-					&highlight);		
+					/*time*/0,&highlight);		
 			}
 		}
 		/*if nothing highlighted, just make the first the current */
@@ -5453,7 +5453,7 @@ creates (and returns) an FE_node_order_info containing the nodes of
 								default:
 								{
 									success=get_FE_nodal_int_value(rig_node_sort->node,&component,0,
-										FE_NODAL_VALUE,&(rig_node_sort->read_order));
+										FE_NODAL_VALUE,/*time*/0,&(rig_node_sort->read_order));
 									rig_node_sort->event_time=0;
 								}break;
 								case EVENT_ORDER:

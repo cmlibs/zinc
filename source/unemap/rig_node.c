@@ -671,7 +671,7 @@ create_config_template_node, and the field_order_info.
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,highlight);
+						FE_NODAL_VALUE,/*time*/0,highlight);
 #endif /*  defined (UNEMAP_USE_NODES) */
 				} break;
 				case TORSO_ELECTRODE_TYPE:
@@ -721,7 +721,7 @@ create_config_template_node, and the field_order_info.
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,highlight);
+						FE_NODAL_VALUE,/*time*/0,highlight);
 #endif /*  defined (UNEMAP_USE_NODES)	*/
 				} break;		
 				case PATCH_ELECTRODE_TYPE:
@@ -769,7 +769,7 @@ create_config_template_node, and the field_order_info.
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,highlight);
+						FE_NODAL_VALUE,/*time*/0,highlight);
 #endif /*  defined (UNEMAP_USE_NODES)	*/
 				} break;
 				case AUXILIARY_TYPE:
@@ -809,7 +809,7 @@ create_config_template_node, and the field_order_info.
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,highlight);
+						FE_NODAL_VALUE,/*time*/0,highlight);
 #endif /*  defined (UNEMAP_USE_NODES)	*/
 				} break;
 			}	/* switch () */
@@ -6230,7 +6230,7 @@ The extraction arguments are:
 					component.number=0;				
 					component.field=signal_drawing_package->highlight_field;
 					get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
-						&highlight);									
+						/*time*/0,&highlight);									
 					component.field=signal_drawing_package->signal_minimum_field;
 					get_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
 						/*time*/0,&signal_minimum);
@@ -6971,9 +6971,9 @@ This function is called iteratively by analysis_unrange_all
 				component.number=0;	
 				component.field = min_max_iterator->signal_minimum_field;	
 				/*??JW should be copying to/from node with MANAGER_MODIFY, but this func not yet used */
-				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_minimum);
+				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,signal_minimum);
 				component.field = min_max_iterator->signal_maximum_field;
-				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_maximum);			
+				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,signal_maximum);			
 				min_max_iterator->count++; /* don't really use,but  may as well count*/
 			}/* if (FE_field_is_defined_at_node*/
 		}	/* if (min_max_iterator */
@@ -7029,9 +7029,9 @@ This function is called iteratively by anal_set_range_all_accep_undec
 				/* set the new signal_minimum,signal_maximum*/
 				component.field = min_max_iterator->signal_minimum_field;
 				/*??JW should be copying to/from node with MANAGER_MODIFY, but this func not yet used */
-				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_minimum);
+				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,signal_minimum);
 				component.field = min_max_iterator->signal_maximum_field;
-				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_maximum);
+				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,signal_maximum);
 				min_max_iterator->count++; /* don't really use,but  may as well count*/
 			}/* if (FE_field_is_defined_at_node*/
 		}	/* if (min_max_iterator */
