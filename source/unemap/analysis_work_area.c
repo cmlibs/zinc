@@ -202,6 +202,85 @@ struct Rig *neurosoft_rig=(struct Rig *)NULL;
 Module functions
 ----------------
 */
+
+static enum Projection_type ensure_projection_type_matches_region_type(
+	struct Analysis_work_area *analysis)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2001
+
+DESCRIPTION : Ensure that the map->projection_type and the 
+rig->current_region->type are compatible.
+==============================================================================*/
+{	
+	enum Projection_type projection_type;
+
+	ENTER(ensure_projection_type_matches_region_type);
+	/* the default */
+	projection_type=HAMMER_PROJECTION;
+	if(analysis)
+	{
+		if(analysis->rig)
+		{		
+			/*get the exisitng  projection_type, if any */
+			if(analysis->mapping_window&&analysis->mapping_window->map)
+			{
+				projection_type=analysis->mapping_window->map->projection_type;
+			}
+			/*possibly change the projection_type*/
+			if(!analysis->rig->current_region)
+			{
+				/*no current_region, so mutli region */
+				projection_type=HAMMER_PROJECTION;
+			}
+			else
+			{
+				switch(analysis->rig->current_region->type)
+				{			
+					case SOCK:
+					{
+						if(projection_type==CYLINDRICAL_PROJECTION)
+						{
+							projection_type=HAMMER_PROJECTION;
+						}
+					}break;
+					case PATCH:
+					{	
+						if((projection_type==HAMMER_PROJECTION)||
+							(projection_type==POLAR_PROJECTION))
+						{
+							projection_type=CYLINDRICAL_PROJECTION;
+						}
+					}break;
+					case TORSO:
+					{
+						if((projection_type==HAMMER_PROJECTION)||
+							(projection_type==POLAR_PROJECTION))
+						{
+							projection_type=CYLINDRICAL_PROJECTION;
+						}
+					}break;	
+					default:
+					{
+						projection_type=HAMMER_PROJECTION;
+					}break;
+				}
+			}
+			/*set the projection type*/
+			if(analysis->mapping_window&&analysis->mapping_window->map)
+			{
+				analysis->mapping_window->map->projection_type=projection_type;
+			}
+		} /* if(analysis->rig) */
+	}/* if(analysis) */
+	else
+	{		
+		display_message(ERROR_MESSAGE,
+			"ensure_projection_type_matches_region_type. Invalid argument");
+	}
+	return(projection_type);
+	LEAVE;
+}/* ensure_projection_type_matches_region_type*/ 
+
 static void display_map(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
@@ -212,6 +291,7 @@ DESCRIPTION :
 ??? multiple beats ?
 ==============================================================================*/
 {
+	enum Projection_type projection_type;
 	int maintain_aspect_ratio,number_of_frames;
 	struct Analysis_window *analysis_window;
 	struct Analysis_work_area *analysis;
@@ -264,6 +344,8 @@ DESCRIPTION :
 		{
 			maintain_aspect_ratio=0;
 		}
+		/*ensure projection_type matches region type */
+		projection_type=ensure_projection_type_matches_region_type(analysis);		
 		/*???should create mapping window and map if not present */
 		if (open_mapping_window(&(analysis->mapping_window),
 			*(analysis->mapping_work_area->activation),
@@ -274,7 +356,7 @@ DESCRIPTION :
 			&(analysis->mapping_work_area->open),
 			&(analysis->mapping_work_area->associate),&(analysis->map_type),
 			HIDE_COLOUR,HIDE_CONTOURS,SHOW_ELECTRODE_NAMES,HIDE_FIBRES,HIDE_LANDMARKS,
-			HIDE_EXTREMA,maintain_aspect_ratio,1,HAMMER_PROJECTION,VARIABLE_THICKNESS,
+			HIDE_EXTREMA,maintain_aspect_ratio,1,projection_type,VARIABLE_THICKNESS,
 			&(analysis->rig),&(analysis->event_number),&(analysis->potential_time),
 			&(analysis->datum),&(analysis->start_search_interval),
 			&(analysis->end_search_interval),analysis->identifying_colour,
@@ -2209,7 +2291,7 @@ Called when the "Save interval" button is clicked.
 
 static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2000
+LAST MODIFIED : 11 September 2001
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -3023,6 +3105,8 @@ Sets up the analysis work area for analysing a set of signals.
 		}
 		update_analysis_window_menu(analysis->window);
 		update_mapping_window_menu(analysis->mapping_window);
+		/* ensure projection_type matches region type */
+		ensure_projection_type_matches_region_type(analysis);
 		/* update the drawing areas */
 		update_mapping_drawing_area(analysis->mapping_window,2);
 		update_mapping_colour_or_auxili(analysis->mapping_window);
@@ -16341,7 +16425,7 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 					if (ButtonPress==callback->event->type)
 					{
 						event= &(callback->event->xbutton);
-						if ((map=mapping->map)&&(sub_map=map->sub_map/*!!jw more than one sub_map??*/)
+						if ((map=mapping->map)&&(sub_map=*(map->sub_map)/*!!jw more than one sub_map??*/)
 							&&(map->number_of_electrodes>0))
 						{
 							/* the sensitivity depends on the size of the electrode marker */
