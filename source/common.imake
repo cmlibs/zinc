@@ -93,9 +93,7 @@ LINK = egcs -rdynamic -L/usr/X11R6/lib
 /* LINK = egcs -shared -L/usr/X11R6/lib -v */
 /* LINK = gcc -L/usr/X11R6/lib -v */
 #else /* defined (DYNAMIC_GL_LINUX) */
-LINK = egcs --no-demangle -rdynamic -L/usr/X11R6/lib
-/* LINK = egcs -rdynamic -L/usr/X11R6/lib */
-/* LINK = egcs -static -L/usr/X11R6/lib -v */
+LINK = egcs -static -L/usr/X11R6/lib -v
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #if defined (OPTIMISED)
 OPTIMISATION_FLAGS = -O

@@ -243,9 +243,9 @@ GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
 #elif defined(LINUX) /* switch OperatingSystem */
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
 #if defined (DYNAMIC_GL_LINUX)
-GRAPHICS_LIB = -lGLU -lGL
+GRAPHICS_LIB = -lGL -lGLU 
 #else /* defined (DYNAMIC_GL_LINUX) */
-GRAPHICS_LIB = -L/usr/local/lib -lMesaGL -lMesaGLU
+GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* switch OperatingSystem */
 #if defined (OLD_CODE)
