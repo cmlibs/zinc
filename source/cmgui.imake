@@ -593,7 +593,7 @@ INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-64/libperlinterpreter-opt.a
 INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-32/libperlinterpreter-opt.a
 #endif /* defined (O64) */
 #elif defined(WIN32) /* switch OperatingSystem */
-INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/CYGWIN_NT-5.0-32-debug/perl_interpreter.o $(INTERPRETER_PATH)/Perl_cmiss/blib/arch/auto/Perl_cmiss/Perl_cmiss.a c:/perl/5.6.1/lib/MSWin32-x86/CORE/libperl56.a
+INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/win32/perl_interpreter.o $(INTERPRETER_PATH)/generated/win32/Perl_cmiss.a $(INTERPRETER_PATH)/generated/win32/libperl56.a
 XCOMM INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/CYGWIN_NT-5.0-32/libperlinterpreter-debug.a
 #endif /* switch OperatingSystem */
 #endif /* !defined (PERL_INTERPRETER) */
