@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_composition.cpp
 //
-// LAST MODIFIED : 24 November 2003
+// LAST MODIFIED : 25 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -304,7 +304,7 @@ class Variable_composition_evaluate_input_source_functor
 Variable_handle Variable_composition::evaluate(
 	std::list<Variable_input_value_handle>& values)
 //******************************************************************************
-// LAST MODIFIED : 21 November 2003
+// LAST MODIFIED : 25 November 2003
 //
 // DESCRIPTION :
 // Overloading Variable::evaluate.
@@ -312,7 +312,7 @@ Variable_handle Variable_composition::evaluate(
 {
 	std::list<Variable_input_value_handle> values_extended(values);
 
-	for_each(input_source_list.begin(),input_source_list.end(),
+	std::for_each(input_source_list.begin(),input_source_list.end(),
 		Variable_composition_evaluate_input_source_functor(values,values_extended));
 
 	return (dependent_variable->evaluate(values_extended));
@@ -322,7 +322,7 @@ Variable_handle Variable_composition::evaluate_derivative(
 	std::list<Variable_input_handle>& independent_variables,
 	std::list<Variable_input_value_handle>& values)
 //******************************************************************************
-// LAST MODIFIED : 24 November 2003
+// LAST MODIFIED : 25 November 2003
 //
 // DESCRIPTION :
 // Overloading Variable::evaluate_derivative.
@@ -440,7 +440,7 @@ Variable_handle Variable_composition::evaluate_derivative(
 			independent_variables_iterator++;
 		}
 		// set up extended values list for f
-		for_each(input_source_list.begin(),input_source_list.end(),
+		std::for_each(input_source_list.begin(),input_source_list.end(),
 			Variable_composition_evaluate_input_source_functor(values,
 			values_extended));
 		Variable_input_composite_handle f_independent_variable(

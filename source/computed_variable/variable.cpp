@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable.cpp
 //
-// LAST MODIFIED : 23 November 2003
+// LAST MODIFIED : 25 November 2003
 //
 // DESCRIPTION :
 //
@@ -376,7 +376,7 @@ class Variable_set_input_value
 Variable_handle Variable::evaluate(
 	std::list<Variable_input_value_handle>& values)
 //******************************************************************************
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 25 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -385,15 +385,15 @@ Variable_handle Variable::evaluate(
 	Variable_handle variable;
 
 	// get the specified values
-	for_each(values.begin(),values.end(),Variable_get_input_value(
+	std::for_each(values.begin(),values.end(),Variable_get_input_value(
 		Variable_handle(this),current_values));
 	// override the specified values
-	for_each(values.begin(),values.end(),Variable_set_input_value(
+	std::for_each(values.begin(),values.end(),Variable_set_input_value(
 		Variable_handle(this)));
 	// do the local evaluate
 	variable=(evaluate_local)();
 	// reset the current values
-	for_each(current_values.rbegin(),current_values.rend(),
+	std::for_each(current_values.rbegin(),current_values.rend(),
 		Variable_set_input_value(Variable_handle(this)));
 
 	return (variable);
@@ -466,7 +466,7 @@ class Calculate_composite_independent_variable_step
 
 class Variable_input_composite_evaluate_derivative_functor
 //******************************************************************************
-// LAST MODIFIED : 23 November 2003
+// LAST MODIFIED : 25 November 2003
 //
 // DESCRIPTION :
 // A unary functor (Functor) for ???DB
@@ -522,7 +522,7 @@ class Variable_input_composite_evaluate_derivative_functor
 					"Incorrect number_of_matrices"));
 				composite_independent_variable_factor=1;
 				result_input_iterator=result->independent_variables.begin();
-				for_each(independent_variables.begin(),input_iterator,
+				std::for_each(independent_variables.begin(),input_iterator,
 					Find_result_input_iterator(result_input_iterator,
 					composite_independent_variable_factor));
 				derivative_iterator=(derivative->matrices).begin();
@@ -542,7 +542,7 @@ class Variable_input_composite_evaluate_derivative_functor
 							result_column_number;
 						Matrix matrix(number_of_rows,number_of_columns);
 
-						for_each(independent_variables.begin(),input_iterator,
+						std::for_each(independent_variables.begin(),input_iterator,
 							Calculate_composite_independent_variable_step(
 							composite_independent_variable_step,matrix_number));
 						derivative_column_number=0;
@@ -605,7 +605,7 @@ Variable_handle Variable::evaluate_derivative(
 	std::list<Variable_input_handle>& independent_variables,
 	std::list<Variable_input_value_handle>& values)
 //******************************************************************************
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 25 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -619,22 +619,22 @@ Variable_handle Variable::evaluate_derivative(
 	Variable_input_is_composite is_composite_input_predicate;
 
 	// check for composite inputs in the list of independent_variables
-	input_iterator=find_if(independent_variables.begin(),
+	input_iterator=std::find_if(independent_variables.begin(),
 		independent_variables.end(),is_composite_input_predicate);
 	if (independent_variables.end()==input_iterator)
 	{
 		// none of the independent variables/inputs are composite
 		// get the specified values
-		for_each(values.begin(),values.end(),Variable_get_input_value(
+		std::for_each(values.begin(),values.end(),Variable_get_input_value(
 			Variable_handle(this),current_values));
 		// override the specified values
-		for_each(values.begin(),values.end(),Variable_set_input_value(
+		std::for_each(values.begin(),values.end(),Variable_set_input_value(
 			Variable_handle(this)));
 		// do the local evaluate derivative
 		derivative=Variable_derivative_matrix_handle(new Variable_derivative_matrix(
 			Variable_handle(this),independent_variables));
 		// reset the current values
-		for_each(current_values.rbegin(),current_values.rend(),
+		std::for_each(current_values.rbegin(),current_values.rend(),
 			Variable_set_input_value(this));
 	}
 	else
@@ -666,7 +666,7 @@ Variable_handle Variable::evaluate_derivative(
 		Variable_input_composite_evaluate_derivative_functor
 			evaluate_derivative_functor(Variable_handle(this),independent_variables,
 			values,input_iterator,derivative);
-		for_each(input_composite_iterator,input_composite->end(),
+		std::for_each(input_composite_iterator,input_composite->end(),
 			evaluate_derivative_functor);
 		*input_iterator=input_composite;
 	}
@@ -699,7 +699,7 @@ class Variable_get_input_value_functor
 
 Variable_handle Variable::get_input_value(const Variable_input_handle& input)
 //******************************************************************************
-// LAST MODIFIED : 21 November 2003
+// LAST MODIFIED : 25 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -718,7 +718,7 @@ Variable_handle Variable::get_input_value(const Variable_input_handle& input)
 	{
 		std::list<Variable_handle> variable_list(0);
 
-		for_each(input_composite->begin(),input_composite->end(),
+		std::for_each(input_composite->begin(),input_composite->end(),
 			Variable_get_input_value_functor(Variable_handle(this),variable_list));
 		result=Variable_handle(new Variable_composite(variable_list));
 	}

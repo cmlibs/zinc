@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_derivative_matrix.cpp
 //
-// LAST MODIFIED : 19 November 2003
+// LAST MODIFIED : 25 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -99,7 +99,7 @@ class Variable_derivative_matrix_create_matrices_inner_functor
 
 class Variable_derivative_matrix_create_matrices_outer_functor
 //******************************************************************************
-// LAST MODIFIED : 12 October 2003
+// LAST MODIFIED : 25 November 2003
 //
 // DESCRIPTION :
 // A unary function (Functor) for creating and zeroing the list of matrices for
@@ -129,7 +129,7 @@ class Variable_derivative_matrix_create_matrices_outer_functor
 			matrix_independent_variables.push_back(new_matrix_independent_variables);
 			last=matrices.end();
 			last--;
-			for_each(matrices.begin(),last,
+			std::for_each(matrices.begin(),last,
 				Variable_derivative_matrix_create_matrices_inner_functor(
 				dependent_variable,independent_variable,number_of_independent_values,
 				matrices,matrix_independent_variables));
@@ -149,13 +149,13 @@ Variable_derivative_matrix::Variable_derivative_matrix(
 	Variable(),dependent_variable(dependent_variable),
 	independent_variables(independent_variables),matrices()
 //******************************************************************************
-// LAST MODIFIED : 14 November 2003
+// LAST MODIFIED : 25 November 2003
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
 {
-	for_each(independent_variables.begin(),independent_variables.end(),
+	std::for_each(independent_variables.begin(),independent_variables.end(),
 		Variable_derivative_matrix_create_matrices_outer_functor(
 		dependent_variable,matrices));
 }
