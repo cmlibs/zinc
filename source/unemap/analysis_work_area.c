@@ -2665,7 +2665,7 @@ Sets up the analysis work area for analysing a set of signals.
 			display_message(ERROR_MESSAGE,
 				"analysis_read_signal_file. file_read_signal_FE_node_group failed ");
 		}
-#endif /* defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_3D) */
 		if (return_code)
 		{
 			/*highlight the first device*/
@@ -2843,7 +2843,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 11 February 2000
+LAST MODIFIED : 7 February 2001
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -2868,10 +2868,30 @@ signals.
 	struct Rig *rig;
 	struct Signal_buffer *buffer;
 	XmString new_dialog_title,old_dialog_title,value_xmstring;
+#if defined (UNEMAP_USE_3D) 
+	struct FE_node_selection *node_selection;
+	struct FE_field *device_name_field;
+	struct FE_node *rig_node;
+	struct GROUP(FE_node) *rig_node_group;
+#endif /* defined (UNEMAP_USE_3D) */
 
 	ENTER(read_event_times_file);
+#if defined (UNEMAP_USE_3D) 
+	node_selection=(struct FE_node_selection *)NULL;	
+	device_name_field=(struct FE_field *)NULL;
+	rig_node=(struct FE_node *)NULL;	
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
+#endif /* defined (UNEMAP_USE_3D) */
 	if (file_name&&(analysis=(struct Analysis_work_area *)analysis_work_area))
 	{
+#if defined (UNEMAP_USE_3D)
+		/* need to unselect nodes, as selecting them accesses them */
+		if (node_selection=get_unemap_package_FE_node_selection
+			(analysis->unemap_package))
+		{
+			FE_node_selection_clear(node_selection);
+		}
+#endif /* defined (UNEMAP_USE_3D)	 */
 		if (input_file=fopen(file_name,"r"))
 		{
 			/* read the signal file name */
@@ -3797,6 +3817,34 @@ signals.
 						XtPopdown(analysis->trace->shell);
 					}
 				}
+#if defined (UNEMAP_USE_3D)			
+				/* read the signal file into nodes */
+				/*???DB.  Would be better to be another callback from the same button ? */
+				if (file_read_signal_FE_node_group(signal_file_name,
+					analysis->unemap_package,analysis->rig))
+				{
+					ACCESS(Unemap_package)(analysis->unemap_package);
+
+		 
+					/* highlight the  node (and everything else) */
+					if ((analysis->highlight)&&(*(analysis->highlight)))
+					{	
+						/*get the rig_node corresponding to the device */
+						node_selection=get_unemap_package_FE_node_selection(analysis->unemap_package);
+						device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
+						rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
+						rig_node=find_rig_node_given_device(*(analysis->highlight),rig_node_group,
+							device_name_field);
+						/*trigger the selction callback*/
+						FE_node_selection_select_node(node_selection,rig_node);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"read_event_times_file. file_read_signal_FE_node_group failed ");
+				}
+#endif /* defined (UNEMAP_USE_3D) */
 				update_analysis_window_menu(analysis->window);
 				update_mapping_window_menu(analysis->mapping_window);
 				/* update the drawing areas */
