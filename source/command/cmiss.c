@@ -23044,6 +23044,9 @@ Executes a UNEMAP OPEN command.
 										define_fit_field_at_quad_elements_and_nodes(torso_element_group,
 											map_fit_field,command_data->basis_manager,
 											command_data->element_manager,command_data->node_manager);
+										/* add cylindrical field infor for texture mapping to defaut torso*/
+										add_cylindrical_info_to_cartesian_torso(default_torso_group_name,
+											command_data->unemap_package);
 									}
 									else
 									{
