@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_handle_iterator.cpp
 //
-// LAST MODIFIED : 4 February 2004
+// LAST MODIFIED : 27 February 2004
 //
 // DESCRIPTION :
 // Handle iterator definitions.
@@ -45,12 +45,17 @@ template<typename Handle>
 	Handle_iterator_representation<Handle> *representation):
 	representation(representation)
 //******************************************************************************
-// LAST MODIFIED : 28 January 2004
+// LAST MODIFIED : 27 February 2004
 //
 // DESCRIPTION :
 // Constructor.
 //==============================================================================
-{}
+{
+	if (representation)
+	{
+		(representation->reference_count)++;
+	}
+}
 
 template<typename Handle>
 	Handle_iterator<Handle>::Handle_iterator(

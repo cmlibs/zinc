@@ -1,0 +1,222 @@
+//******************************************************************************
+// FILE : function_finite_element.hpp
+//
+// LAST MODIFIED : 8 April 2004
+//
+// DESCRIPTION :
+//==============================================================================
+#if !defined (__FUNCTION_FINITE_ELEMENT_HPP__)
+#define __FUNCTION_FINITE_ELEMENT_HPP__
+
+#include <list>
+#include <utility>
+
+extern "C"
+{
+#include "finite_element/finite_element.h"
+}
+#include "computed_variable/function.hpp"
+#include "computed_variable/function_variable.hpp"
+
+class Function_element : public Function
+//******************************************************************************
+// LAST MODIFIED : 7 April 2004
+//
+// DESCRIPTION :
+// An identity function whose input/output is and element.
+//==============================================================================
+{
+	public:
+		// constructor
+		Function_element(struct FE_element *element);
+		// destructor
+		~Function_element();
+	// inherited
+	public:
+		string_handle get_string_representation();
+		Function_variable_handle input();
+		Function_variable_handle output();
+	// additional
+	public:
+		// return the dimension of the element
+		Function_size_type dimension();
+		// return the element.  NB.  The calling program should use
+		//   ACCESS(FE_element) and DEACCESS(FE_element) to manage the lifetime of
+		//   the returned element
+		struct FE_element* element_value();
+	private:
+		Function_handle evaluate(Function_variable_handle atomic_variable);
+		bool evaluate_derivative(Scalar& derivative,
+			Function_variable_handle atomic_variable,
+			std::list<Function_variable_handle>& atomic_independent_variables);
+		bool set_value(Function_variable_handle atomic_variable,
+			Function_variable_handle atomic_value);
+	private:
+		// copy constructor
+		Function_element(const Function_element&);
+		// assignment
+		Function_element& operator=(const Function_element&);
+	private:
+		struct FE_element *element_private;
+};
+
+typedef boost::intrusive_ptr<Function_element> Function_element_handle;
+
+class Function_element_xi : public Function
+//******************************************************************************
+// LAST MODIFIED : 8 April 2004
+//
+// DESCRIPTION :
+// An identity function whose input/output is element/xi.
+//==============================================================================
+{
+	friend class Function_finite_element;
+	public:
+		// constructor
+		Function_element_xi(struct FE_element *element,const Vector& xi);
+		// destructor
+		~Function_element_xi();
+	// inherited
+	public:
+		string_handle get_string_representation();
+		Function_variable_handle input();
+		Function_variable_handle output();
+	// additional
+	public:
+		// variables
+		Function_variable_handle
+			element(),
+			element_xi(),
+			xi(),
+			xi(Function_size_type);
+		// return the dimension of the element and the number of xi
+		Function_size_type number_of_xi();
+		// return the element.  NB.  The calling program should use
+		//   ACCESS(FE_element) and DEACCESS(FE_element) to manage the lifetime of
+		//   the returned element
+		struct FE_element* element_value();
+		// return the xi value 1<=index<=number_of_xi
+		Scalar xi_value(Function_size_type index);
+	private:
+		Function_handle evaluate(Function_variable_handle atomic_variable);
+		bool evaluate_derivative(Scalar& derivative,
+			Function_variable_handle atomic_variable,
+			std::list<Function_variable_handle>& atomic_independent_variables);
+		bool set_value(Function_variable_handle atomic_variable,
+			Function_variable_handle atomic_value);
+	private:
+		// copy constructor
+		Function_element_xi(const Function_element_xi&);
+		// assignment
+		Function_element_xi& operator=(const Function_element_xi&);
+	private:
+		struct FE_element *element_private;
+		Vector xi_private;
+};
+
+typedef boost::intrusive_ptr<Function_element_xi> Function_element_xi_handle;
+
+class Function_finite_element;
+typedef boost::intrusive_ptr<Function_finite_element>
+	Function_finite_element_handle;
+
+class Function_finite_element : public Function
+//******************************************************************************
+// LAST MODIFIED : 8 April 2004
+//
+// DESCRIPTION :
+// A function for a finite element interpolation field.
+//
+//???DB.  Make element_private and xi_private a Function_element_xi for
+//  evaluate, evaluate_derivative and set_value?
+//==============================================================================
+{
+	friend class Function_variable_finite_element;
+	friend class Function_variable_nodal_values;
+	public:
+		// constructor
+		Function_finite_element(struct FE_field *field);
+		// destructor
+		~Function_finite_element();
+	// inherited
+	public:
+		string_handle get_string_representation();
+		Function_variable_handle input();
+		Function_variable_handle output();
+	// additional
+	public:
+		// variables
+		Function_variable_handle
+			component(std::string component_name),
+			component(Function_size_type component_number),
+				// component_number 1 is the first component
+			element(),
+			element_xi(),
+			nodal_values(),
+			nodal_values(std::string component_name,struct FE_node *node,
+				enum FE_nodal_value_type value_type,int version),
+			nodal_values(Function_size_type component_number,struct FE_node *node,
+				enum FE_nodal_value_type value_type,int version),
+			nodal_values(std::string component_name),
+			nodal_values(Function_size_type component_number),
+			nodal_values(struct FE_node *node),
+			nodal_values(enum FE_nodal_value_type value_type),
+			nodal_values(int version),
+			xi(),
+			xi(Function_size_type);
+		// return the number of components
+		Function_size_type number_of_components() const;
+		// return the region that the field is defined for
+		// NB.  The calling program should use ACCESS(FE_region) and
+		//   DEACCESS(FE_region) to manage the lifetime of the returned region
+		struct FE_region *region() const;
+		// return the number of versions for the component at the node
+		Function_size_type number_of_versions(
+			Function_size_type component_number,struct FE_node *node) const;
+		// return the number of derivatives for the component at the node
+		Function_size_type number_of_derivatives(
+			Function_size_type component_number,struct FE_node *node) const;
+		// return the nodal value types for the component at the node
+		// NB.  The calling program should DEALLOCATE the returned array when it is
+		//   no longer needed
+		enum FE_nodal_value_type *nodal_value_types(
+			Function_size_type component_number,struct FE_node *node) const;
+		// return true and get the value if exactly one nodal value is specified,
+		//   otherwise return false
+		bool get_nodal_value(Function_size_type component_number,
+			struct FE_node *node,enum FE_nodal_value_type value_type,int version,
+			Scalar& value);
+		// return true and set the value if exactly one nodal value is specified,
+		//   otherwise return false
+		bool set_nodal_value(Function_size_type component_number,
+			struct FE_node *node,enum FE_nodal_value_type value_type,int version,
+			Scalar& value);
+		// return the dimension of the element and the number of xi
+		Function_size_type number_of_xi() const;
+		// return the element.  NB.  The calling program should use
+		//   ACCESS(FE_element) and DEACCESS(FE_element) to manage the lifetime of
+		//   the returned element
+		struct FE_element* element_value() const;
+		// return the xi value 1<=index<=number_of_xi
+		Scalar xi_value(Function_size_type index) const;
+	private:
+		Function_handle evaluate(Function_variable_handle atomic_variable);
+		bool evaluate_derivative(Scalar& derivative,
+			Function_variable_handle atomic_variable,
+			std::list<Function_variable_handle>& atomic_independent_variables);
+		bool set_value(Function_variable_handle atomic_variable,
+			Function_variable_handle atomic_value);
+	private:
+		// copy constructor
+		Function_finite_element(const Function_finite_element&);
+		// assignment
+		Function_finite_element& operator=(const Function_finite_element&);
+	private:
+		Scalar time_private;
+		struct FE_element *element_private;
+		struct FE_field *field_private;
+		struct FE_node *node_private;
+		Vector xi_private;
+};
+
+#endif /* !defined (__FUNCTION_FINITE_ELEMENT_HPP__) */
