@@ -3643,11 +3643,10 @@ direct_render_Texture.
 			glCallList(texture->display_list);
 			/* SAB There seems to be some problem with losing a bound texture,
 				this tries to correct this */
-#if defined (GL_EXT_texture_object)
 			/* If using texture_objects then we need to check that the texture
 				is still resident */
 			glGetTexParameteriv(GL_TEXTURE_2D,
-				GL_TEXTURE_RESIDENT_EXT,
+				GL_TEXTURE_RESIDENT,
 				&resident);
 			if(GL_TRUE != resident)
 			{
@@ -3664,7 +3663,6 @@ direct_render_Texture.
 					direct_render_Texture(texture);
 				}
 			}
-#endif /* defined (GL_EXT_texture_object) */
 			return_code=1;
 #else /* defined (OPENGL_API) */
 			display_message(ERROR_MESSAGE,
