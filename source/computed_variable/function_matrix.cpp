@@ -88,11 +88,75 @@ bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 4 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
+#if defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
+	bool result;
+	boost::intrusive_ptr< Function_variable_matrix<Scalar> >
+		atomic_dependent_variable,atomic_independent_variable;
+#if defined (OLD_CODE)
+	boost::intrusive_ptr< Function_variable_matrix_output<Scalar> >
+		atomic_dependent_variable;
+	boost::intrusive_ptr< Function_variable_matrix_input<Scalar> >
+		atomic_independent_variable;
+#endif // defined (OLD_CODE)
+
+	result=false;
+	if ((atomic_dependent_variable=boost::dynamic_pointer_cast<
+		Function_variable_matrix_output<Scalar>,Function_variable>(
+		atomic_variable))&&
+		equivalent(Function_handle(this),atomic_dependent_variable->function())&&
+		(1==atomic_dependent_variable->number_differentiable()))
+	{
+		result=true;
+		if ((1==atomic_independent_variables.size())&&
+			((atomic_independent_variable=boost::dynamic_pointer_cast<
+			Function_variable_matrix_input<Scalar>,Function_variable>(
+			atomic_independent_variables.front()))||
+			(atomic_independent_variable=boost::dynamic_pointer_cast<
+			Function_variable_matrix_output<Scalar>,Function_variable>(
+			atomic_independent_variables.front())))&&
+			equivalent(Function_handle(this),
+			atomic_independent_variable->function())&&
+			(atomic_dependent_variable->row()==atomic_independent_variable->row())&&
+			(atomic_dependent_variable->column()==
+			atomic_independent_variable->column()))
+		{
+			derivative=1;
+		}
+		else
+		{
+			derivative=0;
+		}
+	}
+	else if ((atomic_dependent_variable=boost::dynamic_pointer_cast<
+		Function_variable_matrix_input<Scalar>,Function_variable>(
+		atomic_variable))&&
+		equivalent(Function_handle(this),atomic_dependent_variable->function())&&
+		(1==atomic_dependent_variable->number_differentiable()))
+	{
+		result=true;
+		if ((1==atomic_independent_variables.size())&&
+			(atomic_independent_variable=boost::dynamic_pointer_cast<
+			Function_variable_matrix_input<Scalar>,Function_variable>(
+			atomic_independent_variables.front()))&&
+			equivalent(Function_handle(this),
+			atomic_independent_variable->function())&&
+			(atomic_dependent_variable->row()==atomic_independent_variable->row())&&
+			(atomic_dependent_variable->column()==
+			atomic_independent_variable->column()))
+		{
+			derivative=1;
+		}
+		else
+		{
+			derivative=0;
+		}
+	}
+#else // defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
 	bool result;
 	boost::intrusive_ptr< Function_variable_matrix<Scalar> >
 		atomic_dependent_variable,atomic_independent_variable;
@@ -118,6 +182,7 @@ bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
 			derivative=0;
 		}
 	}
+#endif // defined (Function_matrix_INPUT_AND_OUTPUT_ARE_DISTINCT)
 
 	return (result);
 }
