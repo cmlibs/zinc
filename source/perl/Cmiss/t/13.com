@@ -43,9 +43,6 @@ if ($result)
 {
 	print "Could not evaluate\n";
 }
-#???DB.  Changed from set_source to Composition
-#$prolate_spheroidal_to_rectangular_cartesian->set_source(independent=>$coordinates,source=>$prolate_spheroidal_coordinates_var);
-#$result=$prolate_spheroidal_to_rectangular_cartesian->evaluate($element_xi_var,$element_xi,$spheroidal_coordinates_focus,$focus);
 $rectangular_cartesian_coordinates_var=new Cmiss::Variable::Composition(name=>'rectangular_cartesian_coordinates_var',dependent=>$prolate_spheroidal_to_rectangular_cartesian,independent_source=>[$coordinates,$prolate_spheroidal_coordinates_var]);
 $result=$rectangular_cartesian_coordinates_var->evaluate($element_xi_var,$element_xi,$spheroidal_coordinates_focus,$focus);
 if ($result)

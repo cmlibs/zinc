@@ -23,7 +23,6 @@ $result=$d_coordinates->evaluate($element_xi_var,$element_xi);
 $matrix=$result->matrix(independent=>[$element_xi_var]);
 print "$matrix\n";
 Cmiss::Value::Matrix->set_string_convert_max_columns(20);
-print "???DB.  Haven't checked values for first component\n";
 print "$result\n";
 $element_xi=0;
 $coordinates=0;

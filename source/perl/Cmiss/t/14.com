@@ -52,11 +52,7 @@ if ($result)
 {
 	print "Could not evaluate\n";
 }
-#???DB.  Changed from set_source to Composition
-#$prolate_spheroidal_to_rectangular_cartesian->set_source(independent=>$coordinates,source=>$prolate_spheroidal_coordinates_var);
 $rectangular_cartesian_coordinates_var=new Cmiss::Variable::Composition(name=>'rectangular_cartesian_coordinates_var',dependent=>$prolate_spheroidal_to_rectangular_cartesian,independent_source=>[$coordinates,$prolate_spheroidal_coordinates_var]);
-#???DB.  Changed from set_source to Composition
-#$d_coordinates=new Cmiss::Variable::Derivative(name=>"d_coordinates",dependent=>$prolate_spheroidal_to_rectangular_cartesian,independent=>[$element_xi_var]);
 $d_coordinates=new Cmiss::Variable::Derivative(name=>"d_coordinates",dependent=>$rectangular_cartesian_coordinates_var,independent=>[$element_xi_var]);
 $result=$d_coordinates->evaluate($element_xi_var,$element_xi,$spheroidal_coordinates_focus,$focus);
 if ($result)
@@ -66,8 +62,6 @@ if ($result)
 {
 	print "Could not evaluate\n";
 }
-#???DB.  Changed from set_source to Composition
-#$result=$prolate_spheroidal_to_rectangular_cartesian->evaluate_derivative(independent=>[$element_xi_var],values=>[$element_xi_var,$element_xi,$spheroidal_coordinates_focus,$focus]);
 $result=$rectangular_cartesian_coordinates_var->evaluate_derivative(independent=>[$element_xi_var],values=>[$element_xi_var,$element_xi,$spheroidal_coordinates_focus,$focus]);
 if ($result)
 {
