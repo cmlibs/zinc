@@ -102,12 +102,7 @@ OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(STATIC_LINK_OPTION) $(DEBU
 
 unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug utilities :
 	cd source ; \
-	if [ "$(USER)" = "cmiss" ] && [ -d $(CMISS_ROOT)/cross-compile/i386-glibc21-linux ] ; then \
-		export PATH=$(CMISS_ROOT)/cross-compile/i386-glibc21-linux/bin:${PATH}; \
-		$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ; \
-	else \
-		$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ; \
-	fi
+	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
 .NOTPARALLEL:
 
