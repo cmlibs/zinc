@@ -14681,9 +14681,13 @@ the rig_node group. If are highlights them.
 		{		
 			update_signals_drawing_area(analysis->window);
 		}	
-		/* update the  windows*/	
-		update_interval_drawing_area(analysis->window);
-		trace_change_signal(analysis->trace);		
+		/*if we're selecting a signal(s) the update windows */
+		if(num_selected) 
+		{
+			/* update the  windows*/	
+			update_interval_drawing_area(analysis->window);
+			trace_change_signal(analysis->trace);		
+		}
 	}
 	else
 	{

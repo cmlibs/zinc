@@ -83,6 +83,19 @@ The type  used for potential/activation
 	INVERSE_ACTIVATION
 }; /* enum Inverse_potential_activation_mode */
 
+enum Calculate_signal_mode
+/*******************************************************************************
+LAST MODIFIED :8 March 2001
+
+DESCRIPTION :
+The type of signal used for Calculate
+==============================================================================*/
+{
+	CURRENT_SIGNAL,
+	RMS_SIGNAL	
+}; /* enum Calculate_signal_mode */
+
+
 struct Enlarge_area
 /*******************************************************************************
 LAST MODIFIED : 25 April 2000
@@ -472,7 +485,8 @@ DESCRIPTION :
 The drawing area 1 in the trace window.
 ==============================================================================*/
 {
-	struct Inverse_area inverse; 
+	struct Inverse_area inverse;
+	struct Calculate_area calculate; 
 	struct Enlarge_area enlarge;
 	struct Correlation_time_domain_area correlation_time_domain;
 	struct Beat_averaging_area_1 beat_averaging;
@@ -491,7 +505,6 @@ DESCRIPTION :
 The drawing area 2 in the trace window.
 ==============================================================================*/
 {
-	struct Calculate_area calculate;
 	struct Correlation_time_domain_area correlation_time_domain;
 	Widget pane;
 	Widget drawing_area;
@@ -533,6 +546,7 @@ The trace window object.
 	char open;
 	struct Trace_window **address;
 	Widget activation,shell,window,paned_window;
+	enum Calculate_signal_mode calculate_signal_mode;
 	enum Inverse_wave_mode inverse_wave_mode;
 	enum Inverse_electrodes_mode inverse_electrodes_mode;
 	enum Inverse_potential_activation_mode inverse_pot_act_mode;

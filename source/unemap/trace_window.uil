@@ -37,6 +37,7 @@ procedure
 	identify_trace_paned_win;
 	identify_trace_1_area;
 	identify_trace_1_inverse_menu;
+	identify_trace_1_calculate_menu;
 	identify_trace_electrodes_ch;
 	id_electrodes_accepted_button;
 	set_inv_electrodes_accepted;
@@ -131,8 +132,7 @@ procedure
 	expose_trace_1_drawing_area;
 	resize_trace_1_drawing_area;
 	select_trace_1_drawing_area;
-	identify_trace_2_area;
-	identify_trace_2_calculate_menu;
+	identify_trace_2_area;	
 	id_trace_calculate_apply_butt;
 	calculate_apply;
 	identify_calculate_int_rank_ch;
@@ -662,7 +662,7 @@ object
 			XmNtopWidget = XmForm trace_menu;
 			XmNtopOffset = widget_spacing;
 			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;			
+			XmNbottomOffset = widget_spacing;			
 			};
 		controls
 			{
@@ -688,9 +688,10 @@ object
 		controls
 			{
 			XmForm trace_1_inverse_menu;
+			XmForm trace_1_calculate_menu;
 			XmForm trace_enlarge_menu;
 			XmForm trace_correlation_1_menu;
-			XmForm trace_beat_averaging_1_menu;
+			XmForm trace_beat_averaging_1_menu;				
 			XmDrawingArea trace_1_drawing_area;
 			};
 		callbacks
@@ -698,6 +699,305 @@ object
 			MrmNcreateCallback = procedures
 				{
 				identify_trace_1_area(trace_window_structure);
+				};
+			};
+		};
+	trace_1_calculate_menu: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;	
+			XmNtopWidget = XmForm trace_1_inverse_menu;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = widget_spacing;
+			};
+		controls
+			{				
+			XmPushButton trace_apply_button;
+			XmOptionMenu trace_int_rank_choice;
+			XmOptionMenu trace_RMS_current_choice;
+			XmPushButton trace_calculate_button;
+			XmLabelGadget trace_cutoff_value_label;
+			XmTextField trace_cutoff_value;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_trace_1_calculate_menu(trace_window_structure);
+				};
+			};
+		};
+	trace_apply_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Apply");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;	
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;		
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_trace_calculate_apply_butt(trace_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				calculate_apply(analysis_work_area_structure);
+				};
+			};
+		};
+		trace_int_rank_choice: XmOptionMenu
+		{
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;	
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmPushButton trace_apply_button;
+			XmNleftOffset = widget_spacing;		
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget intervals_button;
+					XmPushButtonGadget rank_cutoff_button;							
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_calculate_int_rank_ch(trace_window_structure);
+				};
+			};
+		};
+	intervals_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Intervals");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_calculate_intervals_butt(trace_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				calculate_intervals(trace_window_structure);
+				};
+			};
+		};
+	rank_cutoff_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Rank cutoff");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_calculate_rank_cutoff_butt(trace_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				calculate_rank_cutoff(trace_window_structure);
+				};
+			};
+		};
+	trace_RMS_current_choice: XmOptionMenu
+		{
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;	
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget =  XmOptionMenu trace_int_rank_choice;
+			XmNleftOffset = widget_spacing;		
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{	
+					XmPushButtonGadget current_signal_button;	
+					XmPushButtonGadget rms_signal_button;										
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_calculate_rms_current_ch(trace_window_structure);
+				};
+			};
+		};
+	rms_signal_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("RMS signal");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_calculate_rms_sig_butt(trace_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				calculate_rms_signal(trace_window_structure);
+				};
+			};
+		};
+	current_signal_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Current signal");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_calculate_curr_sig_butt(trace_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				calculate_current_signal(trace_window_structure);
+				};
+			};
+		};
+	trace_calculate_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Calculate");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;	
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget =  XmOptionMenu trace_RMS_current_choice;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_trace_calculate_butt(trace_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				calculate_calculate(analysis_work_area_structure);
+				};
+			};
+		};
+	trace_cutoff_value_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Cut off value");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget =  XmPushButton trace_calculate_button;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	trace_cutoff_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 4;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget trace_cutoff_value_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;	
+			XmNmarginHeight = 5;
+			XmNhighlightThickness = 0;
+			XmNvalue ="88";
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_trace_cutoff_value(trace_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				change_cutoff_value(trace_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				change_cutoff_value(trace_window_structure);
 				};
 			};
 		};
@@ -2147,7 +2447,6 @@ object
 		controls
 			{
 			XmForm trace_correlation_2_menu;
-			XmForm trace_2_calculate_menu;
 			XmDrawingArea trace_2_drawing_area;
 			};
 		callbacks
@@ -2155,304 +2454,6 @@ object
 			MrmNcreateCallback = procedures
 				{
 				identify_trace_2_area(trace_window_structure);
-				};
-			};
-		};
-	trace_2_calculate_menu: XmForm 
-		{
-		arguments
-			{
-			XmNborderWidth = 1;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = widget_spacing;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = widget_spacing;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = widget_spacing;
-			XmNbottomAttachment = XmATTACH_NONE;
-			XmNbottomOffset = widget_spacing;
-			};
-		controls
-			{				
-			XmPushButton trace_apply_button;
-			XmOptionMenu trace_int_rank_choice;
-			XmOptionMenu trace_RMS_current_choice;
-			XmPushButton trace_calculate_button;
-			XmLabelGadget trace_cutoff_value_label;
-			XmTextField trace_cutoff_value;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_trace_2_calculate_menu(trace_window_structure);
-				};
-			};
-		};
-	trace_apply_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString =
-			compound_string("Apply");
-			XmNfontList = button_font;
-			XmNshadowThickness = 0;
-			XmNhighlightThickness = 0;	
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;		
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_trace_calculate_apply_butt(trace_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				calculate_apply(analysis_work_area_structure);
-				};
-			};
-		};
-		trace_int_rank_choice: XmOptionMenu
-		{
-		arguments
-			{
-			XmNmarginHeight = 0;
-			XmNmarginWidth = 0;	
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = XmPushButton trace_apply_button;
-			XmNleftOffset = widget_spacing;		
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		controls
-			{
-			XmPulldownMenu
-				{
-				arguments
-					{
-					XmNborderWidth = 1;
-					};
-				controls
-					{
-					XmPushButtonGadget intervals_button;
-					XmPushButtonGadget rank_cutoff_button;							
-					};
-				};
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_calculate_int_rank_ch(trace_window_structure);
-				};
-			};
-		};
-	intervals_button: XmPushButtonGadget
-		{
-		arguments
-			{
-			XmNlabelString =
-			compound_string("Intervals");
-			XmNfontList = button_font;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_calculate_intervals_butt(trace_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				calculate_intervals(trace_window_structure);
-				};
-			};
-		};
-	rank_cutoff_button: XmPushButtonGadget
-		{
-		arguments
-			{
-			XmNlabelString =
-			compound_string("Rank cutoff");
-			XmNfontList = button_font;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_calculate_rank_cutoff_butt(trace_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				calculate_rank_cutoff(trace_window_structure);
-				};
-			};
-		};
-	trace_RMS_current_choice: XmOptionMenu
-		{
-		arguments
-			{
-			XmNmarginHeight = 0;
-			XmNmarginWidth = 0;	
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget =  XmOptionMenu trace_int_rank_choice;
-			XmNleftOffset = widget_spacing;		
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		controls
-			{
-			XmPulldownMenu
-				{
-				arguments
-					{
-					XmNborderWidth = 1;
-					};
-				controls
-					{
-					XmPushButtonGadget rms_signal_button;
-					XmPushButtonGadget current_signal_button;							
-					};
-				};
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_calculate_rms_current_ch(trace_window_structure);
-				};
-			};
-		};
-	rms_signal_button: XmPushButtonGadget
-		{
-		arguments
-			{
-			XmNlabelString =
-			compound_string("RMS signal");
-			XmNfontList = button_font;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_calculate_rms_sig_butt(trace_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				calculate_rms_signal(trace_window_structure);
-				};
-			};
-		};
-	current_signal_button: XmPushButtonGadget
-		{
-		arguments
-			{
-			XmNlabelString =
-			compound_string("Current signal");
-			XmNfontList = button_font;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_calculate_curr_sig_butt(trace_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				calculate_current_signal(trace_window_structure);
-				};
-			};
-		};
-	trace_calculate_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString =
-			compound_string("Calculate");
-			XmNfontList = button_font;
-			XmNshadowThickness = 0;
-			XmNhighlightThickness = 0;	
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget =  XmOptionMenu trace_RMS_current_choice;
-			XmNleftOffset = widget_spacing;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_trace_calculate_butt(trace_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				calculate_calculate(analysis_work_area_structure);
-				};
-			};
-		};
-	trace_cutoff_value_label: XmLabelGadget
-		{
-		arguments
-			{
-			XmNlabelString =
-			compound_string("Cut off value");
-			XmNfontList = button_font;
-			XmNalignment = XmALIGNMENT_END;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget =  XmPushButton trace_calculate_button;
-			XmNleftOffset = widget_spacing;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
-			};
-		};
-	trace_cutoff_value: XmTextField
-		{
-		arguments
-			{
-			XmNcolumns = 4;
-			XmNfontList = button_font;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = XmLabelGadget trace_cutoff_value_label;
-			XmNleftOffset = widget_spacing;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;	
-			XmNmarginHeight = 5;
-			XmNhighlightThickness = 0;
-			XmNvalue ="88";
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_trace_cutoff_value(trace_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				change_cutoff_value(trace_window_structure);
-				};
-			XmNlosingFocusCallback = procedures
-				{
-				change_cutoff_value(trace_window_structure);
 				};
 			};
 		};

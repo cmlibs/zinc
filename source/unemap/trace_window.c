@@ -364,52 +364,24 @@ static void reset_trace_window_after_eimaging(struct Trace_window *trace)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2001
 
-DESCRIPTION : Reset dimensions of things in the trace window after it has been 
-set to electrical imaging. This is necessary as ELECTRICAL_IMAGING 
-(and CROSS_CORRELATION) displays trace->area_2.pane, but other 
-trace->analysis_mode types don't.
+DESCRIPTION : Reset things in the trace window after it has been 
+set to electrical imaging.
 ==============================================================================*/
-{
-	Dimension paned_window_height;
-
+{	
 	ENTER(reset_trace_window_after_eimaging);
 	if(trace)
-	{	
-		/* unmanage pane2 as it's not used */
-		XtUnmanageChild(trace->area_2.pane);
-		/* swap calculate.menu for correlation_time_domain */
-		XtUnmanageChild(trace->area_2.calculate.menu);
-		XtVaSetValues(trace->area_2.correlation_time_domain.menu,
-			XmNtopAttachment,XmATTACH_FORM,NULL);
-		XtVaSetValues(trace->area_2.correlation_time_domain.menu,
-			XmNbottomAttachment,XmATTACH_NONE,NULL);
-		XtVaSetValues(trace->area_2.drawing_area,
-				XmNtopAttachment,XmATTACH_WIDGET,
-				XmNtopWidget,trace->area_2.correlation_time_domain.menu,NULL);
-		XtManageChild(trace->area_2.correlation_time_domain.menu);
-		/* unmanage pane3 so it'll be resized when it's remanaged*/
-		XtUnmanageChild(trace->area_3.pane);
+	{		 		 
 		/* swap  interval menu for edit menu */	
 		XtUnmanageChild(trace->area_3.interval.menu);
 		XtVaSetValues(trace->area_3.drawing_area,
 			XmNtopWidget,trace->area_3.edit.menu,NULL);
 		XtManageChild(trace->area_3.edit.menu);
-		/*get height of whole paned window*/
-		XtVaGetValues(trace->paned_window,XmNheight,&paned_window_height,NULL);
-		/* manage and unmanage things that are/aren't used*/
-		XtUnmanageChild(trace->area_1.inverse.menu);
-		XtManageChild(trace->area_1.drawing_area);
+		/*reattach top of drawing_area */
 		XtVaSetValues(trace->area_1.drawing_area,
-			XmNtopAttachment,XmATTACH_FORM,
-			NULL);
-		/* unmanage pane1 so can adjust it's height*/	
-		XtUnmanageChild(trace->area_1.pane);
-		/* adust height to 36% of paned_window, as when created in create_Trace_window*/
-		XtVaSetValues(trace->area_1.pane,
-			XmNheight,paned_window_height*9/25,NULL);										
-		/* remanage panes*/
-		XtManageChild(trace->area_3.pane);
-		XtManageChild(trace->area_1.pane);
+			XmNtopAttachment,XmATTACH_FORM,NULL);	
+		/* manage and unmanage things that are/aren't used*/
+		XtUnmanageChild(trace->area_1.inverse.menu);	
+		XtUnmanageChild(trace->area_1.calculate.menu);	 
 	}
 	else
 	{
@@ -985,7 +957,6 @@ DESCRIPTION :
 Sets the analysis mode to electrical imaging.
 ==============================================================================*/
 {
-	Dimension paned_window_height;
 	struct Trace_window *trace;
 
 	ENTER(set_analysis_eimaging);
@@ -1045,50 +1016,24 @@ Sets the analysis mode to electrical imaging.
 			}			 
 			/* set electrical imaging mode */
 			trace->analysis_mode=ELECTRICAL_IMAGING;
-			trace->valid_processing=0;			
-			/*get value to resize things from*/		
-			XtVaGetValues(trace->paned_window,XmNheight,&paned_window_height,NULL);					
-			/* unmange area_1.pane so it'll adjust in size*/
-			XtUnmanageChild(trace->area_1.pane);					
-			XtVaSetValues(trace->area_1.inverse.menu,
-						XmNtopAttachment,XmATTACH_FORM,NULL);
-			XtVaSetValues(trace->area_1.inverse.menu,
-				XmNbottomAttachment,XmATTACH_FORM,NULL);
-			/* no drawing area */
-			XtUnmanageChild(trace->area_1.drawing_area);		
-			XtManageChild(trace->area_1.inverse.menu);
-			/* swap correlation_time_domain.menu for calculate.menu*/
-			XtUnmanageChild(trace->area_2.correlation_time_domain.menu);			
-			XtVaSetValues(trace->area_2.calculate.menu,
-						XmNtopAttachment,XmATTACH_FORM,NULL);
-			XtVaSetValues(trace->area_2.calculate.menu,
-				XmNbottomAttachment,XmATTACH_NONE,NULL);			
-			XtManageChild(trace->area_2.calculate.menu);
-			XtVaSetValues(trace->area_2.drawing_area,
+			trace->valid_processing=0;
+			XtManageChild(trace->area_1.inverse.menu);		
+			XtManageChild(trace->area_1.calculate.menu);
+			XtVaSetValues(trace->area_1.drawing_area,
 				XmNtopAttachment,XmATTACH_WIDGET,
-				XmNtopWidget,trace->area_2.calculate.menu,NULL);	
-			/*set the height of this pane, the others with stretch to fit */			
-			XtVaSetValues(trace->area_2.pane,
-				XmNheight,paned_window_height*5/12,NULL);
-			/* order of re managing is important!*/
-			XtManageChild(trace->area_2.pane);
-			XtManageChild(trace->area_1.pane);
+				XmNtopWidget,trace->area_1.calculate.menu,NULL);				
 			/* swap edit menu for interval menu */	
 			XtUnmanageChild(trace->area_3.edit.menu);
 			XtVaSetValues(trace->area_3.drawing_area,
 				XmNtopWidget,trace->area_3.interval.menu,
 				NULL);
-			XtManageChild(trace->area_3.interval.menu);			
-																												
+			XtManageChild(trace->area_3.interval.menu);
 			redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
-				(XtPointer)NULL);
-		
+				(XtPointer)NULL);		
 			redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
-				(XtPointer)NULL);
-						
+				(XtPointer)NULL);						
 			trace_update_signal_controls(trace);
-			trace_change_signal(trace);
-			
+			trace_change_signal(trace);			
 		}
 	}
 	else
@@ -1591,6 +1536,7 @@ Saves the id of the electrodes choice  menu.
 	if (trace=(struct Trace_window *)trace_window)
 	{
 		trace->area_1.inverse.electrodes_choice_mode= *widget_id;
+		trace->inverse_electrodes_mode=ELECTRODES_ACCEPTED; /* to match first entry in uil*/
 	}
 	else
 	{
@@ -1616,6 +1562,7 @@ Saves the id of the analysis mode menu.
 	if (trace=(struct Trace_window *)trace_window)
 	{
 		trace->area_1.inverse.wave_choice_mode= *widget_id;
+		trace->inverse_wave_mode=P_WAVE; /* to match first entry in uil file*/
 	}
 	else
 	{
@@ -1641,6 +1588,8 @@ Saves the id of the potential/activation  menu.
 	if (trace=(struct Trace_window *)trace_window)
 	{
 		trace->area_1.inverse.pot_act_choice_mode= *widget_id;
+		/* to match first entry in uil file*/
+		trace->inverse_pot_act_mode=INVERSE_POTENTIAL;
 	}
 	else
 	{
@@ -4214,30 +4163,30 @@ Saves the id of the trace 2 area pane.
 	LEAVE;
 } /* identify_trace_2_area */
 
-static void identify_trace_2_calculate_menu(Widget *widget_id,
+static void identify_trace_1_calculate_menu(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2001
+LAST MODIFIED : 8 March 2001
 
 DESCRIPTION :
-Saves the id of the trace inverse menu.
+Saves the id of the trace calculate menu.
 ==============================================================================*/
 {
 	struct Trace_window *trace;
 
-	ENTER(identify_trace_2_calculate_menu);
+	ENTER(identify_trace_1_calculate_menu);
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_2.calculate.menu= *widget_id;
+		trace->area_1.calculate.menu= *widget_id;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_trace_2_calculate_menu.  Missing trace_window");
+			"identify_trace_1_calculate_menu.  Missing trace_window");
 	}
 	LEAVE;
-} /* identify_trace_2_calculate_menu */
+} /* identify_trace_1_calculate_menu */
 
 static void id_trace_calculate_apply_butt(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
@@ -4254,7 +4203,7 @@ Saves the id of the trace calculate apply  button.
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_2.calculate.apply_button= *widget_id;
+		trace->area_1.calculate.apply_button= *widget_id;
 	}
 	else
 	{
@@ -4305,7 +4254,7 @@ Saves the id of the calculate calculate  button.
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_2.calculate.calculate_button= *widget_id;
+		trace->area_1.calculate.calculate_button= *widget_id;
 	}
 	else
 	{
@@ -4356,7 +4305,7 @@ Saves the id of the cutoff value.
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_2.calculate.cutoff_value= *widget_id;
+		trace->area_1.calculate.cutoff_value= *widget_id;
 	}
 	else
 	{
@@ -4407,7 +4356,7 @@ Saves the id of the interval rankcutoff choice  menu.
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_2.calculate.interval_rank_cutoff_mode_choice= *widget_id;
+		trace->area_1.calculate.interval_rank_cutoff_mode_choice= *widget_id;
 	}
 	else
 	{
@@ -4432,7 +4381,7 @@ Saves the id of the intervals button.
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_2.calculate.interval_rank_cutoff_choice.interval_button= *widget_id;
+		trace->area_1.calculate.interval_rank_cutoff_choice.interval_button= *widget_id;
 	}
 	else
 	{
@@ -4483,7 +4432,7 @@ Saves the id of the  button.
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_2.calculate.interval_rank_cutoff_choice.rank_cutoff_button= *widget_id;
+		trace->area_1.calculate.interval_rank_cutoff_choice.rank_cutoff_button= *widget_id;
 	}
 	else
 	{
@@ -4534,7 +4483,9 @@ Saves the id of the  RMS_current_mode choice  menu.
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_2.calculate.RMS_current_mode_choice= *widget_id;
+		trace->area_1.calculate.RMS_current_mode_choice= *widget_id;
+		/* to match first entry in uil file*/
+		trace->calculate_signal_mode=CURRENT_SIGNAL; 
 	}
 	else
 	{
@@ -4559,7 +4510,7 @@ Saves the id of the rms signal  button.
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_2.calculate.RMS_current_choice.RMS_signal_button= *widget_id;
+		trace->area_1.calculate.RMS_current_choice.RMS_signal_button= *widget_id;
 	}
 	else
 	{
@@ -4585,8 +4536,9 @@ Calculate rms signal for inverse
 	USE_PARAMETER(widget);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		/* will need code to calculate intervals here.*/
-		USE_PARAMETER(trace);
+		trace->calculate_signal_mode=RMS_SIGNAL;
+		trace_update_signal_controls(trace);
+		trace_change_signal(trace);
 	}
 	else
 	{
@@ -4610,7 +4562,7 @@ Saves the id of the current_signal  button.
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_2.calculate.RMS_current_choice.current_signal_button= *widget_id;
+		trace->area_1.calculate.RMS_current_choice.current_signal_button= *widget_id;	
 	}
 	else
 	{
@@ -4635,9 +4587,10 @@ get the current signal for inverse
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	if (trace=(struct Trace_window *)trace_window)
-	{
-		/* will need code to get current signal here.*/
-		USE_PARAMETER(trace);
+	{	
+		trace->calculate_signal_mode=CURRENT_SIGNAL;
+		trace_update_signal_controls(trace);
+		trace_change_signal(trace);
 	}
 	else
 	{
@@ -6827,8 +6780,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 		{"expose_trace_1_drawing_area",(XtPointer)redraw_trace_1_drawing_area},
 		{"resize_trace_1_drawing_area",(XtPointer)redraw_trace_1_drawing_area},
 		{"identify_trace_2_area",(XtPointer)identify_trace_2_area},
-		{"identify_trace_2_calculate_menu",
-		 (XtPointer)identify_trace_2_calculate_menu},
+		{"identify_trace_1_calculate_menu",
+		 (XtPointer)identify_trace_1_calculate_menu},
 		{"id_trace_calculate_apply_butt",
 		 (XtPointer)id_trace_calculate_apply_butt},
 		{"calculate_apply",
@@ -7074,20 +7027,20 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_1.axes_top=0;
 				trace->area_1.axes_width=0;
 				trace->area_1.axes_height=0;
-				trace->area_2.calculate.menu=(Widget)NULL;
-				trace->area_2.calculate.apply_button=(Widget)NULL;
-				trace->area_2.calculate.interval_rank_cutoff_mode_choice=(Widget)NULL;
-				trace->area_2.calculate.interval_rank_cutoff_choice.interval_button
+				trace->area_1.calculate.menu=(Widget)NULL;
+				trace->area_1.calculate.apply_button=(Widget)NULL;
+				trace->area_1.calculate.interval_rank_cutoff_mode_choice=(Widget)NULL;
+				trace->area_1.calculate.interval_rank_cutoff_choice.interval_button
 					=(Widget)NULL;
-				trace->area_2.calculate.interval_rank_cutoff_choice.rank_cutoff_button
+				trace->area_1.calculate.interval_rank_cutoff_choice.rank_cutoff_button
 					=(Widget)NULL;
-				trace->area_2.calculate.RMS_current_mode_choice=(Widget)NULL;
-				trace->area_2.calculate.RMS_current_choice.RMS_signal_button
+				trace->area_1.calculate.RMS_current_mode_choice=(Widget)NULL;
+				trace->area_1.calculate.RMS_current_choice.RMS_signal_button
 					=(Widget)NULL;
-				trace->area_2.calculate.RMS_current_choice.current_signal_button
+				trace->area_1.calculate.RMS_current_choice.current_signal_button
 					=(Widget)NULL;
-				trace->area_2.calculate.calculate_button=(Widget)NULL;
-				trace->area_2.calculate.cutoff_value=(Widget)NULL;
+				trace->area_1.calculate.calculate_button=(Widget)NULL;
+				trace->area_1.calculate.cutoff_value=(Widget)NULL;
 				trace->area_2.correlation_time_domain.menu=(Widget)NULL;
 				trace->area_2.correlation_time_domain.toggle=(Widget)NULL;
 				trace->area_2.pane=(Widget)NULL;
@@ -7456,6 +7409,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 										XmNleftWidget,trace->menu.analysis_mode_choice,
 										NULL);
 									XtUnmanageChild(trace->area_1.inverse.menu);
+									XtUnmanageChild(trace->area_1.calculate.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
 									XtUnmanageChild(trace->area_2.pane);
@@ -7483,6 +7437,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 										XmNleftWidget,trace->menu.analysis_mode_choice,
 										NULL);
 									XtUnmanageChild(trace->area_1.inverse.menu);
+									XtUnmanageChild(trace->area_1.calculate.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
@@ -7504,6 +7459,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								case POWER_SPECTRA:
 								{
 									XtUnmanageChild(trace->area_1.inverse.menu);
+									XtUnmanageChild(trace->area_1.calculate.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
@@ -7529,6 +7485,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 										XmNleftWidget,trace->menu.analysis_mode_choice,
 										NULL);
 									XtUnmanageChild(trace->area_1.inverse.menu);
+									XtUnmanageChild(trace->area_1.calculate.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
 									XtUnmanageChild(trace->area_3.edit.menu);
@@ -7555,6 +7512,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 										XmNleftWidget,trace->menu.analysis_mode_choice,
 										NULL);
 									XtUnmanageChild(trace->area_1.inverse.menu);
+									XtUnmanageChild(trace->area_1.calculate.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
@@ -7576,6 +7534,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								case FILTERING:
 								{
 									XtUnmanageChild(trace->area_1.inverse.menu);
+									XtUnmanageChild(trace->area_1.calculate.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_1.beat_averaging.menu);
@@ -7597,6 +7556,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								case BEAT_AVERAGING:
 								{
 									XtUnmanageChild(trace->area_1.inverse.menu);
+									XtUnmanageChild(trace->area_1.calculate.menu);
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.correlation_time_domain.menu);
 									XtUnmanageChild(trace->area_2.pane);
@@ -7605,14 +7565,14 @@ the created trace window.  If unsuccessful, NULL is returned.
 									XtUnmanageChild(trace->area_3.power_spectra.menu);
 									XtUnmanageChild(trace->area_3.correlation.menu);
 									XtUnmanageChild(trace->area_3.filtering.menu);
-									/* set the top widget for the drawing area 3 */
+									/* set the top widget for the drawing area 3 */	
 									XtVaSetValues(trace->area_1.drawing_area,
-										XmNtopWidget,trace->area_1.beat_averaging.menu,
-										NULL);
+										XmNtopAttachment,XmATTACH_WIDGET,
+										XmNtopWidget,trace->area_1.calculate.menu,NULL);									
 									/* set the top widget for the drawing area 3 */
 									XtVaSetValues(trace->area_3.drawing_area,
-										XmNtopWidget,trace->area_3.beat_averaging.menu,
-										NULL);
+										XmNtopWidget,trace->area_3.interval.menu,
+										NULL);									
 								} break;
 								case ELECTRICAL_IMAGING: 
 								{									
@@ -7738,7 +7698,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 							/* adjust the interval/rank cutoffmode choice */
 							child_widget=
 								XmOptionLabelGadget(
-									trace->area_2.calculate.interval_rank_cutoff_mode_choice);
+									trace->area_1.calculate.interval_rank_cutoff_mode_choice);
 							XtVaSetValues(child_widget,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,
@@ -7746,7 +7706,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								NULL);
 							child_widget=
 								XmOptionButtonGadget(
-									trace->area_2.calculate.interval_rank_cutoff_mode_choice);
+									trace->area_1.calculate.interval_rank_cutoff_mode_choice);
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
@@ -7759,7 +7719,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 							/* adjust the RMS current signal mode choice */
 							child_widget=
 								XmOptionLabelGadget(
-									trace->area_2.calculate.RMS_current_mode_choice);
+									trace->area_1.calculate.RMS_current_mode_choice);
 							XtVaSetValues(child_widget,
 								XmNmarginLeft,0,
 								XmNmarginRight,0,
@@ -7767,7 +7727,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 								NULL);
 							child_widget=
 								XmOptionButtonGadget(
-									trace->area_2.calculate.RMS_current_mode_choice);
+									trace->area_1.calculate.RMS_current_mode_choice);
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
@@ -8372,6 +8332,10 @@ Calculates the processed device.
 	{
 		switch (trace->analysis_mode)
 		{
+			case ELECTRICAL_IMAGING:
+			{
+				/*??JW do stuff */ 
+			} break;
 			case EVENT_DETECTION:
 			{
 				char *name;
@@ -9555,7 +9519,7 @@ The callback for redrawing part of the drawing area in trace area 1.
 							background_drawing_colour,0,0,trace_area_1->drawing->width,
 							trace_area_1->drawing->height);
 						switch (trace->analysis_mode)
-						{
+						{						
 							case EVENT_DETECTION: case BEAT_AVERAGING:
 							{
 								/* draw the active signal */
@@ -9753,11 +9717,11 @@ The callback for redrawing part of the drawing area in trace area 1.
 									trace_area_1->axes_height=axes_height;
 								}
 							} break;
-							case CROSS_CORRELATION:
+							case CROSS_CORRELATION:							
 							{
 								if ((device=trace->correlation.device_1)&&
 									(buffer=get_Device_signal_buffer(device)))
-								{
+								{						
 									start_analysis_interval=buffer->start;
 									end_analysis_interval=buffer->end;
 									/* draw the active signal */
@@ -9773,7 +9737,35 @@ The callback for redrawing part of the drawing area in trace area 1.
 									trace_area_1->axes_width=axes_width;
 									trace_area_1->axes_height=axes_height;
 								}
-							} break;
+							} break;	
+							case ELECTRICAL_IMAGING:
+							{									
+								if(trace->calculate_signal_mode==CURRENT_SIGNAL)								
+								{
+									if((device= **(trace->highlight))&&
+										(buffer=get_Device_signal_buffer(device)))	
+									{							
+										start_analysis_interval=buffer->start;
+										end_analysis_interval=buffer->end;
+										/* draw the active signal */
+										draw_signal((struct FE_node *)NULL,
+											(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
+											&start_analysis_interval,&end_analysis_interval,0,0,
+											trace_area_1->drawing->width,trace_area_1->drawing->height,
+											trace_area_1->drawing->pixel_map,&axes_left,&axes_top,
+											&axes_width,&axes_height,signal_drawing_information,
+											user_interface);
+										trace_area_1->axes_left=axes_left;
+										trace_area_1->axes_top=axes_top;
+										trace_area_1->axes_width=axes_width;
+										trace_area_1->axes_height=axes_height;
+									}								
+								}	
+								else
+								/* RMS_SIGNAL  */
+								{
+								}
+							} break;							
 						}
 					}
 					/* redisplay the specified part of the pixmap */
@@ -9872,7 +9864,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 		display=user_interface->display;
 		trace_area_3= &(trace->area_3);
 		if (trace_area_3->drawing_area)
-		{
+		{		
 			if (callback=(XmDrawingAreaCallbackStruct *)call_data)
 			{
 				if ((XmCR_EXPOSE==callback->reason)&&(callback->event)&&
@@ -9951,7 +9943,11 @@ The callback for redrawing part of the drawing area in trace area 3.
 							background_drawing_colour,0,0,trace_area_3->drawing->width,
 							trace_area_3->drawing->height);
 						switch (trace->analysis_mode)
-						{
+						{	
+							case ELECTRICAL_IMAGING:
+							{
+								/* ??JW do something! */
+							} break;
 							case EVENT_DETECTION:
 							{
 								if ((trace->highlight)&&(*(trace->highlight))&&
@@ -10017,7 +10013,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 										user_interface);
 								}
 							} break;
-							case BEAT_AVERAGING:
+							case BEAT_AVERAGING:							
 							{
 								if (trace->valid_processing)
 								{
@@ -10346,6 +10342,14 @@ Called when the "highlighted_device" is changed.
 	{
 		switch (trace->analysis_mode)
 		{
+			case ELECTRICAL_IMAGING:
+			{
+				trace_process_device(trace);
+				redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
+					(XtPointer)NULL);			
+				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
+					(XtPointer)NULL);
+			} break;
 			case EVENT_DETECTION:
 			{
 				trace_process_device(trace);
@@ -10648,6 +10652,10 @@ Updates the selectability of the signal controls.
 		{
 			switch (trace->analysis_mode)
 			{
+				case ELECTRICAL_IMAGING:
+				{
+					/*??JW  do stuff */
+				} break;
 				case EVENT_DETECTION:
 				{
 					/* ghost/unghost the calculate button */
