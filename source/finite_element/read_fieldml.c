@@ -1446,7 +1446,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Fieldml_label_name *returned_label;
 	struct Fieldml_sax_data *fieldml_data;
 
 	ENTER(Fieldml_label_name_create_node_and_element_lookup_lists);
@@ -1472,7 +1471,7 @@ DESCRIPTION :
 			{
 				/* If we can resolve it now then the values are stored in 
 					the element */
-				if (returned_label = Fieldml_label_name_resolve_element_lookup(
+				if (Fieldml_label_name_resolve_element_lookup(
 					label, fieldml_data))
 				{
 					ADD_OBJECT_TO_LIST(Fieldml_label_name)(label,
