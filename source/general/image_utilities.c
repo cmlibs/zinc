@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.c
 
-LAST MODIFIED : 14 March 2002
+LAST MODIFIED : 11 April 2002
 
 DESCRIPTION :
 Utilities for handling images.
@@ -6286,7 +6286,7 @@ struct Cmgui_image *Cmgui_image_constitute(int width, int height,
 	int number_of_components, int number_of_bytes_per_component,
 	int source_width_bytes, unsigned char *source_pixels)
 /*******************************************************************************
-LAST MODIFIED : 11 March 2002
+LAST MODIFIED : 11 April 2002
 
 DESCRIPTION :
 Creates a single Cmgui_image of the specified <width>, <height> with
@@ -6298,17 +6298,16 @@ The source_pixels are stored in rows from the bottom to top and from left to
 right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 ==============================================================================*/
 {
-	int i, return_code, width_bytes;
+	int i, return_code;
 	struct Cmgui_image *cmgui_image;
-	unsigned char *destination, *image, *source;
 #if defined (IMAGEMAGICK)
-	char *magick_image_storage;
-	int bytes_per_pixel, number_of_pixels;
+	unsigned char *p, *start_p;
 	Image *magick_image;
-	ExceptionInfo magick_exception;
-	unsigned short short_value;
-	StorageType magick_storage_type;
+	int x, y;
+  PixelPacket *q;
+	unsigned short short_value[4];
 #else /* defined (IMAGEMAGICK) */
+	unsigned char *destination, *image, *source;
 #endif /* defined (IMAGEMAGICK) */
 
 	ENTER(Cmgui_image_constitute);
@@ -6323,69 +6322,34 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 		if (cmgui_image = CREATE(Cmgui_image)())
 		{
 			return_code = 1;
-			/* make image in our unsigned char format; ImageMagick version needs it
-				 for constitute function, although row order is then top-to-bottom */
-			width_bytes = width*number_of_components*number_of_bytes_per_component;
-			if (ALLOCATE(image, unsigned char, height*width_bytes))
-			{
 #if defined (IMAGEMAGICK)
-				/* fill the image from top to bottom */
-				source = source_pixels;
-				destination = image + height*width_bytes;
-				for (i = 0; i < height; i++)
-				{
-					destination -= width_bytes;
-					memcpy(destination, source, width_bytes);
-					source += source_width_bytes;
-				}
-				if ((2 == number_of_components) || (4 == number_of_components))
-				{
-					/* reverse alpha/opacity */
-					bytes_per_pixel = number_of_components*number_of_bytes_per_component;
-					destination = image +
-						(bytes_per_pixel - number_of_bytes_per_component);
-					number_of_pixels = width*height;
-					/* set source to point at short value for below */
-					source = (unsigned char *)(&short_value);
-					for (i = 0; i < number_of_pixels; i++)
-					{
-						if (2 == number_of_bytes_per_component)
-						{
-#if (1234==__BYTE_ORDER)
-							short_value = 0xFFFF -
-								(((unsigned short)(*(destination + 1))) << 8) - (*destination);
-#else /* (1234==__BYTE_ORDER) */
-							short_value = 0xFFFF -
-								(((unsigned short)(*destination)) << 8) - (*(destination + 1));
-#endif /* (1234==__BYTE_ORDER) */
-							*destination = *source;
-							*(destination + 1) = *(source + 1);
-						}
-						else
-						{
-							*destination = 0xFF - (*destination);
-						}
-						destination += bytes_per_pixel;
-					}
-				}
-				GetExceptionInfo(&magick_exception);
+			/* following code adapted from ImageMagick's ConstituteImage function
+				 with does not support monochrome images */
+			if (magick_image = AllocateImage((ImageInfo *) NULL))
+			{
+				magick_image->columns = width;
+				magick_image->rows = height;
 				switch (number_of_components)
 				{
 					case 1:
 					{
-						magick_image_storage = "R";
+						magick_image->colorspace = GRAYColorspace;
+						magick_image->matte = False;
 					} break;
 					case 2:
 					{
-						magick_image_storage = "RA";
+						magick_image->colorspace = GRAYColorspace;
+						magick_image->matte = True;
 					} break;
 					case 3:
 					{
-						magick_image_storage = "RGB";
+						magick_image->colorspace = RGBColorspace;
+						magick_image->matte = False;
 					} break;
 					case 4:
 					{
-						magick_image_storage = "RGBA";
+						magick_image->colorspace = RGBColorspace;
+						magick_image->matte = True;
 					} break;
 					default:
 					{
@@ -6394,63 +6358,129 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 						return_code = 0;
 					} break;
 				}
-				switch (number_of_bytes_per_component)
+				magick_image->depth = 8*number_of_bytes_per_component;
+				/* need to reverse order of rows */
+				start_p = source_pixels + height*source_width_bytes;
+				for (y = 0; (y < height) && return_code; y++)
 				{
-					case 1:
+					start_p -= source_width_bytes;
+					if (q = SetImagePixels(magick_image, 0, y, width, 1))
 					{
-						magick_storage_type = CharPixel;
-					} break;
-					case 2:
-					{
-						magick_storage_type = ShortPixel;
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"Cmgui_image_dispatch.  Invalid number_of_bytes_per_component");
-						return_code = 0;
-					} break;
-				}
-#if defined (DEBUG)
-				magick_image_info->verbose = 1;
-#endif /* defined (DEBUG) */
-				if (return_code)
-				{
-					magick_image = ConstituteImage(width, height, magick_image_storage, 
-						magick_storage_type, image, &magick_exception);
-					if (magick_image)
-					{
-						cmgui_image->magick_image = magick_image;
-						cmgui_image->width = width;
-						cmgui_image->height = height;
-						cmgui_image->number_of_components = number_of_components;
-						/* note; ImageMagick seems to store 16-bits internally so need to
-							 remember what was actually put in here */
-						cmgui_image->number_of_bytes_per_component =
-							number_of_bytes_per_component;
-						cmgui_image->number_of_images = 1;
+						p = start_p;
+						switch (number_of_bytes_per_component)
+						{
+							case 1:
+							{
+								for (x = 0; x < width; x++)
+								{
+									q->red = UpScale(*p++);
+									if (GRAYColorspace == magick_image->colorspace)
+									{
+										q->blue = q->green = q->red;
+									}
+									else
+									{
+										q->green = UpScale(*p++);
+										q->blue = UpScale(*p++);
+									}
+									if (magick_image->matte)
+									{
+										/* reverse alpha/opacity */
+										q->opacity = UpScale(0xFF - (*p++));
+									}
+									q++;
+								}
+							} break;
+							case 2:
+							{
+								for (x = 0; x < width; x++)
+								{
+									for (i = 0; i < number_of_components; i++)
+									{
+#if (1234==__BYTE_ORDER)
+										short_value[i] = (((unsigned short)(*(p + 1))) << 8) - (*p);
+#else /* (1234==__BYTE_ORDER) */
+										short_value[i] = (((unsigned short)(*p)) << 8) - (*(p + 1));
+#endif /* (1234==__BYTE_ORDER) */
+										p += 2;
+									}
+									q->red = short_value[0];
+									if (GRAYColorspace == magick_image->colorspace)
+									{
+										q->blue = q->green = q->red;
+									}
+									else
+									{
+										q->green = short_value[1];
+										q->blue = short_value[2];
+									}
+									if (magick_image->matte)
+									{
+										/* reverse alpha/opacity */
+										q->opacity = 0xFFFF - short_value[number_of_components - 1];
+									}
+									q++;
+								}
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE, "Cmgui_image_constitute.  "
+									"Invalid number_of_bytes_per_component");
+								return_code = 0;
+							} break;
+						}
+						if (!SyncImagePixels(magick_image))
+						{
+							display_message(ERROR_MESSAGE,
+								"Cmgui_image_constitute.  Could not sync pixels");
+							return_code = 0;
+						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"Cmgui_image_constitute.  Could not constitute image");
+							"Cmgui_image_constitute.  Could not set pixels");
 						return_code = 0;
 					}
 				}
-				/* image is no longer need for ImageMagick */
-				DEALLOCATE(image);
-#else /* defined (IMAGEMAGICK) */
-				/* fill the image from bottom to top */
-				source = source_pixels;
-				destination = image;
-				for (i = 0; i < height; i++)
+				if (return_code)
 				{
-					memcpy(destination, source, width_bytes);
-					source += source_width_bytes;
-					destination += width_bytes;
+					cmgui_image->magick_image = magick_image;
+					cmgui_image->width = width;
+					cmgui_image->height = height;
+					cmgui_image->number_of_components = number_of_components;
+					cmgui_image->number_of_bytes_per_component =
+						number_of_bytes_per_component;
+					cmgui_image->number_of_images = 1;
 				}
-				if (ALLOCATE(cmgui_image->image_arrays, unsigned char *, 1))
+				else
 				{
+					DestroyImage(magick_image);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmgui_image_constitute.  Allocate image failed");
+				return_code = 0;
+			}
+#else /* defined (IMAGEMAGICK) */
+			if (ALLOCATE(cmgui_image->image_arrays, unsigned char *, 1))
+			{
+				cmgui_image->image_arrays[0] = (unsigned char *)NULL;
+				/* make image in our unsigned char format */
+				width_bytes = width*number_of_components*number_of_bytes_per_component;
+				if (ALLOCATE(image, unsigned char, height*width_bytes))
+				{
+					/* fill the image from bottom to top */
+					source = source_pixels;
+					destination = image;
+					for (i = 0; i < height; i++)
+					{
+						memcpy(destination, source, width_bytes);
+						source += source_width_bytes;
+						destination += width_bytes;
+					}
 					cmgui_image->image_arrays[0] = image;
 					cmgui_image->width = width;
 					cmgui_image->height = height;
@@ -6462,17 +6492,17 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Cmgui_image_constitute.  Could not allocate image arrays");
+						"Cmgui_image_constitute.  Could not allocate image");
 					return_code = 0;
 				}
-#endif /* defined (IMAGEMAGICK) */
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmgui_image_constitute.  Could not allocate image");
+					"Cmgui_image_constitute.  Could not allocate image arrays");
 				return_code = 0;
 			}
+#endif /* defined (IMAGEMAGICK) */
 			if (!return_code)
 			{
 				DESTROY(Cmgui_image)(&cmgui_image);
