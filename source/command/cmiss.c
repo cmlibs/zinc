@@ -266,8 +266,10 @@ DESCRIPTION :
 	struct MANAGER(Environment_map) *environment_map_manager;
 	struct MANAGER(FE_basis) *basis_manager;
 	struct LIST(FE_element_shape) *element_shape_list;
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
+	/* Always want the entry for graphics_buffer_package even if it will
+		not be available on this implementation */
 	struct Graphics_buffer_package *graphics_buffer_package;
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
@@ -23633,8 +23635,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->volume_texture_manager=(struct MANAGER(VT_volume_texture) *)NULL;
 		command_data->default_spectrum=(struct Spectrum *)NULL;
 		command_data->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 		command_data->graphics_buffer_package=(struct Graphics_buffer_package *)NULL;
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 		command_data->graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 		command_data->root_region = (struct Cmiss_region *)NULL;
@@ -24786,11 +24788,11 @@ Clean up the command_data, deallocating all the associated memory and resources.
 		DESTROY(MANAGER(Graphics_window))(
 			&command_data->graphics_window_manager);
 		/* Must destroy the graphics_buffer_package after the windows which use it */
+#endif /* defined (MOTIF)|| defined (GTK_USER_INTERFACE) */
 		if (command_data->graphics_buffer_package)
 		{
 			DESTROY(Graphics_buffer_package)(&command_data->graphics_buffer_package);
 		}
-#endif /* defined (MOTIF)|| defined (GTK_USER_INTERFACE) */
 
 		if (command_data->computed_field_finite_element_package)
 		{
