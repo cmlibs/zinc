@@ -1064,9 +1064,7 @@ that it is all in one place.
 		(int) None
 	};
 #endif /* defined (GLX_SGIX_dmbuffer) */
-#if defined (GLX_SGIX_fbconfig) || (USE_GLX_FBCONFIG)
 	int config_index, nelements;
-#endif /* defined (GLX_SGIX_fbconfig) || (USE_GLX_FBCONFIG) */
 #if defined USE_GLX_FBCONFIG
 	int glx_major_version, glx_minor_version;
 #endif /* defined USE_GLX_FBCONFIG */
