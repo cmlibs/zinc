@@ -39684,9 +39684,8 @@ DESCRIPTION :
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"smooth_field_over_node. Currently only works with field->value_type == "
-					"FE_VALUE_VALUE. Write the code!");
+				display_message(ERROR_MESSAGE,"smooth_field_over_node.  "
+					"Currently only works with field->value_type == FE_VALUE_VALUE");
 				return_code=0;
 			}
 		}
@@ -39711,7 +39710,7 @@ DESCRIPTION :
 int smooth_field_over_element(struct FE_element *element,
 	void *void_smooth_field_over_element_data)
 /*******************************************************************************
-LAST MODIFIED : 6 August 2001
+LAST MODIFIED : 7 August 2001
 
 DESCRIPTION :
 ???DB.  Needs to be extended to use get_nodal_value, but what about scale
@@ -39756,7 +39755,9 @@ DESCRIPTION :
 					FE_element_field_is_type_CM_coordinate,(void *)NULL,
 					element->information->fields->element_field_list))
 				{
-					smooth_field_over_element_data->field=element_field->field;
+					/* DEACCESS'd in execute_command_gfx_smooth */
+					smooth_field_over_element_data->field=
+						ACCESS(FE_field)(element_field->field);
 				}
 			}
 			if (field=smooth_field_over_element_data->field)
