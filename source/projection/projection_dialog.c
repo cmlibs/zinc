@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : projection_dialog.c
 
-LAST MODIFIED : 20 October 1997
+LAST MODIFIED : 15 May 2000
 
 DESCRIPTION :
 ???DB.  Started as map_dialog.c in emap
@@ -264,6 +264,30 @@ Saves the id of the blue->red spectrum option in the projection dialog.
 	}
 	LEAVE;
 } /* identify_prj_dialog_blue_red */
+
+static void identify_prj_dialog_bl_wh_rd(Widget *widget_id,
+	XtPointer projection_dialog,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 18 May 2000
+
+DESCRIPTION :
+Saves the id of the blue_white_red spectrum option in the projection dialog.
+==============================================================================*/
+{
+	struct Projection_dialog *dialog;
+
+	ENTER(identify_prj_dialog_bl_wh_rd);
+	if (dialog=(struct Projection_dialog *)projection_dialog)
+	{
+		(dialog->spectrum).type_option.blue_white_red= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_prj_dialog_bl_wh_rd.  Missing projection_dialog");
+	}
+	LEAVE;
+} /* identify_prj_dialog_bl_wh_rd */
 
 static void identify_prj_dialog_red_blue(Widget *widget_id,
 	XtPointer projection_dialog,XtPointer call_data)
@@ -1191,7 +1215,7 @@ Finds the id of the ok button in the projection dialog.
 static void update_projection_from_dialog(Widget widget,
 	XtPointer projection_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 31 May 1997
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Updates the projection settings based on the configure dialog and redraws the
@@ -1268,6 +1292,15 @@ projection if necessary.
 					{
 						Spectrum_set_simple_type(projection->spectrum,
 							BLUE_TO_RED_SPECTRUM);
+						projection_settings_changed = 1;
+					}
+				}
+				else if (option_widget==configure_dialog->spectrum.type_option.blue_white_red)
+				{
+					if (BLUE_WHITE_RED_SPECTRUM != Spectrum_get_simple_type(projection->spectrum))
+					{
+						Spectrum_set_simple_type(projection->spectrum,
+							BLUE_WHITE_RED_SPECTRUM);
 						projection_settings_changed = 1;
 					}
 				}
@@ -1705,7 +1738,7 @@ struct Projection_dialog *create_Projection_dialog(
 	struct Projection_window *projection_window,Widget creator,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 20 May 1997
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Allocates the memory for a projection dialog.  Retrieves the necessary widgets
@@ -1738,6 +1771,8 @@ and initializes the appropriate fields.
 			(XtPointer)identify_prj_dialog_spectrum_no},
 		{"identify_prj_dialog_blue_red",
 			(XtPointer)identify_prj_dialog_blue_red},
+		{"identify_prj_dialog_bl_wh_rd",
+			(XtPointer)identify_prj_dialog_bl_wh_rd},
 		{"identify_prj_dialog_red_blue",
 			(XtPointer)identify_prj_dialog_red_blue},
 		{"identify_prj_dialog_log_blue_re",
@@ -1829,7 +1864,8 @@ and initializes the appropriate fields.
 				projection_dialog->range.maximum_value=(Widget)NULL;
 				projection_dialog->spectrum.type_option_menu=(Widget)NULL;
 				projection_dialog->spectrum.type_option.none=(Widget)NULL;
-				projection_dialog->spectrum.type_option.blue_red=(Widget)NULL;
+				projection_dialog->spectrum.type_option.blue_red=(Widget)NULL;	
+				projection_dialog->spectrum.type_option.blue_white_red=(Widget)NULL;
 				projection_dialog->spectrum.type_option.red_blue=(Widget)NULL;
 				projection_dialog->spectrum.type_option.log_blue_red=(Widget)NULL;
 				projection_dialog->spectrum.type_option.log_red_blue=(Widget)NULL;
@@ -1961,7 +1997,7 @@ and initializes the appropriate fields.
 
 int open_projection_dialog(struct Projection_dialog *projection_dialog)
 /*******************************************************************************
-LAST MODIFIED : 20 October 1997
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Opens the <projection_dialog>.
@@ -2018,6 +2054,10 @@ Opens the <projection_dialog>.
 					case BLUE_TO_RED_SPECTRUM:
 					{
 						option_widget=projection_dialog->spectrum.type_option.blue_red;
+					} break;	
+					case BLUE_WHITE_RED_SPECTRUM:
+					{
+						option_widget=projection_dialog->spectrum.type_option.blue_white_red;
 					} break;
 					case LOG_BLUE_TO_RED_SPECTRUM:
 					{

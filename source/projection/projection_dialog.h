@@ -60,6 +60,7 @@ The dialog box for configuring a projection.
 			Widget red_blue;
 			Widget log_blue_red;
 			Widget log_red_blue;
+			Widget blue_white_red;
 		} type_option;
 	} spectrum;
 	struct

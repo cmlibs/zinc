@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : map_dialog.uil
 !
-!LAST MODIFIED : 23 July 1998
+!LAST MODIFIED : 18 May 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the map dialog in the mapping work area.
@@ -18,6 +18,7 @@ procedure
 	identify_map_dialog_spectrum;
 	identify_map_dialog_spectrum_no;
 	identify_map_dialog_blue_red;
+	identify_map_dialog_bl_wh_rd;
 	identify_map_dialog_red_blue;
 	identify_map_dialog_log_blue_re;
 	identify_map_dialog_log_red_blu;
@@ -504,6 +505,22 @@ object
 							MrmNcreateCallback = procedures
 								{
 								identify_map_dialog_blue_red(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("blue->white->red");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_bl_wh_rd(map_dialog_structure);
 								};
 							};
 						};

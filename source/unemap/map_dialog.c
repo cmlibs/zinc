@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.c
 
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 15 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -275,6 +275,31 @@ Saves the id of the blue->red spectrum option in the map dialog.
 	}
 	LEAVE;
 } /* identify_map_dialog_blue_red */
+
+static void identify_map_dialog_bl_wh_rd(Widget *widget_id,
+	XtPointer map_dialog_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 15 May 2000
+
+DESCRIPTION :
+Saves the id of the blue_white_red spectrum option in the map dialog.
+==============================================================================*/
+{
+	struct Map_dialog *map_dialog;
+
+	ENTER(identify_map_dialog_bl_wh_rd);
+	USE_PARAMETER(call_data);
+	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
+	{
+		(map_dialog->spectrum).type_option.blue_white_red= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_map_dialog_bl_wh_rd.  Missing map_dialog_structure");
+	}
+	LEAVE;
+} /* identify_map_dialog_bl_wh_rd */
 
 static void identify_map_dialog_red_blue(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
@@ -1552,7 +1577,7 @@ Global functions
 struct Map_dialog *create_Map_dialog(struct Map_dialog **map_dialog_address,
 	struct Map **map,Widget activation,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Allocates the memory for a map dialog.  Retrieves the necessary widgets and
@@ -1577,6 +1602,8 @@ initializes the appropriate fields.
 			(XtPointer)identify_map_dialog_spectrum_no},
 		{"identify_map_dialog_blue_red",
 			(XtPointer)identify_map_dialog_blue_red},
+		{"identify_map_dialog_bl_wh_rd",
+			(XtPointer)identify_map_dialog_bl_wh_rd},
 		{"identify_map_dialog_red_blue",
 			(XtPointer)identify_map_dialog_red_blue},
 		{"identify_map_dialog_log_blue_re",
@@ -1697,7 +1724,8 @@ initializes the appropriate fields.
 				map_dialog->range.maximum_value=(Widget)NULL;
 				map_dialog->spectrum.type_option_menu=(Widget)NULL;
 				map_dialog->spectrum.type_option.none=(Widget)NULL;
-				map_dialog->spectrum.type_option.blue_red=(Widget)NULL;
+				map_dialog->spectrum.type_option.blue_red=(Widget)NULL;	
+				map_dialog->spectrum.type_option.blue_white_red=(Widget)NULL;
 				map_dialog->spectrum.type_option.red_blue=(Widget)NULL;
 				map_dialog->spectrum.type_option.log_blue_red=(Widget)NULL;
 				map_dialog->spectrum.type_option.log_red_blue=(Widget)NULL;
@@ -1897,7 +1925,7 @@ initializes the appropriate fields.
 
 int open_map_dialog(struct Map_dialog *map_dialog)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Opens the <map_dialog>.
@@ -1939,6 +1967,10 @@ Opens the <map_dialog>.
 					case LOG_BLUE_TO_RED_SPECTRUM:
 					{
 						option_widget=map_dialog->spectrum.type_option.log_blue_red;
+					} break;
+					case BLUE_WHITE_RED_SPECTRUM:
+					{
+						option_widget=map_dialog->spectrum.type_option.blue_white_red;
 					} break;
 					case LOG_RED_TO_BLUE_SPECTRUM:
 					{

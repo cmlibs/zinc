@@ -5352,35 +5352,13 @@ I would put this with the other gfx modify routines but then it can't be
 static and referred to by gfx_create_Spectrum
 ==============================================================================*/
 {
-	auto struct Modifier_entry
-		help_option_table[]=
-		{
-			{"SPECTRUM_NAME",NULL,NULL,gfx_modify_Spectrum},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{"autorange",NULL,NULL,set_char_flag},
-			{"blue_to_red",NULL,NULL,set_char_flag},
-			{"clear",NULL,NULL,set_char_flag},
-			{"linear",NULL,NULL,gfx_modify_spectrum_settings_linear},
-			{"log",NULL,NULL,gfx_modify_spectrum_settings_log},
-			{"lg_blue_to_red",NULL,NULL,set_char_flag},
-			{"lg_red_to_blue",NULL,NULL,set_char_flag},
-			{"maximum",NULL,NULL,set_Spectrum_maximum_command},
-			{"minimum",NULL,NULL,set_Spectrum_minimum_command},
-			{"overlay_colour",NULL,NULL,set_char_flag},
-			{"overwrite_colour",NULL,NULL,set_char_flag},
-			{"scene_for_autorange",NULL,NULL,set_Scene},
-			{"red_to_blue",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		};
-	char autorange, blue_to_red, clear, *current_token, lg_blue_to_red,
+	char autorange, blue_to_red, blue_white_red, clear, *current_token, lg_blue_to_red,
 		lg_red_to_blue, overlay_colour, overwrite_colour, red_to_blue;
 	int process, range_set, return_code;
 	float maximum, minimum;
 	struct Cmiss_command_data *command_data;
 	struct Modify_spectrum_data modify_spectrum_data;
+	struct Option_table *option_table;
 	struct Scene *autorange_scene;
 	struct Spectrum *spectrum_to_be_modified,*spectrum_to_be_modified_copy;
 	struct Spectrum_command_data spectrum_command_data;
@@ -5457,10 +5435,11 @@ static and referred to by gfx_create_Spectrum
 					{
 						if (spectrum_to_be_modified=CREATE(Spectrum)("dummy"))
 						{
-							(help_option_table[0]).to_be_modified=
-								(void *)spectrum_to_be_modified;
-							(help_option_table[0]).user_data=command_data_void;
-							return_code=process_option(state,help_option_table);
+							option_table=CREATE(Option_table)();
+							Option_table_add_entry(option_table,"SPECTRUM_NAME",
+								(void *)spectrum_to_be_modified,command_data_void,gfx_modify_Spectrum);
+							return_code=Option_table_parse(option_table,state);
+							DESTROY(Option_table)(&option_table);
 							DESTROY(Spectrum)(&spectrum_to_be_modified);
 						}
 						else
@@ -5490,24 +5469,36 @@ static and referred to by gfx_create_Spectrum
 						spectrum_to_be_modified_copy);
 					spectrum_command_data.spectrum_manager 
 						= command_data->spectrum_manager;
-
-					(option_table[0]).to_be_modified = &autorange;
-					(option_table[1]).to_be_modified = &blue_to_red;
-					(option_table[2]).to_be_modified = &clear;
-					(option_table[3]).to_be_modified = &modify_spectrum_data;
-					(option_table[3]).user_data = &spectrum_command_data;
-					(option_table[4]).to_be_modified = &modify_spectrum_data;
-					(option_table[4]).user_data = &spectrum_command_data;
-					(option_table[5]).to_be_modified = &lg_blue_to_red;
-					(option_table[6]).to_be_modified = &lg_red_to_blue;
-					(option_table[7]).to_be_modified = &spectrum_to_be_modified_copy;
-					(option_table[8]).to_be_modified = &spectrum_to_be_modified_copy;
-					(option_table[9]).to_be_modified = &overlay_colour;
-					(option_table[10]).to_be_modified = &overwrite_colour;
-					(option_table[11]).to_be_modified= &autorange_scene;
-					(option_table[11]).user_data=command_data->scene_manager;
-					(option_table[12]).to_be_modified = &red_to_blue;
-					if (return_code=process_multiple_options(state,option_table))
+					option_table=CREATE(Option_table)();
+					Option_table_add_entry(option_table,"autorange",&autorange,NULL,
+						set_char_flag);					
+					Option_table_add_entry(option_table,"blue_to_red",&blue_to_red,NULL,
+						set_char_flag);
+					Option_table_add_entry(option_table,"blue_white_red",&blue_white_red,NULL,
+						set_char_flag);
+					Option_table_add_entry(option_table,"clear",&clear,NULL,
+						set_char_flag);
+					Option_table_add_entry(option_table,"linear",&modify_spectrum_data,
+						&spectrum_command_data,gfx_modify_spectrum_settings_linear);
+					Option_table_add_entry(option_table,"log",&modify_spectrum_data,
+						&spectrum_command_data,gfx_modify_spectrum_settings_log);
+					Option_table_add_entry(option_table,"lg_blue_to_red",&lg_blue_to_red,
+						NULL,set_char_flag);
+					Option_table_add_entry(option_table,"lg_red_to_blue",&lg_red_to_blue,
+						NULL,set_char_flag);
+					Option_table_add_entry(option_table,"maximum",&spectrum_to_be_modified_copy,
+						NULL,set_Spectrum_maximum_command);
+					Option_table_add_entry(option_table,"minimum",&spectrum_to_be_modified_copy,
+						NULL,set_Spectrum_minimum_command);
+					Option_table_add_entry(option_table,"overlay_colour",&overlay_colour,
+						NULL,set_char_flag);
+					Option_table_add_entry(option_table,"overwrite_colour",&overwrite_colour,
+						NULL,set_char_flag);
+					Option_table_add_entry(option_table,"scene_for_autorange",&autorange_scene,
+						command_data->scene_manager,set_Scene);
+					Option_table_add_entry(option_table,"red_to_blue",&red_to_blue,
+						NULL,set_char_flag);									
+					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						if (return_code)
 						{
@@ -5515,11 +5506,12 @@ static and referred to by gfx_create_Spectrum
 							{
 								Spectrum_remove_all_settings(spectrum_to_be_modified_copy);
 							}
-							if (blue_to_red + red_to_blue + lg_red_to_blue + 
+							if (blue_to_red + blue_white_red +red_to_blue + lg_red_to_blue + 
 								lg_blue_to_red > 1 )
 							{
 								display_message(ERROR_MESSAGE,
-									"gfx_modify_Spectrum.  Specify only one simple spectrum type\n     (blue_to_red, red_to_blue, lg_red_to_blue, lg_blue_to_red)");
+									"gfx_modify_Spectrum.  Specify only one simple spectrum type\n "
+									"   (blue_to_red, blue_white_red, red_to_blue, lg_red_to_blue, lg_blue_to_red)");
 								return_code=0;
 							}
 							else if (red_to_blue)
@@ -5531,6 +5523,11 @@ static and referred to by gfx_create_Spectrum
 							{
 								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
 									BLUE_TO_RED_SPECTRUM);
+							}
+							else if (blue_white_red)
+							{
+								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
+									BLUE_WHITE_RED_SPECTRUM);
 							}
 							else if (lg_red_to_blue)
 							{
@@ -5597,6 +5594,10 @@ static and referred to by gfx_create_Spectrum
 						{
 							DESTROY(Spectrum)(&spectrum_to_be_modified_copy);
 						}
+					}
+					if(option_table)
+					{
+						DESTROY(Option_table)(&option_table);
 					}
 					if ( modify_spectrum_data.settings )
 					{

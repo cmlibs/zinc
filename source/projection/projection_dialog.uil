@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : projection_dialog.uil
 !
-!LAST MODIFIED : 20 May 1997
+!LAST MODIFIED : 18 May 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the projection dialog.
@@ -24,6 +24,7 @@ procedure
 	identify_prj_dialog_spectrum;
 	identify_prj_dialog_spectrum_no;
 	identify_prj_dialog_blue_red;
+	identify_prj_dialog_bl_wh_rd;
 	identify_prj_dialog_red_blue;
 	identify_prj_dialog_log_blue_re;
 	identify_prj_dialog_log_red_blu;
@@ -620,6 +621,21 @@ object
 							MrmNcreateCallback = procedures
 								{
 								identify_prj_dialog_blue_red(projection_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("blue->white->red");
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_prj_dialog_bl_wh_rd(projection_dialog_structure);
 								};
 							};
 						};

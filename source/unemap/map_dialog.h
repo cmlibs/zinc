@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.h
 
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -57,6 +57,7 @@ The dialog box for configuring a map.
 			Widget red_blue;
 			Widget log_blue_red;
 			Widget log_red_blue;
+			Widget blue_white_red;
 		} type_option;
 	} spectrum;
 #endif /* defined (MOTIF) */

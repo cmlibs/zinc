@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 15 May 2000
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -195,7 +195,7 @@ Sets the minimum and maximum of the timekeeper to relate to the current map
 static void update_map_from_dialog(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 27 September 1999
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Updates the map settings based on the map dialog and redraws the map if
@@ -301,6 +301,16 @@ necessary.
 								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
 									BLUE_TO_RED_SPECTRUM);
 								map_settings_changed = 1;						
+							}
+						}
+						else if (option_widget==map_dialog->spectrum.type_option.blue_white_red)
+						{
+							if (BLUE_WHITE_RED_SPECTRUM != Spectrum_get_simple_type(
+								spectrum_to_be_modified_copy))
+							{
+								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
+									BLUE_WHITE_RED_SPECTRUM);
+								map_settings_changed = 1;					
 							}
 						}
 						else if (option_widget==map_dialog->spectrum.type_option.log_blue_red)

@@ -214,7 +214,7 @@ Global functions
 int Spectrum_set_simple_type(struct Spectrum *spectrum,
 	enum Spectrum_simple_type type)
 /*******************************************************************************
-LAST MODIFIED : 28 July 1998
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 A convienience routine that allows a spectrum to be automatically set into
@@ -222,7 +222,8 @@ some predetermined simple types.
 ==============================================================================*/
 {
 	struct LIST(Spectrum_settings) *spectrum_settings_list;
-	struct Spectrum_settings *settings, *second_settings;
+	struct Spectrum_settings *settings, *second_settings,*third_settings,
+		*fourth_settings,*fifth_settings,*sixth_settings;
 	int number_in_list, return_code;
 
 	ENTER(Spectrum_set_simple_type);
@@ -230,9 +231,9 @@ some predetermined simple types.
 	{
 		return_code = 1;
 		switch(type)
-		{
+		{				
 			case RED_TO_BLUE_SPECTRUM:
-			case BLUE_TO_RED_SPECTRUM:
+			case BLUE_TO_RED_SPECTRUM:		
 			{
 				spectrum_settings_list = get_Spectrum_settings_list(spectrum);
 				number_in_list = NUMBER_IN_LIST(Spectrum_settings)(spectrum_settings_list);
@@ -261,7 +262,7 @@ some predetermined simple types.
 				}
 			} break;
 			case LOG_RED_TO_BLUE_SPECTRUM:
-			case LOG_BLUE_TO_RED_SPECTRUM:
+			case LOG_BLUE_TO_RED_SPECTRUM:			
 			{
 				spectrum_settings_list = get_Spectrum_settings_list(spectrum);
 				number_in_list = NUMBER_IN_LIST(Spectrum_settings)(spectrum_settings_list);
@@ -270,14 +271,15 @@ some predetermined simple types.
 					REMOVE_ALL_OBJECTS_FROM_LIST(Spectrum_settings)(spectrum_settings_list);
 				}
 				settings = CREATE(Spectrum_settings)();
-				second_settings = CREATE(Spectrum_settings)();
+				second_settings = CREATE(Spectrum_settings)();				
 				Spectrum_settings_add(settings, /* end of list = 0 */0,
 					spectrum_settings_list);
 				Spectrum_settings_add(second_settings, /* end of list = 0 */0,
 					spectrum_settings_list);
+			
 				
 				Spectrum_settings_set_type(settings, SPECTRUM_LOG);
-				Spectrum_settings_set_exaggeration(second_settings, 1.0);
+				Spectrum_settings_set_exaggeration(settings, 1.0);
 				Spectrum_settings_set_colour_mapping(settings, SPECTRUM_RAINBOW);
 				Spectrum_settings_set_range_minimum(settings, -1.0);
 				Spectrum_settings_set_range_maximum(settings, 0.0);
@@ -311,7 +313,90 @@ some predetermined simple types.
 						Spectrum_settings_set_colour_value_minimum(second_settings, 0.0);
 						Spectrum_settings_set_colour_value_maximum(second_settings, 0.5);
 					} break;
+				
+				}			
+			} break;
+			case BLUE_WHITE_RED_SPECTRUM:
+			{
+				spectrum_settings_list = get_Spectrum_settings_list(spectrum);
+				number_in_list = NUMBER_IN_LIST(Spectrum_settings)(spectrum_settings_list);
+				if ( number_in_list > 0 )
+				{
+					REMOVE_ALL_OBJECTS_FROM_LIST(Spectrum_settings)(spectrum_settings_list);
 				}
+				settings = CREATE(Spectrum_settings)();
+				second_settings = CREATE(Spectrum_settings)();
+				third_settings = CREATE(Spectrum_settings)();
+				fourth_settings = CREATE(Spectrum_settings)();
+				fifth_settings = CREATE(Spectrum_settings)();
+				sixth_settings = CREATE(Spectrum_settings)();
+				Spectrum_settings_add(settings, /* end of list = 0 */0,
+					spectrum_settings_list);
+				Spectrum_settings_add(second_settings, /* end of list = 0 */0,
+					spectrum_settings_list);
+				Spectrum_settings_add(third_settings, /* end of list = 0 */0,
+					spectrum_settings_list);
+				Spectrum_settings_add(fourth_settings, /* end of list = 0 */0,
+					spectrum_settings_list);
+				Spectrum_settings_add(fifth_settings, /* end of list = 0 */0,
+					spectrum_settings_list);
+				Spectrum_settings_add(sixth_settings, /* end of list = 0 */0,
+					spectrum_settings_list);
+
+				Spectrum_settings_set_type(settings, SPECTRUM_LINEAR);
+				Spectrum_settings_set_reverse_flag(settings, 1);	
+				Spectrum_settings_set_range_minimum(settings, 0.0);
+				Spectrum_settings_set_range_maximum(settings, 0.5);	
+				Spectrum_settings_set_extend_below_flag(settings, 1);			
+				Spectrum_settings_set_colour_mapping(settings, SPECTRUM_BLUE);						
+				Spectrum_settings_set_colour_value_minimum(settings, 1);
+				Spectrum_settings_set_colour_value_maximum(settings, 1);
+
+				Spectrum_settings_set_type(second_settings, SPECTRUM_LOG);
+				Spectrum_settings_set_exaggeration(second_settings, -10.0);
+				Spectrum_settings_set_range_minimum(second_settings, 0.0);
+				Spectrum_settings_set_range_maximum(second_settings, 0.5);
+				Spectrum_settings_set_extend_below_flag(second_settings, 1);			
+				Spectrum_settings_set_colour_mapping(second_settings, SPECTRUM_GREEN);						
+				Spectrum_settings_set_colour_value_minimum(second_settings, 0);
+				Spectrum_settings_set_colour_value_maximum(second_settings, 1);
+
+				Spectrum_settings_set_type(third_settings, SPECTRUM_LOG);
+				Spectrum_settings_set_exaggeration(third_settings, -10.0);
+				Spectrum_settings_set_range_minimum(third_settings, 0.0);
+				Spectrum_settings_set_range_maximum(third_settings, 0.5);
+				Spectrum_settings_set_extend_below_flag(third_settings, 1);			
+				Spectrum_settings_set_colour_mapping(third_settings, SPECTRUM_RED);						
+				Spectrum_settings_set_colour_value_minimum(third_settings, 0);
+				Spectrum_settings_set_colour_value_maximum(third_settings, 1);
+
+				Spectrum_settings_set_type(fourth_settings, SPECTRUM_LINEAR);
+				Spectrum_settings_set_range_minimum(fourth_settings, 0.5);
+				Spectrum_settings_set_range_maximum(fourth_settings, 1.0);	
+				Spectrum_settings_set_extend_above_flag(fourth_settings, 1);			
+				Spectrum_settings_set_colour_mapping(fourth_settings, SPECTRUM_RED);
+				Spectrum_settings_set_colour_value_minimum(fourth_settings, 1);
+				Spectrum_settings_set_colour_value_maximum(fourth_settings, 1);
+
+				Spectrum_settings_set_type(fifth_settings, SPECTRUM_LOG);
+				Spectrum_settings_set_exaggeration(fifth_settings, 10.0);
+				Spectrum_settings_set_reverse_flag(fifth_settings, 1);	
+				Spectrum_settings_set_range_minimum(fifth_settings, 0.5);
+				Spectrum_settings_set_range_maximum(fifth_settings, 1.0);
+				Spectrum_settings_set_extend_above_flag(fifth_settings, 1);			
+				Spectrum_settings_set_colour_mapping(fifth_settings, SPECTRUM_GREEN);
+				Spectrum_settings_set_colour_value_minimum(fifth_settings, 0);
+				Spectrum_settings_set_colour_value_maximum(fifth_settings, 1);
+
+				Spectrum_settings_set_type(sixth_settings, SPECTRUM_LOG);
+				Spectrum_settings_set_exaggeration(sixth_settings, 10.0);
+				Spectrum_settings_set_reverse_flag(sixth_settings, 1);	
+				Spectrum_settings_set_range_minimum(sixth_settings, 0.5);
+				Spectrum_settings_set_range_maximum(sixth_settings, 1.0);
+				Spectrum_settings_set_extend_above_flag(sixth_settings, 1);			
+				Spectrum_settings_set_colour_mapping(sixth_settings, SPECTRUM_BLUE);
+				Spectrum_settings_set_colour_value_minimum(sixth_settings, 0);
+				Spectrum_settings_set_colour_value_maximum(sixth_settings, 1);
 			} break;
 			default:
 			{
@@ -335,7 +420,7 @@ some predetermined simple types.
 
 enum Spectrum_simple_type Spectrum_get_simple_type(struct Spectrum *spectrum)
 /*******************************************************************************
-LAST MODIFIED : 28 July 1998
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 A convienience routine that interrogates a spectrum to see if it is one of the
@@ -344,7 +429,8 @@ it returns UNKNOWN_SPECTRUM
 ==============================================================================*/
 {
 	struct LIST(Spectrum_settings) *spectrum_settings_list;
-	struct Spectrum_settings *settings, *second_settings;
+	struct Spectrum_settings *settings, *second_settings,*third_settings,
+		*fourth_settings,*fifth_settings,*sixth_settings;
 	enum Spectrum_settings_type settings_type, second_settings_type;
 	int number_in_list, reverse, second_reverse;
 	enum Spectrum_settings_colour_mapping colour_mapping, second_colour_mapping;
@@ -421,7 +507,36 @@ it returns UNKNOWN_SPECTRUM
 					display_message(ERROR_MESSAGE,
 						"Spectrum_set_simple_type.  Bad position numbers in settings");
 				}
-			}
+			}break;
+			case 6:
+			{	
+				settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+					(1, spectrum_settings_list);
+				second_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+					(2, spectrum_settings_list);
+				third_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+					(3, spectrum_settings_list);
+				fourth_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+					(4, spectrum_settings_list);
+				fifth_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+					(5, spectrum_settings_list);
+				sixth_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+					(6, spectrum_settings_list);
+				if (settings&&second_settings&&third_settings&&fourth_settings&&
+					fifth_settings&&sixth_settings)
+				{
+					/* Could do a more exhaustive check, I think but this is enough.*/
+					 if((SPECTRUM_BLUE==Spectrum_settings_get_colour_mapping(settings))&&
+						 (SPECTRUM_GREEN==Spectrum_settings_get_colour_mapping(second_settings))&&
+						 (SPECTRUM_RED==Spectrum_settings_get_colour_mapping(third_settings))&&
+						 (SPECTRUM_RED==Spectrum_settings_get_colour_mapping(fourth_settings))&&
+						 (SPECTRUM_GREEN==Spectrum_settings_get_colour_mapping(fifth_settings))&&
+						 (SPECTRUM_BLUE==Spectrum_settings_get_colour_mapping(sixth_settings)))
+					 {
+						 type = BLUE_WHITE_RED_SPECTRUM;
+					 }
+				}				
+			}break;
 		}
 	}
 	else
@@ -1666,7 +1781,7 @@ Writes the properties of the <spectrum> to the command window.
 
 int Spectrum_list_contents(struct Spectrum *spectrum,void *dummy)
 /*******************************************************************************
-LAST MODIFIED : 5 August 1998
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Writes the properties of the <spectrum> to the command window.
@@ -1701,6 +1816,10 @@ Writes the properties of the <spectrum> to the command window.
 			case LOG_RED_TO_BLUE_SPECTRUM:
 			{
 				display_message(INFORMATION_MESSAGE,"  simple spectrum type: LOG_RED_TO_BLUE\n");
+			} break;
+			case BLUE_WHITE_RED_SPECTRUM:
+			{
+				display_message(INFORMATION_MESSAGE,"  simple spectrum type: BLUE_WHITE_RED\n");
 			} break;
 		}
 		display_message(INFORMATION_MESSAGE,"  minimum=%.3g, maximum=%.3g\n",
