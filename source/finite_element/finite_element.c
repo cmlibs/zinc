@@ -12571,6 +12571,7 @@ specified.
 			node_field_creator->nodal_value_types[component_number][
 				number_of_derivatives + 1] = derivative_type;
 			node_field_creator->numbers_of_derivatives[component_number]++;
+			return_code = 1;
 		}
 		else
 		{
