@@ -222,9 +222,8 @@ GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
 GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
-XCOMM for OpenGL without SGI movie
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
-GRAPHICS_LIB = -lGL -lGLU
+GRAPHICS_LIB = -L/usr/local/lib -lMesaGL -lMesaGLU
 #endif /* switch OperatingSystem */
 #if defined (OLD_CODE)
 XCOMM GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -lmovieplay -lGL -lGLU -delay_load -ldmedia
@@ -572,7 +571,7 @@ LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm
 #if defined (IRIX) /* switch OperatingSystem */
 LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm
 #elif defined(LINUX) /* switch OperatingSystem */
-LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lf2c -lm -ldl -lXp -lSM -lICE
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE
 #endif /* switch OperatingSystem */
 
 START_ALL_DEFINES =
