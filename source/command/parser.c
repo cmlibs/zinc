@@ -4948,3 +4948,122 @@ NB.  *enum_value_address_void is put in *set_value_address_void
 
 	return (return_code);
 } /* set_enum */
+
+int Option_table_add_char_flag_entry(struct Option_table *option_table,
+	char *token, char *flag)
+/*******************************************************************************
+LAST MODIFIED : 8 October 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  If the <token> is specified 
+then the <flag> will be set.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_char_flag_entry);
+	if (option_table && token && flag)
+	{
+		return_code = Option_table_add_entry(option_table, token, (void *)flag, NULL,
+			set_char_flag);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_char_flag_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_char_flag_entry */
+
+int Option_table_add_double_entry(struct Option_table *option_table,
+	char *token, double *value)
+/*******************************************************************************
+LAST MODIFIED : 8 October 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  If the <token> is specified then
+the token following is assigned to <value>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_double_vector_entry);
+	if (option_table && token && value)
+	{
+		return_code = Option_table_add_entry(option_table, token, value,
+			NULL, set_double);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_double_vector_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_double_vector_entry */
+
+int Option_table_add_double_vector_entry(struct Option_table *option_table,
+	char *token, double *vector, int *number_of_components)
+/*******************************************************************************
+LAST MODIFIED : 8 October 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <vector> is filled in with the
+<number_of_components>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_double_vector_entry);
+	if (option_table && token && vector && number_of_components &&
+		(*number_of_components > 0))
+	{
+		return_code = Option_table_add_entry(option_table, token, vector,
+			(void *)number_of_components, set_double_vector);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_double_vector_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_double_vector_entry */
+
+int Option_table_add_double_vector_with_help_entry(
+	struct Option_table *option_table, char *token, double *vector,
+	struct Set_vector_with_help_data *data)
+/*******************************************************************************
+LAST MODIFIED : 8 October 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <vector> is filled in with the
+number of values specified in the <data>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_double_vector_with_help_entry);
+	if (option_table && token && vector && data)
+	{
+		return_code = Option_table_add_entry(option_table, token, (void *)vector, 
+			(void *)data, set_double_vector_with_help);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_double_vector_with_help_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_double_vector_with_help_entry */
+

@@ -684,4 +684,46 @@ value.
 NB.  *enum_value_address_void is put in *set_value_address_void
 ???DB.  Unwieldy.  Can it be done better ?
 ==============================================================================*/
+
+int Option_table_add_char_flag_entry(struct Option_table *option_table,
+	char *token, char *flag);
+/*******************************************************************************
+LAST MODIFIED : 8 October 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  If the <token> is specified 
+then the <flag> will be set.
+==============================================================================*/
+
+int Option_table_add_double_entry(struct Option_table *option_table,
+	char *token, double *value);
+/*******************************************************************************
+LAST MODIFIED : 8 October 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  If the <token> is specified then
+the token following is assigned to <value>.
+==============================================================================*/
+
+int Option_table_add_double_vector_entry(struct Option_table *option_table,
+	char *token, double *vector, int *number_of_components);
+/*******************************************************************************
+LAST MODIFIED : 8 October 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <vector> is filled in with the
+<number_of_components>.
+==============================================================================*/
+
+int Option_table_add_double_vector_with_help_entry(
+	struct Option_table *option_table, char *token, double *vector, 
+	struct Set_vector_with_help_data *data);
+/*******************************************************************************
+LAST MODIFIED : 8 October 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <vector> is filled in with the
+number of values specified in the <data>.
+==============================================================================*/
+
 #endif /* !defined (PARSER_H) */

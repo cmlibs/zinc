@@ -1131,30 +1131,14 @@ the changes are to be applied to all panes.
 {
 	char all_panes_flag,no_undistort_flag,undistort_flag;
 	double max_pixels_per_polygon,texture_placement[4];
-	int first_pane, i, last_pane, pane_no, pixelsx, pixelsy, pixelsz, return_code,
+	int first_pane, last_pane, pane_no, pixelsx, pixelsy, pixelsz, return_code,
 		undistort_on;
 	struct Colour background_colour;
 	struct Graphics_window *window;
 	struct Modify_graphics_window_data *modify_graphics_window_data;
+	struct Option_table *option_table, *undistort_option_table;
 	struct Scene_viewer *scene_viewer;
 	struct Texture *background_texture;
-	static struct Modifier_entry
-		undistort_option_table[]=
-		{
-			{"undistort_texture",NULL,NULL,set_char_flag},
-			{"no_undistort_texture",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{"all_panes",NULL,NULL,set_char_flag},
-			{"colour",NULL,NULL,set_Colour},
-			{"max_pixels_per_polygon",NULL,NULL,set_double},
-			{"texture",NULL,NULL,set_Texture},
-			{"tex_placement",NULL,NULL,set_double_vector_with_help},
-			{NULL,NULL,NULL,NULL},
-			{NULL,NULL,NULL,NULL}
-		};
 	/* do not make the following static as 'set' flag must start at 0 */
 	struct Set_vector_with_help_data texture_placement_data=
 		{4," TEXTURE_LEFT TEXTURE_TOP TEXTURE_WIDTH TEXTURE_HEIGHT",0};
@@ -1197,31 +1181,30 @@ the changes are to be applied to all panes.
 				undistort_flag=0;
 				no_undistort_flag=0;
 				all_panes_flag=0;
-				i=0;
+				option_table = CREATE(Option_table)();
 				/* all_panes */
-				(option_table[i]).to_be_modified= &all_panes_flag;
-				i++;
+				Option_table_add_char_flag_entry(option_table, "all_panes",
+					&all_panes_flag);
 				/* colour */
-				(option_table[i]).to_be_modified= &background_colour;
-				i++;
+				Option_table_add_entry(option_table, "colour",
+					&background_colour, NULL, set_Colour);
 				/* max_pixels_per_polygon */
-				(option_table[i]).to_be_modified= (void *)&max_pixels_per_polygon;
-				i++;
+				Option_table_add_double_entry(option_table, "max_pixels_per_polygon",
+					&max_pixels_per_polygon);
 				/* texture */
-				(option_table[i]).to_be_modified= &background_texture;
-				(option_table[i]).user_data=
-					modify_graphics_window_data->texture_manager;
-				i++;
+				Option_table_add_entry(option_table, "texture",
+					&background_texture, modify_graphics_window_data->texture_manager, set_Texture);
 				/* tex_placement */
-				(option_table[i]).to_be_modified= (void *)texture_placement;
-				(option_table[i]).user_data= &texture_placement_data;
-				i++;
+				Option_table_add_double_vector_with_help_entry(option_table, "tex_placement", 
+					texture_placement, &texture_placement_data);
 				/* undistort_texture/no_undistort_texture */
-				(undistort_option_table[0]).to_be_modified = &undistort_flag;
-				(undistort_option_table[1]).to_be_modified = &no_undistort_flag;
-				(option_table[i]).user_data=undistort_option_table;
-				i++;
-				if (return_code=process_multiple_options(state,option_table))
+				undistort_option_table = CREATE(Option_table)();
+				Option_table_add_char_flag_entry(undistort_option_table, "undistort_texture",
+					&undistort_flag);
+				Option_table_add_char_flag_entry(undistort_option_table, "no_undistort_texture",
+					&no_undistort_flag);
+				Option_table_add_suboption_table(option_table, undistort_option_table);
+				if (return_code=Option_table_multi_parse(option_table, state))
 				{
 					if (scene_viewer)
 					{
@@ -1292,6 +1275,7 @@ the changes are to be applied to all panes.
 						return_code=0;
 					}
 				}
+				DESTROY(Option_table)(&option_table);
 				if (background_texture)
 				{
 					DEACCESS(Texture)(&background_texture);
@@ -1347,25 +1331,15 @@ a spaceship/submarine, where:
 #if defined (MOTIF)
 	EDIT_VAR_PRECISION time_value;
 #endif /* defined (MOTIF) */
-	int i,pane_no,return_code;
+	int pane_no,return_code;
 	struct Graphics_window *window;
 	struct Light *light_to_add,*light_to_remove;
 	struct Light_model *light_model;
 	struct Modify_graphics_window_data *modify_graphics_window_data;
+	struct Option_table *option_table;
 	struct Scene *scene;
 	struct Scene_viewer *scene_viewer;
 	struct Time_keeper *new_time_keeper;
-	static struct Modifier_entry option_table[]=
-	{
-		{"add_light",NULL,NULL,set_Light},
-		{"light_model",NULL,NULL,set_Light_model},
-		{"remove_light",NULL,NULL,set_Light},
-		{"rotate",NULL,NULL,set_double_vector_with_help},
-		{"scene",NULL,NULL,set_Scene},
-		{"update",NULL,NULL,set_char_flag},
-		{"view_all",NULL,NULL,set_char_flag},
-		{NULL,NULL,NULL,NULL}
-	};
 	static struct Set_vector_with_help_data
 		rotate_command_data={4," AXIS_X AXIS_Y AXIS_Z ANGLE",0};
 
@@ -1399,35 +1373,29 @@ a spaceship/submarine, where:
 				rotate_angle=0.0;
 				update_flag=0;
 				view_all_flag=0;
-				i=0;
+				option_table = CREATE(Option_table)();
 				/* add_light */
-				(option_table[i]).to_be_modified= &light_to_add;
-				(option_table[i]).user_data=modify_graphics_window_data->light_manager;
-				i++;
+				Option_table_add_entry(option_table, "add_light", &light_to_add,
+					modify_graphics_window_data->light_manager, set_Light);
 				/* light_model */
-				(option_table[i]).to_be_modified= &light_model;
-				(option_table[i]).user_data=
-					modify_graphics_window_data->light_model_manager;
-				i++;
+				Option_table_add_entry(option_table, "light_model", &light_model,
+					modify_graphics_window_data->light_model_manager, set_Light_model);
 				/* remove_light */
-				(option_table[i]).to_be_modified= &light_to_remove;
-				(option_table[i]).user_data=modify_graphics_window_data->light_manager;
-				i++;
+				Option_table_add_entry(option_table, "remove_light", &light_to_remove,
+					modify_graphics_window_data->light_manager, set_Light);
 				/* rotate */
-				(option_table[i]).to_be_modified= rotate_data;
-				(option_table[i]).user_data= &rotate_command_data;
-				i++;
+				Option_table_add_double_vector_with_help_entry(option_table, "rotate", 
+					rotate_data, &rotate_command_data);
 				/* scene */
-				(option_table[i]).to_be_modified= &scene;
-				(option_table[i]).user_data=modify_graphics_window_data->scene_manager;
-				i++;
+				Option_table_add_entry(option_table, "scene", &scene,
+					modify_graphics_window_data->scene_manager, set_Scene);
 				/* update */
-				(option_table[i]).to_be_modified= &update_flag;
-				i++;
+				Option_table_add_char_flag_entry(option_table, "update", 
+					&update_flag);
 				/* view_all */
-				(option_table[i]).to_be_modified= &view_all_flag;
-				i++;
-				if (return_code=process_multiple_options(state,option_table))
+				Option_table_add_char_flag_entry(option_table, "view_all", 
+					&view_all_flag);
+				if (return_code=Option_table_multi_parse(option_table, state))
 				{
 					if (scene_viewer)
 					{
@@ -1534,6 +1502,7 @@ a spaceship/submarine, where:
 						return_code=0;
 					}
 				}
+				DESTROY(Option_table)(&option_table);
 				if (scene)
 				{
 					DEACCESS(Scene)(&scene);
@@ -1709,16 +1678,12 @@ Parser commands for modifying the overlay scene of the current pane of the
 <window>.
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 	struct Graphics_window *window;
 	struct Modify_graphics_window_data *modify_graphics_window_data;
+	struct Option_table *option_table;
 	struct Scene *overlay_scene,*previous_overlay_scene;
 	struct Scene_viewer *scene_viewer;
-	static struct Modifier_entry option_table[]=
-	{
-		{"scene",NULL,NULL,set_Scene},
-		{NULL,NULL,NULL,NULL}
-	};
 
 	ENTER(modify_Graphics_window_overlay);
 	if (state)
@@ -1743,12 +1708,11 @@ Parser commands for modifying the overlay scene of the current pane of the
 					overlay_scene=(struct Scene *)NULL;
 				}
 				previous_overlay_scene=overlay_scene;
-				i=0;
+				option_table = CREATE(Option_table)();
 				/* scene */
-				(option_table[i]).to_be_modified= &overlay_scene;
-				(option_table[i]).user_data=modify_graphics_window_data->scene_manager;
-				i++;
-				if (return_code=process_multiple_options(state,option_table))
+				Option_table_add_entry(option_table, "scene", &overlay_scene,
+					modify_graphics_window_data->scene_manager, set_Scene);
+				if (return_code=Option_table_multi_parse(option_table, state))
 				{
 					if (scene_viewer)
 					{
@@ -1768,6 +1732,7 @@ Parser commands for modifying the overlay scene of the current pane of the
 						return_code=0;
 					}
 				}
+				DESTROY(Option_table)(&option_table);
 				if (overlay_scene)
 				{
 					DEACCESS(Scene)(&overlay_scene);
@@ -2178,43 +2143,11 @@ view angle, interest point etc.
 		ndc_placement[4],near,photogrammetry_matrix[12],projection_matrix[16],right,
 		top,up[3],view_angle,viewport_coordinates[4];
 	enum Scene_viewer_projection_mode projection_mode;
-	int i,number_of_components,return_code;
+	int number_of_components,return_code;
 	struct Graphics_window *window;
+	struct Option_table *option_table, *projection_mode_option_table,
+		*viewport_mode_option_table;
 	struct Scene_viewer *scene_viewer;
-	static struct Modifier_entry
-		projection_mode_option_table[]=
-		{
-			{"custom",NULL,NULL,set_char_flag},
-			{"parallel",NULL,NULL,set_char_flag},
-			{"perspective",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		viewport_mode_option_table[]=
-		{
-			{"absolute_viewport",NULL,NULL,set_char_flag},
-			{"relative_viewport",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{"allow_skew",NULL,NULL,set_char_flag},
-			{"clip_plane_add",NULL,NULL,set_double_vector_with_help},
-			{"clip_plane_remove",NULL,NULL,set_double_vector_with_help},
-			{"eye_point",NULL,NULL,set_double_vector},
-			{"far_clipping_plane",NULL,NULL,set_double},
-			{"interest_point",NULL,NULL,set_double_vector},
-			{"modelview_matrix",NULL,NULL,set_double_vector_with_help},
-			{"ndc_placement",NULL,NULL,set_double_vector_with_help},
-			{"near_clipping_plane",NULL,NULL,set_double},
-			{"photogrammetry_matrix",NULL,NULL,set_double_vector_with_help},
-			{"projection_matrix",NULL,NULL,set_double_vector_with_help},
-			{NULL,NULL,NULL,NULL},
-			{"up_vector",NULL,NULL,set_double_vector},
-			{"viewport_coordinates",NULL,NULL,set_double_vector_with_help},
-			{"view_angle",NULL,NULL,set_double},
-			{NULL,NULL,NULL,NULL},
-			{NULL,NULL,NULL,NULL}
-		};
 	static struct Set_vector_with_help_data
 		clip_plane_add_data=
 			{4," A B C D",0},
@@ -2244,17 +2177,9 @@ view angle, interest point etc.
 					&(eye[0]),&(eye[1]),&(eye[2]),
 					&(lookat[0]),&(lookat[1]),&(lookat[2]),&(up[0]),&(up[1]),&(up[2]))&&
 				Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
-					&bottom,&top,&near,&far))
+					&bottom,&top,&near,&far)&&
+				Scene_viewer_get_view_angle(scene_viewer,&view_angle))
 			{
-				if (Scene_viewer_get_projection_mode(scene_viewer, &projection_mode) &&
-					(SCENE_VIEWER_CUSTOM==projection_mode))
-				{
-					view_angle=0.0;
-				}
-				else
-				{
-					Scene_viewer_get_view_angle(scene_viewer,&view_angle);
-				}
 				view_angle *= (180.0/PI);
 			}
 			else
@@ -2279,74 +2204,64 @@ view angle, interest point etc.
 			photogrammetry_matrix_data.set=0;
 			projection_matrix_data.set=0;
 			viewport_coordinates_data.set=0;
-			i=0;
+			option_table = CREATE(Option_table)();
 			/* allow_skew */
-			(option_table[i]).to_be_modified= &allow_skew_flag;
-			i++;
+			Option_table_add_char_flag_entry(option_table, "allow_skew", &allow_skew_flag);
 			/* clip_plane_add */
-			(option_table[i]).to_be_modified= (void *)clip_plane_add;
-			(option_table[i]).user_data= &clip_plane_add_data;
-			i++;
+			Option_table_add_double_vector_with_help_entry(option_table, "clip_plane_add", 
+				clip_plane_add, &clip_plane_add_data);
 			/* clip_plane_remove */
-			(option_table[i]).to_be_modified= (void *)clip_plane_remove;
-			(option_table[i]).user_data= &clip_plane_remove_data;
-			i++;
+			Option_table_add_double_vector_with_help_entry(option_table, "clip_plane_remove", 
+				clip_plane_remove, &clip_plane_remove_data);
 			/* eye_point */
-			(option_table[i]).to_be_modified= eye;
-			(option_table[i]).user_data= (void *)&number_of_components;
-			i++;
+			Option_table_add_double_vector_entry(option_table, "eye_point", eye,
+				&number_of_components);
 			/* far_clipping_plane */
-			(option_table[i]).to_be_modified= &far;
-			i++;
+			Option_table_add_double_entry(option_table, "far_clipping_plane", &far);
 			/* interest_point */
-			(option_table[i]).to_be_modified= lookat;
-			(option_table[i]).user_data= (void *)&number_of_components;
-			i++;
+			Option_table_add_double_vector_entry(option_table, "interest_point", lookat,
+				&number_of_components);
 			/* modelview_matrix */
-			(option_table[i]).to_be_modified= (void *)modelview_matrix;
-			(option_table[i]).user_data= &modelview_matrix_data;
-			i++;
+			Option_table_add_double_vector_with_help_entry(option_table, "modelview_matrix", 
+				modelview_matrix, &modelview_matrix_data);
 			/* ndc_placement (normalised device coordinate placement) */
-			(option_table[i]).to_be_modified= (void *)ndc_placement;
-			(option_table[i]).user_data= &ndc_placement_data;
-			i++;
+			Option_table_add_double_vector_with_help_entry(option_table, "ndc_placement",
+				ndc_placement, &ndc_placement_data);
 			/* near_clipping_plane */
-			(option_table[i]).to_be_modified= &near;
-			i++;
+			Option_table_add_double_entry(option_table, "near_clipping_plane", &near);
 			/* photogrammetry_matrix */
-			(option_table[i]).to_be_modified= (void *)photogrammetry_matrix;
-			(option_table[i]).user_data= &photogrammetry_matrix_data;
-			i++;
+			Option_table_add_double_vector_with_help_entry(option_table, "photogrammetry_matrix",
+				photogrammetry_matrix, &photogrammetry_matrix_data);
 			/* projection_matrix */
-			(option_table[i]).to_be_modified= (void *)projection_matrix;
-			(option_table[i]).user_data= &projection_matrix_data;
-			i++;
+			Option_table_add_double_vector_with_help_entry(option_table, "projection_matrix",
+				projection_matrix, &projection_matrix_data);
 			/* projection mode: custom/parallel/perspective */
-			(projection_mode_option_table[0]).to_be_modified=
-				&custom_projection_flag;
-			(projection_mode_option_table[1]).to_be_modified=
-				&parallel_projection_flag;
-			(projection_mode_option_table[2]).to_be_modified=
-				&perspective_projection_flag;
-			(option_table[i]).user_data=projection_mode_option_table;
-			i++;
+			projection_mode_option_table = CREATE(Option_table)();
+			Option_table_add_char_flag_entry(projection_mode_option_table, "custom",
+				&custom_projection_flag);
+			Option_table_add_char_flag_entry(projection_mode_option_table, "parallel",
+				&parallel_projection_flag);
+			Option_table_add_char_flag_entry(projection_mode_option_table, "perspective",
+				&perspective_projection_flag);
+			Option_table_add_suboption_table(option_table,
+				projection_mode_option_table);
 			/* up_vector */
-			(option_table[i]).to_be_modified= up;
-			(option_table[i]).user_data= (void *)&number_of_components;
-			i++;
+			Option_table_add_double_vector_entry(option_table, "up_vector", up,
+				&number_of_components);
 			/* viewport_coordinates */
-			(option_table[i]).to_be_modified= (void *)viewport_coordinates;
-			(option_table[i]).user_data= &viewport_coordinates_data;
-			i++;
+			Option_table_add_double_vector_with_help_entry(option_table, "viewport_coordinates",
+				viewport_coordinates, &viewport_coordinates_data);
 			/* view_angle */
-			(option_table[i]).to_be_modified= &view_angle;
-			i++;
+			Option_table_add_double_entry(option_table, "view_angle", &view_angle);
 			/* viewport mode: absolute_viewport/relative_viewport */
-			(viewport_mode_option_table[0]).to_be_modified= &absolute_viewport_flag;
-			(viewport_mode_option_table[1]).to_be_modified= &relative_viewport_flag;
-			(option_table[i]).user_data=viewport_mode_option_table;
-			i++;
-			if (return_code=process_multiple_options(state,option_table))
+			viewport_mode_option_table = CREATE(Option_table)();
+			Option_table_add_char_flag_entry(viewport_mode_option_table, "absolute_viewport",
+				&absolute_viewport_flag);
+			Option_table_add_char_flag_entry(viewport_mode_option_table, "relative_viewport",
+				&relative_viewport_flag);
+			Option_table_add_suboption_table(option_table,
+				viewport_mode_option_table);
+			if (return_code=Option_table_multi_parse(option_table, state))
 			{
 				if (absolute_viewport_flag&&relative_viewport_flag)
 				{
@@ -2390,41 +2305,44 @@ view angle, interest point etc.
 					}
 					projection_mode=
 						Graphics_window_get_projection_mode(window,window->current_pane);
-					/* must set viewing volume before view_angle otherwise view_angle
-						 is overwritten */
-					Scene_viewer_set_viewing_volume(scene_viewer,left,right,bottom,top,
-						near,far);
-					if (allow_skew_flag)
+					if (SCENE_VIEWER_CUSTOM != projection_mode)
 					{
-						Scene_viewer_set_lookat_parameters(scene_viewer,
-							eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
-							up[0],up[1],up[2]);
-					}
-					else
-					{
-						Scene_viewer_set_lookat_parameters_non_skew(scene_viewer,
-							eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
-							up[0],up[1],up[2]);
-					}
-					/* must set view angle after lookat parameters */
-					if ((0.0<view_angle)&&(view_angle<180.0))
-					{
-						Scene_viewer_set_view_angle(scene_viewer,view_angle*(PI/180.0));
-					}
-					else
-					{
-						display_message(WARNING_MESSAGE,
-							"View angle should be between 0 and 180 degrees.");
-					}
-					if (absolute_viewport_flag)
-					{
-						Scene_viewer_set_viewport_mode(scene_viewer,
-							SCENE_VIEWER_ABSOLUTE_VIEWPORT);
-					}
-					if (relative_viewport_flag)
-					{
-						Scene_viewer_set_viewport_mode(scene_viewer,
-							SCENE_VIEWER_RELATIVE_VIEWPORT);
+						/* must set viewing volume before view_angle otherwise view_angle
+							is overwritten */
+						Scene_viewer_set_viewing_volume(scene_viewer,left,right,bottom,top,
+							near,far);
+						if (allow_skew_flag)
+						{
+							Scene_viewer_set_lookat_parameters(scene_viewer,
+								eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
+								up[0],up[1],up[2]);
+						}
+						else
+						{
+							Scene_viewer_set_lookat_parameters_non_skew(scene_viewer,
+								eye[0],eye[1],eye[2],lookat[0],lookat[1],lookat[2],
+								up[0],up[1],up[2]);
+						}
+						/* must set view angle after lookat parameters */
+						if ((0.0<view_angle)&&(view_angle<180.0))
+						{
+							Scene_viewer_set_view_angle(scene_viewer,view_angle*(PI/180.0));
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+								"View angle should be between 0 and 180 degrees.");
+						}
+						if (absolute_viewport_flag)
+						{
+							Scene_viewer_set_viewport_mode(scene_viewer,
+								SCENE_VIEWER_ABSOLUTE_VIEWPORT);
+						}
+						if (relative_viewport_flag)
+						{
+							Scene_viewer_set_viewport_mode(scene_viewer,
+								SCENE_VIEWER_RELATIVE_VIEWPORT);
+						}
 					}
 					/*???RC should have checks on whether you can set these for the
 						current layout_mode */
@@ -2535,6 +2453,7 @@ view angle, interest point etc.
 					return_code=0;
 				}
 			}
+			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
@@ -5674,12 +5593,12 @@ to the command window.
 			{
 				Scene_viewer_get_modelview_matrix(scene_viewer,modelview_matrix);
 				Scene_viewer_get_projection_matrix(scene_viewer,projection_matrix);
-				display_message(INFORMATION_MESSAGE," modelview matrix");
+				display_message(INFORMATION_MESSAGE," modelview_matrix");
 				for (i=0;i<16;i++)
 				{
 					display_message(INFORMATION_MESSAGE," %13.6e",modelview_matrix[i]);
 				}
-				display_message(INFORMATION_MESSAGE," projection matrix");
+				display_message(INFORMATION_MESSAGE," projection_matrix");
 				for (i=0;i<16;i++)
 				{
 					display_message(INFORMATION_MESSAGE," %13.6e",projection_matrix[i]);
@@ -5821,26 +5740,8 @@ Parameter <help_mode> should be NULL when calling this function.
 	int return_code;
 	struct Graphics_window *window;
 	struct Modify_graphics_window_data *modify_graphics_window_data;
-	static struct Modifier_entry
-		help_option_table[]=
-		{
-			{"GRAPHICS_WINDOW_NAME",NULL,NULL,modify_Graphics_window},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{NULL,NULL,NULL,set_Graphics_window}
-		},
-		valid_window_option_table[]=
-		{
-			{"background",NULL,NULL,modify_Graphics_window_background},
-			{"image",NULL,NULL,modify_Graphics_window_image},
-			{"layout",NULL,NULL,modify_Graphics_window_layout},
-			{"overlay",NULL,NULL,modify_Graphics_window_overlay},
-			{"set",NULL,NULL,modify_Graphics_window_set},
-			{"view",NULL,NULL,modify_Graphics_window_view},
-			{NULL,NULL,NULL,NULL}
-		};
+	struct Option_table *help_option_table, *option_table,
+		*valid_window_option_table;
 
 	ENTER(modify_Graphics_window);
 	if (state)
@@ -5855,43 +5756,50 @@ Parameter <help_mode> should be NULL when calling this function.
 			{
 				if ((!state->current_token)||
 					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-						strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
 				{
-					/* read element group */
-					(option_table[0]).to_be_modified= (void *)&window;
-					(option_table[0]).user_data=
-						(void *)(modify_graphics_window_data->graphics_window_manager);
-					return_code=process_option(state,option_table);
+					option_table = CREATE(Option_table)();
+					/* default: graphics window */
+					Option_table_add_entry(option_table, NULL, (void *)&window,
+						(void *)modify_graphics_window_data->graphics_window_manager,
+						set_Graphics_window);
+					return_code=Option_table_parse(option_table, state);
+					DESTROY(Option_table)(&option_table);
 				}
 				else
 				{
+					help_option_table = CREATE(Option_table)();
 					/* write help - use help_mode flag to get correct behaviour */
-					(help_option_table[0]).to_be_modified= (void *)1;
-					(help_option_table[0]).user_data=modify_graphics_window_data_void;
-					return_code=process_option(state,help_option_table);
+					Option_table_add_entry(help_option_table, "GRAPHICS_WINDOW_NAME",
+						(void *)1, modify_graphics_window_data_void,
+						modify_Graphics_window);
+					return_code=Option_table_parse(help_option_table, state);
+					DESTROY(Option_table)(&help_option_table);
 				}
 			}
 			if (return_code)
 			{
-				(valid_window_option_table[0]).to_be_modified=(void *)window;
-				(valid_window_option_table[0]).user_data=
-					modify_graphics_window_data_void;
-				(valid_window_option_table[1]).to_be_modified=(void *)window;
-				(valid_window_option_table[1]).user_data=
-					modify_graphics_window_data_void;
-				(valid_window_option_table[2]).to_be_modified=(void *)window;
-				(valid_window_option_table[2]).user_data=
-					modify_graphics_window_data_void;
-				(valid_window_option_table[3]).to_be_modified=(void *)window;
-				(valid_window_option_table[3]).user_data=
-					modify_graphics_window_data_void;
-				(valid_window_option_table[4]).to_be_modified=(void *)window;
-				(valid_window_option_table[4]).user_data=
-					modify_graphics_window_data_void;
-				(valid_window_option_table[5]).to_be_modified=(void *)window;
-				(valid_window_option_table[5]).user_data=
-					modify_graphics_window_data_void;
-				return_code=process_option(state,valid_window_option_table);
+				valid_window_option_table = CREATE(Option_table)();
+				Option_table_add_entry(valid_window_option_table, "background",
+						(void *)window, modify_graphics_window_data_void,
+						modify_Graphics_window_background);
+				Option_table_add_entry(valid_window_option_table, "image",
+						(void *)window, modify_graphics_window_data_void,
+						modify_Graphics_window_image);
+				Option_table_add_entry(valid_window_option_table, "layout",
+						(void *)window, modify_graphics_window_data_void,
+						modify_Graphics_window_layout);
+				Option_table_add_entry(valid_window_option_table, "overlay",
+						(void *)window, modify_graphics_window_data_void,
+						modify_Graphics_window_overlay);
+				Option_table_add_entry(valid_window_option_table, "set",
+						(void *)window, modify_graphics_window_data_void,
+						modify_Graphics_window_set);
+				Option_table_add_entry(valid_window_option_table, "view",
+						(void *)window, modify_graphics_window_data_void,
+						modify_Graphics_window_view);
+				return_code = Option_table_parse(valid_window_option_table, state);
+				DESTROY(Option_table)(&valid_window_option_table);
 			}
 			if (window)
 			{
