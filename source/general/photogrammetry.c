@@ -261,7 +261,7 @@ as nearly as possible within the remaining degree of freedom.
 	return (return_code);
 } /* weighted_point_pair_to_3d */
 
-int photogrammetry_to_graphics_projection(double *t,double near,double far,
+int photogrammetry_to_graphics_projection(double *t,double near_plane,double far_plane,
 	double NDC_left,double NDC_bottom,double NDC_width,double NDC_height,
 	double *modelview_matrix,double *projection_matrix,double *eye,
 	double *lookat,double *up)
@@ -271,7 +271,7 @@ LAST MODIFIED : 26 November 2001
 DESCRIPTION :
 Extracts 4x4 modelview and projection matrices suitable for sending to a
 Scene_viewer from the 4x3 photogrammetry projection matrix, t, combined with
-<near> and <far> clipping plane information, and the origin <NDC_left>,
+<near_plane> and <far_plane> clipping plane information, and the origin <NDC_left>,
 <NDC_bottom> and size <NDC_widthxNDC_height> of the region projected on to.
 Also returns lookat parameters <eye> position, <lookat> point and <up> vector.
 Requires for now that NDC_bottom and NDC_left are zero.
@@ -282,7 +282,7 @@ Requires for now that NDC_bottom and NDC_left are zero.
 	int return_code, tmpindx[3];
 
 	ENTER(photogrammetry_to_graphics_projection);
-	if (t&&(0<near)&&(near<far)&&(0!=NDC_width)&&(0!=NDC_height)&&
+	if (t&&(0<near_plane)&&(near_plane<far_plane)&&(0!=NDC_width)&&(0!=NDC_height)&&
 		projection_matrix&&modelview_matrix&&eye&&lookat&&up)
 	{
 #if defined (DEBUG)
@@ -369,8 +369,8 @@ Requires for now that NDC_bottom and NDC_left are zero.
 		modelview_matrix[14]=0.0;
 		modelview_matrix[15]=1.0;
 
-		/* get lookat point halfway between near and far along -z direction */
-		eye_distance=0.5*(near+far);
+		/* get lookat point halfway between near_plane and far_plane along -z direction */
+		eye_distance=0.5*(near_plane+far_plane);
 		lookat[0]=eye[0]-eye_distance*modelview_matrix[8];
 		lookat[1]=eye[1]-eye_distance*modelview_matrix[9];
 		lookat[2]=eye[2]-eye_distance*modelview_matrix[10];
@@ -393,11 +393,11 @@ Requires for now that NDC_bottom and NDC_left are zero.
 		/* The range of projected z-coordinates is from -1 on the near plane to */
 		/* +1 on the far plane. Remembering that the z-coordinate also undergoes */
 		/* division by the homogeneous coordinate, we have on these two planes: */
-		/*   -1 = (S33*-near + S34) / (znorm*near + S44)   */
-		/*   +1 = (S33*-far  + S34) / (znorm*far  + S44)   */
+		/*   -1 = (S33*-near_plane + S34) / (znorm*near_plane + S44)   */
+		/*   +1 = (S33*-far_plane  + S34) / (znorm*far_plane  + S44)   */
 		/* which, can be solved for S33 and S34: */
-		S33=(-znorm*(near+far)-2*S44)/(far-near);
-		S34=(-znorm*(near+far)-2*S44)*near/(far-near)-znorm*near-S44;
+		S33=(-znorm*(near_plane+far_plane)-2*S44)/(far_plane-near_plane);
+		S34=(-znorm*(near_plane+far_plane)-2*S44)*near_plane/(far_plane-near_plane)-znorm*near_plane-S44;
 
 #if defined (DEBUG)
 		{
@@ -472,7 +472,7 @@ Requires for now that NDC_bottom and NDC_left are zero.
 	return (return_code);
 } /* photogrammetry_to_graphics_projection */
 
-int photogrammetry_project(double *t,double near,double far,
+int photogrammetry_project(double *t,double near_plane,double far_plane,
 	double NDC_left,double NDC_bottom,double NDC_width,double NDC_height,
 	double *pos3,double *win_pos)
 /*******************************************************************************
@@ -480,7 +480,7 @@ LAST MODIFIED : 15 April 1998
 
 DESCRIPTION :
 Converts 3-D coordinate pos3 into its projection, win_pos on the window.
-Note that the z-coordinate returned is 0.0 on the near plane and 1.0 on the far
+Note that the z-coordinate returned is 0.0 on the near plane and 1.0 on the far_plane
 plane. The x and y coordinates returned should match those returned by
 point_3d_to_2d_view.
 ==============================================================================*/
@@ -494,7 +494,7 @@ point_3d_to_2d_view.
 	ENTER(photogrammetry_project);
 	if (t&&pos3&&win_pos)
 	{
-		if (return_code=photogrammetry_to_graphics_projection(t,near,far,
+		if (return_code=photogrammetry_to_graphics_projection(t,near_plane,far_plane,
 			NDC_left,NDC_bottom,NDC_width,NDC_height,
 			modelview_matrixT,projection_matrixT,eye,lookat,up))
 		{
@@ -515,7 +515,7 @@ point_3d_to_2d_view.
 			obj_x=(GLdouble)pos3[0];
 			obj_y=(GLdouble)pos3[1];
 			obj_z=(GLdouble)pos3[2];
-			/* for OpenGL window z coordinates, 0.0=near, 1.0=far */
+			/* for OpenGL window z coordinates, 0.0=near_plane, 1.0=far_plane */
 			if (GL_TRUE==gluProject(obj_x,obj_y,obj_z,
 				modelview_matrix,projection_matrix,viewport,&win_x,&win_y,&win_z))
 			{
@@ -545,14 +545,14 @@ point_3d_to_2d_view.
 	return (return_code);
 } /* photogrammetry_project */
 
-int photogrammetry_unproject(double *t,double near,double far,
+int photogrammetry_unproject(double *t,double near_plane,double far_plane,
 	double NDC_left,double NDC_bottom,double NDC_width,double NDC_height,
 	double *pos2,double *near_pos,double *far_pos)
 /*******************************************************************************
 LAST MODIFIED : 9 March 1998
 
 DESCRIPTION :
-Converts 2-D coordinate pos2 into two 3-D locations on the near and far planes
+Converts 2-D coordinate pos2 into two 3-D locations on the near_plane and far planes
 of the viewing volume.
 ==============================================================================*/
 {
@@ -565,7 +565,7 @@ of the viewing volume.
 	ENTER(photogrammetry_unproject);
 	if (t&&pos2&&near_pos&&far_pos)
 	{
-		if (return_code=photogrammetry_to_graphics_projection(t,near,far,
+		if (return_code=photogrammetry_to_graphics_projection(t,near_plane,far_plane,
 			NDC_left,NDC_bottom,NDC_width,NDC_height,
 			modelview_matrixT,projection_matrixT,eye,lookat,up))
 		{
@@ -586,7 +586,7 @@ of the viewing volume.
 			win_x=(pos2[0]-NDC_left)/NDC_width;
 			win_y=(pos2[1]-NDC_bottom)/NDC_height;
 			return_code=0;
-			/* for OpenGL window z coordinates, 0.0=near, 1.0=far */
+			/* for OpenGL window z coordinates, 0.0=near_plane, 1.0=far_plane */
 			if (GL_TRUE==gluUnProject(win_x,win_y,0.0,
 				modelview_matrix,projection_matrix,viewport,&obj_x,&obj_y,&obj_z))
 			{
