@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_input.c
 
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Input routines for the cell interface.
@@ -13,7 +13,6 @@ Input routines for the cell interface.
 /* The XML header files */
 #include "local_utils/crim.h"
 #include "local_utils/xerces_wrapper.h"
-#include "local_utils/xpath_wrapper.h"
 
 #include "cell/cell_input.h"
 #include "command/parser.h"
@@ -48,7 +47,7 @@ Module functions
 */
 void create_Cell_unit_abbreviation_table(void *parent)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Creates a look-up table for all the unit abbreviations stored in the <parent>
@@ -56,27 +55,25 @@ element of the DOM tree.
 ==============================================================================*/
 {
   int position;
-  char path[256];
   void *abbreviation;
 
-  position = 1;
-  sprintf(path,"child::units[position()=%d]",position);
-  while (abbreviation = XPath_evaluate(parent,path))
+  position = 0;
+  while (abbreviation = XMLParser_get_child_node_by_name(parent,"units",
+    position))
   {
     display_message(INFORMATION_MESSAGE,
       "Found abbreviation, \"%s\" => \"%s\"\n",
       XMLParser_get_attribute_value(abbreviation,"abbreviation"),
       XMLParser_get_attribute_value(abbreviation,"expanded"));
     position++;
-    sprintf(path,"child::units[position()=%d]",position);
-  } /* while (abbreviation = XPath_evaluate(parent,path)) */
+  } /* while (abbreviation) */
 } /* create_Cell_unit_abbreviation_table() */
 
 static int create_Cell_variables_from_dom(void *parent,
   struct Cell_component *cell_component,
   struct LIST(Cell_variable) *variable_list)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Creates all the variable objects found as children of the given <parent>
@@ -85,17 +82,16 @@ element in the DOM tree.
 {
   int return_code = 0;
   int position;
-  char path[256];
   void *variable;
   struct Cell_variable *cell_variable;
 
   ENTER(create_Cell_variables_from_dom);
   if (parent && cell_component && variable_list)
   {
-    position = 1;
-    sprintf(path,"child::declares_variable[position()=%d]",position);
+    position = 0;
     return_code = 1;
-    while (return_code && (variable = XPath_evaluate(parent,path)))
+    while (return_code && (variable = XMLParser_get_child_node_by_name(parent,
+      "declares_variable",position)))
     {
       /* Create the cell variable object and add it to the global variable list,
        * and add the variable to the component's variable list.
@@ -117,7 +113,6 @@ element in the DOM tree.
             XMLParser_get_attribute_value(variable,"name"));
         }
         position++;
-        sprintf(path,"child::declares_variable[position()=%d]",position);
       }
       else
       {
@@ -125,7 +120,7 @@ element in the DOM tree.
           "Unable to create the variable and add it to the variable list");
         return_code = 0;
       }
-    } /* while (return_code && (variable = XPath_evaluate(parent,path))) */
+    } /* while (return_code && variable) */
   }
   else
   {
@@ -142,7 +137,7 @@ element in the DOM tree.
 static int create_exported_Cell_variables_from_dom(void *parent,
   struct Cell_component *cell_component)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Creates all the exported variable objects found as children of the given
@@ -151,17 +146,16 @@ Creates all the exported variable objects found as children of the given
 {
   int return_code = 0;
   int position;
-  char path[256];
   void *variable;
   struct Cell_variable *cell_variable;
 
   ENTER(create_exported_Cell_variables_from_dom);
   if (parent && cell_component)
   {
-    position = 1;
-    sprintf(path,"child::export_variable[position()=%d]",position);
+    position = 0;
     return_code = 1;
-    while (return_code && (variable = XPath_evaluate(parent,path)))
+    while (return_code && (variable = XMLParser_get_child_node_by_name(parent,
+      "export_variables",position)))
     {
       /* Create the cell variable object and add the variable to the
        * component's exported variable list.
@@ -172,7 +166,6 @@ Creates all the exported variable objects found as children of the given
           cell_variable))
       {
         position++;
-        sprintf(path,"child::export_variable[position()=%d]",position);
       }
       else
       {
@@ -181,7 +174,7 @@ Creates all the exported variable objects found as children of the given
           "Unable to create the variable and add it to the variable list");
         return_code = 0;
       }
-    } /* while (return_code && (variable = XPath_evaluate(parent,path))) */
+    } /* while (return_code && variable) */
   }
   else
   {
@@ -196,7 +189,7 @@ Creates all the exported variable objects found as children of the given
 static int create_imported_Cell_variables_from_dom(void *parent,
   struct Cell_component *cell_component)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Creates all the imported variable objects found as children of the given
@@ -205,17 +198,16 @@ Creates all the imported variable objects found as children of the given
 {
   int return_code = 0;
   int position;
-  char path[256];
   void *variable;
   struct Cell_variable *cell_variable;
 
   ENTER(create_imported_Cell_variables_from_dom);
   if (parent && cell_component)
   {
-    position = 1;
-    sprintf(path,"child::import_variable[position()=%d]",position);
+    position = 0;
     return_code = 1;
-    while (return_code && (variable = XPath_evaluate(parent,path)))
+    while (return_code && (variable = XMLParser_get_child_node_by_name(parent,
+      "import_variable",position)))
     {
       /* Create the cell variable object and add the variable to the
        * component's imported variable list.
@@ -226,7 +218,6 @@ Creates all the imported variable objects found as children of the given
           cell_variable))
       {
         position++;
-        sprintf(path,"child::import_variable[position()=%d]",position);
       }
       else
       {
@@ -235,7 +226,7 @@ Creates all the imported variable objects found as children of the given
           "Unable to create the variable and add it to the variable list");
         return_code = 0;
       }
-    } /* while (return_code && (variable = XPath_evaluate(parent,path))) */
+    } /* while (return_code && variable) */
   }
   else
   {
@@ -252,7 +243,7 @@ static int create_Cell_mechanisms_from_dom(void *parent,
   struct LIST(Cell_component) *component_list,
   struct LIST(Cell_variable) *variable_list)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Creates all the mechanism objects found as children of the given <parent>
@@ -261,17 +252,16 @@ element in the DOM tree.
 {
   int return_code = 0;
   int position;
-  char path[256];
   void *mechanism;
   struct Cell_component *cell_component;
 
   ENTER(create_Cell_mechanisms_from_dom);
   if (parent && variable_list)
   {
-    position = 1;
-    sprintf(path,"child::mechanism[position()=%d]",position);
+    position = 0;
     return_code = 1;
-    while (return_code && (mechanism = XPath_evaluate(parent,path)))
+    while (return_code && (mechanism = XMLParser_get_child_node_by_name(parent,
+      "mechanism",position)))
     {
       /* display_message(INFORMATION_MESSAGE,
         "Found mechanism: \"%s\"\n",
@@ -289,7 +279,6 @@ element in the DOM tree.
           if (create_imported_Cell_variables_from_dom(mechanism,cell_component))
           {
             position++;
-            sprintf(path,"child::mechanism[position()=%d]",position);
           }
           else
           {
@@ -311,7 +300,7 @@ element in the DOM tree.
           "Unable to create the mechanism and add it to the component list");
         return_code = 0;
       }
-    } /* while (return_code && (mechanism = XPath_evaluate(parent,path))) */
+    } /* while (return_code && mechanism) */
   }
   else
   {
@@ -328,7 +317,7 @@ static int create_Cell_boundaries_from_dom(void *parent,
   struct LIST(Cell_component) *component_list,
   struct LIST(Cell_variable) *variable_list)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Creates all the boundary objects found as children of the given <parent>
@@ -337,7 +326,6 @@ element in the DOM tree.
 {
   int return_code = 0;
   int position,reference_counter;
-  char path[256];
   void *boundary,*between,*uses,*subspace_ref;
   struct Cell_component *cell_component;
   struct Cell_component *subspace_ref_component;
@@ -345,10 +333,10 @@ element in the DOM tree.
   ENTER(create_Cell_boundaries_from_dom);
   if (parent && component_list && variable_list)
   {
-    position = 1;
-    sprintf(path,"child::boundary[position()=%d]",position);
+    position = 0;
     return_code = 1;
-    while (return_code && (boundary = XPath_evaluate(parent,path)))
+    while (return_code && (boundary = XMLParser_get_child_node_by_name(parent,
+      "boundary",position)))
     {
       if ((cell_component = CREATE(Cell_component)(parent_component,
         XMLParser_get_attribute_value(boundary,"name"))) &&
@@ -360,17 +348,15 @@ element in the DOM tree.
         /* The boundary is only useful if it has both <between> and <uses>
          * elements!!
          */
-        sprintf(path,"child::between");
-        if (between = XPath_evaluate(boundary,path))
+        if (between = XMLParser_get_child_node_by_name(boundary,"between",0))
         {
-          sprintf(path,"child::uses");
-          if (uses = XPath_evaluate(boundary,path))
+          if (uses = XMLParser_get_child_node_by_name(boundary,"uses",0))
           {
             /* Get the subspaces the boundary is between */
-            reference_counter = 1;
-            sprintf(path,"child::subspace_ref[position()=%d]",
-              reference_counter);
-            while (return_code && (subspace_ref = XPath_evaluate(between,path)))
+            reference_counter = 0;
+            while (return_code && (subspace_ref =
+              XMLParser_get_child_node_by_name(between,"subspace_ref",
+                reference_counter)))
             {
               if (subspace_ref_component =
                 CREATE(Cell_component)(cell_component,
@@ -383,8 +369,6 @@ element in the DOM tree.
                   subspace_ref_component))
                 {
                   reference_counter++;
-                  sprintf(path,"child::subspace_ref[position()=%d]",
-                    reference_counter);
                 }
                 else
                 {
@@ -402,15 +386,13 @@ element in the DOM tree.
                   "component list");
                 return_code = 0;
               }
-            } /* while (return_code &&
-                 (subspace_ref = XPath_evaluate(between,path))) */
+            } /* while (return_code && subspace_ref) */
             /* create the mechanisms used */
             create_Cell_mechanisms_from_dom(uses,cell_component,component_list,
               variable_list);
-          } /* if (uses = XPath_evaluate(boundary,path)) */
-        } /* if (between = XPath_evaluate(boundary,path)) */
+          } /* if (uses) */
+        } /* if (between) */
         position++;
-        sprintf(path,"child::boundary[position()=%d]",position);
       }
       else
       {
@@ -418,7 +400,7 @@ element in the DOM tree.
           "Unable to create the boundary and add it to the component list");
         return_code = 0;
       }
-    } /* while (return_code && (boundary = XPath_evaluate(parent,path))) */
+    } /* while (return_code && boundary) */
   }
   else
   {
@@ -437,7 +419,7 @@ static int create_Cell_components_from_dom(void *parent,
   struct LIST(Cell_component) *component_list,
   struct LIST(Cell_variable) *variable_list)
 /*******************************************************************************
-LAST MODIFIED : 17 October 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Creates all the component objects found as children of the given <parent>
@@ -448,18 +430,17 @@ element in the DOM tree.
 {
   int return_code = 0;
   int position;
-  char path[256];
   void *component;
   struct Cell_component *cell_component;
 
   ENTER(create_Cell_components_from_dom);
   if (parent && component_list && variable_list)
   {
-    position = 1;
-    sprintf(path,"child::component[position()=%d]",position);
+    position = 0;
     return_code = 1;
     /* get all the <component> children of the parent node */
-    while (return_code && (component = XPath_evaluate(parent,path)))
+    while (return_code && (component = XMLParser_get_child_node_by_name(parent,
+      "component",position)))
     {
       /*display_message(INFORMATION_MESSAGE,
         "Found subspace: \"%s\"\n",
@@ -478,7 +459,6 @@ element in the DOM tree.
             component_list,variable_list))
           {
             position++;
-            sprintf(path,"child::component[position()=%d]",position);
           }
           else
           {
@@ -500,7 +480,7 @@ element in the DOM tree.
           "Unable to create the component and add it to the component list");
         return_code = 0;
       }
-    } /* while (return_code && (component = XPath_evaluate(parent,path))) */
+    } /* while (return_code && component) */
   }
   else
   {
@@ -515,7 +495,7 @@ element in the DOM tree.
 static int build_cmiss_interface_information(void *parent,
   struct LIST(Cell_component) *component_list)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Adds specified CMISS interface information to variables
@@ -523,7 +503,7 @@ Adds specified CMISS interface information to variables
 {
   int return_code = 0;
   int position;
-  char path[256],*name,*string;
+  char *name,*string;
   void *map_variable;
   struct Cell_component *cell_component;
   struct Cell_variable *cell_variable;
@@ -531,11 +511,11 @@ Adds specified CMISS interface information to variables
   ENTER(build_cmiss_interface_information);
   if (parent && component_list)
   {
-    position = 1;
-    sprintf(path,"child::map_variable[position()=%d]",position);
+    position = 0;
     return_code = 1;
     /* get all the <map_variable> children of the parent node */
-    while (return_code && (map_variable = XPath_evaluate(parent,path)))
+    while (return_code && (map_variable = XMLParser_get_child_node_by_name(
+      parent,"map_variable",position)))
     {
       if (name = XMLParser_get_attribute_value(map_variable,"component_ref"))
       {
@@ -595,8 +575,7 @@ Adds specified CMISS interface information to variables
           "Unable to find the correct cell component");
       }
       position++;
-      sprintf(path,"child::map_variable[position()=%d]",position);
-    } /* while (return_code && (map_variable = XPath_evaluate(parent,path))) */
+    } /* while (return_code && map_variable) */
   }
   else
   {
@@ -703,7 +682,7 @@ Sets information in the <cell_calculate> object.
 static int modify_variables(void *parent,
   struct LIST(Cell_variable) *variable_list)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Modifies the values for the variables given in the varaible modification
@@ -711,7 +690,7 @@ element in the Cell configuration file.
 ==============================================================================*/
 {
   int return_code = 0,position;
-  char path[256],*name_ref,*value_string;
+  char *name_ref,*value_string;
   void *modify_variable;
   struct Cell_variable *variable;
 
@@ -719,11 +698,11 @@ element in the Cell configuration file.
   if (parent && variable_list &&
     (NUMBER_IN_LIST(Cell_variable)(variable_list) > 0))
   {
-    position = 1;
-    sprintf(path,"child::modify_variable[position()=%d]",position);
+    position = 0;
     return_code = 1;
     /* Get all the <modify_variable> children of the parent node */
-    while (return_code && (modify_variable = XPath_evaluate(parent,path)))
+    while (return_code && (modify_variable = XMLParser_get_child_node_by_name(
+      parent,"modify_variable",position)))
     {
       /* Get the name_ref attribute */
       if (name_ref =
@@ -770,8 +749,7 @@ element in the Cell configuration file.
           "Missing name_ref attribute");
       }
       position++;
-      sprintf(path,"child::modify_variable[position()=%d]",position);
-    } /* while (return_code && (modify_variable = ...)) */
+    } /* while (return_code && modify_variable) */
   }
   else
   {
@@ -787,7 +765,7 @@ static int build_graphics(void *parent,
   struct Cell_cmgui_interface *cmgui_interface,
   struct LIST(Cell_graphic) *graphic_list)
 /*******************************************************************************
-LAST MODIFIED : 18 November 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Uses the information contained in the <parent> DOM element to create any
@@ -795,7 +773,7 @@ graphics specified in the config file.
 ==============================================================================*/
 {
   int return_code = 0,position;
-  char path[256],path2[256],path3[256],path4[256],*name;
+  char *name;
   void *graphic,*diffuse,*ambient,*emission,*specular;
   struct Cell_graphic *cell_graphic;
 
@@ -803,10 +781,10 @@ graphics specified in the config file.
   if (parent && graphic_list)
   {
     /* Loop through all the graphic elements */
-    position = 1;
-    sprintf(path,"child::graphic[position()=%d]",position);
+    position = 0;
     return_code = 1;
-    while (return_code && (graphic = XPath_evaluate(parent,path)))
+    while (return_code && (graphic = XMLParser_get_child_node_by_name(parent,
+      "graphic",position)))
     {
       /* Create the graphic */
       if (name = XMLParser_get_attribute_value(graphic,"name"))
@@ -820,14 +798,14 @@ graphics specified in the config file.
           /* Create the graphic's and graphical material */
           /* ???? DPN - do you need to really have all 4 of these ???
            */
-          sprintf(path,"child::diffuse");
-          sprintf(path2,"child::ambient");
-          sprintf(path3,"child::emission");
-          sprintf(path4,"child::specular");
-          if ((diffuse = XPath_evaluate(graphic,path)) &&
-            (ambient = XPath_evaluate(graphic,path2)) &&
-            (emission = XPath_evaluate(graphic,path3)) &&
-            (specular = XPath_evaluate(graphic,path4)))
+          if ((diffuse = XMLParser_get_child_node_by_name(graphic,
+            "diffuse",0)) &&
+            (ambient = XMLParser_get_child_node_by_name(graphic,
+              "ambient",0)) &&
+            (emission = XMLParser_get_child_node_by_name(graphic,
+              "emission",0)) &&
+            (specular = XMLParser_get_child_node_by_name(graphic,
+              "specular",0)))
           {
             Cell_graphic_create_graphical_material(cell_graphic,cmgui_interface,
               XMLParser_get_attribute_value(diffuse,"red"),
@@ -868,8 +846,7 @@ graphics specified in the config file.
           "Unable to get the graphic's name");
       }
       position++;
-      sprintf(path,"child::graphic[position()=%d]",position);
-    } /* while (return_code && (graphic = XPath_evaluate(parent,path))) */
+    } /* while (return_code && graphic) */
   }
   else
   {
@@ -886,7 +863,7 @@ static int build_graphical_display(void *parent,
   struct LIST(Cell_component) *component_list,
   struct LIST(Cell_graphic) *graphic_list)
 /*******************************************************************************
-LAST MODIFIED : 18 November 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Uses the information contained in the <parent> DOM element to set-up the
@@ -894,7 +871,7 @@ graphical representation of CellML components.
 ==============================================================================*/
 {
   int return_code = 0,dom_position;
-  char path[256],path2[256],path3[256],*name;
+  char *name;
   void *display,*element,*position,*direction,*scale;
   struct Cell_component *component;
   struct Cell_graphic *graphic;
@@ -903,26 +880,25 @@ graphical representation of CellML components.
   if (parent && component_list)
   {
     /* Loop through all the display elements */
-    dom_position = 1;
-    sprintf(path,"child::display[position()=%d]",dom_position);
+    dom_position = 0;
     return_code = 1;
-    while (return_code && (display = XPath_evaluate(parent,path)))
+    while (return_code && (display = XMLParser_get_child_node_by_name(parent,
+      "display",dom_position)))
     {
       /* Get the component referenced */
-      sprintf(path,"child::component_ref");
-      if (element = XPath_evaluate(display,path))
+      if (element = XMLParser_get_child_node_by_name(display,"component_ref",0))
       {
         if (name = XMLParser_get_attribute_value(element,"name_ref"))
         {
           component = FIND_BY_IDENTIFIER_IN_LIST(Cell_component,name)(
             name,component_list);
           DEALLOCATE(name);
-          sprintf(path,"child::position");
-          sprintf(path2,"child::direction");
-          sprintf(path3,"child::scale");
-          if ((position = XPath_evaluate(display,path)) &&
-            (direction = XPath_evaluate(display,path2)) &&
-            (scale = XPath_evaluate(display,path3)))
+          if ((position = XMLParser_get_child_node_by_name(display,
+            "position",0)) &&
+            (direction = XMLParser_get_child_node_by_name(display,
+              "direction",0)) &&
+            (scale = XMLParser_get_child_node_by_name(display,
+              "scale",0)))
           {
             /* Set-up the graphical transformation matrix */
             if (Cell_component_set_graphical_transformation(component,
@@ -937,8 +913,8 @@ graphical representation of CellML components.
               XMLParser_get_attribute_value(scale,"z")))
             {
               /* Now need to associate the component with its graphic */
-              sprintf(path,"child::graphic_ref");
-              if (element = XPath_evaluate(display,path))
+              if (element = XMLParser_get_child_node_by_name(display,
+                "graphic_ref",0))
               {
                 if (name = XMLParser_get_attribute_value(element,"name_ref"))
                 {
@@ -950,10 +926,10 @@ graphical representation of CellML components.
               }
               else
               {
-                /* No component reference found, look for a straight graphic
+                /* No graphic reference found, look for a straight graphic
                    definition */
-                sprintf(path,"child::graphic");
-                if (element = XPath_evaluate(display,path))
+                if (element = XMLParser_get_child_node_by_name(display,
+                  "graphic",0))
                 {
                   /* build the graphic */
                   build_graphics(display,cmgui_interface,graphic_list);
@@ -997,8 +973,7 @@ graphical representation of CellML components.
           "Unable to get a component reference");
       }
       dom_position++;
-      sprintf(path,"child::display[position()=%d]",dom_position);
-    } /* while (return_code && (display = XPath_evaluate(parent,path))) */
+    } /* while (return_code && display) */
   }
   else
   {
@@ -1014,14 +989,13 @@ static void build_from_dom(void *root,
   struct LIST(Cell_component) *component_list,
   struct LIST(Cell_variable) *variable_list)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Main routine to build the Cell data objects from the DOM tree with the given
 <root> element.
 ==============================================================================*/
 {
-  char path[256];
   void *child;
   struct Cell_component *root_component;
 
@@ -1030,8 +1004,8 @@ Main routine to build the Cell data objects from the DOM tree with the given
   {
     /* Create the units abbreviation look-up table if one is given
      */
-    sprintf(path,"child::units_abbreviation_table");
-    if (child = XPath_evaluate(root,path))
+    if (child = XMLParser_get_child_node_by_name(root,
+      "units_abbreviation_table",0))
     {
       create_Cell_unit_abbreviation_table(child);
     }

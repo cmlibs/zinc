@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_output.c
 
-LAST MODIFIED : 22 February 2001
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Output routines for the cell interface.
@@ -13,7 +13,6 @@ Output routines for the cell interface.
 /* The XML headers */
 #include "local_utils/crim.h"
 #include "local_utils/xerces_wrapper.h"
-#include "local_utils/xpath_wrapper.h"
 
 #include "cell/cell_input.h"
 #include "cell/cell_output.h"
@@ -683,7 +682,7 @@ Updates the attribute values of the <element> to be consistent with the
 static int update_cmiss_mapping_information(void *cmiss_mapping,
   struct LIST(Cell_variable) *variable_list)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 14 April 2001
 
 DESCRIPTION :
 Checks the information contained in the <cmiss_mapping> DOM element is
@@ -693,7 +692,7 @@ the Cell controls is the UnEmap plotting.
 ==============================================================================*/
 {
   int return_code = 0,position;
-  char path[256],*name;
+  char *name;
   void *map_variable;
   struct Cell_variable *variable;
 
@@ -703,11 +702,11 @@ the Cell controls is the UnEmap plotting.
     /* Loop through all the "map_variable" children of the cmiss_mapping
      * element and make sure that he information is up-to-date
      */
-    position = 1;
-    sprintf(path,"child::map_variable[position()=%d]",position);
+    position = 0;
     return_code = 1;
     /* Get all the <map_variable> children of the parent node */
-    while (return_code && (map_variable = XPath_evaluate(cmiss_mapping,path)))
+    while (return_code && (map_variable = XMLParser_get_child_node_by_name(
+      cmiss_mapping,"map_variable",position)))
     {
       /* Get the variable name */
       if (name = XMLParser_get_attribute_value(map_variable,"name_ref"))
@@ -736,8 +735,7 @@ the Cell controls is the UnEmap plotting.
         /* ?? ignore ?? */
       }
       position++;
-      sprintf(path,"child::map_variable[position()=%d]",position);
-    } /* while (return_code && (map_variable = XPath_evaluate(parent,path))) */
+    } /* while (return_code && map_variable) */
   }
   else
   {
