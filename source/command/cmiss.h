@@ -92,4 +92,13 @@ DESCRIPTION :
 Returns the root region from the <command_data>.
 ==============================================================================*/
 
+struct Execute_command *Cmiss_command_data_get_execute_command(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 28 May 2003
+
+DESCRIPTION :
+Returns the execute command structure from the <command_data>, useful for 
+executing cmiss commands from C.
+==============================================================================*/
 #endif /* !defined (COMMAND_CMISS_H) */

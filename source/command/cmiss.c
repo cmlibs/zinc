@@ -70,6 +70,7 @@ Functions for executing cmiss commands.
 #endif /* defined (MOTIF) */
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iges.h"
 #include "finite_element/finite_element_to_iso_lines.h"
@@ -156,8 +157,6 @@ Functions for executing cmiss commands.
 #endif /* defined (MOTIF) */
 #include "node/node_operations.h"
 #include "node/node_tool.h"
-#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
-#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 #if defined (MOTIF)
 #include "node/node_viewer.h"
 #endif /* defined (MOTIF) */
@@ -13894,6 +13893,7 @@ Parameter <help_mode> should be NULL when calling this function.
 					Computed_field_package_get_computed_field_manager(
 						command_data->computed_field_package);
 				g_element_command_data.region = region;
+				g_element_command_data.data_root_region = command_data->data_root_region;
 				g_element_command_data.graphical_material_manager =
 					command_data->graphical_material_manager;
 				g_element_command_data.scene_manager = command_data->scene_manager;
@@ -24878,3 +24878,26 @@ Returns the root region from the <command_data>.
 
 	return (root_region);
 } /* Cmiss_command_data_get_root_region */
+
+struct Execute_command *Cmiss_command_data_get_execute_command(
+	struct Cmiss_command_data *command_data)
+/*******************************************************************************
+LAST MODIFIED : 28 May 2003
+
+DESCRIPTION :
+Returns the execute command structure from the <command_data>, useful for 
+executing cmiss commands from C.
+==============================================================================*/
+{
+	struct Execute_command *execute_command;
+
+	ENTER(Cmiss_command_data_get_execute_command);
+	execute_command=(struct Execute_command *)NULL;
+	if (command_data)
+	{
+		execute_command=command_data->execute_command;
+	}
+	LEAVE;
+
+	return (execute_command);
+} /* Cmiss_command_data_get_execute_command */

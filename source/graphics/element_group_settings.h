@@ -127,6 +127,8 @@ Subset of command data passed to g_element modify routines.
 	struct LIST(GT_object *) glyph_list;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Cmiss_region *region;
+	/* data_root_region used for surface data points from isosurfaces */
+	struct Cmiss_region *data_root_region;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct Spectrum *default_spectrum;
