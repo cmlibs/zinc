@@ -3207,7 +3207,7 @@ Returns the current view as an <eye_point> (3 component vector), an
 					up_vector, up_vector + 1, up_vector + 2, view_angle))
 				{
 					// Convert from diagonal to horizontal view angle
-					*view_angle = (float)(2.0 * 180.0 / 3.141592654 * atan(tan(*view_angle 
+					*view_angle = (float)(2.0 * 180.0 / 3.141592654 * atan(tan((double)*view_angle 
 						* 3.141592654 / (180.0 * 2.0)) / 1.414213562));
 					return_code = PF_SUCCESS_RC;
 				}
@@ -3744,7 +3744,7 @@ Used to specify the image to be texture mapped onto the model.
 	char *image_ptr, filename[200];
 	float texture_ndc_x, temp_texture_ndc_y, texture_ndc_y, texture_ndc_width,
 		texture_ndc_height;
-	FILE *image_file, *image_comfile;
+	FILE *image_file;
 	int i, image_components, return_code;
 	struct Pf_job *pf_job;
 
@@ -3788,29 +3788,11 @@ Used to specify the image to be texture mapped onto the model.
 			texture_ndc_height = ((float)height - pf_job->ndc_texture_offset_y)
 				* pf_job->ndc_texture_scaling - 1.0f - temp_texture_ndc_y;
 
-			sprintf(filename, "%s/pf_specify_hair_mask.com", pf_job->working_path);
-			if (image_comfile = fopen(filename, "w"))
+			if (linux_execute(
+				"%sbin/cmgui_control '$hair_width=%d;$hair_height=%d;cmiss(qq(open comfile %scmiss/pf_specify_hair_mask.com exec))'",
+				photoface_remote_path, width, height, photoface_remote_path))
 			{
-				fprintf(image_comfile, "gfx create texture source_hair_mask\n");
-				fprintf(image_comfile, "system(\"$PHOTOFACE_BIN/convert -size %dx%d -blur 90 -implode -3 rgb:$PHOTOFACE_WORKING/source_hair_mask.raw sgi:$PHOTOFACE_WORKING/source_hair_mask2.rgb\");\n",
-					width, height); 
-				fprintf(image_comfile, "system(\"$PHOTOFACE_BIN/convert -blur 90 sgi:$PHOTOFACE_WORKING/source_hair_mask2.rgb sgi:$PHOTOFACE_WORKING/source_hair_mask3.rgb\");\n");
-				fprintf(image_comfile, "system(\"$PHOTOFACE_BIN/convert -blur 90 sgi:$PHOTOFACE_WORKING/source_hair_mask3.rgb sgi:$PHOTOFACE_WORKING/source_hair_mask4.rgb\");\n"); 
-				fprintf(image_comfile, "gfx modify texture source_hair_mask image sgi:%s/source_hair_mask4.rgb\n",
-					pf_job->remote_working_path);
-
-				fclose(image_comfile);
-
-				if (linux_execute(
-					"%sbin/cmgui_control 'open comfile %s/pf_specify_hair_mask.com exec'",
-					photoface_remote_path, pf_job->remote_working_path))
-				{
-					return_code=PF_SUCCESS_RC;
-				}
-			}
-			else
-			{
-				return_code=PF_OPEN_FILE_FAILURE_RC;
+				return_code=PF_SUCCESS_RC;
 			}
 		}
 		else
