@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.h
 
-LAST MODIFIED : 1 March 2002
+LAST MODIFIED : 13 November 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -26,47 +26,6 @@ DESCRIPTION :
 Global types
 ------------
 */
-#if defined (OLD_CODE)
-/*???DB.  Moved to analysis_calculate */
-enum Event_detection_objective
-/*******************************************************************************
-LAST MODIFIED :  April 2001
-
-DESCRIPTION :
-The objective used when detecting an event.
-==============================================================================*/
-{
-	ABSOLUTE_SLOPE,
-	NEGATIVE_SLOPE,
-	POSITIVE_SLOPE,
-	ABSOLUTE_VALUE,
-	NEGATIVE_VALUE,
-	POSITIVE_VALUE
-}; /* enum Event_detection_objective */
-
-enum Event_detection_algorithm
-/*******************************************************************************
-LAST MODIFIED : 8 December 1999
-
-DESCRIPTION :
-The algorithm used for detecting an event from a signal.
-EDA_INTERVAL = divide the search interval into a user specified number of
-	sub-intervals and select the maximum objective within each sub-interval
-EDA_LEVEL = find the first time in the search interval at which the absolute
-	value of the signal exceeds the user specified level
-EDA_THRESHOLD = select all times within the search interval whose objectives
-	exceed a user specified percentage of the maximum objective for the search
-	interval, subject to user specifed minimum event separation.
-NB.  New algorithms need to be added to the end because the detection algorithm
-	is written to the signals file (when saving analysis)
-==============================================================================*/
-{
-	EDA_INTERVAL,
-	EDA_THRESHOLD,
-	EDA_LEVEL
-}; /* enum Event_detection_algorithm */
-#endif /* defined (OLD_CODE) */
-
 enum Datum_type
 /*******************************************************************************
 LAST MODIFIED : 13 June 1992
@@ -148,5 +107,27 @@ LAST MODIFIED : 19 November 2000
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
 named file.
+==============================================================================*/
+
+int analysis_read_signal_file(char *file_name,struct Rig **rig_address,
+	int *analysis_information,int *datum_address,char *calculate_events_address,
+	enum Event_detection_algorithm *detection_address,int *event_number_address,
+	int *number_of_events_address,int *potential_time_address,
+	int *minimum_separation_address,int *threshold_address,
+	enum Datum_type *datum_type_address,enum Edit_order *edit_order_address,
+	enum Signal_order *signal_order_address,int *start_search_interval_address,
+	int *end_search_interval_address,float *level_address,
+	int *average_width_address
+#if defined (UNEMAP_USE_3D)
+	,struct Unemap_package *unemap_package
+#endif /* defined (UNEMAP_USE_NODES) */
+	);
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+Reads a signal file and the analysis information.  If there is analysis
+information then <*analysis_information> set non-zero and the information is
+set.
 ==============================================================================*/
 #endif /* !defined (ANALYSIS_H) */

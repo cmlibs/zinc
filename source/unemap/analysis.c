@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 9 September 2002
+LAST MODIFIED : 13 November 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -422,3 +422,309 @@ named file.
 
 	return (return_code);
 } /* analysis_write_signal_file */
+
+int analysis_read_signal_file(char *file_name,struct Rig **rig_address,
+	int *analysis_information,int *datum_address,char *calculate_events_address,
+	enum Event_detection_algorithm *detection_address,int *event_number_address,
+	int *number_of_events_address,int *potential_time_address,
+	int *minimum_separation_address,int *threshold_address,
+	enum Datum_type *datum_type_address,enum Edit_order *edit_order_address,
+	enum Signal_order *signal_order_address,int *start_search_interval_address,
+	int *end_search_interval_address,float *level_address,
+	int *average_width_address
+#if defined (UNEMAP_USE_3D)
+	,struct Unemap_package *unemap_package
+#endif /* defined (UNEMAP_USE_NODES) */
+	)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+Reads a signal file and the analysis information.  If there is analysis
+information then <*analysis_information> set non-zero and the information is
+set.
+==============================================================================*/
+{
+	char calculate_events;
+	enum Datum_type datum_type;
+	enum Edit_order edit_order;
+	enum Event_detection_algorithm detection;
+	enum Event_signal_status event_status;
+	enum Signal_order signal_order;
+	FILE *input_file;
+	float level;
+	int average_width,buffer_end,buffer_start,datum,end_search_interval,
+		event_number,event_time,i,minimum_separation,number_of_events,
+		potential_time,return_code,start_search_interval,threshold,temp_int;
+	struct Device **device;
+	struct Event *event,**event_address;
+	struct Rig *rig;
+	struct Signal_buffer *buffer;
+
+	ENTER(analysis_read_signal_file);
+	return_code=0;
+	/* check arguments */
+	if (file_name&&rig_address&&analysis_information&&datum_address&&
+		calculate_events_address&&detection_address&&event_number_address&&
+		number_of_events_address&&potential_time_address&&
+		minimum_separation_address&&threshold_address&&datum_type_address&&
+		edit_order_address&&signal_order_address&&start_search_interval_address&&
+		end_search_interval_address&&level_address&&average_width_address)
+	{
+		/* open the input file */
+		rig=(struct Rig *)NULL;
+		input_file=(FILE *)NULL;
+		if ((input_file=fopen(file_name,"rb"))&&(read_signal_file(input_file,&rig
+#if defined (UNEMAP_USE_3D)
+			,unemap_package
+#endif /* defined (UNEMAP_USE_NODES)*/
+			))&&rig&&(rig->devices)&&(*(rig->devices))&&
+			(buffer=get_Device_signal_buffer(*(rig->devices))))
+		{
+			*rig_address=rig;
+			/* read the event detection settings */
+			buffer_start=buffer->start;
+			buffer_end=buffer->end;
+			if ((1==BINARY_FILE_READ((char *)&datum,sizeof(int),1,input_file))&&
+				(1==BINARY_FILE_READ((char *)&calculate_events,sizeof(char),1,
+				input_file))&&
+				(1==BINARY_FILE_READ((char *)&detection,
+				sizeof(enum Event_detection_algorithm),1,input_file))&&
+				(1==BINARY_FILE_READ((char *)&event_number,sizeof(int),1,input_file))&&
+				(1==BINARY_FILE_READ((char *)&number_of_events,sizeof(int),1,
+				input_file))&&
+				(1==BINARY_FILE_READ((char *)&potential_time,sizeof(int),1,
+				input_file))&&
+				(1==BINARY_FILE_READ((char *)&minimum_separation,sizeof(int),1,
+				input_file))&&
+				(1==BINARY_FILE_READ((char *)&threshold,sizeof(int),1,input_file))&&
+				(1==BINARY_FILE_READ((char *)&datum_type,sizeof(enum Datum_type),1,
+				input_file))&&
+				(1==BINARY_FILE_READ((char *)&edit_order,sizeof(enum Edit_order),1,
+				input_file))&&
+				(1==BINARY_FILE_READ((char *)&signal_order,sizeof(enum Signal_order),1,
+				input_file))&&
+				(1==BINARY_FILE_READ((char *)&start_search_interval,sizeof(int),1,
+				input_file))&&
+				(1==BINARY_FILE_READ((char *)&end_search_interval,sizeof(int),1,
+				input_file)))
+			{
+				return_code=1;
+				if (EDA_LEVEL==detection)
+				{
+					if (!((1==BINARY_FILE_READ((char *)&temp_int,sizeof(int),1,
+						input_file))&&
+						(1==BINARY_FILE_READ((char *)&level,sizeof(float),1,input_file))&&
+						(1==BINARY_FILE_READ((char *)&average_width,sizeof(int),1,
+						input_file))))
+					{
+						*level_address=level;
+						*average_width_address=average_width;
+					}
+					else
+					{
+						return_code=0;
+						display_message(ERROR_MESSAGE,
+							"analysis_read_signal_file.  Could not read level/average_width");
+					}
+				}
+				/* check the event detection settings */
+				if (return_code&&((EDA_INTERVAL==detection)||(EDA_LEVEL==detection)||
+					(EDA_THRESHOLD==detection))&&((AUTOMATIC_DATUM==datum_type)||
+					(FIXED_DATUM==datum_type))&&((DEVICE_ORDER==edit_order)||
+					(BEAT_ORDER==edit_order))&&((EVENT_ORDER==signal_order)||
+					(CHANNEL_ORDER==signal_order)))
+				{
+					if (datum>=buffer_start)
+					{
+						if (datum>buffer_end)
+						{
+							datum=buffer_end;
+						}
+					}
+					else
+					{
+						datum=buffer_start;
+					}
+					if (potential_time>=buffer_start)
+					{
+						if (potential_time>buffer_end)
+						{
+							potential_time=buffer_end;
+						}
+					}
+					else
+					{
+						potential_time=buffer_start;
+					}
+					if (minimum_separation<0)
+					{
+						minimum_separation=0;
+					}
+					if (level<0)
+					{
+						level=0;
+					}
+					if (average_width<1)
+					{
+						average_width=1;
+					}
+					if (number_of_events<1)
+					{
+						number_of_events=1;
+					}
+				}
+				else
+				{
+					return_code=0;
+					display_message(ERROR_MESSAGE,
+						"analysis_read_signal_file.  Invalid event detection settings");
+				}
+				if (return_code)
+				{
+					*threshold_address=threshold;
+					*minimum_separation_address=minimum_separation;
+					*datum_type_address=datum_type;
+					*detection_address=detection;
+					*edit_order_address=edit_order;
+					*number_of_events_address=number_of_events;
+					*calculate_events_address=calculate_events;
+					*signal_order_address=signal_order;
+					*datum_address=datum;
+					*event_number_address=event_number;
+					*potential_time_address=potential_time;
+					*start_search_interval_address=start_search_interval;
+					*end_search_interval_address=end_search_interval;
+					/* for each signal read the status, range and events */
+					if ((device=rig->devices)&&((i=rig->number_of_devices)>0))
+					{
+						while (return_code&&(i>0))
+						{
+							if (((*device)->channel)&&((*device)->signal))
+							{
+								/* read the status and range */
+								/* if no signal status, a linear comb auxiliary device.  Do
+									nothing */
+								if ((1==BINARY_FILE_READ((char *)&event_status,
+									sizeof(enum Event_signal_status),1,input_file))&&
+									(1==BINARY_FILE_READ((char *)&((*device)->
+									signal_display_minimum),sizeof(float),1,input_file))&&
+									(1==BINARY_FILE_READ((char *)&((*device)->
+									signal_display_maximum),sizeof(float),1,input_file)))
+								{
+									if ((ACCEPTED==event_status)||(REJECTED==event_status)||
+										(UNDECIDED==event_status))
+									{
+										(*device)->signal->status=event_status;
+										if ((*device)->signal_display_minimum<=
+											(*device)->signal_display_maximum)
+										{
+											/*???DB.  Originally the unscaled maximum and minimum were
+												stored.  This has to be maintained for backward
+												compatability */
+											(*device)->signal_display_minimum=
+												(((*device)->channel)->gain)*
+												(((*device)->signal_display_minimum)-
+												(((*device)->channel)->offset));
+											(*device)->signal_display_maximum=
+												(((*device)->channel)->gain)*
+												(((*device)->signal_display_maximum)-
+												(((*device)->channel)->offset));
+										}
+										/* read the events */
+										if (1==BINARY_FILE_READ((char *)&number_of_events,
+											sizeof(int),1,input_file))
+										{
+											event_address= &((*device)->signal->first_event);
+											event=(struct Event *)NULL;
+											while (return_code&&(number_of_events>0))
+											{
+												if ((1==BINARY_FILE_READ((char *)&(event_time),
+													sizeof(int),1,input_file))&&
+													(1==BINARY_FILE_READ((char *)&(event_number),
+													sizeof(int),1,input_file))&&
+													(1==BINARY_FILE_READ((char *)&(event_status),
+													sizeof(enum Event_signal_status),1,input_file))&&
+													((ACCEPTED==event_status)||(REJECTED==event_status)||
+													(UNDECIDED==event_status)))
+												{
+													if (event=create_Event(event_time,event_number,
+														event_status,event,(struct Event *)NULL))
+													{
+														*event_address=event;
+														event_address= &(event->next);
+														number_of_events--;
+													}
+													else
+													{
+														return_code=0;
+														display_message(ERROR_MESSAGE,
+															"analysis_read_signal_file.  "
+															"Error creating event");
+													}
+												}
+												else
+												{
+													return_code=0;
+													display_message(ERROR_MESSAGE,
+														"analysis_read_signal_file.  Error reading event");
+												}
+											}
+										}
+										else
+										{
+											return_code=0;
+											display_message(ERROR_MESSAGE,
+									"analysis_read_signal_file.  Error reading number of events");
+										}
+									}
+									else
+									{
+										return_code=0;
+										display_message(ERROR_MESSAGE,
+											"analysis_read_signal_file.  Invalid signal status");
+									}
+								}
+							}
+							device++;
+							i--;
+						}
+						if (return_code)
+						{
+							*analysis_information=1;
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+			}
+			else
+			{
+				return_code=1;
+				*analysis_information=0;
+			}
+			fclose(input_file);
+		}
+		else
+		{
+			return_code=0;
+			display_message(ERROR_MESSAGE,
+				"analysis_read_signal_file.  Error reading signal file: %s",file_name);
+			if (input_file)
+			{
+				fclose(input_file);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"analysis_read_signal_file.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* analysis_read_signal_file */
