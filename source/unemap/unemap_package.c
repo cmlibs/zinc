@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.c
 
-LAST MODIFIED : 26 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Contains function definitions for unemap package.
@@ -2337,6 +2337,97 @@ Allocates and sets the latest rig_node_group pointer of the unemap package.
 	LEAVE;
 	return (return_code);
 }/* set_unemap_package_rig_node_group */
+
+static int rig_node_has_electrode_defined(struct FE_node *node,
+	void *package_void)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :
+Determines if the <node> (assumed to be a member of a unemap_package rig_node_group)
+contains a device_type field with the value ELECTRODE.
+Called  by (see also) unemap_package_rig_node_group_has_electrodes.
+==============================================================================*/
+{
+	int return_code;
+	char *device_type_string=(char *)NULL;
+	struct Unemap_package *package=(struct Unemap_package *)NULL;
+
+	ENTER(rig_node_has_electrode_defined);
+	return_code=0;
+	if (node&&(package=(struct Unemap_package *)package_void))
+	{
+		if(FE_field_is_defined_at_node(package->device_type_field,node))
+		{
+			get_FE_nodal_string_value(node,package->device_type_field,
+				0,0,FE_NODAL_VALUE,&device_type_string);
+			if(!strcmp(device_type_string,"ELECTRODE"))
+			{
+				/*success!*/
+				return_code=1;
+			}
+			DEALLOCATE(device_type_string);			
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"rig_node_has_electrode_defined. invalid arguments");		
+	}
+	LEAVE;
+	return (return_code);
+}/* rig_node_has_electrode_defined */
+
+int unemap_package_rig_node_group_has_electrodes(struct Unemap_package *package,
+	int rig_node_group_number)
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :determines if the <package> rig_node group specified by 
+<rig_node_group_number> contains at least one node with a device_type field
+set to "ELECTRODE". See also rig_node_has_electrode_defined
+==============================================================================*/
+{
+	int return_code; 
+	struct FE_node *node =(struct FE_node *)NULL;
+	struct GROUP(FE_node) *rig_node_group=(struct GROUP(FE_node) *)NULL;
+	ENTER(unemap_package_rig_node_group_has_electrodes)
+	return_code =0;
+	if((package)&&(rig_node_group_number>0))
+	{
+		if(rig_node_group_number<package->number_of_rig_node_groups)
+		{
+			if(package->device_type_field)
+			{
+				rig_node_group=package->rig_node_groups[rig_node_group_number];			
+				node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)(rig_node_has_electrode_defined, 
+					(void *)package,rig_node_group);
+				if(node)
+				{
+					/*we've found one!*/
+					return_code =1;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"unemap_package_rig_node_group_has_electrodes.\n"
+				" no device_type_field defined");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"unemap_package_rig_node_group_has_electrodes.\n"
+				" rig_node_group_number too large");		
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"unemap_package_rig_node_group_has_electrodes.\n"
+			" invalid arguments");	
+	}
+	LEAVE;
+	return(return_code);
+}/* unemap_package_rig_node_group_has_electrodes. */
 
 struct GROUP(FE_node) *get_unemap_package_map_node_group(
 	struct Unemap_package *package,int map_number)

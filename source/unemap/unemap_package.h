@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.h
 
-LAST MODIFIED : 26 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -689,6 +689,16 @@ LAST MODIFIED : August 16 1999
 
 DESCRIPTION :
 Allocates and sets the latest rig_node_group pointer of the unemap package.
+==============================================================================*/
+
+int unemap_package_rig_node_group_has_electrodes(struct Unemap_package *package,
+	int rig_node_group_number);
+/*******************************************************************************
+LAST MODIFIED : 13 June 2000
+
+DESCRIPTION :determines if the <package> rig_node group specified by 
+<rig_node_group_number> contains at least one node with a device_type field
+set to "ELECTRODE". See also rig_node_has_electrode_defined
 ==============================================================================*/
 
 struct GROUP(FE_node) *get_unemap_package_map_node_group(

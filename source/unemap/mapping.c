@@ -3726,7 +3726,7 @@ Draws (or erases) the map contours
 ==============================================================================*/
 {
 	int number_of_constant_contours,number_of_variable_contours,region_number,
-		return_code;
+		return_code,rig_node_group_number;
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct Scene *scene=(struct Scene *)NULL;
 
@@ -3764,10 +3764,16 @@ Draws (or erases) the map contours
 			number_of_variable_contours,CONTOUR_PROPORTION);
 		for (region_number=0;region_number<number_of_regions;region_number++)
 		{	
-			/* draw/remove CONSTANT_THICKNESS contours */
-			map_draw_constant_thickness_contours(scene,package,data_field,
-				number_of_constant_contours,map->contour_minimum,
-				map->contour_maximum,region_number);											
+			/* first is all devices node group */
+			rig_node_group_number=region_number+1;
+			if(unemap_package_rig_node_group_has_electrodes(package,
+				rig_node_group_number))
+			{									
+				/* draw/remove CONSTANT_THICKNESS contours */
+				map_draw_constant_thickness_contours(scene,package,data_field,
+					number_of_constant_contours,map->contour_minimum,
+					map->contour_maximum,region_number);
+			}											
 		}
 	}
 	else
@@ -4572,12 +4578,16 @@ referenced by <map_number>.
 {
 	int return_code,rig_node_group_number;
 	ENTER(map_remove_map_electrode_glyphs);
-	if(package&&(rig_node_group_number=
-		get_unemap_package_map_rig_node_group_number(package,map_number)))
-	{		
-		free_unemap_package_rig_node_group_glyphs(package,rig_node_group_number);	
-		set_unemap_package_map_electrode_glyph(package,(struct GT_object *)NULL,
-			map_number);
+	if(package)
+	{
+		rig_node_group_number=
+			get_unemap_package_map_rig_node_group_number(package,map_number);
+		if(rig_node_group_number>0)
+		{		
+			free_unemap_package_rig_node_group_glyphs(package,rig_node_group_number);	
+			set_unemap_package_map_electrode_glyph(package,(struct GT_object *)NULL,
+				map_number);
+		}
 	}
 	else
 	{
@@ -4649,7 +4659,7 @@ removes the maps elecrodes, if they've changed.
 ==============================================================================*/
 {
 	char *electrode_glyph_name;
-	int region_number,return_code;
+	int region_number,return_code,rig_node_group_number;
 	struct GT_object *electrode_glyph;
 
 	ENTER(map_remove_map_electrodes_if_changed);	
@@ -4692,7 +4702,13 @@ removes the maps elecrodes, if they've changed.
 			{	
 				for (region_number=0;region_number<number_of_regions;region_number++)
 				{
-					map_remove_map_electrode_glyphs(unemap_package,region_number);
+					/* first is all devices node group */
+					rig_node_group_number=region_number+1;
+					if(unemap_package_rig_node_group_has_electrodes(unemap_package,
+						rig_node_group_number))
+					{
+						map_remove_map_electrode_glyphs(unemap_package,region_number);
+					}
 				}
 				free_unemap_package_time_computed_fields(unemap_package);
 			}
@@ -4719,7 +4735,7 @@ DESCRIPTION :
 Removes the map electrodes if they've changed, then redraws them.
 ==============================================================================*/
 {
-	int region_number,return_code;
+	int region_number,return_code,rig_node_group_number;
 
 	ENTER(map_draw_map_electrodes);
 	return_code=0;
@@ -4731,7 +4747,13 @@ Removes the map electrodes if they've changed, then redraws them.
 		/* spectrum (map->drawing_information->spectrum) */
 		for (region_number=0;region_number<number_of_regions;region_number++)
 		{
-			map_update_map_electrodes(unemap_package,region_number,map,time);
+			/* first is all devices node group */
+			rig_node_group_number=region_number+1;
+			if(unemap_package_rig_node_group_has_electrodes(unemap_package,
+				rig_node_group_number))
+			{
+				map_update_map_electrodes(unemap_package,region_number,map,time);
+			}					
 		}
 	}
 	else
@@ -4743,6 +4765,7 @@ Removes the map electrodes if they've changed, then redraws them.
 	return(return_code);
 }/* map_draw_map_electrodes */
 #endif /* UNEMAP_USE_NODES */
+
 
 #if defined (UNEMAP_USE_NODES)
 int draw_map_3d(struct Map *map)
@@ -4802,8 +4825,9 @@ This function draws the <map> in as a 3D CMGUI scene.
 				{
 					number_of_regions=rig->number_of_regions;
 				}
+				
 				if (map_type!=NO_MAP_FIELD)
-				{									
+				{						
 					scene=get_unemap_package_scene(unemap_package);
 					region_item=rig->region_list;	
 					for (region_number=0;region_number<number_of_regions;region_number++)
@@ -4815,56 +4839,60 @@ This function draws the <map> in as a 3D CMGUI scene.
 						else
 						{
 							current_region=rig->current_region;
-						}										
-						if (function=calculate_interpolation_functio(map_type,rig,current_region,
-							map->event_number,frame_time,map->datum,map->start_search_interval,
-							map->end_search_interval,undecided_accepted,
-							map->finite_element_mesh_rows,
-							map->finite_element_mesh_columns,map->membrane_smoothing,
-							map->plate_bending_smoothing))
+						}												
+						rig_node_group_number=region_number+1;						
+						if(unemap_package_rig_node_group_has_electrodes(unemap_package,
+							rig_node_group_number))
 						{
-							/* Now we have the interpolation_function struct */
-							/* make the node and element groups from it.*/
-							/* 1st node_group is 'all_devices_node_group */
-							rig_node_group_number=region_number+1;
-							make_fit_node_and_element_groups(function,unemap_package,rig->name,
-								FIT_SOCK_LAMBDA,FIT_SOCK_FOCUS,FIT_TORSO_R,FIT_PATCH_Z,region_number,
-								rig_node_group_number);	
-							destroy_Interpolation_function(&function);
-							/* Show the map element surface */						
-							element_group=get_unemap_package_map_element_group
-								(unemap_package,region_number);
-							/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
-							if((map->interpolation_type==NO_INTERPOLATION)||
-								(map->colour_option==HIDE_COLOUR))
+							if (function=calculate_interpolation_functio(map_type,rig,current_region,
+								map->event_number,frame_time,map->datum,map->start_search_interval,
+								map->end_search_interval,undecided_accepted,
+								map->finite_element_mesh_rows,
+								map->finite_element_mesh_columns,map->membrane_smoothing,
+								map->plate_bending_smoothing))
 							{
-								/* No Spectrum or computed field used.*/
-								map_show_surfaces(scene,element_group,
-									get_unemap_package_map_graphical_material(unemap_package),
-									get_unemap_package_Graphical_material_manager(unemap_package),
-									(struct Spectrum *)NULL,(struct Computed_field *)NULL,
-									get_unemap_package_no_interpolation_colour(unemap_package));
-							}
-							else /* BICUBIC interpolation  */
-							{
-								/* Get the map "fit" field, to use for the surface */
-								fit_field=get_unemap_package_map_fit_field(unemap_package,
-									region_number);
-								data_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-									Computed_field_is_read_only_with_fe_field,(void *)(fit_field),
-									get_unemap_package_Computed_field_manager(unemap_package));
-								map_show_surfaces(scene,element_group,
-									get_unemap_package_map_graphical_material(unemap_package),
-									get_unemap_package_Graphical_material_manager(unemap_package),
-									spectrum,data_field,(struct Colour*)NULL);
-							}
-							if(!get_unemap_package_viewed_scene(unemap_package))
-							{														
-								/* make the map_electrode_position_field, add to the rig nodes*/
-								make_and_add_map_electrode_position_field(region_number,
-									current_region->type,unemap_package);
-							}
-						}/* if (function=calculate_interpolation_functio */
+								/* Now we have the interpolation_function struct */
+								/* make the node and element groups from it.*/
+								/* 1st node_group is 'all_devices_node_group */							
+								make_fit_node_and_element_groups(function,unemap_package,rig->name,
+									FIT_SOCK_LAMBDA,FIT_SOCK_FOCUS,FIT_TORSO_R,FIT_PATCH_Z,region_number,
+									rig_node_group_number);	
+								destroy_Interpolation_function(&function);
+								/* Show the map element surface */						
+								element_group=get_unemap_package_map_element_group
+									(unemap_package,region_number);
+								/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
+								if((map->interpolation_type==NO_INTERPOLATION)||
+									(map->colour_option==HIDE_COLOUR))
+								{
+									/* No Spectrum or computed field used.*/
+									map_show_surfaces(scene,element_group,
+										get_unemap_package_map_graphical_material(unemap_package),
+										get_unemap_package_Graphical_material_manager(unemap_package),
+										(struct Spectrum *)NULL,(struct Computed_field *)NULL,
+										get_unemap_package_no_interpolation_colour(unemap_package));
+								}
+								else /* BICUBIC interpolation  */
+								{
+									/* Get the map "fit" field, to use for the surface */
+									fit_field=get_unemap_package_map_fit_field(unemap_package,
+										region_number);
+									data_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+										Computed_field_is_read_only_with_fe_field,(void *)(fit_field),
+										get_unemap_package_Computed_field_manager(unemap_package));
+									map_show_surfaces(scene,element_group,
+										get_unemap_package_map_graphical_material(unemap_package),
+										get_unemap_package_Graphical_material_manager(unemap_package),
+										spectrum,data_field,(struct Colour*)NULL);
+								}
+								if(!get_unemap_package_viewed_scene(unemap_package))
+								{														
+									/* make the map_electrode_position_field, add to the rig nodes*/
+									make_and_add_map_electrode_position_field(region_number,
+										current_region->type,unemap_package);
+								}
+							}/* if (function=calculate_interpolation_functio */
+						}/* if(unemap_package_rig_node_group_has_electrodes */
 						region_item=region_item->next;
 					} /* for (region_number=0; */
 					/* Alter the spectrum */
@@ -4902,8 +4930,14 @@ This function draws the <map> in as a 3D CMGUI scene.
 							/* re-add electrodes. Also need to remove the time computed fields */
 							/* used by the glyphs */
 							for (region_number=0;region_number<number_of_regions;region_number++)
-							{
-								map_remove_map_electrode_glyphs(unemap_package,region_number);
+							{		
+								/*1st is all devices nodes group */
+								rig_node_group_number=region_number+1;
+								if(unemap_package_rig_node_group_has_electrodes(unemap_package,
+									rig_node_group_number))
+								{
+									map_remove_map_electrode_glyphs(unemap_package,region_number);
+								}
 							}
 							free_unemap_package_time_computed_fields(unemap_package);
 							Scene_get_data_range_for_spectrum(scene,spectrum,&minimum,&maximum,
