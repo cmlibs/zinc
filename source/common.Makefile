@@ -347,15 +347,15 @@ endif # $(USER_INTERFACE) == WIN32_USER_INTERFACE
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 
 UID2UIDH = uid2uidh
-UID2UIDH_BIN = $(wildcard $(UTILITIES_PATH)/$(UID2UIDH))
+UID2UIDH_BIN := $(wildcard $(UTILITIES_PATH)/$(UID2UIDH))
 ifeq ($(UIDTOUID_BIN),)
    ifdef CMISS_ROOT_DEFINED
-	   UID2UIDH_BIN = $(wildcard $(PRODUCT_UTILITIES_PATH)/$(UID2UIDH))
+	   UID2UIDH_BIN := $(wildcard $(PRODUCT_UTILITIES_PATH)/$(UID2UIDH))
    endif # CMISS_ROOT_DEFINED
 endif # $(UID2UIDH_BIN) ==
 ifeq ($(UIDTOUID_BIN),)
    #If it still isn't found then assume we will build a local one.
-   UID2UIDH_BIN = $(UTILITIES_PATH)/$(UID2UIDH)
+   UID2UIDH_BIN := $(UTILITIES_PATH)/$(UID2UIDH)
 endif
 
 %.uidh : %.uil $(UID2UIDH_BIN)

@@ -201,7 +201,7 @@ ifndef IMAGEMAGICK
 else # ! IMAGEMAGICK
    IMAGEMAGICK_DEFINES += -DIMAGEMAGICK
    IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_libraries
-   IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include$(LIB_ARCH_DIR)
+   IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR)
    IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libMagick.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libtiff.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libpng.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libjpeg.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libxml2.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a
 endif # ! IMAGEMAGICK
 
@@ -389,7 +389,9 @@ USER_INTERFACE_INC =
 USER_INTERFACE_LIB =
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
    ifneq ($(DYNAMIC_GL_LINUX),true)
-      USER_INTERFACE_INC += -I/usr/X11R6/include
+      ifneq ($(SYSNAME:IRIX%=),)
+         USER_INTERFACE_INC += -I/usr/X11R6/include
+      endif # SYSNAME != IRIX%=
       ifeq ($(SYSNAME),Linux)
          USER_INTERFACE_LIB += -lMrm -u _XEditResCheckMessages -lXmu -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
       else # SYSNAME == Linux
@@ -925,7 +927,7 @@ sed "s/./diff/;s/,.*/ >> out.diff/;h;G;G;s/\n//2;s%>> out\.diffdiff %tmp/%;s/dif
 descrip.mms : Makefile descrip_mms.sed
 	sed -f descrip_mms.sed < Makefile > descrip.mms
 
-$(OBJECT_PATH)/version.o.h : $(OBJS) Makefile
+$(OBJECT_PATH)/version.o.h : $(OBJS) cmgui.Makefile
 	if [ ! -d $(OBJECT_PATH) ]; then \
 		mkdir -p $(OBJECT_PATH); \
 	fi	
@@ -1109,7 +1111,7 @@ endif # $(MEMORY_CHECK) == true
 
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 
-   utilities : $(UID2UIDH)
+   utilities : $(UID2UIDH_BIN)
 
    UID2UIDH_SRCS = \
 	   utilities/uid2uidh.c
@@ -1124,7 +1126,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
    UID2UIDH_OBJS = $(UID2UIDH_OBJSB:.f=.o)
    BUILD_UID2UIDH = $(call BuildNormalTarget,$(UID2UIDH),$(UTILITIES_PATH),UID2UIDH_OBJS,$(UID2UIDH_LIB))
 
-   $(UID2UIDH): $(UID2UIDH_OBJS)
+   $(UID2UIDH_BIN): $(UID2UIDH_OBJS)
 		$(BUILD_UID2UIDH)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
