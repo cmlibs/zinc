@@ -1041,6 +1041,10 @@ necessary.
 			{
 				recalculate=2;
 			}	
+#if defined (UNEMAP_USE_3D)		
+			set_map_drawing_information_electrodes_accepted_or_rejected(
+				map->drawing_information,1);
+#endif
 			ensure_map_projection_type_matches_region_type(map);
 			update_mapping_drawing_area(mapping,recalculate);
 			update_mapping_colour_or_auxili(mapping);
@@ -3428,6 +3432,10 @@ Sets the projection to be the Hammer projection.
 		{
 			if (mapping->map->projection_type!=HAMMER_PROJECTION)
 			{
+#if defined (UNEMAP_USE_3D)		
+				set_map_drawing_information_electrodes_accepted_or_rejected(
+					mapping->map->drawing_information,1);
+#endif
 				mapping->map->projection_type=HAMMER_PROJECTION;	
 				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
@@ -3469,6 +3477,10 @@ Sets the projection to be the polar projection.
 		{
 			if (mapping->map->projection_type!=POLAR_PROJECTION)
 			{
+#if defined (UNEMAP_USE_3D)		
+				set_map_drawing_information_electrodes_accepted_or_rejected(
+					mapping->map->drawing_information,1);
+#endif
 				mapping->map->projection_type=POLAR_PROJECTION;				
 				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
@@ -3507,7 +3519,11 @@ drawing
 	if (mapping=(struct Mapping_window *)client_data)
 	{
 		if (mapping->map)
-		{		
+		{	
+#if defined (UNEMAP_USE_3D)		
+				set_map_drawing_information_electrodes_accepted_or_rejected(
+					mapping->map->drawing_information,1);
+#endif	
 			/*must set the rojection_type to something*/
 			mapping->map->projection_type=CYLINDRICAL_PROJECTION;
 			Mapping_window_make_drawing_area_2d(mapping);
@@ -3547,6 +3563,10 @@ Sets the projection to be the cylinder projection.
 		{
 			if (mapping->map->projection_type!=CYLINDRICAL_PROJECTION)
 			{
+#if defined (UNEMAP_USE_3D)		
+				set_map_drawing_information_electrodes_accepted_or_rejected(
+					mapping->map->drawing_information,1);
+#endif
 				mapping->map->projection_type=CYLINDRICAL_PROJECTION;				
 				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
@@ -3587,6 +3607,10 @@ Sets the projection to be the 3D projection.
 		{
 			if (mapping->map->projection_type!=THREED_PROJECTION)
 			{
+#if defined (UNEMAP_USE_3D)		
+				set_map_drawing_information_electrodes_accepted_or_rejected(
+					mapping->map->drawing_information,1);
+#endif
 				mapping->map->projection_type=THREED_PROJECTION;			
 				Mapping_window_make_drawing_area_3d(mapping);
 				update_mapping_drawing_area(mapping,2);
