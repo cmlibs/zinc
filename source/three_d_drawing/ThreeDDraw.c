@@ -2005,7 +2005,7 @@ Returns the visual ID actually used by this X3d widget.
 	if ((drawing_widget=(ThreeDDrawingWidget)widget)&&
 		(True==IsThreeDDrawing(widget)))
 	{
-		visual_id=(drawing_widget)->three_d_drawing.normal_buffer.visual_information->visualid;
+		visual_id=(int)(drawing_widget)->three_d_drawing.normal_buffer.visual_information->visualid;
 	}
 	else
 	{
