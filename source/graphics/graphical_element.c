@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.c
 
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 14 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1083,7 +1083,7 @@ Returns the data_group used by <gt_element_group>.
 int GT_element_group_list_commands(struct GT_element_group *gt_element_group,
 	char *command_prefix,char *command_suffix)
 /*******************************************************************************
-LAST MODIFIED : 4 March 1999
+LAST MODIFIED : 14 December 1999
 
 DESCRIPTION :
 Lists the general settings and graphics defined for <gt_element_group> - as a
@@ -1109,7 +1109,8 @@ optional <command_suffix> may describe the scene (eg. "scene default").
 				sprintf(line_prefix,"%s %s ",command_prefix,name);
 				DEALLOCATE(name);
 				display_message(INFORMATION_MESSAGE,line_prefix);
-				display_message(INFORMATION_MESSAGE,"general circle_discretization %d",
+				display_message(INFORMATION_MESSAGE,"general clear");
+				display_message(INFORMATION_MESSAGE," circle_discretization %d",
 					gt_element_group->circle_discretization);
 				if (GET_NAME(Computed_field)(gt_element_group->default_coordinate_field,
 					&name))

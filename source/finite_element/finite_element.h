@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 15 November 1999
+LAST MODIFIED : 21 December 1999
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -465,6 +465,7 @@ DESCRIPTION :
 CM element types.
 ==============================================================================*/
 {
+  CM_ELEMENT_TYPE_INVALID,
   CM_ELEMENT,
   CM_FACE,
   CM_LINE
@@ -2633,6 +2634,15 @@ Used in command parsing to translate a element group name into an element group.
 ???DB.  Should it be here ?
 ==============================================================================*/
 
+int set_FE_element_group_or_all(struct Parse_state *state,
+	void *element_group_address_void,void *element_group_manager_void);
+/*******************************************************************************
+LAST MODIFIED : 13 December 1999
+
+DESCRIPTION :
+Used in command parsing to translate a element group name into an element group.Valid NULL group means "all" groups.
+==============================================================================*/
+
 int list_group_FE_element(struct GROUP(FE_element) *element_group,void *dummy);
 /*******************************************************************************
 LAST MODIFIED : 28 January 1998
@@ -3302,6 +3312,21 @@ on the dimension of element:top_level, ie.,
 1:3 First 6 values, in form of 3 row X 2 column matrix, used only.
 2:3 First 9 values, in form of 3 row X 3 column matrix, used only.
 NOTE: recursive to handle 1-D to 3-D case.
+==============================================================================*/
+
+int get_FE_element_discretization_from_top_level(struct FE_element *element,
+	int *number_in_xi,struct FE_element *top_level_element,
+	int *top_level_number_in_xi,FE_value *element_to_top_level);
+/*******************************************************************************
+LAST MODIFIED : 21 December 1999
+
+DESCRIPTION :
+Returns in <number_in_xi> the equivalent discretization of <element> for its
+position - element, face or line - in <top_level_element>. Uses
+<element_to_top_level> array for line/face conversion as returned by
+FE_element_get_top_level_element_conversion.
+<number_in_xi> must have space at lease MAXIMUM_ELEMENT_XI_DIMENSIONS integers,
+as remaining values up to this size are cleared to zero.
 ==============================================================================*/
 
 int FE_element_or_parent_contains_node(struct FE_element *element,

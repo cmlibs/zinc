@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 4 November 1999
+LAST MODIFIED : 21 December 1999
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -24155,7 +24155,7 @@ Used in command parsing to translate a element group name into an element group.
 		{
 			display_message(WARNING_MESSAGE,"Missing element group name");
 			display_parse_state_location(state);
-			return_code=1;
+			return_code=0;
 		}
 	}
 	else
@@ -24167,6 +24167,111 @@ Used in command parsing to translate a element group name into an element group.
 
 	return (return_code);
 } /* set_FE_element_group */
+
+int set_FE_element_group_or_all(struct Parse_state *state,
+	void *element_group_address_void,void *element_group_manager_void)
+/*******************************************************************************
+LAST MODIFIED : 13 December 1999
+
+DESCRIPTION :
+Used in command parsing to translate a element group name into an element group.Valid NULL group means "all" groups.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code;
+	struct GROUP(FE_element) *group,**group_address;
+	struct MANAGER(GROUP(FE_element)) *element_group_manager;
+
+	ENTER(set_FE_element_group_or_all);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if ((group_address=
+					(struct GROUP(FE_element) **)element_group_address_void)&&
+					(element_group_manager=
+					(struct MANAGER(GROUP(FE_element)) *)element_group_manager_void))
+				{
+					if (fuzzy_string_compare(current_token,"ALL"))
+					{
+						if (*group_address)
+						{
+							DEACCESS(GROUP(FE_element))(group_address);
+							*group_address=(struct GROUP(FE_element) *)NULL;
+						}
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						if (group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)(
+							current_token,element_group_manager))
+						{
+							if (group!= *group_address)
+							{
+								if (*group_address)
+								{
+									DEACCESS(GROUP(FE_element))(group_address);
+								}
+								*group_address=ACCESS(GROUP(FE_element))(group);
+							}
+							return_code=shift_Parse_state(state,1);
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,"Unknown element group: %s",
+								current_token);
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_FE_element_group_or_all.  Invalid argument(s)");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," ELEMENT_GROUP_NAME|all");
+				if (group_address=
+					(struct GROUP(FE_element) **)element_group_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[");
+					if (group= *group_address)
+					{
+						display_message(INFORMATION_MESSAGE,group->name);
+					}
+					else
+					{
+						display_message(INFORMATION_MESSAGE,"all");
+					}
+					display_message(INFORMATION_MESSAGE,"]");
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(WARNING_MESSAGE,"Missing name of element group or ALL");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_element_group_or_all.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_FE_element_group_or_all */
 
 int list_group_FE_element(struct GROUP(FE_element) *element_group,void *dummy)
 /*******************************************************************************
@@ -30239,6 +30344,80 @@ NOTE: recursive to handle 1-D to 3-D case.
 
 	return (top_level_element);
 } /* FE_element_get_top_level_element_conversion */
+
+int get_FE_element_discretization_from_top_level(struct FE_element *element,
+	int *number_in_xi,struct FE_element *top_level_element,
+	int *top_level_number_in_xi,FE_value *element_to_top_level)
+/*******************************************************************************
+LAST MODIFIED : 21 December 1999
+
+DESCRIPTION :
+Returns in <number_in_xi> the equivalent discretization of <element> for its
+position - element, face or line - in <top_level_element>. Uses
+<element_to_top_level> array for line/face conversion as returned by
+FE_element_get_top_level_element_conversion.
+<number_in_xi> must have space at lease MAXIMUM_ELEMENT_XI_DIMENSIONS integers,
+as remaining values up to this size are cleared to zero.
+==============================================================================*/
+{
+	int dimension,i,j,return_code,top_level_dimension;
+
+	ENTER(get_FE_element_discretization_from_top_level);
+	if (element&&number_in_xi&&top_level_element&&top_level_number_in_xi)
+	{
+		return_code=1;
+		dimension=get_FE_element_dimension(element);
+		if (top_level_element==element)
+		{
+			for (i=0;i<dimension;i++)
+			{
+				number_in_xi[i]=top_level_number_in_xi[i];
+			}
+		}
+		else if (element_to_top_level)
+		{
+			top_level_dimension=get_FE_element_dimension(top_level_element);
+			for (i=0;(i<dimension)&&return_code;i++)
+			{
+				number_in_xi[i]=0;
+				for (j=0;(0==number_in_xi[i])&&(j<top_level_dimension);j++)
+				{
+					if (0.1<fabs(element_to_top_level[j*(dimension+1)+i+1]))
+					{
+						number_in_xi[i]=top_level_number_in_xi[j];
+					}
+				}
+				if (0==number_in_xi[i])
+				{
+					display_message(ERROR_MESSAGE,
+						"get_FE_element_discretization_from_top_level.  "
+						"Could not get discretization");
+					return_code=0;
+				}
+			}
+			for (i=dimension;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+			{
+				number_in_xi[i]=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"get_FE_element_discretization_from_top_level.  "
+				"Missing element_to_top_level matrix");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_discretization_from_top_level.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_FE_element_discretization_from_top_level */
 
 int FE_element_or_parent_contains_node(struct FE_element *element,
 	void *node_void)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.c
 
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 23 December 1999
 
 DESCRIPTION :
 A module for supporting command parsing.
@@ -24,10 +24,28 @@ A module for supporting command parsing.
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
+/* size of blocks allocated onto option table - to reduce number of reallocs */
+#define OPTION_TABLE_ALLOCATE_SIZE 10
+
 /*
 Module types
 ------------
 */
+
+struct Option_table
+/*******************************************************************************
+LAST MODIFIED : 23 December 1999
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Modifier_entry *entry;
+	int allocated_entries,number_of_entries,valid;
+	/* store suboption_tables added to table for destroying with option_table */
+	int number_of_suboption_tables;
+	struct Option_table **suboption_tables;
+}; /* struct Option_table */
+
 enum Variable_operation_type
 {
 	ADD_VARIABLE_OPERATION,
@@ -450,309 +468,933 @@ same length.
 	return (return_code);
 } /* fuzzy_string_compare_same_length */
 
-#if defined (OLD_CODE)
-struct Parse_state *create_Parse_state(char *command_string)
+int process_option(struct Parse_state *state,
+	struct Modifier_entry *modifier_table)
 /*******************************************************************************
-LAST MODIFIED : 17 March 1997
+LAST MODIFIED : 21 December 1999
 
 DESCRIPTION :
-Creates a Parse_state structure which contains
-- a trimmed copy of the <command_string>
-- the <command_string> split into tokens
-NB
-1 ! and # indicate that the rest of the command string is a comment (not split
-	into tokens
-2 Variables are converted into values
+If the <state->current_token> is "?", then the options in the <modifier_table>
+and the values expected for each will be written to the command window and 1
+returned.  Otherwise, the <modifier_table> is searched for entries whose option
+field matchs <state->current_token>.  If no matchs are found, then if the
+terminating entry in the <modifier_table> has a modifier function it is called,
+otherwise an error message is written and 0 returned.  If one match is found,
+then the modifier function of the entry is called and its return value returned.
+If more than one match is found then the possible matchs are written to the
+command window and 0 is returned.  Note that <process_option> is a modifier
+function.
 ==============================================================================*/
 {
-	char character,*string,**token,*token_start;
-	int number_of_tokens,return_code,token_length;
-	struct Parse_state *state;
+	char *current_token,*error_message,*temp_message,**token;
+	int first,i,match_length,number_of_sub_entries,return_code;
+	struct Modifier_entry *entry,*matching_entry,*sub_entry;
 
-	ENTER(create_Parse_state);
-	/* check arguments */
-	if (command_string)
+	ENTER(process_option);
+	exclusive_option++;
+	if (state&&(entry=modifier_table))
 	{
-		/* allocate memory for parse state */
-		if (ALLOCATE(state,struct Parse_state,1))
+		if (current_token=state->current_token)
 		{
-			/* allocate memory for and create a trimmed version of the command
-				string */
-			if (state->command_string=trim_string(command_string))
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				string=state->command_string;
-				if ((character= *string)&&('!'!=character)&&('#'!=character))
+				return_code=0;
+				matching_entry=(struct Modifier_entry *)NULL;
+				match_length=strlen(current_token);
+				error_message=(char *)NULL;
+				while ((entry->option)||((entry->user_data)&&!(entry->modifier)))
 				{
-					/* count the number of tokens */
-					number_of_tokens=1;
-					do
+					if (entry->option)
 					{
-						switch (character)
+						if (fuzzy_string_compare(current_token,entry->option))
 						{
-							case ' ': case '=': case ',': case ';':
-								/*???DB.  What about other whitespace ? */
-								/*???DB.  '=' was added specifically for set dir doc=dir_name */
+							if (matching_entry)
 							{
-								/* skip separator */
-								do
+								if (return_code)
 								{
-									string++;
-								}
-								while ((character= *string)&&((' '==character)||
-									('='==character)||(','==character)||(';'==character)));
-								if (character&&('!'!=character)&&('#'!=character))
-								{
-									number_of_tokens++;
-								}
-							} break;
-							default:
-							{
-								string++;
-							} break;
-						}
-					}
-					while ((character= *string)&&('!'!=character)&&('#'!=character));
-					/* allocate memory for tokens */
-					if (ALLOCATE(token,char *,number_of_tokens))
-					{
-						state->tokens=token;
-						state->number_of_tokens=number_of_tokens;
-						/* assign tokens */
-						string=state->command_string;
-						token_start=string;
-						token_length=0;
-						character= *string;
-						return_code=1;
-						do
-						{
-							switch (character)
-							{
-								case ' ': case '\0': case '!': case '#': case '=': case ',':
-									case ';':
-									/*???DB.  What about other whitespace ? */
-								{
-									/* allocate token */
-									if (ALLOCATE(*token,char,token_length+1))
+									return_code=0;
+									if (ALLOCATE(error_message,char,38+match_length+
+										strlen(matching_entry->option)+strlen(entry->option)))
 									{
-										strncpy(*token,token_start,token_length);
-										(*token)[token_length]='\0';
-										/* convert variables into numbers */
-										return_code=parse_variable(token);
-										token++;
-										number_of_tokens--;
-										/* skip separator */
-										while ((character= *string)&&((' '==character)||
-											('='==character)||(','==character)||(';'==character)))
-										{
-											string++;
-										}
-										token_start=string;
-										token_length=0;
+										strcpy(error_message,"Ambiguous option <");
+										strcat(error_message,current_token);
+										strcat(error_message,"> could be <");
+										strcat(error_message,matching_entry->option);
+										strcat(error_message,"> or <");
+										strcat(error_message,entry->option);
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,
-										"create_Parse_state.  Could not allocate memory for token");
-										return_code=0;
+											"process_option.  Multiple match, insufficient memory");
 									}
-								} break;
-								default:
+								}
+								else
 								{
-									string++;
-									character= *string;
-									token_length++;
-								} break;
+									if (error_message)
+									{
+										if (REALLOCATE(temp_message,error_message,char,
+											strlen(error_message)+8+strlen(entry->option)))
+										{
+											error_message=temp_message;
+											strcat(error_message,"> or <");
+											strcat(error_message,entry->option);
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"process_option.  Multiple match, insufficient memory");
+											DEALLOCATE(error_message);
+										}
+									}
+								}
 							}
-						}
-						while (return_code&&(number_of_tokens>0));
-						if (return_code)
-						{
-							state->current_index=0;
-							state->current_token= *(state->tokens);
-						}
-						else
-						{
-							while (number_of_tokens<state->number_of_tokens)
+							else
 							{
-								token--;
-								DEALLOCATE(*token);
-								number_of_tokens++;
+								matching_entry=entry;
+								return_code=1;
 							}
-							DEALLOCATE(state->tokens);
-							DEALLOCATE(state->command_string);
-							DEALLOCATE(state);
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"create_Parse_state.  Could not allocate memory for tokens");
-						DEALLOCATE(state->command_string);
-						DEALLOCATE(state);
+						/* assume that the user_data is another option table */
+						sub_entry=(struct Modifier_entry *)(entry->user_data);
+						while (sub_entry->option)
+						{
+							if (fuzzy_string_compare(current_token,sub_entry->option))
+							{
+								if (matching_entry)
+								{
+									if (return_code)
+									{
+										return_code=0;
+										if (ALLOCATE(error_message,char,38+match_length+
+											strlen(matching_entry->option)+strlen(sub_entry->option)))
+										{
+											strcpy(error_message,"Ambiguous option <");
+											strcat(error_message,current_token);
+											strcat(error_message,"> could be <");
+											strcat(error_message,matching_entry->option);
+											strcat(error_message,"> or <");
+											strcat(error_message,sub_entry->option);
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"process_option.  Multiple match, insufficient memory");
+										}
+									}
+									else
+									{
+										if (error_message)
+										{
+											if (REALLOCATE(temp_message,error_message,char,
+												strlen(error_message)+8+strlen(sub_entry->option)))
+											{
+												error_message=temp_message;
+												strcat(error_message,"> or <");
+												strcat(error_message,sub_entry->option);
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+												"process_option.  Multiple match, insufficient memory");
+												DEALLOCATE(error_message);
+											}
+										}
+									}
+								}
+								else
+								{
+									matching_entry=sub_entry;
+									return_code=1;
+								}
+							}
+							sub_entry++;
+						}
+					}
+					entry++;
+				}
+				if (return_code)
+				{
+					if (shift_Parse_state(state,1))
+					{
+						return_code=(matching_entry->modifier)(state,
+							matching_entry->to_be_modified,matching_entry->user_data);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"process_option.  Error parsing");
+						return_code=0;
 					}
 				}
 				else
 				{
-					/* empty command */
-					state->tokens=(char **)NULL;
-					state->number_of_tokens=0;
-					state->current_index=0;
-					state->current_token=(char *)NULL;
+					if (!matching_entry)
+					{
+						/* use the default modifier function if it exists */
+						if (entry->modifier)
+						{
+							return_code=(entry->modifier)(state,entry->to_be_modified,
+								entry->user_data);
+						}
+						else
+						{
+							if (ALLOCATE(error_message,char,18+match_length))
+							{
+								strcpy(error_message,"Unknown option <");
+								strcat(error_message,current_token);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"process_option.  No match, insufficient memory");
+							}
+						}
+					}
+					if (error_message)
+					{
+						strcat(error_message,">");
+						display_message(ERROR_MESSAGE,error_message);
+						DEALLOCATE(error_message);
+						display_parse_state_location(state);
+					}
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"create_Parse_state.  Could not trim command string");
-				DEALLOCATE(state);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"create_Parse_state.  Insufficient memory for parse state");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_Parse_state.  Missing command string");
-		state=(struct Parse_state *)NULL;
-	}
-	LEAVE;
-
-	return (state);
-} /* create_Parse_state */
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE_TO_KEEP)
-static int extract_token(char **source_address,char **token_address)
-/*******************************************************************************
-LAST MODIFIED : 24 November 1998
-
-DESCRIPTION :
-On successful return, <*token_address> will point to a newly-allocated string
-containing the first token in the string at <*source_address>. <source_address>
-is then updated to point to the next character after the last one used in
-creating the token.
-The function skips any leading whitespace and stops at the first token delimiter
-(whitespace/=/,/;), comment character (!/#) or end of string. Tokens containing
-any of the above special characters may be produced by enclosing them in single
-or double quotes - but not a mixture of them. Repeating the chosen quote mark
-inside the quote puts one into the final token. The end of source string is a
-valid, automatic end of quote.
-To minimise memory allocation, the function uses the string at <*source_address>
-as working space in which the token is constructed from the source string.
-
-"FERRARI" version: Will turn <con"cat"'enation'> to <concatenation>. Dave does
-not like it since it is too generous to our users - and maybe not supportable
-in future.
-==============================================================================*/
-{
-	char quote_mark,*token,*token_destination,*token_source;
-	int check_quote,mid_quote,return_code,still_working,token_length;
-	struct Parse_state *state;
-
-	ENTER(extract_token);
-	if (source_address && *source_address && token_address)
-	{
-		return_code=1;
-		token_destination = token_source = *source_address;
-		/* pass over leading white space and other delimiters */
-		while (*token_source&&(isspace(*token_source)||
-			('=' == *token_source)||(',' == *token_source)||(';' == *token_source)))
-		{
-			token_source++;
-		}
-		mid_quote=0;
-		still_working=('\0' != *token_source);
-		while (still_working)
-		{
-			check_quote=1;
-			while (check_quote)
-			{
-				check_quote=0;
-				if (mid_quote)
+				/* write help */
+				if (0==usage_indentation_level)
 				{
-					/* check for end of quote or two quote marks together */
-					if (quote_mark == *token_source)
+					display_message(INFORMATION_MESSAGE,"Usage :");
+					token=state->tokens;
+					for (i=state->current_index;i>0;i--)
 					{
-						token_source++;
-						if (quote_mark != *token_source)
+						display_message(INFORMATION_MESSAGE," %s",*token);
+						token++;
+					}
+					display_message(INFORMATION_MESSAGE," %s",*token);
+				}
+				if (!((multiple_options>0)&&(exclusive_option>1)))
+				{
+					display_message(INFORMATION_MESSAGE,"\n");
+				}
+				usage_indentation_level += 2;
+				if (strcmp(PARSER_HELP_STRING,current_token)||(multiple_options>0))
+				{
+					/* recursive help */
+					first=1;
+					while ((entry->option)||((entry->user_data)&&!(entry->modifier)))
+					{
+						if (entry->option)
 						{
-							/* end of quote */
-							mid_quote=0;
-							/* allow immediate start of new quote */
-							check_quote=('\0' != *token_source);
+							if (entry->modifier)
+							{
+								if (multiple_options>0)
+								{
+									if (exclusive_option>1)
+									{
+										if (first)
+										{
+											display_message(INFORMATION_MESSAGE,"\n%*s(%s",
+												usage_indentation_level," ",entry->option);
+										}
+										else
+										{
+											display_message(INFORMATION_MESSAGE,"|%s",entry->option);
+										}
+									}
+									else
+									{
+										display_message(INFORMATION_MESSAGE,"%*s<%s",
+											usage_indentation_level," ",entry->option);
+									}
+								}
+								else
+								{
+									display_message(INFORMATION_MESSAGE,"%*s%s",
+										usage_indentation_level," ",entry->option);
+								}
+								usage_newline=1;
+								(entry->modifier)(state,entry->to_be_modified,entry->user_data);
+								if (multiple_options>0)
+								{
+									if (exclusive_option<=1)
+									{
+										display_message(INFORMATION_MESSAGE,">");
+										if (usage_newline)
+										{
+											display_message(INFORMATION_MESSAGE,"\n");
+											usage_newline=0;
+										}
+									}
+								}
+								else
+								{
+									if (usage_newline)
+									{
+										display_message(INFORMATION_MESSAGE,"\n");
+										usage_newline=0;
+									}
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"process_option.  Missing modifier: %s",entry->option);
+								display_parse_state_location(state);
+							}
+						}
+						else
+						{
+							/* assume that the user_data is another option table */
+							sub_entry=(struct Modifier_entry *)(entry->user_data);
+							display_message(INFORMATION_MESSAGE,"%*s",
+								usage_indentation_level," ");
+							if (0<multiple_options)
+							{
+								display_message(INFORMATION_MESSAGE,"<");
+							}
+							number_of_sub_entries=0;
+							while (sub_entry->option)
+							{
+								number_of_sub_entries++;
+								if (sub_entry->modifier)
+								{
+									if (1<number_of_sub_entries)
+									{
+										display_message(INFORMATION_MESSAGE,"|");
+									}
+									display_message(INFORMATION_MESSAGE,"%s",sub_entry->option);
+									(sub_entry->modifier)(state,sub_entry->to_be_modified,
+										sub_entry->user_data);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"process_option.  Missing modifier: %s",sub_entry->option);
+									display_parse_state_location(state);
+								}
+								sub_entry++;
+							}
+							if (0<multiple_options)
+							{
+								display_message(INFORMATION_MESSAGE,">");
+							}
+							display_message(INFORMATION_MESSAGE,"\n");
+							usage_newline=0;
+						}
+						first=0;
+						entry++;
+					}
+					/* write help for default modifier it it exists */
+					if (entry->modifier)
+					{
+						if (multiple_options>0)
+						{
+							if (exclusive_option>1)
+							{
+								if (first)
+								{
+									display_message(INFORMATION_MESSAGE,"\n%*s(",
+										usage_indentation_level," ");
+								}
+								else
+								{
+									display_message(INFORMATION_MESSAGE,"|");
+								}
+							}
+							else
+							{
+								display_message(INFORMATION_MESSAGE,"%*s<",
+									usage_indentation_level," ");
+							}
+						}
+						else
+						{
+							display_message(INFORMATION_MESSAGE,"%*s",usage_indentation_level,
+								" ");
+						}
+						usage_newline=1;
+						(entry->modifier)(state,entry->to_be_modified,entry->user_data);
+						if (multiple_options>0)
+						{
+							if (exclusive_option<=1)
+							{
+								display_message(INFORMATION_MESSAGE,">");
+								if (usage_newline)
+								{
+									display_message(INFORMATION_MESSAGE,"\n");
+									usage_newline=0;
+								}
+							}
+							else
+							{
+								display_message(INFORMATION_MESSAGE,")");
+							}
+						}
+						else
+						{
+							if (usage_newline)
+							{
+								display_message(INFORMATION_MESSAGE,"\n");
+								usage_newline=0;
+							}
 						}
 					}
 				}
 				else
 				{
-					/* see if quote beginning */
-					if (('\''== *token_source)||('\"'== *token_source))
+					/* one level of help */
+						/*???DB.  Have added  multiple_options>0  to then so won't come
+							here, but haven't stripped out yet */
+					while ((entry->option)||((entry->user_data)&&!(entry->modifier)))
 					{
-						mid_quote=1;
-						quote_mark= *token_source;
-						token_source++;
-						check_quote=('\0' != *token_source);
+						if (entry->option)
+						{
+							if (multiple_options>0)
+							{
+								display_message(INFORMATION_MESSAGE,"%*s<%s>\n",
+									usage_indentation_level," ",entry->option);
+							}
+							else
+							{
+								display_message(INFORMATION_MESSAGE,"%*s%s\n",
+									usage_indentation_level," ",entry->option);
+							}
+						}
+						else
+						{
+							/* assume that the user_data is another option table */
+							sub_entry=(struct Modifier_entry *)(entry->user_data);
+							if (sub_entry->option)
+							{
+								if (multiple_options>0)
+								{
+									display_message(INFORMATION_MESSAGE,"%*s<%s",
+										usage_indentation_level," ",sub_entry->option);
+								}
+								else
+								{
+									display_message(INFORMATION_MESSAGE,"%*s(%s",
+										usage_indentation_level," ",sub_entry->option);
+								}
+								sub_entry++;
+								while (sub_entry->option)
+								{
+									display_message(INFORMATION_MESSAGE,"|%s",sub_entry->option);
+									sub_entry++;
+								}
+								if (multiple_options>0)
+								{
+									display_message(INFORMATION_MESSAGE,">");
+								}
+								else
+								{
+									display_message(INFORMATION_MESSAGE,")");
+								}
+								display_message(INFORMATION_MESSAGE,"\n");
+								usage_newline=0;
+							}
+						}
+						entry++;
+					}
+					/* write help for default modifier if it exists */
+					if (entry->modifier)
+					{
+						if (multiple_options>0)
+						{
+							display_message(INFORMATION_MESSAGE,"%*s<",
+								usage_indentation_level," ");
+						}
+						else
+						{
+							display_message(INFORMATION_MESSAGE,"%*s",usage_indentation_level,
+								" ");
+						}
+						(entry->modifier)(state,entry->to_be_modified,entry->user_data);
+						if (multiple_options>0)
+						{
+							display_message(INFORMATION_MESSAGE,">");
+						}
+						display_message(INFORMATION_MESSAGE,"\n");
 					}
 				}
-			}
-			/* quote handling may have emptied string */
-			if (*token_source)
-			{
-				/* delimiter or comment characters end parsing */
-				if (!mid_quote&&(isspace(*token_source)||('=' == *token_source)||
-					(',' == *token_source)||(';' == *token_source)||
-					('!' == *token_source)||('#' == *token_source)))
-				{
-					still_working=0;
-				}
-				else
-				{
-					/* put character in token */
-					*token_destination = *token_source;
-					token_destination++;
-					token_source++;
-				}
-			}
-			else
-			{
-				still_working=0;
-			}
-		}
-		if (0<(token_length= token_destination - *source_address))
-		{
-			if (ALLOCATE(token,char,token_length+1))
-			{
-				strncpy(token,*source_address,token_length);
-				token[token_length]='\0';
-				*token_address = token;
-				*source_address = token_source;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"extract_token.  Not enough memory");
+				usage_indentation_level -= 2;
+				/* so that process_option is only called once in parsing loop */
 				return_code=0;
 			}
 		}
 		else
 		{
-			/* source string empty or only contained whitespace/delimiters */
-			*token_address = (char *)NULL;
+			display_message(ERROR_MESSAGE,"Missing token");
+			display_parse_state_location(state);
+			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"extract_token.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"process_option.  Invalid argument(s)");
+		return_code=0;
+	}
+	exclusive_option--;
+	LEAVE;
+
+	return (return_code);
+} /* process_option */
+
+int process_multiple_options(struct Parse_state *state,
+	struct Modifier_entry *modifier_table)
+/*******************************************************************************
+LAST MODIFIED : 4 October 1996
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int local_exclusive_option,return_code;
+
+	ENTER(process_multiple_options);
+	if (state&&modifier_table)
+	{
+		multiple_options++;
+		local_exclusive_option=exclusive_option;
+		exclusive_option=0;
+		return_code=1;
+		while ((state->current_token)&&(return_code=process_option(state,
+			(void *)modifier_table)));
+		multiple_options--;
+		exclusive_option=local_exclusive_option;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"process_multiple_options.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* extract_token */
-#endif /* defined (OLD_CODE_TO_KEEP) */
+} /* process_multiple_options */
+
+struct Option_table *CREATE(Option_table)(void)
+/*******************************************************************************
+LAST MODIFIED : 23 December 1999
+
+DESCRIPTION :
+Creates an Option_table for text parsing.
+==============================================================================*/
+{
+	struct Option_table *option_table;
+
+	ENTER(CREATE(Option_table));
+	if (ALLOCATE(option_table,struct Option_table,1))
+	{
+		option_table->allocated_entries = 0;
+		option_table->number_of_entries = 0;
+		option_table->entry = (struct Modifier_entry *)NULL;
+		/* flag indicating all options successfully added */
+		option_table->valid = 1;
+		/* store suboption_tables added to table for destroying with option_table */
+		option_table->number_of_suboption_tables = 0;
+		option_table->suboption_tables = (struct Option_table **)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"CREATE(Option_table).  Not enough memory");
+		if (option_table)
+		{
+			DEALLOCATE(option_table);
+		}
+	}
+	LEAVE;
+
+	return (option_table);
+} /* CREATE(Option_table) */
+
+int DESTROY(Option_table)(struct Option_table **option_table_address)
+/*******************************************************************************
+LAST MODIFIED : 23 December 1999
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i,return_code;
+	struct Option_table *option_table;
+
+	ENTER(DESTROY(Option_table));
+	if (option_table_address)
+	{
+		return_code=1;
+		if (option_table = *option_table_address)
+		{
+			/* clean up suboption_tables added to option_table */
+			if (option_table->suboption_tables)
+			{
+				for (i=0;i<option_table->number_of_suboption_tables;i++)
+				{
+					DESTROY(Option_table)(&(option_table->suboption_tables[i]));
+				}
+				DEALLOCATE(option_table->suboption_tables);
+			}
+			if (option_table->entry)
+			{
+				DEALLOCATE(option_table->entry);
+			}
+			DEALLOCATE(*option_table_address);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"DESTROY(Option_table).  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Option_table) */
+
+static int Option_table_add_entry_private(struct Option_table *option_table,
+	char *token,void *to_be_modified,void *user_data,modifier_function modifier)
+/*******************************************************************************
+LAST MODIFIED : 23 December 1999
+
+DESCRIPTION :
+Adds the given entry to the option table, enlarging the table as needed.
+If fails, marks the option_table as invalid.
+==============================================================================*/
+{
+	int return_code;
+	struct Modifier_entry *temp_entry;
+
+	ENTER(Option_table_add_entry_private);
+	if (option_table)
+	{
+		return_code=1;
+		if (option_table->number_of_entries == option_table->allocated_entries)
+		{
+			if (REALLOCATE(temp_entry,option_table->entry,struct Modifier_entry,
+				option_table->allocated_entries+OPTION_TABLE_ALLOCATE_SIZE))
+			{
+				option_table->entry = temp_entry;
+				option_table->allocated_entries += OPTION_TABLE_ALLOCATE_SIZE;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Option_table_add_entry_private.  Not enough memory");
+				return_code=0;
+				option_table->valid=0;
+			}
+		}
+		if (return_code)
+		{
+			temp_entry = &(option_table->entry[option_table->number_of_entries]);
+			temp_entry->option=token;
+			temp_entry->to_be_modified=to_be_modified;
+			temp_entry->user_data=user_data;
+			temp_entry->modifier=modifier;
+			option_table->number_of_entries++;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_entry_private.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_entry_private */
+
+int Option_table_add_entry(struct Option_table *option_table,char *token,
+	void *to_be_modified,void *user_data,modifier_function modifier)
+/*******************************************************************************
+LAST MODIFIED : 23 December 1999
+
+DESCRIPTION :
+Adds the given <token> etc. to the option table, enlarging the table as needed.
+If fails, marks the option_table as invalid.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_entry);
+	if (option_table&&((token&&to_be_modified&&modifier)||user_data))
+	{
+		if (!(return_code=Option_table_add_entry_private(option_table,token,
+			to_be_modified,user_data,modifier)))
+		{
+			display_message(ERROR_MESSAGE,
+				"Option_table_add_entry.  Could not add option");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_entry */
+
+int Option_table_add_suboption_table(struct Option_table *option_table,
+	struct Option_table *suboption_table)
+/*******************************************************************************
+LAST MODIFIED : 23 December 1999
+
+DESCRIPTION :
+Checks that <suboption_table> is valid, and if so, adds it to <option_table>.
+On calling this function, <suboption_table> is owned by <option_table> and the
+latter is responsible for destroying it. It will be destroyed immediately if it
+is invalid or cannot be added to list of entries.
+Mechanism currently used to handle enumerated options, though it does not insist
+that only one valid enumerator is entered.
+If fails, marks the option_table as invalid.
+Note must not make any further changes to suboption_table after it is made part
+of option_table!
+==============================================================================*/
+{
+	int return_code;
+	struct Option_table **temp_suboption_tables;
+
+	ENTER(Option_table_add_suboption_table);
+	if (option_table&&suboption_table)
+	{
+		/* add blank entry needed for process_option */
+		Option_table_add_entry_private(suboption_table,(char *)NULL,(void *)NULL,
+			(void *)NULL,(modifier_function)NULL);
+		if (suboption_table->valid)
+		{
+			if (REALLOCATE(temp_suboption_tables,option_table->suboption_tables,
+				struct Option_table *,option_table->number_of_suboption_tables+1))
+			{
+				option_table->suboption_tables=temp_suboption_tables;
+				option_table->suboption_tables[option_table->number_of_suboption_tables]
+					=suboption_table;
+				option_table->number_of_suboption_tables++;
+				if (!(return_code=Option_table_add_entry_private(option_table,
+					(char *)NULL,(void *)NULL,suboption_table->entry,
+					(modifier_function)NULL)))
+				{
+					display_message(ERROR_MESSAGE,
+						"Option_table_add_entry.  Could not add option");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Option_table_add_suboption_table.  Not enough memory");
+				return_code=0;
+				option_table->valid=0;
+				DESTROY(Option_table)(&suboption_table);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Option_table_parse.  Invalid suboption_table");
+			option_table->valid=0;
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_suboption_table.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_suboption_table */
+
+int set_enumerator_string(struct Parse_state *state,
+	void *enumerator_string_address_void,void *enumerator_string_value_void)
+/*******************************************************************************
+LAST MODIFIED : 21 December 1999
+
+DESCRIPTION :
+A modifier function for setting an enumerated type variable to a specified
+value.
+==============================================================================*/
+{
+	char *current_token,**enumerator_string_address,*enumerator_string_value;
+	int return_code;
+
+	ENTER(set_enumerator_string);
+	if (state&&(enumerator_string_address=(char **)enumerator_string_address_void)
+		&&(enumerator_string_value=(char *)enumerator_string_value_void))
+	{
+		return_code=1;
+		if (!(current_token=state->current_token)||
+			(strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
+		{
+			*enumerator_string_address = enumerator_string_value;
+		}
+		else
+		{
+			if (*enumerator_string_address == enumerator_string_value)
+			{
+				display_message(INFORMATION_MESSAGE,"[%s]",enumerator_string_value);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_enumerator_string.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_enumerator_string */
+
+int Option_table_add_enumerator(struct Option_table *option_table,
+	int number_of_valid_strings,char **valid_strings,
+	char **enumerator_string_address)
+/*******************************************************************************
+LAST MODIFIED : 20 December 1999
+
+DESCRIPTION :
+Adds a newly created suboption table for all the valid_strings for the
+enumerator. The <valid_strings> array should contain <number_of_valid_strings>
+pointers to static strings, one per enumerator option. Responsibility for
+deallocating this array is left to the calling function. The static string value
+of the enumerator is maintained in <enumerator_string_address> and it is up to
+the calling function to convert back to an enumerated value.
+Note that if any error occurs, the option_table is marked as being invalid and
+no further errors will be reported on subsequent calls.
+==============================================================================*/
+{
+	int i,return_code;
+	struct Option_table *suboption_table;
+
+	ENTER(Option_table_add_enumerator);
+	if (option_table&&(0<number_of_valid_strings)&&valid_strings&&
+		enumerator_string_address)
+	{
+		if (option_table->valid)
+		{
+			if (suboption_table=CREATE(Option_table)())
+			{
+				for (i=0;i<number_of_valid_strings;i++)
+				{
+					Option_table_add_entry(suboption_table,valid_strings[i],
+						enumerator_string_address,valid_strings[i],set_enumerator_string);
+				}
+				return_code=
+					Option_table_add_suboption_table(option_table,suboption_table);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Option_table_add_enumerator.  Not enough memory");
+				return_code=0;
+				option_table->valid=0;
+			}
+		}
+		else
+		{
+			/* report no further errors */
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_enumerator.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_enumerator */
+
+int Option_table_parse(struct Option_table *option_table,
+	struct Parse_state *state)
+/*******************************************************************************
+LAST MODIFIED : 23 December 1999
+
+DESCRIPTION :
+Parses the options in the <option_table>, giving only one option a chance to be
+entered.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_parse);
+	if (option_table&&state)
+	{
+		/* add blank entry needed for process_option */
+		Option_table_add_entry_private(option_table,(char *)NULL,(void *)NULL,
+			(void *)NULL,(modifier_function)NULL);
+		if (option_table->valid)
+		{
+			return_code=process_option(state,option_table->entry);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Option_table_parse.  Invalid option table");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Option_table_parse.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_parse */
+
+int Option_table_multi_parse(struct Option_table *option_table,
+	struct Parse_state *state)
+/*******************************************************************************
+LAST MODIFIED : 23 December 1999
+
+DESCRIPTION :
+Parses the options in the <option_table>, giving all options a chance to be
+entered.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_multi_parse);
+	if (option_table&&state)
+	{
+		/* add blank entry needed for process_option */
+		Option_table_add_entry_private(option_table,(char *)NULL,(void *)NULL,
+			(void *)NULL,(modifier_function)NULL);
+		if (option_table->valid)
+		{
+			return_code=process_multiple_options(state,option_table->entry);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Option_table_multi_parse.  Invalid option table");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_multi_parse.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_multi_parse */
 
 static int extract_token(char **source_address,char **token_address)
 /*******************************************************************************
@@ -1213,520 +1855,6 @@ the <state>.  Useful for changing the kept history echoed to the command window.
 
 	return (return_code);
 } /* Parse_state_append_to_command_string */
-
-int process_option(struct Parse_state *state,
-	struct Modifier_entry *modifier_table)
-/*******************************************************************************
-LAST MODIFIED : 21 June 1999
-
-DESCRIPTION :
-If the <state->current_token> is "?", then the options in the <modifier_table>
-and the values expected for each will be written to the command window and 1
-returned.  Otherwise, the <modifier_table> is searched for entries whose option
-field matchs <state->current_token>.  If no matchs are found, then if the
-terminating entry in the <modifier_table> has a modifier function it is called,
-otherwise an error message is written and 0 returned.  If one match is found,
-then the modifier function of the entry is called and its return value returned.
-If more than one match is found then the possible matchs are written to the
-command window and 0 is returned.  Note that <process_option> is a modifier
-function.
-==============================================================================*/
-{
-	char *current_token,*error_message,*temp_message,**token;
-	int first,i,match_length,return_code;
-	struct Modifier_entry *entry,*matching_entry,*sub_entry;
-
-	ENTER(process_option);
-	exclusive_option++;
-	if (state&&(entry=modifier_table))
-	{
-		if (current_token=state->current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				return_code=0;
-				matching_entry=(struct Modifier_entry *)NULL;
-				match_length=strlen(current_token);
-				error_message=(char *)NULL;
-				while ((entry->option)||((entry->user_data)&&!(entry->modifier)))
-				{
-					if (entry->option)
-					{
-						if (fuzzy_string_compare(current_token,entry->option))
-						{
-							if (matching_entry)
-							{
-								if (return_code)
-								{
-									return_code=0;
-									if (ALLOCATE(error_message,char,38+match_length+
-										strlen(matching_entry->option)+strlen(entry->option)))
-									{
-										strcpy(error_message,"Ambiguous option <");
-										strcat(error_message,current_token);
-										strcat(error_message,"> could be <");
-										strcat(error_message,matching_entry->option);
-										strcat(error_message,"> or <");
-										strcat(error_message,entry->option);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"process_option.  Multiple match, insufficient memory");
-									}
-								}
-								else
-								{
-									if (error_message)
-									{
-										if (REALLOCATE(temp_message,error_message,char,
-											strlen(error_message)+8+strlen(entry->option)))
-										{
-											error_message=temp_message;
-											strcat(error_message,"> or <");
-											strcat(error_message,entry->option);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"process_option.  Multiple match, insufficient memory");
-											DEALLOCATE(error_message);
-										}
-									}
-								}
-							}
-							else
-							{
-								matching_entry=entry;
-								return_code=1;
-							}
-						}
-					}
-					else
-					{
-						/* assume that the user_data is another option table */
-						sub_entry=(struct Modifier_entry *)(entry->user_data);
-						while (sub_entry->option)
-						{
-							if (fuzzy_string_compare(current_token,sub_entry->option))
-							{
-								if (matching_entry)
-								{
-									if (return_code)
-									{
-										return_code=0;
-										if (ALLOCATE(error_message,char,38+match_length+
-											strlen(matching_entry->option)+strlen(sub_entry->option)))
-										{
-											strcpy(error_message,"Ambiguous option <");
-											strcat(error_message,current_token);
-											strcat(error_message,"> could be <");
-											strcat(error_message,matching_entry->option);
-											strcat(error_message,"> or <");
-											strcat(error_message,sub_entry->option);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"process_option.  Multiple match, insufficient memory");
-										}
-									}
-									else
-									{
-										if (error_message)
-										{
-											if (REALLOCATE(temp_message,error_message,char,
-												strlen(error_message)+8+strlen(sub_entry->option)))
-											{
-												error_message=temp_message;
-												strcat(error_message,"> or <");
-												strcat(error_message,sub_entry->option);
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-												"process_option.  Multiple match, insufficient memory");
-												DEALLOCATE(error_message);
-											}
-										}
-									}
-								}
-								else
-								{
-									matching_entry=sub_entry;
-									return_code=1;
-								}
-							}
-							sub_entry++;
-						}
-					}
-					entry++;
-				}
-				if (return_code)
-				{
-					if (shift_Parse_state(state,1))
-					{
-						return_code=(matching_entry->modifier)(state,
-							matching_entry->to_be_modified,matching_entry->user_data);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"process_option.  Error parsing");
-						return_code=0;
-					}
-				}
-				else
-				{
-					if (!matching_entry)
-					{
-						/* use the default modifier function if it exists */
-						if (entry->modifier)
-						{
-							return_code=(entry->modifier)(state,entry->to_be_modified,
-								entry->user_data);
-						}
-						else
-						{
-							if (ALLOCATE(error_message,char,18+match_length))
-							{
-								strcpy(error_message,"Unknown option <");
-								strcat(error_message,current_token);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"process_option.  No match, insufficient memory");
-							}
-						}
-					}
-					if (error_message)
-					{
-						strcat(error_message,">");
-						display_message(ERROR_MESSAGE,error_message);
-						DEALLOCATE(error_message);
-						display_parse_state_location(state);
-					}
-				}
-			}
-			else
-			{
-				/* write help */
-				if (0==usage_indentation_level)
-				{
-					display_message(INFORMATION_MESSAGE,"Usage :");
-					token=state->tokens;
-					for (i=state->current_index;i>0;i--)
-					{
-						display_message(INFORMATION_MESSAGE," %s",*token);
-						token++;
-					}
-					display_message(INFORMATION_MESSAGE," %s",*token);
-				}
-				if (!((multiple_options>0)&&(exclusive_option>1)))
-				{
-					display_message(INFORMATION_MESSAGE,"\n");
-				}
-				usage_indentation_level += 2;
-				if (strcmp(PARSER_HELP_STRING,current_token)||(multiple_options>0))
-				{
-					/* recursive help */
-					first=1;
-					while ((entry->option)||((entry->user_data)&&!(entry->modifier)))
-					{
-						if (entry->option)
-						{
-							if (entry->modifier)
-							{
-								if (multiple_options>0)
-								{
-									if (exclusive_option>1)
-									{
-										if (first)
-										{
-											display_message(INFORMATION_MESSAGE,"\n%*s(%s",
-												usage_indentation_level," ",entry->option);
-										}
-										else
-										{
-											display_message(INFORMATION_MESSAGE,"|%s",entry->option);
-										}
-									}
-									else
-									{
-										display_message(INFORMATION_MESSAGE,"%*s<%s",
-											usage_indentation_level," ",entry->option);
-									}
-								}
-								else
-								{
-									display_message(INFORMATION_MESSAGE,"%*s%s",
-										usage_indentation_level," ",entry->option);
-								}
-								usage_newline=1;
-								(entry->modifier)(state,entry->to_be_modified,entry->user_data);
-								if (multiple_options>0)
-								{
-									if (exclusive_option<=1)
-									{
-										display_message(INFORMATION_MESSAGE,">");
-										if (usage_newline)
-										{
-											display_message(INFORMATION_MESSAGE,"\n");
-											usage_newline=0;
-										}
-									}
-								}
-								else
-								{
-									if (usage_newline)
-									{
-										display_message(INFORMATION_MESSAGE,"\n");
-										usage_newline=0;
-									}
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"process_option.  Missing modifier: %s",entry->option);
-								display_parse_state_location(state);
-							}
-						}
-						else
-						{
-							/* assume that the user_data is another option table */
-							sub_entry=(struct Modifier_entry *)(entry->user_data);
-							if (sub_entry->option)
-							{
-								if (multiple_options>0)
-								{
-									display_message(INFORMATION_MESSAGE,"%*s<%s",
-										usage_indentation_level," ",sub_entry->option);
-								}
-								else
-								{
-									display_message(INFORMATION_MESSAGE,"%*s%s",
-										usage_indentation_level," ",sub_entry->option);
-								}
-								sub_entry++;
-								while (sub_entry->option)
-								{
-									if (sub_entry->modifier)
-									{
-										display_message(INFORMATION_MESSAGE,"|%s",
-											sub_entry->option);
-										(sub_entry->modifier)(state,sub_entry->to_be_modified,
-											sub_entry->user_data);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"process_option.  Missing modifier: %s",
-											sub_entry->option);
-										display_parse_state_location(state);
-									}
-									sub_entry++;
-								}
-								if (multiple_options>0)
-								{
-									display_message(INFORMATION_MESSAGE,">");
-								}
-								display_message(INFORMATION_MESSAGE,"\n");
-								usage_newline=0;
-							}
-						}
-						first=0;
-						entry++;
-					}
-					/* write help for default modifier it it exists */
-					if (entry->modifier)
-					{
-						if (multiple_options>0)
-						{
-							if (exclusive_option>1)
-							{
-								if (first)
-								{
-									display_message(INFORMATION_MESSAGE,"\n%*s(",
-										usage_indentation_level," ");
-								}
-								else
-								{
-									display_message(INFORMATION_MESSAGE,"|");
-								}
-							}
-							else
-							{
-								display_message(INFORMATION_MESSAGE,"%*s<",
-									usage_indentation_level," ");
-							}
-						}
-						else
-						{
-							display_message(INFORMATION_MESSAGE,"%*s",usage_indentation_level,
-								" ");
-						}
-						usage_newline=1;
-						(entry->modifier)(state,entry->to_be_modified,entry->user_data);
-						if (multiple_options>0)
-						{
-							if (exclusive_option<=1)
-							{
-								display_message(INFORMATION_MESSAGE,">");
-								if (usage_newline)
-								{
-									display_message(INFORMATION_MESSAGE,"\n");
-									usage_newline=0;
-								}
-							}
-							else
-							{
-								display_message(INFORMATION_MESSAGE,")");
-							}
-						}
-						else
-						{
-							if (usage_newline)
-							{
-								display_message(INFORMATION_MESSAGE,"\n");
-								usage_newline=0;
-							}
-						}
-					}
-				}
-				else
-				{
-					/* one level of help */
-						/*???DB.  Have added  multiple_options>0  to then so won't come
-							here, but haven't stripped out yet */
-					while ((entry->option)||((entry->user_data)&&!(entry->modifier)))
-					{
-						if (entry->option)
-						{
-							if (multiple_options>0)
-							{
-								display_message(INFORMATION_MESSAGE,"%*s<%s>\n",
-									usage_indentation_level," ",entry->option);
-							}
-							else
-							{
-								display_message(INFORMATION_MESSAGE,"%*s%s\n",
-									usage_indentation_level," ",entry->option);
-							}
-						}
-						else
-						{
-							/* assume that the user_data is another option table */
-							sub_entry=(struct Modifier_entry *)(entry->user_data);
-							if (sub_entry->option)
-							{
-								if (multiple_options>0)
-								{
-									display_message(INFORMATION_MESSAGE,"%*s<%s",
-										usage_indentation_level," ",sub_entry->option);
-								}
-								else
-								{
-									display_message(INFORMATION_MESSAGE,"%*s(%s",
-										usage_indentation_level," ",sub_entry->option);
-								}
-								sub_entry++;
-								while (sub_entry->option)
-								{
-									display_message(INFORMATION_MESSAGE,"|%s",sub_entry->option);
-									sub_entry++;
-								}
-								if (multiple_options>0)
-								{
-									display_message(INFORMATION_MESSAGE,">");
-								}
-								else
-								{
-									display_message(INFORMATION_MESSAGE,")");
-								}
-								display_message(INFORMATION_MESSAGE,"\n");
-								usage_newline=0;
-							}
-						}
-						entry++;
-					}
-					/* write help for default modifier if it exists */
-					if (entry->modifier)
-					{
-						if (multiple_options>0)
-						{
-							display_message(INFORMATION_MESSAGE,"%*s<",
-								usage_indentation_level," ");
-						}
-						else
-						{
-							display_message(INFORMATION_MESSAGE,"%*s",usage_indentation_level,
-								" ");
-						}
-						(entry->modifier)(state,entry->to_be_modified,entry->user_data);
-						if (multiple_options>0)
-						{
-							display_message(INFORMATION_MESSAGE,">");
-						}
-						display_message(INFORMATION_MESSAGE,"\n");
-					}
-				}
-				usage_indentation_level -= 2;
-				/* so that process_option is only called once in parsing loop */
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Missing token");
-			display_parse_state_location(state);
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"process_option.  Invalid argument(s)");
-		return_code=0;
-	}
-	exclusive_option--;
-	LEAVE;
-
-	return (return_code);
-} /* process_option */
-
-int process_multiple_options(struct Parse_state *state,
-	struct Modifier_entry *modifier_table)
-/*******************************************************************************
-LAST MODIFIED : 4 October 1996
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int local_exclusive_option,return_code;
-
-	ENTER(process_multiple_options);
-	if (state&&modifier_table)
-	{
-		multiple_options++;
-		local_exclusive_option=exclusive_option;
-		exclusive_option=0;
-		return_code=1;
-		while ((state->current_token)&&(return_code=process_option(state,
-			(void *)modifier_table)));
-		multiple_options--;
-		exclusive_option=local_exclusive_option;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"process_multiple_options.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* process_multiple_options */
 
 int parse_variable(char **token)
 /*******************************************************************************

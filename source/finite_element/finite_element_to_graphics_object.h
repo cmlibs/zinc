@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -19,6 +19,24 @@ The function prototypes for creating graphical objects from finite elements.
 Global types
 ------------
 */
+
+enum Use_element_type
+/*******************************************************************************
+LAST MODIFIED : 22 December 1999
+
+DESCRIPTION :
+For glyph sets - determines whether they are generated from:
+USE_ELEMENTS = CM_ELEMENT or dimension 3
+USE_FACES    = CM_FACE or dimension 2
+USE_LINES    = CM_LINE or dimension 1
+==============================================================================*/
+{
+  USE_ELEMENT_TYPE_INVALID,
+  USE_ELEMENTS,
+  USE_FACES,
+  USE_LINES
+}; /* enum Use_element_type */
+
 struct Element_to_cylinder_data
 /*******************************************************************************
 LAST MODIFIED : 20 August 1999
@@ -178,7 +196,7 @@ converted voltex code.
 
 struct Element_to_glyph_set_data
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 21 December 1999
 
 DESCRIPTION :
 Data for converting a finite element into a set of glyphs displaying information
@@ -199,19 +217,16 @@ in the field (see function make_glyph_orientation_scale_axes). The three
 The optional <data_field> (currently only a scalar) is calculated as data over
 the glyph_set, for later colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
-The <dimension> value limits the elements in the following way:
-1 = CM_LINE or dimension 1;
-2 = CM_FACE or dimension 2;
-3 = CM_ELEMENT or dimension 3.
+The <use_element_type> determines the type/dimension of elements in use.
 If the dimension is less than 3, <exterior> and <face_number> may be used.
 ==============================================================================*/
 {
 	char exterior;
 	enum Glyph_edit_mode glyph_edit_mode;
-	float time;
+	enum Use_element_type use_element_type;
 	enum Xi_discretization_mode xi_discretization_mode;
-	int dimension,face_number,number_of_cells_in_xi1,number_of_cells_in_xi2,
-		number_of_cells_in_xi3;
+	float time;
+	int face_number,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Computed_field *coordinate_field,*data_field,*label_field,
 		*orientation_scale_field;
 	struct FE_field *native_discretization_field;
@@ -224,6 +239,54 @@ If the dimension is less than 3, <exterior> and <face_number> may be used.
 Global functions
 ----------------
 */
+
+char *Use_element_type_string(enum Use_element_type use_element_type);
+/*******************************************************************************
+LAST MODIFIED : 30 December 1999
+
+DESCRIPTION :
+Returns a pointer to a static string describing the use_element_type.
+The returned string must not be DEALLOCATEd!
+==============================================================================*/
+
+char **Use_element_type_get_valid_strings(int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 20 December 1999
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+Use_element_types - obtained from function Use_element_type_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum Use_element_type Use_element_type_from_string(
+	char *use_element_type_string);
+/*******************************************************************************
+LAST MODIFIED : 20 December 1999
+
+DESCRIPTION :
+Returns the <Use_element_type> described by <use_element_type_string>.
+==============================================================================*/
+
+enum CM_element_type Use_element_type_CM_element_type(
+	enum Use_element_type use_element_type);
+/*******************************************************************************
+LAST MODIFIED : 22 December 1999
+
+DESCRIPTION :
+Returns the CM_element_type expected for the <use_element_type>. Note that a
+match is found if either the dimension or the CM_element_type matches the
+element.
+==============================================================================*/
+
+int Use_element_type_dimension(enum Use_element_type use_element_type);
+/*******************************************************************************
+LAST MODIFIED : 22 December 1999
+
+DESCRIPTION :
+Returns the dimension expected for the <use_element_type>. Note that a match is
+found if either the dimension or the CM_element_type matches the element.
+==============================================================================*/
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct FE_element *element,struct FE_element *top_level_element,
@@ -428,64 +491,45 @@ Vertices are normalized by their x, y, z range values.
 ???DB.  xi_order should be an enumerated type
 ==============================================================================*/
 
-Triple *get_xi_points_at_cell_centres(int number_of_cells_in_xi1,
-	int number_of_cells_in_xi2,int number_of_cells_in_xi3,
+Triple *get_xi_points_at_cell_centres(int dimension,int *number_in_xi,
 	int *number_of_xi_points);
 /*******************************************************************************
-LAST MODIFIED : 15 September 1998
+LAST MODIFIED : 21 December 1999
 
 DESCRIPTION :
 Allocates and returns an array of xi locations at the centres of
-<number_of_cells_in_xi1>*<number_of_cells_in_xi2>*<number_of_cells_in_xi3>
-cells of equal size in xi over a 3-D element. The function also returns the
-<number_of_xi_points> calculated.
-This function also handles 1-D and 2-D cells in the following way:
-* If <number_of_cells_in_xi2> is zero, then only <number_of_cells_in_xi1> points
-  are calculated and only in 1 dimension, ie. xi[1]=xi[2]=0.0.
-* If <number_of_cells_in_xi3> is zero, then only <number_of_cells_in_xi1>*
-  <number_of_cells_in_xi2> points are calculated and only in 2 dimension, ie.
-  xi[2]=0.0.
+<number_in_xi[0]>*<number_in_xi[1]>*<number_in_xi[2]> cells of equal size in xi
+over a 3-D element. Function also returns <number_of_xi_points> calculated.
+xi positions are always returned as triples with remaining xi coordinates 0 for
+1-D and 2-D cases.
 Note: xi changes from 0 to 1 over each element direction.
 ==============================================================================*/
 
-Triple *get_xi_points_at_cell_corners(int number_of_cells_in_xi1,
-	int number_of_cells_in_xi2,int number_of_cells_in_xi3,
+Triple *get_xi_points_at_cell_corners(int dimension,int *number_in_xi,
 	int *number_of_xi_points);
 /*******************************************************************************
-LAST MODIFIED : 3 November 1998
+LAST MODIFIED : 21 December 1999
 
 DESCRIPTION :
 Allocates and returns an array of xi locations at the corners of
-<number_of_cells_in_xi1>*<number_of_cells_in_xi2>*<number_of_cells_in_xi3>
-cells of equal size in xi over a 3-D element. The function also returns the
-<number_of_xi_points> calculated (remember: there is one more in each direction
-than the number of cells).
-This function also handles 1-D and 2-D cells in the following way:
-* If <number_of_cells_in_xi2> is zero, then only <number_of_cells_in_xi1> cells
-  are calculated and only in 1 dimension, ie. xi[1]=xi[2]=0.0.
-* If <number_of_cells_in_xi3> is zero, then only <number_of_cells_in_xi1>*
-  <number_of_cells_in_xi2> cells are calculated and only in 2 dimension, ie.
-  xi[2]=0.0.
+<number_in_xi[0]>*<number_in_xi[1]>*<number_in_xi[2]> cells of equal size in xi
+over a 3-D element. Function also returns <number_of_xi_points> calculated.
+xi positions are always returned as triples with remaining xi coordinates 0 for
+1-D and 2-D cases.
 Note: xi changes from 0 to 1 over each element direction.
 ==============================================================================*/
 
-Triple *get_xi_points_in_cells_random(int number_of_cells_in_xi1,
-	int number_of_cells_in_xi2,int number_of_cells_in_xi3,
+Triple *get_xi_points_in_cells_random(int dimension,int *number_in_xi,
 	int *number_of_xi_points);
 /*******************************************************************************
-LAST MODIFIED : 2 March 1999
+LAST MODIFIED : 21 December 1999
 
 DESCRIPTION :
 Allocates and returns an array of xi locations each at random locations in
-<number_of_cells_in_xi1>*<number_of_cells_in_xi2>*<number_of_cells_in_xi3>
-cells of equal size in xi over a 3-D element. The function also returns the
-<number_of_xi_points> calculated.
-This function also handles 1-D and 2-D cells in the following way:
-* If <number_of_cells_in_xi2> is zero, then only <number_of_cells_in_xi1> points
-  are calculated and only in 1 dimension, ie. xi[1]=xi[2]=0.0.
-* If <number_of_cells_in_xi3> is zero, then only <number_of_cells_in_xi1>*
-  <number_of_cells_in_xi2> points are calculated and only in 2 dimension, ie.
-  xi[2]=0.0.
+<number_in_xi[0]>*<number_in_xi[1]>*<number_in_xi[2]> cells of equal size in xi
+over a 3-D element. Function also returns <number_of_xi_points> calculated.
+xi positions are always returned as triples with remaining xi coordinates 0 for
+1-D and 2-D cases.
 Note: xi changes from 0 to 1 over each element direction.
 ==============================================================================*/
 
@@ -574,6 +618,20 @@ LAST MODIFIED : 20 March 1998
 DESCRIPTION :
 Prints out element block layout (given seed element) for use in external
 programs
+==============================================================================*/
+
+int FE_element_can_be_displayed(struct FE_element *element,
+	int dimension,enum CM_element_type cm_element_type,int exterior,
+	int face_number,struct GROUP(FE_element) *element_group);
+/*******************************************************************************
+LAST MODIFIED : 22 December 1999
+
+DESCRIPTION :
+Returns true if the element is <exterior>, if set, and on the given
+<face_number>, if non-negative, and that the parent element identifying this is
+in the <element_group> in the latter case, again if specified. Tests are assumed
+to succeed for all unspecified parameters.
+Also tests whether the <dimension> or <cm_element_type> matches.
 ==============================================================================*/
 
 int element_to_cylinder(struct FE_element *element,

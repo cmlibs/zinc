@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.h
 
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 15 December 1999
 
 DESCRIPTION :
 Public interface for the beginnings of a simple parser (although at the moment
@@ -10,7 +10,17 @@ it is nothing but a strings container, and some comparison functions)
 #if !defined (PARSER_H)
 #define PARSER_H
 
+#include "general/object.h"
 #include "general/value.h"
+
+/*
+Global types
+------------
+*/
+struct Parse_state;
+
+typedef int (*modifier_function)(struct Parse_state *state,void *to_be_modified,
+		void *user_data);
 
 /*
 Global constants
@@ -23,6 +33,7 @@ Global constants
 Global structures
 -----------------
 */
+
 struct Parse_state
 /*******************************************************************************
 LAST MODIFIED : 12 June 1996
@@ -54,8 +65,7 @@ of the values it expects to the command window.
 	char *option;
 	void *to_be_modified;
 	void *user_data;
-	int (*modifier)(struct Parse_state *state,void *to_be_modified,
-		void *user_data);
+	modifier_function modifier;
 }; /* struct Modifier_entry */
 
 struct Set_vector_with_help_data
@@ -106,6 +116,113 @@ Same as fuzzy_string_compare except that the two reduced strings must be the
 same length.
 ==============================================================================*/
 
+int process_option(struct Parse_state *state,
+	struct Modifier_entry *modifier_table);
+/*******************************************************************************
+LAST MODIFIED : 18 June 1996
+
+DESCRIPTION :
+If the <state->current_string> is "?", then the options in the <modifier_table>
+and the values expected for each will be written to the command window and 1
+returned.  Otherwise, the <modifier_table> is searched for entries whose option
+field matchs <state->current_string>.  If no matchs are found, then if the
+terminating entry in the <modifier_table> has a modifier function it is called,
+otherwise an error message is written and 0 returned.  If one match is found,
+then the modifier function of the entry is called and its return value returned.
+If more than one match is found then the possible matchs are written to the
+command window and 0 is returned.  Note that <process_option> is a modifier
+function.
+==============================================================================*/
+
+int process_multiple_options(struct Parse_state *state,
+	struct Modifier_entry *modifier_table);
+/*******************************************************************************
+LAST MODIFIED : 27 September 1996
+
+DESCRIPTION :
+==============================================================================*/
+
+struct Option_table *CREATE(Option_table)(void);
+/*******************************************************************************
+LAST MODIFIED : 15 December 1999
+
+DESCRIPTION :
+Creates an Option_table for text parsing.
+==============================================================================*/
+
+int DESTROY(Option_table)(struct Option_table **option_table_address);
+/*******************************************************************************
+LAST MODIFIED : 15 December 1999
+
+DESCRIPTION :
+==============================================================================*/
+
+int Option_table_add_entry(struct Option_table *option_table,char *token,
+	void *to_be_modified,void *user_data,modifier_function modifier);
+/*******************************************************************************
+LAST MODIFIED : 15 December 1999
+
+DESCRIPTION :
+Adds the given <token> etc. to the option table, enlarging the table as needed.
+Note that if any error occurs, the option_table is marked as being invalid and
+no further errors will be reported on subsequent calls.
+==============================================================================*/
+
+int Option_table_add_suboption_table(struct Option_table *option_table,
+	struct Option_table *suboption_table);
+/*******************************************************************************
+LAST MODIFIED : 18 December 1999
+
+DESCRIPTION :
+Checks that <suboption_table> is valid, and if so, adds it to <option_table>.
+On calling this function, <suboption_table> is owned by <option_table> and the
+latter is responsible for destroying it. It will be destroyed immediately if it
+is invalid or cannot be added to list of entries.
+Mechanism currently used to handle enumerated options, though it does not insist
+that only one valid enumerator is entered.
+Note that if any error occurs, the option_table is marked as being invalid and
+no further errors will be reported on subsequent calls.
+Note must not make any further changes to suboption_table after it is made part
+of option_table!
+==============================================================================*/
+
+int Option_table_add_enumerator(struct Option_table *option_table,
+	int number_of_valid_strings,char **valid_strings,
+	char **enumerator_string_address);
+/*******************************************************************************
+LAST MODIFIED : 20 December 1999
+
+DESCRIPTION :
+Adds a newly created suboption table for all the valid_strings for the
+enumerator. The <valid_strings> array should contain <number_of_valid_strings>
+pointers to static strings, one per enumerator option. Responsibility for
+deallocating this array is left to the calling function. The static string value
+of the enumerator is maintained in <enumerator_string_address> and it is up to
+the calling function to convert back to an enumerated value.
+Note that if any error occurs, the option_table is marked as being invalid and
+no further errors will be reported on subsequent calls.
+==============================================================================*/
+
+int Option_table_parse(struct Option_table *option_table,
+	struct Parse_state *state);
+/*******************************************************************************
+LAST MODIFIED : 15 December 1999
+
+DESCRIPTION :
+Parses the options in the <option_table>, giving only one option a chance to be
+entered.
+==============================================================================*/
+
+int Option_table_multi_parse(struct Option_table *option_table,
+	struct Parse_state *state);
+/*******************************************************************************
+LAST MODIFIED : 15 December 1999
+
+DESCRIPTION :
+Parses the options in the <option_table>, giving all options a chance to be
+entered.
+==============================================================================*/
+
 struct Parse_state *create_Parse_state(char *command_string);
 /*******************************************************************************
 LAST MODIFIED : 12 June 1996
@@ -150,32 +267,6 @@ LAST MODIFIED : 29 October 1999
 DESCRIPTION :
 Appends the <addition> string to the end of the current command_string stored in
 the <state>.  Useful for changing the kept history echoed to the command window.
-==============================================================================*/
-
-int process_option(struct Parse_state *state,
-	struct Modifier_entry *modifier_table);
-/*******************************************************************************
-LAST MODIFIED : 18 June 1996
-
-DESCRIPTION :
-If the <state->current_string> is "?", then the options in the <modifier_table>
-and the values expected for each will be written to the command window and 1
-returned.  Otherwise, the <modifier_table> is searched for entries whose option
-field matchs <state->current_string>.  If no matchs are found, then if the
-terminating entry in the <modifier_table> has a modifier function it is called,
-otherwise an error message is written and 0 returned.  If one match is found,
-then the modifier function of the entry is called and its return value returned.
-If more than one match is found then the possible matchs are written to the
-command window and 0 is returned.  Note that <process_option> is a modifier
-function.
-==============================================================================*/
-
-int process_multiple_options(struct Parse_state *state,
-	struct Modifier_entry *modifier_table);
-/*******************************************************************************
-LAST MODIFIED : 27 September 1996
-
-DESCRIPTION :
 ==============================================================================*/
 
 int parse_variable(char **token);

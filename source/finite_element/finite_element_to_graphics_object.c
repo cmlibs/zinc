@@ -1146,6 +1146,206 @@ Global functions
 ----------------
 */
 
+char *Use_element_type_string(enum Use_element_type use_element_type)
+/*******************************************************************************
+LAST MODIFIED : 20 December 1999
+
+DESCRIPTION :
+Returns a pointer to a static string describing the use_element_type.
+The returned string must not be DEALLOCATEd!
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Use_element_type_string);
+	switch (use_element_type)
+	{
+		case USE_ELEMENTS:
+		{
+			return_string="use_elements";
+		} break;
+		case USE_FACES:
+		{
+			return_string="use_faces";
+		} break;
+		case USE_LINES:
+		{
+			return_string="use_lines";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Use_element_type_string.  Unknown use_element_type");
+			return_string=(char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Use_element_type_string */
+
+char **Use_element_type_get_valid_strings(int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 20 December 1999
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+Use_element_types - obtained from function Use_element_type_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+
+	ENTER(Use_element_type_get_valid_strings);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=3;
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			valid_strings[0]=Use_element_type_string(USE_LINES);
+			valid_strings[1]=Use_element_type_string(USE_FACES);
+			valid_strings[2]=Use_element_type_string(USE_ELEMENTS);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Use_element_type_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Use_element_type_get_valid_strings.  Invalid argument");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Use_element_type_get_valid_strings */
+
+enum Use_element_type Use_element_type_from_string(
+	char *use_element_type_string)
+/*******************************************************************************
+LAST MODIFIED : 20 December 1999
+
+DESCRIPTION :
+Returns the <Use_element_type> described by <use_element_type_string>.
+==============================================================================*/
+{
+	enum Use_element_type use_element_type;
+
+	ENTER(Use_element_type_from_string);
+	if (use_element_type_string)
+	{
+		if (fuzzy_string_compare_same_length(use_element_type_string,
+			Use_element_type_string(USE_LINES)))
+		{
+			use_element_type=USE_LINES;
+		}
+		else if (fuzzy_string_compare_same_length(use_element_type_string,
+			Use_element_type_string(USE_FACES)))
+		{
+			use_element_type=USE_FACES;
+		}
+		else if (fuzzy_string_compare_same_length(use_element_type_string,
+			Use_element_type_string(USE_ELEMENTS)))
+		{
+			use_element_type=USE_ELEMENTS;
+		}
+		else
+		{
+			use_element_type=USE_ELEMENT_TYPE_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Use_element_type_from_string.  Invalid argument");
+		use_element_type=USE_ELEMENT_TYPE_INVALID;
+	}
+	LEAVE;
+
+	return (use_element_type);
+} /* Use_element_type_from_string */
+
+enum CM_element_type Use_element_type_CM_element_type(
+	enum Use_element_type use_element_type)
+/*******************************************************************************
+LAST MODIFIED : 22 December 1999
+
+DESCRIPTION :
+Returns the CM_element_type expected for the <use_element_type>. Note that a
+match is found if either the dimension or the CM_element_type matches the
+element.
+==============================================================================*/
+{
+	enum CM_element_type cm_element_type;
+
+	ENTER(Use_element_type_CM_element_type);
+	switch (use_element_type)
+	{
+		case USE_ELEMENTS:
+		{
+			cm_element_type=CM_ELEMENT;
+		} break;
+		case USE_FACES:
+		{
+			cm_element_type=CM_FACE;
+		} break;
+		case USE_LINES:
+		{
+			cm_element_type=CM_LINE;
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Use_element_type_CM_element_type.  Unknown use_element_type");
+			cm_element_type=CM_ELEMENT;
+		} break;
+	}
+	LEAVE;
+
+	return (cm_element_type);
+} /* Use_element_type_CM_element_type */
+
+int Use_element_type_dimension(enum Use_element_type use_element_type)
+/*******************************************************************************
+LAST MODIFIED : 22 December 1999
+
+DESCRIPTION :
+Returns the dimension expected for the <use_element_type>. Note that a match is
+found if either the dimension or the CM_element_type matches the element.
+==============================================================================*/
+{
+	int dimension;
+
+	ENTER(Use_element_type_dimension);
+	switch (use_element_type)
+	{
+		case USE_ELEMENTS:
+		{
+			dimension=3;
+		} break;
+		case USE_FACES:
+		{
+			dimension=2;
+		} break;
+		case USE_LINES:
+		{
+			dimension=1;
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Use_element_type_dimension.  Unknown use_element_type");
+			dimension=0;
+		} break;
+	}
+	LEAVE;
+
+	return (dimension);
+} /* Use_element_type_dimension */
+
 #if defined (OLD_CODE)
 struct FE_element_conditional_count_data
 {
@@ -6261,23 +6461,17 @@ with warped values obtained using the <warp_field> over the <element> block.
 	return (return_code);
 } /* warp_FE_node_group_with_FE_element */
 
-Triple *get_xi_points_at_cell_centres(int number_of_cells_in_xi1,
-	int number_of_cells_in_xi2,int number_of_cells_in_xi3,
+Triple *get_xi_points_at_cell_centres(int dimension,int *number_in_xi,
 	int *number_of_xi_points)
 /*******************************************************************************
-LAST MODIFIED : 15 September 1998
+LAST MODIFIED : 21 December 1999
 
 DESCRIPTION :
 Allocates and returns an array of xi locations at the centres of
-<number_of_cells_in_xi1>*<number_of_cells_in_xi2>*<number_of_cells_in_xi3>
-cells of equal size in xi over a 3-D element. The function also returns the
-<number_of_xi_points> calculated.
-This function also handles 1-D and 2-D cells in the following way:
-* If <number_of_cells_in_xi2> is zero, then only <number_of_cells_in_xi1> points
-  are calculated and only in 1 dimension, ie. xi[1]=xi[2]=0.0.
-* If <number_of_cells_in_xi3> is zero, then only <number_of_cells_in_xi1>*
-  <number_of_cells_in_xi2> points are calculated and only in 2 dimension, ie.
-  xi[2]=0.0.
+<number_in_xi[0]>*<number_in_xi[1]>*<number_in_xi[2]> cells of equal size in xi
+over a 3-D element. Function also returns <number_of_xi_points> calculated.
+xi positions are always returned as triples with remaining xi coordinates 0 for
+1-D and 2-D cases.
 Note: xi changes from 0 to 1 over each element direction.
 ==============================================================================*/
 {
@@ -6286,77 +6480,77 @@ Note: xi changes from 0 to 1 over each element direction.
 	Triple *xi_points,*xi;
 
 	ENTER(get_xi_points_at_cell_centres);
-	if ((0<number_of_cells_in_xi1)&&(0<=number_of_cells_in_xi2)&&
-		(0<=number_of_cells_in_xi3)&&number_of_xi_points)
+	xi_points=(Triple *)NULL;
+	if ((0<dimension)&&(3>=dimension)&&number_in_xi&&number_of_xi_points)
 	{
-		if (0==number_of_cells_in_xi2)
+		*number_of_xi_points=1;
+		for (i=0;i<dimension;i++)
 		{
-			/* 1-D case */
-			*number_of_xi_points=number_of_cells_in_xi1;
-			if (ALLOCATE(xi_points,Triple,*number_of_xi_points))
+			if (0<number_in_xi[i])
 			{
-				xi=xi_points;
-				for (i=0;i<number_of_cells_in_xi1;i++)
-				{
-					(*xi)[0]=((float)i + 0.5)/(float)number_of_cells_in_xi1;
-					(*xi)[1]=0.0;
-					(*xi)[2]=0.0;
-					xi++;
-				}
+				*number_of_xi_points *= number_in_xi[i];
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"get_xi_points_at_cell_centres.  non-positive number in xi");
+				*number_of_xi_points=0;
 			}
 		}
-		else
+		if ((0< *number_of_xi_points)&&
+			ALLOCATE(xi_points,Triple,*number_of_xi_points))
 		{
-			if (0==number_of_cells_in_xi3)
+			xi=xi_points;
+			switch (dimension)
 			{
-				/* 2-D case */
-				*number_of_xi_points=number_of_cells_in_xi1*number_of_cells_in_xi2;
-				if (ALLOCATE(xi_points,Triple,*number_of_xi_points))
+				case 1:
 				{
-					xi=xi_points;
-					for (j=0;j<number_of_cells_in_xi2;j++)
+					for (i=0;i<number_in_xi[0];i++)
 					{
-						xi_j=((float)j + 0.5)/(float)number_of_cells_in_xi2;
-						for (i=0;i<number_of_cells_in_xi1;i++)
+						(*xi)[0]=((float)i + 0.5)/(float)number_in_xi[0];
+						(*xi)[1]=0.0;
+						(*xi)[2]=0.0;
+						xi++;
+					}
+				} break;
+				case 2:
+				{
+					for (j=0;j<number_in_xi[1];j++)
+					{
+						xi_j=((float)j + 0.5)/(float)number_in_xi[1];
+						for (i=0;i<number_in_xi[0];i++)
 						{
-							(*xi)[0]=((float)i + 0.5)/(float)number_of_cells_in_xi1;
+							(*xi)[0]=((float)i + 0.5)/(float)number_in_xi[0];
 							(*xi)[1]=xi_j;
 							(*xi)[2]=0.0;
 							xi++;
 						}
 					}
-				}
-			}
-			else
-			{
-				/* 3-D case */
-				*number_of_xi_points=
-					number_of_cells_in_xi1*number_of_cells_in_xi2*number_of_cells_in_xi3;
-				if (ALLOCATE(xi_points,Triple,*number_of_xi_points))
+				} break;
+				case 3:
 				{
-					xi=xi_points;
-					for (k=0;k<number_of_cells_in_xi3;k++)
+					for (k=0;k<number_in_xi[2];k++)
 					{
-						xi_k=((float)k + 0.5)/(float)number_of_cells_in_xi3;
-						for (j=0;j<number_of_cells_in_xi2;j++)
+						xi_k=((float)k + 0.5)/(float)number_in_xi[2];
+						for (j=0;j<number_in_xi[1];j++)
 						{
-							xi_j=((float)j + 0.5)/(float)number_of_cells_in_xi2;
-							for (i=0;i<number_of_cells_in_xi1;i++)
+							xi_j=((float)j + 0.5)/(float)number_in_xi[1];
+							for (i=0;i<number_in_xi[0];i++)
 							{
-								(*xi)[0]=((float)i + 0.5)/(float)number_of_cells_in_xi1;
+								(*xi)[0]=((float)i + 0.5)/(float)number_in_xi[0];
 								(*xi)[1]=xi_j;
 								(*xi)[2]=xi_k;
 								xi++;
 							}
 						}
 					}
-				}
+				} break;
 			}
 		}
-		if (!xi_points)
+		else
 		{
 			display_message(ERROR_MESSAGE,
-				"get_xi_points_at_cell_centres.  Not enough memory");
+				"get_xi_points_at_cell_centres.  No xi points");
 		}
 	}
 	else
@@ -6370,24 +6564,17 @@ Note: xi changes from 0 to 1 over each element direction.
 	return (xi_points);
 } /* get_xi_points_at_cell_centres */
 
-Triple *get_xi_points_at_cell_corners(int number_of_cells_in_xi1,
-	int number_of_cells_in_xi2,int number_of_cells_in_xi3,
+Triple *get_xi_points_at_cell_corners(int dimension,int *number_in_xi,
 	int *number_of_xi_points)
 /*******************************************************************************
-LAST MODIFIED : 3 November 1998
+LAST MODIFIED : 21 December 1999
 
 DESCRIPTION :
 Allocates and returns an array of xi locations at the corners of
-<number_of_cells_in_xi1>*<number_of_cells_in_xi2>*<number_of_cells_in_xi3>
-cells of equal size in xi over a 3-D element. The function also returns the
-<number_of_xi_points> calculated (remember: there is one more in each direction
-than the number of cells).
-This function also handles 1-D and 2-D cells in the following way:
-* If <number_of_cells_in_xi2> is zero, then only <number_of_cells_in_xi1> cells
-  are calculated and only in 1 dimension, ie. xi[1]=xi[2]=0.0.
-* If <number_of_cells_in_xi3> is zero, then only <number_of_cells_in_xi1>*
-  <number_of_cells_in_xi2> cells are calculated and only in 2 dimension, ie.
-  xi[2]=0.0.
+<number_in_xi[0]>*<number_in_xi[1]>*<number_in_xi[2]> cells of equal size in xi
+over a 3-D element. Function also returns <number_of_xi_points> calculated.
+xi positions are always returned as triples with remaining xi coordinates 0 for
+1-D and 2-D cases.
 Note: xi changes from 0 to 1 over each element direction.
 ==============================================================================*/
 {
@@ -6396,78 +6583,77 @@ Note: xi changes from 0 to 1 over each element direction.
 	Triple *xi_points,*xi;
 
 	ENTER(get_xi_points_at_cell_corners);
-	if ((0<number_of_cells_in_xi1)&&(0<=number_of_cells_in_xi2)&&
-		(0<=number_of_cells_in_xi3)&&number_of_xi_points)
+	xi_points=(Triple *)NULL;
+	if ((0<dimension)&&(3>=dimension)&&number_in_xi&&number_of_xi_points)
 	{
-		if (0==number_of_cells_in_xi2)
+		*number_of_xi_points=1;
+		for (i=0;i<dimension;i++)
 		{
-			/* 1-D case */
-			*number_of_xi_points=number_of_cells_in_xi1+1;
-			if (ALLOCATE(xi_points,Triple,*number_of_xi_points))
+			if (0<number_in_xi[i])
 			{
-				xi=xi_points;
-				for (i=0;i<=number_of_cells_in_xi1;i++)
-				{
-					(*xi)[0]=(float)i/(float)number_of_cells_in_xi1;
-					(*xi)[1]=0.0;
-					(*xi)[2]=0.0;
-					xi++;
-				}
+				*number_of_xi_points *= (number_in_xi[i]+1);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"get_xi_points_at_cell_corners.  non-positive number in xi");
+				*number_of_xi_points=0;
 			}
 		}
-		else
+		if ((0< *number_of_xi_points)&&
+			ALLOCATE(xi_points,Triple,*number_of_xi_points))
 		{
-			if (0==number_of_cells_in_xi3)
+			xi=xi_points;
+			switch (dimension)
 			{
-				/* 2-D case */
-				*number_of_xi_points=
-					(number_of_cells_in_xi1+1)*(number_of_cells_in_xi2+1);
-				if (ALLOCATE(xi_points,Triple,*number_of_xi_points))
+				case 1:
 				{
-					xi=xi_points;
-					for (j=0;j<=number_of_cells_in_xi2;j++)
+					for (i=0;i<=number_in_xi[0];i++)
 					{
-						xi_j=(float)j/(float)number_of_cells_in_xi2;
-						for (i=0;i<=number_of_cells_in_xi1;i++)
+						(*xi)[0]=(float)i/(float)number_in_xi[0];
+						(*xi)[1]=0.0;
+						(*xi)[2]=0.0;
+						xi++;
+					}
+				} break;
+				case 2:
+				{
+					for (j=0;j<=number_in_xi[1];j++)
+					{
+						xi_j=(float)j/(float)number_in_xi[1];
+						for (i=0;i<=number_in_xi[0];i++)
 						{
-							(*xi)[0]=(float)i/(float)number_of_cells_in_xi1;
+							(*xi)[0]=(float)i/(float)number_in_xi[0];
 							(*xi)[1]=xi_j;
 							(*xi)[2]=0.0;
 							xi++;
 						}
 					}
-				}
-			}
-			else
-			{
-				/* 3-D case */
-				*number_of_xi_points=(number_of_cells_in_xi1+1)*
-					(number_of_cells_in_xi2+1)*(number_of_cells_in_xi3+1);
-				if (ALLOCATE(xi_points,Triple,*number_of_xi_points))
+				} break;
+				case 3:
 				{
-					xi=xi_points;
-					for (k=0;k<=number_of_cells_in_xi3;k++)
+					for (k=0;k<=number_in_xi[2];k++)
 					{
-						xi_k=(float)k/(float)number_of_cells_in_xi3;
-						for (j=0;j<=number_of_cells_in_xi2;j++)
+						xi_k=(float)k/(float)number_in_xi[2];
+						for (j=0;j<=number_in_xi[1];j++)
 						{
-							xi_j=(float)j/(float)number_of_cells_in_xi2;
-							for (i=0;i<=number_of_cells_in_xi1;i++)
+							xi_j=(float)j/(float)number_in_xi[1];
+							for (i=0;i<=number_in_xi[0];i++)
 							{
-								(*xi)[0]=(float)i/(float)number_of_cells_in_xi1;
+								(*xi)[0]=(float)i/(float)number_in_xi[0];
 								(*xi)[1]=xi_j;
 								(*xi)[2]=xi_k;
 								xi++;
 							}
 						}
 					}
-				}
+				} break;
 			}
 		}
-		if (!xi_points)
+		else
 		{
 			display_message(ERROR_MESSAGE,
-				"get_xi_points_at_cell_corners.  Not enough memory");
+				"get_xi_points_at_cell_corners.  No xi points");
 		}
 	}
 	else
@@ -6481,108 +6667,100 @@ Note: xi changes from 0 to 1 over each element direction.
 	return (xi_points);
 } /* get_xi_points_at_cell_corners */
 
-Triple *get_xi_points_in_cells_random(int number_of_cells_in_xi1,
-	int number_of_cells_in_xi2,int number_of_cells_in_xi3,
+Triple *get_xi_points_in_cells_random(int dimension,int *number_in_xi,
 	int *number_of_xi_points)
 /*******************************************************************************
-LAST MODIFIED : 2 March 1999
+LAST MODIFIED : 21 December 1999
 
 DESCRIPTION :
 Allocates and returns an array of xi locations each at random locations in
-<number_of_cells_in_xi1>*<number_of_cells_in_xi2>*<number_of_cells_in_xi3>
-cells of equal size in xi over a 3-D element. The function also returns the
-<number_of_xi_points> calculated.
-This function also handles 1-D and 2-D cells in the following way:
-* If <number_of_cells_in_xi2> is zero, then only <number_of_cells_in_xi1> points
-  are calculated and only in 1 dimension, ie. xi[1]=xi[2]=0.0.
-* If <number_of_cells_in_xi3> is zero, then only <number_of_cells_in_xi1>*
-  <number_of_cells_in_xi2> points are calculated and only in 2 dimension, ie.
-  xi[2]=0.0.
+<number_in_xi[0]>*<number_in_xi[1]>*<number_in_xi[2]> cells of equal size in xi
+over a 3-D element. Function also returns <number_of_xi_points> calculated.
+xi positions are always returned as triples with remaining xi coordinates 0 for
+1-D and 2-D cases.
 Note: xi changes from 0 to 1 over each element direction.
 ==============================================================================*/
 {
-	float spread1,spread2,spread3;
+	float spread[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int i,j,k;
 	Triple *xi_points,*xi;
 
 	ENTER(get_xi_points_in_cells_random);
-	if ((0<number_of_cells_in_xi1)&&(0<=number_of_cells_in_xi2)&&
-		(0<=number_of_cells_in_xi3)&&number_of_xi_points)
+	xi_points=(Triple *)NULL;
+	if ((0<dimension)&&(3>=dimension)&&number_in_xi&&number_of_xi_points)
 	{
-		spread1=1.0/(float)number_of_cells_in_xi1;
-		if (0==number_of_cells_in_xi2)
+		*number_of_xi_points=1;
+		for (i=0;i<dimension;i++)
 		{
-			/* 1-D case */
-			*number_of_xi_points=number_of_cells_in_xi1;
-			if (ALLOCATE(xi_points,Triple,*number_of_xi_points))
+			if (0<number_in_xi[i])
 			{
-				xi=xi_points;
-				for (i=0;i<number_of_cells_in_xi1;i++)
-				{
-					(*xi)[0]=(float)i/(float)number_of_cells_in_xi1 +
-						(spread1*((float)(random()&0xFFFF))/65536.0);
-					(*xi)[1]=0.0;
-					(*xi)[2]=0.0;
-					xi++;
-				}
+				spread[i] = 1.0 / (float)number_in_xi[i];
+				*number_of_xi_points *= number_in_xi[i];
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"get_xi_points_in_cells_random.  non-positive number in xi");
+				*number_of_xi_points=0;
 			}
 		}
-		else
+		if ((0< *number_of_xi_points)&&
+			ALLOCATE(xi_points,Triple,*number_of_xi_points))
 		{
-			spread2=1.0/(float)number_of_cells_in_xi2;
-			if (0==number_of_cells_in_xi3)
+			xi=xi_points;
+			switch (dimension)
 			{
-				/* 2-D case */
-				*number_of_xi_points=number_of_cells_in_xi1*number_of_cells_in_xi2;
-				if (ALLOCATE(xi_points,Triple,*number_of_xi_points))
+				case 1:
 				{
-					xi=xi_points;
-					for (j=0;j<number_of_cells_in_xi2;j++)
+					for (i=0;i<number_in_xi[0];i++)
 					{
-						for (i=0;i<number_of_cells_in_xi1;i++)
+						(*xi)[0]=(float)i/(float)number_in_xi[0] +
+							(spread[0]*((float)(random()&0xFFFF))/65536.0);
+						(*xi)[1]=0.0;
+						(*xi)[2]=0.0;
+						xi++;
+					}
+				} break;
+				case 2:
+				{
+					for (j=0;j<number_in_xi[1];j++)
+					{
+						for (i=0;i<number_in_xi[0];i++)
 						{
-							(*xi)[0]=(float)i/(float)number_of_cells_in_xi1 +
-								(spread1*((float)(random()&0xFFFF))/65536.0);
-							(*xi)[1]=(float)j/(float)number_of_cells_in_xi2 +
-								(spread2*((float)(random()&0xFFFF))/65536.0);
+							(*xi)[0]=(float)i/(float)number_in_xi[0] +
+								(spread[0]*((float)(random()&0xFFFF))/65536.0);
+							(*xi)[1]=(float)j/(float)number_in_xi[1] +
+								(spread[1]*((float)(random()&0xFFFF))/65536.0);
 							(*xi)[2]=0.0;
 							xi++;
 						}
 					}
-				}
-			}
-			else
-			{
-				spread3=1.0/(float)number_of_cells_in_xi3;
-				/* 3-D case */
-				*number_of_xi_points=
-					number_of_cells_in_xi1*number_of_cells_in_xi2*number_of_cells_in_xi3;
-				if (ALLOCATE(xi_points,Triple,*number_of_xi_points))
+				} break;
+				case 3:
 				{
-					xi=xi_points;
-					for (k=0;k<number_of_cells_in_xi3;k++)
+					for (k=0;k<number_in_xi[2];k++)
 					{
-						for (j=0;j<number_of_cells_in_xi2;j++)
+						for (j=0;j<number_in_xi[1];j++)
 						{
-							for (i=0;i<number_of_cells_in_xi1;i++)
+							for (i=0;i<number_in_xi[0];i++)
 							{
-								(*xi)[0]=(float)i/(float)number_of_cells_in_xi1 +
-									(spread1*((float)(random()&0xFFFF))/65536.0);
-								(*xi)[1]=(float)j/(float)number_of_cells_in_xi2 +
-									(spread2*((float)(random()&0xFFFF))/65536.0);
-								(*xi)[2]=(float)k/(float)number_of_cells_in_xi3 +
-									(spread3*((float)(random()&0xFFFF))/65536.0);
+								(*xi)[0]=(float)i/(float)number_in_xi[0] +
+									(spread[0]*((float)(random()&0xFFFF))/65536.0);
+								(*xi)[1]=(float)j/(float)number_in_xi[1] +
+									(spread[1]*((float)(random()&0xFFFF))/65536.0);
+								(*xi)[2]=(float)k/(float)number_in_xi[2] +
+									(spread[2]*((float)(random()&0xFFFF))/65536.0);
 								xi++;
 							}
 						}
 					}
-				}
+				} break;
 			}
 		}
-		if (!xi_points)
+		else
 		{
 			display_message(ERROR_MESSAGE,
-				"get_xi_points_in_cells_random.  Not enough memory");
+				"get_xi_points_in_cells_random.  No xi points");
 		}
 	}
 	else
@@ -7821,44 +7999,29 @@ programs
 	return(return_code);
 } /* write_FE_element_layout */
 
-static int FE_element_can_be_displayed(struct FE_element *element,int dimension,
-	char exterior,int face_number,struct GROUP(FE_element) *element_group)
+int FE_element_can_be_displayed(struct FE_element *element,
+	int dimension,enum CM_element_type cm_element_type,int exterior,
+	int face_number,struct GROUP(FE_element) *element_group)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 Returns true if the element is <exterior>, if set, and on the given
 <face_number>, if non-negative, and that the parent element identifying this is
 in the <element_group> in the latter case, again if specified. Tests are assumed
 to succeed for all unspecified parameters.
-Also test whether the dimension/element_type is correct, where <dimension> is
-1 = CM_LINE or dimension 1
-2 = CM_FACE or dimension 2
-3 = CM_ELEMENT or dimension 3
+Also tests whether the <dimension> and/or <cm_element_type> matches.
 ==============================================================================*/
 {
 	int return_code;
 	struct FE_element_parent_face_of_element_in_group_data face_in_group_data;
-	enum CM_element_type element_type;
 
 	ENTER(FE_element_can_be_displayed);
 	return_code=0;
 	if (element)
 	{
-		if (3==dimension)
-		{
-			element_type=CM_ELEMENT;
-		}
-		else if (2==dimension)
-		{
-			element_type=CM_FACE;
-		}
-		else /* if (1==dimension) */
-		{
-			element_type=CM_LINE;
-		}
-		if ((element_type == element->cm.type)||
-			(element->shape&&(element->shape->dimension==dimension)))
+		if ((dimension==get_FE_element_dimension(element))||
+			(cm_element_type==element->cm.type))
 		{
 			return_code=1;
 			if (3>dimension)
@@ -7900,7 +8063,7 @@ Also test whether the dimension/element_type is correct, where <dimension> is
 int element_to_cylinder(struct FE_element *element,
 	void *void_element_to_cylinder_data)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 20 December 1999
 
 DESCRIPTION :
 Converts a finite element into a cylinder.
@@ -7915,7 +8078,7 @@ Converts a finite element into a cylinder.
 	if (element&&(element_to_cylinder_data=
 		(struct Element_to_cylinder_data *)void_element_to_cylinder_data))
 	{
-		if (FE_element_can_be_displayed(element,/*dimension*/1,
+		if (FE_element_can_be_displayed(element,1,CM_LINE,
 			element_to_cylinder_data->exterior,element_to_cylinder_data->face_number,
 			element_to_cylinder_data->element_group))
 		{
@@ -7959,7 +8122,7 @@ Converts a finite element into a cylinder.
 int element_to_polyline(struct FE_element *element,
 	void *element_to_polyline_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 20 December 1999
 
 DESCRIPTION :
 Converts a finite element into a polyline and adds it to a graphics_object.
@@ -7973,7 +8136,7 @@ Converts a finite element into a polyline and adds it to a graphics_object.
 	if (element&&(element_to_polyline_data=
 		(struct Element_to_polyline_data *)element_to_polyline_data_void))
 	{
-		if (FE_element_can_be_displayed(element,/*dimension*/1,
+		if (FE_element_can_be_displayed(element,1,CM_LINE,
 			element_to_polyline_data->exterior,element_to_polyline_data->face_number,
 			element_to_polyline_data->element_group))
 		{
@@ -8013,7 +8176,7 @@ Converts a finite element into a polyline and adds it to a graphics_object.
 int element_to_surface(struct FE_element *element,
 	void *void_element_to_surface_data)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 20 December 1999
 
 DESCRIPTION :
 Converts a finite element into a surface.
@@ -8028,7 +8191,7 @@ Converts a finite element into a surface.
 	if (element&&(element_to_surface_data=
 		(struct Element_to_surface_data *)void_element_to_surface_data))
 	{
-		if (FE_element_can_be_displayed(element,/*dimension*/2,
+		if (FE_element_can_be_displayed(element,2,CM_FACE,
 			element_to_surface_data->exterior,element_to_surface_data->face_number,
 			element_to_surface_data->element_group))
 		{
@@ -8363,7 +8526,7 @@ printf("Warp called: volume1 = %s, volume2 = %s,  element = %d, coordinates = %s
 int element_to_glyph_set(struct FE_element *element,
 	void *new_element_to_glyph_set_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 October 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information about the
@@ -8372,8 +8535,9 @@ fields defined over it.
 {
 	FE_value element_to_top_level[9];
 	struct GT_glyph_set *glyph_set;
-	int cells_in_xi1,cells_in_xi2,cells_in_xi3,
-		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],number_of_xi_points,return_code;
+	int dimension,i,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		number_of_xi_points,return_code,
+		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Element_to_glyph_set_data *element_to_glyph_set_data;
 	struct FE_element *top_level_element;
 	Triple *xi_points;
@@ -8385,106 +8549,108 @@ fields defined over it.
 		return_code=1;
 		/* determine if the element is required */
 		if (FE_element_can_be_displayed(element,
-			element_to_glyph_set_data->dimension,element_to_glyph_set_data->exterior,
+			Use_element_type_dimension(element_to_glyph_set_data->use_element_type),
+			Use_element_type_CM_element_type(
+				element_to_glyph_set_data->use_element_type),
+			element_to_glyph_set_data->exterior,
 			element_to_glyph_set_data->face_number,
 			element_to_glyph_set_data->element_group))
 		{
-			top_level_element=(struct FE_element *)NULL;
-			/* use native discretization of element based field if used in element */
-			if (element_to_glyph_set_data->native_discretization_field&&
-				(top_level_element=FE_element_get_top_level_element_conversion(
-					element,/*check_top_level_element*/(struct FE_element *)NULL,
-					element_to_glyph_set_data->element_group,
-					element_to_glyph_set_data->face_number,element_to_top_level))&&
-				FE_element_field_is_grid_based(top_level_element,
-					element_to_glyph_set_data->native_discretization_field)&&
-				get_FE_element_field_grid_map_number_in_xi(top_level_element,
-					element_to_glyph_set_data->native_discretization_field,number_in_xi))
+			dimension=get_FE_element_dimension(element);
+			/* determine discretization of element for graphic */
+			if (top_level_element=FE_element_get_top_level_element_conversion(
+				element,/*check_top_level_element*/(struct FE_element *)NULL,
+				element_to_glyph_set_data->element_group,
+				element_to_glyph_set_data->face_number,element_to_top_level))
 			{
-				cells_in_xi1=number_in_xi[0];
-				if (1<element->shape->dimension)
+				/* use native discretization of grid-based field if used in element */
+				if (!(element_to_glyph_set_data->native_discretization_field&&
+					FE_element_field_is_grid_based(top_level_element,
+						element_to_glyph_set_data->native_discretization_field)&&
+					get_FE_element_field_grid_map_number_in_xi(top_level_element,
+						element_to_glyph_set_data->native_discretization_field,
+						top_level_number_in_xi)))
 				{
-					cells_in_xi2=number_in_xi[1];
-					if (2<element->shape->dimension)
+					for (i=0;i<dimension;i++)
 					{
-						cells_in_xi3=number_in_xi[2];
-					}
-					else
-					{
-						cells_in_xi3=0;
+						top_level_number_in_xi[i]=
+							element_to_glyph_set_data->number_in_xi[i];
 					}
 				}
-				else
-				{
-					cells_in_xi2=0;
-					cells_in_xi3=0;
-				}
-			}
-			else
-			{
-				cells_in_xi1=element_to_glyph_set_data->number_of_cells_in_xi1;
-				cells_in_xi2=element_to_glyph_set_data->number_of_cells_in_xi2;
-				cells_in_xi3=element_to_glyph_set_data->number_of_cells_in_xi3;
-			}
-			switch (element_to_glyph_set_data->xi_discretization_mode)
-			{
-				case XI_DISCRETIZATION_CELL_CENTRES:
-				{
-					xi_points=get_xi_points_at_cell_centres(
-						cells_in_xi1,cells_in_xi2,cells_in_xi3,&number_of_xi_points);
-				} break;
-				case XI_DISCRETIZATION_CELL_CORNERS:
-				{
-					xi_points=get_xi_points_at_cell_corners(
-						cells_in_xi1,cells_in_xi2,cells_in_xi3,&number_of_xi_points);
-				} break;
-				case XI_DISCRETIZATION_CELL_RANDOM:
-				{
-					xi_points=get_xi_points_in_cells_random(
-						cells_in_xi1,cells_in_xi2,cells_in_xi3,&number_of_xi_points);
-				} break;
-				default:
+				if (!get_FE_element_discretization_from_top_level(element,number_in_xi,
+					top_level_element,top_level_number_in_xi,element_to_top_level))
 				{
 					display_message(ERROR_MESSAGE,
-						"element_to_glyph_set.  Unknown xi_discretization_mode");
-					xi_points=(Triple *)NULL;
-				} break;
-			}
-			if (xi_points)
-			{
-				/* add proper source_element support when we add 1d/2d/3d capability,
-					 like GT_element_settings */
-				if (glyph_set=create_GT_glyph_set_from_FE_element(
-					element,top_level_element,
-					element_to_glyph_set_data->coordinate_field,
-					number_of_xi_points,xi_points,element_to_glyph_set_data->glyph,
-					element_to_glyph_set_data->glyph_centre,
-					element_to_glyph_set_data->glyph_size,
-					element_to_glyph_set_data->orientation_scale_field,
-					element_to_glyph_set_data->glyph_scale_factors,
-					element_to_glyph_set_data->data_field,
-					element_to_glyph_set_data->label_field,
-					element_to_glyph_set_data->glyph_edit_mode))
-				{
-					if (!GT_OBJECT_ADD(GT_glyph_set)(
-						element_to_glyph_set_data->graphics_object,
-						element_to_glyph_set_data->time,glyph_set))
-					{
-						DESTROY(GT_glyph_set)(&glyph_set);
-						return_code=0;
-					}
-				}
-				else
-				{
+						"element_to_glyph_set.  Error getting discretization");
 					return_code=0;
 				}
-				DEALLOCATE(xi_points);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"element_to_glyph_set.  Error getting xi points");
+					"element_to_glyph_set.  Error getting top_level_element");
 				return_code=0;
+			}
+			if (return_code)
+			{
+				switch (element_to_glyph_set_data->xi_discretization_mode)
+				{
+					case XI_DISCRETIZATION_CELL_CENTRES:
+					{
+						xi_points=get_xi_points_at_cell_centres(dimension,number_in_xi,
+							&number_of_xi_points);
+					} break;
+					case XI_DISCRETIZATION_CELL_CORNERS:
+					{
+						xi_points=get_xi_points_at_cell_corners(dimension,number_in_xi,
+							&number_of_xi_points);
+					} break;
+					case XI_DISCRETIZATION_CELL_RANDOM:
+					{
+						xi_points=get_xi_points_in_cells_random(dimension,number_in_xi,
+							&number_of_xi_points);
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"element_to_glyph_set.  Unknown xi_discretization_mode");
+						xi_points=(Triple *)NULL;
+					} break;
+				}
+				if (xi_points)
+				{
+					if (glyph_set=create_GT_glyph_set_from_FE_element(
+						element,top_level_element,
+						element_to_glyph_set_data->coordinate_field,
+						number_of_xi_points,xi_points,element_to_glyph_set_data->glyph,
+						element_to_glyph_set_data->glyph_centre,
+						element_to_glyph_set_data->glyph_size,
+						element_to_glyph_set_data->orientation_scale_field,
+						element_to_glyph_set_data->glyph_scale_factors,
+						element_to_glyph_set_data->data_field,
+						element_to_glyph_set_data->label_field,
+						element_to_glyph_set_data->glyph_edit_mode))
+					{
+						if (!GT_OBJECT_ADD(GT_glyph_set)(
+							element_to_glyph_set_data->graphics_object,
+							element_to_glyph_set_data->time,glyph_set))
+						{
+							DESTROY(GT_glyph_set)(&glyph_set);
+							return_code=0;
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+					DEALLOCATE(xi_points);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"element_to_glyph_set.  Error getting xi points");
+					return_code=0;
+				}
 			}
 		}
 	}

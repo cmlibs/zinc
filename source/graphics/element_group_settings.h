@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -12,6 +12,7 @@ appearance of graphical finite element groups.
 
 #include "finite_element/computed_field.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_to_graphics_object.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_object.h"
 #include "general/list.h"
@@ -286,15 +287,6 @@ LAST MODIFIED : 15 September 1998
 
 DESCRIPTION :
 Returns the dimension of the <settings>, which varies for some settings types.
-==============================================================================*/
-
-int GT_element_settings_set_dimension(struct GT_element_settings *settings,
-	int dimension);
-/*******************************************************************************
-LAST MODIFIED : 15 September 1998
-
-DESCRIPTION :
-Sets the dimension of the <settings>, if valid for its settings type.
 ==============================================================================*/
 
 int GT_element_settings_get_discretization(struct GT_element_settings *settings,
@@ -572,6 +564,26 @@ LAST MODIFIED : 24 March 1999
 
 DESCRIPTION :
 For settings_type GT_ELEMENT_SETTINGS_STREAMLINES only.
+==============================================================================*/
+
+enum Use_element_type GT_element_settings_get_use_element_type(
+	struct GT_element_settings *settings);
+/*******************************************************************************
+LAST MODIFIED : 22 December 1999
+
+DESCRIPTION :
+Returns the type of elements used by the settings.
+For <settings> type GT_ELEMENT_SETTINGS_ELEMENT_POINTS only.
+==============================================================================*/
+
+int GT_element_settings_set_use_element_type(
+	struct GT_element_settings *settings,enum Use_element_type use_element_type);
+/*******************************************************************************
+LAST MODIFIED : 22 December 1999
+
+DESCRIPTION :
+Sets the type of elements used by the settings.
+For <settings> type GT_ELEMENT_SETTINGS_ELEMENT_POINTS only.
 ==============================================================================*/
 
 int GT_element_settings_get_visibility(struct GT_element_settings *settings);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 13 December 1999
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -8101,7 +8101,7 @@ Writes the properties of the <scene> to the command window.
 int gfx_modify_g_element_general(struct Parse_state *state,
 	void *element_group_void,void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 3 March 1999
+LAST MODIFIED : 13 December 1999
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT GENERAL command.
@@ -8109,13 +8109,14 @@ Allows general element_group settings to be changed (eg. discretization) and
 updates graphics of settings affected by the changes (probably all).
 ==============================================================================*/
 {
-	int circle_discretization,i,return_code;
+	int circle_discretization,clear_flag,i,return_code;
 	struct Computed_field *default_coordinate_field;
 	struct FE_field *native_discretization_field;
 	struct GROUP(FE_element) *element_group;
 	static struct Modifier_entry option_table[]=
 	{
 		{"circle_discretization",NULL,NULL,set_Circle_discretization},
+		{"clear",NULL,NULL,set_char_flag},
 		{"default_coordinate",NULL,NULL,set_Computed_field_conditional},
 		{"element_discretization",NULL,NULL,set_Element_discretization},
 		{"native_discretization",NULL,NULL,set_FE_field},
@@ -8124,6 +8125,7 @@ updates graphics of settings affected by the changes (probably all).
 	};
 	struct Element_discretization element_discretization;
 	struct GT_element_group *gt_element_group;
+	struct GT_element_settings *settings;
 	struct Scene *scene;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data;
 
@@ -8163,11 +8165,15 @@ updates graphics of settings affected by the changes (probably all).
 				native_discretization_field=(struct FE_field *)NULL;
 			}
 			/* ACCESS scene for use by set_Scene */
+			clear_flag=0;
 			ACCESS(Scene)(scene);
 			i=0;
 			/* circle_discretization */
 			(option_table[i]).to_be_modified= &circle_discretization;
 			(option_table[i]).user_data= (void *)(scene->user_interface);
+			i++;
+			/* clear */
+			(option_table[i]).to_be_modified= &clear_flag;
 			i++;
 			/* default_coordinate */
 			set_coordinate_field_data.computed_field_package=
@@ -8196,6 +8202,17 @@ updates graphics of settings affected by the changes (probably all).
 				if (gt_element_group=Scene_get_graphical_element_group(scene,
 					element_group))
 				{
+					if (clear_flag)
+					{
+						/* remove all settings from group */
+						while (settings=
+							first_settings_in_GT_element_group_that(gt_element_group,
+								(LIST_CONDITIONAL_FUNCTION(GT_element_settings) *)NULL,
+								(void *)NULL))
+						{
+							GT_element_group_remove_settings(gt_element_group,settings);
+						}
+					}
 					GT_element_group_set_circle_discretization(gt_element_group,
 						circle_discretization,scene->user_interface);
 					GT_element_group_set_element_discretization(gt_element_group,

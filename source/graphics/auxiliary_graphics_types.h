@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : auxiliary_graphics_types.h
 
-LAST MODIFIED : 14 September 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 Structures and enumerated types needed to produce graphics primitives but not
@@ -50,7 +50,7 @@ for automatic creation of choose_enumerator widgets.
 
 enum Streamline_type
 /*******************************************************************************
-LAST MODIFIED : 22 March 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 Must keep function Streamline_type_string up-to-date with entries here.
@@ -60,10 +60,10 @@ for automatic creation of choose_enumerator widgets.
 {
 	STREAMLINE_TYPE_INVALID,
 	STREAMLINE_TYPE_BEFORE_FIRST,
-	STREAM_LINE,
-	STREAM_RIBBON,
-	STREAM_EXTRUDED_RECTANGLE,
 	STREAM_EXTRUDED_ELLIPSE,
+	STREAM_LINE,
+	STREAM_EXTRUDED_RECTANGLE,
+	STREAM_RIBBON,
 	STREAMLINE_TYPE_AFTER_LAST
 };
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -47,7 +47,7 @@ static MrmHierarchy settings_editor_hierarchy;
 
 struct Settings_editor
 /*******************************************************************************
-LAST MODIFIED : 18 July 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 Contains all the information carried by the graphical element editor widget.
@@ -68,8 +68,8 @@ Contains all the information carried by the graphical element editor widget.
 	/* geometry widgets */
 	Widget glyph_edit_mode_entry,glyph_edit_mode_form,glyph_edit_mode_widget,
 		coordinate_button,coordinate_field_form,coordinate_field_widget,
-		dimension_entry,dimension_0_button,dimension_1_button,dimension_2_button,
-		dimension_3_button,discretization_entry,discretization_text,
+		use_element_type_entry,use_element_type_form,use_element_type_widget,
+		discretization_entry,discretization_text,
 		exterior_face_entry,exterior_button,face_button,face_option,face_menu,
 		radius_entry,constant_radius_text,radius_scalar_field_button,
 		radius_scalar_field_form,radius_scalar_field_widget,
@@ -192,7 +192,7 @@ Sets the current face_number on the option menu and button.
 static int settings_editor_display_dimension_specific(
 	struct Settings_editor *settings_editor)
 /*******************************************************************************
-LAST MODIFIED : 21 September 1998
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 Sets and manages the dimension buttons (0-D/1-D/2-D/3-D) and sets and manages
@@ -201,44 +201,15 @@ If there is no current_settings object or these widgets are not relevant to it,
 both widget entries are unmanaged.
 ==============================================================================*/
 {
-	int dimension,i,return_code;
-	enum GT_element_settings_type settings_type;
+	int dimension,return_code;
 	struct GT_element_settings *settings;
-	Widget dimension_button[4];
 
 	ENTER(settings_editor_display_dimension_specific);
 	if (settings_editor)
 	{
 		if (settings=settings_editor->current_settings)
 		{
-			settings_type=GT_element_settings_get_settings_type(settings);
 			dimension=GT_element_settings_get_dimension(settings);
-			dimension_button[0]=settings_editor->dimension_0_button;
-			dimension_button[1]=settings_editor->dimension_1_button;
-			dimension_button[2]=settings_editor->dimension_2_button;
-			dimension_button[3]=settings_editor->dimension_3_button;
-			if (GT_element_settings_type_uses_multiple_dimensions(settings_type))
-			{
-				for (i=0;i<=3;i++)
-				{
-					/*XtSetSensitive(dimension_button[i],
-						GT_element_settings_type_uses_dimension(settings_type,i));*/
-					if (GT_element_settings_type_uses_dimension(settings_type,i))
-					{
-						XtManageChild(dimension_button[i]);
-					}
-					else
-					{
-						XtUnmanageChild(dimension_button[i]);
-					}
-					XmToggleButtonSetState(dimension_button[i],(i==dimension),False);
-				}
-				XtManageChild(settings_editor->dimension_entry);
-			}
-			else
-			{
-				XtUnmanageChild(settings_editor->dimension_entry);
-			}
 			if ((1==dimension)||(2==dimension))
 			{
 				XtVaSetValues(settings_editor->exterior_button,
@@ -253,7 +224,6 @@ both widget entries are unmanaged.
 		}
 		else
 		{
-			XtUnmanageChild(settings_editor->dimension_entry);
 			XtUnmanageChild(settings_editor->exterior_face_entry);
 		}
 	}
@@ -274,15 +244,9 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,coordinate_field_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
-	Settings_editor,dimension_entry)
+	Settings_editor,use_element_type_entry)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
-	Settings_editor,dimension_0_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
-	Settings_editor,dimension_1_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
-	Settings_editor,dimension_2_button)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
-	Settings_editor,dimension_3_button)
+	Settings_editor,use_element_type_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,exterior_face_entry)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
@@ -636,68 +600,38 @@ Called when the coordinate field toggle button value changes.
 	LEAVE;
 } /* settings_editor_coordinate_button_CB */
 
-static void settings_editor_dimension_entry_CB(Widget widget,
-	XtPointer client_data,XtPointer call_data)
+static void settings_editor_update_use_element_type(Widget widget,
+	void *settings_editor_void,void *use_element_type_string_void)
 /*******************************************************************************
-LAST MODIFIED : 21 September 1998
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
-Called when the coordinate field toggle button value changes.
+Callback for change of use_element_type.
 ==============================================================================*/
 {
-	int dimension,old_dimension,toggle_state;
-	struct GT_element_settings *settings;
 	struct Settings_editor *settings_editor;
-	Widget button;
 
-	ENTER(settings_editor_dimension_entry_CB);
-  if (widget&&(button=((XmRowColumnCallbackStruct *)call_data)->widget)&&
-		(settings_editor=(struct Settings_editor *)client_data)&&
-		(settings=settings_editor->current_settings))
+	ENTER(settings_editor_update_use_element_type);
+	USE_PARAMETER(widget);
+	if (settings_editor=(struct Settings_editor *)settings_editor_void)
 	{
-		toggle_state=XmToggleButtonGetState(button);
-		if (1==toggle_state)
+		if (GT_element_settings_set_use_element_type(
+			settings_editor->current_settings,Use_element_type_from_string(
+				(char *)use_element_type_string_void)))
 		{
-			old_dimension=GT_element_settings_get_dimension(settings);
-			if (settings_editor->dimension_0_button == button)
-			{
-				dimension=0;
-			}
-			else if (settings_editor->dimension_1_button == button)
-			{
-				dimension=1;
-			}
-			else if (settings_editor->dimension_2_button == button)
-			{
-				dimension=2;
-			}
-			else if (settings_editor->dimension_3_button == button)
-			{
-				dimension=3;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"settings_editor_dimension_entry_CB.  Unknown dimension button");
-				dimension=-1;
-			}
-			if ((0 <= dimension)&&(dimension != old_dimension))
-			{
-				GT_element_settings_set_dimension(settings,dimension);
-				/* make sure the correct widgets are shown for the new dimension */
-				settings_editor_display_dimension_specific(settings_editor);
-				/* inform the client of the change */
-				settings_editor_update(settings_editor);
-			}
+			/* make sure the correct widgets are shown for the new dimension */
+			settings_editor_display_dimension_specific(settings_editor);
+			/* inform the client of the change */
+			settings_editor_update(settings_editor);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"settings_editor_dimension_entry_CB.  Invalid argument(s)");
+			"settings_editor_update_use_element_type.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* settings_editor_dimension_entry_CB */
+} /* settings_editor_update_use_element_type */
 
 static void settings_editor_constant_radius_text_CB(
 	Widget widget,XtPointer client_data,unsigned long *reason)
@@ -1140,7 +1074,7 @@ Callback for change of native_discretization_field.
 static void settings_editor_update_xi_discretization_mode(Widget widget,
 	void *settings_editor_void,void *xi_discretization_mode_string_void)
 /*******************************************************************************
-LAST MODIFIED : 22 March 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 Callback for change of xi_discretization_mode.
@@ -1152,16 +1086,12 @@ Callback for change of xi_discretization_mode.
 	USE_PARAMETER(widget);
 	if (settings_editor=(struct Settings_editor *)settings_editor_void)
 	{
-		/* skip messages from chooser if grayed out */
-		if (XtIsSensitive(settings_editor->xi_discretization_mode_widget))
+		if (GT_element_settings_set_xi_discretization_mode(
+			settings_editor->current_settings,Xi_discretization_mode_from_string(
+				(char *)xi_discretization_mode_string_void)))
 		{
-			if (GT_element_settings_set_xi_discretization_mode(
-				settings_editor->current_settings,Xi_discretization_mode_from_string(
-					(char *)xi_discretization_mode_string_void)))
-			{
-				/* inform the client of the change */
-				settings_editor_update(settings_editor);
-			}
+			/* inform the client of the change */
+			settings_editor_update(settings_editor);
 		}
 	}
 	else
@@ -2392,7 +2322,7 @@ Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 18 July 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 Creates a settings_editor widget.
@@ -2411,16 +2341,10 @@ Creates a settings_editor widget.
 			DIALOG_IDENTIFY(settings_editor,coordinate_button)},
 		{"seted_id_coordinate_form",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,coordinate_field_form)},
-		{"seted_id_dimension_entry",(XtPointer)
-			DIALOG_IDENTIFY(settings_editor,dimension_entry)},
-		{"seted_id_dimension_0_btn",(XtPointer)
-			DIALOG_IDENTIFY(settings_editor,dimension_0_button)},
-		{"seted_id_dimension_1_btn",(XtPointer)
-			DIALOG_IDENTIFY(settings_editor,dimension_1_button)},
-		{"seted_id_dimension_2_btn",(XtPointer)
-			DIALOG_IDENTIFY(settings_editor,dimension_2_button)},
-		{"seted_id_dimension_3_btn",(XtPointer)
-			DIALOG_IDENTIFY(settings_editor,dimension_3_button)},
+		{"seted_id_use_elem_type_entry",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,use_element_type_entry)},
+		{"seted_id_use_elem_type_form",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,use_element_type_form)},
 		{"seted_id_exterior_face_entry",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,exterior_face_entry)},
 		{"seted_id_exterior_btn",(XtPointer)
@@ -2537,8 +2461,6 @@ Creates a settings_editor widget.
 			DIALOG_IDENTIFY(settings_editor,spectrum_form)},
 		{"seted_coordinate_btn_CB",(XtPointer)
 			settings_editor_coordinate_button_CB},
-		{"seted_dimension_entry_CB",(XtPointer)
-			settings_editor_dimension_entry_CB},
 		{"seted_exterior_btn_CB",(XtPointer)
 			settings_editor_exterior_button_CB},
 		{"seted_face_btn_CB",(XtPointer)
@@ -2619,11 +2541,9 @@ Creates a settings_editor widget.
 				settings_editor->coordinate_button=(Widget)NULL;
 				settings_editor->coordinate_field_form=(Widget)NULL;
 				settings_editor->coordinate_field_widget=(Widget)NULL;
-				settings_editor->dimension_entry=(Widget)NULL;
-				settings_editor->dimension_0_button=(Widget)NULL;
-				settings_editor->dimension_1_button=(Widget)NULL;
-				settings_editor->dimension_2_button=(Widget)NULL;
-				settings_editor->dimension_3_button=(Widget)NULL;
+				settings_editor->use_element_type_entry=(Widget)NULL;
+				settings_editor->use_element_type_form=(Widget)NULL;
+				settings_editor->use_element_type_widget=(Widget)NULL;
 				settings_editor->exterior_face_entry=(Widget)NULL;
 				settings_editor->exterior_button=(Widget)NULL;
 				settings_editor->face_button=(Widget)NULL;
@@ -2718,7 +2638,18 @@ Creates a settings_editor widget.
 							&settings_editor_dialog_class))
 						{
 							init_widgets=1;
-							/* create the subwidgets with NULL variables */
+							/* create the subwidgets with default values */
+							valid_strings=
+								Use_element_type_get_valid_strings(&number_of_valid_strings);
+							if (!(settings_editor->use_element_type_widget=
+								create_choose_enumerator_widget(
+								settings_editor->use_element_type_form,
+								valid_strings,number_of_valid_strings,
+								Use_element_type_string(USE_ELEMENTS))))
+							{
+								init_widgets=0;
+							}
+							DEALLOCATE(valid_strings);
 							valid_strings=Glyph_edit_mode_get_valid_strings(
 								&number_of_valid_strings);
 							if (!(settings_editor->glyph_edit_mode_widget=
@@ -3066,7 +2997,7 @@ Returns the currently chosen settings.
 int settings_editor_set_settings(Widget settings_editor_widget,
 	struct GT_element_settings *new_settings)
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 Changes the currently chosen settings.
@@ -3326,9 +3257,14 @@ Changes the currently chosen settings.
 							}
 
 							/* element_points */
-							/* discretization */
 							if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings_type)
 							{
+								choose_enumerator_set_string(
+									settings_editor->use_element_type_widget,
+									Use_element_type_string(
+										GT_element_settings_get_use_element_type(new_settings)));
+								XtManageChild(settings_editor->use_element_type_entry);
+
 								GT_element_settings_get_discretization(new_settings,
 									&discretization);
 								sprintf(temp_string,"%d*%d*%d",discretization.number_in_xi1,
@@ -3362,6 +3298,9 @@ Changes the currently chosen settings.
 								XtManageChild(settings_editor->xi_discretization_mode_entry);
 								/* turn on callbacks */
 								callback.data=(void *)settings_editor;
+								callback.procedure=settings_editor_update_use_element_type;
+								choose_enumerator_set_callback(
+									settings_editor->use_element_type_widget,&callback);
 								callback.procedure=
 									settings_editor_update_native_discretization_field;
 								CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
@@ -3374,12 +3313,15 @@ Changes the currently chosen settings.
 							}
 							else
 							{
+								XtUnmanageChild(settings_editor->use_element_type_entry);
 								XtUnmanageChild(settings_editor->discretization_entry);
 								XtUnmanageChild(settings_editor->native_discretization_entry);
 								XtUnmanageChild(settings_editor->xi_discretization_mode_entry);
 								/* turn off callbacks */
 								callback.procedure=(Callback_procedure *)NULL;
 								callback.data=(void *)NULL;
+								choose_enumerator_set_callback(
+									settings_editor->use_element_type_widget,&callback);
 								CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
 									settings_editor->native_discretization_field_widget,
 									&callback);

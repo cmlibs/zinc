@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : settings_editor.uil
 !
-! LAST MODIFIED : 19 August 1999
+! LAST MODIFIED : 22 December 1999
 !
 ! DESCRIPTION :
 ! The widgets for the settings editor widget.
@@ -15,11 +15,8 @@ procedure
 !Identify geometry widgets:
   seted_id_coordinate_btn;
   seted_id_coordinate_form;
-  seted_id_dimension_entry;
-  seted_id_dimension_0_btn;
-  seted_id_dimension_1_btn;
-  seted_id_dimension_2_btn;
-  seted_id_dimension_3_btn;
+  seted_id_use_elem_type_entry;
+  seted_id_use_elem_type_form;
   seted_id_exterior_face_entry;
   seted_id_exterior_btn;
   seted_id_face_btn;
@@ -92,7 +89,6 @@ procedure
 
 !Callbacks:
   seted_coordinate_btn_CB;
-  seted_dimension_entry_CB;
   seted_exterior_btn_CB;
   seted_face_btn_CB;
   seted_face_menu_CB;
@@ -232,7 +228,7 @@ object
       {
 !      XmLabelGadget seted_geometry_label;
       XmRowColumn seted_coordinate_field_entry;
-      XmRowColumn seted_dimension_entry;
+      XmRowColumn seted_use_elem_type_entry;
       XmForm seted_exterior_face_entry;
       XmRowColumn seted_radius_entry;
       XmRowColumn seted_iso_surface_entry;
@@ -312,32 +308,25 @@ object
       XmForm seted_coordinate_form;
       };
     };
-  seted_dimension_entry: XmRowColumn
+  seted_use_elem_type_entry: XmRowColumn
     {
-		arguments
-			{
-!Uncomment the following to reduce size of rowcolumn.
+    arguments
+      {
 			XmNmarginHeight = 0;
 			XmNmarginWidth = 0;
 			XmNspacing = 0;
 			XmNorientation = XmHORIZONTAL;
-			XmNnumColumns = 1;
-			XmNpacking = XmPACK_COLUMN;
-			XmNentryAlignment = XmALIGNMENT_CENTER;
-			XmNradioBehavior = true;
-			};
+			XmNpacking = XmPACK_TIGHT;
+      };
     controls
       {
-      XmToggleButtonGadget seted_dimension_3_btn;
-      XmToggleButtonGadget seted_dimension_2_btn;
-      XmToggleButtonGadget seted_dimension_1_btn;
-      XmToggleButtonGadget seted_dimension_0_btn;
+      XmLabelGadget seted_use_elem_type_label;
+      XmForm seted_use_elem_type_form;
       };
     callbacks
       {
-      MrmNcreateCallback = procedure seted_id_dimension_entry(seted_structure);
-			XmNentryCallback = procedure
-				seted_dimension_entry_CB(seted_structure);
+      MrmNcreateCallback = procedure
+				seted_id_use_elem_type_entry(seted_structure);
       };
     };
   seted_exterior_face_entry: XmForm
@@ -600,58 +589,23 @@ object
       };
     };
 !*******************************************************************************
-	seted_dimension_3_btn: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Elements");
-!			XmNindicatorOn = false;
-			XmNfontList = button_font;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure seted_id_dimension_3_btn(seted_structure);
-			};
-		};
-	seted_dimension_2_btn: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Faces   ");
-!			XmNindicatorOn = false;
-			XmNfontList = button_font;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure seted_id_dimension_2_btn(seted_structure);
-			};
-		};
-	seted_dimension_1_btn: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Lines   ");
-!			XmNindicatorOn = false;
-			XmNfontList = button_font;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure seted_id_dimension_1_btn(seted_structure);
-			};
-		};
-	seted_dimension_0_btn: XmToggleButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Nodes   ");
-!			XmNindicatorOn = false;
-			XmNfontList = button_font;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure seted_id_dimension_0_btn(seted_structure);
-			};
-		};
+  seted_use_elem_type_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Use element type:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+  seted_use_elem_type_form: XmForm
+    {
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				seted_id_use_elem_type_form(seted_structure);
+      };
+    };
 !*******************************************************************************
   seted_exterior_btn: XmToggleButtonGadget
     {

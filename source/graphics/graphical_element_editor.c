@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -1115,7 +1115,7 @@ Called when a settings select toggle button is selected.
 static void graphical_element_editor_modify_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 22 December 1999
 
 DESCRIPTION :
 Called when a modify button - add, delete, up, down - is activated.
@@ -1248,10 +1248,21 @@ Called when a modify button - add, delete, up, down - is activated.
 					}
 				}
 				/* make sure new settings uses current dimension if not ALL */
-				if (return_code&&(-1 != gelem_editor->current_dimension))
+				if (return_code&&(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==
+					gelem_editor->current_settings_type))
 				{
-					GT_element_settings_set_dimension(settings,
-						gelem_editor->current_dimension);
+					if (1==gelem_editor->current_dimension)
+					{
+						GT_element_settings_set_use_element_type(settings,USE_LINES);
+					}
+					else if (2==gelem_editor->current_dimension)
+					{
+						GT_element_settings_set_use_element_type(settings,USE_FACES);
+					}
+					else if (3==gelem_editor->current_dimension)
+					{
+						GT_element_settings_set_use_element_type(settings,USE_ELEMENTS);
+					}
 				}
 				if (return_code&&GT_element_group_add_settings(
 					gelem_editor->edit_gt_element_group,settings,0))
@@ -1278,12 +1289,13 @@ Called when a modify button - add, delete, up, down - is activated.
 				gelem_editor->edit_gt_element_group,gelem_editor->current_settings)))
 			{
 				list_changed=1;
-				ACCESS(GT_element_settings)(gelem_editor->current_settings);
+				settings=gelem_editor->current_settings;
+				ACCESS(GT_element_settings)(settings);
 				GT_element_group_remove_settings(gelem_editor->edit_gt_element_group,
 					gelem_editor->current_settings);
 				GT_element_group_add_settings(gelem_editor->edit_gt_element_group,
 					gelem_editor->current_settings,position-1);
-				DEACCESS(GT_element_settings)(&(gelem_editor->current_settings));
+				DEACCESS(GT_element_settings)(&settings);
 			}
 		}
 		else if (modify_button==gelem_editor->down_button)
@@ -1293,13 +1305,13 @@ Called when a modify button - add, delete, up, down - is activated.
 				gelem_editor->edit_gt_element_group,gelem_editor->current_settings))
 			{
 				list_changed=1;
-				ACCESS(GT_element_settings)(gelem_editor->current_settings);
-
+				settings=gelem_editor->current_settings;
+				ACCESS(GT_element_settings)(settings);
 				GT_element_group_remove_settings(gelem_editor->edit_gt_element_group,
 					gelem_editor->current_settings);
 				GT_element_group_add_settings(gelem_editor->edit_gt_element_group,
 					gelem_editor->current_settings,position+1);
-				DEACCESS(GT_element_settings)(&(gelem_editor->current_settings));
+				DEACCESS(GT_element_settings)(&settings);
 			}
 		}
 		if (list_changed)
