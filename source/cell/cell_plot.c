@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_plot.c
 
-LAST MODIFIED : 14 March 2001
+LAST MODIFIED : 23 March 2001
 
 DESCRIPTION :
 The object used to draw plots in Cell.
@@ -154,7 +154,7 @@ Returns a string specifying the colour to use for a data set
 
 static void set_foreground_colour(Display *display,GC gc,char *colour)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2001
+LAST MODIFIED : 22 March 2001
 
 DESCRIPTION :
 Sets the foreground colour of the given graphics context <gc> to be the
@@ -168,11 +168,18 @@ specified <colour>.
   if (display && gc && colour)
   {
     /* set the default colour map */
-    colour_map = DefaultColormap(display,DefaultScreen(display));
-    /* allocate the specified colour */
-    XAllocNamedColor(display,colour_map,colour,&screen_colour,&exact_colour);
-    /* set the foreground colour */
-    XSetForeground(display,gc,screen_colour.pixel);
+    if (colour_map = DefaultColormap(display,DefaultScreen(display)))
+    {
+      /* allocate the specified colour */
+      XAllocNamedColor(display,colour_map,colour,&screen_colour,&exact_colour);
+      /* set the foreground colour */
+      XSetForeground(display,gc,screen_colour.pixel);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"set_foreground_colour.  "
+        "Unable to get the default colour map");
+    }
   }
   else
   {
@@ -184,7 +191,7 @@ specified <colour>.
 
 static int get_label_width(Display *display,char *font,char *label)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2001
+LAST MODIFIED : 22 March 2001
 
 DESCRIPTION :
 Returns the width of the given <label> when drawn with the specified <font>
@@ -197,9 +204,18 @@ Returns the width of the given <label> when drawn with the specified <font>
   if (display && label && font)
   {
     /* load the font and font structure */
-    font_info = XLoadQueryFont(display,font);
-    /* get the width of the label */
-    width = XTextWidth(font_info,label,strlen(label));
+    if (font_info = XLoadQueryFont(display,font))
+    {
+      /* get the width of the label */
+      width = XTextWidth(font_info,label,strlen(label));
+      XUnloadFont(display,font_info->fid);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"get_label_width.  "
+        "Unable to load the specified font (%s)",font);
+      width = 0;
+    }
   }
   else
   {
@@ -213,7 +229,7 @@ Returns the width of the given <label> when drawn with the specified <font>
 
 static int get_label_height(Display *display,char *font,char *label)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2001
+LAST MODIFIED : 22 March 2001
 
 DESCRIPTION :
 Returns the height of the given <label> when drawn with the specified <font>
@@ -226,9 +242,18 @@ Returns the height of the given <label> when drawn with the specified <font>
   if (display && label && font)
   {
     /* load the font and font structure */
-    font_info = XLoadQueryFont(display,font);
-    /* get the height of the label */
-    height = font_info->ascent + font_info->descent;
+    if (font_info = XLoadQueryFont(display,font))
+    {
+      /* get the height of the label */
+      height = font_info->ascent + font_info->descent;
+      XUnloadFont(display,font_info->fid);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"get_label_height.  "
+        "Unable to load the specified font (%s)",font);
+      height = 0;
+    }
   }
   else
   {
@@ -245,7 +270,7 @@ static int draw_label(Display *display,Drawable drawable,GC gc,
   enum Text_horizontal_alignment Halign,char *label,char *label_sub,
   char *label_sup,char *label_font,char *label_sub_font,Region *region,int *end)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2001
+LAST MODIFIED : 22 March 2001
 
 DESCRIPTION :
 Draws the specified label and subscript/superscript to the specified drawable.
@@ -281,154 +306,163 @@ int *end - returns the position of the end of the label
   if (display && drawable && gc && text_colour && label && label_font)
   {
     /* load the font and font structure */
-    font_info = XLoadQueryFont(display,label_font);
-    /* place the font into the GC */
-    XSetFont(display,gc,font_info->fid);
-    /* set the text colour */
-    set_foreground_colour(display,gc,text_colour);
-    /* if there is a subscript */
-    if (label_sub != (char *)NULL)
+    if ((font_info = XLoadQueryFont(display,label_font)) &&
+      (font_info_sub = XLoadQueryFont(display,label_sub_font)))
     {
-      /* load the font and font structure */
-      font_info_sub = XLoadQueryFont(display,label_sub_font);
-      /* get the width of the label */
-      width_label = XTextWidth(font_info,label,strlen(label));
-      /* get the the subscript distance from the font structure */
-      XGetFontProperty(font_info,XA_SUBSCRIPT_X,&offset_x);
-      /*offset_x = XTextWidth(font_info,"I",1);*/
-      /* find the origin of the text */
-      if (label_sup != (char *)NULL)
-      {
-        width_all = width_label +
-          XTextWidth(font_info_sub,label_sub,strlen(label_sub)) +
-          XTextWidth(font_info_sub,label_sub,strlen(label_sup));
-      }
-      else
-      {
-        width_all = width_label +
-          XTextWidth(font_info_sub,label_sub,strlen(label_sub));
-      }
-      if (Halign == LEFT)
-      {
-        origin_x = x;
-      }
-      else if (Halign == CENTER)
-      {
-        origin_x = x-(width_all/2);
-      }
-      else
-      {
-        origin_x = x-width_all;
-      }
-      if (Valign == UP)
-      {
-        origin_y = y+(font_info->ascent);
-      }
-      else if (Valign == MIDDLE)
-      {
-        origin_y = y+(((font_info->ascent)+(font_info->descent))/2)-
-          (font_info->descent);
-      }
-      else
-      {
-        origin_y = y-(font_info->descent);
-      }
-      if (label_sup != (char *)NULL)
-      {
-        height_all = 2*(int)offset_x + (int)(font_info->descent +
-          font_info->ascent);
-      }
-      else
-      {
-        height_all = (int)(font_info->ascent + offset_x + font_info->descent);
-      }
-      /* draw on the label */
-      XDrawString(display,drawable,gc,origin_x,origin_y,label,strlen(label));
-      if (label_sup != (char *)NULL)
-      {
-        XDrawString(display,drawable,gc,origin_x+width_label,
-          (int)(origin_y-offset_x),label_sup,strlen(label_sup));
-      }
       /* place the font into the GC */
-      XSetFont(display,gc,font_info_sub->fid);
-      /* draw on the subscript */
-      XDrawString(display,drawable,gc,origin_x+width_label,
-        (int)(origin_y+offset_x),label_sub,strlen(label_sub));
-      /* evaluate return value */
-      ret = origin_y + (int)(font_info->descent + offset_x);
-    }
-    else /* No subscript */
-    {
-      /* get the width of the label */
-      width_label = XTextWidth(font_info,label,strlen(label));
-      /* get the the superscript distance from the font structure */
-      offset_x = XTextWidth(font_info,"I",1);
-      /* get the width of the label */
-      if (label_sup != (char *)NULL)
+      XSetFont(display,gc,font_info->fid);
+      /* set the text colour */
+      set_foreground_colour(display,gc,text_colour);
+      /* if there is a subscript */
+      if (label_sub != (char *)NULL)
       {
-        width_all = XTextWidth(font_info,label,strlen(label)) +
-          XTextWidth(font_info,label_sup,strlen(label_sup));
-        height_all = (int)(font_info->descent +
-          offset_x + font_info->ascent);
-      }
-      else
-      {
-        width_all = XTextWidth(font_info,label,strlen(label));
-        height_all = font_info->ascent + font_info->descent;
-      }
-      /* find the origin of the text */
-      if (Halign == LEFT)
-      {
-        origin_x = x;
-      }
-      else if (Halign == CENTER)
-      {
-        origin_x = x-(width_all/2);
-      }
-      else
-      {
-        origin_x = x-width_all;
-      }
-      if (Valign == UP)
-      {
-        origin_y = y+(font_info->ascent);
-      }
-      else if (Valign == MIDDLE)
-      {
-        origin_y = y+(((font_info->ascent)+(font_info->descent))/2)-
-          (font_info->descent);
-      }
-      else 
-      {
-        origin_y = y-(font_info->descent);
-      }
-      /* draw on the label */
-      XDrawString(display,drawable,gc,origin_x,origin_y,label,strlen(label));
-      if (label_sup != (char *)NULL)
-      {
+        /* get the width of the label */
+        width_label = XTextWidth(font_info,label,strlen(label));
+        /* get the the subscript distance from the font structure */
+        XGetFontProperty(font_info,XA_SUBSCRIPT_X,&offset_x);
+        /*offset_x = XTextWidth(font_info,"I",1);*/
+        /* find the origin of the text */
+        if (label_sup != (char *)NULL)
+        {
+          width_all = width_label +
+            XTextWidth(font_info_sub,label_sub,strlen(label_sub)) +
+            XTextWidth(font_info_sub,label_sub,strlen(label_sup));
+        }
+        else
+        {
+          width_all = width_label +
+            XTextWidth(font_info_sub,label_sub,strlen(label_sub));
+        }
+        if (Halign == LEFT)
+        {
+          origin_x = x;
+        }
+        else if (Halign == CENTER)
+        {
+          origin_x = x-(width_all/2);
+        }
+        else
+        {
+          origin_x = x-width_all;
+        }
+        if (Valign == UP)
+        {
+          origin_y = y+(font_info->ascent);
+        }
+        else if (Valign == MIDDLE)
+        {
+          origin_y = y+(((font_info->ascent)+(font_info->descent))/2)-
+            (font_info->descent);
+        }
+        else
+        {
+          origin_y = y-(font_info->descent);
+        }
+        if (label_sup != (char *)NULL)
+        {
+          height_all = 2*(int)offset_x + (int)(font_info->descent +
+            font_info->ascent);
+        }
+        else
+        {
+          height_all = (int)(font_info->ascent + offset_x + font_info->descent);
+        }
+        /* draw on the label */
+        XDrawString(display,drawable,gc,origin_x,origin_y,label,strlen(label));
+        if (label_sup != (char *)NULL)
+        {
+          XDrawString(display,drawable,gc,origin_x+width_label,
+            (int)(origin_y-offset_x),label_sup,strlen(label_sup));
+        }
+        /* place the font into the GC */
+        XSetFont(display,gc,font_info_sub->fid);
+        /* draw on the subscript */
         XDrawString(display,drawable,gc,origin_x+width_label,
-          origin_y-((int)offset_x),label_sup,strlen(label_sup));
+          (int)(origin_y+offset_x),label_sub,strlen(label_sub));
+        /* evaluate return value */
+        ret = origin_y + (int)(font_info->descent + offset_x);
       }
-      /* evaluate return value */
-      ret = origin_y + (int)font_info->descent;
+      else /* No subscript */
+      {
+        /* get the width of the label */
+        width_label = XTextWidth(font_info,label,strlen(label));
+        /* get the the superscript distance from the font structure */
+        offset_x = XTextWidth(font_info,"I",1);
+        /* get the width of the label */
+        if (label_sup != (char *)NULL)
+        {
+          width_all = XTextWidth(font_info,label,strlen(label)) +
+            XTextWidth(font_info,label_sup,strlen(label_sup));
+          height_all = (int)(font_info->descent +
+            offset_x + font_info->ascent);
+        }
+        else
+        {
+          width_all = XTextWidth(font_info,label,strlen(label));
+          height_all = font_info->ascent + font_info->descent;
+        }
+        /* find the origin of the text */
+        if (Halign == LEFT)
+        {
+          origin_x = x;
+        }
+        else if (Halign == CENTER)
+        {
+          origin_x = x-(width_all/2);
+        }
+        else
+        {
+          origin_x = x-width_all;
+        }
+        if (Valign == UP)
+        {
+          origin_y = y+(font_info->ascent);
+        }
+        else if (Valign == MIDDLE)
+        {
+          origin_y = y+(((font_info->ascent)+(font_info->descent))/2)-
+            (font_info->descent);
+        }
+        else 
+        {
+          origin_y = y-(font_info->descent);
+        }
+        /* draw on the label */
+        XDrawString(display,drawable,gc,origin_x,origin_y,label,strlen(label));
+        if (label_sup != (char *)NULL)
+        {
+          XDrawString(display,drawable,gc,origin_x+width_label,
+            origin_y-((int)offset_x),label_sup,strlen(label_sup));
+        }
+        /* evaluate return value */
+        ret = origin_y + (int)font_info->descent;
+      }
+      if (region != (Region *)NULL)
+      {
+        /* create the region */
+        reg_pts[0].x = origin_x;
+        reg_pts[0].y = origin_y - font_info->ascent;
+        reg_pts[1].x = reg_pts[0].x + width_all;
+        reg_pts[1].y = reg_pts[0].y;
+        reg_pts[2].x = reg_pts[1].x;
+        reg_pts[2].y = reg_pts[0].y + height_all;
+        reg_pts[3].x = reg_pts[0].x;
+        reg_pts[3].y = reg_pts[2].y;
+        *region = XPolygonRegion(reg_pts,4,WindingRule);
+      }
+      if (end != (int *)NULL)
+      {
+        *end = origin_x + width_all;
+      }
     }
-    if (region != (Region *)NULL)
+    else
     {
-      /* create the region */
-      reg_pts[0].x = origin_x;
-      reg_pts[0].y = origin_y - font_info->ascent;
-      reg_pts[1].x = reg_pts[0].x + width_all;
-      reg_pts[1].y = reg_pts[0].y;
-      reg_pts[2].x = reg_pts[1].x;
-      reg_pts[2].y = reg_pts[0].y + height_all;
-      reg_pts[3].x = reg_pts[0].x;
-      reg_pts[3].y = reg_pts[2].y;
-      *region = XPolygonRegion(reg_pts,4,WindingRule);
+      display_message(ERROR_MESSAGE,"draw_label.  "
+        "Unable to load the specified font(s)");
+      ret = -1;
     }
-    if (end != (int *)NULL)
-    {
-      *end = origin_x + width_all;
-    }
+    XUnloadFont(display,font_info->fid);
+    XUnloadFont(display,font_info_sub->fid);
   }
   else
   {
