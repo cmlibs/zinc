@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 14 June 2001
+LAST MODIFIED : 27 June 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -572,7 +572,7 @@ event is <first_list_event>.
 	prev_event=(struct Electrical_imaging_event *)NULL;
 	if(event_to_remove&&(first_list_event)&&(event=*first_list_event))
 	{
-		return_code=0;
+		return_code=0;	
 		found=0;
 		/*find event in list*/
 		while(event&&(!found))
@@ -593,6 +593,7 @@ event is <first_list_event>.
 		else
 		{
 			return_code=1;
+			
 			/* remove event from list */
 			prev_event=event_to_remove->previous;
 			next_event=event_to_remove->next;
@@ -6592,7 +6593,7 @@ static int configure_eimaging_time_dialog_marker_menu(struct Trace_window *trace
 LAST MODIFIED : 22 June 2001
 
 DESCRIPTION :
-Configures <trace>'s eimaging_time_dialog's time_marker_choice based upon
+Configures <trace>'s eimaging_time_dialog's event_choice based upon
 <trace>'s inverse_wave_mode. 
 <trace>'s eimaging_time_dialog MUST have been created before this function can
 be called.
@@ -6668,7 +6669,7 @@ be called.
 			
 		}		
 		/* find current menu selection */
-		XtVaGetValues(eimaging_time_dialog->time_marker_choice,
+		XtVaGetValues(eimaging_time_dialog->event_choice,
 			XmNmenuHistory,&option_widget,NULL);
 		/* is it valid (sensitive) ?*/
 		XtVaGetValues(option_widget,XmNsensitive,&flag,NULL);
@@ -6676,9 +6677,9 @@ be called.
 		if((flag==FALSE)||(option_widget==eimaging_time_dialog->clear_button))
 		{						
 			/* find the first valid (sensitive) entry */
-			XtVaGetValues(eimaging_time_dialog->time_marker_pull_down,XmNchildren,
+			XtVaGetValues(eimaging_time_dialog->event_pull_down,XmNchildren,
 				&list,NULL);
-			XtVaGetValues(eimaging_time_dialog->time_marker_pull_down,XmNnumChildren,
+			XtVaGetValues(eimaging_time_dialog->event_pull_down,XmNnumChildren,
 				&num_children,NULL);
 			i=0;
 			flag=FALSE;
@@ -6688,14 +6689,14 @@ be called.
 				if(flag==TRUE)
 				{	
 					/* make the first valid (sensitive) entry the current choice */					
-					XtVaSetValues(eimaging_time_dialog->time_marker_choice,
+					XtVaSetValues(eimaging_time_dialog->event_choice,
 						XmNmenuHistory,list[i],NULL);					
 				}
 				i++;
 			}			
 		}	/* if(flag==FALSE)	*/
 		/* find (now possibly changed) current menu selection  */
-		XtVaGetValues(eimaging_time_dialog->time_marker_choice,
+		XtVaGetValues(eimaging_time_dialog->event_choice,
 			XmNmenuHistory,&option_widget,NULL);
 		/* update this info */
 		alter_eimaging_button_event_info(option_widget,eimaging_time_dialog);
@@ -12746,7 +12747,7 @@ int move_add_remove_Electrical_imaging_event(XmDrawingAreaCallbackStruct *callba
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface,int pointer_sensitivity)
 /*******************************************************************************
-LAST MODIFIED : 14 June 2001
+LAST MODIFIED : 27 June 2001
 
 DESCRIPTION : detect mouse or keyboard activity and moves, adds or removes an 
 Electrical_imaging_event.
@@ -12758,8 +12759,8 @@ Electrical_imaging_event.
 	float frequency,x_scale;
 	GC graphics_context;
 	int axes_bottom,axes_height,axes_left,axes_right,axes_top,axes_width,
-		end_analysis_interval,event_time,found,marker,pointer_x,pointer_y,
-		return_code,start_analysis_interval,*times;
+		end_analysis_interval,event_time,found,marker,pointer_x,
+		pointer_y,return_code,start_analysis_interval,*times;
 	struct Drawing_2d *drawing;
 	struct Electrical_imaging_event *event;
 	struct Signal_buffer *buffer;
@@ -12836,15 +12837,35 @@ Electrical_imaging_event.
 							frequency,start_analysis_interval,working_button);					
 					}
 					else if(working_button==Button3)
-					{					
+					{	
+						int is_current_event,time;
+						char time_string[20];
+					
+
 						/*remove the Electrical_imaging_event */
 						/*erase graphic */
 						draw_Electrical_imaging_event_marker(event,end_analysis_interval,
 							start_analysis_interval,axes_top,axes_height,axes_left,axes_width, 
 							drawing_area,drawing,signal_drawing_information,buffer);
 						/* remove from list */
+						is_current_event=event->is_current_event;
 						remove_Electrical_imaging_event_from_list(&trace->first_eimaging_event,
 							event);
+						/* if the deleted event was the current one, and there's an event*/
+						/* remaining, make it the current event*/
+						if(is_current_event&&(event=trace->first_eimaging_event))
+						{
+							event->is_current_event=1;
+							marker=SCALE_X(event->time,start_analysis_interval,axes_left,
+								x_scale);
+							reconcile_Electrical_imaging_event_marker(&marker,event,x_scale,
+								axes_left,start_analysis_interval);
+							time=(int)((float)((times)[event->time])*1000./frequency+0.5);
+							sprintf(time_string,"%d",time);
+							write_marker_time(time_string,marker,axes_left,
+								axes_width,axes_top,signal_drawing_information->font,
+								event->graphics_context,display,drawing_area,drawing);
+						}
 					}
 				}/* if(found) */
 				else

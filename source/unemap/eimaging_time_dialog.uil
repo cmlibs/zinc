@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : eimaging_time_dialog.uil
 !
-!LAST MODIFIED : 21 June 2001
+!LAST MODIFIED : 27 June 2001
 !
 !DESCRIPTION :
 !The widgets/gadgets for the electrical imaging time dialog.
@@ -19,9 +19,9 @@ procedure
 	identify_eimaging_period_scroll;
 	identify_eimaging_period_value;
   alter_eimaging_event_info;
-	id_eimaging_time_marker_menu;
-	id_eimaging_time_marker_choice;
-	id_eimaging_time_marker_pulldn;
+	id_eimaging_event_menu;
+	id_eimaging_event_choice;
+	id_eimaging_event_pulldn;
 	id_eimaging_clear_butt;
 	id_eimaging_current_butt;
 	id_eimaging_p_start_butt;
@@ -58,7 +58,7 @@ object
 			{
 			XmForm eimaging_period_menu;
 			XmSeparator separator_1;			
-			XmForm eimage_time_marker_menu;	
+			XmForm eimage_event_menu;	
 			XmSeparator separator_2;		
 			XmForm eimage_tm_dlg_ok_app_cncl;	
 			};
@@ -106,7 +106,7 @@ object
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		};
-	eimage_time_marker_menu: XmForm
+	eimage_event_menu: XmForm
 		{
 		arguments
 			{
@@ -122,14 +122,14 @@ object
 			};
 		controls
 			{		
-			XmLabelGadget eimaging_time_marker_label;
-			XmOptionMenu eimaging_time_marker_choice;
+			XmLabelGadget eimaging_event_label;
+			XmOptionMenu eimaging_event_choice;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_eimaging_time_marker_menu(eimaging_time_dialog_structure);
+				id_eimaging_event_menu(eimaging_time_dialog_structure);
 				};
 			};
 		};
@@ -143,7 +143,7 @@ object
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNrightOffset = widget_spacing;
 			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = XmForm	eimage_time_marker_menu;
+			XmNtopWidget = XmForm	eimage_event_menu;
 			XmNtopOffset = widget_spacing;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
@@ -292,7 +292,7 @@ object
 		arguments
 			{
 			XmNlabelString =
-			compound_string("Marker separation: ");
+			compound_string("   Event separation: ");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_BEGINNING;
 			XmNleftAttachment = XmATTACH_FORM;
@@ -390,12 +390,12 @@ object
 			XmNbottomOffset = 0;
 			};
 		};		
-	eimaging_time_marker_label: XmLabelGadget
+	eimaging_event_label: XmLabelGadget
 		{
 		arguments
 			{
 			XmNlabelString =
-			compound_string("Marker relative to: ");
+			compound_string("Event relative to: ");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_BEGINNING;
 			XmNleftAttachment = XmATTACH_FORM;
@@ -407,14 +407,14 @@ object
 			XmNbottomOffset = 0;
 			};
 		};
-	eimaging_time_marker_choice: XmOptionMenu
+	eimaging_event_choice: XmOptionMenu
 		{
 		arguments
 			{
 			XmNmarginHeight = 0;
 			XmNmarginWidth = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;	
-			XmNleftWidget = XmLabelGadget eimaging_time_marker_label;
+			XmNleftWidget = XmLabelGadget eimaging_event_label;
 			XmNleftOffset = widget_spacing;		
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
@@ -448,7 +448,7 @@ object
 					{
 					MrmNcreateCallback = procedures
 					{
-					id_eimaging_time_marker_pulldn(eimaging_time_dialog_structure);
+					id_eimaging_event_pulldn(eimaging_time_dialog_structure);
 					};
 			};
 				};
@@ -457,7 +457,7 @@ object
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_eimaging_time_marker_choice(eimaging_time_dialog_structure);
+				id_eimaging_event_choice(eimaging_time_dialog_structure);
 				};
 			};
 		};
@@ -466,7 +466,7 @@ object
 		arguments
 			{
 			XmNlabelString =
-			compound_string("Current Marker");
+			compound_string("Current Event");
 			XmNfontList = button_font;		
 			};
 		callbacks
@@ -486,7 +486,7 @@ object
 		arguments
 			{
 			XmNlabelString =
-			compound_string("Remove all markers");
+			compound_string("Remove all Events");
 			XmNfontList = button_font;
 			};
 		callbacks

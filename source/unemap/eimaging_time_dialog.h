@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : eimaging_time_dialog.h
 
-LAST MODIFIED : 18 June 2001
+LAST MODIFIED : 27 June 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -71,9 +71,9 @@ The dialog box for electrical imaging times .
 	Widget period_scroll;
 	Widget period_value;
 	Widget shell;
-	Widget time_marker_choice;
-	Widget time_marker_menu;
-	Widget time_marker_pull_down;
+	Widget event_choice;
+	Widget event_menu;
+	Widget event_pull_down;
 }; /* struct Map_dialog */
 
 /*

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : eimaging_time_dialog.c
 
-LAST MODIFIED : 18 June 2001
+LAST MODIFIED : 27 June 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -94,7 +94,7 @@ static void id_eimaging_time_dlg_apply_but(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->apply_button
 ==============================================================================*/
 {
 
@@ -122,7 +122,7 @@ static void id_eimaging_time_dlg_cancel_but(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->cancel_button
 ==============================================================================*/
 {
 
@@ -150,7 +150,7 @@ static void id_eimaging_time_dlg_ok_but(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->ok_button
 ==============================================================================*/
 {
 
@@ -178,7 +178,7 @@ static void identify_eimaging_period_menu(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->period_menu
 ==============================================================================*/
 {
 
@@ -206,7 +206,7 @@ static void identify_eimaging_period_label(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->period_label
 ==============================================================================*/
 {
 
@@ -234,7 +234,7 @@ static void identify_eimaging_period_scroll(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->period_scroll
 ==============================================================================*/
 {
 
@@ -262,7 +262,7 @@ static void identify_eimaging_period_value(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->period_value
 ==============================================================================*/
 {
 
@@ -521,91 +521,91 @@ Closes the windows associated with the imaging_time_dialog box.
 	LEAVE;
 } /*close_eimaging_time_dialog  */
 
-static void id_eimaging_time_marker_menu(Widget *widget_id,
+static void id_eimaging_event_menu(Widget *widget_id,
 	XtPointer eimaging_time_dialog_structure,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->event_menu
 ==============================================================================*/
 {
 
 	struct Electrical_imaging_time_dialog *eimaging_time_dialog;
 
-	ENTER(id_eimaging_time_marker_menu);
+	ENTER(id_eimaging_event_menu);
 	USE_PARAMETER(call_data);
 	if (eimaging_time_dialog=(struct Electrical_imaging_time_dialog *)
 		eimaging_time_dialog_structure)
 	{
-		eimaging_time_dialog->time_marker_menu= *widget_id;
+		eimaging_time_dialog->event_menu= *widget_id;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_eimaging_time_marker_menu."
+			"id_eimaging_event_menu."
 			" Missing eimaging_time_dialog_structure");
 	}
 	LEAVE;
-} /* id_eimaging_time_marker_menu  */
+} /* id_eimaging_event_menu  */
 
-static void id_eimaging_time_marker_choice(Widget *widget_id,
+static void id_eimaging_event_choice(Widget *widget_id,
 	XtPointer eimaging_time_dialog_structure,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->event_choice
 ==============================================================================*/
 {
 
 	struct Electrical_imaging_time_dialog *eimaging_time_dialog;
 
-	ENTER(id_eimaging_time_marker_choice);
+	ENTER(id_eimaging_event_choice);
 	USE_PARAMETER(call_data);
 	if (eimaging_time_dialog=(struct Electrical_imaging_time_dialog *)
 		eimaging_time_dialog_structure)
 	{
-		eimaging_time_dialog->time_marker_choice= *widget_id;			
+		eimaging_time_dialog->event_choice= *widget_id;			
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_eimaging_time_marker_choice."
+			"id_eimaging_event_choice."
 			" Missing eimaging_time_dialog_structure");
 	}
 	LEAVE;
-} /* id_eimaging_time_marker_choice  */
+} /* id_eimaging_event_choice  */
 
-static void id_eimaging_time_marker_pulldn(Widget *widget_id,
+static void id_eimaging_event_pulldn(Widget *widget_id,
 	XtPointer eimaging_time_dialog_structure,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->event_pull_down
 ==============================================================================*/
 {
 
 	struct Electrical_imaging_time_dialog *eimaging_time_dialog;
 
-	ENTER(id_eimaging_time_marker_pulldn);
+	ENTER(id_eimaging_event_pulldn);
 	USE_PARAMETER(call_data);
 	if (eimaging_time_dialog=(struct Electrical_imaging_time_dialog *)
 		eimaging_time_dialog_structure)
 	{
-		eimaging_time_dialog->time_marker_pull_down= *widget_id;
+		eimaging_time_dialog->event_pull_down= *widget_id;
 		/* to match first entry in uil file*/
 		eimaging_time_dialog->reference_event=EVENT_CLEAR; 		
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_eimaging_time_marker_pulldn."
+			"id_eimaging_event_pulldn."
 			" Missing eimaging_time_dialog_structure");
 	}
 	LEAVE;
-} /* id_eimaging_time_marker_pulldn  */
+} /* id_eimaging_event_pulldn  */
 
 static void id_eimaging_clear_butt(Widget *widget_id,
 	XtPointer eimaging_time_dialog_structure,XtPointer call_data)
@@ -613,7 +613,7 @@ static void id_eimaging_clear_butt(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->clear_button
 ==============================================================================*/
 {
 
@@ -641,7 +641,7 @@ static void id_eimaging_current_butt(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->current_button
 ==============================================================================*/
 {
 
@@ -669,7 +669,7 @@ static void id_eimaging_p_start_butt(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->p_wave_start_button
 ==============================================================================*/
 {
 
@@ -697,7 +697,7 @@ static void id_eimaging_p_pt_butt(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->p_wave_peak_or_trough_button
 ==============================================================================*/
 {
 
@@ -725,7 +725,7 @@ static void id_eimaging_p_end_butt(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->p_wave_end_button
 ==============================================================================*/
 {
 
@@ -753,7 +753,7 @@ static void id_eimaging_qrs_start_butt(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->qrs_wave_start_button
 ==============================================================================*/
 {
 
@@ -781,7 +781,7 @@ static void id_eimaging_qrs_pt_butt(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->qrs_wave_peak_or_trough_button
 ==============================================================================*/
 {
 
@@ -809,7 +809,7 @@ static void id_eimaging_qrs_end_butt(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->qrs_wave_end_button
 ==============================================================================*/
 {
 
@@ -837,7 +837,7 @@ static void id_eimaging_t_start_butt(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->t_wave_start_button
 ==============================================================================*/
 {
 
@@ -865,7 +865,7 @@ static void id_eimaging_t_pt_butt(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->t_wave_peak_or_trough_button
 ==============================================================================*/
 {
 
@@ -893,7 +893,7 @@ static void id_eimaging_t_end_butt(Widget *widget_id,
 LAST MODIFIED : 18 June 2001
 
 DESCRIPTION :
-Saves the id of the 
+Saves the id of the eimaging_time_dialog->t_wave_end_button
 ==============================================================================*/
 {
 
@@ -923,7 +923,7 @@ struct Electrical_imaging_time_dialog *create_Electrical_imaging_time_dialog(
 	struct Electrical_imaging_time_dialog **eimaging_time_dialog_address,
 	Widget activation,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 18 June 2000
+LAST MODIFIED : 26 June 2000
 
 DESCRIPTION :
 Allocates the memory for an Electrical_imaging_time dialog.  Retrieves the 
@@ -957,12 +957,12 @@ necessary widgets and initializes the appropriate fields.
 		 (XtPointer)identify_eimaging_period_label},
 		{"identify_eimaging_period_value",
 		 (XtPointer)identify_eimaging_period_value},
-		{"id_eimaging_time_marker_menu",
-			 (XtPointer)id_eimaging_time_marker_menu},
-		{"id_eimaging_time_marker_choice",
-			 (XtPointer)id_eimaging_time_marker_choice},
-		{"id_eimaging_time_marker_pulldn",
-			 (XtPointer)id_eimaging_time_marker_pulldn},
+		{"id_eimaging_event_menu",
+			 (XtPointer)id_eimaging_event_menu},
+		{"id_eimaging_event_choice",
+			 (XtPointer)id_eimaging_event_choice},
+		{"id_eimaging_event_pulldn",
+			 (XtPointer)id_eimaging_event_pulldn},
 		{"id_eimaging_clear_butt",
 			 (XtPointer)id_eimaging_clear_butt},
 		{"id_eimaging_current_butt",
@@ -1028,9 +1028,9 @@ necessary widgets and initializes the appropriate fields.
 				eimaging_time_dialog->period_label=(Widget)NULL;
 				eimaging_time_dialog->period_scroll=(Widget)NULL;
 				eimaging_time_dialog->period_value=(Widget)NULL;
-				eimaging_time_dialog->time_marker_menu=(Widget)NULL;			
-				eimaging_time_dialog->time_marker_choice=(Widget)NULL;
-				eimaging_time_dialog->time_marker_pull_down=(Widget)NULL;
+				eimaging_time_dialog->event_menu=(Widget)NULL;			
+				eimaging_time_dialog->event_choice=(Widget)NULL;
+				eimaging_time_dialog->event_pull_down=(Widget)NULL;
 				eimaging_time_dialog->clear_button=(Widget)NULL;
 				eimaging_time_dialog->current_button=(Widget)NULL;
 				eimaging_time_dialog->p_wave_start_button=(Widget)NULL;
@@ -1055,7 +1055,7 @@ necessary widgets and initializes the appropriate fields.
 					XmNdeleteResponse,XmDO_NOTHING,
 					XmNmwmDecorations,MWM_DECOR_ALL|MWM_DECOR_RESIZEH,
 					XmNmwmFunctions,MWM_FUNC_MOVE|MWM_FUNC_CLOSE,
-					XmNtitle,"Electrical Imaging Time settings",
+					XmNtitle,"Electrical Imaging Event Settings",
 					NULL))
 				{
 					eimaging_time_dialog->shell_list_item=
@@ -1085,7 +1085,7 @@ necessary widgets and initializes the appropriate fields.
 							{
 
 							child_widget=
-								XmOptionButtonGadget(eimaging_time_dialog->time_marker_choice);
+								XmOptionButtonGadget(eimaging_time_dialog->event_choice);
 							XtVaSetValues(child_widget,
 								XmNshadowThickness,0,
 								XmNhighlightThickness,0,
