@@ -680,7 +680,7 @@ Main program for the CMISS Graphical User Interface
 	command_data.unemap_system_window=(struct System_window *)NULL;
 #endif /* defined (UNEMAP) */
 #if defined (CELL)
-	command_data.cell_window=(struct Cell_window *)NULL;
+	command_data.cell_interface = (struct Cell_interface *)NULL;
 #endif /* defined (CELL) */
 #if defined (MIRAGE)
 	command_data.tracking_editor_dialog=(struct Tracking_editor_dialog *)NULL;
