@@ -200,11 +200,10 @@ DESCRIPTION :
 Returns element with <name> in sub_region <path> of <region> if it exists.
 ==============================================================================*/
 {
-	int node_number;
+	int name_length, node_number;
 	struct Cmiss_node *return_node;
 	struct Cmiss_region *sub_region;
 	struct FE_region *fe_region;
-	unsigned int name_length;
 
 	ENTER(Cmiss_region_get_node);
 	return_node = (struct Cmiss_node *)NULL;
@@ -214,7 +213,7 @@ Returns element with <name> in sub_region <path> of <region> if it exists.
 			sub_region && (fe_region = Cmiss_region_get_FE_region(sub_region)))
 		{
 			if ((1==sscanf(name," %d %n",&node_number,&name_length))&&
-				(name_length==strlen(name)))
+				((unsigned int)name_length==strlen(name)))
 			{
 				return_node = FE_region_get_FE_node_from_identifier(fe_region,
 					node_number);
