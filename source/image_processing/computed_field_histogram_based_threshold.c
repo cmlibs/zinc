@@ -446,8 +446,15 @@ Perform a automatic thresholding operation on the image cache.
 				}
 				w1 = 1.0 - w0;
 				mu0 = mu/w0;
-				mu1 = (muT - mu) / w1;
-				sigB[j] = w0 * w1 * (mu1 - mu0) * (mu1 - mu0);
+				if (w1 == 0.0)
+				{
+				        sigB[j] = 0.0;
+				}
+				else
+				{
+					mu1 = (muT - mu) / w1;
+					sigB[j] = w0 * w1 * (mu1 - mu0) * (mu1 - mu0);
+				}
 				max_sigB = my_Max(max_sigB, sigB[j]);
 			}
 			/*for (j = 0; j < number_of_bins; j++ )
