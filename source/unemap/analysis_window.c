@@ -4149,7 +4149,7 @@ the new potential time.
 	struct User_interface *user_interface;
 	Window signals_window;
 
-	ENTER(analysis_time_update_callback);
+	ENTER(analysis_window_update_signal_area_time);
 	return_code=0;
 	if ((*analysis->highlight)&&(highlight_device= **(analysis->highlight))&&
 		(user_interface=analysis->user_interface)&&
