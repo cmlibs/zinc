@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.c
 
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -98,7 +98,7 @@ Module functions
 static void GT_element_group_element_change(
 	struct MANAGER_MESSAGE(FE_element) *message,void *gt_element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 One or several of the nodes have changed in the manager. If any changes affect
@@ -123,7 +123,10 @@ this <gt_element_group>, affected graphics are updated.
 			} break;
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_element):
 			case MANAGER_CHANGE_OBJECT(FE_element):
+			case MANAGER_CHANGE_IDENTIFIER(FE_element):
 			{
+				/*???RC not very efficient for change of identifier, but this seldom
+					happens and must cause some graphics to be rebuilt sometimes */
 				if (IS_OBJECT_IN_GROUP(FE_element)(message->object_changed,
 					gt_element_group->element_group))
 				{
@@ -149,7 +152,6 @@ this <gt_element_group>, affected graphics are updated.
 			} break;
 			case MANAGER_CHANGE_ADD(FE_element):
 			case MANAGER_CHANGE_DELETE(FE_element):
-			case MANAGER_CHANGE_IDENTIFIER(FE_element):
 			{
 				/* do nothing */
 			} break;
@@ -241,7 +243,10 @@ this <gt_element_group>, affected graphics are updated.
 			} break;
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
 			case MANAGER_CHANGE_OBJECT(FE_node):
+			case MANAGER_CHANGE_IDENTIFIER(FE_node):
 			{
+				/*???RC not very efficient for change of identifier, but this seldom
+					happens and must cause some graphics to be rebuilt sometimes */
 				if (IS_OBJECT_IN_GROUP(FE_node)(message->object_changed,
 					gt_element_group->node_group))
 				{
@@ -267,7 +272,6 @@ this <gt_element_group>, affected graphics are updated.
 			} break;
 			case MANAGER_CHANGE_ADD(FE_node):
 			case MANAGER_CHANGE_DELETE(FE_node):
-			case MANAGER_CHANGE_IDENTIFIER(FE_node):
 			{
 				/* do nothing */
 			} break;
