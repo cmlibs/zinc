@@ -22156,6 +22156,7 @@ Can also write individual element groups with the <group> option.
 				}
 			}
 		}
+		DESTROY(Option_table)(&option_table);
 		if (field_order_info)
 		{
 			DESTROY(FE_field_order_info)(&field_order_info);
