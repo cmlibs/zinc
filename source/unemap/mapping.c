@@ -7375,7 +7375,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 		}
 		else
 		{				
-#if (!defined (NEW_CODE))
+#if 0 /*(!defined (NEW_CODE))*/
 			/* 2d map for 2d projection */	
 			/* draw one full size map*/
 			return_code=draw_map_2d(map,recalculate,drawing,drawing->width,
@@ -9167,6 +9167,113 @@ draw the constant thickness contours
 	return(return_code);
 }/* draw_2d_constant_thickness_contours */
 
+static int set_map_2d_map_min_max(struct Map *map)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2001
+
+DESCRIPTION :
+Sets the (possibly multi frame) <map>'s minimum and maximum, 
+based upon the map's frame's min and max.
+*******************************************************************************/
+{
+	float min_f,max_f;
+	int i,number_of_frames,return_code;
+	struct Map_frame *frame;
+
+	ENTER(set_map_2d_map_min_max);
+	if(map)
+	{
+		return_code=1;
+		number_of_frames=map->number_of_frames;
+		/*???DB.  loop over frames */
+		if (!(map->fixed_range)||(map->minimum_value>map->maximum_value))
+		{
+			frame=map->frames;
+			min_f=frame->minimum;
+			max_f=frame->maximum;
+			for (i=number_of_frames-1;i>0;i--)
+			{
+				frame++;
+				if (frame->minimum<=frame->maximum)
+				{
+					if (min_f<=max_f)
+					{
+						if (frame->minimum<min_f)
+						{
+							min_f=frame->minimum;
+						}
+						if (frame->maximum<max_f)
+						{
+							max_f=frame->maximum;
+						}
+					}
+					else
+					{
+						min_f=frame->minimum;
+						max_f=frame->maximum;
+					}
+				}
+			}
+			map->minimum_value=min_f;
+			map->maximum_value=max_f;
+			map->contour_minimum=min_f;
+			map->contour_maximum=max_f;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_map_2d_map_min_max invalid arguments");
+    return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_map_2d_map_min_max */
+
+static int set_map_2d_frame_min_max(struct Map_frame *frame,float max_f,
+	float min_f,int minimum_x,int maximum_x,int minimum_y,int maximum_y)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2001
+
+DESCRIPTION :
+<frame>'s minimum and maximum.
+*******************************************************************************/
+{
+	int return_code;
+
+	ENTER(set_map_2d_fram_min_max);
+	if(frame)
+	{
+		return_code=1;
+		if (max_f<min_f)
+		{
+			frame->maximum=0;
+			frame->maximum_x= -1;
+			frame->maximum_y= -1;
+			frame->minimum=0;
+			frame->minimum_x= -1;
+			frame->minimum_y= -1;	
+		}/* if (max_f<min_f) */
+		else
+		{
+			frame->maximum=max_f;
+			frame->maximum_x=maximum_x;
+			frame->maximum_y=maximum_y;
+			frame->minimum=min_f;
+			frame->minimum_x=minimum_x;
+			frame->minimum_y=minimum_y;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_map_2d_frame_min_max invalid arguments");
+    return_code=0;
+	}	
+	LEAVE;
+	return(return_code);
+}/* set_map_2d_frame_min_max */
+
 static int set_map_2d_no_interpolation_min_max(struct Map *map,
 	int *draw_region_number,int number_of_electrodes)
 /*******************************************************************************
@@ -9271,62 +9378,12 @@ for the case map->interpolation_type==NO_INTERPOLATION.
 			}
 			frame->maximum_region=maximum_region;
 			frame->minimum_region=minimum_region;
-			if (max_f<min_f)
-			{
-				frame->maximum=0;
-				frame->maximum_x= -1;
-				frame->maximum_y= -1;
-				frame->minimum=0;
-				frame->minimum_x= -1;
-				frame->minimum_y= -1;
-			}
-			else
-			{
-				frame->maximum=max_f;
-				frame->maximum_x=maximum_x;
-				frame->maximum_y=maximum_y;
-				frame->minimum=min_f;
-				frame->minimum_x=minimum_x;
-				frame->minimum_y=minimum_y;
-			}
+			set_map_2d_frame_min_max(frame,max_f,min_f,minimum_x,maximum_x,
+				minimum_y,maximum_y);
 			frame_number++;
 			frame++;
 		}
-		/*???DB.  loop over frames */
-		if (!(map->fixed_range)||
-			(map->minimum_value>map->maximum_value))
-		{
-			frame=map->frames;
-			min_f=frame->minimum;
-			max_f=frame->maximum;
-			for (i=number_of_frames-1;i>0;i--)
-			{
-				frame++;
-				if (frame->minimum<=frame->maximum)
-				{
-					if (min_f<=max_f)
-					{
-						if (frame->minimum<min_f)
-						{
-							min_f=frame->minimum;
-						}
-						if (frame->maximum<max_f)
-						{
-							max_f=frame->maximum;
-						}
-					}
-					else
-					{
-						min_f=frame->minimum;
-						max_f=frame->maximum;
-					}
-				}
-			}
-			map->minimum_value=min_f;
-			map->maximum_value=max_f;
-			map->contour_minimum=min_f;
-			map->contour_maximum=max_f;
-		}
+		set_map_2d_map_min_max(map);
 	}			
 	else
 	{		
@@ -10140,6 +10197,223 @@ Set <f_approx> from <function>
 	return(return_code);
 }/* draw_2d_calculate_f_approx */
 
+static int draw_2d_map_boundary(char *background_map_boundary_base,
+	int map_height,int map_width,float *pixel_value,float boundary_pixel_value,
+	float background_pixel_value)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2001
+
+DESCRIPTION : (possibly) draw map boundary
+*******************************************************************************/
+{	
+	char *background_map_boundary;
+	int i,j,return_code;
+
+	ENTER(draw_2d_map_boundary);
+	background_map_boundary=(char *)NULL;
+
+	if(background_map_boundary_base&&pixel_value)
+	{
+		return_code=1;
+		background_map_boundary=background_map_boundary_base;
+		for (i=map_height;i>0;i--)
+		{
+			for (j=map_width;j>0;j--)
+			{
+				if (0== *background_map_boundary)
+				{
+					if (((i<map_height)&&(1==
+						*(background_map_boundary-map_width)))||
+						((i>1)&&(1==
+							*(background_map_boundary+map_width)))||
+						((j<map_width)&&(1==
+							*(background_map_boundary-1)))||
+						((j>1)&&(1== *(background_map_boundary+1))))
+					{
+						*pixel_value=boundary_pixel_value;
+					}
+					else
+					{
+						*pixel_value=background_pixel_value;
+					}
+				}
+				background_map_boundary++;
+				pixel_value++;
+			}
+		}/* for (i=map_height;i>0;i--)*/
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_2d_map_boundary Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);	
+} /* draw_2d_map_boundary */
+
+static int draw_2d_set_minx_max_x(struct Rig *rig,int *draw_region_number,
+	float *min_x,float *max_x,float *min_y,float *max_y,float *a,float pi,
+	enum Projection_type map_projection_type)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2001
+
+DESCRIPTION :
+sets <min_x>, <max_x> <min_y> <max_y>.
+*******************************************************************************/
+{
+	int region_number,return_code,temp_region_number,number_of_regions;
+	struct Region_list_item *region_item;
+	struct Region *region;
+
+	ENTER(draw_2d_set_minx_max_x);
+	region_item=(struct Region_list_item *)NULL;
+	region=(struct Region *)NULL;
+	if((rig)&&(0<(number_of_regions=rig->number_of_regions)))
+	{
+		return_code=1;
+		/* divide the drawing area into regions */
+		region_item=get_Rig_region_list(rig);
+		for (temp_region_number=0;temp_region_number<number_of_regions;
+				 temp_region_number++)
+		{
+			region_number=draw_region_number[temp_region_number];
+			if (0<=region_number)
+			{
+				region=get_Region_list_item_region(region_item);
+				switch (region->type)
+				{
+					case SOCK:
+					{
+						switch (map_projection_type)
+						{
+							case HAMMER_PROJECTION:
+							{
+								Hammer_projection(max_x[region_number],0,a,
+									max_y+region_number,(float *)NULL);
+								min_x[region_number]= -1;
+								max_x[region_number]=1;
+								min_y[region_number]= -1;
+							} break;
+							case POLAR_PROJECTION:
+							{
+								min_x[region_number]= -max_x[region_number];
+								min_y[region_number]=min_x[region_number];
+								max_y[region_number]=max_x[region_number];
+							} break;
+						}
+					} break;
+					case TORSO:
+					{
+						min_x[region_number]= -pi;
+						max_x[region_number]=pi;
+					} break;
+				}/* switch (region->type) */
+			}/* for (temp_region_number=0;temp_region_number<number_of_regions; */
+			region_item=get_Region_list_item_next(region_item);
+		}/* for (temp_region_number=0;temp_region_number<number_of_regions; */
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"draw_2d_set_minx_max_x Invalid arguments");
+		return_code=0;
+	}	
+	LEAVE;
+	return(return_code); 
+}/* draw_2d_set_minx_max_x */
+
+static int draw_2d_calc_map_to_screen_transform(struct Map *map,Display *display,
+	int number_of_drawn_regions,float *min_x,float *max_x,float *min_y,
+	float *max_y,int screen_region_width,int screen_region_height,int x_border,
+	int y_border,int ascent,int descent,int *start_x,int *start_y,
+	float *stretch_x,float *stretch_y,int number_of_rows,int number_of_columns,
+	int map_height,int map_width)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2001
+
+DESCRIPTION :
+*******************************************************************************/
+{	
+	float pixel_aspect_ratio;	
+	int i,return_code;
+	
+	ENTER(draw_2d_calc_map_to_screen_transform);
+	if(map&&display)
+	{
+		return_code=1;						
+		/* calculate the transformation from map coordinates to screen coordinates */
+		pixel_aspect_ratio=get_pixel_aspect_ratio(display);
+		for (i=0;i<number_of_drawn_regions;i++)
+		{
+			if ((map->maintain_aspect_ratio)&&(max_x[i]!=min_x[i])&&
+				(screen_region_width>2*x_border+1)&&(max_y[i]!=min_y[i])&&
+				(screen_region_height>2*y_border+1))
+			{
+				if ((float)((max_y[i]-min_y[i])*(screen_region_width-
+					(2*x_border+1)))<(float)((max_x[i]-min_x[i])*
+						(screen_region_height-(2*y_border+ascent+descent+1)))*
+					pixel_aspect_ratio)
+				{
+					/* fill width */
+					start_x[i]=x_border;
+					stretch_x[i]=((float)(screen_region_width-(2*x_border+1)))/
+						(max_x[i]-min_x[i]);
+					stretch_y[i]=stretch_x[i]/pixel_aspect_ratio;
+					start_y[i]=(screen_region_height+
+						(int)((max_y[i]-min_y[i])*stretch_y[i]))/2;
+				}
+				else
+				{
+					/* fill height */
+					start_y[i]=screen_region_height-(y_border+1);
+					stretch_y[i]=((float)(screen_region_height-
+						(2*y_border+ascent+descent+1)))/(max_y[i]-min_y[i]);
+					stretch_x[i]=stretch_y[i]*pixel_aspect_ratio;
+					start_x[i]=(screen_region_width-
+						(int)((max_x[i]-min_x[i])*stretch_x[i]))/2;
+				}
+			}
+			else
+			{
+				if ((max_x[i]==min_x[i])||(screen_region_width<=2*x_border+1))
+				{
+					start_x[i]=(screen_region_width)/2;
+					stretch_x[i]=0;
+				}
+				else
+				{
+					start_x[i]=x_border;
+					stretch_x[i]=((float)(screen_region_width-(2*x_border+1)))/
+						(max_x[i]-min_x[i]);
+				}
+				if ((max_y[i]==min_y[i])||(screen_region_height<=2*y_border+1))
+				{
+					start_y[i]=(screen_region_height)/2;
+					stretch_y[i]=0;
+				}
+				else
+				{
+					start_y[i]=screen_region_height-(y_border+1);
+					stretch_y[i]=((float)(screen_region_height-
+						(2*y_border+ascent+descent+1)))/(max_y[i]-min_y[i]);
+				}
+			}
+			start_x[i] += ((i/number_of_rows)*map_width)/
+				number_of_columns;
+			start_y[i] += ((i%number_of_rows)*map_height)/number_of_rows;
+		}/* for (i=0;i<number_of_drawn_regions;i++) */
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"draw_2d_calc_map_to_screen_transform Invalid arguments");
+		return_code=0;
+	}	
+	LEAVE;
+	return(return_code); 
+}/* draw_2d_calc_map_to_screen_transform */
+
 /* #define one of these but not both. Or none, the usual case. */
 /*
 #define GOURAUD_FROM_MESH 1
@@ -10371,7 +10645,7 @@ An experimental function. Only works for Torso maps?
 int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing,
 		int map_width,int map_height, int map_x_offset,int map_y_offset)
 /*******************************************************************************
-LAST MODIFIED : 13 July 2001
+LAST MODIFIED : 19 July 2001
 
 DESCRIPTION :
 This function draws the <map> in the <drawing>, with <map_width>, <map_height> 
@@ -10402,7 +10676,7 @@ comparison with 3D maps.
 	Display *display=(Display *)NULL;
 	enum Map_type map_type;
 	float a,background_pixel_value,boundary_pixel_value,f_approx,frame_time,f_value,
-		max_f,min_f,pi,pi_over_2,pixel_aspect_ratio,range_f,two_pi,u,v,x_screen,
+		max_f,min_f,pi,pi_over_2,range_f,two_pi,u,v,x_screen,
 		x_screen_left,x_screen_step,y_screen,y_screen_top,y_screen_step;
 	float *electrode_value=(float *)NULL;
 	float *max_x=(float *)NULL;
@@ -10447,7 +10721,6 @@ comparison with 3D maps.
 	struct Region *current_region=(struct Region *)NULL;
 	struct Region	*maximum_region=(struct Region *)NULL;
 	struct Region *minimum_region=(struct Region *)NULL;
-	struct Region *region=(struct Region *)NULL;
 	struct Region_list_item *region_item=(struct Region_list_item *)NULL;
 	struct Rig *rig=(struct Rig *)NULL;
 	XCharStruct bounds;
@@ -10670,47 +10943,9 @@ comparison with 3D maps.
 							}/* if ((ELECTRODE==(description=(*device)->description)->type)&& */
 							device++;
 							number_of_devices--;
-						}/* while (number_of_devices>0) */
-						/* divide the drawing area into regions */
-						region_item=get_Rig_region_list(rig);
-						for (temp_region_number=0;temp_region_number<number_of_regions;
-							temp_region_number++)
-						{
-							region_number=draw_region_number[temp_region_number];
-							if (0<=region_number)
-							{
-								region=get_Region_list_item_region(region_item);
-								switch (region->type)
-								{
-									case SOCK:
-									{
-										switch (map->projection_type)
-										{
-											case HAMMER_PROJECTION:
-											{
-												Hammer_projection(max_x[region_number],0,&a,
-													max_y+region_number,(float *)NULL);
-												min_x[region_number]= -1;
-												max_x[region_number]=1;
-												min_y[region_number]= -1;
-											} break;
-											case POLAR_PROJECTION:
-											{
-												min_x[region_number]= -max_x[region_number];
-												min_y[region_number]=min_x[region_number];
-												max_y[region_number]=max_x[region_number];
-											} break;
-										}
-									} break;
-									case TORSO:
-									{
-										min_x[region_number]= -pi;
-										max_x[region_number]=pi;
-									} break;
-								}/* switch (region->type) */
-							}/* for (temp_region_number=0;temp_region_number<number_of_regions; */
-							region_item=get_Region_list_item_next(region_item);
-						}/* for (temp_region_number=0;temp_region_number<number_of_regions; */
+						}/* while (number_of_devices>0) */			
+						draw_2d_set_minx_max_x(rig,draw_region_number,min_x,max_x,min_y,
+							max_y,&a,pi,map->projection_type);
 						number_of_columns=(int)(0.5+sqrt((double)number_of_drawn_regions));
 						if (number_of_columns<1)
 						{
@@ -10731,68 +10966,10 @@ comparison with 3D maps.
 						/* make the regions fill the width and the height */
 						screen_region_width=(map_width)/number_of_columns;
 						screen_region_height=(map_height)/number_of_rows;
-						/* calculate the transformation from map coordinates to screen
-							 coordinates */
-						pixel_aspect_ratio=get_pixel_aspect_ratio(display);
-						for (i=0;i<number_of_drawn_regions;i++)
-						{
-							if ((map->maintain_aspect_ratio)&&(max_x[i]!=min_x[i])&&
-								(screen_region_width>2*x_border+1)&&(max_y[i]!=min_y[i])&&
-								(screen_region_height>2*y_border+1))
-							{
-								if ((float)((max_y[i]-min_y[i])*(screen_region_width-
-									(2*x_border+1)))<(float)((max_x[i]-min_x[i])*
-										(screen_region_height-(2*y_border+ascent+descent+1)))*
-									pixel_aspect_ratio)
-								{
-									/* fill width */
-									start_x[i]=x_border;
-									stretch_x[i]=((float)(screen_region_width-(2*x_border+1)))/
-										(max_x[i]-min_x[i]);
-									stretch_y[i]=stretch_x[i]/pixel_aspect_ratio;
-									start_y[i]=(screen_region_height+
-										(int)((max_y[i]-min_y[i])*stretch_y[i]))/2;
-								}
-								else
-								{
-									/* fill height */
-									start_y[i]=screen_region_height-(y_border+1);
-									stretch_y[i]=((float)(screen_region_height-
-										(2*y_border+ascent+descent+1)))/(max_y[i]-min_y[i]);
-									stretch_x[i]=stretch_y[i]*pixel_aspect_ratio;
-									start_x[i]=(screen_region_width-
-										(int)((max_x[i]-min_x[i])*stretch_x[i]))/2;
-								}
-							}
-							else
-							{
-								if ((max_x[i]==min_x[i])||(screen_region_width<=2*x_border+1))
-								{
-									start_x[i]=(screen_region_width)/2;
-									stretch_x[i]=0;
-								}
-								else
-								{
-									start_x[i]=x_border;
-									stretch_x[i]=((float)(screen_region_width-(2*x_border+1)))/
-										(max_x[i]-min_x[i]);
-								}
-								if ((max_y[i]==min_y[i])||(screen_region_height<=2*y_border+1))
-								{
-									start_y[i]=(screen_region_height)/2;
-									stretch_y[i]=0;
-								}
-								else
-								{
-									start_y[i]=screen_region_height-(y_border+1);
-									stretch_y[i]=((float)(screen_region_height-
-										(2*y_border+ascent+descent+1)))/(max_y[i]-min_y[i]);
-								}
-							}
-							start_x[i] += ((i/number_of_rows)*map_width)/
-								number_of_columns;
-							start_y[i] += ((i%number_of_rows)*map_height)/number_of_rows;
-						}/* for (i=0;i<number_of_drawn_regions;i++) */
+						draw_2d_calc_map_to_screen_transform(map,display,number_of_drawn_regions,
+							min_x,max_x,min_y,max_y,screen_region_width,screen_region_height,
+							x_border,y_border,ascent,descent,start_x,start_y,stretch_x,
+							stretch_y,number_of_rows,number_of_columns,map_height,map_width);
 						/* calculate the electrode screen locations */
 						electrode=map->electrodes;
 						x_item=x;
@@ -11215,25 +11392,15 @@ comparison with 3D maps.
 													}/* for (temp_region_number=0; */
 													frame->maximum_region=maximum_region;
 													frame->minimum_region=minimum_region;
+													set_map_2d_frame_min_max(frame,max_f,min_f,minimum_x,
+														maximum_x,minimum_y,maximum_y);
 													if (max_f<min_f)
 													{
-														frame->maximum=0;
-														frame->maximum_x= -1;
-														frame->maximum_y= -1;
-														frame->minimum=0;
-														frame->minimum_x= -1;
-														frame->minimum_y= -1;
 														background_pixel_value= -1;
-														boundary_pixel_value=1;
-													}/* if (max_f<min_f) */
+														boundary_pixel_value=1;	
+													}
 													else
 													{
-														frame->maximum=max_f;
-														frame->maximum_x=maximum_x;
-														frame->maximum_y=maximum_y;
-														frame->minimum=min_f;
-														frame->minimum_x=minimum_x;
-														frame->minimum_y=minimum_y;
 														background_pixel_value=min_f-1;
 														boundary_pixel_value=max_f+1;
 														if ((background_pixel_value>=min_f)||
@@ -11243,71 +11410,13 @@ comparison with 3D maps.
 																"draw_map_2d.  Problems with background/boundary");
 														}
 													}/* if (max_f<min_f) */
-
-													background_map_boundary=background_map_boundary_base;
-													for (i=map_height;i>0;i--)
-													{
-														for (j=map_width;j>0;j--)
-														{
-															if (0== *background_map_boundary)
-															{
-																if (((i<map_height)&&(1==
-																	*(background_map_boundary-map_width)))||
-																	((i>1)&&(1==
-																		*(background_map_boundary+map_width)))||
-																	((j<map_width)&&(1==
-																		*(background_map_boundary-1)))||
-																	((j>1)&&(1== *(background_map_boundary+1))))
-																{
-																	*pixel_value=boundary_pixel_value;
-																}
-																else
-																{
-																	*pixel_value=background_pixel_value;
-																}
-															}
-															background_map_boundary++;
-															pixel_value++;
-														}
-													}/* for (i=map_height;i>0;i--)*/
+													draw_2d_map_boundary(background_map_boundary_base,
+														map_height,map_width,pixel_value,boundary_pixel_value,
+														background_pixel_value);
 													frame_number++;
 													frame++;
 												}/* while ((frame_number<number_of_frames)&&return_code) */
-												/*???DB.  loop over frames */
-												if (!(map->fixed_range)||
-													(map->minimum_value>map->maximum_value))
-												{
-													frame=map->frames;
-													min_f=frame->minimum;
-													max_f=frame->maximum;
-													for (i=number_of_frames-1;i>0;i--)
-													{
-														frame++;
-														if (frame->minimum<=frame->maximum)
-														{
-															if (min_f<=max_f)
-															{
-																if (frame->minimum<min_f)
-																{
-																	min_f=frame->minimum;
-																}
-																if (frame->maximum<max_f)
-																{
-																	max_f=frame->maximum;
-																}
-															}
-															else
-															{
-																min_f=frame->minimum;
-																max_f=frame->maximum;
-															}
-														}
-													}
-													map->minimum_value=min_f;
-													map->maximum_value=max_f;
-													map->contour_minimum=min_f;
-													map->contour_maximum=max_f;
-												}/* if (!(map->fixed_range)|| */
+												set_map_2d_map_min_max(map);
 												DEALLOCATE(background_map_boundary_base);
 											}/* if (ALLOCATE(background_map_boundary_base,char, */
 											else
