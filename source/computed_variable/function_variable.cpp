@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.cpp
 //
-// LAST MODIFIED : 24 January 2005
+// LAST MODIFIED : 23 February 2005
 //
 // DESCRIPTION :
 // See function_variable.hpp
@@ -566,15 +566,155 @@ Function_handle Function_variable::evaluate(Function_variable_handle input,
 Function_handle Function_variable::evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 11 March 2004
+// LAST MODIFIED : 23 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	Function_handle result(0);
+	Function_size_type order;
 
-	if (this)
+	if (this&&(0<(order=independent_variables.size())))
 	{
+#if defined (SEPARATE_ATOMIC_AND_MATRIX_SPLITTING)
+		Function_size_type number_of_columns,number_of_rows;
+		std::list<Function_variable_handle>::iterator
+			independent_variables_iterator=independent_variables.begin(),
+			independent_variables_iterator_end=independent_variables.end();
+
+		number_of_rows=number_differentiable();
+		number_of_columns=1;
+		while (independent_variables_iterator!=independent_variables_iterator_end)
+		{
+			number_of_columns *=
+				(*independent_variables_iterator)->number_differentiable();
+			independent_variables_iterator++;
+		}
+		if ((0<number_of_rows)&&(0<number_of_columns))
+		{
+			Function_size_type row,column;
+			Function_variable_iterator atomic_dependent_variable_iterator,
+				atomic_dependent_variable_iterator_end;
+			Matrix new_matrix(number_of_rows,number_of_columns);
+
+			row=0;
+			atomic_dependent_variable_iterator=begin_atomic();
+			atomic_dependent_variable_iterator_end=end_atomic();
+			while (atomic_dependent_variable_iterator!=
+				atomic_dependent_variable_iterator_end)
+			{
+				Function_variable_handle atomic_dependent_variable=
+					*atomic_dependent_variable_iterator;
+
+				if (1==atomic_dependent_variable->number_differentiable())
+				{
+					bool no_derivative;
+					Function_size_type i;
+					std::vector<Function_variable_iterator>
+						atomic_independent_variable_end_iterators(order),
+						atomic_independent_variable_iterators(order);
+
+					Assert(atomic_dependent_variable&&
+						(atomic_dependent_variable->function()),std::logic_error(
+						"Function_variable::evaluate_derivative.  "
+						"Atomic variable missing function()"));
+					independent_variables_iterator=independent_variables.begin(),
+					i=0;
+					no_derivative=false;
+					while ((independent_variables_iterator!=
+						independent_variables_iterator_end)&&!no_derivative)
+					{
+						atomic_independent_variable_iterators[i]=
+							(*independent_variables_iterator)->begin_atomic();
+						atomic_independent_variable_end_iterators[i]=
+							(*independent_variables_iterator)->end_atomic();
+						while ((atomic_independent_variable_iterators[i]!=
+							atomic_independent_variable_end_iterators[i])&&
+							(1!=(*(atomic_independent_variable_iterators[i]))->
+							number_differentiable()))
+						{
+							atomic_independent_variable_iterators[i]++;
+						}
+						if (atomic_independent_variable_iterators[i]==
+							atomic_independent_variable_end_iterators[i])
+						{
+							no_derivative=true;
+						}
+						else
+						{
+							independent_variables_iterator++;
+						}
+						i++;
+					}
+					if (!no_derivative)
+					{
+						column=0;
+						do
+						{
+							std::list<Function_variable_handle>
+								new_matrix_atomic_independent_variables(0);
+
+							i=order;
+							while (i>0)
+							{
+								i--;
+								new_matrix_atomic_independent_variables.push_front(
+									*(atomic_independent_variable_iterators[i]));
+							}
+							(atomic_dependent_variable->function())->evaluate_derivative(
+								new_matrix(row,column),atomic_dependent_variable,
+								new_matrix_atomic_independent_variables);
+							// move to next column
+							i=order;
+							independent_variables_iterator=independent_variables_iterator_end;
+							if (i>0)
+							{
+								i--;
+								independent_variables_iterator--;
+								atomic_independent_variable_iterators[i]++;
+								while ((atomic_independent_variable_iterators[i]!=
+									atomic_independent_variable_end_iterators[i])&&
+									(1!=(*(atomic_independent_variable_iterators[i]))->
+									number_differentiable()))
+								{
+									atomic_independent_variable_iterators[i]++;
+								}
+								while ((i>0)&&
+									(atomic_independent_variable_end_iterators[i]==
+									atomic_independent_variable_iterators[i]))
+								{
+									atomic_independent_variable_iterators[i]=
+										(*independent_variables_iterator)->begin_atomic();
+									while ((atomic_independent_variable_iterators[i]!=
+										atomic_independent_variable_end_iterators[i])&&
+										(1!=(*(atomic_independent_variable_iterators[i]))->
+										number_differentiable()))
+									{
+										atomic_independent_variable_iterators[i]++;
+									}
+									i--;
+									atomic_independent_variable_iterators[i]++;
+									independent_variables_iterator--;
+									while ((atomic_independent_variable_iterators[i]!=
+										atomic_independent_variable_end_iterators[i])&&
+										(1!=(*(atomic_independent_variable_iterators[i]))->
+										number_differentiable()))
+									{
+										atomic_independent_variable_iterators[i]++;
+									}
+								}
+							}
+							column++;
+						} while (atomic_independent_variable_end_iterators[i]!=
+							atomic_independent_variable_iterators[0]);
+					}
+					row++;
+				}
+				atomic_dependent_variable_iterator++;
+			}
+			result=Function_handle(new Function_matrix<Scalar>(new_matrix));
+		}
+#else // defined (SEPARATE_ATOMIC_AND_MATRIX_SPLITTING)
 		try
 		{
 			//???DB.  Do what the Function_derivative_matrix constructor does for a
@@ -596,6 +736,7 @@ Function_handle Function_variable::evaluate_derivative(
 			//???debug
 			std::cout << "Function_variable::evaluate_derivative.  Failed" << std::endl;
 		}
+#endif // defined (SEPARATE_ATOMIC_AND_MATRIX_SPLITTING)
 	}
 
 	return (result);
