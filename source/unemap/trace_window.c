@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 29 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2610,6 +2610,31 @@ Saves the id of the trace beat averaging beats up arrow.
 	LEAVE;
 } /* identify_trace_beat_averaging_u */
 
+static void identify_trace_beat_averaging_a(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 28 December 1999
+
+DESCRIPTION :
+Saves the id of the trace beat averaging align button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_trace_beat_averaging_a);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.beat_averaging.align_with_events_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_trace_beat_averaging_a.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_trace_beat_averaging_a */
+
 static void identify_trace_1_drawing_area(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
@@ -4244,6 +4269,32 @@ trace area 3.
 	LEAVE;
 } /* id_trace_beat_averaging_toggle */
 
+static void id_trace_beat_averaging_overlay(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 28 December 1999
+
+DESCRIPTION :
+Saves the id of the overlay beats toggle button for the beat averaging menu in
+trace area 3.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(id_trace_beat_averaging_overlay);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_3.beat_averaging.overlay_beats_toggle= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_trace_beat_averaging_overlay.  Missing trace_window");
+	}
+	LEAVE;
+} /* id_trace_beat_averaging_overlay */
+
 static void identify_trace_3_drawing_area(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
@@ -4312,7 +4363,7 @@ static struct Trace_window *create_Trace_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 29 December 1999
 
 DESCRIPTION :
 This function allocates the memory for an trace window and sets the fields to
@@ -4443,6 +4494,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)identify_trace_beat_averaging_l},
 		{"identify_trace_beat_averaging_u",
 			(XtPointer)identify_trace_beat_averaging_u},
+		{"identify_trace_beat_averaging_a",
+			(XtPointer)identify_trace_beat_averaging_a},
 		{"identify_trace_1_drawing_area",(XtPointer)identify_trace_1_drawing_area},
 		{"expose_trace_1_drawing_area",(XtPointer)redraw_trace_1_drawing_area},
 		{"resize_trace_1_drawing_area",(XtPointer)redraw_trace_1_drawing_area},
@@ -4540,6 +4593,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 		{"change_beat_averaging",(XtPointer)change_beat_averaging},
 		{"id_trace_beat_averaging_toggle",
 			(XtPointer)id_trace_beat_averaging_toggle},
+		{"id_trace_beat_averaging_overlay",
+			(XtPointer)id_trace_beat_averaging_overlay},
 		{"identify_trace_3_drawing_area",(XtPointer)identify_trace_3_drawing_area},
 		{"expose_trace_3_drawing_area",(XtPointer)redraw_trace_3_drawing_area},
 		{"resize_trace_3_drawing_area",(XtPointer)redraw_trace_3_drawing_area}};
@@ -4566,7 +4621,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 
 	ENTER(create_Trace_window);
 	/* check arguments */
-	if (signal_drawing_information&&user_interface)
+	if (signal_drawing_information&&user_interface&&detection)
 	{
 		no_cascade_pixmap=user_interface->no_cascade_pixmap;
 		if (MrmOpenHierarchy_base64_string(trace_window_uidh,
@@ -4634,6 +4689,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_1.beat_averaging.number_of_beats.down_arrow=(Widget)NULL;
 				trace->area_1.beat_averaging.number_of_beats.label=(Widget)NULL;
 				trace->area_1.beat_averaging.number_of_beats.up_arrow=(Widget)NULL;
+				trace->area_1.beat_averaging.align_with_events_button=(Widget)NULL;
 				trace->area_1.pane=(Widget)NULL;
 				trace->area_1.drawing_area=(Widget)NULL;
 				trace->area_1.drawing=(struct Drawing_2d *)NULL;
@@ -4703,6 +4759,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_3.beat_averaging.menu=(Widget)NULL;
 				trace->area_3.beat_averaging.baseline_toggle=(Widget)NULL;
 				trace->area_3.beat_averaging.beat_averaging_toggle=(Widget)NULL;
+				trace->area_3.beat_averaging.overlay_beats_toggle=(Widget)NULL;
 				trace->area_3.pane=(Widget)NULL;
 				trace->area_3.drawing_area=(Widget)NULL;
 				trace->area_3.drawing=(struct Drawing_2d *)NULL;
@@ -5589,6 +5646,10 @@ the created trace window.  If unsuccessful, NULL is returned.
 								XmNlabelString,XmStringCreate(number_string,
 								XmSTRING_DEFAULT_CHARSET),
 								NULL);
+							XtVaSetValues(trace->area_1.beat_averaging.number_of_beats.label,
+								XmNlabelString,XmStringCreate(number_string,
+								XmSTRING_DEFAULT_CHARSET),
+								NULL);
 #if defined (OLD_CODE)
 							if (1== *number_of_events)
 							{
@@ -6039,7 +6100,7 @@ If <*trace_address> is NULL, a trace window with the specified <parent> and
 void redraw_trace_1_drawing_area(Widget widget,XtPointer trace_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 August 1997
+LAST MODIFIED : 29 December 1999
 
 DESCRIPTION :
 The callback for redrawing part of the drawing area in trace area 1.
@@ -6784,7 +6845,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 
 int trace_change_signal(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 13 October 1999
+LAST MODIFIED : 30 December 1999
 
 DESCRIPTION :
 Called when the "highlighted_device" is changed.
@@ -6799,7 +6860,7 @@ Called when the "highlighted_device" is changed.
 		/*???DB.  average_width should be analysis->gradient_average_width */
 		beat_number,beat_start,beat_end,buffer_offset,buffer_offset_2,end,high_pass,
 		i,low_pass,notch,number_of_beats,number_of_samples,*processed_time,
-		return_code,start,*time;
+		return_code,start,start_time,*time;
 	struct Device *device,*processed_device;
 	struct Signal_buffer *buffer,*processed_buffer;
 
@@ -6958,11 +7019,13 @@ Called when the "highlighted_device" is changed.
 									value=averaged_value+beat_start;
 									processed_time=processed_buffer->times;
 									time=processed_time+beat_start;
+									/* averaged beat starts from time 0 */
+									start_time= *time;
 									for (i=beat_end-beat_start;i>0;i--)
 									{
 										*averaged_value= *value;
 										*value=0;
-										*processed_time= *time;
+										*processed_time=(*time)-start_time;
 										processed_time++;
 										time++;
 										averaged_value++;
@@ -7790,7 +7853,7 @@ Change the signal interval displayed in the trace window.
 
 int trace_change_search_interval(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 29 December 1999
 
 DESCRIPTION :
 Change the search interval displayed in the trace window.
@@ -8634,7 +8697,7 @@ Draws the markers in the <trace> window.
 
 int trace_update_edit_interval(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 29 December 1999
 
 DESCRIPTION :
 ???DB.  Should be a module function.  Wait until select_trace_1_drawing_area
@@ -8736,7 +8799,7 @@ has been moved.
 
 int trace_change_rig(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 29 December 1999
 
 DESCRIPTION :
 Sets both the cross correlation devices to the highlight device.  Should be
@@ -8760,6 +8823,7 @@ called when the analysis rig is changed.
 			trace->correlation.device_1=(struct Device *)NULL;
 			trace->correlation.device_2=(struct Device *)NULL;
 		}
+		/* set the edit interval */
 		switch (*(trace->event_detection.detection))
 		{
 			case EDA_INTERVAL:

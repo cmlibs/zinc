@@ -1,15 +1,15 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 28 December 1999
+LAST MODIFIED : 30 December 1999
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
 	file
 
 ???DB.  Temp.  Beat averaging considerations
-1 Beat averaging is done in trace_analysis_mode_apply and trace_change_signal
-	(trace_window.c)
+1 Beat averaging is done in trace_analysis_mode_apply (analysis_work_area.c) and
+	trace_change_signal (trace_window.c)
 2 Greg's algorithm
 	- determine the times to average about (one for each beat), by picking a
 		stimulation signal (could be the current signal in unemap) and finding
@@ -50,6 +50,7 @@ DESCRIPTION :
 ???DB.  What is the correspondence between beats and events?
 	- allow event editing in beat averaging
 	- save search/edit intervals when apply (for reset)
+	- add an "Overlay beats" check box
 5 Intended method of use
 	- read signal file
 	- pick a signal to use to determine the averaging intervals
@@ -68,11 +69,20 @@ DESCRIPTION :
 		looking at the signals window (if applying, need to reset before fixing)
 	- for a bad average can reject beats by rejecting events
 6 Bug fixes
-	- make beat averaging always use EDA_INTERVAL
+	- make beat averaging always use EDA_INTERVAL.
+		DONE by adding set_detection_interval to the beat_averaging_button in
+		unemap/trace_window.uil
 	- don't use the highlight colour for the electrode name in the trace window
 		(because inconsistent for cross correlation)
+		DONE
 	- beat average should start from time 0
+		DONE
 	- widget layout for event detection under linux
+		IMPROVED, but still not happy with vertical centering of text in buttons or
+		having to use a 1x1 pixmap (no_cascade_pixmap) to remove blank area on right
+		from option menus
+	- increase the maximum number of beats to average over
+		DONE
 ==============================================================================*/
 #include <stddef.h>
 #include <stdlib.h>
@@ -125,6 +135,7 @@ Module constants
 ----------------
 */
 #define MAX_SPECTRUM_COLOURS 256
+#define MAX_EVENTS 99
 
 /*
 Module types
@@ -1862,7 +1873,7 @@ Called when the "Save interval" button is clicked.
 
 static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 30 December 1999
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -2200,26 +2211,37 @@ Sets up the analysis work area for analysing a set of signals.
 							XtVaSetValues(trace->area_1.enlarge.number_of_events.label,
 								XmNlabelString,value_xmstring,
 								NULL);
+							XtVaSetValues(trace->area_1.beat_averaging.number_of_beats.label,
+								XmNlabelString,value_xmstring,
+								NULL);
 							XmStringFree(value_xmstring);
 							if (1==number_of_events)
 							{
 								XtUnmanageChild(
 									trace->area_1.enlarge.number_of_events.down_arrow);
+								XtUnmanageChild(
+									trace->area_1.beat_averaging.number_of_beats.down_arrow);
 							}
 							else
 							{
 								XtManageChild(
 									trace->area_1.enlarge.number_of_events.down_arrow);
+								XtManageChild(
+									trace->area_1.beat_averaging.number_of_beats.down_arrow);
 							}
-							if (9==number_of_events)
+							if (MAX_EVENTS==number_of_events)
 							{
 								XtUnmanageChild(
 									trace->area_1.enlarge.number_of_events.up_arrow);
+								XtUnmanageChild(
+									trace->area_1.beat_averaging.number_of_beats.up_arrow);
 							}
 							else
 							{
 								XtManageChild(
 									trace->area_1.enlarge.number_of_events.up_arrow);
+								XtManageChild(
+									trace->area_1.beat_averaging.number_of_beats.up_arrow);
 							}
 						}
 					}
@@ -2278,6 +2300,7 @@ Sets up the analysis work area for analysing a set of signals.
 					analysis->potential_time=potential_time;
 					analysis->start_search_interval=start_search_interval;
 					analysis->end_search_interval=end_search_interval;
+					/* set the edit interval */
 					if (trace)
 					{
 						switch (detection)
@@ -2577,7 +2600,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 30 December 1999
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -2875,26 +2898,38 @@ signals.
 														number_of_events.label,
 														XmNlabelString,value_xmstring,
 														NULL);
+													XtVaSetValues(analysis->trace->area_1.beat_averaging.
+														number_of_beats.label,
+														XmNlabelString,value_xmstring,
+														NULL);
 													XmStringFree(value_xmstring);
 													if (1==analysis_number_of_events)
 													{
 														XtUnmanageChild(analysis->trace->area_1.enlarge.
 															number_of_events.down_arrow);
+														XtUnmanageChild(analysis->trace->area_1.
+															beat_averaging.number_of_beats.down_arrow);
 													}
 													else
 													{
 														XtManageChild(analysis->trace->area_1.enlarge.
 															number_of_events.down_arrow);
+														XtManageChild(analysis->trace->area_1.
+															beat_averaging.number_of_beats.down_arrow);
 													}
-													if (9==analysis_number_of_events)
+													if (MAX_EVENTS==analysis_number_of_events)
 													{
 														XtUnmanageChild(analysis->trace->area_1.enlarge.
 															number_of_events.up_arrow);
+														XtUnmanageChild(analysis->trace->area_1.
+															beat_averaging.number_of_beats.up_arrow);
 													}
 													else
 													{
 														XtManageChild(analysis->trace->area_1.enlarge.
 															number_of_events.up_arrow);
+														XtManageChild(analysis->trace->area_1.
+															beat_averaging.number_of_beats.up_arrow);
 													}
 												}
 												analysis->number_of_events=analysis_number_of_events;
@@ -6282,7 +6317,7 @@ drawing area.
 static void decrement_number_of_events(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 30 December 1999
 
 DESCRIPTION :
 Decrement the number of events.
@@ -6308,7 +6343,7 @@ trace window.
 		if ((trace=analysis->trace)&&(trace->event_detection.event_number)&&
 			(trace->event_detection.number_of_events))
 		{
-			if (9== *(trace->event_detection.number_of_events))
+			if (MAX_EVENTS== *(trace->event_detection.number_of_events))
 			{
 				XtManageChild(trace->area_1.enlarge.number_of_events.up_arrow);
 				XtManageChild(trace->area_1.beat_averaging.number_of_beats.up_arrow);
@@ -6379,7 +6414,7 @@ trace window.
 static void increment_number_of_events(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 30 December 1999
 
 DESCRIPTION :
 Increment the number of events.
@@ -6420,7 +6455,7 @@ trace window.
 				XmNlabelString,xm_string,
 				NULL);
 			XmStringFree(xm_string);
-			if (9== *(trace->event_detection.number_of_events))
+			if (MAX_EVENTS== *(trace->event_detection.number_of_events))
 			{
 				XtUnmanageChild(trace->area_1.enlarge.number_of_events.up_arrow);
 				XtUnmanageChild(trace->area_1.beat_averaging.number_of_beats.up_arrow);
@@ -10632,7 +10667,7 @@ DESCRIPTION :
 static void trace_analysis_mode_apply(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 October 1999
+LAST MODIFIED : 30 December 1999
 
 DESCRIPTION :
 Applies the current analysis mode settings to all signals.
@@ -10644,7 +10679,7 @@ Applies the current analysis mode settings to all signals.
 		/*???DB.  average_width should be analysis->gradient_average_width */
 		beat_end,beat_number,beat_start,buffer_offset_1,buffer_offset_2,end,
 		high_pass,i,j,low_pass,notch,number_of_beats,number_of_samples,
-		*processed_time,start,*time,transform_buffer_offset,
+		*processed_time,start,start_time,*time,transform_buffer_offset,
 		transform_number_of_samples;
 	struct Analysis_work_area *analysis;
 	struct Device **device,*highlight;
@@ -10727,9 +10762,11 @@ Applies the current analysis mode settings to all signals.
 						{
 							processed_time=buffer->times;
 							time=processed_time+start;
+							/* averaged beat starts from time 0 */
+							start_time= *time;
 							for (i=end-start;i>=0;i--)
 							{
-								*processed_time= *time;
+								*processed_time=(*time)-start_time;
 								time++;
 								processed_time++;
 							}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 28 December 1999
+LAST MODIFIED : 30 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1890,7 +1890,7 @@ int draw_signal(struct FE_node *device_node,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 30 December 1999
 
 DESCRIPTION :
 Draws the <device> signal in the <pixel_map> at the specified position
@@ -2383,7 +2383,8 @@ Draws the <device> signal in the <pixel_map> at the specified position
 				SET_VERTICAL_ALIGNMENT(CENTRE_VERTICAL_ALIGNMENT);
 				y_string=(y_min+y_max)/2;
 #endif
-				if (highlight)
+				/* only highlight signal name in the signals window */
+				if (highlight&&(SIGNAL_AREA_DETAIL==detail))
 				{
 					XPSDrawString(display,pixel_map,
 						(signal_drawing_information->graphics_context).highlighted_colour,

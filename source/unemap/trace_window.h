@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.h
 
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 28 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -20,7 +20,7 @@ DESCRIPTION :
 #include "user_interface/user_interface.h"
 
 /*
-Global Types
+Global types
 ------------
 */
 enum Signal_analysis_mode
@@ -306,7 +306,7 @@ The information for calculating the filtered response.
 
 struct Beat_averaging_area_1
 /*******************************************************************************
-LAST MODIFIED : 13 August 1997
+LAST MODIFIED : 28 December 1999
 
 DESCRIPTION :
 The control widgets for beat averaging area 1.
@@ -321,11 +321,12 @@ The control widgets for beat averaging area 1.
 		Widget label;
 		Widget up_arrow;
 	} number_of_beats;
+	Widget align_with_events_button;
 }; /* struct Beat_averaging_area_1 */
 
 struct Beat_averaging_area_3
 /*******************************************************************************
-LAST MODIFIED : 13 August 1997
+LAST MODIFIED : 28 December 1999
 
 DESCRIPTION :
 The control widgets for beat averaging area 3.
@@ -334,6 +335,7 @@ The control widgets for beat averaging area 3.
 	Widget menu;
 	Widget baseline_toggle;
 	Widget beat_averaging_toggle;
+	Widget overlay_beats_toggle;
 }; /* struct Beat_averaging_area_3 */
 
 struct Trace_window_menu
@@ -452,7 +454,6 @@ enum Trace_window_update_flags
 	TRACE_1_NO_DATUM_ERASE = 8,
 	TRACE_3_NO_DATUM_ERASE = 16
 }; /* enum Trace_window_update_flags */
-
 
 /*
 Global functions
@@ -636,4 +637,4 @@ DESCRIPTION :
 Sets both the cross correlation devices to the highlight device.  Should be
 called when the analysis rig is changed.
 ==============================================================================*/
-#endif
+#endif /* !defined (TRACE_WINDOW_H) */

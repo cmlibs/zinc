@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : trace_window.uil
 !
-!LAST MODIFIED : 27 December 1999
+!LAST MODIFIED : 30 December 1999
 !
 !DESCRIPTION :
 !The widgets/gadgets for the trace window in the analysis work area.
@@ -82,6 +82,7 @@ procedure
 	identify_trace_beat_averaging_d;
 	identify_trace_beat_averaging_l;
 	identify_trace_beat_averaging_u;
+	identify_trace_beat_averaging_a;
 	identify_trace_1_drawing_area;
 	expose_trace_1_drawing_area;
 	resize_trace_1_drawing_area;
@@ -154,6 +155,7 @@ procedure
 	id_trace_beat_averaging_baselin;
 	change_beat_averaging;
 	id_trace_beat_averaging_toggle;
+	id_trace_beat_averaging_overlay;
 	identify_trace_3_drawing_area;
 	expose_trace_3_drawing_area;
 	resize_trace_3_drawing_area;
@@ -399,6 +401,8 @@ object
 			XmNactivateCallback = procedures
 				{
 				set_analysis_beat_averaging(trace_window_structure);
+!				Make beat averaging always use EDA_INTERVAL
+				set_detection_interval(analysis_work_area_structure);
 				};
 			};
 		};
@@ -904,7 +908,7 @@ object
 		arguments
 			{
 			XmNlabelString =
-			compound_string("1");
+			compound_string("88");
 			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftWidget = XmArrowButtonGadget trace_enlarge_events_down;
@@ -1259,6 +1263,7 @@ object
 		controls
 			{
 			XmForm trace_beat_averaging_number;
+			XmPushButtonGadget trace_beat_averaging_align_butt;
 			};
 		callbacks
 			{
@@ -1327,7 +1332,7 @@ object
 		arguments
 			{
 			XmNlabelString =
-			compound_string("1");
+			compound_string("88");
 			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftWidget = XmArrowButtonGadget trace_beat_averaging_down;
@@ -1372,6 +1377,36 @@ object
 			XmNactivateCallback = procedures
 				{
 				increment_number_of_events(analysis_work_area_structure);
+				};
+			};
+		};
+	trace_beat_averaging_align_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Align");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmForm trace_beat_averaging_number;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_trace_beat_averaging_a(trace_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+!				trace_analysis_mode_apply(analysis_work_area_structure);
 				};
 			};
 		};
@@ -2668,6 +2703,7 @@ object
 			{
 			XmToggleButtonGadget trace_beat_averaging_baseline_t;
 			XmToggleButtonGadget trace_beat_averaging_toggle;
+			XmToggleButtonGadget trace_beat_averaging_overlay_to;
 			};
 		callbacks
 			{
@@ -2731,6 +2767,35 @@ object
 			XmNvalueChangedCallback = procedures
 				{
 				change_beat_averaging(trace_window_structure);
+				};
+			};
+		};
+	trace_beat_averaging_overlay_to: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Overlay");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmToggleButtonGadget trace_beat_averaging_toggle;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_trace_beat_averaging_overlay(trace_window_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+!				change_beat_averaging(trace_window_structure);
 				};
 			};
 		};
