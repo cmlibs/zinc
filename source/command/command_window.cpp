@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : command_window.c
 
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Management routines for the main command window.
@@ -86,16 +86,18 @@ The menu bar at the top of the command window
 
 enum Command_window_outfile_mode
 /*******************************************************************************
-LAST MODIFIED : 11 August 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Controls what is written to the log file.
-These are independent flags which can be || together.
+Must ensure OUTFILE_OUTPUT_AND_INPUT = OUTFILE_OUTPUT & OUTFILE_INPUT,
+so that the bits can operate as independent flags.
 ==============================================================================*/
 {
 	OUTFILE_INVALID = 0,
 	OUTFILE_OUTPUT = 1,
-	OUTFILE_INPUT = 2
+	OUTFILE_INPUT = 2,
+	OUTFILE_OUTPUT_AND_INPUT = 3
 }; /* enum Command_window_outfile_mode */
 
 struct Command_window
@@ -700,13 +702,6 @@ DESCRIPTION:
 	LEAVE;
 } /* id_volume_editor_create_button */
 
-
-
-
-
-
-
-
 static void command_changed(Widget widget,XtPointer command_window_structure,
 	XtPointer call_data)
 /*******************************************************************************
@@ -928,34 +923,6 @@ DESCRIPTION:
 } /* Command_window_dialog_proc */
 #endif /* defined (WINDOWS) */
 
-#if !defined (WINDOWS_DEV_FLAG)
-void change_scrolling(Widget widget,XtPointer command_window_structure,
-	XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 9 May 2000
-
-DESCRIPTION :
-Change from scrolling to not and back.
-==============================================================================*/
-{
-	struct Command_window *command_window;
-
-	ENTER(change_scrolling);
- 	USE_PARAMETER(widget);
- 	USE_PARAMETER(call_data);
-	if (command_window=(struct Command_window *)command_window_structure)
-	{
-		USE_PARAMETER(command_window);
-		display_message(WARNING_MESSAGE,"change_scrolling.	Not implemented");
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"change_scrolling.	Missing command_window");
-	}
-	LEAVE;
-} /* change_scrolling */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
 #if defined (MOTIF)
 static int command_window_property_notify_callback(XPropertyEvent *event,
 	void *command_window_void,struct User_interface *user_interface)
@@ -1135,7 +1102,7 @@ DESCRIPTION :
 			{
 			   if (input && output)
 				{
-					command_window->out_file_mode = OUTFILE_INPUT & OUTFILE_OUTPUT;
+					command_window->out_file_mode = OUTFILE_OUTPUT_AND_INPUT;
 				}
 				else if (input)
 				{
@@ -1350,7 +1317,6 @@ Create the structures and retrieve the command window from the uil file.
 
 		{"callback_command",(XtPointer)callback_command},
 		{"open_file_and_read",(XtPointer)open_file_and_read},
-		{"change_scrolling",(XtPointer)change_scrolling},
 		{"command_window_close",(XtPointer)command_window_close}
 	};
 	static MrmRegisterArg identifier_list[2];
