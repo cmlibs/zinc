@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -3691,6 +3691,14 @@ LAST MODIFIED : 1 December 1999
 
 DESCRIPTION :
 Returns true if <element> is a top-level element - CM_ELEMENT/no parents.
+==============================================================================*/
+
+int FE_element_is_not_top_level(struct FE_element *element,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Returns true if <element> is not a top-level element = CM_ELEMENT/no parents.
 ==============================================================================*/
 
 int FE_element_to_element_string(struct FE_element *element,char **name_ptr);

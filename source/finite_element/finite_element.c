@@ -13270,18 +13270,30 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_node,cm_node_identifier,int)
 	int return_code;
 
 	ENTER(MANAGER_COPY_IDENTIFIER(FE_node,cm_node_identifier));
+	USE_PARAMETER(destination);
+	USE_PARAMETER(cm_node_identifier);
+	/*???RC cannot rename nodes that are in use by any list outside the manager
+		since they must be removed and re-added to keep indexed list working. Hence,
+		disallow this for now */
+	display_message(ERROR_MESSAGE,
+		"MANAGER_COPY_IDENTIFIER(FE_node,cm_node_identifier).  "
+		"Nodes may not be renamed");
+	return_code=0;
+#if defined (SAVE_CODE)
 	/* check arguments */
 	if (destination)
 	{
 		destination->cm_node_identifier=cm_node_identifier;
-		return_code=1;
+		return_code=0;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_IDENTIFIER(FE_node,cm_node_identifier).  Invalid argument(s)");
+			"MANAGER_COPY_IDENTIFIER(FE_node,cm_node_identifier).  "
+			"Invalid argument(s)");
 		return_code=0;
 	}
+#endif /* defined (SAVE_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -24942,6 +24954,16 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_element,identifier,
 	int return_code;
 
 	ENTER(MANAGER_COPY_IDENTIFIER(FE_element,identifier));
+	USE_PARAMETER(destination);
+	USE_PARAMETER(identifier);
+	/*???RC cannot rename elements that are in use by any list outside the manager
+		since they must be removed and re-added to keep indexed list working. Hence,
+		disallow this for now */
+	display_message(ERROR_MESSAGE,
+		"MANAGER_COPY_IDENTIFIER(FE_node,cm_node_identifier).  "
+		"Elements may not be renamed");
+	return_code=0;
+#if defined (SAVE_CODE)
 	if (identifier&&destination)
 	{
 		destination->cm.type=identifier->type;
@@ -24954,6 +24976,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_element,identifier,
 	"MANAGER_COPY_IDENTIFIER(FE_element,identifier).  Invalid argument(s)");
 		return_code=0;
 	}
+#endif /* defined (SAVE_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -32073,6 +32096,33 @@ Returns true if <element> is a top-level element - CM_ELEMENT/no parents.
 
 	return (return_code);
 } /* FE_element_is_top_level */
+
+int FE_element_is_not_top_level(struct FE_element *element,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2000
+
+DESCRIPTION :
+Returns true if <element> is not a top-level element = CM_ELEMENT/no parents.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_is_not_top_level);
+	USE_PARAMETER(dummy_void);
+	if (element)
+	{
+		return_code=(CM_ELEMENT != element->cm.type);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_is_not_top_level.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_is_not_top_level */
 
 int FE_element_to_element_string(struct FE_element *element,char **name_ptr)
 /*******************************************************************************
