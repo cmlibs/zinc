@@ -162,18 +162,6 @@ Runs a job through the photoface interface.
 	}
 	
 	if (0 == pf_get_marker_fitted_positions(pf_job_id, number_of_markers, 
-		eye_marker_names, eyeball_fitted_3d_positions))
-	{
-		printf("Eyeball Fitted positions:\n");
-		for (i = 0 ; i < 2 ; i++)
-		{
-			printf("   %s:  %f %f %f\n", eye_marker_names[i],
-				eyeball_fitted_3d_positions[3 * i], eyeball_fitted_3d_positions[3 * i + 1], 
-				eyeball_fitted_3d_positions[3 * i + 2]);
-		}
-	}
-
-	if (0 == pf_get_marker_fitted_positions(pf_job_id, 2, 
 		marker_names, marker_fitted_3d_positions))
 	{
 		printf("Fitted positions:\n");
@@ -182,6 +170,18 @@ Runs a job through the photoface interface.
 			printf("   %s:  %f %f %f\n", marker_names[i],
 				marker_fitted_3d_positions[3 * i], marker_fitted_3d_positions[3 * i + 1], 
 				marker_fitted_3d_positions[3 * i + 2]);
+		}
+	}
+
+	if (0 == pf_get_marker_fitted_positions(pf_job_id, 2, 
+		eye_marker_names, eyeball_fitted_3d_positions))
+	{
+		printf("Eyeball Fitted positions:\n");
+		for (i = 0 ; i < 2 ; i++)
+		{
+			printf("   %s:  %f %f %f\n", eye_marker_names[i],
+				eyeball_fitted_3d_positions[3 * i], eyeball_fitted_3d_positions[3 * i + 1], 
+				eyeball_fitted_3d_positions[3 * i + 2]);
 		}
 	}
 

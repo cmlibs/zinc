@@ -735,6 +735,11 @@ DESCRIPTION :
 								/*printf("word(%s) vt[%d][%d] = %lf\n", word, n_vt, i, vt[n_vt][i]);*/
 								i++;
 							}
+							while (i < 3)
+							{
+								vt[3 * n_vt + i] = 0.0;
+								i++;
+							}
 							n_vt++;
 						}			
 						else if (0==strncmp(word,"vn", 2))
@@ -743,6 +748,11 @@ DESCRIPTION :
 							while (word=strtok(NULL," "))
 							{
 								vn[3 * n_vn + i]=atof(word);
+								i++;
+							}
+							while (i < 3)
+							{
+								vn[3 * n_vn + i] = 0.0;
 								i++;
 							}
 							n_vn++;
@@ -756,6 +766,11 @@ DESCRIPTION :
 								v[3 * n_v + i]=atof(word);
 								i++;
 							}				
+							while (i < 3)
+							{
+								vt[3 * n_v + i] = 0.0;
+								i++;
+							}
 							n_v++;
 						}			
 						else if (0==strcmp(word,"f"))
@@ -867,9 +882,9 @@ DESCRIPTION :
 							obj->triangle_vertices[3 * i] = t[i * 9 + 0 * 3 + 0];
 							obj->triangle_vertices[3 * i + 1] = t[i * 9 + 1 * 3 + 0];
 							obj->triangle_vertices[3 * i + 2] = t[i * 9 + 2 * 3 + 0];
-							obj->triangle_texture_vertices[3 * i] = t[i * 9 + 0 * 3 + 2];
-							obj->triangle_texture_vertices[3 * i + 1] = t[i * 9 + 1 * 3 + 2];
-							obj->triangle_texture_vertices[3 * i + 2] = t[i * 9 + 2 * 3 + 2];
+							obj->triangle_texture_vertices[3 * i] = t[i * 9 + 0 * 3 + 1];
+							obj->triangle_texture_vertices[3 * i + 1] = t[i * 9 + 1 * 3 + 1];
+							obj->triangle_texture_vertices[3 * i + 2] = t[i * 9 + 2 * 3 + 1];
 						}
 						obj->number_of_triangles = n_t;
 					}
@@ -888,6 +903,7 @@ DESCRIPTION :
 				display_message(PF_ERROR_MESSAGE, "Unable to allocate Obj structure");
 			}
 #endif /* defined (MANUAL_CMISS) */
+			fclose(objfile);
 		}
 #if defined (MANUAL_CMISS)
 		else
@@ -1469,6 +1485,7 @@ m, n and a parts as this is all that is stored in a version 2 file.
 #endif /* defined (MANUAL_CMISS) */
 			return_code = -16;
 		}
+		fclose(file);
 	}
 	else
 	{
@@ -1661,7 +1678,7 @@ DESCRIPTION :
 This routine cleans up the working directory and destroys the specified job.
 ==============================================================================*/
 {
-	char *working_path, *working_path2;
+	char *slash_ptr, *working_path, *working_path2;
 	int return_code;
 	struct stat stat_buffer;
 
@@ -1677,6 +1694,7 @@ This routine cleans up the working directory and destroys the specified job.
 		if (0 == stat(working_path, &stat_buffer))
 		{
 			/* Lock it or wait */
+			strcat(working_path, "/");
 			strcat(working_path, PF_LOCK_DIRNAME);
 #if defined (WIN32)
 			while (!CreateDirectory(working_path, NULL))
@@ -1707,16 +1725,28 @@ This routine cleans up the working directory and destroys the specified job.
 #endif /* defined (WIN32) */
 			if (PF_SUCCESS_RC == return_code)
 			{
+				sprintf(working_path, "%sworking/job%06d", photoface_local_path,
+					pf_job_id);
 				sprintf(working_path2, "%sworking/job%06dx", photoface_local_path,
 					pf_job_id);
+			
+				/* Delete the directory */
+#if defined (WIN32)
+				/* Move the directory away so no other processes find it */
+				MoveFile(working_path, working_path2);
+
+				sprintf(working_path, working_path2);
+				/* As we are going to use a system command we need to reverse all the / separators */
+				slash_ptr = working_path;
+				while (slash_ptr = strchr(slash_ptr, '/'))
+				{
+					*slash_ptr = '\\';
+				}
+				sprintf(working_path2, "rmdir /s /q %s", working_path);
+#else /* defined (WIN32) */
 				/* Move the directory away so no other processes find it */
 				rename(working_path, working_path2);
 
-				/* Delete the directory */
-#if defined (WIN32)
-				sprintf(working_path2, "rmdir /s /q %sworking/job%06dx", photoface_local_path,
-					pf_job_id);
-#else /* defined (WIN32) */
 				sprintf(working_path2, "rm -r %sworking/job%06dx", photoface_local_path,
 					pf_job_id);
 #endif /* defined (WIN32) */
@@ -2677,10 +2707,13 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 (marker number varying slowest).
 ==============================================================================*/
 {
-	char *filename, buffer[MARKER_BUFFER_SIZE];
-	FILE *warped_file;
+	char *filename, buffer[MARKER_BUFFER_SIZE], 
+		*special_marker_names[] = {"eyeball_origin_left",
+									  "eyeball_origin_right"};
+	FILE *eye_file, *warped_file;
 	float *marker_positions, marker_x, marker_y, marker_z;
-	int i, j, *marker_indices, return_code;
+	int call_cmiss, i, j, load_eyeballs, *marker_indices, return_code;
+	int number_of_special_markers = 2;
 	struct Pf_job *pf_job;
 
 	ENTER(pf_get_marker_fitted_positions);
@@ -2690,6 +2723,8 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 	{
 		if (ALLOCATE(filename,char,strlen(photoface_local_path)+50))
 		{
+			call_cmiss = 0;
+			load_eyeballs = 0;
 			/* If we haven't already done so read the marker definition file */
 			if (!markers)
 			{
@@ -2711,96 +2746,156 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 						marker_positions[3 * i + 2] = 0.0;
 
 						j = 0;
-						while ((j < markers->number_of_markers) &&
+						while ((j < number_of_special_markers) &&
 							(!fuzzy_string_compare_same_length(marker_names[i],
-								markers->marker_names[j])))
+								special_marker_names[j])))
 						{
 							j++;
 						}
 						if (j < markers->number_of_markers)
 						{
-							marker_indices[i] = markers->marker_indices[j];
-							marker_positions[3 * i] = markers->marker_positions[3 * j];
-							marker_positions[3 * i + 1] = markers->marker_positions[3 * j + 1];
-							marker_positions[3 * i + 2] = markers->marker_positions[3 * j + 2];
+							/* Special marker name, currently forces an eyeball load */
+							marker_indices[i] = -j;
+							load_eyeballs = 1;
 						}
-#if defined (MANUAL_CMISS)
 						else
 						{
-							display_message(PF_WARNING_MESSAGE,
-								"Marker name \"%s\" not defined for current model, ignoring",
-								marker_names[i]);
-						}
+							j = 0;
+							while ((j < markers->number_of_markers) &&
+								(!fuzzy_string_compare_same_length(marker_names[i],
+									markers->marker_names[j])))
+							{
+								j++;
+							}
+							if (j < markers->number_of_markers)
+							{
+								marker_indices[i] = markers->marker_indices[j];
+								marker_positions[3 * i] = markers->marker_positions[3 * j];
+								marker_positions[3 * i + 1] = markers->marker_positions[3 * j + 1];
+								marker_positions[3 * i + 2] = markers->marker_positions[3 * j + 2];
+								call_cmiss = 1;
+							}
+#if defined (MANUAL_CMISS)
+							else
+							{
+								display_message(PF_WARNING_MESSAGE,
+									"Marker name \"%s\" not defined for current model, ignoring",
+									marker_names[i]);
+							}
 #endif /* defined (MANUAL_CMISS) */
-					}
-
-					/* Write out the original.exnode that specifies the the original
-						3D positions for fit.pl */
-					sprintf(filename, "%s/original.exnode", pf_job->working_path);
-					if (!(return_code = write_exnode(filename, "get_marker_positions", 
-						"marker_coordinates",
-						3, number_of_markers, marker_indices, marker_positions)))
-					{
-						/* Define these fields and nodes */
-						if (linux_execute(
-							"%sbin/cmgui_control 'open comfile %scmiss/pf_get_marker_fitted_positions.com exec'",
-							photoface_remote_path, photoface_remote_path))
-						{
-							return_code=PF_SUCCESS_RC;
 						}
-						/* Read the generated exnode file and return the results */
-						sprintf(filename, "%s/warped.exnode",
-							pf_job->working_path);
-						if (warped_file = fopen(filename, "r"))
+					}
+					if (load_eyeballs)
+					{
+						sprintf(filename, "%s/standin_eyes.exnode", pf_job->working_path);
+						if (eye_file = fopen(filename, "r"))
 						{
 							i = 0;
 							return_code = PF_SUCCESS_RC;
-							while ((return_code == PF_SUCCESS_RC) && (!feof(warped_file)) && 
-								(!read_line(warped_file, buffer, MARKER_BUFFER_SIZE)))
+							while ((return_code == PF_SUCCESS_RC) && (!feof(eye_file)) && 
+								(i < 2) && (!read_line(eye_file, buffer, MARKER_BUFFER_SIZE)))
 							{
 								if (3 == sscanf(buffer, "%f%f%f", &marker_x, &marker_y,
 									&marker_z))
 								{
-									if (i >= number_of_markers)
+									for (j = 0 ; j < number_of_markers ; j++)
 									{
-#if defined (MANUAL_CMISS)
-										display_message(PF_ERROR_MESSAGE,
-											"Unexpected marker positions in file %s",filename);
-#endif /* defined (MANUAL_CMISS) */
-										return_code = PF_READ_FILE_FAILURE_RC;
+										if (marker_indices[j] = -i)
+										{
+											marker_fitted_3d_positions[3 * j] = marker_x;
+											marker_fitted_3d_positions[3 * j + 1] = marker_y;
+											marker_fitted_3d_positions[3 * j + 2] = marker_z;
+										}
 									}
-									marker_fitted_3d_positions[3 * i] = marker_x;
-									marker_fitted_3d_positions[3 * i + 1] = marker_y;
-									marker_fitted_3d_positions[3 * i + 2] = marker_z;
-									i++;
+									i++;									
 								}
 							}
-							if (i < number_of_markers)
-							{
-#if defined (MANUAL_CMISS)
-								display_message(PF_ERROR_MESSAGE,
-									"Insufficient marker positions in file %s",filename);
-#endif /* defined (MANUAL_CMISS) */
-								return_code = PF_READ_FILE_FAILURE_RC;
-							}
-							fclose(warped_file);
 						}
 						else
 						{
 #if defined (MANUAL_CMISS)
 							display_message(PF_ERROR_MESSAGE,
-								"Unable to open warped positions file %s",filename);
+								"Unable to open eye positions file %s",filename);
 #endif /* defined (MANUAL_CMISS) */
 							return_code = PF_OPEN_FILE_FAILURE_RC;
 						}
 					}
-					else
+
+					if (call_cmiss)
 					{
+						/* Write out the original.exnode that specifies the the original
+							3D positions for fit.pl */
+						sprintf(filename, "%s/original.exnode", pf_job->working_path);
+						if (!(return_code = write_exnode(filename, "get_marker_positions", 
+									"marker_coordinates",
+									3, number_of_markers, marker_indices, marker_positions)))
+						{
+							/* Define these fields and nodes */
+							if (linux_execute(
+									 "%sbin/cmgui_control 'open comfile %scmiss/pf_get_marker_fitted_positions.com exec'",
+									 photoface_remote_path, photoface_remote_path))
+							{
+								return_code=PF_SUCCESS_RC;
+							}
+							/* Read the generated exnode file and return the results */
+							sprintf(filename, "%s/warped.exnode",
+								pf_job->working_path);
+							if (warped_file = fopen(filename, "r"))
+							{
+								i = 0;
+								return_code = PF_SUCCESS_RC;
+								while ((return_code == PF_SUCCESS_RC) && (!feof(warped_file)) && 
+									(i < number_of_markers) &&
+									(!read_line(warped_file, buffer, MARKER_BUFFER_SIZE)))
+								{
+									if (3 == sscanf(buffer, "%f%f%f", &marker_x, &marker_y,
+											 &marker_z))
+									{
+										while (marker_indices[i] < 1)
+										{
+											i++;
+										}
+										if (i >= number_of_markers)
+										{
 #if defined (MANUAL_CMISS)
-						display_message(PF_ERROR_MESSAGE,
-							"Unable to write original positions");
+											display_message(PF_ERROR_MESSAGE,
+												"Unexpected marker positions in file %s",filename);
 #endif /* defined (MANUAL_CMISS) */
-						return_code = PF_WRITE_FILE_FAILURE_RC;
+											return_code = PF_READ_FILE_FAILURE_RC;
+										}
+										marker_fitted_3d_positions[3 * i] = marker_x;
+										marker_fitted_3d_positions[3 * i + 1] = marker_y;
+										marker_fitted_3d_positions[3 * i + 2] = marker_z;
+										i++;
+									}
+								}
+								if (i < number_of_markers)
+								{
+#if defined (MANUAL_CMISS)
+									display_message(PF_ERROR_MESSAGE,
+										"Insufficient marker positions in file %s",filename);
+#endif /* defined (MANUAL_CMISS) */
+									return_code = PF_READ_FILE_FAILURE_RC;
+								}
+								fclose(warped_file);
+							}
+							else
+							{
+#if defined (MANUAL_CMISS)
+								display_message(PF_ERROR_MESSAGE,
+									"Unable to open warped positions file %s",filename);
+#endif /* defined (MANUAL_CMISS) */
+								return_code = PF_OPEN_FILE_FAILURE_RC;
+							}
+						}
+						else
+						{
+#if defined (MANUAL_CMISS)
+							display_message(PF_ERROR_MESSAGE,
+								"Unable to write original positions");
+#endif /* defined (MANUAL_CMISS) */
+							return_code = PF_WRITE_FILE_FAILURE_RC;
+						}
 					}
 					DEALLOCATE(marker_indices);
 					DEALLOCATE(marker_positions);
@@ -3348,14 +3443,14 @@ is filled in based on the current model.
 		fprintf(texture_comfile, "gfx modify g_element objface surfaces coordinate texture select_on material source_image texture_coordinates projection selected_material default_selected render_shaded scene texture_projection\n");
 
 		/* 	Some Linux X servers don't do single	
-				fprintf(texture_comfile, "gfx create window texture_projection single\n"); */
+		fprintf(texture_comfile, "gfx create window texture_projection single\n"); */
 		fprintf(texture_comfile, "gfx create window texture_projection\n");
 		fprintf(texture_comfile, "gfx modify window texture_projection layout 2d ortho_axes z -y width $width height $height\n");
 		fprintf(texture_comfile, "gfx modify window texture_projection image scene texture_projection\n");
-		fprintf(texture_comfile, "gfx modify window texture_projection view parallel eye_point 0.5 0.5 3 interest_point 0.5 0.5 0 up_vector 0.00580574 0.999983 0 view_angle 26.525435202 near_clipping_plane 0.0288485 far_clipping_plane 10.3095 relative_viewport ndc_placement -1 -1 2 2 viewport_coordinates -1 -1 400 400\n");
+		fprintf(texture_comfile, "gfx modify window texture_projection view parallel eye_point 0.5 0.5 3 interest_point 0.5 0.5 0 up_vector 0.0 1.0 0.0 view_angle 26.525435202 near_clipping_plane 0.0288485 far_clipping_plane 10.3095 relative_viewport ndc_placement -1 -1 2 2 viewport_coordinates -1 -1 400 400\n");
 		fprintf(texture_comfile, "gfx print window texture_projection rgb file %s/standin.rgb width $width height $height\n",
 			pf_job->remote_working_path);
-		fprintf(texture_comfile, "gfx modify texture face_mapped image %s/standin.rgb\n",
+		fprintf(texture_comfile, "gfx modify texture face_mapped image %s/standinA.rgb\n",
 			pf_job->remote_working_path);
 #endif /* defined (BACKWARD_PROJECTION) */
 		fprintf(texture_comfile, "open comfile %scmiss/pf_make_standin_texture.com exec\n",

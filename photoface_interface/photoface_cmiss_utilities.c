@@ -34,7 +34,11 @@ Macros
 ( final = ( type *) realloc( (void *)( initial ) , \
 	( number ) * sizeof( type ) ) )
 
-static void write_basis(char *filename,int m,int n,float *a,
+/*
+Module functions
+----------------
+*/
+static void write_basis(const char *filename,int m,int n,float *a,
 	int basis_version,int verbose)
 /*******************************************************************************
 LAST MODIFIED : 28 January 1998
@@ -64,7 +68,6 @@ and removing unused basis version 1 paramters.
 			{
 				fprintf(stderr, "write_basis():lib/emlib.c",
 					"Unable to write basis file version %d\n", basis_version);
-				exit;
 			} break;
 			case 2:
 			{
@@ -88,7 +91,6 @@ and removing unused basis version 1 paramters.
 			{
 				fprintf(stderr, "write_basis():lib/emlib.c",
 					"Unknown basis file version %d\n", basis_version);
-				exit;
 			} break;
 		}
   
@@ -101,13 +103,13 @@ and removing unused basis version 1 paramters.
 Global functions
 ----------------
 */
-CMISSDECLSPEC int pf_write_head_model(char *obj_file_name,
-	int number_of_vertices,float *vertex_3d_locations,
-	int number_of_texture_vertices,float *texture_vertex_3d_locations,
-	int number_of_triangles,int *triangle_vertices,
-	int *triangle_texture_vertices)
+CMISSDECLSPEC int pf_write_head_model(const char *obj_file_name,
+	int number_of_vertices,int number_of_dynamic_vertices,
+	float *vertex_3d_locations,int number_of_texture_vertices,
+	float *texture_vertex_3d_locations,int number_of_triangles,
+	int *triangle_vertices,int *triangle_texture_vertices)
 /*******************************************************************************
-LAST MODIFIED : 10 June 2001
+LAST MODIFIED : 12 June 2001
 
 DESCRIPTION :
 Writes the head model
@@ -132,15 +134,28 @@ to the specified <obj_file>.
 	ENTER(pf_write_head_model);
 	if (file = fopen(obj_file_name,"w"))
 	{
+		if ((number_of_dynamic_vertices > 0) && 
+			(number_of_dynamic_vertices <= number_of_vertices))
+		{
+			fprintf(file, "# DYNOBJ %d %d\n", number_of_dynamic_vertices,
+				(number_of_vertices - number_of_dynamic_vertices));
+			fprintf(file, "# dynamic\n");
+		}
 		vertex = vertex_3d_locations;
 		for ( i = 0 ; i < number_of_vertices ; i++)
 		{
-			fprintf(file, "v %lf %lf %lf\n", vertex[0], vertex[1], vertex[2]);
+			if (i + 1 == number_of_dynamic_vertices)
+			{
+				fprintf(file, "# static\n");
+			}
+			fprintf(file, "v %f %f %f\n", vertex[0], vertex[1], vertex[2]);
+			vertex += 3;
 		}
 		vertex = texture_vertex_3d_locations;
 		for ( i = 0 ; i < number_of_texture_vertices ; i++)
 		{
-			fprintf(file, "vt %lf %lf %lf\n", vertex[0], vertex[1], vertex[2]);
+			fprintf(file, "vt %f %f %f\n", vertex[0], vertex[1], vertex[2]);
+			vertex += 3;
 		}
 		for ( i = 0 ; i < number_of_triangles ; i++)
 		{
@@ -161,7 +176,7 @@ to the specified <obj_file>.
 	return (return_code);
 } /* pf_write_head_model */
 
-CMISSDECLSPEC int pf_write_basis(char *basis_file_name,int number_of_modes,
+CMISSDECLSPEC int pf_write_basis(const char *basis_file_name,int number_of_modes,
 	int number_of_vertices,float *vertex_3d_locations_or_offsets)
 /*******************************************************************************
 LAST MODIFIED : 10 June 2001
@@ -181,7 +196,7 @@ Copied from lib/emlib.c
 	int return_code;
 
 	ENTER(pf_write_basis);
-	write_basis(basis_file_name, number_of_modes, number_of_vertices,
+	write_basis(basis_file_name, number_of_vertices * 3, number_of_modes,
 		vertex_3d_locations_or_offsets, /*basis_version*/2, /*verbose*/0 );
 	return_code=0;
 	LEAVE;
@@ -189,7 +204,7 @@ Copied from lib/emlib.c
 	return (return_code);
 } /* pf_write_basis */
 
-CMISSDECLSPEC int pf_write_texture(char *jpeg_file_name,int width,int height,
+CMISSDECLSPEC int pf_write_texture(const char *jpeg_file_name,int width,int height,
 	char *texture)
 /*******************************************************************************
 LAST MODIFIED : 10 June 2001
@@ -200,6 +215,7 @@ Writes the <texture> to the <jpeg_file>.
 ???DB.  From libjpeg.doc
 ==============================================================================*/
 {
+	char *texture_ptr;
 	FILE *jpeg_file;
 	int return_code,row_stride;
 	JSAMPROW row_pointer[1];
@@ -228,10 +244,12 @@ Writes the <texture> to the <jpeg_file>.
 			jpeg_start_compress(&cinfo, TRUE);
 			/* 5. while (scan lines remain to be written) */
 			row_stride=width*3;
+			texture_ptr = texture + row_stride * (height - 1);
 			while (cinfo.next_scanline<cinfo.image_height)
 			{
-				row_pointer[0]= &(texture[cinfo.next_scanline*row_stride]);
+				row_pointer[0]= texture_ptr;
 				jpeg_write_scanlines(&cinfo,row_pointer,1);
+				texture_ptr -= row_stride;
 			}
 			/* 6. jpeg_finish_compress(...) */
 			jpeg_finish_compress(&cinfo);
@@ -245,7 +263,7 @@ Writes the <texture> to the <jpeg_file>.
 	return (return_code);
 } /* pf_write_texture */
 
-CMISSDECLSPEC int pf_write_scene_graph(char *scene_graph_file_name,
+CMISSDECLSPEC int pf_write_scene_graph(const char *scene_graph_file_name,
 	float *eye_point,float *interest_point,float *up_vector,float view_angle,
 	float *left_eye,float *right_eye)
 /*******************************************************************************
@@ -279,11 +297,13 @@ and <pf_get_marker_fitted_positions>.
 		fprintf(file, "   pushTexture unimap_rachel_web  #set texture\n");
 		fprintf(file, "      Geoset face # render geoset\n");
 		fprintf(file, "\n");
-		fprintf(file, "      pushmatrix \"Left Eye\" translate $XL $YL $ZL\n");
+		fprintf(file, "      pushmatrix \"Left Eye\" translate %g %g %g\n",
+			left_eye[0], left_eye[1], left_eye[2]);
 		fprintf(file, "         Geoset 'eye' # render\n");
 		fprintf(file, "      popmatrix       # pop matrix\n");
 		fprintf(file, "      \n");
-		fprintf(file, "      pushmatrix \"Right Eye\"  translate $XR $YR $ZR\n");
+		fprintf(file, "      pushmatrix \"Right Eye\"  translate %g %g %g\n",
+			right_eye[0], right_eye[1], right_eye[2]);
 		fprintf(file, "         geoset \"eye\" # render geoset\n");
 		fprintf(file, "      popmatrix     # pop matrix\n");
 		fprintf(file, "\n");

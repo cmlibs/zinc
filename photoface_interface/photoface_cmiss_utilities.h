@@ -28,13 +28,13 @@ extern "C" {
 Global functions
 ----------------
 */
-CMISSDECLSPEC int pf_write_head_model(char *obj_file_name,
-	int number_of_vertices,float *vertex_3d_locations,
-	int number_of_texture_vertices,float *texture_vertex_3d_locations,
-	int number_of_triangles,int *triangle_vertices,
-	int *triangle_texture_vertices);
+CMISSDECLSPEC int pf_write_head_model(const char *obj_file_name,
+	int number_of_vertices,int number_of_dynamic_vertices,
+	float *vertex_3d_locations,int number_of_texture_vertices,
+	float *texture_vertex_3d_locations,int number_of_triangles,
+	int *triangle_vertices,int *triangle_texture_vertices);
 /*******************************************************************************
-LAST MODIFIED : 10 June 2001
+LAST MODIFIED : 12 June 2001
 
 DESCRIPTION :
 Writes the head model
@@ -52,7 +52,7 @@ Writes the head model
 to the specified <obj_file>.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_write_basis(char *basis_file_name,int number_of_modes,
+CMISSDECLSPEC int pf_write_basis(const char *basis_file_name,int number_of_modes,
 	int number_of_vertices,float *vertex_3d_locations_or_offsets);
 /*******************************************************************************
 LAST MODIFIED : 10 June 2001
@@ -67,7 +67,7 @@ mode number slowest
 to the specified <basis_file>.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_write_texture(char *jpeg_file_name,int width,int height,
+CMISSDECLSPEC int pf_write_texture(const char *jpeg_file_name,int width,int height,
 	char *texture);
 /*******************************************************************************
 LAST MODIFIED : 10 June 2001
@@ -76,7 +76,7 @@ DESCRIPTION :
 Writes the <texture> to the <jpeg_file>.
 ==============================================================================*/
 
-CMISSDECLSPEC int pf_write_scene_graph(char *scene_graph_file_name,
+CMISSDECLSPEC int pf_write_scene_graph(const char *scene_graph_file_name,
 	float *eye_point,float *interest_point,float *up_vector,float view_angle,
 	float *left_eye,float *right_eye);
 /*******************************************************************************
