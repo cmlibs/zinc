@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -81,7 +81,7 @@ static int make_edit_gt_element_group(
 	struct Graphical_element_editor_struct *gelem_editor,
 	struct GT_element_group *gt_element_group)
 /*******************************************************************************
-LAST MODIFIED : 20 April 1999
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Destroys the edit_gt_element_group member of <gelem_editor> and rebuilds it as
@@ -99,15 +99,11 @@ a complete copy of <gt_element_group>.
 		{
 			DESTROY(GT_element_group)(&(gelem_editor->edit_gt_element_group));
 		}
-		/* make an empty GT_element_group */
-		if (gelem_editor->edit_gt_element_group=CREATE(GT_element_group)(
-			GT_element_group_get_element_group(gt_element_group),
-			GT_element_group_get_node_group(gt_element_group),
-			GT_element_group_get_data_group(gt_element_group)))
+		/* copy GT_element_group without graphics objects */
+		if (gelem_editor->edit_gt_element_group=
+			copy_create_GT_element_group(gt_element_group))
 		{
-			/* copy settings WITHOUT graphics objects */
-			return_code=GT_element_group_copy(gelem_editor->edit_gt_element_group,
-				gt_element_group);
+			return_code=1;
 		}
 		else
 		{
