@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.c
 
-LAST MODIFIED : 4 June 2004
+LAST MODIFIED : 14 February 2005
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -129,7 +129,10 @@ DESCRIPTION :
 	/* The viewport mode specifies whether the NDCs, adjusted to the aspect
 		 ratio from NDC_width/NDC_height are made as large as possible in the
 		 physical viewport (RELATIVE_VIEWPORT), or whether an exact mapping from
-		 user coordinates to pixels is used (ABSOLUTE_VIEWPORT). */
+		 user coordinates to pixels is used (ABSOLUTE_VIEWPORT), or whether the
+		 aspect ratio from NDC_width/NDC_height is ignored and the NDCs are made
+		 as large as possible(DISTORTING_RELATIVE_VIEWPORT).
+	*/
 	enum Scene_viewer_viewport_mode viewport_mode;
 	/* Specifies the offset and scale of user coordinates in the physical
 		 viewport, by supplying the user coordinate of the top,left position in
@@ -145,8 +148,9 @@ DESCRIPTION :
 	/* A background texture may also be displayed behind the projected image */
 	struct Texture *background_texture;
 	/* When an ABSOLUTE_VIEWPORT is used the following values specify the
-		 position and scale of the image relative to user coordinates. In
-		 RELATIVE_VIEWPORT mode, these values are ignored and the image is
+		 position and scale of the image relative to user coordinates. In the
+		 RELATIVE_VIEWPORT and DISTORTING_RELATIVE_VIEWPORT modes, these values
+		 are ignored and the image is
 		 drawn behind the normalized device coordinate range.
 		 ???RC.  Allow texture to be cropped as well? */
 	double bk_texture_left,bk_texture_top,bk_texture_width,
@@ -661,7 +665,7 @@ DESCRIPTION :
 static int Scene_viewer_calculate_transformation(
 	struct Scene_viewer *scene_viewer, int viewport_width, int viewport_height)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2003
+LAST MODIFIED : 04 February 2005
 
 DESCRIPTION :
 Calculates the projection_matrix, window_projection_matrix and modelview_materix
@@ -773,6 +777,15 @@ modes, so push/pop them if you want them preserved.
 					premultiply_matrix[5] *= (scene_viewer->NDC_height*viewport_width/
 						(scene_viewer->NDC_width*viewport_height));
 				}
+			} break;
+			case SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT:
+			{
+				/* distorting relative viewport: NDC volume is scaled to the largest size
+					 that can fit in the viewport. Note that
+					 the NDC_height and NDC_width are all that is needed to characterise
+					 the size/shape of the NDC volume in relative mode
+					 This is a simple no-op, as the identity matrix is sufficient to achieve this.
+				*/
 			} break;
 		}
 		multiply_matrix(4,4,4,premultiply_matrix,scene_viewer->projection_matrix,
@@ -3522,7 +3535,7 @@ transformations.
 static void Scene_viewer_input_callback(struct Graphics_buffer *graphics_buffer,
 	struct Graphics_buffer_input *input, void *scene_viewer_void)
 /*******************************************************************************
-LAST MODIFIED : 1 July 2002
+LAST MODIFIED : 04 February 2005
 
 DESCRIPTION :
 The callback for mouse or keyboard input in the Scene_viewer window. The
@@ -3566,7 +3579,8 @@ returned to the scene.
 				}
 				if (scene_viewer->temporary_transform_mode)
 				{
-					if (SCENE_VIEWER_RELATIVE_VIEWPORT == scene_viewer->viewport_mode)
+					if (SCENE_VIEWER_RELATIVE_VIEWPORT == scene_viewer->viewport_mode ||
+						SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT == scene_viewer->viewport_mode)
 					{
 						if (SCENE_VIEWER_CUSTOM != scene_viewer->projection_mode)
 						{
@@ -3607,7 +3621,8 @@ returned to the scene.
 					scene_viewer->update_pixel_image=1;
 					Scene_viewer_redraw(scene_viewer);
 				}
-				if (SCENE_VIEWER_RELATIVE_VIEWPORT==scene_viewer->viewport_mode)
+				if (SCENE_VIEWER_RELATIVE_VIEWPORT==scene_viewer->viewport_mode ||
+					SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT==scene_viewer->viewport_mode)
 				{
 					if (SCENE_VIEWER_CUSTOM != scene_viewer->projection_mode)
 					{
@@ -6623,7 +6638,7 @@ See Scene_viewer_set_viewport_mode for explanation.
 int Scene_viewer_set_viewport_mode(struct Scene_viewer *scene_viewer,
 	enum Scene_viewer_viewport_mode viewport_mode)
 /*******************************************************************************
-LAST MODIFIED : 14 October 1998
+LAST MODIFIED : 04 February 2005
 
 DESCRIPTION :
 Sets the viewport_mode of the Scene_viewer. A relative viewport scales the NDC
@@ -6636,7 +6651,8 @@ viewport coordinates, which are specified relative to the window.
 
 	ENTER(Scene_viewer_set_viewport_mode);
 	if (scene_viewer&&((SCENE_VIEWER_RELATIVE_VIEWPORT==viewport_mode)||
-		(SCENE_VIEWER_ABSOLUTE_VIEWPORT==viewport_mode)))
+		(SCENE_VIEWER_ABSOLUTE_VIEWPORT==viewport_mode) ||
+		(SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT==viewport_mode)))
 	{
 		scene_viewer->viewport_mode=viewport_mode;
 		scene_viewer->transform_flag = 1;
@@ -7989,7 +8005,7 @@ NOTE: Calling function must not deallocate returned string.
 char *Scene_viewer_viewport_mode_string(
 	enum Scene_viewer_viewport_mode viewport_mode)
 /*******************************************************************************
-LAST MODIFIED : 14 October 1998
+LAST MODIFIED : 04 February 2005
 
 DESCRIPTION :
 Returns a string label for the <viewport_mode>.
@@ -8004,6 +8020,10 @@ NOTE: Calling function must not deallocate returned string.
 		case SCENE_VIEWER_RELATIVE_VIEWPORT:
 		{
 			return_string="relative_viewport";
+		} break;
+		case SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT:
+		{
+			return_string="distorting_relative_viewport";
 		} break;
 		case SCENE_VIEWER_ABSOLUTE_VIEWPORT:
 		{

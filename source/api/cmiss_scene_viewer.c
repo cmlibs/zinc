@@ -305,6 +305,112 @@ clip plane in the <scene_viewer>.
 	return (return_code);
 } /* Cmiss_scene_viewer_get_near_and_far_plane */
 
+int Cmiss_scene_viewer_get_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
+	enum Cmiss_scene_viewer_viewport_mode *viewport_mode)
+/*******************************************************************************
+LAST MODIFIED : 04 February 2005
+
+DESCRIPTION :
+Gets the viewport mode(absolute/relative/distorting relative) for the
+<scene_viewer>.
+==============================================================================*/
+{
+	enum Scene_viewer_viewport_mode scene_viewer_viewport_mode;
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_get_viewport_mode);
+	if (scene_viewer)
+	{
+		scene_viewer_viewport_mode = Scene_viewer_get_viewport_mode(scene_viewer);
+		switch(scene_viewer_viewport_mode)
+		{
+			case SCENE_VIEWER_ABSOLUTE_VIEWPORT:
+			{
+				*viewport_mode = CMISS_SCENE_VIEWER_ABSOLUTE_VIEWPORT;
+				return_code = 1;
+			} break;
+			case SCENE_VIEWER_RELATIVE_VIEWPORT:
+			{
+				*viewport_mode = CMISS_SCENE_VIEWER_RELATIVE_VIEWPORT;
+				return_code = 1;
+			} break;
+			case SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT:
+			{
+				*viewport_mode = CMISS_SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT;
+				return_code = 1;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_scene_viewer_get_viewport_mode.  "
+					"Viewport mode not supported in public interface.");
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_get_viewport_mode.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_get_viewport_mode */
+
+int Cmiss_scene_viewer_set_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
+	enum Cmiss_scene_viewer_viewport_mode viewport_mode)
+/*******************************************************************************
+LAST MODIFIED : 04 February 2005
+
+DESCRIPTION :
+Sets the viewport mode(absolute/relative/distorting relative) for the
+<scene_viewer>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_scene_viewer_set_viewport_mode);
+	if (scene_viewer)
+	{
+		switch(viewport_mode)
+		{
+			case CMISS_SCENE_VIEWER_ABSOLUTE_VIEWPORT:
+			{
+				return_code = Scene_viewer_set_viewport_mode(scene_viewer, 
+					SCENE_VIEWER_ABSOLUTE_VIEWPORT);
+			} break;
+			case CMISS_SCENE_VIEWER_RELATIVE_VIEWPORT:
+			{
+				return_code = Scene_viewer_set_viewport_mode(scene_viewer, 
+					SCENE_VIEWER_RELATIVE_VIEWPORT);
+			} break;
+			case CMISS_SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT:
+			{
+				return_code = Scene_viewer_set_viewport_mode(scene_viewer, 
+					SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT);
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmiss_scene_viewer_set_viewport_mode.  "
+					"Unknown viewport mode.");
+				return_code = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmiss_scene_viewer_set_viewport_mode.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_scene_viewer_set_viewport_mode */
+
 int Cmiss_scene_viewer_get_projection_mode(Cmiss_scene_viewer_id scene_viewer,
 	enum Cmiss_scene_viewer_projection_mode *projection_mode)
 /*******************************************************************************

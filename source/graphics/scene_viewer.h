@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.h
 
-LAST MODIFIED : 18 September 2002
+LAST MODIFIED : 4 February 2004
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -155,18 +155,22 @@ Be sure to implement any new modes in Scene_viewer_stereo_mode_string.
 
 enum Scene_viewer_viewport_mode
 /*******************************************************************************
-LAST MODIFIED : 14 October 1998
+LAST MODIFIED : 4 February 2005
 
 DESCRIPTION :
 In RELATIVE viewport mode the intended viewing volume is made as large as
 possible in the physical viewport while maintaining the aspect ratio from
 NDC_width and NDC_height. In ABSOLUTE viewport mode viewport_pixels_per_unit
 values are used to give and exact mapping from user coordinates to pixels.
+In DISTORTING_RELATIVE viewport mode the intended viewing volume is made as
+large as possible in the physical viewport, and the aspect ratio may be
+changed.
 Be sure to implement any new modes in Scene_viewer_viewport_mode_string.
 ==============================================================================*/
 {
 	SCENE_VIEWER_ABSOLUTE_VIEWPORT,
-	SCENE_VIEWER_RELATIVE_VIEWPORT
+	SCENE_VIEWER_RELATIVE_VIEWPORT,
+	SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT
 };
 
 DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 23 April 2002
+LAST MODIFIED : 14 February 2005
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -2133,15 +2133,16 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 static int modify_Graphics_window_view(struct Parse_state *state,
 	void *window_void,void *modify_graphics_window_data_void)
 /*******************************************************************************
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 14 February 2005
 
 DESCRIPTION :
 Parser commands for modifying the view in the current pane of <window>,
 view angle, interest point etc.
 ==============================================================================*/
 {
-	char allow_skew_flag,absolute_viewport_flag,relative_viewport_flag,
-		custom_projection_flag,parallel_projection_flag,perspective_projection_flag;
+	char allow_skew_flag,absolute_viewport_flag,distorting_relative_viewport_flag,
+		custom_projection_flag,parallel_projection_flag,perspective_projection_flag,
+		relative_viewport_flag;
 	double bottom,eye[3],clip_plane_add[4],clip_plane_remove[4],far_plane,left,lookat[3],
 		modelview_matrix[16],
 		ndc_placement[4],near_plane,photogrammetry_matrix[12],projection_matrix[16],right,
@@ -2263,15 +2264,19 @@ view angle, interest point etc.
 				&absolute_viewport_flag);
 			Option_table_add_char_flag_entry(viewport_mode_option_table, "relative_viewport",
 				&relative_viewport_flag);
+			Option_table_add_char_flag_entry(viewport_mode_option_table, "distorting_relative_viewport",
+				&distorting_relative_viewport_flag);
 			Option_table_add_suboption_table(option_table,
 				viewport_mode_option_table);
 			if (return_code=Option_table_multi_parse(option_table, state))
 			{
-				if (absolute_viewport_flag&&relative_viewport_flag)
+				if (1<(absolute_viewport_flag+relative_viewport_flag+
+					distorting_relative_viewport_flag))
 				{
 					display_message(WARNING_MESSAGE,
-						"Only one of absolute_viewport/relative_viewport");
+						"Only one of absolute_viewport/distoring_relative_viewport/relative_viewport");
 					absolute_viewport_flag=0;
+					distorting_relative_viewport_flag=0;
 					relative_viewport_flag=0;
 				}
 				if (1<(custom_projection_flag+parallel_projection_flag+
@@ -2346,6 +2351,11 @@ view angle, interest point etc.
 						{
 							Scene_viewer_set_viewport_mode(scene_viewer,
 								SCENE_VIEWER_RELATIVE_VIEWPORT);
+						}
+						if (distorting_relative_viewport_flag)
+						{
+							Scene_viewer_set_viewport_mode(scene_viewer,
+								SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT);
 						}
 					}
 					/*???RC should have checks on whether you can set these for the

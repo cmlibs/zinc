@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_scene_viewer.h
 
-LAST MODIFIED : 19 September 2002
+LAST MODIFIED : 14 February 2005
 
 DESCRIPTION :
 The public interface to the Cmiss_scene_viewer object for rendering cmiss
@@ -52,6 +52,27 @@ depending on the other requirements of the scene_viewer.
 	CMISS_SCENE_VIEWER_ANY_STEREO_MODE,
 	CMISS_SCENE_VIEWER_MONO,
 	CMISS_SCENE_VIEWER_STEREO
+};
+
+enum Cmiss_scene_viewer_viewport_mode
+/*******************************************************************************
+LAST MODIFIED : 04 February 2005
+
+DESCRIPTION :
+Specifies the behaviour of the NDC co-ordinates with respect to the size of the
+viewport.
+In RELATIVE viewport mode the intended viewing volume is made as large as
+possible in the physical viewport while maintaining the aspect ratio from
+NDC_width and NDC_height. In ABSOLUTE viewport mode viewport_pixels_per_unit
+values are used to give and exact mapping from user coordinates to pixels.
+In DISTORTING_RELATIVE viewport mode the intended viewing volume is made as
+large as possible in the physical viewport, and the aspect ratio may be
+changed.
+==============================================================================*/
+{
+	CMISS_SCENE_VIEWER_ABSOLUTE_VIEWPORT,
+	CMISS_SCENE_VIEWER_RELATIVE_VIEWPORT,
+	CMISS_SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT
 };
 
 enum Cmiss_scene_viewer_projection_mode
@@ -176,6 +197,26 @@ LAST MODIFIED : 13 September 2002
 DESCRIPTION :
 Sets the distance from the eye_point to the <near> clip plane and to the <far>
 clip plane in the <scene_viewer>.
+==============================================================================*/
+
+int Cmiss_scene_viewer_get_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
+	enum Cmiss_scene_viewer_viewport_mode *viewport_mode);
+/*******************************************************************************
+LAST MODIFIED : 04 February 2005
+
+DESCRIPTION :
+Gets the viewport mode(absolute/relative/distorting relative) for the
+<scene_viewer>.
+==============================================================================*/
+
+int Cmiss_scene_viewer_set_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
+	enum Cmiss_scene_viewer_viewport_mode viewport_mode);
+/*******************************************************************************
+LAST MODIFIED : 04 February 2005
+
+DESCRIPTION :
+Sets the viewport mode(absolute/relative/distorting relative) for the
+<scene_viewer>.
 ==============================================================================*/
 
 int Cmiss_scene_viewer_get_projection_mode(Cmiss_scene_viewer_id scene_viewer,
