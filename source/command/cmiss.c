@@ -20400,7 +20400,7 @@ Executes a GFX SELECT command.
 	char all_flag,data_flag,elements_flag,faces_flag,grid_points_flag,
 		*group_name,lines_flag,nodes_flag,selected_flag;
 	FE_value time;
-	int return_code,total_number_in_ranges;
+	int return_code;
 	struct Computed_field *conditional_field;
 	struct Cmiss_command_data *command_data;
 	struct Element_point_ranges *element_point_ranges;
@@ -20617,8 +20617,7 @@ Executes a GFX SELECT command.
 				/* grid_points */
 				if (grid_points_flag)
 				{
-					if (0<(total_number_in_ranges=
-						Multi_range_get_total_number_in_ranges(multi_range)))
+					if (0<Multi_range_get_total_number_in_ranges(multi_range))
 					{
 						if (grid_field)
 						{
