@@ -1532,6 +1532,7 @@ Main program for the CMISS Graphical User Interface
 							if (version_ptr=strstr(VERSION,"version "))
 							{
 								strncpy(version_temp,version_ptr+8,11);
+								version_temp[11] = 0;
 								strcat(version_id_string,version_temp);
 							}
 							strcat(version_id_string,"*");
