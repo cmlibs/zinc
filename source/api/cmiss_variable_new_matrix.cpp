@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new_matrix.cpp
 
-LAST MODIFIED : 6 November 2003
+LAST MODIFIED : 26 November 2003
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new matrix object.
@@ -19,7 +19,7 @@ Global functions
 Cmiss_variable_new_id Cmiss_variable_new_matrix_create(
 	unsigned int number_of_rows,unsigned int number_of_columns,Scalar *values)
 /*******************************************************************************
-LAST MODIFIED : 24 October 2003
+LAST MODIFIED : 26 November 2003
 
 DESCRIPTION :
 Creates a Cmiss_variable_new matrix with the specified <number_of_rows>,
@@ -28,10 +28,9 @@ initialized to zero.
 ==============================================================================*/
 {
 	Cmiss_variable_new_id result;
-	Variable_size_type number_of_values;
 
 	result=0;
-	if (0<(number_of_values=number_of_rows*number_of_columns))
+	if (0<number_of_rows*number_of_columns)
 	{
 		Matrix values_matrix(number_of_rows,number_of_columns);
 		Variable_size_type i,j,k;
