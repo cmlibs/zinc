@@ -17,7 +17,6 @@ Perl_pp_spwent
 PL_rsfp
 Perl_magic_setbm
 Perl_ck_fun_locale
-Perl_bytes_to_utf8
 Perl_ck_lfun
 Perl_ck_glob
 Perl_my_atof
@@ -40,7 +39,6 @@ PL_sig_name
 Perl_pp_time
 Perl_newHVREF
 Perl_pp_gnbyname
-Perl_printf_nocontext
 Perl_croak
 Perl_pp_leavewrite
 Perl_set_numeric_radix
@@ -88,9 +86,7 @@ Perl_pp_ggrgid
 Perl_pp_bit_and
 PL_lex_formbrack
 Perl_pp_lineseq
-PL_xpvav_arenaroot
 Perl_magic_setnkeys
-PL_xpvlv_arenaroot
 Perl_vform
 Perl_sv_unmagic
 PL_vtbl_packelem
@@ -126,7 +122,6 @@ Perl_save_nogv
 PL_sv_undef
 PL_psig_ptr
 PL_seen_zerolen
-PL_xrv_arenaroot
 Perl_pp_ord
 Perl_pp_fork
 Perl_append_elem
@@ -144,11 +139,8 @@ Perl_pp_rindex
 PL_efloatsize
 Perl_deprecate
 Perl_oopsHV
-Perl_utf8_to_bytes
 Perl_sv_setiv_mg
-Perl_save_padsv
 PL_oldbufptr
-Perl_ck_substr
 Perl_is_uni_punct_lc
 PL_endav
 PL_reginterp_cnt
@@ -160,8 +152,6 @@ Perl_pp_predec
 Perl_my_pclose
 PL_reg_eval_set
 PL_preambleav
-Perl_utf8_to_uv_simple
-Perl_save_generic_pvref
 Perl_pp_ftctime
 PerlIO_vsprintf
 PL_last_swash_klen
@@ -221,7 +211,6 @@ Perl_pp_xor
 Perl_pp_gpwent
 Perl_newMYSUB
 PL_patchlevel
-Perl_report_evil_fh
 Perl_magic_killbackrefs
 Perl_pp_ge
 Perl_save_re_context
@@ -244,7 +233,6 @@ Perl_op_free
 Perl_pp_or
 Perl_pp_ftewrite
 Perl_init_stacks
-Perl_gv_efullname4
 Perl_do_sv_dump
 PL_regtill
 Perl_save_scalar
@@ -281,7 +269,6 @@ Perl_do_sprintf
 Perl_mode_from_discipline
 Perl_pp_push
 Perl_ck_delete
-PL_nullstash
 PL_defgv
 Perl_pp_leavesublv
 Perl_pp_schomp
@@ -469,7 +456,6 @@ Perl_start_subparse
 PL_reg_leftiter
 Perl_is_uni_upper_lc
 Perl_vmess
-Perl_is_gv_magical
 Perl_newLOOPOP
 Perl_newSVnv
 Perl_pp_lt
@@ -479,7 +465,6 @@ Perl_pp_substcont
 Perl_gv_check
 Perl_pp_threadsv
 Perl_magic_freeregexp
-PL_xpvbm_arenaroot
 PL_regprogram
 Perl_pp_gnetent
 PL_statcache
@@ -532,13 +517,11 @@ Perl_sv_tainted
 PL_numeric_local
 PL_savestack
 PL_freq
-PL_xiv_arenaroot
 Perl_instr
 PL_regexecp
 PL_regsawback
 PL_sawampersand
 Perl_is_uni_digit
-PL_xpviv_arenaroot
 Perl_magic_getuvar
 Perl_sv_free_arenas
 PL_srand_called
@@ -668,7 +651,6 @@ PL_curstname
 PL_bufptr
 PL_uudmap
 Perl_newOP
-Perl_bytes_from_utf8
 PL_toptarget
 Perl_pp_closedir
 PL_vtbl_collxfrm
@@ -756,7 +738,6 @@ PL_lex_brackets
 PL_cshname
 PL_utf8_space
 PL_xpvbm_root
-PL_xpvnv_arenaroot
 Perl_my_popen
 PL_lex_stuff
 PL_diehook
@@ -783,7 +764,6 @@ Perl_sv_setref_nv
 Perl_pp_rcatline
 Perl_is_utf8_cntrl
 Perl_sv_magic
-PL_numeric_radix_sv
 Perl_pp_die
 PL_xpvcv_root
 Perl_pp_slt
@@ -796,7 +776,6 @@ Perl_hv_store_ent
 Perl_do_exec3
 Perl_pp_exec
 Perl_mg_length
-Perl_sv_del_backref
 PL_euid
 PL_regbol
 Perl_pp_scmp
@@ -835,12 +814,10 @@ PL_error_count
 Perl_newCONSTSUB
 PL_utf8_mark
 PL_reg_oldpos
-Perl_gv_fullname4
 Perl_repeatcpy
 PL_regcc
 PL_regindent
 Perl_sv_len
-PL_xpvmg_arenaroot
 Perl_sv_gets
 Perl_pv_display
 Perl_io_close
@@ -959,7 +936,6 @@ PL_modglobal
 Perl_pp_wait
 Perl_pp_egrent
 Perl_sv_catpvn_mg
-Perl_apply_attrs_string
 Perl_newFOROP
 perl_set_numeric_standard
 Perl_is_uni_cntrl
@@ -1019,7 +995,6 @@ Perl_pp_crypt
 Perl_pp_regcmaybe
 Perl_die_where
 Perl_huge
-Perl_is_utf8_string
 Perl_pp_atan2
 PL_fold_locale
 Perl_gv_fullname3
@@ -1058,7 +1033,6 @@ Perl_pp_mapstart
 PL_multi_start
 Perl_newCONDOP
 Perl_sv_vsetpvf_mg
-PL_xpvcv_arenaroot
 Perl_pp_gvsv
 Perl_ck_select
 Perl_pp_ftatime
@@ -1076,7 +1050,6 @@ Perl_do_open
 Perl_pp_method_named
 Perl_pp_lstat
 PL_delaymagic
-PL_xpv_arenaroot
 Perl_magic_getsubstr
 Perl_pp_exp
 Perl_pp_pushre
@@ -1176,7 +1149,6 @@ PL_vtbl_taint
 Perl_newPROG
 Perl_sv_pvbyte
 Perl_newSV
-Perl_magic_regdatum_set
 PL_hintgv
 Perl_magic_clearsig
 PL_sub_generation
@@ -1226,7 +1198,6 @@ Perl_gv_fetchfile
 Perl_pp_ftsgid
 Perl_is_uni_cntrl_lc
 perl_require_pv
-Perl_save_mortalizesv
 Perl_magic_getvec
 PL_oldname
 Perl_listkids
@@ -1290,7 +1261,6 @@ Perl_unsharepvn
 Perl_sv_pv
 PL_tmps_stack
 PL_mainstack
-Perl_ck_return
 PL_reg_flags
 Perl_pp_pow
 Perl_gv_fetchmethod
@@ -1306,25 +1276,21 @@ PL_op
 PL_linestr
 PL_utf8_digit
 PL_modcount
-Perl_utf8_length
 Perl_sv_2iv
 Perl_pp_sge
 PL_e_script
 Perl_newWHILEOP
-PL_xpvhv_arenaroot
 PL_numeric_name
 PL_uuemap
 Perl_ninstr
 PL_xnv_root
 Perl_pp_i_modulo
 PL_lastfd
-PL_he_arenaroot
 Perl_pp_getppid
 Perl_is_uni_ascii
 Perl_sv_derived_from
 Perl_sv_catsv
 Perl_vload_module
-Perl_sv_add_backref
 Perl_pp_int
 Perl_cast_ulong
 Perl_av_fill
@@ -1397,7 +1363,6 @@ Perl_sv_setnv
 Perl_avhv_keys
 Perl_pp_fileno
 PL_minus_a
-PL_xnv_arenaroot
 PL_yyerrflag
 Perl_sv_replace
 Perl_moreswitches
@@ -1464,13 +1429,11 @@ Perl_pad_allocmy
 Perl_newSUB
 Perl_ck_exit
 PL_yyval
-PL_beginav_save
 Perl_magic_getdefelem
 Perl_pp_fteexec
 PL_tainting
 Perl_sv_catpv_mg
 PL_reg_call_cc
-Perl_is_lvalue_sub
 Perl_gv_IOadd
 Perl_pp_i_lt
 PL_hints
@@ -1493,7 +1456,6 @@ Perl_pp_anonhash
 PL_timesbuf
 Perl_pp_ftrwrite
 Perl_magic_setamagic
-PL_dummy1_bincompat
 PL_vtbl_env
 Perl_init_debugger
 Perl_mg_get
