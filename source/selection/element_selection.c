@@ -96,7 +96,7 @@ on or if no such changes have occurred.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_selection_update.   Invalid argument(s)");
+			"FE_element_selection_update.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -178,7 +178,7 @@ Destroys the FE_element_selection.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"DESTROY(FE_element_selection).   Invalid argument(s)");
+			"DESTROY(FE_element_selection).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -212,14 +212,14 @@ void *user_data.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_element_selection_add_callback.   Could not add callback");
+				"FE_element_selection_add_callback.  Could not add callback");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_selection_add_callback.   Invalid argument(s)");
+			"FE_element_selection_add_callback.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -251,14 +251,14 @@ Removes the callback calling <function> with <user_data> from
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_element_selection_remove_callback.   Could not remove callback");
+				"FE_element_selection_remove_callback.  Could not remove callback");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_selection_remove_callback.   Invalid argument(s)");
+			"FE_element_selection_remove_callback.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -284,7 +284,7 @@ occur until FE_element_selection_end_cache is called.
 		if (element_selection->cache)
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_element_selection_begin_cache.   Cache already enabled");
+				"FE_element_selection_begin_cache.  Cache already enabled");
 			return_code=0;
 		}
 		else
@@ -296,7 +296,7 @@ occur until FE_element_selection_end_cache is called.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_selection_begin_cache.   Invalid argument(s)");
+			"FE_element_selection_begin_cache.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -329,14 +329,14 @@ while caching was on.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_element_selection_end_cache.   Cache not enabled");
+				"FE_element_selection_end_cache.  Cache not enabled");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_selection_end_cache.   Invalid argument(s)");
+			"FE_element_selection_end_cache.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
