@@ -4965,7 +4965,7 @@ int draw_torso_arm_labels(struct Unemap_package *package,int map_number)/*FOR AJ
 LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
-Creates a pair of arms, and adds to the scene. Or removes if not required.
+Creates a pair of arm labels, and adds to the scene.
 ==============================================================================*/
 {	
 	int return_code,rig_node_group_number;

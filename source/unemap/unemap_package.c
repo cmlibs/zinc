@@ -4207,14 +4207,6 @@ cf free_unemap_package_map_info
 		DEALLOCATE(package->maps_info);
 		package->number_of_maps=0;	
 		package->viewed_scene=0; 
-
-		if(package->scene_viewer)/*FOR AJP*/	
-		/*reset lookat info so aligned with cardianal axis  */
-		/*??JW possible to just destory scene?*/
-		{
-			Scene_viewer_set_lookat_parameters(package->scene_viewer,
-				0,0,1, 0,0,0, 0,1,0);
-		}
 	}
 	else
 	{
@@ -4383,73 +4375,108 @@ gets the spectrum_manager of the unemap package.
 
 int unemap_package_align_scene(struct Unemap_package *package) /*FOR AJP*/
 /*******************************************************************************
-LAST MODIFIED : 19 Jun 2000
+LAST MODIFIED : 20 Jun 2000
 
-DESCRIPTION : Aligns the <package> scene so that the largest dimension of the 
-scene is the scene viewer's up vector component (ie it is at the top of the screen). 
-Does this by:
-Finding the largest dimension component of the scene, setting the 
-corresponding up vector component to 1 (others are set to zero) and swapping the 
-corresponding eye components to ensure we're still looking at the scene viewer 
-lookat point, and the up and lookat->eye vectors are orthogonal.
-??JW Assumes that scene,eye[],lookat,up[] are aligned with cardinal axis!
-To do properly use cross products, etc.
+DESCRIPTION : Aligns the <package> scene so that the largest cardinal dimension 
+component of the scene is the scene viewer's up vector, and the viewer is 
+looking along the scene's smallest cardinal dimension component towards the 
+centre of the scene. Eg if a scene is 100 by 30 by 150 (in x,y,z)
+then we'd look along the y axis, with the z axis as the up vector. 
 
+cf Scene_viewer_view_all.
 Should be in Scene_viewer? RC doesn't think so.
 ==============================================================================*/
 {
-	FE_value dum;
-	double centre_x,centre_y,centre_z,eye[3],size[3],lookatx,lookaty,lookatz,max,
-		size_x,size_y,size_z,up[3];
-	int i,j,k,return_code;
+	double centre[3],clip_factor,diff[3],dist,eye[3],lookat[3],max,min,
+		radius,size[3],up[3];
+	int i,max_index,min_index,return_code,width_factor;
 	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)NULL;
+	/*not using middle at the moment, but may want to in future*/
+#if defined (NEW_CODE)
+	double middle;
+	int middle_index
+#endif /* defined (NEW_CODE)*/
 
 	ENTER(unemap_package_align_scene);
 	if (package&&(scene_viewer=get_unemap_package_scene_viewer(package)))
-	{		
-		/*do Scene_viewer_view_all to set up eye, lookat, up*/
-		Scene_viewer_view_all(scene_viewer);
+	{							
 		if(Scene_get_graphics_range(Scene_viewer_get_scene(scene_viewer),
-			&centre_x,&centre_y,&centre_z,&size_x,&size_y,&size_z)&&
+			&centre[0],&centre[1],&centre[2],&size[0],&size[1],&size[2]))
+		{	
+			radius=0.5*sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);		
+			/* enlarge radius to keep image within edge of window */
+			/*???RC width_factor should be read in from defaults file */
+			width_factor=1.05;
+			radius *= width_factor;
+			/*???RC clip_factor should be read in from defaults file: */
+			clip_factor = 10.0;		
+			if((Scene_viewer_set_view_simple(scene_viewer,centre[0],centre[1],centre[2],
+				radius,40,clip_factor*radius))&&
+			/*now done the equiv of Scene_viewer_view_all,&  have size[0],&size[1],&size[2] */
 			(Scene_viewer_get_lookat_parameters(scene_viewer,
-				&eye[0],&eye[1],&eye[2],&lookatx,&lookaty,&lookatz,&up[0],&up[1],&up[2])))
-		{
-			/*get set up eye, lookat, up*/
-			return_code=1;			
-			size[0]=size_x;
-			size[1]=size_y;
-			size[2]=size_z;	
-			max=size[0];
-			/*for x,y,z components*/
-			for(i=0;i<3;i++)
+				&eye[0],&eye[1],&eye[2],&lookat[0],&lookat[1],&lookat[2],&up[0],&up[1],&up[2])))
 			{
-				/*if this is the largest dimension */
-				if(size[i] > max)
+				/* get,min,middle,max component of the scene size*/		
+				min=size[0];
+				max=size[0];		
+				min_index=0;
+				max_index=0;				
+				for(i=0;i<3;i++)
 				{
-					/*for x,y,z comps of the old up vector*/
-					for(j=0;j<3;j++)
+					if(size[i]>max)
 					{
-						/*remember the previous non-zero up[] component */
-						if(up[j]>0)
-						{
-							k=j;
-						}				
-						/*zero all up[] components*/
-						up[j]=0;					
+						max=size[i];
+						max_index=i;
 					}
-					/*set the new max*/
-					max=size[i];
-					/*this is now the up direction*/
-					up[i]=1;
-					/* swap the current eye component with the prev eye component that */
-					/* corresponds to the previous non-zero up[] component*/
-					dum =eye[i];				
-					eye[i]=eye[k];	
-					eye[k]=-dum;
+					if(size[i]<min)
+					{
+						min=size[i];
+						min_index=i;
+					}	
 				}
-			}					
-			Scene_viewer_set_lookat_parameters(scene_viewer,
-				eye[0],eye[1],eye[2],lookatx,lookaty,lookatz,up[0],up[1],up[2]);		
+				/*not using middle at the moment, but may want to in future*/
+#if defined (NEW_CODE)
+				middle=size[0];
+				middle_index=0;
+				for(i=0;i<3;i++)
+				{
+					if((size[i]<max)&&(size[i]>min))
+					{
+						middle=size[i];
+						middle_index=i;
+					}
+				}		
+#endif /*defined (NEW_CODE)	 */		
+				/*clear up vector */
+				for(i=0;i<3;i++)
+				{
+					up[i]=0;				
+				}
+				/*set the up vector to be the max size component*/
+				up[max_index]=1;
+				/* get the dist of eye pt from centre pt (after Scene_viewer_set_view_simple ) */
+				/* (centre[] and lookat[] are the same)*/
+				diff[0]=eye[0]-centre[0];
+				diff[1]=eye[1]-centre[1];
+				diff[2]=eye[2]-centre[2];
+				dist=sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]);
+				/*clear eye pt*/
+				for(i=0;i<3;i++)
+				{			
+					eye[i]=0;
+				}		
+				/*set eye pt to be along the min size component,dist from the centre */	
+				/*-ve sign so look at the front of torso meshes - they seem to be aligned this way*/
+				eye[min_index]=-dist;
+				return_code=Scene_viewer_set_lookat_parameters(scene_viewer,
+					eye[0],eye[1],eye[2],centre[0],centre[1],centre[2],up[0],up[1],up[2]);
+			}
+			else
+			{	
+				display_message(ERROR_MESSAGE,
+					"unemap_package_align_scene. Scene_viewer_set_view_simple failed");
+				return_code=0;
+			}
 		}
 		else
 		{
@@ -4468,5 +4495,4 @@ Should be in Scene_viewer? RC doesn't think so.
 
 	return (return_code);
 } /*unemap_package_align_scene  */
-
 #endif /* #if defined (UNEMAP_USE_NODES) */

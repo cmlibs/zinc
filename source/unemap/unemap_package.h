@@ -1139,18 +1139,17 @@ DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
 
-int unemap_package_align_scene(struct Unemap_package *package);
+int unemap_package_align_scene(struct Unemap_package *package); /*FOR AJP*/
 /*******************************************************************************
-LAST MODIFIED : 19 Jun 2000
+LAST MODIFIED : 20 Jun 2000
 
-DESCRIPTION : Aligns the <package> scene so that the largest dimension of the 
-scene is the scene viewer's up vector component (ie it is at the top of the screen). 
-Does this by:
-Finding the largest dimension component of the scene, setting the 
-corresponding up vector component to 1 (others are set to zero) and swapping the 
-corresponding eye components to ensure we're still looking at the scene viewer 
-lookat point, and the up and lookat->eye vectors are orthogonal.
+DESCRIPTION : Aligns the <package> scene so that the largest cardinal dimension 
+component of the scene is the scene viewer's up vector, and the viewer is 
+looking along the scene's smallest cardinal dimension component towards the 
+centre of the scene. Eg if a scene is 100 by 30 by 150 (in x,y,z)
+then we'd look along the y axis, with the z axis as the up vector. 
 
+cf Scene_viewer_view_all.
 Should be in Scene_viewer? RC doesn't think so.
 ==============================================================================*/
 
