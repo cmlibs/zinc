@@ -4325,7 +4325,7 @@ Writes the properties of the <texture> to the command window.
 			/* get the compressed texture size */
 			glGetIntegerv(GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &texture_size);
 			display_message(INFORMATION_MESSAGE,"  compressed storage used in graphics : %d\n",
-				ENUMERATOR_STRING(Texture_compression_mode)(texture_size));
+				texture_size);
 		}
 #endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 
