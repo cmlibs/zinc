@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.h
 
-LAST MODIFIED : 31 January 2003
+LAST MODIFIED : 4 February 2003
 
 DESCRIPTION :
 Computed_variable's are expressions that are constructed for:
@@ -246,70 +246,37 @@ int Computed_variable_set_independent_variable_source_variable(
 	struct Computed_variable *independent_variable,
 	struct Computed_variable *source_variable);
 /*******************************************************************************
-LAST MODIFIED : 29 January 2003
+LAST MODIFIED : 3 February 2003
 
 DESCRIPTION :
-Sets the values for <independent_variable> to come from the <source>.  The types
-of the values for <independent_variable> and <source> must match.  If
-<source_variable> is NULL then a previous setting for <independent_variable> is
-cleared.
+Sets the values for <independent_variable> of the <variable> to come from the
+<source_variable>.  The types of the values for <independent_variable> and
+<source_variable> must match.  If <source_variable> is NULL then a previous
+setting of the source variable for <independent_variable> is cleared.
 ==============================================================================*/
 
-int Computed_variable_set_value(struct Computed_variable *variable,
+int Computed_variable_set_independent_variable_value(
+	struct Computed_variable *variable,
+	struct Computed_variable *independent_variable,
 	struct Computed_value *value);
 /*******************************************************************************
-LAST MODIFIED : 29 January 2003
+LAST MODIFIED : 3 February 2003
 
 DESCRIPTION :
-Sets the <value> for the <variable>.
+Sets the <value> of the <independent_variable> for the <variable>.
 ==============================================================================*/
 
-int Computed_variable_get_value(struct Computed_variable *variable,
+int Computed_variable_get_independent_variable_value(
+	struct Computed_variable *variable,
+	struct Computed_variable *independent_variable,
 	struct Computed_value *value);
 /*******************************************************************************
-LAST MODIFIED : 23 January 2003
+LAST MODIFIED : 3 February 2003
 
 DESCRIPTION :
-Gets the <value> of the <variable>.  If the <value> has no type, then the
-default type for the variable is used otherwise a representation in <value>'s
-type is attempted.
-==============================================================================*/
-
-int Computed_variable_set_type_derivative(
-	struct Computed_variable *derivative,
-	struct Computed_variable *variable,
-	struct LIST(Computed_variable) *independent_variables);
-/*******************************************************************************
-LAST MODIFIED : 29 January 2003
-
-DESCRIPTION :
-Sets <derivative> to be the derivative of the <variable> with respect to the
-<independent_variables>.
-==============================================================================*/
-
-int Computed_variable_set_type_divergence(
-	struct Computed_variable *divergence,
-	struct Computed_variable *variable,
-	struct LIST(Computed_variable) *independent_variables);
-/*******************************************************************************
-LAST MODIFIED : 24 January 2003
-
-DESCRIPTION :
-Sets <divergence> to be the divergence of the <variable> with respect to the
-<independent_variables>.
-==============================================================================*/
-
-int Computed_variable_set_type_inverse(
-	struct Computed_variable *inverse_variable,
-	struct Computed_variable *variable,
-	struct LIST(Computed_variable) *dependent_variables);
-/*******************************************************************************
-LAST MODIFIED : 24 January 2003
-
-DESCRIPTION :
-Sets <inverse_variable> to be the inverse of the <variable>.  Its independent
-variables are the dependent variables of the <variable> and its
-<dependent_variables> are independent variables of the <variable>.
+Gets the <value> of the <independent_variable> for the <variable>.  If the
+<value> has no type, then the default type for the <independent_variable> is
+used otherwise a representation in <value>'s type is attempted.
 ==============================================================================*/
 
 int Computed_variable_depends_on_Computed_variable(
@@ -364,27 +331,64 @@ PROTOTYPE_OBJECT_FUNCTIONS(Computed_variable_value);
 
 PROTOTYPE_LIST_FUNCTIONS(Computed_variable_value);
 
-int Computed_variables_are_defined(struct LIST(Computed_variable) *variables,
+int Computed_variable_is_defined(struct Computed_variable *variable,
 	struct LIST(Computed_variable_value) *values);
 /*******************************************************************************
-LAST MODIFIED : 24 January 2003
+LAST MODIFIED : 4 February 2003
 
 DESCRIPTION :
-Returns true if <variables> can be calculated with the specified <values>
+Returns true if <variable> can be calculated with the specified <values>
 over-riding, but not setting, the current values.
 
 ???DB.  Could use evaluate, but that would be less efficient and currently
 	would write error messages if it failed
 ==============================================================================*/
 
-int Computed_variables_evaluate(struct LIST(Computed_variable_value) *variables,
+int Computed_variable_evaluate(struct Computed_variable_value *variable_value,
 	struct LIST(Computed_variable_value) *values);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2003
+
+DESCRIPTION :
+Calculates the <variable_value> with the specified <values> over-riding, but not
+setting, the current values.
+==============================================================================*/
+
+int Computed_variable_set_type_derivative(
+	struct Computed_variable *derivative,
+	struct Computed_variable *variable,
+	struct LIST(Computed_variable) *independent_variables);
+/*******************************************************************************
+LAST MODIFIED : 29 January 2003
+
+DESCRIPTION :
+Sets <derivative> to be the derivative of the <variable> with respect to the
+<independent_variables>.
+==============================================================================*/
+
+int Computed_variable_set_type_divergence(
+	struct Computed_variable *divergence,
+	struct Computed_variable *variable,
+	struct LIST(Computed_variable) *independent_variables);
 /*******************************************************************************
 LAST MODIFIED : 24 January 2003
 
 DESCRIPTION :
-Calculates the <variables> with the specified <values> over-riding, but not
-setting, the current values.
+Sets <divergence> to be the divergence of the <variable> with respect to the
+<independent_variables>.
+==============================================================================*/
+
+int Computed_variable_set_type_inverse(
+	struct Computed_variable *inverse_variable,
+	struct Computed_variable *variable,
+	struct LIST(Computed_variable) *dependent_variables);
+/*******************************************************************************
+LAST MODIFIED : 24 January 2003
+
+DESCRIPTION :
+Sets <inverse_variable> to be the inverse of the <variable>.  Its independent
+variables are the dependent variables of the <variable> and its
+<dependent_variables> are independent variables of the <variable>.
 ==============================================================================*/
 
 struct Coordinate_system *Computed_variable_get_coordinate_system(

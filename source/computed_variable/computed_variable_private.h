@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable_private.h
 
-LAST MODIFIED : 31 January 2003
+LAST MODIFIED : 4 February 2003
 
 DESCRIPTION :
 ???DB.  Move structure into .c .  Means that have to change macro into a
@@ -16,21 +16,103 @@ Method types
 */
 typedef int (*Computed_variable_clear_type_specific_function)(
 	struct Computed_variable *variable);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+
 typedef void* (*Computed_variable_copy_type_specific_function)(
 	struct Computed_variable *source_variable,
 	struct Computed_variable *destination_variable);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+
+typedef int
+	(*Computed_variable_get_independent_variable_value_type_specific_function)(
+	struct Computed_variable *dependent_variable,
+	struct Computed_variable *independent_variable,
+	struct Computed_value *value);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+
 typedef int (*Computed_variable_get_value_type_type_specific_function)(
 	struct Computed_variable *variable,struct Computed_value *type);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+
+typedef int
+	(*Computed_variable_is_defined_type_specific_function)(
+	struct Computed_variable *variable,
+	struct LIST(Computed_variable_value) *values);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2003
+
+DESCRIPTION :
+If the <variable> can be evaluated assuming that all its source variables can be
+evaluated and that the <values> are specified, then this method returns a
+non-zero.  This method is not recursive - checking through tree of source
+variables is done by Computed_variable_is_defined.
+
+???DB.  Could change so that doesn't need to look at independent/source
+	variable pairs at all - Computed_variable_is_defined incorporates the
+	independent variables into a values list and change how source/independent
+	pairs are stored?
+==============================================================================*/
+
 typedef int
 	(*Computed_variable_is_independent_variable_of_type_specific_function)(
 	struct Computed_variable *dependent_variable,
 	struct Computed_variable *independent_variable);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+
 typedef int (*Computed_variable_not_in_use_function)(
 	struct Computed_variable *variable);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+
 typedef int (*Computed_variable_overlap_type_specific_function)(
 	struct Computed_variable *variable_1,struct Computed_variable *variable_2);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+
 typedef int (*Computed_variable_same_variable_type_specific_function)(
 	struct Computed_variable *variable_1,struct Computed_variable *variable_2);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+
+typedef int
+	(*Computed_variable_set_independent_variable_value_type_specific_function)(
+	struct Computed_variable *dependent_variable,
+	struct Computed_variable *independent_variable,
+	struct Computed_value *value);
+/*******************************************************************************
+LAST MODIFIED : 4 February 2003
+
+DESCRIPTION :
+==============================================================================*/
 
 #if defined (OLD_CODE)
 typedef int (*Computed_variable_clear_type_specific_function)(
@@ -95,7 +177,7 @@ Friend macros
 */
 #define COMPUTED_VARIABLE_ESTABLISH_METHODS( variable, variable_type ) \
 /***************************************************************************** \
-LAST MODIFIED : 31 January 2003 \
+LAST MODIFIED : 4 February 2003 \
 \
 DESCRIPTION : \
 Each Computed_variable_set_type function should call this macro to establish \
@@ -106,11 +188,14 @@ to NULL or some default function. \
 Computed_variable_establish_methods(variable, \
 	Computed_variable_ ## variable_type ## _clear_type_specific, \
 	Computed_variable_ ## variable_type ## _copy_type_specific, \
+	Computed_variable_ ## variable_type ## _get_independent_variable_value_type_specific, \
 	Computed_variable_ ## variable_type ## _get_value_type_type_specific, \
+	Computed_variable_ ## variable_type ## _is_defined_type_specific_function, \
 	Computed_variable_ ## variable_type ## _is_independent_variable_of_type_specific, \
 	Computed_variable_ ## variable_type ## _not_in_use, \
 	Computed_variable_ ## variable_type ## _overlap_type_specific, \
-	Computed_variable_ ## variable_type ## _same_variable_type_specific)
+	Computed_variable_ ## variable_type ## _same_variable_type_specific, \
+	Computed_variable_ ## variable_type ## _set_independent_variable_value_type_specific)
 
 #if defined (OLD_CODE)
 variable->computed_variable_clear_type_specific_function = \
@@ -162,8 +247,12 @@ int Computed_variable_establish_methods(struct Computed_variable *variable,
 	computed_variable_clear_type_specific_function,
 	Computed_variable_copy_type_specific_function
 	computed_variable_copy_type_specific_function,
+	Computed_variable_get_independent_variable_value_type_specific_function
+	computed_variable_get_independent_variable_value_type_specific_function,
 	Computed_variable_get_value_type_type_specific_function
 	computed_variable_get_value_type_type_specific_function,
+	Computed_variable_is_defined_type_specific_function
+	computed_variable_is_defined_type_specific_function,
 	Computed_variable_is_independent_variable_of_type_specific_function
 	computed_variable_is_independent_variable_of_type_specific_function,
 	Computed_variable_not_in_use_function
@@ -171,9 +260,11 @@ int Computed_variable_establish_methods(struct Computed_variable *variable,
 	Computed_variable_overlap_type_specific_function
 	computed_variable_overlap_type_specific_function,
 	Computed_variable_same_variable_type_specific_function
-	computed_variable_same_variable_type_specific_function);
+	computed_variable_same_variable_type_specific_function,
+	Computed_variable_set_independent_variable_value_type_specific_function
+	computed_variable_set_independent_variable_value_type_specific_function);
 /*******************************************************************************
-LAST MODIFIED : 31 January 2003
+LAST MODIFIED : 4 February 2003
 
 DESCRIPTION :
 Sets the methods for the <variable>.
