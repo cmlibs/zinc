@@ -1,4 +1,4 @@
-package Cmiss::cmgui_command_data;
+package Cmiss::Cmgui_command_data;
 
 use 5.006;
 use strict;
@@ -36,7 +36,7 @@ sub AUTOLOAD {
     my $constname;
     our $AUTOLOAD;
     ($constname = $AUTOLOAD) =~ s/.*:://;
-    croak "&Cmiss::cmgui_command_data::constant not defined" if $constname eq 'constant';
+    croak "&Cmiss::Cmgui_command_data::constant not defined" if $constname eq 'constant';
     my ($error, $val) = constant($constname);
     if ($error) { croak $error; }
     {
@@ -53,21 +53,21 @@ sub AUTOLOAD {
 }
 
 use Cmiss;
-if (!defined $Cmiss::cmgui_command_data)
+if (!defined $Cmiss::Cmgui_command_data)
 {
    require Cmiss::Perl_cmiss;
    Cmiss::require_library('cmgui');
 }
 
-package Cmiss::cmgui_command_data;
+package Cmiss::Cmgui_command_data;
 
 require XSLoader;
-XSLoader::load('Cmiss::cmgui_command_data', $VERSION);
+XSLoader::load('Cmiss::Cmgui_command_data', $VERSION);
 
 #Only destroy the actual command data if it was made here.
 my $actually_destroy_command_data = 0;
 
-if (!defined $Cmiss::cmgui_command_data)
+if (!defined $Cmiss::Cmgui_command_data)
 {
   no warnings; #Suppress warnings from variables defined in initialisation.
 
@@ -76,15 +76,15 @@ if (!defined $Cmiss::cmgui_command_data)
   my $tmp_command_data = create(["cmgui", "-console"]);
   bless $tmp_command_data, "SomethingThatWillNOTMatch";
 
-  if (!defined $Cmiss::cmgui_command_data)
+  if (!defined $Cmiss::Cmgui_command_data)
   {
 	 die "Cmgui failed to initialise correctly";
   }
   sub cmiss
 	 {
-		Cmiss::cmgui_command_data::execute_command($Cmiss::cmgui_command_data, @_);
+		Cmiss::Cmgui_command_data::execute_command($Cmiss::Cmgui_command_data, @_);
 	 }
-  *cmiss::cmiss = \&Cmiss::cmgui_command_data::cmiss;
+  *cmiss::cmiss = \&Cmiss::Cmgui_command_data::cmiss;
 }
 
 # Preloaded methods go here.
@@ -94,7 +94,7 @@ sub new
 	my ($class) = @_;
 	my $objref;
 
-	$objref = $Cmiss::cmgui_command_data;
+	$objref = $Cmiss::Cmgui_command_data;
 	bless $objref, $class;
 
 	return $objref;
@@ -139,22 +139,22 @@ __END__
 
 =head1 NAME
 
-Cmiss::cmgui_command_data - Perl extension for Cmiss values
+Cmiss::Cmgui_command_data - Perl extension for Cmiss values
 
 =head1 SYNOPSIS
 
-  use Cmiss::cmgui_command_data;
+  use Cmiss::Cmgui_command_data;
 
 =head1 ABSTRACT
 
-  This should be the abstract for Cmiss::cmgui_command_data.
+  This should be the abstract for Cmiss::Cmgui_command_data.
   The abstract is used when making PPD (Perl Package Description) files.
   If you don't want an ABSTRACT you should also edit Makefile.PL to
   remove the ABSTRACT_FROM option.
 
 =head1 DESCRIPTION
 
-Stub documentation for Cmiss::cmgui_command_data, created by h2xs. It looks like the
+Stub documentation for Cmiss::Cmgui_command_data, created by h2xs. It looks like the
 author of the extension was negligent enough to leave the stub
 unedited.
 

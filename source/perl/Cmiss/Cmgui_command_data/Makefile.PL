@@ -11,7 +11,7 @@ use ExtUtils::MakeMaker;
 # To find local
 #   setenv PERLLIB /dosD/cmiss/cmgui/perl/lib/perl5/site_perl/5.8.0/i686-linux/
 # To test without installing
-#   perl -Mblib -MCmiss::cmgui_command_data -e 'Cmiss::cmgui_command_data::create'
+#   perl -Mblib -MCmiss::Cmgui_command_data -e 'Cmiss::Cmgui_command_data::create'
 
 #Recursively look up from here for typemap files.
 my $typemap_file = "typemap";
@@ -27,15 +27,15 @@ while ( -f $typemap_file )
 unshift @typemap_array, "$ENV{CMGUI_DEV_SOURCE}/perl/Cmiss/Region/typemap";
 
 #
-# Problems with "Manifying" in a FAT32 filesystem because Cmiss::cmgui_command_data.3 is not
+# Problems with "Manifying" in a FAT32 filesystem because Cmiss::Cmgui_command_data.3 is not
 #   a valid file name
 WriteMakefile(
-    'NAME'    => 'Cmiss::cmgui_command_data',
+    'NAME'    => 'Cmiss::Cmgui_command_data',
   #          
-    'VERSION_FROM'  => 'cmgui_command_data.pm', # finds $VERSION
+    'VERSION_FROM'  => 'Cmgui_command_data.pm', # finds $VERSION
     'PREREQ_PM'    => {}, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
-      (ABSTRACT_FROM => 'cmgui_command_data.pm', # retrieve abstract from module
+      (ABSTRACT_FROM => 'Cmgui_command_data.pm', # retrieve abstract from module
        AUTHOR     => '"Shane Blackett <s.blackett@auckland.ac.nz>"') : ()),
     'LIBS'    => [''], # e.g., '-lm'
     'DEFINE'    => '-DPERL_INTERPRETER', # e.g., '-DHAVE_SOMETHING'

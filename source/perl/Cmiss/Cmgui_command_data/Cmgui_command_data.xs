@@ -5,11 +5,11 @@
 #include "command/cmiss.h"
 #include "typemap.h"
 
-MODULE = Cmiss::cmgui_command_data		PACKAGE = Cmiss::cmgui_command_data		PREFIX = Cmiss_cmgui_command_data_
+MODULE = Cmiss::Cmgui_command_data		PACKAGE = Cmiss::Cmgui_command_data		PREFIX = Cmiss_cmgui_command_data_
 
 PROTOTYPES: DISABLE
 
-Cmiss::cmgui_command_data
+Cmiss::Cmgui_command_data
 create(argv)
    AV *argv;
 	CODE:
@@ -37,7 +37,7 @@ create(argv)
 		RETVAL
 
 int
-destroy(Cmiss::cmgui_command_data value)
+destroy(Cmiss::Cmgui_command_data value)
 	CODE:
 		{
 			struct Cmiss_command_data *temp_value;
@@ -49,7 +49,7 @@ destroy(Cmiss::cmgui_command_data value)
 		RETVAL
 
 int
-execute_command(Cmiss::cmgui_command_data cmgui_command_data, char *name)
+execute_command(Cmiss::Cmgui_command_data cmgui_command_data, char *name)
 	CODE:
 	{
 	   int quit = 0;
@@ -59,7 +59,7 @@ execute_command(Cmiss::cmgui_command_data cmgui_command_data, char *name)
 	RETVAL
 
 Cmiss::Region
-command_data_get_root_region(Cmiss::cmgui_command_data cmgui_command_data)
+command_data_get_root_region(Cmiss::Cmgui_command_data cmgui_command_data)
 	CODE:
 		if (RETVAL=Cmiss_command_data_get_root_region(cmgui_command_data))
 		{
