@@ -396,7 +396,7 @@ Runs a job through the photoface interface.
     1, /* Skull_Top_Right_End */
     1, /* Skull_Top_Left_2 */
     1, /* Skull_Top_Left_1 */
-    1, /* Skull_Top_Vertex */
+    0.1, /* Skull_Top_Vertex */
     1, /* Hairline_Right_End */
     1, /* Hairline_Right_3 */
     1, /* Hairline_Right_1 */
@@ -593,7 +593,7 @@ Runs a job through the photoface interface.
 		DEALLOCATE(error_message);
 	}
 
-	if (PF_SUCCESS_RC == pf_setup("rachelv_r05m", "", &pf_job_id))
+	if (PF_SUCCESS_RC == pf_setup("rachelv_r05m", "neutral", &pf_job_id))
 	{
 		printf("Completed pf_setup.\n");
 	}
@@ -869,8 +869,72 @@ Runs a job through the photoface interface.
 	DEALLOCATE(hair_obj.triangle_texture_vertices);
 	DEALLOCATE(vertex_3d_locations);
 
+	{
+		int convert_number_of_points = 4;
+		float convert_2d_positions[] = 
+			{ 
+				379.503, 724.559, /* Nose_Left_Wing */
+				406.319, 688.777, /* Nose_Left_3 */
+				423.001, 654.897, /* Nose_Left_2 */
+				429.513, 614.416, /* Nose_Left_1 */
+			};
+		float convert_texture_positions[3 * 4];
+
+		/* Test the conversion code */
+		printf("Converting face photo coordinates to texture coordinates\n");
+		if (PF_SUCCESS_RC == pf_convert_2d_positions_to_texture_coordinates(pf_job_id, PF_FACE_COMPONENT,
+				 convert_number_of_points, convert_2d_positions, convert_texture_positions))
+		{
+
+			for (i = 0 ; i < 4 ; i++)
+			{
+				printf("   %f %f :>  %f %f %f\n", convert_2d_positions[2 * i],
+					convert_2d_positions[2 * i + 1],
+					convert_texture_positions[3 * i], convert_texture_positions[3 * i + 1], 
+					convert_texture_positions[3 * i + 2]);
+			}
+		}
+		else
+		{
+			pf_get_error_message(&error_message);
+			fprintf(stderr, "ERROR: pf_convert_2d_positions_to_texture_coordinates failed: %s\n", error_message);
+			DEALLOCATE(error_message);			
+		}
+	}
+
+	{
+		int convert_number_of_points = 2;
+		float convert_2d_positions[] = 
+			{ 
+				594.571, 564.47, /* Eye_Right_Pupil_Center_0 */
+				593.351, 566.637 /* Eye_Right_Center_0 */
+			};
+		float convert_texture_positions[3 * 2];
+
+		/* Test the conversion code */
+		printf("Converting right eye photo coordinates to texture coordinates\n");
+		if (PF_SUCCESS_RC == pf_convert_2d_positions_to_texture_coordinates(pf_job_id, PF_RIGHT_EYE_COMPONENT,
+				 convert_number_of_points, convert_2d_positions, convert_texture_positions))
+		{
+
+			for (i = 0 ; i < 2 ; i++)
+			{
+				printf("   %f %f :>  %f %f %f\n", convert_2d_positions[2 * i],
+					convert_2d_positions[2 * i + 1],
+					convert_texture_positions[3 * i], convert_texture_positions[3 * i + 1], 
+					convert_texture_positions[3 * i + 2]);
+			}
+		}
+		else
+		{
+			pf_get_error_message(&error_message);
+			fprintf(stderr, "ERROR: pf_convert_2d_positions_to_texture_coordinates failed: %s\n", error_message);
+			DEALLOCATE(error_message);			
+		}
+	}
+
 	/* End this job */
-	pf_close(pf_job_id);
+	//	pf_close(pf_job_id);
 
 	/* Free up the path memory */
 	pf_specify_paths(NULL, NULL);

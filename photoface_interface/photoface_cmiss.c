@@ -1538,11 +1538,16 @@ m, n and a parts as this is all that is stored in a version 2 file.
 } /* read_basis_version1and2 */
 
 static int convert_2d_to_ndc(int number_of_markers, float *twod_coordinates,
-	float *ndc_coordinates, struct Pf_job *pf_job)
+	float *ndc_coordinates, int calculate_scaling, struct Pf_job *pf_job)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
 
 DESCRIPTION :
+This function uses the parameters in the pf_job to convert from a 2d
+coordinate system to scaled ndc coordinates.  When <calculate_scaling> is true
+then the scaling is calculated based on the ranges of coordinates in the 2d
+data.  If <calculate_scaling> is false then the previously calculated values
+are just used to scale the new <twod_coordinates>.
 ==============================================================================*/
 {
 	float maximum_x, minimum_x, maximum_y, minimum_y, *ndc_index, padding_factor = 1.2f,
@@ -1552,66 +1557,68 @@ DESCRIPTION :
 	ENTER(convert_2d_to_ndc);
 	return_code = 0;
 
-	/* Find the maximum value */
-	twod_index = twod_coordinates;
-	maximum_x = *twod_index;
-	minimum_x = *twod_index;
-	twod_index++;
-	maximum_y = *twod_index;
-	minimum_y = *twod_index;
-	twod_index++;
-	for (i = 1 ; i < number_of_markers ; i++)
+	if (calculate_scaling)
 	{
-		if (*twod_index > maximum_x)
-		{
-			maximum_x = *twod_index;
-		}
-		if (*twod_index < minimum_x)
-		{
-			minimum_x = *twod_index;
-		}
+		/* Find the maximum value */
+		twod_index = twod_coordinates;
+		maximum_x = *twod_index;
+		minimum_x = *twod_index;
 		twod_index++;
-		if (*twod_index > maximum_y)
-		{
-			maximum_y = *twod_index;
-		}
-		if (*twod_index < minimum_y)
-		{
-			minimum_y = *twod_index;
-		}
+		maximum_y = *twod_index;
+		minimum_y = *twod_index;
 		twod_index++;
-	}
-
-	range = 0.0;
-	if (maximum_x != minimum_x)
-	{
-		range = maximum_x - minimum_x;
-	}
-	if (maximum_y != minimum_y)
-	{
-		if (maximum_y - minimum_y > range)
+		for (i = 1 ; i < number_of_markers ; i++)
 		{
-			range = maximum_y - minimum_y;
+			if (*twod_index > maximum_x)
+			{
+				maximum_x = *twod_index;
+			}
+			if (*twod_index < minimum_x)
+			{
+				minimum_x = *twod_index;
+			}
+			twod_index++;
+			if (*twod_index > maximum_y)
+			{
+				maximum_y = *twod_index;
+			}
+			if (*twod_index < minimum_y)
+			{
+				minimum_y = *twod_index;
+			}
+			twod_index++;
+		}
+
+		range = 0.0;
+		if (maximum_x != minimum_x)
+		{
+			range = maximum_x - minimum_x;
+		}
+		if (maximum_y != minimum_y)
+		{
+			if (maximum_y - minimum_y > range)
+			{
+				range = maximum_y - minimum_y;
+			}
+		}
+		if (range > 0.0)
+		{
+			/* Store the maximum plus a bit for later */
+			pf_job->ndc_texture_scaling = 2.0f / (padding_factor * range);
+			pf_job->ndc_texture_offset_x = (maximum_x + minimum_x - range) / 2.0f
+				- (padding_factor - 1.0f) / 
+				(padding_factor * pf_job->ndc_texture_scaling);
+			pf_job->ndc_texture_offset_y = (maximum_y + minimum_y - range) / 2.0f
+				- (padding_factor - 1.0f) / 
+				(padding_factor * pf_job->ndc_texture_scaling);
+		}
+		else
+		{
+			pf_job->ndc_texture_scaling = 1.0f;
+			pf_job->ndc_texture_offset_x = minimum_x;
+			pf_job->ndc_texture_offset_y = minimum_y;
 		}
 	}
-	if (range > 0.0)
-	{
-		/* Store the maximum plus a bit for later */
-		pf_job->ndc_texture_scaling = 2.0f / (padding_factor * range);
-		pf_job->ndc_texture_offset_x = (maximum_x + minimum_x - range) / 2.0f
-			- (padding_factor - 1.0f) / 
-			(padding_factor * pf_job->ndc_texture_scaling);
-		pf_job->ndc_texture_offset_y = (maximum_y + minimum_y - range) / 2.0f
-			- (padding_factor - 1.0f) / 
-			(padding_factor * pf_job->ndc_texture_scaling);
-	}
-	else
-	{
-		pf_job->ndc_texture_scaling = 1.0f;
-		pf_job->ndc_texture_offset_x = minimum_x;
-		pf_job->ndc_texture_offset_y = minimum_y;
-	}
-
 #if defined (CMISS_DEBUG)	
 	printf("Minimum %f Maximum %f\n", minimum, maximum);
 	printf("Scaling %f Offset x %f y %f\n", pf_job->ndc_texture_scaling, 
@@ -2789,7 +2796,7 @@ Specify <number_of_markers> using
 					sprintf(filename,"%s/specified_2D_positions.exnode",
 						pf_job->working_path);
 					convert_2d_to_ndc(number_of_markers, marker_2d_positions,
-						marker_ndc_positions, pf_job);
+						marker_ndc_positions, /*calculate_scaling*/1, pf_job);
 					if (!(return_code=write_exnode(filename,"fiducial","ndc_coordinates",
 						2, number_of_markers, marker_indices, marker_ndc_positions)))
 					{
@@ -3367,10 +3374,7 @@ Returns the current transformed generic head as
 		}
 		else
 		{
-#if defined (ERROR_MESSAGE)
-			set_error_message(PF_ERROR_MESSAGE, "Unable to open file %s for reading",
-				filename);
-#endif /* defined (ERROR_MESSAGE) */
+			/* Don't overwrite the message set in read_obj */
 			return_code= PF_OPEN_FILE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
@@ -3681,10 +3685,7 @@ Returns the current transformed generic head as
 		}
 		else
 		{
-#if defined (ERROR_MESSAGE)
-			set_error_message(PF_ERROR_MESSAGE, "Unable to open file %s for reading",
-				filename);
-#endif /* defined (ERROR_MESSAGE) */
+			/* Don't overwrite the message set in read_obj */
 			return_code= PF_OPEN_FILE_FAILURE_RC;
 		}
 		save_state_Pf_job_and_unlock(&pf_job);
@@ -3963,3 +3964,188 @@ is filled in based on the current model.
 
 	return (return_code);
 } /* pf_get_distorted_background */
+
+int pf_convert_2d_positions_to_texture_coordinates(int pf_job_id,
+	enum PF_geometry_component component,
+	int number_of_points, float *convert_2d_positions, float *texture_positions)
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Converts the <number_of_points> from their <2d_positions> in the image into
+the corresponding <texture_positions> in the final texture.  The <component>
+specifies which part of the geometry should be "looked up" to find the 
+equivalent location.  <texture_positions> should already be allocated
+3 * number_of_points.
+==============================================================================*/
+{
+	char buffer[MARKER_BUFFER_SIZE], *component_string, *filename;
+	char pf_left_eye_component[] = "left_eye_component",
+		pf_right_eye_component[] = "right_eye_component",
+		pf_face_component[] = "face_component";
+	FILE *texture_convert_file;
+	float *convert_positions, *convert_ndc_positions, node, texture_x, texture_y,
+		texture_z;
+	int i, j, *convert_indices, node_offset = 900001, return_code;
+	struct Pf_job *pf_job;
+
+	ENTER(pf_specify_markers);
+	return_code=PF_GENERAL_FAILURE_RC;
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
+	{
+		if (ALLOCATE(filename,char,strlen(photoface_local_path)+100))
+		{
+			ALLOCATE(convert_indices,int,number_of_points);
+			ALLOCATE(convert_ndc_positions,float,number_of_points*2);
+			ALLOCATE(convert_positions,float,number_of_points*3);
+			if (convert_indices&&convert_ndc_positions&&convert_positions)
+			{
+				/* Set the node names */
+				for (i = 0 ; i < number_of_points ; i++)
+				{
+					convert_indices[i] = node_offset + i;
+					convert_positions[3 * i] = 0.0;
+					convert_positions[3 * i + 1] = 0.0;
+					convert_positions[3 * i + 2] = 0.0;
+				}
+
+				/* Write out the placed_2d_points.exnode that specifies the these 2D
+					positions for calculate_ptm and fit.pl in ndc coordinates */
+				sprintf(filename,"%s/specified_2D_positions_convert.exnode",
+					pf_job->working_path);
+				convert_2d_to_ndc(number_of_points, convert_2d_positions,
+					convert_ndc_positions, /*calculate_scaling*/0, pf_job);
+				if (!(return_code=write_exnode(filename,"convert","ndc_coordinates",
+					2, number_of_points, convert_indices, convert_ndc_positions)))
+				{
+					sprintf(filename,"%s/convert_texture_coordinates_template.exnode",
+						pf_job->working_path);
+					if (!(return_code=write_exnode(filename,"convert",
+						"convert_texture_coordinates",
+						3, number_of_points, convert_indices, convert_positions)))
+					{
+						switch (component)
+						{
+							case PF_RIGHT_EYE_COMPONENT:
+							{
+								component_string = pf_right_eye_component;
+							} break;
+							case PF_LEFT_EYE_COMPONENT:
+							{
+								component_string = pf_left_eye_component;
+							} break;
+							case PF_FACE_COMPONENT:
+							{
+								component_string = pf_face_component;
+							} break;
+							default:
+							{
+								component_string = pf_face_component;
+							} break;
+						}
+						/* Convert these points */
+						if (linux_execute(
+								 "%sbin/cmgui_control -id %06d  '$component=\"%s\";cmiss(\"open comfile %scmiss/pf_convert_points.com exec\")'",
+								 photoface_remote_path, pf_job_id, component_string, photoface_remote_path))
+						{
+							/* Read the generated exnode file and return the results */
+							sprintf(filename, "%s/convert_texture_coordinates.exnode",
+								pf_job->working_path);
+							if (texture_convert_file = fopen(filename, "r"))
+							{
+								i = 0;
+								return_code = PF_SUCCESS_RC;
+								while ((return_code == PF_SUCCESS_RC) && 
+									(!feof(texture_convert_file)) && (i < number_of_points) &&
+									(!read_line(texture_convert_file, buffer, MARKER_BUFFER_SIZE)))
+								{
+									if ((1 == sscanf(buffer, " Node: %d", &node))
+										&& (!read_line(texture_convert_file, buffer, MARKER_BUFFER_SIZE))
+										&& (1 == sscanf(buffer, "%f", &texture_x))
+										&& (!read_line(texture_convert_file, buffer, MARKER_BUFFER_SIZE))
+										&& (1 == sscanf(buffer, "%f", &texture_y))
+										&& (!read_line(texture_convert_file, buffer, MARKER_BUFFER_SIZE))
+										&& (1 == sscanf(buffer, "%f", &texture_z)))
+									{
+										if (i >= number_of_points)
+										{
+#if defined (ERROR_MESSAGE)
+											set_error_message(PF_ERROR_MESSAGE,
+												"Unexpected texture positions in file %s",filename);
+#endif /* defined (ERROR_MESSAGE) */
+											return_code = PF_READ_FILE_FAILURE_RC;
+										}
+										else
+										{
+											texture_positions[3 * i] = texture_x;
+											texture_positions[3 * i + 1] = texture_y;
+											texture_positions[3 * i + 2] = texture_z;
+										}
+										i++;
+									}
+								}
+								if (i < number_of_points)
+								{
+#if defined (ERROR_MESSAGE)
+									set_error_message(PF_ERROR_MESSAGE,
+										"Insufficient texture positions in file %s",filename);
+#endif /* defined (ERROR_MESSAGE) */
+									return_code = PF_READ_FILE_FAILURE_RC;
+								}
+								fclose(texture_convert_file);
+							}
+							else
+							{
+#if defined (ERROR_MESSAGE)
+								set_error_message(PF_ERROR_MESSAGE,
+									"Unable to open texture positions file %s",filename);
+#endif /* defined (ERROR_MESSAGE) */
+								return_code = PF_OPEN_FILE_FAILURE_RC;
+							}
+						}
+					}
+					else
+					{
+#if defined (ERROR_MESSAGE)
+						set_error_message(PF_ERROR_MESSAGE,"Unable to write file %s",
+							filename);
+#endif /* defined (ERROR_MESSAGE) */
+						return_code = PF_WRITE_FILE_FAILURE_RC;
+					}
+				}
+				else
+				{
+#if defined (ERROR_MESSAGE)
+					set_error_message(PF_ERROR_MESSAGE,"Unable to write file %s",
+						filename);
+#endif /* defined (ERROR_MESSAGE) */
+					return_code = PF_WRITE_FILE_FAILURE_RC;
+				}
+			}
+			else
+			{
+#if defined (ERROR_MESSAGE)
+				set_error_message(PF_ERROR_MESSAGE,
+					"Unable to allocate marker indices array");
+#endif /* defined (ERROR_MESSAGE) */
+				return_code = PF_ALLOCATE_FAILURE_RC;
+			}
+			DEALLOCATE(convert_indices);
+			DEALLOCATE(convert_ndc_positions);
+			DEALLOCATE(convert_positions);
+		}
+		else
+		{
+#if defined (ERROR_MESSAGE)
+			set_error_message(PF_ERROR_MESSAGE,"Unable to allocate filename string");
+#endif /* defined (ERROR_MESSAGE) */
+			return_code = PF_ALLOCATE_FAILURE_RC;
+		}
+		save_state_Pf_job_and_unlock(&pf_job);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* pf_specify_markers */
+

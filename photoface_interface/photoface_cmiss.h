@@ -63,12 +63,25 @@ The image formats that the interface supports
 	PF_RGBA_IMAGE
 }; /* enum PF_image_format */
 
+enum PF_geometry_component
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Identify different geometry components of the face
+==============================================================================*/
+{
+	PF_FACE_COMPONENT,
+	PF_LEFT_EYE_COMPONENT,
+	PF_RIGHT_EYE_COMPONENT
+}; /* enum PF_geometry_component */
+
 /*
 Global functions
 ----------------
 */
 #if defined (ERROR_MESSAGE)
-	int pf_get_error_message(char **message);
+CMISSDECLSPEC int pf_get_error_message(char **message);
 /*******************************************************************************
 LAST MODIFIED : 19 October 2001
 
@@ -302,7 +315,7 @@ The caller specifies the texture size and provides the storage.  The <texture>
 is filled in based on the current model.
 ==============================================================================*/
 
-int pf_get_distorted_background(int pf_job_id,int width,int height,
+CMISSDECLSPEC int pf_get_distorted_background(int pf_job_id,int width,int height,
 	enum PF_image_format image_format,char *texture);
 /*******************************************************************************
 LAST MODIFIED : 26 June 2001
@@ -311,6 +324,21 @@ DESCRIPTION :
 The caller specifies the texture size and provides the storage.  The <texture>
 is filled in based on the current model.
 ==============================================================================*/
+
+CMISSDECLSPEC int pf_convert_2d_positions_to_texture_coordinates(int pf_job_id,
+	enum PF_geometry_component component,
+	int number_of_points, float *convert_2d_positions, float *texture_positions);
+/*******************************************************************************
+LAST MODIFIED : 21 January 2002
+
+DESCRIPTION :
+Converts the <number_of_points> from their <2d_positions> in the image into
+the corresponding <texture_positions> in the final texture.  The <component>
+specifies which part of the geometry should be "looked up" to find the 
+equivalent location.  <texture_positions> should already be allocated
+3 * number_of_points.
+==============================================================================*/
+
 #if defined (__cplusplus)
 }
 #endif /* defined (__cplusplus) */
