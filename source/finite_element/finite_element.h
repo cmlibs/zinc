@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 1 August 2000
+LAST MODIFIED : 15 September 2000
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -882,7 +882,7 @@ and nodes.
 
 struct FE_node_order_info
 /*******************************************************************************
-LAST MODIFIED : 11 August  1999
+LAST MODIFIED : 11 August 1999
 
 DESCRIPTION :
 Use to pass info about a node group's nodes, their number, and their order.
@@ -947,6 +947,29 @@ LAST MODIFIED : 28 October 1998
 
 DESCRIPTION :
 Defines a field at a node (does not assign values).
+==============================================================================*/
+
+int undefine_FE_field_at_node(struct FE_node *node,struct FE_field *field);
+/*******************************************************************************
+LAST MODIFIED : 13 September 2000
+
+DESCRIPTION :
+Removes definition of <field> at <node>. If field is of type GENERAL_FE_FIELD
+then removes values storage for it and shifts values storage for all subsequent
+fields down.
+Note: Must ensure that the node field is not in-use by any elements before it
+is undefined!
+==============================================================================*/
+
+int undefine_field_at_listed_nodes(struct LIST(FE_node) *node_list,
+	struct FE_field *field,struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager);
+/*******************************************************************************
+LAST MODIFIED : 15 September 2000
+
+DESCRIPTION :
+Makes sure <field> is not defined at any nodes in <node_list>, unless that field
+at the node is in use by an element.
 ==============================================================================*/
 
 int for_FE_field_at_node(struct FE_field *field,
@@ -2694,11 +2717,10 @@ top_level_parents are in the list.
 int add_FE_element_and_faces_to_group(struct FE_element *element,
 	struct GROUP(FE_element) *element_group);
 /*******************************************************************************
-LAST MODIFIED : 14 April 1999
+LAST MODIFIED : 6 September 2000
 
 DESCRIPTION :
-Ensures <element>, its faces (and theirs etc.) are in <element_group>. Only
-top-level elements should be passed to this function.
+Ensures <element>, its faces (and theirs etc.) are in <element_group>.
 Note: this function is recursive.
 ==============================================================================*/
 
@@ -3985,6 +4007,14 @@ LAST MODIFIED : 4 May 1999
 
 DESCRIPTION :
 Returns true if the <field> is defined for the <node>.
+==============================================================================*/
+
+int FE_node_field_is_not_defined(struct FE_node *node,void *field_void);
+/*******************************************************************************
+LAST MODIFIED : 15 September 2000
+
+DESCRIPTION :
+FE_node iterator version of FE_field_is_defined_at_node.
 ==============================================================================*/
 
 int FE_field_is_defined_in_element(struct FE_field *field,

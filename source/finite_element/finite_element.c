@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 17 August 2000
+LAST MODIFIED : 14 September 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -364,13 +364,6 @@ struct FE_element_field_priority_iterator_and_data
 	int priority_on;
 	struct LIST(FE_field) *priority_field_list;
 }; /* struct FE_element_field_iterator_and_data */
-
-struct FE_node_value_data
-{
-	struct FE_node *source_node;
-	Value_storage *dest_values_storage;
-	struct LIST(FE_node_field) *exclusion_field_list;
-}; /* FE_node_value_data */
 
 /*
 Module variables
@@ -1491,7 +1484,7 @@ A debug function to print all a node's node fields (to stdout)
 
 static int FE_node_field_get_number_of_values(struct FE_node_field *node_field)
 /*******************************************************************************
-LAST MODIFIED : 15 September 1999
+LAST MODIFIED : 14 September 2000
 
 DESCRIPTION :
 Returns the number of values sum of (1+number_of_derivatives)*number_of_versions
@@ -1499,24 +1492,24 @@ for all components.
 ==============================================================================*/
 {
 	int i,number_of_values;
-	struct FE_node_field_component node_field_component;
+	struct FE_node_field_component *component;
 	
 	ENTER(FE_node_field_get_number_of_values);
+	number_of_values=0;
 	if (node_field)
 	{
-		number_of_values=0;
-		for (i=0;i<node_field->field->number_of_components;i++)
+		component = node_field->components;
+		for (i=node_field->field->number_of_components;0<i;i--)
 		{
-			node_field_component = node_field->components[i];
-			number_of_values += (1+node_field_component.number_of_derivatives)*
-				node_field_component.number_of_versions;
+			number_of_values +=
+				(1+component->number_of_derivatives) * component->number_of_versions;
+			component++;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_node_field_get_number_of_values.  Invalid argument");
-		number_of_values = 0;
 	}
 	LEAVE;
 
@@ -1526,22 +1519,28 @@ for all components.
 static int FE_node_field_add_values_storage_size(
 	struct FE_node_field *node_field,void *values_storage_size_void)
 /*******************************************************************************
-LAST MODIFIED : 26 October 1999
+LAST MODIFIED : 14 September 2000
 
 DESCRIPTION :
-Increases values_storage_size_void by the size, in bytes, of the data in the
-nodal values storage owned by the node_field.
+If <node_field> represents a GENERAL_FE_FIELD then its required values_storage
+in the node, adjusted for word alignment, is added on to <*values_storage_size>.
 ==============================================================================*/
 {
 	int return_code,this_values_storage_size,*values_storage_size;
-	
+	struct FE_field *field;
+
 	ENTER(FE_node_field_add_values_storage_size);
-	if (node_field&&(values_storage_size = (int *)values_storage_size_void))
+	if (node_field&&(field=node_field->field)&&
+		(values_storage_size = (int *)values_storage_size_void))
 	{
-		this_values_storage_size = FE_node_field_get_number_of_values(node_field)*
-			get_Value_storage_size(node_field->field->value_type);
-		ADJUST_VALUE_STORAGE_SIZE(this_values_storage_size);
-		(*values_storage_size) += this_values_storage_size;
+		if (GENERAL_FE_FIELD==field->fe_field_type)
+		{
+			this_values_storage_size =
+				FE_node_field_get_number_of_values(node_field) *
+				get_Value_storage_size(field->value_type);
+			ADJUST_VALUE_STORAGE_SIZE(this_values_storage_size);
+			(*values_storage_size) += this_values_storage_size;
+		}
 		return_code = 1;
 	}
 	else
@@ -1556,9 +1555,9 @@ nodal values storage owned by the node_field.
 } /* FE_node_field_add_values_storage_size */
 
 static int FE_node_field_copy_value_storage(struct FE_node_field *node_field,
-	struct FE_node *node,Value_storage **values_storage)
+	struct FE_node *node,Value_storage *values_storage)
 /*******************************************************************************
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 13 September 2000
 
 DESCRIPTION :
 Copy the FE_node_field's values_storage stored at the FE_node to values_storage.
@@ -1567,31 +1566,35 @@ Assumes values_storage has already been allocated.
 {
  	enum Value_type value_type;
 	int number_of_values,offset,return_code;
+	struct FE_field *field;
 	struct FE_node_field_component *component;
 	Value_storage *destination,*source;
 
 	ENTER(FE_node_field_copy_value_storage);
-	if (node_field&&node_field->field&&node)
+	if (node_field&&(field=node_field->field)&&node&&values_storage)
 	{
-		return_code = 1;
 		/* only GENERAL_FE_FIELD has values stored with node */
-		if (GENERAL_FE_FIELD==node_field->field->fe_field_type)
+		if (GENERAL_FE_FIELD == field->fe_field_type)
 		{
-			value_type = node_field->field->value_type;
+			value_type = field->value_type;
 			number_of_values = FE_node_field_get_number_of_values(node_field);
 			/* start at first component->value */
-			component = &(node_field->components[0]);
+			component = node_field->components;
 			offset = component->value;
-			destination = *values_storage + offset;
+			destination = values_storage + offset;
 			source = node->values_storage + offset;
 			return_code=copy_value_storage_array(destination,value_type,
 				number_of_values,source);
+		}
+		else
+		{
+			return_code = 1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_node_field_copy_value_storage.  Invalid arguments");
+			"FE_node_field_copy_value_storage.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1599,8 +1602,15 @@ Assumes values_storage has already been allocated.
 	return(return_code);
 } /* FE_node_field_copy_value_storage */
 
+struct FE_node_value_data
+{
+	struct FE_node *source_node;
+	Value_storage *dest_values_storage;
+	struct LIST(FE_node_field) *exclusion_field_list;
+}; /* FE_node_value_data */
+
 static int iterative_FE_node_field_copy_values_storage(
-	struct FE_node_field *node_field,	void *node_value_data)
+	struct FE_node_field *node_field,	void *node_value_data_void)
 /*******************************************************************************
 LAST MODIFIED: 4 March 1999
 
@@ -1614,29 +1624,29 @@ node_value_data.values_storage.
 ==============================================================================*/
 {	
 	int return_code;
-
-	struct FE_node_value_data *the_node_value_data;
+	struct FE_node_value_data *node_value_data;
 
 	ENTER(iterative_FE_node_field_copy_values_storage);
-	if(node_field&&node_value_data)
+	if (node_field&&(node_value_data=
+		(struct FE_node_value_data *)node_value_data_void))
 	{
 		return_code =1;
-		the_node_value_data = (struct FE_node_value_data *)node_value_data;
-		if(the_node_value_data->dest_values_storage)
-		{	
-			if ((!the_node_value_data->exclusion_field_list)||
+		if (node_value_data->dest_values_storage)
+		{
+			if ((!node_value_data->exclusion_field_list)||
 				!FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(node_field->field,
-					the_node_value_data->exclusion_field_list))
+					node_value_data->exclusion_field_list))
 			{
 				/* get the values_storage for this node field*/	
 				FE_node_field_copy_value_storage(node_field,
-					the_node_value_data->source_node,&the_node_value_data->dest_values_storage);
+					node_value_data->source_node,node_value_data->dest_values_storage);
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"iterative_FE_node_field_copy_values_storage"
-				".the_node_value_data->dest_values_storage not allocated");
+			display_message(ERROR_MESSAGE,
+				"iterative_FE_node_field_copy_values_storage.  "
+				"Missing destination values_storage");
 			return_code = 0;
 		}
 	
@@ -1707,45 +1717,42 @@ are not allocated and copied.
 	LEAVE;
 
 	return(return_code);
-}/*copy_FE_node_value_storage */
+} /* copy_FE_node_value_storage */
 
-static int get_FE_node_field_info_values_storage_size(
-	struct LIST(FE_node_field) *node_field_list,int *values_storage_size)
+static int get_FE_node_field_list_values_storage_size(
+	struct LIST(FE_node_field) *node_field_list)
 /*******************************************************************************
-LAST MODIFIED : 15 September 1999
+LAST MODIFIED : 13 September 2000
 
 DESCRIPTION :
 Returns the size, in bytes, of the data in the nodal values storage owned
 by the all the node_fields in node_field_list.
 ==============================================================================*/
 {
-	int return_code,the_values_storage_size;
+	int values_storage_size;
 	
-	ENTER(get_FE_node_field_info_values_storage_size);
-	if(node_field_list)
+	ENTER(get_FE_node_field_list_values_storage_size);
+	values_storage_size=0;
+	if (node_field_list)
 	{
-		the_values_storage_size = 0;
 		FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
 			FE_node_field_add_values_storage_size,
-			(void *)&the_values_storage_size,node_field_list);
-		*values_storage_size = the_values_storage_size;
-		return_code = 1;
+			(void *)&values_storage_size,node_field_list);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			" get_FE_node_field_info_values_storage_size. Invalid argument");
-	return_code = 0;
+			"get_FE_node_field_list_values_storage_size.  Invalid argument");
 	}
 	LEAVE;
 
-	return (return_code);
-}/* get_FE_node_field_info_values_storage_size */
+	return (values_storage_size);
+} /* get_FE_node_field_list_values_storage_size */
 
 static int allocate_and_copy_FE_node_value_storage(struct FE_node *node, 
 	Value_storage **values_storage)
 /******************************************************************************
-LAST MODIFIED: 4 March 1999
+LAST MODIFIED: 13 September 2000
 
 DESCRIPTION:
 Allocates values_storage to the same size as node->values_storage.
@@ -1768,20 +1775,21 @@ and any arrays in values_storage.
 	{
 		return_code = 1;
 	
-		if(node->fields)
+		if (node->fields)
 		{
-			get_FE_node_field_info_values_storage_size(node->fields->node_field_list,&size);
+			size = get_FE_node_field_list_values_storage_size(
+				node->fields->node_field_list);
 			if (size)
 			{
-				if(ALLOCATE(dest_values_storage,Value_storage,size))
+				if (ALLOCATE(dest_values_storage,Value_storage,size))
 				{
 					copy_FE_node_value_storage(node,&dest_values_storage,
 						(struct LIST(FE_node_field) *)NULL);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE," allocate_and_copy_FE_node_value_storage." 
-						" Not enough memory");
+					display_message(ERROR_MESSAGE,
+						"allocate_and_copy_FE_node_value_storage.  Not enough memory");
 					dest_values_storage = (Value_storage *)NULL;
 					return_code = 0;
 				}
@@ -1799,8 +1807,8 @@ and any arrays in values_storage.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE," allocate_and_copy_FE_node_value_storage." 
-			" Invalid arguments");
+		display_message(ERROR_MESSAGE,
+			"allocate_and_copy_FE_node_value_storage.  Invalid arguments");
 		return_code = 0;
 	}
 	LEAVE;
@@ -2018,7 +2026,7 @@ static struct FE_node_field *CREATE(FE_node_field)(struct FE_field *field)
 LAST MODIFIED : 19 January 1998
 
 DESCRIPTION :
-Allocates memory and assigns fields for an node field.  The components are
+Allocates memory and assigns fields for a node field.  The components are
 allocated and set to "zero".
 ???DB.  Not allocating any nodal value names.
 ==============================================================================*/
@@ -2110,6 +2118,71 @@ Frees the memory for the node field and sets <*node_field_address> to NULL.
 
 DECLARE_OBJECT_FUNCTIONS(FE_node_field)
 
+static struct FE_node_field *copy_create_FE_node_field_with_offset(
+	struct FE_node_field *source_node_field,int value_offset)
+/*******************************************************************************
+LAST MODIFIED : 14 September 2000
+
+DESCRIPTION :
+Creates an FE_node_field that is identical to <source_node_field> except that
+the <value_offset> is added to the value member of the components (which is
+an offset into the values_storage array at the node). For non-GENERAL_FE_FIELD
+types, the value is not changed.
+==============================================================================*/
+{
+	int i,number_of_components;
+	struct FE_field *field;
+	struct FE_node_field *node_field;
+	struct FE_node_field_component *component,*source_component;
+
+	ENTER(copy_create_FE_node_field_with_offset);
+	if (source_node_field&&(field=source_node_field->field))
+	{
+		if (node_field=CREATE(FE_node_field)(field))
+		{
+			if (GENERAL_FE_FIELD != field->fe_field_type)
+			{
+				/* though component->value is currently irrelevant for these fields,
+					 keep it unchanged for future use */
+				value_offset=0;
+			}
+			number_of_components=get_FE_field_number_of_components(field);
+			component=node_field->components;
+			source_component=source_node_field->components;
+			for (i=number_of_components;(0<i)&&node_field;i--)
+			{
+				if (!assign_FE_node_field_component(component,
+					source_component->value+value_offset,
+					source_component->number_of_derivatives,
+					source_component->number_of_versions,
+					source_component->nodal_value_types))
+				{
+					display_message(ERROR_MESSAGE,
+						"copy_create_FE_node_field_with_offset.  "
+						"Could not assign node field component");
+					DESTROY(FE_node_field)(&node_field);
+				}
+				component++;
+				source_component++;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"copy_create_FE_node_field_with_offset.  Could not create node field");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"copy_create_FE_node_field_with_offset.  Invalid argument(s)");
+		node_field=(struct FE_node_field *)NULL;
+	}
+	LEAVE;
+
+	return (node_field);
+} /* copy_create_FE_node_field_with_offset */
+
 #if !defined (FINITE_ELEMENT_USE_SAFE_LIST)
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_node_field,field,struct FE_field *, \
 	compare_FE_field)
@@ -2130,51 +2203,81 @@ PROTOTYPE_CREATE_LIST_FUNCTION(FE_node_field_info);
 
 PROTOTYPE_FIRST_OBJECT_IN_LIST_THAT_FUNCTION(FE_node_field_info);
 
+static int FE_node_fields_match(struct FE_node_field *node_field_1,
+	struct FE_node_field *node_field_2)
+/*******************************************************************************
+LAST MODIFIED : 14 September 2000
+
+DESCRIPTION :
+Returns true if <node_field_1> and <node_field_2> are the same in every way.
+==============================================================================*/
+{
+	int i,return_code;
+	struct FE_node_field_component *component_1,*component_2;
+
+	ENTER(FE_node_fields_match);
+	if (node_field_1 && node_field_2)
+	{
+		if (node_field_1->field == node_field_2->field)
+		{
+			return_code=1;
+			component_1=node_field_1->components;
+			component_2=node_field_2->components;
+			for (i=node_field_1->field->number_of_components;(return_code)&&(0<i);i--)
+			{
+				if ((component_1->value == component_2->value) &&
+					(component_1->number_of_derivatives == 
+						component_2->number_of_derivatives) &&
+					(component_1->number_of_versions ==
+						component_2->number_of_versions))
+				{
+					/*???RC Should compare nodal value types ie. derivatives here */
+					component_1++;
+					component_2++;
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"FE_node_fields_match.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_fields_match */
+
 static int FE_node_field_not_in_list(struct FE_node_field *node_field,
 	void *node_field_list)
 /*******************************************************************************
-LAST MODIFIED : 19 November 1999
+LAST MODIFIED : 14 September 2000
 
 DESCRIPTION :
 Checks if the <node_field> is not in the <node_field_list>.
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 	struct FE_node_field *node_field_2;
-	struct FE_node_field_component *component_1,*component_2;
 	struct LIST(FE_node_field) *list;
 
 	ENTER(FE_node_field_not_in_list);
-	/* check arguments */
 	if (node_field&&(node_field->field)&&
 		(list=(struct LIST(FE_node_field) *)node_field_list))
 	{
-		if ((node_field_2=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-			node_field->field,list))&&
-			/* additional check for field - must have same address since field
-				 could have same name but be from a different manager */
-			(node_field_2->field==node_field->field)&&
-			(component_1=node_field->components)&&
-			(component_2=node_field_2->components))
+		if ((node_field_2 = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+			node_field->field,list)) &&
+			FE_node_fields_match(node_field,node_field_2))
 		{
-			i=node_field->field->number_of_components;
 			return_code=0;
-			while (!return_code&&(i>0))
-			{
-				if ((component_1->value==component_2->value)&&
-					(component_1->number_of_derivatives==
-					component_2->number_of_derivatives)&&
-					(component_1->number_of_versions==component_2->number_of_versions))
-				{
-					component_1++;
-					component_2++;
-					i--;
-				}
-				else
-				{
-					return_code=1;
-				}
-			}
 		}
 		else
 		{
@@ -2198,7 +2301,7 @@ static int match_FE_node_field_list(struct FE_node_field_info *field_info,
 LAST MODIFIED : 9 February 1999
 
 DESCRIPTION :
-Checks if the <field_info> matchs the <node_field_lists>.
+Checks if the <field_info> matches the <node_field_lists>.
 ==============================================================================*/
 {
 	int return_code;
@@ -2208,8 +2311,7 @@ Checks if the <field_info> matchs the <node_field_lists>.
 	/* check arguments */
 	if (field_info&&(field_list=(struct FE_node_field_info *)node_field_list))
 	{
-		if (
-			(NUMBER_IN_LIST(FE_node_field)(field_list->node_field_list)==
+		if ((NUMBER_IN_LIST(FE_node_field)(field_list->node_field_list)==
 			NUMBER_IN_LIST(FE_node_field)(field_info->node_field_list)))
 		{
 			if (FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
@@ -2367,9 +2469,11 @@ is created with duplicated node field lists, added to
 					field_info->node_field_list=duplicate_node_field_list;
 					field_info->number_of_values=number_of_values;
 					field_info->access_count=0;	 					
-					get_FE_node_field_info_values_storage_size(field_info->node_field_list,
-						&(field_info->values_storage_size));					
-					if (!ADD_OBJECT_TO_LIST(FE_node_field_info)(field_info,all_FE_node_field_info))
+					field_info->values_storage_size=
+						get_FE_node_field_list_values_storage_size(
+							field_info->node_field_list);					
+					if (!ADD_OBJECT_TO_LIST(FE_node_field_info)(field_info,
+						all_FE_node_field_info))
 					{
 						display_message(ERROR_MESSAGE,
 							"CREATE(FE_node_field_info).  Could not add to all list");
@@ -6312,6 +6416,11 @@ obtained from the node_field_component for the field at the node.
 										node_field_component=
 											node_field->components + component_number;
 									}
+									else
+									{
+										/* field not defined at this node */
+										node_field_component=(struct FE_node_field_component *)NULL;
+									}
 									node_field_info=node->fields;
 								}
 								if (node_field_component)
@@ -6353,7 +6462,9 @@ obtained from the node_field_component for the field at the node.
 								else
 								{
 									display_message(ERROR_MESSAGE,
-								"global_to_element_map_values.  Invalid node field component");
+										"global_to_element_map_values.  Cannot evaluate field %s "
+										"in element %d because it is not defined at node %d",
+										field->name,element->cm.number,node->cm_node_identifier);
 									return_code=0;
 								}
 								standard_node_map_address++;
@@ -8530,6 +8641,421 @@ Up to the calling routine to deallocate the returned char string!
 
 	return (return_code);
 } /* GET_NAME(FE_node) */
+
+struct FE_node_field_add_to_list_with_exclusion_data
+{
+	int value_exclusion_length,value_exclusion_start;
+	struct FE_node_field *excluded_node_field;
+	struct LIST(FE_node_field) *node_field_list;
+};
+
+static int FE_node_field_add_to_list_with_exclusion(
+	struct FE_node_field *node_field,void *exclusion_data_void)
+/*******************************************************************************
+LAST MODIFIED : 14 September 2000
+
+DESCRIPTION :
+If <node_field> is before the excluded_node_field, it is added to the list.
+If <node_field> is the excluded_node_field, it is ignored.
+If <node_field> is after the excluded_node_field, a copy of it is made with
+a new value reduced by the <value_exclusion_length>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_node_field *offset_node_field;
+	struct FE_node_field_add_to_list_with_exclusion_data *exclusion_data;
+
+	ENTER(FE_node_field_add_to_list_with_exclusion);
+	if (node_field && (exclusion_data=
+		(struct FE_node_field_add_to_list_with_exclusion_data *)
+		exclusion_data_void))
+	{
+		return_code=1;
+		if (node_field != exclusion_data->excluded_node_field)
+		{
+			if ((GENERAL_FE_FIELD == node_field->field->fe_field_type) &&
+				(node_field->components->value > exclusion_data->value_exclusion_start))
+			{
+				/* create copy of node_field with component->value reduced
+					 by value_exclusion_length */
+				if (offset_node_field=copy_create_FE_node_field_with_offset(
+					node_field,-exclusion_data->value_exclusion_length))
+				{
+					if (!ADD_OBJECT_TO_LIST(FE_node_field)(offset_node_field,
+						exclusion_data->node_field_list))
+					{
+						DESTROY(FE_node_field)(&offset_node_field);
+						return_code=0;
+					}
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			else
+			{
+				return_code=ADD_OBJECT_TO_LIST(FE_node_field)(node_field,
+					exclusion_data->node_field_list);
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_node_field_add_to_list_with_exclusion.  Failed");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_field_add_to_list_with_exclusion.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_field_add_to_list_with_exclusion */
+
+int undefine_FE_field_at_node(struct FE_node *node,struct FE_field *field)
+/*******************************************************************************
+LAST MODIFIED : 15 September 2000
+
+DESCRIPTION :
+Removes definition of <field> at <node>. If field is of type GENERAL_FE_FIELD
+then removes values storage for it and shifts values storage for all subsequent
+fields down.
+Note: Must ensure that the node field is not in-use by any elements before it
+is undefined!
+==============================================================================*/
+{
+	int bytes_to_copy,field_number_of_values,return_code;
+	struct FE_node_field *node_field;
+	struct FE_node_field_add_to_list_with_exclusion_data exclusion_data;
+	struct FE_node_field_info *existing_node_field_info,*new_node_field_info;
+	Value_storage *values_storage;
+
+	ENTER(undefine_FE_field_at_node);
+	if (node&&field&&(existing_node_field_info=node->fields))
+	{
+		/* check if the field is already defined at the node */
+		if (node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
+			existing_node_field_info->node_field_list))
+		{
+			if (1<NUMBER_IN_LIST(FE_node_field)(
+				existing_node_field_info->node_field_list))
+			{
+			field_number_of_values=FE_node_field_get_number_of_values(node_field);
+			if (GENERAL_FE_FIELD==field->fe_field_type)
+			{
+				exclusion_data.value_exclusion_start = node_field->components->value;
+				exclusion_data.value_exclusion_length = field_number_of_values *
+					get_Value_storage_size(node_field->field->value_type);
+				/* adjust size for proper word alignment in memory */
+				ADJUST_VALUE_STORAGE_SIZE(exclusion_data.value_exclusion_length);
+			}
+			else
+			{
+				exclusion_data.value_exclusion_start=
+					existing_node_field_info->values_storage_size;
+				exclusion_data.value_exclusion_length=0;
+			}
+			exclusion_data.excluded_node_field=node_field;
+			exclusion_data.node_field_list=CREATE(LIST(FE_node_field))();
+			if (FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
+				FE_node_field_add_to_list_with_exclusion,(void *)&exclusion_data,
+				existing_node_field_info->node_field_list))
+			{
+				if (new_node_field_info=CREATE(FE_node_field_info)(
+					existing_node_field_info->number_of_values - field_number_of_values,
+					exclusion_data.node_field_list))
+				{
+					if (0<exclusion_data.value_exclusion_length)
+					{
+						/* copy values_storage after the removed field */
+						bytes_to_copy = existing_node_field_info->values_storage_size -
+							(exclusion_data.value_exclusion_start +
+								exclusion_data.value_exclusion_length);
+						if (0<bytes_to_copy)
+						{
+							/* use memmove instead of memcpy as memory blocks overlap */
+							memmove(node->values_storage+exclusion_data.value_exclusion_start,
+								node->values_storage+exclusion_data.value_exclusion_start+
+								exclusion_data.value_exclusion_length,bytes_to_copy);
+						}
+						/* free the currently used space */
+						if (REALLOCATE(values_storage,node->values_storage,Value_storage,
+							new_node_field_info->values_storage_size))
+						{
+							node->values_storage=values_storage;
+						}
+					}
+					REACCESS(FE_node_field_info)(&(node->fields),new_node_field_info);
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"undefine_FE_field_at_node.  Could not create node field info");
+					DESTROY(LIST(FE_node_field))(&exclusion_data.node_field_list);
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"undefine_FE_field_at_node.  Could not copy node field list");
+				DESTROY(LIST(FE_node_field))(&exclusion_data.node_field_list);
+				return_code=0;
+			}
+			}
+			else
+			{
+				/* if all fields are removed from a node then the user will have
+					 no way of visually selecting the node. Hence, prevent removal of
+					 last field */
+				display_message(ERROR_MESSAGE,
+					"undefine_FE_field_at_node.  Cannot undefine last field at node");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"undefine_FE_field_at_node.  Field %s is not defined at node %d",
+				field->name,node->cm_node_identifier);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"undefine_FE_field_at_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* undefine_FE_field_at_node */
+struct Node_list_field_data
+/*******************************************************************************
+LAST MODIFIED : 15 September 2000
+
+DESCRIPTION :
+Iterator/conditional function data containing a node list and FE_field.
+==============================================================================*/
+{
+	struct LIST(FE_node) *node_list;
+	struct FE_field *field;
+};
+
+static int ensure_FE_element_nodes_are_not_in_list_if_field_defined(
+	struct FE_element *element,void *node_list_field_data_void)
+/*******************************************************************************
+LAST MODIFIED : 15 September 2000
+
+DESCRIPTION :
+Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT)
+and <field> is defined over it, ensures none of its nodes are in <node_list>.
+==============================================================================*/
+{
+	int i,return_code;
+	struct Node_list_field_data *node_list_field_data;
+	struct FE_node **node;
+
+	ENTER(ensure_FE_element_nodes_are_not_in_list_if_field_defined);
+	if (element&&(node_list_field_data=
+		(struct Node_list_field_data *)node_list_field_data_void))
+	{
+		return_code=1;
+		/* only nodes in parentless elements need be added */
+		if (CM_ELEMENT==element->cm.type)
+		{
+			if (element->information)
+			{
+				if (FE_field_is_defined_in_element(node_list_field_data->field,element))
+				{
+					/* note that element may have no node-based fields */
+					if (node=element->information->nodes)
+					{
+						for (i=element->information->number_of_nodes;(0<i)&&return_code;i--)
+						{
+							if ((*node)&&IS_OBJECT_IN_LIST(FE_node)(*node,
+								node_list_field_data->node_list))
+							{
+								if (!REMOVE_OBJECT_FROM_LIST(FE_node)(*node,
+									node_list_field_data->node_list))
+								{
+									display_message(ERROR_MESSAGE,
+										"ensure_FE_element_nodes_are_not_in_list_if_field_defined."
+										"  Could not remove node from list");
+									return_code=0;
+								}
+							}
+							node++;
+						}
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"ensure_FE_element_nodes_are_not_in_list_if_field_defined.  "
+					"Missing node scale field information");
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ensure_FE_element_nodes_are_not_in_list_if_field_defined.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* ensure_FE_element_nodes_are_not_in_list_if_field_defined */
+
+struct Ensure_FE_node_field_is_undefined_data
+/*******************************************************************************
+LAST MODIFIED : 15 September 2000
+
+DESCRIPTION :
+User data for ensure_FE_node_field_is_undefined function.
+==============================================================================*/
+{
+	struct FE_field *field;
+	struct MANAGER(FE_node) *node_manager;
+};
+
+static int ensure_FE_node_field_is_undefined(struct FE_node *node,
+	void *undefine_data_void)
+/*******************************************************************************
+LAST MODIFIED : 15 September 2000
+
+DESCRIPTION :
+If FE_field <field> is defined at <node>, it is undefined.
+Note: must first ensure node field is not used by element field!
+==============================================================================*/
+{
+	int return_code;
+	struct Ensure_FE_node_field_is_undefined_data *undefine_data;
+	struct FE_node *temp_node;
+
+	ENTER(ensure_FE_node_field_is_undefined);
+	if (node&&(undefine_data=
+		(struct Ensure_FE_node_field_is_undefined_data *)undefine_data_void))
+	{
+		if (FE_field_is_defined_at_node(undefine_data->field,node))
+		{
+			if (temp_node=CREATE(FE_node)(0,node))
+			{
+				return_code=undefine_FE_field_at_node(temp_node,undefine_data->field)&&
+					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(node,
+						temp_node,undefine_data->node_manager);
+				DESTROY(FE_node)(&temp_node);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"ensure_FE_node_field_is_undefined.  Could not create node copy");
+				return_code=0;
+			}
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ensure_FE_node_field_is_undefined.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* ensure_FE_node_field_is_undefined */
+
+int undefine_field_at_listed_nodes(struct LIST(FE_node) *node_list,
+	struct FE_field *field,struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager)
+/*******************************************************************************
+LAST MODIFIED : 15 September 2000
+
+DESCRIPTION :
+Makes sure <field> is not defined at any nodes in <node_list>, unless that field
+at the node is in use by an element.
+==============================================================================*/
+{
+	int number_to_undefine,number_with_field_defined,return_code;
+	struct Node_list_field_data node_list_field_data;
+	struct Ensure_FE_node_field_is_undefined_data undefine_data;
+
+	ENTER(undefine_field_at_listed_nodes);
+	if (node_list&&field&&node_manager&&element_manager)
+	{
+		node_list_field_data.field=field;
+		node_list_field_data.node_list=CREATE(LIST(FE_node))();
+		if (COPY_LIST(FE_node)(node_list_field_data.node_list,node_list))
+		{
+			REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+				FE_node_field_is_not_defined,(void *)field,
+				node_list_field_data.node_list);
+			number_with_field_defined=
+				NUMBER_IN_LIST(FE_node)(node_list_field_data.node_list);
+			if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+				ensure_FE_element_nodes_are_not_in_list_if_field_defined,
+				(void *)&node_list_field_data,element_manager))
+			{
+				number_to_undefine=
+					NUMBER_IN_LIST(FE_node)(node_list_field_data.node_list);
+				if (number_to_undefine < number_with_field_defined)
+				{
+					display_message(WARNING_MESSAGE,"Field could not be undefined in %d "
+						"node(s) because in-use by elements",
+						number_with_field_defined-number_to_undefine);
+				}
+				undefine_data.field=field;
+				undefine_data.node_manager=node_manager;
+				MANAGER_BEGIN_CACHE(FE_node)(node_manager);
+				return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(
+					ensure_FE_node_field_is_undefined,(void *)&undefine_data,
+					node_list_field_data.node_list);
+				if (!return_code)
+				{
+					display_message(ERROR_MESSAGE,"undefine_field_at_listed_nodes.  "
+						"Error undefining field at nodes");
+				}
+				MANAGER_END_CACHE(FE_node)(node_manager);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"undefine_field_at_listed_nodes.  "
+					"Error excluding nodes in elements with field defined");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"undefine_field_at_listed_nodes.  Could not copy node list");
+			return_code=0;
+		}
+		DESTROY(LIST(FE_node))(&node_list_field_data.node_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"undefine_field_at_listed_nodes.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* undefine_field_at_listed_nodes */
 
 int define_FE_field_at_node(struct FE_node *node,struct FE_field *field,
 	int *components_number_of_derivatives,int *components_number_of_versions,
@@ -16586,15 +17112,12 @@ The optional <top_level_element> forces inheritance from it as needed.
 						if (ALLOCATE(standard_basis_arguments_address,int *,
 							number_of_components))
 						{
-							/*??GRC make sure these start out clear as allocated by other
-								functions */
+							/* clear these addresses since allocated by other functions */
 							for (i=0;i<number_of_components;i++)
 							{
 								standard_basis_arguments_address[i]=(int *)NULL;
 							}
 						}
-						/*???SAB.  The blending matrix is never DEALLOCATED so I set it NULL
-							here and DEALLOCATE if set at the end of this routine */
 						blending_matrix=(FE_value *)NULL;
 						if (number_of_values_address&&values_address&&
 							standard_basis_address&&standard_basis_arguments_address)
@@ -32887,7 +33410,7 @@ MANAGED_GROUP_BEGIN_CACHE/END_CACHE calls for efficient manager messages.
 int ensure_top_level_FE_element_is_in_list(struct FE_element *element,
 	void *element_list_void)
 /*******************************************************************************
-LAST MODIFIED : 28 April 1999
+LAST MODIFIED : 15 September 2000
 
 DESCRIPTION :
 Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
@@ -32901,8 +33424,7 @@ adds it to the <element_list> if not currently in it.
 	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
 	{
 		if ((CM_ELEMENT==element->cm.type)&&
-			(!FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-				element->identifier,element_list)))
+			(!IS_OBJECT_IN_LIST(FE_element)(element,element_list)))
 		{
 			return_code=ADD_OBJECT_TO_LIST(FE_element)(element,element_list);
 		}
@@ -32925,7 +33447,7 @@ adds it to the <element_list> if not currently in it.
 int ensure_top_level_FE_element_nodes_are_in_list(struct FE_element *element,
 	void *node_list_void)
 /*******************************************************************************
-LAST MODIFIED : 18 August 1999
+LAST MODIFIED : 15 September 2000
 
 DESCRIPTION :
 Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
@@ -32950,8 +33472,7 @@ ensures all its nodes are added to the <node_list> if not currently in it.
 			{
 				for (i=element->information->number_of_nodes;(0<i)&&return_code;i--)
 				{
-					if ((*node)&&(!FIND_BY_IDENTIFIER_IN_LIST(FE_node,
-						cm_node_identifier)((*node)->cm_node_identifier,node_list)))
+					if ((*node)&&(!IS_OBJECT_IN_LIST(FE_node)(*node,node_list)))
 					{
 						if (!ADD_OBJECT_TO_LIST(FE_node)(*node,node_list))
 						{
@@ -32980,7 +33501,7 @@ ensures all its nodes are added to the <node_list> if not currently in it.
 int ensure_top_level_FE_element_nodes_are_not_in_list(
 	struct FE_element *element,void *node_list_void)
 /*******************************************************************************
-LAST MODIFIED : 20 April 1999
+LAST MODIFIED : 15 September 2000
 
 DESCRIPTION :
 Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
@@ -33005,8 +33526,7 @@ ensures none of its nodes are in <node_list>.
 				{
 					for (i=element->information->number_of_nodes;(0<i)&&return_code;i--)
 					{
-						if ((*node)&&FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-							(*node)->cm_node_identifier,node_list))
+						if ((*node)&&IS_OBJECT_IN_LIST(FE_node)(*node,node_list))
 						{
 							if (!REMOVE_OBJECT_FROM_LIST(FE_node)(*node,node_list))
 							{
@@ -33588,6 +34108,33 @@ Returns true if the <field> is defined for the <node>.
 
 	return (return_code);
 } /* FE_field_is_defined_at_node */
+
+int FE_node_field_is_not_defined(struct FE_node *node,void *field_void)
+/*******************************************************************************
+LAST MODIFIED : 15 September 2000
+
+DESCRIPTION :
+FE_node iterator version of FE_field_is_defined_at_node.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_field *field;
+
+	ENTER(FE_node_field_is_not_defined);
+	if (node&&(field=(struct FE_field *)field_void))
+	{
+		return_code = !FE_field_is_defined_at_node(field,node);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_field_is_not_defined.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_field_is_not_defined */
 
 static int FE_element_parent_has_field_defined(struct FE_element_parent *parent,
 	void *field_void)
