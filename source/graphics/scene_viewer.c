@@ -6002,17 +6002,20 @@ you can even see through the first semi-transparent surface drawn.
 		(SCENE_VIEWER_LAYERED_TRANSPARENCY==transparency_mode)||
 		(SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY==transparency_mode)))
 	{
+		return_code=1;
 		if (SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY==transparency_mode)
 		{
 			if (!order_independent_capable())
 			{
 				/* If we can't do it don't change */
-				transparency_mode = scene_viewer->transparency_mode;
+				return_code=0;
 			}
 		}
-		scene_viewer->transparency_mode=transparency_mode;
-		Scene_viewer_redraw(scene_viewer);
-		return_code=1;
+		if (return_code)
+		{
+			scene_viewer->transparency_mode=transparency_mode;
+			Scene_viewer_redraw(scene_viewer);
+		}
 	}
 	else
 	{
