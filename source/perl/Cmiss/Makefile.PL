@@ -44,7 +44,7 @@ WriteMakefile(
 	 'DIR'   =>  [ 'graphics_window', 'scene_viewer' ],
 
   #Add the perl version into the site library
-    'INSTALLSITELIB'   =>  "\$(PREFIX)/lib",
+    'INSTALLSITELIB'   =>  "\$(PREFIX)/lib/$Config{version}",
 	 'INSTALLSITEARCH'   =>  "\$(PREFIX)/lib/$Config{version}/$Config{archname}",
 
     'VERSION_FROM'  => 'Cmiss.pm', # finds $VERSION
