@@ -549,7 +549,7 @@ Function_derivatnew_composition::Function_derivatnew_composition(
 	const std::list<Function_variable_handle>& independent_variables):
 	Function_derivatnew(dependent_variable,independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 24 January 2005
+// LAST MODIFIED : 30 March 2005
 //
 // DESCRIPTION :
 // Constructor.
@@ -679,6 +679,10 @@ Function_derivatnew_composition::Function_derivatnew_composition(
 			{
 				derivative_g=local_derivative_g;
 				derivative_f=local_derivative_f;
+			}
+			else
+			{
+				throw Function_derivatnew_composition::Construction_exception();
 			}
 		}
 		else
