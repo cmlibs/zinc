@@ -242,12 +242,14 @@ DESCRIPTION :
 Updates the mapping region menu to be consistent with the current rig.
 ==============================================================================*/
 
-int highlight_electrode_or_auxiliar(struct Device *device,int electrode_number,
-	int auxiliary_number,
-	struct Map *map,
+int highlight_electrode_or_auxiliar(struct Device *device,
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node *device_node,
+#endif
+	int electrode_number,	int auxiliary_number,struct Map *map,
 	struct Mapping_window *mapping);
 /*******************************************************************************
-LAST MODIFIED : 7 May 1993
+LAST MODIFIED : 31 August 2000
 
 DESCRIPTION :
 Highlights/dehighlights an electrode or an auxiliary device in the <mapping>

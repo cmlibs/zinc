@@ -284,6 +284,7 @@ Main program for unemap
 	struct FE_node_selection *data_selection=(struct FE_node_selection *)NULL;
 	struct Graphical_material *default_graphical_material=(struct Graphical_material *)NULL;
 	struct Graphical_material *default_selected_material=(struct Graphical_material *)NULL;	
+	struct Graphical_material *electrode_selected_material=(struct Graphical_material *)NULL;	
 	struct GT_object *glyph=(struct GT_object *)NULL;
 	struct Light *default_light=(struct Light *)NULL;
 	struct Light_model *default_light_model=(struct Light_model *)NULL;
@@ -700,8 +701,8 @@ Main program for unemap
 				"default_selected"))
 			{
 				colour.red=1.0;
-				colour.green=1.0;
-				colour.blue=1.0;
+				colour.green=0.0;
+				colour.blue=0.0;
 				Graphical_material_set_ambient(default_selected_material,&colour);
 				Graphical_material_set_diffuse(default_selected_material,&colour);
 				/* ACCESS so can never be destroyed */
@@ -711,7 +712,25 @@ Main program for unemap
 				{
 					DEACCESS(Graphical_material)(&default_selected_material);
 				}
-			}				
+			}			
+			/* create material "electrode_selected" to be bright white for highlighting
+				 electrode graphics */
+			if (electrode_selected_material=CREATE(Graphical_material)(
+				"electrode_selected"))
+			{
+				colour.red=1.0;
+				colour.green=1.0;
+				colour.blue=1.0;
+				Graphical_material_set_ambient(electrode_selected_material,&colour);
+				Graphical_material_set_diffuse(electrode_selected_material,&colour);
+				/* ACCESS so can never be destroyed */
+				ACCESS(Graphical_material)(electrode_selected_material);
+				if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(electrode_selected_material,
+					graphical_material_manager))
+				{
+					DEACCESS(Graphical_material)(&electrode_selected_material);
+				}
+			}						
 		}
 		data_manager=CREATE_MANAGER(FE_node)();
 		if ((computed_field_package=CREATE(Computed_field_package)(
@@ -832,7 +851,7 @@ Main program for unemap
 		transform_tool=CREATE(Transform_tool)(interactive_tool_manager);
 		unemap_package=CREATE(Unemap_package)(fe_field_manager,
 			element_group_manager,node_manager,data_group_manager,node_group_manager,
-			fe_basis_manager,element_manager,computed_field_manager);	
+			fe_basis_manager,element_manager,computed_field_manager,node_selection);	
 		all_FE_element_field_info=CREATE_LIST(FE_element_field_info)();
 		/* FE_element_shape manager */
 		/*???DB.  To be done */

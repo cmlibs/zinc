@@ -26,7 +26,7 @@ struct Unemap_package
 /* Still need structure, for (NULL) function parameters, */ 
 /*even when UNEMAP_USE_NODE not defined*/
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 31 August 2000
 
 DESCRIPTION :
 Stores information needed to construct rig_node element,nodes, fields,
@@ -41,6 +41,7 @@ element,nodes, fields when they are no longer required.
 	struct MANAGER(FE_basis) *fe_basis_manager;
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(Computed_field) *computed_field_manager;
+	struct FE_node_selection *node_selection;
 	/* fields of the rig_nodes, so we know what to clean up, and what to*/
 	/*construct draw package with */	
 	struct FE_field *channel_gain_field;
@@ -74,9 +75,10 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_basis) *fe_basis_manager,
 	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(Computed_field) *computed_field_manager);
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct FE_node_selection *node_selection);
 /*******************************************************************************
-LAST MODIFIED : 26 May 2000
+LAST MODIFIED : 31 August 2000
 
 DESCRIPTION:
 Create a Unemap package, and fill in the managers.
@@ -343,6 +345,15 @@ LAST MODIFIED : 3 September 1999
 
 DESCRIPTION :
 gets a manager of the unemap package.
+==============================================================================*/
+
+struct FE_node_selection *get_unemap_package_FE_node_selection(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 31 August 2000
+
+DESCRIPTION :
+gets a FE_node_selection of the unemap package.
 ==============================================================================*/
 
 struct MANAGER(GROUP(FE_element)) *get_unemap_package_element_group_manager(

@@ -2779,7 +2779,10 @@ Sets up the analysis work area for analysing a set of signals.
 				component.number=0;
 				component.field=highlight_field;
 				set_FE_nodal_int_value(rig_node,&component,/*version*/0,FE_NODAL_VALUE,
-					1/*highlight*/);			
+					1/*highlight*/);	
+				/*select to node for 3D window*/
+				FE_node_selection_select_node(get_unemap_package_FE_node_selection
+					(analysis->unemap_package),rig_node);			
 			}		
 		}
 		else
@@ -9381,7 +9384,7 @@ should be done as a callback from the trace_window.
 																		signal_minimum_field=
 																			get_Signal_drawing_package_signal_minimum_field(
 																			signal_drawing_package);
-																		/* set the new signal_maximum*/
+																		/* set the new signal_minimum*/
 																		component.number=0;
 																		component.field = signal_minimum_field;
 																		set_FE_nodal_FE_value_value(analysis->highlight_rig_node,
@@ -14044,8 +14047,11 @@ else
 							analysis->datum,analysis->potential_time,signals,
 							analysis->signal_drawing_information,analysis->user_interface,
 							&(analysis->window->interval));
-						highlight_electrode_or_auxiliar(*new_highlight,new_electrode_number,
-							new_auxiliary_number,map,mapping);
+						highlight_electrode_or_auxiliar(*new_highlight,
+#if defined (UNEMAP_USE_NODES)
+							(struct FE_node *)NULL,
+#endif
+							new_electrode_number,new_auxiliary_number,map,mapping);
 					}
 				}
 				else
@@ -14068,8 +14074,11 @@ else
 					}
 					/* update the trace window */
 					trace_change_signal(analysis->trace);
-					highlight_electrode_or_auxiliar(*new_highlight,new_electrode_number,
-						new_auxiliary_number,map,mapping);
+					highlight_electrode_or_auxiliar(*new_highlight,
+#if defined (UNEMAP_USE_NODES)
+							(struct FE_node *)NULL,
+#endif
+						new_electrode_number,new_auxiliary_number,map,mapping);
 				}
 			}
 			else
@@ -14098,6 +14107,9 @@ else
 									analysis->signal_drawing_information,analysis->user_interface,
 									&(analysis->window->interval));
 								highlight_electrode_or_auxiliar(*old_highlight,
+#if defined (UNEMAP_USE_NODES)
+									(struct FE_node *)NULL,
+#endif
 									old_electrode_number,-1,map,mapping);
 							}
 							old_electrode_number++;
@@ -14117,8 +14129,11 @@ else
 										analysis->datum,analysis->potential_time,signals,
 										analysis->signal_drawing_information,analysis->user_interface,
 										&(analysis->window->interval));
-									highlight_electrode_or_auxiliar(*old_highlight,-1,
-										old_auxiliary_number,map,mapping);
+									highlight_electrode_or_auxiliar(*old_highlight,
+#if defined (UNEMAP_USE_NODES)
+										(struct FE_node *)NULL,
+#endif
+										-1,old_auxiliary_number,map,mapping);
 								}
 								old_auxiliary_number++;
 							}
@@ -14153,8 +14168,11 @@ else
 					}
 					/* update the trace window */
 					trace_change_signal(analysis->trace);
-					highlight_electrode_or_auxiliar(*new_highlight,new_electrode_number,
-						new_auxiliary_number,map,mapping);
+					highlight_electrode_or_auxiliar(*new_highlight,
+#if defined (UNEMAP_USE_NODES)
+						(struct FE_node *)NULL,
+#endif
+						new_electrode_number,	new_auxiliary_number,map,mapping);
 				}
 			}
 		}
@@ -14237,7 +14255,10 @@ cf highlight_analysis_device
 		analysis->signal_drawing_package)&&(device_type_field=
 			get_Signal_drawing_package_device_type_field(signal_drawing_package))&&	
 		(device_node||device_number||electrode_number||auxiliary_number))
-	{		
+	{	
+		/*node selection goes on in highlight_electrode_or_auxil, so cache here*/
+		FE_node_selection_begin_cache(get_unemap_package_FE_node_selection(
+			analysis->unemap_package)); 
 		current_region=get_Rig_current_region(analysis->rig);			
 		rig_node_order_info=get_Analysis_window_rig_node_order_info(analysis->window);		
 		if(rig_node_order_info)
@@ -14576,12 +14597,10 @@ cf highlight_analysis_device
 								analysis->signal_drawing_package,new_device_number,0,0,
 								analysis->datum,analysis->potential_time,signals,
 								analysis->signal_drawing_information,analysis->user_interface,
-								&(analysis->window->interval));
-							/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
-							/*
-							highlight_electrode_or_auxiliar(*new_highlight,new_electrode_number,
-								new_auxiliary_number,map,mapping);
-							*/
+								&(analysis->window->interval));						
+							highlight_electrode_or_auxiliar((struct Device *)NULL,
+								new_highlight_rig_node,new_electrode_number,new_auxiliary_number,
+								map,mapping);						
 						}
 					}
 					else
@@ -14601,12 +14620,10 @@ cf highlight_analysis_device
 							update_interval_drawing_area(analysis->window);
 						}
 						/* update the trace window */
-						trace_change_signal(analysis->trace);
-						/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
-						/*
-						highlight_electrode_or_auxiliar(*new_highlight,new_electrode_number,
-							new_auxiliary_number,map,mapping);
-						*/
+						trace_change_signal(analysis->trace);					
+						highlight_electrode_or_auxiliar((struct Device *)NULL,
+							new_highlight_rig_node,new_electrode_number,new_auxiliary_number,
+							map,mapping);
 					}
 				}/* if (multiple_selection) */
 				else
@@ -14634,12 +14651,9 @@ cf highlight_analysis_device
 									analysis->signal_drawing_package,old_device_number,
 									0,0,analysis->datum,analysis->potential_time,signals,
 									analysis->signal_drawing_information,analysis->user_interface,
-									&(analysis->window->interval));
-								/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
-								/*
-								highlight_electrode_or_auxiliar(*old_highlight,
-									old_electrode_number,-1,map,mapping);
-								*/
+									&(analysis->window->interval));							
+								highlight_electrode_or_auxiliar((struct Device *)NULL,
+									old_highlight_rig_node,old_electrode_number,-1,map,mapping);
 							}
 							old_electrode_number++;
 						}
@@ -14653,12 +14667,9 @@ cf highlight_analysis_device
 									analysis->signal_drawing_package,old_device_number,
 									0,0,analysis->datum,analysis->potential_time,signals,
 									analysis->signal_drawing_information,analysis->user_interface,
-									&(analysis->window->interval));
-								/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
-								/*
-								highlight_electrode_or_auxiliar(*old_highlight,-1,
-									old_auxiliary_number,map,mapping);
-								*/
+									&(analysis->window->interval));						
+								highlight_electrode_or_auxiliar((struct Device *)NULL,
+									old_highlight_rig_node,-1,old_auxiliary_number,map,mapping);
 							}
 							old_auxiliary_number++;
 						}							
@@ -14710,12 +14721,10 @@ cf highlight_analysis_device
 							update_interval_drawing_area(analysis->window);
 						}
 						/* update the trace window */
-						trace_change_signal(analysis->trace);
-						/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
-						/*
-						highlight_electrode_or_auxiliar(*new_highlight,new_electrode_number,
-							new_auxiliary_number,map,mapping);
-						*/
+						trace_change_signal(analysis->trace);					
+						highlight_electrode_or_auxiliar((struct Device *)NULL,
+							new_highlight_rig_node,new_electrode_number,new_auxiliary_number,map,
+							mapping);						
 					}/* if (new_highlight_rig_node) */
 				}/* if (multiple_selection) */
 			}	/* if (return_code) */
@@ -14726,11 +14735,13 @@ cf highlight_analysis_device
 				"highlight_analysis_device_node. couln't create rig_node_order_info");
 			return_code=0;
 		}
+		FE_node_selection_end_cache(get_unemap_package_FE_node_selection(
+			analysis->unemap_package));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"highlight_analysis_device_node.  Missing arguments");
+			"highlight_analysis_device_node. Invalid arguments");
 		return_code=0;
 	}
 	LEAVE;

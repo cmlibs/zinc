@@ -43,6 +43,7 @@ DESCRIPTION :
 #include "unemap/rig.h"
 #if defined (UNEMAP_USE_NODES)
 #include "unemap/rig_node.h"
+#include "unemap/unemap_package.h"
 #endif /* defined (UNEMAP_USE_NODES) */
 #include "unemap/setup_dialog.h"
 #include "user_interface/filedir.h"
@@ -4974,39 +4975,101 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 	return (return_code);
 } /* update_mapping_window_menu */
 
-int highlight_electrode_or_auxiliar(struct Device *device,int electrode_number,
-	int auxiliary_number,struct Map *map,struct Mapping_window *mapping)
+int highlight_electrode_or_auxiliar(struct Device *device,
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node *device_node,
+#endif
+	int electrode_number,	int auxiliary_number,struct Map *map,
+	struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 31 August 2000
 
 DESCRIPTION :
 Highlights/dehighlights an electrode or an auxiliary device in the <mapping>
 window.
 ==============================================================================*/
 {
-	char electrode_drawn,*name,value_string[11];
+	char electrode_drawn,*device_name,*name,value_string[11];
 	Display *display;
 	enum Map_type map_type;
 	float f_value,max_f,min_f,range_f;
 	GC graphics_context;
-	int ascent,descent,direction,marker_size,name_length,
-		number_of_spectrum_colours,return_code,xmax,xmin,xpos,xstart,ymax,ymin,ypos,
-		ystart;
+	int ascent,descent,device_channel_number,device_highlighted,direction,
+		marker_size,name_length,number_of_spectrum_colours,return_code,xmax,
+		xmin,xpos,xstart,ymax,ymin,ypos,ystart;
 	Pixel *spectrum_pixels;
 	struct Map_drawing_information *drawing_information;
 	XCharStruct bounds;
 	XFontStruct *font;
+#if defined (UNEMAP_USE_NODES)
+	struct FE_field *channel_number_field,*device_name_field,*highlight_field;
+	struct FE_field_component component;
+#endif /* defined (UNEMAP_USE_NODES) */
 
 	ENTER(highlight_electrode_or_auxiliar);
+	device_name=(char *)NULL;
+	name=(char *)NULL;	
+#if defined (UNEMAP_USE_NODES)
+	channel_number_field=(struct FE_field *)NULL;
+	device_name_field=(struct FE_field *)NULL;
+	highlight_field=(struct FE_field *)NULL;;
+#endif /* defined (UNEMAP_USE_NODES) */
 	return_code=0;
 	if (map&&mapping&&(drawing_information=map->drawing_information)&&
-		(drawing_information->user_interface))
+		(drawing_information->user_interface)&&
+#if defined (UNEMAP_USE_NODES)
+		((device&&!device_node)||(!device&&device_node)))
+#else
+		device)
+#endif /* defined (UNEMAP_USE_NODES) */
 	{
 		display=drawing_information->user_interface->display;
 		font=drawing_information->font;
 		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
 		spectrum_pixels=drawing_information->spectrum_colours;
 		map_type= *(map->type);
+#if defined (UNEMAP_USE_NODES)
+		if(device_node)
+		{
+			device_name_field=get_unemap_package_device_name_field(map->unemap_package);
+			highlight_field=get_unemap_package_highlight_field(map->unemap_package);
+			channel_number_field=get_unemap_package_channel_number_field(map->unemap_package);
+			get_FE_nodal_string_value(device_node,device_name_field,0,0,FE_NODAL_VALUE,
+				&device_name);
+			component.number=0;
+			component.field=highlight_field;
+			get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
+						&device_highlighted);
+			component.field=channel_number_field;
+			get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
+						&device_channel_number);
+			/*select/unselect  node for 3D window*/
+			if(device_highlighted)
+			{
+				FE_node_selection_select_node(get_unemap_package_FE_node_selection
+					(map->unemap_package),device_node);
+			}
+			else
+			{
+				FE_node_selection_unselect_node(get_unemap_package_FE_node_selection
+					(map->unemap_package),device_node);
+			}
+		}
+		else
+#endif /* defined (UNEMAP_USE_NODES) */
+		{	
+			device_name=device->description->name;
+			device_highlighted=device->highlight;
+			/* i.e an auxiliary device*/
+			if(device->channel)			
+			{
+				device_channel_number=device->channel->number;			
+			}
+			else
+			{
+				device_channel_number=0;
+			}
+		}
 		if (map&&(map->electrodes_option!=HIDE_ELECTRODES)&&
 			(electrode_number>=0)&&(map->electrode_drawn)&&
 			((map->electrode_drawn)[electrode_number])&&mapping&&
@@ -5020,14 +5083,14 @@ window.
 					electrode_drawn=1;
 					if (SHOW_ELECTRODE_NAMES==map->electrodes_option)
 					{
-						name=device->description->name;
+						name=device_name;
 					}
 					else
 					{
-						sprintf(value_string,"%d",device->channel->number);
+						sprintf(value_string,"%d",device_channel_number);
 						name=value_string;
 					}
-					if (device->highlight)
+					if (device_highlighted)
 					{
 						graphics_context=(drawing_information->graphics_context).
 							highlighted_colour;
@@ -5053,7 +5116,7 @@ window.
 						{
 							name=(char *)NULL;
 						}
-						if (device->highlight)
+						if (device_highlighted)
 						{
 							graphics_context=(drawing_information->graphics_context).
 								highlighted_colour;
@@ -5167,7 +5230,7 @@ window.
 							ystart=mapping->map_drawing->height-descent;
 						}
 					}
-					if (device->highlight)
+					if (device_highlighted)
 					{
 						XDrawString(display,mapping->map_drawing->pixel_map,
 							(drawing_information->graphics_context).highlighted_colour,xstart,
@@ -5213,7 +5276,7 @@ window.
 			xmax=xpos+2;
 			ymin=ypos-2;
 			ymax=ypos+2;
-			if (device->highlight)
+			if (device_highlighted)
 			{
 				XFillRectangle(display,
 					mapping->colour_or_auxiliary_drawing->pixel_map,
@@ -5227,24 +5290,24 @@ window.
 					(drawing_information->graphics_context).unhighlighted_colour,xmin,
 					ymin,5,5);
 			}
-			if (device->description->name)
+			if (device_name)
 			{
-				name_length=strlen(device->description->name);
-				XTextExtents(font,device->description->name,name_length,
+				name_length=strlen(device_name);
+				XTextExtents(font,device_name,name_length,
 					&direction,&ascent,&descent,&bounds);
 				xstart=xpos+6-bounds.lbearing;
 				ystart=ypos+ascent-4;
-				if (device->highlight)
+				if (device_highlighted)
 				{
 					XDrawString(display,mapping->colour_or_auxiliary_drawing->pixel_map,
 						(drawing_information->graphics_context).highlighted_colour,xstart,
-						ystart,device->description->name,name_length);
+						ystart,device_name,name_length);
 				}
 				else
 				{
 					XDrawString(display,mapping->colour_or_auxiliary_drawing->pixel_map,
 						(drawing_information->graphics_context).node_text_colour,xstart,
-						ystart,device->description->name,name_length);
+						ystart,device_name,name_length);
 				}
 				if (xstart+bounds.lbearing<xmin)
 				{

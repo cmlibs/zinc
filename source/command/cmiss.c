@@ -22299,11 +22299,14 @@ Executes a UNEMAP OPEN command.
 	Widget shell;
 #if defined (UNEMAP)
 	struct MANAGER(Computed_field) *computed_field_manager;
+	struct Graphical_material *electrode_selected_material;
+	struct Colour colour;
 #endif /*  defined (UNEMAP) */
 
 	ENTER(execute_command_unemap_open);
 #if defined (UNEMAP)
 	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
+	electrode_selected_material=(struct Graphical_material *)NULL;	
 #endif /*  defined (UNEMAP) */
 	USE_PARAMETER(dummy_to_be_modified);
 	/* check argument */
@@ -22312,6 +22315,28 @@ Executes a UNEMAP OPEN command.
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{	
 #if defined (UNEMAP)
+			/* create material "electrode_selected" to be bright white for highlighting
+				 electrode graphics */
+			if(!(FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
+				("electrode_selected",command_data->graphical_material_manager)))
+			{
+				if (electrode_selected_material=CREATE(Graphical_material)("electrode_selected"))
+				{
+					colour.red=1.0;
+					colour.green=1.0;
+					colour.blue=1.0;
+					Graphical_material_set_ambient(electrode_selected_material,&colour);
+					Graphical_material_set_diffuse(electrode_selected_material,&colour);
+					/* ACCESS so can never be destroyed */
+					ACCESS(Graphical_material)(electrode_selected_material);
+					if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(electrode_selected_material,
+						command_data->graphical_material_manager))
+					{
+						DEACCESS(Graphical_material)(&electrode_selected_material);
+					}
+				}		
+			}
+			/* create the unemap_package */
 			if(!(command_data->unemap_package))
 			{
 				computed_field_manager=Computed_field_package_get_computed_field_manager(
@@ -22320,7 +22345,8 @@ Executes a UNEMAP OPEN command.
 					command_data->fe_field_manager,command_data->element_group_manager,
 					command_data->node_manager,command_data->data_group_manager,
 					command_data->node_group_manager,command_data->basis_manager,
-					command_data->element_manager,computed_field_manager);
+					command_data->element_manager,computed_field_manager,
+					command_data->node_selection);
 			}
 			if(command_data->unemap_package)
 			{
@@ -22408,6 +22434,7 @@ Executes a UNEMAP OPEN command.
 					}
 					if (system)
 					{
+						return_code=1;
 						/* pop up the system window shell */
 						XtPopup(system->window_shell,XtGrabNone);
 					}

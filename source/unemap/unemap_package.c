@@ -33,9 +33,10 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_basis) *fe_basis_manager,
 	struct MANAGER(FE_element) *element_manager,
-	struct MANAGER(Computed_field) *computed_field_manager)
+	struct MANAGER(Computed_field) *computed_field_manager,
+	struct FE_node_selection *node_selection)
 /*******************************************************************************
-LAST MODIFIED : 26 May 2000
+LAST MODIFIED : 31 AUGUST 2000
 
 DESCRIPTION:
 Create a Unemap package, and fill in the managers.
@@ -47,7 +48,7 @@ The fields are filed in with set_unemap_package_fields()
 	ENTER(CREATE(Unemap_package));
 	if (fe_field_manager&&element_group_manager&&node_manager&&
 		data_group_manager&&node_group_manager&&fe_basis_manager&&element_manager&&		
-		computed_field_manager)
+		computed_field_manager&&node_selection)
 	{
 		if (ALLOCATE(package,struct Unemap_package,1))
 		{
@@ -58,7 +59,8 @@ The fields are filed in with set_unemap_package_fields()
 			package->node_group_manager=node_group_manager;
 			package->fe_basis_manager=fe_basis_manager;	
 			package->element_manager=element_manager;
-			package->computed_field_manager=computed_field_manager;			
+			package->computed_field_manager=computed_field_manager;
+			package->node_selection=node_selection;
 			/* fields of the rig_nodes */
 			package->device_name_field=(struct FE_field *)NULL;
 			package->device_type_field=(struct FE_field *)NULL;
@@ -975,6 +977,32 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(computed_field_manager);
 }/* get_unemap_package_Computed_field_manager */
+
+struct FE_node_selection *get_unemap_package_FE_node_selection(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 31 AUGUST 2000
+
+DESCRIPTION :
+gets a FE_node_selection of the unemap package.
+==============================================================================*/
+{
+	struct FE_node_selection *node_selection;
+
+	ENTER(get_unemap_package_FE_node_selection);
+	if(package)
+	{
+		node_selection=package->node_selection;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_FE_node_selection."
+			" invalid arguments");
+		node_selection = (struct FE_node_selection *)NULL;
+	}
+	LEAVE;
+	return(node_selection);
+}/* get_unemap_package_FE_node_selection */
 
 struct MANAGER(GROUP(FE_element)) *get_unemap_package_element_group_manager(
 	struct Unemap_package *package)
