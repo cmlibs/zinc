@@ -113,12 +113,13 @@ DESCRIPTION :
 		emoter_slider_dialog,grid_field_calculator_dialog,input_module_dialog,
 		interactive_data_editor_dialog,interactive_node_editor_dialog,
 		material_editor_dialog,
-		node_group_slider_dialog,spectrum_editor_dialog,sync_2d_3d_dialog;
-	struct Time_editor_dialog *time_editor_dialog;
+		node_group_slider_dialog, sync_2d_3d_dialog;
 	struct Node_viewer *data_viewer,*node_viewer;
 	struct Element_point_viewer *element_point_viewer;
 	struct Element_creator *element_creator;
 	struct Scene_editor *scene_editor;
+	struct Spectrum_editor_dialog *spectrum_editor_dialog;
+	struct Time_editor_dialog *time_editor_dialog;
 #endif /* defined (MOTIF) */
 #if defined (UNEMAP)
 	struct Unemap_command_data *unemap_command_data;
