@@ -5895,17 +5895,6 @@ value searches just elements of that dimension.
 	return (return_code);
 } /* set_Texture_image_from_field */
 
-struct Texture_evaluate_image_data
-{
-	char *region_path;
-	enum Texture_storage_type storage;
-	int depth_texels;
-	int element_dimension; /* where 0 is any dimension */
-	int propagate_field;
-	struct Computed_field *field, *texture_coordinates_field;
-	struct Spectrum *spectrum;
-};
-
 int set_element_dimension_or_all(struct Parse_state *state,
 	void *value_address_void, void *dummy_user_data)
 /*******************************************************************************
@@ -5990,10 +5979,19 @@ MAXIMUM_ELEMENT_XI_DIMENSIONS to be set.
 	return (return_code);
 } /* set_element_dimension_or_all */
 
+struct Texture_evaluate_image_data
+{
+	char *region_path;
+	int element_dimension; /* where 0 is any dimension */
+	int propagate_field;
+	struct Computed_field *field, *texture_coordinates_field;
+	struct Spectrum *spectrum;
+};
+
 static int gfx_modify_Texture_evaluate_image(struct Parse_state *state,
 	void *data_void, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 February 2003
+LAST MODIFIED : 16 May 2003
 
 DESCRIPTION :
 Modifies the properties of a texture.
@@ -6013,9 +6011,6 @@ Modifies the properties of a texture.
 		if (state->current_token)
 		{
 			option_table = CREATE(Option_table)();
-			/* depth_texels */
-			Option_table_add_entry(option_table, "depth_texels",
-				&data->depth_texels, NULL, set_int_positive);
 			/* element_dimension */
 			Option_table_add_entry(option_table, "element_dimension",
 				&data->element_dimension, NULL, set_element_dimension_or_all);
@@ -6031,9 +6026,6 @@ Modifies the properties of a texture.
 			set_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table, "field", &data->field,
 				&set_field_data, set_Computed_field_conditional);
-			/* format */
-			Option_table_add_entry(option_table, "format", &data->storage,
-				NULL, set_Texture_storage);
 			/* propagate_field/no_propagate_field */
 			Option_table_add_switch(option_table, "propagate_field",
 				"no_propagate_field", &data->propagate_field);
@@ -6727,7 +6719,7 @@ Modifies the properties of a texture.
 								evaluate_data.propagate_field, 
 								evaluate_data.spectrum, evaluate_data_region,
 								evaluate_data.element_dimension,
-								evaluate_data.storage, specify_width, 
+								specify_format, specify_width, 
 								specify_height, specify_depth,
 								command_data->user_interface);
 						}
