@@ -38,7 +38,7 @@ unemap-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=true
 unemap-nodes : USE_UNEMAP_NODES_OPTION=USE_UNEMAP_NODES=true
 unemap-nodes unemap-3d : USE_UNEMAP_3D_OPTION=USE_UNEMAP_3D=true
 
-utilities: TARGET=utilities
+utilities: TARGET_OPTION=utilities
 utilities: force
 
 ifdef TARGET
@@ -95,7 +95,7 @@ depend:
 	ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST) TARGET=depend' && \
 	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST) TARGET=depend' ;
 
-cronjob:
+cronjob: update_sources
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(PRODUCT_PATH); \
 		echo -n > $(MAILFILE_PATH)/unemap_programmer.mail ; \

@@ -5,6 +5,7 @@ MAILFILE_PATH=mailfiles
 
 #Build defaults
 USER_INTERFACE=USER_INTERFACE=MOTIF_USER_INTERFACE
+DYNAMIC_GL_LINUX=false
 DEBUG=DEBUG=true
 ABI=
 MEMORYCHECK=
@@ -27,60 +28,64 @@ endif # CMISS_ROOT_DEFINED
 #Developers default
 cell-debug :
 
-cell cell-debug cell-debug-memorycheck cell64 cell64-debug : USER_INTERFACE=USER_INTERFACE=MOTIF_USER_INTERFACE
-cell cell64 : DEBUG=DEBUG=false
-cell-debug cell-debug-memorycheck cell64-debug : DEBUG=DEBUG=true
-cell64 cell64-debug : ABI=ABI=64
-cell-debug-memorycheck : MEMORYCHECK=MEMORYCHECK=true
+cell cell-debug cell-debug-memorycheck cell64 cell64-debug : USER_INTERFACE_OPTION=USER_INTERFACE=MOTIF_USER_INTERFACE
+cell cell64 : DEBUG_OPTION=DEBUG=false
+cell-debug cell-debug-memorycheck cell64-debug : DEBUG_OPTION=DEBUG=true
+cell64 cell64-debug : ABI_OPTION=ABI=64
+cell-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=true
 
-utilities: TARGET=utilities
+utilities: TARGET_OPTION=utilities
 utilities: force
+
+ifdef TARGET
+   TARGET_OPTION = $(TARGET)
+endif
+ifdef USER_INTERFACE
+   USER_INTERFACE_OPTION = USER_INTERFACE=$(USER_INTERFACE)
+endif
+ifdef DYNAMIC_GL_LINUX
+   DYNAMIC_GL_OPTION = DYNAMIC_GL_LINUX=$(DYNAMIC_GL_LINUX)
+endif
+ifdef DEBUG
+   DEBUG_OPTION = DEBUG=$(DEBUG)
+endif
+ifdef ABI
+   ABI_OPTION = ABI=$(ABI)
+endif
+ifdef MEMORYCHECK
+   MEMORYCHECK_OPTION = MEMORYCHECK=$(MEMORYCHECK)
+endif
+OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(DYNAMIC_GL_LINUX_OPTION) $(DEBUG_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION)
 
 cell cell-debug cell-debug-memorycheck cell64 cell64-debug utilities :
 	cd source ; \
-	$(MAKE) -f $(SUBMAKEFILE) $(TARGET) $(USER_INTERFACE) $(ABI) $(DEBUG) $(MEMORYCHECK) ;
-
-update_sources :
-	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
-		cvs update && \
-		cd $(PRODUCT_SOURCE_PATH) && \
-		chgrp -R cmgui_programmers * && \
-		cd $(PRODUCT_PATH) && \
-		ssh 130.216.191.92 'export CVS_RSH=ssh; cd $(CMISS_ROOT)/cmgui ; $(CMISS_ROOT)/bin/cvs update ' ; \
-	else \
-		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
-	fi
+	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
 ESU_BUILD_LIST = cell cell-debug cell-debug-memorycheck cell64 utilities
+ESU_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+ESU_BUILD_MACHINE = 130.216.208.35 #esu35
 ESP_BUILD_LIST = cell cell-debug cell-debug-memorycheck utilities
+ESP_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+ESP_BUILD_MACHINE = 130.216.208.156 #esp56
 HPC1_BUILD_LIST = cell cell-debug cell64 
+HPC1_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+HPC1_BUILD_MACHINE = 130.216.191.92 #hpc1
 
-update : update_sources
-	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
-		cd $(PRODUCT_SOURCE_PATH) && \
-		chgrp -R cmgui_programmers * && \
-		cd $(PRODUCT_PATH) && \
-		$(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST) && \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)' && \
-		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f  $(MAKEFILE) $(HPC1_BUILD_LIST) ;  ' && \
-		cd $(PRODUCT_SOURCE_PATH) && \
-		chgrp -R cmgui_programmers *; \
-	else \
-		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
-	fi
+update_sources :
+	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH)/source ; cvs update' && \
+	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH)/source ; cvs update' ;
 
-depend: update_sources
-	if [ "$(USER)" = "cmiss" ]; then \
-		CMGUI_DEV_ROOT=$(PWD) ; \
-		export CMGUI_DEV_ROOT ; \
-		$(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST) TARGET=depend ; \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; setenv CMGUI_DEV_ROOT $(PWD) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST) TARGET=depend ; ' ; \
-		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f $(MAKEFILE) $(HPC1_BUILD_LIST) TARGET=depend ;  ' ; \
-	else \
-		echo "Must be cmiss"; \
-	fi
+update :
+	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST)' && \
+	ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)' && \
+	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST)' ;
 
-cronjob:
+depend:
+	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST) TARGET=depend' && \
+	ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST) TARGET=depend' && \
+	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST) TARGET=depend' ;
+
+cronjob: update_sources
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(PRODUCT_PATH); \
 		echo -n > $(MAILFILE_PATH)/cell_programmer.mail ; \
