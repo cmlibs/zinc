@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.c
 
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -626,7 +626,7 @@ modes, so push/pop them if you want them preserved.
 static int Scene_viewer_render_scene_private(struct Scene_viewer *scene_viewer,
 	int picking_on,int left, int bottom, int right, int top)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 17 July 2000
 
 DESCRIPTION :
 Called to redraw the Scene_viewer scene after changes in the display lists or
@@ -642,7 +642,7 @@ access this function.
 {
 	Dimension xwidth, xheight;
 	double max_x,max_y,pixel_offset_x,pixel_offset_y;
-	GLboolean valid_raster;
+	GLboolean double_buffer,valid_raster;
 	static GLint viewport[4]={0,0,1,1};
 	GLint stencil_bits;
 	GLdouble modelview_matrix[16],obj_x,obj_y,obj_z,projection_matrix[16],
@@ -752,6 +752,11 @@ access this function.
 				else
 				{
 					return_code=1;
+					/* work out if the rendering is double buffered. Do not just look at
+						 the buffer_mode flag as it is overridden in cases such as printing
+						 the window. */
+					glGetBooleanv(GL_DOUBLEBUFFER,&double_buffer);
+
 					/* in picking mode the transformations are left unchanged */
 					Scene_viewer_calculate_transformation(scene_viewer,
 						viewport_width,viewport_height);
@@ -824,7 +829,7 @@ access this function.
 					glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 					/* depth tests are against a normalised z coordinate (i.e. [0..1])
 						 so the following sets this up and turns on the test */
-					if (SCENE_VIEWER_DOUBLE_BUFFER==scene_viewer->buffer_mode)
+					if (double_buffer)
 					{
 						glDrawBuffer(GL_BACK);
 					}
@@ -877,8 +882,7 @@ access this function.
 						/* enable stencil buffer */
 						glEnable(GL_STENCIL_TEST);
 					}
-					if ((SCENE_VIEWER_DOUBLE_BUFFER!=scene_viewer->buffer_mode) ||
-						(!scene_viewer->fast_changing) || picking_on)
+					if ((!double_buffer) ||	(!scene_viewer->fast_changing) || picking_on)
 					{
 						for (accumulation_count=0;accumulation_count<scene_redraws;
 								 accumulation_count++)
@@ -1163,14 +1167,24 @@ access this function.
 						glMatrixMode(GL_PROJECTION);
 						glLoadMatrixd(projection_matrix);
 						glMatrixMode(GL_MODELVIEW);
+						glLoadIdentity();
+						reset_Lights();
+						/* turn on lights that are part of the Scene_viewer,
+							 ie. headlamps */
+						FOR_EACH_OBJECT_IN_LIST(Light)(execute_Light,(void *)NULL,
+							scene_viewer->list_of_lights);
 						glLoadMatrixd(modelview_matrix);
+						/* turn on lights that are part of the Scene and fixed relative
+							 to it. Note the scene will have compiled them already. */
+						for_each_Light_in_Scene(scene_viewer->scene,execute_Light,
+							(void *)NULL);
+
 						glViewport((GLint)left, (GLint)bottom,
 							(GLint)viewport_width, (GLint)viewport_height);
 						/* do not write into the depth buffer */
 						glDepthMask(GL_FALSE);
 
-						if ((SCENE_VIEWER_DOUBLE_BUFFER==scene_viewer->buffer_mode) &&
-							!picking_on)
+						if (double_buffer && !picking_on)
 						{
 							/* for OpenGL window z coordinates, 0.0=near, 1.0=far */
 							if (GL_TRUE==gluUnProject(0.00001,0.00001,0.00001,
@@ -1200,8 +1214,14 @@ access this function.
 					}
 					else
 					{
-						scene_viewer->swap_buffers=
-							(SCENE_VIEWER_DOUBLE_BUFFER == scene_viewer->buffer_mode);
+						if (double_buffer)
+						{
+							scene_viewer->swap_buffers=1;
+						}
+						else
+						{
+							scene_viewer->swap_buffers=0;
+						}
 						scene_viewer->first_fast_change=1;
 					}
 					if (0<stencil_bits)
