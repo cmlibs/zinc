@@ -48,7 +48,16 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_fibres.h"
-#include "computed_field/computed_field_image_processing.h"
+
+#include "image_processing/computed_field_dilate_filter.h"
+#include "image_processing/computed_field_erode_filter.h"
+#include "image_processing/computed_field_histogram_equalize.h"
+#include "image_processing/computed_field_image_contour.h"
+#include "image_processing/computed_field_color_based_segment.h"
+#include "image_processing/computed_field_intensity_based_segment.h"
+#include "image_processing/computed_field_median_filter.h"
+#include "image_processing/computed_field_sobel_filter.h"
+
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_matrix_operations.h"
 #include "computed_field/computed_field_sample_texture.h"
@@ -24105,12 +24114,34 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			}
 			Computed_field_register_types_deformation(
 				command_data->computed_field_package);
-			if (command_data->root_region)
+
+                        if (command_data->root_region)
 			{
 				/* Image processing computed fields still work with a NULL user_interface
 					but they cannot use the find_element_xi_special 2D acceleration */
-				Computed_field_register_types_image_processing(
-					command_data->computed_field_package, 
+				Computed_field_register_types_erode_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_dilate_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_histogram_equalize(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_color_based_segment(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_intensity_based_segment(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_median_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_sobel_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_image_contour(
+					command_data->computed_field_package,
 					command_data->root_region, command_data->user_interface);
 			}
 		}

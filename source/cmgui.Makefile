@@ -661,7 +661,6 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_fibres.c \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_finite_element.c \
-	computed_field/computed_field_image_processing.c \
 	computed_field/computed_field_integration.c \
 	computed_field/computed_field_matrix_operations.c \
 	computed_field/computed_field_sample_texture.c \
@@ -807,6 +806,16 @@ GRAPHICS_INTERFACE_SRCS = \
 	graphics/texturemap.c \
 	graphics/volume_texture_editor.c \
 	graphics/volume_texture_editor_dialog.c
+IMAGE_PROCESSING_SRCS = \
+        image_processing/image_cache.c \
+	image_processing/computed_field_image_contour.c \
+	image_processing/computed_field_dilate_filter.c \
+	image_processing/computed_field_erode_filter.c \
+	image_processing/computed_field_histogram_equalize.c \
+	image_processing/computed_field_color_based_segment.c \
+	image_processing/computed_field_intensity_based_segment.c \
+	image_processing/computed_field_median_filter.c \
+	image_processing/computed_field_sobel_filter.c
 INTERACTION_SRCS = \
 	interaction/interaction_graphics.c \
 	interaction/interaction_volume.c \
@@ -911,6 +920,7 @@ SRCS_1 = \
 	$(GENERAL_SRCS) \
 	$(GRAPHICS_SRCS) \
 	$(HELP_SRCS) \
+	$(IMAGE_PROCESSING_SRCS) \
 	$(INTERACTION_SRCS) \
 	$(IO_DEVICES_SRCS) \
 	$(MATRIX_SRCS) \
