@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 27 November 2002
+# LAST MODIFIED : 27 December 2002
 #
 # DESCRIPTION :
 #
@@ -634,8 +634,9 @@ GENERAL_SRCS = \
 	general/error_handler.c \
 	general/geometry.c \
 	general/heapsort.c \
-	general/indexed_multi_range.c \
 	general/image_utilities.c \
+	general/indexed_multi_range.c \
+	general/integration.c \
 	general/machine.c \
 	general/matrix_vector.c \
 	general/multi_range.c \
