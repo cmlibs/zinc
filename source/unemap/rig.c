@@ -411,7 +411,7 @@ alternatives for specifying the list of devices to use.
 		special_characters[]="+-*/()",start_device_name;
 	enum Device_expression_operator_type operator;
 	float coefficient;
-	int count,first_length,i,level,return_code,second_length,skipped;
+	int count,first_length,i,level,return_code,skipped;
 	struct Device *device,**device_address;
 	struct Device_list_item *device_list_item;
 	struct Device_expression *expression;
@@ -446,7 +446,6 @@ alternatives for specifying the list of devices to use.
 		first=device_expression_string+count;
 		first_length=0;
 		second=first;
-		second_length=0;
 		if ((*first==start_device_name)&&('\0'!=start_device_name))
 		{
 			/* find end of device name */
@@ -1242,7 +1241,7 @@ channel devices calculated by this routine.
 static int evaluate_device_expression(struct Device_expression *expression,
 	float **channel_values_address,float *result)
 /*******************************************************************************
-LAST MODIFIED : 24 July 2002
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 Evaluates the <expression> using the <*channel_values_address>.  The values
@@ -1251,14 +1250,14 @@ should be for and in the order of the channels returned by
 through.
 ==============================================================================*/
 {
-	float *channel_values,first_result,second_result;
+	float first_result,second_result;
 	int return_code;
 
 	ENTER(evaluate_device_expression);
 	return_code=0;
 	/* check arguments */
 	if (result&&((!expression)||(expression&&channel_values_address&&
-		(channel_values= *channel_values_address))))
+		(*channel_values_address))))
 	{
 		if (expression)
 		{
@@ -2054,7 +2053,7 @@ If the return_code is nonzero, the extraction arguments are:
 			}
 		}
 #endif /* defined (DEVICE_EXPRESSIONS) */
-		times=(float *)times;
+		times=(float *)NULL;
 		signals_values=(float *)NULL;
 		signals_status=(enum Event_signal_status *)NULL;
 		if (return_code&&buffer)

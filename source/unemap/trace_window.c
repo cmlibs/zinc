@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 5 September 2002
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5130,7 +5130,7 @@ DESCRIPTION : draws the markers on the trace window.
 
 static int calculate_Cardiac_interval_device(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 6 September 2002
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 Calculate the <trace's> cardiac_interval_device.
@@ -5151,18 +5151,21 @@ calculated, it contains the entire signal.
 	float *current_times,*current_values,frequency,*cardiac_interval_value,
 		maximum_value,minimum_value,*time_float,*value;
 	struct Cardiac_interval *interval;
-	struct Device *cardiac_interval_device,**electrodes,*source_device;
+	struct Device *cardiac_interval_device,*source_device;
 	struct Signal_buffer *cardiac_interval_buffer;
 	struct Signal *signal_next,*signal_next_new;
 #if defined (DEVICE_EXPRESSIONS)
 	struct Signal_buffer *buffer;
 #else /* defined (DEVICE_EXPRESSIONS) */
+	struct Device **electrodes;
 	struct Device *device;
 #endif /* defined (DEVICE_EXPRESSIONS) */
 
 	ENTER(calculate_Cardiac_interval_device);
 	return_code=0;
+#if !defined (DEVICE_EXPRESSIONS)
 	electrodes=(struct Device **)NULL;
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 	interval=(struct Cardiac_interval *)NULL;
 	source_device=(struct Device *)NULL;
 	cardiac_interval_device=(struct Device *)NULL;
@@ -9919,7 +9922,7 @@ and location.
 
 static int process_eimaging(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2002
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 Calculates the processed device for electrical imaging.
@@ -9936,7 +9939,7 @@ before this function is exited.
 		*value,*values;
 	int buffer_offset,end,i,j,number_of_devices,num_valid_devices,
 		number_of_samples,number_of_signals,*processed_time,return_code,start;
-	struct Device *device,**electrodes,*processed_device,**the_device;
+	struct Device *device,*processed_device,**the_device;
 	struct Device_description *description;
 	struct Rig *rig;
 	struct Region *current_region;
@@ -9945,15 +9948,15 @@ before this function is exited.
 #if defined (DEVICE_EXPRESSIONS)
 	struct Signal_buffer *buffer;
 #else /* defined (DEVICE_EXPRESSIONS) */
-	struct Device *a_device;
+	struct Device *a_device,**electrodes;
 #endif /* defined (DEVICE_EXPRESSIONS) */
 
 	ENTER(process_eimaging);
 	device=(struct Device *)NULL;
 	processed_device=(struct Device *)NULL;
 	the_device=(struct Device **)NULL;
-	electrodes=(struct Device **)NULL;
 #if !defined (DEVICE_EXPRESSIONS)
+	electrodes=(struct Device **)NULL;
 	a_device=(struct Device *)NULL;
 #endif /* !defined (DEVICE_EXPRESSIONS) */
 	values=(float *)NULL;

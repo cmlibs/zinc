@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 13 September 2002
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 
@@ -2005,7 +2005,7 @@ DESCRIPTION :
 static int remove_scrolling_device(struct Page_window *page_window,
 	struct Device *device)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2002
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2021,7 +2021,7 @@ DESCRIPTION :
 		i=0;
 		j=0;
 		while ((i<page_window->number_of_scrolling_devices)&&
-			(device!=(scrolling_device=(page_window->scrolling_devices)[i])))
+			(device!=(page_window->scrolling_devices)[i]))
 		{
 			j += (page_window->number_of_scrolling_channels_device)[i];
 			i++;
@@ -7333,7 +7333,7 @@ static void page_auto_range(
 #endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 13 September 2002
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 Called when the auto range button is pressed.
@@ -7393,7 +7393,8 @@ Called when the auto range button is pressed.
 				if (ALLOCATE(samples,short int,number_of_samples*number_of_channels)&&
 					ALLOCATE(card_maximum,float,number_of_channels/64)&&
 					ALLOCATE(card_minimum,float,number_of_channels/64)&&
-					unemap_get_samples_acquired(0,number_of_samples,samples,(int *)NULL))
+					unemap_get_samples_acquired(0,(int)number_of_samples,samples,
+					(int *)NULL))
 				{
 					/* calculate ranges */
 					for (card_number=0;card_number<number_of_channels/64;card_number++)
