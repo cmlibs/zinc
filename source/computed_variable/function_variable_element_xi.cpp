@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_element_xi.cpp
 //
-// LAST MODIFIED : 2 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -17,7 +17,10 @@ extern "C"
 //???DB.  Get rid of debug.h (C->C++)
 #include "general/debug.h"
 }
+//???DB.  Make module function_element_xi?
+#include "computed_variable/function_finite_element.hpp"
 #include "computed_variable/function_variable_element_xi.hpp"
+#include "computed_variable/function_variable_matrix.hpp"
 #include "computed_variable/function_variable_value_element.hpp"
 #include "computed_variable/function_variable_value_scalar.hpp"
 
@@ -68,7 +71,7 @@ bool Function_variable_element_xi_set_element_function(
 class Function_variable_iterator_representation_atomic_element_xi:
 	public Function_variable_iterator_representation
 //******************************************************************************
-// LAST MODIFIED : 1 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -284,13 +287,8 @@ class Function_variable_iterator_representation_atomic_element_xi:
 			result=false;
 			if (representation_element_xi)
 			{
-				if (((0==atomic_variable)&&
-					(0==representation_element_xi->atomic_variable))||
-					(atomic_variable&&(representation_element_xi->atomic_variable)&&
-					(*atomic_variable== *(representation_element_xi->atomic_variable))))
-				{
-					result=true;
-				}
+				result=equivalent(atomic_variable,
+					representation_element_xi->atomic_variable);
 			}
 
 			return (result);
@@ -429,7 +427,7 @@ Function_size_type Function_variable_element_xi::number_differentiable()
 bool Function_variable_element_xi::equality_atomic(
 	const Function_variable_handle& variable) const
 //******************************************************************************
-// LAST MODIFIED : 2 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -441,7 +439,7 @@ bool Function_variable_element_xi::equality_atomic(
 	if (variable_element_xi=boost::dynamic_pointer_cast<
 		Function_variable_element_xi,Function_variable>(variable))
 	{
-		if ((variable_element_xi->function()==function())&&
+		if (equivalent(variable_element_xi->function(),function())&&
 			(variable_element_xi->element_private==element_private)&&
 			(variable_element_xi->xi_private==xi_private)&&
 			((variable_element_xi->indices).size()==indices.size()))
@@ -550,7 +548,8 @@ Function_variable_element_xi::Function_variable_element_xi(
 
 #if defined (TO_BE_DONE)
 //???DB.  Should these be on Functions?
-Function_variable_handle operator-(const Function_variable& second) const
+Function_variable_handle Function_variable_element_xi::operator-(
+	const Function_variable& second) const
 {
 	Function_variable_element_xi_handle result(0);
 
@@ -601,17 +600,27 @@ Function_variable_handle operator-(const Function_variable& second) const
 
 	return (result);
 };
-Function_variable_handle operator-=(const Function_variable& second)
+#endif // defined (TO_BE_DONE)
+
+Function_variable_handle Function_variable_element_xi::operator+=(
+	const Function_variable& second)
+//******************************************************************************
+// LAST MODIFIED : 9 August 2004
+//
+// DESCRIPTION :
+//==============================================================================
 {
+	Function_variable_handle result(0);
+
 	try
 	{
-		const Function_variable_matrix& second_vector=
-			dynamic_cast<const Function_variable_matrix&>(second);
+		const Function_variable_matrix<Scalar>& second_vector=
+			dynamic_cast<const Function_variable_matrix<Scalar>&>(second);
 		Function_size_type i,number_of_values;
 
 		number_of_values=second_vector.number_of_rows();
-		if (this&&(1==second_vector.number_of_columns)&&
-			(xi.size()==number_of_values)&&(0<number_of_values))
+		if (this&&(1==second_vector.number_of_columns())&&
+			(number_of_xi()==number_of_values)&&(0<number_of_values))
 		{
 			FE_value *increment_array,*xi_array;
 
@@ -619,24 +628,49 @@ Function_variable_handle operator-=(const Function_variable& second)
 			xi_array=new FE_value[number_of_values];
 			if (increment_array&&xi_array)
 			{
+				boost::intrusive_ptr< Function_variable_matrix<Scalar> >
+					increment_variable;
+				Function_variable_element_xi_handle element_xi_variable;
+				Function_variable_iterator element_xi_iterator=begin_atomic();
+				Scalar scalar_value;
 				struct FE_element *increment_element;
-				for (i=0;i<number_of_values;i++)
+
+				if ((*element_xi_iterator)&&(element_xi_variable=
+					boost::dynamic_pointer_cast<Function_variable_element_xi,
+					Function_variable>(*element_xi_iterator))&&
+					(element_xi_variable->get_element)(increment_element))
 				{
-					increment_array[i]=(FE_value)second_vector(i,1);
-					xi_array[i]=(FE_value)xi[i];
-				}
-				increment_element=element;
-				if (FE_element_xi_increment(&increment_element,xi_array,
-					increment_array))
-				{
-					if (element)
-					{
-						DEACCESS(FE_element)(&element);
-					}
-					element=ACCESS(FE_element)(increment_element);
 					for (i=0;i<number_of_values;i++)
 					{
-						xi[i]=(Scalar)(xi_array[i]);
+						element_xi_iterator++;
+						if ((*element_xi_iterator)&&(element_xi_variable=
+							boost::dynamic_pointer_cast<Function_variable_element_xi,
+							Function_variable>(*element_xi_iterator))&&
+							(element_xi_variable->get_xi)(scalar_value))
+						{
+							xi_array[i]=(FE_value)scalar_value;
+							if ((increment_variable=second_vector(i+1,1))&&
+								(increment_variable->get_entry(scalar_value)))
+							{
+								increment_array[i]=(FE_value)scalar_value;
+							}
+						}
+					}
+					if (FE_element_xi_increment(&increment_element,xi_array,
+						increment_array))
+					{
+						Function_element_xi_handle element_xi;
+						Vector xi_vector(number_of_values);
+
+						for (i=0;i<number_of_values;i++)
+						{
+							xi_vector[i]=(Scalar)(xi_array[i]);
+						}
+						if ((element_xi=Function_element_xi_handle(new Function_element_xi(
+							increment_element,xi_vector)))&&set_value(element_xi))
+						{
+							result=Function_variable_element_xi_handle(this);
+						}
 					}
 				}
 			}
@@ -649,6 +683,5 @@ Function_variable_handle operator-=(const Function_variable& second)
 		// do nothing
 	}
 
-	return (Function_variable_element_xi_handle(this));
-};
-#endif // defined (TO_BE_DONE)
+	return (result);
+}
