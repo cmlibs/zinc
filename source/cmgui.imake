@@ -31,9 +31,7 @@ XCOMM ==========================================================================
 SHELL=/bin/sh
 
 /* Perl interpreter is now std but I don't have it for O64 yet */
-#if ! defined (O64)
 #define PERL_INTERPRETER
-#endif /* ! defined (O64) */
 
 BIN_PATH=$(CMGUI_DEV_ROOT)/bin
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
@@ -81,19 +79,6 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_lite
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #else /* defined (LITEWEIGHT) */
-#if defined (F90_INTERPRETER)
-#define Target cmgui_f90
-#define SpacesToTabsTarget spaces_to_tabs
-#define TabsToSpacesTarget tabs_to_spaces
-#define Uid2uidhTarget uid2uidh
-#define Makefile cmgui_sgif90.make
-#define DependMake cmgui_sgif90.depend
-#define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32_f90
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_f90
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
-#else /* defined (F90_INTERPRETER) */
 #if !defined (OPTIMISED)
 /* The normal debug and memory check versions keep the same extension
 	as they only differ in one file */
@@ -136,7 +121,6 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_optimised
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #endif /* !defined (OPTIMISED) */
-#endif /* defined (F90_INTERPRETER) */
 #endif /* defined (LITEWEIGHT) */
 #else /* !defined (O64) */
 /* The O64 version can be either OPTIMISED or not but only one
@@ -310,7 +294,6 @@ MIRAGE_SRCS = \
 	slider/emoter_dialog.c
 #endif /* !defined (MIRAGE) */
 
-#if !defined (F90_INTERPRETER)
 #if !defined (PERL_INTERPRETER)
 INTERPRETER_INC =
 INTERPRETER_SWITCH = 
@@ -326,22 +309,18 @@ INTERPRETER_INC = -I$(INTERPRETER_PATH)/source/
 INTERPRETER_SWITCH = -DPERL_INTERPRETER
 INTERPRETER_SRCS =
 #if defined (IRIX) /* switch OperatingSystem */
+#if defined (O64)
+#if defined (OPTIMISED)
+INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/mips4-n32-debug/libperlinterpreter.a
+#else /* defined (OPTIMISED) */
 INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/mips3-n32-debug/libperlinterpreter.a
+#endif /* defined (OPTIMISED) */
+#else /* defined (O64) */
+INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/mips4-64-debug/libperlinterpreter.a
+#endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/linuxdebug/libperlinterpreter.a
 #endif /* switch OperatingSystem */
-#endif /* !defined (PERL_INTERPRETER) */
-#else /* !defined (F90_INTERPRETER) */
-#if defined (CMISS_ROOT_DEFINED)
-INTERPRETER_PATH=$(CMISS_ROOT)/interpreter
-#else /* defined (CMISS_ROOT_DEFINED) */
-INTERPRETER_PATH=$(CMGUI_DEV_ROOT)/interpreter
-#endif /* defined (CMISS_ROOT_DEFINED) */
-INTERPRETER_INC = -I$(INTERPRETER_PATH)/source
-INTERPRETER_SWITCH = -DF90_INTERPRETER
-INTERPRETER_SRCS = command/f90_interpreter.c
-INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/cmissinterpreter_c_n32.a -lfortran
-#endif /* !defined (F90_INTERPRETER) */
 
 #if !defined (ROBO_APPLICATION)
 ROBO_APPLICATION_SWITCH =
