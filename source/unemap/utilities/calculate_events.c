@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : calculate_events.c
 
-LAST MODIFIED : 19 November 2000
+LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
 Reads in a signal file, calculates events and writes out the signal file with
@@ -69,11 +69,22 @@ int main(int argc,char *argv[])
 						objective=POSITIVE_SLOPE;
 						return_code=1;
 					}
-					else if (0==strcmp("value",argv[arg_number]))
+					if (0==strcmp("absolute_value",argv[arg_number]))
 					{
-						objective=VALUE_OBJECTIVE;
+						objective=ABSOLUTE_VALUE;
 						return_code=1;
 					}
+					else if (0==strcmp("negative_value",argv[arg_number]))
+					{
+						objective=NEGATIVE_VALUE;
+						return_code=1;
+					}
+					else if (0==strcmp("positive_value",argv[arg_number]))
+					{
+						objective=POSITIVE_VALUE;
+						return_code=1;
+					}
+
 					if (return_code)
 					{
 						/* read average width */
