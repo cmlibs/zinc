@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : glyph.c
 
-LAST MODIFIED : 16 July 2002
+LAST MODIFIED : 10 June 2004
 
 DESCRIPTION :
 Glyphs are GT_objects which contain simple geometric shapes such as
@@ -212,17 +212,19 @@ from the shaft.
 	return (glyph);
 } /* make_glyph_arrow_line */
 
-struct GT_object *make_glyph_arrow_solid(char *name,
-	int number_of_segments_around,float shaft_length,float shaft_radius)
+struct GT_object *make_glyph_arrow_solid(char *name, int primary_axis,
+	int number_of_segments_around,float shaft_length,float shaft_radius,
+	float cone_radius)
 /*******************************************************************************
-LAST MODIFIED : 3 May 1999
+LAST MODIFIED : 10 June 2004
 
 DESCRIPTION :
 Creates a graphics object named <name> resembling an arrow made from a cone on
 a cylinder. The base of the arrow is at (0,0,0) while its head lies at (1,0,0).
-The radius of the cone is 0.5 at its base. The cylinder is <shaft_length> long
+The radius of the cone is <cone_radius>. The cylinder is <shaft_length> long
 with its radius given by <shaft_radius>. The ends of the arrow and the cone
-are both closed.
+are both closed.  Primary axis is either 1,2 or 3 and indicates the direction
+the arrow points in.
 ==============================================================================*/
 {
 	float r1,r2,x1,x2;
@@ -267,19 +269,19 @@ are both closed.
 							x1=shaft_length;
 							r1=shaft_radius;
 							x2=shaft_length;
-							r2=0.5;
+							r2=cone_radius;
 						} break;
 						case 3:
 						{
 							/* head */
 							x1=shaft_length;
-							r1=0.5;
+							r1=cone_radius;
 							x2=1.0;
 							r2=0.0;
 						} break;
 					}
-					if (!construct_tube(number_of_segments_around,x1,r1,x2,r2,0.0,0.0,1,
-						points,normalpoints))
+					if (!construct_tube(number_of_segments_around,x1,r1,x2,r2,0.0,0.0,
+						primary_axis,points,normalpoints))
 					{
 						DEALLOCATE(points);
 						DEALLOCATE(normalpoints);
@@ -321,24 +323,27 @@ are both closed.
 	return (glyph);
 } /* make_glyph_arrow_solid */
 
-struct GT_object *make_glyph_axes(char *name,float head_length,
-	float half_head_width,float label_offset)
+struct GT_object *make_glyph_axes(char *name, int make_solid, float head_length,
+	float half_head_width,char **labels, float label_offset)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 10 June 2004
 
 DESCRIPTION :
 Creates a graphics object named <name> consisting of three axis arrows heading
 from <0,0,0> to 1 in each of their directions. The arrows are made up of lines,
-with a 4-way arrow head so it looks normal from the other two axes. A further
-graphics object containing the axis labels 'x', 'y' and 'z' is attached to it so
+with a 4-way arrow head so it looks normal from the other two axes. If <labels>
+is specified then it is assumed to point to an array of 3 strings which will
+be used to label each arrow and are attached to it so
 that the two objects are displayed and destroyed together. The labels are
 located on the respective axes <label_offset> past 1.0.
 The length and width of the arrow heads are specified by the final parameters.
 ==============================================================================*/
 {
-	char *labels_name,**text;
+	char *glyph_name,**text;
 	int j;
-	struct GT_object *glyph,*labels;
+	struct Colour colour;
+	struct Graphical_material *material;
+	struct GT_object *glyph,*arrow2,*arrow3,*labels_object;
 	struct GT_pointset *pointset;
 	struct GT_polyline *polyline;
 	Triple *points,*vertex;
@@ -346,120 +351,161 @@ The length and width of the arrow heads are specified by the final parameters.
 	ENTER(make_glyph_axes);
 	if (name)
 	{
-		polyline=(struct GT_polyline *)NULL;
-		if (ALLOCATE(points,Triple,30))
+		if (make_solid)
 		{
-			vertex=points;
-			/* most coordinates are 0.0, so clear them all to that */
-			for (j=0;j<30;j++)
+			if (ALLOCATE(glyph_name, char, strlen(name) + 8))
 			{
-				(*vertex)[0]=0.0;
-				(*vertex)[1]=0.0;
-				(*vertex)[2]=0.0;
-				vertex++;
+				glyph = make_glyph_arrow_solid(name, /*primary_axis*/1,
+					/*number_of_segments_around*/12, /*shaft_length*/2./3.,
+					/*shaft_radius*/1./20., /*cone_radius*/1./8.);
+				material = CREATE(Graphical_material)("red");
+				colour.red = 1;
+				colour.green = 0;
+				colour.blue = 0;
+				Graphical_material_set_diffuse(material, &colour);
+				set_GT_object_default_material(glyph, material);
+
+				sprintf(glyph_name, "%s_arrow2", name);
+				arrow2 = make_glyph_arrow_solid(glyph_name, /*primary_axis*/2,
+					/*number_of_segments_around*/12, /*shaft_length*/2./3.,
+					/*shaft_radius*/1./20., /*cone_radius*/1./8.);
+				material = CREATE(Graphical_material)("green");
+				colour.red = 0;
+				colour.green = 1;
+				colour.blue = 0;
+				Graphical_material_set_diffuse(material, &colour);
+				set_GT_object_default_material(arrow2, material);
+				glyph->nextobject=ACCESS(GT_object)(arrow2);
+
+				sprintf(glyph_name, "%s_arrow3", name);
+				arrow3 = make_glyph_arrow_solid(glyph_name, /*primary_axis*/3,
+					/*number_of_segments_around*/12, /*shaft_length*/2./3.,
+					/*shaft_radius*/1./20., /*cone_radius*/1./8.);
+				material = CREATE(Graphical_material)("blue");
+				colour.red = 0;
+				colour.green = 0;
+				colour.blue = 1;
+				Graphical_material_set_diffuse(material, &colour);
+				set_GT_object_default_material(arrow3, material);
+				arrow2->nextobject=ACCESS(GT_object)(arrow3);
+				
+				DEALLOCATE(glyph_name);
 			}
-			/* x-axis */
-			points[ 1][0]=1.0;
-			points[ 2][0]=1.0;
-			points[ 3][0]=1.0-head_length;
-			points[ 3][1]=half_head_width;
-			points[ 4][0]=1.0;
-			points[ 5][0]=1.0-head_length;
-			points[ 5][2]=half_head_width;
-			points[ 6][0]=1.0;
-			points[ 7][0]=1.0-head_length;
-			points[ 7][1]=-half_head_width;
-			points[ 8][0]=1.0;
-			points[ 9][0]=1.0-head_length;
-			points[ 9][2]=-half_head_width;
-			/* y-axis */
-			points[11][1]=1.0;
-			points[12][1]=1.0;
-			points[13][1]=1.0-head_length;
-			points[13][2]=half_head_width;
-			points[14][1]=1.0;
-			points[15][1]=1.0-head_length;
-			points[15][0]=half_head_width;
-			points[16][1]=1.0;
-			points[17][1]=1.0-head_length;
-			points[17][2]=-half_head_width;
-			points[18][1]=1.0;
-			points[19][1]=1.0-head_length;
-			points[19][0]=-half_head_width;
-			/* z-axis */
-			points[21][2]=1.0;
-			points[22][2]=1.0;
-			points[23][2]=1.0-head_length;
-			points[23][0]=half_head_width;
-			points[24][2]=1.0;
-			points[25][2]=1.0-head_length;
-			points[25][1]=half_head_width;
-			points[26][2]=1.0;
-			points[27][2]=1.0-head_length;
-			points[27][0]=-half_head_width;
-			points[28][2]=1.0;
-			points[29][2]=1.0-head_length;
-			points[29][1]=-half_head_width;
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
-				15,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
-			{
-				DEALLOCATE(points);
-			}
-		}
-		pointset=(struct GT_pointset *)NULL;
-		if (ALLOCATE(points,Triple,3)&&
-			ALLOCATE(text,char *,3)&&
-			ALLOCATE(text[0],char,2)&&
-			ALLOCATE(text[1],char,2)&&
-			ALLOCATE(text[2],char,2)&&
-			ALLOCATE(labels_name,char,strlen(name)+8))
-		{
-			sprintf(labels_name,"%s_labels",name);
-			points[0][0]=1.0+label_offset;
-			points[0][1]=0.0;
-			points[0][2]=0.0;
-			strcpy(text[0],"x");
-			points[1][0]=0.0;
-			points[1][1]=1.0+label_offset;
-			points[1][2]=0.0;
-			strcpy(text[1],"y");
-			points[2][0]=0.0;
-			points[2][1]=0.0;
-			points[2][2]=1.0+label_offset;
-			strcpy(text[2],"z");
-			if (!(pointset=CREATE(GT_pointset)(3,points,text,g_NO_MARKER,0.0,
-				g_NO_DATA,(GTDATA *)NULL,(int *)NULL)))
-			{
-				DEALLOCATE(labels_name);
-				DEALLOCATE(text[0]);
-				DEALLOCATE(text[1]);
-				DEALLOCATE(text[2]);
-				DEALLOCATE(text);
-				DEALLOCATE(points);
-			}
-		}
-		if (polyline&&pointset)
-		{
-			if (labels=CREATE(GT_object)(labels_name,g_POINTSET,
-				(struct Graphical_material *)NULL))
-			{
-				GT_OBJECT_ADD(GT_pointset)(labels,/*time*/0.0,pointset);
-			}
-			if (glyph=CREATE(GT_object)(name,g_POLYLINE,
-				(struct Graphical_material *)NULL))
-			{
-				/* must access labels since destroying glyph will deaccess them - and
-					 destroy them as necessary */
-				glyph->nextobject=ACCESS(GT_object)(labels);
-				GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline);
-			}
-			DEALLOCATE(labels_name);
 		}
 		else
 		{
-			DESTROY(GT_polyline)(&polyline);
-			DESTROY(GT_pointset)(&pointset);
-			glyph=(struct GT_object *)NULL;
+			polyline=(struct GT_polyline *)NULL;
+			if (ALLOCATE(points,Triple,30))
+			{
+				vertex=points;
+				/* most coordinates are 0.0, so clear them all to that */
+				for (j=0;j<30;j++)
+				{
+					(*vertex)[0]=0.0;
+					(*vertex)[1]=0.0;
+					(*vertex)[2]=0.0;
+					vertex++;
+				}
+				/* x-axis */
+				points[ 1][0]=1.0;
+				points[ 2][0]=1.0;
+				points[ 3][0]=1.0-head_length;
+				points[ 3][1]=half_head_width;
+				points[ 4][0]=1.0;
+				points[ 5][0]=1.0-head_length;
+				points[ 5][2]=half_head_width;
+				points[ 6][0]=1.0;
+				points[ 7][0]=1.0-head_length;
+				points[ 7][1]=-half_head_width;
+				points[ 8][0]=1.0;
+				points[ 9][0]=1.0-head_length;
+				points[ 9][2]=-half_head_width;
+				/* y-axis */
+				points[11][1]=1.0;
+				points[12][1]=1.0;
+				points[13][1]=1.0-head_length;
+				points[13][2]=half_head_width;
+				points[14][1]=1.0;
+				points[15][1]=1.0-head_length;
+				points[15][0]=half_head_width;
+				points[16][1]=1.0;
+				points[17][1]=1.0-head_length;
+				points[17][2]=-half_head_width;
+				points[18][1]=1.0;
+				points[19][1]=1.0-head_length;
+				points[19][0]=-half_head_width;
+				/* z-axis */
+				points[21][2]=1.0;
+				points[22][2]=1.0;
+				points[23][2]=1.0-head_length;
+				points[23][0]=half_head_width;
+				points[24][2]=1.0;
+				points[25][2]=1.0-head_length;
+				points[25][1]=half_head_width;
+				points[26][2]=1.0;
+				points[27][2]=1.0-head_length;
+				points[27][0]=-half_head_width;
+				points[28][2]=1.0;
+				points[29][2]=1.0-head_length;
+				points[29][1]=-half_head_width;
+				if (polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+						15,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL))
+				{
+					if (glyph=CREATE(GT_object)(name,g_POLYLINE,
+							(struct Graphical_material *)NULL))
+					{
+						GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline);
+					}
+				}
+				else
+				{
+					DEALLOCATE(points);
+				}
+			}
+		}
+		if (glyph && labels)
+		{
+			pointset=(struct GT_pointset *)NULL;
+			if (ALLOCATE(points,Triple,3)&&
+				ALLOCATE(text,char *,3)&&
+				ALLOCATE(text[0],char,strlen(labels[0]) + 1)&&
+				ALLOCATE(text[1],char,strlen(labels[1]) + 1)&&
+				ALLOCATE(text[2],char,strlen(labels[2]) + 1)&&
+				ALLOCATE(glyph_name,char,strlen(name)+8))
+			{
+				sprintf(glyph_name,"%s_labels",name);
+				points[0][0]=1.0+label_offset;
+				points[0][1]=0.0;
+				points[0][2]=0.0;
+				strcpy(text[0],labels[0]);
+				points[1][0]=0.0;
+				points[1][1]=1.0+label_offset;
+				points[1][2]=0.0;
+				strcpy(text[1],labels[1]);
+				points[2][0]=0.0;
+				points[2][1]=0.0;
+				points[2][2]=1.0+label_offset;
+				strcpy(text[2],labels[2]);
+				if (pointset=CREATE(GT_pointset)(3,points,text,g_NO_MARKER,0.0,
+					g_NO_DATA,(GTDATA *)NULL,(int *)NULL))
+				{
+					if (labels_object=CREATE(GT_object)(glyph_name,g_POINTSET,
+						(struct Graphical_material *)NULL))
+					{
+						GT_OBJECT_ADD(GT_pointset)(labels_object,/*time*/0.0,pointset);
+						glyph->nextobject=ACCESS(GT_object)(labels_object);
+					}
+				}
+				else
+				{
+					DEALLOCATE(text[0]);
+					DEALLOCATE(text[1]);
+					DEALLOCATE(text[2]);
+					DEALLOCATE(text);
+					DEALLOCATE(points);
+				}
+				DEALLOCATE(glyph_name);
+			}
 		}
 		if (!glyph)
 		{
@@ -1465,6 +1511,8 @@ DESCRIPTION :
 Creates a list of standard glyphs for the cmgui and unemap applications.
 ==============================================================================*/
 {
+	char *labels_xyz[] = {"x","y","z"}, *labels_fsn[] = {"f","s","n"},
+		 *labels_123[] = {"1","2","3"};
 	struct GT_object *glyph, *mirror_glyph;
 	struct LIST(GT_object) *glyph_list;
 
@@ -1481,7 +1529,8 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
-		if (glyph=make_glyph_arrow_solid("arrow_solid",12,2./3.,1./6.))
+		if (glyph=make_glyph_arrow_solid("arrow_solid",/*primary_axis*/1,
+				12,2./3.,1./6.,/*cone_radius*/0.5))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
@@ -1490,7 +1539,28 @@ Creates a list of standard glyphs for the cmgui and unemap applications.
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}
-		if (glyph=make_glyph_axes("axes",0.1,0.025,0.1))
+		if (glyph=make_glyph_axes("axes_xyz",/*make_solid*/0,0.1,0.025,labels_xyz, 0.1))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_axes("axes_fsn",/*make_solid*/0,0.1,0.025,labels_fsn, 0.1))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_axes("axes_123",/*make_solid*/0,0.1,0.025,labels_123, 0.1))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_axes("axes",/*make_solid*/0,0.1,0.025,(char **)NULL, 0.1))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_axes("axes_solid",/*make_solid*/1,0.1,0.025,(char **)NULL, 0.1))
+		{
+			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+		}
+		if (glyph=make_glyph_axes("axes_solid_xyz",/*make_solid*/1,0.1,0.025,
+			labels_xyz, 0.1))
 		{
 			ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
 		}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : glyph.h
 
-LAST MODIFIED : 16 July 2002
+LAST MODIFIED : 10 June 2004
 
 DESCRIPTION :
 Glyphs are GT_objects which contain simple geometric shapes such as
@@ -34,29 +34,32 @@ Creates a graphics object named <name> consisting of a line from <0,0,0> to
 from the shaft.
 ==============================================================================*/
 
-struct GT_object *make_glyph_arrow_solid(char *name,
-	int number_of_segments_around,float shaft_length,float shaft_radius);
+struct GT_object *make_glyph_arrow_solid(char *name, int primary_axis,
+	int number_of_segments_around,float shaft_length,float shaft_radius,
+	float cone_radius);
 /*******************************************************************************
-LAST MODIFIED : 17 July 1998
+LAST MODIFIED : 10 June 2004
 
 DESCRIPTION :
 Creates a graphics object named <name> resembling an arrow made from a cone on
 a cylinder. The base of the arrow is at (0,0,0) while its head lies at (1,0,0).
-The radius of the cone is 0.5 at its base. The cylinder is <shaft_length> long
+The radius of the cone is <cone_radius>. The cylinder is <shaft_length> long
 with its radius given by <shaft_radius>. The ends of the arrow and the cone
-are both closed.
+are both closed.  Primary axis is either 1,2 or 3 and indicates the direction
+the arrow points in.
 ==============================================================================*/
 
-struct GT_object *make_glyph_axes(char *name,float head_length,
-	float half_head_width,float label_offset);
+struct GT_object *make_glyph_axes(char *name, int make_solid, float head_length,
+	float half_head_width,char **labels, float label_offset);
 /*******************************************************************************
-LAST MODIFIED : 20 July 1998
+LAST MODIFIED : 10 June 2004
 
 DESCRIPTION :
 Creates a graphics object named <name> consisting of three axis arrows heading
-from (0,0,0) to 1 in each of their directions. The arrows are made up of lines,
-with a 4-way arrow head so it looks normal from the other two axes. A further
-graphics object containing the axis labels 'x', 'y' and 'z' is attached to it so
+from <0,0,0> to 1 in each of their directions. The arrows are made up of lines,
+with a 4-way arrow head so it looks normal from the other two axes. If <labels>
+is specified then it is assumed to point to an array of 3 strings which will
+be used to label each arrow and are attached to it so
 that the two objects are displayed and destroyed together. The labels are
 located on the respective axes <label_offset> past 1.0.
 The length and width of the arrow heads are specified by the final parameters.
