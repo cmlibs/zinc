@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : graphics_window.uil
 !
-!LAST MODIFIED : 9 May 2000
+!LAST MODIFIED : 28 June 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the 3-D graphics window
@@ -20,8 +20,7 @@ procedure
 	gwin_id_view_all_btn;
 	gwin_id_time_edit_form;
 	gwin_id_perspective_btn;
-	gwin_id_layout_option;
-	gwin_id_layout_menu;
+	gwin_id_layout_mode_form;
 	gwin_id_orthographic_form;
 	gwin_id_ortho_up_option;
 	gwin_id_ortho_up_menu;
@@ -31,7 +30,6 @@ procedure
 	gwin_selection_list_CB;
 	gwin_view_all_btn_CB;
 	gwin_perspective_btn_CB;
-	gwin_layout_mode_CB;
 	gwin_ortho_up_menu_CB;
 	gwin_ortho_front_btn_CB;
 
@@ -89,7 +87,7 @@ object
 			XmForm gwin_time_edit_form;
 			XmToggleButtonGadget gwin_perspective_btn;
 			XmSeparatorGadget {};
-			XmOptionMenu gwin_layout_option;
+			XmForm gwin_layout_mode_form;
 			XmRowColumn gwin_orthographic_form;
 			XmSeparatorGadget {};
 			XmForm gwin_interactive_tool_form;
@@ -275,29 +273,11 @@ object
 			};
 		};
 !*******************************************************************************
-	gwin_layout_option: XmOptionMenu
+	gwin_layout_mode_form: XmForm
 		{
-		controls
-			{
-			XmPulldownMenu gwin_layout_menu;
-			};
 		callbacks
 			{
-			MrmNcreateCallback = procedure gwin_id_layout_option(gwin_structure);
-			};
-		};
-	gwin_layout_menu: XmPulldownMenu
-		{
-		arguments
-			{
-			XmNbuttonFontList = button_font;
-!			XmNlabelFontList = button_font;
-!			XmNtextFontList = button_font;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedure gwin_id_layout_menu(gwin_structure);
-			XmNentryCallback = procedure gwin_layout_mode_CB(gwin_structure);
+			MrmNcreateCallback = procedure gwin_id_layout_mode_form(gwin_structure);
 			};
 		};
 !*******************************************************************************

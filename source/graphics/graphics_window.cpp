@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -22,6 +22,7 @@ interest and set scene_viewer values directly.
 #include <Mrm/MrmPublic.h>
 #include <Mrm/MrmDecls.h>
 
+#include "choose/choose_enumerator.h"
 #include "colour/edit_var.h"
 #include "command/parser.h"
 #include "general/debug.h"
@@ -66,7 +67,7 @@ Module types
 */
 struct Graphics_window
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Contains information for a graphics window.
@@ -79,7 +80,7 @@ Contains information for a graphics window.
 	/* widgets on the Graphics_window */
 	Widget viewing_form,viewing_area1,viewing_area2,viewing_area3,viewing_area4,
 		view_all_button,time_edit_form,time_edit_widget,perspective_button,
-		layout_option,layout_menu,orthographic_form,ortho_up_option,
+		layout_mode_form,layout_mode_widget,orthographic_form,ortho_up_option,
 		ortho_up_menu,ortho_front_button,
 		interactive_toolbar_form,interactive_toolbar_widget;
 	Widget window_shell,main_window;
@@ -182,9 +183,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
         Graphics_window,perspective_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,layout_option)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
-        Graphics_window,layout_menu)
+        Graphics_window,layout_mode_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
         Graphics_window,orthographic_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphics_window, \
@@ -313,69 +312,6 @@ converts the axis number to a three component [float] vector. eg 1 -> (1,0,0).
 
 	return (return_code);
 } /* axis_number_to_axis_vector */
-
-static int Graphics_window_make_layout_mode_option_menu(
-	struct Graphics_window *window)
-/*******************************************************************************
-LAST MODIFIED : 6 October 1998
-
-DESCRIPTION :
-Makes the option menu for choosing the layout mode - simple/orthographic etc.
-==============================================================================*/
-{
-	Arg args[2];
-	enum Graphics_window_layout_mode layout_mode;
-	int num_children,return_code;
-	Widget temp_widget;
-	XmString new_string;
-
-	ENTER(Graphics_window_make_layout_mode_option_menu);
-	if (window)
-	{
-		/* unmanage and destroy current menu items */
-		XtVaGetValues(window->layout_menu,XmNnumChildren,&num_children,NULL);
-		if (0==num_children)
-		{
-			layout_mode=GRAPHICS_WINDOW_LAYOUT_BEFORE_FIRST;
-			for (layout_mode++;layout_mode<GRAPHICS_WINDOW_LAYOUT_AFTER_LAST;
-				layout_mode++)
-			{
-				XtSetArg(args[0],XmNuserData,(XtPointer)layout_mode);
-				new_string=XmStringCreateSimple(
-					Graphics_window_layout_mode_string(layout_mode));
-				XtSetArg(args[1],XmNlabelString,(XtPointer)new_string);
-				if (temp_widget=XmCreatePushButtonGadget(window->layout_menu,
-					Graphics_window_layout_mode_string(layout_mode),args,2))
-				{
-					XtManageChild(temp_widget);
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Graphics_window_make_layout_mode_option_menu.  "
-						"Could not create item");
-					return_code=0;
-				}
-				XmStringFree(new_string);
-			}
-		}
-		else
-		{
-			return_code=1;
-		}
-		XtManageChild(window->layout_option);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_make_layout_mode_option_menu.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Graphics_window_make_layout_mode_option_menu */
 
 static int Graphics_window_read_defaults(
 	struct Graphics_window *graphics_window)
@@ -662,26 +598,23 @@ Called when a new tool is chosen in the interactive_toolbar_widget.
 	LEAVE;
 } /* Graphics_window_update_interactive_tool */
 
-static void Graphics_window_layout_mode_CB(Widget caller,
-	XtPointer *window_void,XmAnyCallbackStruct *call_data)
+static void Graphics_window_layout_mode_CB(Widget widget,
+	void *graphics_window_void,void *layout_mode_string_void)
 /*******************************************************************************
-LAST MODIFIED : 6 October 1998
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
-Callback for change of layout_mode from the layout option menu.
+Callback for change of layout_mode from the layout_mode_widget.
 ==============================================================================*/
 {
-	enum Graphics_window_layout_mode layout_mode;
-	struct Graphics_window *window;
-	Widget layout_mode_button;
+	struct Graphics_window *graphics_window;
 
 	ENTER(Graphics_window_layout_mode_CB);
-	USE_PARAMETER(caller);
-	if ((window=(struct Graphics_window *)window_void)&&call_data&&
-		(layout_mode_button=((XmRowColumnCallbackStruct *)call_data)->widget))
+	USE_PARAMETER(widget);
+	if (graphics_window=(struct Graphics_window *)graphics_window_void)
 	{
-		XtVaGetValues(layout_mode_button,XmNuserData,&layout_mode,NULL);
-		Graphics_window_set_layout_mode(window,layout_mode);
+		Graphics_window_set_layout_mode(graphics_window,
+			Graphics_window_layout_mode_from_string((char *)layout_mode_string_void));
 	}
 	else
 	{
@@ -1517,198 +1450,121 @@ a spaceship/submarine, where:
 } /* modify_Graphics_window_image */
 
 static int modify_Graphics_window_layout(struct Parse_state *state,
-	void *window_void,void *modify_graphics_window_data_void)
+	void *graphics_window_void,void *user_data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 July 1999
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Parser commands for setting the scene and how it is displayed (time, light model
 etc.) in all panes of the <window>.
 ==============================================================================*/
 {
-	char two_d_layout_flag,free_ortho_layout_flag,front_back_layout_flag,
-		orthographic_layout_flag,pseudo_3d_layout_flag,simple_layout_flag;
+	char *layout_mode_string,**valid_strings;
 	double eye_spacing;
-	int height,i,old_height,old_width,return_code,width;
-	struct Graphics_window *window;
+	enum Graphics_window_layout_mode layout_mode,old_layout_mode;
+	int height,number_of_valid_strings,old_height,old_width,return_code,width;
+	struct Graphics_window *graphics_window;
 	struct Graphics_window_ortho_axes ortho_axes;
-	struct Modify_graphics_window_data *modify_graphics_window_data;
-	static struct Modifier_entry
-		layout_mode_option_table[]=
-		{
-			{"2d",NULL,NULL,set_char_flag},
-			{"free_ortho",NULL,NULL,set_char_flag},
-			{"front_back",NULL,NULL,set_char_flag},
-			{"orthographic",NULL,NULL,set_char_flag},
-			{"pseudo_3d",NULL,NULL,set_char_flag},
-			{"simple",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{NULL,NULL,NULL,NULL},
-			{"eye_spacing",NULL,NULL,set_double},
-			{"height",NULL,NULL,set_int_non_negative},
-			{"ortho_axes",NULL,NULL,set_Graphics_window_ortho_axes},
-			{"width",NULL,NULL,set_int_non_negative},
-			{NULL,NULL,NULL,NULL}
-		};
+	struct Option_table *option_table;
 
 	ENTER(modify_Graphics_window_layout);
+	USE_PARAMETER(user_data_void);
 	if (state)
 	{
-		if (modify_graphics_window_data=(struct Modify_graphics_window_data *)
-			modify_graphics_window_data_void)
+		if (state->current_token)
 		{
-			/* Keep the handle in case we need it sometime */
-			USE_PARAMETER(modify_graphics_window_data);
-			if (state->current_token)
+			/* get defaults from scene_viewer for first pane of window */
+			if (graphics_window=(struct Graphics_window *)graphics_window_void)
 			{
-				/* get defaults from scene_viewer for first pane of window */
-				if (window=(struct Graphics_window *)window_void)
-				{
-					Graphics_window_get_viewing_area_size(window,&width,&height);
-					ortho_axes.up=window->ortho_up_axis;
-					ortho_axes.front=window->ortho_front_axis;
-					eye_spacing=window->eye_spacing;
-				}
-				else
-				{
-					width=0;
-					height=0;
-					ortho_axes.up=0;
-					ortho_axes.front=0;
-					eye_spacing=0.0;
-				}
-				old_width=width;
-				old_height=height;
-				two_d_layout_flag=0;
-				free_ortho_layout_flag=0;
-				front_back_layout_flag=0;
-				orthographic_layout_flag=0;
-				pseudo_3d_layout_flag=0;
-				simple_layout_flag=0;
-				i=0;
-				/* layout mode: front_back/orthographics/simple */
-				(layout_mode_option_table[0]).to_be_modified= &two_d_layout_flag;
-				(layout_mode_option_table[1]).to_be_modified= &free_ortho_layout_flag;
-				(layout_mode_option_table[2]).to_be_modified= &front_back_layout_flag;
-				(layout_mode_option_table[3]).to_be_modified= &orthographic_layout_flag;
-				(layout_mode_option_table[4]).to_be_modified= &pseudo_3d_layout_flag;
-				(layout_mode_option_table[5]).to_be_modified= &simple_layout_flag;
-				(option_table[i]).user_data=layout_mode_option_table;
-				i++;
-				/* eye_spacing */
-				(option_table[i]).to_be_modified= &eye_spacing;
-				i++;
-				/* height */
-				(option_table[i]).to_be_modified= &height;
-				i++;
-				/* ortho_axes */
-				(option_table[i]).to_be_modified= &ortho_axes;
-				i++;
-				/* width */
-				(option_table[i]).to_be_modified= &width;
-				i++;
-				if (return_code=process_multiple_options(state,option_table))
-				{
-					if (1<(two_d_layout_flag+free_ortho_layout_flag+front_back_layout_flag
-						+orthographic_layout_flag+pseudo_3d_layout_flag+simple_layout_flag))
-					{
-						display_message(WARNING_MESSAGE,"Only one of "
-							"2d/free_ortho/front_back/orthographic/pseudo_3d/simple");
-						two_d_layout_flag=0;
-						free_ortho_layout_flag=0;
-						front_back_layout_flag=0;
-						orthographic_layout_flag=0;
-						pseudo_3d_layout_flag=0;
-						simple_layout_flag=0;
-					}
-					if (window)
-					{
-						if (two_d_layout_flag)
-						{
-							Graphics_window_set_layout_mode(window,
-								GRAPHICS_WINDOW_LAYOUT_2D);
-						}
-						if (free_ortho_layout_flag)
-						{
-							Graphics_window_set_layout_mode(window,
-								GRAPHICS_WINDOW_LAYOUT_FREE_ORTHO);
-						}
-						if (front_back_layout_flag)
-						{
-							Graphics_window_set_layout_mode(window,
-								GRAPHICS_WINDOW_LAYOUT_FRONT_BACK);
-						}
-						if (orthographic_layout_flag)
-						{
-							Graphics_window_set_layout_mode(window,
-								GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC);
-						}
-						if (pseudo_3d_layout_flag)
-						{
-							Graphics_window_set_layout_mode(window,
-								GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D);
-						}
-						if (simple_layout_flag)
-						{
-							Graphics_window_set_layout_mode(window,
-								GRAPHICS_WINDOW_LAYOUT_SIMPLE);
-						}
-						if ((ortho_axes.up != window->ortho_up_axis)||
-							(ortho_axes.front != window->ortho_front_axis))
-						{
-							Graphics_window_set_orthographic_axes(window,ortho_axes.up,
-								ortho_axes.front);
-							if ((GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC==window->layout_mode)||
-								(GRAPHICS_WINDOW_LAYOUT_FREE_ORTHO==window->layout_mode)||
-								(GRAPHICS_WINDOW_LAYOUT_FRONT_BACK==window->layout_mode))
-							{
-								Graphics_window_set_layout_mode(window,window->layout_mode);
-							}
-						}
-						if (eye_spacing != window->eye_spacing)
-						{
-							Graphics_window_set_eye_spacing(window,eye_spacing);
-							if (GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D==window->layout_mode)
-							{
-								Graphics_window_set_layout_mode(window,window->layout_mode);
-							}
-						}
-						if ((width != old_width) || (height != old_height))
-						{
-							Graphics_window_set_viewing_area_size(window,width,height);
-						}
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"modify_Graphics_window_layout. "
-							"Missing or invalid scene_viewer");
-						display_parse_state_location(state);
-						return_code=0;
-					}
-				}
+				layout_mode=Graphics_window_get_layout_mode(graphics_window);
+				Graphics_window_get_viewing_area_size(graphics_window,&width,&height);
+				ortho_axes.up=graphics_window->ortho_up_axis;
+				ortho_axes.front=graphics_window->ortho_front_axis;
+				eye_spacing=graphics_window->eye_spacing;
 			}
 			else
 			{
-				display_message(WARNING_MESSAGE,"Missing window layout modifications");
-				display_parse_state_location(state);
-				return_code=0;
+				layout_mode=GRAPHICS_WINDOW_LAYOUT_SIMPLE;
+				width=0;
+				height=0;
+				ortho_axes.up=0;
+				ortho_axes.front=0;
+				eye_spacing=0.0;
 			}
+			old_width=width;
+			old_height=height;
+			old_layout_mode=layout_mode;
+
+			option_table=CREATE(Option_table)();
+			/* layout_mode */
+			layout_mode_string=Graphics_window_layout_mode_string(layout_mode);
+			valid_strings=Graphics_window_layout_mode_get_valid_strings(
+				&number_of_valid_strings);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&layout_mode_string);
+			DEALLOCATE(valid_strings);
+			/* eye_spacing */
+			Option_table_add_entry(option_table,"eye_spacing",&eye_spacing,
+				NULL,set_double);
+			/* height */
+			Option_table_add_entry(option_table,"height",&height,
+				NULL,set_int_non_negative);
+			/* ortho_axes */
+			Option_table_add_entry(option_table,"ortho_axes",&ortho_axes,
+				NULL,set_Graphics_window_ortho_axes);
+			/* width */
+			Option_table_add_entry(option_table,"width",&width,
+				NULL,set_int_non_negative);
+			if (return_code=Option_table_multi_parse(option_table,state))
+			{
+				if (graphics_window)
+				{
+					if ((ortho_axes.up != graphics_window->ortho_up_axis)||
+						(ortho_axes.front != graphics_window->ortho_front_axis))
+					{
+						Graphics_window_set_orthographic_axes(graphics_window,
+							ortho_axes.up,ortho_axes.front);
+						/* always force layout to be reset */
+						old_layout_mode=GRAPHICS_WINDOW_LAYOUT_MODE_INVALID;
+					}
+					if (eye_spacing != graphics_window->eye_spacing)
+					{
+						Graphics_window_set_eye_spacing(graphics_window,eye_spacing);
+						/* always force layout to be reset */
+						old_layout_mode=GRAPHICS_WINDOW_LAYOUT_MODE_INVALID;
+					}
+					layout_mode=
+						Graphics_window_layout_mode_from_string(layout_mode_string);
+					if (layout_mode != old_layout_mode)
+					{
+						Graphics_window_set_layout_mode(graphics_window,layout_mode);
+					}
+					if ((width != old_width) || (height != old_height))
+					{
+						Graphics_window_set_viewing_area_size(graphics_window,
+							width,height);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"modify_Graphics_window_layout.  Missing graphics_window");
+					return_code=0;
+				}
+			}
+			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"modify_Graphics_window_layout.  "
-				"Missing modify_graphics_window_data");
+			display_message(WARNING_MESSAGE,"Missing window layout modifications");
+			display_parse_state_location(state);
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"modify_Graphics_window_layout.  Missing state");
+			"modify_Graphics_window_layout.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -2502,7 +2358,7 @@ struct Graphics_window *CREATE(Graphics_window)(char *name,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION:
 Creates a Graphics_window object, window shell and widgets. Returns a pointer
@@ -2514,10 +2370,11 @@ will be printed on the windows title bar.
 ==============================================================================*/
 {
 	Atom WM_DELETE_WINDOW;
-	EDIT_VAR_PRECISION time_value;
-	char *window_title;
+	char **valid_strings,*window_title;
 	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
-	int init_widgets,ortho_front_axis,ortho_up_axis,pane_no,return_code;
+	EDIT_VAR_PRECISION time_value;
+	int init_widgets,number_of_valid_strings,ortho_front_axis,ortho_up_axis,
+		pane_no,return_code;
 	MrmType graphics_window_dialog_class;
 	static MrmRegisterArg callbacks[] =
 	{
@@ -2537,10 +2394,8 @@ will be printed on the windows title bar.
 			DIALOG_IDENTIFY(graphics_window,time_edit_form)},
 		{"gwin_id_perspective_btn",(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,perspective_button)},
-		{"gwin_id_layout_option",(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,layout_option)},
-		{"gwin_id_layout_menu",(XtPointer)
-			DIALOG_IDENTIFY(graphics_window,layout_menu)},
+		{"gwin_id_layout_mode_form",(XtPointer)
+			DIALOG_IDENTIFY(graphics_window,layout_mode_form)},
 		{"gwin_id_orthographic_form",(XtPointer)
 			DIALOG_IDENTIFY(graphics_window,orthographic_form)},
 		{"gwin_id_ortho_up_option",(XtPointer)
@@ -2556,8 +2411,6 @@ will be printed on the windows title bar.
 			(XtPointer)Graphics_window_view_all_button_CB},
 		{"gwin_perspective_btn_CB",
 			(XtPointer)Graphics_window_perspective_button_CB},
-		{"gwin_layout_mode_CB",
-			(XtPointer)Graphics_window_layout_mode_CB},
 		{"gwin_ortho_up_menu_CB",
 			(XtPointer)Graphics_window_ortho_up_menu_CB},
 		{"gwin_ortho_front_btn_CB",
@@ -2640,8 +2493,8 @@ will be printed on the windows title bar.
 				graphics_window->time_edit_form=(Widget)NULL;
 				graphics_window->time_edit_widget=(Widget)NULL;
 				graphics_window->perspective_button=(Widget)NULL;
-				graphics_window->layout_option=(Widget)NULL;
-				graphics_window->layout_menu=(Widget)NULL;
+				graphics_window->layout_mode_form=(Widget)NULL;
+				graphics_window->layout_mode_widget=(Widget)NULL;
 				graphics_window->orthographic_form=(Widget)NULL;
 				graphics_window->ortho_up_option=(Widget)NULL;
 				graphics_window->ortho_up_menu=(Widget)NULL;
@@ -2747,6 +2600,26 @@ will be printed on the windows title bar.
 								{
 									init_widgets=0;
 								}
+								valid_strings=Graphics_window_layout_mode_get_valid_strings(
+									&number_of_valid_strings);
+								if (graphics_window->layout_mode_widget=
+									create_choose_enumerator_widget(
+										graphics_window->layout_mode_form,
+										number_of_valid_strings,valid_strings,
+										Graphics_window_layout_mode_string(
+											graphics_window->layout_mode)))
+								{
+									/* get callbacks for change of layout mode */
+									callback.data=(void *)graphics_window;
+									callback.procedure=Graphics_window_layout_mode_CB;
+									choose_enumerator_set_callback(
+										graphics_window->layout_mode_widget,&callback);
+								}
+								else
+								{
+									init_widgets=0;
+								}
+								DEALLOCATE(valid_strings);
 								/* create the time editing widget */
 								if (!init_widgets)
 								{
@@ -2845,8 +2718,6 @@ will be printed on the windows title bar.
 										graphics_window->ortho_front_axis=0;
 										Graphics_window_set_orthographic_axes(graphics_window,
 											ortho_up_axis,ortho_front_axis);
-										Graphics_window_make_layout_mode_option_menu(
-											graphics_window);
 										/* The time_slider receives messages from the
 											default_time_keeper of the scene */
 										ACCESS(Time_keeper)(graphics_window->time_keeper);
@@ -3344,7 +3215,7 @@ are SCENE_VIEWER_NO_INPUT, SCENE_VIEWER_SELECT and SCENE_VIEWER_TRANSFORM.
 enum Graphics_window_layout_mode Graphics_window_get_layout_mode(
 	struct Graphics_window *window)
 /*******************************************************************************
-LAST MODIFIED : 6 October 1998
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Returns the layout mode in effect on the <window>.
@@ -3361,7 +3232,7 @@ Returns the layout mode in effect on the <window>.
 	{
 		display_message(ERROR_MESSAGE,
 			"Graphics_window_get_layout_mode.  Invalid argument(s)");
-		layout_mode=GRAPHICS_WINDOW_LAYOUT_INVALID;
+		layout_mode=GRAPHICS_WINDOW_LAYOUT_MODE_INVALID;
 	}
 	LEAVE;
 
@@ -3371,7 +3242,7 @@ Returns the layout mode in effect on the <window>.
 int Graphics_window_set_layout_mode(struct Graphics_window *window,
 	enum Graphics_window_layout_mode layout_mode)
 /*******************************************************************************
-LAST MODIFIED : 18 May 1999
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Sets the layout mode in effect on the <window>.
@@ -3379,8 +3250,7 @@ Sets the layout mode in effect on the <window>.
 {
 	double eye[3],eye_distance,front[3],lookat[3],up[3],view[3];
 	enum Scene_viewer_projection_mode projection_mode;
-	int i,new_layout,num_children,pane_no,return_code,temp_layout_mode;
-	Widget *child_list;
+	int new_layout,pane_no,return_code;
 
 	ENTER(Graphics_window_set_layout_mode);
 	if (window)
@@ -3391,19 +3261,10 @@ Sets the layout mode in effect on the <window>.
 			window->layout_mode=layout_mode;
 			/* get the number of panes for the new layout */
 			window->number_of_panes=
-				Graphics_window_layout_number_of_panes(layout_mode);
-			/* make sure the current layout mode is displayed on the option menu */
-			XtVaGetValues(window->layout_menu,
-				XmNnumChildren,&num_children,XmNchildren,&child_list,NULL);
-			for (i=0;i<num_children;i++)
-			{
-				XtVaGetValues(child_list[i],XmNuserData,&temp_layout_mode,NULL);
-				if (temp_layout_mode==layout_mode)
-				{
-					XtVaSetValues(window->layout_option,
-						XmNmenuHistory,child_list[i],NULL);
-				}
-			}
+				Graphics_window_layout_mode_get_number_of_panes(layout_mode);
+			/* make sure the current layout mode is displayed on the chooser */
+			choose_enumerator_set_string(window->layout_mode_widget,
+				Graphics_window_layout_mode_string(layout_mode));
 		}
 		/* get projection mode of pane 0, using parallel for custom */
 		if (SCENE_VIEWER_PERSPECTIVE==
@@ -3527,6 +3388,8 @@ Sets the layout mode in effect on the <window>.
 				Scene_viewer_redraw_now(window->scene_viewer[1]);
 			} break;
 			case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
+			case GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE:
+			case GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D:
 			{
 				if (new_layout)
 				{
@@ -3548,57 +3411,29 @@ Sets the layout mode in effect on the <window>.
 					/* un-grey orthographic view controls */
 					XtSetSensitive(window->orthographic_form,True);
 				}
-				/* two views, tied together front and back */
-				/* set the front view in pane 1 */
-				if (Scene_viewer_get_lookat_parameters(window->scene_viewer[0],
+				if ((GRAPHICS_WINDOW_LAYOUT_FRONT_BACK==layout_mode)||
+					(GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE==layout_mode))
+				{
+					/* set the front view in pane 0 */
+					if (Scene_viewer_get_lookat_parameters(window->scene_viewer[0],
 						&(eye[0]),&(eye[1]),&(eye[2]),
 						&(lookat[0]),&(lookat[1]),&(lookat[2]),&(up[0]),&(up[1]),&(up[2]))&&
-					axis_number_to_axis_vector(window->ortho_up_axis,up)&&
-					axis_number_to_axis_vector(window->ortho_front_axis,front))
-				{
-					view[0]=eye[0]-lookat[0];
-					view[1]=eye[1]-lookat[1];
-					view[2]=eye[2]-lookat[2];
-					eye_distance=normalize3(view);
-					Scene_viewer_set_lookat_parameters(window->scene_viewer[0],
-						lookat[0]+eye_distance*front[0],lookat[1]+eye_distance*front[1],
-						lookat[2]+eye_distance*front[2],lookat[0],lookat[1],lookat[2],
-						up[0],up[1],up[2]);
+						axis_number_to_axis_vector(window->ortho_up_axis,up)&&
+						axis_number_to_axis_vector(window->ortho_front_axis,front))
+					{
+						view[0]=eye[0]-lookat[0];
+						view[1]=eye[1]-lookat[1];
+						view[2]=eye[2]-lookat[2];
+						eye_distance=normalize3(view);
+						Scene_viewer_set_lookat_parameters(window->scene_viewer[0],
+							lookat[0]+eye_distance*front[0],lookat[1]+eye_distance*front[1],
+							lookat[2]+eye_distance*front[2],lookat[0],lookat[1],lookat[2],
+							up[0],up[1],up[2]);
+					}
+					Scene_viewer_redraw_now(window->scene_viewer[0]);
 				}
 				/* put tied views in proper relationship to front view in pane 0 */
 				Graphics_window_view_changed(window,0);
-				/* Graphics_window_view_changed redraws the scene viewers that are
-					 tied to pane 0, but not pane 0 itself, hence: */
-				Scene_viewer_redraw_now(window->scene_viewer[0]);
-			} break;
-			case GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D:
-			{
-				if (new_layout)
-				{
-					/* make sure panes 0 and 1 use same projection, and enable tumble */
-					for (pane_no=0;pane_no<2;pane_no++)
-					{
-						Graphics_window_set_projection_mode(window,pane_no,projection_mode);
-						Scene_viewer_set_transform_rate(window->scene_viewer[pane_no],
-							window->default_translate_rate,window->default_tumble_rate,
-							window->default_zoom_rate);
-					}
-					XtVaSetValues(window->viewing_area1,
-						XmNrightPosition,1,XmNbottomPosition,2,NULL);
-					XtVaSetValues(window->viewing_area2,
-						XmNbottomPosition,2,NULL);
-					XtManageChild(window->viewing_area2);
-					XtUnmanageChild(window->viewing_area3);
-					XtUnmanageChild(window->viewing_area4);
-					/* un-grey orthographic view controls */
-					XtSetSensitive(window->orthographic_form,False);
-				}
-				/* two views tied together, separated by eye spacing */
-				/* put tied views in proper relationship to view in pane 0 */
-				Graphics_window_view_changed(window,0);
-				/* Graphics_window_view_changed redraws the scene viewers that are
-					 tied to pane 0, but not pane 0 itself, hence: */
-				Scene_viewer_redraw_now(window->scene_viewer[0]);
 			} break;
 			default:
 			{
@@ -3762,7 +3597,7 @@ Returns the projection mode used by pane <pane_no> of <window>.
 int Graphics_window_set_projection_mode(struct Graphics_window *window,
 	int pane_no,enum Scene_viewer_projection_mode projection_mode)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Sets the <projection_mode> used by pane <pane_no> of <window>. Allowable values
@@ -3777,7 +3612,7 @@ Must call Graphics_window_view_changed after changing tied pane.
 	if (window&&(0<=pane_no)&&(pane_no<window->number_of_panes)&&
 		(window->scene_viewer[pane_no]))
 	{
-		if (Graphics_window_layout_projection_mode_valid_for_pane(
+		if (Graphics_window_layout_mode_is_projection_mode_valid_for_pane(
 			window->layout_mode,pane_no,projection_mode))
 		{
 			if (return_code=Scene_viewer_set_projection_mode(
@@ -3795,7 +3630,7 @@ Must call Graphics_window_view_changed after changing tied pane.
 					{
 						XtVaSetValues(window->perspective_button,XmNset,False,NULL);
 					}
-					if ((!Graphics_window_layout_projection_mode_valid_for_pane(
+					if ((!Graphics_window_layout_mode_is_projection_mode_valid_for_pane(
 						window->layout_mode,pane_no,SCENE_VIEWER_PERSPECTIVE))||
 						(SCENE_VIEWER_CUSTOM==projection_mode))
 					{
@@ -4472,7 +4307,7 @@ with commands for setting these.
 int Graphics_window_view_changed(struct Graphics_window *window,
 	int changed_pane)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Call this function whenever the view in a pane has changed. Depending on the
@@ -4673,8 +4508,18 @@ current layout_mode, the function adjusts the view in all the panes tied to
 					}
 				} break;
 				case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
+				case GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE:
 				{
-					/* panes 0 and 1 tied as front and back */
+					if (GRAPHICS_WINDOW_LAYOUT_FRONT_BACK==window->layout_mode)
+					{
+						/* panes 0 and 1 tied as front and back */
+						angle=PI;
+					}
+					else
+					{
+						/* panes 0 and 1 tied as front and side (third angle) */
+						angle=PI/2.0;
+					}
 					/* first give each tied scene viewer the same lookat parameters,
 						 viewing volume (except for near and far) and projection_mode */
 					for (pane_no=0;pane_no<window->number_of_panes;pane_no++)
@@ -4693,13 +4538,13 @@ current layout_mode, the function adjusts the view in all the panes tied to
 						case 0:
 						{
 							Scene_viewer_rotate_about_lookat_point(window->scene_viewer[1],
-								up,-PI);
+								up,angle);
 							Scene_viewer_redraw_now(window->scene_viewer[1]);
 						} break;
 						case 1:
 						{
 							Scene_viewer_rotate_about_lookat_point(window->scene_viewer[0],
-								up,PI);
+								up,-angle);
 							Scene_viewer_redraw_now(window->scene_viewer[0]);
 						} break;
 					}
@@ -5548,7 +5393,7 @@ This writes the first scene viewer of the graphics window to a file.
 char *Graphics_window_layout_mode_string(
 	enum Graphics_window_layout_mode layout_mode)
 /*******************************************************************************
-LAST MODIFIED : 18 May 1999
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Returns a string label for the <layout_mode>, used in widgets and parsing.
@@ -5560,13 +5405,9 @@ NOTE: Calling function must not deallocate returned string.
 	ENTER(Graphics_window_layout_mode_string);
 	switch (layout_mode)
 	{
-		case GRAPHICS_WINDOW_LAYOUT_SIMPLE:
+		case GRAPHICS_WINDOW_LAYOUT_2D:
 		{
-			return_string="simple";
-		} break;
-		case GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC:
-		{
-			return_string="orthographic";
+			return_string="2d";
 		} break;
 		case GRAPHICS_WINDOW_LAYOUT_FREE_ORTHO:
 		{
@@ -5576,13 +5417,21 @@ NOTE: Calling function must not deallocate returned string.
 		{
 			return_string="front_back";
 		} break;
+		case GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE:
+		{
+			return_string="front_side";
+		} break;
+		case GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC:
+		{
+			return_string="orthographic";
+		} break;
 		case GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D:
 		{
 			return_string="pseudo_3d";
 		} break;
-		case GRAPHICS_WINDOW_LAYOUT_2D:
+		case GRAPHICS_WINDOW_LAYOUT_SIMPLE:
 		{
-			return_string="2d";
+			return_string="simple";
 		} break;
 		default:
 		{
@@ -5596,10 +5445,110 @@ NOTE: Calling function must not deallocate returned string.
 	return (return_string);
 } /* Graphics_window_layout_mode_string */
 
-int Graphics_window_layout_number_of_panes(
+char **Graphics_window_layout_mode_get_valid_strings(
+	int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 28 June 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
+Graphics_window_layout_modes - obtained from function
+Graphics_window_layout_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+	enum Graphics_window_layout_mode layout_mode;
+	int i;
+
+	ENTER(Graphics_window_layout_mode_get_valid_strings);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=0;
+		layout_mode=GRAPHICS_WINDOW_LAYOUT_MODE_BEFORE_FIRST;
+		layout_mode++;
+		while (layout_mode<GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST)
+		{
+			(*number_of_valid_strings)++;
+			layout_mode++;
+		}
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			layout_mode=GRAPHICS_WINDOW_LAYOUT_MODE_BEFORE_FIRST;
+			layout_mode++;
+			i=0;
+			while (layout_mode<GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST)
+			{
+				valid_strings[i]=Graphics_window_layout_mode_string(layout_mode);
+				i++;
+				layout_mode++;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Graphics_window_layout_mode_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_layout_mode_get_valid_strings.  Invalid argument");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Graphics_window_layout_mode_get_valid_strings */
+
+enum Graphics_window_layout_mode Graphics_window_layout_mode_from_string(
+	char *layout_mode_string)
+/*******************************************************************************
+LAST MODIFIED : 28 June 2000
+
+DESCRIPTION :
+Returns the <Graphics_window_layout_mode> described by <layout_mode_string>,
+or GRAPHICS_WINDOW_LAYOUT_MODE_INVALID if not recognized.
+==============================================================================*/
+{
+	enum Graphics_window_layout_mode layout_mode;
+
+	ENTER(Graphics_window_layout_mode_from_string);
+	if (layout_mode_string)
+	{
+		layout_mode=GRAPHICS_WINDOW_LAYOUT_MODE_BEFORE_FIRST;
+		layout_mode++;
+		while ((layout_mode<GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST)&&
+			(!fuzzy_string_compare_same_length(layout_mode_string,
+				Graphics_window_layout_mode_string(layout_mode))))
+		{
+			layout_mode++;
+		}
+		if (GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST==layout_mode)
+		{
+			layout_mode=GRAPHICS_WINDOW_LAYOUT_MODE_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_layout_mode_from_string.  Invalid argument");
+		layout_mode=GRAPHICS_WINDOW_LAYOUT_MODE_INVALID;
+	}
+	LEAVE;
+
+	return (layout_mode);
+} /* Graphics_window_layout_mode_from_string */
+
+
+
+
+
+
+int Graphics_window_layout_mode_get_number_of_panes(
 	enum Graphics_window_layout_mode layout_mode)
 /*******************************************************************************
-LAST MODIFIED : 18 May 1999
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Returns the number of panes in a graphics window with the given <layout_mode>.
@@ -5607,7 +5556,7 @@ Returns the number of panes in a graphics window with the given <layout_mode>.
 {
 	int number_of_panes;
 
-	ENTER(Graphics_window_layout_number_of_panes);
+	ENTER(Graphics_window_layout_mode_get_number_of_panes);
 	switch (layout_mode)
 	{
 		case GRAPHICS_WINDOW_LAYOUT_SIMPLE:
@@ -5621,6 +5570,7 @@ Returns the number of panes in a graphics window with the given <layout_mode>.
 			number_of_panes=4;
 		} break;
 		case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
+		case GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE:
 		case GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D:
 		{
 			number_of_panes=2;
@@ -5628,20 +5578,20 @@ Returns the number of panes in a graphics window with the given <layout_mode>.
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"Graphics_window_layout_number_of_panes.  Unknown layout mode");
+				"Graphics_window_layout_mode_get_number_of_panes.  Unknown layout mode");
 			number_of_panes=0;
 		}
 	}
 	LEAVE;
 
 	return (number_of_panes);
-} /* Graphics_window_layout_number_of_panes */
+} /* Graphics_window_layout_mode_get_number_of_panes */
 
-int Graphics_window_layout_projection_mode_valid_for_pane(
+int Graphics_window_layout_mode_is_projection_mode_valid_for_pane(
 	enum Graphics_window_layout_mode layout_mode,int pane_no,
 	enum Scene_viewer_projection_mode projection_mode)
 /*******************************************************************************
-LAST MODIFIED : 18 May 1999
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Returns true if the <projection_mode> can be used with pane <pane_no> of a
@@ -5650,7 +5600,7 @@ graphics window with the given <layout_mode>.
 {
 	int return_code;
 
-	ENTER(Graphics_window_layout_projection_mode_valid_for_pane);
+	ENTER(Graphics_window_layout_mode_is_projection_mode_valid_for_pane);
 	switch (layout_mode)
 	{
 		case GRAPHICS_WINDOW_LAYOUT_SIMPLE:
@@ -5675,6 +5625,7 @@ graphics window with the given <layout_mode>.
 				((1<=pane_no)&&(4>pane_no)&&(SCENE_VIEWER_PARALLEL==projection_mode));
 		} break;
 		case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
+		case GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE:
 		case GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D:
 		{
 			return_code=(0<=pane_no)&&(2>pane_no)&&(
@@ -5684,7 +5635,7 @@ graphics window with the given <layout_mode>.
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"Graphics_window_layout_projection_mode_valid_for_pane.  "
+				"Graphics_window_layout_mode_is_projection_mode_valid_for_pane.  "
 				"Unknown layout mode");
 			return_code=0;
 		}
@@ -5692,4 +5643,4 @@ graphics window with the given <layout_mode>.
 	LEAVE;
 
 	return (return_code);
-} /* Graphics_window_layout_projection_mode_valid_for_pane */
+} /* Graphics_window_layout_mode_is_projection_mode_valid_for_pane */

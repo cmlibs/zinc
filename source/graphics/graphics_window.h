@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.h
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Interface file for opening and closing and working a CMISS 3D display window.
@@ -29,7 +29,7 @@ Global/Public types
 
 enum Graphics_window_layout_mode
 /*******************************************************************************
-LAST MODIFIED : 18 May 1999
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Must ensure all the types defined here are handled by functions referring to
@@ -38,15 +38,16 @@ Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
 without knowing which order the types are in.
 ==============================================================================*/
 {
-	GRAPHICS_WINDOW_LAYOUT_INVALID,
-	GRAPHICS_WINDOW_LAYOUT_BEFORE_FIRST,
-	GRAPHICS_WINDOW_LAYOUT_SIMPLE,
-	GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC,
+	GRAPHICS_WINDOW_LAYOUT_MODE_INVALID,
+	GRAPHICS_WINDOW_LAYOUT_MODE_BEFORE_FIRST,
+	GRAPHICS_WINDOW_LAYOUT_2D,
 	GRAPHICS_WINDOW_LAYOUT_FREE_ORTHO,
 	GRAPHICS_WINDOW_LAYOUT_FRONT_BACK,
+	GRAPHICS_WINDOW_LAYOUT_FRONT_SIDE,
+	GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC,
 	GRAPHICS_WINDOW_LAYOUT_PSEUDO_3D,
-	GRAPHICS_WINDOW_LAYOUT_2D,
-	GRAPHICS_WINDOW_LAYOUT_AFTER_LAST
+	GRAPHICS_WINDOW_LAYOUT_SIMPLE,
+	GRAPHICS_WINDOW_LAYOUT_MODE_AFTER_LAST
 };
 
 struct Graphics_window;
@@ -478,20 +479,42 @@ Returns a string label for the <layout_mode>, used in widgets and parsing.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 
-int Graphics_window_layout_number_of_panes(
+char **Graphics_window_layout_mode_get_valid_strings(
+	int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 28 June 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for valid
+Graphics_window_layout_modes - obtained from function
+Graphics_window_layout_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum Graphics_window_layout_mode Graphics_window_layout_mode_from_string(
+	char *layout_mode_string);
+/*******************************************************************************
+LAST MODIFIED : 28 June 2000
+
+DESCRIPTION :
+Returns the <Graphics_window_layout_mode> described by <layout_mode_string>,
+or GRAPHICS_WINDOW_LAYOUT_MODE_INVALID if not recognized.
+==============================================================================*/
+
+int Graphics_window_layout_mode_get_number_of_panes(
 	enum Graphics_window_layout_mode layout_mode);
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Returns the number of panes in a graphics window with the given <layout_mode>.
 ==============================================================================*/
 
-int Graphics_window_layout_projection_mode_valid_for_pane(
+int Graphics_window_layout_mode_is_projection_mode_valid_for_pane(
 	enum Graphics_window_layout_mode layout_mode,int pane_no,
 	enum Scene_viewer_projection_mode projection_mode);
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Returns true if the <projection_mode> can be used with pane <pane_no> of a
