@@ -56,6 +56,7 @@ UTILITIES_PATH=$(CMISS_ROOT)/cmgui/source/utilities
 #define Posdat2sigTarget unemap/posdat2sig64
 #define RegisterTarget unemap/register64
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware64
+#define Tuff2sigTarget unemap/tuff2sig64
 #define UniqueChannelsTarget unemap/unique_channels64
 #define Uid2uidhTarget uid2uidh64
 #define Makefile unemap_sgi64.make
@@ -87,6 +88,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 #define Posdat2sigTarget unemap/posdat2sig_optimised
 #define RegisterTarget unemap/register_optimised
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_optimised
+#define Tuff2sigTarget unemap/tuff2sig_optimised
 #define UniqueChannelsTarget unemap/unique_channels_optimised
 #define Uid2uidhTarget uid2uidh
 #define DependMake unemap_sgioptimised.depend
@@ -117,6 +119,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Posdat2sigTarget unemap/posdat2sig_nodes
 #define RegisterTarget unemap/register_nodes
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_nodes
+#define Tuff2sigTarget unemap/tuff2sig_nodes
 #define UniqueChannelsTarget unemap/unique_channels_nodes
 #define Uid2uidhTarget uid2uidh
 #define Makefile unemap_sginodes.make
@@ -149,6 +152,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Posdat2sigTarget unemap/posdat2sig32
 #define RegisterTarget unemap/register32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
+#define Tuff2sigTarget unemap/tuff2sig32
 #define UniqueChannelsTarget unemap/unique_channels32
 #define Uid2uidhTarget uid2uidh32
 #define Makefile unemap_sgi.make
@@ -177,6 +181,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Posdat2sigTarget unemap/posdat2sig32
 #define RegisterTarget unemap/register32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
+#define Tuff2sigTarget unemap/tuff2sig32
 #define UniqueChannelsTarget unemap/unique_channels32
 #define Uid2uidhTarget uid2uidh32
 #define Makefile unemap_sgi_memorycheck.make
@@ -209,6 +214,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Posdat2sigTarget unemap/posdat2sig_linux
 #define RegisterTarget unemap/register_linux
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux
+#define Tuff2sigTarget unemap/tuff2sig_linux
 #define UniqueChannelsTarget unemap/unique_channels_linux
 #define Uid2uidhTarget uid2uidh_linux
 #define Makefile unemap_linux.make
@@ -651,7 +657,8 @@ utilities : AffineTarget Bmsi2sigTarget Biosense2sigTarget \
 ChangeCalibrationTarget ChangeChannelsTarget ChangeConfigurationTarget \
 ChangeEventsTarget ChangeFrequencyTarget CombineSignalsTarget \
 DifferenceSignalsTarget ExtractSignalTarget Img2sigTarget Plt2cnfgTarget \
-Posdat2sigTarget RegisterTarget TestUnemapHardwareTarget UniqueChannelsTarget
+Posdat2sigTarget RegisterTarget TestUnemapHardwareTarget Tuff2sigTarget \
+UniqueChannelsTarget
 
 AFFINE_SRCS = \
 	unemap/utilities/affine.c \
@@ -853,6 +860,20 @@ TEST_UNEMAP_HARDWARE_SRCS = \
 	user_interface/message.c
 
 BuildNormalTarget(TestUnemapHardwareTarget,$(UTILITIES_PATH),TEST_UNEMAP_HARDWARE_SRCS,TEST_UNEMAP_HARDWARE_OBJSA,TEST_UNEMAP_HARDWARE_OBJSB,TEST_UNEMAP_HARDWARE_OBJS,$(LIB)) 
+
+TUFF2SIG_SRCS = \
+	unemap/utilities/tuff2sig.c \
+	command/parser.c \
+	general/debug.c \
+	general/geometry.c \
+	general/matrix_vector.c \
+	general/myio.c \
+	general/mystring.c \
+	unemap/interpolate.c \
+	unemap/rig.c \
+	user_interface/message.c
+
+BuildNormalTarget(Tuff2sigTarget,$(UTILITIES_PATH),TUFF2SIG_SRCS,TUFF2SIG_OBJSA,TUFF2SIG_OBJSB,TUFF2SIG_OBJS,-lm) 
 
 UNIQUE_CHANNELS_SRCS = \
 	unemap/utilities/unique_channels.c \
