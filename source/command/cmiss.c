@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 8 May 2001
+LAST MODIFIED : 6 July 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -48,6 +48,7 @@ Functions for executing cmiss commands.
 #include "finite_element/finite_element_to_streamlines.h"
 #include "finite_element/grid_field_calculator.h"
 #include "finite_element/import_finite_element.h"
+#include "finite_element/snake.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "general/debug.h"
 #if !defined (WINDOWS_DEV_FLAG)
@@ -62,7 +63,9 @@ Functions for executing cmiss commands.
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_window.h"
 #include "graphics/import_graphics_object.h"
+#if defined (OLD_CODE)
 #include "graphics/interactive_streamlines_dialog.h"
+#endif /* defined (OLD_CODE) */
 #include "graphics/iso_field_calculation.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
@@ -427,7 +430,7 @@ static int FE_element_manager_change_element_group_identifiers(
 	struct GROUP(FE_element) *element_group, enum CM_element_type cm_type,
 	int element_offset, struct Computed_field *sort_by_field)
 /*******************************************************************************
-LAST MODIFIED : 22 December 2000
+LAST MODIFIED : 16 May 2001
 
 DESCRIPTION :
 Changes the identifiers of all elements of <cm_type> in <element_group>.
@@ -445,7 +448,7 @@ identifier changes.
 {
 	int i, number_of_elements, number_of_values, return_code;
 	struct CM_element_information cm, next_spare_element_identifier;
-	struct FE_element *element_with_same_number;
+	struct FE_element *element_with_identifier;
 	struct FE_element_and_values_to_array_data array_data;
 	struct FE_element_count_if_type_data count_data;
 	struct FE_element_values_number *element_values;
@@ -562,10 +565,10 @@ identifier changes.
 					for (i = 0; (i < number_of_elements) && return_code; i++)
 					{
 						cm.number = element_values[i].new_number;
-						if ((element_with_same_number =
+						if ((element_with_identifier =
 							FIND_BY_IDENTIFIER_IN_MANAGER(FE_element, identifier)(
 								&cm, element_manager)) &&
-							(!IS_OBJECT_IN_GROUP(FE_element)(element_with_same_number,
+							(!IS_OBJECT_IN_GROUP(FE_element)(element_with_identifier,
 								element_group)))
 						{
 							display_message(ERROR_MESSAGE,
@@ -586,30 +589,35 @@ identifier changes.
 					for (i = 0; (i < number_of_elements) && return_code; i++)
 					{
 						cm.number = element_values[i].new_number;
-						if (element_with_same_number =
+						element_with_identifier =
 							FIND_BY_IDENTIFIER_IN_GROUP(FE_element, identifier)(
-								&cm, element_group))
+								&cm, element_group);
+						/* only modify if element doesn't already have correct identifier */
+						if (element_with_identifier != element_values[i].element)
 						{
-							while (((struct FE_element *)NULL !=
-								FIND_BY_IDENTIFIER_IN_MANAGER(FE_element, identifier)(
-									&next_spare_element_identifier, element_manager)))
+							if (element_with_identifier)
 							{
-								next_spare_element_identifier.number++;
+								while (((struct FE_element *)NULL !=
+									FIND_BY_IDENTIFIER_IN_MANAGER(FE_element, identifier)(
+										&next_spare_element_identifier, element_manager)))
+								{
+									next_spare_element_identifier.number++;
+								}
+								if (!MANAGER_MODIFY_IDENTIFIER(FE_element, identifier)(
+									element_with_identifier, &next_spare_element_identifier,
+									element_manager))
+								{
+									return_code = 0;
+								}
 							}
 							if (!MANAGER_MODIFY_IDENTIFIER(FE_element, identifier)(
-								element_with_same_number, &next_spare_element_identifier,
-								element_manager))
+								element_values[i].element, &cm, element_manager))
 							{
+								display_message(ERROR_MESSAGE,
+									"FE_element_manager_change_element_group_identifiers.  "
+									"Could not change element identifier");
 								return_code = 0;
 							}
-						}
-						if (!MANAGER_MODIFY_IDENTIFIER(FE_element, identifier)(
-							element_values[i].element, &cm, element_manager))
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_manager_change_element_group_identifiers.  "
-								"Could not change element identifier");
-							return_code = 0;
 						}
 					}
 				}
@@ -752,7 +760,7 @@ static int FE_node_manager_change_node_group_identifiers(
 	struct MANAGER(FE_node) *node_manager, struct GROUP(FE_node) *node_group,
 	int node_offset, struct Computed_field *sort_by_field)
 /*******************************************************************************
-LAST MODIFIED : 22 December 2000
+LAST MODIFIED : 16 May 2001
 
 DESCRIPTION :
 Changes the identifiers of all nodes in <node_group>.
@@ -769,7 +777,7 @@ identifier changes.
 ==============================================================================*/
 {
 	int i, next_spare_node_number, number_of_nodes, number_of_values, return_code;
-	struct FE_node *node_with_same_number;
+	struct FE_node *node_with_identifier;
 	struct FE_node_and_values_to_array_data array_data;
 	struct FE_node_values_number *node_values;
 
@@ -873,10 +881,10 @@ identifier changes.
 					/* check no new numbers are in use by nodes not in node_group */
 					for (i = 0; (i < number_of_nodes) && return_code; i++)
 					{
-						if ((node_with_same_number =
+						if ((node_with_identifier =
 							FIND_BY_IDENTIFIER_IN_MANAGER(FE_node, cm_node_identifier)(
 								node_values[i].new_number, node_manager)) &&
-							(!IS_OBJECT_IN_GROUP(FE_node)(node_with_same_number, node_group)))
+							(!IS_OBJECT_IN_GROUP(FE_node)(node_with_identifier, node_group)))
 						{
 							display_message(ERROR_MESSAGE,
 								"FE_node_manager_change_node_group_identifiers.  "
@@ -894,25 +902,30 @@ identifier changes.
 						node_values[number_of_nodes - 1].new_number + 1;
 					for (i = 0; (i < number_of_nodes) && return_code; i++)
 					{
-						if (node_with_same_number =
+						node_with_identifier =
 							FIND_BY_IDENTIFIER_IN_GROUP(FE_node, cm_node_identifier)(
-								node_values[i].new_number, node_group))
+								node_values[i].new_number, node_group);
+						/* only modify if node doesn't already have correct identifier */
+						if (node_with_identifier != node_values[i].node)
 						{
-							next_spare_node_number =
-								get_next_FE_node_number(node_manager, next_spare_node_number);
-							if (!MANAGER_MODIFY_IDENTIFIER(FE_node, cm_node_identifier)(
-								node_with_same_number, next_spare_node_number, node_manager))
+							if (node_with_identifier)
 							{
+								next_spare_node_number =
+									get_next_FE_node_number(node_manager, next_spare_node_number);
+								if (!MANAGER_MODIFY_IDENTIFIER(FE_node, cm_node_identifier)(
+									node_with_identifier, next_spare_node_number, node_manager))
+								{
+									return_code = 0;
+								}
+							}
+							if (!MANAGER_MODIFY_IDENTIFIER(FE_node, cm_node_identifier)(
+								node_values[i].node, node_values[i].new_number, node_manager))
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_node_manager_change_node_group_identifiers.  "
+									"Could not change node identifier");
 								return_code = 0;
 							}
-						}
-						if (!MANAGER_MODIFY_IDENTIFIER(FE_node, cm_node_identifier)(
-							node_values[i].node, node_values[i].new_number, node_manager))
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_node_manager_change_node_group_identifiers.  "
-								"Could not change node identifier");
-							return_code = 0;
 						}
 					}
 				}
@@ -4866,7 +4879,7 @@ new slider.
 static int gfx_create_node_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 6 July 2001
 
 DESCRIPTION :
 Executes a GFX CREATE NODE_VIEWER command.
@@ -4905,10 +4918,15 @@ Executes a GFX CREATE NODE_VIEWER command.
 				}
 				else
 				{
-					if (command_data->node_viewer=CREATE(Node_viewer)(
-						&(command_data->node_viewer),"Node Viewer",
-						command_data->node_manager,(struct FE_node *)NULL,
-						command_data->node_selection,command_data->computed_field_package,
+					if (command_data->node_viewer = CREATE(Node_viewer)(
+						&(command_data->node_viewer),
+						"Node Viewer",
+						(struct FE_node *)NULL,
+						command_data->node_manager,
+						command_data->node_manager,
+						command_data->element_manager,
+						command_data->node_selection,
+						command_data->computed_field_package,
 						command_data->user_interface))
 					{
 						return_code=1;
@@ -4941,7 +4959,7 @@ Executes a GFX CREATE NODE_VIEWER command.
 static int gfx_create_data_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 6 July 2001
 
 DESCRIPTION :
 Executes a GFX CREATE DATA_VIEWER command.
@@ -4980,10 +4998,15 @@ Executes a GFX CREATE DATA_VIEWER command.
 				}
 				else
 				{
-					if (command_data->data_viewer=CREATE(Node_viewer)(
-						&(command_data->data_viewer),"Data Viewer",
-						command_data->data_manager,(struct FE_node *)NULL,
-						command_data->data_selection,command_data->computed_field_package,
+					if (command_data->data_viewer = CREATE(Node_viewer)(
+						&(command_data->data_viewer),
+						"Data Viewer",
+						(struct FE_node *)NULL,
+						command_data->data_manager,
+						command_data->node_manager,
+						command_data->element_manager,
+						command_data->data_selection,
+						command_data->computed_field_package,
 						command_data->user_interface))
 					{
 						return_code=1;
@@ -5877,6 +5900,104 @@ Executes a GFX CREATE SCENE command.
 } /* gfx_create_scene */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
+static int gfx_create_snake(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 14 May 2001
+
+DESCRIPTION :
+Executes a GFX CREATE SNAKE command.
+==============================================================================*/
+{
+	float density_factor, stiffness;
+	int number_of_elements, return_code;
+	struct Cmiss_command_data *command_data;
+	struct FE_field *coordinate_field;
+	struct GROUP(FE_element) *element_group;
+	struct Option_table *option_table;
+	struct Set_FE_field_conditional_data set_coordinate_field_data;
+
+	ENTER(gfx_create_snake);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	{
+		coordinate_field = (struct FE_field *)NULL;
+		density_factor = 0.0;
+		element_group = (struct GROUP(FE_element) *)NULL;
+		number_of_elements = 1;
+		stiffness = 0.0;
+
+		option_table = CREATE(Option_table)();
+		/* coordinate */
+		set_coordinate_field_data.fe_field_manager = command_data->fe_field_manager;
+		set_coordinate_field_data.conditional_function =
+			FE_field_is_coordinate_field;
+		set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
+		Option_table_add_entry(option_table, "coordinate", &coordinate_field,
+			&set_coordinate_field_data, set_FE_field_conditional);
+		/* density_factor */
+		Option_table_add_entry(option_table, "density_factor",
+			&density_factor, NULL, set_float_0_to_1_inclusive);
+		/* destination_group */
+		Option_table_add_entry(option_table, "destination_group", &element_group,
+			command_data->element_group_manager, set_FE_element_group);
+		/* number_of_elements */
+		Option_table_add_entry(option_table, "number_of_elements",
+			&number_of_elements, NULL, set_int_positive);
+		/* stiffness */
+		Option_table_add_entry(option_table, "stiffness",
+			&stiffness, NULL, set_float_non_negative);
+		return_code = Option_table_multi_parse(option_table, state);
+		/* no errors, not asking for help */
+		if (return_code)
+		{
+			if (!coordinate_field)
+			{
+				display_message(ERROR_MESSAGE, "gfx create snake.  "
+					"Must specify a coordinate_field to define on elements in snake");
+				return_code = 0;
+			}
+			if (!element_group)
+			{
+				display_message(ERROR_MESSAGE, "gfx create snake.  "
+					"Must specify a destination_group to put the snake elements in");
+				return_code = 0;
+			}
+			if (return_code)
+			{
+				return_code = create_FE_element_snake_from_data_points(
+					command_data->element_manager,
+					command_data->node_manager,
+					element_group,
+					command_data->node_group_manager,
+					command_data->basis_manager,
+					coordinate_field,
+					FE_node_selection_get_node_list(command_data->data_selection),
+					number_of_elements,
+					density_factor,
+					stiffness);
+			}
+		} /* parse error, help */
+		DESTROY(Option_table)(&option_table);
+		if (coordinate_field)
+		{
+			DEACCESS(FE_field)(&coordinate_field);
+		}
+		if (element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&element_group);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_create_snake.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_create_snake */
+
 static int gfx_modify_Spectrum(struct Parse_state *state,void *spectrum_void,
 	void *command_data_void)
 /*******************************************************************************
@@ -6703,6 +6824,7 @@ Executes a GFX CREATE STREAMLINES command.
 	return (return_code);
 } /* gfx_create_streamlines */
 
+#if defined (OLD_CODE)
 static int gfx_create_interactive_streamline(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -7094,6 +7216,7 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 
 	return (return_code);
 } /* gfx_create_interactive_streamline */
+#endif /* defined (OLD_CODE) */
 
 static int gfx_create_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -10124,7 +10247,7 @@ Executes a DETACH command.
 static int execute_command_gfx_create(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 8 May 2001
 
 DESCRIPTION :
 Executes a GFX CREATE command.
@@ -10289,12 +10412,16 @@ Executes a GFX CREATE command.
 					(void *)&create_node_group_slider_data,create_pivot_slider);
 				Option_table_add_entry(option_table,"scene",NULL,
 					command_data_void,gfx_create_scene);
+				Option_table_add_entry(option_table, "snake", NULL,
+					command_data_void, gfx_create_snake);
 				Option_table_add_entry(option_table,"spectrum",NULL,
 					command_data_void,gfx_create_spectrum);
 				Option_table_add_entry(option_table,"streamlines",NULL,
 					command_data_void,gfx_create_streamlines);
+#if defined (OLD_CODE)
 				Option_table_add_entry(option_table,"strline_interactive",NULL,
 					command_data_void,gfx_create_interactive_streamline);
+#endif /* defined (OLD_CODE) */
 				Option_table_add_entry(option_table,"surfaces",NULL,
 					command_data_void,gfx_create_surfaces);
 				Option_table_add_entry(option_table,"texmap",NULL,
@@ -15526,7 +15653,7 @@ DESCRIPTION :
 							modify_g_element_data->position);
 					}
 					/* modify same_settings to match new ones */
-					return_code=GT_element_group_modify_settings(gt_element_group,
+					return_code = GT_element_group_modify_settings(gt_element_group,
 						same_settings,modify_g_element_data->settings);
 					DEACCESS(GT_element_settings)(&same_settings);
 				}
@@ -15547,9 +15674,6 @@ DESCRIPTION :
 						DEACCESS(GT_element_settings)(&same_settings);
 					}
 				}
-				/* rebuild graphics for changed settings */
-				GT_element_group_build_graphics_objects(gt_element_group,
-					(struct FE_element *)NULL,(struct FE_node *)NULL);
 			}
 		}
 		else
@@ -17216,7 +17340,7 @@ movie is being created.
 static int execute_command_gfx_node_tool(struct Parse_state *state,
 	void *data_tool_flag,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 12 September 2000
+LAST MODIFIED : 14 May 2001
 
 DESCRIPTION :
 Executes a GFX NODE_TOOL or GFX_DATA_TOOL command. If <data_tool_flag> is set,
@@ -17225,7 +17349,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 ==============================================================================*/
 {
 	int create_enabled,define_enabled,edit_enabled,motion_update_enabled,
-		return_code,select_enabled;
+		return_code,select_enabled, streaming_create_enabled;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field;
 	struct Node_tool *node_tool;
@@ -17257,6 +17381,8 @@ Which tool that is being modified is passed in <node_tool_void>.
 			edit_enabled=Node_tool_get_edit_enabled(node_tool);
 			motion_update_enabled=Node_tool_get_motion_update_enabled(node_tool);
 			select_enabled=Node_tool_get_select_enabled(node_tool);
+			streaming_create_enabled =
+				Node_tool_get_streaming_create_enabled(node_tool);
 			node_group=Node_tool_get_node_group(node_tool);
 		}
 		else
@@ -17267,6 +17393,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 			edit_enabled=0;
 			motion_update_enabled=0;
 			select_enabled=1;
+			streaming_create_enabled = 0;
 			node_group=(struct GROUP(FE_node) *)NULL;
 		}
 		if (coordinate_field)
@@ -17302,7 +17429,10 @@ Which tool that is being modified is passed in <node_tool_void>.
 			&motion_update_enabled);
 		/* select/no_select */
 		Option_table_add_switch(option_table,"select","no_select",&select_enabled);
-		if (return_code=Option_table_multi_parse(option_table,state))
+		/* streaming_create/no_streaming_create */
+		Option_table_add_switch(option_table, "streaming_create",
+			"no_streaming_create", &streaming_create_enabled);
+		if (return_code = Option_table_multi_parse(option_table,state))
 		{
 			if (node_tool)
 			{
@@ -17312,6 +17442,8 @@ Which tool that is being modified is passed in <node_tool_void>.
 				Node_tool_set_coordinate_field(node_tool,coordinate_field);
 				Node_tool_set_create_enabled(node_tool,create_enabled);
 				Node_tool_set_node_group(node_tool,node_group);
+				Node_tool_set_streaming_create_enabled(node_tool,
+					streaming_create_enabled);
 				Node_tool_set_motion_update_enabled(node_tool,motion_update_enabled);
 			}
 			else
@@ -18946,7 +19078,7 @@ Executes a GFX UNSELECT command.
 static int gfx_set_axis_length(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 9 May 1999
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Sets the axis length from the command line.
@@ -18960,31 +19092,24 @@ Sets the axis length from the command line.
 		{"scene",NULL,NULL,set_Scene},
 		{NULL,NULL,NULL,set_special_float3}
 	};
-	Triple axis_lengths,old_axis_lengths;
+	Triple axis_lengths;
 
 	ENTER(gfx_set_axis_length);
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
-			scene=command_data->default_scene;
+			scene = command_data->default_scene;
 			ACCESS(Scene)(scene);
-			Scene_get_axis_lengths(scene,axis_lengths);
-			(option_table[0]).to_be_modified= &scene;
-			(option_table[0]).user_data=command_data->scene_manager;
-			(option_table[1]).to_be_modified= axis_lengths;
-			(option_table[1]).user_data= "*";
-			if (return_code=process_multiple_options(state,option_table))
+			Scene_get_axis_lengths(scene, axis_lengths);
+			(option_table[0]).to_be_modified = &scene;
+			(option_table[0]).user_data = command_data->scene_manager;
+			(option_table[1]).to_be_modified = axis_lengths;
+			(option_table[1]).user_data = "*";
+			if (return_code = process_multiple_options(state, option_table))
 			{
-				/* update scene only if changed */
-				Scene_get_axis_lengths(scene,old_axis_lengths);
-				if ((axis_lengths[0] != old_axis_lengths[0])||
-					(axis_lengths[1] != old_axis_lengths[1])||
-					(axis_lengths[2] != old_axis_lengths[2]))
-				{
-					Scene_set_axis_lengths(scene,axis_lengths);
-				}
+				return_code = Scene_set_axis_lengths(scene, axis_lengths);
 			}
 			DEACCESS(Scene)(&scene);
 		}
@@ -18992,13 +19117,13 @@ Sets the axis length from the command line.
 		{
 			display_message(ERROR_MESSAGE,
 				"gfx_set_axis_length.  Missing command_data");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"gfx_set_axis_length.  Missing state");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -19036,17 +19161,13 @@ Sets the axis material from the command line.
 			ACCESS(Scene)(scene);
 			axis_material=Scene_get_axis_material(scene);
 			ACCESS(Graphical_material)(axis_material);
-			(option_table[0]).to_be_modified= &scene;
-			(option_table[0]).user_data=command_data->scene_manager;
-			(option_table[1]).to_be_modified= &axis_material;
-			(option_table[1]).user_data=command_data->graphical_material_manager;
+			(option_table[0]).to_be_modified = &scene;
+			(option_table[0]).user_data = command_data->scene_manager;
+			(option_table[1]).to_be_modified = &axis_material;
+			(option_table[1]).user_data = command_data->graphical_material_manager;
 			if (return_code=process_multiple_options(state,option_table))
 			{
-				/* update scene only if changed */
-				if (axis_material != Scene_get_axis_material(scene))
-				{
-					Scene_set_axis_material(scene,axis_material);
-				}
+				Scene_set_axis_material(scene, axis_material);
 			}
 			DEACCESS(Graphical_material)(&axis_material);
 			DEACCESS(Scene)(&scene);
@@ -19144,70 +19265,6 @@ Sets the axis origin of a scene from the command line.
 	return (return_code);
 } /* gfx_set_axis_origin */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if defined (OLD_CODE)
-#if !defined (WINDOWS_DEV_FLAG)
-static int gfx_set_axis_visibility(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 19 October 1998
-
-DESCRIPTION :
-Sets the axis visibility from the command line.
-==============================================================================*/
-{
-	enum GT_visibility_type axis_visibility;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	struct Scene *scene;
-	static struct Modifier_entry option_table[]=
-	{
-		{"scene",NULL,NULL,set_Scene},
-		{NULL,NULL,NULL,NULL}
-	};
-
-	ENTER(gfx_set_axis_visibility);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			scene=command_data->default_scene;
-			ACCESS(Scene)(scene);
-			axis_visibility=Scene_get_axis_visibility(scene);
-			(option_table[0]).to_be_modified= &scene;
-			if (return_code=process_multiple_options(state,option_table))
-			{
-				if (g_VISIBLE==Scene_get_axis_visibility(scene))
-				{
-					axis_visibility=g_INVISIBLE;
-				}
-				else
-				{
-					axis_visibility=g_VISIBLE;
-				}
-				Scene_set_axis_visibility(scene,axis_visibility);
-			}
-			DEACCESS(Scene)(&scene);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_set_axis_visibility.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_set_axis_visibility.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_set_axis_visibility */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-#endif /* defined (OLD_CODE) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_set_background(struct Parse_state *state,
