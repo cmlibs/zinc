@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 27 April 2001
+LAST MODIFIED : 22 July 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -18,6 +18,15 @@ Functions for manipulating finite element structures.
 #define NOT_FINITE_ELEMENT_EXCEPT_FOR_FE_node
 	/*???DB.  Temporary.  Need because there are problems with indexed lists.
 		What are the problems ? */
+
+/*???DB.  Testing */
+#define INHERITED_POLYGON_BLENDING
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  SMOOTH_POLYGONS is only done for INHERITED_POLYGON_BLENDING */
+/*???DB.  SMOOTH_POLYGONS was previously ALLOW_POLYGON_REORDERING, but
+	decided to allow coordinate reordering except for polygons */
+#define SMOOTH_POLYGONS
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -767,7 +776,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 				double *dest_array,*source_array,**array_address;				
 				/* get number of array values from source */		 
 				number_of_array_values = *((int *)source);
-				if(number_of_array_values) /* no array values, source array is NULL*/
+				if (number_of_array_values) /* no array values, source array is NULL*/
 				{
 					/* get address of array from source */			
 					array_address = (double **)(source+sizeof(int));
@@ -778,7 +787,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					{
 						/* copy values into the dest array */
 						memcpy(dest_array,source_array,array_size);
-						/* copy the number of array values into the dest values_storage */			 
+						/* copy the number of array values into the dest values_storage */
 						*((int *)dest) = number_of_array_values;
 						/* copy the address of the new array into the dest values_storage*/	
 						array_address = (double **)(dest+sizeof(int));
@@ -793,13 +802,14 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 				}
 				else
 				{
-					/* copy the number of array values = 0 into the dest values_storage */			 
+					/* copy the number of array values = 0 into the dest values_storage */
 					*((int *)dest) = 0;
-					/* copy the  NULL address of the new array into the dest values_storage*/	
+					/* copy the  NULL address of the new array into the dest
+						values_storage*/	
 					array_address = (double **)(dest+sizeof(int));
 					*array_address = (double *)NULL;		
 				}
-			}break; 
+			} break; 
 			case FE_VALUE_ARRAY_VALUE:				
 			{
 				FE_value *dest_array,*source_array,**array_address;				
@@ -837,7 +847,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					array_address = (FE_value **)(dest+sizeof(int));
 					*array_address = (FE_value *)NULL;		
 				}
-			}break;
+			} break;
 			case FLT_ARRAY_VALUE:		
 			{
 				float *dest_array,*source_array,**array_address;				
@@ -875,7 +885,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					array_address = (float **)(dest+sizeof(int));
 					*array_address = (float *)NULL;		
 				}	
-			}break;
+			} break;
 			case SHORT_ARRAY_VALUE:		
 			{
 				short *dest_array,*source_array,**array_address;				
@@ -913,7 +923,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					array_address = (short **)(dest+sizeof(int));
 					*array_address = (short *)NULL;		
 				}	
-			}break;	
+			} break;	
 			case INT_ARRAY_VALUE:			
 			{
 				int *dest_array,*source_array,**array_address;				
@@ -951,7 +961,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					array_address = (int **)(dest+sizeof(int));
 					*array_address = (int *)NULL;		
 				}	
-			}break;
+			} break;
 			case UNSIGNED_ARRAY_VALUE:
 			{
 				unsigned *dest_array,*source_array,**array_address;				
@@ -989,7 +999,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					array_address = (unsigned **)(dest+sizeof(int));
 					*array_address = (unsigned *)NULL;		
 				}		
-			}break;
+			} break;
 			case STRING_VALUE:
 			{
 				char *dest_array,*source_array,**array_address;			
@@ -1020,13 +1030,13 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					array_address = (char **)(dest);
 					*array_address = (char *)NULL;
 				}
-			}break;		
+			} break;		
 			default:
 			{	
 				display_message(ERROR_MESSAGE,
 					"allocate_and_copy_values_storage_array. Invalis type");
 				return_code = 0;
-			}break;
+			} break;
 		} /*switch(the_value_type) */
 	}
 	else
@@ -3177,17 +3187,16 @@ of <matrix_1> and <matrix_2>.  All matricies are assumed to be stored row-wise.
 	return (product);
 } /* tensor_product */
 
-static int sort_basis_function_numbers(void *number_1_address,
-	void *number_2_address)
+static int sort_integers(void *number_1_address,void *number_2_address)
 /*******************************************************************************
-LAST MODIFIED : 20 June 1993
+LAST MODIFIED : 10 May 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int number_1,number_2,return_code;
 
-	ENTER(sort_basis_function_numbers);
+	ENTER(sort_integers);
 	number_1= *((int *)number_1_address);
 	number_2= *((int *)number_2_address);
 	if (number_1<number_2)
@@ -3208,7 +3217,72 @@ DESCRIPTION :
 	LEAVE;
 
 	return (return_code);
-} /* sort_basis_function_numbers */
+} /* sort_integers */
+
+static int sort_basis_functions(void *tuple_1_void,void *tuple_2_void)
+/*******************************************************************************
+LAST MODIFIED : 13 May 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i,number_of_xi_coordinates,return_code,*tuple_1,*tuple_2;
+
+	ENTER(sort_basis_functions);
+	tuple_1=(int *)tuple_1_void;
+	tuple_2=(int *)tuple_2_void;
+	number_of_xi_coordinates=tuple_1[1];
+	i=number_of_xi_coordinates-1;
+	tuple_1 += 2*number_of_xi_coordinates;
+	tuple_2 += 2*number_of_xi_coordinates;
+	while ((i>0)&&(*tuple_1== *tuple_2))
+	{
+		tuple_1 -= 2;
+		tuple_2 -= 2;
+	}
+	if (*tuple_1< *tuple_2)
+	{
+		return_code= -1;
+	}
+	else
+	{
+		if (*tuple_1> *tuple_2)
+		{
+			return_code=1;
+		}
+		else
+		{
+			tuple_1=(int *)tuple_1_void;
+			tuple_2=(int *)tuple_2_void;
+			i=number_of_xi_coordinates-1;
+			tuple_1 += 2*number_of_xi_coordinates+1;
+			tuple_2 += 2*number_of_xi_coordinates+1;
+			while ((i>0)&&(*tuple_1== *tuple_2))
+			{
+				tuple_1 -= 2;
+				tuple_2 -= 2;
+			}
+			if (*tuple_1< *tuple_2)
+			{
+				return_code= -1;
+			}
+			else
+			{
+				if (*tuple_1> *tuple_2)
+				{
+					return_code=1;
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* sort_basis_functions */
 
 static int monomial_basis_functions(void *type_arguments,
 	FE_value *xi_coordinates,FE_value *function_values)
@@ -3231,13 +3305,6 @@ NB.  xi_1 is varying slowest (xi_n fastest)
 	if ((argument=(int *)type_arguments)&&(xi_coordinate=xi_coordinates)&&
 		function_values)
 	{
-/*???debug */
-/*printf("monomial_basis_functions ");
-for (i=0;i<=argument[0];i++)
-{
-	printf(" %d",argument[i]);
-}
-printf("\n");*/
 		number_of_xi_coordinates= *argument;
 		value=function_values;
 		*value=1;
@@ -3275,6 +3342,179 @@ printf("\n");*/
 	return (return_code);
 } /* monomial_basis_functions */
 
+#if defined (SMOOTH_POLYGONS)
+static int polygon_basis_functions(void *type_arguments,
+	FE_value *xi_coordinates,FE_value *function_values)
+/*******************************************************************************
+LAST MODIFIED : 20 July 2001
+
+SCRIPTION :
+For a polygon
+a) xi1 is circumferential and xi2 is radial.
+b) the nodal basis functions are
+	phi0 = 1 - xi2,  centre node
+				/ xi2 * (1 - n*xi1), 0<=n*xi1<1
+	phi1 = | xi2 * (n*xi1 - (n-1)), n-1<n*xi1<n
+				\ 0, otherwise
+				/ xi2 * (i - n*xi1), i-1<=n*xi1<i
+	phii = | xi2 * (n*xi1 - (i-2)), i-2<n*xi1<i-1 ,  1<i<=n
+				\ 0, otherwise
+	where n is the number of polygon verticies/sides.
+c) the standard basis functions are
+				/ 1, xi1=1
+	s001 = | 1, 0<=n*xi1<1
+				\ 0, otherwise
+	s00i = / 1, i-1<=n*xi1<i ,  2<=i<=n
+				\ 0, otherwise
+	s10i = / n*xi1-i+1, i-1<=n*xi1<i ,  1<=i<=n
+				\ 0, otherwise
+	s01i = xi2 * s00i ,  1<=i<=n
+	s11i = xi2 * s10i ,  1<=i<=n
+???DB.  Should this be
+				/ 0.5, xi1=0 or xi1=1 or n*xi1=1
+	s001 = | 1, 0<n*xi1<1
+				\ 0, otherwise
+				/ 0.5, n*xi1=i-1 or n*xi1=i
+	s00i = | 1, i-1<n*xi1<i           ,  2<=i<=n
+				\ 0, otherwise
+				/ 0.5, n*xi1=i
+	s10i = | n*xi1-i+1, i-1<n*xi1<i ,  1<=i<=n
+				\ 0, otherwise
+	s01i = xi2 * s00i ,  1<=i<=n
+	s11i = xi2 * s10i ,  1<=i<=n
+	to get derivatives right (better) at vertices ?
+d) the blending matrix is
+	1 1 1 . . . 1 0 0 0 . . . 0 -1 -1 -1 . . . -1  0  0  0 . . .  0
+	0 0 0 . . . 0 0 0 0 . . . 0  1  0  0 . . .  0 -1  0  0 . . .  1
+	0 0 0 . . . 0 0 0 0 . . . 0  0  1  0 . . .  0  1 -1  0 . . .  0
+	0 0 0 . . . 0 0 0 0 . . . 0  0  0  1 . . .  0  0  1 -1 . . .  0
+	.             .              .              .              .
+	.             .              .              .              .
+	.             .              .              .              .
+	0 0 0 . . . 0 0 0 0 . . . 0  0  0  0 . . .  1  0  0  0 . 0 1 -1
+==============================================================================*/
+{
+	FE_value basis_function10,basis_function11,save_value,*temp_value,*value,xi,
+		xi_circumferential,*xi_coordinate,xi_power,xi_radial;
+	int *argument,first_polygon_coordinate,i,j,k,number_of_polygon_verticies,
+		number_of_values,number_of_xi_coordinates,offset00,offset01,offset10,
+		offset11,order,polygon_offset,polygon_vertex,return_code;
+
+	ENTER(polygon_basis_functions);
+	if ((argument=(int *)type_arguments)&&(xi_coordinate=xi_coordinates)&&
+		function_values)
+	{
+		number_of_xi_coordinates= *argument;
+		value=function_values;
+		*value=1;
+		number_of_values=1;
+		for (i=number_of_xi_coordinates;i>0;i--)
+		{
+			xi= *xi_coordinate;
+			argument++;
+			order= *argument;
+			if (order<0)
+			{
+				/* polygon */
+				order= -order;
+				/* need to distinguish between first and second polygon coordinates */
+				if (first_polygon_coordinate=order%2)
+				{
+					/* first polygon coordinate */
+					order /= 2;
+					polygon_offset=order%number_of_xi_coordinates;
+					order /= number_of_xi_coordinates;
+					/* first polygon coordinate is circumferential */
+					xi_circumferential=xi;
+					/* second polygon coordinate is radial */
+					xi_radial=xi_coordinate[polygon_offset];
+					/* may be called with xi outside the element (eg. during streamline
+						tracking).  Wrap the circumferential coordinate */
+					xi_circumferential -= floor(xi_circumferential);
+					number_of_polygon_verticies=(-argument[polygon_offset])/2;
+					/*???DB.  Need to do higher order polygons */
+					basis_function10=
+						xi_circumferential*(FE_value)number_of_polygon_verticies;
+					polygon_vertex=(int)(basis_function10);
+					basis_function10 -= (FE_value)polygon_vertex;
+					if (number_of_polygon_verticies==polygon_vertex)
+					{
+						polygon_vertex=0;
+					}
+					basis_function11=xi_radial*basis_function10;
+					temp_value=function_values;
+					offset00=polygon_vertex*number_of_values;
+					offset11=number_of_polygon_verticies*number_of_values;
+					offset10=offset00+offset11;
+					offset01=offset10+offset11;
+					offset11=offset01+offset11;
+					for (j=number_of_values;j>0;j--)
+					{
+						save_value= *temp_value;
+						temp_value[offset00]=save_value;
+						temp_value[offset10]=basis_function10*save_value;
+						temp_value[offset01]=xi_radial*save_value;
+						temp_value[offset11]=basis_function11*save_value;
+						temp_value++;
+					}
+					temp_value=function_values;
+					offset10=number_of_polygon_verticies*number_of_values;
+					offset01=2*offset10;
+					offset11=3*offset10;
+					for (j=offset00;j>0;j--)
+					{
+						*temp_value=0;
+						temp_value[offset10]=0;
+						temp_value[offset01]=0;
+						temp_value[offset11]=0;
+						temp_value++;
+					}
+					temp_value += number_of_values;
+					for (j=(number_of_polygon_verticies-polygon_vertex-1)*
+						number_of_values;j>0;j--)
+					{
+						*temp_value=0;
+						temp_value[offset10]=0;
+						temp_value[offset01]=0;
+						temp_value[offset11]=0;
+						temp_value++;
+					}
+					number_of_values *= 4*number_of_polygon_verticies;
+					value=function_values+(number_of_values-1);
+				}
+			}
+			else
+			{
+				/* not polygon */
+				xi_power=xi;
+				for (j=order;j>0;j--)
+				{
+					temp_value=function_values;
+					for (k=number_of_values;k>0;k--)
+					{
+						value++;
+						*value=(*temp_value)*xi_power;
+						temp_value++;
+					}
+					xi_power *= xi;
+				}
+				number_of_values *= (order+1);
+			}
+			xi_coordinate++;
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"polygon_basis_functions.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* polygon_basis_functions */
+#else /* defined (SMOOTH_POLYGONS) */
 static int polygon_basis_functions(void *type_arguments,
 	FE_value *xi_coordinates,FE_value *function_values)
 /*******************************************************************************
@@ -3437,6 +3677,7 @@ d) the blending matrix is
 
 	return (return_code);
 } /* polygon_basis_functions */
+#endif /* defined (SMOOTH_POLYGONS) */
 
 struct FE_element_field_lists_merge_data
 /*******************************************************************************
@@ -7093,24 +7334,29 @@ value for a <component>.  The storage for the nodes array
 	return (return_code);
 } /* global_to_element_map_nodes */
 
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+#if defined (SMOOTH_POLYGONS)
 static int calculate_standard_basis_transformation(struct FE_basis *basis,
 	FE_value *coordinate_transformation,int inherited_dimension,
 	int **inherited_arguments_address,int *number_of_inherited_values_address,
-	FE_value **blending_matrix_address,int **field_to_element_address,
-	int **reorder_coordinates_address)
+	Standard_basis_function **inherited_standard_basis_function_address,
+	FE_value **blending_matrix_address)
 /*******************************************************************************
-LAST MODIFIED : 28 July 1998
+LAST MODIFIED : 20 July 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	FE_value *blending_matrix,*expanded_coordinate_transformation,*transformation,
-		*value;
-	int basis_dimension,*field_to_element,i,*inherited_standard_basis_argument,
-		*inherited_standard_basis_arguments,j,k,l,number_of_inherited_values,
-		number_of_polygon_verticies,offset,order,p,polygon_offset,
-		*reorder_coordinate,return_code,row_size,*standard_basis_argument,
-		*standard_basis_arguments;
+	FE_value *blending_matrix,*expanded_coordinate_transformation,
+		*inherited_value,*reorder_blending_matrix,scalar,sum,*sumand,
+		*transformation,*value;
+	int basis_dimension,*field_to_element,i,inherited_polygon_offset,
+		*inherited_standard_basis_argument,*inherited_standard_basis_arguments,j,k,
+		l,m,need_reordering,number_of_inherited_values,number_of_polygon_verticies,
+		number_of_values,offset,order,p,polygon_offset,polygon_vertex,
+		*reorder_coordinate,*reorder_value,*reorder_values,return_code,row_size,
+		*standard_basis_argument,*standard_basis_arguments;
 	Standard_basis_function *standard_basis_function;
 
 	ENTER(calculate_standard_basis_transformation);
@@ -7121,8 +7367,7 @@ DESCRIPTION :
 	return_code=0;
 	/* check arguments */
 	if (basis&&(inherited_dimension>0)&&inherited_arguments_address&&
-		blending_matrix_address&&field_to_element_address&&
-		reorder_coordinates_address)
+		inherited_standard_basis_function_address&&blending_matrix_address)
 	{
 		standard_basis_arguments=(int *)(basis->arguments);
 		standard_basis_function=basis->standard_basis;
@@ -7158,6 +7403,942 @@ DESCRIPTION :
 					for (i=basis_dimension;i>0;i--)
 					{
 						standard_basis_argument++;
+						order= *standard_basis_argument;
+						inherited_standard_basis_argument=
+							inherited_standard_basis_arguments;
+						for (j=inherited_dimension;j>=0;j--)
+						{
+							transformation++;
+							*transformation= *value;
+							value++;
+							if (j>0)
+							{
+								inherited_standard_basis_argument++;
+								if ((0!= *value)&&(order> *inherited_standard_basis_argument))
+								{
+									*inherited_standard_basis_argument=order;
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					for (i=basis_dimension*(inherited_dimension+1);i>0;i--)
+					{
+						transformation++;
+						*transformation=0;
+					}
+					transformation=expanded_coordinate_transformation+
+						(inherited_dimension+1);
+					inherited_standard_basis_argument=
+						inherited_standard_basis_arguments;
+					i=1;
+					while (i<=basis_dimension)
+					{
+						standard_basis_argument++;
+						inherited_standard_basis_argument++;
+						transformation[i]=1;
+						i++;
+						transformation += inherited_dimension+1;
+						*inherited_standard_basis_argument= *standard_basis_argument;
+					}
+				}
+				row_size=basis->number_of_standard_basis_functions;
+				number_of_inherited_values=1;
+				inherited_standard_basis_argument=
+					inherited_standard_basis_arguments;
+				for (j=inherited_dimension;j>0;j--)
+				{
+					inherited_standard_basis_argument++;
+					number_of_inherited_values *= (*inherited_standard_basis_argument)+1;
+				}
+				if (ALLOCATE(blending_matrix,FE_value,
+					row_size*number_of_inherited_values))
+				{
+					value=blending_matrix;
+					*value=1;
+					for (i=row_size*number_of_inherited_values-1;i>0;i--)
+					{
+						value++;
+						*value=0;
+					}
+					standard_basis_argument=standard_basis_arguments;
+					row_size=1;
+					transformation=expanded_coordinate_transformation+
+						(inherited_dimension+1);
+					for (i=basis_dimension;i>0;i--)
+					{
+						standard_basis_argument++;
+						order= *standard_basis_argument;
+						for (j=0;j<order;j++)
+						{
+							offset=0;
+							for (k=0;k<=inherited_dimension;k++)
+							{
+								if (0!= *transformation)
+								{
+									/* loop over blending matrix rows */
+									value=blending_matrix+(j*row_size*number_of_inherited_values);
+									for (l=0;l<row_size;l++)
+									{
+										for (p=number_of_inherited_values-offset;p>0;p--)
+										{
+											if (0!= *value)
+											{
+												value[row_size*number_of_inherited_values+offset] +=
+													(*value)*(*transformation);
+											}
+											value++;
+										}
+										value += offset;
+									}
+								}
+								if (k>0)
+								{
+									offset *= (1+inherited_standard_basis_arguments[k]);
+								}
+								else
+								{
+									offset=1;
+								}
+								transformation++;
+							}
+							transformation -= inherited_dimension+1;
+						}
+						transformation += inherited_dimension+1;
+						row_size *= (order+1);
+					}
+					*inherited_arguments_address=inherited_standard_basis_arguments;
+					*blending_matrix_address=blending_matrix;
+					*number_of_inherited_values_address=number_of_inherited_values;
+					*inherited_standard_basis_function_address=monomial_basis_functions;
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_standard_basis_transformation.  "
+						"Insufficient memory for blending_matrix");
+					DEALLOCATE(inherited_standard_basis_arguments);
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"calculate_standard_basis_transformation.  Insufficient memory 1");
+				DEALLOCATE(inherited_standard_basis_arguments);
+				return_code=0;
+			}
+			DEALLOCATE(expanded_coordinate_transformation);
+		}
+		else
+		{
+			if (polygon_basis_functions==standard_basis_function)
+			{
+				/* calculate the blending matrix from the standard basis for the full
+					<basis> to the inherited standard basis */
+				ALLOCATE(inherited_standard_basis_arguments,int,inherited_dimension+1);
+				ALLOCATE(field_to_element,int,basis_dimension);
+				ALLOCATE(reorder_coordinate,int,inherited_dimension);
+				row_size=basis->number_of_standard_basis_functions;
+				ALLOCATE(blending_matrix,FE_value,row_size*row_size);
+				if (inherited_standard_basis_arguments&&field_to_element&&
+					reorder_coordinate&&blending_matrix)
+				{
+					return_code=1;
+					/* determine the correspondence between the xi coordinates for the
+						element field and the xi coordinates for the element */
+					/*???DB.  At present only able to do transformations that are one to
+						one in the xi coordinates.  This is equivalent to one non-zero in
+						each column of A and at most one non-zero in each row of A */
+					if (value=coordinate_transformation)
+					{
+						i=0;
+						k=0;
+						need_reordering=0;
+						standard_basis_argument=standard_basis_arguments;
+						while (return_code&&(i<basis_dimension))
+						{
+							field_to_element[i]=0;
+							standard_basis_argument++;
+							order= *standard_basis_argument;
+							/* skip translate b */
+							value++;
+							/* examine matrix A */
+							j=0;
+							while (return_code&&(j<inherited_dimension))
+							{
+								if (0!= *value)
+								{
+									if (0==field_to_element[i])
+									{
+										field_to_element[i]=j+1;
+										reorder_coordinate[k]=j;
+										if (j!=k)
+										{
+											need_reordering=1;
+										}
+										k++;
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+"calculate_standard_basis_transformation.  Coordinate transformation not 1 to 1");
+										return_code=0;
+									}
+								}
+								value++;
+								j++;
+							}
+							i++;
+						}
+						if (return_code)
+						{
+							if (!need_reordering)
+							{
+								/* coordinate reordering is not needed */
+								DEALLOCATE(reorder_coordinate);
+							}
+						}
+					}
+					else
+					{
+						need_reordering=0;
+						DEALLOCATE(reorder_coordinate);
+						for (i=inherited_dimension;i>0;i--)
+						{
+							field_to_element[i-1]=i;
+						}
+					}
+					if (return_code)
+					{
+						/* calculate the arguments for the standard basis function */
+						number_of_inherited_values=1;
+						*inherited_standard_basis_arguments=inherited_dimension;
+						standard_basis_argument=standard_basis_arguments;
+						standard_basis_function=monomial_basis_functions;
+						i=0;
+						while (return_code&&(i<basis_dimension))
+						{
+							standard_basis_argument++;
+							order= *standard_basis_argument;
+							if (order<0)
+							{
+								/* polygon */
+								order= -order;
+								if (order%2)
+								{
+									/* first polygon coordinate */
+									order /= 2;
+									polygon_offset=order%basis_dimension;
+									order /= basis_dimension;
+									number_of_polygon_verticies=
+										(-standard_basis_argument[polygon_offset])/2;
+									if (field_to_element[i])
+									{
+										if (field_to_element[i+polygon_offset])
+										{
+											/* radial and circumferential coordinates inherited */
+											standard_basis_function=polygon_basis_functions;
+											inherited_polygon_offset=
+												field_to_element[i+polygon_offset]-field_to_element[i];
+											if (inherited_polygon_offset<0)
+											{
+												display_message(ERROR_MESSAGE,
+													"calculate_standard_basis_transformation.  "
+													"Reordering of polygon coordinates is not supported");
+												return_code=0;
+											}
+											else
+											{
+												inherited_standard_basis_arguments[field_to_element[i]]=
+													-(1+2*(inherited_polygon_offset+
+													order*inherited_dimension));
+												inherited_standard_basis_arguments[field_to_element[
+													i+polygon_offset]]= -2*number_of_polygon_verticies;
+											}
+											number_of_inherited_values *=
+												4*number_of_polygon_verticies;
+										}
+										else
+										{
+											/* circumferential coordinate inherited */
+											inherited_standard_basis_arguments[field_to_element[i]]=
+												order;
+											number_of_inherited_values *= order+1;
+										}
+									}
+									else
+									{
+										if (field_to_element[i+polygon_offset])
+										{
+											display_message(ERROR_MESSAGE,
+												"calculate_standard_basis_transformation.  "
+												"Cannot inherit polygon radial coordinate by itself");
+											return_code=0;
+										}
+									}
+								}
+								else
+								{
+									/* second polygon coordinate.  Validity checked and argument
+										assigned with first coordinate */
+								}
+							}
+							else
+							{
+								/* not polygon */
+								if (field_to_element[i])
+								{
+									inherited_standard_basis_arguments[field_to_element[i]]=order;
+									number_of_inherited_values *= order+1;
+								}
+							}
+							i++;
+						}
+						if (return_code)
+						{
+							/* calculate the blending matrix */
+							/* start with the identity */
+							value=blending_matrix;
+							*value=1;
+							for (i=row_size-1;i>0;i--)
+							{
+								for (j=row_size;j>0;j--)
+								{
+									value++;
+									*value=0;
+								}
+								value++;
+								*value=1;
+							}
+							if (transformation=coordinate_transformation)
+							{
+								number_of_inherited_values=1;
+								standard_basis_argument=standard_basis_arguments;
+								number_of_values=basis->number_of_standard_basis_functions;
+								offset=1;
+								for (i=0;i<basis_dimension;i++)
+								{
+									standard_basis_argument++;
+									order= *standard_basis_argument;
+									if (order<0)
+									{
+										/* polygon */
+										order= -order;
+										if (order%2)
+										{
+											/* first polygon component */
+											order /= 2;
+											polygon_offset=order%basis_dimension;
+											order /= basis_dimension;
+											number_of_polygon_verticies=
+												(-standard_basis_argument[polygon_offset])/2;
+											/* NB.  Have already checked validity when calculating
+												inherited arguments */
+											if (field_to_element[i])
+											{
+												if (field_to_element[i+polygon_offset])
+												{
+													/* polygon is in projection */
+													number_of_inherited_values *=
+														4*number_of_polygon_verticies;
+												}
+												else
+												{
+													/* edge of polygon in projection */
+													polygon_vertex=(int)(0.1+(*transformation)*
+														(FE_value)number_of_polygon_verticies);
+													value=blending_matrix;
+													inherited_value=value;
+													if (number_of_polygon_verticies-1==polygon_vertex)
+													{
+														for (j=number_of_values/
+															(4*number_of_polygon_verticies*
+															number_of_inherited_values);j>0;j--)
+														{
+															for (k=number_of_inherited_values;k>0;k--)
+															{
+																for (l=row_size;l>0;l--)
+																{
+																	scalar=value[polygon_vertex*
+																		number_of_inherited_values*row_size]+
+																		value[(polygon_vertex+
+																		2*number_of_polygon_verticies)*
+																		number_of_inherited_values*row_size];
+																	inherited_value[
+																		number_of_inherited_values*row_size]=
+																		(*value)+
+																		value[2*number_of_polygon_verticies*
+																		number_of_inherited_values*row_size]-scalar;
+																	*inherited_value=scalar;
+																	inherited_value++;
+																	value++;
+																}
+															}
+															inherited_value +=
+																number_of_inherited_values*row_size;
+															value +=
+																(4*number_of_polygon_verticies-1)*
+																number_of_inherited_values*row_size;
+														}
+													}
+													else
+													{
+														if (number_of_polygon_verticies==polygon_vertex)
+														{
+															polygon_vertex=0;
+														}
+														value += polygon_vertex*number_of_inherited_values*
+															row_size;
+														for (j=number_of_values/
+															(4*number_of_polygon_verticies*
+															number_of_inherited_values);j>0;j--)
+														{
+															for (k=number_of_inherited_values;k>0;k--)
+															{
+																for (l=row_size;l>0;l--)
+																{
+																	scalar= (*value)+
+																		value[2*number_of_polygon_verticies*
+																		number_of_inherited_values*row_size];
+																	inherited_value[
+																		number_of_inherited_values*row_size]=
+																		value[number_of_inherited_values*row_size]+
+																		value[(2*number_of_polygon_verticies+1)*
+																		number_of_inherited_values*row_size]-
+																		scalar;
+																	*inherited_value=scalar;
+																	inherited_value++;
+																	value++;
+																}
+															}
+															inherited_value +=
+																number_of_inherited_values*row_size;
+															value += (4*number_of_polygon_verticies-1)*
+																number_of_inherited_values*row_size;
+														}
+													}
+													number_of_values /= 4*number_of_polygon_verticies;
+													number_of_values *= 2;
+													number_of_inherited_values *= 2;
+												}
+											}
+											else
+											{
+												/* polygon is not in projection */
+												polygon_vertex=(int)(0.1+(*transformation)*
+													(FE_value)number_of_polygon_verticies);
+												if (number_of_polygon_verticies==polygon_vertex)
+												{
+													polygon_vertex=0;
+												}
+												value=blending_matrix;
+												inherited_value=value;
+												value +=
+													polygon_vertex*number_of_inherited_values*row_size;
+												for (j=number_of_values/(4*number_of_polygon_verticies*
+													number_of_inherited_values);j>0;j--)
+												{
+													for (k=number_of_inherited_values;k>0;k--)
+													{
+														for (l=row_size;l>0;l--)
+														{
+															*inherited_value= *value+
+																value[2*number_of_polygon_verticies*
+																number_of_inherited_values*row_size];
+															inherited_value++;
+															value++;
+														}
+													}
+													value += (4*number_of_polygon_verticies-1)*
+														number_of_inherited_values*row_size;
+												}
+												number_of_values /=
+													4*number_of_polygon_verticies;
+											}
+										}
+									}
+									else
+									{
+										/* not polygon */
+										if (field_to_element[i])
+										{
+											/* in projection */
+											number_of_inherited_values *= order+1;
+										}
+										else
+										{
+											/* not in projection */
+											if (*transformation)
+											{
+												/* assume *transformation (b) is 1 */
+												value=blending_matrix;
+												inherited_value=value;
+												for (j=number_of_values/
+													((order+1)*number_of_inherited_values);j>0;j--)
+												{
+													for (k=number_of_inherited_values;k>0;k--)
+													{
+														for (l=row_size;l>0;l--)
+														{
+															sum= *value;
+															sumand=value;
+															for (m=order;m>0;m--)
+															{
+																sumand += number_of_inherited_values*row_size;
+																sum += *sumand;
+															}
+															*inherited_value=sum;
+															inherited_value++;
+															value++;
+														}
+													}
+													value += order*number_of_inherited_values*row_size;
+												}
+												number_of_values /= order+1;
+											}
+											else
+											{
+												/* *transformation (b) is 0 */
+												value=blending_matrix;
+												inherited_value=value;
+												for (j=number_of_values/
+													((order+1)*number_of_inherited_values);j>0;j--)
+												{
+													for (k=number_of_inherited_values*row_size;k>0;k--)
+													{
+														*inherited_value= *value;
+														inherited_value++;
+														value++;
+													}
+													value += order*number_of_inherited_values*row_size;
+												}
+												number_of_values /= order+1;
+											}
+										}
+									}
+									transformation += inherited_dimension+1;
+								}
+								/* transpose so that stored by columns */
+								value=blending_matrix;
+								for (i=0;i<row_size;i++)
+								{
+									inherited_value=blending_matrix+i;
+									for (j=0;j<i;j++)
+									{
+										scalar= *inherited_value;
+										*inherited_value= *value;
+										*value=scalar;
+										value++;
+										inherited_value += row_size;
+									}
+									value += row_size-i;
+								}
+								/* compress by reducing the column length */
+								value=blending_matrix;
+								inherited_value=blending_matrix;
+								for (j=row_size;j>0;j--)
+								{
+									for (i=number_of_inherited_values;i>0;i--)
+									{
+										*inherited_value= *value;
+										inherited_value++;
+										value++;
+									}
+									value += row_size-number_of_inherited_values;
+								}
+								if (reorder_coordinate)
+								{
+									ALLOCATE(reorder_blending_matrix,FE_value,
+										number_of_inherited_values*row_size);
+									ALLOCATE(reorder_values,int,number_of_inherited_values);
+									if (reorder_blending_matrix&&reorder_values)
+									{
+										value=blending_matrix;
+										blending_matrix=reorder_blending_matrix;
+										reorder_blending_matrix=value;
+										inherited_value=blending_matrix;
+										for (l=row_size;l>0;l--)
+										{
+											*inherited_value= *value;
+											value += number_of_inherited_values;
+											inherited_value += number_of_inherited_values;
+										}
+										reorder_value=reorder_values;
+										*reorder_value=0;
+										k=1;
+										for (i=0;i<inherited_dimension;i++)
+										{
+											offset=1;
+											inherited_standard_basis_argument=
+												inherited_standard_basis_arguments;
+											for (j=reorder_coordinate[i];j>0;j--)
+											{
+												inherited_standard_basis_argument++;
+												order= *inherited_standard_basis_argument;
+												if (order<0)
+												{
+													/* polygon */
+													order= -order;
+													if (order%2)
+													{
+														/* first polygon coordinate */
+														order /= 2;
+														polygon_offset=order%inherited_dimension;
+														number_of_polygon_verticies=
+															(-inherited_standard_basis_argument[
+															polygon_offset])/2;
+														offset *= 4*number_of_polygon_verticies;
+													}
+												}
+												else
+												{
+													/* not polygon */
+													offset *= order+1;
+												}
+											}
+											inherited_standard_basis_argument++;
+											order= *inherited_standard_basis_argument;
+											if (order<0)
+											{
+												/* polygon */
+												order= -order;
+												if (order%2)
+												{
+													/* first polygon coordinate */
+													order /= 2;
+													polygon_offset=order%inherited_dimension;
+													order=4*(-inherited_standard_basis_argument[
+														polygon_offset])/2;
+												}
+												else
+												{
+													order=0;
+												}
+											}
+											reorder_value=reorder_values;
+											for (j=0;j<k*order;j++)
+											{
+												reorder_value[k]=(*reorder_value)+offset;
+												inherited_value=blending_matrix+reorder_value[k];
+												value=reorder_blending_matrix+(j+k);
+												for (l=row_size;l>0;l--)
+												{
+													*inherited_value= *value;
+													value += number_of_inherited_values;
+													inherited_value += number_of_inherited_values;
+												}
+												reorder_value++;
+											}
+											k *= (order+1);
+										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"calculate_standard_basis_transformation.  "
+											"Insufficient memory 2");
+										return_code=0;
+									}
+									DEALLOCATE(reorder_values);
+									DEALLOCATE(reorder_blending_matrix);
+								}
+							}
+							if (return_code)
+							{
+								*number_of_inherited_values_address=number_of_inherited_values;
+								*inherited_standard_basis_function_address=
+									standard_basis_function;
+								*inherited_arguments_address=inherited_standard_basis_arguments;
+								*blending_matrix_address=blending_matrix;
+							}
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_standard_basis_transformation.  Insufficient memory 1");
+					return_code=0;
+				}
+				if (!return_code)
+				{
+					DEALLOCATE(blending_matrix);
+					DEALLOCATE(inherited_standard_basis_arguments);
+				}
+				DEALLOCATE(field_to_element);
+				DEALLOCATE(reorder_coordinate);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"calculate_standard_basis_transformation.  Invalid basis");
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,
+			"calculate_standard_basis_transformation.  Invalid argument(s)");
+		return_code=0;
+	}
+#if defined (DEBUG)
+	/*???debug */
+	printf("leave calculate_standard_basis_transformation %d\n",return_code);
+#endif /* defined (DEBUG) */
+	LEAVE;
+
+	return (return_code);
+} /* calculate_standard_basis_transformation */
+#else /* defined (SMOOTH_POLYGONS) */
+static int calculate_standard_basis_transformation(struct FE_basis *basis,
+	FE_value *coordinate_transformation,int inherited_dimension,
+	int **inherited_arguments_address,int *number_of_inherited_values_address,
+	Standard_basis_function **inherited_standard_basis_function_address,
+	FE_value **blending_matrix_address)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FE_value *blending_matrix,*expanded_coordinate_transformation,
+		*inherited_value,*reorder_blending_matrix,scalar,sum,*sumand,
+		*transformation,*value;
+	int basis_dimension,*field_to_element,i,inherited_polygon_offset,
+		*inherited_standard_basis_argument,*inherited_standard_basis_arguments,j,k,
+		l,m,need_reordering,number_of_inherited_values,number_of_polygon_verticies,
+		number_of_values,offset,order,p,polygon_offset,polygon_vertex,
+		*reorder_coordinate,*reorder_value,*reorder_values,return_code,row_size,
+		*standard_basis_argument,*standard_basis_arguments;
+	Standard_basis_function *standard_basis_function;
+
+	ENTER(calculate_standard_basis_transformation);
+#if defined (DEBUG)
+	/*???debug */
+	printf("enter calculate_standard_basis_transformation\n");
+#endif /* defined (DEBUG) */
+	return_code=0;
+	/* check arguments */
+	if (basis&&(inherited_dimension>0)&&inherited_arguments_address&&
+		inherited_standard_basis_function_address&&blending_matrix_address)
+	{
+		standard_basis_arguments=(int *)(basis->arguments);
+		standard_basis_function=basis->standard_basis;
+		basis_dimension=(basis->type)[0];
+		if (monomial_basis_functions==standard_basis_function)
+		{
+			/* calculate the blending matrix from the monomial basis for the full
+				<basis> to the inherited monomial basis */
+			ALLOCATE(inherited_standard_basis_arguments,int,inherited_dimension+1);
+			ALLOCATE(expanded_coordinate_transformation,FE_value,
+				(basis_dimension+1)*(inherited_dimension+1));
+			if (inherited_standard_basis_arguments&&
+				expanded_coordinate_transformation)
+			{
+				inherited_standard_basis_argument=
+					inherited_standard_basis_arguments;
+				*inherited_standard_basis_argument=inherited_dimension;
+				for (i=inherited_dimension;i>0;i--)
+				{
+					inherited_standard_basis_argument++;
+					*inherited_standard_basis_argument=0;
+				}
+				standard_basis_argument=standard_basis_arguments;
+				expanded_coordinate_transformation[0]=1;
+				transformation=expanded_coordinate_transformation;
+				for (j=inherited_dimension;j>0;j--)
+				{
+					transformation++;
+					*transformation=0;
+				}
+				if (value=coordinate_transformation)
+				{
+					for (i=basis_dimension;i>0;i--)
+					{
+						standard_basis_argument++;
+						order= *standard_basis_argument;
+						inherited_standard_basis_argument=
+							inherited_standard_basis_arguments;
+						for (j=inherited_dimension;j>=0;j--)
+						{
+							transformation++;
+							*transformation= *value;
+							value++;
+							if (j>0)
+							{
+								inherited_standard_basis_argument++;
+								if ((0!= *value)&&(order> *inherited_standard_basis_argument))
+								{
+									*inherited_standard_basis_argument=order;
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					for (i=basis_dimension*(inherited_dimension+1);i>0;i--)
+					{
+						transformation++;
+						*transformation=0;
+					}
+					transformation=expanded_coordinate_transformation+
+						(inherited_dimension+1);
+					inherited_standard_basis_argument=
+						inherited_standard_basis_arguments;
+					i=1;
+					while (i<=basis_dimension)
+					{
+						standard_basis_argument++;
+						inherited_standard_basis_argument++;
+						transformation[i]=1;
+						i++;
+						transformation += inherited_dimension+1;
+						*inherited_standard_basis_argument= *standard_basis_argument;
+					}
+				}
+				row_size=basis->number_of_standard_basis_functions;
+				number_of_inherited_values=1;
+				inherited_standard_basis_argument=
+					inherited_standard_basis_arguments;
+				for (j=inherited_dimension;j>0;j--)
+				{
+					inherited_standard_basis_argument++;
+					number_of_inherited_values *= (*inherited_standard_basis_argument)+1;
+				}
+				if (ALLOCATE(blending_matrix,FE_value,
+					row_size*number_of_inherited_values))
+				{
+					value=blending_matrix;
+					*value=1;
+					for (i=row_size*number_of_inherited_values-1;i>0;i--)
+					{
+						value++;
+						*value=0;
+					}
+					standard_basis_argument=standard_basis_arguments;
+					row_size=1;
+					transformation=expanded_coordinate_transformation+
+						(inherited_dimension+1);
+					for (i=basis_dimension;i>0;i--)
+					{
+						standard_basis_argument++;
+						order= *standard_basis_argument;
+						for (j=0;j<order;j++)
+						{
+							offset=0;
+							for (k=0;k<=inherited_dimension;k++)
+							{
+								if (0!= *transformation)
+								{
+									/* loop over blending matrix rows */
+									value=blending_matrix+(j*row_size*number_of_inherited_values);
+									for (l=0;l<row_size;l++)
+									{
+										for (p=number_of_inherited_values-offset;p>0;p--)
+										{
+											if (0!= *value)
+											{
+												value[row_size*number_of_inherited_values+offset] +=
+													(*value)*(*transformation);
+											}
+											value++;
+										}
+										value += offset;
+									}
+								}
+								if (k>0)
+								{
+									offset *= (1+inherited_standard_basis_arguments[k]);
+								}
+								else
+								{
+									offset=1;
+								}
+								transformation++;
+							}
+							transformation -= inherited_dimension+1;
+						}
+						transformation += inherited_dimension+1;
+						row_size *= (order+1);
+					}
+					*inherited_arguments_address=inherited_standard_basis_arguments;
+					*blending_matrix_address=blending_matrix;
+					*number_of_inherited_values_address=number_of_inherited_values;
+					*inherited_standard_basis_function_address=monomial_basis_functions;
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_standard_basis_transformation.  "
+						"Insufficient memory for blending_matrix");
+					DEALLOCATE(inherited_standard_basis_arguments);
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"calculate_standard_basis_transformation.  Insufficient memory 1");
+				DEALLOCATE(inherited_standard_basis_arguments);
+				return_code=0;
+			}
+			DEALLOCATE(expanded_coordinate_transformation);
+#if defined (OLD_CODE)
+/*???DB.  Used before blending matrix was reordered in CREATE(FE_basis) to
+	remove the simplex special case */
+			int *temp_reorder_coordinates;
+
+			/* calculate the blending matrix from the monomial basis for the full
+				<basis> to the inherited monomial basis */
+			ALLOCATE(inherited_standard_basis_arguments,int,inherited_dimension+1);
+			ALLOCATE(expanded_coordinate_transformation,FE_value,
+				(basis_dimension+1)*(inherited_dimension+1));
+			ALLOCATE(temp_reorder_coordinates,int,basis_dimension);
+			if (inherited_standard_basis_arguments&&temp_reorder_coordinates&&
+				expanded_coordinate_transformation)
+			{
+				reorder_coordinate=temp_reorder_coordinates;
+				for (i=basis_dimension;i>0;i--)
+				{
+					*reorder_coordinate=0;
+					reorder_coordinate++;
+				}
+				inherited_standard_basis_argument=
+					inherited_standard_basis_arguments;
+				*inherited_standard_basis_argument=inherited_dimension;
+				for (i=inherited_dimension;i>0;i--)
+				{
+					inherited_standard_basis_argument++;
+					*inherited_standard_basis_argument=0;
+				}
+				standard_basis_argument=standard_basis_arguments;
+				expanded_coordinate_transformation[0]=1;
+				transformation=expanded_coordinate_transformation;
+				reorder_coordinate=temp_reorder_coordinates;
+				for (j=inherited_dimension;j>0;j--)
+				{
+					transformation++;
+					*transformation=0;
+				}
+				if (value=coordinate_transformation)
+				{
+					for (i=basis_dimension;i>0;i--)
+					{
+						standard_basis_argument++;
+						while (*reorder_coordinate)
+						{
+							reorder_coordinate++;
+						}
+						value=coordinate_transformation+
+							((reorder_coordinate-temp_reorder_coordinates)*
+							(inherited_dimension+1));
 						if ((order= *standard_basis_argument)<0)
 						{
 							/* simplex */
@@ -7179,6 +8360,7 @@ DESCRIPTION :
 								j=0;
 								do
 								{
+									reorder_coordinate[k]=1;
 									inherited_standard_basis_argument=
 										inherited_standard_basis_arguments;
 									for (l=0;l<=inherited_dimension;l++)
@@ -7205,16 +8387,12 @@ DESCRIPTION :
 									j++;
 								}
 								while ((standard_basis_argument[j]<0)
-								  && (-basis_dimension<standard_basis_argument[j - 1]));
-							}
-							else
-							{
-								/* not first */
-								value += inherited_dimension;
+								  && (-basis_dimension<standard_basis_argument[j-1]));
 							}
 						}
 						else
 						{
+							*reorder_coordinate=1;
 							inherited_standard_basis_argument=
 								inherited_standard_basis_arguments;
 							for (j=inherited_dimension;j>=0;j--)
@@ -7435,6 +8613,1896 @@ for (i=row_size;i>0;i--)
 				return_code=0;
 			}
 			DEALLOCATE(expanded_coordinate_transformation);
+			DEALLOCATE(temp_reorder_coordinates);
+#endif /* defined (OLD_CODE) */
+		}
+		else
+		{
+			if (polygon_basis_functions==standard_basis_function)
+			{
+				/* calculate the blending matrix from the standard basis for the full
+					<basis> to the inherited standard basis */
+				ALLOCATE(inherited_standard_basis_arguments,int,inherited_dimension+1);
+				ALLOCATE(field_to_element,int,basis_dimension);
+				ALLOCATE(reorder_coordinate,int,inherited_dimension);
+				row_size=basis->number_of_standard_basis_functions;
+				ALLOCATE(blending_matrix,FE_value,row_size*row_size);
+				if (inherited_standard_basis_arguments&&field_to_element&&
+					reorder_coordinate&&blending_matrix)
+				{
+					return_code=1;
+					/* determine the correspondence between the xi coordinates for the
+						element field and the xi coordinates for the element */
+					/*???DB.  At present only able to do transformations that are one to
+						one in the xi coordinates.  This is equivalent to one non-zero in
+						each column of A and at most one non-zero in each row of A */
+					if (value=coordinate_transformation)
+					{
+						i=0;
+						k=0;
+						need_reordering=0;
+						standard_basis_argument=standard_basis_arguments;
+						while (return_code&&(i<basis_dimension))
+						{
+							field_to_element[i]=0;
+							standard_basis_argument++;
+							order= *standard_basis_argument;
+							/* skip translate b */
+							value++;
+							/* examine matrix A */
+							j=0;
+							while (return_code&&(j<inherited_dimension))
+							{
+								if (0!= *value)
+								{
+									if (0==field_to_element[i])
+									{
+										field_to_element[i]=j+1;
+										reorder_coordinate[k]=j;
+										if (j!=k)
+										{
+											need_reordering=1;
+										}
+										k++;
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+"calculate_standard_basis_transformation.  Coordinate transformation not 1 to 1");
+										return_code=0;
+									}
+								}
+								value++;
+								j++;
+							}
+							i++;
+						}
+						if (return_code)
+						{
+							if (!need_reordering)
+							{
+								/* coordinate reordering is not needed */
+								DEALLOCATE(reorder_coordinate);
+							}
+						}
+					}
+					else
+					{
+						need_reordering=0;
+						DEALLOCATE(reorder_coordinate);
+						for (i=inherited_dimension;i>0;i--)
+						{
+							field_to_element[i-1]=i;
+						}
+					}
+					if (return_code)
+					{
+						/* calculate the arguments for the standard basis function */
+						number_of_inherited_values=1;
+						inherited_standard_basis_argument=
+							inherited_standard_basis_arguments;
+						*inherited_standard_basis_argument=inherited_dimension;
+						standard_basis_argument=standard_basis_arguments;
+						standard_basis_function=monomial_basis_functions;
+						for (i=0;i<basis_dimension;i++)
+						{
+							standard_basis_argument++;
+							order= *standard_basis_argument;
+							if (order<0)
+							{
+								/* polygon */
+								polygon_offset= -order;
+								if (polygon_offset<basis_dimension)
+								{
+									/* first polygon coordinate */
+									number_of_polygon_verticies=
+										-standard_basis_argument[polygon_offset]-basis_dimension;
+									if (field_to_element[i])
+									{
+										if (field_to_element[i+polygon_offset])
+										{
+											standard_basis_function=polygon_basis_functions;
+											inherited_standard_basis_argument++;
+											*inherited_standard_basis_argument=
+												field_to_element[i]-
+												field_to_element[i+polygon_offset];
+											number_of_inherited_values *=
+												4*number_of_polygon_verticies;
+										}
+										else
+										{
+											inherited_standard_basis_argument++;
+											*inherited_standard_basis_argument=1;
+											number_of_inherited_values *= 2;
+										}
+									}
+								}
+								else
+								{
+									/* second polygon coordinate */
+									if (field_to_element[i])
+									{
+										inherited_standard_basis_argument++;
+										*inherited_standard_basis_argument=
+											(*standard_basis_argument)+
+											(basis_dimension-inherited_dimension);
+									}
+								}
+							}
+							else
+							{
+								/* not polygon */
+								if (field_to_element[i])
+								{
+									inherited_standard_basis_argument++;
+									*inherited_standard_basis_argument=order;
+									number_of_inherited_values *=
+										(*inherited_standard_basis_argument)+1;
+								}
+							}
+						}
+						/* calculate the blending matrix */
+						/* start with the identity */
+						value=blending_matrix;
+						*value=1;
+						for (i=row_size-1;i>0;i--)
+						{
+							for (j=row_size;j>0;j--)
+							{
+								value++;
+								*value=0;
+							}
+							value++;
+							*value=1;
+						}
+						if (transformation=coordinate_transformation)
+						{
+							number_of_inherited_values=1;
+							standard_basis_argument=standard_basis_arguments;
+							number_of_values=basis->number_of_standard_basis_functions;
+							offset=1;
+							for (i=0;i<basis_dimension;i++)
+							{
+								standard_basis_argument++;
+								order= *standard_basis_argument;
+								if (order<0)
+								{
+									/* polygon */
+									if ((polygon_offset= -order)<basis_dimension)
+									{
+										/* first polygon component */
+										number_of_polygon_verticies=
+											-standard_basis_argument[polygon_offset]-basis_dimension;
+										if (field_to_element[i])
+										{
+											if (field_to_element[i+polygon_offset])
+											{
+												/* polygon is in projection */
+												number_of_inherited_values *=
+													4*number_of_polygon_verticies;
+											}
+											else
+											{
+												/* edge of polygon in projection */
+												polygon_vertex=(int)(0.1+(*transformation)*
+													(FE_value)number_of_polygon_verticies);
+												value=blending_matrix;
+												inherited_value=value;
+												if (number_of_polygon_verticies-1==polygon_vertex)
+												{
+													for (j=number_of_values/
+														(4*number_of_polygon_verticies*
+														number_of_inherited_values);j>0;j--)
+													{
+														for (k=number_of_inherited_values;k>0;k--)
+														{
+															for (l=row_size;l>0;l--)
+															{
+																scalar=value[polygon_vertex*
+																	number_of_inherited_values*row_size]+
+																	value[(polygon_vertex+
+																		2*number_of_polygon_verticies)*
+																		number_of_inherited_values*row_size];
+																inherited_value[
+																	number_of_inherited_values*row_size]=(*value)+
+																	value[2*number_of_polygon_verticies*
+																	number_of_inherited_values*row_size]-scalar;
+																*inherited_value=scalar;
+																inherited_value++;
+																value++;
+															}
+														}
+														inherited_value +=
+															number_of_inherited_values*row_size;
+														value +=
+															(4*number_of_polygon_verticies-1)*
+															number_of_inherited_values*row_size;
+													}
+												}
+												else
+												{
+													if (number_of_polygon_verticies==polygon_vertex)
+													{
+														polygon_vertex=0;
+													}
+													value += polygon_vertex*number_of_inherited_values*
+														row_size;
+													for (j=number_of_values/
+														(4*number_of_polygon_verticies*
+														number_of_inherited_values);j>0;j--)
+													{
+														for (k=number_of_inherited_values;k>0;k--)
+														{
+															for (l=row_size;l>0;l--)
+															{
+#if defined (OLD_CODE)
+																*inherited_value= (*value)+
+																	value[2*number_of_polygon_verticies*
+																	number_of_inherited_values*row_size];
+																inherited_value[
+																	number_of_inherited_values*row_size]=
+																	value[number_of_inherited_values*row_size]+
+																	value[(2*number_of_polygon_verticies+1)*
+																	number_of_inherited_values*row_size]-
+																	*inherited_value;
+#endif /* defined (OLD_CODE) */
+																scalar= (*value)+
+																	value[2*number_of_polygon_verticies*
+																	number_of_inherited_values*row_size];
+																inherited_value[
+																	number_of_inherited_values*row_size]=
+																	value[number_of_inherited_values*row_size]+
+																	value[(2*number_of_polygon_verticies+1)*
+																	number_of_inherited_values*row_size]-
+																	scalar;
+																*inherited_value=scalar;
+																inherited_value++;
+																value++;
+															}
+														}
+														inherited_value +=
+															number_of_inherited_values*row_size;
+														value += (4*number_of_polygon_verticies-1)*
+															number_of_inherited_values*row_size;
+													}
+												}
+												number_of_values /= 4*number_of_polygon_verticies;
+												number_of_values *= 2;
+												number_of_inherited_values *= 2;
+											}
+										}
+										else
+										{
+											/* polygon is not in projection */
+											polygon_vertex=(int)(0.1+(*transformation)*
+												(FE_value)number_of_polygon_verticies);
+											if (number_of_polygon_verticies==polygon_vertex)
+											{
+												polygon_vertex=0;
+											}
+											value=blending_matrix;
+											inherited_value=value;
+											value +=
+												polygon_vertex*number_of_inherited_values*row_size;
+											for (j=number_of_values/(4*number_of_polygon_verticies*
+												number_of_inherited_values);j>0;j--)
+											{
+												for (k=number_of_inherited_values;k>0;k--)
+												{
+													for (l=row_size;l>0;l--)
+													{
+														*inherited_value= *value+
+															value[2*number_of_polygon_verticies*
+															number_of_inherited_values*row_size];
+														inherited_value++;
+														value++;
+													}
+												}
+												value += (4*number_of_polygon_verticies-1)*
+													number_of_inherited_values*row_size;
+											}
+											number_of_values /=
+												4*number_of_polygon_verticies;
+										}
+									}
+								}
+								else
+								{
+									/* not polygon */
+									if (field_to_element[i])
+									{
+										/* in projection */
+										number_of_inherited_values *= order+1;
+									}
+									else
+									{
+										/* not in projection */
+										if (*transformation)
+										{
+											/* assume *transformation (b) is 1 */
+											value=blending_matrix;
+											inherited_value=value;
+											for (j=number_of_values/
+												((order+1)*number_of_inherited_values);j>0;j--)
+											{
+												for (k=number_of_inherited_values;k>0;k--)
+												{
+													for (l=row_size;l>0;l--)
+													{
+														sum= *value;
+														sumand=value;
+														for (m=order;m>0;m--)
+														{
+															sumand += number_of_inherited_values*row_size;
+															sum += *sumand;
+														}
+														*inherited_value=sum;
+														inherited_value++;
+														value++;
+													}
+												}
+												value += order*number_of_inherited_values*row_size;
+											}
+											number_of_values /= order+1;
+										}
+										else
+										{
+											/* *transformation (b) is 0 */
+											value=blending_matrix;
+											inherited_value=value;
+											for (j=number_of_values/
+												((order+1)*number_of_inherited_values);j>0;j--)
+											{
+												for (k=number_of_inherited_values*row_size;k>0;k--)
+												{
+													*inherited_value= *value;
+													inherited_value++;
+													value++;
+												}
+												value += order*number_of_inherited_values*row_size;
+											}
+											number_of_values /= order+1;
+										}
+									}
+								}
+								transformation += inherited_dimension+1;
+							}
+							/* transpose so that stored by columns */
+							value=blending_matrix;
+							for (i=0;i<row_size;i++)
+							{
+								inherited_value=blending_matrix+i;
+								for (j=0;j<i;j++)
+								{
+									scalar= *inherited_value;
+									*inherited_value= *value;
+									*value=scalar;
+									value++;
+									inherited_value += row_size;
+								}
+								value += row_size-i;
+							}
+							/* compress by reducing the column length */
+							value=blending_matrix;
+							inherited_value=blending_matrix;
+							for (j=row_size;j>0;j--)
+							{
+								for (i=number_of_inherited_values;i>0;i--)
+								{
+									*inherited_value= *value;
+									value++;
+									inherited_value++;
+								}
+								value += row_size-number_of_inherited_values;
+							}
+							if (reorder_coordinate)
+							{
+								ALLOCATE(reorder_blending_matrix,FE_value,
+									number_of_inherited_values*row_size);
+								ALLOCATE(reorder_values,int,number_of_inherited_values);
+								if (reorder_blending_matrix&&reorder_values)
+								{
+									value=blending_matrix;
+									blending_matrix=reorder_blending_matrix;
+									reorder_blending_matrix=value;
+									inherited_value=blending_matrix;
+									for (l=row_size;l>0;l--)
+									{
+										*inherited_value= *value;
+										inherited_value++;
+										value++;
+									}
+									reorder_value=reorder_values;
+									*reorder_value=0;
+									k=1;
+									for (i=0;i<inherited_dimension;i++)
+									{
+										offset=1;
+										inherited_standard_basis_argument=
+											inherited_standard_basis_arguments;
+										for (j=reorder_coordinate[i];j>0;j--)
+										{
+											inherited_standard_basis_argument++;
+											polygon_offset= *inherited_standard_basis_argument;
+											if (polygon_offset<0)
+											{
+												polygon_offset= -polygon_offset;
+												if (polygon_offset<inherited_dimension)
+												{
+													offset *= -4*(inherited_standard_basis_argument[
+														polygon_offset]+inherited_dimension);
+												}
+											}
+											else
+											{
+												offset *= polygon_offset+1;
+											}
+										}
+										inherited_standard_basis_argument++;
+										order= *inherited_standard_basis_argument;
+										if (order<0)
+										{
+											/* polygon */
+											if ((polygon_offset= -order)<inherited_dimension)
+											{
+												/* first polygon coordinate */
+												order= -4*(inherited_standard_basis_argument[
+													polygon_offset]+inherited_dimension);
+												reorder_value=reorder_values;
+												for (j=k*(order-1);j>0;j--)
+												{
+													reorder_value[k]=(*reorder_value)+offset;
+													inherited_value=blending_matrix+reorder_value[k];
+													for (l=row_size;l>0;l--)
+													{
+														*inherited_value= *value;
+														value += number_of_inherited_values;
+														inherited_value += number_of_inherited_values;
+													}
+													value += 1-(row_size*number_of_inherited_values);
+													reorder_value++;
+												}
+												k *= order;
+											}
+										}
+										else
+										{
+											/* not polygon */
+											reorder_value=reorder_values;
+											for (j=k*order;j>0;j--)
+											{
+												reorder_value[k]=(*reorder_value)+offset;
+												inherited_value=blending_matrix+reorder_value[k];
+												for (l=row_size;l>0;l--)
+												{
+													*inherited_value= *value;
+													value += number_of_inherited_values;
+													inherited_value += number_of_inherited_values;
+												}
+												value += 1-(row_size*number_of_inherited_values);
+												reorder_value++;
+											}
+											k *= (order+1);
+										}
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"calculate_standard_basis_transformation.  "
+										"Insufficient memory 2");
+									return_code=0;
+								}
+								DEALLOCATE(reorder_values);
+								DEALLOCATE(reorder_blending_matrix);
+							}
+						}
+						if (return_code)
+						{
+							*number_of_inherited_values_address=number_of_inherited_values;
+							*inherited_standard_basis_function_address=
+								standard_basis_function;
+							*inherited_arguments_address=inherited_standard_basis_arguments;
+							*blending_matrix_address=blending_matrix;
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_standard_basis_transformation.  Insufficient memory 1");
+					return_code=0;
+				}
+				if (!return_code)
+				{
+					DEALLOCATE(blending_matrix);
+					DEALLOCATE(inherited_standard_basis_arguments);
+				}
+				DEALLOCATE(field_to_element);
+				DEALLOCATE(reorder_coordinate);
+#if defined (OLD_CODE)
+/*???DB.  Prior to trying to do blending_matrix by reproducing
+	calculate_FE_element_field_values */
+				/* calculate the blending matrix from the standard basis for the full
+					<basis> to the inherited standard basis */
+				ALLOCATE(inherited_standard_basis_arguments,int,inherited_dimension+1);
+				ALLOCATE(expanded_coordinate_transformation,FE_value,
+					(basis_dimension+1)*(inherited_dimension+1));
+				ALLOCATE(field_to_element,int,basis_dimension);
+				ALLOCATE(reorder_coordinate,int,inherited_dimension);
+				if (inherited_standard_basis_arguments&&
+					expanded_coordinate_transformation&&field_to_element&&
+					reorder_coordinate)
+				{
+					return_code=1;
+					inherited_standard_basis_argument=inherited_standard_basis_arguments;
+					*inherited_standard_basis_argument=inherited_dimension;
+					for (i=inherited_dimension;i>0;i--)
+					{
+						inherited_standard_basis_argument++;
+						*inherited_standard_basis_argument=0;
+					}
+					/* determine the correspondence between the polygon xi coordinates for
+						the element field and the xi coordinates for the element */
+					if (value=coordinate_transformation)
+					{
+						i=0;
+						k=0;
+						need_reordering=0;
+						standard_basis_argument=standard_basis_arguments;
+						while (return_code&&(i<basis_dimension))
+						{
+							field_to_element[i]=0;
+							standard_basis_argument++;
+							order= *standard_basis_argument;
+							/* skip translate b */
+							value++;
+							/* examine matrix A */
+							j=0;
+							inherited_standard_basis_argument=
+								inherited_standard_basis_arguments;
+							while (return_code&&(j<inherited_dimension))
+							{
+								inherited_standard_basis_argument++;
+								if (0!= *value)
+								{
+									if (order<0)
+									{
+										/* polygon */
+										/*???DB.  At present only able to do transformations that
+											are one to one in the xi coordinates.  This is
+											equivalent to one non-zero in each column of A and at
+											most one non-zero in each row of A */
+										if (0==field_to_element[i])
+										{
+											field_to_element[i]=j+1;
+											reorder_coordinate[k]=j;
+											if (j!=k)
+											{
+												need_reordering=1;
+											}
+											k++;
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+"calculate_standard_basis_transformation.  Coordinate transformation not 1 to 1");
+											return_code=0;
+										}
+									}
+									else
+									{
+										/* not polygon */
+										if (0==field_to_element[i])
+										{
+											field_to_element[i]=j+1;
+										}
+										if (order> *inherited_standard_basis_argument)
+										{
+											*inherited_standard_basis_argument=order;
+										}
+									}
+								}
+								value++;
+								j++;
+							}
+							i++;
+						}
+						if (return_code)
+						{
+							if (!need_reordering)
+							{
+								/* coordinate reordering is not needed */
+								DEALLOCATE(reorder_coordinate);
+							}
+						}
+					}
+					else
+					{
+						need_reordering=0;
+						DEALLOCATE(reorder_coordinate);
+						for (i=inherited_dimension;i>0;i--)
+						{
+							field_to_element[i-1]=i;
+						}
+					}
+					if (return_code)
+					{
+						number_of_inherited_values=1;
+						inherited_standard_basis_argument=
+							inherited_standard_basis_arguments;
+						standard_basis_argument=standard_basis_arguments;
+						if (value=coordinate_transformation)
+						{
+							standard_basis_function=monomial_basis_functions;
+							expanded_coordinate_transformation[0]=1;
+							transformation=expanded_coordinate_transformation;
+							for (j=inherited_dimension;j>0;j--)
+							{
+								transformation++;
+								*transformation=0;
+							}
+							for (i=0;i<basis_dimension;i++)
+							{
+								for (j=inherited_dimension;j>=0;j--)
+								{
+									transformation++;
+									*transformation= *value;
+									value++;
+								}
+								standard_basis_argument++;
+								order= *standard_basis_argument;
+								if (order<0)
+								{
+									/* polygon */
+									polygon_offset= -order;
+									if (polygon_offset<basis_dimension)
+									{
+										/* first polygon coordinate */
+										number_of_polygon_verticies=
+											-standard_basis_argument[polygon_offset]-
+											basis_dimension;
+										if (field_to_element[i])
+										{
+											if (field_to_element[i+polygon_offset])
+											{
+												standard_basis_function=polygon_basis_functions;
+												inherited_standard_basis_argument++;
+												*inherited_standard_basis_argument=
+													field_to_element[i]-
+													field_to_element[i+polygon_offset];
+												number_of_inherited_values *=
+													4*number_of_polygon_verticies;
+											}
+											else
+											{
+												inherited_standard_basis_argument++;
+												*inherited_standard_basis_argument=1;
+												number_of_inherited_values *= 2;
+											}
+										}
+									}
+									else
+									{
+										/* second polygon coordinate */
+										if (field_to_element[i])
+										{
+											inherited_standard_basis_argument++;
+											*inherited_standard_basis_argument=
+												(*standard_basis_argument)+
+												(basis_dimension-inherited_dimension);
+										}
+									}
+								}
+								else
+								{
+									/* not polygon */
+									if (field_to_element[i])
+									{
+										inherited_standard_basis_argument++;
+										number_of_inherited_values *=
+											(*inherited_standard_basis_argument)+1;
+									}
+								}
+							}
+						}
+						else
+						{
+							standard_basis_function=polygon_basis_functions;
+							for (i=basis_dimension*(inherited_dimension+1);i>0;i--)
+							{
+								transformation++;
+								*transformation=0;
+							}
+							transformation=expanded_coordinate_transformation+
+								(inherited_dimension+1);
+							i=1;
+							while (i<=basis_dimension)
+							{
+								standard_basis_argument++;
+								inherited_standard_basis_argument++;
+								transformation[i]=1;
+								i++;
+								transformation += inherited_dimension+1;
+								order= *standard_basis_argument;
+								if (order<0)
+								{
+									/* polygon */
+									polygon_offset= -order;
+									if (polygon_offset<basis_dimension)
+									{
+										/* first polygon coordinate */
+										number_of_polygon_verticies=
+											-standard_basis_argument[polygon_offset]-
+										number_of_inherited_values *=
+											4*number_of_polygon_verticies;
+									}
+								}
+								else
+								{
+									number_of_inherited_values *= order+1;
+								}
+								*inherited_standard_basis_argument=order;
+							}
+						}
+						row_size=basis->number_of_standard_basis_functions;
+						if (ALLOCATE(blending_matrix,FE_value,
+							row_size*number_of_inherited_values))
+						{
+							value=blending_matrix;
+							*value=1;
+							for (i=row_size*number_of_inherited_values-1;i>0;i--)
+							{
+								value++;
+								*value=0;
+							}
+							standard_basis_argument=standard_basis_arguments;
+							row_size=1;
+							transformation=expanded_coordinate_transformation+
+								(inherited_dimension+1);
+							for (i=0;i<basis_dimension;i++)
+							{
+								standard_basis_argument++;
+								order= *standard_basis_argument;
+								if (order<0)
+								{
+									/* polygon */
+									polygon_offset= -order;
+									if (polygon_offset<basis_dimension)
+									{
+										/* first polygon coordinate */
+										number_of_polygon_verticies=
+											-standard_basis_argument[polygon_offset]-
+											basis_dimension;
+										if (field_to_element[i])
+										{
+											if (field_to_element[i+polygon_offset])
+											{
+												/* polygon is in projection */
+												order=4*number_of_polygon_verticies;
+												/*???DB.  Copied from "not polygon" below */
+												for (j=0;j<order;j++)
+												{
+													offset=0;
+													for (k=0;k<=inherited_dimension;k++)
+													{
+														if (0!= *transformation)
+														{
+															/* loop over blending matrix rows */
+															value=blending_matrix+
+																(j*row_size*number_of_inherited_values);
+															for (l=0;l<row_size;l++)
+															{
+																for (p=number_of_inherited_values-offset;p>0;
+																	p--)
+																{
+																	if (0!= *value)
+																	{
+																		value[row_size*number_of_inherited_values+
+																			offset] += (*value)*(*transformation);
+																	}
+																	value++;
+																}
+																value += offset;
+															}
+														}
+														if (k>0)
+														{
+															if ((polygon_offset=
+																inherited_standard_basis_arguments[k])<0)
+															{
+																/* polygon */
+																polygon_offset= -polygon_offset;
+																if (polygon_offset<inherited_dimension)
+																{
+																	/* first polygon coordinate */
+																	number_of_polygon_verticies=
+																		-inherited_standard_basis_arguments[
+																		polygon_offset]-inherited_dimension;
+																	offset *= 4*number_of_polygon_verticies;
+																}
+															}
+															else
+															{
+																/* not polygon */
+																offset *= 1+polygon_offset;
+															}
+														}
+														else
+														{
+															offset=1;
+														}
+														transformation++;
+													}
+													transformation -= inherited_dimension+1;
+												}
+											}
+											else
+											{
+												/* edge of polygon in projection */
+												polygon_vertex=(int)(0.1+
+													(transformation[field_to_element[i]])*
+													(FE_value)number_of_polygon_verticies);
+												if (number_of_polygon_verticies-1==polygon_vertex)
+												{
+													for (j=number_of_values/
+														(4*number_of_polygon_verticies*
+														number_of_inherited_values);j>0;j--)
+													{
+														for (k=number_of_inherited_values;k>0;
+															k--)
+														{
+															scalar=value[polygon_vertex*
+																number_of_inherited_values]+
+																value[(polygon_vertex+
+																	2*number_of_polygon_verticies)*
+																	number_of_inherited_values];
+															inherited_value[
+																number_of_inherited_values]=
+																(*value)+
+																value[2*number_of_polygon_verticies*
+																number_of_inherited_values]-scalar;
+															*inherited_value=scalar;
+															inherited_value++;
+															value++;
+														}
+														inherited_value +=
+															number_of_inherited_values;
+														value +=
+															(4*number_of_polygon_verticies-1)*
+															number_of_inherited_values;
+													}
+												}
+												else
+												{
+													if (number_of_polygon_verticies==polygon_vertex)
+													{
+														polygon_vertex=0;
+													}
+												}
+												order=1;
+												/*???DB.  Copied from "not polygon" below */
+												for (j=0;j<order;j++)
+												{
+													offset=0;
+													for (k=0;k<=inherited_dimension;k++)
+													{
+														if (0!= *transformation)
+														{
+															polygon_vertex=(int)(0.1+(*transformation)*
+																(FE_value)number_of_polygon_verticies);
+															/* loop over blending matrix rows */
+															value=blending_matrix+
+																(j*row_size*number_of_inherited_values);
+															for (l=0;l<row_size;l++)
+															{
+																for (p=number_of_inherited_values-offset;p>0;
+																	p--)
+																{
+																	if (0!= *value)
+																	{
+																		value[row_size*number_of_inherited_values+
+																			offset] += (*value)*(*transformation);
+																	}
+																	value++;
+																}
+																value += offset;
+															}
+														}
+														if (k>0)
+														{
+															if ((polygon_offset=
+																inherited_standard_basis_arguments[k])<0)
+															{
+																/* polygon */
+																polygon_offset= -polygon_offset;
+																if (polygon_offset<inherited_dimension)
+																{
+																	/* first polygon coordinate */
+																	number_of_polygon_verticies=
+																		-inherited_standard_basis_arguments[
+																		polygon_offset]-inherited_dimension;
+																	offset *= 4*number_of_polygon_verticies;
+																}
+															}
+															else
+															{
+																/* not polygon */
+																offset *= 1+polygon_offset;
+															}
+														}
+														else
+														{
+															offset=1;
+														}
+														transformation++;
+													}
+													transformation -= inherited_dimension+1;
+												}
+											}
+										}
+										else
+										{
+											/* polygon is not in projection.  Second polygon
+												coordinate is radial and so can't be in projection by
+												itself */
+										}
+										row_size *= 4*number_of_polygon_vertices;
+									}
+								}
+								else
+								{
+									/* not polygon */
+									for (j=0;j<order;j++)
+									{
+										offset=0;
+										for (k=0;k<=inherited_dimension;k++)
+										{
+											if (0!= *transformation)
+											{
+												/* loop over blending matrix rows */
+												value=blending_matrix+
+													(j*row_size*number_of_inherited_values);
+												for (l=0;l<row_size;l++)
+												{
+													for (p=number_of_inherited_values-offset;p>0;p--)
+													{
+														if (0!= *value)
+														{
+															value[
+																row_size*number_of_inherited_values+offset] +=
+																(*value)*(*transformation);
+														}
+														value++;
+													}
+													value += offset;
+												}
+											}
+											if (k>0)
+											{
+												if ((polygon_offset=
+													inherited_standard_basis_arguments[k])<0)
+												{
+													/* polygon */
+													polygon_offset= -polygon_offset;
+													if (polygon_offset<inherited_dimension)
+													{
+														/* first polygon coordinate */
+														number_of_polygon_verticies=
+															-inherited_standard_basis_arguments[
+															polygon_offset]-inherited_dimension;
+														offset *= 4*number_of_polygon_verticies;
+													}
+												}
+												else
+												{
+													/* not polygon */
+													offset *= 1+polygon_offset;
+												}
+											}
+											else
+											{
+												offset=1;
+											}
+											transformation++;
+										}
+										transformation -= inherited_dimension+1;
+									}
+									row_size *= (order+1);
+								}
+								transformation += inherited_dimension+1;
+							}
+							*inherited_arguments_address=inherited_standard_basis_arguments;
+							*blending_matrix_address=blending_matrix;
+							*number_of_inherited_values_address=number_of_inherited_values;
+							*inherited_standard_basis_function_address=
+								standard_basis_functions;
+							return_code=1;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"calculate_standard_basis_transformation.  "
+								"Insufficient memory for blending_matrix");
+							DEALLOCATE(inherited_standard_basis_arguments);
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_standard_basis_transformation.  Insufficient memory 1");
+					DEALLOCATE(inherited_standard_basis_arguments);
+					return_code=0;
+				}
+				DEALLOCATE(expanded_coordinate_transformation);
+				DEALLOCATE(field_to_element);
+				DEALLOCATE(reorder_coordinate);
+#if defined (OLD_CODE)
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
+				if (coordinate_transformation)
+				{
+					field_to_element= *field_to_element_address;
+					if (!field_to_element)
+					{
+						/* determine the correspondence between the xi coordinates
+							for the element field and the xi coordinates for the
+							element */
+						/*???DB.  At present only able to do transformations that
+							are one to one in the xi coordinates.  This is
+							equivalent to one non-zero in each column of A and at
+							most one non-zero in each row of A */
+						/*???DB.  Can this be incorporated into the blending
+							matrix idea for the monomial basis */
+/*???debug */
+/*{
+FE_value *value;
+int i,j;
+
+printf("polygon coordinate transformation %d %d\n",inherited_dimension,
+basis_dimension);
+value=coordinate_transformation;
+for (i=basis_dimension;i>0;i--)
+{
+printf("%g  ",*value);
+value++;
+for (j=inherited_dimension;j>0;j--)
+{
+printf(" %g",*value);
+value++;
+}
+printf("\n");
+}
+}*/
+						ALLOCATE(field_to_element,int,basis_dimension);
+						ALLOCATE(reorder_coordinate,int,inherited_dimension);
+						if (field_to_element&&reorder_coordinate)
+						{
+							*field_to_element_address=field_to_element;
+							*reorder_coordinates_address=reorder_coordinate;
+							return_code=1;
+							i=0;
+							/* for keeping track of whether or not the coordinates
+								need reordering */
+							k=0;
+							transformation=coordinate_transformation;
+							while (return_code&&(i<basis_dimension))
+							{
+								field_to_element[i]=0;
+								/* skip translate b */
+								transformation++;
+								/* examine matrix A */
+								j=0;
+								while (return_code&&(j<inherited_dimension))
+								{
+									if (0!= *transformation)
+									{
+										if (0==field_to_element[i])
+										{
+											field_to_element[i]=j+1;
+											*reorder_coordinate=j;
+											reorder_coordinate++;
+											if (j==k)
+											{
+												k++;
+											}
+											else
+											{
+												k= -1;
+											}
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+"calculate_standard_basis_transformation.  Coordinate transformation not 1 to 1");
+											return_code=0;
+										}
+									}
+									transformation++;
+									j++;
+								}
+								i++;
+							}
+/*???debug */
+/*printf("field to element :");
+for (i=0;i<basis_dimension;i++)
+{
+printf(" %d",field_to_element[i]);
+}
+printf("\n");
+printf("k=%d\n",k);*/
+							if (return_code)
+							{
+								if (-1!=k)
+								{
+									/* coordinate reordering is not needed */
+									DEALLOCATE(*reorder_coordinates_address);
+								}
+							}
+							else
+							{
+								DEALLOCATE(*field_to_element_address);
+								DEALLOCATE(*reorder_coordinates_address);
+								display_message(ERROR_MESSAGE,
+"calculate_standard_basis_transformation.  Invalid coordinate transformation");
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+							"calculate_standard_basis_transformation.  Insufficient memory");
+							DEALLOCATE(*field_to_element_address);
+							DEALLOCATE(*reorder_coordinates_address);
+							return_code=0;
+						}
+					}
+					if (return_code)
+					{
+						field_to_element= *field_to_element_address;
+						/* calculate the arguments for the standard basis function */
+						if (ALLOCATE(inherited_standard_basis_arguments,int,
+							inherited_dimension+1))
+						{
+							*inherited_arguments_address=inherited_standard_basis_arguments;
+							number_of_inherited_values=1;
+							if (reorder_coordinate= *reorder_coordinates_address)
+							{
+								standard_basis_function=monomial_basis_functions;
+								inherited_standard_basis_argument=
+									inherited_standard_basis_arguments;
+								*inherited_standard_basis_argument=inherited_dimension;
+								inherited_standard_basis_argument++;
+								standard_basis_argument=standard_basis_arguments;
+/*???debug */
+/*printf("field to element :");*/
+								for (i=0;i<basis_dimension;i++)
+								{
+									standard_basis_argument++;
+									order= *standard_basis_argument;
+/*???debug */
+/*printf(" %d",field_to_element[i]);*/
+									if (order<0)
+									{
+										/* polygon */
+										polygon_offset= -order;
+										if (polygon_offset<basis_dimension)
+										{
+											/* first polygon coordinate */
+											number_of_polygon_verticies=
+												-standard_basis_argument[polygon_offset]-
+												basis_dimension;
+											if (field_to_element[i])
+											{
+												if (field_to_element[i+polygon_offset])
+												{
+													/* both polygon coordinates are inherited */
+													standard_basis_function=polygon_basis_functions;
+													inherited_polygon_offset=
+														field_to_element[i+polygon_offset]-
+														field_to_element[i];
+													/* reordering, does not reorder polygon coordinates */
+													inherited_standard_basis_argument
+														[*reorder_coordinate]= -inherited_polygon_offset;
+													inherited_standard_basis_argument
+														[*reorder_coordinate+inherited_polygon_offset]=
+														standard_basis_argument[polygon_offset]+
+														(basis_dimension-inherited_dimension);
+													number_of_inherited_values *=
+														4*number_of_polygon_verticies;
+												}
+												else
+												{
+													inherited_standard_basis_argument
+														[*reorder_coordinate]=1;
+													number_of_inherited_values *= 2;
+												}
+												reorder_coordinate++;
+											}
+										}
+#if defined (OLD_CODE)
+/*???DB.  Handled by first polygon coordinate */
+										else
+										{
+											/* second polygon coordinate */
+											if (field_to_element[i])
+											{
+												inherited_standard_basis_argument
+													[*reorder_coordinate]=
+													*standard_basis_argument+
+													basis_dimension-inherited_dimension;
+												reorder_coordinate++;
+											}
+										}
+#endif /* defined (OLD_CODE) */
+									}
+									else
+									{
+										/* not polygon */
+										if (field_to_element[i])
+										{
+											inherited_standard_basis_argument
+												[*reorder_coordinate]=
+												*standard_basis_argument;
+											reorder_coordinate++;
+											number_of_inherited_values *= order+1;
+										}
+									}
+								}
+/*???debug */
+/*printf("\n");*/
+							}
+							else
+							{
+								inherited_standard_basis_argument=
+									inherited_standard_basis_arguments;
+								*inherited_standard_basis_argument=inherited_dimension;
+								standard_basis_argument=standard_basis_arguments;
+								for (i=0;i<basis_dimension;i++)
+								{
+									standard_basis_argument++;
+									order= *standard_basis_argument;
+/*???debug */
+/*printf("%d %d %d %d\n",i,order,field_to_element[i],basis_dimension);*/
+									if (order<0)
+									{
+										/* polygon */
+										polygon_offset= -order;
+										if (polygon_offset<basis_dimension)
+										{
+											/* first polygon coordinate */
+											number_of_polygon_verticies=
+												-standard_basis_argument[polygon_offset]-
+												basis_dimension;
+											if (field_to_element[i])
+											{
+												if (field_to_element[i+polygon_offset])
+												{
+													standard_basis_function=polygon_basis_functions;
+													inherited_standard_basis_argument++;
+													*inherited_standard_basis_argument=
+														field_to_element[i]-
+														field_to_element[i+polygon_offset];
+													number_of_inherited_values *=
+														4*number_of_polygon_verticies;
+												}
+												else
+												{
+													inherited_standard_basis_argument++;
+													*inherited_standard_basis_argument=1;
+													number_of_inherited_values *= 2;
+												}
+											}
+										}
+										else
+										{
+											/* second polygon coordinate */
+											if (field_to_element[i])
+											{
+												inherited_standard_basis_argument++;
+												*inherited_standard_basis_argument=
+													(*standard_basis_argument)+
+													(basis_dimension-inherited_dimension);
+											}
+										}
+									}
+									else
+									{
+										/* not polygon */
+										if (field_to_element[i])
+										{
+											inherited_standard_basis_argument++;
+											*inherited_standard_basis_argument=
+												*standard_basis_argument;
+											number_of_inherited_values *= order+1;
+										}
+									}
+								}
+							}
+							*number_of_inherited_values_address=number_of_inherited_values;
+							*inherited_standard_basis_function_address=
+								standard_basis_function;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+							"calculate_standard_basis_transformation.  Insufficient memory");
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					/*???DB.  To be done.  Fill in arguments */
+					return_code=1;
+				}
+#endif /* defined (OLD_CODE) */
+#endif /* defined (OLD_CODE) */
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"calculate_standard_basis_transformation.  Invalid basis");
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(WARNING_MESSAGE,
+			"calculate_standard_basis_transformation.  Invalid argument(s)");
+		return_code=0;
+	}
+#if defined (DEBUG)
+	/*???debug */
+	printf("leave calculate_standard_basis_transformation %d\n",return_code);
+#endif /* defined (DEBUG) */
+	LEAVE;
+
+	return (return_code);
+} /* calculate_standard_basis_transformation */
+#endif /* defined (SMOOTH_POLYGONS) */
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
+static int calculate_standard_basis_transformation(struct FE_basis *basis,
+	FE_value *coordinate_transformation,int inherited_dimension,
+	int **inherited_arguments_address,int *number_of_inherited_values_address,
+	FE_value **blending_matrix_address,int **field_to_element_address,
+	int **reorder_coordinates_address)
+/*******************************************************************************
+LAST MODIFIED : 25 June 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FE_value *blending_matrix,*expanded_coordinate_transformation,*transformation,
+		*value;
+	int basis_dimension,*field_to_element,i,inherited_polygon_offset,
+		*inherited_standard_basis_argument,*inherited_standard_basis_arguments,j,k,
+		l,number_of_inherited_values,number_of_polygon_verticies,offset,order,p,
+		polygon_offset,*reorder_coordinate,return_code,row_size,
+		*standard_basis_argument,*standard_basis_arguments;
+	Standard_basis_function *standard_basis_function;
+
+	ENTER(calculate_standard_basis_transformation);
+#if defined (DEBUG)
+	/*???debug */
+	printf("enter calculate_standard_basis_transformation\n");
+#endif /* defined (DEBUG) */
+	return_code=0;
+	/* check arguments */
+	if (basis&&(inherited_dimension>0)&&inherited_arguments_address&&
+		blending_matrix_address&&field_to_element_address&&
+		reorder_coordinates_address)
+	{
+		standard_basis_arguments=(int *)(basis->arguments);
+		standard_basis_function=basis->standard_basis;
+		basis_dimension=(basis->type)[0];
+		if (monomial_basis_functions==standard_basis_function)
+		{
+			/* calculate the blending matrix from the monomial basis for the full
+				<basis> to the inherited monomial basis */
+			ALLOCATE(inherited_standard_basis_arguments,int,inherited_dimension+1);
+			ALLOCATE(expanded_coordinate_transformation,FE_value,
+				(basis_dimension+1)*(inherited_dimension+1));
+			if (inherited_standard_basis_arguments&&
+				expanded_coordinate_transformation)
+			{
+				inherited_standard_basis_argument=
+					inherited_standard_basis_arguments;
+				*inherited_standard_basis_argument=inherited_dimension;
+				for (i=inherited_dimension;i>0;i--)
+				{
+					inherited_standard_basis_argument++;
+					*inherited_standard_basis_argument=0;
+				}
+				standard_basis_argument=standard_basis_arguments;
+				expanded_coordinate_transformation[0]=1;
+				transformation=expanded_coordinate_transformation;
+				for (j=inherited_dimension;j>0;j--)
+				{
+					transformation++;
+					*transformation=0;
+				}
+				if (value=coordinate_transformation)
+				{
+					for (i=basis_dimension;i>0;i--)
+					{
+						standard_basis_argument++;
+						order= *standard_basis_argument;
+						inherited_standard_basis_argument=
+							inherited_standard_basis_arguments;
+						for (j=inherited_dimension;j>=0;j--)
+						{
+							transformation++;
+							*transformation= *value;
+							value++;
+							if (j>0)
+							{
+								inherited_standard_basis_argument++;
+								if ((0!= *value)&&(order> *inherited_standard_basis_argument))
+								{
+									*inherited_standard_basis_argument=order;
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					for (i=basis_dimension*(inherited_dimension+1);i>0;i--)
+					{
+						transformation++;
+						*transformation=0;
+					}
+					transformation=expanded_coordinate_transformation+
+						(inherited_dimension+1);
+					inherited_standard_basis_argument=
+						inherited_standard_basis_arguments;
+					i=1;
+					while (i<=basis_dimension)
+					{
+						standard_basis_argument++;
+						inherited_standard_basis_argument++;
+						transformation[i]=1;
+						i++;
+						transformation += inherited_dimension+1;
+						*inherited_standard_basis_argument= *standard_basis_argument;
+					}
+				}
+				row_size=basis->number_of_standard_basis_functions;
+				number_of_inherited_values=1;
+				inherited_standard_basis_argument=
+					inherited_standard_basis_arguments;
+				for (j=inherited_dimension;j>0;j--)
+				{
+					inherited_standard_basis_argument++;
+					number_of_inherited_values *= (*inherited_standard_basis_argument)+1;
+				}
+				if (ALLOCATE(blending_matrix,FE_value,
+					row_size*number_of_inherited_values))
+				{
+					value=blending_matrix;
+					*value=1;
+					for (i=row_size*number_of_inherited_values-1;i>0;i--)
+					{
+						value++;
+						*value=0;
+					}
+					standard_basis_argument=standard_basis_arguments;
+					row_size=1;
+					transformation=expanded_coordinate_transformation+
+						(inherited_dimension+1);
+					for (i=basis_dimension;i>0;i--)
+					{
+						standard_basis_argument++;
+						order= *standard_basis_argument;
+						for (j=0;j<order;j++)
+						{
+							offset=0;
+							for (k=0;k<=inherited_dimension;k++)
+							{
+								if (0!= *transformation)
+								{
+									/* loop over blending matrix rows */
+									value=blending_matrix+(j*row_size*number_of_inherited_values);
+									for (l=0;l<row_size;l++)
+									{
+										for (p=number_of_inherited_values-offset;p>0;p--)
+										{
+											if (0!= *value)
+											{
+												value[row_size*number_of_inherited_values+offset] +=
+													(*value)*(*transformation);
+											}
+											value++;
+										}
+										value += offset;
+									}
+								}
+								if (k>0)
+								{
+									offset *= (1+inherited_standard_basis_arguments[k]);
+								}
+								else
+								{
+									offset=1;
+								}
+								transformation++;
+							}
+							transformation -= inherited_dimension+1;
+						}
+						transformation += inherited_dimension+1;
+						row_size *= (order+1);
+					}
+					*inherited_arguments_address=inherited_standard_basis_arguments;
+					*blending_matrix_address=blending_matrix;
+					*number_of_inherited_values_address=number_of_inherited_values;
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_standard_basis_transformation.  "
+						"Insufficient memory for blending_matrix");
+					DEALLOCATE(inherited_standard_basis_arguments);
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"calculate_standard_basis_transformation.  Insufficient memory 1");
+				DEALLOCATE(inherited_standard_basis_arguments);
+				return_code=0;
+			}
+			DEALLOCATE(expanded_coordinate_transformation);
+#if defined (OLD_CODE)
+/*???DB.  Used before blending matrix was reordered in CREATE(FE_basis) to
+	remove the simplex special case */
+			int *temp_reorder_coordinates;
+
+			/* calculate the blending matrix from the monomial basis for the full
+				<basis> to the inherited monomial basis */
+			ALLOCATE(inherited_standard_basis_arguments,int,inherited_dimension+1);
+			ALLOCATE(expanded_coordinate_transformation,FE_value,
+				(basis_dimension+1)*(inherited_dimension+1));
+			ALLOCATE(temp_reorder_coordinates,int,basis_dimension);
+			if (inherited_standard_basis_arguments&&temp_reorder_coordinates&&
+				expanded_coordinate_transformation)
+			{
+				reorder_coordinate=temp_reorder_coordinates;
+				for (i=basis_dimension;i>0;i--)
+				{
+					*reorder_coordinate=0;
+					reorder_coordinate++;
+				}
+				inherited_standard_basis_argument=
+					inherited_standard_basis_arguments;
+				*inherited_standard_basis_argument=inherited_dimension;
+				for (i=inherited_dimension;i>0;i--)
+				{
+					inherited_standard_basis_argument++;
+					*inherited_standard_basis_argument=0;
+				}
+				standard_basis_argument=standard_basis_arguments;
+				expanded_coordinate_transformation[0]=1;
+				transformation=expanded_coordinate_transformation;
+				reorder_coordinate=temp_reorder_coordinates;
+				for (j=inherited_dimension;j>0;j--)
+				{
+					transformation++;
+					*transformation=0;
+				}
+				if (value=coordinate_transformation)
+				{
+					for (i=basis_dimension;i>0;i--)
+					{
+						standard_basis_argument++;
+						while (*reorder_coordinate)
+						{
+							reorder_coordinate++;
+						}
+						value=coordinate_transformation+
+							((reorder_coordinate-temp_reorder_coordinates)*
+							(inherited_dimension+1));
+						if ((order= *standard_basis_argument)<0)
+						{
+							/* simplex */
+							j=0;
+							k=0;
+							do
+							{
+								k += standard_basis_argument[j];
+								j++;
+							}
+							while ((standard_basis_argument[j]<0)&&
+								(-basis_dimension<standard_basis_argument[j]));
+							order=(-standard_basis_argument[j])/basis_dimension;
+							k += (-standard_basis_argument[j])%basis_dimension;
+							if (0==k)
+							{
+								/* first dimension */
+								k=0;
+								j=0;
+								do
+								{
+									reorder_coordinate[k]=1;
+									inherited_standard_basis_argument=
+										inherited_standard_basis_arguments;
+									for (l=0;l<=inherited_dimension;l++)
+									{
+										transformation++;
+										*transformation=value[k*(inherited_dimension+1)+l];
+										if (l>0)
+										{
+											inherited_standard_basis_argument++;
+#if defined (OLD_CODE)
+											if ((0!= *transformation)&&
+												(order> *inherited_standard_basis_argument))
+											{
+												*inherited_standard_basis_argument=order;
+											}
+#endif /* defined (OLD_CODE) */
+											if (0!= *transformation)
+											{
+												*inherited_standard_basis_argument += order;
+											}
+										}
+									}
+									k -= standard_basis_argument[j];
+									j++;
+								}
+								while ((standard_basis_argument[j]<0)
+								  && (-basis_dimension<standard_basis_argument[j-1]));
+							}
+						}
+						else
+						{
+							*reorder_coordinate=1;
+							inherited_standard_basis_argument=
+								inherited_standard_basis_arguments;
+							for (j=inherited_dimension;j>=0;j--)
+							{
+								transformation++;
+								*transformation= *value;
+								value++;
+								if (j>0)
+								{
+									inherited_standard_basis_argument++;
+									if ((0!= *value)&&(order> *inherited_standard_basis_argument))
+									{
+										*inherited_standard_basis_argument=order;
+									}
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+/*???debug */
+/*printf("no coordinate_transformation\n");*/
+					for (i=basis_dimension*(inherited_dimension+1);i>0;i--)
+					{
+						transformation++;
+						*transformation=0;
+					}
+					transformation=expanded_coordinate_transformation+
+						(inherited_dimension+1);
+					inherited_standard_basis_argument=
+						inherited_standard_basis_arguments;
+					i=1;
+					while (i<=basis_dimension)
+					{
+/*???debug */
+/*printf("i=%d\n",i);*/
+						standard_basis_argument++;
+						inherited_standard_basis_argument++;
+						if ((order= *standard_basis_argument)<0)
+						{
+							/* simplex */
+							j=0;
+							do
+							{
+								j++;
+							}
+							while ((standard_basis_argument[j]<0)&&
+								(-basis_dimension<standard_basis_argument[j]));
+							order=(-standard_basis_argument[j])/basis_dimension;
+/*???debug */
+/*printf("order=%d\n",order);*/
+							transformation[i]=1;
+							transformation += inherited_dimension+1;
+							*inherited_standard_basis_argument=order;
+							j=i;
+							do
+							{
+								j -= *standard_basis_argument;
+								transformation[j]=1;
+								transformation += inherited_dimension+1;
+								standard_basis_argument++;
+								i++;
+								inherited_standard_basis_argument++;
+								*inherited_standard_basis_argument=order;
+							}
+							while ((*standard_basis_argument<0)&&
+								(-basis_dimension< *standard_basis_argument));
+							i++;
+						}
+						else
+						{
+							transformation[i]=1;
+							i++;
+							transformation += inherited_dimension+1;
+							*inherited_standard_basis_argument=order;
+						}
+					}
+				}
+/*???debug */
+/*printf("expanded_coordinate_transformation: %p\n",
+expanded_coordinate_transformation);
+if (value=expanded_coordinate_transformation)
+{
+for (i=basis_dimension+1;i>0;i--)
+{
+for (j=inherited_dimension+1;j>0;j--)
+{
+printf(" %g",*value);
+value++;
+}
+printf("\n");
+}
+}*/
+				row_size=basis->number_of_standard_basis_functions;
+				number_of_inherited_values=1;
+				inherited_standard_basis_argument=
+					inherited_standard_basis_arguments;
+/*???debug */
+/*printf("inherited_standard_basis_arguments : %d",
+	*inherited_standard_basis_argument);*/
+				for (j=inherited_dimension;j>0;j--)
+				{
+					inherited_standard_basis_argument++;
+					number_of_inherited_values *= (*inherited_standard_basis_argument)+1;
+/*???debug */
+/*printf(" %d",*inherited_standard_basis_argument);*/
+				}
+/*???debug */
+/*printf("\n");*/
+/*???debug */
+/*printf("size %d %d\n",row_size,number_of_inherited_values);*/
+				if (ALLOCATE(blending_matrix,FE_value,
+					row_size*number_of_inherited_values))
+				{
+					value=blending_matrix;
+					*value=1;
+					for (i=row_size*number_of_inherited_values-1;i>0;i--)
+					{
+						value++;
+						*value=0;
+					}
+					standard_basis_argument=standard_basis_arguments;
+					row_size=1;
+					transformation=expanded_coordinate_transformation+
+						(inherited_dimension+1);
+					for (i=basis_dimension;i>0;i--)
+					{
+						standard_basis_argument++;
+						if ((order= *standard_basis_argument)<0)
+						{
+							/* simplex */
+							j=0;
+							while ((standard_basis_argument[j]<0)&&
+								(-basis_dimension<standard_basis_argument[j]))
+							{
+								j++;
+							}
+							order=(-standard_basis_argument[j])/
+								basis_dimension;
+							/*???DB.  If didn't store blending matrix for full monomials with
+								the basis, would have to do somethingdifferent here */
+						}
+/*???debug */
+/*printf("%d order %d\n",i,order);*/
+						for (j=0;j<order;j++)
+						{
+							offset=0;
+							for (k=0;k<=inherited_dimension;k++)
+							{
+								if (0!= *transformation)
+								{
+									/* loop over blending matrix rows */
+									value=blending_matrix+(j*row_size*number_of_inherited_values);
+									for (l=0;l<row_size;l++)
+									{
+										for (p=number_of_inherited_values-offset;p>0;p--)
+										{
+											if (0!= *value)
+											{
+/*???debug */
+/*printf("non-zero %d %d %d %d\n",value-blending_matrix,transformation-
+expanded_coordinate_transformation,row_size,offset);*/
+												value[row_size*number_of_inherited_values+offset] +=
+													(*value)*(*transformation);
+											}
+											value++;
+										}
+										value += offset;
+									}
+								}
+								if (k>0)
+								{
+									offset *=
+										(1+inherited_standard_basis_arguments[k]);
+								}
+								else
+								{
+									offset=1;
+								}
+								transformation++;
+							}
+							transformation -= inherited_dimension+1;
+						}
+						transformation += inherited_dimension+1;
+						row_size *= (order+1);
+					}
+					*inherited_arguments_address=inherited_standard_basis_arguments;
+					*blending_matrix_address=blending_matrix;
+					*number_of_inherited_values_address=number_of_inherited_values;
+					return_code=1;
+/*???debug */
+/*printf("blending_matrix:\n");
+value=blending_matrix;
+for (i=row_size;i>0;i--)
+{
+	for (j=number_of_inherited_values;j>0;j--)
+	{
+		printf(" %g",*value);
+		value++;
+	}
+	printf("\n");
+}*/
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+"calculate_standard_basis_transformation.  Insufficient memory for blending_matrix");
+					DEALLOCATE(inherited_standard_basis_arguments);
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"calculate_standard_basis_transformation.  Insufficient memory 1");
+				DEALLOCATE(inherited_standard_basis_arguments);
+				return_code=0;
+			}
+			DEALLOCATE(expanded_coordinate_transformation);
+			DEALLOCATE(temp_reorder_coordinates);
+#endif /* defined (OLD_CODE) */
 		}
 		else
 		{
@@ -7596,11 +10664,17 @@ printf("k=%d\n",k);*/
 											{
 												if (field_to_element[i+polygon_offset])
 												{
-													/*???DB.  Assume that reordering does NOT
-														reorder polygon_coordinates */
+													/* both polygon coordinates are inherited */
+													inherited_polygon_offset=
+														field_to_element[i+polygon_offset]-
+														field_to_element[i];
+													/* reordering, does not reorder polygon coordinates */
 													inherited_standard_basis_argument
-														[*reorder_coordinate]=field_to_element[i]-
-														field_to_element[i+polygon_offset];
+														[*reorder_coordinate]= -inherited_polygon_offset;
+													inherited_standard_basis_argument
+														[*reorder_coordinate+inherited_polygon_offset]=
+														standard_basis_argument[polygon_offset]+
+														(basis_dimension-inherited_dimension);
 													number_of_inherited_values *=
 														4*number_of_polygon_verticies;
 												}
@@ -7613,6 +10687,8 @@ printf("k=%d\n",k);*/
 												reorder_coordinate++;
 											}
 										}
+#if defined (OLD_CODE)
+/*???DB.  Handled by first polygon coordinate */
 										else
 										{
 											/* second polygon coordinate */
@@ -7625,6 +10701,7 @@ printf("k=%d\n",k);*/
 												reorder_coordinate++;
 											}
 										}
+#endif /* defined (OLD_CODE) */
 									}
 									else
 									{
@@ -7691,7 +10768,7 @@ printf("k=%d\n",k);*/
 												inherited_standard_basis_argument++;
 												*inherited_standard_basis_argument=
 													(*standard_basis_argument)+
-													basis_dimension-inherited_dimension;
+													(basis_dimension-inherited_dimension);
 											}
 										}
 									}
@@ -7745,6 +10822,7 @@ printf("k=%d\n",k);*/
 
 	return (return_code);
 } /* calculate_standard_basis_transformation */
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 
 #if defined (OLD_CODE)
 static int merge_FE_node_into_list(struct FE_node *node,void *list_void)
@@ -9258,38 +12336,38 @@ Defines a field at a node (does not assign values)
 														*((FE_value *)new_value) = FE_VALUE_INITIALIZER;
 														new_value+=sizeof(FE_value);
 													}
-												}break;
+												} break;
 												case FE_VALUE_VALUE:
 												{																					
 													*((FE_value *)new_value) = FE_VALUE_INITIALIZER;
 													new_value+=size;
-												}break;
+												} break;
 												case UNSIGNED_VALUE:
 												{																					
 													*((unsigned *)new_value) = 0;
 													new_value+=size;
-												}break;	
+												} break;	
 												case INT_VALUE:
 												{																			
 													*((int *)new_value) = 0;
 													new_value+=size;
-												}break;
+												} break;
 												case DOUBLE_VALUE:
 												{																							
 													*((double *)new_value) = 0;
 													new_value+=size;
-												}break;	
+												} break;	
 												case FLT_VALUE:
 												{																						
 													*((float *)new_value) = 0;
 													new_value+=size;
-												}break;
+												} break;
 												case SHORT_VALUE:
 												{
 													display_message(ERROR_MESSAGE,"define_FE_field_at_node."
 														"SHORT_VALUE.Code not written yet. Beware alignmemt problems ");
 													return_code =0;
-												}break;
+												} break;
 												case DOUBLE_ARRAY_VALUE:
 												{	
 													double *array = (double *)NULL;
@@ -9301,7 +12379,7 @@ Defines a field at a node (does not assign values)
 													array_address = (double **)(new_value+sizeof(int));
 													*array_address = array;																							
 													new_value+=size;
-												}break;																			
+												} break;																			
 												case FE_VALUE_ARRAY_VALUE:
 												{	
 													FE_value *array = (FE_value *)NULL;
@@ -9311,7 +12389,7 @@ Defines a field at a node (does not assign values)
 													array_address = (FE_value **)(new_value+sizeof(int));
 													*array_address = array;	
 													new_value+=size;
-												}break;
+												} break;
 												case FLT_ARRAY_VALUE:
 												{	
 													float *array = (float *)NULL;	
@@ -9321,7 +12399,7 @@ Defines a field at a node (does not assign values)
 													array_address = (float **)(new_value+sizeof(int));
 													*array_address = array;	
 													new_value+=size;
-												}break;		
+												} break;		
 												case SHORT_ARRAY_VALUE:
 												{	
 													short *array = (short *)NULL;	
@@ -9331,7 +12409,7 @@ Defines a field at a node (does not assign values)
 													array_address = (short **)(new_value+sizeof(int));
 													*array_address = array;	
 													new_value+=size;
-												}break;									
+												} break;									
 												case  INT_ARRAY_VALUE:
 												{	
 													int *array = (int *)NULL;	
@@ -9341,7 +12419,7 @@ Defines a field at a node (does not assign values)
 													array_address = (int **)(new_value+sizeof(int));
 													*array_address = array;	
 													new_value+=size;
-												}break;															
+												} break;															
 												case  UNSIGNED_ARRAY_VALUE:
 												{	
 													unsigned *array = (unsigned *)NULL;	
@@ -9351,7 +12429,7 @@ Defines a field at a node (does not assign values)
 													array_address = (unsigned **)(new_value+sizeof(int));
 													*array_address = array;	
 													new_value+=size;
-												}break;
+												} break;
 												case STRING_VALUE:
 												{	
 													char **string_address;
@@ -9359,13 +12437,13 @@ Defines a field at a node (does not assign values)
 													string_address = (char **)(new_value);
 													*string_address = (char *)NULL;	
 													new_value += size;
-												}break;	
+												} break;	
 												case  UNKNOWN_VALUE:
 												{
 													display_message(ERROR_MESSAGE,"define_FE_field_at_node." 
 														" UNKNOWN_VALUE");
 													return_code =0;
-												}break;
+												} break;
 											}
 										}
 									}
@@ -11374,12 +14452,12 @@ Give an error if field->values_storage isn't storing array types.
 								return_code=1;
 							}
 						}
-					}break;				
+					} break;				
 					default:
 					{					
 						display_message(ERROR_MESSAGE,
 							"get_FE_nodal_array_attributes. Not an array type");
-					}break;
+					} break;
 				}
 
 
@@ -11507,12 +14585,12 @@ Give an error if field->values_storage isn't storing array types.
 								}							
 							}
 						}
-					}break;				
+					} break;				
 					default:
 					{					
 						display_message(ERROR_MESSAGE,
 							"get_FE_nodal_array_number_of_elements. Not an array type");
-					}break;
+					} break;
 				}
 			}
 			else
@@ -14629,7 +17707,7 @@ Returns true if <node_group> contains any nodes in <node_list>.
 
 struct FE_basis *CREATE(FE_basis)(int *type)
 /*******************************************************************************
-LAST MODIFIED : 10 November 1997
+LAST MODIFIED : 20 July 2001
 
 DESCRIPTION :
 A basis is created with the specified <type> (duplicated).  The basis is
@@ -14640,12 +17718,12 @@ returned.
 	FE_value *blending_matrix,*polygon_blending_matrix,*reorder_1,*reorder_2,
 		*temp_matrix;
 	int *argument,*arguments,*basis_function_number,*basis_function_numbers,
-		*basis_type,i,j,k,number_of_basis_functions,number_of_basis_functions_2,
-		number_of_basis_functions_3,number_of_nodes,number_of_polygon_verticies,
-		number_of_standard_basis_functions,*number_of_values_at_node,
-		number_of_xi_coordinates,polygon_offset,simplex_dimension,simplex_order,
-		simplex_type,step_1,step_2,*temp_int_ptr_1,*temp_int_ptr_2,temp_int_1,
-		temp_int_2,temp_int_3,temp_int_4,*type_column,*type_entry,xi_coordinate;
+		*basis_type,i,j,k,l,need_reorder,number_of_basis_functions,
+		number_of_polygon_verticies,number_of_standard_basis_functions,
+		number_of_xi_coordinates,offset_1,offset_2,polygon_offset,*reorder_offsets,
+		*reorder_xi,*reorder_xi_entry,simplex_dimension,simplex_order,simplex_type,
+		step_1,step_2,*temp_int_ptr_1,*temp_int_ptr_2,temp_int_1,temp_int_2,
+		temp_int_3,*type_column,*type_entry,xi_coordinate;
 	Standard_basis_function *standard_basis;
 	struct FE_basis *basis;
 
@@ -14656,22 +17734,39 @@ returned.
 		/* check that the type is valid */
 		if (ALLOCATE(arguments,int,number_of_xi_coordinates+1)&&
 			ALLOCATE(blending_matrix,FE_value,1)&&
-			ALLOCATE(basis_function_numbers,int,1)&&
-			ALLOCATE(number_of_values_at_node,int,1))
+			ALLOCATE(basis_function_numbers,int,2*(number_of_xi_coordinates+1))&&
+			ALLOCATE(reorder_xi,int,number_of_xi_coordinates))
 		{
-/*???debug */
-			/*printf("create basis : %d\n",number_of_xi_coordinates);*/
+#if defined (DEBUG)
+			/*???debug */
+			printf("create basis : %d\n",number_of_xi_coordinates);
+#endif /* defined (DEBUG) */
 			*arguments=number_of_xi_coordinates;
 			*blending_matrix=1;
-			*basis_function_numbers=0;
-			*number_of_values_at_node=1;
-			number_of_nodes=1;
+			/* assign a (2*<number_of_xi_coordinates>+1)-tuple to each basis function
+				so that can order the basis functions (rows of the blending matrix) with
+				FE_nodal_value_type varying fastest, xi1 varying next fastest, xi2
+				varying next fastest and so on */
+			basis_function_number=basis_function_numbers;
+			for (i=2*(number_of_xi_coordinates+1);i>0;i--)
+			{
+				*basis_function_number=0;
+				basis_function_number++;
+			}
+			basis_function_numbers[1]=number_of_xi_coordinates;
 			valid_type=1;
 			number_of_basis_functions=1;
 			number_of_standard_basis_functions=1;
 			xi_coordinate=0;
 			type_entry=type+1;
 			standard_basis=monomial_basis_functions;
+			/* for non-tensor product bases (simplex and polygon), the blending
+				matrix is initially calculated as the tensor product of the current
+				blending matrix and the blending matrix for the non-tensor product
+				basis.  This implies that all the coordinates for the non-tensor
+				product basis will be consecutive.  The coordinates (columns of the
+				blending matrix) then have to be reordered */
+			reorder_xi_entry=reorder_xi;
 			argument=arguments+1;
 			while (valid_type&&(xi_coordinate<number_of_xi_coordinates))
 			{
@@ -14686,28 +17781,24 @@ returned.
 						{
 							DEALLOCATE(blending_matrix);
 							blending_matrix=temp_matrix;
+							temp_int_1=number_of_basis_functions*
+								2*(number_of_xi_coordinates+1);
 							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								2*number_of_basis_functions)&&REALLOCATE(temp_int_ptr_2,
-								number_of_values_at_node,int,2*number_of_nodes))
+								2*temp_int_1))
 							{
+								*reorder_xi_entry=xi_coordinate;
+								reorder_xi_entry++;
 								basis_function_numbers=temp_int_ptr_1;
-								number_of_values_at_node=temp_int_ptr_2;
-								/* number basis functions so that when the rows of the
-									blending are reordered by basis function number the basis
-									functions for each node will be sequential */
-								basis_function_number=basis_function_numbers;
+								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
+									temp_int_1*sizeof(int));
+								basis_function_number=basis_function_numbers+(temp_int_1+
+									2*xi_coordinate);
 								for (i=number_of_basis_functions;i>0;i--)
 								{
-									*(basis_function_number+number_of_basis_functions)=
-										(*basis_function_number)+number_of_basis_functions;
-									basis_function_number++;
+									*basis_function_number=1;
+									basis_function_number[1]=0;
+									basis_function_number += 2*(number_of_xi_coordinates+1);
 								}
-								for (i=0;i<number_of_nodes;i++)
-								{
-									number_of_values_at_node[i+number_of_nodes]=
-										number_of_values_at_node[i];
-								}
-								number_of_nodes *= 2;
 								number_of_basis_functions *= 2;
 								number_of_standard_basis_functions *= 2;
 								*argument=1;
@@ -14732,33 +17823,28 @@ returned.
 						{
 							DEALLOCATE(blending_matrix);
 							blending_matrix=temp_matrix;
+							temp_int_1=number_of_basis_functions*
+								2*(number_of_xi_coordinates+1);
 							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								3*number_of_basis_functions)&&REALLOCATE(temp_int_ptr_2,
-								number_of_values_at_node,int,3*number_of_nodes))
+								3*temp_int_1))
 							{
+								*reorder_xi_entry=xi_coordinate;
+								reorder_xi_entry++;
 								basis_function_numbers=temp_int_ptr_1;
-								number_of_values_at_node=temp_int_ptr_2;
-								/* number basis functions so that when the rows of the
-									blending are reordered by basis function number the basis
-									functions for each node will be sequential */
-								basis_function_number=basis_function_numbers;
-								temp_int_1=2*number_of_basis_functions;
+								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
+									temp_int_1*sizeof(int));
+								memcpy(basis_function_numbers+(2*temp_int_1),
+									basis_function_numbers,temp_int_1*sizeof(int));
+								basis_function_number=basis_function_numbers+(temp_int_1+
+									2*xi_coordinate);
 								for (i=number_of_basis_functions;i>0;i--)
 								{
-									*(basis_function_number+number_of_basis_functions)=
-										(*basis_function_number)+number_of_basis_functions;
-									*(basis_function_number+temp_int_1)=
-										(*basis_function_number)+temp_int_1;
-									basis_function_number++;
+									*basis_function_number=1;
+									basis_function_number[1]=0;
+									basis_function_number[temp_int_1]=2;
+									basis_function_number[temp_int_1+1]=0;
+									basis_function_number += 2*(number_of_xi_coordinates+1);
 								}
-								for (i=0;i<number_of_nodes;i++)
-								{
-									number_of_values_at_node[i+number_of_nodes]=
-										number_of_values_at_node[i];
-									number_of_values_at_node[i+2*number_of_nodes]=
-										number_of_values_at_node[i];
-								}
-								number_of_nodes *= 3;
 								number_of_basis_functions *= 3;
 								number_of_standard_basis_functions *= 3;
 								*argument=2;
@@ -14783,38 +17869,32 @@ returned.
 						{
 							DEALLOCATE(blending_matrix);
 							blending_matrix=temp_matrix;
+							temp_int_1=number_of_basis_functions*
+								2*(number_of_xi_coordinates+1);
 							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								4*number_of_basis_functions)&&REALLOCATE(temp_int_ptr_2,
-								number_of_values_at_node,int,4*number_of_nodes))
+								4*temp_int_1))
 							{
+								*reorder_xi_entry=xi_coordinate;
+								reorder_xi_entry++;
 								basis_function_numbers=temp_int_ptr_1;
-								number_of_values_at_node=temp_int_ptr_2;
-								/* number basis functions so that when the rows of the
-									blending are reordered by basis function number the basis
-									functions for each node will be sequential */
-								basis_function_number=basis_function_numbers;
-								temp_int_1=2*number_of_basis_functions;
-								temp_int_2=temp_int_1+number_of_basis_functions;
+								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
+									temp_int_1*sizeof(int));
+								memcpy(basis_function_numbers+(2*temp_int_1),
+									basis_function_numbers,temp_int_1*sizeof(int));
+								memcpy(basis_function_numbers+(3*temp_int_1),
+									basis_function_numbers,temp_int_1*sizeof(int));
+								basis_function_number=basis_function_numbers+(temp_int_1+
+									2*xi_coordinate);
 								for (i=number_of_basis_functions;i>0;i--)
 								{
-									*(basis_function_number+number_of_basis_functions)=
-										(*basis_function_number)+number_of_basis_functions;
-									*(basis_function_number+temp_int_1)=
-										(*basis_function_number)+temp_int_1;
-									*(basis_function_number+temp_int_2)=
-										(*basis_function_number)+temp_int_2;
-									basis_function_number++;
+									*basis_function_number=1;
+									basis_function_number[1]=0;
+									basis_function_number[temp_int_1]=2;
+									basis_function_number[temp_int_1+1]=0;
+									basis_function_number[2*temp_int_1]=3;
+									basis_function_number[2*temp_int_1+1]=0;
+									basis_function_number += 2*(number_of_xi_coordinates+1);
 								}
-								for (i=0;i<number_of_nodes;i++)
-								{
-									number_of_values_at_node[i+number_of_nodes]=
-										number_of_values_at_node[i];
-									number_of_values_at_node[i+2*number_of_nodes]=
-										number_of_values_at_node[i];
-									number_of_values_at_node[i+3*number_of_nodes]=
-										number_of_values_at_node[i];
-								}
-								number_of_nodes *= 4;
 								number_of_basis_functions *= 4;
 								number_of_standard_basis_functions *= 4;
 								*argument=3;
@@ -14839,49 +17919,32 @@ returned.
 						{
 							DEALLOCATE(blending_matrix);
 							blending_matrix=temp_matrix;
+							temp_int_1=number_of_basis_functions*
+								2*(number_of_xi_coordinates+1);
 							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								4*number_of_basis_functions)&&REALLOCATE(temp_int_ptr_2,
-								number_of_values_at_node,int,2*number_of_nodes))
+								4*temp_int_1))
 							{
+								*reorder_xi_entry=xi_coordinate;
+								reorder_xi_entry++;
 								basis_function_numbers=temp_int_ptr_1;
-								number_of_values_at_node=temp_int_ptr_2;
-								/* number basis functions so that when the rows of the
-									blending are reordered by basis function number the basis
-									functions for each node will be sequential */
-								basis_function_number=basis_function_numbers;
-								number_of_basis_functions_2=2*number_of_basis_functions;
-								number_of_basis_functions_3=number_of_basis_functions_2+
-									number_of_basis_functions;
+								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
+									temp_int_1*sizeof(int));
+								memcpy(basis_function_numbers+(2*temp_int_1),
+									basis_function_numbers,temp_int_1*sizeof(int));
+								memcpy(basis_function_numbers+(3*temp_int_1),
+									basis_function_numbers,temp_int_1*sizeof(int));
+								basis_function_number=basis_function_numbers+(temp_int_1+
+									2*xi_coordinate);
 								for (i=number_of_basis_functions;i>0;i--)
 								{
-									temp_int_1= *basis_function_number;
-									temp_int_2=0;
-									j=0;
-									while ((j<number_of_nodes)&&
-										(temp_int_1-number_of_values_at_node[j]>=0))
-									{
-										temp_int_1 -= number_of_values_at_node[j];
-										temp_int_2 += 2*number_of_values_at_node[j];
-										j++;
-									}
-									temp_int_2 += temp_int_1;
-									*basis_function_number=temp_int_2;
-									basis_function_number[number_of_basis_functions]=
-										temp_int_2+number_of_values_at_node[j];
-									basis_function_number[number_of_basis_functions_2]=
-										temp_int_2+number_of_basis_functions_2;
-									basis_function_number[number_of_basis_functions_3]=
-										basis_function_number[number_of_basis_functions]+
-										number_of_basis_functions_2;
-									basis_function_number++;
+									*basis_function_number=0;
+									basis_function_number[1]=1;
+									basis_function_number[temp_int_1]=1;
+									basis_function_number[temp_int_1+1]=0;
+									basis_function_number[2*temp_int_1]=1;
+									basis_function_number[2*temp_int_1+1]=1;
+									basis_function_number += 2*(number_of_xi_coordinates+1);
 								}
-								for (i=0;i<number_of_nodes;i++)
-								{
-									number_of_values_at_node[i] *= 2;
-									number_of_values_at_node[i+number_of_nodes]=
-										number_of_values_at_node[i];
-								}
-								number_of_nodes *= 2;
 								number_of_basis_functions *= 4;
 								number_of_standard_basis_functions *= 4;
 								*argument=3;
@@ -14906,44 +17969,28 @@ returned.
 						{
 							DEALLOCATE(blending_matrix);
 							blending_matrix=temp_matrix;
+							temp_int_1=number_of_basis_functions*
+								2*(number_of_xi_coordinates+1);
 							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								3*number_of_basis_functions)&&REALLOCATE(temp_int_ptr_2,
-								number_of_values_at_node,int,2*number_of_nodes))
+								3*temp_int_1))
 							{
+								*reorder_xi_entry=xi_coordinate;
+								reorder_xi_entry++;
 								basis_function_numbers=temp_int_ptr_1;
-								number_of_values_at_node=temp_int_ptr_2;
-								/* number basis functions so that when the rows of the
-									blending are reordered by basis function number the basis
-									functions for each node will be sequential */
-								basis_function_number=basis_function_numbers;
-								number_of_basis_functions_2=2*number_of_basis_functions;
+								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
+									temp_int_1*sizeof(int));
+								memcpy(basis_function_numbers+(2*temp_int_1),
+									basis_function_numbers,temp_int_1*sizeof(int));
+								basis_function_number=basis_function_numbers+(temp_int_1+
+									2*xi_coordinate);
 								for (i=number_of_basis_functions;i>0;i--)
 								{
-									temp_int_1= *basis_function_number;
-									basis_function_number[number_of_basis_functions_2]=
-										temp_int_1+number_of_basis_functions_2;
-									temp_int_2=0;
-									j=0;
-									while ((j<number_of_nodes)&&
-										(temp_int_1-number_of_values_at_node[j]>=0))
-									{
-										temp_int_1 -= number_of_values_at_node[j];
-										temp_int_2 += 2*number_of_values_at_node[j];
-										j++;
-									}
-									temp_int_2 += temp_int_1;
-									*basis_function_number=temp_int_2;
-									basis_function_number[number_of_basis_functions]=
-										temp_int_2+number_of_values_at_node[j];
-									basis_function_number++;
+									*basis_function_number=0;
+									basis_function_number[1]=1;
+									basis_function_number[temp_int_1]=1;
+									basis_function_number[temp_int_1+1]=0;
+									basis_function_number += 2*(number_of_xi_coordinates+1);
 								}
-								for (i=0;i<number_of_nodes;i++)
-								{
-									number_of_values_at_node[i+number_of_nodes]=
-										number_of_values_at_node[i];
-									number_of_values_at_node[i] *= 2;
-								}
-								number_of_nodes *= 2;
 								number_of_basis_functions *= 3;
 								number_of_standard_basis_functions *= 3;
 								*argument=2;
@@ -14968,43 +18015,28 @@ returned.
 						{
 							DEALLOCATE(blending_matrix);
 							blending_matrix=temp_matrix;
+							temp_int_1=number_of_basis_functions*
+								2*(number_of_xi_coordinates+1);
 							if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
-								3*number_of_basis_functions)&&REALLOCATE(temp_int_ptr_2,
-								number_of_values_at_node,int,2*number_of_nodes))
+								3*temp_int_1))
 							{
+								*reorder_xi_entry=xi_coordinate;
+								reorder_xi_entry++;
 								basis_function_numbers=temp_int_ptr_1;
-								number_of_values_at_node=temp_int_ptr_2;
-								/* number basis functions so that when the rows of the
-									blending are reordered by basis function number the basis
-									functions for each node will be sequential */
-								basis_function_number=basis_function_numbers;
-								number_of_basis_functions_2=2*number_of_basis_functions;
+								memcpy(basis_function_numbers+temp_int_1,basis_function_numbers,
+									temp_int_1*sizeof(int));
+								memcpy(basis_function_numbers+(2*temp_int_1),
+									basis_function_numbers,temp_int_1*sizeof(int));
+								basis_function_number=basis_function_numbers+(temp_int_1+
+									2*xi_coordinate);
 								for (i=number_of_basis_functions;i>0;i--)
 								{
-									temp_int_1= *basis_function_number;
-									temp_int_2=0;
-									j=0;
-									while ((j<number_of_nodes)&&
-										(temp_int_1-number_of_values_at_node[j]>=0))
-									{
-										temp_int_1 -= number_of_values_at_node[j];
-										temp_int_2 += 2*number_of_values_at_node[j];
-										j++;
-									}
-									temp_int_2 += temp_int_1;
-									basis_function_number[number_of_basis_functions]=
-										number_of_basis_functions+temp_int_2;
-									basis_function_number[number_of_basis_functions_2]=
-										number_of_basis_functions+temp_int_2+
-										number_of_values_at_node[j];
-									basis_function_number++;
+									*basis_function_number=1;
+									basis_function_number[1]=0;
+									basis_function_number[temp_int_1]=1;
+									basis_function_number[temp_int_1+1]=1;
+									basis_function_number += 2*(number_of_xi_coordinates+1);
 								}
-								for (i=0;i<number_of_nodes;i++)
-								{
-									number_of_values_at_node[i+number_of_nodes]=
-										2*number_of_values_at_node[i];
-								}
-								number_of_nodes *= 2;
 								number_of_basis_functions *= 3;
 								number_of_standard_basis_functions *= 3;
 								*argument=2;
@@ -15065,7 +18097,6 @@ returned.
 									type_entry++;
 									i--;
 								}
-								argument++;
 							}
 							else
 							{
@@ -15104,6 +18135,10 @@ returned.
 								}
 								if (valid_type&&(0<number_of_polygon_verticies))
 								{
+									*reorder_xi_entry=xi_coordinate;
+									reorder_xi_entry++;
+									*reorder_xi_entry=xi_coordinate+polygon_offset;
+									reorder_xi_entry++;
 									/* see polygon_basis_functions for the polygon blending
 										matrix */
 									if (ALLOCATE(polygon_blending_matrix,FE_value,
@@ -15157,42 +18192,50 @@ returned.
 										{
 											DEALLOCATE(blending_matrix);
 											blending_matrix=temp_matrix;
-											if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
-												int,(number_of_polygon_verticies+1)*
-												number_of_basis_functions)&&REALLOCATE(temp_int_ptr_2,
-												number_of_values_at_node,int,
-												(number_of_polygon_verticies+1)*number_of_nodes))
+											temp_int_1=number_of_basis_functions*
+												2*(number_of_xi_coordinates+1);
+											if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,int,
+												(number_of_polygon_verticies+1)*temp_int_1))
 											{
 												basis_function_numbers=temp_int_ptr_1;
-												number_of_values_at_node=temp_int_ptr_2;
-												/* number basis functions so that when the rows of the
-													blending are reordered by basis function number the
-													basis functions for each node will be sequential */
-												basis_function_number=basis_function_numbers;
-												for (i=number_of_polygon_verticies*
-													number_of_basis_functions;i>0;i--)
+												for (i=number_of_polygon_verticies;i>0;i--)
 												{
-													*(basis_function_number+number_of_basis_functions)=
-														(*basis_function_number)+
-														number_of_basis_functions;
-													basis_function_number++;
+													memcpy(basis_function_numbers+(i*temp_int_1),
+														basis_function_numbers,temp_int_1*sizeof(int));
 												}
-												for (i=number_of_polygon_verticies*number_of_nodes;
-													i>0;i--)
+												basis_function_number=basis_function_numbers+
+													(2*xi_coordinate);
+												for (i=number_of_basis_functions;i>0;i--)
 												{
-													*(temp_int_ptr_2+number_of_nodes)= *temp_int_ptr_2;
-													temp_int_ptr_2++;
+													for (j=number_of_polygon_verticies;j>0;j--)
+													{
+														basis_function_number[j*temp_int_1]=j;
+														basis_function_number[j*temp_int_1+1]=0;
+													}
+													basis_function_number +=
+														2*(number_of_xi_coordinates+1);
 												}
-												number_of_nodes *= number_of_polygon_verticies+1;
 												number_of_basis_functions *=
 													number_of_polygon_verticies+1;
 												number_of_standard_basis_functions *=
 													4*number_of_polygon_verticies;
+#if defined (SMOOTH_POLYGONS)
+												*argument= -(1+2*(1/*polygon_offset*/+1/*order*/*
+													number_of_xi_coordinates));
+												argument++;
+												*argument= -2*number_of_polygon_verticies;
+												argument++;
+#else /* defined (SMOOTH_POLYGONS) */
+#if defined (OLD_CODE)
+/*???DB.  Reordering will now take care of this */
 												*argument= -polygon_offset;
-												argument[polygon_offset]=
-													-(number_of_xi_coordinates+
+#endif /* defined (OLD_CODE) */
+												*argument= -1;
+												argument++;
+												*argument= -(number_of_xi_coordinates+
 													number_of_polygon_verticies);
 												argument++;
+#endif /* defined (SMOOTH_POLYGONS) */
 												standard_basis=polygon_basis_functions;
 												valid_type=2;
 											}
@@ -15243,28 +18286,25 @@ returned.
 						if (1==simplex_dimension)
 						{
 							/* first component of the simplex */
+							*reorder_xi_entry=xi_coordinate;
+							reorder_xi_entry++;
 							simplex_type= *type_entry;
 								/*???DB.  Maybe able to remove if can work how to calculate the
 									blending matrix for an arbitrary order */
 							/* determine the simplex dimension */
 							type_entry++;
-							j=1;
 							for (i=1;i<=number_of_xi_coordinates-xi_coordinate;i++)
 							{
 								if (NO_RELATION!= *type_entry)
 								{
+									*reorder_xi_entry=xi_coordinate+i;
+									reorder_xi_entry++;
 									simplex_dimension++;
-									*argument= -j;
-									j=0;
-									k=i;
-									argument++;
 								}
 								type_entry++;
-								j++;
 							}
 							if (2<=simplex_dimension)
 							{
-								*argument= -k;
 								/*???DB.  Should be able to calculate the blending matrix for
 									arbitrary dimension and arbitrary order, but get the basics
 									going first */
@@ -15284,38 +18324,29 @@ returned.
 												{
 													DEALLOCATE(blending_matrix);
 													blending_matrix=temp_matrix;
+													temp_int_1=number_of_basis_functions*
+														2*(number_of_xi_coordinates+1);
 													if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
-														int,3*number_of_basis_functions)&&
-														REALLOCATE(temp_int_ptr_2,number_of_values_at_node,
-														int,3*number_of_nodes))
+														int,3*temp_int_1))
 													{
 														basis_function_numbers=temp_int_ptr_1;
-														number_of_values_at_node=temp_int_ptr_2;
-														/* number basis functions so that when the rows of
-															the blending matrix are reordered by basis
-															function number the basis functions for each node
-															will be sequential */
-														basis_function_number=basis_function_numbers;
-														temp_int_1=2*number_of_basis_functions;
+														memcpy(basis_function_numbers+temp_int_1,
+															basis_function_numbers,temp_int_1*sizeof(int));
+														memcpy(basis_function_numbers+(2*temp_int_1),
+															basis_function_numbers,temp_int_1*sizeof(int));
+														basis_function_number=basis_function_numbers+
+															(temp_int_1+2*xi_coordinate);
+														temp_int_2=temp_int_1+
+															2*(*(reorder_xi_entry-1)-xi_coordinate);
 														for (i=number_of_basis_functions;i>0;i--)
 														{
-															*(basis_function_number+
-																number_of_basis_functions)=
-																(*basis_function_number)+
-																number_of_basis_functions;
-															*(basis_function_number+temp_int_1)=
-																(*basis_function_number)+temp_int_1;
-															basis_function_number++;
+															*basis_function_number=1;
+															basis_function_number[1]=0;
+															basis_function_number[temp_int_2]=1;
+															basis_function_number[temp_int_2+1]=0;
+															basis_function_number +=
+																2*(number_of_xi_coordinates+1);
 														}
-														temp_int_1=2*number_of_nodes;
-														for (i=0;i<number_of_nodes;i++)
-														{
-															number_of_values_at_node[i+number_of_nodes]=
-																number_of_values_at_node[i];
-															number_of_values_at_node[i+temp_int_1]=
-																number_of_values_at_node[i];
-														}
-														number_of_nodes *= 3;
 														number_of_basis_functions *= 3;
 														number_of_standard_basis_functions *= 4;
 													}
@@ -15338,44 +18369,35 @@ returned.
 												{
 													DEALLOCATE(blending_matrix);
 													blending_matrix=temp_matrix;
+													temp_int_1=number_of_basis_functions*
+														2*(number_of_xi_coordinates+1);
 													if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
-														int,4*number_of_basis_functions)&&
-														REALLOCATE(temp_int_ptr_2,number_of_values_at_node,
-														int,4*number_of_nodes))
+														int,4*temp_int_1))
 													{
 														basis_function_numbers=temp_int_ptr_1;
-														number_of_values_at_node=temp_int_ptr_2;
-														/* number basis functions so that when the rows of
-															the blending matrix are reordered by basis
-															function number the basis functions for each node
-															will be sequential */
-														basis_function_number=basis_function_numbers;
-														temp_int_1=2*number_of_basis_functions;
-														temp_int_2=temp_int_1+number_of_basis_functions;
+														memcpy(basis_function_numbers+temp_int_1,
+															basis_function_numbers,temp_int_1*sizeof(int));
+														memcpy(basis_function_numbers+(2*temp_int_1),
+															basis_function_numbers,temp_int_1*sizeof(int));
+														memcpy(basis_function_numbers+(3*temp_int_1),
+															basis_function_numbers,temp_int_1*sizeof(int));
+														basis_function_number=basis_function_numbers+
+															(temp_int_1+2*xi_coordinate);
+														temp_int_2=temp_int_1+
+															2*(*(reorder_xi_entry-2)-xi_coordinate);
+														temp_int_3=2*temp_int_1+
+															2*(*(reorder_xi_entry-1)-xi_coordinate);
 														for (i=number_of_basis_functions;i>0;i--)
 														{
-															*(basis_function_number+
-																number_of_basis_functions)=
-																(*basis_function_number)+
-																number_of_basis_functions;
-															*(basis_function_number+temp_int_1)=
-																(*basis_function_number)+temp_int_1;
-															*(basis_function_number+temp_int_2)=
-																(*basis_function_number)+temp_int_2;
-															basis_function_number++;
+															*basis_function_number=1;
+															basis_function_number[1]=0;
+															basis_function_number[temp_int_2]=1;
+															basis_function_number[temp_int_2+1]=0;
+															basis_function_number[temp_int_3]=1;
+															basis_function_number[temp_int_3+1]=0;
+															basis_function_number +=
+																2*(number_of_xi_coordinates+1);
 														}
-														temp_int_1=2*number_of_nodes;
-														temp_int_2=temp_int_1+number_of_nodes;
-														for (i=0;i<number_of_nodes;i++)
-														{
-															number_of_values_at_node[i+number_of_nodes]=
-																number_of_values_at_node[i];
-															number_of_values_at_node[i+temp_int_1]=
-																number_of_values_at_node[i];
-															number_of_values_at_node[i+temp_int_2]=
-																number_of_values_at_node[i];
-														}
-														number_of_nodes *= 4;
 														number_of_basis_functions *= 4;
 														number_of_standard_basis_functions *= 8;
 													}
@@ -15409,56 +18431,46 @@ returned.
 												{
 													DEALLOCATE(blending_matrix);
 													blending_matrix=temp_matrix;
+													temp_int_1=number_of_basis_functions*
+														2*(number_of_xi_coordinates+1);
 													if (REALLOCATE(temp_int_ptr_1,basis_function_numbers,
-														int,6*number_of_basis_functions)&&
-														REALLOCATE(temp_int_ptr_2,number_of_values_at_node,
-														int,6*number_of_nodes))
+														int,6*temp_int_1))
 													{
 														basis_function_numbers=temp_int_ptr_1;
-														number_of_values_at_node=temp_int_ptr_2;
-														/* number basis functions so that when the rows of
-															the blending matrix are reordered by basis
-															function number the basis functions for each node
-															will be sequential */
-														basis_function_number=basis_function_numbers;
-														temp_int_1=2*number_of_basis_functions;
-														temp_int_2=temp_int_1+number_of_basis_functions;
-														temp_int_3=temp_int_2+number_of_basis_functions;
-														temp_int_4=temp_int_3+number_of_basis_functions;
+														memcpy(basis_function_numbers+temp_int_1,
+															basis_function_numbers,temp_int_1*sizeof(int));
+														memcpy(basis_function_numbers+(2*temp_int_1),
+															basis_function_numbers,temp_int_1*sizeof(int));
+														memcpy(basis_function_numbers+(3*temp_int_1),
+															basis_function_numbers,temp_int_1*sizeof(int));
+														memcpy(basis_function_numbers+(4*temp_int_1),
+															basis_function_numbers,temp_int_1*sizeof(int));
+														memcpy(basis_function_numbers+(5*temp_int_1),
+															basis_function_numbers,temp_int_1*sizeof(int));
+														basis_function_number=basis_function_numbers+
+															(temp_int_1+2*xi_coordinate);
+														temp_int_2=2*temp_int_1+
+															2*(*(reorder_xi_entry-1)-xi_coordinate);
 														for (i=number_of_basis_functions;i>0;i--)
 														{
-															*(basis_function_number+
-																number_of_basis_functions)=
-																(*basis_function_number)+
-																number_of_basis_functions;
-															*(basis_function_number+temp_int_1)=
-																(*basis_function_number)+temp_int_1;
-															*(basis_function_number+temp_int_2)=
-																(*basis_function_number)+temp_int_2;
-															*(basis_function_number+temp_int_3)=
-																(*basis_function_number)+temp_int_3;
-															*(basis_function_number+temp_int_4)=
-																(*basis_function_number)+temp_int_4;
-															basis_function_number++;
+															*basis_function_number=1;
+															basis_function_number[1]=0;
+															basis_function_number[temp_int_1]=2;
+															basis_function_number[temp_int_1+1]=0;
+															basis_function_number[2*temp_int_1+temp_int_2]=1;
+															basis_function_number[2*temp_int_1+temp_int_2+1]=
+																0;
+															basis_function_number[3*temp_int_1]=1;
+															basis_function_number[3*temp_int_1+1]=0;
+															basis_function_number[3*temp_int_1+temp_int_2]=1;
+															basis_function_number[3*temp_int_1+temp_int_2+1]=
+																0;
+															basis_function_number[4*temp_int_1+temp_int_2]=2;
+															basis_function_number[4*temp_int_1+temp_int_2+1]=
+																0;
+															basis_function_number +=
+																2*(number_of_xi_coordinates+1);
 														}
-														temp_int_1=2*number_of_nodes;
-														temp_int_2=temp_int_1+number_of_nodes;
-														temp_int_3=temp_int_2+number_of_nodes;
-														temp_int_4=temp_int_3+number_of_nodes;
-														for (i=0;i<number_of_nodes;i++)
-														{
-															number_of_values_at_node[i+number_of_nodes]=
-																number_of_values_at_node[i];
-															number_of_values_at_node[i+temp_int_1]=
-																number_of_values_at_node[i];
-															number_of_values_at_node[i+temp_int_2]=
-																number_of_values_at_node[i];
-															number_of_values_at_node[i+temp_int_3]=
-																number_of_values_at_node[i];
-															number_of_values_at_node[i+temp_int_4]=
-																number_of_values_at_node[i];
-														}
-														number_of_nodes *= 6;
 														number_of_basis_functions *= 6;
 														number_of_standard_basis_functions *= 9;
 													}
@@ -15483,8 +18495,11 @@ returned.
 										valid_type=0;
 									} break;
 								}
-								*argument -= simplex_order*number_of_xi_coordinates;
-								argument++;
+								for (i=simplex_dimension;i>0;i--)
+								{
+									*argument=simplex_order;
+									argument++;
+								}
 							}
 							else
 							{
@@ -15526,50 +18541,246 @@ returned.
 					ALLOCATE(basis->blending_matrix,FE_value,number_of_basis_functions*
 					number_of_standard_basis_functions))
 				{
-					basis->access_count=0;
-					/* copy the basis type */
-					basis->type=basis_type;
-					type_entry=type;
-					for (i=1+number_of_xi_coordinates*(number_of_xi_coordinates+1)/2-1;
-						i>=0;i--)
+					/* reorder the xi coordinates */
+					need_reorder=0;
+					for (i=0;i<number_of_xi_coordinates;i++)
 					{
-						*basis_type= *type_entry;
-						basis_type++;
-						type_entry++;
-					}
-					basis->number_of_basis_functions=number_of_basis_functions;
-					basis->number_of_standard_basis_functions=
-						number_of_standard_basis_functions;
-					/* reorder the basis functions */
-					for (i=0;i<number_of_basis_functions;i++)
-					{
-						basis_function_numbers[i]=
-							number_of_basis_functions*basis_function_numbers[i]+i;
-					}
-					heapsort((void *)basis_function_numbers,number_of_basis_functions,
-						sizeof(int),sort_basis_function_numbers);
-					/* reorder the blending matrix */
-					reorder_1=basis->blending_matrix;
-					basis_function_number=basis_function_numbers;
-					for (i=0;i<number_of_basis_functions;i++)
-					{
-						reorder_2=blending_matrix+(((*basis_function_number)%
-							number_of_basis_functions)*number_of_standard_basis_functions);
-						for (j=0;j<number_of_standard_basis_functions;j++)
+						if (i+1!=reorder_xi[i])
 						{
-							*reorder_1=  *reorder_2;
-							reorder_1++;
-							reorder_2++;
+							need_reorder=1;
 						}
-						basis_function_number++;
+						reorder_xi[i]=number_of_xi_coordinates*reorder_xi[i]+i;
 					}
+					if (need_reorder)
+					{
+						ALLOCATE(reorder_offsets,int,number_of_standard_basis_functions);
+						ALLOCATE(temp_int_ptr_1,int,number_of_xi_coordinates+1);
+						if (reorder_offsets&&temp_int_ptr_1)
+						{
+							heapsort((void *)reorder_xi,number_of_xi_coordinates,sizeof(int),
+								sort_integers);
+							for (i=0;i<number_of_xi_coordinates;i++)
+							{
+								reorder_xi[i] %= number_of_xi_coordinates;
+							}
+							reorder_1=basis->blending_matrix;
+							reorder_2=blending_matrix;
+							for (i=number_of_basis_functions;i>0;i--)
+							{
+								*reorder_1= *reorder_2;
+								reorder_1 += number_of_standard_basis_functions;
+								reorder_2 += number_of_standard_basis_functions;
+							}
+							offset_1=1;
+							reorder_offsets[0]=0;
+							for (i=0;i<number_of_xi_coordinates;i++)
+							{
+								offset_2=1;
+								for (j=reorder_xi[i];j>0;j--)
+								{
+									if ((temp_int_1=arguments[j])<0)
+									{
+										/* polygon */
+#if defined (SMOOTH_POLYGONS)
+										temp_int_1= -temp_int_1;
+										if (temp_int_1%2)
+										{
+											/* first polygon coordinate */
+											/* do nothing for second because all standard basis
+												functions carried by first */
+											temp_int_1 /= 2;
+											temp_int_1 %= number_of_xi_coordinates;
+											offset_2 *= 4*(-arguments[j+temp_int_1])/2;
+										}
+#else /* defined (SMOOTH_POLYGONS) */
+#if defined (OLD_CODE)
+										if (number_of_xi_coordinates< -temp_int_1)
+										{
+											/* second polygon coordinate */
+											/* do nothing for first because all standard basis
+												functions carried by second */
+											offset_2 *= 4*(-temp_int_1-number_of_xi_coordinates);
+										}
+#endif /* defined (OLD_CODE) */
+										if (number_of_xi_coordinates> -temp_int_1)
+										{
+											/* first polygon coordinate */
+											/* do nothing for second because all standard basis
+												functions carried by first */
+											temp_int_1= -temp_int_1;
+											offset_2 *= 4*(-arguments[j+temp_int_1]-
+												number_of_xi_coordinates);
+										}
+#endif /* defined (SMOOTH_POLYGONS) */
+									}
+									else
+									{
+										offset_2 *= temp_int_1+1;
+									}
+								}
+								if ((temp_int_1=arguments[reorder_xi[i]+1])<0)
+								{
+									/* polygon */
+#if defined (SMOOTH_POLYGONS)
+									temp_int_1= -temp_int_1;
+									if (temp_int_1%2)
+									{
+										/* first polygon coordinate */
+										temp_int_1 /= 2;
+										temp_int_1 %= number_of_xi_coordinates;
+										temp_int_1=4*(-arguments[reorder_xi[i]+1+temp_int_1])/2-1;
+									}
+									else
+									{
+										/* do nothing for second because all standard basis
+											functions carried by first */
+										temp_int_1=0;
+									}
+#else /* defined (SMOOTH_POLYGONS) */
+#if defined (OLD_CODE)
+									if (number_of_xi_coordinates< -temp_int_1)
+									{
+										/* second polygon coordinate */
+										temp_int_1=4*(-temp_int_1-number_of_xi_coordinates)-1;
+									}
+									else
+									{
+										/* do nothing for first because all standard basis
+											functions carried by second */
+										temp_int_1=0;
+									}
+#endif /* defined (OLD_CODE) */
+									if (number_of_xi_coordinates< -temp_int_1)
+									{
+										/* do nothing for second because all standard basis
+											functions carried by first */
+										temp_int_1=0;
+									}
+									else
+									{
+										/* first polygon coordinate */
+										temp_int_1= -temp_int_1;
+										temp_int_1=4*(-arguments[reorder_xi[i]+1+temp_int_1]-
+											number_of_xi_coordinates)-1;
+									}
+#endif /* defined (SMOOTH_POLYGONS) */
+								}
+								for (j=1;j<=temp_int_1;j++)
+								{
+									for (k=0;k<offset_1;k++)
+									{
+										reorder_1=basis->blending_matrix+j*offset_1+k;
+										reorder_offsets[j*offset_1+k]=
+											reorder_offsets[(j-1)*offset_1+k]+offset_2;
+										reorder_2=blending_matrix+reorder_offsets[j*offset_1+k];
+										for (l=number_of_basis_functions;l>0;l--)
+										{
+											*reorder_1= *reorder_2;
+											reorder_1 += number_of_standard_basis_functions;
+											reorder_2 += number_of_standard_basis_functions;
+										}
+									}
+								}
+								offset_1 *= temp_int_1+1;
+							}
+							reorder_1=basis->blending_matrix;
+							basis->blending_matrix=blending_matrix;
+							blending_matrix=reorder_1;
+							temp_int_ptr_1[0]=arguments[0];
+							/* don't need to allow for reordering polygon coordinates because
+								the exelem format only allows specification of bases with
+								circumferential first */
+							for (i=number_of_xi_coordinates;i>0;i--)
+							{
+								if ((temp_int_1=arguments[reorder_xi[i-1]+1])<0)
+								{
+									/* polygon */
+#if defined (SMOOTH_POLYGONS)
+									if ((-temp_int_1)%2)
+									{
+										temp_int_1= -temp_int_1;
+										/* first polygon coordinate */
+										temp_int_1 /= 2;
+										polygon_offset=temp_int_1%number_of_xi_coordinates;
+										temp_int_1 /= number_of_xi_coordinates;
+										polygon_offset=reorder_xi[i-1+polygon_offset]-
+											reorder_xi[i-1];
+										temp_int_1= -(1+2*(polygon_offset+
+											temp_int_1*number_of_xi_coordinates));
+									}
+#else /* defined (SMOOTH_POLYGONS) */
+									if (-number_of_xi_coordinates<temp_int_1)
+									{
+										/* first polygon coordinate */
+										temp_int_1=reorder_xi[i-1]-reorder_xi[i-1-temp_int_1];
+									}
+#endif /* defined (SMOOTH_POLYGONS) */
+								}
+								temp_int_ptr_1[i]=temp_int_1;
+							}
+							temp_int_ptr_2=arguments;
+							arguments=temp_int_ptr_1;
+							temp_int_ptr_1=temp_int_ptr_2;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+							"CREATE(FE_basis).  Could not allocate memory for reordering xi");
+							DEALLOCATE(basis);
+							DEALLOCATE(basis->blending_matrix);
+							DEALLOCATE(basis_type);
+							DEALLOCATE(arguments);
+						}
+						DEALLOCATE(reorder_offsets);
+						DEALLOCATE(temp_int_ptr_1);
+					}
+					if (basis)
+					{
+						basis->access_count=0;
+						/* copy the basis type */
+						basis->type=basis_type;
+						type_entry=type;
+						for (i=1+number_of_xi_coordinates*(number_of_xi_coordinates+1)/2-1;
+							i>=0;i--)
+						{
+							*basis_type= *type_entry;
+							basis_type++;
+							type_entry++;
+						}
+						basis->number_of_basis_functions=number_of_basis_functions;
+						basis->number_of_standard_basis_functions=
+							number_of_standard_basis_functions;
+						/* reorder the basis functions */
+						basis_function_number=basis_function_numbers;
+						for (i=0;i<number_of_basis_functions;i++)
+						{
+							*basis_function_number=i;
+							basis_function_number += 2*(number_of_xi_coordinates+1);
+						}
+						heapsort((void *)basis_function_numbers,number_of_basis_functions,
+							2*(number_of_xi_coordinates+1)*sizeof(int),sort_basis_functions);
+						/* reorder the blending matrix */
+						reorder_1=basis->blending_matrix;
+						basis_function_number=basis_function_numbers;
+						for (i=0;i<number_of_basis_functions;i++)
+						{
+							reorder_2=blending_matrix+(((*basis_function_number)%
+								number_of_basis_functions)*number_of_standard_basis_functions);
+							for (j=0;j<number_of_standard_basis_functions;j++)
+							{
+								*reorder_1=  *reorder_2;
+								reorder_1++;
+								reorder_2++;
+							}
+							basis_function_number += 2*(number_of_xi_coordinates+1);
+						}
 /*???debug */
 /*{
 	FE_value *value;
 	int i,j;
 
-	printf("%d) %d %d %d\n",xi_coordinate,number_of_nodes,
-		number_of_basis_functions,number_of_standard_basis_functions);
+	printf("%d) %d %d\n",xi_coordinate,number_of_basis_functions,
+		number_of_standard_basis_functions);
 	value=basis->blending_matrix;
 	for (i=number_of_standard_basis_functions;i>0;i--)
 	{
@@ -15593,12 +18804,13 @@ returned.
 	printf("%p %p %p\n",standard_basis,monomial_basis_functions,
 		polygon_basis_functions);
 }*/
-					/* create the names for the values that multiply the basis
-						functions */
-						/*???DB.  To be done */
-					basis->value_names=(char **)NULL;
-					basis->arguments=arguments;
-					basis->standard_basis=standard_basis;
+						/* create the names for the values that multiply the basis
+							functions */
+							/*???DB.  To be done */
+						basis->value_names=(char **)NULL;
+						basis->arguments=arguments;
+						basis->standard_basis=standard_basis;
+					}
 				}
 				else
 				{
@@ -15618,9 +18830,9 @@ returned.
 				DEALLOCATE(arguments);
 				basis=(struct FE_basis *)NULL;
 			}
-			DEALLOCATE(number_of_values_at_node);
 			DEALLOCATE(basis_function_numbers);
 			DEALLOCATE(blending_matrix);
+			DEALLOCATE(reorder_xi);
 		}
 		else
 		{
@@ -17158,7 +20370,7 @@ int calculate_FE_element_field_values(struct FE_element *element,
 	struct FE_element_field_values *element_field_values,
 	struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 20 July 2001
 
 DESCRIPTION :
 If <field> is NULL, element values are calculated for the coordinate field.  The
@@ -17172,16 +20384,13 @@ The optional <top_level_element> forces inheritance from it as needed.
 		*derivative_value,*inherited_value,*inherited_values,scalar,
 		*second_derivative_value,sum,*sumand,*transformation,*value,
 		**values_address;
-	int *basis_type,calculate_standard_basis_arguments,component_number,
-		*component_number_in_xi,element_dimension,*element_value_offsets,
-		field_element_dimension,*field_to_element,*grid_offset_in_xi,i,
+	int *basis_type,component_number,*component_number_in_xi,element_dimension,
+		*element_value_offsets,field_element_dimension,*grid_offset_in_xi,i,
 		*inherited_standard_basis_argument,j,k,l,maximum_number_of_values,
-		*number_in_xi,number_of_components,
-		number_of_inherited_values,number_of_polygon_verticies,number_of_values,
-		*number_of_values_address,offset,order,*orders,polygon_offset,
-		polygon_vertex,power,*reorder_coordinate,*reorder_coordinates,
-		*reorder_value,*reorder_values,return_code,row_size,
-		*standard_basis_argument,*standard_basis_arguments,
+		*number_in_xi,number_of_components,number_of_inherited_values,
+		number_of_polygon_verticies,number_of_values,*number_of_values_address,
+		offset,order,*orders,polygon_offset,polygon_vertex,power,return_code,
+		row_size,*standard_basis_argument,*standard_basis_arguments,
 		**standard_basis_arguments_address;
 	Standard_basis_function **standard_basis_address;
 	struct FE_basis *previous_basis;
@@ -17189,6 +20398,13 @@ The optional <top_level_element> forces inheritance from it as needed.
 	struct FE_element_field *element_field;
 	struct FE_element_field_component **component;
 	Value_storage **values_storage_address;
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
+	int calculate_standard_basis_arguments,*field_to_element,*reorder_coordinate,
+		*reorder_coordinates,*reorder_value,*reorder_values;
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 
 	ENTER(calculate_FE_element_field_values);
 #if defined (DEBUG)
@@ -17334,20 +20550,23 @@ The optional <top_level_element> forces inheritance from it as needed.
 									if (!return_code)
 									{
 										display_message(ERROR_MESSAGE,
-											"calculate_FE_element_field_values.  Grid based components must be linear");
+											"calculate_FE_element_field_values.  "
+											"Grid based components must be linear");
 									}
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"calculate_FE_element_field_values.  Inconsistent sub-divisions for grid based components");
+										"calculate_FE_element_field_values.  "
+										"Inconsistent sub-divisions for grid based components");
 									return_code=0;
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"calculate_FE_element_field_values.  Cannot mix grid based and non grid based components");
+									"calculate_FE_element_field_values.  "
+									"Cannot mix grid based and non grid based components");
 								return_code=0;
 							}
 							component++;
@@ -17360,7 +20579,8 @@ The optional <top_level_element> forces inheritance from it as needed.
 							{
 								maximum_number_of_values *= 2;
 							}
-							ALLOCATE(values_storage_address,Value_storage *,number_of_components);
+							ALLOCATE(values_storage_address,Value_storage *,
+								number_of_components);
 							ALLOCATE(number_in_xi,int,element_dimension);
 							/* need space for basis function for value and derivatives */
 							ALLOCATE(basis_function_values,FE_value,
@@ -17371,15 +20591,17 @@ The optional <top_level_element> forces inheritance from it as needed.
 								grid_offset_in_xi&&element_value_offsets)
 							{
 								element_field_values->number_in_xi=number_in_xi;
-								element_field_values->field=ACCESS(FE_field)(element_field->field);
+								element_field_values->field=
+									ACCESS(FE_field)(element_field->field);
 								element_field_values->element=ACCESS(FE_element)(element);
-								/* store field_element since we are now able to suggest through the
-									 top_level_element clue which one we get. Must compare element
-									 and field_element to ensure field values are still valid for
-									 a given line or face. */
+								/* store field_element since we are now able to suggest through
+									the top_level_element clue which one we get. Must compare
+									element and field_element to ensure field values are still
+									valid for a given line or face. */
 								element_field_values->field_element=
 									ACCESS(FE_element)(field_element);
-								/* derivatives will be calculated in calculate_FE_element_field */
+								/* derivatives will be calculated in
+									calculate_FE_element_field */
 								/*???DB.  Assuming linear */
 								element_field_values->derivatives_calculated=1;
 								element_field_values->number_of_components=number_of_components;
@@ -17388,20 +20610,23 @@ The optional <top_level_element> forces inheritance from it as needed.
 									values_storage_address;
 								element_field_values->base_grid_offset=0;
 								element_field_values->grid_offset_in_xi=grid_offset_in_xi;
-								element_field_values->element_value_offsets=element_value_offsets;
+								element_field_values->element_value_offsets=
+									element_value_offsets;
 								/* clear arrays not used for grid-based fields */
 								element_field_values->component_values=(FE_value **)NULL;
 								element_field_values->component_standard_basis_functions=
 									(Standard_basis_function **)NULL;
-								element_field_values->component_standard_basis_function_arguments=
-									(void *)NULL;
-								element_field_values->basis_function_values=basis_function_values;
+								element_field_values->
+									component_standard_basis_function_arguments=(void *)NULL;
+								element_field_values->basis_function_values=
+									basis_function_values;
 								element_field_values->destroy_standard_basis_arguments=0;
 								/* get convenient lookup into position in values_storage where
 									 values for each component are stored */
 								component=element_field->components;
-								for (component_number=0;(component_number<number_of_components)&&
-											 return_code;component_number++)
+								for (component_number=0;
+									(component_number<number_of_components)&&return_code;
+									component_number++)
 								{
 									*values_storage_address=
 										(field_element->information->values_storage)+
@@ -17418,7 +20643,8 @@ The optional <top_level_element> forces inheritance from it as needed.
 									if (!calculate_grid_field_offsets(element_dimension,
 										field_element_dimension,component_number_in_xi,
 										coordinate_transformation,number_in_xi,
-										&(element_field_values->base_grid_offset),grid_offset_in_xi))
+										&(element_field_values->base_grid_offset),
+										grid_offset_in_xi))
 									{
 										display_message(ERROR_MESSAGE,
 											"calculate_FE_element_field_values.  "
@@ -17510,9 +20736,14 @@ The optional <top_level_element> forces inheritance from it as needed.
 							/* for each component */
 							component=element_field->components;
 							previous_basis=(struct FE_basis *)NULL;
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
 							reorder_values=(int *)NULL;
 							field_to_element=(int *)NULL;
 							reorder_coordinates=(int *)NULL;
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 							component_number=0;
 							return_code=1;
 							maximum_number_of_values=0;
@@ -17548,16 +20779,27 @@ The optional <top_level_element> forces inheritance from it as needed.
 #endif /* defined (DEBUG) */
 										if (previous_basis==(*component)->basis)
 										{
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+											*standard_basis_address= *(standard_basis_address-1);
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
 											calculate_standard_basis_arguments=0;
 											/*???DB.  Changed because of polygons */
 											/* *standard_basis_address= *(standard_basis_address-1);*/
 											*standard_basis_address=previous_basis->standard_basis;
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 											*standard_basis_arguments_address=
 												*(standard_basis_arguments_address-1);
 										}
 										else
 										{
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
 											calculate_standard_basis_arguments=1;
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 											previous_basis=(*component)->basis;
 											if (blending_matrix)
 											{
@@ -17565,16 +20807,81 @@ The optional <top_level_element> forces inheritance from it as needed.
 												DEALLOCATE(blending_matrix);
 											}
 											*standard_basis_address=previous_basis->standard_basis;
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+											return_code=calculate_standard_basis_transformation(
+												previous_basis,coordinate_transformation,
+												element_dimension,standard_basis_arguments_address,
+												&number_of_inherited_values,standard_basis_address,
+												&blending_matrix);
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
 											return_code=calculate_standard_basis_transformation(
 												previous_basis,coordinate_transformation,
 												element_dimension,standard_basis_arguments_address,
 												&number_of_inherited_values,&blending_matrix,
 												&field_to_element,&reorder_coordinates);
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 										}
 										if (return_code)
 										{
 											/* project the element values onto the element using the
 												 affine transformation */
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+											if ((monomial_basis_functions== *standard_basis_address)||
+												(polygon_basis_functions== *standard_basis_address))
+											{
+												/* allocate memory for the element values */
+												if (calculate_derivatives)
+												{
+													ALLOCATE(inherited_values,FE_value,
+														(element_dimension+1)*number_of_inherited_values);
+												}
+												else
+												{
+													ALLOCATE(inherited_values,FE_value,
+														number_of_inherited_values);
+												}
+												if (inherited_values)
+												{
+													row_size= *number_of_values_address;
+													inherited_value=inherited_values;
+													for (j=0;j<number_of_inherited_values;j++)
+													{
+														sum=0;
+														value= *values_address;
+														transformation=blending_matrix+j;
+														for (i=row_size;i>0;i--)
+														{
+															sum += (*transformation)*(*value);
+															value++;
+															transformation += number_of_inherited_values;
+														}
+														*inherited_value=sum;
+														inherited_value++;
+													}
+													DEALLOCATE(*values_address);
+													*values_address=inherited_values;
+													*number_of_values_address=number_of_inherited_values;
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+														"calculate_FE_element_field_values.  "
+														"Insufficient memory for inherited_values");
+													DEALLOCATE(*values_address);
+													return_code=0;
+												}
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"calculate_FE_element_field_values.  Invalid basis");
+												return_code=0;
+											}
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
 											/*???DB.  Projection is dependent on standard basis */
 											if (monomial_basis_functions== *standard_basis_address)
 											{
@@ -17660,7 +20967,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 #endif /* defined (DEBUG) */
 														if (order<0)
 														{
-																/* polygon */
+															/* polygon */
 															if ((polygon_offset= -order) <
 																field_element_dimension)
 															{
@@ -17687,7 +20994,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 																		/* edge of polygon in projection */
 																		polygon_vertex=
 																			(int)(0.1+(*transformation)*
-																				(FE_value)number_of_polygon_verticies);
+																			(FE_value)number_of_polygon_verticies);
 #if defined (DEBUG)
 																		/*???debug */
 																		printf("polygon edge is in projection %d\n",
@@ -17699,10 +21006,11 @@ The optional <top_level_element> forces inheritance from it as needed.
 																			polygon_vertex)
 																		{
 																			for (j=number_of_values/
-																						 (4*number_of_polygon_verticies*
-																							 number_of_inherited_values);j>0;j--)
+																				(4*number_of_polygon_verticies*
+																				number_of_inherited_values);j>0;j--)
 																			{
-																				for (k=number_of_inherited_values;k>0;k--)
+																				for (k=number_of_inherited_values;k>0;
+																					k--)
 																				{
 																					scalar=value[polygon_vertex*
 																						number_of_inherited_values]+
@@ -17710,9 +21018,10 @@ The optional <top_level_element> forces inheritance from it as needed.
 																							2*number_of_polygon_verticies)*
 																							number_of_inherited_values];
 																					inherited_value[
-																						number_of_inherited_values]=(*value)+
+																						number_of_inherited_values]=
+																						(*value)+
 																						value[2*number_of_polygon_verticies*
-																							number_of_inherited_values]-scalar;
+																						number_of_inherited_values]-scalar;
 																					*inherited_value=scalar;
 																					inherited_value++;
 																					value++;
@@ -17731,22 +21040,24 @@ The optional <top_level_element> forces inheritance from it as needed.
 																			{
 																				polygon_vertex=0;
 																			}
-																			value +=
-																				polygon_vertex*number_of_inherited_values;
+																			value += polygon_vertex*
+																				number_of_inherited_values;
 																			for (j=number_of_values/
-																						 (4*number_of_polygon_verticies*
-																							 number_of_inherited_values);j>0;j--)
+																				(4*number_of_polygon_verticies*
+																				number_of_inherited_values);j>0;j--)
 																			{
-																				for (k=number_of_inherited_values;k>0;k--)
+																				for (k=number_of_inherited_values;k>0;
+																					k--)
 																				{
 																					*inherited_value= (*value)+
 																						value[2*number_of_polygon_verticies*
-																							number_of_inherited_values];
+																						number_of_inherited_values];
 																					inherited_value[
 																						number_of_inherited_values]=
 																						value[number_of_inherited_values]+
-																						value[(2*number_of_polygon_verticies+
-																							1)*number_of_inherited_values]-
+																						value[
+																						(2*number_of_polygon_verticies+
+																						1)*number_of_inherited_values]-
 																						*inherited_value;
 																					inherited_value++;
 																					value++;
@@ -17766,14 +21077,15 @@ The optional <top_level_element> forces inheritance from it as needed.
 																}
 																else
 																{
-																/* polygon is not in projection */
+																	/* polygon is not in projection */
 #if defined (DEBUG)
-																/*???debug */
+																	/*???debug */
 																	printf("polygon is not in projection\n");
 #endif /* defined (DEBUG) */
 																	polygon_vertex=(int)(0.1+(*transformation)*
 																		(FE_value)number_of_polygon_verticies);
-																	if (number_of_polygon_verticies==polygon_vertex)
+																	if (number_of_polygon_verticies==
+																		polygon_vertex)
 																	{
 																		polygon_vertex=0;
 																	}
@@ -17782,14 +21094,14 @@ The optional <top_level_element> forces inheritance from it as needed.
 																	value +=
 																		polygon_vertex*number_of_inherited_values;
 																	for (j=number_of_values/
-																				 (4*number_of_polygon_verticies*
-																					 number_of_inherited_values);j>0;j--)
+																		(4*number_of_polygon_verticies*
+																		number_of_inherited_values);j>0;j--)
 																	{
 																		for (k=number_of_inherited_values;k>0;k--)
 																		{
 																			*inherited_value= *value+
 																				value[2*number_of_polygon_verticies*
-																					number_of_inherited_values];
+																				number_of_inherited_values];
 																			inherited_value++;
 																			value++;
 																		}
@@ -17803,7 +21115,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 														}
 														else
 														{
-																/* not polygon */
+															/* not polygon */
 															if (field_to_element[i])
 															{
 																/* in projection */
@@ -17814,12 +21126,12 @@ The optional <top_level_element> forces inheritance from it as needed.
 																/* not in projection */
 																if (*transformation)
 																{
-																/* assume *transformation (b) is 1 */
+																	/* assume *transformation (b) is 1 */
 																	value= *values_address;
 																	inherited_value=value;
 																	for (j=number_of_values/
-																				 ((order+1)*number_of_inherited_values);j>0;
-																			 j--)
+																		((order+1)*number_of_inherited_values);j>0;
+																		j--)
 																	{
 																		for (k=number_of_inherited_values;k>0;k--)
 																		{
@@ -17840,12 +21152,12 @@ The optional <top_level_element> forces inheritance from it as needed.
 																}
 																else
 																{
-																/* *transformation (b) is 0 */
+																	/* *transformation (b) is 0 */
 																	value= *values_address;
 																	inherited_value=value;
 																	for (j=number_of_values/
-																				 ((order+1)*number_of_inherited_values);j>0;
-																			 j--)
+																		((order+1)*number_of_inherited_values);j>0;
+																		j--)
 																	{
 																		for (k=number_of_inherited_values;k>0;k--)
 																		{
@@ -17856,7 +21168,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 																		value += order*number_of_inherited_values;
 																	}
 																	number_of_values /= order+1;
-																} break;
+																}
 															}
 														}
 														transformation += element_dimension+1;
@@ -17882,7 +21194,8 @@ The optional <top_level_element> forces inheritance from it as needed.
 														if (calculate_derivatives)
 														{
 															ALLOCATE(inherited_values,FE_value,
-																(element_dimension+1)*number_of_inherited_values);
+																(element_dimension+1)*
+																number_of_inherited_values);
 														}
 														else
 														{
@@ -17891,7 +21204,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 														}
 														if (inherited_values)
 														{
-																/* reorder values */
+															/* reorder values */
 															if (calculate_standard_basis_arguments)
 															{
 																DEALLOCATE(reorder_values);
@@ -17906,7 +21219,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 																	reorder_coordinate=reorder_coordinates;
 																	orders= *standard_basis_arguments_address;
 #if defined (DEBUG)
-																/*???debug */
+																	/*???debug */
 																	printf("reorder coordinates :");
 #endif /* defined (DEBUG) */
 																	for (i=element_dimension;i>0;i--)
@@ -17921,9 +21234,11 @@ The optional <top_level_element> forces inheritance from it as needed.
 																		/*???debug */
 																		printf(" (%d)",order);
 #endif /* defined (DEBUG) */
+#if defined (OLD_CODE)
 																		if (order> -element_dimension)
 																		{
 																			/* not polygon second coordinate */
+#endif /* defined (OLD_CODE) */
 																			offset=1;
 																			inherited_standard_basis_argument=
 																				(*standard_basis_arguments_address)+1;
@@ -17938,7 +21253,8 @@ The optional <top_level_element> forces inheritance from it as needed.
 																					{
 																						offset *= -4*
 																							(inherited_standard_basis_argument[
-																								polygon_offset]+element_dimension);
+																							polygon_offset]+
+																							element_dimension);
 																					}
 																				}
 																				else
@@ -17955,9 +21271,10 @@ The optional <top_level_element> forces inheritance from it as needed.
 																					element_dimension)
 																				{
 																					/* first polygon coordinate */
-																					order=
-																						-4*(inherited_standard_basis_argument[
-																							polygon_offset]+element_dimension);
+																					order= -4*
+																						(inherited_standard_basis_argument[
+																						polygon_offset]+
+																						element_dimension);
 																					reorder_value=reorder_values;
 																					for (j=k*(order-1);j>0;j--)
 																					{
@@ -17986,11 +21303,13 @@ The optional <top_level_element> forces inheritance from it as needed.
 																				}
 																				k *= (order+1);
 																			}
+#if defined (OLD_CODE)
 																		}
+#endif /* defined (OLD_CODE) */
 																		reorder_coordinate++;
 																	}
 #if defined (DEBUG)
-																/*???debug */
+																	/*???debug */
 																	printf("\n");
 																	printf("reorder values :");
 																	for (i=0;i<number_of_inherited_values;i++)
@@ -18027,7 +21346,8 @@ The optional <top_level_element> forces inheritance from it as needed.
 														else
 														{
 															display_message(ERROR_MESSAGE,
-																"calculate_FE_element_field_values.  Insufficient memory");
+																"calculate_FE_element_field_values.  "
+																"Insufficient memory");
 															DEALLOCATE(*values_address);
 															return_code=0;
 														}
@@ -18053,7 +21373,8 @@ The optional <top_level_element> forces inheritance from it as needed.
 														else
 														{
 															display_message(ERROR_MESSAGE,
-																"calculate_FE_element_field_values.  Insufficient memory");
+																"calculate_FE_element_field_values.  "
+																"Insufficient memory");
 															DEALLOCATE(*values_address);
 															return_code=0;
 														}
@@ -18098,11 +21419,13 @@ The optional <top_level_element> forces inheritance from it as needed.
 													"calculate_FE_element_field_values.  Invalid basis");
 												return_code=0;
 											}
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 											if (return_code)
 											{
 #if defined (DEBUG)
 												/*???debug */
-												printf("number of values=%d\n",*number_of_values_address);
+												printf("number of values=%d\n",
+													*number_of_values_address);
 												printf("inherited values :");
 												value= *values_address;
 												for (i= *number_of_values_address;i>0;i--)
@@ -18120,12 +21443,12 @@ The optional <top_level_element> forces inheritance from it as needed.
 												}
 												printf("\n");
 #endif /* defined (DEBUG) */
-												number_of_values= *number_of_values_address;
 												if (calculate_derivatives)
 												{
 													/* calculate the derivatives with respect to the xi
 														 coordinates */
-													if (monomial_basis_functions== *standard_basis_address)
+													if (monomial_basis_functions==
+														*standard_basis_address)
 													{
 														number_of_values= *number_of_values_address;
 														value= *values_address;
@@ -18155,114 +21478,189 @@ The optional <top_level_element> forces inheritance from it as needed.
 															offset *= (order+1);
 														}
 													}
-													else
+													else if (polygon_basis_functions==
+														*standard_basis_address)
 													{
-														if (polygon_basis_functions== *standard_basis_address)
+														number_of_values= *number_of_values_address;
+														value= *values_address;
+														derivative_value=value+number_of_values;
+														orders= *standard_basis_arguments_address;
+														offset=1;
+														for (i=element_dimension;i>0;i--)
 														{
-															number_of_values= *number_of_values_address;
-															value= *values_address;
-															derivative_value=value+number_of_values;
-															orders= *standard_basis_arguments_address;
-															offset=1;
-															for (i=element_dimension;i>0;i--)
+															orders++;
+															order= *orders;
+															if (order<0)
 															{
-																orders++;
-																order= *orders;
-																if (order<0)
+																/* polygon */
+#if defined (SMOOTH_POLYGONS)
+																order= -order;
+																if (order%2)
 																{
-																	/* polygon */
-																	if ((polygon_offset= -order)<element_dimension)
+																	/* calculate derivatives with respect to
+																		both polygon coordinates */
+																	order /= 2;
+																	polygon_offset=order%element_dimension;
+																	order /= element_dimension;
+																	number_of_polygon_verticies=
+																		(-orders[polygon_offset])/2;
+																	/* first polygon coordinate is
+																		circumferential */
+																	second_derivative_value=derivative_value+
+																		(polygon_offset*number_of_values);
+																	order=4*number_of_polygon_verticies;
+																	scalar=
+																		(FE_value)number_of_polygon_verticies;
+																	for (j=0;j<number_of_values;j++)
 																	{
-																/* calculate derivatives with respect to both
-																	 polygon coordinates */
-																		second_derivative_value=derivative_value+
-																			(polygon_offset*number_of_values);
-																		number_of_polygon_verticies=
-																			-orders[polygon_offset]-element_dimension;
-																		order=4*number_of_polygon_verticies;
-																		scalar=(FE_value)number_of_polygon_verticies;
-																		for (j=0;j<number_of_values;j++)
+																		/* calculate derivative values */
+																		k=(j/offset)%order;
+																		switch (k/number_of_polygon_verticies)
 																		{
-																			/* calculate derivative values */
-																			k=(j/offset)%order;
-																			switch (k/number_of_polygon_verticies)
+																			case 0:
 																			{
-																				case 0:
-																				{
-																					*derivative_value=scalar*value[j+
-																						number_of_polygon_verticies*offset];
-																					*second_derivative_value=value[j+
-																						2*number_of_polygon_verticies*offset];
-																				} break;
-																				case 1:
-																				{
-																					*derivative_value=0;
-																					*second_derivative_value=value[j+
-																						2*number_of_polygon_verticies*offset];
-																				} break;
-																				case 2:
-																				{
-																					*derivative_value=scalar*value[j+
-																						number_of_polygon_verticies*offset];
-																					*second_derivative_value=0;
-																				} break;
-																				case 3:
-																				{
-																					*derivative_value=0;
-																					*second_derivative_value=0;
-																				} break;
-																			}
-																			/* move to the next derivative value */
-																			derivative_value++;
-																			second_derivative_value++;
+																				*derivative_value=scalar*value[j+
+																					number_of_polygon_verticies*offset];
+																				*second_derivative_value=value[j+
+																					2*number_of_polygon_verticies*
+																					offset];
+																			} break;
+																			case 1:
+																			{
+																				*derivative_value=0;
+																				*second_derivative_value=value[j+
+																					2*number_of_polygon_verticies*
+																					offset];
+																			} break;
+																			case 2:
+																			{
+																				*derivative_value=scalar*value[j+
+																					number_of_polygon_verticies*offset];
+																				*second_derivative_value=0;
+																			} break;
+																			case 3:
+																			{
+																				*derivative_value=0;
+																				*second_derivative_value=0;
+																			} break;
 																		}
-																		offset *= order;
+																		/* move to the next derivative value */
+																		derivative_value++;
+																		second_derivative_value++;
 																	}
-																	else
-																	{
-																/* second polgon xi.  Derivatives already
-																	 calculated */
-																		derivative_value += number_of_values;
-																	}
+																	offset *= order;
 																}
 																else
 																{
-																	/* not polygon */
+																	/* second polgon xi.  Derivatives already
+																		calculated */
+																	derivative_value += number_of_values;
+																}
+#else /* defined (SMOOTH_POLYGONS) */
+																if ((polygon_offset= -order)<
+																	element_dimension)
+																{
+																	/* calculate derivatives with respect to
+																		both polygon coordinates */
+																	second_derivative_value=derivative_value+
+																		(polygon_offset*number_of_values);
+																	number_of_polygon_verticies=
+																		-orders[polygon_offset]-
+																		element_dimension;
+																	order=4*number_of_polygon_verticies;
+																	scalar=
+																		(FE_value)number_of_polygon_verticies;
 																	for (j=0;j<number_of_values;j++)
 																	{
-																/* calculate derivative value */
-																		power=(j/offset)%(order+1);
-																		if (order==power)
+																		/* calculate derivative values */
+																		k=(j/offset)%order;
+																		switch (k/number_of_polygon_verticies)
 																		{
-																			*derivative_value=0;
+																			case 0:
+																			{
+																				*derivative_value=scalar*value[j+
+																					number_of_polygon_verticies*offset];
+																				*second_derivative_value=value[j+
+																					2*number_of_polygon_verticies*
+																					offset];
+																			} break;
+																			case 1:
+																			{
+																				*derivative_value=0;
+																				*second_derivative_value=value[j+
+																					2*number_of_polygon_verticies*
+																					offset];
+																			} break;
+																			case 2:
+																			{
+																				*derivative_value=scalar*value[j+
+																					number_of_polygon_verticies*offset];
+																				*second_derivative_value=0;
+																			} break;
+																			case 3:
+																			{
+																				*derivative_value=0;
+																				*second_derivative_value=0;
+																			} break;
 																		}
-																		else
-																		{
-																			*derivative_value=
-																				(FE_value)(power+1)*value[j+offset];
-																		}
-																/* move to the next derivative value */
+																		/* move to the next derivative value */
 																		derivative_value++;
+																		second_derivative_value++;
 																	}
-																	offset *= (order+1);
+																	offset *= order;
 																}
+																else
+																{
+																	/* second polgon xi.  Derivatives already
+																		calculated */
+																	derivative_value += number_of_values;
+																}
+#endif /* defined (SMOOTH_POLYGONS) */
 															}
-														}
-														else
-														{
-															display_message(ERROR_MESSAGE,
-																"calculate_FE_element_field_values.  Invalid basis");
-															DEALLOCATE(*values_address);
-															if (calculate_standard_basis_arguments)
+															else
 															{
-																DEALLOCATE(*standard_basis_arguments_address);
+																/* not polygon */
+																for (j=0;j<number_of_values;j++)
+																{
+																	/* calculate derivative value */
+																	power=(j/offset)%(order+1);
+																	if (order==power)
+																	{
+																		*derivative_value=0;
+																	}
+																	else
+																	{
+																		*derivative_value=
+																			(FE_value)(power+1)*value[j+offset];
+																	}
+																	/* move to the next derivative value */
+																	derivative_value++;
+																}
+																offset *= (order+1);
 															}
-															return_code=0;
 														}
+													}
+													else
+													{
+														display_message(ERROR_MESSAGE,
+															"calculate_FE_element_field_values.  "
+															"Invalid basis");
+														DEALLOCATE(*values_address);
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
+														if (calculate_standard_basis_arguments)
+														{
+															DEALLOCATE(*standard_basis_arguments_address);
+														}
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
+														return_code=0;
 													}
 												}
 #if defined (DEBUG)
 												/*???debug */
+												number_of_values= *number_of_values_address;
 												for (i=0;i<3;i++)
 												{
 													printf("%d :",i);
@@ -18289,24 +21687,28 @@ The optional <top_level_element> forces inheritance from it as needed.
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"calculate_FE_element_field_values.  Could not calculate values");
+											"calculate_FE_element_field_values.  "
+											"Could not calculate values");
 										return_code=0;
 									}
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"calculate_FE_element_field_values.  Cannot mix grid based and non grid based components");
+										"calculate_FE_element_field_values.  "
+										"Cannot mix grid based and non grid based components");
 									return_code=0;
 								}
 							}
 							if (return_code)
 							{
-								if (!((maximum_number_of_values>0)&&(ALLOCATE(element_field_values->
-									basis_function_values,FE_value,maximum_number_of_values))))
+								if (!((maximum_number_of_values>0)&&
+									(ALLOCATE(element_field_values->basis_function_values,
+									FE_value,maximum_number_of_values))))
 								{
 									display_message(ERROR_MESSAGE,
-										"calculate_FE_element_field_values.  Could not allocate basis_function_values");
+										"calculate_FE_element_field_values.  "
+										"Could not allocate basis_function_values");
 									return_code=0;
 								}
 							}
@@ -18331,9 +21733,14 @@ The optional <top_level_element> forces inheritance from it as needed.
 								DEALLOCATE(element_field_values->
 									component_standard_basis_function_arguments);
 							}
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
 							DEALLOCATE(reorder_values);
 							DEALLOCATE(field_to_element);
 							DEALLOCATE(reorder_coordinates);
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 						}
 						else
 						{
@@ -18523,7 +21930,7 @@ Frees the memory for the fields of the <element_field_values> structure.
 int calculate_FE_element_field_nodes(struct FE_element *element,
 	struct FE_field *field,struct LIST(FE_node) *element_field_nodes)
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 1 July 2001
 
 DESCRIPTION :
 If <field> is NULL, element nodes are calculated for the coordinate field.  The
@@ -18536,16 +21943,22 @@ not node-based are ignored.
 	double sum;
 	FE_value *blending_matrix,*combined_blending_matrix,
 		*coordinate_transformation,*row,*column,*transformation;
-	int add,component_number,element_dimension,
-		*field_to_element,i,*inherited_basis_arguments,j,k,number_of_components,
-		number_of_element_values,number_of_inherited_values,
+	int add,component_number,element_dimension,i,*inherited_basis_arguments,j,k,
+		number_of_components,number_of_element_values,number_of_inherited_values,
 		number_of_standard_basis_functions,previous_number_of_element_values,
-		*reorder_coordinates,*reorder_values,return_code;
+		return_code;
 	struct FE_basis *basis,*previous_basis;
 	struct FE_element *field_element;
 	struct FE_element_field *element_field;
 	struct FE_element_field_component *component,**component_address;
 	struct FE_node **element_value,**element_values,**previous_element_values;
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+	Standard_basis_function *standard_basis_function;
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
+	int *field_to_element,*reorder_coordinates,*reorder_values;
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 
 	ENTER(calculate_FE_element_field_nodes);
 	/*???debug */
@@ -18554,8 +21967,8 @@ not node-based are ignored.
 	if (element&&(element->shape)&&element_field_nodes)
 	{
 		/* retrieve the element field from which this element inherits the field
-			 and calculate the affine transformation from the element xi coordinates
-			 to the xi coordinates for the element field */
+			and calculate the affine transformation from the element xi coordinates
+			to the xi coordinates for the element field */
 		coordinate_transformation=(FE_value *)NULL;
 		if (inherit_FE_element_field(element,field,&element_field,&field_element,
 			&coordinate_transformation,(struct FE_element *)NULL)&&element_field)
@@ -18568,9 +21981,14 @@ not node-based are ignored.
 			previous_basis=(struct FE_basis *)NULL;
 			previous_number_of_element_values= -1;
 			previous_element_values=(struct FE_node **)NULL;
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
 			reorder_values=(int *)NULL;
 			field_to_element=(int *)NULL;
 			reorder_coordinates=(int *)NULL;
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 			component_number=0;
 			while (return_code&&(component_number<number_of_components))
 			{
@@ -18586,7 +22004,7 @@ not node-based are ignored.
 						if ((basis=component->basis)&&
 							(number_of_element_values==basis->number_of_basis_functions)&&
 							(basis->standard_basis)&&((number_of_standard_basis_functions=
-								basis->number_of_standard_basis_functions)>0))
+							basis->number_of_standard_basis_functions)>0))
 						{
 							if ((i=number_of_element_values)==
 								previous_number_of_element_values)
@@ -18603,11 +22021,96 @@ not node-based are ignored.
 								previous_element_values=element_values;
 								previous_number_of_element_values=number_of_element_values;
 								previous_basis=basis;
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+								if (calculate_standard_basis_transformation(basis,
+									coordinate_transformation,element_dimension,
+									&inherited_basis_arguments,&number_of_inherited_values,
+									&standard_basis_function,&blending_matrix))
+								{
+									if (basis->blending_matrix)
+									{
+										if (ALLOCATE(combined_blending_matrix,FE_value,
+											number_of_element_values*number_of_inherited_values))
+										{
+											transformation=combined_blending_matrix;
+											for (i=0;i<number_of_element_values;i++)
+											{
+												for (j=0;j<number_of_inherited_values;j++)
+												{
+													sum=0;
+													row=(basis->blending_matrix)+
+														(i*number_of_standard_basis_functions);
+													column=blending_matrix+j;
+													for (k=number_of_standard_basis_functions;k>0;k--)
+													{
+														sum += (double)(*row)*(double)(*column);
+														row++;
+														column += number_of_inherited_values;
+													}
+													*transformation=(FE_value)sum;
+													transformation++;
+												}
+											}
+											DEALLOCATE(blending_matrix);
+											blending_matrix=combined_blending_matrix;
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"calculate_FE_element_field_nodes.  "
+												"Could not allocate combined_blending_matrix");
+											return_code=0;
+										}
+									}
+									if (return_code)
+									{
+										transformation=blending_matrix;
+										element_value=element_values;
+										i=number_of_element_values;
+										while (return_code&&(i>0))
+										{
+											add=0;
+											j=number_of_inherited_values;
+											while (!add&&(j>0))
+											{
+												if (1.e-8<fabs(*transformation))
+												{
+													add=1;
+												}
+												transformation++;
+												j--;
+											}
+											transformation += j;
+											if (add)
+											{
+												if (!IS_OBJECT_IN_LIST(FE_node)(*element_value,
+													element_field_nodes))
+												{
+													return_code=ADD_OBJECT_TO_LIST(FE_node)(
+														*element_value,element_field_nodes);
+												}
+											}
+											element_value++;
+											i--;
+										}
+									}
+									DEALLOCATE(blending_matrix);
+									DEALLOCATE(inherited_basis_arguments);
+								}
+								else
+								{
+									return_code=0;
+								}
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
 								if (calculate_standard_basis_transformation(basis,
 									coordinate_transformation,element_dimension,
 									&inherited_basis_arguments,&number_of_inherited_values,
 									&blending_matrix,&field_to_element,&reorder_coordinates))
 								{
+									/*???DB.  blending_matrix isn't calculated for
+										polygon_basis_functions */
 									/* project the element values onto the element using the
 										 affine transformation */
 									/*???DB.  Projection is dependent on standard basis */
@@ -18644,7 +22147,7 @@ not node-based are ignored.
 											{
 												display_message(ERROR_MESSAGE,
 													"calculate_FE_element_field_nodes.  Could not allocate combined_blending_matrix"
-																				);
+													);
 												return_code=0;
 											}
 										}
@@ -18688,9 +22191,11 @@ not node-based are ignored.
 										{
 											/*???debug */
 											display_message(ERROR_MESSAGE,
-												"calculate_FE_element_field_nodes.  Not yet implemented for polygon_basis_functions");
+												"calculate_FE_element_field_nodes.  "
+												"Not yet implemented for polygon_basis_functions");
 											return_code=0;
 #if defined (TO_BE_DONE)
+/*???DB.  Comes from calculate_FE_element_field_values */
 											if (coordinate_transformation)
 											{
 												number_of_inherited_values=1;
@@ -18736,8 +22241,8 @@ not node-based are ignored.
 																		polygon_vertex)
 																	{
 																		for (j=number_of_values/
-																					 (4*number_of_polygon_verticies*
-																						 number_of_inherited_values);j>0;j--)
+																			(4*number_of_polygon_verticies*
+																			number_of_inherited_values);j>0;j--)
 																		{
 																			for (k=number_of_inherited_values;
 																					 k>0;k--)
@@ -18750,7 +22255,7 @@ not node-based are ignored.
 																				inherited_value[
 																					number_of_inherited_values]=
 																					(*value)+value[2*
-																						number_of_polygon_verticies*
+																					number_of_polygon_verticies*
 																						number_of_inherited_values]-
 																					scalar;
 																				*inherited_value=scalar;
@@ -18774,8 +22279,8 @@ not node-based are ignored.
 																		value += polygon_vertex*
 																			number_of_inherited_values;
 																		for (j=number_of_values/
-																					 (4*number_of_polygon_verticies*
-																						 number_of_inherited_values);j>0;j--)
+																			(4*number_of_polygon_verticies*
+																			number_of_inherited_values);j>0;j--)
 																		{
 																			for (k=number_of_inherited_values;
 																					 k>0;k--)
@@ -18812,7 +22317,7 @@ not node-based are ignored.
 																/* polygon is not in projection */
 																polygon_vertex=
 																	(int)(0.1+(*transformation)*
-																		(FE_value)number_of_polygon_verticies);
+																	(FE_value)number_of_polygon_verticies);
 																if (number_of_polygon_verticies==
 																	polygon_vertex)
 																{
@@ -18823,15 +22328,14 @@ not node-based are ignored.
 																value += polygon_vertex*
 																	number_of_inherited_values;
 																for (j=number_of_values/
-																			 (4*number_of_polygon_verticies*
-																				 number_of_inherited_values);j>0;j--)
+																	(4*number_of_polygon_verticies*
+																	number_of_inherited_values);j>0;j--)
 																{
-																	for (k=number_of_inherited_values;k>0;
-																			 k--)
+																	for (k=number_of_inherited_values;k>0;k--)
 																	{
 																		*inherited_value= *value+
 																			value[2*number_of_polygon_verticies*
-																				number_of_inherited_values];
+																			number_of_inherited_values];
 																		inherited_value++;
 																		value++;
 																	}
@@ -18901,7 +22405,7 @@ not node-based are ignored.
 																		order*number_of_inherited_values;
 																}
 																number_of_values /= order+1;
-															} break;
+															}
 														}
 													}
 													transformation += element_dimension+1;
@@ -18943,9 +22447,11 @@ not node-based are ignored.
 																{
 																	orders++;
 																	order= *orders;
+#if defined (OLD_CODE)
 																	if (order> -element_dimension)
 																	{
 																		/* not polygon second coordinate */
+#endif /* defined (OLD_CODE) */
 																		offset=1;
 																		inherited_standard_basis_argument=
 																			inherited_standard_basis_arguments+
@@ -18962,8 +22468,8 @@ not node-based are ignored.
 																				{
 																					offset *= -4*
 																						(inherited_standard_basis_argument[
-																							polygon_offset]+
-																							element_dimension);
+																						polygon_offset]+
+																						element_dimension);
 																				}
 																			}
 																			else
@@ -18983,8 +22489,7 @@ not node-based are ignored.
 																				/* first polygon coordinate */
 																				order=
 																					-4*(inherited_standard_basis_argument[
-																						polygon_offset]+
-																						element_dimension);
+																					polygon_offset]+element_dimension);
 																				reorder_value=reorder_values;
 																				for (j=k*(order-1);j>0;j--)
 																				{
@@ -19013,7 +22518,9 @@ not node-based are ignored.
 																			}
 																			k *= (order+1);
 																		}
+#if defined (OLD_CODE)
 																	}
+#endif /* defined (OLD_CODE) */
 																	reorder_coordinate++;
 																}
 																*standard_basis_arguments_address=(void *)
@@ -19119,6 +22626,7 @@ not node-based are ignored.
 								{
 									return_code=0;
 								}
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 							}
 							else
 							{
@@ -19138,9 +22646,14 @@ not node-based are ignored.
 				component_address++;
 			}
 			DEALLOCATE(previous_element_values);
+#if defined (INHERITED_POLYGON_BLENDING)
+/*???DB.  Trying to do blending_matrix for polygon_basis_functions */
+#else /* defined (INHERITED_POLYGON_BLENDING) */
+/*???DB.  Prior to trying to do blending_matrix for polygon_basis_functions */
 			DEALLOCATE(reorder_values);
 			DEALLOCATE(field_to_element);
 			DEALLOCATE(reorder_coordinates);
+#endif /* defined (INHERITED_POLYGON_BLENDING) */
 		}
 		else
 		{
@@ -20993,7 +24506,7 @@ Frees the memory for the node, scale and field information and sets
 
 struct FE_element_shape *CREATE(FE_element_shape)(int dimension,int *type)
 /*******************************************************************************
-LAST MODIFIED : 27 April 2001
+LAST MODIFIED : 22 July 2001
 
 DESCRIPTION :
 Searchs the list of all shapes (all_FE_element_shape) for a shape with the
@@ -21003,9 +24516,10 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 ==============================================================================*/
 {
 	FE_value *face_to_element;
-	int dimension_2,*face,i,j,k,linked_coordinate,linked_offset,*linked_offsets,
-		no_error,number_of_faces,number_of_polygon_verticies,offset,*shape_type,
-		simplex_coordinate,simplex_dimension,temp_int,*type_entry,xi_coordinate;
+	int dimension_2,*face,i,j,k,k_set,l,linked_coordinate,linked_k,linked_offset,
+		*linked_offsets,no_error,number_of_faces,number_of_polygon_verticies,offset,
+		*shape_type,simplex_coordinate,simplex_dimension,temp_int,*type_entry,
+		xi_coordinate;
 	struct FE_element_shape *shape;
 
 	ENTER(CREATE(FE_element_shape));
@@ -21206,12 +24720,31 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 								}
 								if (0==linked_offsets[xi_coordinate-1])
 								{
+									/* this is first simplex coordinate */
 									number_of_faces++;
 								}
 								else
 								{
 									/* check intermediary links */
+									/* calculate first simplex coordinate */
 									i=xi_coordinate+linked_offsets[xi_coordinate-1];
+									type_entry=(shape->type)+((i-1)*(2*dimension-i+2))/2;
+									j=dimension-i;
+									k=xi_coordinate-i;
+									i++;
+									while (no_error&&(i<xi_coordinate))
+									{
+										j--;
+										k += j;
+										type_entry++;
+										if (((0== *type_entry)&&(0!=type_entry[k]))||
+											((0!= *type_entry)&&(0==type_entry[k])))
+										{
+											no_error=0;
+										}
+										i++;
+									}
+#if defined (OLD_CODE)
 									type_entry=shape_type+((i-1)*(2*dimension-i+2))/2;
 									j=dimension-xi_coordinate+1;
 									k=shape_type-type_entry;
@@ -21229,6 +24762,7 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 										}
 										i++;
 									}
+#endif /* defined (OLD_CODE) */
 								}
 								number_of_faces++;
 								/* check succeeding dimensions */
@@ -21290,6 +24824,8 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 							face=shape->faces;
 							shape_type=shape->type;
 							offset=1;
+							/* loop over the coordinates calculating the face matrices
+								(number dependent on <*shape_type>) for each */
 							for (xi_coordinate=0;xi_coordinate<dimension;xi_coordinate++)
 							{
 								switch (*shape_type)
@@ -21297,23 +24833,81 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 									case LINE_SHAPE:
 									{
 										/* line */
+										/* two faces for this coordinate */
 										offset *= 2;
 										*face=offset;
 										face++;
 										*face=offset+1;
 										face++;
 										face_to_element[dimension_2+xi_coordinate*dimension]=1;
+#if defined (SMOOTH_POLYGONS)
+#define CALCULATE_K_SET() \
+k_set=k; \
+if (POLYGON_SHAPE== *type_entry) \
+{ \
+	linked_offset=linked_offsets[j]; \
+	/* for when *shape_type is POLYGON_SHAPE */ \
+	if (xi_coordinate!=j+linked_offset) \
+	{ \
+		if (0<linked_offset) \
+		{ \
+			/* first polygon coordinate */ \
+			linked_k=k; \
+			if (linked_k<=xi_coordinate) \
+			{ \
+				linked_k--; \
+			} \
+			linked_k += linked_offset; \
+			if (linked_k>=dimension) \
+			{ \
+				linked_k -= dimension; \
+			} \
+			if (linked_k<xi_coordinate) \
+			{ \
+				linked_k++; \
+			} \
+			if (linked_k<k) \
+			{ \
+				k_set=linked_k; \
+			} \
+		} \
+		else \
+		{ \
+			/* second polygon coordinate */ \
+			linked_k=k; \
+			if (linked_k<=xi_coordinate) \
+			{ \
+				linked_k--; \
+			} \
+			linked_k -= linked_offset; \
+			if (linked_k>=dimension) \
+			{ \
+				linked_k -= dimension; \
+			} \
+			if (linked_k<xi_coordinate) \
+			{ \
+				linked_k++; \
+			} \
+			if (k<linked_k) \
+			{ \
+				k_set=linked_k; \
+			} \
+		} \
+	} \
+}
 										k=xi_coordinate+1;
 										if (k>=dimension)
 										{
 											k=1;
 										}
+										type_entry=shape->type;
 										for (j=0;j<dimension;j++)
 										{
 											if (j!=xi_coordinate)
 											{
-												face_to_element[k]=1;
-												face_to_element[dimension_2+k]=1;
+												CALCULATE_K_SET();
+												face_to_element[k_set]=1;
+												face_to_element[dimension_2+k_set]=1;
 												k++;
 												if (k>=dimension)
 												{
@@ -21321,26 +24915,103 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 												}
 											}
 											face_to_element += dimension;
+											type_entry += dimension-j;
 										}
+#else /* defined (SMOOTH_POLYGONS) */
+										k=1;
+										for (j=0;j<dimension;j++)
+										{
+											if (j!=xi_coordinate)
+											{
+												face_to_element[k]=1;
+												face_to_element[dimension_2+k]=1;
+												k++;
+											}
+											face_to_element += dimension;
+										}
+#endif /* defined (SMOOTH_POLYGONS) */
 										face_to_element += dimension_2;
 									} break;
 									case POLYGON_SHAPE:
 									{
 										/* polygon */
+										/* <number_of_polygon_verticies>+1 faces in total for the
+											two polygon dimension */
 										if (0<(linked_offset=linked_offsets[xi_coordinate]))
 										{
 											/* first polygon dimension */
 											number_of_polygon_verticies=shape_type[linked_offset];
 											offset *= number_of_polygon_verticies;
+											linked_offset += xi_coordinate;
 											for (i=0;i<number_of_polygon_verticies;i++)
 											{
 												*face=offset;
 												face++;
 												offset++;
-												face_to_element[xi_coordinate*dimension]=
+#if defined (SMOOTH_POLYGONS)
+												k=xi_coordinate+1;
+												if (k>=dimension)
+												{
+													k=1;
+												}
+												type_entry=shape->type;
+												j=0;
+												while (j<xi_coordinate)
+												{
+													CALCULATE_K_SET();
+													face_to_element[k_set]=1;
+													k++;
+													if (k>=dimension)
+													{
+														k=1;
+													}
+													type_entry += dimension-j;
+													j++;
+													face_to_element += dimension;
+												}
+												*face_to_element=
 													(FE_value)i/(FE_value)number_of_polygon_verticies;
-												face_to_element[(xi_coordinate+linked_offset)*
-													dimension]=1;
+												face_to_element[k]=
+													1./(FE_value)number_of_polygon_verticies;
+												k++;
+												if (k>=dimension)
+												{
+													k=1;
+												}
+												type_entry += dimension-j;
+												j++;
+												face_to_element += dimension;
+												while (j<linked_offset)
+												{
+													CALCULATE_K_SET();
+													face_to_element[k_set]=1;
+													k++;
+													if (k>=dimension)
+													{
+														k=1;
+													}
+													type_entry += dimension-j;
+													j++;
+													face_to_element += dimension;
+												}
+												*face_to_element=1;
+												face_to_element += dimension;
+												type_entry += dimension-j;
+												j++;
+												while (j<dimension)
+												{
+													CALCULATE_K_SET();
+													face_to_element[k_set]=1;
+													k++;
+													if (k>=dimension)
+													{
+														k=1;
+													}
+													type_entry += dimension-j;
+													j++;
+													face_to_element += dimension;
+												}
+#else /* defined (SMOOTH_POLYGONS) */
 												j=1;
 												while (j<=xi_coordinate)
 												{
@@ -21354,7 +25025,6 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 													1./(FE_value)number_of_polygon_verticies;
 												j++;
 												face_to_element += dimension;
-												linked_offset += xi_coordinate;
 												while (j<=linked_offset)
 												{
 													face_to_element[j]=1;
@@ -21369,15 +25039,17 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 													j++;
 													face_to_element += dimension;
 												}
+#endif /* defined (SMOOTH_POLYGONS) */
 											}
 										}
 									} break;
 									case SIMPLEX_SHAPE:
 									{
+										/*???DB.  Never did !defined (SMOOTH_POLYGONS) for
+											SIMPLEX_SHAPE */
 										offset *= 2;
 										*face=offset;
 										face++;
-/*???DB.  Start of new code */
 										simplex_dimension=0;
 										/* calculate the simplex dimension */
 										simplex_coordinate=xi_coordinate;
@@ -21411,19 +25083,63 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 										{
 											linked_coordinate += linked_offsets[linked_coordinate];
 										}
-#if !defined (RC_CODE_IN_PROGRESS)
-										k = 1;
-#else /* defined (RC_CODE_IN_PROGRESS) */
-										/* ???RC this screws up simplex(2)*simplex*line as
-											 leaves an all-zero column. Face keeps the same order
-											 of xi as for parent, only one is missing and some
-											 are slightly different on diagonals */
-										k = xi_coordinate + 1;
-										if (k >= dimension)
+										k=xi_coordinate+1;
+										if (k>=dimension)
 										{
-											k = 1;
+											k=1;
 										}
-#endif /* defined (RC_CODE_IN_PROGRESS) */
+										if (simplex_dimension<dimension)
+										{
+											/* make sure that k is not in the simplex containing
+												xi_coordinate */
+											i=1;
+											do
+											{
+												if (k>xi_coordinate)
+												{
+													i=k;
+												}
+												else
+												{
+													i=k-1;
+												}
+												if (0==linked_offsets[i])
+												{
+													i=0;
+												}
+												else
+												{
+													l=i;
+													do
+													{
+														l += linked_offsets[l];
+													} while ((l!=i)&&(l!=xi_coordinate));
+													if (l==xi_coordinate)
+													{
+														k++;
+														if (k>=dimension)
+														{
+															k=1;
+														}
+														i=1;
+													}
+													else
+													{
+														i=0;
+													}
+												}
+											} while (1==i);
+										}
+										/* start with
+											- simplex_coordinate being the first simplex coordinate
+											- (simplex_dimension-linked_offset)-1 being the
+												coordinate in the simplex of the xi_coordinate
+											- linked_coordinate being the coordinate after
+												xi_coordinate in the simplex
+											*/
+#if defined (SMOOTH_POLYGONS)
+										type_entry=shape->type;
+#endif /* defined (SMOOTH_POLYGONS) */
 										for (j=0;j<dimension;j++)
 										{
 											if (j==simplex_coordinate)
@@ -21476,18 +25192,65 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 											{
 												if (j!=xi_coordinate)
 												{
+#if defined (SMOOTH_POLYGONS)
+													CALCULATE_K_SET();
+													face_to_element[k_set]=1;
+#else /* defined (SMOOTH_POLYGONS) */
 													face_to_element[k]=1;
-												}
-											}
-											if (j!=xi_coordinate)
-											{
-												k++;
-												if (k>=dimension)
-												{
-													k=1;
+#endif /* defined (SMOOTH_POLYGONS) */
+													k++;
+													if (k>=dimension)
+													{
+														k=1;
+													}
+													if (simplex_dimension<dimension)
+													{
+														/* make sure that k is not in the simplex containing
+															xi_coordinate */
+														i=1;
+														do
+														{
+															if (k>xi_coordinate)
+															{
+																i=k;
+															}
+															else
+															{
+																i=k-1;
+															}
+															if (0==linked_offsets[i])
+															{
+																i=0;
+															}
+															else
+															{
+																l=i;
+																do
+																{
+																	l += linked_offsets[l];
+																} while ((l!=i)&&(l!=xi_coordinate));
+																if (l==xi_coordinate)
+																{
+																	k++;
+																	if (k>=dimension)
+																	{
+																		k=1;
+																	}
+																	i=1;
+																}
+																else
+																{
+																	i=0;
+																}
+															}
+														} while (1==i);
+													}
 												}
 											}
 											face_to_element += dimension;
+#if defined (SMOOTH_POLYGONS)
+											type_entry += dimension-j;
+#endif /* defined (SMOOTH_POLYGONS) */
 										}
 										if (linked_offsets[xi_coordinate]<0)
 										{
@@ -21496,19 +25259,56 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 											simplex_coordinate=xi_coordinate+
 												linked_offsets[xi_coordinate];
 											linked_coordinate=simplex_coordinate;
-#if !defined (RC_CODE_IN_PROGRESS)
-											k = 1;
-#else /* defined (RC_CODE_IN_PROGRESS) */
-											/* ???RC this screws up simplex(2)*simplex*line as
-												 leaves an all-zero column. Face keeps the same order
-												 of xi as for parent, only one is missing and some
-												 are slightly different on diagonals */
-											k = xi_coordinate + 1;
-											if (k >= dimension)
+											k=xi_coordinate+1;
+											if (k>=dimension)
 											{
-												k = 1;
+												k=1;
 											}
-#endif /* defined (RC_CODE_IN_PROGRESS) */
+											if (simplex_dimension<dimension)
+											{
+												/* make sure that k is not in the simplex containing
+													xi_coordinate */
+												i=1;
+												do
+												{
+													if (k>xi_coordinate)
+													{
+														i=k;
+													}
+													else
+													{
+														i=k-1;
+													}
+													if (0==linked_offsets[i])
+													{
+														i=0;
+													}
+													else
+													{
+														l=i;
+														do
+														{
+															l += linked_offsets[l];
+														} while ((l!=i)&&(l!=xi_coordinate));
+														if (l==xi_coordinate)
+														{
+															k++;
+															if (k>=dimension)
+															{
+																k=1;
+															}
+															i=1;
+														}
+														else
+														{
+															i=0;
+														}
+													}
+												} while (1==i);
+											}
+#if defined (SMOOTH_POLYGONS)
+											type_entry=shape->type;
+#endif /* defined (SMOOTH_POLYGONS) */
 											for (j=0;j<dimension;j++)
 											{
 												if (j==simplex_coordinate)
@@ -21553,21 +25353,69 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 												{
 													if (j!=xi_coordinate)
 													{
+#if defined (SMOOTH_POLYGONS)
+														CALCULATE_K_SET();
+														face_to_element[k_set]=1;
+#else /* defined (SMOOTH_POLYGONS) */
 														face_to_element[k]=1;
-													}
-												}
-												if (j!=xi_coordinate)
-												{
-													k++;
-													if (k>=dimension)
-													{
-														k=1;
+#endif /* defined (SMOOTH_POLYGONS) */
+														k++;
+														if (k>=dimension)
+														{
+															k=1;
+														}
+														if (simplex_dimension<dimension)
+														{
+															/* make sure that k is not in the simplex
+																containing xi_coordinate */
+															i=1;
+															do
+															{
+																if (k>xi_coordinate)
+																{
+																	i=k;
+																}
+																else
+																{
+																	i=k-1;
+																}
+																if (0==linked_offsets[i])
+																{
+																	i=0;
+																}
+																else
+																{
+																	l=i;
+																	do
+																	{
+																		l += linked_offsets[l];
+																	} while ((l!=i)&&(l!=xi_coordinate));
+																	if (l==xi_coordinate)
+																	{
+																		k++;
+																		if (k>=dimension)
+																		{
+																			k=1;
+																		}
+																		i=1;
+																	}
+																	else
+																	{
+																		i=0;
+																	}
+																}
+															} while (1==i);
+														}
 													}
 												}
 												face_to_element += dimension;
+#if defined (SMOOTH_POLYGONS)
+												type_entry += dimension-j;
+#endif /* defined (SMOOTH_POLYGONS) */
 											}
 										}
 #if defined (OLD_CODE)
+/*???DB.  Didn't make sure that k wasn't indexing a coordinate in the simplex */
 										if (0<(linked_offset=linked_offsets[xi_coordinate]))
 										{
 											while (linked_offsets[xi_coordinate+linked_offset]>0)
@@ -21641,8 +25489,8 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 							}
 #if defined (DEBUG)
 							/*???debug */
-							face_to_element = shape->face_to_element;
-							face = shape->faces;
+							face_to_element=shape->face_to_element;
+							face=shape->faces;
 							for (i=1;i<=number_of_faces;i++)
 							{
 								printf("face %d %d:\n",i,*face);
@@ -21869,7 +25717,7 @@ Searchs the <list> for the element shape with the specified <dimension> and
 struct FE_element_shape *get_FE_element_shape_of_face(
 	struct FE_element_shape *shape,int face_number)
 /*******************************************************************************
-LAST MODIFIED : 28 April 1999
+LAST MODIFIED : 5 July 2001
 
 DESCRIPTION :
 From the parent <shape> returns the FE_element_shape for its face <face_number>.
@@ -21878,7 +25726,8 @@ The returned shape is ACCESSed here, and should be DEACCESSed when no longer
 needed.
 ==============================================================================*/
 {
-	int face_code,face_type[3],line_xi_bit,number_of_polygon_vertices;
+	int face_code,face_type[3],line_xi_bit,number_of_polygon_vertices,
+		polygon_face;
 	struct FE_element_shape *face_shape;
 
 	ENTER(get_FE_element_shape_of_face);
@@ -21908,26 +25757,45 @@ needed.
 					(POLYGON_SHAPE==(shape->type)[5]))
 				{
 					/* 2 out of 3 xi directions must be linked in a polygon: hence need
-						 to determine if face is a polygon or a square */
+						to determine if face is a polygon or a square */
 					face_code=shape->faces[face_number];
 					/* work out number_of_polygon_vertices */
+					polygon_face=0;
 					if (POLYGON_SHAPE==(shape->type)[0])
 					{
 						if (POLYGON_SHAPE==(shape->type)[3])
 						{
 							number_of_polygon_vertices=(shape->type)[1];
+							/* polygon-polygon-line */
+							if (face_code>=number_of_polygon_vertices*2)
+							{
+								polygon_face=1;
+							}
 						}
 						else
 						{
 							number_of_polygon_vertices=(shape->type)[2];
+							/* polygon-line-polygon */
+							if (face_code>=number_of_polygon_vertices*2)
+							{
+								polygon_face=1;
+							}
 						}
 					}
 					else
 					{
 						number_of_polygon_vertices=(shape->type)[4];
+						/* line-polygon-polygon */
+						if (face_code<number_of_polygon_vertices*2)
+						{
+							polygon_face=1;
+						}
 					}
+#if defined (OLD_CODE)
 					face_code /= number_of_polygon_vertices;
 					if (face_code & 2)
+#endif /* defined (OLD_CODE) */
+					if (polygon_face)
 					{
 						/* face has a polygon shape */
 						face_type[0]=POLYGON_SHAPE;
@@ -30449,13 +34317,13 @@ Should only call this function for unmanaged fields.
 						case FLT_VALUE: 
 						{							
 							*((float *)times) = 0;
-						}break;	
+						} break;	
 						case SHORT_VALUE: 
 						{							
 							display_message(ERROR_MESSAGE," set_FE_field_number_of_times." 
 								"SHORT_VALUE. Code not written yet. Beware alignment problems ");
 							return_code =0;
-						}break;
+						} break;
 						case INT_VALUE: 
 						{						
 							*((int *)times) = 0;
@@ -30473,54 +34341,54 @@ Should only call this function for unmanaged fields.
 							/* copy the pointer to the array values (currently NULL), to times*/
 							array_address = (double **)(times+sizeof(int));
 							*array_address = (double *)NULL;
-						}break;
+						} break;
 						case FE_VALUE_ARRAY_VALUE:				
 						{	
 							FE_value **array_address;												
 							*((int *)times) = 0;						
 							array_address = (FE_value **)(times+sizeof(int));
 							*array_address = (FE_value *)NULL;
-						}break;
+						} break;
 						case FLT_ARRAY_VALUE:			
 						{		
 							float **array_address;												
 							*((int *)times) = 0;						
 							array_address = (float **)(times+sizeof(int));
 							*array_address = (float *)NULL;
-						}break;	
+						} break;	
 						case SHORT_ARRAY_VALUE:			
 						{		
 							short **array_address;												
 							*((int *)times) = 0;						
 							array_address = (short **)(times+sizeof(int));
 							*array_address = (short *)NULL;
-						}break;			
+						} break;			
 						case INT_ARRAY_VALUE:								
 						{	
 							int **array_address;												
 							*((int *)times) = 0;						
 							array_address = (int **)(times+sizeof(int));
 							*array_address = (int *)NULL;
-						}break;	
+						} break;	
 						case UNSIGNED_ARRAY_VALUE:			
 						{ 
 							unsigned **array_address;												
 							*((int *)times) = 0;						
 							array_address = (unsigned **)(times+sizeof(int));
 							*array_address = (unsigned *)NULL;
-						}break;	
+						} break;	
 						case STRING_VALUE:
 						{	
 							char **str_address;							
 							str_address = (char **)(times);
 							*str_address = (char *)NULL;	
-						}break;
+						} break;
 						case UNKNOWN_VALUE:
 						{
 							display_message(ERROR_MESSAGE," set_FE_field_number_of_times." 
 								" UNKNOWN_VALUE");
 							return_code =0;
-						}break;
+						} break;
 					}	/*	switch(field->time_value_type) */				
 					times += size;	
 				}/* (i=0;i<number_of_times;i++) */
@@ -31017,13 +34885,13 @@ max_number_of_array_values. Return the field value_type.
 						}
 						values_storage+=(i*size);
 					}
-				}break;		
+				} break;		
 				default:
 				{
 					display_message(ERROR_MESSAGE," get_FE_field_max_array_size. Not an array type)");
 					number_of_array_values = 0;
 					return_code=0;
-				}break;
+				} break;
 			}
 		}
 		else
@@ -31079,7 +34947,7 @@ Give an error if field->values_storage isn't storing array types.
 					values_storage = field->values_storage+(value_number*size);
 					/* get the number of array values  for the specified array in vaules_storage */			
 					*number_of_array_values = *((int *)values_storage);
-				}break;
+				} break;
 				case STRING_VALUE:
 				{
 					char *the_string,**str_address;
@@ -31090,13 +34958,13 @@ Give an error if field->values_storage isn't storing array types.
 					str_address = (char **)(values_storage);
 					the_string = *str_address;
 					*number_of_array_values = strlen(the_string)+1;/* +1 for null termination*/
-				}break;
+				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,"get_FE_field_array_attributes. Not an array type)");
 					number_of_array_values = 0;
 					return_code=0;
-				}break;
+				} break;
 			}
 		}
 		else
@@ -32395,15 +36263,15 @@ NOTE: recursive to handle 1-D to 3-D case.
 				/*???debug*/
 				{
 					FE_value *value;
-					int a, b;
-					
-					value = element_to_top_level;
-					for (b = 0; b < top_level_element->shape->dimension; b++)
+					int a,b;
+
+					value=element_to_top_level;
+					for (b=0;b<top_level_element->shape->dimension;b++)
 					{
 						printf("[");
-						for (a = 0; a <= element->shape->dimension; a++)
+						for (a=0;a<=element->shape->dimension;a++)
 						{
-							printf(" %6.2f", *value);
+							printf(" %6.2f",*value);
 							value++;
 						}
 						printf(" ]\n");
@@ -32440,7 +36308,7 @@ int get_FE_element_discretization_from_top_level(struct FE_element *element,
 	int *number_in_xi,struct FE_element *top_level_element,
 	int *top_level_number_in_xi,FE_value *element_to_top_level)
 /*******************************************************************************
-LAST MODIFIED : 26 April 2001
+LAST MODIFIED : 3 May 2001
 
 DESCRIPTION :
 Returns in <number_in_xi> the equivalent discretization of <element> for its
@@ -32451,7 +36319,7 @@ FE_element_get_top_level_element_conversion.
 as remaining values up to this size are cleared to zero.
 ==============================================================================*/
 {
-	int dimension, i, j, maximum_number_in_xi, return_code, top_level_dimension;
+	int dimension,i,j,maximum_number_in_xi,return_code,top_level_dimension;
 
 	ENTER(get_FE_element_discretization_from_top_level);
 	if (element&&number_in_xi&&top_level_element&&top_level_number_in_xi)
@@ -32471,25 +36339,25 @@ as remaining values up to this size are cleared to zero.
 			/* use largest number_in_xi of any linked xi directions */
 			for (i=0;(i<dimension)&&return_code;i++)
 			{
-				maximum_number_in_xi = 0;
+				maximum_number_in_xi=0;
 				number_in_xi[i]=0;
-				for (j = 0; j < top_level_dimension; j++)
+				for (j=0;j<top_level_dimension;j++)
 				{
-					if (0.0 != fabs(element_to_top_level[j*(dimension + 1) + i + 1]))
+					if (0.0!=fabs(element_to_top_level[j*(dimension+1)+i+1]))
 					{
-						if (top_level_number_in_xi[j] > maximum_number_in_xi)
+						if (top_level_number_in_xi[j]>maximum_number_in_xi)
 						{
-							maximum_number_in_xi = top_level_number_in_xi[j];
+							maximum_number_in_xi=top_level_number_in_xi[j];
 						}
 					}
 				}
 				number_in_xi[i] = maximum_number_in_xi;
-				if (0 == maximum_number_in_xi)
+				if (0==maximum_number_in_xi)
 				{
 					display_message(ERROR_MESSAGE,
 						"get_FE_element_discretization_from_top_level.  "
 						"Could not get discretization");
-					return_code = 0;
+					return_code=0;
 				}
 			}
 			for (i=dimension;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
@@ -36280,11 +40148,11 @@ Copies the CM_Field_information from source to destination
 				destination->indices.dependent.nr = source->indices.dependent.nr;
 				destination->indices.dependent.nxc = source->indices.dependent.nxc;
 				destination->indices.dependent.nxt = source->indices.dependent.nxt;			
-			}break;
+			} break;
 			default: /* everything else is independent*/
 			{
 				destination->indices.independent.nr = source->indices.independent.nr;;
-			}break;
+			} break;
 		}
 		return_code =1;
 	}
@@ -36365,7 +40233,7 @@ pointer to an array.
 					field_info->indices.dependent.nxc = 0;
 					field_info->indices.dependent.nxt = 0;
 				}					
-			}break;
+			} break;
 			default: /* everything else is independent*/
 			{
 				if(indices)/* have some data */
@@ -36376,7 +40244,7 @@ pointer to an array.
 				{
 					field_info->indices.independent.nr = 0;
 				}		
-			}break;
+			} break;
 		}
 
 		return_code =1;
@@ -36430,12 +40298,12 @@ Compares the CM_Field_information structures, field_info1 and field_info2.
 								(field_info1->indices.dependent.nxt == 
 									field_info2->indices.dependent.nxt)
 									);
-						}break;
+						} break;
 						default: /* everything else is independent*/
 						{
 							return_code = (field_info1->indices.independent.nr == 
 								field_info2->indices.independent.nr);
-						}break;
+						} break;
 					} /* switch*/
 				}
 		}
