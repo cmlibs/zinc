@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_scalar.cpp
 //
-// LAST MODIFIED : 6 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 //???DB.  Should be template?
@@ -31,7 +31,7 @@ template<class Assertion,class Exception>inline void Assert(
 
 class Variable_input_scalar_value : public Variable_input
 //******************************************************************************
-// LAST MODIFIED : 6 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -48,14 +48,16 @@ class Variable_input_scalar_value : public Variable_input
 		virtual bool operator==(const Variable_input& input)
 		try
 		{
-			const Variable_input_scalar_value& input_scalar_value=
-				dynamic_cast<const Variable_input_scalar_value&>(input);
+			{
+				const Variable_input_scalar_value& input_scalar_value=
+					dynamic_cast<const Variable_input_scalar_value&>(input);
 
-			return (variable_scalar==input_scalar_value.variable_scalar);
-		}
-		catch (std::bad_cast)
-		{
-			return (false);
+				return (variable_scalar==input_scalar_value.variable_scalar);
+			}
+			catch (std::bad_cast)
+			{
+				return (false);
+			};
 		};
 	private:
 		Variable_scalar_handle variable_scalar;

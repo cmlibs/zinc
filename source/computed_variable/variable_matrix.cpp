@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_matrix.cpp
 //
-// LAST MODIFIED : 6 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 //???DB.  Should be template?
@@ -31,7 +31,7 @@ template<class Assertion,class Exception>inline void Assert(
 
 class Variable_input_matrix_values : public Variable_input
 //******************************************************************************
-// LAST MODIFIED : 6 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -65,34 +65,36 @@ class Variable_input_matrix_values : public Variable_input
 			return (result);
 		};
 		virtual bool operator==(const Variable_input& input)
-		try
 		{
-			const Variable_input_matrix_values& input_matrix_values=
-				dynamic_cast<const Variable_input_matrix_values&>(input);
-			bool result;
-
-			result=false;
-			if ((variable_matrix==input_matrix_values.variable_matrix)&&
-				(indices.size()==input_matrix_values.indices.size()))
+			try
 			{
-				int i=indices.size();
+				const Variable_input_matrix_values& input_matrix_values=
+					dynamic_cast<const Variable_input_matrix_values&>(input);
+				bool result;
 
-				result=true;
-				while (result&&(i>0))
+				result=false;
+				if ((variable_matrix==input_matrix_values.variable_matrix)&&
+					(indices.size()==input_matrix_values.indices.size()))
 				{
-					i--;
-					if (!(indices[i]==input_matrix_values.indices[i]))
+					int i=indices.size();
+
+					result=true;
+					while (result&&(i>0))
 					{
-						result=false;
+						i--;
+						if (!(indices[i]==input_matrix_values.indices[i]))
+						{
+							result=false;
+						}
 					}
 				}
-			}
 
-			return (result);
-		}
-		catch (std::bad_cast)
-		{
-			return (false);
+				return (result);
+			}
+			catch (std::bad_cast)
+			{
+				return (false);
+			};
 		};
 	private:
 		Variable_matrix_handle variable_matrix;

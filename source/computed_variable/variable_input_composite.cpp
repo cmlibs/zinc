@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_input_composite.cpp
 //
-// LAST MODIFIED : 24 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -172,21 +172,23 @@ Variable_size_type Variable_input_composite::size()
 
 bool Variable_input_composite::operator==(const Variable_input& input)
 //******************************************************************************
-// LAST MODIFIED : 6 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
-try
 {
-	const Variable_input_composite& input_composite=
-		dynamic_cast<const Variable_input_composite&>(input);
+	try
+	{
+		const Variable_input_composite& input_composite=
+			dynamic_cast<const Variable_input_composite&>(input);
 
-	return (inputs_list==input_composite.inputs_list);
-}
-catch (std::bad_cast)
-{
-	return (false);
-}
+		return (inputs_list==input_composite.inputs_list);
+	}
+	catch (std::bad_cast)
+	{
+		return (false);
+	}
+};
 
 std::list<Variable_input_handle>::iterator Variable_input_composite::begin()
 //******************************************************************************
