@@ -4,7 +4,6 @@
 // LAST MODIFIED : 20 July 2004
 //
 // DESCRIPTION :
-//???DB.  Should be template?
 //==============================================================================
 
 #if defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
