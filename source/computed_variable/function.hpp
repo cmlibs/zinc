@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 25 August 2004
 //
 // DESCRIPTION :
 // Functions are expressions that are constructed for:
@@ -22,7 +22,7 @@
 
 class Function
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 25 August 2004
 //
 // DESCRIPTION :
 // A function maintains storage for all its inputs and the outputs that can be
@@ -37,6 +37,7 @@ class Function
 	friend class Function_derivative;
 	friend class Function_derivative_matrix;
 	friend class Function_identity;
+	friend class Function_gradient;
 	friend class Function_variable;
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
