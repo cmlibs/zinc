@@ -1558,7 +1558,7 @@ the drawable (not sure which)
 						(void)fprintf(postscript.file,"%% PutImage\n");
 						(void)fprintf(postscript.file,"gsave\n");
 						(void)fprintf(postscript.file,"/scan_line %d string def\n",
-							scan_line_length);
+							(int)scan_line_length);
 						(void)fprintf(postscript.file,"0 setgray\n");
 						(void)fprintf(postscript.file,"%d %d translate\n",dest_x,dest_y);
 						(void)fprintf(postscript.file,"%u %u\n",width,height);
@@ -1657,7 +1657,7 @@ the drawable (not sure which)
 						(void)fprintf(postscript.file,"%% PutImage\n");
 						(void)fprintf(postscript.file,"gsave\n");
 						(void)fprintf(postscript.file,"/scan_line %d string def\n",
-							scan_line_length);
+							(int)scan_line_length);
 						(void)fprintf(postscript.file,"%d %d translate\n",dest_x,dest_y);
 						(void)fprintf(postscript.file,"%u %u\n",width,height);
 						(void)fprintf(postscript.file,"8\n");
