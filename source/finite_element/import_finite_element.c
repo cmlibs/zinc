@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 18 October 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -238,134 +238,154 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 	return (return_code);
 } /* read_element_xi_value */
 
-static int read_string_value(FILE *input_file,char **string_address)
+static int read_string_value(FILE *input_file, char **string_address)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 15 January 2002
 
 DESCRIPTION :
 Returns an allocated string with the next contiguous block (length>0) of
 characters from input_file not containing whitespace (space, formfeed, newline,
 carriage return, tab, vertical tab). If the string begins with EITHER a single
 or double quote, ' or ", then the string must end in the same quote mark
-followed by whitespace or EOF. Repeat that quote mark to put it once in the
-string.
+followed by whitespace or EOF.
+Special characters including the quote marks, $ and backslash must be preceded
+by the escape/backslash character in the input file.
 ==============================================================================*/
 {
 	char *the_string;
-	int allocated_length,length,quote_mark,reading_token,return_code,this_char;
+	int allocated_length, length, quote_mark, reading_token, return_code,
+		this_char;
 
 	ENTER(read_string_value);
-	if (input_file&&string_address)
+	if (input_file && string_address)
 	{
-		the_string=(char *)NULL;
-		allocated_length=0; /* including space for \0 at end */
-		length=0;
+		the_string = (char *)NULL;
+		allocated_length = 0; /* including space for \0 at end */
+		length = 0;
 		/* pass over leading white space */
-		while (isspace(this_char=fgetc(input_file)));
+		while (isspace(this_char = fgetc(input_file)));
 		/* determine if string is in quotes and which quote_mark is in use */
 		if (((int)'\'' == this_char) || ((int)'\"' == this_char))
 		{
-			quote_mark=this_char;
-			this_char=fgetc(input_file);
+			quote_mark = this_char;
+			this_char = fgetc(input_file);
 		}
 		else
 		{
-			quote_mark=0;
+			quote_mark = 0;
 		}
-		reading_token=1;
+		reading_token = 1;
 		/* read token until [quote_mark+]EOF/whitespace */
 		while (reading_token)
 		{
-			if ((EOF==this_char)||(!quote_mark&&isspace(this_char)))
+			if (EOF == this_char)
 			{
-				if (EOF==this_char)
+				if (quote_mark)
 				{
-					if (quote_mark)
-					{
-						display_message(ERROR_MESSAGE,
-							"End of file before end quote mark");
-						return_code=0;
-					}
+					display_message(ERROR_MESSAGE,
+						"End of file before end quote mark.  Line %d",
+						get_line_number(input_file));
+					return_code = 0;
+				}
+				if (!the_string)
+				{
+					display_message(ERROR_MESSAGE,
+						"Missing string in input file.  Line %d",
+						get_line_number(input_file));
+					return_code = 0;
+				}
+				reading_token = 0;
+			}
+			else if (!quote_mark && isspace(this_char))
+			{
+				reading_token = 0;
+			}
+			else if (quote_mark && ((int)'\\' == this_char))
+			{
+				this_char = fgetc(input_file);
+				if (!(((int)'\\' == this_char) ||
+					((int)'\"' == this_char) ||
+					((int)'\'' == this_char) ||
+					((int)'$' == this_char)))
+				{
+					display_message(ERROR_MESSAGE,
+						"Invalid escape sequence: \\%c.  Line %d", this_char,
+						get_line_number(input_file));
+					DEALLOCATE(the_string);
+					reading_token = 0;					
+					return_code = 0;
+				}
+			}
+			else if (quote_mark && (quote_mark == this_char))
+			{
+				this_char = fgetc(input_file);
+				if ((EOF == this_char) || isspace(this_char))
+				{
 					if (!the_string)
 					{
-						display_message(ERROR_MESSAGE,
-							"read_string_value.  Missing string");
-						return_code=0;
-					}
-				}
-				reading_token=0;
-			}
-			else
-			{
-				if (quote_mark&&(quote_mark==this_char))
-				{
-					this_char=fgetc(input_file);
-					if ((EOF==this_char)||isspace(this_char))
-					{
-						if (!the_string)
+						/* for empty string "" or '' */
+						if (ALLOCATE(the_string, char, 1))
 						{
-							/* for empty string "" or '' */
-							if (ALLOCATE(the_string,char,1))
-							{
-								*string_address=the_string;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"read_string_value.  Not enough memory");
-							}
-						}
-						reading_token=0;
-					}
-					else if (quote_mark!=this_char)
-					{
-						display_message(ERROR_MESSAGE,
-							"Must have white space after end quote.  Line %d",
-							get_line_number(input_file));
-						DEALLOCATE(the_string);
-						reading_token=0;
-					}
-				}
-				if (reading_token)
-				{
-					length++;
-					/* is the current string big enough (including \0 at end)? */
-					if (allocated_length < length+1)
-					{
-						allocated_length += 50;
-						if (REALLOCATE(*string_address,the_string,char,
-							allocated_length))
-						{
-							the_string = *string_address;
+							*string_address = the_string;
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
 								"read_string_value.  Not enough memory");
-							DEALLOCATE(the_string);
-							reading_token=0;
+							return_code = 0;
 						}
 					}
-					if (the_string)
-					{
-						the_string[length-1]=(char)this_char;
-					}
-					this_char=fgetc(input_file);
+					reading_token = 0;
 				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Must have white space after end quote.  Line %d",
+						get_line_number(input_file));
+					DEALLOCATE(the_string);
+					reading_token = 0;
+					return_code = 0;
+				}
+			}
+			if (reading_token)
+			{
+				length++;
+				/* is the current string big enough (including \0 at end)? */
+				if (allocated_length < length + 1)
+				{
+					allocated_length += 25;
+					if (REALLOCATE(*string_address, the_string, char, allocated_length))
+					{
+						the_string = *string_address;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"read_string_value.  Not enough memory");
+						DEALLOCATE(the_string);
+						reading_token = 0;
+						return_code = 0;
+					}
+				}
+				if (the_string)
+				{
+					the_string[length - 1] = (char)this_char;
+				}
+				this_char = fgetc(input_file);
 			}
 		}
 		if (the_string)
 		{
-			the_string[length]='\0';
-			return_code=1;
+			the_string[length] = '\0';
+			return_code = 1;
 		}
-		*string_address=the_string;
+		*string_address = the_string;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"read_string_value.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
