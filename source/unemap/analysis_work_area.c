@@ -377,11 +377,13 @@ DESCRIPTION :
 			{
 				map->activation_front= -1;
 			}
+#if defined (OLD_CODE)
 			if (!(map->fixed_range))
 			{
 				map->minimum_value=1;
 				map->maximum_value=0;
 			}
+#endif /* defined (OLD_CODE) */
 			/* set the start and end frame times based on the potential time */
 			if ((analysis->rig)&&(analysis->rig->devices)&&
 				(*(analysis->rig->devices))&&
@@ -777,7 +779,6 @@ analysis work area.
 	struct Device **highlight;
 	struct Analysis_window *analysis_window;
 	struct Analysis_work_area *analysis;
-	struct Map *map;
 	struct Mapping_window *mapping;
 	struct Rig *rig;
 	struct Region *current_region;
@@ -897,11 +898,13 @@ analysis work area.
 						XtVaSetValues(mapping->region_choice,
 							XmNmenuHistory,mapping->current_region,
 							NULL);
+#if defined (OLD_CODE)
 						if ((map=mapping->map)&&!(map->fixed_range))
 						{
 							map->minimum_value=1;
 							map->maximum_value=0;
 						}
+#endif /* defined (OLD_CODE) */
 						update_mapping_drawing_area(mapping,2);
 						update_mapping_colour_or_auxili(mapping);
 					}
@@ -2220,14 +2223,16 @@ to be consistant with it.
 		times=buffer->times;
 		potential_time=analysis->potential_time;
 		Time_keeper_request_new_time(Time_object_get_time_keeper(
-			analysis->potential_time_object),((double)times[potential_time]*1000.0/
+			analysis->potential_time_object),((double)times[potential_time]/
 				frequency));
 		Time_keeper_set_minimum(Time_object_get_time_keeper(
 			analysis->potential_time_object),
-			(float)buffer->times[analysis->start_search_interval]*1000.0/frequency);
+			(float)buffer->times[analysis->start_search_interval]/frequency);
 		Time_keeper_set_maximum(Time_object_get_time_keeper(
 			analysis->potential_time_object),
-			(float)buffer->times[analysis->end_search_interval]*1000.0/frequency);
+			(float)buffer->times[analysis->end_search_interval]/frequency);
+		Time_keeper_set_speed(Time_object_get_time_keeper(
+			analysis->potential_time_object),20.0/frequency);
 	}	
 	else
 	{
@@ -3104,10 +3109,13 @@ Sets up the analysis work area for analysing a set of signals.
 		/* ensure projection_type matches region type */
 		ensure_projection_type_matches_region_type(analysis);
 		/* update the drawing areas */
-		update_mapping_drawing_area(analysis->mapping_window,2);
-		update_mapping_colour_or_auxili(analysis->mapping_window);
 		update_signals_drawing_area(analysis->window);
 		update_interval_drawing_area(analysis->window);
+		/*set the time keeper to the new current time. Important to keep any */
+		/*movie player in sync */
+		set_up_time_keeper_after_read(analysis);
+		update_mapping_drawing_area(analysis->mapping_window,2);
+		update_mapping_colour_or_auxili(analysis->mapping_window);
 		/* free the old analysis window title */
 		XmStringFree(old_dialog_title);
 #if defined (UNEMAP_USE_3D) 
@@ -3124,7 +3132,6 @@ Sets up the analysis work area for analysing a set of signals.
 			FE_node_selection_select_node(node_selection,rig_node);
 		}
 #endif /* defined (UNEMAP_USE_3D) */		
-		set_up_time_keeper_after_read(analysis);
 		mapping_window_set_animation_buttons(analysis->mapping_window);
 	}
 	else
@@ -4115,10 +4122,13 @@ signals.
 				update_analysis_window_menu(analysis->window);
 				update_mapping_window_menu(analysis->mapping_window);					
 				/* update the drawing areas */
-				update_mapping_drawing_area(analysis->mapping_window,2);
-				update_mapping_colour_or_auxili(analysis->mapping_window);
 				update_signals_drawing_area(analysis->window);
 				update_interval_drawing_area(analysis->window);
+				/*set the time keeper to the new current time. Important to keep any */
+				/*movie player in sync */
+				set_up_time_keeper_after_read(analysis);
+				update_mapping_drawing_area(analysis->mapping_window,2);
+				update_mapping_colour_or_auxili(analysis->mapping_window);
 				trace_change_signal(analysis->trace);
 				/* free the old analysis window title */
 				XmStringFree(old_dialog_title);
@@ -4153,9 +4163,6 @@ signals.
 				}
 #endif /* defined (UNEMAP_USE_3D) */
 
-				/*set the time keeper to the new current time. Important to keep any */
-				/*movie player in sync */				
-				set_up_time_keeper_after_read(analysis);
 				mapping_window_set_animation_buttons(analysis->mapping_window);
 			}
 			else
@@ -4810,10 +4817,13 @@ for analysing the signals.
 			/* ensure projection_type matches region type */
 			ensure_projection_type_matches_region_type(analysis);
 			/* update the drawing areas */
-			update_mapping_drawing_area(analysis->mapping_window,2);
-			update_mapping_colour_or_auxili(analysis->mapping_window);
 			update_signals_drawing_area(analysis->window);
 			update_interval_drawing_area(analysis->window);
+			/*set the time keeper to the new current time. Important to keep any */
+			/*movie player in sync */
+			set_up_time_keeper_after_read(analysis);
+			update_mapping_drawing_area(analysis->mapping_window,2);
+			update_mapping_colour_or_auxili(analysis->mapping_window);
 			/* free the old analysis window title */
 			XmStringFree(old_dialog_title);
 #if defined (UNEMAP_USE_3D) 
@@ -4830,9 +4840,6 @@ for analysing the signals.
 				FE_node_selection_select_node(node_selection,rig_node);
 			}
 #endif /* defined (UNEMAP_USE_3D) */
-			/*set the time keeper to the new current time. Important to keep any */
-			/*movie player in sync */
-			set_up_time_keeper_after_read(analysis);
 			mapping_window_set_animation_buttons(analysis->mapping_window);
 		}/* if(return_code) */
 	}
@@ -7170,7 +7177,7 @@ drawing area.
 														Time_keeper_request_new_time(
 															Time_object_get_time_keeper(
 																analysis->potential_time_object),
-															((double)times[potential_time]*1000.0/
+															((double)times[potential_time]/
 																frequency));
 													}
 													else
@@ -8249,7 +8256,7 @@ should be done as a callback from the trace_window.
 																	Time_keeper_request_new_time(
 																		Time_object_get_time_keeper(
 																			analysis->potential_time_object),
-																		((double)times[potential_time]*1000.0/
+																		((double)times[potential_time]/
 																			frequency));
 																} break;
 																case MOVING_DATUM_MARKER:
@@ -10339,7 +10346,7 @@ should be done as a callback from the trace_window.
 																		Time_keeper_request_new_time(
 																			Time_object_get_time_keeper(
 																				analysis->potential_time_object),
-																			((double)times[potential_time]*1000.0/
+																			((double)times[potential_time]/
 																				frequency));
 																	} break;
 																	case MOVING_DATUM_MARKER:
@@ -14546,22 +14553,22 @@ Calculates the next desired update callback from the time object.
 								{
 									case TIME_KEEPER_PLAY_FORWARD:
 									{
-										next_time=map->start_time+
-											(map->end_time-map->start_time)/
-											(float)(map->number_of_frames-1)*
-											floor((float)(map->number_of_frames-1)*
-												((time_after-map->start_time)/
-													(map->end_time-map->start_time))+1.0);
+										next_time=((double)map->start_time+
+											(double)(map->end_time-map->start_time)/
+											(double)(map->number_of_frames-1)*
+											floor((double)(map->number_of_frames-1)*
+												((time_after*1000.0-(double)map->start_time)/
+													(double)(map->end_time-map->start_time))+1.0))/1000.0;
 										time_set=1;
 									} break;
 									case TIME_KEEPER_PLAY_BACKWARD:
 									{
-										next_time=map->start_time+
-											(map->end_time - map->start_time)/
-											(float)(map->number_of_frames-1)*
-											ceil((float)(map->number_of_frames-1)*
-												((time_after-map->start_time)/
-													(map->end_time-map->start_time))-1.0);
+										next_time=((double)map->start_time+
+											(double)(map->end_time - map->start_time)/
+											(double)(map->number_of_frames-1)*
+											ceil((double)(map->number_of_frames-1)*
+												((time_after*1000.0-(double)map->start_time)/
+													(double)(map->end_time-map->start_time))-1.0))/1000.0;
 										time_set=1;
 									} break;
 								}
@@ -14585,26 +14592,26 @@ Calculates the next desired update callback from the time object.
 					{
 						case TIME_KEEPER_PLAY_FORWARD:
 						{
-							next_time=(float)buffer->times[analysis->datum]*1000.0/
+							next_time=((float)buffer->times[analysis->datum]/
 								buffer->frequency+map->minimum_value+
 								(map->maximum_value-map->minimum_value)/
 								(float)(number_of_spectrum_colours-1)*
 								floor(1.0001+(float)(number_of_spectrum_colours-1)*
-								(time_after-(float)buffer->times[analysis->datum]*1000.0/
+								(time_after*1000.0-(float)buffer->times[analysis->datum]/
 								buffer->frequency-map->minimum_value)/
-								(map->maximum_value-map->minimum_value));
+								(map->maximum_value-map->minimum_value)))/1000.0;
 							time_set=1;
 						} break;
 						case TIME_KEEPER_PLAY_BACKWARD:
 						{
-							next_time=(float)buffer->times[analysis->datum]*1000.0/
+							next_time=((float)buffer->times[analysis->datum]/
 								buffer->frequency+map->minimum_value+
 								(map->maximum_value-map->minimum_value)/
 								(float)(number_of_spectrum_colours-1)*
 								ceil(-1.0001+(float)(number_of_spectrum_colours-1)*
-								(time_after-(float)buffer->times[analysis->datum]*1000.0/
+								(time_after*1000.0-(float)buffer->times[analysis->datum]/
 								buffer->frequency-map->minimum_value)/
-								(map->maximum_value-map->minimum_value));
+								(map->maximum_value-map->minimum_value))/1000.0);
 							time_set=1;
 						} break;
 					}
@@ -14617,12 +14624,12 @@ Calculates the next desired update callback from the time object.
 			{
 				case TIME_KEEPER_PLAY_FORWARD:
 				{
-					next_time=(1.0+floor(time_after*buffer->frequency/1000.0))*1000.0/
+					next_time=(1.0+floor(time_after*buffer->frequency))/
 						buffer->frequency;
 				} break;
 				case TIME_KEEPER_PLAY_BACKWARD:
 				{
-					next_time=(-1.0+ceil(time_after*buffer->frequency/1000.0))*1000.0/
+					next_time=(-1.0+ceil(time_after*buffer->frequency))/
 						buffer->frequency;
 				} break;
 				default:
@@ -14677,7 +14684,7 @@ Responds to update callbacks from the time object.
 	{	 
 		frequency=buffer->frequency;
 		previous_potential_time=analysis->potential_time;
-		potential_time=(int)(current_time*frequency/1000.0)-
+		potential_time=(int)(current_time*frequency)-
 			(buffer->times)[0];
 		if (potential_time<0)
 		{
@@ -14692,21 +14699,21 @@ Responds to update callbacks from the time object.
 			potential_time,buffer->times[potential_time]);
 #endif /* defined (DEBUG) */
 		if (((float)buffer->times[potential_time]<
-			(current_time-1.0)*frequency/1000.0))
+			(current_time-0.001)*frequency))
 		{
 			while ((potential_time<buffer->number_of_samples)&&
 				((float)buffer->times[potential_time]<
-				(current_time-1.0)*frequency/1000.0))
+				(current_time-0.001)*frequency))
 			{
 				potential_time++;
 			}
 		}
 		else
 		{
-			if ((float)buffer->times[potential_time]>current_time*frequency/1000.0)
+			if ((float)buffer->times[potential_time]>current_time*frequency)
 			{
 				while ((potential_time>=0)&&
-					((float)buffer->times[potential_time]>current_time*frequency/1000.0))
+					((float)buffer->times[potential_time]>current_time*frequency))
 				{
 					potential_time--;
 				}
@@ -14752,7 +14759,7 @@ Responds to update callbacks from the time object.
 						{
 							case POTENTIAL:
 							{						 
-								map_potential_time=current_time;
+								map_potential_time=current_time*1000.0;
 								switch(map->interpolation_type)
 								{
 									case BICUBIC_INTERPOLATION:
@@ -14867,13 +14874,13 @@ Responds to update callbacks from the time object.
 								number_of_spectrum_colours=
 									drawing_information->number_of_spectrum_colours;
 								map->activation_front=(float)(number_of_spectrum_colours-1)*
-									(current_time-(float)buffer->times[analysis->datum]*1000.0/
+									(current_time*1000.0-(float)buffer->times[analysis->datum]*1000.0/
 										frequency-map->minimum_value)/(map->maximum_value-
 											map->minimum_value);
 #if defined (DEBUG)
 								printf("analysis_potential_time_update_callback.  front %d current %f  datum %f  minimum %f maximum %f\n",
 									map->activation_front,current_time,
-									(float)buffer->times[analysis->datum]*1000.0/frequency,
+									(float)buffer->times[analysis->datum]/frequency,
 									map->minimum_value,map->maximum_value);
 #endif /* defined (DEBUG) */
 								if ((0<=map->activation_front)&&
@@ -17270,6 +17277,8 @@ Creates the windows associated with the analysis work area.
 		analysis->trace_update_flags=TRACE_FLAGS_CLEAR;
 		analysis->potential_time_object=
 			ACCESS(Time_object)(CREATE(Time_object)("UNEMAP Potential Time"));
+		set_unemap_package_potential_time_object(analysis->unemap_package,
+			analysis->potential_time_object);
 		Time_object_set_next_time_function(analysis->potential_time_object,
 			analysis_potential_time_next_time_callback,(void *)analysis);
 		if (time_keeper)

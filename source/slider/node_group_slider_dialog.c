@@ -575,7 +575,7 @@ Updates the node locations for the <node_group_slider>
 											}
 											return_code=set_FE_nodal_FE_value_value(temp_node,
 												&coordinate_field_component,0,FE_NODAL_VALUE,
-												(FE_value)temp_double);
+												/*time*/0, (FE_value)temp_double);
 											(coordinate_field_component.number)++;
 											j++;
 										}

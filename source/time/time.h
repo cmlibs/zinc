@@ -47,9 +47,26 @@ DESCRIPTION :
 int Time_object_set_current_time_privileged(struct Time_object *time,
 	double new_time);
 /*******************************************************************************
-LAST MODIFIED : 29 September 1998
+LAST MODIFIED : 17 January 2002
 
 DESCRIPTION :
+This routine allows the timekeeper to explicitly set the time.
+Separated Time_object_notify_clients_privileged so that all the clients
+can be updated with the new time before any of them call back to their clients.
+Users of a time object that is controlled by a timekeeper should set the time 
+through the timekeeper.
+==============================================================================*/
+
+int Time_object_notify_clients_privileged(struct Time_object *time);
+/*******************************************************************************
+LAST MODIFIED : 17 January 2002
+
+DESCRIPTION :
+This routine allows the timekeeper to tell the time_object to notify its clients.
+Separated off from Time_object_set_current_time_privileged so that all the clients
+can be updated with the new time before any of them call back to their clients.
+Users of a time object that is controlled by a timekeeper should set the time 
+through the timekeeper.
 ==============================================================================*/
 
 int Time_object_set_update_frequency(struct Time_object *time,double frequency);

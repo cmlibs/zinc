@@ -72,7 +72,7 @@ element,nodes, fields when they are no longer required.
 	struct Computed_field *signal_value_at_time_field;
 	struct Computed_field *offset_signal_value_at_time_field;
 	struct Computed_field *scaled_offset_signal_value_at_time_field;
-	struct Computed_field *time_field;
+	struct Time_object *potential_time_object;
 	int access_count;
 }; /* struct Unemap_package */
 
@@ -412,6 +412,26 @@ Sets the field of the unemap package.
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
+struct Time_object *get_unemap_package_potential_time_object(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 25 January 2002
+
+DESCRIPTION :
+Get the potential time object.
+==============================================================================*/
+
+int set_unemap_package_potential_time_object(struct Unemap_package *package,
+	struct Time_object *potential_time_object);
+/*******************************************************************************
+LAST MODIFIED : 25 January 2002
+
+DESCRIPTION :
+Sets the potential time object.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
 struct MANAGER(FE_field) *get_unemap_package_FE_field_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -667,28 +687,6 @@ DESCRIPTION :
 Sets the field of the unemap package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-struct Computed_field *get_unemap_package_time_field(
-	struct Unemap_package *package);
-/*******************************************************************************
-LAST MODIFIED : 3 May 2000
-
-DESCRIPTION :
-gets the field of the unemap package.
-==============================================================================*/
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-int set_unemap_package_time_field(struct Unemap_package *package,
-	struct Computed_field *time_field);
-/*******************************************************************************
-LAST MODIFIED : 3 May 2000
-
-DESCRIPTION :
-Sets the field of the unemap package.
-==============================================================================*/
-#endif /* #if defined(UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
 char *get_unemap_package_default_torso_name(	struct Unemap_package *package);

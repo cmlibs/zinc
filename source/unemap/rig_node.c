@@ -631,11 +631,11 @@ create_config_template_node, and the field_order_info.
 						(float *)NULL);
 #endif/*  defined (DEBUG)*/
 					component.number = 0;					
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,lambda);
+					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,lambda);
 					component.number = 1;
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,mu);
+					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,mu);
 					component.number = 2;
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,theta);
+					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,theta);
 					/* 2nd field contains device name */
 					field=get_FE_field_order_info_field(field_order_info,
 						field_number);
@@ -656,14 +656,14 @@ create_config_template_node, and the field_order_info.
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,channel_number);	
+						FE_NODAL_VALUE,/*time*/0,channel_number);	
 					/* 5th field contains read_order_number */
 					component.field=get_FE_field_order_info_field(
 						field_order_info,field_number);
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,read_order_number);	
+						FE_NODAL_VALUE,/*time*/0,read_order_number);	
 #if  defined (UNEMAP_USE_NODES)	
 					/* 6th field contains highlight */
 					component.field=get_FE_field_order_info_field(
@@ -681,11 +681,11 @@ create_config_template_node, and the field_order_info.
 						field_order_info,field_number);
 					field_number++;
 					component.number = 0;					
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,xpos);
+					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,xpos);
 					component.number = 1;	
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,ypos);
+					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,ypos);
 					component.number = 2;	
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,zpos);
+					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,zpos);
 					/* 2nd field contains device name */
 					field=get_FE_field_order_info_field(field_order_info,
 						field_number);
@@ -706,14 +706,14 @@ create_config_template_node, and the field_order_info.
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,channel_number);	
+						FE_NODAL_VALUE,/*time*/0,channel_number);	
 					/* 5th field contains read_order_number */
 					component.field=get_FE_field_order_info_field(
 						field_order_info,field_number);
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,read_order_number);
+						FE_NODAL_VALUE,/*time*/0,read_order_number);
 #if  defined (UNEMAP_USE_NODES)		
 					/* 6th field contains highlight */
 					component.field=get_FE_field_order_info_field(
@@ -731,9 +731,9 @@ create_config_template_node, and the field_order_info.
 						field_order_info,field_number);
 					field_number++;
 					component.number = 0;					
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,xpos);
+					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,xpos);
 					component.number = 1;	
-					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,ypos);
+					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,ypos);
 					/* 2nd field contains device name */
 					field=get_FE_field_order_info_field(field_order_info,
 						field_number);
@@ -754,14 +754,14 @@ create_config_template_node, and the field_order_info.
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,channel_number);	
+						FE_NODAL_VALUE,/*time*/0,channel_number);	
 					/* 5th field contains read_order_number */
 					component.field=get_FE_field_order_info_field(
 						field_order_info,field_number);
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,read_order_number);	
+						FE_NODAL_VALUE,/*time*/0,read_order_number);	
 #if  defined (UNEMAP_USE_NODES)	
 					/* 6th field contains highlight */
 					component.field=get_FE_field_order_info_field(
@@ -794,14 +794,14 @@ create_config_template_node, and the field_order_info.
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,channel_number);	
+						FE_NODAL_VALUE,/*time*/0,channel_number);	
 					/* 4th field contains read_order_number */
 					component.field=get_FE_field_order_info_field(
 						field_order_info,field_number);
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,read_order_number);
+						FE_NODAL_VALUE,/*time*/0,read_order_number);
 #if  defined (UNEMAP_USE_NODES)		
 					/* 5th field contains highlight */
 					component.field=get_FE_field_order_info_field(
@@ -2309,6 +2309,7 @@ linear combinations of other channels.
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(FE_node) *node_manager;
 	struct FE_time *fe_time;
+	struct FE_time_version *fe_time_version;
 #if defined(NEW_CODE) /* not using yet, may use later*/
 	int index;
 #endif
@@ -2319,6 +2320,7 @@ linear combinations of other channels.
 	buffer_signals_short=(short int *)NULL;
 	buffer_times=(int *)NULL;
 	buffer_signals_float=(float *)NULL;
+	fe_time_version = (struct FE_time_version *)NULL;
 	node_signals_short=(short int *)NULL;
 	node_signals_fe_value=(FE_value *)NULL;
 	node=(struct FE_node *)NULL;
@@ -2434,7 +2436,7 @@ linear combinations of other channels.
 										component.number=0;										
 										component.field=package->channel_number_field;										
 										if ((get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
-											&channel_number))&&(channel_number>0))
+											/*time*/0,&channel_number))&&(channel_number>0))
 										{																				
 											if ((1==BINARY_FILE_READ((char *)&temp_int,sizeof(int),1,
 												input_file))&&(1==BINARY_FILE_READ((char *)&channel_offsets[count],
@@ -2523,10 +2525,10 @@ linear combinations of other channels.
 														fe_field_manager,"signal",GENERAL_FE_FIELD,
 														fe_time,/*indexer_field*/(struct FE_field *)NULL,
 														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
-														&coordinate_system,SHORT_ARRAY_VALUE,
+														&coordinate_system,SHORT_VALUE,
 														/*number_of_components*/1,signal_component_names,
-														/*number_of_times*/number_of_samples,/*time_value_type*/
-														FE_VALUE_VALUE,
+														/*number_of_times*/0,/*time_value_type*/
+														UNKNOWN_VALUE,
 														(struct FE_field_external_information *)NULL)))
 													{
 														display_message(ERROR_MESSAGE,"read_signal_FE_node_group."
@@ -2549,9 +2551,9 @@ linear combinations of other channels.
 														fe_field_manager,"signal",GENERAL_FE_FIELD,
 														fe_time,/*indexer_field*/(struct FE_field *)NULL,
 														/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
-														&coordinate_system,FE_VALUE_ARRAY_VALUE,
+														&coordinate_system,FE_VALUE_VALUE,
 														/*number_of_components*/1,signal_component_names,
-														number_of_samples,/*time_value_type*/FE_VALUE_VALUE,
+														/*number_of_values*/0,/*time_value_type*/UNKNOWN_VALUE,
 														(struct FE_field_external_information *)NULL)))
 													{
 														display_message(ERROR_MESSAGE,"read_signal_FE_node_group."
@@ -2574,6 +2576,11 @@ linear combinations of other channels.
 											for(j=0;j<number_of_samples;j++)
 											{
 												set_FE_field_time_FE_value(signal_field,j,times[j]);
+											}
+											if (!(fe_time_version = get_FE_time_version_matching_time_series(
+												fe_time, number_of_samples, times)))
+											{
+												return_code = 0;
 											}
 										}
 									}							
@@ -2638,7 +2645,7 @@ linear combinations of other channels.
 															component.number = 0;
 															component.field = channel_gain_field; 
 															set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-																channel_gains[i]);
+																/*time*/0,channel_gains[i]);
 														}
 														else
 														{
@@ -2673,7 +2680,7 @@ linear combinations of other channels.
 															component.number = 0;
 															component.field = channel_offset_field; 
 															set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-																channel_offsets[i]);
+																/*time*/0,channel_offsets[i]);
 														}
 														else
 														{
@@ -2710,7 +2717,7 @@ linear combinations of other channels.
 															component.number = 0;
 															component.field = signal_minimum_field;												
 															set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-																1.0);
+																/*time*/0,1.0);
 														}
 														else
 														{
@@ -2746,7 +2753,7 @@ linear combinations of other channels.
 															component.number = 0;
 															component.field = signal_maximum_field; 
 															set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-																0.0);
+																/*time*/0,0.0);
 														}
 														else
 														{
@@ -2814,8 +2821,7 @@ linear combinations of other channels.
 													}				
 													/* add signal field to the node */
 													if (define_FE_field_at_node(node,signal_field,
-														(struct FE_time_version *)NULL,
-														node_field_creator))
+														fe_time_version, node_field_creator))
 													{	
 														/* add it to the unemap package */
 														set_unemap_package_signal_field(package,signal_field);
@@ -2826,13 +2832,19 @@ linear combinations of other channels.
 														{
 															case SHORT_INT_VALUE:
 															{
-																set_FE_nodal_short_array(node,&component,0,FE_NODAL_VALUE,
-																	node_signals_short,number_of_samples);
+																for (j=0;j<number_of_samples;j++)
+																{
+																	set_FE_nodal_short_value(node,&component,0,
+																		FE_NODAL_VALUE,times[j],node_signals_short[j]);
+																}
 															} break;
 															case FLOAT_VALUE:
 															{
-																set_FE_nodal_FE_value_array(node,&component,0,FE_NODAL_VALUE,
-																	node_signals_fe_value,number_of_samples);
+																for (j=0;j<number_of_samples;j++)
+																{
+																	set_FE_nodal_FE_value_value(node,&component,0,
+																		FE_NODAL_VALUE,times[j],node_signals_fe_value[j]);
+																}
 															} break;
 														}	/* switch (signal_value_type) */											
 													}
@@ -3136,10 +3148,10 @@ Must call after read_signal_FE_node_group
 							component.field=signal_minimum_field;
 							/* fields have already been defined at the node in read_signal_FE_node_group*/
 							set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-								signal_minimum);
+								/*time*/0,signal_minimum);
 							component.field=signal_maximum_field;
 							set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-								signal_maximum);
+								/*time*/0,signal_maximum);
 							switch (signal_status)
 							{
 								case ACCEPTED:
@@ -3334,15 +3346,15 @@ Does nothing with REJECTED signals.
 					value_type=get_FE_field_value_type(min_max_iterator->signal_component->field);
 					switch (value_type)
 					{
-						case FE_VALUE_ARRAY_VALUE:
+						case FE_VALUE_VALUE:
 						{
-							return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
+							return_code=get_FE_nodal_FE_value_value(node,
 								min_max_iterator->signal_component,0,
 								FE_NODAL_VALUE,min_max_iterator->time,&fe_value);
 						} break;
-						case SHORT_ARRAY_VALUE:
+						case SHORT_VALUE:
 						{
-							return_code=get_FE_nodal_short_array_value_at_FE_value_time(node,
+							return_code=get_FE_nodal_short_value(node,
 								min_max_iterator->signal_component,0,FE_NODAL_VALUE,
 								min_max_iterator->time,&short_value);
 							fe_value=short_value;
@@ -3480,13 +3492,13 @@ rig_node_group_set_map_electrode_position_lambda_r
 							component.field=map_electrode_position_field;
 							component.number=0;/* lambda */
 							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,lambda);
+								FE_NODAL_VALUE,/*time*/0,lambda);
 							component.number=1;/* mu */
 							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,mu);
+								FE_NODAL_VALUE,/*time*/0,mu);
 							component.number=2;/* theta */
 							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,theta);							
+								FE_NODAL_VALUE,/*time*/0,theta);							
 						} break;	
 						case TORSO:
 						{				
@@ -3528,13 +3540,13 @@ rig_node_group_set_map_electrode_position_lambda_r
 							component.field=map_electrode_position_field;
 							component.number=0;/* r */	
 							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,r); 
+								FE_NODAL_VALUE,/*time*/0,r); 
 							component.number=1;/* theta */	
 							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,theta);
+								FE_NODAL_VALUE,/*time*/0,theta);
 							component.number=2;/* z_cp */	
 							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,z_cp);							
+								FE_NODAL_VALUE,/*time*/0,z_cp);							
 						} break;
 						case PATCH:
 						{		
@@ -3551,10 +3563,10 @@ rig_node_group_set_map_electrode_position_lambda_r
 							component.field=map_electrode_position_field;
 							component.number=0;/* x */
 							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,x);
+								FE_NODAL_VALUE,/*time*/0,x);
 							component.number=1;/* y */
 							set_FE_nodal_FE_value_value(node_unmanaged,&component,0,
-								FE_NODAL_VALUE,y);															
+								FE_NODAL_VALUE,/*time*/0,y);															
 						} break;
 						default:
 						{
@@ -7083,14 +7095,14 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 			component.field=signal_field;
 			switch (value_type)
 			{
-				case FE_VALUE_ARRAY_VALUE:
+				case FE_VALUE_VALUE:
 				{
-					return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
+					return_code=get_FE_nodal_FE_value_value(node,
 						&component,0,FE_NODAL_VALUE,time,&fe_value);
 				} break;
-				case SHORT_ARRAY_VALUE:
+				case SHORT_VALUE:
 				{
-					return_code=get_FE_nodal_short_array_value_at_FE_value_time(node,
+					return_code=get_FE_nodal_short_value(node,
 						&component,0,FE_NODAL_VALUE,time,&short_value);
 					fe_value=short_value;
 				} break;
@@ -8005,6 +8017,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 	struct FE_node *node,*node_managed;
 	struct FE_node_field_creator *node_field_creator;
 	struct FE_time *fe_time;
+	struct FE_time_version *fe_time_version;
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(FE_node) *node_manager;
 	struct Signal_buffer *buffer;
@@ -8028,6 +8041,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 	device=(struct Device **)NULL;
 	fe_field_manager=(struct MANAGER(FE_field) *)NULL;
 	fe_time=(struct FE_time *)NULL;
+	fe_time_version=(struct FE_time_version *)NULL;
 	node_manager=(struct MANAGER(FE_node) *)NULL;
 	package=(struct Unemap_package *)NULL;
 	/*assumes all devices share the same signal buffer*/
@@ -8058,6 +8072,11 @@ Assumes that convert_config_rig_to_nodes has been called first.
 				{
 					times[j] = buffer_times[j]*period;										
 				}											
+				if (!(fe_time_version = get_FE_time_version_matching_time_series(
+					fe_time, number_of_samples, times)))
+				{
+					return_code = 0;
+				}
 			}
 			else
 			{
@@ -8078,10 +8097,10 @@ Assumes that convert_config_rig_to_nodes has been called first.
 							fe_field_manager,"signal",GENERAL_FE_FIELD,
 							fe_time,/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
-							&coordinate_system,SHORT_ARRAY_VALUE,
+							&coordinate_system,SHORT_VALUE,
 							/*number_of_components*/1,signal_component_names,
-							/*number_of_times*/number_of_samples,/*time_value_type*/
-							FE_VALUE_VALUE,
+							/*number_of_times*/0,/*time_value_type*/
+							UNKNOWN_VALUE,
 							(struct FE_field_external_information *)NULL)))
 						{
 							display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
@@ -8105,9 +8124,9 @@ Assumes that convert_config_rig_to_nodes has been called first.
 							fe_field_manager,"signal",GENERAL_FE_FIELD,
 							fe_time,/*indexer_field*/(struct FE_field *)NULL,
 							/*number_of_indexed_values*/0,CM_GENERAL_FIELD,
-							&coordinate_system,FE_VALUE_ARRAY_VALUE,
+							&coordinate_system,FE_VALUE_VALUE,
 							/*number_of_components*/1,signal_component_names,
-							number_of_samples,/*time_value_type*/FE_VALUE_VALUE,
+							/*number_of_samples*/0,/*time_value_type*/UNKNOWN_VALUE,
 							(struct FE_field_external_information *)NULL)))
 						{
 							display_message(ERROR_MESSAGE,"convert_signal_rig_to_nodes."
@@ -8124,14 +8143,6 @@ Assumes that convert_config_rig_to_nodes has been called first.
 					}
 				} break;
 			}	/* switch (signal_value_type) */									
-			/* fill in field based time values*/
-			if (signal_field)
-			{
-				for(j=0;j<number_of_samples;j++)
-				{
-					set_FE_field_time_FE_value(signal_field,j,times[j]);
-				}
-			}
 		}							
 		if (return_code)
 		{		
@@ -8201,7 +8212,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 									channel_gain=1;
 								}
 								set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-									channel_gain);
+									/*time*/0,channel_gain);
 							}
 							else
 							{
@@ -8244,7 +8255,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 									channel_offset=0;
 								}
 								set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-									channel_offset);
+									/*time*/0,channel_offset);
 							}
 							else
 							{
@@ -8280,7 +8291,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 								component.number = 0;
 								component.field = signal_minimum_field;												
 								set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-									(*device)->signal_display_minimum);
+									/*time*/0,(*device)->signal_display_minimum);
 							}
 							else
 							{
@@ -8315,7 +8326,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 								component.number = 0;
 								component.field = signal_maximum_field; 
 								set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-									(*device)->signal_display_maximum);
+									/*time*/0,(*device)->signal_display_maximum);
 							}
 							else
 							{
@@ -8400,7 +8411,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 						}				
 						/* add signal field to the node */
 						if (define_FE_field_at_node(node,signal_field,
-							(struct FE_time_version *)NULL, node_field_creator))
+							fe_time_version, node_field_creator))
 						{	
 							/* add it to the unemap package */
 							set_unemap_package_signal_field(package,signal_field);
@@ -8411,13 +8422,19 @@ Assumes that convert_config_rig_to_nodes has been called first.
 							{
 								case SHORT_INT_VALUE:
 								{
-									set_FE_nodal_short_array(node,&component,0,FE_NODAL_VALUE,
-										node_signals_short,number_of_samples);
+									for (j=0;j<number_of_samples;j++)
+									{
+										set_FE_nodal_short_value(node,&component,0,
+											FE_NODAL_VALUE,times[j],node_signals_short[j]);
+									}
 								} break;
 								case FLOAT_VALUE:
 								{
-									set_FE_nodal_FE_value_array(node,&component,0,FE_NODAL_VALUE,
-										node_signals_fe_value,number_of_samples);
+									for (j=0;j<number_of_samples;j++)
+									{
+										set_FE_nodal_FE_value_value(node,&component,0,
+											FE_NODAL_VALUE,times[j],node_signals_fe_value[j]);
+									}
 								} break;
 							}	/* switch (signal_value_type) */											
 						}

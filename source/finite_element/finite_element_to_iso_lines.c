@@ -863,12 +863,12 @@ data values for more efficient storage and smoother rendering.
 
 int create_iso_lines_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,
-	struct Computed_field *scalar_field,FE_value iso_value,
+	struct Computed_field *scalar_field,FE_value iso_value,FE_value time,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
-	struct GT_object *graphics_object,FE_value time)
+	struct GT_object *graphics_object,FE_value graphics_object_time)
 /*******************************************************************************
-LAST MODIFIED : 30 December 2001
+LAST MODIFIED : 7 February 2002
 
 DESCRIPTION :
 Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
@@ -1028,7 +1028,7 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 			{
 				Contour_lines_link_ends(contour_lines);
 				if (!Contour_lines_add_to_graphics_object(contour_lines,
-					graphics_object,time,
+						 graphics_object, graphics_object_time,
 					CM_element_information_to_graphics_name(element->identifier)))
 				{
 					display_message(ERROR_MESSAGE,"create_iso_lines_from_FE_element.  "

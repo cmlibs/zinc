@@ -30,6 +30,7 @@ DESCRIPTION :
 #include "graphics/element_group_settings.h"
 #endif /* defined (UNEMAP_USE_3D) */
 #include "graphics/spectrum.h"
+#include "time/time.h"
 #include "unemap/drawing_2d.h"
 #include "unemap/delauney.h"
 #include "unemap/interpolate.h"
@@ -901,7 +902,7 @@ values, <coords_comp_X_num_versions>,<coords_comp_X>, using <field_order_info>
 					for(j=0;j<number_of_derivatives+1;j++)
 					{
 						return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-							component_value_types[j],*value)); /*lambda,theta,x*/
+							component_value_types[j],/*time*/0,*value)); /*lambda,theta,x*/
 						value++;
 					}
 				}
@@ -910,13 +911,13 @@ values, <coords_comp_X_num_versions>,<coords_comp_X>, using <field_order_info>
 				for(i=0;i<coords_comp_1_num_versions;i++)
 				{
 					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,coords_comp_1[i])); /*mu,r,y*/
+						FE_NODAL_VALUE,/*time*/0,coords_comp_1[i])); /*mu,r,y*/
 				}				
 				component.number = 2;	
 				for(i=0;i<coords_comp_2_num_versions;i++)
 				{
 					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,coords_comp_2[i])); /*theta,z,z */
+						FE_NODAL_VALUE,/*time*/0,coords_comp_2[i])); /*theta,z,z */
 				}					
 			} break;
 			case PATCH: /* x,y */
@@ -927,13 +928,13 @@ values, <coords_comp_X_num_versions>,<coords_comp_X>, using <field_order_info>
 				for(i=0;i<coords_comp_0_num_versions;i++)
 				{
 					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,coords_comp_0[i])); /*x*/
+						FE_NODAL_VALUE,/*time*/0,coords_comp_0[i])); /*x*/
 				}
 				component.number = 1;		
 				for(i=0;i<coords_comp_1_num_versions;i++)
 				{
 					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,coords_comp_1[i])); /*y*/
+						FE_NODAL_VALUE,/*time*/0,coords_comp_1[i])); /*y*/
 				}				
 				component.number = 2;							
 			} break;
@@ -979,10 +980,10 @@ Sets a node's values storage with the values  potential<f> and derivatives
 		component.field=fit_field;
 		component.number=component_number;
 		return_code=(
-			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,f)&&
-			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D_DS1,dfdx)&&
-			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D_DS2,dfdy)&&
-			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D2_DS1DS2,d2fdxdy));
+			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,/*time*/0,f)&&
+			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D_DS1,/*time*/0,dfdx)&&
+			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D_DS2,/*time*/0,dfdy)&&
+			set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_D2_DS1DS2,/*time*/0,d2fdxdy));
 	}
 	else
 	{	
@@ -3521,7 +3522,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 	graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
 	element_group=(struct GROUP(FE_element) *)NULL;
 	if ((!number_of_contours)||(data_field&&scene&&map_drawing_information&&region))
-	{			
+	{
 		map_3d_package=get_Region_map_3d_package(region);		
 		/*non-current regions will have had map_3d_package set to NULL by */
 		/* set_Region_map_3d_package(NULL) in draw_map_3d */
@@ -3621,108 +3622,13 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 #endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-/* proportion of the contour that is blacked. 1000=1, 100=0.1  */
-#define CONTOUR_PROPORTION 100
-static int map_draw_contours(struct Map *map,	struct Spectrum *spectrum,
-	struct Unemap_package *package,struct Computed_field *data_field,
-	int delauney_map)
-/*******************************************************************************
-LAST MODIFIED : 22 January 2001
-
-DESCRIPTION :
-Draws (or erases) the map contours
-==============================================================================*/
-{
-	int default_torso_loaded,number_of_constant_contours,number_of_variable_contours,
-		return_code;
-	struct MANAGER(Spectrum) *spectrum_manager;
-	struct Scene *scene;
-	struct Rig *rig;
-	struct GROUP(FE_node) *unrejected_node_group;
-	struct Region_list_item *region_item;	
-	struct Region *region;
-
-	ENTER(map_draw_contours);
-	spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
-	scene=(struct Scene *)NULL;
-	rig=(struct Rig *)NULL;	
-	unrejected_node_group=(struct GROUP(FE_node) *)NULL;	
-	region_item=(struct Region_list_item *)NULL;	
-	region=(struct Region *)NULL; 
-	/*data_field can be NULL*/
-	if (map&&&package&&spectrum&&(map->rig_pointer)&&(rig= *(map->rig_pointer))&&
-		(map->drawing_information)&&(spectrum_manager=
-			get_map_drawing_information_spectrum_manager(map->drawing_information))&&
-		(scene=get_map_drawing_information_scene(map->drawing_information)))
-	{
-		/* Show the contours */	
-		if ((map->contours_option==SHOW_CONTOURS)&&
-			(map->interpolation_type!=NO_INTERPOLATION))
-		{
-			if (map->contour_thickness==CONSTANT_THICKNESS)
-			{
-				number_of_constant_contours=map->number_of_contours;
-				number_of_variable_contours=0;
-			}
-			else
-				/* map->contour_thickness==VARIABLE_THICKNESS */
-			{
-				number_of_constant_contours=0;
-				/*-1 as unemap treats number of contours differently from the cmgui spectrum */
-				/* it's a fencepost thing */
-				number_of_variable_contours=map->number_of_contours-1;
-			}						
-		}
-		else
-		{
-			number_of_variable_contours=0;
-			number_of_constant_contours=0;
-		}					
-		/* draw/remove VARIABLE_THICKNESS contours*/
-		if (get_unemap_package_default_torso_name(package))
-		{
-			default_torso_loaded=1;
-		}
-		else
-		{
-			default_torso_loaded=0;
-		}
-		Spectrum_overlay_contours(spectrum_manager,spectrum,
-			number_of_variable_contours,CONTOUR_PROPORTION);
-		region_item=get_Rig_region_list(rig);
-		while(region_item)
-		{
-			region=get_Region_list_item_region(region_item);			
-			unrejected_node_group=get_Region_unrejected_node_group(region);
-			if (unrejected_node_group&&
-				(unemap_package_rig_node_group_has_electrodes(package,unrejected_node_group)))
-			{			
-				/* draw/remove CONSTANT_THICKNESS contours */
-				map_draw_constant_thickness_contours(scene,map->drawing_information,
-					data_field,number_of_constant_contours,map->contour_minimum,
-					map->contour_maximum,region,default_torso_loaded,delauney_map);					
-			}				
-			region_item=get_Region_list_item_next(region_item);
-		}/* while(region_item)*/
-	}
-	else
-	{	
-		display_message(ERROR_MESSAGE,
-			"map_draw_contours. Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return (return_code);
-}/* map_draw_contours */
-#endif /* defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
 static int map_show_surface(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Spectrum *spectrum,struct Computed_field *data_field,
-	struct Colour *no_interpolation_colour,
-	struct User_interface *user_interface,int direct_interpolation)
+	struct Colour *no_interpolation_colour, struct Time_object *time_object,
+	struct User_interface *user_interface,int direct_interpolation,
+	int autoranging_spectrum)
 /*******************************************************************************
 LAST MODIFIED : 31 May 2001
 
@@ -3738,13 +3644,15 @@ if <direct_interpolation> is true, sets the element discretization to 1
 Also applies <number_of_contours> contours to surface.
 ==============================================================================*/
 {
-	int maximum_discretization,required_discretization,return_code;
+	int existing_autorange_spectrum_flag,maximum_discretization,
+		required_discretization,return_code,update_settings;
 	struct Element_discretization discretization;
 	struct GT_element_group *gt_element_group;
 	struct Computed_field *existing_data_field;
 	struct Graphical_material *default_selected_material,
 		*material_copy;
 	struct GT_element_settings *settings,*new_settings;
+	struct Scene_object *scene_object;
 	struct Spectrum *existing_spectrum;
 
 	ENTER(map_make_surfaces);
@@ -3759,10 +3667,11 @@ Also applies <number_of_contours> contours to surface.
 		((spectrum&&data_field&&!no_interpolation_colour)
 		||(!spectrum&&!data_field&&no_interpolation_colour)))
 	{				
-		if ((gt_element_group=Scene_get_graphical_element_group(scene,element_group))&&			 
+		if ((scene_object=Scene_get_scene_object_with_element_group(scene,element_group))&&
+			(gt_element_group=Scene_object_get_graphical_element_group(scene_object))&&			 
 			 (default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
 			 ("default_selected",graphical_material_manager)))
-		{			
+		{
 			GT_element_group_get_element_discretization(gt_element_group,
 				&discretization);			
 			if (direct_interpolation)
@@ -3792,31 +3701,75 @@ Also applies <number_of_contours> contours to surface.
 				return_code=1;
 				GT_element_settings_get_data_spectrum_parameters(settings,&existing_data_field,
 					&existing_spectrum);
+				existing_autorange_spectrum_flag = GT_element_settings_get_autorange_spectrum_flag(settings);				
 				/* did we use a spectrum and data_field last time?*/
+				update_settings = 0;
 				if (existing_spectrum&&existing_data_field)
 				{
 					if (data_field&&spectrum)
 					{
 						/* change the spectrum, if it's different from the existing one */
-						if (!((data_field==existing_data_field)&&(spectrum==existing_spectrum)))
+						if (!((data_field==existing_data_field)&&(spectrum==existing_spectrum)&&
+							(existing_autorange_spectrum_flag==autoranging_spectrum)))
 						{
-							if (new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES))
-							{															
-								GT_element_settings_set_data_spectrum_parameters(new_settings,data_field,
-									spectrum);
-								GT_element_group_modify_settings(gt_element_group,settings,
-									new_settings);	
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"map_show_surface. CREATE(GT_element_settings) failed ");
-								return_code=0;
-							}
+							update_settings = 1;
 						}
 					}/* if (data_field&&spectrum) */
 					else
-					{		
+					{
+						update_settings = 1;
+					}/* if (!(data_field&&spectrum))	*/			
+				}
+				else
+				{
+					if (data_field&&spectrum)
+					{
+						update_settings = 1;
+					}
+				}
+				if (update_settings)
+				{
+					if (data_field&&spectrum)
+					{
+						/*change the material's colour to white */
+						material_copy=CREATE(Graphical_material)("");
+						new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES);
+						if (material_copy&&new_settings&&
+							MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name)
+							(material_copy,material))
+						{																								
+							if (MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
+								material,material_copy,graphical_material_manager))
+							{
+								/* use the spectrum and data_field*/									
+								GT_element_settings_set_material(new_settings,material);							
+								GT_element_settings_set_selected_material(new_settings,
+									default_selected_material);
+								GT_element_settings_set_data_spectrum_parameters(new_settings,data_field,
+									spectrum);							
+								GT_element_settings_set_autorange_spectrum_flag(new_settings, 
+									autoranging_spectrum);
+								GT_element_group_modify_settings(gt_element_group,settings,
+									new_settings);	
+								/* Do this after the appropriate stuff has been put in the GT_element_group */
+								Scene_object_set_time_object(scene_object, time_object);
+							}	/* if (MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name */
+							else
+							{	
+								display_message(ERROR_MESSAGE,
+									"map_show_surface.MANAGER_MODIFY failed ");
+								return_code=0;
+							}
+						}
+						else
+						{	
+							display_message(ERROR_MESSAGE,
+							"map_show_surface. Couldn't copy material ");							
+							return_code=0;
+						}		
+					}
+					else
+					{
 						new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES);
 						/* change the material colour to our no_interpolation_colour */
 						material_copy=CREATE(Graphical_material)("");							
@@ -3836,6 +3789,8 @@ Also applies <number_of_contours> contours to surface.
 									default_selected_material);
 								GT_element_group_modify_settings(gt_element_group,settings,
 									new_settings);
+								/* Do this after the appropriate stuff has been put in the GT_element_group */
+								Scene_object_set_time_object(scene_object, time_object);
 							}
 							else
 							{
@@ -3849,48 +3804,9 @@ Also applies <number_of_contours> contours to surface.
 							display_message(ERROR_MESSAGE,
 							"map_show_surface. Couldn't copy material ");							
 							return_code=0;
-						}																
-					}/* if (!(data_field&&spectrum))	*/			
-				}
-				/* used the no_interpolation colour last time*/
-				else
-				{
-					if (data_field&&spectrum)/* nothing to do if data_field,spectrum NULL*/
-					{
-						/*change the material's colour to white */
-						material_copy=CREATE(Graphical_material)("");
-						new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES);
-						if (material_copy&&new_settings&&
-							MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name)
-							(material_copy,material))
-						{																								
-							if (MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
-								material,material_copy,graphical_material_manager))
-							{
-								/* use the spectrum and data_field*/									
-								GT_element_settings_set_material(new_settings,material);							
-								GT_element_settings_set_selected_material(new_settings,
-									default_selected_material);
-								GT_element_settings_set_data_spectrum_parameters(new_settings,data_field,
-									spectrum);							
-								GT_element_group_modify_settings(gt_element_group,settings,
-									new_settings);	
-							}	/* if (MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name */
-							else
-							{	
-								display_message(ERROR_MESSAGE,
-									"map_show_surface.MANAGER_MODIFY failed ");
-								return_code=0;
-							}
 						}
-						else
-						{	
-							display_message(ERROR_MESSAGE,
-							"map_show_surface. Couldn't copy material ");							
-							return_code=0;
-						}		
 					}/* if (data_field&&spectrum) */
-				}	/* if (existing_spectrum&&existing_data_field) */
+				}	/* if (update_settings) */
 			}	/* if (settings=first_settings_in_*/
 			else
 			{
@@ -3903,6 +3819,8 @@ Also applies <number_of_contours> contours to surface.
 					{
 						GT_element_settings_set_data_spectrum_parameters(settings,data_field,
 							spectrum);
+						GT_element_settings_set_autorange_spectrum_flag(settings, 
+							/*autorange_spectrum_flag*/1);
 					}
 					else
 					/* change the material to our neutral colour  */	
@@ -3936,6 +3854,8 @@ Also applies <number_of_contours> contours to surface.
 						DESTROY(GT_element_settings)(&settings);
 						return_code = 0; 
 					}
+					/* Do this after the appropriate stuff has been put in the GT_element_group */
+					Scene_object_set_time_object(scene_object, time_object);
 				}
 				else
 				{
@@ -4230,6 +4150,7 @@ Also sets the glyph in the <map_3d_package>
 }/* map_get_map_electrodes_glyph */
 #endif /* #if defined (UNEMAP_USE_3D) */
 
+#if defined (OLD_CODE)
 #if defined (UNEMAP_USE_3D)
 static int map_update_electrode_colour_from_time(struct Unemap_package *package,
 	FE_value time)
@@ -4286,28 +4207,26 @@ the surface.
 	return return_code;
 }/* map_updatelectrode_colour_from_time */
 #endif /* (UNEMAP_USE_3D) */
+#endif /* defined (OLD_CODE) */
 
 #if defined (UNEMAP_USE_3D)
-static int map_set_electrode_colour_from_time(struct Unemap_package *package,
-	struct Spectrum *spectrum,struct GT_element_settings *settings,FE_value time)
+static int map_define_scaled_offset_signal_at_time(struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2000
+LAST MODIFIED : 1 February 2002
 
 DESCRIPTION :
-Gets or creates the computed fields necessary for the map electrode glyphs colour.
-Sets the <time> of the time field.
+Gets or creates the computed fields necessary for the map colour.
 ==============================================================================*/
 {
 	int return_code;
 	struct Computed_field *computed_gain_field,*computed_offset_field,
 		*offset_signal_value_at_time_field,*scaled_offset_signal_value_at_time_field,
-		*signal_value_at_time_field,*time_field;		
+		*signal_value_at_time_field;
 	struct FE_field *channel_gain_field,*channel_offset_field,*signal_field;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	
-	ENTER(map_set_electrode_colour_from_time);	
+	ENTER(map_define_scaled_offset_signal_at_time);	
 	signal_value_at_time_field=(struct Computed_field *)NULL;
-	time_field=(struct Computed_field *)NULL;
 	computed_gain_field=(struct Computed_field *)NULL;
 	computed_offset_field=(struct Computed_field *)NULL;
 	offset_signal_value_at_time_field=(struct Computed_field *)NULL;
@@ -4316,8 +4235,7 @@ Sets the <time> of the time field.
 	channel_gain_field=(struct FE_field *)NULL;
 	channel_offset_field=(struct FE_field *)NULL;
 	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
-	if (package&&spectrum&&settings&&(computed_field_manager=
-		get_unemap_package_Computed_field_manager(package))&&
+	if (package&&(computed_field_manager=get_unemap_package_Computed_field_manager(package))&&
 		(signal_field=get_unemap_package_signal_field(package))
 		&&(channel_gain_field=get_unemap_package_channel_gain_field(package))
 		&&(channel_offset_field=get_unemap_package_channel_offset_field(package)))
@@ -4330,39 +4248,18 @@ Sets the <time> of the time field.
 			Computed_field_is_read_only_with_fe_field,(void *)(channel_offset_field),
 			computed_field_manager);
 		/* set up signal_value_at_time_field for spectrum according to signal values and time */
-		/* ??JW will eventually want to tie this computed field to the time manager */
-		/* ??JW do as a constant field for now*/
-		/* create new time_field*/
 		MANAGER_BEGIN_CACHE(Computed_field)(computed_field_manager);
-		if (!(time_field=get_unemap_package_time_field(package)))
-		{
-			if (time_field=CREATE(Computed_field)("signal_time"))
-			{
-				if (!((Computed_field_set_type_constant(time_field,1,&time))&&
-					(ADD_OBJECT_TO_MANAGER(Computed_field)(time_field,
-						computed_field_manager))&&
-					set_unemap_package_time_field(package,time_field)))
-				{
-					DESTROY(Computed_field)(&time_field);
-				}
-			}
-		}	
 		/* create new data_field,using time_field*/
 		/*signal value at time*/
 		if (!(signal_value_at_time_field=get_unemap_package_signal_value_at_time_field
 			(package)))
 		{
-			if (signal_value_at_time_field=CREATE(Computed_field)("signal_value_at_time"))
+			/* Fetch the wrapper fo the fe_field from the manager */
+			if (signal_value_at_time_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				Computed_field_is_read_only_with_fe_field,(void *)
+				(signal_field),computed_field_manager),get_unemap_package_FE_field_manager(package))
 			{
-				if (!((Computed_field_set_type_node_array_value_at_time(
-					signal_value_at_time_field,signal_field,FE_NODAL_VALUE,0,time_field))&&
-					(ADD_OBJECT_TO_MANAGER(Computed_field)(signal_value_at_time_field,
-						computed_field_manager))&&
-
-					set_unemap_package_signal_value_at_time_field(package,signal_value_at_time_field)))
-				{
-					DESTROY(Computed_field)(&signal_value_at_time_field);
-				}
+				set_unemap_package_signal_value_at_time_field(package,signal_value_at_time_field);
 			}
 		}	
 		/*offset the signal value*/
@@ -4401,6 +4298,44 @@ Sets the <time> of the time field.
 			}
 		}							
 		MANAGER_END_CACHE(Computed_field)(computed_field_manager);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"map_define_scaled_offset_signal_at_time  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return return_code;
+}/* map_define_scaled_offset_signal_at_time */
+#endif /* (UNEMAP_USE_3D) */
+
+
+#if defined (UNEMAP_USE_3D)
+static int map_set_electrode_colour_from_time(struct Unemap_package *package,
+	struct Spectrum *spectrum,struct GT_element_settings *settings)
+/*******************************************************************************
+LAST MODIFIED : 1 February 2002
+
+DESCRIPTION :
+Gets or creates the computed fields necessary for the map colour based on
+the scaled_offset_signal and assigns that field to the <settings>.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *scaled_offset_signal_value_at_time_field;
+
+	ENTER(map_set_electrode_colour_from_time);	
+	if (package&&spectrum&&settings)
+	{		
+		return_code=1;
+		if (!(scaled_offset_signal_value_at_time_field = 
+			get_unemap_package_scaled_offset_signal_value_at_time_field(package)))
+		{
+			map_define_scaled_offset_signal_at_time(package);
+			scaled_offset_signal_value_at_time_field = 
+				get_unemap_package_scaled_offset_signal_value_at_time_field(package);
+		}
 		/* alter the spectrum settings with the data */
 		GT_element_settings_set_data_spectrum_parameters(settings,
 			scaled_offset_signal_value_at_time_field,spectrum);
@@ -4418,7 +4353,7 @@ Sets the <time> of the time field.
 
 #if defined (UNEMAP_USE_3D)
 static int map_show_map_electrodes(struct Unemap_package *package,
-	struct GT_object *glyph,struct Map *map,FE_value time,struct Region *region)
+	struct GT_object *glyph,struct Map *map,struct Region *region)
 /*******************************************************************************
 LAST MODIFIED : 31 May 2001
 
@@ -4444,6 +4379,7 @@ Construct the settings and build the graphics objects for the glyphs.
 	struct Map_drawing_information *drawing_information=
 		(struct Map_drawing_information *)NULL;
 	struct Scene *scene;	
+	struct Scene_object *scene_object;
 	Triple glyph_centre,glyph_size,glyph_scale_factors;
 
 	ENTER(map_show_map_electrodes);	
@@ -4464,6 +4400,7 @@ Construct the settings and build the graphics objects for the glyphs.
 	graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
 	field=(struct FE_field *)NULL;
 	computed_field=(struct Computed_field *)NULL;
+	scene_object=(struct Scene_object *)NULL;
 	if (map&&(drawing_information=map->drawing_information)&&
 		region&&package&&glyph&&(electrode_material=
 		get_map_drawing_information_electrode_graphical_material(drawing_information))&&
@@ -4481,13 +4418,14 @@ Construct the settings and build the graphics objects for the glyphs.
 		rig_element_group=
 			FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
 			(group_name,element_group_manager);
-		if (rig_element_group&&(gt_element_group=Scene_get_graphical_element_group(
-			scene,rig_element_group)))
+		if (rig_element_group&&(scene_object=Scene_get_scene_object_with_element_group
+			(scene,rig_element_group))&&(gt_element_group=
+			Scene_object_get_graphical_element_group(scene_object)))
 		{	
 			/* do nothing if already have these settings in this group*/
 			if (!(unselected_settings=first_settings_in_GT_element_group_that(gt_element_group,
-				GT_element_settings_type_matches,(void *)GT_ELEMENT_SETTINGS_NODE_POINTS)))			
-			{				
+				GT_element_settings_type_matches,(void *)GT_ELEMENT_SETTINGS_NODE_POINTS)))		
+			{
 				if ((unselected_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_NODE_POINTS))&&
 						(selected_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_NODE_POINTS)))
 				{						
@@ -4532,7 +4470,7 @@ Construct the settings and build the graphics objects for the glyphs.
 					/* else electrode takes colour of electrode_material*/
 					{
 						map_set_electrode_colour_from_time(package,map->drawing_information->spectrum,
-							unselected_settings,time);
+							unselected_settings);
 					}				
 					switch (map->electrodes_label_type)
 					{
@@ -4593,6 +4531,9 @@ Construct the settings and build the graphics objects for the glyphs.
 						DESTROY(GT_element_settings)(&selected_settings);
 					}					
 				}/* if (settings=CREATE(GT_element_settings) */							
+				/* Do this after the settings have been added */
+				Scene_object_set_time_object(scene_object, 
+					get_unemap_package_potential_time_object(package));
 			}/* if (!(settings=first_settings_in_GT_element_group_that */
 			else
 			{
@@ -4650,7 +4591,7 @@ in <region>
 
 #if defined (UNEMAP_USE_3D)
 static int map_update_map_electrodes(struct Unemap_package *package,
-	struct Region *region,struct Map *map,FE_value time)
+	struct Region *region,struct Map *map)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
 
@@ -4676,11 +4617,7 @@ rig_node_group in <region>. Glyph type taken from
 		/* glyph can be NULL for no markers */		
 		if (electrode_glyph)		
 		{
-			map_show_map_electrodes(package,electrode_glyph,map,time,region);
-			if (map->colour_electrodes_with_signal)
-			{
-				map_update_electrode_colour_from_time(package,time);
-			}
+			map_show_map_electrodes(package,electrode_glyph,map,region);
 		}
 	}
 	else
@@ -4692,6 +4629,111 @@ rig_node_group in <region>. Glyph type taken from
 	LEAVE;
 	return (return_code);
 }/* map_update_map_electrodes */
+#endif /* #if defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static struct Computed_field *map_get_data_field_for_3d_map(struct Map *map, 
+	struct Map_3d_package *map_3d_package)
+/*******************************************************************************
+LAST MODIFIED : 5 February 2002
+
+DESCRIPTION :
+Uses the enumerators in the <map> to determine what the currently displayed
+data field is.
+==============================================================================*/
+{
+	struct Computed_field *data_field;
+	struct FE_field *fit_field;
+	struct Unemap_package *unemap_package;
+
+	ENTER(map_get_data_field_for_3d_map);
+	if (map && (unemap_package=map->unemap_package))
+	{	
+		if ((map->interpolation_type==NO_INTERPOLATION)||
+			(map->colour_option==HIDE_COLOUR))
+		{
+			data_field = (struct Computed_field *)NULL;
+		}
+		else
+		{
+			/* Get the map "fit" field, to use for the surface */
+			if (map->interpolation_type==DIRECT_INTERPOLATION)
+			{		
+				if (!(data_field=get_unemap_package_scaled_offset_signal_value_at_time_field(
+							unemap_package)))
+				{
+					map_define_scaled_offset_signal_at_time(unemap_package);
+				data_field = get_unemap_package_scaled_offset_signal_value_at_time_field(
+					unemap_package);
+				}
+			}	
+			/*BICUBIC_INTERPOLATION */ 
+			else							
+			{
+				fit_field=get_map_3d_package_fit_field(map_3d_package);
+				data_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_is_read_only_with_fe_field,(void *)(fit_field),
+					get_unemap_package_Computed_field_manager(unemap_package));
+			}
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"map_get_data_field_for_3d_map.  Invalid argument(s)");
+		data_field = (struct Computed_field *)NULL;
+	}	
+	LEAVE;
+	return (data_field);
+}/* map_get_data_field_for_3d_map */
+#endif /* #if defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int map_is_delauney(struct Map *map)
+/*******************************************************************************
+LAST MODIFIED : 5 February 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Rig *rig;
+
+	ENTER(map_is_deluney);	 		
+	if (map)
+	{	
+		/* do we have a default torso loaded ? */ 
+		if (map->interpolation_type==DIRECT_INTERPOLATION)
+		{	
+			/* can only have DIRECT_INTERPOLATION for TORSO,THREED_PROJECTION*/	
+			/* these conditions should be ensured in open_map_dialog()*/
+			if ((map->projection_type==THREED_PROJECTION)&&(map->rig_pointer)&&
+				(rig=*(map->rig_pointer))&&(rig->current_region)&&
+				(rig->current_region->type==TORSO))
+			{
+				return_code=1;
+			}
+			else
+			{	
+				display_message(ERROR_MESSAGE,
+					"map_is_delauney.  DIRECT_INTERPOLATION for wrong map type ");
+				return_code=0;
+			}
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"map_is_delauney.  Invalid argument(s)");
+		return_code=0;
+	}	
+	LEAVE;
+	return (return_code);
+}/* map_is_delauney */
 #endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
@@ -4758,7 +4800,7 @@ haven't
 
 #if defined (UNEMAP_USE_3D)
 static int map_draw_map_electrodes(struct Unemap_package *unemap_package,
-	struct Map *map,FE_value time)
+	struct Map *map)
 /*******************************************************************************
 LAST MODIFIED :  11 July 2000
 
@@ -4813,7 +4855,7 @@ region(s)
 				electrodes_properties_changed=0;
 			}
 			/* remove undisplayed or changed electrodes */
-			if (electrodes_properties_changed||(!display_all_regions||
+			if (electrodes_properties_changed||(!display_all_regions&&
 				(region!=current_region)))
 			{									
 				map_remove_map_electrode_glyphs(drawing_information,
@@ -4824,7 +4866,7 @@ region(s)
 				(unemap_package_rig_node_group_has_electrodes(unemap_package,
 					unrejected_node_group))&&((region==current_region)||display_all_regions))
 			{
-				map_update_map_electrodes(unemap_package,region,map,time);
+				map_update_map_electrodes(unemap_package,region,map);
 			}		
 			region_item=get_Region_list_item_next(region_item);
 		}/* while(region_item)*/		
@@ -5041,7 +5083,6 @@ time computed fields used by the glyphs.
 	return (return_code);
 }/* map_remove_all_electrodes */
 #endif /* defined (UNEMAP_USE_3D) */
-
 
 #if defined (UNEMAP_USE_3D)
 static int merge_fit_field_template_element(struct FE_element *element,
@@ -5490,7 +5531,8 @@ vertices_data->vertices we've filled in.
 static struct FE_element *make_delauney_template_element(
 	struct MANAGER(FE_basis) *basis_manager,
 	struct MANAGER(FE_element) *element_manager,struct FE_field *data_field,
-	struct FE_field *coordinate_field)
+	struct FE_field *coordinate_field, struct FE_field *gain_field,
+	struct FE_field *offset_field)
 /*******************************************************************************
 LAST MODIFIED :17 November 2000
 
@@ -5650,7 +5692,9 @@ Therefore must deaccess the returned element outside this function
 							if (success)
 							{								
 								if (!(define_FE_field_at_element(template_element,data_field,data_components)&&
-									define_FE_field_at_element(template_element,coordinate_field,coord_components)))
+									define_FE_field_at_element(template_element,coordinate_field,coord_components)&&
+									define_FE_field_at_element(template_element,gain_field,data_components)&&
+									define_FE_field_at_element(template_element,offset_field,data_components)))
 								{
 									display_message(ERROR_MESSAGE,
 										"make_delauney_template_element.  Could not define field");
@@ -5726,8 +5770,8 @@ Therefore must deaccess the returned element outside this function
 }/* make_delauney_template_element */
 
 static int make_delauney_node_and_element_group(struct GROUP(FE_node) *source_nodes,
-	struct FE_field *electrode_postion_field,
-	struct FE_field *delauney_signal_field,
+	struct FE_field *electrode_postion_field,struct FE_field *delauney_signal_field,
+	struct FE_field *channel_gain_field,struct FE_field *channel_offset_field,
 	struct Unemap_package *unemap_package,struct Region *region)
 /*******************************************************************************
 LAST MODIFIED :17 November 2000
@@ -5790,9 +5834,14 @@ Stores node and element groups in region <map_3d_package>
 			(void *)delauney_signal_field,source_nodes))&&
 			!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
 				(void *)electrode_postion_field,source_nodes))&&
+			!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
+			(void *)channel_gain_field,source_nodes))&&
+			!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
+				(void *)channel_offset_field,source_nodes))&&
 			/*create template element*/
 			(template_element=make_delauney_template_element(basis_manager,element_manager,
-				delauney_signal_field,electrode_postion_field)))
+				delauney_signal_field,electrode_postion_field,channel_gain_field,
+				channel_offset_field)))
 		{		
 			element_identifier.type=CM_ELEMENT;
 			element_identifier.number=1;
@@ -6042,6 +6091,7 @@ Used by iterative_set_delauney_signal_nodal_value
 	struct MANAGER(FE_node) *node_manager;
 }; /* Set_delauney_signal_data */
 
+#if defined (OLD_CODE)
 static int iterative_set_delauney_signal_nodal_value(struct FE_node *node,
 	void *set_delauney_signal_data_void)
 /*******************************************************************************
@@ -6095,17 +6145,17 @@ cf map_set_electrode_colour_from_time
 			/* get the signal value at the given time*/
 			value_type=get_FE_field_value_type(signal_field);
 			component.number=0;
-			component.field=signal_field;		
+			component.field=signal_field;
 			switch (value_type)
 			{
-				case FE_VALUE_ARRAY_VALUE:
+				case FE_VALUE_VALUE:
 				{
-					return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
+					return_code=get_FE_nodal_FE_value_value(node,
 						&component,0,FE_NODAL_VALUE,time,&fe_value);
 				} break;
-				case SHORT_ARRAY_VALUE:
+				case SHORT_VALUE:
 				{
-					return_code=get_FE_nodal_short_array_value_at_FE_value_time(node,
+					return_code=get_FE_nodal_short_value_at_time(node,
 						&component,0,FE_NODAL_VALUE,time,&short_value);
 					fe_value=short_value;
 				} break;
@@ -6167,6 +6217,7 @@ cf map_set_electrode_colour_from_time
 	LEAVE;
 	return (return_code); 
 } /*iterative_set_delauney_signal_nodal_value */
+#endif /* defined (OLD_CODE) */
 
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -6182,69 +6233,42 @@ Makes and/or sets the nodal values in the delauney node and element groups
 ==============================================================================*/
 {	
 	int return_code;
-	struct Define_FE_field_at_node_data define_FE_field_at_node_data;
-	struct FE_field *electrode_postion_field,*delauney_signal_field;	
+	struct FE_field *electrode_postion_field,*delauney_signal_field,
+		*channel_gain_field, *channel_offset_field;
+#if defined (OLD_CODE)
 	struct FE_node *node;
-	struct FE_node_field_creator *node_field_creator;
-	struct GROUP(FE_node) *delauney_torso_node_group,*rig_node_group,*unrejected_nodes;
+	struct GROUP(FE_node) *rig_node_group;
 	struct MANAGER(FE_node) *node_manager;
+#endif /* defined (OLD_CODE) */
+	struct GROUP(FE_node) *unrejected_nodes;
 	struct Map_3d_package *map_3d_package;
+#if defined (OLD_CODE)
 	struct Set_delauney_signal_data set_delauney_signal_data;
+#endif /* defined (OLD_CODE) */
 
 	ENTER(make_and_set_delauney);
+	USE_PARAMETER(time);
 	electrode_postion_field=(struct FE_field *)NULL;
 	delauney_signal_field=(struct FE_field *)NULL;
+	channel_gain_field=(struct FE_field *)NULL;
+	channel_offset_field=(struct FE_field *)NULL;
+#if defined (OLD_CODE)
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
-	unrejected_nodes=(struct GROUP(FE_node) *)NULL;
 	node_manager=(struct MANAGER(FE_node) *)NULL;
-	map_3d_package=(struct Map_3d_package *)NULL;	
-	delauney_torso_node_group=(struct GROUP(FE_node) *)NULL;
 	node=(struct FE_node *)NULL;
-	if (region&&unemap_package&&	
-		(node_manager=get_unemap_package_node_manager(unemap_package))&&
-		(electrode_postion_field=get_Region_electrode_position_field(region))&&		
-		(rig_node_group=get_Region_rig_node_group(region)))
+#endif /* defined (OLD_CODE) */
+	unrejected_nodes=(struct GROUP(FE_node) *)NULL;
+	map_3d_package=(struct Map_3d_package *)NULL;	
+	if (region&&unemap_package&&
+		(electrode_postion_field=get_Region_electrode_position_field(region)))
 	{	
 		return_code=1;
-		/* if necessary, make the delauney_signal_field , and define it at the nodes*/
-		if (!(delauney_signal_field=
-			get_unemap_package_delauney_signal_field(unemap_package)))
+		if (!(delauney_signal_field=get_unemap_package_signal_field(unemap_package))
+			 || !(channel_gain_field=get_unemap_package_channel_gain_field(unemap_package))
+			 || !(channel_offset_field=get_unemap_package_channel_offset_field(unemap_package)))
 		{
-			delauney_signal_field=create_mapping_type_fe_field
-				("delauney_signal",
-					get_unemap_package_FE_field_manager(unemap_package),
-					get_unemap_package_FE_time(unemap_package));
-			set_unemap_package_delauney_signal_field(unemap_package,
-				delauney_signal_field);
-		}		
-		node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
-					((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,rig_node_group);
-	  if (node&&delauney_signal_field)
-		{
-			/* define field at all nodes, not just unrejected ones, as rejected ones may */
-			/* be accepted later*/
-			/*is field not defined at first node, assume it's not defined at the rest*/
-			if (!FE_field_is_defined_at_node(delauney_signal_field,node))
-			{
-				node_field_creator = CREATE(FE_node_field_creator)(
-					/*number_of_components*/1);
-				/* define delauney_signal field at nodes */
-				define_FE_field_at_node_data.field=delauney_signal_field;
-				define_FE_field_at_node_data.node_field_creator = node_field_creator;
-				define_FE_field_at_node_data.node_manager=node_manager;
-				define_FE_field_at_node_data.time_version=
-					(struct FE_time_version *)NULL;
-				MANAGER_BEGIN_CACHE(FE_node)(node_manager);
-				return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(iterative_define_FE_field_at_node,
-					(void *)(&define_FE_field_at_node_data),rig_node_group);
-				MANAGER_END_CACHE(FE_node)(node_manager);
-				DESTROY(FE_node_field_creator)(&node_field_creator);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"make_and_set_delauney"
-						" node node or elauney_signal_field");
+			display_message(ERROR_MESSAGE,"make_and_set_delauney.  "
+						"signal field, gain field or offset field not found ");
 			return_code=0;
 		}
 		/* check if haven't made delauney groups yet, or for newly rejected/accpted */
@@ -6266,7 +6290,8 @@ Makes and/or sets the nodal values in the delauney node and element groups
 				if (return_code&&(unrejected_nodes=get_Region_unrejected_node_group(region)))
 				{
 					return_code=make_delauney_node_and_element_group(unrejected_nodes,
-						electrode_postion_field,delauney_signal_field,unemap_package,region);	
+						electrode_postion_field,delauney_signal_field,
+						channel_gain_field,channel_offset_field,unemap_package,region);	
 				}
 				else
 				{
@@ -6275,6 +6300,7 @@ Makes and/or sets the nodal values in the delauney node and element groups
 				}				
 			}/* if ((!map_3d_package)||(map_3d_package&& */
 		}/* (nodes_rejected_or_accepted) */			
+#if defined (OLD_CODE)
 		/* map_3d_package may have changed*/
 		map_3d_package=get_Region_map_3d_package(region);
 		if (map_3d_package&&(delauney_torso_node_group=
@@ -6303,7 +6329,7 @@ Makes and/or sets the nodal values in the delauney node and element groups
 				" no group to set");
 			return_code=0;
 		}
-
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -6320,6 +6346,108 @@ Makes and/or sets the nodal values in the delauney node and element groups
 Global functions
 ----------------
 */
+#if defined (UNEMAP_USE_3D)
+/* proportion of the contour that is blacked. 1000=1, 100=0.1  */
+#define CONTOUR_PROPORTION 100
+int map_draw_contours(struct Map *map,	struct Spectrum *spectrum,
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 22 January 2001
+
+DESCRIPTION :
+Draws (or erases) the map contours
+==============================================================================*/
+{
+	int default_torso_loaded,delauney_map,number_of_constant_contours,
+		number_of_variable_contours,return_code;
+	struct Computed_field *data_field;
+	struct MANAGER(Spectrum) *spectrum_manager;
+	struct Map_3d_package *map_3d_package;
+	struct Scene *scene;
+	struct Rig *rig;
+	struct GROUP(FE_node) *unrejected_node_group;
+	struct Region_list_item *region_item;	
+	struct Region *region;
+
+	ENTER(map_draw_contours);
+	map_3d_package=(struct Map_3d_package *)NULL;
+	spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+	scene=(struct Scene *)NULL;
+	rig=(struct Rig *)NULL;	
+	unrejected_node_group=(struct GROUP(FE_node) *)NULL;	
+	region_item=(struct Region_list_item *)NULL;	
+	region=(struct Region *)NULL; 
+	/*data_field can be NULL*/
+	if (map&&&package&&spectrum&&(map->rig_pointer)&&(rig= *(map->rig_pointer))&&
+		(map->drawing_information)&&(spectrum_manager=
+			get_map_drawing_information_spectrum_manager(map->drawing_information))&&
+		(scene=get_map_drawing_information_scene(map->drawing_information)))
+	{
+		/* Show the contours */	
+		if ((map->contours_option==SHOW_CONTOURS)&&
+			(map->interpolation_type!=NO_INTERPOLATION))
+		{
+			if (map->contour_thickness==CONSTANT_THICKNESS)
+			{
+				number_of_constant_contours=map->number_of_contours;
+				number_of_variable_contours=0;
+			}
+			else
+				/* map->contour_thickness==VARIABLE_THICKNESS */
+			{
+				number_of_constant_contours=0;
+				/*-1 as unemap treats number of contours differently from the cmgui spectrum */
+				/* it's a fencepost thing */
+				number_of_variable_contours=map->number_of_contours-1;
+			}						
+		}
+		else
+		{
+			number_of_variable_contours=0;
+			number_of_constant_contours=0;
+		}					
+		/* draw/remove VARIABLE_THICKNESS contours*/
+		if (get_unemap_package_default_torso_name(package))
+		{
+			default_torso_loaded=1;
+		}
+		else
+		{
+			default_torso_loaded=0;
+		}
+		Spectrum_overlay_contours(spectrum_manager,spectrum,
+			number_of_variable_contours,CONTOUR_PROPORTION);
+		region_item=get_Rig_region_list(rig);
+		while(region_item)
+		{
+			region=get_Region_list_item_region(region_item);			
+			unrejected_node_group=get_Region_unrejected_node_group(region);
+			map_3d_package=get_Region_map_3d_package(region);
+			if (unrejected_node_group&&
+				(unemap_package_rig_node_group_has_electrodes(package,unrejected_node_group))&&
+				(map_3d_package = get_Region_map_3d_package(region)))
+			{			
+				data_field = map_get_data_field_for_3d_map(map, map_3d_package);
+				delauney_map = map_is_delauney(map);
+				/* draw/remove CONSTANT_THICKNESS contours */
+				map_draw_constant_thickness_contours(scene,map->drawing_information,
+					data_field,number_of_constant_contours,map->contour_minimum,
+					map->contour_maximum,region,default_torso_loaded,delauney_map);					
+			}				
+			region_item=get_Region_list_item_next(region_item);
+		}/* while(region_item)*/
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"map_draw_contours. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+}/* map_draw_contours */
+#endif /* defined (UNEMAP_USE_3D) */
+
 struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
 	enum Contours_option contours_option,enum Electrodes_label_type electrodes_label_type,
 	enum Fibres_option fibres_option,enum Landmarks_option landmarks_option,
@@ -6640,6 +6768,7 @@ NULL if not successful.
 			map->drawing_information=map_drawing_information;
 #if defined (UNEMAP_USE_3D)
 			map->unemap_package = unemap_package;			
+			/* register for any spectrum changes */
 #else
 			map->unemap_package = (struct Unemap_package *)NULL;		
 #endif /* defined (UNEMAP_USE_3D) */
@@ -6741,8 +6870,8 @@ Called by (see also) update_colour_map_unemap.
 	XColor colour,*spectrum_rgb;
 	XImage *map_image;
 	struct Spectrum *spectrum=(struct Spectrum *)NULL;
-	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
 	struct Spectrum *spectrum_copy=(struct Spectrum *)NULL;	
+	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct Sub_map *sub_map;
 
@@ -7013,8 +7142,8 @@ Called by (see also) update_colour_map_unemap.
 					pixel_value=map_frame->pixel_values;
 					background_pixel=drawing_information->background_drawing_colour;
 					boundary_pixel=drawing_information->boundary_colour;
-					drawing_height=drawing->height;
-					drawing_width=drawing->width;
+					drawing_height=sub_map->height;
+					drawing_width=sub_map->width;
 					/* calculate range of values */
 					range_f=max_f-min_f;
 					if (range_f<=0)
@@ -7199,15 +7328,15 @@ Removes 3d drawing for non-current region(s).
 	double z_up[3]={0.0,0.0,1.0};
 	double *up_vector;
 	FE_value focus,time;
-	struct FE_field *fit_field,*map_position_field;
+	struct Device *device;
+	struct FE_field *map_position_field;
 	struct FE_field_order_info *field_order_info;
 	struct Computed_field *data_field;
 	float frame_time,minimum,maximum;
 	int default_torso_loaded,delauney_map,display_all_regions,
-		nodes_rejected_or_accepted,range_set,return_code;
+		nodes_rejected_or_accepted,range_set,return_code,*times;
 	enum Map_type map_type;
 	char undecided_accepted;
-	struct FE_field *signal_field;
 	struct Map_drawing_information *drawing_information;
 	struct Rig *rig;
 	struct Region_list_item *region_item;
@@ -7215,6 +7344,8 @@ Removes 3d drawing for non-current region(s).
 	struct Interpolation_function *function;
 	struct Unemap_package *unemap_package;
 	struct Scene *scene;
+	struct Signal *signal;
+	struct Signal_buffer *buffer;
 	struct Spectrum *spectrum,*spectrum_to_be_modified_copy;	
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Map_3d_package *map_3d_package;
@@ -7223,11 +7354,10 @@ Removes 3d drawing for non-current region(s).
 	struct GROUP(FE_node) *rig_node_group,*unrejected_node_group;
 
 	ENTER(draw_map_3d);
-	signal_field=(struct FE_field *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
 	fit_name=(char *)NULL;
 	field_order_info=(struct FE_field_order_info *)NULL;	
 	map_position_field=(struct FE_field *)NULL;
-	fit_field=(struct FE_field *)NULL;
 	data_field=(struct Computed_field *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
 	rig=(struct Rig *)NULL;
@@ -7236,10 +7366,12 @@ Removes 3d drawing for non-current region(s).
 	region=(struct Region *)NULL;
 	function=(struct Interpolation_function *)NULL;
 	unemap_package=(struct Unemap_package *)NULL;
+	signal=(struct Signal *)NULL;
 	scene=(struct Scene *)NULL;
 	spectrum=(struct Spectrum *)NULL;
 	spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
 	spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+	times=(int *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;
 	element_group=(struct GROUP(FE_element) *)NULL;
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
@@ -7271,28 +7403,7 @@ Removes 3d drawing for non-current region(s).
 		{
 			map_type=NO_MAP_FIELD;
 		}
-		/* do we have a default torso loaded ? */ 
-		if (map->interpolation_type==DIRECT_INTERPOLATION)
-		{	
-			/* can only have DIRECT_INTERPOLATION for TORSO,THREED_PROJECTION*/	
-			/* these conditions should be ensured in open_map_dialog()*/
-			if ((map->projection_type==THREED_PROJECTION)&&(rig=*(map->rig_pointer))&&
-				(rig->current_region)&&(rig->current_region->type==TORSO))
-			{
-				delauney_map=1;
-			}
-			else
-			{	
-				display_message(ERROR_MESSAGE,
-					"draw_map_3d. DIRECT_INTERPOLATION for wrong map type ");
-				return_code=0;
-				delauney_map=0;
-			}
-		}
-		else
-		{
-			delauney_map=0;
-		}
+		delauney_map = map_is_delauney(map);
 		/* have any electrode nodes been accepted or rejected recently?*/		
 		nodes_rejected_or_accepted=
 			get_map_drawing_information_electrodes_accepted_or_rejected
@@ -7302,10 +7413,12 @@ Removes 3d drawing for non-current region(s).
 		if ((map->rig_pointer)&&(rig= *(map->rig_pointer)))
 		{					
 			return_code=1;				
+			device=*(rig->devices);
+			signal=(device)->signal;
+			buffer=signal->buffer;
+			times=buffer->times;
+			frame_time=(int)((float)((times)[*(map->potential_time)])*1000./buffer->frequency);
 			undecided_accepted=map->undecided_accepted;
-			signal_field=get_unemap_package_signal_field(unemap_package);
-			get_FE_field_time_FE_value(signal_field,*(map->potential_time),&frame_time);
-			frame_time*=1000;
 			current_region=get_Rig_current_region(rig);				
 			/*if current_region NULL, displaying all regions*/
 			if (!current_region)
@@ -7451,34 +7564,24 @@ Removes 3d drawing for non-current region(s).
 									(drawing_information),
 									(struct Spectrum *)NULL,(struct Computed_field *)NULL,
 									get_map_drawing_information_no_interpolation_colour
-									(drawing_information),
+									(drawing_information), 
+									get_unemap_package_potential_time_object(unemap_package),
 									get_map_drawing_information_user_interface(drawing_information),
-									delauney_map);
+									delauney_map, !(map->fixed_range));
 							}
 							/* BICUBIC_INTERPOLATION or DIRECT_INTERPOLATION */
 							else 
 							{
-								/* Get the map "fit" field, to use for the surface */
-								if (map->interpolation_type==DIRECT_INTERPOLATION)
-								{		
-									fit_field=get_unemap_package_delauney_signal_field(unemap_package);
-								}	
-								/*BICUBIC_INTERPOLATION */ 
-								else							
-								{
-									fit_field=get_map_3d_package_fit_field(map_3d_package);
-								}
-								data_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-									Computed_field_is_read_only_with_fe_field,(void *)(fit_field),
-									get_unemap_package_Computed_field_manager(unemap_package));
+								data_field = map_get_data_field_for_3d_map(map, map_3d_package);
 								map_show_surface(scene,element_group,
 									get_map_drawing_information_map_graphical_material
 									(drawing_information),
 									get_map_drawing_information_Graphical_material_manager
 									(drawing_information),
 									spectrum,data_field,(struct Colour*)NULL,
+									get_unemap_package_potential_time_object(unemap_package),
 									get_map_drawing_information_user_interface(drawing_information),
-									delauney_map);
+									delauney_map, !(map->fixed_range));
 							}					
 
 						} 
@@ -7515,11 +7618,13 @@ Removes 3d drawing for non-current region(s).
 						maximum=map->maximum_value;	
 						range_set=1;
 					}
+#if defined (OLD_CODE)
 					/* remove electrode on default_torso*/
 					if ((default_torso_loaded)&&(!delauney_map))
 					{
 						map_remove_all_electrodes(map);
 					}
+#endif /* defined (OLD_CODE) */
 				}
 				/* spectrum range automatic */
 				else					
@@ -7529,6 +7634,7 @@ Removes 3d drawing for non-current region(s).
 					/*range from surface(s). Similarly for DIRECT, as the electrodes*/
 					/* include rejected signals, whcih will mess up range. */
 					/* Also remove electodes for default torso surface, as can't display these yet */
+#if defined (OLD_CODE)
 					/* Electrodes added below. This is a little inefficient, as must then */
 					/* re-add electrodes. */
 					if ((map->interpolation_type==BICUBIC_INTERPOLATION)||
@@ -7537,6 +7643,7 @@ Removes 3d drawing for non-current region(s).
 					{
 						map_remove_all_electrodes(map);
 					}
+#endif /* defined (OLD_CODE) */
 					/* NO_INTERPOLATION-map range comes from the signals (i.e electrodes) */
 					if (map->interpolation_type==NO_INTERPOLATION)
 					{													
@@ -7547,19 +7654,21 @@ Removes 3d drawing for non-current region(s).
 							get_unemap_package_channel_gain_field(unemap_package),
 							get_unemap_package_channel_offset_field(unemap_package),
 							time,&minimum,&maximum);
+						map->minimum_value=minimum;
+						map->maximum_value=maximum;	
+						map->contour_minimum=minimum;
+						map->contour_maximum=maximum;
+						map->range_changed=0;
 						range_set=1;
 					}
 					/* BICUBIC_INTERPOLATION	or DIRECT_INTERPOLATION */
 					else 						
-					{									
+					{
+#if defined (OLD_CODE)
 						Scene_get_data_range_for_spectrum(scene,spectrum,&minimum,&maximum,
 							&range_set);														
+#endif /* defined (OLD_CODE) */
 					}
-					map->minimum_value=minimum;
-					map->maximum_value=maximum;	
-					map->contour_minimum=minimum;
-					map->contour_maximum=maximum;
-					map->range_changed=0;
 				}	/* if (map->fixed_range) */
 				if (range_set)
 				{
@@ -7594,9 +7703,13 @@ Removes 3d drawing for non-current region(s).
 				/* can't do electrodes on default_torso surface yet*/							
 				if ((region->type!=TORSO)||(!(default_torso_loaded&&(!delauney_map))))
 				{		 
-					map_draw_map_electrodes(unemap_package,map,time);
+					map_draw_map_electrodes(unemap_package,map);
 				}
-				map_draw_contours(map,spectrum,unemap_package,data_field,delauney_map);
+				else
+				{
+					map_remove_all_electrodes(map);
+				}
+				map_draw_contours(map,spectrum,unemap_package);
 				/* First time the scene's viewed  do "view_all"*/
 				if (!get_map_drawing_information_viewed_scene(drawing_information))				
 				{						

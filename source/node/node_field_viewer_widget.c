@@ -228,7 +228,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 
 									get_FE_nodal_int_value(node_field_viewer->current_node,
 										&fe_field_component,nodal_value_information->version,
-										nodal_value_information->type,&int_value);
+										nodal_value_information->type,time,&int_value);
 									sprintf(temp_value_string, "%d", int_value);
 									new_value_string = duplicate_string(temp_value_string);
 								} break;
@@ -449,7 +449,7 @@ data, and then changes the correct value in the array structure.
 								nodal_value_information->component_number;
 							set_FE_nodal_FE_value_value(node_field_viewer->current_node,
 								&fe_field_component,nodal_value_information->version,
-								nodal_value_information->type,fe_value_value);
+								nodal_value_information->type, time, fe_value_value);
 						} break;
 						case INT_VALUE:
 						{
@@ -461,7 +461,7 @@ data, and then changes the correct value in the array structure.
 								nodal_value_information->component_number;
 							set_FE_nodal_int_value(node_field_viewer->current_node,
 								&fe_field_component,nodal_value_information->version,
-								nodal_value_information->type,int_value);
+								nodal_value_information->type,time, int_value);
 						} break;
 						case STRING_VALUE:
 						{

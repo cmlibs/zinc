@@ -11,7 +11,6 @@ module time_editor
 
 procedure
 	time_editor_identify_widget    (integer);
-	time_editor_destroy_CB          ();
 	time_editor_control_CB          (integer);
 
 value
@@ -77,10 +76,6 @@ object
 			XmMenuBar time_editor_menu;
 			XmForm time_editor_frame_controls;
 			XmForm time_editor_play_controls;
-			};
-		callbacks
-			{
-			XmNdestroyCallback = procedure time_editor_destroy_CB();
 			};
 		};
 

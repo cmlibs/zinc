@@ -374,17 +374,17 @@ Updates the node locations for the <emoter_slider>
 								coordinate_field_component.number=0;
 								return_code=set_FE_nodal_FE_value_value(temp_node,
 									&coordinate_field_component,0,FE_NODAL_VALUE,
-									(FE_value)temp_x);
+									/*time*/0, (FE_value)temp_x);
 
 								coordinate_field_component.number=1;
 								return_code=set_FE_nodal_FE_value_value(temp_node,
 									&coordinate_field_component,0,FE_NODAL_VALUE,
-									(FE_value)temp_y);
+									/*time*/0, (FE_value)temp_y);
 
 								coordinate_field_component.number=2;
 								return_code=set_FE_nodal_FE_value_value(temp_node,
 									&coordinate_field_component,0,FE_NODAL_VALUE,
-									(FE_value)temp_z);
+									/*time*/0, (FE_value)temp_z);
 
 								if (return_code)
 								{

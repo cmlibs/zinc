@@ -556,6 +556,7 @@ Evaluate the fields cache at the node.
 	enum Value_type value_type;
 	float float_value;
 	int i, int_value, return_code;
+	short short_value;
 	struct Computed_field_finite_element_type_specific_data *data;
 	struct FE_field_component fe_field_component;
 
@@ -577,7 +578,7 @@ Evaluate the fields cache at the node.
 				{
 					return_code=get_FE_nodal_double_value(node,
 						&fe_field_component,/*version_number*/0,
-						/*nodal_value_type*/FE_NODAL_VALUE, &double_value);
+						/*nodal_value_type*/FE_NODAL_VALUE,time,&double_value);
 					field->values[i] = (FE_value)double_value;
 				} break;
 				case FE_VALUE_VALUE:
@@ -589,14 +590,23 @@ Evaluate the fields cache at the node.
 				case FLT_VALUE:
 				{
 					return_code=get_FE_nodal_float_value(node,&fe_field_component,
-						/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,&float_value);
+						/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
+						time,&float_value);
 					field->values[i] = (FE_value)float_value;
 				} break;
 				case INT_VALUE:
 				{
 					return_code=get_FE_nodal_int_value(node,&fe_field_component,
-						/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,&int_value);
+						/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
+						time,&int_value);
 					field->values[i] = (FE_value)int_value;
+				} break;
+				case SHORT_VALUE:
+				{
+					return_code=get_FE_nodal_short_value(node,&fe_field_component,
+						/*version_number*/0,/*nodal_value_type*/FE_NODAL_VALUE,
+						time,&short_value);
+					field->values[i] = (FE_value)short_value;
 				} break;
 				default:
 				{
@@ -659,6 +669,7 @@ Evaluate the fields cache at the node.
 			switch (value_type)
 			{
 				case FE_VALUE_VALUE:
+				case SHORT_VALUE:
 				{
 					if (calculate_derivatives)
 					{
@@ -863,6 +874,7 @@ Sets the <values> of the computed <field> at <node>.
 	enum Value_type value_type;
 	float float_value;
 	int i,int_value,j,k,return_code;
+	short short_value;
 	struct Computed_field_finite_element_type_specific_data *data;
 	struct FE_field_component fe_field_component;
 
@@ -890,24 +902,30 @@ Sets the <values> of the computed <field> at <node>.
 					{
 						double_value=(double)values[i];
 						return_code=set_FE_nodal_double_value(node,&fe_field_component,
-							j,/*nodal_value_type*/FE_NODAL_VALUE,double_value);
+							j,/*nodal_value_type*/FE_NODAL_VALUE,/*time*/0,double_value);
 					} break;
 					case FE_VALUE_VALUE:
 					{
 						return_code=set_FE_nodal_FE_value_value(node,&fe_field_component,
-							j,/*nodal_value_type*/FE_NODAL_VALUE,values[i]);
+							j,/*nodal_value_type*/FE_NODAL_VALUE,/*time*/0,values[i]);
 					} break;
 					case FLT_VALUE:
 					{
 						float_value=(float)values[i];
 						return_code=set_FE_nodal_float_value(node,&fe_field_component,
-							j,/*nodal_value_type*/FE_NODAL_VALUE,float_value);
+							j,/*nodal_value_type*/FE_NODAL_VALUE,/*time*/0,float_value);
 					} break;
 					case INT_VALUE:
 					{
 						int_value=(int)floor(values[i]+0.5);
-						return_code=set_FE_nodal_float_value(node,&fe_field_component,
-							j,/*nodal_value_type*/FE_NODAL_VALUE,int_value);
+						return_code=set_FE_nodal_int_value(node,&fe_field_component,
+							j,/*nodal_value_type*/FE_NODAL_VALUE,/*time*/0,int_value);
+					} break;
+					case SHORT_VALUE:
+					{
+						short_value=(short)floor(values[i]+0.5);
+						return_code=set_FE_nodal_short_value(node,&fe_field_component,
+							j,/*nodal_value_type*/FE_NODAL_VALUE,/*time*/0,short_value);
 					} break;
 					default:
 					{
@@ -3133,6 +3151,7 @@ Evaluate the fields cache at the node.
 	enum Value_type value_type;
 	float float_value;
 	int i, int_value, return_code;
+	short short_value;
 	struct Computed_field_node_value_type_specific_data *data;
 	struct FE_field_component fe_field_component;
 
@@ -3156,7 +3175,7 @@ Evaluate the fields cache at the node.
 					{
 						return_code=get_FE_nodal_double_value(node,
 							&fe_field_component,data->version_number,
-							data->nodal_value_type,&double_value);
+							data->nodal_value_type,time,&double_value);
 						field->values[i] = (FE_value)double_value;
 					} break;
 					case FE_VALUE_VALUE:
@@ -3169,19 +3188,25 @@ Evaluate the fields cache at the node.
 					{
 						return_code=get_FE_nodal_float_value(node,
 							&fe_field_component,data->version_number,
-							data->nodal_value_type,&float_value);
+							data->nodal_value_type,time,&float_value);
 						field->values[i] = (FE_value)float_value;
 					} break;
 					case INT_VALUE:
 					{
 						return_code=get_FE_nodal_int_value(node,&fe_field_component,
-							data->version_number,data->nodal_value_type,&int_value);
+							data->version_number,data->nodal_value_type,time,&int_value);
 						field->values[i] = (FE_value)int_value;
+					} break;
+					case SHORT_VALUE:
+					{
+						return_code=get_FE_nodal_short_value(node,&fe_field_component,
+							data->version_number,data->nodal_value_type,time,&short_value);
+						field->values[i] = (FE_value)short_value;
 					} break;
 					default:
 					{
 						display_message(ERROR_MESSAGE,
-							"Computed_field_evaluate_cache_at_node.  "
+							"Computed_field_node_value_evaluate_cache_at_node.  "
 							"Unsupported value type %s in node_value field",
 							Value_type_string(value_type));
 						return_code=0;
@@ -3197,7 +3222,7 @@ Evaluate the fields cache at the node.
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_evaluate_cache_at_node.  "
+				"Computed_field_node_value_evaluate_cache_at_node.  "
 				"Error evaluating node_value field at node");
 		}
 	}
@@ -3340,24 +3365,24 @@ Sets the <values> of the computed <field> at <node>.
 					{
 						double_value=(double)values[i];
 						return_code=set_FE_nodal_double_value(node,&fe_field_component,
-							data->version_number,data->nodal_value_type,double_value);
+							data->version_number,data->nodal_value_type,/*time*/0,double_value);
 					} break;
 					case FE_VALUE_VALUE:
 					{
 						return_code=set_FE_nodal_FE_value_value(node,&fe_field_component,
-							data->version_number,data->nodal_value_type,values[i]);
+							data->version_number,data->nodal_value_type,/*time*/0,values[i]);
 					} break;
 					case FLT_VALUE:
 					{
 						float_value=(float)values[i];
 						return_code=set_FE_nodal_float_value(node,&fe_field_component,
-							data->version_number,data->nodal_value_type,float_value);
+							data->version_number,data->nodal_value_type,/*time*/0,float_value);
 					} break;
 					case INT_VALUE:
 					{
 						int_value=(int)floor(values[i]+0.5);
 						return_code=set_FE_nodal_float_value(node,&fe_field_component,
-							data->version_number,data->nodal_value_type,int_value);
+							data->version_number,data->nodal_value_type,/*time*/0,int_value);
 					} break;
 					default:
 					{

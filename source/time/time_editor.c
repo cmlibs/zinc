@@ -436,59 +436,15 @@ DESCRIPTION :
 	LEAVE;
 } /* time_editor_control_CB */
 
-static void time_editor_destroy_CB(Widget widget, int *tag,
-	unsigned long *reason)
-/*******************************************************************************
-LAST MODIFIED : 24 November 1999
-
-DESCRIPTION :
-Callback for the time_editor dialog - tidies up all details - mem etc
-==============================================================================*/
-{
-	struct Time_editor_struct *time_editor;
-
-	ENTER(time_editor_destroy_CB);
-	USE_PARAMETER(tag);
-	USE_PARAMETER(reason);
-	if (widget)
-	{
-		/* Get the pointer to the data for the time_editor widget */
-		XtVaGetValues(widget,XmNuserData,&time_editor,NULL);
-		if (time_editor)
-		{
-			if(time_editor->time_keeper)
-			{
-				Time_keeper_remove_callback(time_editor->time_keeper,
-					time_editor_time_keeper_callback, (void *)time_editor);
-				DEACCESS(Time_keeper)(&(time_editor->time_keeper));
-			}
-
-			*(time_editor->widget_address)=(Widget)NULL;
-			DEALLOCATE(time_editor);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"time_editor_destroy_CB.  Missing time_editor");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"time_editor_destroy_CB.  Missing widget");
-	}
-	LEAVE;
-} /* time_editor_destroy_CB */
-
 /*
 Global functions
 ----------------
 */
-Widget create_time_editor_widget(Widget *time_editor_widget,
+Widget CREATE(Time_editor)(Widget *time_editor_widget,
 	Widget parent, struct Time_keeper *time_keeper,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1998
+LAST MODIFIED : 29 January 2002
 
 DESCRIPTION :
 Creates a time_editor widget.
@@ -516,7 +472,6 @@ Creates a time_editor widget.
 	{
 		{"time_editor_identify_widget",(XtPointer)time_editor_identify_widget},
 		{"time_editor_control_CB",(XtPointer)time_editor_control_CB},
-		{"time_editor_destroy_CB",(XtPointer)time_editor_destroy_CB},
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
@@ -537,7 +492,7 @@ Creates a time_editor widget.
 	};
 	Widget return_widget;
 
-	ENTER(create_time_editor_widget);
+	ENTER(CREATE(Time_editor));
 
 	return_widget=(Widget)NULL;
 	if (time_editor_widget && parent && user_interface)
@@ -605,47 +560,96 @@ Creates a time_editor widget.
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-			"create_time_editor_widget.  Could not fetch time_editor dialog");
+							display_message(ERROR_MESSAGE, "CREATE(Time_editor).  "
+								"Could not fetch time_editor dialog");
 							DEALLOCATE(time_editor);
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"create_time_editor_widget.  Could not register identifiers");
+							"CREATE(Time_editor).  Could not register identifiers");
 						DEALLOCATE(time_editor);
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"create_time_editor_widget.  Could not register callbacks");
+						"CREATE(Time_editor).  Could not register callbacks");
 					DEALLOCATE(time_editor);
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"create_time_editor_widget.  "
+				display_message(ERROR_MESSAGE,"CREATE(Time_editor).  "
 					"Could not allocate time_editor widget structure");
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_time_editor_widget.  Could not open hierarchy");
+				"CREATE(Time_editor).  Could not open hierarchy");
 		}
 		*time_editor_widget=return_widget;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_time_editor_widget.  Invalid argument(s)");
+			"CREATE(Time_editor).  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_widget);
-} /* create_time_editor_widget */
+} /* CREATE(Time_editor) */
+
+int DESTROY(Time_editor)(Widget *time_editor_widget)
+/*******************************************************************************
+LAST MODIFIED : 29 January 2002
+
+DESCRIPTION :
+Callback for the time_editor dialog - tidies up all details - mem etc
+==============================================================================*/
+{
+	int return_code;
+	struct Time_editor_struct *time_editor;
+
+	ENTER(DESTROY(Time_editor));
+	if (time_editor_widget)
+	{
+		/* Get the pointer to the data for the dialog */
+		XtVaGetValues(*time_editor_widget,
+			XmNuserData,&time_editor,NULL);
+		if (time_editor)
+		{
+			if(time_editor->time_keeper)
+			{
+				Time_keeper_remove_callback(time_editor->time_keeper,
+					time_editor_time_keeper_callback, (void *)time_editor);
+				DEACCESS(Time_keeper)(&(time_editor->time_keeper));
+			}
+			
+			*(time_editor->widget_address)=(Widget)NULL;
+			DEALLOCATE(time_editor);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Time_editor).  Missing time_editor");
+			return_code=0;
+		}
+		*time_editor_widget = (Widget)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Time_editor).  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Time_editor) */
 
 int time_editor_get_callback(Widget time_editor_widget,
 	struct Callback_data *callback)

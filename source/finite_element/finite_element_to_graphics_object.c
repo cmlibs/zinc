@@ -5663,13 +5663,13 @@ DESCRIPTION :
 						/* assign the coordinates to the node */
 						field_component.number=0;
 						set_FE_nodal_FE_value_value(node_copy,&field_component,0,FE_NODAL_VALUE,
-							coordinate_1);
+							/*time*/0, coordinate_1);
 						(field_component.number)++;
 						set_FE_nodal_FE_value_value(node_copy,&field_component,0,FE_NODAL_VALUE,
-							coordinate_2);
+							/*time*/0, coordinate_2);
 						(field_component.number)++;
 						set_FE_nodal_FE_value_value(node_copy,&field_component,0,FE_NODAL_VALUE,
-							coordinate_3);
+							/*time*/0, coordinate_3);
 						return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
 							node,node_copy,warp_node_data->node_manager);
 					} /* if outside_block */
@@ -5678,13 +5678,13 @@ DESCRIPTION :
 						/* do nothing ?? */
 						field_component.number=0;
 						set_FE_nodal_FE_value_value(node_copy,&field_component,0,FE_NODAL_VALUE,
-							coordinates[0]);
+							/*time*/0, coordinates[0]);
 						(field_component.number)++;
 						set_FE_nodal_FE_value_value(node_copy,&field_component,0,FE_NODAL_VALUE,
-							coordinates[1]);
+							/*time*/0, coordinates[1]);
 						(field_component.number)++;
 						set_FE_nodal_FE_value_value(node_copy,&field_component,0,FE_NODAL_VALUE,
-							coordinates[2]);
+							/*time*/0, coordinates[2]);
 						return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
 							node,node_copy,warp_node_data->node_manager);
 
@@ -7723,10 +7723,11 @@ Computes iso-surfaces/lines/points graphics from <element>.
 								element_to_iso_scalar_data->coordinate_field,
 								element_to_iso_scalar_data->scalar_field,
 								element_to_iso_scalar_data->iso_value,
+								element_to_iso_scalar_data->time,
 								element_to_iso_scalar_data->data_field,
 								number_in_xi[0],number_in_xi[1],top_level_element,
 								element_to_iso_scalar_data->graphics_object,
-								element_to_iso_scalar_data->time);
+								/*graphics_object_time*/0.0);
 						}
 						else
 						{

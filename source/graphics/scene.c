@@ -3611,12 +3611,16 @@ the references to the time_object.
 				{
 					Time_object_remove_callback(scene_object->time_object,
 						Scene_object_time_update_callback, scene_object);
+					Time_object_remove_callback(scene_object->time_object,
+						Scene_time_update_callback, scene_object->scene);
 				}
 				REACCESS(Time_object)(&(scene_object->time_object),time);
 				if (time)
 				{
 					Time_object_add_callback(scene_object->time_object,
 						Scene_object_time_update_callback, scene_object);
+					Time_object_add_callback(scene_object->time_object,
+						Scene_time_update_callback, scene_object->scene);
 				}
 			}
 			return_code=1;
@@ -6777,6 +6781,124 @@ SCENE_CHANGE. Clients may respond to SCENE_FAST_CHANGE more efficiently.
 	return (change_status);
 } /* Scene_get_change_status */
 
+static int Scene_get_data_range_for_autoranging_spectrum_iterator(
+	struct Scene_object *scene_object, void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 18 January 2002
+
+DESCRIPTION :
+Expands the range to include the data values of only those element_group settings
+in the <scene> which are autoranging and which point to this spectrum.
+==============================================================================*/
+{
+	int return_code;
+	
+	ENTER(Scene_get_data_range_for_spectrum_iterator);
+	if (scene_object && data_void)
+	{
+		if (g_VISIBLE == Scene_object_get_visibility(scene_object))
+		{
+			switch(scene_object->type)
+			{
+				case SCENE_OBJECT_GRAPHICS_OBJECT:
+				{
+					/* Do nothing */
+				} break;
+				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+				{
+					for_each_settings_in_GT_element_group(scene_object->gt_element_group,
+						GT_element_settings_get_data_range_for_autoranging_spectrum,
+						data_void);
+				} break;
+				case SCENE_OBJECT_SCENE:
+				{
+					for_each_Scene_object_in_Scene(scene_object->child_scene,
+						Scene_get_data_range_for_autoranging_spectrum_iterator, data_void);
+				} break;
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_get_data_range_for_spectrum_iterator.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* Scene_get_data_range_for_spectrum_iterator */
+
+static int Scene_expand_data_range_for_autoranging_spectrum(
+	struct Spectrum *spectrum, void *scene_void)
+/*******************************************************************************
+LAST MODIFIED : 18 January 2001
+
+DESCRIPTION :
+Expands the range to include the data values of only those element_group settings
+in the <scene> which are autoranging and which point to this spectrum.
+==============================================================================*/
+{
+	int return_code;
+	struct Scene *scene;
+	struct Scene_get_data_range_for_spectrum_data data;
+	struct Spectrum *spectrum_to_be_modified_copy;
+
+	ENTER(Scene_expand_data_range_for_autoranging_spectrum);
+
+	if (spectrum && (scene = (struct Scene *)scene_void))
+	{
+		data.spectrum = spectrum;
+		data.range.first = 1;
+		data.range.minimum = 0;
+		data.range.maximum = 0;
+
+		for_each_Scene_object_in_Scene(scene,
+			Scene_get_data_range_for_autoranging_spectrum_iterator, (void *)&data);
+
+		if ( !data.range.first )
+		{
+			if ((data.range.minimum != get_Spectrum_minimum(spectrum))
+				|| (data.range.maximum != get_Spectrum_maximum(spectrum)))
+			{
+				if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+					("spectrum_modify_temp"))
+				{
+					MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+						(spectrum_to_be_modified_copy,spectrum);		
+					/*Ensure spectrum is set correctly */
+					Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,
+						data.range.minimum, data.range.maximum);		
+				
+					MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+						spectrum_to_be_modified_copy,scene->spectrum_manager);
+					DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Scene_expand_data_range_for_autoranging_spectrum.  "
+						"Could not create spectrum copy.");				
+				}
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_expand_data_range_for_autoranging_spectrum.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* Scene_expand_data_range_for_autoranging_spectrum */
+
 int build_Scene(struct Scene *scene)
 /*******************************************************************************
 LAST MODIFIED : 7 June 2001
@@ -6797,9 +6919,24 @@ this function must be called before compile_Scene.
 		/* check whether scene contents need building */
 		if (scene->build)
 		{
+			scene->build = 0;
 			return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(build_Scene_object,
 				(void *)NULL, scene->scene_object_list);
-			scene->build = 0;
+			if (return_code && scene->spectrum_manager)
+			{
+				return_code = FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
+					Scene_expand_data_range_for_autoranging_spectrum,
+					(void *)scene, scene->spectrum_manager);
+			}
+			if (return_code && scene->build)
+			{
+				/* The autoranging spectrum could possibly have had some side effect
+					like changing contours and therefore some settings may have changed.
+				   I haven't put it in a while loop as I don't want to make a possible
+				   infinite loop */
+				return_code = FOR_EACH_OBJECT_IN_LIST(Scene_object)(build_Scene_object,
+					(void *)NULL, scene->scene_object_list);
+			}
 		}
 		else
 		{
@@ -7660,8 +7797,6 @@ Scene_object has a Time_object.
 						{
 							Scene_object_set_time_object(scene_object, time);
 							Time_object_set_time_keeper(time, scene->default_time_keeper);
-							Time_object_add_callback(time, Scene_time_update_callback,
-								scene);
 						}
 						DEALLOCATE(time_object_name);
 						DEALLOCATE(graphics_object_name);
@@ -7734,8 +7869,8 @@ Scene_object has a Time_object.
 						{
 							Scene_object_set_time_object(scene_object, time);
 							Time_object_set_time_keeper(time, scene->default_time_keeper);
-							Time_object_add_callback(time, Scene_time_update_callback,
-								scene);
+							/* Time_object_set_next_time_function(time,
+								GT_element_group_next_time_function, element_group); */
 						}
 						DEALLOCATE(time_object_name);
 						DEALLOCATE(element_group_name);
@@ -7791,7 +7926,7 @@ object for the scene_object named <scene_object_name>.
 {
 	int return_code;
 	struct Scene_object *scene_object;
-	struct Time_object *time, *old_time;
+	struct Time_object *time;
 	
 	ENTER(Scene_update_time_behaviour);
 	/* check arguments */
@@ -7803,16 +7938,8 @@ object for the scene_object named <scene_object_name>.
 		{
 			if(time = CREATE(Time_object)(time_object_name))
 			{
-				if(Scene_object_has_time(scene_object))
-				{
-					old_time = Scene_object_get_time_object(scene_object);
-					Time_object_remove_callback(old_time, Scene_time_update_callback,
-						scene);
-				}
 				Scene_object_set_time_object(scene_object, time);
 				Time_object_set_time_keeper(time, time_keeper);
-				Time_object_add_callback(time, Scene_time_update_callback,
-					scene);
 			}
 			else
 			{
@@ -8534,8 +8661,38 @@ Returns the graphical element_group for <element_group> in <scene>.
 	}
 	LEAVE;
 
-	return gt_element_group;
+	return (gt_element_group);
 } /* Scene_get_graphical_element_group */
+
+struct Scene_object *Scene_get_scene_object_with_element_group(
+	struct Scene *scene,struct GROUP(FE_element) *element_group)
+/*******************************************************************************
+LAST MODIFIED : 24 January 2002
+
+DESCRIPTION :
+Returns the scene_object for <element_group> in <scene>.
+==============================================================================*/
+{
+	struct Scene_object *scene_object;
+
+	ENTER(Scene_get_scene_object_with_element_group);
+	/* check arguments */
+	if (scene&&element_group)
+	{
+		scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+			Scene_object_has_element_group,(void *)element_group,
+			scene->scene_object_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_get_scene_object_with_element_group.  Invalid argument(s)");
+		scene_object=(struct Scene_object *)NULL;
+	}
+	LEAVE;
+
+	return (scene_object);
+} /* Scene_get_scene_object_with_element_group */
 
 int set_Scene(struct Parse_state *state,
 	void *scene_address_void,void *scene_manager_void)
@@ -9380,12 +9537,6 @@ elements and those chained together with other graphics objects
 	return (return_code);
 } /* for_each_graphics_object_in_scene */
 
-struct Scene_get_data_range_for_spectrum_data
-{
-	struct Spectrum *spectrum;
-	struct Graphics_object_data_range_struct range;
-};
-
 static int Scene_get_data_range_for_spectrum_iterator(
 	struct GT_object *graphics_object, double time, void *data_void)
 /*******************************************************************************
@@ -9475,3 +9626,4 @@ in the <scene> which point to this spectrum.
 
 	return (return_code);
 } /* Scene_get_data_range_for_spectrum */
+

@@ -1215,51 +1215,40 @@ Returns as a string the value for the (<version>, <type>) for the <field>
 It is up to the calling function to DEALLOCATE the returned string.
 ==============================================================================*/
 
-int get_FE_nodal_double_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,double *value);
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Gets a particular double value (<version>, <type>) for the field <component> at
-the <node>.
-???DB.  May need speeding up
+#define PROTOTYPE_GET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
+int get_FE_nodal_ ## value_type ## _value(struct FE_node *node, \
+	struct FE_field_component *component,int version, \
+	enum FE_nodal_value_type type, FE_value time, value_type *value); \
+/******************************************************************************* \
+LAST MODIFIED : 30 January 2002 \
+ \
+DESCRIPTION : \
+Gets a particular value (<version>, <type>) for the field <component> \
+at the <node> and <time>. \
+???DB.  May need speeding up \
 ==============================================================================*/
 
-int set_FE_nodal_double_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,double value);
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets a particular double value (<version>, <type>) for the field <component> at
-the <node>.
+#define PROTOTYPE_SET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
+int set_FE_nodal_ ## value_type ## _value(struct FE_node *node, \
+	struct FE_field_component *component,int version, \
+	enum FE_nodal_value_type type, FE_value time, value_type value); \
+/******************************************************************************* \
+LAST MODIFIED : 30 January 2002 \
+ \
+DESCRIPTION : \
+Sets a particular value (<version>, <type>) for the field <component> \
+at the <node>. \
 ==============================================================================*/
 
-int get_FE_nodal_FE_value_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type, FE_value time, FE_value *value);
-/*******************************************************************************
-LAST MODIFIED : 20 November 2001
+#define PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( value_type , value_enum ) \
+PROTOTYPE_GET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum) \
+PROTOTYPE_SET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum)
 
-DESCRIPTION :
-Gets a particular FE_value value (<version>, <type>) for the field <component>
-at the <node> and <time>.
-???DB.  May need speeding up
-==============================================================================*/
-
-int set_FE_nodal_FE_value_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,FE_value value);
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets a particular FE_value value (<version>, <type>) for the field <component>
-at the <node>.
-==============================================================================*/
+PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( FE_value , FE_VALUE_VALUE )
+PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( double , DOUBLE_VALUE )
+PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( float , FLOAT_VALUE )
+PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( int , INT_VALUE )
+PROTOTYPE_FE_NODAL_VALUE_FUNCTIONS( short , SHORT_VALUE )
 
 int get_FE_nodal_FE_value_array_value_at_FE_value_time(struct FE_node *node,
 	struct FE_field_component *component,int version,
@@ -1289,52 +1278,6 @@ The field must have time defined for it, and the number of times must match
 the number of array elements. If <time> is within the node field's time array's 
 range, but doesn't correspond exactly to an array element, interpolates to determine 
 <value>.
-==============================================================================*/
-
-int get_FE_nodal_float_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,float *value);
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Gets a particular float value (<version>, <type>) for the field <component> at
-the <node>.
-???DB.  May need speeding up
-==============================================================================*/
-
-int set_FE_nodal_float_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,float value);
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets a particular float value (<version>, <type>) for the field <component> at
-the <node>.
-==============================================================================*/
-
-int get_FE_nodal_int_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,int *value);
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Gets a particular int value (<version>, <type>) for the field <component> at
-the <node>.
-???DB.  May need speeding up
-==============================================================================*/
-
-int set_FE_nodal_int_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,int value);
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets a particular int value (<version>, <type>) for the field <component> at
-the <node>.
 ==============================================================================*/
 
 int get_FE_nodal_element_xi_value(struct FE_node *node,

@@ -375,6 +375,17 @@ DESCRIPTION : The Map.
 Global functions
 ----------------
 */
+#if defined (UNEMAP_USE_3D)
+int map_draw_contours(struct Map *map,	struct Spectrum *spectrum,
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 22 January 2001
+
+DESCRIPTION :
+Draws (or erases) the map contours
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D) */
+
 struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
 	enum Contours_option contours_option,	
 	enum Electrodes_label_type electrodes_label_type,

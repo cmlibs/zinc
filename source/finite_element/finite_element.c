@@ -7330,13 +7330,14 @@ obtained from the node_field_component for the field at the node.
 ==============================================================================*/
 {
 	FE_value *array,*blended_element_value,*blended_element_values,
-		*blending_matrix,*element_value,*element_values,*global_values,
+		*blending_matrix,*element_value,*element_values,
 		*scale_factors,temp_value,xi;
 	int *coefficient_index,*global_value_index,i,j,k,l,
 		number_of_blended_element_values,number_of_element_nodes,
 		number_of_element_values,number_of_global_values,number_of_map_values,
 		number_of_scale_factors,return_code,*scale_factor_index,scale_index,
 		time_index_one, time_index_two, value_index;
+	short *short_array;
 	struct FE_basis *basis;
 	struct FE_element_field_component *component;
 	struct FE_field *field;
@@ -7356,6 +7357,7 @@ obtained from the node_field_component for the field at the node.
 #else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 	FE_value sum;
 #endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+	void *global_values;
 
 	ENTER(global_to_element_map_values);
 /*???debug */
@@ -7370,14 +7372,14 @@ obtained from the node_field_component for the field at the node.
 		switch (component->type)
 		{
 			case STANDARD_NODE_TO_ELEMENT_MAP:
-			/* global values are associated with nodes */
+				/* global values are associated with nodes */
 			{
 				/* check information */
 				/*???RC 18 Nov 1999 allowed having no scale factors */
 				if ((element->information)&&(nodes=element->information->nodes)&&
 					((number_of_element_nodes=element->information->number_of_nodes)>0)&&
 					((0==(number_of_scale_factors=
-						element->information->number_of_scale_factors))||
+						  element->information->number_of_scale_factors))||
 						((0<number_of_scale_factors)&&
 							(scale_factors=element->information->scale_factors))))
 				{
@@ -7392,7 +7394,7 @@ obtained from the node_field_component for the field at the node.
 					{
 						if ((standard_node_map= *standard_node_map_address)&&
 							((number_of_map_values=
-							standard_node_map->number_of_nodal_values)>0)&&
+								standard_node_map->number_of_nodal_values)>0)&&
 							(0<=standard_node_map->node_index)&&
 							(standard_node_map->node_index<number_of_element_nodes)&&
 							(node=nodes[standard_node_map->node_index])&&
@@ -7423,8 +7425,8 @@ obtained from the node_field_component for the field at the node.
 								component->map.standard_node_based.node_to_element_maps;
 							j=component->map.standard_node_based.number_of_nodes;
 							/* Need node_field_component to get absolute offset into nodal
-								 values array. Also store node_field_info so we don't have to
-								 get node_field_component each time if it is not changing */
+								values array. Also store node_field_info so we don't have to
+								get node_field_component each time if it is not changing */
 							node_field_info=(struct FE_node_field_info *)NULL;
 							node_field_component=(struct FE_node_field_component *)NULL;
 							time_version = (struct FE_time_version *)NULL;
@@ -7443,7 +7445,7 @@ obtained from the node_field_component for the field at the node.
 								if (node_field_info != node->fields)
 								{
 									if (node->fields&&(node_field=FIND_BY_IDENTIFIER_IN_LIST(
-										FE_node_field,field)(field,node->fields->node_field_list))&&
+																 FE_node_field,field)(field,node->fields->node_field_list))&&
 										node_field->components)
 									{
 										node_field_component=
@@ -7466,9 +7468,9 @@ obtained from the node_field_component for the field at the node.
 								if (node_field_component)
 								{
 									/* add absolute value offset from node_field_component and
-										 cast address into FE_value type */
+										cast address into FE_value type */
 									global_values=
-										(FE_value *)(node->values_storage+node_field_component->value);
+										node->values_storage+node_field_component->value;
 									k=standard_node_map->number_of_nodal_values;
 									while (k>0)
 									{
@@ -7476,39 +7478,90 @@ obtained from the node_field_component for the field at the node.
 										if ((0<=(value_index= *global_value_index))&&
 											(value_index<number_of_global_values))
 										{
-											if (time_version)
+											switch (field->value_type)
 											{
-												array = *((FE_value **)(global_values+value_index));
-												/* if there is not a scale factor use 1 as the scale
-													factor */
-												if ((0<=(scale_index= *scale_factor_index))&&
-													(scale_index<number_of_scale_factors))
+												case FE_VALUE_VALUE:
 												{
-													*element_value=((1.0 - xi)*array[time_index_one]
-														+xi*array[time_index_two])*
-														scale_factors[scale_index];
+													if (time_version)
+													{
+														array = *(((FE_value **)global_values+value_index));
+														/* if there is not a scale factor use 1 as the scale
+															factor */
+														if ((0<=(scale_index= *scale_factor_index))&&
+															(scale_index<number_of_scale_factors))
+														{
+															*element_value=((1.0 - xi)*array[time_index_one]
+																+xi*array[time_index_two])*
+																scale_factors[scale_index];
+														}
+														else
+														{
+															*element_value=((1.0 - xi)*array[time_index_one]
+																+xi*array[time_index_two]);
+														}												
+													}
+													else
+													{
+														/* if there is not a scale factor use 1 as the scale
+															factor */
+														if ((0<=(scale_index= *scale_factor_index))&&
+															(scale_index<number_of_scale_factors))
+														{
+															*element_value=((FE_value *)global_values)[value_index]*
+																scale_factors[scale_index];
+														}
+														else
+														{
+															*element_value=((FE_value *)global_values)[value_index];
+														}
+													}
+												} break;
+												case SHORT_VALUE:
+												{
+													if (time_version)
+													{
+														short_array = *(((short **)global_values+value_index));
+														/* if there is not a scale factor use 1 as the scale
+															factor */
+														if ((0<=(scale_index= *scale_factor_index))&&
+															(scale_index<number_of_scale_factors))
+														{
+															*element_value=((1.0 - xi)*(FE_value)short_array[time_index_one]
+																+xi*(FE_value)short_array[time_index_two])*
+																scale_factors[scale_index];
+														}
+														else
+														{
+															*element_value=((1.0 - xi)*(FE_value)short_array[time_index_one]
+																+xi*(FE_value)short_array[time_index_two]);
+														}												
+													}
+													else
+													{
+														/* if there is not a scale factor use 1 as the scale
+															factor */
+														if ((0<=(scale_index= *scale_factor_index))&&
+															(scale_index<number_of_scale_factors))
+														{
+															*element_value=(FE_value)(((short *)global_values)[value_index])*
+																scale_factors[scale_index];
+														}
+														else
+														{
+															*element_value=(FE_value)(((short *)global_values)[value_index]);
+														}
+													}
+												} break;
+												default:
+												{
+													display_message(ERROR_MESSAGE,
+														"global_to_element_map_values.  "
+														"Unsupported value type %s in finite_element field",
+														Value_type_string(field->value_type));
+													return_code=0;
 												}
-												else
-												{
-													*element_value=((1.0 - xi)*array[time_index_one]
-														+xi*array[time_index_two]);
-												}												
 											}
-											else
-											{
-												/* if there is not a scale factor use 1 as the scale
-													factor */
-												if ((0<=(scale_index= *scale_factor_index))&&
-													(scale_index<number_of_scale_factors))
-												{
-													*element_value=global_values[value_index]*
-														scale_factors[scale_index];
-												}
-												else
-												{
-													*element_value=global_values[value_index];
-												}
-											}
+										
 										}
 										else
 										{
@@ -7535,7 +7588,7 @@ obtained from the node_field_component for the field at the node.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-				"global_to_element_map_values.  Could not allocate memory for values");
+								"global_to_element_map_values.  Could not allocate memory for values");
 							return_code=0;
 						}
 					}
@@ -7548,14 +7601,14 @@ obtained from the node_field_component for the field at the node.
 				}
 			} break;
 			case GENERAL_NODE_TO_ELEMENT_MAP:
-			/* global values are associated with nodes */
+				/* global values are associated with nodes */
 			{
 				/* check information */
 				if ((element->information)&&(nodes=element->information->nodes)&&
 					((number_of_element_nodes=element->information->number_of_nodes)>0)&&
 					(scale_factors=element->information->scale_factors)&&
 					((number_of_scale_factors=element->information->
-					number_of_scale_factors)>0))
+						number_of_scale_factors)>0))
 				{
 					/* calculate the number of element values by summing the numbers of
 						values retrieved from each node */
@@ -7568,7 +7621,7 @@ obtained from the node_field_component for the field at the node.
 					{
 						if ((general_node_map= *general_node_map_address)&&
 							((number_of_map_values=
-							general_node_map->number_of_nodal_values)>0)&&
+								general_node_map->number_of_nodal_values)>0)&&
 							(0<=general_node_map->node_index)&&
 							(general_node_map->node_index<number_of_element_nodes)&&
 							(node=nodes[general_node_map->node_index])&&
@@ -7598,8 +7651,8 @@ obtained from the node_field_component for the field at the node.
 								component->map.general_node_based.node_to_element_maps;
 							j=component->map.general_node_based.number_of_nodes;
 							/* Need node_field_component to get absolute offset into nodal
-								 values array. Also store node_field_info so we don't have to
-								 get node_field_component each time if it is not changing */
+								values array. Also store node_field_info so we don't have to
+								get node_field_component each time if it is not changing */
 							node_field_info=(struct FE_node_field_info *)NULL;
 							node_field_component=(struct FE_node_field_component *)NULL;
 							while (return_code&&(j>0))
@@ -7616,7 +7669,7 @@ obtained from the node_field_component for the field at the node.
 								if (node_field_info != node->fields)
 								{
 									if (node->fields&&(node_field=FIND_BY_IDENTIFIER_IN_LIST(
-										FE_node_field,field)(field,node->fields->node_field_list))&&
+																 FE_node_field,field)(field,node->fields->node_field_list))&&
 										node_field->components)
 									{
 										node_field_component=
@@ -7627,8 +7680,8 @@ obtained from the node_field_component for the field at the node.
 								if (node_field_component)
 								{
 									/* add absolute value offset from node_field_component and
-										 cast address into FE_value type */
-									global_values=(FE_value *)(node->values_storage+
+										cast address into FE_value type */
+									global_values=(node->values_storage+
 										node_field_component->value);
 									k=general_node_map->number_of_nodal_values;
 									while (return_code&&(k>0))
@@ -7648,16 +7701,16 @@ obtained from the node_field_component for the field at the node.
 													(value_index<number_of_global_values))
 												{
 													/* if there is not a coefficient use 1 as the
-														 coefficient */
+														coefficient */
 													if ((0<=(scale_index= *coefficient_index))&&
 														(scale_index<number_of_scale_factors))
 													{
 														/* ???RC Change to relative. */
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
-														sum += (double)(global_values[value_index])*
+														sum += (double)(((FE_value *)global_values)[value_index])*
 															(double)(scale_factors[scale_index]);
 #else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-														sum += global_values[value_index]*
+														sum += ((FE_value *)global_values)[value_index]*
 															scale_factors[scale_index];
 #endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 													}
@@ -7665,9 +7718,9 @@ obtained from the node_field_component for the field at the node.
 													{
 														/* ???RC Change to relative. */
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
-														sum += (double)global_values[value_index];
+														sum += (double)((FE_value *)global_values)[value_index];
 #else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-														sum += global_values[value_index];
+														sum += ((FE_value *)global_values)[value_index];
 #endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 													}
 												}
@@ -7679,7 +7732,7 @@ obtained from the node_field_component for the field at the node.
 										else
 										{
 											display_message(ERROR_MESSAGE,
-								   "global_to_element_map_values.  Missing linear combination");
+												"global_to_element_map_values.  Missing linear combination");
 											DEALLOCATE(element_values);
 											return_code=0;
 										}
@@ -7691,7 +7744,7 @@ obtained from the node_field_component for the field at the node.
 								else
 								{
 									display_message(ERROR_MESSAGE,
-								 "global_to_element_map_values.  Invalid node field component");
+										"global_to_element_map_values.  Invalid node field component");
 									return_code=0;
 								}
 								general_node_map_address++;
@@ -7701,7 +7754,7 @@ obtained from the node_field_component for the field at the node.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-				"global_to_element_map_values.  Could not allocate memory for values");
+								"global_to_element_map_values.  Could not allocate memory for values");
 							return_code=0;
 						}
 					}
@@ -7714,20 +7767,20 @@ obtained from the node_field_component for the field at the node.
 				}
 			} break;
 			case FIELD_TO_ELEMENT_MAP:
-			/* global values are associated with the field */
+				/* global values are associated with the field */
 			{
 				/* check information */
 				if ((element->information)&&
 					(scale_factors=element->information->scale_factors)&&
 					((number_of_scale_factors=element->information->
-					number_of_scale_factors)>0)&&					 						
+						number_of_scale_factors)>0)&&					 						
 					(field->value_type==FE_VALUE_VALUE)&&
 					((number_of_global_values=field->number_of_values)>0))
 				{
 					/* allocate storage for storing the element values */
 					if ((linear_combination_address=component->map.field_based.
-						element_values)&&((number_of_element_values=
-						component->map.field_based.number_of_element_values)>0)&&
+							 element_values)&&((number_of_element_values=
+														 component->map.field_based.number_of_element_values)>0)&&
 						(ALLOCATE(element_values,FE_value,number_of_element_values)))
 					{
 						element_value=element_values;
@@ -7789,7 +7842,7 @@ obtained from the node_field_component for the field at the node.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-				"global_to_element_map_values.  Could not allocate memory for values");
+							"global_to_element_map_values.  Could not allocate memory for values");
 						return_code=0;
 					}
 				}
@@ -13478,6 +13531,30 @@ Defines a field at a node (does not assign values)
 															return_code = 0;
 														}
 													} break;
+													case SHORT_VALUE:
+													{
+														short *array;
+
+														/* Allocate the array */
+														if (ALLOCATE(array,short,number_of_times))
+														{
+															for (j = 0 ; j < number_of_times ; j++)
+															{
+																array[j] = 0;
+															}
+															/* Store the pointer to the array
+																in the values storage */
+															*((short **)new_value) = array;
+															new_value+=size;
+														}
+														else
+														{
+															display_message(ERROR_MESSAGE,
+																"define_FE_field_at_node.  "
+																"Unable to allocate short time array");
+															return_code = 0;
+														}
+													} break;
 													default:
 													case  UNKNOWN_VALUE:
 													{
@@ -14134,7 +14211,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 
 				component.field=field;
 				component.number=component_number;
-				if (get_FE_nodal_int_value(node,&component,version,type,&value))
+				if (get_FE_nodal_int_value(node,&component,version,type,time,&value))
 				{
 					sprintf(temp_string,"%d",value);
 					return_code=append_string(string,temp_string,&return_code);
@@ -14167,492 +14244,194 @@ It is up to the calling function to DEALLOCATE the returned string.
 	return (return_code);
 } /* get_FE_nodal_value_as_string */
 
-int get_FE_nodal_double_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,double *value)
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
+#define DEFINE_GET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
+int get_FE_nodal_ ## value_type ## _value(struct FE_node *node, \
+	struct FE_field_component *component,int version, \
+	enum FE_nodal_value_type type, FE_value time, value_type *value) \
+/******************************************************************************* \
+LAST MODIFIED : 29 January 2002 \
+ \
+DESCRIPTION : \
+Gets a particular value_type value (<version>, <type>) for the field <component> \
+at the <node> and <time>. \
+???DB.  May need speeding up \
+==============================================================================*/ \
+{ \
+   value_type *array; \
+	FE_value xi; \
+	int return_code, time_index_one, time_index_two; \
+	struct FE_field *field; \
+	struct FE_time_version *time_version; \
+	Value_storage *values_storage = NULL; \
+ \
+	ENTER(get_FE_nodal_ ## value_type ## _value); \
+	return_code=0; \
+	if (node&&component&&(field=component->field)&&(0<=component->number)&& \
+		(component->number < field->number_of_components)&&(0<=version)&&value) \
+	{ \
+		switch (field->fe_field_type) \
+		{ \
+			case CONSTANT_FE_FIELD: \
+			{ \
+				*value = *((value_type *)(field->values_storage)+component->number); \
+				return_code=1; \
+			} break; \
+			case GENERAL_FE_FIELD: \
+			{ \
+				if (find_FE_nodal_values_storage_dest(node,component,version,type, \
+					value_enum ,&values_storage,&time_version)) \
+				{ \
+					if (time_version) \
+					{ \
+						if (FE_time_version_get_interpolation_for_time(time_version, \
+							time, &time_index_one, &time_index_two, &xi)) \
+						{ \
+							array = *((value_type **)values_storage); \
+							*value = array[time_index_one] * (1.0 - xi) + \
+								array[time_index_two] * xi; \
+						} \
+						else \
+						{ \
+							display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_type "_value.  " \
+								"Cannot evaluate node at given time."); \
+						} \
+					} \
+					else \
+					{ \
+						*value = *((value_type *)values_storage); \
+					} \
+					return_code=1; \
+				} \
+				else \
+				{	 \
+					display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_type "_value.  " \
+						"find_FE_nodal_values_storage_dest failed"); \
+				} \
+			} break; \
+			case INDEXED_FE_FIELD: \
+			{ \
+				int index; \
+				struct FE_field_component index_component; \
+ \
+				index_component.field=field->indexer_field; \
+				index_component.number=0; \
+				if (get_FE_nodal_int_value(node,&index_component,/*version*/0, \
+					FE_NODAL_VALUE,time,&index)) \
+				{ \
+					/* index numbers start at 1 */ \
+					if ((1<=index)&&(index<=field->number_of_indexed_values)) \
+					{ \
+						*value = *((value_type *)(field->values_storage)+ \
+							field->number_of_indexed_values*component->number+index-1); \
+						return_code=1;	 \
+					} \
+					else \
+					{	 \
+						display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_type "_value.  " \
+							"Index field %s gave out-of-range index %d in field %s", \
+							field->indexer_field->name,index,field->name); \
+					} \
+				} \
+				else \
+				{	 \
+					display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_type "_value.  " \
+						"Field %s, indexed by %s not defined at node %", \
+						field->name,field->indexer_field->name,node->cm_node_identifier); \
+					return_code=0;	 \
+				} \
+			} break; \
+			default: \
+			{ \
+				display_message(ERROR_MESSAGE, \
+					"get_FE_nodal_" #value_type "_value.  Unknown FE_field_type"); \
+			} break; \
+		} \
+	}		 \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"get_FE_nodal_" #value_type "_value.  Invalid argument(s)"); \
+	} \
+	LEAVE; \
+ \
+	return (return_code); \
+} /* get_FE_nodal_ ## value_type ## _value */
 
-DESCRIPTION :
-Gets a particular double value (<version>, <type>) for the field <component> at
-the <node>.
-???DB.  May need speeding up
-==============================================================================*/
-{
-	int return_code;
-	struct FE_time_version *time_version;
-	Value_storage *values_storage = NULL;
+#define DEFINE_SET_FE_NODAL_VALUE_FUNCTION( value_type, value_enum ) \
+int set_FE_nodal_ ## value_type ## _value(struct FE_node *node, \
+	struct FE_field_component *component,int version, \
+	enum FE_nodal_value_type type, FE_value time, value_type value) \
+/******************************************************************************* \
+LAST MODIFIED : 30 January 2002 \
+ \
+DESCRIPTION : \
+Sets a particular value (<version>, <type>) for the field <component> \
+at the <node>. \
+==============================================================================*/ \
+{ \
+   value_type *array; \
+	int return_code, time_index;  \
+	struct FE_time_version *time_version; \
+	Value_storage *values_storage = NULL; \
+ \
+	ENTER(set_FE_nodal_ ## value_type ## _value); \
+	return_code=0; \
+	/* check arguments */ \
+	if (node&&component&&(component->field)&&(0<=component->number)&& \
+		(component->number<component->field->number_of_components)&&(0<=version)) \
+	{ \
+		/* get the values storage */ \
+		if (find_FE_nodal_values_storage_dest(node,component,version,type, \
+			value_enum,&values_storage,&time_version)) \
+		{ \
+			if (time_version) \
+			{ \
+				if (FE_time_version_get_index_for_time(time_version, time, &time_index)) \
+				{ \
+					array = *((value_type **)values_storage); \
+					array[time_index] = value; \
+					return_code = 1; \
+				} \
+			   else \
+				{ \
+					display_message(ERROR_MESSAGE,"set_FE_nodal_" #value_type "_value.  " \
+						"Time value for time %g not defined at this node.", time); \
+					return_code=0; \
+				} \
+			} \
+			else \
+			{ \
+				/* copy in the value */ \
+				*((value_type *)values_storage) = value; \
+				return_code=1; \
+			} \
+		} \
+		else \
+		{	 \
+			display_message(ERROR_MESSAGE,"set_FE_nodal_" #value_type "_value.  " \
+				"find_FE_nodal_values_storage_dest failed"); \
+			return_code=0; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"set_FE_nodal_" #value_type "_value.  Invalid argument(s)"); \
+	} \
+	LEAVE; \
+ \
+	return (return_code); \
+} /* set_FE_nodal_ ## value_type ## _value */
 
-	ENTER(get_FE_nodal_double_value);
-	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version)&&
-		value)
-	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			DOUBLE_VALUE,&values_storage,&time_version))
-		{
-			*value = *((double *)values_storage);
-			return_code =1;
-		}
-		else
-		{	
-			display_message(ERROR_MESSAGE,
-				"get_FE_nodal_double_value.  find_FE_nodal_values_storage_dest failed");
-			return_code=0;	
-		}	
-	}		
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_nodal_double_value.  Invalid argument(s)");
-	}
-	LEAVE;
+#define DEFINE_FE_NODAL_VALUE_FUNCTIONS( value_type , value_enum ) \
+DEFINE_GET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum) \
+DEFINE_SET_FE_NODAL_VALUE_FUNCTION(value_type,value_enum)
 
-	return (return_code);
-} /* get_FE_nodal_double_value */
-
-int set_FE_nodal_double_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,double value)
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets a particular double value (<version>, <type>) for the field <component> at
-the <node>.
-==============================================================================*/
-{
-	int return_code; 
-	struct FE_time_version *time_version;
-	Value_storage *values_storage = NULL;
-
-	ENTER(set_FE_nodal_double_value);
-	return_code=0;
-	/* check arguments */
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
-	{
-		/* get the values storage */
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			DOUBLE_VALUE,&values_storage,&time_version))
-		{
-			/* copy in the double */		
-			*((double *)values_storage) = value;
-			return_code=1;
-		}
-		else
-		{	
-			display_message(ERROR_MESSAGE,
-				"set_FE_nodal_double_value.  find_FE_nodal_values_storage_dest failed");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_nodal_double_value.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_nodal_double_value */
-
-int get_FE_nodal_FE_value_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type, FE_value time, FE_value *value)
-/*******************************************************************************
-LAST MODIFIED : 20 November 2001
-
-DESCRIPTION :
-Gets a particular FE_value value (<version>, <type>) for the field <component>
-at the <node> and <time>.
-???DB.  May need speeding up
-==============================================================================*/
-{
-	FE_value *array, xi;
-	int return_code, time_index_one, time_index_two;
-	struct FE_field *field;
-	struct FE_time_version *time_version;
-	Value_storage *values_storage = NULL;
-
-	ENTER(get_FE_nodal_FE_value_value);
-	return_code=0;
-	if (node&&component&&(field=component->field)&&(0<=component->number)&&
-		(component->number < field->number_of_components)&&(0<=version)&&value)
-	{
-		switch (field->fe_field_type)
-		{
-			case CONSTANT_FE_FIELD:
-			{
-				*value = *((FE_value *)(field->values_storage)+component->number);
-				return_code=1;
-			} break;
-			case GENERAL_FE_FIELD:
-			{
-				if (find_FE_nodal_values_storage_dest(node,component,version,type,
-					FE_VALUE_VALUE,&values_storage,&time_version))
-				{
-					if (time_version)
-					{
-						if (FE_time_version_get_interpolation_for_time(time_version,
-							time, &time_index_one, &time_index_two, &xi))
-						{
-							array = *((FE_value **)values_storage);
-							*value = array[time_index_one] * (1.0 - xi) +
-								array[time_index_two] * xi;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"get_FE_nodal_FE_value_value.  "
-								"Cannot evaluate node at given time.");
-						}
-					}
-					else
-					{
-						*value = *((FE_value *)values_storage);
-					}
-					return_code=1;
-				}
-				else
-				{	
-					display_message(ERROR_MESSAGE,"get_FE_nodal_FE_value_value.  "
-						"find_FE_nodal_values_storage_dest failed");
-				}
-			} break;
-			case INDEXED_FE_FIELD:
-			{
-				int index;
-				struct FE_field_component index_component;
-
-				index_component.field=field->indexer_field;
-				index_component.number=0;
-				if (get_FE_nodal_int_value(node,&index_component,/*version*/0,
-					FE_NODAL_VALUE,&index))
-				{
-					/* index numbers start at 1 */
-					if ((1<=index)&&(index<=field->number_of_indexed_values))
-					{
-						*value = *((FE_value *)(field->values_storage)+
-							field->number_of_indexed_values*component->number+index-1);
-						return_code=1;	
-					}
-					else
-					{	
-						display_message(ERROR_MESSAGE,"get_FE_nodal_FE_value_value.  "
-							"Index field %s gave out-of-range index %d in field %s",
-							field->indexer_field->name,index,field->name);
-					}
-				}
-				else
-				{	
-					display_message(ERROR_MESSAGE,"get_FE_nodal_FE_value_value.  "
-						"Field %s, indexed by %s not defined at node %",
-						field->name,field->indexer_field->name,node->cm_node_identifier);
-					return_code=0;	
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_nodal_FE_value_value.  Unknown FE_field_type");
-			} break;
-		}
-	}		
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_nodal_FE_value_value.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_nodal_FE_value_value */
-
-int set_FE_nodal_FE_value_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,FE_value value)
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets a particular FE_value value (<version>, <type>) for the field <component>
-at the <node>.
-==============================================================================*/
-{
-	int return_code; 
-	struct FE_time_version *time_version;
-	Value_storage *values_storage = NULL;
-
-	ENTER(set_FE_nodal_FE_value_value);
-	return_code=0;
-	/* check arguments */
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
-	{
-		/* get the values storage */
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			FE_VALUE_VALUE,&values_storage,&time_version))
-		{
-			if (time_version)
-			{
-				display_message(ERROR_MESSAGE,"set_FE_nodal_FE_value_value.  "
-					"time set functions not implemented yet.");
-				return_code=0;
-			}
-			else
-			{
-				/* copy in the FE_value */		
-				*((FE_value *)values_storage) = value;
-				return_code=1;
-			}
-		}
-		else
-		{	
-			display_message(ERROR_MESSAGE,"set_FE_nodal_FE_value_value.  "
-				"find_FE_nodal_values_storage_dest failed");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_nodal_FE_value_value.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_nodal_FE_value_value */
-
-int get_FE_nodal_float_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,float *value)
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Gets a particular float value (<version>, <type>) for the field <component> at
-the <node>.
-???DB.  May need speeding up
-==============================================================================*/
-{
-	int return_code;
-	struct FE_time_version *time_version;
-	Value_storage *values_storage = NULL;
-
-	ENTER(get_FE_nodal_float_value);
-	return_code=0;
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version)&&
-		value)
-	{
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			FLT_VALUE,&values_storage,&time_version))
-		{
-			*value = *((float *)values_storage);
-			return_code =1;
-		}
-		else
-		{	
-			display_message(ERROR_MESSAGE,
-				"get_FE_nodal_float_value.  find_FE_nodal_values_storage_dest failed");
-			return_code=0;	
-		}	
-	}		
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_nodal_float_value.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_nodal_float_value */
-
-int set_FE_nodal_float_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,float value)
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets a particular float value (<version>, <type>) for the field <component> at
-the <node>.
-==============================================================================*/
-{
-	int return_code; 
-	struct FE_time_version *time_version;
-	Value_storage *values_storage = NULL;
-
-	ENTER(set_FE_nodal_float_value);
-	return_code=0;
-	/* check arguments */
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
-	{
-		/* get the values storage */
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			FLT_VALUE,&values_storage,&time_version))
-		{
-			/* copy in the float */		
-			*((float *)values_storage) = value;
-			return_code=1;
-		}
-		else
-		{	
-			display_message(ERROR_MESSAGE,
-				"set_FE_nodal_float_value.  find_FE_nodal_values_storage_dest failed");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_nodal_float_value.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_nodal_float_value */
-
-int get_FE_nodal_int_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,int *value)
-/*******************************************************************************
-LAST MODIFIED : 3 September 1999
-
-DESCRIPTION :
-Gets a particular int value (<version>, <type>) for the field <component> at
-the <node>.
-???DB.  May need speeding up
-==============================================================================*/
-{
-	int return_code;
-	struct FE_field *field;
-	struct FE_time_version *time_version;
-	Value_storage *values_storage = NULL;
-
-	ENTER(get_FE_nodal_int_value);
-	return_code=0;
-	if (node&&component&&(field=component->field)&&(0<=component->number)&&
-		(component->number<field->number_of_components)&&(0<=version)&&value)
-	{
-		switch (field->fe_field_type)
-		{
-			case CONSTANT_FE_FIELD:
-			{
-				*value = *((int *)(field->values_storage)+component->number);
-				return_code=1;
-			} break;
-			case GENERAL_FE_FIELD:
-			{
-				if (find_FE_nodal_values_storage_dest(node,component,version,type,
-					INT_VALUE,&values_storage,&time_version))
-				{
-					*value = *((int *)values_storage);
-					return_code =1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"get_FE_nodal_int_value.  "
-						"find_FE_nodal_values_storage_dest failed");
-					return_code=0;	
-				}
-			} break;
-			case INDEXED_FE_FIELD:
-			{
-				int index;
-				struct FE_field_component index_component;
-
-				index_component.field=field->indexer_field;
-				index_component.number=0;
-				if (get_FE_nodal_int_value(node,&index_component,/*version*/0,
-					FE_NODAL_VALUE,&index))
-				{
-					/* index numbers start at 1 */
-					if ((1<=index)&&(index<=field->number_of_indexed_values))
-					{
-						*value = *((int *)(field->values_storage)+
-							field->number_of_indexed_values*component->number+index-1);
-						return_code=1;	
-					}
-					else
-					{	
-						display_message(ERROR_MESSAGE,"get_FE_nodal_int_value.  "
-							"Index field %s gave out-of-range index %d in field %s",
-							field->indexer_field->name,index,field->name);
-					}
-				}
-				else
-				{	
-					display_message(ERROR_MESSAGE,"get_FE_nodal_int_value.  "
-						"Field %s, indexed by %s not defined at node %",
-						field->name,field->indexer_field->name,node->cm_node_identifier);
-					return_code=0;	
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"get_FE_nodal_int_value.  Unknown FE_field_type");
-			} break;
-		}
-	}		
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_nodal_int_value.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_nodal_int_value */
-
-int set_FE_nodal_int_value(struct FE_node *node,
-	struct FE_field_component *component,int version,
-	enum FE_nodal_value_type type,int value)
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets a particular int value (<version>, <type>) for the field <component> at
-the <node>.
-==============================================================================*/
-{
-	int return_code; 
-	struct FE_time_version *time_version;
-	Value_storage *values_storage = NULL;
-
-	ENTER(set_FE_nodal_int_value);
-	return_code=0;
-	/* check arguments */
-	if (node&&component&&(component->field)&&(0<=component->number)&&
-		(component->number<component->field->number_of_components)&&(0<=version))
-	{
-		/* get the values storage */
-		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			INT_VALUE,&values_storage,&time_version))
-		{
-			/* copy in the int */		
-			*((int *)values_storage) = value;
-			return_code=1;
-		}
-		else
-		{	
-			display_message(ERROR_MESSAGE,
-				"set_FE_nodal_int_value.  find_FE_nodal_values_storage_dest failed");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_nodal_int_value.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_nodal_int_value */
+DEFINE_FE_NODAL_VALUE_FUNCTIONS( FE_value , FE_VALUE_VALUE )
+DEFINE_FE_NODAL_VALUE_FUNCTIONS( double , DOUBLE_VALUE )
+DEFINE_FE_NODAL_VALUE_FUNCTIONS( float , FLT_VALUE )
+DEFINE_FE_NODAL_VALUE_FUNCTIONS( int , INT_VALUE )
+DEFINE_FE_NODAL_VALUE_FUNCTIONS( short , SHORT_VALUE )
 
 int get_FE_nodal_element_xi_value(struct FE_node *node,
 	struct FE_field *field, int component_number, int version,
@@ -14712,7 +14491,7 @@ at the <node>.
 				index_component.field=field->indexer_field;
 				index_component.number=0;
 				if (get_FE_nodal_int_value(node,&index_component,/*version*/0,
-					FE_NODAL_VALUE,&index))
+					FE_NODAL_VALUE,/*time*/0,&index))
 				{
 					/* index numbers start at 1 */
 					if ((1<=index)&&(index<=field->number_of_indexed_values))
@@ -17093,7 +16872,7 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 				index_component.field=field->indexer_field;
 				index_component.number=0;
 				if (get_FE_nodal_int_value(node,&index_component,/*version*/0,
-					FE_NODAL_VALUE,&index))
+					FE_NODAL_VALUE,/*time*/0,&index))
 				{
 					/* index numbers start at 1 */
 					if ((1<=index)&&(index<=field->number_of_indexed_values))
@@ -24145,7 +23924,7 @@ the derivatives will start at the first position of <jacobian>.
 	return_code=0;
 	if (element_field_values&&xi_coordinates&&values&&
 		(!jacobian||(jacobian&&(element_field_values->derivatives_calculated)))&&
-		(field=element_field_values->field)&&(FE_VALUE_VALUE==field->value_type)&&
+		(field=element_field_values->field)&&
 		((GENERAL_FE_FIELD != field->fe_field_type)||
 			(basis_function_values=element_field_values->basis_function_values)))
 	{
@@ -28761,7 +28540,7 @@ Should only be called for unmanaged elements.
 				else
 				{
 					/* only FE_VALUE_VALUE supported by these other types */
-					if (FE_VALUE_VALUE != field->value_type)
+					if ((FE_VALUE_VALUE != field->value_type) && (SHORT_VALUE != field->value_type))
 					{
 						display_message(ERROR_MESSAGE,"define_FE_field_at_element.  "
 							"%s type only supported for grid, constant and indexed fields",
@@ -38355,7 +38134,8 @@ for the coordinate_field used.
 				for (version=0;
 						 version<coordinate_node_field_component->number_of_versions;version++)
 				{
-					set_FE_nodal_FE_value_value(node,&field_component,version,FE_NODAL_VALUE,node_1);
+					set_FE_nodal_FE_value_value(node,&field_component,version,FE_NODAL_VALUE,
+						/*time*/0, node_1);
 				}
 				if (1<number_of_coordinate_components)
 				{
@@ -38365,7 +38145,7 @@ for the coordinate_field used.
 							 version<coordinate_node_field_component->number_of_versions;version++)
 					{
 						set_FE_nodal_FE_value_value(node,&field_component,version,
-							FE_NODAL_VALUE,node_2);
+							FE_NODAL_VALUE, /*time*/0, node_2);
 					}
 					if (2<number_of_coordinate_components)
 					{
@@ -38375,7 +38155,7 @@ for the coordinate_field used.
 									 coordinate_node_field_component->number_of_versions;version++)
 						{
 							set_FE_nodal_FE_value_value(node,&field_component,version,
-								FE_NODAL_VALUE,node_3);
+								FE_NODAL_VALUE, /*time*/0, node_3);
 						}
 					}
 				}

@@ -220,7 +220,7 @@ Global functions
 int Spectrum_set_simple_type(struct Spectrum *spectrum,
 	enum Spectrum_simple_type type)
 /*******************************************************************************
-LAST MODIFIED : 15 January 2001
+LAST MODIFIED : 7 February 2002
 
 DESCRIPTION :
 A convienience routine that allows a spectrum to be automatically set into
@@ -229,12 +229,15 @@ some predetermined simple types.
 {
 	struct LIST(Spectrum_settings) *spectrum_settings_list;
 	struct Spectrum_settings *settings, *second_settings;
+	float maximum, minimum;
 	int number_in_list, return_code;
 
 	ENTER(Spectrum_set_simple_type);
 	if (spectrum)
 	{
 		return_code = 1;
+		minimum = spectrum->minimum;
+		maximum = spectrum->maximum;
 		switch(type)
 		{				
 			case RED_TO_BLUE_SPECTRUM:
@@ -366,7 +369,9 @@ some predetermined simple types.
 				return_code=0;
 			} break;
 		}
+		/* Rerange the settings so that it matches the minimum and maximum of the spectrum */
 		Spectrum_calculate_range(spectrum);
+		Spectrum_set_minimum_and_maximum(spectrum, minimum, maximum);
 	}
 	else
 	{
@@ -1501,7 +1506,7 @@ functions are in one place and the iterator can have local scope.
 ==============================================================================*/
 {
 	float min, max;
-	int return_code;
+	int fixed_minimum, fixed_maximum, return_code;
 	struct Spectrum_calculate_range_iterator_data *data;
 
 	ENTER(spectrum_calculate_range_iterator);
@@ -1509,24 +1514,41 @@ functions are in one place and the iterator can have local scope.
 	{
 		min = Spectrum_settings_get_range_minimum(settings);
 		max = Spectrum_settings_get_range_maximum(settings);
+		fixed_minimum = Spectrum_settings_get_fix_minimum_flag(settings);
+		fixed_maximum = Spectrum_settings_get_fix_maximum_flag(settings);
 
 		if ( data->first )
 		{
-			data->min = min;
-			data->max = max;
+			if (!fixed_minimum && !fixed_maximum)
+			{
+				data->min = min;
+				data->max = max;
+				data->first = 0;
+			}
+			else if (!fixed_minimum)
+			{
+				data->min = min;
+				data->max = min;
+				data->first = 0;
+			}
+			else if (!fixed_maximum)
+			{
+				data->min = max;
+				data->max = max;
+				data->first = 0;
+			}
 		}
 		else
 		{
-			if ( min < data->min )
+			if (!fixed_minimum && (min < data->min))
 			{
 				data->min = min;
 			}
-			if ( max > data->max )
+			if (!fixed_maximum && (max > data->max))
 			{
 				data->max = max;
 			}
 		}
-		data->first = 0;
 		return_code = 1;
 	}
 	else
@@ -1561,8 +1583,11 @@ the minimum and maximum contained inside it.
 		FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 			Spectrum_calculate_range_iterator,
 			(void *)&data, spectrum->list_of_settings);
-		spectrum->minimum = data.min;
-		spectrum->maximum = data.max;
+		if (!data.first)
+		{
+			spectrum->minimum = data.min;
+			spectrum->maximum = data.max;
+		}
 	}
 	else
 	{
@@ -1577,7 +1602,7 @@ the minimum and maximum contained inside it.
 
 struct Spectrum_rerange_data
 {
-	float old_min, old_range, min, range;
+	float old_min, old_range, old_max, min, range, max;
 };
 static int Spectrum_rerange_iterator(
 	struct Spectrum_settings *settings, void *data_void)
@@ -1605,13 +1630,13 @@ functions are in one place and the iterator can have local scope.
 		{
 			min = data->min + data->range *
 				((min - data->old_min) / data->old_range);
-			max = data->min + data->range *
-				((max - data->old_min) / data->old_range);
+			max = data->max - data->range *
+				((data->old_max - max) / data->old_range);
 		}
 		else
 		{
 			min = data->min;
-			max = data->min + data->range;
+			max = data->max;
 		}
 
 		Spectrum_settings_set_range_minimum(settings, min);
@@ -1680,20 +1705,25 @@ it contains.  The ratios of the different settings are preserved.
 	struct Spectrum_rerange_data data;
 
 	ENTER(spectrum_set_minimum_and_maximum);
-	if (spectrum || minimum > maximum)
+	if (spectrum && (minimum <= maximum))
 	{
 		if ( minimum != spectrum->minimum 
 			|| maximum != spectrum->maximum )
 		{
 			data.old_min = spectrum->minimum;
+			/* Keep the range to speed calculation and the
+				maximum so we get exact values */
 			data.old_range = spectrum->maximum - spectrum->minimum;
+			data.old_max = spectrum->maximum;
 			data.min = minimum;
 			data.range = maximum - minimum;
+			data.max = maximum;
 			FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 				Spectrum_rerange_iterator,
 				(void *)&data, spectrum->list_of_settings);
-			spectrum->minimum = minimum;
-			spectrum->maximum = maximum;
+			/* Cannot assume that the minimum and maximum are now what was requested
+				as the fix minimum and fix maximum flags may have overrided our rerange. */
+			Spectrum_calculate_range(spectrum);
 		}
 	}
 	else

@@ -15,13 +15,22 @@ Global Functions
 ----------------
 */
 
-Widget create_time_editor_widget(Widget *time_editor_widget,
-	Widget parent, struct Time_keeper *time_keeper, 
+Widget CREATE(Time_editor)(Widget *time_editor_widget,
+	Widget parent, struct Time_keeper *time_keeper,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 8 December 1998
+LAST MODIFIED : 29 January 2002
 
 DESCRIPTION :
+Creates a time_editor widget.
+==============================================================================*/
+
+int DESTROY(Time_editor)(Widget *time_editor_widget);
+/*******************************************************************************
+LAST MODIFIED : 29 January 2002
+
+DESCRIPTION :
+Callback for the time_editor dialog - tidies up all details - mem etc
 ==============================================================================*/
 
 int time_editor_get_callback(Widget time_editor_widget,

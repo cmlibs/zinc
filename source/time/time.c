@@ -181,12 +181,46 @@ DESCRIPTION :
 int Time_object_set_current_time_privileged(struct Time_object *time,
 	double new_time)
 /*******************************************************************************
-LAST MODIFIED : 29 September 1998
+LAST MODIFIED : 17 January 2002
 
 DESCRIPTION :
-This routine allows the timekeeper to explicitly set the time.  Users of a time
-object that is controlled by a timekeeper should set the time through the
-timekeeper.
+This routine allows the timekeeper to explicitly set the time.
+Separated Time_object_notify_clients_privileged so that all the clients
+can be updated with the new time before any of them call back to their clients.
+Users of a time object that is controlled by a timekeeper should set the time 
+through the timekeeper.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Time_object_set_current_time_privileged);
+
+	if (time)
+	{
+		time->current_time = new_time;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Time_object_set_current_time_privileged. Invalid time object");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Time_object_set_current_time_privileged */
+
+int Time_object_notify_clients_privileged(struct Time_object *time)
+/*******************************************************************************
+LAST MODIFIED : 17 January 2002
+
+DESCRIPTION :
+This routine allows the timekeeper to tell the time_object to notify its clients.
+Separated off from Time_object_set_current_time_privileged so that all the clients
+can be updated with the new time before any of them call back to their clients.
+Users of a time object that is controlled by a timekeeper should set the time 
+through the timekeeper.
 ==============================================================================*/
 {
 	int return_code;
@@ -196,11 +230,10 @@ timekeeper.
 
 	if (time)
 	{
-		time->current_time = new_time;
 		callback_data = time->callback_list;
 		while(callback_data)
 		{
-			(callback_data->callback)(time, new_time,
+			(callback_data->callback)(time, time->current_time,
 				callback_data->callback_user_data);
 			callback_data = callback_data->next;
 		}

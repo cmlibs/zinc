@@ -203,6 +203,12 @@ Contains all information necessary for an input callback from the scene.
 DECLARE_CALLBACK_TYPES(Scene_object_transformation, struct Scene_object *, \
 	gtMatrix *);
 
+struct Scene_get_data_range_for_spectrum_data
+{
+	struct Spectrum *spectrum;
+	struct Graphics_object_data_range_struct range;
+};
+
 /*
 Global functions
 ----------------
@@ -1449,6 +1455,15 @@ LAST MODIFIED : 8 December 1997
 
 DESCRIPTION :
 Returns the graphical element_group for <element_group> in <scene>.
+==============================================================================*/
+
+struct Scene_object *Scene_get_scene_object_with_element_group(
+	struct Scene *scene,struct GROUP(FE_element) *element_group);
+/*******************************************************************************
+LAST MODIFIED : 24 January 2002
+
+DESCRIPTION :
+Returns the scene_object for <element_group> in <scene>.
 ==============================================================================*/
 
 #if defined (OLD_CODE)

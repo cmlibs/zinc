@@ -106,6 +106,7 @@ DESCRIPTION :Destroys the <time_editor_dialog> - tidies up all details - mem etc
 		return_code=1;
 		destroy_Shell_list_item_from_shell(&time_editor_dialog->dialog,
 			time_editor_dialog->user_interface);
+		DESTROY(Time_editor)(&time_editor_dialog->editor_widget);
 		/* deaccess the time_editor_dialog */
 		XtDestroyWidget(time_editor_dialog->dialog);
 		time_editor_dialog->dialog=(Widget)NULL;	
@@ -234,7 +235,7 @@ Creates a dialog widget that allows the user to edit time.
 								XtManageChild(time_editor_dialog->widget);
 								/* set the mode toggle to the correct position */
 								init_widgets=1;
-								if (!create_time_editor_widget(
+								if (!CREATE(Time_editor)(
 									&(time_editor_dialog->editor_widget),
 									time_editor_dialog->editor_form,
 									(struct Time_keeper *)NULL,user_interface))

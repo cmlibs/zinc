@@ -140,6 +140,8 @@ The mapping window object.
 	/* Note: interactive_tool is NOT accessed by graphics_window; the chooser
 		 will update it if the current one is destroyed */
 	struct Interactive_tool *interactive_tool,*transform_tool;
+	/* used for getting updates from autoranging spectrums or the spectrum editor */
+	void *spectrum_manager_callback_id;
 #endif /* defined (UNEMAP_USE_3D) */
 	struct User_interface *user_interface;	
 }; /* struct Mapping_window */

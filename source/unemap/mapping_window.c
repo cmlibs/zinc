@@ -126,7 +126,7 @@ Finds the id of the mapping map button.
 
 static void mapping_window_update_time_limits(struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 4 February 2002
 
 DESCRIPTION :
 Sets the minimum and maximum of the time_keeper to relate to the current map
@@ -152,9 +152,9 @@ Sets the minimum and maximum of the time_keeper to relate to the current map
 						case BICUBIC_INTERPOLATION:
 						{	
 							Time_keeper_set_minimum(Time_object_get_time_keeper(
-								mapping->potential_time_object), map->start_time);
+								mapping->potential_time_object), map->start_time/1000.0);
 							Time_keeper_set_maximum(Time_object_get_time_keeper(
-								mapping->potential_time_object), map->end_time);
+								mapping->potential_time_object), map->end_time/1000.0);
 						}break;
 						case NO_INTERPOLATION:
 						case DIRECT_INTERPOLATION:
@@ -162,11 +162,11 @@ Sets the minimum and maximum of the time_keeper to relate to the current map
 						{
 							Time_keeper_set_minimum(Time_object_get_time_keeper(
 								mapping->potential_time_object),
-								(float)buffer->times[*(map->start_search_interval)]*1000.0/
+								(float)buffer->times[*(map->start_search_interval)]/
 								(buffer->frequency));
 							Time_keeper_set_maximum(Time_object_get_time_keeper(
 								mapping->potential_time_object),
-								(float)buffer->times[*(map->end_search_interval)]*1000.0/
+								(float)buffer->times[*(map->end_search_interval)]/
 								buffer->frequency);
 						}break;					
 					}/*switch(map->interpolation_type)*/
@@ -175,22 +175,22 @@ Sets the minimum and maximum of the time_keeper to relate to the current map
 				{
 					Time_keeper_set_minimum(Time_object_get_time_keeper(
 						mapping->potential_time_object),
-						map->minimum_value + (float)buffer->times[*(map->datum)]
-						* 1000.0 / buffer->frequency);
+						map->minimum_value / 1000.0 + (float)buffer->times[*(map->datum)]
+						/ buffer->frequency);
 					Time_keeper_set_maximum(Time_object_get_time_keeper(
 						mapping->potential_time_object),
-						map->maximum_value + (float)buffer->times[*(map->datum)]
-						* 1000.0 / buffer->frequency );
+						map->maximum_value / 1000.0 + (float)buffer->times[*(map->datum)]
+						/ buffer->frequency );
 				} break;
 				default:
 				{
 					Time_keeper_set_minimum(Time_object_get_time_keeper(
 						mapping->potential_time_object),
-						(float)buffer->times[*(map->start_search_interval)]*1000.0/
+						(float)buffer->times[*(map->start_search_interval)]/
 						(buffer->frequency));
 					Time_keeper_set_maximum(Time_object_get_time_keeper(
 						mapping->potential_time_object),
-						(float)buffer->times[*(map->end_search_interval)]*1000.0/
+						(float)buffer->times[*(map->end_search_interval)]/
 						buffer->frequency);
 				} break;
 			}
@@ -446,7 +446,7 @@ If the <mapping> has a time keeper, stop it and destroy it's editor widget.
 static void update_map_from_dialog(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 7 December 2001
+LAST MODIFIED : 4 February 2002
 
 DESCRIPTION :
 Updates the map settings based on the map dialog and redraws the map if
@@ -459,6 +459,7 @@ necessary.
 	enum Electrodes_label_type electrodes_label_type;
 	enum Fibres_option fibres_option;
 	enum Interpolation_type interpolation_type;
+	enum Spectrum_simple_type spectrum_simple_type;
 	float maximum_range,minimum_range,value;
 	int electrodes_marker_size,number_of_mesh_columns,number_of_mesh_rows,
 		recalculate;
@@ -516,99 +517,70 @@ necessary.
 				map->colour_option=SHOW_COLOUR;
 			}
 			spectrum=drawing_information->spectrum;
-#if defined (UNEMAP_USE_3D)				
-			if(spectrum_manager=get_map_drawing_information_spectrum_manager
-				(drawing_information))
+			if (option_widget==map_dialog->spectrum.type_option.blue_red)
 			{
-				if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+				spectrum_simple_type = BLUE_TO_RED_SPECTRUM;
+			}
+			else if (option_widget==map_dialog->spectrum.type_option.blue_white_red)
+			{
+				spectrum_simple_type = BLUE_WHITE_RED_SPECTRUM;
+			}
+			else if (option_widget==map_dialog->spectrum.type_option.log_blue_red)
+			{
+				spectrum_simple_type = LOG_BLUE_TO_RED_SPECTRUM;
+			}
+			else if (option_widget==map_dialog->spectrum.type_option.log_red_blue)
+			{
+				spectrum_simple_type = LOG_RED_TO_BLUE_SPECTRUM;
+			}
+			else
+			{
+				spectrum_simple_type = RED_TO_BLUE_SPECTRUM;
+			}
+			if (spectrum_simple_type != Spectrum_get_simple_type(spectrum))
+			{
+#if defined (UNEMAP_USE_3D)				
+				if(spectrum_manager=get_map_drawing_information_spectrum_manager
+					(drawing_information))
 				{
-					if (spectrum_to_be_modified_copy=CREATE(Spectrum)
-						("spectrum_modify_temp"))
+					if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
 					{
-						MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
-							(spectrum_to_be_modified_copy,spectrum);
+						if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+							("spectrum_modify_temp"))
+						{
+							MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+								(spectrum_to_be_modified_copy,spectrum);
 #else
-						spectrum_to_be_modified_copy=spectrum;
+							spectrum_to_be_modified_copy=spectrum;
 #endif /* defined (UNEMAP_USE_3D) */
-						if (option_widget==map_dialog->spectrum.type_option.blue_red)
-						{
-							if (BLUE_TO_RED_SPECTRUM != Spectrum_get_simple_type(
-								spectrum_to_be_modified_copy))
-							{
-								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
-									BLUE_TO_RED_SPECTRUM);
-								map_settings_changed = 1;	
-								recalculate=2;
-							}
-						}
-						else if (option_widget==map_dialog->spectrum.type_option.blue_white_red)
-						{
-							if (BLUE_WHITE_RED_SPECTRUM != Spectrum_get_simple_type(
-								spectrum_to_be_modified_copy))
-							{
-								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
-									BLUE_WHITE_RED_SPECTRUM);
-								map_settings_changed = 1;
-								recalculate=2;
-							}
-						}
-						else if (option_widget==map_dialog->spectrum.type_option.log_blue_red)
-						{
-							if (LOG_BLUE_TO_RED_SPECTRUM != Spectrum_get_simple_type(
-								spectrum_to_be_modified_copy))
-							{
-								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
-									LOG_BLUE_TO_RED_SPECTRUM);
-								map_settings_changed = 1;
-								recalculate=2;
-							}
-						}
-						else if (option_widget==map_dialog->spectrum.type_option.log_red_blue)
-						{
-							if (LOG_RED_TO_BLUE_SPECTRUM != Spectrum_get_simple_type(
-								spectrum_to_be_modified_copy))
-							{
-								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
-									LOG_RED_TO_BLUE_SPECTRUM);
-								map_settings_changed = 1;
-								recalculate=2;
-							}
+							Spectrum_set_simple_type(spectrum_to_be_modified_copy,
+								spectrum_simple_type);
+							map_settings_changed = 1;	
+							recalculate=2;
+#if defined (UNEMAP_USE_3D)	
+							MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+								spectrum_to_be_modified_copy,spectrum_manager);
+							DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
 						}
 						else
 						{
-							if (RED_TO_BLUE_SPECTRUM != Spectrum_get_simple_type(
-								spectrum_to_be_modified_copy))
-							{
-								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
-									RED_TO_BLUE_SPECTRUM);
-								map_settings_changed = 1;
-								recalculate=2;					
-							}
+							display_message(ERROR_MESSAGE,
+								" update_map_from_dialog. Could not create spectrum copy.");				
 						}
-
-#if defined (UNEMAP_USE_3D)	
-						MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
-							spectrum_to_be_modified_copy,spectrum_manager);
-						DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							" update_map_from_dialog. Could not create spectrum copy.");				
+							" update_map_from_dialog. Spectrum is not in manager!");		
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						" update_map_from_dialog. Spectrum is not in manager!");		
+						" update_map_from_dialog. Spectrum_manager not present");
 				}
+#endif /* defined (UNEMAP_USE_3D) */
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					" update_map_from_dialog. Spectrum_manager not present");
-			}
-#endif /* defined (UNEMAP_USE_3D) */		
 		}
 		XtVaGetValues(map_dialog->interpolation.option_menu,
 			XmNmenuHistory,&option_widget,
@@ -1012,9 +984,6 @@ necessary.
 				{				
 					update_movie_frames_information(mapping,&recalculate,
 						&map_settings_changed);					
-					/*the time can have changed so update the time_keeper*/
-					time_keeper=Time_object_get_time_keeper(mapping->potential_time_object);
-					Time_keeper_request_new_time(time_keeper,map->start_time);					
 				}break; /*case BICUBIC_INTERPOLATION:*/
 				case NO_INTERPOLATION:
 				case DIRECT_INTERPOLATION:
@@ -1076,6 +1045,9 @@ necessary.
 			update_mapping_drawing_area(mapping,recalculate);
 			update_mapping_colour_or_auxili(mapping);
 			mapping_window_update_time_limits(mapping);			
+			/*the time can have changed so update the time_keeper*/
+			time_keeper=Time_object_get_time_keeper(mapping->potential_time_object);
+			Time_keeper_request_new_time(time_keeper,map->start_time/1000.0);
 		}
 		if (widget==map_dialog->ok_button)
 		{
@@ -1617,7 +1589,7 @@ Draws a frame in the activation map animation.
 static void animate_activation_map(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 28 November 2001
+LAST MODIFIED : 4 February 2002
 
 DESCRIPTION :
 Starts the activation map animation.
@@ -1670,14 +1642,14 @@ Starts the activation map animation.
 							{
 								/* Jump to the start of the animated sequence */
 								Time_keeper_request_new_time(time_keeper,
-									map->start_time);
+									map->start_time/1000.0);
 							}break;
 							case NO_INTERPOLATION:
 							case DIRECT_INTERPOLATION:
 							default:
 							{											
 								Time_keeper_request_new_time(time_keeper,
-									map->start_time);					
+									map->start_time/1000.0);					
 							}break;
 						}/* map->interpolation_type */
 					} break;
@@ -1685,15 +1657,15 @@ Starts the activation map animation.
 					{				 
 						map->activation_front= 0;
 						Time_keeper_request_new_time(time_keeper,
-							map->minimum_value + (float)buffer->times[*(map->datum)]
-							* 1000.0 / buffer->frequency);
+							map->minimum_value / 1000.0 + (float)buffer->times[*(map->datum)]
+							/ buffer->frequency);
 					} break;
 					case MULTIPLE_ACTIVATION:
 					{
 						map->activation_front= *(map->datum);		
 						Time_keeper_request_new_time(time_keeper,
-							(float)buffer->times[*(map->start_search_interval)]*1000.0/
-							(buffer->frequency));
+							(float)buffer->times[*(map->start_search_interval)]/
+							buffer->frequency);
 					} break;
 				}
 				bring_up_time_editor_dialog(&mapping->time_editor_dialog,
@@ -3805,7 +3777,7 @@ Finds the id of the colour_or_auxiliary_scroll_bar.
 static void destroy_Mapping_window(Widget widget,XtPointer client_data,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 1 February 2002
 
 DESCRIPTION :
 This function expects <client_data> to be a pointer to a mapping window.  If the
@@ -3832,6 +3804,13 @@ and frees the memory for the mapping window.
 		/* the mapping window, so deaccess never gets called. See ACCESS */
 		DEACCESS(Interactive_tool)(&(mapping->transform_tool));
 #endif /*	defined (NEW_CODE) */
+		if (mapping->spectrum_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Spectrum)(
+				mapping->spectrum_manager_callback_id,
+				get_map_drawing_information_spectrum_manager(
+				mapping->map->drawing_information));
+		}
 #endif /*defined (UNEMAP_USE_3D)*/
 		if (mapping->potential_time_object)
 		{
@@ -4592,6 +4571,80 @@ the mapping_window.
 	return (return_code);
 } /* write_map_animation_jpg_file */
 
+static void mapping_window_spectrum_change(
+	struct MANAGER_MESSAGE(Spectrum) *message,void *mapping_void)
+/*******************************************************************************
+LAST MODIFIED : 30 January 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	float minimum_value, maximum_value;
+	struct Mapping_window *mapping;
+	struct Spectrum *spectrum;
+
+	ENTER(mapping_window_spectrum_change);
+	if (message && (mapping = (struct Mapping_window *)mapping_void))
+	{
+		switch (message->change)
+		{
+			case MANAGER_CHANGE_OBJECT(Spectrum):
+			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Spectrum):
+			{
+				spectrum = mapping->map->drawing_information->spectrum;
+				if (IS_OBJECT_IN_LIST(Spectrum)(spectrum,
+					message->changed_object_list))
+				{
+					minimum_value = get_Spectrum_minimum(spectrum);
+					maximum_value = get_Spectrum_maximum(spectrum);
+					if ((minimum_value != mapping->map->minimum_value) 
+						|| (maximum_value != mapping->map->maximum_value))
+					{
+						mapping->map->minimum_value = minimum_value;
+						mapping->map->maximum_value = maximum_value;
+						mapping->map->contour_minimum = minimum_value;
+						mapping->map->contour_maximum = maximum_value;
+						if (mapping->colour_or_auxiliary_drawing)
+						{
+							/* clear the colour or auxiliary area */
+							XFillRectangle(mapping->map->drawing_information->user_interface->display,
+								mapping->colour_or_auxiliary_drawing->pixel_map,
+								(mapping->map->drawing_information->graphics_context).background_drawing_colour,
+								0,0,mapping->colour_or_auxiliary_drawing->width,
+								mapping->colour_or_auxiliary_drawing->height);
+							draw_colour_or_auxiliary_area(mapping->map,
+								mapping->colour_or_auxiliary_drawing);
+							XCopyArea(mapping->map->drawing_information->user_interface->display,
+								mapping->colour_or_auxiliary_drawing->pixel_map,
+								XtWindow(mapping->colour_or_auxiliary_drawing_area),
+								(mapping->map->drawing_information->graphics_context).copy,0,0,
+								mapping->colour_or_auxiliary_drawing->width,
+								mapping->colour_or_auxiliary_drawing->height,0,0);
+						}
+						if (mapping->map->projection_type==THREED_PROJECTION)
+						{
+							map_draw_contours(mapping->map,spectrum,
+								mapping->map->unemap_package);
+						}
+					}
+				}
+			} break;
+			case MANAGER_CHANGE_ADD(Spectrum):
+			case MANAGER_CHANGE_REMOVE(Spectrum):
+			case MANAGER_CHANGE_IDENTIFIER(Spectrum):
+			{
+				/* do nothing */
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"mapping_window_spectrum_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* mapping_window_spectrum_change */
+
 static struct Mapping_window *create_Mapping_window(
 	struct Mapping_window **address,char *open,
 	struct Mapping_window **current_address,Widget activation,Widget parent,
@@ -4605,7 +4658,7 @@ static struct Mapping_window *create_Mapping_window(
 #endif /*  defined (UNEMAP_USE_3D) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 23 July 2001
+LAST MODIFIED : 1 February 2002
 
 DESCRIPTION :
 This function allocates the memory for a mapping_window and sets the fields to
@@ -4827,6 +4880,12 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				mapping->colour_or_auxiliary_drawing_area=(Widget)NULL;
 				mapping->colour_or_auxiliary_drawing=(struct Drawing_2d *)NULL;
 				mapping->colour_or_auxiliary_scroll_bar=(Widget)NULL;
+#if defined (UNEMAP_USE_3D)
+				mapping->spectrum_manager_callback_id=
+					MANAGER_REGISTER(Spectrum)(mapping_window_spectrum_change,
+					(void *)mapping,get_map_drawing_information_spectrum_manager(
+					mapping->map->drawing_information));			
+#endif /* defined (UNEMAP_USE_3D) */
 				/* register the callbacks */
 				if ((MrmSUCCESS==MrmRegisterNamesInHierarchy(mapping_window_hierarchy,
 					callback_list,XtNumber(callback_list)))&&

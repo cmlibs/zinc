@@ -787,9 +787,9 @@ derivatives; helps make smooth snakes from few data points.
 							component.number = n;
 							if (!(set_FE_nodal_FE_value_value(nodes[j],
 								&component, /*version*/0, FE_NODAL_VALUE,
-								force_vectors[n*number_of_rows + j*2]) &&
+								/*time*/0, force_vectors[n*number_of_rows + j*2]) &&
 								set_FE_nodal_FE_value_value(nodes[j],
-									&component, /*version*/0, FE_NODAL_D_DS1,
+									&component, /*version*/0, FE_NODAL_D_DS1, /*time*/0, 
 									force_vectors[n*number_of_rows + j*2 + 1])))
 							{
 								display_message(ERROR_MESSAGE,

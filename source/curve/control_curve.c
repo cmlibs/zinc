@@ -186,7 +186,7 @@ For Control_curves, <nodal_value_type> can be FE_NODAL_VALUE or FE_NODAL_D_DS1.
 		{
 			component.number=i;
 			if (!set_FE_nodal_FE_value_value(node,&component,0,nodal_value_type,
-				*value))
+				/*time*/0, *value))
 			{
 				display_message(ERROR_MESSAGE,"cc_set_node_field_values.  "
 					"Field/nodal value type not defined at node");

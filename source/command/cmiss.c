@@ -17992,6 +17992,7 @@ otherwise the nodes file is read.
 								command_data->data_group_manager, 
 								command_data->element_group_manager,
 								(struct FE_node_order_info *)NULL, node_time_index);
+							fclose(input_file);
 						}
 						else
 						{
@@ -19793,7 +19794,7 @@ Sets nodal field values from a command.
 								&&COPY(FE_node)(node_copy,node))
 							{
 								if (return_code=set_FE_nodal_FE_value_value(node_copy,
-									&component,0,value_type,value))
+									&component,0,value_type,/*time*/0,value))
 								{
 									return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,
 										cm_node_identifier)(node,node_copy,command_data->node_manager);

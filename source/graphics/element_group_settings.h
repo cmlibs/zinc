@@ -370,6 +370,34 @@ For type GT_ELEMENT_SETTINGS_STREAMLINES use function
 GT_element_settings_get_data_spectrum_parameters_streamlines instead.
 ==============================================================================*/
 
+int GT_element_settings_get_autorange_spectrum_flag(
+	struct GT_element_settings *settings);
+/*******************************************************************************
+LAST MODIFIED : 24 January 2002
+
+DESCRIPTION :
+Returns the value of the autoranging_spectrum_flag from <settings>.
+==============================================================================*/
+
+int GT_element_settings_set_autorange_spectrum_flag(
+	struct GT_element_settings *settings, int flag);
+/*******************************************************************************
+LAST MODIFIED : 24 January 2002
+
+DESCRIPTION :
+Sets the autorange_spectrum_flag used by <settings> to value of <flag>.
+==============================================================================*/
+
+int GT_element_settings_get_data_range_for_autoranging_spectrum(
+	struct GT_element_settings *settings, void *data_void);
+/*******************************************************************************
+LAST MODIFIED : 18 January 2002
+
+DESCRIPTION :
+Expands the range to include the data values of only those element_group settings
+in the <scene> which are autoranging and which point to this spectrum.
+==============================================================================*/
+
 int GT_element_settings_set_data_spectrum_parameters(
 	struct GT_element_settings *settings,struct Computed_field *data_field,
 	struct Spectrum *spectrum);

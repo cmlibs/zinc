@@ -6,6 +6,7 @@ LAST MODIFIED : 21 January 2002
 DESCRIPTION :
 Representing time in finite elements.
 ==============================================================================*/
+#include <math.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"
@@ -413,20 +414,20 @@ that corresponds to the <time>.  Returns 0 if that exact time is not found
 and 1 if it is.
 ==============================================================================*/
 {
-	int i, number_of_times, return_code;
+	int return_code, time_index_one, time_index_two;
+	FE_value xi;
 	
 	ENTER(FE_time_version_get_index_for_time);
 	
 	if (fe_time_version)
 	{
 		return_code = 0;
-		number_of_times = fe_time_version->number_of_times;
-		/* SAB Speed up with a better search.. assume ordered values */
-		for(i = 0 ;(i < number_of_times) && (return_code == 0) ; i++)
+		if (FE_time_version_get_interpolation_for_time(fe_time_version, 
+			time, &time_index_one, &time_index_two, &xi))
 		{
-			if (fe_time_version->times[i] == time)
+			if (0 == xi)
 			{
-				*time_index = i;
+				*time_index = time_index_one;
 				return_code = 1;
 			}
 		}
@@ -456,7 +457,8 @@ and 1 to indicate what fraction of the way between <time_index_one> and
 of the time index array.
 ==============================================================================*/
 {
-	int i, number_of_times, return_code;
+	int array_index,done,index_high,index_low,number_of_times,return_code,step;	
+	FE_value first_time,last_time,this_time,fe_value_index,time_high,time_low;
 	
 	ENTER(FE_time_version_get_index_for_time);
 	
@@ -464,42 +466,145 @@ of the time index array.
 	{
 		return_code = 0;
 		number_of_times = fe_time_version->number_of_times;
-		/* SAB Speed up with a better search.. assume ordered values */
-		for(i = 0 ;(i < number_of_times) && (return_code == 0) ; i++)
-		{
-			if (fe_time_version->times[i] > time)
+
+		first_time = fe_time_version->times[0];
+		last_time = fe_time_version->times[number_of_times-1];
+		/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
+		/*This assumption and hence estimate is true for most signal files. */
+		fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
+		fe_value_index+=0.5;/*round float to nearest int */
+		array_index=floor(fe_value_index);
+		time_low=0;
+		time_high=0;
+		done=0;
+		index_low=0;
+		index_high=number_of_times-1;
+		/* do binary search for <time>'s array index. Also look at time of */
+		/* adjacent array element, as index estimate may be slightly off due to*/
+		/* rounding error. This avoids unnecessarily long search from end of array */
+		while(!done)
+		{	
+			if ((array_index >= 0) && (array_index < number_of_times))
 			{
-				if (i > 0)
-				{
-					*time_index_one = i - 1;
-					*time_index_two = i;
-					*xi = (time - fe_time_version->times[i - 1]) /
-						(fe_time_version->times[i] - fe_time_version->times[i - 1]);
-					return_code = 1;
+				this_time = fe_time_version->times[array_index];
+				if (this_time>time)
+				{ 
+					index_high=array_index;					
+					if (array_index>0)
+					{
+						/* get adjacent array element*/
+						time_low = fe_time_version->times[array_index - 1];
+						/* are we between elements?*/
+						if (time_low<time)
+						{			
+							index_low=array_index-1;
+							return_code=1;
+							done=1;
+						}	
+						else
+						{
+							time_low=0;
+						}
+					}
+					else
+					{
+						/* can't get lower adjacent array element when array_index=0. Finished*/
+						time_low = fe_time_version->times[array_index];
+						index_low=array_index;
+						return_code=1;
+						done=1;
+					}
 				}
-				else
+				else if (this_time<time)
 				{
-					*time_index_one = i;
-					*time_index_two = i;
-					*xi = 0.0;
-					return_code = 1;					
+					index_low=array_index;
+					if (array_index<(number_of_times-1))
+					{
+						/* get adjacent array element*/
+						time_high = fe_time_version->times[array_index + 1];
+						/* are we between elements?*/
+						if (time_high>time)
+						{		
+							index_high=array_index+1;
+							return_code=1;
+							done=1;
+						}	
+						else
+						{
+							time_high=0;
+						}
+					}
+					else
+					{
+						/* can't get higher adjacent array element when */
+						/*array_index=(number_of_times-1). Finished*/
+						time_high = fe_time_version->times[array_index];
+						index_high=array_index;
+						return_code=1;
+						done=1;
+					}
 				}
+				else /* (this_time == time) */
+				{
+					index_low=array_index;
+					index_high=array_index;
+					time_high=this_time;
+					time_low=this_time;
+					return_code=1;
+					done=1;
+				}
+				if (!done)
+				{	
+					step=(index_high-index_low)/2;	
+					/* No exact match, can't subdivide further, must do interpolation.*/
+					if (step==0)												
+					{	
+						done=1;	
+						return_code=1;														
+					}
+					else
+					{
+						array_index=index_low+step;
+					}
+						
+				}/* if (!done)	*/
 			}
-		}
-		if (!return_code)
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_time_version_get_interpolation_for_time.  "
+					"time out of range");
+				done = 1;
+				return_code = 0;
+			}
+		}	/* while(!done)	*/
+		/* index_low and index_high should now be adjacent */
+		if (!time_low)
 		{
-			*time_index_one = i - 1;
-			*time_index_two = i - 1;
+			time_low = fe_time_version->times[index_low];
+		}
+		if (!time_high)
+		{
+			time_high = fe_time_version->times[index_high];
+		}
+		*time_index_one = index_low;
+		*time_index_two = index_high;
+		if (time_high > time_low)
+		{
+			*xi = (time - time_low) / (time_high - time_low);
+		}
+		else
+		{
 			*xi = 0.0;
-			return_code = 1;					
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_time_version_get_interpolation_for_time.  Invalid arguments");
-		return_code = 0;
-	}
+			"FE_time_version_get_interpolation_for_time.  "
+			"Invalid arguments time out of range");
+		return_code=0;
+	}	
 	LEAVE;
 
 	return (return_code);

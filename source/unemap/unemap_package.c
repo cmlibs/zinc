@@ -17,6 +17,7 @@ Contains function definitions for unemap package.
 #endif /* defined (UNEMAP_USE_NODES) */
 #include "general/debug.h"
 #include "graphics/colour.h"
+#include "time/time.h"
 #include "unemap/unemap_package.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -139,7 +140,7 @@ The fields are filed in with set_unemap_package_fields()
 				(struct Computed_field *)NULL;
 			package->scaled_offset_signal_value_at_time_field=
 				(struct Computed_field *)NULL;
-			package->time_field=(struct Computed_field *)NULL;
+			package->potential_time_object=(struct Time_object *)NULL;
 			package->access_count=0;
 		}
 		else
@@ -222,7 +223,7 @@ to NULL.
 		DEACCESS(Computed_field)(&(package->scaled_offset_signal_value_at_time_field));
 		DEACCESS(Computed_field)(&(package->offset_signal_value_at_time_field));
 		DEACCESS(Computed_field)(&(package->signal_value_at_time_field));
-		DEACCESS(Computed_field)(&(package->time_field));		
+		DEACCESS(Time_object)(&(package->potential_time_object));		
 		DEALLOCATE(*package_address);		
 		return_code=1;
 	}
@@ -396,6 +397,61 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_channel_number_field */
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+struct Time_object *get_unemap_package_potential_time_object(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 25 January 2002
+
+DESCRIPTION :
+Get the potential time object.
+==============================================================================*/
+{
+	struct Time_object *time_object;
+	ENTER(get_unemap_package_potential_time_object);
+	if(package)
+	{
+		time_object=package->potential_time_object;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_potential_time_object."
+				" invalid arguments");
+		time_object = (struct Time_object *)NULL;
+	}
+	LEAVE;
+	return (time_object);
+} /* get_unemap_package_potential_time_object */
+
+int set_unemap_package_potential_time_object(struct Unemap_package *package,
+	struct Time_object *potential_time_object)
+/*******************************************************************************
+LAST MODIFIED : 25 January 2002
+
+DESCRIPTION :
+Sets the potential time object.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_potential_time_object);
+	if(package)
+	{
+		return_code =1;		
+		REACCESS(Time_object)(&(package->potential_time_object),
+			potential_time_object);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_unemap_package_potential_time_object."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_potential_time_object */
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_NODES)
@@ -1110,61 +1166,6 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_scaled_offset_signal_value_at_time_field */
-#endif /* defined (UNEMAP_USE_3D)*/
-
-#if defined (UNEMAP_USE_3D)
-struct Computed_field *get_unemap_package_time_field(
-	struct Unemap_package *package)
-/*******************************************************************************
-LAST MODIFIED : 3 May 2000
-
-DESCRIPTION :
-gets the field of the unemap package.
-==============================================================================*/
-{
-	struct Computed_field *time_field;
-	ENTER(get_unemap_package_time_field);
-	if(package)
-	{
-		time_field=package->time_field; 
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_time_field."
-				" invalid arguments");
-		time_field = (struct Computed_field *)NULL;
-	}
-	LEAVE;
-	return (time_field);
-} /* get_unemap_package_time_field */
-
-int set_unemap_package_time_field(struct Unemap_package *package,
-	struct Computed_field *time_field)
-/*******************************************************************************
-LAST MODIFIED : 3 May 2000
-
-DESCRIPTION :
-Sets the field of the unemap package.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_unemap_package_time_field);
-	if(package)
-	{
-		return_code =1;	
-		REACCESS(Computed_field)(&(package->time_field),
-			time_field);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_unemap_package_time_field."
-				" invalid arguments");
-		return_code =0;
-	}
-	LEAVE;
-	return (return_code);
-} /* set_unemap_package_time_field */
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
@@ -1925,80 +1926,12 @@ stored in the unemap package. Also frees any associated fe_fields
 					"Couldn't destroy offset_signal_value_at_time_field");
 			}				
 		}/* if(computed_field) */
-		computed_field=get_unemap_package_signal_value_at_time_field(unemap_package);
+		/* signal_value_at_time_field is now just a pointer to an fe_field wrapper and
+			so we no longer destroy it here, just deaccess it */
 		/* following does deaccess*/
 		set_unemap_package_signal_value_at_time_field
 						(unemap_package,(struct Computed_field *)NULL);
-		if(computed_field)
-		{				
-			if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
-				computed_field_manager))
-			{			
-				/* also want to destroy any wrapped FE_field */
-				fe_field=(struct FE_field *)NULL;
-				if (Computed_field_is_type_finite_element(computed_field))
-				{
-				  Computed_field_get_type_finite_element(computed_field,
-					 &fe_field);
-				}
-				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
-					(computed_field,computed_field_manager))
-				{
-					if (fe_field)
-					{
-						return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
-							fe_field,fe_field_manager);
-					}
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
-						" Couldn't remove signal_value_at_time_field from manager");
-				}
-				
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
-					"Couldn't destroy signal_value_at_time_field");
-			}				
-		}/* if(computed_field) */
-		computed_field=get_unemap_package_time_field(unemap_package);	
-		/* following does deaccess */
-		set_unemap_package_time_field
-						(unemap_package,(struct Computed_field *)NULL);
-		if(computed_field)
-		{	
-			if (MANAGED_OBJECT_NOT_IN_USE(Computed_field)(computed_field,
-				computed_field_manager))
-			{
-				fe_field=(struct FE_field *)NULL;
-				if (Computed_field_is_type_finite_element(computed_field))
-				{
-				  Computed_field_get_type_finite_element(computed_field,
-					 &fe_field);
-				}
-				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
-					(computed_field,computed_field_manager))
-				{
-					if (fe_field)
-					{
-						return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
-							fe_field,fe_field_manager);
-					}
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields"
-						" Couldn't remove time_field from manager");
-				}
-			}
-			else
-			{
-				display_message(WARNING_MESSAGE,"free_unemap_package_time_computed_fields. "
-					"Couldn't destroy time_field ");
-			}
-		}/* if(computed_field) */
+		/* and the time_field has gone altogether */
 	}/* if(unemap_package) */
 	else
 	{

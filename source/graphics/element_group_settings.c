@@ -113,6 +113,7 @@ finite element group rendition.
 	struct Graphical_material *material,*selected_material;
 	struct Computed_field *data_field;
 	struct Spectrum *spectrum;
+	int autorange_spectrum_flag;
 	/* for surfaces */
 	enum Render_type render_type;
 
@@ -728,6 +729,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->selected_material=(struct Graphical_material *)NULL;
 			settings->data_field=(struct Computed_field *)NULL;
 			settings->spectrum=(struct Spectrum *)NULL;
+			settings->autorange_spectrum_flag = 0;
 			/* for surfaces and volumes */
 			settings->render_type = RENDER_TYPE_SHADED;
 			/* for streamlines only */
@@ -1033,6 +1035,7 @@ Note: destination->access_count is not changed by COPY.
 		}
 		REACCESS(Graphical_material)(&(destination->selected_material),
 			source->selected_material);
+		destination->autorange_spectrum_flag = source->autorange_spectrum_flag;
 
 		/* copy rendering information */
 		REACCESS(GT_object)(&(destination->graphics_object),
@@ -1258,6 +1261,97 @@ Sets the <texture_coordinate_field> used by <settings>.
 
 	return (return_code);
 } /* GT_element_settings_set_texture_coordinate_field */
+
+int GT_element_settings_get_autorange_spectrum_flag(
+	struct GT_element_settings *settings)
+/*******************************************************************************
+LAST MODIFIED : 24 January 2002
+
+DESCRIPTION :
+Returns the value of the autoranging_spectrum_flag from <settings>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_settings_get_autorange_spectrum_flag);
+	if (settings)
+	{
+		return_code = settings->autorange_spectrum_flag;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_get_autorange_spectrum_flag.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_get_autorange_spectrum_flag */
+
+int GT_element_settings_set_autorange_spectrum_flag(
+	struct GT_element_settings *settings, int flag)
+/*******************************************************************************
+LAST MODIFIED : 24 January 2002
+
+DESCRIPTION :
+Sets the autorange_spectrum_flag used by <settings> to value of <flag>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_settings_set_autorange_spectrum_flag);
+	if (settings)
+	{
+		settings->autorange_spectrum_flag = flag;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_set_autorange_spectrum_flag.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_set_autorange_spectrum_flag */
+
+int GT_element_settings_get_data_range_for_autoranging_spectrum(
+	struct GT_element_settings *settings, void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 18 January 2002
+
+DESCRIPTION :
+Expands the range to include the data values of only those element_group settings
+in the <scene> which are autoranging and which point to this spectrum.
+==============================================================================*/
+{
+	int return_code;
+	struct Scene_get_data_range_for_spectrum_data *data;
+
+	ENTER(GT_element_settings_get_data_spectrum_parameters);
+	if (settings &&
+		(data = (struct Scene_get_data_range_for_spectrum_data *)data_void))
+	{
+		if (settings->visibility && (settings->spectrum == data->spectrum) &&
+			settings->autorange_spectrum_flag)
+		{
+			get_graphics_object_data_range(settings->graphics_object,
+				(void *)&(data->range));
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_get_data_spectrum_parameters.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_get_data_spectrum_parameters */
 
 int GT_element_settings_get_data_spectrum_parameters(
 	struct GT_element_settings *settings,
@@ -4864,9 +4958,10 @@ Converts a finite element into a graphics object with the supplied settings.
 										return_code = create_iso_lines_from_FE_element(element,
 											settings_to_object_data->rc_coordinate_field,
 											settings->iso_scalar_field, settings->iso_value,
+											settings_to_object_data->time,
 											settings->data_field, number_in_xi[0], number_in_xi[1],
-											top_level_element, settings->graphics_object,
-											settings_to_object_data->time);
+											top_level_element, settings->graphics_object, 
+											/*graphics_object_time*/0.0);
 									}
 								}
 								else
@@ -5987,7 +6082,8 @@ we can sort out these dependencies before the manager message is sent out.
 			coordinate_field = change_data->default_coordinate_field;
 		}
 
-		if (Computed_field_depends_on_Computed_field_in_list(coordinate_field,
+		if (coordinate_field &&
+			Computed_field_depends_on_Computed_field_in_list(coordinate_field,
 			changed_field_list))
 		{
 			rebuild_graphics_object = 1;
