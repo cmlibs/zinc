@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_composition.cpp
 //
-// LAST MODIFIED : 25 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -322,7 +322,7 @@ Variable_handle Variable_composition::evaluate_derivative(
 	std::list<Variable_input_handle>& independent_variables,
 	std::list<Variable_input_value_handle>& values)
 //******************************************************************************
-// LAST MODIFIED : 25 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 // Overloading Variable::evaluate_derivative.
@@ -411,7 +411,7 @@ Variable_handle Variable_composition::evaluate_derivative(
 	i=input_source_list.size();
 	while (valid_independent_variables&&(i>0))
 	{
-		if (independent_variables.end()==find(independent_variables.begin(),
+		if (independent_variables.end()==std::find(independent_variables.begin(),
 			independent_variables.end(),(*input_source_iterator)->input()))
 		{
 			g_variables.push_back((*input_source_iterator)->value());
@@ -430,7 +430,7 @@ Variable_handle Variable_composition::evaluate_derivative(
 		independent_variables_iterator=independent_variables.begin();
 		for (i=independent_variables.size();i>0;i--)
 		{
-			if (f_inputs.end()==find(f_inputs.begin(),f_inputs.end(),
+			if (f_inputs.end()==std::find(f_inputs.begin(),f_inputs.end(),
 				*independent_variables_iterator))
 			{
 				g_variables.push_back(Variable_handle(new Variable_identity(
@@ -467,21 +467,20 @@ Variable_handle Variable_composition::evaluate_derivative(
 			((g->evaluate_derivative)(independent_variables,values));
 		if (derivative_f&&derivative_g)
 		{
+			bool found;
+			bool *not_used;
 			Scalar product,sum;
 			std::list<Matrix> matrices_result(0);
 			std::list<Matrix>::iterator matrix_f,matrix_g,matrix_result;
 			std::list<Variable_input_handle>::iterator independent_variable_iterator;
 			Variable_size_type column_number_result,i,index_result,j,k,l,
 				number_of_columns_f,number_of_columns_result,
-				number_of_intermediate_values,number_of_matrices,number_of_rows,
+				number_of_intermediate_values,number_of_matrices,number_of_rows,order,
 				offset_f,offset_g,order_result,p,q,r,row_number,s;
-			Variable_size_type order=(derivative_g->independent_variables).size();
-			bool found,not_used[order+1];
-			Variable_size_type column_numbers_g[order+1],index_f[order+1],
-				index_g[order+1],mapping_g[order+1],mapping_result[order+1],
-				numbers_of_independent_values[order],product_orders[order+1],
-				order_g[order+1],sub_order_g[order+1];
-			std::list<Matrix>::iterator matrices_g[order+1];
+			Variable_size_type *column_numbers_g,*index_f,*index_g,*mapping_g,
+				*mapping_result,*numbers_of_independent_values,*product_orders,*order_g,
+				*sub_order_g;
+			std::list<Matrix>::iterator *matrices_g;
 
 			// initialize
 			number_of_matrices=(derivative_g->matrices).size();
@@ -489,283 +488,260 @@ Variable_handle Variable_composition::evaluate_derivative(
 			number_of_intermediate_values=derivative_g->dependent_variable->size();
 			independent_variable_iterator=
 				(derivative_g->independent_variables).begin();
-			for (i=0;i<order;i++)
+			order=(derivative_g->independent_variables).size();
+			not_used=new bool[order+1];
+			column_numbers_g=new Variable_size_type[order+1];
+			index_f=new Variable_size_type[order+1];
+			mapping_g=new Variable_size_type[order+1];
+			mapping_result=new Variable_size_type[order+1];
+			numbers_of_independent_values=new Variable_size_type[order];
+			product_orders=new Variable_size_type[order+1];
+			order_g=new Variable_size_type[order+1];
+			sub_order_g=new Variable_size_type[order+1];
+			matrices_g=new std::list<Matrix>::iterator[order+1];
+			if (not_used&&column_numbers_g&&index_f&&mapping_g&&mapping_result&&
+				numbers_of_independent_values&&product_orders&&order_g&&sub_order_g&&
+				matrices_g)
 			{
-				numbers_of_independent_values[i]=
-					(*independent_variable_iterator)->size();
-				independent_variable_iterator++;
-			}
-			matrix_g=(derivative_g->matrices).begin();
-			for (i=0;i<number_of_matrices;i++)
-			{
-				Matrix new_matrix(number_of_rows,matrix_g->size2());
-
-				matrices_result.push_back(new_matrix);
-				matrix_g++;
-			}
-			/* loop over dependent values (rows) */
-			row_number=0;
-			while (row_number<number_of_rows)
-			{
-				/* loop over derivatives (matrices) */
-				matrix_result=matrices_result.begin();
-				// index_result stores which derivative (matrix) of result (H) is being
-				//   calculated
-				index_result=1;
-				while (index_result<=number_of_matrices)
+				for (i=0;i<order;i++)
 				{
-					// determine the derivative being evaluated and calculate its order
-					//   and number of values
-					order_result=0;
-					number_of_columns_result=1;
-					j=index_result;
-					i=0;
-					while (j>0)
+					numbers_of_independent_values[i]=
+						(*independent_variable_iterator)->size();
+					independent_variable_iterator++;
+				}
+				matrix_g=(derivative_g->matrices).begin();
+				for (i=0;i<number_of_matrices;i++)
+				{
+					Matrix new_matrix(number_of_rows,matrix_g->size2());
+
+					matrices_result.push_back(new_matrix);
+					matrix_g++;
+				}
+				/* loop over dependent values (rows) */
+				row_number=0;
+				while (row_number<number_of_rows)
+				{
+					/* loop over derivatives (matrices) */
+					matrix_result=matrices_result.begin();
+					// index_result stores which derivative (matrix) of result (H) is
+					//   being calculated
+					index_result=1;
+					while (index_result<=number_of_matrices)
 					{
-						if (j%2)
+						// determine the derivative being evaluated and calculate its order
+						//   and number of values
+						order_result=0;
+						number_of_columns_result=1;
+						j=index_result;
+						i=0;
+						while (j>0)
 						{
-							index_g[order_result]=0;
-							mapping_result[order_result]=i;
-							order_result++;
-							number_of_columns_result *= numbers_of_independent_values[i];
-						}
-						j /= 2;
-						i++;
-					}
-					// calculate the values for the derivative
-					column_number_result=0;
-					while (column_number_result<number_of_columns_result)
-					{
-						// loop over the sums for different order derivatives of f
-						sum=(Scalar)0;
-						matrix_f=(derivative_f->matrices).begin();
-						offset_f=1;
-						j=0;
-						while (j<order_result)
-						{
-							// initialize the orders for the derivatives of g that are
-							//   multiplied together.  There are j+1 derivatives of g and
-							//   their orders have to sum to the order of the derivative of
-							//   result (order_result)
-							for (l=0;l<j;l++)
+							if (j%2)
 							{
-								product_orders[l]=1;
+								index_g[order_result]=0;
+								mapping_result[order_result]=i;
+								order_result++;
+								number_of_columns_result *= numbers_of_independent_values[i];
 							}
-							product_orders[j]=order_result-j;
-							// loop over the possible ways of dividing the order_result
-							//   independent variables, in mapping_result, into j+1 non-empty
-							//   sets, where the order of the sets and the order within the
-							//   sets are not important.  For each possible way, loop across
-							//   the row of matrix_f and down the columns of matrix_g and
-							//   - calculate the product of the derivatives of g represented
-							//     by the sets
-							//   - multiply the product by the corresponding derivative of f
-							//   - add the result to result
-							do
+							j /= 2;
+							i++;
+						}
+						// calculate the values for the derivative
+						column_number_result=0;
+						while (column_number_result<number_of_columns_result)
+						{
+							// loop over the sums for different order derivatives of f
+							sum=(Scalar)0;
+							matrix_f=(derivative_f->matrices).begin();
+							offset_f=1;
+							j=0;
+							while (j<order_result)
 							{
-								// initialize the variable assigment
-								// for each of the independent variables being differentiated
-								//   with respect to in the product have:
-								//   mapping_g - a reordering of the variables without changing
-								//     the orders of the partial derivatives.  It is a location
-								//     in order_g and sub_order_g
-								//   order_g - the order of the partial derivative they're in
-								//   sub_order_g - their position in the variables in partial
-								//     derivatives of the same order
-								r=0;
-								l=0;
-								while (l<=j)
+								// initialize the orders for the derivatives of g that are
+								//   multiplied together.  There are j+1 derivatives of g and
+								//   their orders have to sum to the order of the derivative of
+								//   result (order_result)
+								for (l=0;l<j;l++)
 								{
-									q=0;
-									do
-									{
-										for (p=0;p<product_orders[l];p++)
-										{
-											mapping_g[r]=r;
-											order_g[r]=product_orders[l];
-											sub_order_g[r]=q;
-											r++;
-											q++;
-										}
-										l++;
-									} while ((l<=j)&&(product_orders[l]==product_orders[l-1]));
+									product_orders[l]=1;
 								}
-								// find the column numbers of matrix g for the partial
-								//   derivatives in the product
-								// r is the number of the partial derivative within partial
-								//   derivatives of the same order
-								r=0;
-								for (l=0;l<=j;l++)
+								product_orders[j]=order_result-j;
+								// loop over the possible ways of dividing the order_result
+								//   independent variables, in mapping_result, into j+1
+								//   non-empty sets, where the order of the sets and the order
+								//   within the sets are not important.  For each possible way,
+								//   loop across the row of matrix_f and down the columns of
+								//   matrix_g and
+								//   - calculate the product of the derivatives of g represented
+								//     by the sets
+								//   - multiply the product by the corresponding derivative of f
+								//   - add the result to result
+								do
 								{
-									// initialize the value position within the partial derivative
-									//   of f
-									index_f[l]=0;
-									// determine which independent variables are used in the
-									//   partial derivative of g
-									matrix_g=(derivative_g->matrices).begin();
-									offset_g=1;
-									for (p=0;p<order_result;p++)
-									{
-										q=mapping_g[p];
-										// is the same partial derivative within the partial
-										//   derivatives of the same order
-										if ((product_orders[j]==order_g[q])&&
-											(r==sub_order_g[q]/order_g[q]))
-										{
-											not_used[p]=false;
-										}
-										else
-										{
-											not_used[p]=true;
-										}
-										//???DB.  matrix_g += offset_g;
-										for (s=offset_g;s>0;s--)
-										{
-											matrix_g++;
-										}
-										offset_g *= 2;
-									}
-									matrix_g--;
-									for (p=order_result;p>0;p--)
-									{
-										offset_g /= 2;
-										if (not_used[p-1])
-										{
-											//???DB.  matrix_g -= offset_g;
-											for (s=offset_g;s>0;s--)
-											{
-												matrix_g--;
-											}
-										}
-									}
-									matrices_g[l]=matrix_g;
-									// second the index of the value
-									column_numbers_g[l]=0;
-									for (p=0;p<order_result;p++)
-									{
-										if (!not_used[p])
-										{
-											column_numbers_g[l]=numbers_of_independent_values[
-												mapping_result[p]]*column_numbers_g[l]+index_g[p];
-										}
-									}
-									// increment r (the number of the partial derivative within
-									//   partial derivatives of the same order
-									if ((l<j)&&(product_orders[l]==product_orders[l+1]))
-									{
-										r++;
-									}
-									else
-									{
-										r=0;
-									}
-								}
-								number_of_columns_f=matrix_f->size2();
-								// loop across the row of matrix_f and down the columns of
-								//   matrix_g
-								k=0;
-								while (k<number_of_columns_f)
-								{
-									// calculate the product
-									product=(*matrix_f)(row_number,k);
+									// initialize the variable assigment
+									// for each of the independent variables being differentiated
+									//   with respect to in the product have:
+									//   mapping_g - a reordering of the variables without
+									//     changing the orders of the partial derivatives.  It is
+									//     a location in order_g and sub_order_g
+									//   order_g - the order of the partial derivative they're in
+									//   sub_order_g - their position in the variables in partial
+									//     derivatives of the same order
+									r=0;
 									l=0;
 									while (l<=j)
 									{
-										product *= (*matrices_g[l])(index_f[l],column_numbers_g[l]);
-										l++;
-									}
-									// add to sum
-									sum += product;
-									// increment to next value for derivative in matrix_f and
-									//   matrix_g
-									k++;
-									l=j;
-									index_f[l]++;
-									while ((l>0)&&(index_f[l]>=number_of_intermediate_values))
-									{
-										index_f[l]=0;
-										l--;
-										index_f[l]++;
-									}
-								}
-								// move to the next choice for the j+1 sets
-								// first try leaving the number of variables in each set the
-								//   same (don't change product_orders).  Do this by running
-								//   through the permutations of order_result things with
-								//   restrictions
-								//   - start with the permutation 0,1,2, ... order_result-1
-								//   - for the current permutation
-								//   - start at the end and run back looking for an entry which
-								//     is less than one of the entries further on and for which
-								//     the restrictions hold
-								//   - find the smallest entry that is further on than the
-								//     current entry, greater than the current entry and
-								//     satisfies the restrictions
-								//   - put the smallest in the current and add the remaining
-								//     entries in increasing order
-								l=order_result-1;
-								q=mapping_g[l];
-								found=false;
-								while ((l>0)&&!found)
-								{
-									p=q;
-									l--;
-									q=mapping_g[l];
-									// check if there is a value further on with a greater index
-									//   (unrestricted permutations)
-									if (q<p)
-									{
-										// apply restrictions
-										// if have same order
-										if (order_g[p]==order_g[q])
+										q=0;
+										do
 										{
-											// check that p and q are not in the same partial
-											//   derivative and that second set doesn't have values
-											//   less than the first value of q's set
-											// the order of sets of the same size being unimportant is
-											//   equivalent to having the first value of the first set
-											//   always less than all the values of the second set
-											if ((sub_order_g[p]/order_g[p]!=
-												sub_order_g[q]/order_g[p])&&
-												(0!=sub_order_g[q]%order_g[p]))
+											for (p=0;p<product_orders[l];p++)
 											{
-												found=true;
+												mapping_g[r]=r;
+												order_g[r]=product_orders[l];
+												sub_order_g[r]=q;
+												r++;
+												q++;
 											}
+											l++;
+										} while ((l<=j)&&(product_orders[l]==product_orders[l-1]));
+									}
+									// find the column numbers of matrix g for the partial
+									//   derivatives in the product
+									// r is the number of the partial derivative within partial
+									//   derivatives of the same order
+									r=0;
+									for (l=0;l<=j;l++)
+									{
+										// initialize the value position within the partial
+										//   derivative of f
+										index_f[l]=0;
+										// determine which independent variables are used in the
+										//   partial derivative of g
+										matrix_g=(derivative_g->matrices).begin();
+										offset_g=1;
+										for (p=0;p<order_result;p++)
+										{
+											q=mapping_g[p];
+											// is the same partial derivative within the partial
+											//   derivatives of the same order
+											if ((product_orders[j]==order_g[q])&&
+												(r==sub_order_g[q]/order_g[q]))
+											{
+												not_used[p]=false;
+											}
+											else
+											{
+												not_used[p]=true;
+											}
+											//???DB.  matrix_g += offset_g;
+											for (s=offset_g;s>0;s--)
+											{
+												matrix_g++;
+											}
+											offset_g *= 2;
+										}
+										matrix_g--;
+										for (p=order_result;p>0;p--)
+										{
+											offset_g /= 2;
+											if (not_used[p-1])
+											{
+												//???DB.  matrix_g -= offset_g;
+												for (s=offset_g;s>0;s--)
+												{
+													matrix_g--;
+												}
+											}
+										}
+										matrices_g[l]=matrix_g;
+										// second the index of the value
+										column_numbers_g[l]=0;
+										for (p=0;p<order_result;p++)
+										{
+											if (!not_used[p])
+											{
+												column_numbers_g[l]=numbers_of_independent_values[
+													mapping_result[p]]*column_numbers_g[l]+index_g[p];
+											}
+										}
+										// increment r (the number of the partial derivative within
+										//   partial derivatives of the same order
+										if ((l<j)&&(product_orders[l]==product_orders[l+1]))
+										{
+											r++;
 										}
 										else
 										{
-											// check that q hasn't been tried in a partial derivative
-											//   of order_g[p]
-											if (order_g[q]<order_g[p])
-											{
-												found=true;
-											}
+											r=0;
 										}
 									}
-								}
-								if (found)
-								{
-									// mark as unused the values after l
-									for (p=0;p<order_result;p++)
+									number_of_columns_f=matrix_f->size2();
+									// loop across the row of matrix_f and down the columns of
+									//   matrix_g
+									k=0;
+									while (k<number_of_columns_f)
 									{
-										not_used[p]=false;
-									}
-									for (p=l;p<order_result;p++)
-									{
-										not_used[mapping_g[p]]=true;
-									}
-									q=mapping_g[l];
-									p=q;
-									found=false;
-									// find the smallest valid value after l which is greater than
-									//   mapping_g[l]
-									do
-									{
-										p++;
-										if (not_used[p])
+										// calculate the product
+										product=(*matrix_f)(row_number,k);
+										l=0;
+										while (l<=j)
 										{
+											product *=
+												(*matrices_g[l])(index_f[l],column_numbers_g[l]);
+											l++;
+										}
+										// add to sum
+										sum += product;
+										// increment to next value for derivative in matrix_f and
+										//   matrix_g
+										k++;
+										l=j;
+										index_f[l]++;
+										while ((l>0)&&(index_f[l]>=number_of_intermediate_values))
+										{
+											index_f[l]=0;
+											l--;
+											index_f[l]++;
+										}
+									}
+									// move to the next choice for the j+1 sets
+									// first try leaving the number of variables in each set the
+									//   same (don't change product_orders).  Do this by running
+									//   through the permutations of order_result things with
+									//   restrictions
+									//   - start with the permutation 0,1,2, ... order_result-1
+									//   - for the current permutation
+									//   - start at the end and run back looking for an entry
+									//     which is less than one of the entries further on and
+									//     for which the restrictions hold
+									//   - find the smallest entry that is further on than the
+									//     current entry, greater than the current entry and
+									//     satisfies the restrictions
+									//   - put the smallest in the current and add the remaining
+									//     entries in increasing order
+									l=order_result-1;
+									q=mapping_g[l];
+									found=false;
+									while ((l>0)&&!found)
+									{
+										p=q;
+										l--;
+										q=mapping_g[l];
+										// check if there is a value further on with a greater index
+										//   (unrestricted permutations)
+										if (q<p)
+										{
+											// apply restrictions
+											// if have same order
 											if (order_g[p]==order_g[q])
 											{
+												// check that p and q are not in the same partial
+												//   derivative and that second set doesn't have values
+												//   less than the first value of q's set
+												// the order of sets of the same size being unimportant
+												//   is equivalent to having the first value of the
+												//   first set always less than all the values of the
+												//   second set
 												if ((sub_order_g[p]/order_g[p]!=
 													sub_order_g[q]/order_g[p])&&
 													(0!=sub_order_g[q]%order_g[p]))
@@ -775,41 +751,74 @@ Variable_handle Variable_composition::evaluate_derivative(
 											}
 											else
 											{
-												if (order_g[p]>order_g[q])
+												// check that q hasn't been tried in a partial
+												//   derivative of order_g[p]
+												if (order_g[q]<order_g[p])
 												{
 													found=true;
 												}
 											}
 										}
-									} while (!found);
-									// put the smallest value in l
-									mapping_g[l]=p;
-									not_used[p]=false;
-									// put the unused values in increasing order after l
-									for (p=0;p<order_result;p++)
+									}
+									if (found)
 									{
-										if (not_used[p])
+										// mark as unused the values after l
+										for (p=0;p<order_result;p++)
 										{
-											l++;
-											mapping_g[l]=p;
+											not_used[p]=false;
+										}
+										for (p=l;p<order_result;p++)
+										{
+											not_used[mapping_g[p]]=true;
+										}
+										q=mapping_g[l];
+										p=q;
+										found=false;
+										// find the smallest valid value after l which is greater
+										//   than mapping_g[l]
+										do
+										{
+											p++;
+											if (not_used[p])
+											{
+												if (order_g[p]==order_g[q])
+												{
+													if ((sub_order_g[p]/order_g[p]!=
+														sub_order_g[q]/order_g[p])&&
+														(0!=sub_order_g[q]%order_g[p]))
+													{
+														found=true;
+													}
+												}
+												else
+												{
+													if (order_g[p]>order_g[q])
+													{
+														found=true;
+													}
+												}
+											}
+										} while (!found);
+										// put the smallest value in l
+										mapping_g[l]=p;
+										not_used[p]=false;
+										// put the unused values in increasing order after l
+										for (p=0;p<order_result;p++)
+										{
+											if (not_used[p])
+											{
+												l++;
+												mapping_g[l]=p;
+											}
 										}
 									}
-								}
-								else
-								{
-									// look for another choice of the j+1 set sizes.  Having the
-									//   order of the sets being unimportant is equivalent to
-									//   having the sizes in non-decreasing order and starting
-									//   with sizes 1,2,...order_result-j
-									l=j;
-									while ((l>0)&&
-										(product_orders[l]==product_orders[l-1]))
+									else
 									{
-										l--;
-									}
-									if (l>0)
-									{
-										(product_orders[l])--;
+										// look for another choice of the j+1 set sizes.  Having the
+										//   order of the sets being unimportant is equivalent to
+										//   having the sizes in non-decreasing order and starting
+										//   with sizes 1,2,...order_result-j
+										l=j;
 										while ((l>0)&&
 											(product_orders[l]==product_orders[l-1]))
 										{
@@ -817,45 +826,64 @@ Variable_handle Variable_composition::evaluate_derivative(
 										}
 										if (l>0)
 										{
-											// have found a new choice of set sizes re-initialize the
-											//   variable assignment
-											(product_orders[l-1])++;
+											(product_orders[l])--;
+											while ((l>0)&&
+												(product_orders[l]==product_orders[l-1]))
+											{
+												l--;
+											}
+											if (l>0)
+											{
+												// have found a new choice of set sizes re-initialize
+												//   the variable assignment
+												(product_orders[l-1])++;
+											}
 										}
 									}
+								} while (l>0);
+								offset_f *= 2;
+								//???DB.  matrix_f += offset_f;
+								for (s=offset_f;s>0;s--)
+								{
+									matrix_f++;
 								}
-							} while (l>0);
-							offset_f *= 2;
-							//???DB.  matrix_f += offset_f;
-							for (s=offset_f;s>0;s--)
-							{
-								matrix_f++;
+								j++;
 							}
-							j++;
-						}
-						(*matrix_result)(row_number,column_number_result)=sum;
-						// increment to next value for derivative in matrix_g
-						j=order_result-1;
-						index_g[j]++;
-						k=mapping_result[j];
-						while ((j>0)&&(index_g[j]>=numbers_of_independent_values[k]))
-						{
-							index_g[j]=0;
-							j--;
-							k=mapping_result[j];
+							(*matrix_result)(row_number,column_number_result)=sum;
+							// increment to next value for derivative in matrix_g
+							j=order_result-1;
 							index_g[j]++;
+							k=mapping_result[j];
+							while ((j>0)&&(index_g[j]>=numbers_of_independent_values[k]))
+							{
+								index_g[j]=0;
+								j--;
+								k=mapping_result[j];
+								index_g[j]++;
+							}
+							// increment to next column in derivative (matrix) of result
+							column_number_result++;
 						}
-						// increment to next column in derivative (matrix) of result
-						column_number_result++;
+						// increment to next derivative (matrix)
+						index_result++;
+						matrix_result++;
 					}
-					// increment to next derivative (matrix)
-					index_result++;
-					matrix_result++;
+					// increment to next row
+					row_number++;
 				}
-				// increment to next row
-				row_number++;
+				result=Variable_handle(new Variable_derivative_matrix(
+					Variable_handle(this),independent_variables,matrices_result));
 			}
-			result=Variable_handle(new Variable_derivative_matrix(
-				Variable_handle(this),independent_variables,matrices_result));
+			delete [] not_used;
+			delete [] column_numbers_g;
+			delete [] index_f;
+			delete [] mapping_g;
+			delete [] mapping_result;
+			delete [] numbers_of_independent_values;
+			delete [] product_orders;
+			delete [] order_g;
+			delete [] sub_order_g;
+			delete [] matrices_g;
 		}
 	}
 
