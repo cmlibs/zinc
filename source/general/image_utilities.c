@@ -6367,8 +6367,7 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 					case 1:
 					{
 						magick_image->colorspace = GRAYColorspace;
-						/* magick_image->matte = MagickFalse;*/
-						magick_image->matte = 0;
+						magick_image->matte = MagickFalse;
 					} break;
 					case 2:
 					{
