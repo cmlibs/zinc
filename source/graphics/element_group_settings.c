@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 28 November 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -3087,12 +3087,12 @@ field from the gt_element_group - that is, settings->coordinate_field is NULL.
 int GT_element_settings_element_discretization_change(
 	struct GT_element_settings *settings,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 28 June 1999
+LAST MODIFIED : 28 November 2000
 
 DESCRIPTION :
 Deaccesses any graphics_object in <settings> if it would have to be rebuilt
-due to a change in element discretization. Currently element_points, volumes
-and 0-D types do not require a rebuild in this case.
+due to a change in element discretization. Currently element_points, volumes,
+streamlines and 0-D types do not require a rebuild in this case.
 ==============================================================================*/
 {
 	int return_code;
@@ -3101,11 +3101,12 @@ and 0-D types do not require a rebuild in this case.
 	USE_PARAMETER(dummy_void);
 	if (settings)
 	{
-		if (settings->graphics_object&&(
-			GT_element_settings_type_uses_dimension(settings->settings_type,1)||
-			GT_element_settings_type_uses_dimension(settings->settings_type,2)||
-			GT_element_settings_type_uses_dimension(settings->settings_type,3))&&
-			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS != settings->settings_type)&&
+		if (settings->graphics_object && (
+			GT_element_settings_type_uses_dimension(settings->settings_type, 1) ||
+			GT_element_settings_type_uses_dimension(settings->settings_type, 2) ||
+			GT_element_settings_type_uses_dimension(settings->settings_type, 3)) &&
+			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS != settings->settings_type) &&
+			(GT_ELEMENT_SETTINGS_STREAMLINES != settings->settings_type) &&
 			(GT_ELEMENT_SETTINGS_VOLUMES != settings->settings_type))
 		{
 			DEACCESS(GT_object)(&(settings->graphics_object));
