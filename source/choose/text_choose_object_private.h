@@ -329,8 +329,9 @@ Updates the chosen object and text field in response to manager messages. \
 			} break; \
 			case MANAGER_CHANGE_REMOVE(object_type): \
 			{ \
-				if (IS_OBJECT_IN_LIST(object_type)(text_choose_object->current_object, \
-					message->changed_object_list)) \
+				if (text_choose_object->current_object && \
+					IS_OBJECT_IN_LIST(object_type)(text_choose_object->current_object, \
+						message->changed_object_list)) \
 				{ \
 					TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
 						(struct object_type *)NULL); \
@@ -339,8 +340,9 @@ Updates the chosen object and text field in response to manager messages. \
 			case MANAGER_CHANGE_IDENTIFIER(object_type): \
 			case MANAGER_CHANGE_OBJECT(object_type): \
 			{ \
-				if (IS_OBJECT_IN_LIST(object_type)(text_choose_object->current_object, \
-					message->changed_object_list)) \
+				if (text_choose_object->current_object && \
+					IS_OBJECT_IN_LIST(object_type)(text_choose_object->current_object, \
+						message->changed_object_list)) \
 				{ \
 					TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
 						text_choose_object->current_object); \
