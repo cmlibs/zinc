@@ -1,7 +1,7 @@
 /******************************************************************
   FILE: computed_field_region_label.c
 
-  LAST MODIFIED: 2 August 2004
+  LAST MODIFIED: 2 November 2004
 
   DESCRIPTION: Implement image regions labeling
 ==================================================================*/
@@ -21,7 +21,7 @@
 
 struct Computed_field_region_label_package
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 A container for objects required to define fields in this module.
@@ -48,7 +48,7 @@ static char computed_field_region_label_type_string[] = "region_label";
 
 int Computed_field_is_type_region_label(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -126,7 +126,7 @@ we know to invalidate the image cache.
 static int Computed_field_region_label_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -172,7 +172,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_region_label_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -234,7 +234,7 @@ Copy the type specific data used by this type.
 int Computed_field_region_label_clear_cache_type_specific
    (struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -268,7 +268,7 @@ DESCRIPTION :
 static int Computed_field_region_label_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Compare the type specific data
@@ -309,7 +309,7 @@ Compare the type specific data
 #define Computed_field_region_label_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -318,7 +318,7 @@ Check the source fields using the default.
 #define Computed_field_region_label_is_defined_at_node \
 	Computed_field_default_is_defined_at_node
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -327,7 +327,7 @@ Check the source fields using the default.
 #define Computed_field_region_label_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -336,7 +336,7 @@ Window projection does have numerical components.
 #define Computed_field_region_label_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 No special criteria.
@@ -345,7 +345,7 @@ No special criteria.
 
 static int Image_cache_region_label(struct Image_cache *image)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION : Implement region labeling on image cache. The image must be black-white, and the objects are with
         value 1.
@@ -560,7 +560,7 @@ DESCRIPTION : Implement region labeling on image cache. The image must be black-
 static int Computed_field_region_label_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -605,7 +605,7 @@ static int Computed_field_region_label_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -652,7 +652,7 @@ Evaluate the fields cache at the node.
 #define Computed_field_region_label_evaluate_as_string_at_node \
 	Computed_field_default_evaluate_as_string_at_node
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -661,7 +661,7 @@ Print the values calculated in the cache.
 #define Computed_field_region_label_evaluate_as_string_in_element \
 	Computed_field_default_evaluate_as_string_in_element
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -670,7 +670,7 @@ Print the values calculated in the cache.
 #define Computed_field_region_label_set_values_at_node \
    (Computed_field_set_values_at_node_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Not implemented yet.
@@ -679,7 +679,7 @@ Not implemented yet.
 #define Computed_field_region_label_set_values_in_element \
    (Computed_field_set_values_in_element_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Not implemented yet.
@@ -688,7 +688,7 @@ Not implemented yet.
 #define Computed_field_region_label_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -697,7 +697,7 @@ Inherit result from first source field.
 #define Computed_field_region_label_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 2 August 2004
+LAST MODIFIED : 2 November 2004
 
 DESCRIPTION :
 Not implemented yet.
