@@ -11,7 +11,7 @@ use Cmiss::Function::Matrix::Product;
 use Cmiss::Function_variable;
 use Cmiss::Function::Composite;
 
-# check creating matrix sum function
+# check creating matrix product function
 $function_1=new Cmiss::Function::Matrix(n_columns=>3,values=>[1,5,-3,8,2,4]);
 $variable_1=$function_1->output();
 $function_2=new Cmiss::Function::Matrix(n_columns=>2,values=>[-1,-5,3,-8,-2,-4]);
