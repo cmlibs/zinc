@@ -27,9 +27,14 @@ typedef struct USTMSCpair
 #define DM_BUFFER_PRIVATE_FUNCTIONS
 #include <dmedia/dm_buffer.h>
 #include <dmedia/dm_image.h>
+#endif /* defined (SGI_DIGITAL_MEDIA) */
 #include <GL/glx.h>
 #include <GL/gl.h>
-#endif /* defined (SGI_DIGITAL_MEDIA) */
+#if !defined (SGI_DIGITAL_MEDIA)
+/* On the 64Bit version this is defined but the libraries 
+	do not exist so I have undefined it so that the file compiles correctly */
+#undef GLX_SGIX_dm_pbuffer
+#endif /* !defined (SGI_DIGITAL_MEDIA) */
 #include <stdio.h>
 #include <X11/Xatom.h>
 #include <X11/IntrinsicP.h>
@@ -175,7 +180,7 @@ supported on displays other than SGI will do.
 									user_interface->display, buffer->visual_info)))
 							{
 								printf("CREATE(Dm_buffer). openGL visual id = %d\n",
-									buffer->visual_info->visualid);
+									(int)buffer->visual_info->visualid);
 								if ( buffer->pbuffer = glXCreateGLXPbufferSGIX(user_interface->display,
 									config, width, height, dm_pbuffer_attribs))
 								{
@@ -306,7 +311,7 @@ supported on displays other than SGI will do.
 								DefaultScreen(user_interface->display), visattrs))
 							{
 								printf("CREATE(Dm_buffer). openGL visual id = %d\n",
-									buffer->visual_info->visualid);
+									(int)buffer->visual_info->visualid);
 
 								if (buffer->glx_pixmap = glXCreateGLXPixmap(user_interface->display,
 									buffer->visual_info, buffer->pixmap))
