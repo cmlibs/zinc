@@ -44,6 +44,7 @@ November 97 Created from rendering part of Drawing.
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/texture.h"
+#include "graphics/transform_tool.h"
 /* #include "graphics/write_to_video.h" */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -2244,8 +2245,8 @@ Converts mouse button-press and motion events into viewing transformations in
 									if (Scene_viewer_rotate_about_lookat_point(scene_viewer,axis,
 										-angle))
 									{
-										/* Only allow automatic tumble in transform mode */
-										if (SCENE_VIEWER_TRANSFORM == scene_viewer->input_mode)
+										if (Interactive_tool_transform_get_free_spin(
+											scene_viewer->interactive_tool))
 										{
 											/* Store axis and angle so that we can make the
 												 scene viewer spin if left alone. */
@@ -2263,6 +2264,11 @@ Converts mouse button-press and motion events into viewing transformations in
 													scene_viewer->user_interface->application_context,
 													Scene_viewer_automatic_tumble_callback,scene_viewer);
 											}
+										}
+										else
+										{
+											scene_viewer->tumble_angle = 0;
+											scene_viewer->tumble_active = 0;											
 										}
 										view_changed=1;
 									}
@@ -3749,7 +3755,7 @@ Returns the input_mode of the Scene_viewer.
 int Scene_viewer_set_input_mode(struct Scene_viewer *scene_viewer,
 	enum Scene_viewer_input_mode input_mode)
 /*******************************************************************************
-LAST MODIFIED : 25 July 1998
+LAST MODIFIED : 6 October 2000
 
 DESCRIPTION :
 Sets the input_mode of the Scene_viewer.
@@ -6039,53 +6045,6 @@ NOTE: Calling function must not deallocate returned string.
 
 	return (return_string);
 } /* Scene_viewer_buffer_mode_string */
-
-char *Scene_viewer_input_mode_string(
-	enum Scene_viewer_input_mode input_mode)
-/*******************************************************************************
-LAST MODIFIED : 14 October 1998
-
-DESCRIPTION :
-Returns a string label for the <input_mode>.
-NOTE: Calling function must not deallocate returned string.
-==============================================================================*/
-{
-	char *return_string;
-
-	ENTER(Scene_viewer_input_mode_string);
-	switch (input_mode)
-	{
-		case SCENE_VIEWER_NO_INPUT_OR_DRAW:
-		{
-			return_string="no_input_or_draw";
-		} break;
-		case SCENE_VIEWER_UPDATE_ON_CLICK:
-		{
-			return_string="update_on_click";
-		} break;
-		case SCENE_VIEWER_NO_INPUT:
-		{
-			return_string="no_input";
-		} break;
-		case SCENE_VIEWER_SELECT:
-		{
-			return_string="select";
-		} break;
-		case SCENE_VIEWER_TRANSFORM:
-		{
-			return_string="transform";
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_input_mode_string.  Unknown input mode");
-			return_string=(char *)NULL;
-		}
-	}
-	LEAVE;
-
-	return (return_string);
-} /* Scene_viewer_input_mode_string */
 
 char *Scene_viewer_projection_mode_string(
 	enum Scene_viewer_projection_mode projection_mode)

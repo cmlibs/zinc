@@ -25,6 +25,8 @@ static int element_point_tool_hierarchy_open=0;
 static MrmHierarchy element_point_tool_hierarchy;
 #endif /* defined (MOTIF) */
 
+static char Interactive_tool_element_point_type_string[] = "element_point_tool";
+
 
 /*
 Module types
@@ -340,9 +342,11 @@ Creates an Element_point_tool with Interactive_tool in
 				ACCESS(Graphical_material)(rubber_band_material);
 			element_point_tool->interactive_tool=CREATE(Interactive_tool)(
 				"element_point_tool","Element point tool",
+				Interactive_tool_element_point_type_string,
 				Element_point_tool_interactive_event_handler,
 				Element_point_tool_make_interactive_tool_button,
 				(Interactive_tool_bring_up_dialog_function *)NULL,
+				(Interactive_tool_destroy_tool_data_function *)NULL,
 				(void *)element_point_tool);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 				element_point_tool->interactive_tool,

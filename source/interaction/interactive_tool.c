@@ -16,6 +16,7 @@ content of the global selections and objects with text input.
 #include "general/manager_private.h"
 #include "general/mystring.h"
 #include "interaction/interactive_tool.h"
+#include "interaction/interactive_tool_private.h"
 #include "user_interface/message.h"
 
 /*
@@ -34,9 +35,12 @@ ACCESS this object for as long as you need to keep it; it is not modifiable.
 {
 	/* name identifier for the tool and display name for presentation */
 	char *display_name,*name;
+	/* This points to the static string which identifies the tool type */
+	char *tool_type_name;
 	Interactive_event_handler *interactive_event_handler;
 	Interactive_tool_make_button_function *make_button_function;
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function;
+   Interactive_tool_destroy_tool_data_function *destroy_tool_data_function;
 	/* data for the actual tool receiving the events */
 	void *tool_data;
 	int access_count;
@@ -58,9 +62,11 @@ Global functions
 */
 
 struct Interactive_tool *CREATE(Interactive_tool)(char *name,char *display_name,
+	char *tool_type_name,
 	Interactive_event_handler *interactive_event_handler,
 	Interactive_tool_make_button_function *make_button_function,
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function,
+   Interactive_tool_destroy_tool_data_function *destroy_tool_data_function,
 	void *tool_data)
 /*******************************************************************************
 LAST MODIFIED : 11 May 2000
@@ -69,7 +75,9 @@ DESCRIPTION :
 Creates an Interactive_tool with the given <name> and <icon>. If an
 <interactive_event_handler> is supplied it is called to pass on any input
 events to the interactive_tool, with the <tool_data> passed as the third
-parameter.
+parameter.  The <tool_type_name> is used to identify what object type the tool
+is and each type of tool should pass a pointer to a static string naming that
+type.
 ==============================================================================*/
 {
 	struct Interactive_tool *interactive_tool;
@@ -81,9 +89,13 @@ parameter.
 			(interactive_tool->name=duplicate_string(name))&&
 			(interactive_tool->display_name=duplicate_string(display_name)))
 		{
+			/* We don't duplicate this string as it is the pointer to the 
+				string which identifies its type */
+			interactive_tool->tool_type_name=tool_type_name;
 			interactive_tool->make_button_function=make_button_function;
 			interactive_tool->bring_up_dialog_function=bring_up_dialog_function;
 			interactive_tool->interactive_event_handler=interactive_event_handler;
+			interactive_tool->destroy_tool_data_function=destroy_tool_data_function;
 			interactive_tool->tool_data=tool_data;
 			interactive_tool->access_count=0;
 		}
@@ -130,6 +142,10 @@ Destroys the Interactive_tool.
 	{
 		if (0==interactive_tool->access_count)
 		{
+			if (interactive_tool->destroy_tool_data_function)
+			{
+				(interactive_tool->destroy_tool_data_function)(&interactive_tool->tool_data);
+			}
 			DEALLOCATE(interactive_tool->name);
 			DEALLOCATE(interactive_tool->display_name);
 			DEALLOCATE(*interactive_tool_address);
@@ -320,6 +336,62 @@ Up to calling function to DEALLOCATE the returned copy of the display_name.
 
 	return (display_name);
 } /* Interactive_tool_get_display_name */
+
+char *Interactive_tool_get_tool_type_name(
+	struct Interactive_tool *interactive_tool)
+/*******************************************************************************
+LAST MODIFIED : 6 October 2000
+
+DESCRIPTION :
+Returns the static pointer to the string which belongs to the tool type.  Do
+not DEALLOCATE this pointer.
+==============================================================================*/
+{
+	char *tool_type_name;
+
+	ENTER(Interactive_tool_get_tool_type_name);
+	if (interactive_tool)
+	{
+		tool_type_name = interactive_tool->tool_type_name;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Interactive_tool_get_tool_type_name.  Invalid argument(s)");
+		tool_type_name=(char *)NULL;
+	}
+	LEAVE;
+
+	return (tool_type_name);
+} /* Interactive_tool_get_tool_type_name */
+
+void *Interactive_tool_get_tool_data(
+	struct Interactive_tool *interactive_tool)
+/*******************************************************************************
+LAST MODIFIED : 6 October 2000
+
+DESCRIPTION :
+Priveleged function for objects of type Interactive tool to get their own
+type specific data.
+==============================================================================*/
+{
+	void *tool_data;
+
+	ENTER(Interactive_tool_get_tool_data);
+	if (interactive_tool)
+	{
+		tool_data = interactive_tool->tool_data;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Interactive_tool_get_tool_data.  Invalid argument(s)");
+		tool_data = NULL;
+	}
+	LEAVE;
+
+	return (tool_data);
+} /* Interactive_tool_get_tool_data */
 
 int Interactive_tool_handle_interactive_event(
 	struct Interactive_tool *interactive_tool,void *device_id,

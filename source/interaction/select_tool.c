@@ -26,6 +26,8 @@ static int select_tool_hierarchy_open=0;
 static MrmHierarchy select_tool_hierarchy;
 #endif /* defined (MOTIF) */
 
+static char Interactive_tool_select_type_string[] = "select_tool";
+
 
 /*
 Module types
@@ -323,9 +325,11 @@ Creates an Select_tool with Interactive_tool in
 				ACCESS(Graphical_material)(rubber_band_material);
 			select_tool->interactive_tool=CREATE(Interactive_tool)(
 				"select_tool","Select tool",
+				Interactive_tool_select_type_string,
 				Select_tool_interactive_event_handler,
 				Select_tool_make_interactive_tool_button,
 				(Interactive_tool_bring_up_dialog_function *)NULL,
+				(Interactive_tool_destroy_tool_data_function *)NULL,
 				(void *)select_tool);
 			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 				select_tool->interactive_tool,

@@ -721,7 +721,7 @@ Main program for the CMISS Graphical User Interface
 #if defined (SGI_MOVIE_FILE)
 	command_data.movie_graphics_manager=(struct MANAGER(Movie_graphics) *)NULL;
 #endif /* defined (SGI_MOVIE_FILE) */
-	command_data.transform_tool=(struct Transform_tool *)NULL;
+	command_data.transform_tool=(struct Interactive_tool *)NULL;
 	command_data.node_tool=(struct Node_tool *)NULL;
 	command_data.element_tool=(struct Element_tool *)NULL;
 	command_data.data_tool=(struct Node_tool *)NULL;
@@ -1215,8 +1215,10 @@ Main program for the CMISS Graphical User Interface
 	}
 	if (command_data.user_interface)
 	{
-		command_data.transform_tool=CREATE(Transform_tool)(
-			command_data.interactive_tool_manager);
+		command_data.transform_tool=create_Interactive_tool_transform(
+			command_data.user_interface);
+		ADD_OBJECT_TO_MANAGER(Interactive_tool)(command_data.transform_tool,
+		  command_data.interactive_tool_manager);
 		command_data.node_tool=CREATE(Node_tool)(
 			command_data.interactive_tool_manager,
 			command_data.node_manager,/*use_data*/0,
@@ -1946,10 +1948,6 @@ Main program for the CMISS Graphical User Interface
 				if (command_data.node_tool)
 				{
 					DESTROY(Node_tool)(&command_data.node_tool);
-				}
-				if (command_data.transform_tool)
-				{
-					DESTROY(Transform_tool)(&command_data.transform_tool);
 				}
 				DESTROY(MANAGER(Interactive_tool))(
 					&(command_data.interactive_tool_manager));

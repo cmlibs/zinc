@@ -40,6 +40,7 @@ interest and set scene_viewer values directly.
 #include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "graphics/texture.h"
+#include "graphics/transform_tool.h"
 #include "interaction/interactive_toolbar_widget.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
@@ -132,7 +133,7 @@ Contains information for a graphics window.
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	/* Note: interactive_tool is NOT accessed by graphics_window; the chooser
 		 will update it if the current one is destroyed */
-	struct Interactive_tool *interactive_tool,*transform_tool;
+	struct Interactive_tool *interactive_tool;
 	/* the time_slider is attached to the default_time_keeper of the scene,
 		the reference is kept so that the callbacks can be undone */
 	struct Time_keeper *time_keeper;
@@ -540,12 +541,9 @@ toolbar to match the selection.
 			graphics_window->interactive_toolbar_widget,interactive_tool))
 		{
 			graphics_window->interactive_tool=interactive_tool;
-			if (interactive_tool == graphics_window->transform_tool)
+			if (Interactive_tool_is_Transform_tool(interactive_tool))
 			{
 				Graphics_window_set_input_mode(graphics_window,SCENE_VIEWER_TRANSFORM);
-				/* transform_tool is just a placeholder for transform mode so pass
-					 NULL to the scene_viewers */
-				interactive_tool=(struct Interactive_tool *)NULL;
 			}
 			else
 			{
@@ -2500,10 +2498,9 @@ will be printed on the windows title bar.
 				/* I have accessed the time_keeper further down */
 				graphics_window->time_keeper = Scene_get_default_time_keeper(scene);
 				graphics_window->interactive_tool_manager=interactive_tool_manager;
-				graphics_window->transform_tool=ACCESS(Interactive_tool)(
+				graphics_window->interactive_tool=ACCESS(Interactive_tool)(
 					FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
 						"transform_tool",graphics_window->interactive_tool_manager));
-				graphics_window->interactive_tool=graphics_window->transform_tool;
 				graphics_window->user_interface=user_interface;
 				graphics_window->default_viewing_height=512;
 				graphics_window->default_viewing_width=512;
@@ -2632,10 +2629,6 @@ will be printed on the windows title bar.
 										add_interactive_tool_to_interactive_toolbar_widget,
 										(void *)graphics_window->interactive_toolbar_widget,
 										interactive_tool_manager);
-									/* make sure the transform_tool is currently set */
-									interactive_toolbar_widget_set_current_interactive_tool(
-										graphics_window->interactive_toolbar_widget,
-										graphics_window->transform_tool);
 								}
 								else
 								{
@@ -2754,10 +2747,8 @@ will be printed on the windows title bar.
 												graphics_window->default_tumble_rate,
 												graphics_window->default_zoom_rate);
 										}
-										/* make sure the input mode matches scene_viewer default */
-										Graphics_window_set_input_mode(graphics_window,
-											Scene_viewer_get_input_mode(
-												graphics_window->scene_viewer[0]));
+										Graphics_window_set_interactive_tool(
+											graphics_window, graphics_window->interactive_tool);
 										/* set and update the orthographic axes */
 										ortho_up_axis=graphics_window->ortho_up_axis;
 										ortho_front_axis=graphics_window->ortho_front_axis;
@@ -2894,7 +2885,6 @@ Graphics_window_destroy_CB.
 			DEACCESS(Time_keeper)(&(graphics_window->time_keeper));
 		}
 		DEALLOCATE(graphics_window->name);
-		DEACCESS(Interactive_tool)(&(graphics_window->transform_tool));
 		DEALLOCATE(*graphics_window_address);
 		return_code=1;
 	}

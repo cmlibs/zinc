@@ -30,6 +30,8 @@ static int element_tool_hierarchy_open=0;
 static MrmHierarchy element_tool_hierarchy;
 #endif /* defined (MOTIF) */
 
+static char Interactive_tool_element_type_string[] = "element_tool";
+
 
 /*
 Module types
@@ -568,9 +570,11 @@ Selects elements in <element_selection> in response to interactive_events.
 				/* interactive_tool */
 				element_tool->interactive_tool=CREATE(Interactive_tool)(
 					"element_tool","Element tool",
+					Interactive_tool_element_type_string,
 					Element_tool_interactive_event_handler,
 					Element_tool_make_interactive_tool_button,
 					Element_tool_bring_up_interactive_tool_dialog,
+					(Interactive_tool_destroy_tool_data_function *)NULL,
 					(void *)element_tool);
 				ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 					element_tool->interactive_tool,

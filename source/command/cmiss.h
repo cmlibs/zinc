@@ -45,7 +45,7 @@ DESCRIPTION :
 	struct Element_tool *element_tool;
 	struct Node_tool *data_tool,*node_tool;
 	struct Select_tool *select_tool;
-	struct Transform_tool *transform_tool;
+	struct Interactive_tool *transform_tool;
 	/*???RC.  Single list of graphics objects - eventually set up manager ? */
 	struct LIST(GT_object) *graphics_object_list;
 	/* list of glyphs = simple graphics objects with only geometry */

@@ -45,10 +45,9 @@ Be sure to implement any new modes in Scene_viewer_projection_mode_string.
 
 enum Scene_viewer_input_mode
 /*******************************************************************************
-LAST MODIFIED : 14 October 1998
+LAST MODIFIED : 6 October 2000
 
 DESCRIPTION :
-Be sure to implement any new modes in Scene_viewer_input_mode_string.
 ==============================================================================*/
 {
 	SCENE_VIEWER_NO_INPUT_OR_DRAW,

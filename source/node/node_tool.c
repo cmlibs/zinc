@@ -39,6 +39,8 @@ static int node_tool_hierarchy_open=0;
 static MrmHierarchy node_tool_hierarchy;
 #endif /* defined (MOTIF) */
 
+static char Interactive_tool_node_type_string[] = "node_tool";
+
 /*
 Module types
 ------------
@@ -954,79 +956,6 @@ object's coordinate field.
 
 	return (return_code);
 } /* Node_tool_define_field_at_node_from_picked_coordinates */
-
-static int Node_tool_define_field_at_node_at_interaction_volume(
-	struct Node_tool *node_tool,struct FE_node *node,
-	struct Interaction_volume *interaction_volume)
-/*******************************************************************************
-LAST MODIFIED : 12 September 2000
-
-DESCRIPTION :
-Defines the coordinate_field at the node from the central position in the
-<interaction_volume>.
-==============================================================================*/
-{
-	double d,LU_transformation_matrix[16],node_coordinates[3];
-	FE_value coordinates[3];
-	int i,LU_indx[4],transformation_required,return_code;
-	struct Computed_field *coordinate_field,*rc_coordinate_field;
-
-	ENTER(Node_tool_define_field_at_node_at_interaction_volume);
-	if (node_tool&&node&&interaction_volume)
-	{
-		coordinate_field=node_tool->coordinate_field;
-		if (rc_coordinate_field=
-			Computed_field_begin_wrap_coordinate_field(coordinate_field))
-		{
-			/* get new node coordinates from interaction_volume */
-			Interaction_volume_get_placement_point(interaction_volume,
-				node_coordinates);
-			for (i=0;i<3;i++)
-			{
-				coordinates[i]=(FE_value)node_coordinates[i];
-			}
-			if (Scene_picked_object_get_total_transformation_matrix(
-				node_tool->scene_picked_object,&transformation_required,
-				LU_transformation_matrix)&&transformation_required&&
-				LU_decompose(4,LU_transformation_matrix,LU_indx,&d))
-			{
-				world_to_model_coordinates(coordinates,
-					LU_transformation_matrix,LU_indx);
-			}
-			if (Node_tool_define_field_at_node(node_tool,node)&&
-				Computed_field_set_values_at_node(rc_coordinate_field,
-					node,coordinates))
-			{
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Node_tool_define_field_at_interaction_volume.  Failed");
-				return_code=0;
-			}
-			Computed_field_clear_cache(rc_coordinate_field);
-			Computed_field_end_wrap(&rc_coordinate_field);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Node_tool_define_field_at_node_at_interaction_volume.  "
-				"Could not wrap coordinate field");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Node_tool_define_field_at_node_at_interaction_volume.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Node_tool_define_field_at_node_at_interaction_volume */
 
 static struct FE_node *Node_tool_create_node_at_interaction_volume(
 	struct Node_tool *node_tool,struct Scene *scene,
@@ -2053,9 +1982,11 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				}
 				node_tool->interactive_tool=CREATE(Interactive_tool)(
 					tool_name,tool_display_name,
+					Interactive_tool_node_type_string,
 					Node_tool_interactive_event_handler,
 					Node_tool_make_interactive_tool_button,
 					Node_tool_bring_up_interactive_tool_dialog,
+					(Interactive_tool_destroy_tool_data_function *)NULL,
 					(void *)node_tool);
 				ADD_OBJECT_TO_MANAGER(Interactive_tool)(
 					node_tool->interactive_tool,

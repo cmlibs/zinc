@@ -29,6 +29,8 @@ typedef void Interactive_event_handler(void *device_id,
 typedef int Interactive_tool_bring_up_dialog_function(void *user_data);
 typedef Widget Interactive_tool_make_button_function(void *user_data,
 	Widget parent);
+typedef int Interactive_tool_destroy_tool_data_function(
+   void **interactive_tool_data_address);
 
 struct Interactive_tool;
 /*******************************************************************************
@@ -49,9 +51,11 @@ Global functions
 */
 
 struct Interactive_tool *CREATE(Interactive_tool)(char *name,char *display_name,
+	char *tool_type_name,
 	Interactive_event_handler *interactive_event_handler,
 	Interactive_tool_make_button_function *make_button_function,
 	Interactive_tool_bring_up_dialog_function *bring_up_dialog_function,
+   Interactive_tool_destroy_tool_data_function *destroy_tool_data_function,
 	void *tool_data);
 /*******************************************************************************
 LAST MODIFIED : 11 May 2000
@@ -91,6 +95,16 @@ Returns the display_name of the tool = what should be shown on widget/window
 descriptions of the tool. The actual name generally uses underscore _ characters
 instead of spaces for more terse commands.
 Up to calling function to DEALLOCATE the returned copy of the display_name.
+==============================================================================*/
+
+char *Interactive_tool_get_tool_type_name(
+	struct Interactive_tool *interactive_tool);
+/*******************************************************************************
+LAST MODIFIED : 6 October 2000
+
+DESCRIPTION :
+Returns the static pointer to the string which belongs to the tool type.  Do
+not DEALLOCATE this pointer.
 ==============================================================================*/
 
 int Interactive_tool_handle_interactive_event(

@@ -78,6 +78,7 @@ Functions for executing cmiss commands.
 #include "graphics/spectrum_settings.h"
 #include "graphics/texture.h"
 #include "graphics/texturemap.h"
+#include "graphics/transform_tool.h"
 #include "graphics/userdef_objects.h"
 #include "graphics/volume_texture.h"
 #include "graphics/volume_texture_editor.h"
@@ -20364,55 +20365,47 @@ DESCRIPTION :
 	return (return_code);
 } /* gfx_timekeeper */
 
-#if !defined (WINDOWS_DEV_FLAG)
-static int execute_command_gfx_transform(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+static int gfx_transform_tool(struct Parse_state *state,
+	void *dummy_user_data,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 January 1999
+LAST MODIFIED : 6 October 2000
 
 DESCRIPTION :
-Executes a GFX TRANSFORM command.
+Executes a GFX TRANSFORM_TOOL command.
 ==============================================================================*/
 {
-	int return_code;
+	int free_spin_flag, return_code;
 	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"node",NULL,NULL,gfx_transform_node},
-			/*???DB.  Change gfx_transform_node because not in this module ? */
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Node_transform_data node_transform_data;
+	struct Option_table *option_table;
+	struct Interactive_tool *transform_tool;
 
-	ENTER(execute_command_gfx_transform);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	ENTER(execute_command_gfx_transform_tool);
+	USE_PARAMETER(dummy_user_data);
+	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void)
+		&& (transform_tool=command_data->transform_tool))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		/* initialize defaults */
+		free_spin_flag = Interactive_tool_transform_get_free_spin(transform_tool);
+
+		option_table=CREATE(Option_table)();
+		/* free_spin/no_free_spin */
+		Option_table_add_switch(option_table,"free_spin","no_free_spin",&free_spin_flag);
+		if (return_code=Option_table_multi_parse(option_table,state))
 		{
-			node_transform_data.fe_field_manager=command_data->fe_field_manager;
-			node_transform_data.node_manager=command_data->node_manager;
-			(option_table[0]).user_data= &node_transform_data;
-			return_code=process_option(state,option_table);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_gfx_transform.  Invalid argument(s)");
-			return_code=0;
-		}
+			Interactive_tool_transform_set_free_spin(transform_tool, free_spin_flag);
+		} /* parse error,help */
+		DESTROY(Option_table)(&option_table);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"execute_command_gfx_transform.  Missing state");
+			"execute_command_gfx_transform_tool.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* execute_command_gfx_transform */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+} /* execute_command_gfx_transform_tool */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_update(struct Parse_state *state,
@@ -21592,7 +21585,7 @@ Executes a GFX command.
 		{"set",NULL,NULL,execute_command_gfx_set},
 		{"smooth",NULL,NULL,execute_command_gfx_smooth},
 		{"timekeeper",NULL,NULL,gfx_timekeeper},
-		{"transform",NULL,NULL,execute_command_gfx_transform},
+		{"transform_tool",NULL,NULL,gfx_transform_tool},
 		{"unselect",NULL,NULL,execute_command_gfx_unselect},
 		{"update",NULL,NULL,execute_command_gfx_update},
 		{"warp",NULL,NULL,execute_command_gfx_warp},
@@ -21705,7 +21698,7 @@ Executes a GFX command.
 				/* timekeeper */
 				(option_table[i]).user_data=command_data_void;
 				i++;
-				/* transform */
+				/* transform_tool */
 				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* unselect */

@@ -30,23 +30,41 @@ Global functions
 ----------------
 */
 
-struct Transform_tool *CREATE(Transform_tool)(
-	struct MANAGER(Interactive_tool) *interactive_tool_manager);
+int Interactive_tool_is_Transform_tool(struct Interactive_tool *interactive_tool);
 /*******************************************************************************
-LAST MODIFIED : 12 June 2000
+LAST MODIFIED : 6 October 2000
 
 DESCRIPTION :
-Creates a Transform_tool which works like a placeholder for a graphics windows
-own transform mode - so it appears like any other tool in a toolbar.
+Identifies whether an Interactive_tool is a Transform_tool.
 ==============================================================================*/
 
-int DESTROY(Transform_tool)(struct Transform_tool **transform_tool_address);
+int Interactive_tool_transform_get_free_spin(
+	struct Interactive_tool *interactive_tool);
 /*******************************************************************************
-LAST MODIFIED : 12 June 2000
+LAST MODIFIED : 9 October 2000
 
 DESCRIPTION :
-Frees and deaccesses objects in the <transform_tool> and deallocates the
-structure itself.
+If the interactive tool is of type Transform this function specifies whether 
+the window should spin freely when tumbling.
 ==============================================================================*/
 
+int Interactive_tool_transform_set_free_spin(struct Interactive_tool *interactive_tool,
+	int free_spin);
+/*******************************************************************************
+LAST MODIFIED : 9 October 2000
+
+DESCRIPTION :
+If the interactive tool is of type Transform this function controls whether 
+the window will spin freely when tumbling.
+==============================================================================*/
+
+struct Interactive_tool *create_Interactive_tool_transform(
+	struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 9 October 2000
+
+DESCRIPTION :
+Creates a transform type Interactive_tool which control the transformation of
+scene_viewers.
+==============================================================================*/
 #endif /* !defined (TRANSFORM_TOOL_H) */
