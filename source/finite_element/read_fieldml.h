@@ -9,7 +9,8 @@ DESCRIPTION :
 #define READ_FIELDML_H
 
 struct Cmiss_region *parse_fieldml_file(char *filename,
-	struct MANAGER(FE_basis) *basis_manager);
+	struct MANAGER(FE_basis) *basis_manager,
+	struct LIST(FE_element_shape) *element_shape_list);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2003
 

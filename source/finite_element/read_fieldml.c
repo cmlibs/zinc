@@ -18,6 +18,7 @@ The function for importing finite element data into CMISS.
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
 #include "finite_element/finite_element_region.h"
+#include "finite_element/read_fieldml.h"
 #include "general/debug.h"
 #include "general/list.h"
 #include "general/list_private.h"
@@ -3568,14 +3569,17 @@ DESCRIPTION :
 		{
 			element_template = 
 				fieldml_data->current_element_interpolation_ref->element_template;
+			fieldml_data->current_element = CREATE(FE_element)(
+				&cm, (struct FE_element_shape *)NULL, 
+				(struct FE_region *)NULL, element_template);
 		}
 		else
 		{
 			element_template = (struct FE_element *)NULL;
+			fieldml_data->current_element = CREATE(FE_element)(
+				&cm, fieldml_data->current_element_shape, 
+				fieldml_data->root_fe_region, element_template);
 		}
-		fieldml_data->current_element = CREATE(FE_element)(
-			&cm, (struct FE_element_shape *)NULL, 
-			(struct FE_region *)NULL, element_template);
 		if (fieldml_data->face_numbers)
 		{
 			face_identifier.type = CM_ELEMENT;
@@ -5445,6 +5449,7 @@ DESCRIPTION :
 
 	if (ctxt->wellFormed)
 		ret = 0;
+
 	else
 		ret = -1;
 	if (sax != NULL)

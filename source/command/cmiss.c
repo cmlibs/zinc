@@ -16373,7 +16373,8 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			}
 			if (return_code)
 			{
-				if (region = parse_fieldml_file(file_name, command_data->basis_manager))
+				if (region = parse_fieldml_file(file_name, command_data->basis_manager,
+					command_data->element_shape_list))
 				{
 					ACCESS(Cmiss_region)(region);
 					if (Cmiss_regions_FE_regions_can_be_merged(
