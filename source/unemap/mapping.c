@@ -11020,7 +11020,7 @@ LAST MODIFIED :17 September 2001
 
 DESCRIPTION :
 Construct a colour map image for colour map or contours or  values  in the
-<map> frame.
+<sub_map> frame.
 *******************************************************************************/
 {
 	char *background_map_boundary,*background_map_boundary_base,*temp_char,
@@ -11514,7 +11514,7 @@ static int draw_2d_make_map(struct Map *map,int recalculate,
 	struct Drawing_2d *drawing,int map_width,int map_height,int map_x_offset,
 	int map_y_offset,float frame_time,int use_potential_time)
 /*******************************************************************************
-LAST MODIFIED : 17 October 2001
+LAST MODIFIED :30 October 2001
 
 DESCRIPTION :
 This function draws the <map> in the <drawing>, with <map_width>, <map_height> 
@@ -11685,183 +11685,194 @@ comparison with 3D maps.
 					map->draw_region_number=draw_region_number;
 					DEALLOCATE(map->electrodes);
 					DEALLOCATE(map->electrode_drawn);					
-					if (ALLOCATE(electrode,struct Device *,number_of_electrodes)&&
-						ALLOCATE(electrode_drawn,char,number_of_electrodes)&&
-						ALLOCATE(x,float,number_of_electrodes)&&
-						ALLOCATE(y,float,number_of_electrodes)&&
-						ALLOCATE(first,char,number_of_drawn_regions))
+					if(map->number_of_electrodes)
 					{
-						map->electrodes=electrode;
-						map->electrode_drawn=electrode_drawn;															
-						if ((sub_map=create_Sub_map(number_of_drawn_regions,
-							number_of_electrodes,map_x_offset,map_y_offset,map_height,
-							map_width,frame_time,use_potential_time))&&
-							(map_add_Sub_map(map,sub_map)))
+						if (ALLOCATE(electrode,struct Device *,number_of_electrodes)&&
+							ALLOCATE(electrode_drawn,char,number_of_electrodes)&&
+							ALLOCATE(x,float,number_of_electrodes)&&
+							ALLOCATE(y,float,number_of_electrodes)&&
+							ALLOCATE(first,char,number_of_drawn_regions))
 						{
-							if (use_potential_time)
+							map->electrodes=electrode;
+							map->electrode_drawn=electrode_drawn;															
+							if ((sub_map=create_Sub_map(number_of_drawn_regions,
+								number_of_electrodes,map_x_offset,map_y_offset,map_height,
+								map_width,frame_time,use_potential_time))&&
+								(map_add_Sub_map(map,sub_map)))
 							{
-								if ((map->potential_time)&&(*(map->potential_time))&&
-									(rig->devices)&&(*(rig->devices))&&
-									((*(rig->devices))->signal)&&
-									(buffer=(*(rig->devices))->signal->buffer)&&
-									(times=buffer->times))
+								if (use_potential_time)
 								{
-									sub_map->frame_time=(float)((times)[*(map->potential_time)])*
-										1000./(buffer->frequency);
-								}
-								else
-								{
-									sub_map->frame_time=0;
-								}
-							}
-							screen_x=sub_map->electrode_x;
-							screen_y=sub_map->electrode_y;
-							electrode_value=sub_map->electrode_value;													
-							min_x=sub_map->min_x;
-							min_y=sub_map->min_y;
-							stretch_x=sub_map->stretch_x;
-							stretch_y=sub_map->stretch_y;
-							start_x=sub_map->start_x;
-							start_y=sub_map->start_y;														
-							/* calculate the projections of the electrode positions, the
-								 electrode values and the x and y ranges */
-							device=rig->devices;
-							number_of_devices=rig->number_of_devices;
-							x_item=x;
-							y_item=y;
-							for (i=number_of_drawn_regions;i>0;)
-							{
-								i--;
-								first[i]=1;
-							}
-							x_border=4;
-							y_border=4;
-							while (number_of_devices>0)
-							{
-								if ((ELECTRODE==(description=(*device)->description)->type)&&
-									(!current_region||(current_region==description->region)))
-								{
-									/* add device */
-									*electrode= *device;
-									/* update border size */
-									if (description->name)
+									if ((map->potential_time)&&(*(map->potential_time))&&
+										(rig->devices)&&(*(rig->devices))&&
+										((*(rig->devices))->signal)&&
+										(buffer=(*(rig->devices))->signal->buffer)&&
+										(times=buffer->times))
 									{
-										XTextExtents(font,description->name,
-											strlen(description->name),&direction,&ascent,&descent,
-											&bounds);
-										x_name_border=bounds.lbearing+bounds.rbearing+1;
-										if (x_name_border>x_border)
-										{
-											x_border=x_name_border;
-										}
-										y_name_border=ascent+1+descent;
-										if (y_name_border>y_border)
-										{
-											y_border=y_name_border;
-										}
+										sub_map->frame_time=(float)((times)[*(map->potential_time)])*
+											1000./(buffer->frequency);
 									}
-									/* perform projection and update ranges */
-									draw_2d_perform_projection_update_ranges(map,sub_map,
-										description,x_item,y_item,first);
-									/* calculate electrode value */
-									f_value=0;
-									*electrode_drawn=0;
-									draw_2d_calculate_electrode_value(map,sub_map,electrode_drawn,
-										electrode,&f_value);
-									*electrode_value=f_value;
-									electrode_value++;
-									electrode_drawn++;
+									else
+									{
+										sub_map->frame_time=0;
+									}
+								}
+								screen_x=sub_map->electrode_x;
+								screen_y=sub_map->electrode_y;
+								electrode_value=sub_map->electrode_value;													
+								min_x=sub_map->min_x;
+								min_y=sub_map->min_y;
+								stretch_x=sub_map->stretch_x;
+								stretch_y=sub_map->stretch_y;
+								start_x=sub_map->start_x;
+								start_y=sub_map->start_y;														
+								/* calculate the projections of the electrode positions, the
+									 electrode values and the x and y ranges */
+								device=rig->devices;
+								number_of_devices=rig->number_of_devices;
+								x_item=x;
+								y_item=y;
+								for (i=number_of_drawn_regions;i>0;)
+								{
+									i--;
+									first[i]=1;
+								}
+								x_border=4;
+								y_border=4;
+								while (number_of_devices>0)
+								{
+									if ((ELECTRODE==(description=(*device)->description)->type)&&
+										(!current_region||(current_region==description->region)))
+									{
+										/* add device */
+										*electrode= *device;
+										/* update border size */
+										if (description->name)
+										{
+											XTextExtents(font,description->name,
+												strlen(description->name),&direction,&ascent,&descent,
+												&bounds);
+											x_name_border=bounds.lbearing+bounds.rbearing+1;
+											if (x_name_border>x_border)
+											{
+												x_border=x_name_border;
+											}
+											y_name_border=ascent+1+descent;
+											if (y_name_border>y_border)
+											{
+												y_border=y_name_border;
+											}
+										}
+										/* perform projection and update ranges */
+										draw_2d_perform_projection_update_ranges(map,sub_map,
+											description,x_item,y_item,first);
+										/* calculate electrode value */
+										f_value=0;
+										*electrode_drawn=0;
+										draw_2d_calculate_electrode_value(map,sub_map,electrode_drawn,
+											electrode,&f_value);
+										*electrode_value=f_value;
+										electrode_value++;
+										electrode_drawn++;
+										electrode++;
+										x_item++;
+										y_item++;
+									}/* if ((ELECTRODE==(description=(*device)->description)->type)&& */
+									device++;
+									number_of_devices--;
+								}/* while (number_of_devices>0) */			
+								draw_2d_set_min_x_max_x(map,sub_map,&a,pi,map->projection_type);
+								map->number_of_region_columns=(int)(0.5+sqrt((double)number_of_drawn_regions));
+								if (map->number_of_region_columns<1)
+								{
+									map->number_of_region_columns=1;
+								}
+								map->number_of_region_rows=(number_of_drawn_regions-1)/
+									map->number_of_region_columns+1;
+								if (map->number_of_region_rows<1)
+								{
+									map->number_of_region_rows=1;
+								}
+								/* equalize the columns */
+								if ((number_of_drawn_regions>1)&&(map->number_of_region_columns>1)&&
+									((i=map->number_of_region_rows*map->number_of_region_columns-
+										number_of_drawn_regions-1)>0))
+								{
+									map->number_of_region_rows -= i/(map->number_of_region_columns-1);
+								}
+								/* make the regions fill the width and the height */
+								screen_region_width=(map_width)/map->number_of_region_columns;
+								screen_region_height=(map_height)/map->number_of_region_rows;
+								draw_2d_calc_map_to_screen_transform(map,sub_map,display,
+									screen_region_width,screen_region_height,x_border,y_border,ascent,
+									descent);
+								/* calculate the electrode screen locations */
+								electrode=map->electrodes;
+								x_item=x;
+								y_item=y;
+								screen_x=sub_map->electrode_x;
+								screen_y=sub_map->electrode_y;
+								for (i=number_of_electrodes;i>0;i--)
+								{
+									region_number=draw_region_number[
+										(*electrode)->description->region->number];
+									/* calculate screen position */
+									*screen_x=start_x[region_number]+
+										(int)(((*x_item)-min_x[region_number])*
+											stretch_x[region_number]);
+									*screen_y=start_y[region_number]-
+										(int)(((*y_item)-min_y[region_number])*
+											stretch_y[region_number]);
 									electrode++;
 									x_item++;
 									y_item++;
-								}/* if ((ELECTRODE==(description=(*device)->description)->type)&& */
-								device++;
-								number_of_devices--;
-							}/* while (number_of_devices>0) */			
-							draw_2d_set_min_x_max_x(map,sub_map,&a,pi,map->projection_type);
-							map->number_of_region_columns=(int)(0.5+sqrt((double)number_of_drawn_regions));
-							if (map->number_of_region_columns<1)
-							{
-								map->number_of_region_columns=1;
-							}
-							map->number_of_region_rows=(number_of_drawn_regions-1)/
-								map->number_of_region_columns+1;
-							if (map->number_of_region_rows<1)
-							{
-								map->number_of_region_rows=1;
-							}
-							/* equalize the columns */
-							if ((number_of_drawn_regions>1)&&(map->number_of_region_columns>1)&&
-								((i=map->number_of_region_rows*map->number_of_region_columns-
-									number_of_drawn_regions-1)>0))
-							{
-								map->number_of_region_rows -= i/(map->number_of_region_columns-1);
-							}
-							/* make the regions fill the width and the height */
-							screen_region_width=(map_width)/map->number_of_region_columns;
-							screen_region_height=(map_height)/map->number_of_region_rows;
-							draw_2d_calc_map_to_screen_transform(map,sub_map,display,
-								screen_region_width,screen_region_height,x_border,y_border,ascent,
-								descent);
-							/* calculate the electrode screen locations */
-							electrode=map->electrodes;
-							x_item=x;
-							y_item=y;
-							screen_x=sub_map->electrode_x;
-							screen_y=sub_map->electrode_y;
-							for (i=number_of_electrodes;i>0;i--)
-							{
-								region_number=draw_region_number[
-									(*electrode)->description->region->number];
-								/* calculate screen position */
-								*screen_x=start_x[region_number]+
-									(int)(((*x_item)-min_x[region_number])*
-										stretch_x[region_number]);
-								*screen_y=start_y[region_number]-
-									(int)(((*y_item)-min_y[region_number])*
-										stretch_y[region_number]);
-								electrode++;
-								x_item++;
-								y_item++;
-								screen_x++;
-								screen_y++;
-							}/* for (i=number_of_electrodes;i>0;i--) */
+									screen_x++;
+									screen_y++;
+								}/* for (i=number_of_electrodes;i>0;i--) */
 
-							/* construct a colour map image for colour map or contours or
-								 values */
-							/* draw colour map and contours first (background) */
-							if (NO_MAP_FIELD!=map_type)
+								/* construct a colour map image for colour map or contours or
+									 values */
+								/* draw colour map and contours first (background) */
+								if (NO_MAP_FIELD!=map_type)
+								{
+									if (NO_INTERPOLATION!=map->interpolation_type)
+									{
+										draw_2d_construct_image_map(map,sub_map,drawing,recalculate,
+											undecided_accepted,pi_over_2,pi,two_pi,screen_region_height,
+											screen_region_width);
+									}/* (NO_INTERPOLATION!=map->interpolation_type) */
+									else
+									{
+										if (1<recalculate)
+										{							
+											set_map_2d_no_interpolation_min_max(map,sub_map);
+										}	
+									}
+								}/* if (NO_MAP_FIELD!=map_type) */
+							}/* if (x&&y&&electrode&&screen_x&&screen_y&&electrode_value&& */
+							else
 							{
-								if (NO_INTERPOLATION!=map->interpolation_type)
-								{
-									draw_2d_construct_image_map(map,sub_map,drawing,recalculate,
-										undecided_accepted,pi_over_2,pi,two_pi,screen_region_height,
-										screen_region_width);
-								}/* (NO_INTERPOLATION!=map->interpolation_type) */
-								else
-								{
-									if (1<recalculate)
-									{							
-										set_map_2d_no_interpolation_min_max(map,sub_map);
-									}	
-								}
-							}/* if (NO_MAP_FIELD!=map_type) */
-						}/* if (x&&y&&electrode&&screen_x&&screen_y&&electrode_value&& */
+								display_message(ERROR_MESSAGE,
+									"draw_2d_make_map. creation of sub_map failed");
+								return_code=0;
+							}	
+							DEALLOCATE(x);
+							DEALLOCATE(y);
+							DEALLOCATE(first);
+						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"draw_2d_make_map. creation of sub_map failed");
+								"draw_2d_make_map. out of memory for electrode/electrode_drawnx/y/first");
 							return_code=0;
-						}	
-						DEALLOCATE(x);
-						DEALLOCATE(y);
-						DEALLOCATE(first);
+						}					
 					}
 					else
-					{
-						display_message(ERROR_MESSAGE,
-							"draw_2d_make_map. out of memory for electrode/electrode_drawnx/y/first");
-						return_code=0;
+					{						
+						map->minimum_value=0;
+						map->maximum_value=1;
+						map->contour_minimum=0;
+						map->contour_maximum=1;
+						display_message(WARNING_MESSAGE,"No electrodes to map!");
 					}
 				}
 				else
@@ -11981,7 +11992,7 @@ Draw multiple sub maps on the same window for Electrical Imaging.
 static int draw_map_2d(struct Map *map,int recalculate,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2001
+LAST MODIFIED : 30 October 2001
 
 DESCRIPTION:
 Draws all the sub maps of the 2D <map>, by first making it with
@@ -12053,28 +12064,26 @@ See draw_2d_make_map for meanings of recalculate.
 					return_code=draw_2d_make_map(map,recalculate,drawing,map_width,
 						map_height,map_x_offset,map_y_offset,frame_time,use_potential_time);						
 				}
-				if(number_of_frames>1)
+				if(return_code&&map->number_of_electrodes)
+				/* map->number_of_electrodes=0, nothing to show*/
 				{
-					/* draw the first frame of movie */
-					set_map_2d_map_min_max(map);
-				}
-				else
-				{
-					/*??JW What has DB done with the frame_time/use potential time thing?*/
-					/*need to update the map->start_time,end_time from sub_map->frame_time */
-					/* (where it's now generated) for map_dialog, at least if mapping with */
-					/* potential_time where it's now generated */
-					map->start_time=map->sub_map[0]->frame_time;
-					map->end_time=map->start_time;				
-					if (recalculate>1)
+					if(number_of_frames>1)
 					{
+						/* draw the first frame of movie */
 						set_map_2d_map_min_max(map);
 					}
-				}
-				update_colour_map_unemap(map,drawing);				
-				draw_2d_show_map(map,map->sub_map_number,recalculate,drawing);
-			}								 
-		}
+					else
+					{
+						if (recalculate>1)
+						{
+							set_map_2d_map_min_max(map);
+						}
+					}					
+					update_colour_map_unemap(map,drawing);				
+					draw_2d_show_map(map,map->sub_map_number,recalculate,drawing);
+				} /* if(return_code&&map->number_of_electrodes)	*/
+			}/* if (recalculate==0) */
+		}/* if ((*map->first_eimaging_event)&& */
 	}
 	else
 	{

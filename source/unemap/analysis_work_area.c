@@ -293,7 +293,7 @@ rig->current_region->type are compatible.
 static void display_map(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 6 September 2000
+LAST MODIFIED : 30 October 2001
 
 DESCRIPTION :
 ??? colour bar ?
@@ -307,8 +307,10 @@ DESCRIPTION :
 	struct Map *map;
 	struct Mapping_window *mapping;
 	struct Signal_buffer *buffer;
+	struct Spectrum *spectrum;
 	struct User_interface *user_interface;
 	ENTER(display_map);
+	spectrum=(struct Spectrum *)NULL;
 	analysis_window=(struct Analysis_window *)NULL;
 	analysis=(struct Analysis_work_area *)NULL;
 	map=(struct Map *)NULL;
@@ -317,9 +319,11 @@ DESCRIPTION :
 	buffer=(struct Signal_buffer *)NULL;
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
 		(analysis_window=analysis->window)&&
-		(user_interface=analysis->user_interface))
+		(user_interface=analysis->user_interface)&&
+		(spectrum=analysis->map_drawing_information->spectrum))
 	{
-		if (analysis->map_type_changed)
+		if ((analysis->map_type_changed)||
+			(UNKNOWN_SPECTRUM==Spectrum_get_simple_type(spectrum)))
 		/* revert to the default spectrum type if the map type has changed  */
 		{
 			switch (analysis->map_type)
@@ -327,13 +331,11 @@ DESCRIPTION :
 				case SINGLE_ACTIVATION:
 				case MULTIPLE_ACTIVATION:
 				{
-					Spectrum_set_simple_type(analysis->map_drawing_information->spectrum,
-						RED_TO_BLUE_SPECTRUM);
+					Spectrum_set_simple_type(spectrum,RED_TO_BLUE_SPECTRUM);
 				} break;
 				default:
 				{
-					Spectrum_set_simple_type(analysis->map_drawing_information->spectrum,
-						BLUE_TO_RED_SPECTRUM);
+					Spectrum_set_simple_type(spectrum,BLUE_TO_RED_SPECTRUM);
 				} break;
 			}
 			analysis->map_type_changed=0;
@@ -2857,18 +2859,16 @@ Sets up the analysis work area for analysing a set of signals.
 #if defined (UNEMAP_USE_3D)
 		/* convert the loaded rig to nodes/elements/fields */
 		if (convert_rig_to_nodes(analysis->rig))
-		{
-			/* same as rig->unemap_package */
-			ACCESS(Unemap_package)(analysis->unemap_package);	
-			return_code=1;
-#if  defined (OLD_CODE)
+		{			
+#if defined (OLD_CODE)
 		/* used to read the signal file into nodes now do the convert above */
 		/*???DB.  Would be better to be another callback from the same button ? */
 		if (file_read_signal_FE_node_group(file_name,analysis->rig))
-		{
+		{			 
+#endif /* defined (OLD_CODE) */
+			/* same as rig->unemap_package */
 			ACCESS(Unemap_package)(analysis->unemap_package);	
-			return_code=1;	 
-#endif
+			return_code=1;
 		}
 		else
 		{
@@ -3128,7 +3128,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2001
+LAST MODIFIED : 26 October 2001
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -4173,15 +4173,22 @@ signals.
 				/*???DB.  Would be better to be another callback from the same button ? */
 				if (return_code&&signal_file_name)
 				{
+					/* convert the loaded rig to nodes/elements/fields */
+					if (convert_rig_to_nodes(analysis->rig))
+					{
+#if  defined (OLD_CODE)
+					/* used to read the signal file into nodes now do the convert above */	
 					if(file_read_signal_FE_node_group(signal_file_name,analysis->rig))
 					{
+#endif /* defined (OLD_CODE) */
 						ACCESS(Unemap_package)(analysis->unemap_package);		 
 						/* highlight the  node (and everything else) */
 						if ((analysis->highlight)&&(*(analysis->highlight)))
 						{	
 							/*get the rig_node corresponding to the device */
 							node_selection=get_unemap_package_FE_node_selection(analysis->unemap_package);
-							device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
+							device_name_field=
+								get_unemap_package_device_name_field(analysis->unemap_package);
 							rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
 							rig_node=find_rig_node_given_device(*(analysis->highlight),rig_node_group,
 								device_name_field);
@@ -4192,7 +4199,7 @@ signals.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"read_event_times_file. file_read_signal_FE_node_group failed ");
+						"read_event_times_file. convert_rig_to_nodes failed ");						
 					}
 				}
 #endif /* defined (UNEMAP_USE_3D) */
@@ -14291,7 +14298,7 @@ Calculates the next desired update callback from the time object.
 static int analysis_potential_time_update_callback(
 	struct Time_object *time_object,double current_time,void *analysis_void)
 /*******************************************************************************
-LAST MODIFIED : 17 September 2001
+LAST MODIFIED : 30 October 2001
 
 DESCRIPTION :
 Responds to update callbacks from the time object.
@@ -14479,6 +14486,8 @@ Responds to update callbacks from the time object.
 												update_mapping_drawing_area(mapping,1);
 												update_mapping_colour_or_auxili(mapping);
 												map->interpolation_type=interpolation;
+												map->start_time=map_potential_time;
+												map->end_time=map->start_time;
 #if defined (UNEMAP_USE_3D)
 											}
 #endif /* defined (UNEMAP_USE_3D) */
