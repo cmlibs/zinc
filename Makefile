@@ -302,6 +302,7 @@ update : update_sources
 		$(MAKE) -f cmgui.make cmgui cmgui_optimised cmgui64 cmgui_console cmgui_memorycheck && \
 		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmgui.make cmgui_linux cmgui_linux_memorycheck cmgui_linux_dynamic cmgui_linux_optimised cmgui_linux_optimised_dynamic cmgui_linux_console' && \
 		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f cmgui.make cmgui_aix cmgui_aix_optimised cmgui_aix64 cmgui_aix64_optimised ;  ' && \
+		ssh 130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmgui.make cmgui_linux_gtk' && \
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers *; \
 	else \
@@ -321,6 +322,7 @@ depend: $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(S
 		$(MAKE) -f cmgui_sgi64.make depend ; \
 		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f cmgui_linux.make depend ; $(MAKE) -f cmgui_linux_memorycheck.make depend; $(MAKE) -f cmgui_linux_dynamic.make depend ; $(MAKE) -f cmgui_linux_optimised.make depend ; $(MAKE) -f cmgui_linux_optimised_dynamic.make depend ; $(MAKE) -f cmgui_linux_console.make depend ' && \
 		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f cmgui.make cmgui_aix cmgui_aix_optimised cmgui_aix64 cmgui_aix64_optimised TARGET=depend ;  ' ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmgui.make cmgui_linux_gtk TARGET=depend ' && \
 	else \
 		echo "Must be cmiss"; \
 	fi
