@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 6 April 2001
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -26,6 +26,7 @@ interest and set scene_viewer values directly.
 #include "colour/edit_var.h"
 #include "command/parser.h"
 #include "general/debug.h"
+#include "general/geometry.h"
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
 #include "general/matrix_vector.h"
@@ -4721,20 +4722,101 @@ current layout_mode, the function adjusts the view in all the panes tied to
 	return return_code;
 } /* Graphics_window_view_changed */
 
+int view_and_up_vectors_to_xyz_rotations(double *view, double *up,
+	double *rotations)
+/*******************************************************************************
+LAST MODIFIED : 6 April 2001
+
+DESCRIPTION :
+Deduces three <rotations> about the global x, global y and global z axes that
+rotate the initial view (looking in the -z direction with y up) to look in the
+<view> direction upright in the <up>-direction. The final up-vector will be
+orthogonal with the view direction even if not initially; <up> may not be
+co-linear with <view>.
+Rotations are returned in radians. Note the results are non-unique.
+These rotations are used in the MAYA viewing model.
+==============================================================================*/
+{
+  int return_code;
+	double c, m[9], norm_right[3], norm_view[3], ry[9], rz[9], s, x_view[3];
+
+	ENTER(view_and_up_vectors_to_xyz_rotations);
+	if (view && up && rotations)
+	{
+		norm_view[0] = view[0];
+		norm_view[1] = view[1];
+		norm_view[2] = view[2];
+		/* establish right vector at view x up and normalise it and view */
+		if ((0.0 != normalize3(norm_view)) &&
+			cross_product3(norm_view, up, norm_right) &&
+			(0.0 != normalize3(norm_right)))
+		{
+			/* Calculate the z and y rotations */
+			rotations[2] = atan2(norm_right[1], norm_right[0]);
+			rotations[1] = atan2(-norm_right[2],
+				sqrt(norm_right[0]*norm_right[0] + norm_right[1]*norm_right[1]));
+
+			/* create matrix ry that undoes the y rotation */
+			identity_matrix(3, ry);
+			s = sin(-rotations[1]);
+			c = cos(-rotations[1]);
+			ry[0] = c;
+			ry[2] = s;
+			ry[6] = -s;
+			ry[8] = c;
+			/* create matrix rz that undoes the z rotation */
+			identity_matrix(3, rz);
+			s = sin(-rotations[2]);
+			c = cos(-rotations[2]);
+			rz[0] = c;
+			rz[1] = -s;
+			rz[3] = s;
+			rz[4] = c;
+			/* multiply to get matrix m that undoes the z and y rotations */
+			multiply_matrix(3, 3, 3, ry, rz, m);
+			/* multiply norm_view by m to get initial view rotated just by x angle */
+			multiply_matrix(3, 3, 1, m, norm_view, x_view);
+
+			/* calculate the x-rotation */
+			rotations[0] = atan2(x_view[1], -x_view[2]);
+
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"view_and_up_vectors_to_xyz_rotations.  "
+				"View and/or up vectors zero or not orthogonal");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"view_and_up_vectors_to_xyz_rotations.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* view_and_up_vectors_to_xyz_rotations */
+
 int list_Graphics_window(struct Graphics_window *window,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 6 April 2001
 
 DESCRIPTION :
 Writes the properties of the <window> to the command window.
 ==============================================================================*/
 {
 	char line[80],*name;
-	double bottom,
-		eye[3],far,left,lookat[3],max_pixels_per_polygon,modelview_matrix[16],
-		NDC_height,NDC_left,NDC_top,NDC_width,near,projection_matrix[16],right,
-		texture_height,texture_width,top,up[3],view_angle,viewport_left,
-		viewport_top,viewport_pixels_per_unit_x,viewport_pixels_per_unit_y;
+	double bottom, eye[3], far, horizontal_view_angle, left, lookat[3],
+		max_pixels_per_polygon, modelview_matrix[16],
+		NDC_height, NDC_left, NDC_top, NDC_width,
+		near, projection_matrix[16], right, rotations[3],
+		texture_height, texture_width, top,
+		up[3], view[3], view_angle, viewport_left, viewport_top,
+		viewport_pixels_per_unit_x, viewport_pixels_per_unit_y;
 	enum Scene_viewer_buffer_mode buffer_mode;
 	enum Scene_viewer_projection_mode projection_mode;
 	enum Scene_viewer_transparency_mode transparency_mode;
@@ -4862,9 +4944,14 @@ Writes the properties of the <window> to the command window.
 				Scene_viewer_get_lookat_parameters(scene_viewer,
 					&(eye[0]),&(eye[1]),&(eye[2]),&(lookat[0]),&(lookat[1]),&(lookat[2]),
 					&(up[0]),&(up[1]),&(up[2]));
+				view[0] = lookat[0] - eye[0];
+				view[1] = lookat[1] - eye[1];
+				view[2] = lookat[2] - eye[2];
 				Scene_viewer_get_viewing_volume(scene_viewer,&left,&right,
 					&bottom,&top,&near,&far);
 				Scene_viewer_get_view_angle(scene_viewer,&view_angle);
+				Scene_viewer_get_horizontal_view_angle(scene_viewer,
+					&horizontal_view_angle);
 				display_message(INFORMATION_MESSAGE,
 					"    eye point: %g %g %g\n",eye[0],eye[1],eye[2]);
 				display_message(INFORMATION_MESSAGE,
@@ -4872,7 +4959,9 @@ Writes the properties of the <window> to the command window.
 				display_message(INFORMATION_MESSAGE,
 					"    up vector: %g %g %g\n",up[0],up[1],up[2]);
 				display_message(INFORMATION_MESSAGE,
-					"    diagonal view angle: %g degrees\n",view_angle*180/PI);
+					"    view angle (across NDC, degrees) diagonal, horizontal : %g %g\n",
+					view_angle*(180/PI), horizontal_view_angle*(180/PI));
+
 				display_message(INFORMATION_MESSAGE,
 					"    near and far clipping planes: %g %g\n",near,far);
 				/* work out if view is skew = up not orthogonal to view direction */
@@ -4885,6 +4974,16 @@ Writes the properties of the <window> to the command window.
 				{
 					display_message(INFORMATION_MESSAGE,
 						"    view is skew (up-vector not orthogonal to view direction)\n");
+				}
+				else
+				{
+					if (view_and_up_vectors_to_xyz_rotations(view, up, rotations))
+					{
+						display_message(INFORMATION_MESSAGE,
+							"    view rotations about x, y and z axes (degrees): %g %g %g\n",
+							rotations[0]*(180.0/PI), rotations[1]*(180.0/PI),
+							rotations[2]*(180.0/PI));
+					}
 				}
 			}
 			viewport_mode=Scene_viewer_get_viewport_mode(scene_viewer);
