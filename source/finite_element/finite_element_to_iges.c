@@ -14,6 +14,7 @@ to file.
 #include <string.h>
 #include <time.h>
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_iges.h"
@@ -89,6 +90,8 @@ DESCRIPTION :
 	struct IGES_entity_info *next;
 }; /* struct IGES_entity_info */
 
+#define NUMBER_OF_NODES (16)
+
 struct Get_iges_entity_info_data
 /******************************************************************************
 LAST MODIFIED : 6 June 2002
@@ -97,6 +100,12 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct IGES_entity_info *head,*tail;
+	struct Computed_field *field;
+	struct FE_element *element;
+	struct FE_field *fe_field;
+	struct FE_node *nodes[NUMBER_OF_NODES];
+	struct FE_region *fe_region;
+	int extra_line_number;
 }; /* struct Get_iges_entity_info_data */
 
 static struct IGES_entity_info *create_iges_entity_info(
@@ -165,7 +174,7 @@ DESCRIPTION :
 static int get_iges_entity_info(struct FE_element *element,
 	void *get_data_void)
 /******************************************************************************
-LAST MODIFIED : 13 June 2002
+LAST MODIFIED : 7 August 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -193,8 +202,7 @@ DESCRIPTION :
 		coordinate_element_field_values = (struct FE_element_field_values *)NULL;
 		if ((2==get_FE_element_dimension(element))&&
 			get_FE_element_number_of_parents(element, &number_of_parents) &&
-			(1>=number_of_parents)&&
-			(coordinate_field=get_FE_element_default_coordinate_field(element))&&
+			(1>=number_of_parents)&&(coordinate_field=get_data->fe_field)&&
 			(3==get_FE_field_number_of_components(coordinate_field))&&
 			(coordinate_element_field_values = CREATE(FE_element_field_values)()) &&
 			(calculate_FE_element_field_values(element,coordinate_field,
@@ -664,6 +672,200 @@ DESCRIPTION :
 	return (return_code);
 } /* get_iges_entity_info */
 
+static int get_iges_entity_as_cubic_from_any_2D_element(struct FE_element *element,
+	void *get_data_void)
+/******************************************************************************
+LAST MODIFIED : 5 August 2003
+
+DESCRIPTION :
+SAB This function uses a template bicubic element patch to generate an IGES
+representation of any 2D element.  The actual element is evaluated for nodal 
+positions and  derivatives at each corner and these are just put into the template
+nodes. This means that the iges code does not need to be implemented for each 
+basis type, however every element type will be converted to a cubic.
+==============================================================================*/
+{
+	FE_value values[3], xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int i, j, number_of_parents, number_of_values, return_code;
+	struct CM_element_information cm;
+	struct FE_element *face, *true_face;
+	struct FE_element_shape *element_shape, *face_shape;
+	struct FE_node_field_creator *node_field_creator;
+	struct Get_iges_entity_info_data *get_data;
+
+	ENTER(get_iges_entity_info);
+	return_code = 0;
+	/* check arguments */
+	if (element && (get_data = (struct Get_iges_entity_info_data *)get_data_void))
+	{
+		return_code = 1;
+		if ((2 == get_FE_element_dimension(element)) &&
+			get_FE_element_number_of_parents(element, &number_of_parents) &&
+			(1>=number_of_parents))
+		{
+			/* Create the node and element templates */
+			if (!get_data->element)
+			{
+				/* Then we presume we have made nothing */
+				/* Make a suitable FE_field */
+				if ((get_data->fe_field = CREATE(FE_field)("coordinates", get_data->fe_region)) &&
+					set_FE_field_value_type(get_data->fe_field, FE_VALUE_VALUE) &&
+					set_FE_field_number_of_components(get_data->fe_field, /*number_of_components*/3))
+				{
+					ACCESS(FE_field)(get_data->fe_field);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"get_iges_entity_as_cubic_from_any_2D_element.  "
+						"Could not create fe field");
+					DEACCESS(FE_field)(&(get_data->fe_field));
+					return_code=0;
+				}
+
+				if (node_field_creator = CREATE(FE_node_field_creator)(
+						 /*number_of_components*/3))
+				{
+#if defined (OLD_CODE)
+					for (i = 0 ; i < 3 ; i++)
+					{
+						FE_node_field_creator_define_derivative(
+							node_field_creator, /*component_number*/i,
+							FE_NODAL_D_DS1);
+						FE_node_field_creator_define_derivative(
+							node_field_creator, /*component_number*/i,
+							FE_NODAL_D_DS2);
+						FE_node_field_creator_define_derivative(
+							node_field_creator, /*component_number*/i,
+							FE_NODAL_D2_DS1DS2);
+					}
+#endif /* defined (OLD_CODE) */
+					for (i = 0 ; return_code && (i < NUMBER_OF_NODES) ; i++)
+					{
+						if (get_data->nodes[i] = CREATE(FE_node)(/*node_number*/0,
+							 get_data->fe_region, (struct FE_node *)NULL))
+						{
+							ACCESS(FE_node)(get_data->nodes[i]);
+							if (!define_FE_field_at_node(get_data->nodes[i], get_data->fe_field,
+									 (struct FE_time_version *)NULL, node_field_creator))
+							{
+								display_message(ERROR_MESSAGE,
+									"get_iges_entity_as_cubic_from_any_2D_element.  "
+									"Could not define coordinate field in node_1");
+								DEACCESS(FE_node)(&(get_data->nodes[i]));
+								return_code=0;
+							}
+						}
+					}
+					DESTROY(FE_node_field_creator)(&(node_field_creator));
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"get_iges_entity_as_cubic_from_any_2D_element.  "
+						"Could not create node field creator");
+					return_code=0;
+				}
+				if (return_code)
+				{
+					if (return_code = make_square_FE_element(&get_data->element, get_data->fe_region,
+							 /*dimension*/2, /*basis_type*/CUBIC_LAGRANGE, get_data->fe_field))
+					{
+						ACCESS(FE_element)(get_data->element);
+						for (i = 0 ; return_code && (i < NUMBER_OF_NODES) ; i++)
+						{
+							if (!set_FE_element_node(get_data->element, i, get_data->nodes[i]))
+							{
+								display_message(ERROR_MESSAGE,
+									"get_iges_entity_as_cubic_from_any_2D_element.  "
+									"Could not set node %d into element", i+1);
+								return_code=0;
+							}
+						}
+					}
+				}
+				if (return_code)
+				{
+					/* Add four faces */
+					get_FE_element_shape(element, &element_shape);
+					cm.type = CM_LINE;
+					cm.number = 0;
+					for (i = 0 ; return_code && (i < 4) ; i++)
+					{
+						face_shape = get_FE_element_shape_of_face(element_shape, i, get_data->fe_region);
+						if (face = CREATE(FE_element)(&cm, face_shape,
+								 get_data->fe_region, (struct FE_element *)NULL))
+						{
+							/* must put the face in the element to inherit fields */
+							set_FE_element_face(get_data->element, i, face);
+						}
+						else
+						{
+							return_code = 0;
+						}
+					}
+				}
+			}
+			xi[2] = 0.0;
+			/* Fill in the nodal values */
+			for (i = 0 ; return_code && (i < 4) ; i++)
+			{
+				for (j = 0 ; return_code && (j < 4) ; j++)
+				{
+					xi[0] = (float)j / 3.0;
+					xi[1] = (float)i / 3.0;
+					if (Computed_field_evaluate_in_element(get_data->field, element, xi, 
+						 /*time*/0.0, /*top_level_element*/(struct FE_element *)NULL,
+						 values, (FE_value *)NULL))
+					{
+						if (!set_FE_nodal_field_FE_value_values(get_data->fe_field,
+							get_data->nodes[i * 4 + j], values, &number_of_values))
+						{
+							display_message(ERROR_MESSAGE,
+								"get_iges_entity_as_cubic_from_any_2D_element.  "
+								"Unable to set values in node %d", i * 4 + j);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"get_iges_entity_as_cubic_from_any_2D_element.  "
+							"Unable to evaluate values in node %d", i * 4 + j);
+						return_code=0;
+					}
+				}
+			}
+			/* Set the correct element number into the template element */
+			get_FE_element_identifier(element, &cm);
+			cm.type = CM_ELEMENT;
+			set_FE_element_identifier(get_data->element, &cm);
+			/* Set the correct element numbers into the faces */
+			for (i = 0 ; i < 4 ; i++)
+			{
+				get_FE_element_face(element, i, &true_face);
+				get_FE_element_face(get_data->element, i, &face);
+				if (!(true_face && get_FE_element_identifier(true_face, &cm)))
+				{
+					cm.type = CM_LINE;
+					cm.number = FE_region_get_next_FE_element_identifier(get_data->fe_region,
+						CM_LINE, get_data->extra_line_number + 1);
+					get_data->extra_line_number = cm.number;
+				}
+				set_FE_element_identifier(face, &cm);
+			}
+			/* Add the element entity info for the element we just made */
+			if (return_code)
+			{
+				get_iges_entity_info(get_data->element, get_data_void);
+			}
+		}
+	}
+	LEAVE;
+	
+	return (return_code);
+} /* get_iges_entity_as_cubic_from_any_2D_element */
+	
 /*
 Global functions
 ----------------
@@ -854,8 +1056,39 @@ Write bicubic elements to an IGES file.
 			/* get entity information */
 			iges_entity_info_data.head=(struct IGES_entity_info *)NULL;
 			iges_entity_info_data.tail=(struct IGES_entity_info *)NULL;
+			iges_entity_info_data.field=Computed_field_begin_wrap_coordinate_field(field);
+			iges_entity_info_data.fe_field=(struct FE_field *)NULL;
+			iges_entity_info_data.fe_region=fe_region;
+			iges_entity_info_data.element=(struct FE_element *)NULL;
+			iges_entity_info_data.extra_line_number = 999000; /* Start somewhere random although
+							                              we will still check that it doesn't conflict */
+         for (i = 0 ; i < NUMBER_OF_NODES ; i++)
+         {
+				iges_entity_info_data.nodes[i]=(struct FE_node *)NULL;
+			}
+#if defined (NEW_CODE)
+         FE_region_get_default_coordinate_FE_field(
+				fe_region,&(iges_entity_info_data.fe_field));
 			FE_region_for_each_FE_element(fe_region, get_iges_entity_info,
 				&iges_entity_info_data);
+         USE_PARAMETER(get_iges_entity_as_cubic_from_any_2D_element);
+#endif /* defined (NEW_CODE) */
+			FE_region_for_each_FE_element(fe_region, get_iges_entity_as_cubic_from_any_2D_element,
+				&iges_entity_info_data);
+         Computed_field_end_wrap(&(iges_entity_info_data.field));
+			if (iges_entity_info_data.fe_field)
+			{
+				DEACCESS(FE_field)(&iges_entity_info_data.fe_field);
+			}
+			if (iges_entity_info_data.element)
+			{
+				DEACCESS(FE_element)(&iges_entity_info_data.element);
+			}
+         for (i = 0 ; i < NUMBER_OF_NODES ; i++)
+         {
+				DEACCESS(FE_node)(&iges_entity_info_data.nodes[i]);
+			}
+			/* We no longer require the template element and nodes */
 			/* directory entry section */
 			entity=iges_entity_info_data.head;
 			while (entity)
