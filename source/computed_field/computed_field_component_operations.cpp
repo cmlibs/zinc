@@ -2286,6 +2286,7 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	struct Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
+	struct Coordinate_system *coordinate_system;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
@@ -2392,6 +2393,13 @@ already) and allows its contents to be modified.
 			{
 				return_code = Computed_field_set_type_scale(field,
 					source_field, scale_factors);
+				if (source_field)
+				{
+					/* Copy the source fields coordinate system, it will get
+						overwritten if the coordinate system is specified on the command line */
+					coordinate_system = Computed_field_get_coordinate_system(source_field);
+					Computed_field_set_coordinate_system(field, coordinate_system);
+				}
 			}
 			if (!return_code)
 			{
@@ -4458,6 +4466,7 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	struct Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
+	struct Coordinate_system *coordinate_system;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
@@ -4560,6 +4569,13 @@ already) and allows its contents to be modified.
 			{
 				return_code = Computed_field_set_type_offset(field,
 					source_field, offsets);
+				if (source_field)
+				{
+					/* Copy the source fields coordinate system, it will get
+						overwritten if the coordinate system is specified on the command line */
+					coordinate_system = Computed_field_get_coordinate_system(source_field);
+					Computed_field_set_coordinate_system(field, coordinate_system);
+				}
 			}
 			if (!return_code)
 			{
@@ -5779,6 +5795,7 @@ already) and allows its contents to be modified.
 	struct Computed_field *field,*source_field;
 	struct Computed_field_component_operations_package 
 		*computed_field_component_operations_package;
+	struct Coordinate_system *coordinate_system;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_source_field_data;
 
@@ -5879,6 +5896,13 @@ already) and allows its contents to be modified.
 			{
 				return_code = Computed_field_set_type_edit_mask(field,
 					source_field, edit_mask);
+				if (source_field)
+				{
+					/* Copy the source fields coordinate system, it will get
+						overwritten if the coordinate system is specified on the command line */
+					coordinate_system = Computed_field_get_coordinate_system(source_field);
+					Computed_field_set_coordinate_system(field, coordinate_system);
+				}
 			}
 			if (!return_code)
 			{
