@@ -1147,7 +1147,7 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
       UID2UIDH_LIB += -lgen
    endif # SYSNAME == IRIX%=
 
-   UID2UIDH_OBJSA = utilities/uid2uidh.o
+   UID2UIDH_OBJSA = $(UID2UIDH_SRCS:.c=.o)
    UID2UIDH_OBJSB = $(UID2UIDH_OBJSA:.cpp=.o)
    UID2UIDH_OBJS = $(UID2UIDH_OBJSB:.f=.o)
    BUILD_UID2UIDH = $(call BuildNormalTarget,$(UID2UIDH),$(UTILITIES_PATH),UID2UIDH_OBJS,$(UID2UIDH_LIB))
@@ -1161,7 +1161,7 @@ utilities : SpacesToTabs TabsToSpaces
 SPACES_TO_TABS_SRCS = \
 	utilities/spaces_to_tabs.c
 
-SPACES_TO_TABS_OBJSA = utilities/uid2uidh.o
+SPACES_TO_TABS_OBJSA = $(SPACES_TO_TABS_SRCS:.c=.o)
 SPACES_TO_TABS_OBJSB = $(SPACES_TO_TABS_OBJSA:.cpp=.o)
 SPACES_TO_TABS_OBJS = $(SPACES_TO_TABS_OBJSB:.f=.o)
 BUILD_SPACES_TO_TABS = $(call BuildNormalTarget,SpacesToTabs,$(UTILITIES_PATH),SPACES_TO_TABS_OBJS,-lm) 
@@ -1172,7 +1172,7 @@ SpacesToTabs: $(SPACES_TO_TABS_OBJS)
 TABS_TO_SPACES_SRCS = \
 	utilities/tabs_to_spaces.c
 
-TABS_TO_SPACES_OBJSA = utilities/uid2uidh.o
+TABS_TO_SPACES_OBJSA = $(TABS_TO_SPACES_SRCS:.c=.o)
 TABS_TO_SPACES_OBJSB = $(TABS_TO_SPACES_OBJSA:.cpp=.o)
 TABS_TO_SPACES_OBJS = $(TABS_TO_SPACES_OBJSB:.f=.o)
 BUILD_TABS_TO_SPACES = $(call BuildNormalTarget,TabsToSpaces,$(UTILITIES_PATH),TABS_TO_SPACES_OBJS,-lm) 
