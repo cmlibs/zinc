@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 13 August 2003
+LAST MODIFIED : 10 October 2003
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -1087,7 +1087,7 @@ static int process_message(const unsigned char operation_code,
 	const long message_size,const unsigned char big_endian,
 	unsigned char **out_buffer_address,long *out_buffer_size_address)
 /*******************************************************************************
-LAST MODIFIED : 13 August 2003
+LAST MODIFIED : 10 October 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1278,11 +1278,22 @@ DESCRIPTION :
 						}
 						if (return_code)
 						{
-							if (return_code=unemap_configure(number_of_channels,
-								channel_numbers,sampling_frequency,number_of_samples_in_buffer,
-								(HWND)NULL,(UINT)0,scrolling_callback,(void *)NULL,
-								scrolling_frequency,scrolling_callback_frequency,
-								synchronization_card))
+							if ((0==scrolling_frequency)&&(0==scrolling_callback_frequency))
+							{
+								return_code=unemap_configure(number_of_channels,
+									channel_numbers,sampling_frequency,number_of_samples_in_buffer,
+									(HWND)NULL,(UINT)0,(Unemap_hardware_callback *)NULL,(void *)NULL,
+									0,0,synchronization_card);
+							}
+							else
+							{
+								return_code=unemap_configure(number_of_channels,
+									channel_numbers,sampling_frequency,number_of_samples_in_buffer,
+									(HWND)NULL,(UINT)0,scrolling_callback,(void *)NULL,
+									scrolling_frequency,scrolling_callback_frequency,
+									synchronization_card);
+							}
+							if (return_code)
 							{
 								scrolling_big_endian=big_endian;
 								stimulation_big_endian=big_endian;
