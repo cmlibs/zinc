@@ -1721,7 +1721,7 @@ Check the source fields using the default.
 static int Computed_field_default_coordinate_is_defined_at_node(
 	struct Computed_field *field, struct FE_node *node)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 5 December 2000
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -1729,7 +1729,7 @@ Check the source fields using the default.
 {
 	int return_code;
 
-	ENTER(Computed_field_default_coordinate_evaluate_cache_at_node);
+	ENTER(Computed_field_default_coordinate_is_defined_at_node);
 	if (field && node)
 	{
 		if (get_FE_node_default_coordinate_field(node))
@@ -1751,7 +1751,7 @@ Check the source fields using the default.
 	LEAVE;
 
 	return (return_code);
-} /* Computed_field_default_coordinate_evaluate_cache_at_node */
+} /* Computed_field_default_coordinate_is_defined_at_node */
 
 #define Computed_field_default_coordinate_has_numerical_components \
 	Computed_field_default_has_numerical_components
