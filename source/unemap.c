@@ -1057,6 +1057,9 @@ Main program for unemap
 						(default_torso_group_name,element_group_manager);
 					define_fit_field_at_quad_elements_and_nodes(torso_element_group,
 						map_fit_field,fe_basis_manager,element_manager,node_manager);
+					/* add cylindrical field infor for texture mapping to defaut torso*/
+					add_cylindrical_info_to_cartesian_torso(default_torso_group_name,
+						unemap_package);
 				}
 				else
 				{
