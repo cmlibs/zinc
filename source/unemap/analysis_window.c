@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 18 January 2002
+LAST MODIFIED : 10 May 2002
 
 DESCRIPTION :
 ===========================================================================*/
@@ -122,7 +122,7 @@ Saves the id of the signal_range in the analysis window
 	ENTER(identify_anal_signal_range);
 	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
-	{	
+	{
 		analysis->interval.signal_range= *widget_id;
 	}
 	else
@@ -147,7 +147,7 @@ Saves the id of the minimum value text field in the analysis window
 	ENTER(identify_anal_sig_range_minim);
 	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
-	{	
+	{
 		analysis->interval.minimum_value= *widget_id;
 	}
 	else
@@ -178,7 +178,7 @@ Saves the id of the maximum value text field in the analysis window
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_anal_sig_range_maxim. missing analysis_window"); 
+			"identify_anal_sig_range_maxim. missing analysis_window");
 	}
 	LEAVE;
 } /* identify_anal_sig_range_maxim */
@@ -485,7 +485,7 @@ Finds the id of the accelerator for the analysis accept button.
 	}
 	LEAVE;
 } /* identify_analysis_accept_accele */
-#endif
+#endif /* defined (OLD_CODE) */
 
 static void identify_analysis_reject_button(Widget *widget_id,
 	XtPointer analysis_window,XtPointer call_data)
@@ -1524,7 +1524,6 @@ except the warning box shell.
 		display_message(ERROR_MESSAGE,
 			"busy_cursor_off_warning_box_shell.  Missing file_open_data");
 	}
-
 	LEAVE;
 } /* busy_cursor_off_warning_box_shell */
 
@@ -1901,8 +1900,8 @@ Writes the PostScript for drawing either <all> the signals from the
 	{
 		display=analysis->user_interface->display;
 		first_data=buffer->start;
-		last_data=buffer->end;		
-		current_region=get_Rig_current_region(rig);	 
+		last_data=buffer->end;
+		current_region=get_Rig_current_region(rig);
 		if (open_printer(&printer,analysis->user_interface))
 		{
 			if (XGetWindowAttributes(display,
@@ -2122,7 +2121,7 @@ Writes the PostScript for drawing either <all> the signals from the
 							(*device)->description->region)))||(!all&&((*device)->highlight)))
 						{
 							/* set the page window */
-							set_postscript_display_transfor(0,y_position_point,
+							set_postscript_display_transfor (0,y_position_point,
 								signal_width_point,signal_height_point,0,
 								(float)signal_height_pixel,(float)signal_width_pixel,
 								(float)signal_height_pixel);
@@ -2248,7 +2247,7 @@ Writes the PostScript for drawing selected signals to the specified file.
 ==============================================================================*/
 {
 	int return_code;
-;
+
 	ENTER(print_selected_signals);
 	return_code=print_signals(0,file_name,analysis_window);
 	LEAVE;
@@ -2632,7 +2631,7 @@ Finds the id of the analysis drawing area.
 
 #if defined (UNEMAP_USE_NODES)
 static int node_order_info_make_first_highlighted_node_current_node(
-	struct FE_node_order_info *node_order_info,struct FE_field *highlight_field)	
+	struct FE_node_order_info *node_order_info,struct FE_field *highlight_field)
 /*******************************************************************************
 LAST MODIFIED : 18 August 2000
 
@@ -2646,7 +2645,7 @@ make it the current node of <node_order_info>
 	int highlight,return_code;
 
 	ENTER(node_order_info_make_first_highlighted_node_current_node);
-	if(node_order_info&&highlight_field)
+	if (node_order_info&&highlight_field)
 	{
 		current_node=(struct FE_node *)NULL;
 		highlight=0;
@@ -2656,41 +2655,43 @@ make it the current node of <node_order_info>
 		current_node=get_FE_node_order_info_current_node(node_order_info);
 		get_FE_nodal_int_value(current_node,&component,0,FE_NODAL_VALUE,
 			/*time*/0,&highlight);
-		while(current_node&&!highlight)
+		while (current_node&&!highlight)
 		{
 			current_node=get_FE_node_order_info_next_node(node_order_info);
-			if(current_node)
+			if (current_node)
 			{
 				get_FE_nodal_int_value(current_node,&component,0,FE_NODAL_VALUE,
-					/*time*/0,&highlight);		
+					/*time*/0,&highlight);
 			}
 		}
 		/*if nothing highlighted, just make the first the current */
-		if(!highlight)
+		if (!highlight)
 		{
 			set_FE_node_order_info_current_node_number(node_order_info,0);
 		}
 		return_code=1;
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
-			"node_order_info_make_first_highlighted_node_current_node. invalid arguments");
+			"node_order_info_make_first_highlighted_node_current_node.  "
+			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
-}/* node_order_info_make_first_highlighted_node_current_node */
+
+	return (return_code);
+} /* node_order_info_make_first_highlighted_node_current_node */
 #endif /* defined (UNEMAP_USE_NODES)*/
 
 #if defined (UNEMAP_USE_NODES)
 static int Analysis_window_set_and_sort_rig_node_order_info
-   (struct Analysis_window *analysis_window)
+	(struct Analysis_window *analysis_window)
 /*******************************************************************************
 LAST MODIFIED : 26 July 2000
 
 DESCRIPTION : Creates and sets the <analysis_window> ->rig_node_order_info,
-from the rig_node_group at the <analysis_window> rig or region. 
+from the rig_node_group at the <analysis_window> rig or region.
 Sorts rig_node_order_info according to <analysis_window> ->signal_order
 ==============================================================================*/
 {
@@ -2699,7 +2700,7 @@ Sorts rig_node_order_info according to <analysis_window> ->signal_order
 	struct FE_node_order_info *node_order_info;
 	struct GROUP(FE_node) *rig_node_group;
 	struct Region *current_region;
-	struct Rig *rig;	
+	struct Rig *rig;
 	struct Signal_drawing_package *signal_drawing_package;
 
 	ENTER(Analysis_window_set_and_sort_rig_node_order_info);
@@ -2709,23 +2710,23 @@ Sorts rig_node_order_info according to <analysis_window> ->signal_order
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
 	signal_drawing_package=(struct Signal_drawing_package *)NULL;
 	if (analysis_window)
-	{	
+	{
 		rig=*(analysis_window->rig);
 		signal_order=*(analysis_window->signal_order);
 		return_code=0;
-		signal_drawing_package=*(analysis_window->signal_drawing_package);	
+		signal_drawing_package=*(analysis_window->signal_drawing_package);
 		/* create an array of pointers to the nodes, in node_order_info */
 		/* so can increment through nodes similar to devices. */
-		/* should use GROUP NEXT operator (when it's ready!) */					
+		/* should use GROUP NEXT operator (when it's ready!) */
 		if (current_region=get_Rig_current_region(rig))
-		{	
-			rig_node_group=get_Region_rig_node_group(current_region);						
+		{
+			rig_node_group=get_Region_rig_node_group(current_region);
 		}
 		else
 		{
 			rig_node_group=get_Rig_all_devices_rig_node_group(rig);
-		}				
-		if(node_order_info=create_and_sort_FE_node_order_info_from_rig_node_group(
+		}
+		if (node_order_info=create_and_sort_FE_node_order_info_from_rig_node_group(
 			rig_node_group,signal_order,signal_drawing_package))
 		{
 			/* save the rig_node_order_info */
@@ -2736,7 +2737,8 @@ Sorts rig_node_order_info according to <analysis_window> ->signal_order
 		else
 		{
 			display_message(ERROR_MESSAGE,
-			"Analysis_window_set_and_sort_rig_node_order_info. node_order_info not created");
+				"Analysis_window_set_and_sort_rig_node_order_info. "
+				"node_order_info not created");
 			return_code=0;
 		}
 	}
@@ -2764,13 +2766,13 @@ This function draws all the signals for the <analysis_window>  signal_event_list
 in the drawing using the graphics_context.
 
 If <analysis_window> signal_drawing_package is not NULL, then use rig_node_group
-from rig/region to draw signals. In this case, create an array of pointers to the
-nodes, in , <analysis_window> rig_node_order_info so can increment through nodes 
-similar to rig->devices. This FE_node_order_info is also used elsewhere.
+from rig/region to draw signals. In this case, create an array of pointers to
+the nodes, in, <analysis_window> rig_node_order_info so can increment through
+nodes similar to rig->devices. This FE_node_order_info is also used elsewhere.
 ==============================================================================*/
-{	
+{
 	enum Signal_layout layout;
-	float signal_aspect_ratio;	
+	float signal_aspect_ratio;
 	int axes_height,axes_left,axes_top,axes_width,datum,drawing_height,drawing_width,
 		first_data,i,j,last_data,number_of_columns,number_of_rows,number_of_signals,
 		potential_time,return_code,signal_height,signal_overlap_spacing,signal_width,
@@ -2786,9 +2788,9 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 	struct User_interface *user_interface;
 	Pixmap pixel_map;
 #if defined (UNEMAP_USE_NODES)
-	int node_number;	
+	int node_number;
 	struct FE_node *node;
-	struct FE_node_order_info *node_order_info;	
+	struct FE_node_order_info *node_order_info;
 #endif /* defined (UNEMAP_USE_NODES) */
 
 	ENTER(draw_all_signals);
@@ -2814,7 +2816,7 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 	signal_overlap_spacing=analysis_window->signal_overlap_spacing;
 	signal_drawing_information=analysis_window->signal_drawing_information;
 	user_interface=analysis_window->user_interface;
-	signal_drawing_package=*(analysis_window->signal_drawing_package);	
+	signal_drawing_package=*(analysis_window->signal_drawing_package);
 
 	if (signals&&(drawing=signals->drawing)&&signal_drawing_information&&
 		user_interface)
@@ -2843,7 +2845,7 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 				/*for device nodes,first_data, last_data not used, so just set to 0 */
 				/* device node fields display_start(end)_time used instead*/
 				first_data=0;
-				last_data=0;									
+				last_data=0;
 				node_number=0;
 				node=get_FE_node_order_info_node(node_order_info,node_number);
 				number_of_signals=get_FE_node_order_info_number_of_nodes(node_order_info);
@@ -2851,11 +2853,11 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 			}
 			else if (rig&&(device=rig->devices)&&(*device)&&
 				(buffer=get_Device_signal_buffer(*device)))
-			{				
+			{
 				first_data=buffer->start;
 				last_data=buffer->end;
-				/* determine the number of signals */		
-				if(current_region=get_Rig_current_region(rig))
+				/* determine the number of signals */
+				if (current_region=get_Rig_current_region(rig))
 				{
 					number_of_signals=current_region->number_of_devices;
 				}
@@ -2871,8 +2873,8 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 					case SEPARATE_LAYOUT:
 					{
 						/* First choose the signal width so that all signals are shown, the
-							 signals have the specified aspect ratio and the signals are as
-							 large as possible */
+							signals have the specified aspect ratio and the signals are as
+							large as possible */
 						signal_width=(int)sqrt((float)(drawing_height*drawing_width)/
 							(signal_aspect_ratio*(float)number_of_signals));
 						if (drawing_width<signal_width)
@@ -2926,7 +2928,7 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 						signals->axes_height=axes_height;
 						/*if using rig,(not rig_node_group) draw_device_markers, and inc */
 						/* device pointer write code rig_node based draw_device_markers later */
-						if(!using_rig_node_group)
+						if (!using_rig_node_group)
 						{
 							draw_device_markers(*device,first_data,last_data,datum,1,
 								potential_time,1,SIGNAL_AREA_DETAIL,0,axes_left,axes_top,
@@ -3031,7 +3033,8 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 #if defined (UNEMAP_USE_NODES)
 							node,signal_drawing_package,(struct Device *)NULL,
 #else /* defined (UNEMAP_USE_NODES) */
-							(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,*device,
+							(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
+							*device,
 #endif /* defined (UNEMAP_USE_NODES) */
 							SIGNAL_AREA_DETAIL,1,0,&first_data,&last_data,xpos,ypos,
 							signal_width,signal_height,pixel_map,&axes_left,&axes_top,
@@ -3041,7 +3044,7 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 						signals->axes_top=axes_top;
 						signals->axes_width=axes_width;
 						signals->axes_height=axes_height;
-						if(!using_rig_node_group)					
+						if (!using_rig_node_group)
 						{
 							/* for rig based, get next device */
 							device++;
@@ -3079,7 +3082,7 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 								signal_width,signal_height,pixel_map,&axes_left,&axes_top,
 								&axes_width,&axes_height,signal_drawing_information,
 								user_interface);
-							if(!using_rig_node_group)							
+							if (!using_rig_node_group)
 							{
 								/* for rig based, get next device */
 								device++;
@@ -3095,8 +3098,8 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 							number_of_signals--;
 						}
 						/* have to draw the markers separately because the signals
-							 overlap */
-						if(!using_rig_node_group)
+							overlap */
+						if (!using_rig_node_group)
 						{
 							/* for rig based */
 							device=rig->devices;
@@ -3120,7 +3123,7 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 						ypos=axes_top;
 						while (number_of_signals>0)
 						{
-							if(!using_rig_node_group)
+							if (!using_rig_node_group)
 							{
 								draw_device_markers(*device,first_data,last_data,datum,1,
 									potential_time,1,SIGNAL_AREA_DETAIL,0,xpos,ypos,axes_width,
@@ -3139,7 +3142,7 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 							{
 								ypos=axes_top+(i*drawing_height)/(number_of_rows+3);
 							}
-							if(!using_rig_node_group)
+							if (!using_rig_node_group)
 							{
 								/* for rig based, get next device */
 								device++;
@@ -3162,15 +3165,15 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 							"draw_all_signals.  Invalid signal layout");
 					} break;
 				} /* switch */
-				/* get highlighted signal min,max put in range widget*/	
+				/* get highlighted signal min,max put in range widget*/
 				update_signal_range_widget_from_highlight_signal(
 					&(analysis_window->interval),
 #if defined (UNEMAP_USE_NODES)
 					*(analysis_window->highlight_rig_node),signal_drawing_package
 #else
-					 **(analysis_window->highlight)
+					**(analysis_window->highlight)
 #endif /* defined (UNEMAP_USE_NODES)*/
-					);		
+					);
 			}	/* if (number_of_signals>0)*/
 		} /* if ((!rig_node_group&&!signal_drawing_package)|| */
 		else
@@ -3186,8 +3189,10 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 		return_code=0;
 	}
 	LEAVE;
+
 	return (return_code);
 } /* draw_all_signals */
+
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #define UNEMAP_USE_NODES 1
 #endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
@@ -3355,7 +3360,7 @@ The callback for resizing an analysis drawing area.
 #define UNEMAP_USE_NODES 1
 #endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
 							/* display the intersection of the old rectangle and the new
-								 rectangle */
+								rectangle */
 							if (attributes.width<width)
 							{
 								width=attributes.width;
@@ -3481,7 +3486,7 @@ The callback for redrawing part of an analysis interval drawing area.
 									{
 										first_data=0;
 										last_data=buffer->number_of_samples-1;
-#if defined (UNEMAP_USE_NODES)		
+#if defined (UNEMAP_USE_NODES)
 										draw_signal(
 											*(analysis->highlight_rig_node),
 											*(analysis->signal_drawing_package),
@@ -3503,7 +3508,7 @@ The callback for redrawing part of an analysis interval drawing area.
 											&(interval->axes_top),&(interval->axes_width),
 											&(interval->axes_height),
 											analysis->signal_drawing_information,
-											analysis->user_interface);	
+											analysis->user_interface);
 #endif /* defined (UNEMAP_USE_NODES)	*/
 										draw_device_markers(highlight_device,first_data,last_data,
 											*(analysis->datum),1,*(analysis->potential_time),1,
@@ -3655,7 +3660,7 @@ The callback for resizing an analysis interval drawing area.
 							{
 								first_data=0;
 								last_data=buffer->number_of_samples-1;
-#if defined (UNEMAP_USE_NODES)		
+#if defined (UNEMAP_USE_NODES)
 								draw_signal(*(analysis->highlight_rig_node),
 									*(analysis->signal_drawing_package),(struct Device *)NULL,
 									INTERVAL_AREA_DETAIL,1,0,&first_data,
@@ -3768,7 +3773,7 @@ analysis window and frees the memory associated with the analysis window.
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
 #if defined (UNEMAP_USE_NODES)
-		DEACCESS(FE_node_order_info)(&(analysis->rig_node_order_info));				
+		DEACCESS(FE_node_order_info)(&(analysis->rig_node_order_info));
 #endif
 		/* set the pointer to the analysis window to NULL */
 		if (analysis->address)
@@ -3808,10 +3813,10 @@ Shifts the bar in the interval area part of the analysis window to represent
 the new potential time.
 
 No longer check for previous_potential_time!=potential_time, as this
-has already been done before calling (in select_analysis_interval which calls 
+has already been done before calling (in select_analysis_interval which calls
 Time_keeper_request_new_time which calls analysis_potential_time_update_callback
-which calls this). This check sometimes caused problems, as the checks here and 
-in select_analysis_interval were called on differetly scaled potential_times, 
+which calls this). This check sometimes caused problems, as the checks here and
+in select_analysis_interval were called on differetly scaled potential_times,
 so there could be inconsistencies.
 ==============================================================================*/
 {
@@ -3935,14 +3940,15 @@ so there could be inconsistencies.
 			x_string,y_string,number_string,length);
 		XDrawString(display,working_window,
 			potential_time_colour,
-			x_string,y_string,number_string,length);		
+			x_string,y_string,number_string,length);
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"analysis_window_update_interval_area_time.  Missing analysis_window_structure");
-		return_code = 0;
+			"analysis_window_update_interval_area_time.  "
+			"Missing analysis_window_structure");
+		return_code=0;
 	}
 	LEAVE;
 
@@ -4073,7 +4079,7 @@ the new potential time.
 	{
 		display_message(ERROR_MESSAGE,
 	"analysis_time_update_signal_area_time.  Missing analysis_window_structure");
-		return_code = 0;
+		return_code=0;
 	}
 	LEAVE;
 
@@ -4151,7 +4157,7 @@ the new datum time.
 				signals_axes_width-1));
 			while (device_number>0)
 			{
-				if (scaled_previous_datum_marker != scaled_datum_marker)
+				if (scaled_previous_datum_marker!=scaled_datum_marker)
 				{
 					draw_datum_marker(previous_datum_marker,
 						SIGNAL_AREA_DETAIL,
@@ -4198,13 +4204,14 @@ the new datum time.
 				device++;
 			}
 		}
-		return_code = 1;
+		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"analysis_window_update_signal_area_datum.  Missing analysis_window_structure");
-		return_code = 0;
+			"analysis_window_update_signal_area_datum.  "
+			"Missing analysis_window_structure");
+		return_code=0;
 	}
 	LEAVE;
 
@@ -4280,7 +4287,7 @@ returned.
 	int signal_aspect_ratio_percent,widget_spacing;
 	MrmType analysis_window_class;
 	Pixmap no_cascade_pixmap;
-	static MrmRegisterArg callback_list[]={	
+	static MrmRegisterArg callback_list[]={
 		{"identify_analysis_reset_button",
 			(XtPointer)identify_analysis_reset_button},
 		{"identify_analysis_baseline_butt",
@@ -4300,11 +4307,11 @@ returned.
 		{"identify_analysis_previous_butt",
 			(XtPointer)identify_analysis_previous_butt},
 		{"identify_anal_signal_range",
-		 (XtPointer)identify_anal_signal_range},
+		(XtPointer)identify_anal_signal_range},
 		{"identify_anal_sig_range_minim",
-		 (XtPointer)identify_anal_sig_range_minim},
+		(XtPointer)identify_anal_sig_range_minim},
 		{"identify_anal_sig_range_maxim",
-		 (XtPointer)identify_anal_sig_range_maxim},
+		(XtPointer)identify_anal_sig_range_maxim},
 #if defined (OLD_CODE)
 		{"identify_analysis_previous_acce",
 			(XtPointer)identify_analysis_previous_acce},
@@ -4595,16 +4602,17 @@ returned.
 					/* assign and register the identifiers */
 					identifier_list[0].value=(XtPointer)analysis;
 					identifier_list[1].value=(XtPointer)identifying_colour;
-          /* DPN 18 June 2001 - Keep a pointer to the file selection boxes */
-          analysis->print_all_signals_data = create_File_open_data(
+					/* DPN 18 June 2001 - Keep a pointer to the file selection boxes */
+					analysis->print_all_signals_data=create_File_open_data(
 						postscript_file_extension,REGULAR,print_all_signals,
 						(XtPointer)analysis,1,user_interface);
-					identifier_list[2].value=(XtPointer)(analysis->print_all_signals_data);
-          analysis->print_selected_signals_data = create_File_open_data(
+					identifier_list[2].value=
+						(XtPointer)(analysis->print_all_signals_data);
+					analysis->print_selected_signals_data=create_File_open_data(
 						postscript_file_extension,REGULAR,print_selected_signals,
 						(XtPointer)analysis,1,user_interface);
-					identifier_list[3].value =
-            (XtPointer)(analysis->print_selected_signals_data);
+					identifier_list[3].value=
+						(XtPointer)(analysis->print_selected_signals_data);
 					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(analysis_window_hierarchy,
 						identifier_list,XtNumber(identifier_list)))
 					{
@@ -4772,7 +4780,7 @@ returned.
 								XmNmarginRight,0,
 								XmNmarginWidth,0,
 								NULL);
-							update_analysis_window_menu(analysis);							
+							update_analysis_window_menu(analysis);
 							install_accelerators(parent, parent);
 							/*??? more to do ? */
 							if (address)
@@ -4918,7 +4926,7 @@ The function for redrawing the analysis interval drawing area.
 	float x_scale;
 	int device_number,first_data,last_data,return_code;
 #if !defined (UNEMAP_USE_NODES)
-	int i;	
+	int i;
 	struct Device **device;
 #endif
 	struct Device **highlight_device;
@@ -4950,8 +4958,8 @@ The function for redrawing the analysis interval drawing area.
 		{
 			/* draw all of the active signal */
 			first_data=0;
-			last_data=buffer->number_of_samples-1;			
-#if defined (UNEMAP_USE_NODES)		
+			last_data=buffer->number_of_samples-1;
+#if defined (UNEMAP_USE_NODES)
 			draw_signal(*(analysis->highlight_rig_node),
 				*(analysis->signal_drawing_package),(struct Device *)NULL,
 				INTERVAL_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
@@ -4960,7 +4968,7 @@ The function for redrawing the analysis interval drawing area.
 				&(interval->axes_top),&(interval->axes_width),
 				&(interval->axes_height),analysis->signal_drawing_information,
 				analysis->user_interface);
-#else			
+#else
 			draw_signal((struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
 				*highlight_device,INTERVAL_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
 				interval->drawing->width,interval->drawing->height,
@@ -5000,8 +5008,8 @@ The function for redrawing the analysis interval drawing area.
 			current_region=get_Rig_current_region(*(analysis->rig));
 			device_number=get_FE_node_order_info_current_node_number(
 				analysis->rig_node_order_info);
-#else			
-			if(current_region=get_Rig_current_region(*(analysis->rig)))
+#else
+			if (current_region=get_Rig_current_region(*(analysis->rig)))
 			{
 				device_number=0;
 				device=(*(analysis->rig))->devices;
@@ -5058,28 +5066,30 @@ int analysis_Window_free_rig_node_order_info(struct  Analysis_window *analysis)
 /*******************************************************************************
 LAST MODIFIED : 25 July 2000
 
-DESCRIPTION : frees up <analysis>'s the Fe_node_order_info  
+DESCRIPTION : frees up <analysis>'s the Fe_node_order_info
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(analysis_Window_free_rig_node_order_info);
-	if(analysis)
+	if (analysis)
 	{
 		return_code=1;
-		if(analysis->rig_node_order_info)
-		{			
+		if (analysis->rig_node_order_info)
+		{
 			DEACCESS(FE_node_order_info)(&(analysis->rig_node_order_info));
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"analysis_Window_free_rig_node_order_info. Invalid arguments");
+		display_message(ERROR_MESSAGE,"analysis_Window_free_rig_node_order_info.  "
+			"Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
-}/* analysis_Window_free_rig_node_order_info */
+	
+	return (return_code);
+} /* analysis_Window_free_rig_node_order_info */
 #endif /* defined (UNEMAP_USE_NODES) */
 
 int update_analysis_window_menu(struct Analysis_window *analysis)
@@ -5153,8 +5163,8 @@ Updates the analysis region menu to be consistent with the current rig.
 							analysis->region_pull_down_menu,"All regions",attributes,
 							NUMBER_OF_ATTRIBUTES))
 						{
-							XtManageChild(*regions);							
-							if(!get_Rig_current_region(rig))
+							XtManageChild(*regions);
+							if (!get_Rig_current_region(rig))
 							{
 								current_region= *regions;
 							}
@@ -5175,7 +5185,7 @@ Updates the analysis region menu to be consistent with the current rig.
 							analysis->region_pull_down_menu,region->name,
 							attributes,NUMBER_OF_ATTRIBUTES))
 						{
-							XtManageChild(*regions);						
+							XtManageChild(*regions);
 							if ((get_Rig_current_region(rig)==region)||
 								((!current_region)&&(!(get_Rig_current_region(rig)))))
 							{
@@ -5254,9 +5264,9 @@ Highlights/dehighlights the <device> in the <signals> area.
 	ENTER(highlight_signal);
 	if (signals&&signal_drawing_information&&user_interface&&interval_area
 #if defined (UNEMAP_USE_NODES)
-		 &&((device&&!device_rig_node&&!signal_drawing_package)||
-		 (!device&&device_rig_node&&signal_drawing_package))
-#else 
+		&&((device&&!device_rig_node&&!signal_drawing_package)||
+		(!device&&device_rig_node&&signal_drawing_package))
+#else
 		&&device
 #endif /* defined (UNEMAP_USE_NODES)*/
 			)
@@ -5280,7 +5290,7 @@ Highlights/dehighlights the <device> in the <signals> area.
 		}
 #if defined (UNEMAP_USE_NODES)
 		/* use the node if we have it*/
-		if(device_rig_node)
+		if (device_rig_node)
 		{
 			/*??JW need to do draw_device_markers with node */
 			draw_signal(device_rig_node,signal_drawing_package,
@@ -5291,7 +5301,7 @@ Highlights/dehighlights the <device> in the <signals> area.
 		}
 		else
 		/* use the device*/
-		{	
+		{
 #endif /* defined (UNEMAP_USE_NODES)*/
 			/* redraw the signal */
 		draw_device_markers(device,start_data,end_data,datum,1,potential_time,1,
@@ -5316,14 +5326,14 @@ Highlights/dehighlights the <device> in the <signals> area.
 			XtWindow(signals->drawing_area),
 			(signal_drawing_information->graphics_context).copy,xpos,ypos,
 			signals->drawing->width,signals->drawing->height,xpos,ypos);
-		/* get signal min,max put in range widget*/	
+		/* get signal min,max put in range widget*/
 		update_signal_range_widget_from_highlight_signal(interval_area,
 #if defined (UNEMAP_USE_NODES)
 			device_rig_node,signal_drawing_package
 #else
 			device
 #endif /* defined (UNEMAP_USE_NODES)*/
-	    );		
+			);
 		return_code=1;
 	}
 	else
@@ -5348,7 +5358,7 @@ Returns the interval_area used by the <analysis_window>.
 
 	ENTER(get_Analysis_window_interval_area);
 	interval_area=(struct Interval_area *)NULL;
-	if(analysis_window)
+	if (analysis_window)
 	{
 		interval_area=&(analysis_window->interval);
 	}
@@ -5358,7 +5368,8 @@ Returns the interval_area used by the <analysis_window>.
 			"get_Analysis_window_interval_area. Invalid argument");
 	}
 	LEAVE;
-	return(interval_area);
+	
+	return (interval_area);
 }/* get_Analysis_window_interval_area */
 
 #if defined (UNEMAP_USE_NODES)
@@ -5374,7 +5385,7 @@ DESCRIPTION : returns the rig_node_order_info of <analysis_window>
 
 	ENTER(get_Analysis_window_rig_node_order_info);
 	rig_node_order_info=(struct FE_node_order_info *)NULL;
-	if(analysis_window)
+	if (analysis_window)
 	{
 		rig_node_order_info=analysis_window->rig_node_order_info;
 	}
@@ -5384,12 +5395,14 @@ DESCRIPTION : returns the rig_node_order_info of <analysis_window>
 			"get_Analysis_window_rig_node_order_info. invalid arguments");
 	}
 	LEAVE;
-	return(rig_node_order_info);
-}
+
+	return (rig_node_order_info);
+} /* get_Analysis_window_rig_node_order_info */
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-struct FE_node_order_info *create_and_sort_FE_node_order_info_from_rig_node_group(
+struct FE_node_order_info
+	*create_and_sort_FE_node_order_info_from_rig_node_group(
 	struct GROUP(FE_node) *rig_node_group,enum Signal_order signal_order,
 	struct Signal_drawing_package *signal_drawing_package)
 /*******************************************************************************
@@ -5397,7 +5410,7 @@ LAST MODIFIED : 10 August 2000
 
 DESCRIPTION :
 Given <rig_node_group> <signal_drawing_package>, and <signal_order>
-creates (and returns) an FE_node_order_info containing the nodes of 
+creates (and returns) an FE_node_order_info containing the nodes of
 <rig_node_group>, sorted by <signal_order>
 ==============================================================================*/
 {
@@ -5409,45 +5422,47 @@ creates (and returns) an FE_node_order_info containing the nodes of
 	struct FE_field *highlight_field;
 
 	ENTER(create_and_sort_FE_node_order_info_from_rig_node_group);
-	node_order_info=(struct FE_node_order_info *)NULL;	
+	node_order_info=(struct FE_node_order_info *)NULL;
 	rig_node_sort_array=(struct Rig_node_sort **)NULL;
 	rig_node_sort=(struct Rig_node_sort *)NULL;
 	highlight_field=(struct FE_field *)NULL;
-	if(rig_node_group&&signal_drawing_package)
+	if (rig_node_group&&signal_drawing_package)
 	{
 		if (node_order_info=CREATE(FE_node_order_info)(0))
-		{	
+		{
 			if (success=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
 				fill_FE_node_order_info,(void *)node_order_info,
 				rig_node_group))
-			{												
-				number_of_nodes= get_FE_node_order_info_number_of_nodes(node_order_info);
+			{
+				number_of_nodes=get_FE_node_order_info_number_of_nodes(node_order_info);
 				/* create and fill an array of Rig_node_sort pointers to sort*/
-				if(ALLOCATE(rig_node_sort_array,struct Rig_node_sort *,number_of_nodes))
+				if (ALLOCATE(rig_node_sort_array,struct Rig_node_sort *,
+					number_of_nodes))
 				{
-					component.number=0;	
-					switch(signal_order)
-					{	
+					component.number=0;
+					switch (signal_order)
+					{
 						case CHANNEL_ORDER:
 						default:
-						{								
-							component.field=
-								get_Signal_drawing_package_read_order_field(signal_drawing_package);
-						}break;
+						{
+							component.field=get_Signal_drawing_package_read_order_field(
+								signal_drawing_package);
+						} break;
 						case EVENT_ORDER:
-						{							
-							/*??JW will have to extract this properly, when we have the field Set NULL for now */
+						{
+							/*??JW will have to extract this properly, when we have the field
+								Set NULL for now */
 							component.field=(struct FE_field *)NULL;
-						}break;
-					}/* switch(signal_order) */
+						} break;
+					}
 					count=0;
-					while((count<number_of_nodes)&&(success))
+					while ((count<number_of_nodes)&&(success))
 					{
 						/*create and fill a rig_node_sort */
-						if(ALLOCATE(rig_node_sort,struct Rig_node_sort,1))
+						if (ALLOCATE(rig_node_sort,struct Rig_node_sort,1))
 						{
 							rig_node_sort->node=get_FE_node_order_info_node(node_order_info,count);
-							switch(signal_order)
+							switch (signal_order)
 							{
 								case CHANNEL_ORDER:
 								default:
@@ -5455,50 +5470,52 @@ creates (and returns) an FE_node_order_info containing the nodes of
 									success=get_FE_nodal_int_value(rig_node_sort->node,&component,0,
 										FE_NODAL_VALUE,/*time*/0,&(rig_node_sort->read_order));
 									rig_node_sort->event_time=0;
-								}break;
+								} break;
 								case EVENT_ORDER:
 								{
 									rig_node_sort->read_order=0;
 									/*??JW will have to extract this properly, when have a field*/
 									/* Set to a dummy for now */
 									rig_node_sort->event_time=count;
-								}break;
-							}/* switch(signal_order) */
+								} break;
+							}/* switch (signal_order) */
 							rig_node_sort_array[count]=rig_node_sort;
 							count++;
-						}/* if(ALLOCATE(rig_node_sort */
+						}/* if (ALLOCATE(rig_node_sort */
 						else
-						{						
+						{
 							display_message(ERROR_MESSAGE,
 								"create_and_sort_FE_node_order_info_from_rig_node_group. "
 								"ALLOCATE(node_sorter failed");
 							success=0;
 						}
-					}/* while(( */
-					/*sort the array*/	
-					switch(signal_order)
-					{	
+					}
+					/* sort the array*/
+					switch (signal_order)
+					{
 						case CHANNEL_ORDER:
 						default:
 						{
 							heapsort((void *)(rig_node_sort_array),number_of_nodes,
-								sizeof(struct Rig_node_sort *),sort_rig_node_sorts_by_read_order);
-						}break;
+								sizeof(struct Rig_node_sort *),
+								sort_rig_node_sorts_by_read_order);
+						} break;
 						case EVENT_ORDER:
 						{
 							heapsort((void *)(rig_node_sort_array),number_of_nodes,
-								sizeof(struct Rig_node_sort *),sort_rig_node_sorts_by_event_time);
-						}break;
-					}/* switch(signal_order) */
-#if defined (DEBUG) 
-					for(count=0;count<number_of_nodes;count++)
-					{								
+								sizeof(struct Rig_node_sort *),
+								sort_rig_node_sorts_by_event_time);
+						} break;
+					}
+#if defined (DEBUG)
+					for (count=0;count<number_of_nodes;count++)
+					{
 						printf("%d\n",rig_node_sort_array[count]->read_order);
 					}
-#endif /*  defined (DEBUG) */				
-					/*reset the sorted array into the node_order_info*/
-					for(count=0;count<number_of_nodes;count++)
-					{								
+#endif /*  defined (DEBUG) */
+					/* reset the sorted array into the node_order_info*/
+					for (count=0;count<number_of_nodes;count++)
+					{
 						set_FE_node_order_info_node(node_order_info,count,
 							rig_node_sort_array[count]->node);
 						DEALLOCATE(rig_node_sort_array[count]);
@@ -5506,18 +5523,18 @@ creates (and returns) an FE_node_order_info containing the nodes of
 					DEALLOCATE(rig_node_sort_array);
 					highlight_field=get_Signal_drawing_package_highlight_field(
 							signal_drawing_package);
-					node_order_info_make_first_highlighted_node_current_node(node_order_info,
-						highlight_field);
-				}/* if(ALLOCATE(node_sort */
+					node_order_info_make_first_highlighted_node_current_node(
+						node_order_info,highlight_field);
+				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
 						"create_and_sort_FE_node_order_info_from_rig_node_group. "
-						"ALLOCATE(node_sorter_array failed");
+						"ALLOCATE(node_sorter_array) failed");
 					success=0;
-				}			
-			}/* if (success=FOR_EACH_OBJECT_IN_GROUP(FE_node)( */
-		}/* if (node_order_info=CREATE(FE_node_order_info)(0)) */
+				}
+			}
+		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
@@ -5527,20 +5544,21 @@ creates (and returns) an FE_node_order_info containing the nodes of
 		}
 	}
 	else
-	{	
+	{
 		display_message(ERROR_MESSAGE,
 			"create_and_sort_FE_node_order_info_from_rig_node_group. "
-			"invalid arguments");	
-		success=0;	
+			"invalid arguments");
+		success=0;
 	}
-	if((!success)&&node_order_info)
+	if ((!success)&&node_order_info)
 	{
 		DESTROY(FE_node_order_info)(&node_order_info);
 		node_order_info=(struct FE_node_order_info *)NULL;
 	}
 	LEAVE;
-	return(node_order_info);
-}/* create_and_sort_FE_node_order_info_from_rig_node_group */
+
+	return (node_order_info);
+} /* create_and_sort_FE_node_order_info_from_rig_node_group */
 #endif /* defined (UNEMAP_USE_NODES) */
 
 int update_signal_range_widget_from_highlight_signal(
@@ -5560,61 +5578,63 @@ Updates the range maximum, minimum widget numbers, from the highlighted signal
 c.f analysis_set_highlight_max, analysis_set_highlight_min
 ==============================================================================*/
 {
-		char max_string[20];
-		char min_string[20];
-		float maximum,minimum;
-		int return_code;
+	char max_string[20];
+	char min_string[20];
+	float maximum,minimum;
+	int return_code;
 
-		ENTER(update_signal_range_widget_from_highlight_signal);		
-		return_code=0;
-		if(interval_area&&
+	ENTER(update_signal_range_widget_from_highlight_signal);
+	return_code=0;
+	if (interval_area&&
 #if defined (UNEMAP_USE_NODES)
-			device_rig_node&&signal_drawing_package
+		device_rig_node&&signal_drawing_package
 #else
-			device
+		device
 #endif /* defined (UNEMAP_USE_NODES)*/
-	    )
+		)
+	{
+#if defined (UNEMAP_USE_NODES)
+		struct FE_field_component component;
+		struct FE_field *signal_minimum_field,*signal_maximum_field;
+
+		signal_minimum_field=(struct FE_field *)NULL;
+		signal_maximum_field=(struct FE_field *)NULL;
+		return_code=
+			((signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
+			signal_drawing_package))&&(
+			(signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
+			signal_drawing_package))));
+		if (return_code)
 		{
-#if defined (UNEMAP_USE_NODES)				
-			struct FE_field_component component;
-			struct FE_field *signal_minimum_field,*signal_maximum_field;
-		
-			signal_minimum_field=(struct FE_field *)NULL;
-			signal_maximum_field=(struct FE_field *)NULL;				
-			return_code=
-				((signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
-				signal_drawing_package))&&(
-				(signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
-				signal_drawing_package))));			
-			if(return_code)
-			{
-				component.number=0;
-				component.field=signal_minimum_field;
-				return_code=get_FE_nodal_FE_value_value(device_rig_node,&component,
-					0,FE_NODAL_VALUE,
-					/*time*/0,&minimum);
-			}
-			if(return_code)
-			{
-				component.field=signal_maximum_field;
-				get_FE_nodal_FE_value_value(device_rig_node,&component,0,FE_NODAL_VALUE,
-					/*time*/0,&maximum);
-			}		
-#else
-			return_code=1;
-			minimum=device->signal_display_minimum;
-			maximum=device->signal_display_maximum;
+			component.number=0;
+			component.field=signal_minimum_field;
+			return_code=get_FE_nodal_FE_value_value(device_rig_node,&component,
+				0,FE_NODAL_VALUE,
+				/*time*/0,&minimum);
+		}
+		if (return_code)
+		{
+			component.field=signal_maximum_field;
+			get_FE_nodal_FE_value_value(device_rig_node,&component,0,FE_NODAL_VALUE,
+				/*time*/0,&maximum);
+		}
+#else /* defined (UNEMAP_USE_NODES) */
+		return_code=1;
+		minimum=device->signal_display_minimum;
+		maximum=device->signal_display_maximum;
 #endif /*	defined (UNEMAP_USE_NODES) */
-			sprintf(min_string,"%.3g",minimum);
-			sprintf(max_string,"%.3g",maximum);		
-			XtVaSetValues(interval_area->minimum_value,XmNvalue,min_string,NULL);
-			XtVaSetValues(interval_area->maximum_value,XmNvalue,max_string,NULL);
-		}
-		else
-		{	
-			display_message(ERROR_MESSAGE,"update_signal_range_widget_from_highlight_signal"
-											" invalid arguments");
-		}
-		LEAVE;
-		return(return_code);
+		sprintf(min_string,"%.3g",minimum);
+		sprintf(max_string,"%.3g",maximum);
+		XtVaSetValues(interval_area->minimum_value,XmNvalue,min_string,NULL);
+		XtVaSetValues(interval_area->maximum_value,XmNvalue,max_string,NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"update_signal_range_widget_from_highlight_signal.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
 }/* update_signal_range_widget_from_highlight_signal */

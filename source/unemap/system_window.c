@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 23 October 2001
+LAST MODIFIED : 10 May 2002
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -160,9 +160,9 @@ Associate the mapping window with the acquisition work area
 			{
 				maintain_aspect_ratio=0;
 			}
-#if defined (UNEMAP_USE_NODES)	
-			spectrum=system->map_drawing_information->spectrum;		
-			if(spectrum_manager=get_map_drawing_information_spectrum_manager
+#if defined (UNEMAP_USE_NODES)
+			spectrum=system->map_drawing_information->spectrum;
+			if (spectrum_manager=get_map_drawing_information_spectrum_manager
 				(drawing_information))
 			{
 				if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
@@ -171,23 +171,23 @@ Associate the mapping window with the acquisition work area
 						("spectrum_modify_temp"))
 					{
 						MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
-							(spectrum_to_be_modified_copy,spectrum);										
+							(spectrum_to_be_modified_copy,spectrum);
 						Spectrum_set_simple_type(spectrum_to_be_modified_copy,
-							BLUE_TO_RED_SPECTRUM);	
+							BLUE_TO_RED_SPECTRUM);
 						MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
 							spectrum_to_be_modified_copy,spectrum_manager);
-						DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+						DESTROY(Spectrum)(&spectrum_to_be_modified_copy);
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"associate_mapping_acquisition. Could not create spectrum copy.");				
+							"associate_mapping_acquisition. Could not create spectrum copy.");
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"associate_mapping_acquisition. Spectrum is not in manager!");		
+						"associate_mapping_acquisition. Spectrum is not in manager!");
 				}
 			}
 			else
@@ -318,7 +318,7 @@ Opens the windows associated with the acquisition work area.
 #if defined (UNEMAP_USE_3D)
 					,system->unemap_package
 #endif /* defined (UNEMAP_USE_3D) */
-					 ))
+					))
 				{
 					read_default_configuration=1;
 				}
@@ -581,12 +581,12 @@ Associate the mapping window with the analysis work area
 				maintain_aspect_ratio=0;
 			}
 			/* Don't want to reset the spectrum when using the analysis window */
-			if(system->mapping.associate!=ANALYSIS_ASSOCIATE)
+			if (system->mapping.associate!=ANALYSIS_ASSOCIATE)
 			{
 
 				spectrum=system->map_drawing_information->spectrum;
-#if defined (UNEMAP_USE_NODES)				
-				if(spectrum_manager=get_map_drawing_information_spectrum_manager
+#if defined (UNEMAP_USE_NODES)
+				if (spectrum_manager=get_map_drawing_information_spectrum_manager
 					(drawing_information))
 				{
 					if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
@@ -614,21 +614,21 @@ Associate the mapping window with the analysis work area
 										BLUE_TO_RED_SPECTRUM);
 								} break;
 							}
-#if defined (UNEMAP_USE_NODES)	
+#if defined (UNEMAP_USE_NODES)
 							MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
 								spectrum_to_be_modified_copy,spectrum_manager);
-							DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+							DESTROY(Spectrum)(&spectrum_to_be_modified_copy);
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"associate_mapping_analysis. Could not create spectrum copy.");				
+								"associate_mapping_analysis. Could not create spectrum copy.");
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"associate_mapping_analysis. Spectrum is not in manager!");		
+							"associate_mapping_analysis. Spectrum is not in manager!");
 					}
 				}
 				else
@@ -636,7 +636,7 @@ Associate the mapping window with the analysis work area
 					display_message(ERROR_MESSAGE,
 						"associate_mapping_analysis. Spectrum_manager not present");
 				}
-#endif /* defined (UNEMAP_USE_NODES) */		
+#endif /* defined (UNEMAP_USE_NODES) */
 			}
 			open_mapping_window(&(system->analysis.mapping_window),
 				system->mapping_button,system->window_shell,
@@ -712,7 +712,7 @@ Opens the windows associated with the analysis work area.
 			if (system->analysis.window_shell)
 			{
 				/* pop up the analysis window shell */
-				XtPopup(system->analysis.window_shell,XtGrabNone);			
+				XtPopup(system->analysis.window_shell,XtGrabNone);
 				/* ghost the analysis activation button */
 				XtSetSensitive(system->analysis.activation,False);
 				if (system->analysis.trace)
@@ -777,9 +777,9 @@ Opens the windows associated with the mapping work area.
 	static MrmRegisterArg identifier_list[]=
 	{
 		{"system_window_structure",(XtPointer)NULL}
-	};	
+	};
 	struct Map_drawing_information *drawing_information
-		=(struct Map_drawing_information *)NULL;	
+		=(struct Map_drawing_information *)NULL;
 	struct Spectrum *spectrum=(struct Spectrum *)NULL;
 	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
@@ -837,9 +837,9 @@ Opens the windows associated with the mapping work area.
 								}
 							}
 						}
-#if defined (UNEMAP_USE_NODES)	
+#if defined (UNEMAP_USE_NODES)
 						spectrum=drawing_information->spectrum;
-						if(spectrum_manager=get_map_drawing_information_spectrum_manager
+						if (spectrum_manager=get_map_drawing_information_spectrum_manager
 							(drawing_information))
 						{
 							if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
@@ -850,21 +850,21 @@ Opens the windows associated with the mapping work area.
 									MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
 										(spectrum_to_be_modified_copy,spectrum);
 									Spectrum_set_simple_type(spectrum_to_be_modified_copy,
-										BLUE_TO_RED_SPECTRUM);	
+										BLUE_TO_RED_SPECTRUM);
 									MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
 										spectrum_to_be_modified_copy,spectrum_manager);
-									DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+									DESTROY(Spectrum)(&spectrum_to_be_modified_copy);
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"open_mapping_work_area . Could not create spectrum copy.");				
+										"open_mapping_work_area . Could not create spectrum copy.");
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"open_mapping_work_area . Spectrum is not in manager!");		
+									"open_mapping_work_area . Spectrum is not in manager!");
 							}
 						}
 						else
@@ -915,7 +915,7 @@ Opens the windows associated with the mapping work area.
 									system->configuration_file_extension,
 									system->analysis_colour,system->map_drawing_information,
 									user_interface, system->time_keeper,
-									system->unemap_package))								
+									system->unemap_package))
 								{
 									display_message(ERROR_MESSAGE,
 							"open_mapping_work_area.  Could not create analysis work area");
@@ -923,8 +923,8 @@ Opens the windows associated with the mapping work area.
 							}
 						}
 						spectrum=drawing_information->spectrum;
-#if defined (UNEMAP_USE_NODES)				
-						if(spectrum_manager=get_map_drawing_information_spectrum_manager
+#if defined (UNEMAP_USE_NODES)
+						if (spectrum_manager=get_map_drawing_information_spectrum_manager
 							(drawing_information))
 						{
 							if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
@@ -955,21 +955,21 @@ Opens the windows associated with the mapping work area.
 												BLUE_TO_RED_SPECTRUM);
 										} break;
 									}
-#if defined (UNEMAP_USE_NODES)	
+#if defined (UNEMAP_USE_NODES)
 									MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
 										spectrum_to_be_modified_copy,spectrum_manager);
-									DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
+									DESTROY(Spectrum)(&spectrum_to_be_modified_copy);
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"open_mapping_work_area. Could not create spectrum copy.");				
+										"open_mapping_work_area. Could not create spectrum copy.");
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"open_mapping_work_area. Spectrum is not in manager!");		
+									"open_mapping_work_area. Spectrum is not in manager!");
 							}
 						}
 						else
@@ -977,7 +977,7 @@ Opens the windows associated with the mapping work area.
 							display_message(ERROR_MESSAGE,
 								"open_mapping_work_area. Spectrum_manager not present");
 						}
-#endif /* defined (UNEMAP_USE_NODES) */	
+#endif /* defined (UNEMAP_USE_NODES) */
 						open_mapping_window(&(system->analysis.mapping_window),
 							system->mapping_button,system->window_shell,
 							&(system->mapping.window_shell),&(system->mapping.outer_form),
@@ -1068,8 +1068,8 @@ Close emap environment.
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
 	if (system=(struct System_window *)system_window)
-	{		
-		if(system->time_keeper)
+	{
+		if (system->time_keeper)
 		{
 			DEACCESS(Time_keeper)(&(system->time_keeper));
 		}
@@ -1158,7 +1158,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 			{"identify_system_mapping_button",
 				(XtPointer)identify_system_mapping_button},
 			{"open_mapping_work_area",(XtPointer)open_mapping_work_area},
-			{"identify_system_close_button",(XtPointer)identify_system_close_button},		
+			{"identify_system_close_button",(XtPointer)identify_system_close_button},
 		},
 		global_callback_list[]=
 		{
@@ -1342,9 +1342,9 @@ pointer to the created structure if successful and NULL if unsuccessful.
 #if defined (UNEMAP_USE_3D)
 		&&unemap_package&&element_point_ranges_selection&&element_selection&&
 		node_selection&&data_selection&&texture_manager&&
-		  interactive_tool_manager&&scene_manager&&light_model_manager&&
-	    light_manager&&spectrum_manager&&graphical_material_manager&&
-	    data_manager&&glyph_list&&graphical_material&&
+			interactive_tool_manager&&scene_manager&&light_model_manager&&
+			light_manager&&spectrum_manager&&graphical_material_manager&&
+			data_manager&&glyph_list&&graphical_material&&
 			computed_field_package&&light&&light_model
 #endif /* defined (UNEMAP_USE_3D) */
 		)
@@ -1354,12 +1354,12 @@ pointer to the created structure if successful and NULL if unsuccessful.
 		{
 			/* allocate memory */
 			if (ALLOCATE(system,struct System_window,1))
-			{			
+			{
 #if defined (UNEMAP_USE_3D)
-				system->unemap_package = unemap_package;			
-#else				
-				system->unemap_package = (struct Unemap_package *)NULL;				
-#endif				
+				system->unemap_package=unemap_package;
+#else
+				system->unemap_package=(struct Unemap_package *)NULL;
+#endif
 				system->window_shell=shell;
 				system->user_interface=user_interface;
 				system->map_drawing_information=
@@ -1371,14 +1371,14 @@ pointer to the created structure if successful and NULL if unsuccessful.
 						light_manager,spectrum_manager,graphical_material_manager,
 						data_manager,glyph_list,graphical_material,
 						computed_field_package,light,light_model
-#endif /* defined (UNEMAP_USE_3D) */										 
-						 );	
+#endif /* defined (UNEMAP_USE_3D) */
+						);
 #if defined (UNEMAP_USE_3D)
-				set_map_drawing_information_user_interface(system->map_drawing_information,
-					user_interface);
+				set_map_drawing_information_user_interface(
+					system->map_drawing_information,user_interface);
 				set_map_drawing_information_time_keeper(system->map_drawing_information,
 					time_keeper);
-#endif /* defined (UNEMAP_USE_3D) */		
+#endif /* defined (UNEMAP_USE_3D) */
 				system->configuration_directory=(char *)NULL;
 				system->configuration_file_extension=(char *)NULL;
 				system->postscript_file_extension=(char *)NULL;
@@ -1579,7 +1579,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				}
 				/*???DB.  Retrieve settings */
 				/* register the callbacks */
-				(callback_list[0]).value=(XtPointer)close_button_callback;				
+				(callback_list[0]).value=(XtPointer)close_button_callback;
 				if ((MrmSUCCESS==MrmRegisterNamesInHierarchy(system_window_hierarchy,
 					callback_list,XtNumber(callback_list)))&&(MrmSUCCESS==
 					MrmRegisterNames(global_callback_list,

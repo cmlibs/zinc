@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 6 March 2002
+LAST MODIFIED : 10 May 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -61,491 +61,10 @@ and the <max_tick_mark>.
 	LEAVE;
 } /* calculate_divisions */
 
-#if defined (OLD_CODE)
-/*???DB.  Moved to analysis_calculate */
-static int calculate_moving_average(float *objective_values,
-	int number_of_objective_values,int objective_values_step,int average_width)
-/*******************************************************************************
-LAST MODIFIED : 30 September 2001
-
-DESCRIPTION :
-Calculates the moving average of the <objective_values>.
-==============================================================================*/
-{
-	float average_after,*average_after_value,average_before,first_value,
-		last_value,*objective_value,*save_value,*save_values,temp_value;
-	int average_width_after,average_width_before,i,return_code;
-
-	ENTER(calculate_moving_average);
-	return_code=0;
-	if (objective_values&&(0<number_of_objective_values)&&
-		(0<objective_values_step)&&(0<average_width))
-	{
-		if (average_width>1)
-		{
-			average_width_before=average_width/2;
-			average_width_after=average_width-1-average_width_before;
-			if (ALLOCATE(save_values,float,average_width_before))
-			{
-				objective_value=objective_values;
-				first_value=objective_values[0];
-				last_value=objective_values[(number_of_objective_values-1)*
-					objective_values_step];
-				save_value=save_values;
-				for (i=average_width_before;i>0;i--)
-				{
-					*save_value=first_value;
-					save_value++;
-				}
-				save_value=save_values;
-				average_before=first_value*(float)average_width_before;
-				average_after=0;
-				if (average_width_after<number_of_objective_values)
-				{
-					for (i=average_width_after;i>0;i--)
-					{
-						objective_value += objective_values_step;
-						average_after += *objective_value;
-					}
-					objective_value=objective_values;
-					average_after_value=objective_value+
-						(average_width_after*objective_values_step);
-					for (i=number_of_objective_values-average_width_after-1;i>0;i--)
-					{
-						temp_value=average_after+(*objective_value)+average_before;
-						average_before += (*objective_value)-(*save_value);
-						*save_value= *objective_value;
-						save_value++;
-						if (save_value-save_values>=average_width_before)
-						{
-							save_value=save_values;
-						}
-						*objective_value=temp_value;
-						objective_value += objective_values_step;
-						average_after_value += objective_values_step;
-						average_after += (*average_after_value)-(*objective_value);
-					}
-					for (i=average_width_after+1;i>0;i--)
-					{
-						temp_value=average_after+(*objective_value)+average_before;
-						average_before += (*objective_value)-(*save_value);
-						*save_value= *objective_value;
-						save_value++;
-						if (save_value-save_values>=average_width_before)
-						{
-							save_value=save_values;
-						}
-						*objective_value=temp_value;
-						objective_value += objective_values_step;
-						average_after += last_value-(*objective_value);
-					}
-				}
-				else
-				{
-					for (i=number_of_objective_values-1;i>0;i--)
-					{
-						objective_value += objective_values_step;
-						average_after += *objective_value;
-					}
-					average_after += last_value*
-						(float)(average_width_after-(number_of_objective_values-1));
-					objective_value=objective_values;
-					for (i=number_of_objective_values;i>0;i--)
-					{
-						temp_value=average_after+(*objective_value)+average_before;
-						average_before += (*objective_value)-first_value;
-						*objective_value=temp_value;
-						objective_value += objective_values_step;
-						average_after += last_value-(*objective_value);
-					}
-				}
-				objective_value=objective_values;
-				temp_value=(float)average_width;
-				for (i=number_of_objective_values;i>0;i--)
-				{
-					*objective_value /= temp_value;
-					objective_value += objective_values_step;
-				}
-				DEALLOCATE(save_values);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"calculate_moving_average.  Could not allocate save_values");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"calculate_moving_average.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* calculate_moving_average */
-#endif /* defined (OLD_CODE) */
-
 /*
 Global functions
 ----------------
 */
-#if defined (OLD_CODE)
-/*???DB.  Split between here and analysis_calculate */
-int calculate_device_objective(struct Device *device,
-	enum Event_detection_algorithm detection,
-	enum Event_detection_objective objective,float *objective_values,
-	int number_of_objective_values,int objective_values_step,int average_width)
-/*******************************************************************************
-LAST MODIFIED : 31 January 2002
-
-DESCRIPTION :
-Calculates the specified <objective>/<detection> function for the <device>.
-Storing the values in the array (<objective_values> every
-<objective_values_step>) provided.
-==============================================================================*/
-{
-	float average_after,*average_after_value,average_before,first_value,
-		*float_value,gain,last_value,objective_maximum,objective_minimum,
-		*objective_value,offset,*save_value,*save_values,scale,signal_maximum,
-		signal_minimum,temp_value;
-	int i,number_of_samples,number_of_signals,return_code;
-	short *short_value;
-	struct Signal *signal;
-	struct Signal_buffer *buffer;
-
-	ENTER(calculate_device_objective);
-	number_of_samples=0;
-	return_code=0;
-	if (device&&(signal=device->signal)&&(buffer=signal->buffer)&&
-		(0<(number_of_samples=buffer->number_of_samples))&&
-		(((SHORT_INT_VALUE==buffer->value_type)&&
-		(buffer->signals.short_int_values))||((FLOAT_VALUE==buffer->value_type)&&
-		(buffer->signals.float_values)))&&objective_values&&
-		(number_of_samples<=number_of_objective_values)&&(0<objective_values_step)&&
-		(0<average_width)&&(device->channel))
-	{
-		if (ALLOCATE(save_values,float,average_width))
-		{
-			number_of_signals=signal->buffer->number_of_signals;
-			objective_value=objective_values;
-			switch (buffer->value_type)
-			{
-				case SHORT_INT_VALUE:
-				{
-					short_value=(buffer->signals.short_int_values)+(signal->index);
-					for (i=number_of_samples;i>0;i--)
-					{
-						*objective_value=(float)(*short_value);
-						short_value += number_of_signals;
-						objective_value += objective_values_step;
-					}
-				} break;
-				case FLOAT_VALUE:
-				{
-					float_value=(buffer->signals.float_values)+(signal->index);
-					for (i=number_of_samples;i>0;i--)
-					{
-						*objective_value=(float)(*float_value);
-						float_value += number_of_signals;
-						objective_value += objective_values_step;
-					}
-				} break;
-			}
-			objective_value=objective_values;
-			gain=device->channel->gain;
-			offset=device->channel->offset;
-			temp_value=gain*((*objective_value)-offset);
-			signal_maximum=temp_value;
-			signal_minimum=signal_maximum;
-			for (i=number_of_samples-1;i>0;i--)
-			{
-				objective_value += objective_values_step;
-				temp_value=gain*((*objective_value)-offset);
-				if (temp_value>signal_maximum)
-				{
-					signal_maximum=temp_value;
-				}
-				else
-				{
-					if (temp_value<signal_minimum)
-					{
-						signal_minimum=temp_value;
-					}
-				}
-			}
-			/* calculate objective function */
-			objective_value=objective_values;
-			switch (detection)
-			{
-				case EDA_INTERVAL:
-				case EDA_THRESHOLD:
-				{
-					if ((ABSOLUTE_VALUE==objective)||(POSITIVE_VALUE==objective)||
-						(NEGATIVE_VALUE==objective))
-					{
-						switch (objective)
-						{
-							case ABSOLUTE_VALUE:
-							{
-								objective_value=objective_values;
-								for (i=number_of_samples;i>0;i--)
-								{
-									if (*objective_value<0)
-									{
-										*objective_value= -(*objective_value);
-									}
-									objective_value += objective_values_step;
-								}
-							} break;
-							case NEGATIVE_VALUE:
-							{
-								objective_value=objective_values;
-								for (i=number_of_samples;i>0;i--)
-								{
-									*objective_value= -(*objective_value);
-									objective_value += objective_values_step;
-								}
-							} break;
-						}
-						/* take moving average */
-						return_code=calculate_moving_average(objective_values,
-							number_of_samples,objective_values_step,average_width);
-					}
-					else
-					{
-						first_value=objective_values[0];
-						last_value=
-							objective_values[(number_of_samples-1)*objective_values_step];
-						save_value=save_values;
-						for (i=average_width;i>0;i--)
-						{
-							*save_value=first_value;
-							save_value++;
-						}
-						save_value=save_values;
-						average_before=first_value*(float)average_width;
-						average_after=0;
-						if (average_width<number_of_samples)
-						{
-							for (i=average_width;i>0;i--)
-							{
-								objective_value += objective_values_step;
-								average_after += *objective_value;
-							}
-							objective_value=objective_values;
-							average_after_value=objective_value+
-								(average_width*objective_values_step);
-							for (i=number_of_samples-average_width-1;i>0;i--)
-							{
-								temp_value=average_after-average_before;
-								average_before += (*objective_value)-(*save_value);
-								*save_value= *objective_value;
-								save_value++;
-								if (save_value-save_values>=average_width)
-								{
-									save_value=save_values;
-								}
-								*objective_value=temp_value;
-								objective_value += objective_values_step;
-								average_after_value += objective_values_step;
-								average_after += (*average_after_value)-(*objective_value);
-							}
-							for (i=average_width;i>0;i--)
-							{
-								temp_value=average_after-average_before;
-								average_before += (*objective_value)-(*save_value);
-								*save_value= *objective_value;
-								save_value++;
-								if (save_value-save_values>=average_width)
-								{
-									save_value=save_values;
-								}
-								*objective_value=temp_value;
-								objective_value += objective_values_step;
-								average_after += last_value-(*objective_value);
-							}
-							*objective_value=average_after-average_before;
-						}
-						else
-						{
-							for (i=number_of_samples-1;i>0;i--)
-							{
-								objective_value += objective_values_step;
-								average_after += *objective_value;
-							}
-							average_after +=
-								last_value*(float)(average_width-(number_of_samples-1));
-							objective_value=objective_values;
-							for (i=number_of_samples;i>0;i--)
-							{
-								temp_value=average_after-average_before;
-								average_before += (*objective_value)-first_value;
-								*objective_value=temp_value;
-								objective_value += objective_values_step;
-								average_after += last_value-(*objective_value);
-							}
-						}
-						switch (objective)
-						{
-							case ABSOLUTE_SLOPE:
-							{
-								objective_value=objective_values;
-								objective_minimum=0;
-								objective_maximum=0;
-								for (i=number_of_samples;i>0;i--)
-								{
-									if (*objective_value<0)
-									{
-										*objective_value= -(*objective_value);
-									}
-									if (*objective_value>objective_maximum)
-									{
-										objective_maximum= *objective_value;
-									}
-									objective_value += objective_values_step;
-								}
-							} break;
-							case NEGATIVE_SLOPE:
-							{
-								objective_value=objective_values;
-								objective_minimum= -(*objective_value);
-								objective_maximum=objective_minimum;
-								for (i=number_of_samples;i>0;i--)
-								{
-									*objective_value= -(*objective_value);
-									if (*objective_value>objective_maximum)
-									{
-										objective_maximum= *objective_value;
-									}
-									else
-									{
-										if (*objective_value<objective_minimum)
-										{
-											objective_minimum= *objective_value;
-										}
-									}
-									objective_value += objective_values_step;
-								}
-							} break;
-							case POSITIVE_SLOPE:
-							{
-								objective_value=objective_values;
-								objective_minimum= *objective_value;
-								objective_maximum=objective_minimum;
-								for (i=number_of_samples;i>0;i--)
-								{
-									if (*objective_value>objective_maximum)
-									{
-										objective_maximum= *objective_value;
-									}
-									else
-									{
-										if (*objective_value<objective_minimum)
-										{
-											objective_minimum= *objective_value;
-										}
-									}
-									objective_value += objective_values_step;
-								}
-							} break;
-						}
-						if (signal_maximum==signal_minimum)
-						{
-							signal_minimum -= 1;
-							signal_maximum += 1;
-						}
-						if (objective_maximum==objective_minimum)
-						{
-							objective_value=objective_values;
-							for (i=number_of_samples;i>0;i--)
-							{
-								*objective_value=signal_minimum;
-								objective_value += objective_values_step;
-							}
-						}
-						else
-						{
-							objective_value=objective_values;
-							scale=(signal_maximum-signal_minimum)/
-								(objective_maximum-objective_minimum);
-							for (i=number_of_samples;i>0;i--)
-							{
-								*objective_value=signal_minimum+
-									scale*((*objective_value)-objective_minimum);
-								objective_value += objective_values_step;
-							}
-						}
-					}
-				} break;
-				case EDA_LEVEL:
-				{
-					/* take absolute value */
-					for (i=number_of_samples;i>0;i--)
-					{
-						if (*objective_value<0)
-						{
-							*objective_value= -(*objective_value);
-						}
-						objective_value += objective_values_step;
-					}
-					/* take moving average */
-					return_code=calculate_moving_average(objective_values,
-						number_of_samples,objective_values_step,average_width);
-				} break;
-			}
-			DEALLOCATE(save_values);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"calculate_device_objective.  Could not allocate save_values");
-			return_code=0;
-		}
-	}
-	else
-	{
-		if (device)
-		{
-			if (device->signal)
-			{
-				if (device->signal->buffer)
-				{
-					display_message(ERROR_MESSAGE,
-"calculate_device_objective.  Invalid argument(s).  %d (%d %d) %p %p %p %d %d %d %p",
-						buffer->value_type,SHORT_INT_VALUE,FLOAT_VALUE,
-						buffer->signals.short_int_values,buffer->signals.float_values,
-						objective_values,number_of_objective_values,objective_values_step,
-						number_of_samples,device->channel);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"calculate_device_objective.  Missing signal buffer");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"calculate_device_objective.  Missing signal");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"calculate_device_objective.  Missing device");
-		}
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* calculate_device_objective */
-#endif /* defined (OLD_CODE) */
-
 int calculate_device_objective(struct Device *device,
 	enum Event_detection_algorithm detection,
 	enum Event_detection_objective objective,float *objective_values,
@@ -644,249 +163,6 @@ Storing the values in the array (<objective_values> every
 	return (return_code);
 } /* calculate_device_objective */
 
-#if defined (OLD_CODE)
-/*???DB.  Split between here and analysis_calculate */
-int calculate_device_event_markers(struct Device *device,
-	int start_search,int end_search,enum Event_detection_algorithm detection,
-	float *objective_values,int number_of_objective_values,
-	int objective_values_step,int number_of_events,int threshold_percentage,
-	int minimum_separation_milliseconds,float level)
-/*******************************************************************************
-LAST MODIFIED : 12 September 2000
-
-DESCRIPTION :
-Calculate the positions of the event markers for a signal/<device>/<device_node>
-based upon the the start and end times, the number of events, the <detection> 
-algorithm and the <objective_values>.
-==============================================================================*/
-{
-	float maximum_objective,minimum_objective,*objective_value,threshold;
-	int event_number,interval_end,maximum,minimum_separation,no_maximum,present,
-		return_code;
-	struct Event *event,**event_next;
-	struct Signal *signal;
-	struct Signal_buffer *buffer;
-
-	ENTER(calculate_device_event_markers);
-	signal=(struct Signal *)NULL;
-	buffer=(struct Signal_buffer *)NULL;
-	if ((0<=start_search)&&(start_search<=end_search)&&
-		device&&(signal=device->signal)&&(buffer=signal->buffer)&&
-		(end_search<buffer->number_of_samples)&&
-		(((SHORT_INT_VALUE==buffer->value_type)&&
-		(buffer->signals.short_int_values))||((FLOAT_VALUE==buffer->value_type)&&
-		(buffer->signals.float_values)))&&
-		(((EDA_INTERVAL==detection)&&
-		(0<number_of_events))||((EDA_LEVEL==detection)&&(0<=level))||
-		((EDA_THRESHOLD==detection)&&(0<=threshold_percentage)&&
-		(threshold_percentage<=100)&&(0<minimum_separation_milliseconds)))&&
-		objective_values&&(0<objective_values_step)
-		&&(buffer->number_of_samples<=number_of_objective_values))
-	{
-		/* free the previous events */
-		destroy_Event_list(&(signal->first_event));
-		objective_value=objective_values+(start_search*objective_values_step);
-		switch (detection)
-		{
-			case EDA_INTERVAL:
-			{
-				present=start_search;
-				event=(struct Event *)NULL;
-				event_next= &(signal->first_event);
-				event_number=1;
-				no_maximum=0;
-				do
-				{
-					maximum_objective= *objective_value;
-					maximum=present;
-					interval_end=SCALE_X(event_number,0,start_search,
-						SCALE_FACTOR(number_of_events,end_search-start_search));
-					while (present<interval_end)
-					{
-						present++;
-						objective_value += objective_values_step;
-						if ((maximum_objective< *objective_value)||no_maximum)
-						{
-							maximum_objective= *objective_value;;
-							maximum=present;
-							no_maximum=0;
-						}
-					}
-					if (event=create_Event(maximum,event_number,UNDECIDED,event,
-						(struct Event *)NULL))
-					{
-						*event_next=event;
-						event_next= &(event->next);
-						event_number++;
-						no_maximum=1;
-					}
-				} /* do */
-				while (event&&(event_number<=number_of_events));
-				if (event_number>number_of_events)
-				{
-					return_code=1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"calculate_device_event_markers.  Could not allocate event");
-					destroy_Event_list(&(signal->first_event));
-					return_code=0;
-				}
-			} break;
-			case EDA_LEVEL:
-			{
-				present=start_search;
-				while ((present<end_search)&&(*objective_value<level))
-				{
-					present++;
-					objective_value += objective_values_step;
-				}
-				if (present<end_search)
-				{
-					/* found event */
-					if (event=create_Event(present,1,UNDECIDED,(struct Event *)NULL,
-						(struct Event *)NULL))
-					{
-						signal->first_event=event;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"calculate_device_event_markers.  Could not allocate event");
-						destroy_Event_list(&(signal->first_event));
-						return_code=0;
-					}
-				}
-			} break;
-			case EDA_THRESHOLD:
-			{
-				minimum_separation=(int)(((float)minimum_separation_milliseconds*
-					(buffer->frequency))/1000.);
-				/* determine the maximum */
-				present=start_search;
-				maximum_objective= *objective_value;
-				minimum_objective=maximum_objective;
-				while (present<end_search)
-				{
-					present++;
-					objective_value += objective_values_step;
-					if (maximum_objective< *objective_value)
-					{
-						maximum_objective= *objective_value;
-					}
-					if (*objective_value<minimum_objective)
-					{
-						minimum_objective= *objective_value;
-					}
-				}
-				threshold=(threshold_percentage*maximum_objective+
-					(100-threshold_percentage)*minimum_objective)/100;
-				/* determine the events */
-				present=start_search;
-				objective_value=objective_values+(start_search*objective_values_step);
-				if (*objective_value>=threshold)
-				{
-					maximum_objective= *objective_value;
-					maximum=present;
-					no_maximum=0;
-				}
-				else
-				{
-					maximum=start_search-1;
-					no_maximum=1;
-				}
-				event_number=1;
-				event=(struct Event *)NULL;
-				event_next= &(signal->first_event);
-				return_code=1;
-				while (return_code&&(present<end_search))
-				{
-					present++;
-					objective_value += objective_values_step;
-					if (*objective_value>=threshold)
-					{
-						if (!no_maximum&&(maximum>=start_search)&&
-							(minimum_separation<present-maximum))
-						{
-							if (event=create_Event(maximum,event_number,UNDECIDED,event,
-								(struct Event *)NULL))
-							{
-								*event_next=event;
-								event_next= &(event->next);
-								event_number++;
-								maximum=present;
-								maximum_objective= *objective_value;
-							}
-							else
-							{
-								return_code=0;
-								display_message(ERROR_MESSAGE,
-									"calculate_device_event_markers.  Could not allocate event");
-								destroy_Event_list(&(signal->first_event));
-								return_code=0;
-							}
-						}
-						else
-						{
-							if ((maximum_objective< *objective_value)||no_maximum)
-							{
-								maximum=present;
-								maximum_objective= *objective_value;
-								no_maximum=0;
-							}
-						}
-					}
-				}
-				if (return_code&&(maximum>=start_search))
-				{
-					if (event=create_Event(maximum,event_number,UNDECIDED,event,
-						(struct Event *)NULL))
-					{
-						*event_next=event;
-						event_next= &(event->next);
-						event_number++;
-					}
-					else
-					{
-						return_code=0;
-						display_message(ERROR_MESSAGE,
-							"calculate_device_event_markers.  Could not allocate event");
-						destroy_Event_list(&(signal->first_event));
-						return_code=0;
-					}
-				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-			"calculate_device_event_markers.  Invalid event detection algorithm");
-				return_code=0;
-			} break;
-		}
-	}
-	else
-	{
-		if (buffer)
-		{
-			display_message(ERROR_MESSAGE,
-				"calculate_device_event_markers.  Invalid argument(s).  %p %p %d %d",
-				signal,buffer,buffer->number_of_samples,number_of_objective_values);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"calculate_device_event_markers.  Invalid argument(s).  %p %p %d",
-				signal,buffer,number_of_objective_values);
-		}
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* calculate_device_event_markers */
-#endif /* defined (OLD_CODE) */
-
 int calculate_device_event_markers(struct Device *device,
 	int start_search,int end_search,enum Event_detection_algorithm detection,
 	float *objective_values,int number_of_objective_values,
@@ -897,7 +173,7 @@ LAST MODIFIED : 6 March 2002
 
 DESCRIPTION :
 Calculate the positions of the event markers for a signal/<device>/<device_node>
-based upon the the start and end times, the number of events, the <detection> 
+based upon the the start and end times, the number of events, the <detection>
 algorithm and the <objective_values>.
 ==============================================================================*/
 {
@@ -972,7 +248,7 @@ LAST MODIFIED : 2 August 2000
 DESCRIPTION :
 Draws the <device> signal in the <pixel_map> at the specified position
 (<x_pos>, <y_pos>), size (<width>, <height>) and <detail>.
-NB.  0<=current_data_interval<number_of_data_intervals 
+NB.  0<=current_data_interval<number_of_data_intervals
 ???missing data ? times ?
 ???DB.  Needs more checking and more on return_code
 ???DB.  Change first_data and last_data to times
@@ -1006,7 +282,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 	printf("draw_signal.  %d %d %d %d %d %d\n",first_data,last_data,x_pos,y_pos,
 		width,height);
 #endif /* defined (DEBUG) */
-	return_code=0; 
+	return_code=0;
 	if (user_interface&&signal_drawing_information&&(0<=current_data_interval)&&
 		(current_data_interval<number_of_data_intervals)&&first_data&&last_data)
 	{
@@ -1030,7 +306,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 				times[i]=(float *)NULL;
 				name[i]=(char *)NULL;
 			}
-			i=0;		
+			i=0;
 			while ((i<number_of_data_intervals)&&extract_signal_information(
 				device_node,signal_drawing_package,device,0,first_data[i],last_data[i],
 				number_of_signals+i,number_of_points+i,times+i,signals_values+i,
@@ -1131,7 +407,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 								{
 									signal_maximum=value_float;
 								}
-							} 
+							}
 							signal_value++;
 						}
 					}
@@ -1141,7 +417,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 				{
 					signal_maximum += 1;
 					signal_minimum -= 1;
-				}	
+				}
 				/* These max and min are  scaled and offset (by channel_gain,*/
 				/* channel_offset) values*/
 				if (device)
@@ -1153,17 +429,17 @@ NB.  0<=current_data_interval<number_of_data_intervals
 				else
 				{
 					struct FE_field_component component;
-					component.number=0;				
+					component.number=0;
 					/* These max and min are  scaled and offset (by channel_gain,*/
 					/* channel_offset) values*/
 					component.field=get_Signal_drawing_package_signal_minimum_field(
-						signal_drawing_package); 
+						signal_drawing_package);
 					/*??JW should be copying out of and into node with MANAGER_MODIFY */
 					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
 						/*time*/0,signal_minimum);
 					component.number=0;
 					component.field=get_Signal_drawing_package_signal_maximum_field(
-						signal_drawing_package); 
+						signal_drawing_package);
 					set_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
 						/*time*/0,signal_maximum);
 				}
@@ -1653,7 +929,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 									point++;
 									signal_value++;
 									time++;
-								}	
+								}
 								/* draw */
 								XPSDrawLines(display,pixel_map,graphics_context,points,
 									number_of_points[k],CoordModeOrigin);
@@ -1724,9 +1000,9 @@ NB.  0<=current_data_interval<number_of_data_intervals
 										i--;
 									}
 								}
-								/* draw */			
+								/* draw */
 								XDrawSegments(display,pixel_map,graphics_context,segments,
-									number_of_segments);			
+									number_of_segments);
 								DEALLOCATE(segments);
 							}
 							else
@@ -1744,10 +1020,10 @@ NB.  0<=current_data_interval<number_of_data_intervals
 				display_message(ERROR_MESSAGE,
 					"draw_signal.  Could not extract signal information");
 				return_code=0;
-			}	
+			}
 			for (i=0;i<number_of_data_intervals;i++)
 			{
-				DEALLOCATE(name[i]);	
+				DEALLOCATE(name[i]);
 				DEALLOCATE(signals_status[i]);
 				DEALLOCATE(signals_values[i]);
 				DEALLOCATE(times[i]);
@@ -1757,7 +1033,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 		{
 			display_message(ERROR_MESSAGE,"draw_signal.  Could not allocate storage");
 			return_code=0;
-		}	
+		}
 		DEALLOCATE(signals_status);
 		DEALLOCATE(signals_values);
 		DEALLOCATE(times);
@@ -1772,7 +1048,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 	{
 		display_message(ERROR_MESSAGE,"draw_signal.  Invalid argument(s)");
 		return_code=0;
-	}	
+	}
 	LEAVE;
 
 	return (return_code);
@@ -1888,7 +1164,7 @@ DESCRIPTION :
 						length=strlen(number_string);
 #if defined (NO_ALIGNMENT)
 						XTextExtents(font,number_string,length,&direction,&ascent,&descent,
-							&bounds);						
+							&bounds);
 						x_string=x_marker+(bounds.lbearing-bounds.rbearing+1)/2;
 						if (x_string+bounds.rbearing>=axes_left+axes_width)
 						{
@@ -2099,8 +1375,8 @@ DESCRIPTION : draws the event_marker
 					y_string=axes_top-(int)(y_scale*(float)descent);
 /*					XPSDrawString(display,pixel_map,event_graphics_context,
 						x_string,y_string,number_string,length);*/
- 					XPSDrawString(display,pixel_map,event_graphics_context_text,
- 						x_string,y_string,number_string,length);
+					XPSDrawString(display,pixel_map,event_graphics_context_text,
+						x_string,y_string,number_string,length);
 #else
 					SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
 					SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
@@ -2111,7 +1387,7 @@ DESCRIPTION : draws the event_marker
 					{
 						XPSDrawString(display,drawing_area_window,event_graphics_context,
 #if defined (NO_ALIGNMENT)
- 							x_string,y_string,
+							x_string,y_string,
 #else
 							x_marker,axes_top,
 #endif
@@ -2145,13 +1421,13 @@ DESCRIPTION : Draws the markers for the device
 {
 	int return_code,signal_index,*times;
 	float frequency;
-	struct Event *event;	
+	struct Event *event;
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
 
 	ENTER(draw_device_markers);
 	times=(int *)NULL;
-	event=(struct Event *)NULL;	
+	event=(struct Event *)NULL;
 	signal=(struct Signal *)NULL;
 	buffer=(struct Signal_buffer *)NULL;
 	return_code=0;
@@ -2292,7 +1568,7 @@ DESCRIPTION : creates the Signal_drawing_information
 		},
 		{
 			XmNcardiacIntervalColour,
-			XmCCardiacIntervalColour,		
+			XmCCardiacIntervalColour,
 			XmRPixel,
 			sizeof(Pixel),
 			XtOffsetOf(Signal_drawing_information_settings,cardiac_interval_colour),
@@ -2301,7 +1577,7 @@ DESCRIPTION : creates the Signal_drawing_information
 		},
 		{
 			XmNeimagingEventColour,
-			XmCEimagingEventColour,		
+			XmCEimagingEventColour,
 			XmRPixel,
 			sizeof(Pixel),
 			XtOffsetOf(Signal_drawing_information_settings,eimaging_event_colour),
@@ -2712,175 +1988,175 @@ DESCRIPTION : destroys the Signal_drawing_information
 		(signal_drawing_information= *signal_drawing_information_address)&&
 		(signal_drawing_information->user_interface))
 	{
-    /* DPN 18 June 2001 - Need to check things */
-    if (display=signal_drawing_information->user_interface->display)
-    {
-      if ((signal_drawing_information->graphics_context).accepted_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          accepted_colour);
-      }
-      if ((signal_drawing_information->graphics_context).accepted_colour_text)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          accepted_colour_text);
-      }
-      if ((signal_drawing_information->graphics_context).axis_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          axis_colour);
-      }
-      if ((signal_drawing_information->graphics_context).
-        background_drawing_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          background_drawing_colour);
-      }
-      if ((signal_drawing_information->graphics_context).copy)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).copy);
-      }
-      if ((signal_drawing_information->graphics_context).datum_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          datum_colour);
-      }
-      if ((signal_drawing_information->graphics_context).pwave_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          pwave_colour);
-      }
-      if ((signal_drawing_information->graphics_context).qrswave_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          qrswave_colour);
-      }
-      if ((signal_drawing_information->graphics_context).twave_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          twave_colour);
-      }
-      if ((signal_drawing_information->graphics_context).cardiac_interval_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          cardiac_interval_colour);
-      }
+		/* DPN 18 June 2001 - Need to check things */
+		if (display=signal_drawing_information->user_interface->display)
+		{
+			if ((signal_drawing_information->graphics_context).accepted_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					accepted_colour);
+			}
+			if ((signal_drawing_information->graphics_context).accepted_colour_text)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					accepted_colour_text);
+			}
+			if ((signal_drawing_information->graphics_context).axis_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					axis_colour);
+			}
+			if ((signal_drawing_information->graphics_context).
+				background_drawing_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					background_drawing_colour);
+			}
+			if ((signal_drawing_information->graphics_context).copy)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).copy);
+			}
+			if ((signal_drawing_information->graphics_context).datum_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					datum_colour);
+			}
+			if ((signal_drawing_information->graphics_context).pwave_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					pwave_colour);
+			}
+			if ((signal_drawing_information->graphics_context).qrswave_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					qrswave_colour);
+			}
+			if ((signal_drawing_information->graphics_context).twave_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					twave_colour);
+			}
+			if ((signal_drawing_information->graphics_context).cardiac_interval_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					cardiac_interval_colour);
+			}
 			if ((signal_drawing_information->graphics_context).eimaging_event_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          eimaging_event_colour);
-      }
-      if ((signal_drawing_information->graphics_context).device_name_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          device_name_colour);
-      }
-      if ((signal_drawing_information->graphics_context).
-        highlighted_box_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          highlighted_box_colour);
-      }
-      if ((signal_drawing_information->graphics_context).
-        highlighted_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          highlighted_colour);
-      }
-      if ((signal_drawing_information->graphics_context).
-        interval_box_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          interval_box_colour);
-      }
-      if ((signal_drawing_information->graphics_context).
-        potential_time_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          potential_time_colour);
-      }
-      if ((signal_drawing_information->graphics_context).
-        potential_time_colour_text)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          potential_time_colour_text);
-      }
-      if ((signal_drawing_information->graphics_context).
-        rejected_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          rejected_colour);
-      }
-      if ((signal_drawing_information->graphics_context).
-        rejected_colour_text)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          rejected_colour_text);
-      }
-      if ((signal_drawing_information->graphics_context).
-        scaling_signal_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          scaling_signal_colour);
-      }
-      if ((signal_drawing_information->graphics_context).
-        signal_accepted_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          signal_accepted_colour);
-      }
-      if ((signal_drawing_information->graphics_context).
-        signal_rejected_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          signal_rejected_colour);
-      }
-      if ((signal_drawing_information->graphics_context).
-        signal_overlay_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          signal_overlay_colour);
-      }
-      if ((signal_drawing_information->graphics_context).
-        signal_undecided_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          signal_undecided_colour);
-      }
-      if ((signal_drawing_information->graphics_context).spectrum)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).spectrum);
-      }
-      if ((signal_drawing_information->graphics_context).
-        undecided_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          undecided_colour);
-      }
-      if ((signal_drawing_information->graphics_context).
-        undecided_colour_text)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          undecided_colour_text);
-      }
-      if ((signal_drawing_information->graphics_context).
-        unhighlighted_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          unhighlighted_colour);
-      }
-      /* DPN 10 July 2001 - This one is done above */
-      /* if ((signal_drawing_information->graphics_context).
-         accepted_colour)
-         {
-         XFreeGC(display,(signal_drawing_information->graphics_context).
-         accepted_colour);
-         }*/
-    }
-    if (signal_drawing_information->signal_overlay_colours)
-    {
-      DEALLOCATE(signal_drawing_information->signal_overlay_colours);
-    }
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					eimaging_event_colour);
+			}
+			if ((signal_drawing_information->graphics_context).device_name_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					device_name_colour);
+			}
+			if ((signal_drawing_information->graphics_context).
+				highlighted_box_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					highlighted_box_colour);
+			}
+			if ((signal_drawing_information->graphics_context).
+				highlighted_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					highlighted_colour);
+			}
+			if ((signal_drawing_information->graphics_context).
+				interval_box_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					interval_box_colour);
+			}
+			if ((signal_drawing_information->graphics_context).
+				potential_time_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					potential_time_colour);
+			}
+			if ((signal_drawing_information->graphics_context).
+				potential_time_colour_text)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					potential_time_colour_text);
+			}
+			if ((signal_drawing_information->graphics_context).
+				rejected_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					rejected_colour);
+			}
+			if ((signal_drawing_information->graphics_context).
+				rejected_colour_text)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					rejected_colour_text);
+			}
+			if ((signal_drawing_information->graphics_context).
+				scaling_signal_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					scaling_signal_colour);
+			}
+			if ((signal_drawing_information->graphics_context).
+				signal_accepted_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					signal_accepted_colour);
+			}
+			if ((signal_drawing_information->graphics_context).
+				signal_rejected_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					signal_rejected_colour);
+			}
+			if ((signal_drawing_information->graphics_context).
+				signal_overlay_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					signal_overlay_colour);
+			}
+			if ((signal_drawing_information->graphics_context).
+				signal_undecided_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					signal_undecided_colour);
+			}
+			if ((signal_drawing_information->graphics_context).spectrum)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).spectrum);
+			}
+			if ((signal_drawing_information->graphics_context).
+				undecided_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					undecided_colour);
+			}
+			if ((signal_drawing_information->graphics_context).
+				undecided_colour_text)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					undecided_colour_text);
+			}
+			if ((signal_drawing_information->graphics_context).
+				unhighlighted_colour)
+			{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+					unhighlighted_colour);
+			}
+			/* DPN 10 July 2001 - This one is done above */
+			/* if ((signal_drawing_information->graphics_context).
+				accepted_colour)
+				{
+				XFreeGC(display,(signal_drawing_information->graphics_context).
+				accepted_colour);
+				}*/
+		}
+		if (signal_drawing_information->signal_overlay_colours)
+		{
+			DEALLOCATE(signal_drawing_information->signal_overlay_colours);
+		}
 		DEALLOCATE(*signal_drawing_information_address);
 		return_code=1;
 	}

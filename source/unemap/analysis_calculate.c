@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_calculate.c
 
-LAST MODIFIED : 27 March 2002
+LAST MODIFIED : 10 May 2002
 
 DESCRIPTION :
 The routines for calculating event times.  Separated out and without structures
@@ -146,7 +146,7 @@ Global functions
 ----------------
 */
 int calculate_time_series_objective(enum Event_detection_algorithm detection,
-  enum Event_detection_objective objective,int average_width,float gain,
+	enum Event_detection_objective objective,int average_width,float gain,
 	float offset,int number_of_objective_values,int objective_values_step,
 	float *objective_values)
 /*******************************************************************************
@@ -162,13 +162,13 @@ is assumed to have storage for at least <number_of_objective_values>*
 Split from function calculate_device_objective on 19 February 2002
 ==============================================================================*/
 {
-  float average_after,*average_after_value,average_before,first_value,
+	float average_after,*average_after_value,average_before,first_value,
 		last_value,objective_maximum,objective_minimum,*objective_value,*save_value,
 		signal_maximum,signal_minimum,*save_values,scale,temp_value;
-  int i,return_code;
+	int i,return_code;
 
 	ENTER(calculate_time_series_objective);
-  return_code=0;
+	return_code=0;
 	if ((0<number_of_objective_values)&&objective_values&&
 		(0<objective_values_step))
 	{
@@ -306,7 +306,7 @@ Split from function calculate_device_objective on 19 February 2002
 								*objective_value=temp_value;
 								objective_value += objective_values_step;
 								average_after += last_value-(*objective_value);
-							}            
+							}
 						}
 						/* max/min calculations */
 						switch (objective)
@@ -415,7 +415,7 @@ Split from function calculate_device_objective on 19 February 2002
 					/* take moving average */
 					return_code=calculate_moving_average(objective_values,
 						number_of_objective_values,objective_values_step,average_width);
-				} break;      
+				} break;
 			}
 			DEALLOCATE(save_values);
 			return_code=1;
@@ -426,21 +426,21 @@ Split from function calculate_device_objective on 19 February 2002
 				"calculate_time_series_objective.  Could not allocate save_values");
 			return_code=0;
 		}
-  }
-  else
-  {
-    display_message(ERROR_MESSAGE,
-      "calculate_time_series_objective.  Invalid argument(s).  %d %p %d",
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"calculate_time_series_objective.  Invalid argument(s).  %d %p %d",
 			number_of_objective_values,objective_values,objective_values_step);
-    return_code=0;
-  }
+		return_code=0;
+	}
 	LEAVE;
 
-  return (return_code);
+	return (return_code);
 } /* calculate_time_series_objective */
 
 int calculate_time_series_event_markers(int start_search,int end_search,
-  enum Event_detection_algorithm detection,float *objective_values,
+	enum Event_detection_algorithm detection,float *objective_values,
 	int number_of_objective_values,int objective_values_step,
 	int number_of_interval_events,int threshold_percentage,
 	int minimum_separation_milliseconds,float level,float frequency,
@@ -458,12 +458,12 @@ for <*event_address>.
 Split from the function calculate_device_event_markers on 19 February 2002
 ==============================================================================*/
 {
-  float maximum_objective,minimum_objective,*objective_value,threshold;
-  int event_number,*events,*events_temp,interval_end,maximum,minimum_separation,
+	float maximum_objective,minimum_objective,*objective_value,threshold;
+	int event_number,*events,*events_temp,interval_end,maximum,minimum_separation,
 		no_maximum,number_of_events,present,return_code;
 
 	ENTER(calculate_time_series_event_markers);
-  return_code=0;
+	return_code=0;
 	/* check arguments */
 	if (number_of_events_address&&events_address&&(0<=start_search)&&
 		(start_search<=end_search)&&(end_search<number_of_objective_values)&&
@@ -489,7 +489,7 @@ Split from the function calculate_device_event_markers on 19 February 2002
 					maximum_objective= *objective_value;
 					maximum=present;
 					interval_end=SCALE_X(event_number,0,start_search,
-						SCALE_FACTOR(number_of_interval_events,end_search-start_search)); 
+						SCALE_FACTOR(number_of_interval_events,end_search-start_search));
 					while (present<interval_end)
 					{
 						present++;
@@ -541,7 +541,7 @@ Split from the function calculate_device_event_markers on 19 February 2002
 							"calculate_time_series_event_markers.  "
 							"Could not reallocate events");
 						DEALLOCATE(events);
-						return_code=0;          
+						return_code=0;
 					}
 				}
 			} break;
@@ -604,9 +604,9 @@ Split from the function calculate_device_event_markers on 19 February 2002
 									"calculate_time_series_event_markers.  "
 									"Could not reallocate events");
 								DEALLOCATE(events);
-								return_code=0;          
+								return_code=0;
 							}
-							event_number++;            
+							event_number++;
 							maximum=present;
 							maximum_objective= *objective_value;
 						}
@@ -635,7 +635,7 @@ Split from the function calculate_device_event_markers on 19 February 2002
 							"calculate_time_series_event_markers.  "
 							"Could not reallocate events");
 						DEALLOCATE(events);
-						return_code=0;          
+						return_code=0;
 					}
 					event_number++;
 				}
@@ -645,8 +645,8 @@ Split from the function calculate_device_event_markers on 19 February 2002
 				return_code=0;
 				display_message(ERROR_MESSAGE,
 					"Invalid event detection algorithm");
-			} break;    
-		} /* detection*/
+			} break;
+		}
 		if (return_code)
 		{
 			*events_address=events;
@@ -656,18 +656,18 @@ Split from the function calculate_device_event_markers on 19 February 2002
 		{
 			DEALLOCATE(events);
 		}
-  }
-  else
-  {
-    display_message(ERROR_MESSAGE,"calculate_time_series_event_markers.  "
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"calculate_time_series_event_markers.  "
 			"Invalid argument(s).  %p %p %d %d %d %d %g %d %g %d %p %d %d",
 			number_of_events_address,events_address,start_search,end_search,detection,
 			number_of_interval_events,level,threshold_percentage,frequency,
 			minimum_separation_milliseconds,objective_values,objective_values_step,
 			number_of_objective_values);
-    return_code=0;
-  }
+		return_code=0;
+	}
 	LEAVE;
 
-  return (return_code);
+	return (return_code);
 } /* calculate_time_series_event_markers */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 6 May 2002
+LAST MODIFIED : 10 May 2002
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -376,7 +376,7 @@ DESCRIPTION :
 			if ((analysis->time_keeper)&&
 				Time_keeper_is_playing(analysis->time_keeper))
 			{
-				map->activation_front = 0;
+				map->activation_front=0;
 			}
 			else
 			{
@@ -1007,7 +1007,7 @@ DESCRIPTION : draws all_markers
 					{
 						signal_index= -1;
 					}
-					interval= get_Analysis_window_interval_area(analysis->window);
+					interval=get_Analysis_window_interval_area(analysis->window);
 					draw_potential_time_marker(potential_time,buffer,
 						highlight_device->channel,signal_index,INTERVAL_AREA_DETAIL,0,
 						buffer->number_of_samples-1,interval->axes_left,interval->axes_top,
@@ -2367,7 +2367,7 @@ signal type file
 
 static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED :6 December 2001
+LAST MODIFIED : 10 May 2002
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -2505,9 +2505,9 @@ Sets up the analysis work area for analysing a set of signals.
 					{
 						level=0;
 					}
-					if (average_width<0)
+					if (average_width<1)
 					{
-						average_width=0;
+						average_width=1;
 					}
 					if (number_of_events<1)
 					{
@@ -3323,6 +3323,10 @@ signals.
 												if (2==fscanf(input_file,"level : %f, width : %d\n",
 													&level,&average_width))
 												{
+													if (average_width<1)
+													{
+														average_width=1;
+													}
 													if (analysis->trace)
 													{
 														/* set the level */
@@ -4577,7 +4581,7 @@ LAST MODIFIED : 28 March 2002
 
 DESCRIPTION :
 Reads in the signals from the bdf or edf file and sets up the analysis work area
-for analysing the signals.  <bdf> != 0 reads bdf files, else reads edf files
+for analysing the signals.  <bdf>!=0 reads bdf files, else reads edf files
 ==============================================================================*/
 {
 	char *file_name,*temp_string,ext_str[5];
@@ -6153,7 +6157,7 @@ Adds the hot key handler to the widget.
 static void calculate_all_event_markers(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2000
+LAST MODIFIED : 10 May 2002
 
 DESCRIPTION :
 Calculate the positions of all event markers, recalculate the datum if this is
@@ -6274,9 +6278,9 @@ set to automatic and reorder the devices if this is required.
 						NULL);
 					if (1==sscanf(value_string,"%d",&average_width))
 					{
-						if (average_width<0)
+						if (average_width<1)
 						{
-							average_width=0;
+							average_width=1;
 						}
 					}
 					else
@@ -7660,7 +7664,7 @@ erasing the time text from any events that have it written.
 		return_code=1;
 		times=buffer->times;
 		event=*trace->first_eimaging_event;
-		while(event)
+		while (event)
 		{
 			if (event->is_current_event)
 			{
@@ -7722,7 +7726,7 @@ Electrical_imaging_event.
 
 	ENTER(move_add_remove_Electrical_imaging_event);
 	times=(int *)NULL;
-	event =(struct Electrical_imaging_event *)NULL;
+	event=(struct Electrical_imaging_event *)NULL;
 	buffer=(struct Signal_buffer *)NULL;
 	trace_area_3=(struct Trace_window_area_3 *)NULL;
 	button_event=(XButtonEvent *)NULL;
@@ -7765,7 +7769,7 @@ Electrical_imaging_event.
 				/* are we at an electrical imaging event? */
 				found=0;
 				moving=TRACE_MOVING_NONE;
-				while(event&&(!found))
+				while (event&&(!found))
 				{
 					marker=SCALE_X(event->time,start_analysis_interval,
 						axes_left,x_scale);
@@ -7779,7 +7783,7 @@ Electrical_imaging_event.
 					{
 						event=event->next;
 					}
-				}/* while(interval&&(!found))*/
+				}/* while (interval&&(!found))*/
 				if (found)
 				{
 					if ((moving==TRACE_MOVING_ELECTRICAL_IMAGING_EVENT)&&
@@ -7989,7 +7993,7 @@ update_map_from_manual_time_update
 					if (event=*trace->first_eimaging_event)
 					{
 						/* find the current event */
-						while(event&&(!found))
+						while (event&&(!found))
 						{
 							if (event->is_current_event)
 							{
@@ -9327,13 +9331,13 @@ should be done as a callback from the trace_window.
 													xpos += signals_axes_left;
 													ypos += signals_axes_top;
 													draw_event_marker(event,event_number,datum,times,
-														frequency,SIGNAL_AREA_DETAIL,start_analysis_interval,
-														end_analysis_interval,
+														frequency,SIGNAL_AREA_DETAIL,
+														start_analysis_interval,end_analysis_interval,
 														highlight_device->signal_display_minimum,
 														highlight_device->signal_display_maximum,xpos,ypos,
-														signals_axes_width,signals_axes_height,signals_window,
-														signals_pixel_map,signal_drawing_information,
-														user_interface);
+														signals_axes_width,signals_axes_height,
+														signals_window,signals_pixel_map,
+														signal_drawing_information,user_interface);
 												}
 												/* free the memory for the event */
 												if (event->previous)
@@ -9597,13 +9601,13 @@ should be done as a callback from the trace_window.
 													xpos += signals_axes_left;
 													ypos += signals_axes_top;
 													draw_event_marker(event,event_number,datum,times,
-														frequency,SIGNAL_AREA_DETAIL,start_analysis_interval,
-														end_analysis_interval,
+														frequency,SIGNAL_AREA_DETAIL,
+														start_analysis_interval,end_analysis_interval,
 														highlight_device->signal_display_minimum,
 														highlight_device->signal_display_maximum,xpos,ypos,
-														signals_axes_width,signals_axes_height,signals_window,
-														signals_pixel_map,signal_drawing_information,
-														user_interface);
+														signals_axes_width,signals_axes_height,
+														signals_window,signals_pixel_map,
+														signal_drawing_information,user_interface);
 												}
 												trace_update_signal_controls(analysis->trace);
 											}
@@ -9685,10 +9689,12 @@ should be done as a callback from the trace_window.
 														if ((pointer_x>=axes_left-pointer_sensitivity)&&
 															(pointer_x<=axes_left+pointer_sensitivity))
 														{
-															/* determine if the positive or the negative y axis
-																has been selected */
-															signal_min=trace_area_3_device->signal_display_minimum;
-															signal_max=trace_area_3_device->signal_display_maximum;
+															/* determine if the positive or the negative y
+																axis has been selected */
+															signal_min=
+																trace_area_3_device->signal_display_minimum;
+															signal_max=
+																trace_area_3_device->signal_display_maximum;
 															if (signal_max==signal_min)
 															{
 																signal_max += 1;
@@ -9714,8 +9720,8 @@ should be done as a callback from the trace_window.
 															{
 																moving=SCALING_Y_AXIS_POSITIVE;
 																marker_graphics_context=
-																	(signal_drawing_information->graphics_context).
-																	scaling_signal_colour;
+																	(signal_drawing_information->
+																	graphics_context).scaling_signal_colour;
 															}
 															else
 															{
@@ -10232,8 +10238,10 @@ should be done as a callback from the trace_window.
 																					SIGNAL_AREA_DETAIL,
 																					start_analysis_interval,
 																					end_analysis_interval,
-																					highlight_device->signal_display_minimum,
-																					highlight_device->signal_display_maximum,xpos,
+																					highlight_device->
+																					signal_display_minimum,
+																					highlight_device->
+																					signal_display_maximum,xpos,
 																					ypos,signals_axes_width,
 																					signals_axes_height,signals_window,
 																					signals_pixel_map,
@@ -10272,53 +10280,62 @@ should be done as a callback from the trace_window.
 																		new_max=initial_value+
 																			(float)(x_axis_y_marker-axes_top)*
 																			(float)(marker-x_axis_y_marker)/(y_scale*
-																				(float)(initial_marker-x_axis_y_marker));
+																			(float)(initial_marker-x_axis_y_marker));
 #if defined (UNEMAP_USE_NODES)
 																		signal_drawing_package=
 																			analysis->signal_drawing_package;
 																		signal_maximum_field=
 																			get_Signal_drawing_package_signal_maximum_field(
-																				signal_drawing_package);
+																			signal_drawing_package);
 																		/* set the new signal_maximum*/
 																		component.number=0;
-																		component.field = signal_maximum_field;
-																		/*??JW should be copying out of and into node with MANAGER_MODIFY */
+																		component.field=signal_maximum_field;
+																		/*??JW should be copying out of and into
+																			node with MANAGER_MODIFY */
 																		set_FE_nodal_FE_value_value(
 																			analysis->highlight_rig_node,
-																			&component,0,FE_NODAL_VALUE,/*time*/0,new_max);
+																			&component,0,FE_NODAL_VALUE,/*time*/0,
+																			new_max);
 #endif /*	defined (UNEMAP_USE_NODES) */
-																		highlight_device->signal_display_maximum=new_max;
+																		highlight_device->signal_display_maximum=
+																			new_max;
 																		if (highlight_device!=trace_area_3_device)
 																		{
-																			trace_area_3_device->signal_display_maximum=
-																				highlight_device->signal_display_maximum;
+																			trace_area_3_device->
+																				signal_display_maximum=
+																				highlight_device->
+																				signal_display_maximum;
 																		}
 																	} break;
 																	case SCALING_Y_AXIS_NEGATIVE:
 																	{
-																		new_min=	initial_value+
+																		new_min=initial_value+
 																			(float)(x_axis_y_marker-axes_bottom)*
 																			(float)(marker-x_axis_y_marker)/(y_scale*
-																				(float)(initial_marker-x_axis_y_marker));
+																			(float)(initial_marker-x_axis_y_marker));
 #if defined (UNEMAP_USE_NODES)
 																		signal_drawing_package=
 																			analysis->signal_drawing_package;
 																		signal_minimum_field=
 																			get_Signal_drawing_package_signal_minimum_field(
-																				signal_drawing_package);
+																			signal_drawing_package);
 																		/* set the new signal_minimum*/
 																		component.number=0;
-																		component.field = signal_minimum_field;
-																		/*??JW should be copying out of and into node with MANAGER_MODIFY */
+																		component.field=signal_minimum_field;
+																		/*??JW should be copying out of and into
+																			node with MANAGER_MODIFY */
 																		set_FE_nodal_FE_value_value(
 																			analysis->highlight_rig_node,&component,0,
 																			FE_NODAL_VALUE,/*time*/0,new_min);
 #endif /*	defined (UNEMAP_USE_NODES) */
-																		highlight_device->signal_display_minimum=new_min;
+																		highlight_device->signal_display_minimum=
+																			new_min;
 																		if (highlight_device!=trace_area_3_device)
 																		{
-																			trace_area_3_device->signal_display_minimum=
-																				highlight_device->signal_display_minimum;
+																			trace_area_3_device->
+																				signal_display_minimum=
+																				highlight_device->
+																				signal_display_minimum;
 																		}
 																	} break;
 																}/* switch (moving) */
@@ -11321,7 +11338,7 @@ Resets the signals being analysed back to the raw data.
 static void analysis_set_baseline(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 10 May 2002
 
 DESCRIPTION :
 For every electrode signal in the current region, the baseline is shifted to the
@@ -11329,8 +11346,8 @@ value at the potential time.
 ==============================================================================*/
 {
 	float channel_offset,*value;
-	int buffer_offset,count,i,j,potential_time,sample_shift,
-		samples_to_average_across,the_time;
+	int average_width,average_width_after,average_width_before,buffer_offset,i,j,
+		potential_time;
 	struct Analysis_work_area *analysis;
 	struct Device **device,*highlight;
 	struct Map *map;
@@ -11403,14 +11420,56 @@ value at the potential time.
 				if ((ELECTRODE==(*device)->description->type)&&(!current_region||
 					(current_region==(*device)->description->region)))
 				{
+					/* calculate offset,an average of samples_to_average_across signals
+						values around the potential_time */
+					/*???DB.  Keep consistent with calculate_moving_average in
+						analysis_calculate */
+					average_width=analysis->average_width;
+					if (average_width<1)
+					{
+						average_width=1;
+					}
+					average_width_before=average_width/2;
+					average_width_after=average_width-1-average_width_before;
+					value=(buffer->signals.float_values)+((*device)->signal->index);
+					channel_offset=0;
+					if (potential_time<average_width_before)
+					{
+						channel_offset += (float)(average_width_before-potential_time)*
+							(*value);
+						average_width_before=potential_time;
+					}
+					else
+					{
+						value += (potential_time-average_width_before)*buffer_offset;
+					}
+					for (j=average_width_before;j>0;j--)
+					{
+						channel_offset += *value;
+						value += buffer_offset;
+					}
+					channel_offset += *value;
+					if (potential_time+average_width_after>=buffer->number_of_samples)
+					{
+						channel_offset += (float)(potential_time+average_width_after+1-
+							(buffer->number_of_samples))*(buffer->signals.float_values)[
+							((buffer->number_of_samples)-1)*buffer_offset+
+							((*device)->signal->index)];
+						average_width_after=(buffer->number_of_samples)-1-potential_time;
+					}
+					for (j=average_width_after;j>0;j--)
+					{
+						value += buffer_offset;
+						channel_offset += *value;
+					}
+					channel_offset /= (float)average_width;
+#if defined (OLD_CODE)
 					channel_offset=(buffer->signals.float_values)[potential_time*
 						buffer_offset+(*device)->signal->index];
-					/* calculate offset,an average of samples_to_average_across signals values */
-					/*around the potential_time*/
 					samples_to_average_across=analysis->average_width;
 					channel_offset=0;
 					sample_shift=(samples_to_average_across/2);
-					/*ensure not averaging off the start/end of the samples*/
+					/* ensure not averaging off the start/end of the samples */
 					if (potential_time>sample_shift)
 					{
 						if ((buffer->number_of_samples-potential_time)<sample_shift)
@@ -11425,13 +11484,14 @@ value at the potential time.
 						samples_to_average_across=2*sample_shift;
 					}
 					the_time=potential_time-sample_shift;
-					for(count=0;count<samples_to_average_across;count++)
+					for (count=0;count<samples_to_average_across;count++)
 					{
 						channel_offset+=(buffer->signals.float_values)[the_time*
 							buffer_offset+(*device)->signal->index];
 						the_time++;
 					}
 					channel_offset/=samples_to_average_across;
+#endif /* defined (OLD_CODE) */
 					/* offset signals */
 					value=(buffer->signals.float_values)+(*device)->signal->index;
 					for (j=buffer->number_of_samples;j>0;j--)
@@ -11518,11 +11578,13 @@ c.f. analysis_set_range_frm_win.
 			display_end_time_field,(struct FE_field *)NULL,&minimum,&maximum,
 			(enum Event_signal_status *)NULL,	1/*time_range*/);
 		/* set the new signal_minimum,signal_maximum*/
-		component.field = signal_minimum_field;
+		component.field=signal_minimum_field;
 		/*??JW should be copying out of and into node with MANAGER_MODIFY */
-		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,/*time*/0,minimum);
-		component.field = signal_maximum_field;
-		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,/*time*/0,maximum);
+		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,/*time*/0,
+			minimum);
+		component.field=signal_maximum_field;
+		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,/*time*/0,
+			maximum);
 		/* update the display */
 		update_signals_drawing_area(analysis->window);
 		update_interval_drawing_area(analysis->window);
@@ -12855,7 +12917,7 @@ else
 static int accept_signal(struct Analysis_work_area *analysis,
 	struct Device **signal_device)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2000
+LAST MODIFIED : 10 May 2002
 
 DESCRIPTION : accept the analysis signal.
 ==============================================================================*/
@@ -12863,8 +12925,8 @@ DESCRIPTION : accept the analysis signal.
 	char *value_string;
 	float level,*objective_values;
 	int average_width,device_number,i,minimum_separation,
-		number_of_objective_values,objective_values_step,return_code,threshold_percentage,xpos,
-		ypos;
+		number_of_objective_values,objective_values_step,return_code,
+		threshold_percentage,xpos,ypos;
 	struct Device **device;
 	struct Region *current_region;
 	struct Rig *rig;
@@ -12891,7 +12953,8 @@ DESCRIPTION : accept the analysis signal.
 	if (analysis&&analysis->trace)
 	{
 		return_code=1;
-		if ((rig=analysis->rig)&&(signal=(*signal_device)->signal)&&(buffer=signal->buffer))
+		if ((rig=analysis->rig)&&(signal=(*signal_device)->signal)&&
+			(buffer=signal->buffer))
 		{
 			if (signal->status!=ACCEPTED)
 			{
@@ -12930,9 +12993,9 @@ DESCRIPTION : accept the analysis signal.
 								NULL);
 							if (1==sscanf(value_string,"%d",&average_width))
 							{
-								if (average_width<0)
+								if (average_width<1)
 								{
-									average_width=0;
+									average_width=1;
 								}
 							}
 							else
@@ -13064,7 +13127,7 @@ DESCRIPTION : accept the analysis signal.
 					struct Region *region=(struct Region *)NULL;
 
 					region_item=get_Rig_region_list(rig);
-					while(region_item)
+					while (region_item)
 					{
 						region=get_Region_list_item_region(region_item);
 						if (unrejected_node_group=get_Region_unrejected_node_group(region))
@@ -13076,7 +13139,7 @@ DESCRIPTION : accept the analysis signal.
 							}
 						}
 						region_item=get_Region_list_item_next(region_item);
-					}/* while(region_item)*/
+					}/* while (region_item)*/
 				}
 				else
 				/* just one region */
@@ -13237,7 +13300,7 @@ Reject the  <signal> in <analysis>
 					struct Region *region=(struct Region *)NULL;
 
 					region_item=get_Rig_region_list(rig);
-					while(region_item)
+					while (region_item)
 					{
 						region=get_Region_list_item_region(region_item);
 						if (unrejected_node_group=get_Region_unrejected_node_group(region))
@@ -13249,7 +13312,7 @@ Reject the  <signal> in <analysis>
 							}
 						}
 						region_item=get_Region_list_item_next(region_item);
-					}/* while(region_item)*/
+					}/* while (region_item)*/
 				}
 				else
 				{
@@ -15803,9 +15866,10 @@ c.f update_signal_range_widget_from_highlight_signal
 				signal_drawing_package);
 			/* set the new signal_minimum */
 			component.number=0;
-			component.field = signal_minimum_field;
+			component.field=signal_minimum_field;
 			/*??JW should be copying out of and into node with MANAGER_MODIFY */
-			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,/*time*/0,minimum);
+			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
+				/*time*/0,minimum);
 #else
 			device->signal_display_minimum=minimum;
 #endif /*	defined (UNEMAP_USE_NODES) */
@@ -15878,9 +15942,10 @@ c.f update_signal_range_widget_from_highlight_signal
 				signal_drawing_package);
 			/* set the new signal_maximum*/
 			component.number=0;
-			component.field = signal_maximum_field;
+			component.field=signal_maximum_field;
 			/*??JW should be copying out of and into node with MANAGER_MODIFY */
-			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,/*time*/0,maximum);
+			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
+				/*time*/0,maximum);
 #else
 			device->signal_display_maximum=maximum;
 #endif /*	defined (UNEMAP_USE_NODES) */
@@ -16119,7 +16184,7 @@ cf highlight_analysis_device
 				number_of_devices=get_FE_node_order_info_number_of_nodes(rig_node_order_info);
 				i=0;
 				success=0;
-				while((i<number_of_devices)&&(!success))
+				while ((i<number_of_devices)&&(!success))
 				{
 					temp_device_rig_node=get_FE_node_order_info_node(rig_node_order_info,i);
 					if (temp_device_rig_node==device_node)
@@ -16177,7 +16242,7 @@ cf highlight_analysis_device
 						"incompatible with device, electrode and auxiliary numbers");
 					return_code=0;
 				}
-			}/* if (new_highlight_rig_node=devic*/
+			}
 			else
 			{
 				/* have not specified the device */
@@ -16188,11 +16253,12 @@ cf highlight_analysis_device
 					/* determine the device and the electrode and auxiliary numbers */
 					new_electrode_number=0;
 					new_auxiliary_number=0;
-					for(i=0;i<new_device_number;i++)
+					for (i=0;i<new_device_number;i++)
 					{
-						temp_device_rig_node=get_FE_node_order_info_node(rig_node_order_info,i);
-						get_FE_nodal_string_value(temp_device_rig_node,device_type_field,0,0,
-							FE_NODAL_VALUE,&device_type_string);
+						temp_device_rig_node=get_FE_node_order_info_node(
+							rig_node_order_info,i);
+						get_FE_nodal_string_value(temp_device_rig_node,device_type_field,0,
+							0,FE_NODAL_VALUE,&device_type_string);
 						if (!strcmp(device_type_string,"ELECTRODE"))
 						{
 							new_electrode_number++;
@@ -16205,8 +16271,8 @@ cf highlight_analysis_device
 					}
 					new_highlight_rig_node=get_FE_node_order_info_node(
 						rig_node_order_info,new_device_number);
-					get_FE_nodal_string_value(new_highlight_rig_node,device_type_field,0,0,
-						FE_NODAL_VALUE,&device_type_string);
+					get_FE_nodal_string_value(new_highlight_rig_node,device_type_field,0,
+						0,FE_NODAL_VALUE,&device_type_string);
 					if (!strcmp(device_type_string,"ELECTRODE"))
 					{
 						new_auxiliary_number= -1;
@@ -16249,7 +16315,7 @@ cf highlight_analysis_device
 							number_of_devices=get_FE_node_order_info_number_of_nodes(
 								rig_node_order_info);
 							success=0;
-							while((new_device_number<number_of_devices)&&(!success))
+							while ((new_device_number<number_of_devices)&&(!success))
 							{
 								temp_device_rig_node=get_FE_node_order_info_node(rig_node_order_info,
 									new_device_number);
@@ -16298,7 +16364,7 @@ cf highlight_analysis_device
 								number_of_devices=get_FE_node_order_info_number_of_nodes(
 									rig_node_order_info);
 								success=0;
-								while((new_device_number<number_of_devices)&&(!success))
+								while ((new_device_number<number_of_devices)&&(!success))
 								{
 									temp_device_rig_node=get_FE_node_order_info_node(rig_node_order_info,
 										new_device_number);
@@ -16346,7 +16412,7 @@ cf highlight_analysis_device
 			{
 				if (device_node)
 				{
-					device_node= new_highlight_rig_node;
+					device_node=new_highlight_rig_node;
 				}
 				if (device_number)
 				{
@@ -16520,7 +16586,7 @@ cf highlight_analysis_device
 						struct Set_highlight_iterator highlight_iterator;
 
 						region_item=get_Rig_region_list(analysis->rig);
-						while(region_item)
+						while (region_item)
 						{
 							region=get_Region_list_item_region(region_item);
 							if (region!=current_region)
@@ -16538,7 +16604,7 @@ cf highlight_analysis_device
 								}
 							}
 							region_item=get_Region_list_item_next(region_item);
-						}/* while(region_item)*/
+						}/* while (region_item)*/
 					}
 					/* highlight the new device */
 					analysis->highlight_rig_node=new_highlight_rig_node;
@@ -17116,17 +17182,19 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 						{
 							found_electrode=0;
 							j=0;
-							while((j<map->number_of_sub_maps)&&(!found_electrode))
+							while ((j<map->number_of_sub_maps)&&(!found_electrode))
 							{
 								sub_map=map->sub_map[j];
-								/* the sensitivity depends on the size of the electrode marker */
+								/* the sensitivity depends on the size of the electrode
+									marker */
 								pointer_sensitivity=map->electrodes_marker_size;
 								/* determine the electrode number */
 								electrode_number=0;
 								electrode_x=sub_map->electrode_x;
 								electrode_y=sub_map->electrode_y;
 								electrode_drawn=map->electrode_drawn;
-								while((electrode_number<map->number_of_electrodes)&&(!found_electrode))
+								while ((electrode_number<map->number_of_electrodes)&&
+									(!found_electrode))
 								{
 									if ((*electrode_drawn)&&
 										((event->x>*electrode_x-pointer_sensitivity)&&
@@ -17342,7 +17410,7 @@ Creates the windows associated with the analysis work area.
 		}
 		else
 		{
-			analysis->time_keeper = (struct Time_keeper *)NULL;
+			analysis->time_keeper=(struct Time_keeper *)NULL;
 		}
 		Time_object_add_callback(analysis->potential_time_object,
 			analysis_potential_time_update_callback,(void *)analysis);
@@ -17353,14 +17421,14 @@ Creates the windows associated with the analysis work area.
 			analysis_datum_time_update_callback,(void *)analysis);
 		analysis->search_interval_divisions=(int *)NULL;
 		/* DPN 18 June 2001 - Initialise the file selection boxes */
-		analysis->read_signal_file_data = (struct File_open_data *)NULL;
-		analysis->event_times_file_data = (struct File_open_data *)NULL;
-		analysis->read_bard_electrode_data = (struct File_open_data *)NULL;
-		analysis->read_beekeeper_eeg_fil_data = (struct File_open_data *)NULL;
-		analysis->read_cardiomapp_electr_data = (struct File_open_data *)NULL;
-		analysis->read_neurosoft_electro_data = (struct File_open_data *)NULL;
-		analysis->write_signal_file_data = (struct File_open_data *)NULL;
-		analysis->overlay_signal_file_data = (struct File_open_data *)NULL;
+		analysis->read_signal_file_data=(struct File_open_data *)NULL;
+		analysis->event_times_file_data=(struct File_open_data *)NULL;
+		analysis->read_bard_electrode_data=(struct File_open_data *)NULL;
+		analysis->read_beekeeper_eeg_fil_data=(struct File_open_data *)NULL;
+		analysis->read_cardiomapp_electr_data=(struct File_open_data *)NULL;
+		analysis->read_neurosoft_electro_data=(struct File_open_data *)NULL;
+		analysis->write_signal_file_data=(struct File_open_data *)NULL;
+		analysis->overlay_signal_file_data=(struct File_open_data *)NULL;
 		/* retrieve the settings */
 		XtVaGetApplicationResources(user_interface->application_shell,analysis,
 			resources,XtNumber(resources),NULL);
@@ -17406,41 +17474,43 @@ Creates the windows associated with the analysis work area.
 				/* DPN 18 June 2001 - need to keep pointers to all the file selection
 					boxes */
 				identifier_list[0].value=(XtPointer)analysis;
-				analysis->read_signal_file_data = create_File_open_data(
+				analysis->read_signal_file_data=create_File_open_data(
 					signal_file_extension_read,REGULAR,analysis_read_signal_file,
 					(void *)analysis,0,user_interface);
 				identifier_list[1].value=(XtPointer)(analysis->read_signal_file_data);
-				analysis->event_times_file_data = create_File_open_data(
+				analysis->event_times_file_data=create_File_open_data(
 					analysis->events_file_extension,REGULAR,read_event_times_file,
 					(XtPointer)analysis,0,user_interface);
 				identifier_list[2].value=(XtPointer)(analysis->event_times_file_data);
-				analysis->read_bard_electrode_data = create_File_open_data(".ele",
+				analysis->read_bard_electrode_data=create_File_open_data(".ele",
 					REGULAR,analysis_read_bard_electrode_fi,(XtPointer)analysis,0,
 					user_interface);
-				identifier_list[3].value=(XtPointer)(analysis->read_bard_electrode_data);
-				analysis->read_beekeeper_eeg_fil_data = create_File_open_data(".eeg",
+				identifier_list[3].value=
+					(XtPointer)(analysis->read_bard_electrode_data);
+				analysis->read_beekeeper_eeg_fil_data=create_File_open_data(".eeg",
 					REGULAR,analysis_read_beekeeper_eeg_fil,(XtPointer)analysis,0,
 					user_interface);
-				identifier_list[4].value =
+				identifier_list[4].value=
 					(XtPointer)(analysis->read_beekeeper_eeg_fil_data);
-				analysis->read_cardiomapp_electr_data = create_File_open_data(
+				analysis->read_cardiomapp_electr_data=create_File_open_data(
 					configuration_file_extension,REGULAR,analysis_read_cardiomapp_electr,
 					(XtPointer)analysis,0,user_interface);
-				identifier_list[5].value =
+				identifier_list[5].value=
 					(XtPointer)(analysis->read_cardiomapp_electr_data);
-				analysis->read_neurosoft_electro_data = create_File_open_data(
+				analysis->read_neurosoft_electro_data=create_File_open_data(
 					configuration_file_extension,REGULAR,analysis_read_neurosoft_electro,
 					(XtPointer)analysis,0,user_interface);
-				identifier_list[6].value =
+				identifier_list[6].value=
 					(XtPointer)(analysis->read_neurosoft_electro_data);
-				analysis->write_signal_file_data = create_File_open_data(
+				analysis->write_signal_file_data=create_File_open_data(
 					signal_file_extension_write,REGULAR,
 					file_analysis_write_signal_file,(XtPointer)analysis,0,user_interface);
 				identifier_list[7].value=(XtPointer)(analysis->write_signal_file_data);
-				analysis->overlay_signal_file_data = create_File_open_data(
+				analysis->overlay_signal_file_data=create_File_open_data(
 					signal_file_extension_read,REGULAR,analysis_overlay_signal_file,
 					(void *)analysis,0,user_interface);
-				identifier_list[8].value=(XtPointer)(analysis->overlay_signal_file_data);
+				identifier_list[8].value=
+					(XtPointer)(analysis->overlay_signal_file_data);
 				if (MrmSUCCESS==MrmRegisterNames(identifier_list,
 					XtNumber(identifier_list)))
 					/*???DB.  Using global name table because the analysis and trace
@@ -17588,10 +17658,11 @@ Created by DPN to try and fix up memory leaks when the UnEmap analysis work area
 is used in Cell.
 ==============================================================================*/
 {
-	int return_code = 0;
+	int return_code;
 	struct Analysis_window *window;
 
 	ENTER(destroy_analysis_work_area);
+	return_code=0;
 	if (analysis)
 	{
 		/* destroy all the file selection boxes */
@@ -17627,7 +17698,7 @@ is used in Cell.
 		{
 			destroy_File_open_data(&(analysis->overlay_signal_file_data));
 		}
-		if (window = analysis->window)
+		if (window=analysis->window)
 		{
 			if (window->write_times_file_open_data)
 			{
@@ -17677,7 +17748,7 @@ is used in Cell.
 	{
 		display_message(ERROR_MESSAGE,"destroy_analysis_work_area.  "
 			"Invalid argument(s)");
-		return_code = 0;
+		return_code=0;
 	}
 	LEAVE;
 

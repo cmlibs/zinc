@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.h
 
-LAST MODIFIED : 2 October 2001
+LAST MODIFIED : 10 May 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -28,7 +28,7 @@ Global types
 */
 struct Analysis_work_area
 /*******************************************************************************
-LAST MODIFIED : 2 October 2001
+LAST MODIFIED : 10 May 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -75,6 +75,10 @@ DESCRIPTION :
 	char *configuration_file_extension,*postscript_file_extension;
 	/* user settings */
 	char *events_file_extension,*signal_file_extension_read;
+	/* the average_width (>=1) is the number of values that averages are done
+		over.  For value averages, this is the number of values averaged over.  For
+		slopes, this many values are averaged before and this many values are
+		averaged after */
 	int average_width;
 	Pixel identifying_colour;
 	/* these flags ensure that when the next update occurs the XOR graphics are
@@ -88,16 +92,16 @@ DESCRIPTION :
 		parts of the analysis work area but is not input to a timekeeper */
 	struct Time_object *datum_time_object;
 	struct Unemap_package *unemap_package;
-  /* DPN 18 June 2001 - Need to keep pointers to file selection boxes to be
-     able to destroy them */
-  struct File_open_data *read_signal_file_data;
-  struct File_open_data *event_times_file_data;
-  struct File_open_data *read_bard_electrode_data;
-  struct File_open_data *read_beekeeper_eeg_fil_data;
-  struct File_open_data *read_cardiomapp_electr_data;
-  struct File_open_data *read_neurosoft_electro_data;
-  struct File_open_data *write_signal_file_data;
-  struct File_open_data *overlay_signal_file_data;
+	/* DPN 18 June 2001 - Need to keep pointers to file selection boxes to be
+		able to destroy them */
+	struct File_open_data *read_signal_file_data;
+	struct File_open_data *event_times_file_data;
+	struct File_open_data *read_bard_electrode_data;
+	struct File_open_data *read_beekeeper_eeg_fil_data;
+	struct File_open_data *read_cardiomapp_electr_data;
+	struct File_open_data *read_neurosoft_electro_data;
+	struct File_open_data *write_signal_file_data;
+	struct File_open_data *overlay_signal_file_data;
 }; /* struct Analysis_work_area */
 
 /*
@@ -113,24 +117,24 @@ LAST MODIFIED : 20 April 1998
 DESCRIPTION :
 If the highlight is part of a multiple selection
 then
-  If the <device> is not highlighted
-  then
-    highlight it and make it THE highlighted device for the analysis work area
-  else
-    if it is the only highlighted device
-    then
-      do nothing
-    else
-      dehighlight it
-      if it is THE highlighted device for the analysis work area
-      then
-        make the first highlighted device THE highlighted device
+	If the <device> is not highlighted
+	then
+		highlight it and make it THE highlighted device for the analysis work area
+	else
+		if it is the only highlighted device
+		then
+			do nothing
+		else
+			dehighlight it
+			if it is THE highlighted device for the analysis work area
+			then
+				make the first highlighted device THE highlighted device
 else
-  highlight it and dehighlight all other devices
-  make it THE highlighted device for the analysis work area
+	highlight it and dehighlight all other devices
+	make it THE highlighted device for the analysis work area
 ==============================================================================*/
 
-#if defined (UNEMAP_USE_NODES) 
+#if defined (UNEMAP_USE_NODES)
 /* need to alter to use callbacks, cf highlight_analysis_device*/
 int highlight_analysis_device_node(unsigned int multiple_selection,
 	struct FE_node *device_node,	int *device_number,int *electrode_number,
@@ -141,21 +145,21 @@ LAST MODIFIED : 5 September 2000
 DESCRIPTION :
 If the highlight is part of a multiple selection
 then
-  If the <device_node> is not highlighted
-  then
-    highlight it and make it THE highlighted device for the analysis work area
-  else
-    if it is the only highlighted device
-    then
-      do nothing
-    else
-      dehighlight it
-      if it is THE highlighted device for the analysis work area
-      then
-        make the first highlighted device THE highlighted device
+	If the <device_node> is not highlighted
+	then
+		highlight it and make it THE highlighted device for the analysis work area
+	else
+		if it is the only highlighted device
+		then
+			do nothing
+		else
+			dehighlight it
+			if it is THE highlighted device for the analysis work area
+			then
+				make the first highlighted device THE highlighted device
 else
-  highlight it and dehighlight all other devices
-  make it THE highlighted device for the analysis work area
+	highlight it and dehighlight all other devices
+	make it THE highlighted device for the analysis work area
 
 cf highlight_analysis_device
 
@@ -245,5 +249,4 @@ call to close_analysis_work_area().
 Created by DPN to try and fix up memory leaks when the UnEmap analysis work area
 is used in Cell.
 ==============================================================================*/
-
-#endif
+#endif /* !defined (ANALYSIS_WORK_AREA_H) */
