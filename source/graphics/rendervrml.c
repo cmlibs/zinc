@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendervrml.c
 
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Renders gtObjects to VRML file
@@ -1965,24 +1965,29 @@ DESCRIPTION :
 static int draw_voltex_vrml(FILE *vrml_file,int n_iso_polys,int *triangle_list,
 	struct VT_iso_vertex *vertex_list,int n_vertices,int n_rep,
 	struct Graphical_material **per_vertex_materials,
-	int *iso_poly_material_index, struct Environment_map **iso_env_map,
+	int *iso_poly_material_index,
+	struct Environment_map **per_vertex_environment_maps,
+	int *iso_poly_environment_map_index,
 	float *texturemap_coord,int *texturemap_index,int number_of_data_components,
-	GTDATA *data,struct Graphical_material *default_material,struct Spectrum *spectrum,
+	GTDATA *data,struct Graphical_material *default_material,
+	struct Spectrum *spectrum,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int i, ii, poly_materials, return_code, total_num_vertices;
+	struct Environment_map *environment_map;
 	struct Graphical_material *last_material, *next_material;
 
 	ENTER(draw_voltex_vrml);
 	/* default return code */
 	return_code=0;
 	if (triangle_list && vertex_list &&
-		((!iso_poly_material_index) || per_vertex_materials) && iso_env_map &&
+		((!iso_poly_material_index) || per_vertex_materials) &&
+		((!iso_poly_environment_map_index) || per_vertex_environment_maps) &&
 		texturemap_coord&&texturemap_index&&(0<n_rep)&&(0<n_iso_polys))
 	{
 		last_material=(struct Graphical_material *)NULL;
@@ -1990,9 +1995,12 @@ DESCRIPTION :
 		poly_materials = 0;
 		for (i=0;i<n_iso_polys;i++)
 		{
-			if (iso_env_map[i*3])
+			if (iso_poly_environment_map_index &&
+				iso_poly_environment_map_index[i*3])
 			{
-				if ((iso_env_map[i*3]->face_material)[texturemap_index[i*3]])
+				if ((environment_map = per_vertex_environment_maps[
+					iso_poly_environment_map_index[i*3] - 1]) &&
+					environment_map->face_material[texturemap_index[i*3]])
 				{
 					poly_materials = 1;
 				}
@@ -2013,12 +2021,14 @@ DESCRIPTION :
 				{
 					/* if an environment map exists use it in preference to a material */
 					next_material = default_material;
-					if (iso_env_map[i*3])
+					if (iso_poly_environment_map_index &&
+						iso_poly_environment_map_index[i*3])
 					{
-						if ((iso_env_map[i*3]->face_material)[texturemap_index[i*3]])
+						if (environment_map = per_vertex_environment_maps[
+							iso_poly_environment_map_index[i*3] - 1])
 						{
 							next_material =
-								iso_env_map[i*3]->face_material[texturemap_index[i*3]];
+								environment_map->face_material[texturemap_index[i*3]];
 						}
 					}
 					else
@@ -2094,12 +2104,14 @@ DESCRIPTION :
 					glTexCoord2fv(&(texturemap_coord[3*(3*i+0)]));
 
 					next_material = default_material;
-					if (iso_env_map[i*3+2])
+					if (iso_poly_environment_map_index &&
+						iso_poly_environment_map_index[i*3+2])
 					{
-						if (iso_env_map[i*3+2]->face_material[texturemap_index[i*3+2]])
+						if (environment_map = per_vertex_environment_maps[
+							iso_poly_environment_map_index[i*3+2] - 1])
 						{
-							next_material=
-								iso_env_map[i*3+2]->face_material[texturemap_index[i*3+2]];
+							next_material =
+								environment_map->face_material[texturemap_index[i*3+2]];
 						}
 					}
 					else
@@ -2220,7 +2232,7 @@ DESCRIPTION :
 int makevrml(FILE *vrml_file,gtObject *object,float time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Convert graphical object into API object.
@@ -2572,7 +2584,8 @@ Only writes the geometry field.
 								voltex->n_rep,
 								voltex->per_vertex_materials,
 								voltex->iso_poly_material_index,
-								voltex->iso_env_map,
+								voltex->per_vertex_environment_maps,
+								voltex->iso_poly_environment_map_index,
 								voltex->texturemap_coord,
 								voltex->texturemap_index,voltex->n_data_components,voltex->data,
 								object->default_material,object->spectrum,

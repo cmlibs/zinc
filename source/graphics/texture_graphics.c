@@ -917,7 +917,7 @@ Global functions
 */
 void draw_texture_isosurface(struct Texture_window *texture_window)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Calculates an isosurface from the volume texture, and creates an isosurface
@@ -930,7 +930,7 @@ object.
 	float *texturemap_coord;
 	struct Graphical_material *material;
 	struct GT_voltex *voltex;
-	struct Environment_map **iso_env_map;
+	struct Environment_map *environment_map;
 	struct VT_iso_vertex *vertex_list;
 	struct VT_scalar_field *scalar_field_list[MAX_SCALAR_FIELDS];
 	struct VT_volume_texture *current_texture;
@@ -1139,11 +1139,10 @@ printf("DEBUG:Before allocate npolys = %d n_verts = %d\n",n_iso_polys,
 				double,3*n_iso_polys*3)&&ALLOCATE(texturemap_coord,float,
 				3*n_iso_polys*3)&&ALLOCATE(texturemap_index,int,3*n_iso_polys)&&
 				ALLOCATE(vertex_list,struct VT_iso_vertex,n_vertices*1
-				/*n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2]*/)&&ALLOCATE(iso_env_map,
-				struct Environment_map *,3*n_iso_polys))
+				/*n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2]*/))
 			{
 				if (!(texture_window->voltex=CREATE(GT_voltex)(n_iso_polys,n_vertices,
-					triangle_list,vertex_list,iso_env_map,iso_poly_cop,
+					triangle_list,vertex_list,iso_poly_cop,
 					texturemap_coord,texturemap_index,1
 					/* n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2]*/,
 					0 /*n_data_components*/, (GTDATA *)NULL, g_VOLTEX_SHADED_TEXMAP )))
@@ -1170,7 +1169,6 @@ printf("DEBUG:voltex successfully created: t_list = %p, v_list = %p\n",
 				texturemap_coord=(float *)NULL;
 				texturemap_index=(int *)NULL;
 				vertex_list=(struct VT_iso_vertex *)NULL;
-				iso_env_map=(struct Environment_map **)NULL;
 			}
 /*???debug */
 #if defined (UNIX)
@@ -1198,12 +1196,14 @@ if (triangle_list[3*i+j] > n_vertices || triangle_list[3*i+j] < 0)
 						if (material = current_texture->mc_iso_surface->
 							compiled_triangle_list[i]->material[j])
 						{
-							GT_voltex_set_vertex_material(voltex, 3*i+j, material);
+							GT_voltex_set_triangle_vertex_material(voltex, i, j, material);
 						}
-
-						iso_env_map[3*i+j] =
-						current_texture->mc_iso_surface->
-							compiled_triangle_list[i]->env_map[j];
+						if (environment_map = current_texture->mc_iso_surface->
+							compiled_triangle_list[i]->env_map[j])
+						{
+							GT_voltex_set_triangle_vertex_environment_map(voltex,
+								i, j, environment_map);
+						}
 
 						texturemap_index[3*i+j]=
 						current_texture->mc_iso_surface->
@@ -1276,7 +1276,9 @@ printf("DEBUG:voltex->n_iso_polys = %d\n",voltex->n_iso_polys);
 				draw_voltexGL(voltex->n_iso_polys,voltex->triangle_list,
 					voltex->vertex_list,voltex->n_vertices,voltex->n_rep,
 					voltex->per_vertex_materials,
-					voltex->iso_poly_material_index, voltex->iso_env_map,
+					voltex->iso_poly_material_index,
+					voltex->per_vertex_environment_maps,
+					voltex->iso_poly_environment_map_index,
 					voltex->texturemap_coord, voltex->texturemap_index,
 					/*n_data_components*/0,/*data*/(GTDATA *)NULL,
 					(struct Graphical_material *)NULL,(struct Spectrum *)NULL);
@@ -1289,7 +1291,6 @@ printf("DEBUG:voltex->n_iso_polys = %d\n",voltex->n_iso_polys);
 				DEALLOCATE(vertex_list);
 				DEALLOCATE(texturemap_coord);
 				DEALLOCATE(texturemap_index);
-				DEALLOCATE(iso_env_map);
 				DEALLOCATE(iso_poly_cop);
 			} /* if voltex */
 /*???debug */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : renderbinarywavefront.c
 
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Renders gtObjects to Wavefront OBJ file
@@ -355,17 +355,20 @@ static int draw_voltex_wavefront(struct Binary_wavefront_data *data,
 	struct VT_iso_vertex *vertex_list,int n_vertices,int n_rep,
 	struct Graphical_material **per_vertex_materials,
 	int *iso_poly_material_index,
-	struct Environment_map **iso_env_map, double *iso_poly_cop,
+	struct Environment_map **per_vertex_environment_maps,
+	int *iso_poly_environment_map_index,
+	double *iso_poly_cop,
 	float *texturemap_coord,int *texturemap_index,int n_data_components,
 	struct Graphical_material *default_material, struct Spectrum *spectrum)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	float vt[3][3], *u_texture_index, *v_texture_index;
 	int i,ii,j,k,return_code, *connection_index, *polygon_index, *texture_index;
+	struct Environment_map *environment_map;
 	struct Graphical_material *last_material,*next_material;
 	struct vertex *point_index;
 
@@ -378,7 +381,8 @@ DESCRIPTION :
 	/* default return code */
 	return_code=0;
 	if (triangle_list && vertex_list &&
-		((!iso_poly_material_index) || per_vertex_materials) && iso_env_map &&
+		((!iso_poly_material_index) || per_vertex_materials) &&
+		((!iso_poly_environment_map_index) || per_vertex_environment_maps) &&
 		texturemap_coord&&texturemap_index&&(0<n_rep)&&(0<n_iso_polys))
 	{
 		last_material=(struct Graphical_material *)NULL;
@@ -405,12 +409,14 @@ DESCRIPTION :
 				/* if an environment map exists use it in preference to a material */
 				/*???MS.  What am I doing with these crazy index orders? */
 				/*???RC.  Don't do anything with these materials here anyway! */
-				if (iso_env_map[i*3])
+				if (iso_poly_environment_map_index &&
+					iso_poly_environment_map_index[i*3])
 				{
-					if ((iso_env_map[i*3]->face_material)[texturemap_index[i*3]])
+					if (environment_map = per_vertex_environment_maps[
+						iso_poly_environment_map_index[i*3] - 1])
 					{
 						next_material =
-							iso_env_map[i*3]->face_material[texturemap_index[i*3]];
+							environment_map->face_material[texturemap_index[i*3]];
 					}
 				}
 				else
@@ -439,12 +445,14 @@ DESCRIPTION :
 				}
 
 				next_material = default_material;
-				if (iso_env_map[i*3+2])
+				if (iso_poly_environment_map_index &&
+					iso_poly_environment_map_index[i*3+2])
 				{
-					if (iso_env_map[i*3+2]->face_material[texturemap_index[i*3+2]])
+					if (environment_map = per_vertex_environment_maps[
+						iso_poly_environment_map_index[i*3+2] - 1])
 					{
-						next_material=
-							iso_env_map[i*3+2]->face_material[texturemap_index[i*3+2]];
+						next_material =
+							environment_map->face_material[texturemap_index[i*3+2]];
 					}
 				}
 				else
@@ -473,12 +481,14 @@ DESCRIPTION :
 				}
 
 				next_material=default_material;
-				if (iso_env_map[i*3+1])
+				if (iso_poly_environment_map_index &&
+					iso_poly_environment_map_index[i*3+1])
 				{
-					if (iso_env_map[i*3+1]->face_material[texturemap_index[i*3+1]])
+					if (environment_map = per_vertex_environment_maps[
+						iso_poly_environment_map_index[i*3+1] - 1])
 					{
-						next_material=
-							iso_env_map[i*3+1]->face_material[texturemap_index[i*3+1]];
+						next_material =
+							environment_map->face_material[texturemap_index[i*3+1]];
 					}
 				}
 				else
@@ -575,10 +585,11 @@ DESCRIPTION :
 	return (return_code);
 } /* draw_voltex_wavefront */
 
-static int make_binary_wavefront(struct Binary_wavefront_data *data, int full_write,
+static int make_binary_wavefront(struct Binary_wavefront_data *data,
+	int full_write,
 	gtObject *object, float time)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Convert graphical object into Wavefront object file.
@@ -707,7 +718,9 @@ Convert graphical object into Wavefront object file.
 								voltex->n_iso_polys,voltex->triangle_list,
 								voltex->vertex_list,voltex->n_vertices,voltex->n_rep,
 								voltex->per_vertex_materials,
-								voltex->iso_poly_material_index,voltex->iso_env_map,
+								voltex->iso_poly_material_index,
+								voltex->per_vertex_environment_maps,
+								voltex->iso_poly_environment_map_index,
 								voltex->iso_poly_cop, voltex->texturemap_coord,
 								voltex->texturemap_index,voltex->n_data_components,
 								object->default_material, object->spectrum);

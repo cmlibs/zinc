@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 6 May 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -3381,7 +3381,7 @@ struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field,
 	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 12 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Creates a <GT_voltex> from a 3-D finite <element> <block> and volume texture
@@ -3395,12 +3395,14 @@ deformed vertices by taking the average of the cross products of the surrounding
 faces.
 ==============================================================================*/
 {
+	enum GT_voltex_type voltex_type;
 	FE_value *coordinate_field_derivatives,coordinate_1,coordinate_2,coordinate_3,
 		*data,distance,minimum_distance,xi[3],xi_step[3],xi_stepsize[3],
 		/*???DB.  Merge */
 		rmag,vector1[3],vector2[3],result[3],vectorsum[3],vertex0[3],vertex1[3],
 		vertex2[3];
 	FE_value colour_data[4];
+	struct Environment_map *environment_map;
 	struct Graphical_material *material;
 	struct GT_voltex *voltex;
 	int *adjacency_table,data_index,*deform,i,ii,j,jj,k,kk,m,n_iso_polys,
@@ -3410,7 +3412,6 @@ faces.
 		*triangle_list,*triangle_list2,acc_triangle_index,
 		*dont_draw;
 	struct FE_element **element_block,**element_block_ptr;
-	struct Environment_map **iso_env_map;
 	struct VT_iso_vertex *vertex_list;
 
 	double *iso_poly_cop;
@@ -3586,122 +3587,84 @@ faces.
 #endif /* defined (DONT_DRAW) */
 						if (return_code)
 						{
-
 							/* allocate memory for the VOLTEX */
-							n_iso_polys=vtexture->mc_iso_surface->n_triangles;
-							n_vertices=vtexture->mc_iso_surface->n_vertices;
-							triangle_list=(int *)NULL;
-							triangle_list2=(int *)NULL;
-							iso_poly_cop=(double *)NULL;
-							texturemap_coord=(float *)NULL;
-							texturemap_index=(int *)NULL;
-							vertex_list=(struct VT_iso_vertex *)NULL;
-							iso_env_map=(struct Environment_map **)NULL;
-							if (ALLOCATE(triangle_list,int,3*n_iso_polys)&&
-								ALLOCATE(triangle_list2,int,3*n_iso_polys)&&
-								ALLOCATE(iso_poly_cop,double,3*n_iso_polys*3)
-								&&ALLOCATE(texturemap_coord,float,3*n_iso_polys*3)
-								&&ALLOCATE(texturemap_index,int,3*n_iso_polys)
-								&&ALLOCATE(vertex_list,struct VT_iso_vertex,
-								n_vertices*n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2])&&
-								ALLOCATE(iso_env_map,struct Environment_map *,3*n_iso_polys))
-								/*???DB.  n_iso_polys=n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2] */
+							n_iso_polys = vtexture->mc_iso_surface->n_triangles;
+							n_vertices = vtexture->mc_iso_surface->n_vertices;
+							ALLOCATE(triangle_list, int, 3*n_iso_polys);
+							ALLOCATE(triangle_list2, int, 3*n_iso_polys);
+							ALLOCATE(iso_poly_cop, double, 3*n_iso_polys*3);
+							ALLOCATE(texturemap_coord, float, 3*n_iso_polys*3);
+							ALLOCATE(texturemap_index, int, 3*n_iso_polys);
+							ALLOCATE(vertex_list, struct VT_iso_vertex,
+								n_vertices*n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2]);
+							/*???DB.  n_iso_polys=n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2] */
+							if (data_field)
 							{
-								if(data_field)
-								{
-									ALLOCATE(data,GTDATA,n_vertices*n_xi_rep[0]*n_xi_rep[1]*
-										n_xi_rep[2]*n_data_components);
-								}
-								else
-								{
-									n_data_components = 0;
-									data = (GTDATA *)NULL;
-								}
-								switch (render_type)
-								{
-									case RENDER_TYPE_SHADED:
-									{
-										if (!(voltex=CREATE(GT_voltex)(n_iso_polys,n_vertices,
-											triangle_list2,vertex_list,iso_env_map,
-											iso_poly_cop,texturemap_coord,texturemap_index,
-											n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2],n_data_components,
-											data, g_VOLTEX_SHADED_TEXMAP)))
-										{
-											display_message(ERROR_MESSAGE,
-												"create_GT_voltex_from_FE_element.   Could not create voltex");
-											DEALLOCATE(triangle_list);
-											DEALLOCATE(triangle_list2);
-											DEALLOCATE(iso_poly_cop);
-											DEALLOCATE(texturemap_coord);
-											DEALLOCATE(texturemap_index);
-											DEALLOCATE(vertex_list);
-											DEALLOCATE(iso_env_map);
-											if (data)
-											{
-												DEALLOCATE(data);
-											}
-										}
-									} break;
-									case RENDER_TYPE_WIREFRAME:
-									{
-										if (!(voltex=CREATE(GT_voltex)(n_iso_polys,n_vertices,
-											triangle_list2,vertex_list,iso_env_map,
-											iso_poly_cop,texturemap_coord,texturemap_index,
-											n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2],n_data_components,
-											data, g_VOLTEX_WIREFRAME_SHADED_TEXMAP)))
-										{
-											display_message(ERROR_MESSAGE,
-												"create_GT_voltex_from_FE_element.   Could not create voltex");
-											DEALLOCATE(triangle_list);
-											DEALLOCATE(triangle_list2);
-											DEALLOCATE(iso_poly_cop);
-											DEALLOCATE(texturemap_coord);
-											DEALLOCATE(texturemap_index);
-											DEALLOCATE(vertex_list);
-											DEALLOCATE(iso_env_map);
-											if (data)
-											{
-												DEALLOCATE(data);
-											}
-										}
-									} break;
-									default:
-									{
-										display_message(ERROR_MESSAGE,
-											"create_GT_voltex_from_FE_element.  Unknown render type.");
-										DEALLOCATE(triangle_list);
-										DEALLOCATE(triangle_list2);
-										DEALLOCATE(iso_poly_cop);
-										DEALLOCATE(texturemap_coord);
-										DEALLOCATE(texturemap_index);
-										DEALLOCATE(vertex_list);
-										DEALLOCATE(iso_env_map);
-										if (data)
-										{
-											DEALLOCATE(data);
-										}										
-									} break;
-								}
+								ALLOCATE(data, GTDATA, n_vertices*n_xi_rep[0]*n_xi_rep[1]*
+									n_xi_rep[2]*n_data_components);
 							}
 							else
 							{
+								n_data_components = 0;
+								data = (GTDATA *)NULL;
+							}
+							if (!(triangle_list && triangle_list2 && iso_poly_cop &&
+								texturemap_coord && texturemap_index && vertex_list &&
+								((!data_field) || data)))
+							{
 								display_message(ERROR_MESSAGE,
-		"create_GT_voltex_from_FE_element.   Could not allocate memory for points");
+									"create_GT_voltex_from_FE_element.  "
+									"Could not allocate memory for points");
+								/*???debug*/
 								display_message(ERROR_MESSAGE,
-"n_iso_polys=%d, n_vertices=%d, n_xi_rep[0]=%d, n_xi_rep[1]=%d, n_xi_rep[2]=%d\n",
+									"n_iso_polys=%d, n_vertices=%d, n_xi_rep[0]=%d, "
+									"n_xi_rep[1]=%d, n_xi_rep[2]=%d\n",
 									n_iso_polys,n_vertices,n_xi_rep[0],n_xi_rep[1],n_xi_rep[2]);
+								return_code = 0;
+							}
+							switch (render_type)
+							{
+								case RENDER_TYPE_SHADED:
+								{
+									voltex_type = g_VOLTEX_SHADED_TEXMAP;
+								} break;
+								case RENDER_TYPE_WIREFRAME:
+								{
+									voltex_type = g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
+								} break;
+								default:
+								{
+									display_message(ERROR_MESSAGE,
+										"create_GT_voltex_from_FE_element.  Unknown render type");
+									return_code = 0;
+								} break;
+							}
+							if (return_code)
+							{
+								if (!(voltex = CREATE(GT_voltex)(n_iso_polys ,n_vertices,
+									triangle_list2, vertex_list, iso_poly_cop,
+									texturemap_coord, texturemap_index,
+									n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2] ,n_data_components,
+									data, voltex_type)))
+								{
+									display_message(ERROR_MESSAGE,
+										"create_GT_voltex_from_FE_element.  "
+										"Could not create voltex");
+									return_code = 0;
+								}
+							}
+							if (!voltex)
+							{
 								DEALLOCATE(triangle_list);
 								DEALLOCATE(triangle_list2);
 								DEALLOCATE(iso_poly_cop);
 								DEALLOCATE(texturemap_coord);
 								DEALLOCATE(texturemap_index);
 								DEALLOCATE(vertex_list);
-								DEALLOCATE(iso_env_map);
 								if (data)
 								{
 									DEALLOCATE(data);
 								}
-								voltex=(struct GT_voltex *)NULL;
 							}
 							if (voltex)
 							{
@@ -3741,6 +3704,7 @@ faces.
 								for (i=0;i<n_iso_polys;i++)
 								{
 									/* dont use polys on face */
+									/*???RC This comment has a preservation orfer on it */
 									/*???Mark.  This needs to be redone - have to think of way of
 									  doing this properly - want to only copy triangles not on
 									  face ! taint triangle_list and do to that? so if triangle
@@ -3766,7 +3730,7 @@ faces.
 									{
 #endif /* defined (OLD_CODE) */
 
-										for (j=0;j<3;j++)
+										for (j = 0; j < 3; j++)
 										{
 											triangle_list2[3*acc_triangle_index+j]=
 												vtexture->mc_iso_surface->
@@ -3774,12 +3738,15 @@ faces.
 											if (material = vtexture->mc_iso_surface->
 												compiled_triangle_list[i]->material[j])
 											{
-												GT_voltex_set_vertex_material(voltex,
-													3*acc_triangle_index+j, material);
+												GT_voltex_set_triangle_vertex_material(voltex,
+													acc_triangle_index, j, material);
 											}
-											iso_env_map[3*acc_triangle_index+j]=
-												vtexture->mc_iso_surface->
-												compiled_triangle_list[i]->env_map[j];
+											if (environment_map = vtexture->mc_iso_surface->
+												compiled_triangle_list[i]->env_map[j])
+											{
+												GT_voltex_set_triangle_vertex_environment_map(voltex,
+													acc_triangle_index, j, environment_map);
+											}
 											texturemap_index[3*acc_triangle_index+j]=
 												vtexture->mc_iso_surface->
 												compiled_triangle_list[i]->env_map_index[j];

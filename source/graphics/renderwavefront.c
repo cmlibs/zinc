@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : renderwavefront.c
 
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Renders gtObjects to Wavefront OBJ file
@@ -622,18 +622,21 @@ static int drawvoltexwavefront(FILE *out_file, int full_comments,
 	int n_iso_polys,int *triangle_list,
 	struct VT_iso_vertex *vertex_list,int n_vertices,int n_rep,
 	struct Graphical_material **per_vertex_materials,
-	int *iso_poly_material_index, struct Environment_map **iso_env_map,
+	int *iso_poly_material_index,
+	struct Environment_map **per_vertex_environment_maps,
+	int *iso_poly_environment_map_index,
 	double *iso_poly_cop,
 	float *texturemap_coord,int *texturemap_index,int number_of_data_components,
 	struct Graphical_material *default_material, struct Spectrum *spectrum)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	float vt[3][3];
 	int i,ii,j,k,return_code;
+	struct Environment_map *environment_map;
 	struct Graphical_material *last_material,*next_material;
 
 	ENTER(drawvoltexwavefront);
@@ -644,7 +647,8 @@ DESCRIPTION :
 	USE_PARAMETER(spectrum);
 	return_code=0;
 	if (triangle_list && vertex_list &&
-		((!iso_poly_material_index) || per_vertex_materials) && iso_env_map &&
+		((!iso_poly_material_index) || per_vertex_materials) &&
+		((!iso_poly_environment_map_index) || per_vertex_environment_maps) &&
 		texturemap_coord&&texturemap_index&&(0<n_rep)&&(0<n_iso_polys))
 	{
 		last_material=(struct Graphical_material *)NULL;
@@ -726,13 +730,15 @@ DESCRIPTION :
 				/* if an environment map exists use it in preference to a material */
 				/*???MS.  What am I doing with these crazy index orders? */
 				/* I don't know how to implement a different material on each
-					vertex so I only evaluate the iso_env_map at the first vertex */
-				if (iso_env_map[i*3])
+					 vertex so I only evaluate environment map at the first vertex */
+				if (iso_poly_environment_map_index &&
+					iso_poly_environment_map_index[i*3])
 				{
-					if ((iso_env_map[i*3]->face_material)[texturemap_index[i*3]])
+					if (environment_map = per_vertex_environment_maps[
+						iso_poly_environment_map_index[i*3] - 1])
 					{
 						next_material =
-							iso_env_map[i*3]->face_material[texturemap_index[i*3]];
+							environment_map->face_material[texturemap_index[i*3]];
 					}
 				}
 				else
@@ -893,7 +899,7 @@ DESCRIPTION :
 static int makewavefront(FILE *wavefront_file, int full_comments,
 	gtObject *object, float time)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Convert graphical object into Wavefront object file.
@@ -1019,7 +1025,9 @@ Convert graphical object into Wavefront object file.
 								voltex->n_iso_polys,voltex->triangle_list,
 								voltex->vertex_list,voltex->n_vertices,voltex->n_rep,
 								voltex->per_vertex_materials,
-								voltex->iso_poly_material_index,voltex->iso_env_map,
+								voltex->iso_poly_material_index,
+								voltex->per_vertex_environment_maps,
+								voltex->iso_poly_environment_map_index,
 								voltex->iso_poly_cop, voltex->texturemap_coord,
 								voltex->texturemap_index,voltex->n_data_components,
 								object->default_material, object->spectrum);

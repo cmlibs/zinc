@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendergl.h
 
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Header file for rendergl.c, GL rendering calls (API specific)
@@ -111,12 +111,14 @@ DESCRIPTION :
 int draw_voltexGL(int n_iso_polys,int *triangle_list,
 	struct VT_iso_vertex *vertex_list,int n_vertices,int n_rep,
 	struct Graphical_material **per_vertex_materials,
-	int *iso_poly_material_index, struct Environment_map **iso_env_map,
+	int *iso_poly_material_index,
+	struct Environment_map **per_vertex_environment_maps,
+	int *iso_poly_environment_map_index,
 	float *texturemap_coord,int *texturemap_index,int number_of_data_components,
 	GTDATA *data, struct Graphical_material *default_material,
 	struct Spectrum *spectrum);
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Numbers in <iso_poly_material_index> are indices into the materials in the
@@ -124,6 +126,9 @@ Numbers in <iso_poly_material_index> are indices into the materials in the
 and index of 1 means the first material in the per_vertex_materials. Not
 supplying the <iso_poly_material_index> gives the default material to all
 vertices.
+Use of <iso_poly_environment_map_index> and <per_vertex_environment_maps> is
+exactly the same as for materials. Note environment map materials are used in
+preference to normal materials.
 ==============================================================================*/
 
 #endif /* !defined (RENDERGL_H) */

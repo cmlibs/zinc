@@ -1514,12 +1514,14 @@ DESCRIPTION :
 int draw_voltexGL(int n_iso_polys,int *triangle_list,
 	struct VT_iso_vertex *vertex_list,int n_vertices,int n_rep,
 	struct Graphical_material **per_vertex_materials,
-	int *iso_poly_material_index, struct Environment_map **iso_env_map,
+	int *iso_poly_material_index,
+	struct Environment_map **per_vertex_environment_maps,
+	int *iso_poly_environment_map_index,
 	float *texturemap_coord,int *texturemap_index,int number_of_data_components,
 	GTDATA *data, struct Graphical_material *default_material,
 	struct Spectrum *spectrum)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Numbers in <iso_poly_material_index> are indices into the materials in the
@@ -1527,9 +1529,13 @@ Numbers in <iso_poly_material_index> are indices into the materials in the
 and index of 1 means the first material in the per_vertex_materials. Not
 supplying the <iso_poly_material_index> gives the default material to all
 vertices.
+Use of <iso_poly_environment_map_index> and <per_vertex_environment_maps> is
+exactly the same as for materials. Note environment map materials are used in
+preference to normal materials.
 ==============================================================================*/
 {
-	int i,ii,return_code;
+	int i, ii, return_code;
+	struct Environment_map *environment_map;
 	struct Graphical_material *last_material,*next_material;
 	struct Spectrum_render_data *render_data;
 
@@ -1538,7 +1544,8 @@ vertices.
 	return_code = 0;
 	/* checking arguments */
 	if (triangle_list && vertex_list &&
-		((!iso_poly_material_index) || per_vertex_materials) && iso_env_map &&
+		((!iso_poly_material_index) || per_vertex_materials) &&
+		((!iso_poly_environment_map_index) || per_vertex_environment_maps) &&
 		((!texturemap_coord) && (!texturemap_index) ||
 			(texturemap_coord && texturemap_index)) &&
 		(0 < n_rep) && (0 < n_iso_polys))
@@ -1565,12 +1572,14 @@ vertices.
 				{
 					next_material = default_material;
 					/* if an environment map exists use it in preference to a material */
-					if (iso_env_map[i*3])
+					if (iso_poly_environment_map_index &&
+						iso_poly_environment_map_index[i*3])
 					{
-						if ((iso_env_map[i*3]->face_material)[texturemap_index[i*3]])
+						if (environment_map = per_vertex_environment_maps[
+							iso_poly_environment_map_index[i*3] - 1])
 						{
 							next_material =
-								iso_env_map[i*3]->face_material[texturemap_index[i*3]];
+								environment_map->face_material[texturemap_index[i*3]];
 						}
 					}
 					else
@@ -1607,12 +1616,14 @@ vertices.
 						&(vertex_list[triangle_list[i*3+0]+n_vertices*ii].coord[0]));
 
 					next_material = default_material;
-					if (iso_env_map[i*3+2])
+					if (iso_poly_environment_map_index &&
+						iso_poly_environment_map_index[i*3+2])
 					{
-						if (iso_env_map[i*3+2]->face_material[texturemap_index[i*3+2]])
+						if (environment_map = per_vertex_environment_maps[
+							iso_poly_environment_map_index[i*3+2] - 1])
 						{
-							next_material=
-								iso_env_map[i*3+2]->face_material[texturemap_index[i*3+2]];
+							next_material =
+								environment_map->face_material[texturemap_index[i*3+2]];
 						}
 					}
 					else
@@ -1648,12 +1659,14 @@ vertices.
 						&(vertex_list[triangle_list[i*3+2]+n_vertices*ii].coord[0]));
 
 					next_material=default_material;
-					if (iso_env_map[i*3+1])
+					if (iso_poly_environment_map_index &&
+						iso_poly_environment_map_index[i*3+1])
 					{
-						if (iso_env_map[i*3+1]->face_material[texturemap_index[i*3+1]])
+						if (environment_map = per_vertex_environment_maps[
+							iso_poly_environment_map_index[i*3+1] - 1])
 						{
-							next_material=
-								iso_env_map[i*3+1]->face_material[texturemap_index[i*3+1]];
+							next_material =
+								environment_map->face_material[texturemap_index[i*3+1]];
 						}
 					}
 					else

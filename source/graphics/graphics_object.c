@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.c
 
-LAST MODIFIED : 20 March 2002
+LAST MODIFIED : 7 August 2002
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -2638,88 +2638,12 @@ Frees the memory for <**userdef> and its fields and sets <*userdef> to NULL.
 	return (return_code);
 } /* DESTROY(GT_userdef) */
 
-int GT_voltex_set_vertex_material(struct GT_voltex *voltex,
-	int vertex_number, struct Graphical_material *material)
+struct GT_voltex *CREATE(GT_voltex)(int n_iso_polys, int n_vertices,
+	int *triangle_list, struct VT_iso_vertex *vertex_list, double *iso_poly_cop,
+	float *texturemap_coord, int *texturemap_index,int n_rep,
+	int n_data_components, GTDATA *data, enum GT_voltex_type voltex_type)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
-
-DESCRIPTION :
-Sets the material used for vertex <vertex_number> in <voltex> to <material>.
-Handles conversion to an indexed look-up into a non-repeating material array.
-==============================================================================*/
-{
-	int i, j, number_of_vertices, return_code;
-	struct Graphical_material **temp_materials;
-
-	ENTER(GT_voltex_set_vertex_material);
-	return_code = 1;
-	if (voltex && (0 <= vertex_number) &&
-		(vertex_number < (number_of_vertices = voltex->n_iso_polys*3)) && material)
-	{
-		/* find or make space for material in per_vertex_materials */
-		j = 0;
-		while ((j < voltex->number_of_per_vertex_materials) &&
-			(material != voltex->per_vertex_materials[j]))
-		{
-			j++;
-		}
-		if (j == voltex->number_of_per_vertex_materials)
-		{
-			if (REALLOCATE(temp_materials, voltex->per_vertex_materials,
-				struct Graphical_material *, j + 1))
-			{
-				temp_materials[j] = ACCESS(Graphical_material)(material);
-				voltex->per_vertex_materials = temp_materials;
-				voltex->number_of_per_vertex_materials = j + 1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "GT_voltex_set_vertex_material.  "
-					"Could not reallocate per-vertex materials");
-				return_code = 0;
-			}
-		}
-		if ((int *)NULL == voltex->iso_poly_material_index)
-		{
-			if (ALLOCATE(voltex->iso_poly_material_index, int, number_of_vertices))
-			{
-				/* clear indices to 0 = default material */
-				for (i = 0; i < number_of_vertices; i++)
-				{
-					voltex->iso_poly_material_index[i] = 0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "GT_voltex_set_vertex_material.  "
-					"Could not allocate material indices");
-				return_code = 0;
-			}
-		}
-		if (return_code)
-		{
-			/* index 0 is used for the default material, hence start at 1 */
-			voltex->iso_poly_material_index[vertex_number] = j + 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_voltex_set_vertex_material.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_voltex_set_vertex_material */
-
-struct GT_voltex *CREATE(GT_voltex)(int n_iso_polys,int n_vertices,
-	int *triangle_list,struct VT_iso_vertex *vertex_list,
-	struct Environment_map **iso_env_map, double *iso_poly_cop,
-	float *texturemap_coord,int *texturemap_index,int n_rep,
-	int n_data_components, GTDATA *data,enum GT_voltex_type voltex_type)
-/*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics volume texture.
@@ -2735,7 +2659,7 @@ Allocates memory and assigns fields for a graphics volume texture.
 #endif /* defined (DEBUG) */
 #if defined (OLD_CODE)
 	/*???MS.  Allow creation of empty voltexs in volume_texture_editor.c */
-  if ((n_iso_polys>0)&&triangle_list&&iso_env_map&&
+  if ((n_iso_polys>0)&&triangle_list&&
 		vertex_list&&iso_poly_cop&&texturemap_coord&&texturemap_index)
 	{
 #endif /* defined (OLD_CODE) */
@@ -2749,7 +2673,9 @@ Allocates memory and assigns fields for a graphics volume texture.
 			voltex->number_of_per_vertex_materials = 0;
 			voltex->per_vertex_materials = (struct Graphical_material **)NULL;
 			voltex->iso_poly_material_index = (int *)NULL;
-			voltex->iso_env_map=iso_env_map;
+			voltex->number_of_per_vertex_environment_maps = 0;
+			voltex->per_vertex_environment_maps = (struct Environment_map **)NULL;
+			voltex->iso_poly_environment_map_index = (int *)NULL;
 			voltex->iso_poly_cop=iso_poly_cop;
 			voltex->texturemap_coord=texturemap_coord;
 			voltex->texturemap_index=texturemap_index;
@@ -2803,14 +2729,28 @@ Frees the memory for <**voltex> and sets <*voltex> to NULL.
 				}
 				DEALLOCATE((*voltex)->per_vertex_materials);
 			}
+			DEALLOCATE((*voltex)->iso_poly_material_index);
+
+			if (0 < (number = (*voltex)->number_of_per_vertex_environment_maps))
+			{
+				for (i = 0; i < number; i++)
+				{
+					if ((*voltex)->per_vertex_environment_maps[i])
+					{
+						DEACCESS(Environment_map)(
+							&((*voltex)->per_vertex_environment_maps[i]));
+					}
+				}
+				DEALLOCATE((*voltex)->per_vertex_environment_maps);
+			}
+			DEALLOCATE((*voltex)->iso_poly_environment_map_index);
+
 			DEALLOCATE((*voltex)->triangle_list);
 			DEALLOCATE((*voltex)->vertex_list);
 			DEALLOCATE((*voltex)->texturemap_coord);
 			DEALLOCATE((*voltex)->texturemap_index);
-			DEALLOCATE((*voltex)->iso_poly_material_index);
 			/*???DB.  Problem with memory leak ? */
 			DEALLOCATE((*voltex)->iso_poly_cop);
-			DEALLOCATE((*voltex)->iso_env_map);
 			if((*voltex)->data)
 			{
 				DEALLOCATE((*voltex)->data);
@@ -2829,59 +2769,172 @@ Frees the memory for <**voltex> and sets <*voltex> to NULL.
 	return (return_code);
 } /* DESTROY(GT_voltex) */
 
-#if defined (OLD_CODE)
-int update_GT_voltex_materials_to_default(struct GT_object *graphics_object)
+int GT_voltex_set_triangle_vertex_environment_map(struct GT_voltex *voltex,
+	int triangle_number, int triangle_vertex_number,
+	struct Environment_map *environment_map)
 /*******************************************************************************
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
-Voltexes differ from other graphics objects in that their materials are
-specified for each polygon inside the primitive. Since they most often have the
-same material throughout, this function is provided to copy the default_material
-from <graphics_object> to the iso_poly_material array in the voltex. Of course,
-<graphics_object> must be of type g_VOLTEX.
+Sets the environment map used for vertex <vertex_number> in <voltex> to
+<environment_map>. Handles conversion to an indexed look-up into a non-repeating
+environment_map array.
 ==============================================================================*/
 {
-	int i,j,return_code;
-	struct GT_voltex *voltex;
-	struct Graphical_material *default_material,**iso_poly_material;
+	int i, j, number_of_vertices, return_code, vertex_number;
+	struct Environment_map **temp_environment_maps;
 
-	ENTER(update_GT_voltex_materials_to_default);
-	if (graphics_object&&(g_VOLTEX==graphics_object->object_type)&&
-		(graphics_object->gu.gt_voltex)&&
-		(default_material=graphics_object->default_material))
+	ENTER(GT_voltex_set_triangle_vertex_environment_map);
+	return_code = 1;
+	if (voltex &&
+		(0 <= triangle_number) && (triangle_number < voltex->n_iso_polys) &&
+		(0 <= triangle_vertex_number) && (triangle_vertex_number < 3) &&
+		environment_map)
 	{
-		for (j=0;j<graphics_object->number_of_times;j++)
+		vertex_number = triangle_number*3 + triangle_vertex_number;
+		number_of_vertices = voltex->n_iso_polys*3;
+		/* find or make space for environment_map in per_vertex_environment_maps */
+		j = 0;
+		while ((j < voltex->number_of_per_vertex_environment_maps) &&
+			(environment_map != voltex->per_vertex_environment_maps[j]))
 		{
-			voltex=graphics_object->gu.gt_voltex[j];
-			while (voltex)
+			j++;
+		}
+		if (j == voltex->number_of_per_vertex_environment_maps)
+		{
+			if (REALLOCATE(temp_environment_maps, voltex->per_vertex_environment_maps,
+				struct Environment_map *, j + 1))
 			{
-				if (iso_poly_material=voltex->iso_poly_material)
-				{
-					i=3*voltex->n_iso_polys;
-					while (i>0)
-					{
-						*iso_poly_material = default_material;
-						iso_poly_material++;
-						i--;
-					}
-				}
-				voltex=voltex->ptrnext;
+				temp_environment_maps[j] =
+					ACCESS(Environment_map)(environment_map);
+				voltex->per_vertex_environment_maps = temp_environment_maps;
+				voltex->number_of_per_vertex_environment_maps = j + 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_voltex_set_triangle_vertex_environment_map.  "
+					"Could not reallocate per-vertex environment_maps");
+				return_code = 0;
 			}
 		}
-		return_code=1;
+		if ((int *)NULL == voltex->iso_poly_environment_map_index)
+		{
+			if (ALLOCATE(voltex->iso_poly_environment_map_index, int,
+				number_of_vertices))
+			{
+				/* clear indices to 0 = default environment_map */
+				for (i = 0; i < number_of_vertices; i++)
+				{
+					voltex->iso_poly_environment_map_index[i] = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_voltex_set_triangle_vertex_environment_map.  "
+					"Could not allocate environment_map indices");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			/* index 0 is used for the default environment_map, hence start at 1 */
+			voltex->iso_poly_environment_map_index[vertex_number] = j + 1;
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"update_GT_voltex_materials_to_default.  Invalid argument(s)");
-		return_code=0;
+			"GT_voltex_set_triangle_vertex_environment_map.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* update_GT_voltex_materials_to_default */
-#endif /* defined (OLD_CODE) */
+} /* GT_voltex_set_triangle_vertex_environment_map */
+
+int GT_voltex_set_triangle_vertex_material(struct GT_voltex *voltex,
+	int triangle_number, int triangle_vertex_number,
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 7 August 2002
+
+DESCRIPTION :
+Sets the material used for vertex <vertex_number> in <voltex> to <material>.
+Handles conversion to an indexed look-up into a non-repeating material array.
+==============================================================================*/
+{
+	int i, j, number_of_vertices, return_code, vertex_number;
+	struct Graphical_material **temp_materials;
+
+	ENTER(GT_voltex_set_triangle_vertex_material);
+	return_code = 1;
+	if (voltex &&
+		(0 <= triangle_number) && (triangle_number < voltex->n_iso_polys) &&
+		(0 <= triangle_vertex_number) && (triangle_vertex_number < 3) &&
+		material)
+	{
+		vertex_number = triangle_number*3 + triangle_vertex_number;
+		number_of_vertices = voltex->n_iso_polys*3;
+		/* find or make space for material in per_vertex_materials */
+		j = 0;
+		while ((j < voltex->number_of_per_vertex_materials) &&
+			(material != voltex->per_vertex_materials[j]))
+		{
+			j++;
+		}
+		if (j == voltex->number_of_per_vertex_materials)
+		{
+			if (REALLOCATE(temp_materials, voltex->per_vertex_materials,
+				struct Graphical_material *, j + 1))
+			{
+				temp_materials[j] = ACCESS(Graphical_material)(material);
+				voltex->per_vertex_materials = temp_materials;
+				voltex->number_of_per_vertex_materials = j + 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_voltex_set_triangle_vertex_material.  "
+					"Could not reallocate per-vertex materials");
+				return_code = 0;
+			}
+		}
+		if ((int *)NULL == voltex->iso_poly_material_index)
+		{
+			if (ALLOCATE(voltex->iso_poly_material_index, int, number_of_vertices))
+			{
+				/* clear indices to 0 = default material */
+				for (i = 0; i < number_of_vertices; i++)
+				{
+					voltex->iso_poly_material_index[i] = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_voltex_set_triangle_vertex_material.  "
+					"Could not allocate material indices");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			/* index 0 is used for the default material, hence start at 1 */
+			voltex->iso_poly_material_index[vertex_number] = j + 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_voltex_set_triangle_vertex_material.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_voltex_set_triangle_vertex_material */
 
 struct GT_object *CREATE(GT_object)(char *name,enum GT_object_type object_type,
 	struct Graphical_material *default_material)
@@ -3083,14 +3136,15 @@ and sets <*object> to NULL.
 
 int compile_GT_voltex_materials(struct GT_object *graphics_object)
 /*******************************************************************************
-LAST MODIFIED : 11 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Compiles display list of any Graphical_materials used by the voltexes in
 <graphics_object>.
 ==============================================================================*/
 {
-	int i, j, return_code;
+	int i, j, k, return_code;
+	struct Environment_map *environment_map;
 	struct GT_voltex *voltex;
 
 	ENTER(compile_GT_voltex_materials);
@@ -3102,6 +3156,20 @@ Compiles display list of any Graphical_materials used by the voltexes in
 			voltex = graphics_object->gu.gt_voltex[j];
 			while (voltex)
 			{
+				for (k = 0; k < voltex->number_of_per_vertex_environment_maps; k++)
+				{
+					if (environment_map = voltex->per_vertex_environment_maps[k])
+					{
+						for (i = 0; i < 6; i++)
+						{
+							if (environment_map->face_material[i])
+							{
+								compile_Graphical_material(environment_map->face_material[i],
+									(void *)NULL);
+							}
+						}
+					}
+				}
 				for (i = 0; i < voltex->number_of_per_vertex_materials; i++)
 				{
 					compile_Graphical_material(voltex->per_vertex_materials[i],

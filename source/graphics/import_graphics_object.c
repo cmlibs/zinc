@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_graphics_object.c
 
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Functions for reading graphics object data from a file.
@@ -925,12 +925,13 @@ DESCRIPTION :
 int file_read_voltex_graphics_object_from_obj(char *file_name,
 	void *file_read_graphics_object_from_obj_data_void)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	double *iso_poly_cop;
+	enum GT_voltex_type voltex_type;
 	float *texturemap_coord;
 	int acc_triangle_index, i, j, k, n_iso_polys, n_triangles, n_vertices, 
 		return_code, *texturemap_index, triangle, *triangle_list;
@@ -939,7 +940,7 @@ DESCRIPTION :
 	FILE *file;
 	gtObject *obj;
 	char objname[100];
-	struct Environment_map **iso_env_map;
+	struct Environment_map *environment_map;
 	struct File_read_graphics_object_from_obj_data *file_read_graphics_object_data;
 	struct Graphical_material *material, *object_material;
 	struct GT_voltex *voltex;
@@ -972,8 +973,7 @@ DESCRIPTION :
 						&& ALLOCATE(iso_poly_cop,double,3*n_triangles*3)
 						&& ALLOCATE(texturemap_coord,float,3*n_triangles*3)
 						&& ALLOCATE(texturemap_index,int,3*n_triangles)
-						&& ALLOCATE(vertex_list,struct VT_iso_vertex, n_vertices)
-						&& ALLOCATE(iso_env_map,struct Environment_map *,3*n_triangles))
+						&& ALLOCATE(vertex_list,struct VT_iso_vertex, n_vertices))
 					{
 						if(file_read_graphics_object_data->graphics_object_name)
 						{
@@ -1017,35 +1017,32 @@ DESCRIPTION :
 									file_read_graphics_object_data->object_list);
 							}
 						}
+						switch (file_read_graphics_object_data->render_type)
+						{
+							case RENDER_TYPE_SHADED:
+							{
+								voltex_type = g_VOLTEX_SHADED_TEXMAP;
+							} break;
+							case RENDER_TYPE_WIREFRAME:
+							{
+								voltex_type = g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE,
+									"file_read_voltex_graphics_object_from_obj.  "
+									"Unknown render type");
+								return_code = 0;
+							} break;
+						}
 						if (return_code)
 						{
-							switch (file_read_graphics_object_data->render_type)
-							{
-								case RENDER_TYPE_SHADED:
-								{
-									voltex = CREATE(GT_voltex)(n_triangles, n_vertices,
-										triangle_list, vertex_list, 
-										iso_env_map, iso_poly_cop, texturemap_coord, texturemap_index,
-										/*n_rep*/1, /*n_data_components*/0, (GTDATA *)NULL, g_VOLTEX_SHADED_TEXMAP);
-								} break;
-								case RENDER_TYPE_WIREFRAME:
-								{
-									voltex = CREATE(GT_voltex)(n_triangles, n_vertices,
-										triangle_list, vertex_list, 
-										iso_env_map, iso_poly_cop, texturemap_coord, texturemap_index,
-										/*n_rep*/1, /*n_data_components*/0, (GTDATA *)NULL, 
-										g_VOLTEX_WIREFRAME_SHADED_TEXMAP);
-								} break;
-								default:
-								{
-									display_message(ERROR_MESSAGE,
-										"file_read_voltex_graphics_object_from_obj.  Unknown Render_type.");
-									return_code=0;
-									voltex = (struct GT_voltex *)NULL;
-								}
-							}
+							voltex = CREATE(GT_voltex)(n_triangles, n_vertices,
+								triangle_list, vertex_list, 
+								iso_poly_cop, texturemap_coord, texturemap_index, /*n_rep*/1,
+								/*n_data_components*/0, (GTDATA *)NULL, voltex_type);
 							if (voltex)
-								{
+							{
 								acc_triangle_index=0;
 								for (i=0;i<n_iso_polys;i++)
 								{
@@ -1057,12 +1054,15 @@ DESCRIPTION :
 										if (material = vtexture->mc_iso_surface->
 											compiled_triangle_list[i]->material[j])
 										{
-											GT_voltex_set_vertex_material(voltex,
-												3*acc_triangle_index+j, material);
+											GT_voltex_set_triangle_vertex_material(voltex,
+												acc_triangle_index, j, material);
 										}
-										iso_env_map[3*acc_triangle_index+j]=
-											vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->env_map[j];
+										if (environment_map = vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->env_map[j])
+										{
+											GT_voltex_set_triangle_vertex_environment_map(voltex,
+												acc_triangle_index, j, environment_map);
+										}
 										texturemap_index[3*acc_triangle_index+j]=
 											vtexture->mc_iso_surface->
 											compiled_triangle_list[i]->env_map_index[j];
@@ -1144,25 +1144,27 @@ DESCRIPTION :
 							}
 							else
 							{
-								return_code=0;
 								display_message(ERROR_MESSAGE,
-									"file_read_voltex_graphics_object_from_obj.  Unable create GT_voltex");
+									"file_read_voltex_graphics_object_from_obj.  "
+									"Unable create GT_voltex");
+								return_code=0;
 							}
 						}
-							
 					}
 					else
 					{
-						return_code=0;
 						display_message(ERROR_MESSAGE,
-							"file_read_voltex_graphics_object_from_obj.  Unable to ALLOCATE GT_voltex data");
+							"file_read_voltex_graphics_object_from_obj.  "
+							"Unable to ALLOCATE GT_voltex data");
+						return_code = 0;
 					}
 				}
 				else
 				{
-					return_code=0;
 					display_message(ERROR_MESSAGE,
-						"file_read_voltex_graphics_object_from_obj.  Unable to read obj file");
+						"file_read_voltex_graphics_object_from_obj.  "
+						"Unable to read obj file");
+					return_code = 0;
 				}
 				DESTROY(VT_volume_texture)(&vtexture);
 			}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.h
 
-LAST MODIFIED : 12 March 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Graphical object data structures.
@@ -450,7 +450,11 @@ DESCRIPTION :
 	struct Graphical_material **per_vertex_materials;
 	/* materials assigned to vertices */
 	int *iso_poly_material_index;
-	struct Environment_map **iso_env_map;
+	/* non-repeating list of per-vertex environment_maps with access_count */
+	int number_of_per_vertex_environment_maps;
+	struct Environment_map **per_vertex_environment_maps;
+	/* environment_maps assigned to vertices */
+	int *iso_poly_environment_map_index;
 	/* cop for cells */
 	double *iso_poly_cop;
 	float *texturemap_coord;
@@ -936,23 +940,12 @@ DESCRIPTION :
 Frees the memory for <**userdef> and its fields and sets <*userdef> to NULL.
 ==============================================================================*/
 
-int GT_voltex_set_vertex_material(struct GT_voltex *voltex,
-	int vertex_number, struct Graphical_material *material);
+struct GT_voltex *CREATE(GT_voltex)(int n_iso_polys, int n_vertices,
+	int *triangle_list, struct VT_iso_vertex *vertex_list, double *iso_poly_cop,
+	float *texturemap_coord, int *texturemap_index,int n_rep,
+	int n_data_components, GTDATA *data, enum GT_voltex_type voltex_type);
 /*******************************************************************************
-LAST MODIFIED : 8 March 2002
-
-DESCRIPTION :
-Sets the material used for vertex <vertex_number> in <voltex> to <material>.
-Handles conversion to an indexed look-up into a non-repeating material array.
-==============================================================================*/
-
-struct GT_voltex *CREATE(GT_voltex)(int n_iso_polys,int n_vertices,
-	int *triangle_list,struct VT_iso_vertex *vertex_list,
-	struct Environment_map **iso_env_map, double *iso_poly_cop,
-	float *texturemap_coord,int *texturemap_index,int n_rep,int n_data_components,
-	GTDATA *data, enum GT_voltex_type voltex_type);
-/*******************************************************************************
-LAST MODIFIED : 3 May 2000
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics volume texture.
@@ -965,6 +958,29 @@ LAST MODIFIED : 19 June 1998
 DESCRIPTION :
 Frees the memory for <**voltex> and sets <*voltex> to NULL.
 ???DB.  Free memory for fields ?
+==============================================================================*/
+
+int GT_voltex_set_triangle_vertex_environment_map(struct GT_voltex *voltex,
+	int triangle_number, int triangle_vertex_number,
+	struct Environment_map *environment_map);
+/*******************************************************************************
+LAST MODIFIED : 8 August 2002
+
+DESCRIPTION :
+Sets the environment map used for vertex <vertex_number> in <voltex> to
+<environment_map>. Handles conversion to an indexed look-up into a non-repeating
+environment_map array.
+==============================================================================*/
+
+int GT_voltex_set_triangle_vertex_material(struct GT_voltex *voltex,
+	int triangle_number, int triangle_vertex_number,
+	struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 7 August 2002
+
+DESCRIPTION :
+Sets the material used for vertex <vertex_number> in <voltex> to <material>.
+Handles conversion to an indexed look-up into a non-repeating material array.
 ==============================================================================*/
 
 struct GT_object *CREATE(GT_object)(char *name,enum GT_object_type object_type,
