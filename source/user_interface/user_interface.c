@@ -40,6 +40,9 @@ Functions for opening and closing the user interface.
 #include "user_interface/call_work_procedures.h"
 #endif /* !defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+#include "gtk/gtk.h"
+#endif /* defined (GTK_USER_INTERFACE) */
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -59,15 +62,23 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 ==============================================================================*/
 {
+#if defined (WIN32_USER_INTERFACE)
+	HINSTANCE instance;
+	HWND main_window;
+	int main_window_state,widget_spacing;
+	LPSTR command_line;
+#else /* defined (WIN32_USER_INTERFACE) */
+	char *application_name,**argv,*class_name;
+	int *argc_address;
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (OPENGL_API)
 	/* If non-zero forces OpenGL to select a particular visual ID */
 	int specified_visual_id;
 #endif /* defined (OPENGL_API) */
 #if defined (MOTIF) /* switch (USER_INTERFACE) */
-	char *application_name,**argv,*class_name;
 	Cursor busy_cursor;
 	Display *display;
-	int *argc_address,screen_height,screen_width,widget_spacing;
+	int screen_height,screen_width,widget_spacing;
 	/* to avoid large gaps on the right of cascade buttons (option menus) */
 	Pixmap no_cascade_pixmap;
 	/* for communication with other applications */
@@ -84,15 +95,11 @@ DESCRIPTION :
 	struct Event_dispatcher_idle_callback *special_idle_x_callback;
 	struct Event_dispatcher_timeout_callback *timeout_x_callback;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
-	HINSTANCE instance;
-	HWND main_window;
-	int main_window_state,widget_spacing;
-	LPSTR command_line;
-#elif defined (CONSOLE_USER_INTERFACE) /* switch (USER_INTERFACE) */
-	char *application_name,**argv,*class_name;
-	int *argc_address;
-#endif /* switch (USER_INTERFACE) */
+#endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+	GtkWidget *main_window;
+#endif /* defined (GTK_USER_INTERFACE) */
+
 	struct Event_dispatcher *event_dispatcher;
 	struct Machine_information *local_machine_info;
 	struct Shell_list_item *shell_list;
@@ -1107,13 +1114,9 @@ Open the <user_interface>.
 	/* check arguments */
 	if (ALLOCATE(user_interface, struct User_interface, 1))
 	{
-#if defined (MOTIF) /* switch (USER_INTERFACE) */
+#if defined (MOTIF)
 		user_interface->application_context=(XtAppContext)NULL;
-		user_interface->application_name=application_name;
 		user_interface->application_shell=(Widget)NULL;
-		user_interface->argc_address= argc_address;
-		user_interface->argv=argv;
-		user_interface->class_name=class_name;
 		user_interface->display=(Display *)NULL;
 #if ! defined (USE_XTAPP_CONTEXT)
 		user_interface->main_x_connection_handler = 
@@ -1123,17 +1126,18 @@ Open the <user_interface>.
 		user_interface->timeout_x_callback = 
 			(struct Event_dispatcher_timeout_callback *)NULL;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
 		user_interface->instance=current_instance;
 		user_interface->main_window=(HWND)NULL;
 		user_interface->main_window_state=initial_main_window_state;
 		user_interface->command_line=command_line;
-#elif defined (CONSOLE_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#else /* defined (WIN32_USER_INTERFACE) */
 		user_interface->argc_address= argc_address;
 		user_interface->argv=argv;
 		user_interface->application_name=application_name;
 		user_interface->class_name=class_name;
-#endif /* switch (USER_INTERFACE) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (OPENGL_API)
 		user_interface->specified_visual_id = 0;
@@ -1357,6 +1361,17 @@ Open the <user_interface>.
 #if defined (WIN32_USER_INTERFACE)
 		user_interface->widget_spacing=5;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (GTK_USER_INTERFACE)
+		/* Initialize i18n support */
+		gtk_set_locale ();
+		
+		/* Initialize the widget set */
+		gtk_init (argc_address, &argv);
+
+		/* Create the main window */
+		user_interface->main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+#endif /* defined (GTK_USER_INTERFACE) */
+
 	}
 	else
 	{
@@ -1794,6 +1809,33 @@ Returns the particular Open GL visual if set to be used by the graphics.
 	return (specified_visual_id);
 } /* User_interface_get_specified_visual_id */
 #endif /* defined (OPENGL_API) */
+
+#if defined (GTK_USER_INTERFACE)
+GtkWidget *User_interface_get_main_window(struct User_interface *user_interface)
+/*******************************************************************************
+LAST MODIFIED : 9 July 2002
+
+DESCRIPTION :
+Returns the main window widget
+==============================================================================*/
+{
+	GtkWidget *main_window;
+
+	ENTER(User_interface_get_main_window);
+	if (user_interface)
+	{
+		main_window = user_interface->main_window;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"User_interface_get_main_window.  Invalid argument");
+		main_window = (GtkWidget *)NULL;
+	}
+	LEAVE;
+
+	return (main_window);
+} /* User_interface_get_main_window */
+#endif /* defined (GTK_USER_INTERFACE) */
 
 int User_interface_get_local_machine_name(struct User_interface *user_interface,
 	char **name_ptr)

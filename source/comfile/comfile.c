@@ -30,7 +30,10 @@ Opens a comfile, and a window if it is to be executed.  If a comfile is not
 specified on the command line, a file selection box is presented to the user.
 ==============================================================================*/
 {
-	char *command_string, *filename, *name;
+	char *command_string, *filename;
+#if defined (MOTIF)
+	char *name;
+#endif /* defined (MOTIF) */
 	int i,length,return_code;
 #if defined (MOTIF)
 	struct Comfile_window *comfile_window;

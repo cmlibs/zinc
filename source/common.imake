@@ -58,6 +58,7 @@ UIL = uil64
 CC = cc -c
 CPP = CC -c
 FORTRAN = f77 -c
+CPREPROCESS = cc -P
 /* LINK = cc */
 /* Must use C++ linker for XML */
 LINK = CC
@@ -91,6 +92,7 @@ UIL = uil
 CC = gcc -c
 CPP = g++ -c
 FORTRAN = g77 -c -fno-second-underscore
+CPREPROCESS = gcc -E -P
 #if defined (DYNAMIC_GL_LINUX)
 LINK = gcc
 /* LINK = egcs -shared -L/usr/X11R6/lib -v */
@@ -122,6 +124,7 @@ UIL = uil
 CC = xlc -c
 CPP = xlc -qnolm -c
 FORTRAN = f77 -c
+CPREPROCESS = 
 LINK = xlc
 #if defined (OPTIMISED)
 OPTIMISATION_FLAGS = -O2 -qmaxmem=-1
@@ -145,13 +148,14 @@ AR_FLAGS = -X64
 #endif /* defined (O64) */
 #elif defined(WIN32) /* switch OperatingSystem */
 UIL = uil
-CC = gcc -c
+CC = gcc -c -mno-cygwin -fnative-struct
 CPP = gcc -c
 FORTRAN = f77 -c
-#if defined (CONSOLE)
-LINK = gcc -mno-cygwin
-#else /* defined (CONSOLE) */
-LINK = gcc -mwindows -mno-cygwin
+CPREPROCESS = 
+#if defined (CONSOLE) || defined (GTK_USER_INTERFACE)
+LINK = gcc -mno-cygwin -fnative-struct -mconsole
+#else /* defined (CONSOLE) || defined (GTK_USER_INTERFACE) */
+LINK = gcc -mwindows -mno-cygwin -fnative-struct
 #endif /* defined (CONSOLE) */
 #if defined (OPTIMISED)
 OPTIMISATION_FLAGS = -O2

@@ -33,20 +33,18 @@ DESCRIPTION :
 #endif /* defined (CELL) */
 	struct Console *command_console;
 	struct Command_window *command_window;
-#if defined (MOTIF)
 	struct Colour background_colour,foreground_colour;
-#endif /* defined (MOTIF) */
 	struct Execute_command *execute_command,*set_command;
 #if defined (MOTIF)
 	struct Element_point_tool *element_point_tool;
 	struct Element_tool *element_tool;
 #endif /* defined (MOTIF) */
 	struct Event_dispatcher *event_dispatcher;
-#if defined (MOTIF)
 	struct Node_tool *data_tool,*node_tool;
+#if defined (MOTIF)
 	struct Select_tool *select_tool;
-	struct Interactive_tool *transform_tool;
 #endif /* defined (MOTIF) */
+	struct Interactive_tool *transform_tool;
 #if defined (SELECT_DESCRIPTORS)
 	struct LIST(Io_device) *device_list;
 #endif /* defined (SELECT_DESCRIPTORS) */
@@ -66,9 +64,9 @@ DESCRIPTION :
 	struct MANAGER(FE_node) *data_manager,*node_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct Graphical_material *default_graphical_material;
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 	struct MANAGER(Graphics_window) *graphics_window_manager;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 		/*???DB.  Also manages faces and lines */
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;

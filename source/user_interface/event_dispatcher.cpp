@@ -8,16 +8,24 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
 ==============================================================================*/
 #include <math.h>
 #include <stdio.h>
-#include <fcntl.h>
-#if defined (UNIX)
-#include <sys/time.h>
-#endif /* defined (UNIX) */
-#if defined (USE_XTAPP_CONTEXT)
+#include <general/time.h>
+
+#if defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
 #include <Xm/Xm.h>
-#endif /* defined (USE_XTAPP_CONTEXT) */
-#if defined (WIN32_USER_INTERFACE)
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 #include <windows.h>
-#endif /* defined (WIN32_USER_INTERFACE) */
+#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+/* This should not remain the default, the normal select main loop should be
+	given control rather than GTK */
+#define USE_GTK_MAIN_STEP
+#include <gtk/gtk.h>
+#elif 1 /* switch (USER_INTERFACE) */
+/* This is the default code, it is an event dispatcher designed to run 
+	without any particular user interface, I defined a string here to
+	make it easy to switch through the code */
+#define USE_GENERIC_EVENT_DISPATCHER
+#endif /* switch (USER_INTERFACE) */
+
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/list.h"
@@ -48,6 +56,9 @@ Contains all information necessary for a file descriptor handler.
 #if defined (USE_XTAPP_CONTEXT)
 	XtInputId xt_input_id;
 #endif /* defined (USE_XTAPP_CONTEXT) */
+#if defined (USE_GTK_MAIN_STEP)
+	guint gtk_input_id;
+#endif /* defined (USE_GTK_MAIN_STEP) */
 }; /* struct Event_dispatcher_file_descriptor_handler */
 
 PROTOTYPE_OBJECT_FUNCTIONS(Event_dispatcher_file_descriptor_handler);
@@ -93,6 +104,9 @@ Contains all information necessary for a file descriptor handler.
 #if defined (USE_XTAPP_CONTEXT)
 	XtWorkProcId xt_idle_id;
 #endif /* defined (USE_XTAPP_CONTEXT) */
+#if defined (USE_GTK_MAIN_STEP)
+	guint gtk_idle_id;
+#endif /* defined (USE_GTK_MAIN_STEP) */
 }; /* struct Event_dispatcher_idle_callback */
 
 PROTOTYPE_OBJECT_FUNCTIONS(Event_dispatcher_idle_callback);
@@ -149,6 +163,12 @@ Create a single object that belongs to a specific file descriptor.
 		handler->pending = 0;
 		handler->user_data = user_data;
 		handler->access_count = 0;
+#if defined (USE_XTAPP_CONTEXT)
+		handler->xt_input_id = (XtInputId)NULL;
+#endif /* defined (USE_XTAPP_CONTEXT) */
+#if defined (USE_GTK_MAIN_STEP)
+		handler->gtk_input_id = 0;
+#endif /* defined (USE_GTK_MAIN_STEP) */
 	}
 	else
 	{
@@ -192,7 +212,7 @@ Destroys the object associated with the file descriptor.
 	return (return_code);
 } /* DESTROY(Event_dispatcher_file_descriptor_handler) */
 
-#if ! defined (USE_XTAPP_CONTEXT)
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
 static int Event_dispatcher_file_descriptor_handler_add_file_descriptor_to_read_set(
 	struct Event_dispatcher_file_descriptor_handler *handler, void *read_set_void)
 /*******************************************************************************
@@ -223,9 +243,9 @@ Adds the <handler>'s file descriptor to the <read_set> for the select call.
 
 	return (return_code);
 } /* Event_dispatcher_file_descriptor_handler_add_file_descriptor_to_read_set */
-#endif /* ! defined (USE_XTAPP_CONTEXT) */
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 
-#if ! defined (USE_XTAPP_CONTEXT)
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
 static int Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set(
 	struct Event_dispatcher_file_descriptor_handler *handler, void *read_set_void)
 /*******************************************************************************
@@ -260,9 +280,9 @@ that we know to call it.
 
 	return (return_code);
 } /* Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set */
-#endif /* ! defined (USE_XTAPP_CONTEXT) */
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 
-#if ! defined (USE_XTAPP_CONTEXT)
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
 static int Event_dispatcher_file_descriptor_handler_is_pending(
 	struct Event_dispatcher_file_descriptor_handler *handler, void *user_data)
 /*******************************************************************************
@@ -292,7 +312,7 @@ that we know to call it.
 
 	return (return_code);
 } /* Event_dispatcher_file_descriptor_handler_is_pending */
-#endif /* ! defined (USE_XTAPP_CONTEXT) */
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Event_dispatcher_file_descriptor_handler, \
 	self,struct Event_dispatcher_file_descriptor_handler *,compare_pointer)
@@ -458,6 +478,13 @@ Create a single object that belongs to a specific file descriptor.
 		idle_callback->idle_function = idle_function;
 		idle_callback->user_data = user_data;
 		idle_callback->access_count = 0;
+
+#if defined (USE_XTAPP_CONTEXT)
+		idle_callback->xt_idle_id = (XtWorkProcId)NULL;
+#endif /* defined (USE_XTAPP_CONTEXT) */
+#if defined (USE_GTK_MAIN_STEP)
+		idle_callback->gtk_idle_id = 0;
+#endif /* defined (USE_GTK_MAIN_STEP) */
 	}
 	else
 	{
@@ -647,6 +674,71 @@ DESCRIPTION :
 } /* Event_dispatcher_xt_idle_callback */
 #endif /* defined (USE_XTAPP_CONTEXT) */
 
+#if defined (USE_GTK_MAIN_STEP)
+void Event_dispatcher_gtk_input_callback(
+	gpointer handler_void, gint source, GdkInputCondition condition)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Event_dispatcher_file_descriptor_handler *handler;
+
+	ENTER(Event_dispatcher_gtk_input_callback);
+	USE_PARAMETER(source);
+	USE_PARAMETER(condition);
+	if (handler = (struct Event_dispatcher_file_descriptor_handler *)handler_void)
+	{
+		(*handler->handler_function)(handler->file_descriptor, handler->user_data);		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_xt_input_callback.  Invalid arguments.");
+	}
+	LEAVE;
+
+} /* Event_dispatcher_gtk_input_callback */
+#endif /* defined (USE_GTK_MAIN_STEP) */
+
+#if defined (USE_GTK_MAIN_STEP)
+gboolean Event_dispatcher_gtk_idle_callback(
+	gpointer idle_callback_void)
+/*******************************************************************************
+LAST MODIFIED : 10 July 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	gboolean return_code;
+	struct Event_dispatcher_idle_callback *idle_callback;
+
+	ENTER(Event_dispatcher_gtk_idle_callback);
+	if (idle_callback = (struct Event_dispatcher_idle_callback *)idle_callback_void)
+	{
+		if ((*idle_callback->idle_function)(idle_callback->user_data))
+		{
+			return_code = FALSE;
+		}
+		else
+		{
+			gtk_idle_remove(idle_callback->gtk_idle_id);
+			idle_callback->gtk_idle_id = 0;
+			return_code = TRUE;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_gtk_idle_callback.  Invalid arguments.");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Event_dispatcher_gtk_idle_callback */
+#endif /* defined (USE_GTK_MAIN_STEP) */
+
 /*
 Global functions
 ----------------
@@ -768,7 +860,7 @@ DESCRIPTION :
 				DESTROY(Event_dispatcher_file_descriptor_handler)(&handler);
 				handler = (struct Event_dispatcher_file_descriptor_handler *)NULL;
 			}
-#if defined (USE_XTAPP_CONTEXT)
+#if defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
 			else
 			{
 				if (event_dispatcher->application_context)
@@ -785,7 +877,14 @@ DESCRIPTION :
 					handler = (struct Event_dispatcher_file_descriptor_handler *)NULL;
 				}
 			}
-#endif /* defined (USE_XTAPP_CONTEXT) */
+#elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
+			else
+			{
+				handler->gtk_input_id = gdk_input_add(file_descriptor,
+					GDK_INPUT_READ, Event_dispatcher_gtk_input_callback,
+					(void *)handler);
+			}
+#endif /* defined (USER_INTERFACE) */
 		}
 		else
 		{
@@ -997,13 +1096,12 @@ DESCRIPTION :
 {
 	struct Event_dispatcher_timeout_callback *timeout_callback;
 	struct timeval timeofday;
-	struct timezone timeofdayzone;
 
 	ENTER(Event_dispatcher_register_file_descriptor_handler);
 
 	if (event_dispatcher && timeout_function)
 	{
-		gettimeofday(&timeofday, &timeofdayzone);
+		gettimeofday(&timeofday, NULL);
 		timeout_callback = Event_dispatcher_add_timeout_callback_at_time(
 			event_dispatcher, timeout_s + (unsigned long)timeofday.tv_sec, 
 			timeout_ns + 1000*(unsigned long)timeofday.tv_usec, 
@@ -1095,6 +1193,12 @@ DESCRIPTION :
 					idle_callback = (struct Event_dispatcher_idle_callback *)NULL;
 				}
 			}
+#elif defined (USE_GTK_MAIN_STEP)
+			else
+			{
+				idle_callback->gtk_idle_id = gtk_idle_add(
+					Event_dispatcher_gtk_idle_callback, idle_callback);
+			}
 #endif /* defined (USE_XTAPP_CONTEXT) */
 		}
 		else
@@ -1183,6 +1287,8 @@ DESCRIPTION :
 	{
 #if defined (USE_XTAPP_CONTEXT)
 		XtRemoveWorkProc(callback_id->xt_idle_id);
+#elif defined (USE_GTK_MAIN_STEP)
+		gtk_idle_remove(callback_id->gtk_idle_id);
 #endif /* defined (USE_XTAPP_CONTEXT) */
 		return_code = REMOVE_OBJECT_FROM_LIST(Event_dispatcher_idle_callback)
 			(callback_id, event_dispatcher->idle_list);
@@ -1207,21 +1313,20 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-#if !defined (USE_XTAPP_CONTEXT) && !defined (WIN32_USER_INTERFACE)
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
 	int callback_code, select_code;
 	fd_set read_set;
 	struct timeval timeofday, timeout, *timeout_ptr;
-	struct timezone timeofdayzone;
 	struct Event_dispatcher_file_descriptor_handler *file_descriptor_callback;
 	struct Event_dispatcher_idle_callback *idle_callback;
 	struct Event_dispatcher_timeout_callback *timeout_callback;
-#endif /* ! defined (USE_XTAPP_CONTEXT) && !defined (WIN32_USER_INTERFACE) */
+#endif /*  defined (USE_GENERIC_EVENT_DISPATCHER) */
 
 	ENTER(Event_dispatcher_do_one_event);
 
 	if (event_dispatcher)
 	{
-#if defined (WIN32_USER_INTERFACE)
+#if defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		{
 			MSG message;
 			if (TRUE==GetMessage(&message,NULL,0,0))
@@ -1231,10 +1336,13 @@ DESCRIPTION :
 			}
 			return_code=1;
 		}
-#elif defined (USE_XTAPP_CONTEXT)
+#elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
+		gtk_main_iteration();
+		return_code = 1;
+#elif defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
 		XtAppProcessEvent(event_dispatcher->application_context, XtIMAll);
 		return_code = 1;
-#else /* defined (USE_XTAPP_CONTEXT) */
+#elif defined (USE_GENERIC_EVENT_DISPATCHER) /* switch (USER_INTERFACE) */
 		return_code=1;
 		FD_ZERO(&read_set);
 		FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_file_descriptor_handler)
@@ -1267,7 +1375,7 @@ DESCRIPTION :
 				/* Till the first timeout */
 				if (timeout_callback)
 				{
-					gettimeofday(&timeofday, &timeofdayzone);
+					gettimeofday(&timeofday, NULL);
 					if ((timeout_callback->timeout_s < (unsigned long)timeofday.tv_sec) ||
 						((timeout_callback->timeout_s == (unsigned long)timeofday.tv_sec) &&
 							(timeout_callback->timeout_ns <= (unsigned long)1000*timeofday.tv_usec)))
@@ -1330,7 +1438,7 @@ DESCRIPTION :
 				if (select_code == 0)
 				{
 					/* Look for ready timer callbacks first */
-					gettimeofday(&timeofday, &timeofdayzone);
+					gettimeofday(&timeofday, NULL);
 					if (timeout_callback &&
 						((timeout_callback->timeout_s < (unsigned long)timeofday.tv_sec) ||
 							((timeout_callback->timeout_s == (unsigned long)timeofday.tv_sec) &&
@@ -1380,7 +1488,7 @@ DESCRIPTION :
 				}
 			}
 		}
-#endif /* defined (USE_XTAPP_CONTEXT) */
+#endif /* switch (USER_INTERFACE) */
 	}
 	else
 	{

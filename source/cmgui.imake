@@ -28,7 +28,11 @@ XCOMM ==========================================================================
 	for linux
 		image -DLINUX -T cmgui.imake -f /dev/null -s cmgui_linux.make */
 
+#if !defined (WIN32)
 SHELL=/bin/sh
+#else /* !defined (WIN32) */
+SHELL=bash.exe
+#endif /* !defined (WIN32) */
 
 #if defined (aix)
 #define aix aix
@@ -65,18 +69,18 @@ PRODUCT_PATH=.
 #define MOTIF
 #endif /* !defined (CONSOLE) */
 #elif defined (LINUX) /* switch OperatingSystem */
-#if !defined (CONSOLE)
+#if !defined (CONSOLE) && !defined (GTK_USER_INTERFACE)
 #define MIRAGE
 #define UNEMAP
 #define CELL
-#endif /* !defined (CONSOLE) */
+#endif /* !defined (CONSOLE) && !defined (GTK_USER_INTERFACE) */
 #define IMAGEMAGICK
 #define PERL_INTERPRETER
-#if !defined (CONSOLE)
+#if !defined (CONSOLE) && !defined (GTK_USER_INTERFACE)
 /* Currently need motif to link cmiss for prompt window */
 #define LINK_CMISS
 #define MOTIF
-#endif /* !defined (CONSOLE) */
+#endif /* !defined (CONSOLE) && !defined (GTK_USER_INTERFACE) */
 #elif defined (AIX) /* switch OperatingSystem */
 #define MIRAGE
 #define UNEMAP
@@ -92,11 +96,11 @@ PRODUCT_PATH=.
 /*#define UNEMAP*/
 /*#define CELL*/
 /*#define IMAGEMAGICK*/
-/*#define PERL_INTERPRETER*/
+#define PERL_INTERPRETER
 /*#define LINK_CMISS*/
-#if !defined (CONSOLE)
+#if !defined (CONSOLE) && !defined (GTK_USER_INTERFACE)
 #define WIN32_USER_INTERFACE
-#endif /* !defined (CONSOLE) */
+#endif /* !defined (CONSOLE) && !defined (GTK_USER_INTERFACE) */
 #endif /* switch OperatingSystem */
 
 #if defined (IRIX) /* switch OperatingSystem */
@@ -191,6 +195,19 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_console
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_console
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_console
 #else /* defined (CONSOLE) */
+#if defined (GTK_USER_INTERFACE)
+#define Target cmgui_linux_gtk
+#define SpacesToTabsTarget spaces_to_tabs_linux
+#define TabsToSpacesTarget tabs_to_spaces_linux
+#define Uid2uidhTarget uid2uidh_linux
+#define Makefile cmgui_linux_gtk.make
+#define DependMake cmgui_linux_gtk.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/linux_gtk
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_gtk
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_gtk
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_gtk
+#else /* defined (GTK_USER_INTERFACE) */
 #if defined (OPTIMISED)
 #if defined (DYNAMIC_GL_LINUX)
 #define Target cmgui_linux_optimised_dynamic
@@ -248,6 +265,7 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_g
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_g
 #endif /* defined (OPTIMISED) */
+#endif /* defined (GTK_USER_INTERFACE) */
 #endif /* defined (CONSOLE) */
 #elif defined (AIX) /* switch OperatingSystem */
 #if defined (O64)
@@ -328,6 +346,19 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/win32_console
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/win32_console
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/win32_console
 #else /* defined (CONSOLE) */
+#if defined (GTK_USER_INTERFACE)
+#define Target cmgui_win32_gtk
+#define SpacesToTabsTarget spaces_to_tabs_linux
+#define TabsToSpacesTarget tabs_to_spaces_linux
+#define Uid2uidhTarget uid2uidh_linux
+#define Makefile cmgui_win32_gtk.make
+#define DependMake cmgui_win32_gtk.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/win32_gtk
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/win32_gtk
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/win32_gtk
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/win32_gtk
+#else /* defined (GTK_USER_INTERFACE) */
 #if defined (OPTIMISED)
 #define Target cmgui_win32_optimised
 #define SpacesToTabsTarget spaces_to_tabs_win32
@@ -364,6 +395,7 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/win32_g
 UIDH_PATH=$(CMGUI_DEV_ROOT)/res/cmgui/win32_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/res/cmgui/win32_g
 #endif /* defined (OPTIMISED) */
+#endif /* defined (GTK_USER_INTERFACE) */
 #endif /* defined (CONSOLE) */
 #endif /* switch OperatingSystem */
 
@@ -396,6 +428,8 @@ SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH) -I$(PRODUCT_SOURCE_PATH)
   USER_INTERFACE = -DMOTIF
 #elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
   USER_INTERFACE = -DWIN32_USER_INTERFACE
+#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+  USER_INTERFACE = -DGTK_USER_INTERFACE
 #elif 1 /* SGI imake doesn't do else correctly *//* switch (USER_INTERFACE) */
   USER_INTERFACE = -DCONSOLE_USER_INTERFACE
 #endif /* switch (USER_INTERFACE) */
@@ -427,6 +461,10 @@ GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS
 #else /* defined (CONSOLE) */
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
 #endif /* defined (CONSOLE) */
+#if defined (GTK_USER_INTERFACE)
+	/* Comes from USER_INTERFACE_LIB) */
+GRAPHICS_LIB =
+#else /* defined (GTK_USER_INTERFACE) */
 #if defined (DYNAMIC_GL_LINUX)
 GRAPHICS_LIB = -L/usr/X11R6/lib -lGL -lGLU 
 #else /* defined (DYNAMIC_GL_LINUX) */
@@ -434,6 +472,7 @@ GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU
 /*GRAPHICS_LIB = -L/home/blackett/lib -lGL -lGLU*/
 /*GRAPHICS_LIB = -L/home/nickerso/cmiss/cmgui -lMesaGL -lMesaGLU*/
 #endif /* defined (DYNAMIC_GL_LINUX) */
+#endif /* defined (GTK_USER_INTERFACE) */
 #elif defined(AIX) /* switch OperatingSystem */
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS
 GRAPHICS_LIB = -lGL -lGLU
@@ -554,7 +593,8 @@ INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-64/libperlinterpreter-opt.a
 INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-32/libperlinterpreter-opt.a
 #endif /* defined (O64) */
 #elif defined(WIN32) /* switch OperatingSystem */
-INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/win32/libperlinterpreter-opt.a
+INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/CYGWIN_NT-5.0-32-debug/perl_interpreter.o $(INTERPRETER_PATH)/Perl_cmiss/blib/arch/auto/Perl_cmiss/Perl_cmiss.a c:/perl/5.6.1/lib/MSWin32-x86/CORE/libperl56.a
+XCOMM INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/CYGWIN_NT-5.0-32/libperlinterpreter-debug.a
 #endif /* switch OperatingSystem */
 #endif /* !defined (PERL_INTERPRETER) */
 
@@ -808,7 +848,7 @@ VIDEO_SRCS =
 HELP_DEFINES = -DNETSCAPE_HELP
 HELP_INCLUDE =
 HELP_LIB =
-HELP_INTERFACE_SRCS = \
+HELP_SRCS = \
 	help/help_interface.c
 
 #if defined (OLD_CODE)
@@ -834,44 +874,54 @@ MEMORY_CHECK_LIB = -lmalloc_ss -lfpe
 MEMORY_CHECK_LIB = 
 #endif /* defined (MEMORY_CHECK) */
 #if defined (MOTIF)
-MOTIF_LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu
+USER_INTERFACE_LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu
 #else /* defined (MOTIF) */
-MOTIF_LIB =
+USER_INTERFACE_LIB =
 #endif /* defined (MOTIF) */
-LIB = $(MOTIF_LIB) $(MEMORY_CHECK_LIB) -lPW -lftn -lm -lC -lCio -lpthread 
+LIB = $(USER_INTERFACE_LIB) $(MEMORY_CHECK_LIB) -lPW -lftn -lm -lC -lCio -lpthread 
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
 X_LIB = /usr/X11R6/lib
-#if defined (MOTIF)
-MOTIF_LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
-#else /* defined (MOTIF) */
-MOTIF_LIB =
-#endif /* defined (MOTIF) */
-LIB = $(MOTIF_LIB) -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a /usr/lib/libstdc++-2-libc6.1-1-2.9.0.a
+USER_INTERFACE_INC = -I/usr/X11R6/include
+USER_INTERFACE_LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
+#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+USER_INTERFACE_INC = `pkg-config gtkgl-2.0 gtk+-2.0 --cflags` 
+USER_INTERFACE_LIB = -L/home/blackett/lib -lgtkgl-2.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 /home/blackett/lib/libGLU.a /usr/lib/libGL.so
+#elif 1 /* switch (USER_INTERFACE) */
+USER_INTERFACE_INC = 
+USER_INTERFACE_LIB =
+#endif /* switch (USER_INTERFACE) */
+LIB = -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a `ls -1 /usr/lib/libstdc++*.a | tail -1`
 #else /* defined (DYNAMIC_GL_LINUX) */
-#if defined (MOTIF)
-MOTIF_LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext -lXp -lSM -lICE
-#else /* defined (MOTIF) */
-MOTIF_LIB =
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
+USER_INTERFACE_INC = -I/usr/X11R6/include
+USER_INTERFACE_LIB = -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
+#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+USER_INTERFACE_INC = `pkg-config gtk+-2.0 --cflags`
+USER_INTERFACE_LIB = `pkg-config gtk+-2.0 --libs`
+#elif 1 /* switch (USER_INTERFACE) */
+USER_INTERFACE_LIB =
 #endif /* defined (MOTIF) */
-LIB = $(MOTIF_LIB) -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
+LIB = -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #elif defined(AIX) /* switch OperatingSystem */
 #if defined (MOTIF)
-MOTIF_LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext
+USER_INTERFACE_LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext
 #else /* defined (MOTIF) */
-MOTIF_LIB =
+USER_INTERFACE_LIB =
 #endif /* defined (MOTIF) */
-LIB = $(MOTIF_LIB) -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
+LIB = -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
 #elif defined(WIN32) /* switch OperatingSystem */
-LIB = -lcomdlg32 -lwinmm
+#if defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
+USER_INTERFACE_INC = -L"c:\perl\5.6.1\lib\MSWin32-x86\CORE" -L"c:\dev\gcc\lib" -Ic:/dev/gtk2/include/gtk-2.0 -Ic:/dev/gtk2/include/pango-1.0 -Ic:/dev/gtk2/include/glib-2.0/ -Ic:/dev/gtk2/include/atk-1.0 -Ic:/dev/gtk2/include/gtkgl-2.0/ -Ic:/dev/gtk2/lib/glib-2.0/include -Ic:/dev/gtk2/lib/gtk-2.0/include
+USER_INTERFACE_LIB = -L"c:\dev\gtk2\lib" -lgtkgl-2.0 -lgtk-win32-2.0 -lgdk-win32-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangowin32-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -lglib-2.0
+#elif 1 /* switch (USER_INTERFACE) */
+USER_INTERFACE_INC = 
+USER_INTERFACE_LIB = -lcomdlg32
+#endif /* switch (USER_INTERFACE) */
+LIB = -lmsvcrt -lmoldname -lkernel32 -luser32 -lgdi32  -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32
 #endif /* switch OperatingSystem */
-
-#if defined (LINUX)
-X11_INC = -I/usr/X11R6/include
-#else
-X11_INC =
-#endif
 
 START_ALL_DEFINES =
 END_ALL_DEFINES =
@@ -893,15 +943,15 @@ ALL_DEFINES = $(START_ALL_DEFINES) \
 
 ALL_INCLUDES = $(START_ALL_INCLUDES) \
 	$(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) $(XML_INC) \
-	$(UIDH_INC) $(X11_INC) $(INTERPRETER_INC) $(IMAGEMAGICK_INC) $(END_ALL_INCLUDES)
+	$(UIDH_INC) $(USER_INTERFACE_INC) $(INTERPRETER_INC) $(IMAGEMAGICK_INC) $(END_ALL_INCLUDES)
 
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
-ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(WORMHOLE_LIB) \
-		$(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
-		$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
-	  $(MOVIE_FILE_LIB) $(XML_LIB) $(LIB)
+ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
+	$(WORMHOLE_LIB) $(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
+	$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
+	$(MOVIE_FILE_LIB) $(XML_LIB) $(LIB)
 
 CHOOSE_INTERFACE_SRCS = \
 	choose/choose_computed_field.c \
@@ -1090,12 +1140,12 @@ MENU_INTERFACE_SRCS =  \
 MOTIF_INTERFACE_SRCS =  \
 	motif/image_utilities.c
 NODE_SRCS = \
-	node/node_operations.c
+	node/node_operations.c \
+	node/node_tool.c
 NODE_INTERFACE_SRCS = \
 	node/interactive_node_editor.c \
 	node/interactive_node_editor_dialog.c \
 	node/node_field_viewer_widget.c \
-	node/node_tool.c \
 	node/node_viewer.c \
 	node/node_viewer_widget.c
 PROJECTION_INTERFACE_SRCS = \
@@ -1161,6 +1211,7 @@ SRCS_1 = \
 	$(FINITE_ELEMENT_SRCS) \
 	$(GENERAL_SRCS) \
 	$(GRAPHICS_SRCS) \
+	$(HELP_SRCS) \
 	$(INTERACTION_SRCS) \
 	$(IO_DEVICES_SRCS) \
 	$(MIRAGE_SRCS) \
@@ -1186,7 +1237,6 @@ SRCS_2 = \
 	$(FINITE_ELEMENT_INTERFACE_SRCS) \
 	$(GENERAL_INTERFACE_SRCS) \
 	$(GRAPHICS_INTERFACE_SRCS) \
-	$(HELP_INTERFACE_SRCS) \
 	$(INTERACTION_INTERFACE_SRCS) \
 	$(IO_DEVICES_INTERFACE_SRCS) \
 	$(LINK_INTERFACE_SRCS) \
@@ -1208,6 +1258,9 @@ SRCS_2 = \
 #elif defined (WIN32_USER_INTERFACE)  /* switch (USER_INTERFACE) */
 SRCS_2 = \
 	$(COMMAND_INTERFACE_SRCS)
+#elif defined (GTK_USER_INTERFACE)  /* switch (USER_INTERFACE) */
+SRCS_2 = \
+	graphics/graphics_window.c
 #elif 1 /* SGI imake doesn't do else correctly *//* switch (USER_INTERFACE) */
 SRCS_2 =
 #endif  /* switch (USER_INTERFACE) */
@@ -1393,7 +1446,9 @@ $(OBJECT_PATH)/$(EXPORTS_FILE) :
 EXPORTS_FILE = cmgui.exports
 EXPORTS_LINK_FLAGS = -Wl,-exports_file,$(EXPORTS_FILE)
 $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(EXPORTS_FILE)
-	cp $(EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE)
+	cp $(EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
+	cd $(OBJECT_PATH) ; $(CPREPROCESS) $(ALL_DEFINES) $(EXPORTS_FILE).c
+	cp $(OBJECT_PATH)/$(EXPORTS_FILE).i $(OBJECT_PATH)/$(EXPORTS_FILE)
 #endif /* defined (EXPORT_EVERYTHING) */
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
@@ -1404,7 +1459,7 @@ EXPORTS_FILE = cmgui.dummy
 SRC_EXPORTS_FILE = cmgui.exports
 EXPORTS_LINK_FLAGS = -Wl,-E
 $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
-	echo > $(OBJECT_PATH)/$(EXPORTS_FILE)
+	touch $(OBJECT_PATH)/$(EXPORTS_FILE)
 #else /* defined (EXPORT_EVERYTHING) */
 #if defined (NEW_BINUTILS)
 /* In Linux this requires an ld from binutils 2.12 or later 
@@ -1417,9 +1472,11 @@ EXPORTS_FILE = cmgui_ld_version.script
 SRC_EXPORTS_FILE = cmgui.exports
 EXPORTS_LINK_FLAGS = -Wl,-export-dynamic,--version-script,$(EXPORTS_FILE)
 $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
+	cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
+	$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(EXPORTS_FILE).c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
 	echo > $(OBJECT_PATH)/$(EXPORTS_FILE)	"CMISS_EXP_1.0 {"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"global:"
-	sed -n -e 's/\([^ ]*\)/  \1;/p' < $(SRC_EXPORTS_FILE) >> $(OBJECT_PATH)/$(EXPORTS_FILE)
+	sed -n -e 's/\([^ ]+\)/  \1;/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE)
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"local:"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"  *;"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"};"
@@ -1435,13 +1492,15 @@ EXPORTS_SONAME = cmgui.so /* If we are going to put this in the executable lets 
 SRC_EXPORTS_FILE = cmgui.exports
 EXPORTS_LINK_FLAGS = $(EXPORTS_FILE) -Wl,-soname,$(EXPORTS_SONAME)
 $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
+	cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
+	$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(EXPORTS_FILE).c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
 	echo > $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define lt_preloaded_symbols some_other_symbol"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define dynamic_ptr void *"
-	sed -n -e 's/\([^ ]*\)/extern char \1;/p' < $(SRC_EXPORTS_FILE) >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
+	sed -n -e 's/\([^ ]+\)/extern char \1;/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#undef lt_preloaded_symbols"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"const struct { const char *name; dynamic_ptr address; }"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"lt_preloaded_symbols[] = {"
-	sed -n -e 's/\([^ ]*\)/  {\"\1\", (dynamic_ptr) \&\1},/p' < $(SRC_EXPORTS_FILE) >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
+	sed -n -e 's/\([^ ]+\)/  {\"\1\", (dynamic_ptr) \&\1},/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"{0, (dynamic_ptr) 0} };"
 	$(LINK) -shared -o $(OBJECT_PATH)/$(EXPORTS_FILE) -Wl,-soname,$(EXPORTS_SONAME) $(OBJECT_PATH)/$(EXPORTS_FILE).c
 #endif /* defined (NEW_BINUTILS) */
@@ -1452,14 +1511,19 @@ EXPORTS_LINK_FLAGS =
 $(OBJECT_PATH)/$(EXPORTS_FILE) :	
 	touch $(OBJECT_PATH)/$(EXPORTS_FILE)
 #endif /* defined (DYNAMIC_GL_LINUX) */
+#elif defined (WIN32) /* switch OperatingSystem */
+EXPORTS_FILE = no.exports
+EXPORTS_LINK_FLAGS = 
+$(OBJECT_PATH)/$(EXPORTS_FILE) :	
+	touch $(OBJECT_PATH)/$(EXPORTS_FILE)
 #endif /* switch OperatingSystem */
 
-#if defined (WIN32)
+#if defined (WIN32) && !defined (GTK_USER_INTERFACE)
 RESOURCE_FILES = command/command_window.rc
 COMPILED_RESOURCE_FILES = $(RESOURCE_FILES:.rc=.res)
-#else /* defined (WIN32) */
+#else /* defined (WIN32) && !defined (GTK_USER_INTERFACE) */
 COMPILED_RESOURCE_FILES = 
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32) && !defined (GTK_USER_INTERFACE) */
 
 Target : $(OBJS) $(COMPILED_RESOURCE_FILES) cmgui.ObjSuffix $(OBJECT_PATH)/$(EXPORTS_FILE)
 	if [ ! -d $(BIN_PATH) ]; then \
@@ -1549,5 +1613,5 @@ BuildNormalTarget(TabsToSpacesTarget,$(UTILITIES_PATH),TABS_TO_SPACES_SRCS,TABS_
 
 /* sinclude used so that the makefile can be run when the dependency file doesn't exist,
  it should then make one */
-sinclude $(PRODUCT_SOURCE_PATH)/DependMake
+XCOMM sinclude $(PRODUCT_SOURCE_PATH)/DependMake
 sinclude DependMake

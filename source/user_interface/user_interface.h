@@ -22,6 +22,9 @@ Function definitions for the user interface.
 #include <windowsx.h>
 	/*???DB.  Contains lots of convenience macros */
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (GTK_USER_INTERFACE)
+#include "gtk/gtk.h"
+#endif /* defined (GTK_USER_INTERFACE) */
 #include "general/machine.h"
 
 /*
@@ -146,15 +149,15 @@ Switchs from the busy cursor to the default cursor for all shells except the
 ???DB.  Move in with windowing macros ?
 ==============================================================================*/
 
-#if defined (UNIX) /* switch (OPERATING_SYSTEM) */
+#if !defined (WIN32_USER_INTERFACE)
 struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
 	struct Event_dispatcher *event_dispatcher, char *class_name, 
 	char *application_name);
-#elif defined (WIN32_USER_INTERFACE) /* switch (OPERATING_SYSTEM) */
+#else /* !defined (WIN32_USER_INTERFACE) */
 struct User_interface *CREATE(User_interface)(HINSTANCE current_instance,
 	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state,
 	struct Event_dispatcher *event_dispatcher);
-#endif /* switch (OPERATING_SYSTEM) */
+#endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
 LAST MODIFIED : 20 June 2002
 
@@ -296,6 +299,16 @@ DESCRIPTION :
 Returns the application shell widget
 ==============================================================================*/
 #endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
+GtkWidget *User_interface_get_main_window(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 9 July 2002
+
+DESCRIPTION :
+Returns the main window widget
+==============================================================================*/
+#endif /* defined (GTK_USER_INTERFACE) */
 
 int User_interface_get_local_machine_name(struct User_interface *user_interface,
 	char **name);

@@ -72,9 +72,9 @@ Functions for executing cmiss commands.
 #include "graphics/environment_map.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 #include "graphics/graphics_window.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 #include "graphics/import_graphics_object.h"
 #include "graphics/iso_field_calculation.h"
 #include "graphics/light.h"
@@ -102,8 +102,8 @@ Functions for executing cmiss commands.
 #include "graphics/texture.h"
 #if defined (MOTIF)
 #include "graphics/texturemap.h"
-#include "graphics/transform_tool.h"
 #endif /* defined (MOTIF) */
+#include "graphics/transform_tool.h"
 #include "graphics/userdef_objects.h"
 #include "graphics/volume_texture.h"
 #if defined (MOTIF)
@@ -132,8 +132,10 @@ Functions for executing cmiss commands.
 #include "node/interactive_node_editor_dialog.h"
 #endif /* defined (MOTIF) */
 #include "node/node_operations.h"
-#if defined (MOTIF)
+#if defined (MOTIF) || (GTK_USER_INTERFACE)
 #include "node/node_tool.h"
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) */
+#if defined (MOTIF)
 #include "node/node_viewer.h"
 #include "projection/projection_window.h"
 #include "slider/emoter_dialog.h"
@@ -153,13 +155,9 @@ Functions for executing cmiss commands.
 #include "view/coord_trans.h"
 #include "xvg/include/xvg_interface.h"
 #endif /* defined (MOTIF) */
-#if defined (F90_INTERPRETER)
-#include "command/f90_interpreter.h"
-#else /* defined (F90_INTERPRETER) */
 #if defined (PERL_INTERPRETER)
 #include "perl_interpreter.h"
 #endif /* defined (PERL_INTERPRETER) */
-#endif /* defined (F90_INTERPRETER) */
 #if defined (UNEMAP)
 #include "unemap/unemap_command.h"
 #endif /* defined (UNEMAP) */
@@ -9958,7 +9956,7 @@ Executes a GFX CREATE VTEXTURE command.
 	return (return_code);
 } /* gfx_create_volume_texture */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 static int gfx_create_window(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -10096,7 +10094,7 @@ Executes a GFX CREATE WINDOW command.
 
 	return (return_code);
 } /* gfx_create_window */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 
 #if defined (HAPTIC)
 static int gfx_create_haptic(struct Parse_state *state,
@@ -10870,9 +10868,11 @@ Executes a GFX CREATE command.
 #endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"vtexture",NULL,
 					command_data_void,gfx_create_volume_texture);
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 				Option_table_add_entry(option_table,"window",NULL,
 					command_data_void,gfx_create_window);
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"3d_digitizer",NULL,
 					command_data_void,gfx_create_3d_digitizer);
 #endif /* defined (MOTIF) */
@@ -18648,9 +18648,9 @@ Executes a GFX MODIFY command.
 	struct Cmiss_command_data *command_data;
 	struct Modify_environment_map_data modify_environment_map_data;
 	struct Modify_graphical_material_data modify_graphical_material_data;
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 	struct Modify_graphics_window_data modify_graphics_window_data;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 	struct Modify_light_data modify_light_data;
 	struct Modify_light_model_data modify_light_model_data;
 	struct Modify_scene_data modify_scene_data;
@@ -18766,7 +18766,7 @@ Executes a GFX MODIFY command.
 					command_data->set_file_name_option_table;
 				Option_table_add_entry(option_table,"vtexture",NULL, 
 					(void *)(&modify_VT_volume_texture_data), modify_VT_volume_texture);
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 				/* window */
 				modify_graphics_window_data.graphics_window_manager=
 					command_data->graphics_window_manager;
@@ -18780,7 +18780,7 @@ Executes a GFX MODIFY command.
 					command_data->texture_manager;
 				Option_table_add_entry(option_table,"window",NULL, 
 					(void *)(&modify_graphics_window_data), modify_Graphics_window);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 
 				return_code=Option_table_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
@@ -19196,7 +19196,7 @@ movie is being created.
 } /* gfx_movie */
 #endif /* defined (MOTIF) */
 
-#if defined (MOTIF)
+#if defined (MOTIF) || (GTK_USER_INTERFACE)
 static int execute_command_gfx_node_tool(struct Parse_state *state,
 	void *data_tool_flag,void *command_data_void)
 /*******************************************************************************
@@ -19368,7 +19368,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 
 	return (return_code);
 } /* execute_command_gfx_node_tool */
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) */
 
 #if defined (MOTIF)
 static int execute_command_gfx_print(struct Parse_state *state,
@@ -21655,7 +21655,6 @@ Sets nodal field values from a command.
 	return (return_code);
 } /* gfx_set_FE_nodal_value */
 
-#if defined (MOTIF)
 static int gfx_set_scene_order(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -21739,7 +21738,6 @@ Sets the ordering of graphics objects on scene(s) from the command line.
 
 	return (return_code);
 } /* gfx_set_scene_order */
-#endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
 static int gfx_set_time(struct Parse_state *state,void *dummy_to_be_modified,
@@ -21811,7 +21809,6 @@ Sets the time from the command line.
 } /* gfx_set_time */
 #endif /* defined (MOTIF) */
 
-#if defined (MOTIF)
 static int set_transformation_matrix(struct Parse_state *state,
 	void *transformation_matrix_void,void *dummy_user_data)
 /*******************************************************************************
@@ -21906,9 +21903,7 @@ Sets a transformation matrix from the command line.
 
 	return (return_code);
 } /* set_transformation_matrix */
-#endif /* defined (MOTIF) */
 
-#if defined (MOTIF)
 static int gfx_set_transformation(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -22008,7 +22003,6 @@ Sets the transformation for a graphics object from the command line.
 
 	return (return_code);
 } /* gfx_set_transformation */
-#endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
 static int gfx_set_up_vector(struct Parse_state *state,
@@ -22487,7 +22481,6 @@ Sets the current view point from the command line.
 } /* gfx_set_view_point */
 #endif /* defined (MOTIF) */
 
-#if defined (MOTIF)
 static int gfx_set_visibility(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -22616,7 +22609,6 @@ Toggles the visibility of graphics objects on scenes from the command line.
 
 	return (return_code);
 } /* gfx_set_visibility */
-#endif /* defined (MOTIF) */
 
 static int execute_command_gfx_set(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
@@ -22652,17 +22644,19 @@ Executes a GFX SET command.
 #endif /* defined (MOTIF) */
 			Option_table_add_entry(option_table, "node_value", NULL,
 				command_data_void, gfx_set_FE_nodal_value);
-#if defined (MOTIF)
 			Option_table_add_entry(option_table, "order", NULL,
 				command_data_void, gfx_set_scene_order);
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "point_size", &global_point_size,
 				NULL, set_float_positive);
 			Option_table_add_entry(option_table, "resolution", NULL,
 				command_data->graphics_window_manager, set_graphics_window_resolution);
 			Option_table_add_entry(option_table, "slider", NULL,
 				command_data->node_group_slider_dialog, set_node_group_slider_value);
+#endif /* defined (MOTIF) */
 			Option_table_add_entry(option_table, "transformation", NULL,
 				command_data_void, gfx_set_transformation);
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "time", NULL,
 				command_data_void, gfx_set_time);
 			Option_table_add_entry(option_table, "up_vector", NULL,
@@ -22673,9 +22667,9 @@ Executes a GFX SET command.
 				command_data_void, gfx_set_view_angle);
 			Option_table_add_entry(option_table, "view_point", NULL,
 				command_data_void, gfx_set_view_point);
+#endif /* defined (MOTIF) */
 			Option_table_add_entry(option_table, "visibility", NULL,
 				command_data_void, gfx_set_visibility);
-#endif /* defined (MOTIF) */
 			return_code = Option_table_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 		}
@@ -23040,7 +23034,6 @@ DESCRIPTION :
 	return (return_code);
 } /* gfx_timekeeper */
 
-#if defined (MOTIF)
 static int gfx_transform_tool(struct Parse_state *state,
 	void *dummy_user_data,void *command_data_void)
 /*******************************************************************************
@@ -23082,7 +23075,6 @@ Executes a GFX TRANSFORM_TOOL command.
 
 	return (return_code);
 } /* execute_command_gfx_transform_tool */
-#endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
 static int execute_command_gfx_update(struct Parse_state *state,
@@ -24178,10 +24170,10 @@ Executes a GFX command.
 				command_data_void, gfx_change_identifier);
 			Option_table_add_entry(option_table, "create", NULL,
 				command_data_void, execute_command_gfx_create);
-#if defined (MOTIF)
+#if defined (MOTIF) || (GTK_USER_INTERFACE)
 			Option_table_add_entry(option_table, "data_tool", /*data_tool*/(void *)1,
 				command_data_void, execute_command_gfx_node_tool);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) */
 			Option_table_add_entry(option_table, "define", NULL,
 				command_data_void, execute_command_gfx_define);
 			Option_table_add_entry(option_table, "destroy", NULL,
@@ -24214,9 +24206,11 @@ Executes a GFX command.
 			Option_table_add_entry(option_table, "movie", NULL,
 				command_data_void, gfx_movie);
 #endif /* defined (SGI_MOVIE_FILE) */
-#if defined (MOTIF)
+#if defined (MOTIF) || (GTK_USER_INTERFACE)
 			Option_table_add_entry(option_table, "node_tool", /*data_tool*/(void *)0,
 				command_data_void, execute_command_gfx_node_tool);
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) */
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "print", NULL,
 				command_data_void, execute_command_gfx_print);
 			/* project */
@@ -24245,10 +24239,8 @@ Executes a GFX command.
 				command_data_void, execute_command_gfx_smooth);
 			Option_table_add_entry(option_table, "timekeeper", NULL,
 				command_data_void, gfx_timekeeper);
-#if defined (MOTIF)
 			Option_table_add_entry(option_table, "transform_tool", NULL,
 				command_data_void, gfx_transform_tool);
-#endif /* defined (MOTIF) */
 			Option_table_add_entry(option_table, "unselect", NULL,
 				command_data_void, execute_command_gfx_unselect);
 #if defined (MOTIF)

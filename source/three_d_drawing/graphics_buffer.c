@@ -7,12 +7,17 @@ DESCRIPTION :
 This provides a Cmgui interface to the OpenGL contexts of many types.
 Should be merged with dm_interface.c
 ******************************************************************************/
-
 #if defined (MOTIF)
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
 #include "three_d_drawing/ThreeDDraw.h"
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+#include <gtk/gtk.h>
+#if !defined (TEST_WITH_GTK_DRAWING_AREA)
+#include <gtkgl/gtkglarea.h>
+#endif /* !defined (TEST_WITH_GTK_DRAWING_AREA) */
+#endif /* defined (GTK_USER_INTERFACE) */
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -20,6 +25,10 @@ Should be merged with dm_interface.c
 #include "three_d_drawing/graphics_buffer.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+
+#if defined (GTK_USER_INTERFACE)
+static GtkWidget *share_glarea = (GtkWidget *)NULL;
+#endif /* defined (GTK_USER_INTERFACE) */
 
 /*
 Module types
@@ -51,6 +60,11 @@ struct Graphics_buffer
 	Widget drawing_widget;
 	Widget parent;
 #endif /* defined (MOTIF) */
+
+/* For GRAPHICS_BUFFER_GTKGLAREA_TYPE */
+#if defined (GTK_USER_INTERFACE)
+	GtkWidget *glarea;
+#endif /* defined (MOTIF) */
 };
 
 /*
@@ -70,6 +84,7 @@ DEFINE_CMISS_CALLBACK_FUNCTIONS(Graphics_buffer_input_callback, \
 
 DECLARE_OBJECT_FUNCTIONS(Graphics_buffer)
 
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 static struct Graphics_buffer *CREATE(Graphics_buffer)(void)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
@@ -102,6 +117,11 @@ contained in the this module only.
 		buffer->drawing_widget = (Widget)NULL;
 		buffer->parent = (Widget)NULL;
 #endif /* defined (MOTIF) */
+
+/* For GRAPHICS_BUFFER_GTKGLAREA_TYPE */
+#if defined (GTK_USER_INTERFACE)
+		buffer->glarea = (GtkWidget *)NULL;
+#endif /* defined (MOTIF) */
 	}
 	else
 	{
@@ -112,6 +132,7 @@ contained in the this module only.
 	LEAVE;
 	return (buffer);
 } /* CREATE(Graphics_buffer) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 
 #if defined (MOTIF)
 static void Graphics_buffer_X3d_initialize_callback(Widget graphics_buffer_widget,
@@ -395,8 +416,339 @@ returned to the scene.
 } /* Graphics_buffer_input_callback */
 #endif /* defined (MOTIF) */
 
+#if defined (GTK_USER_INTERFACE)
+static void Graphics_buffer_gtkglarea_initialise_callback(GtkWidget *widget,
+	gpointer graphics_buffer_void)
+/*******************************************************************************
+LAST MODIFIED : 10 July 2002
+
+DESCRIPTION :
+Called when part of the graphics_buffer window is initialised. Does not attempt to
+redraw just the initialised area. Instead, it redraws the whole picture, but only
+if there are no more initialise events pending.
+==============================================================================*/
+{
+	struct Graphics_buffer *graphics_buffer;
+
+	ENTER(graphics_buffer_gtkglarea_initialise_callback);
+	if (widget && (graphics_buffer = (struct Graphics_buffer *)graphics_buffer_void))
+	{
+		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+			graphics_buffer->initialise_callback_list, graphics_buffer, NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphics_buffer_gtkglarea_initialise_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* graphics_buffer_gtkglarea_initialise_callback */
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
+static void Graphics_buffer_gtkglarea_resize_callback(GtkWidget *widget,
+	GtkAllocation *allocation, gpointer graphics_buffer_void)
+/*******************************************************************************
+LAST MODIFIED : 10 July 2002
+
+DESCRIPTION :
+Called when part of the graphics_buffer window is resized. Does not attempt to
+redraw just the resized area. Instead, it redraws the whole picture, but only
+if there are no more resize events pending.
+==============================================================================*/
+{
+	struct Graphics_buffer *graphics_buffer;
+
+	ENTER(graphics_buffer_gtkglarea_resize_callback);
+	USE_PARAMETER(allocation);
+	if (widget && (graphics_buffer = (struct Graphics_buffer *)graphics_buffer_void))
+	{
+		CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+			graphics_buffer->resize_callback_list, graphics_buffer, NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphics_buffer_gtkglarea_resize_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* graphics_buffer_gtkglarea_resize_callback */
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
+static gboolean Graphics_buffer_gtkglarea_expose_callback(GtkWidget *widget,
+	GdkEventExpose *expose_event, gpointer graphics_buffer_void)
+/*******************************************************************************
+LAST MODIFIED : 10 July 2002
+
+DESCRIPTION :
+Called when part of the graphics_buffer window is exposed. Does not attempt to
+redraw just the exposed area. Instead, it redraws the whole picture, but only
+if there are no more expose events pending.
+==============================================================================*/
+{
+	struct Graphics_buffer *graphics_buffer;
+
+	ENTER(graphics_buffer_gtkglarea_expose_callback);
+	USE_PARAMETER(expose_event);
+	if (widget && (graphics_buffer = (struct Graphics_buffer *)graphics_buffer_void))
+	{
+		if (0 == expose_event->count)
+		{
+			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_callback)(
+				graphics_buffer->expose_callback_list, graphics_buffer, NULL);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphics_buffer_gtkglarea_expose_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return(TRUE);
+} /* graphics_buffer_gtkglarea_expose_callback */
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
+static gboolean Graphics_buffer_gtkglarea_button_callback(GtkWidget *widget,
+	GdkEventButton *button_event, gpointer graphics_buffer_structure)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2002
+
+DESCRIPTION :
+The callback for mouse button input in the graphics_buffer window. The
+resulting behaviour depends on the <graphics_buffer> input_mode. In Transform mode
+mouse clicks and drags are converted to transformation; in Select mode OpenGL
+picking is performed with picked objects and mouse click and drag information
+returned to the scene.
+==============================================================================*/
+{
+	int return_code;
+	struct Graphics_buffer *graphics_buffer;
+	struct Graphics_buffer_input input;
+
+	ENTER(Graphics_buffer_gtkglarea_button_callback);
+	USE_PARAMETER(widget);
+	if ((graphics_buffer=(struct Graphics_buffer *)graphics_buffer_structure)
+		&& button_event)
+	{
+		return_code = 1;
+		input.type = GRAPHICS_BUFFER_INVALID_INPUT;
+		switch(button_event->type)
+		{
+			case GDK_BUTTON_PRESS:
+			{
+				input.type = GRAPHICS_BUFFER_BUTTON_PRESS;
+			} break;
+			case GDK_BUTTON_RELEASE:
+			{
+				input.type = GRAPHICS_BUFFER_BUTTON_RELEASE;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Graphics_buffer_gtkglarea_button_callback.  Unknown button event");
+				return_code=0;
+				/* This event type is not being passed on */
+			} break;
+		}
+		input.key_code = 0;
+		input.button_number = button_event->button;
+		input.position_x = button_event->x;
+		input.position_y = button_event->y;
+		input.input_modifier = (enum Graphics_buffer_input_modifier)0;
+		if (GDK_SHIFT_MASK&(button_event->state))
+		{
+			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+		}
+		if (GDK_CONTROL_MASK&(button_event->state))
+		{
+			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+		}
+		if (GDK_MOD1_MASK&(button_event->state))
+		{
+			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+		}
+		if (GDK_BUTTON1_MASK&(button_event->state))
+		{
+			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+		}
+		if (return_code)
+		{
+			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
+				graphics_buffer->input_callback_list, graphics_buffer, &input);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_buffer_gtkglarea_button_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return(TRUE);
+} /* Graphics_buffer_gtkglarea_button_callback */
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
+static gboolean Graphics_buffer_gtkglarea_key_callback(GtkWidget *widget,
+	GdkEventKey *key_event, gpointer graphics_buffer_structure)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2002
+
+DESCRIPTION :
+The callback for key input in the graphics_buffer window. The
+resulting behaviour depends on the <graphics_buffer> input_mode. In Transform mode
+mouse clicks and drags are converted to transformation; in Select mode OpenGL
+picking is performed with picked objects and mouse click and drag information
+returned to the scene.
+==============================================================================*/
+{
+	int return_code;
+	struct Graphics_buffer *graphics_buffer;
+	struct Graphics_buffer_input input;
+
+	ENTER(Graphics_buffer_gtkglarea_key_callback);
+	USE_PARAMETER(widget);
+	if ((graphics_buffer=(struct Graphics_buffer *)graphics_buffer_structure)
+		&& key_event)
+	{
+		return_code = 1;
+		input.type = GRAPHICS_BUFFER_INVALID_INPUT;
+		switch(key_event->type)
+		{
+			case GDK_KEY_PRESS:
+			{
+				input.type = GRAPHICS_BUFFER_KEY_PRESS;
+			} break;
+			case GDK_KEY_RELEASE:
+			{
+				input.type = GRAPHICS_BUFFER_KEY_RELEASE;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Graphics_buffer_gtkglarea_key_callback.  Unknown key event");
+				return_code=0;
+				/* This event type is not being passed on */
+			} break;
+		}
+		input.button_number = 0;
+		input.key_code = 0;
+		input.position_x = 0;
+		input.position_y = 0;
+		input.input_modifier = (enum Graphics_buffer_input_modifier)0;
+		if (GDK_SHIFT_MASK&(key_event->state))
+		{
+			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+		}
+		if (GDK_CONTROL_MASK&(key_event->state))
+		{
+			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+		}
+		if (GDK_MOD1_MASK&(key_event->state))
+		{
+			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+		}
+		if (GDK_BUTTON1_MASK&(key_event->state))
+		{
+			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+		}
+		if (return_code)
+		{
+			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
+				graphics_buffer->input_callback_list, graphics_buffer, &input);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_buffer_gtkglarea_key_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return(TRUE);
+} /* Graphics_buffer_gtkglarea_key_callback */
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
+static gboolean Graphics_buffer_gtkglarea_motion_notify_callback(
+	GtkWidget *widget,
+	GdkEventMotion *motion_event, gpointer graphics_buffer_structure)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2002
+
+DESCRIPTION :
+The callback for mouse button input in the graphics_buffer window. The
+resulting behaviour depends on the <graphics_buffer> input_mode. In Transform mode
+mouse clicks and drags are converted to transformation; in Select mode OpenGL
+picking is performed with picked objects and mouse click and drag information
+returned to the scene.
+==============================================================================*/
+{
+	GdkModifierType state;
+	int return_code;
+	struct Graphics_buffer *graphics_buffer;
+	struct Graphics_buffer_input input;
+
+	ENTER(Graphics_buffer_gtkglarea_motion_notify_callback);
+	USE_PARAMETER(widget);
+	if ((graphics_buffer=(struct Graphics_buffer *)graphics_buffer_structure)
+		&& motion_event)
+	{
+		return_code = 1;
+		input.button_number = 0;
+		input.type = GRAPHICS_BUFFER_MOTION_NOTIFY;
+		input.key_code = 0;
+		if (motion_event->is_hint)
+		{
+			gdk_window_get_pointer(motion_event->window, &input.position_x,
+				&input.position_y, &state);
+		}
+		else
+		{
+			input.position_x = motion_event->x;
+			input.position_y = motion_event->y;
+			state = motion_event->state;
+		}
+		input.input_modifier = (enum Graphics_buffer_input_modifier)0;
+		if (GDK_SHIFT_MASK&(state))
+		{
+			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_SHIFT;
+		}
+		if (GDK_CONTROL_MASK&(state))
+		{
+			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_CONTROL;
+		}
+		if (GDK_MOD1_MASK&(state))
+		{
+			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_ALT;
+		}
+		if (GDK_BUTTON1_MASK&(state))
+		{
+			input.input_modifier |= GRAPHICS_BUFFER_INPUT_MODIFIER_BUTTON1;
+		}
+		if (return_code)
+		{
+			CMISS_CALLBACK_LIST_CALL(Graphics_buffer_input_callback)(
+				graphics_buffer->input_callback_list, graphics_buffer, &input);
+		}
+		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_buffer_gtkglarea_motion_notify_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return(TRUE);
+} /* Graphics_buffer_gtkglarea_motion_notify_callback */
+#endif /* defined (GTK_USER_INTERFACE) */
+
 /*
-Module functions
+Global functions
 ----------------
 */
 
@@ -464,6 +816,118 @@ If <specified_visual_id> is not zero then this visual is required.
 } /* create_Graphics_buffer_X3d */
 #endif /* defined (MOTIF) */
 
+#if defined (GTK_USER_INTERFACE)
+struct Graphics_buffer *create_Graphics_buffer_gtkglarea(GtkContainer *parent)
+/*******************************************************************************
+LAST MODIFIED : 10 July 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+#if !defined (TEST_WITH_GTK_DRAWING_AREA)
+	GtkGLArea *share;
+	int attrlist[] = {
+		GDK_GL_RGBA,
+		GDK_GL_DOUBLEBUFFER,
+		GDK_GL_BUFFER_SIZE, 24,
+		GDK_GL_ACCUM_RED_SIZE, 16,
+		GDK_GL_ACCUM_GREEN_SIZE, 16,
+		GDK_GL_ACCUM_BLUE_SIZE, 16,
+		GDK_GL_DEPTH_SIZE, 8,
+		GDK_GL_NONE
+	};
+#endif /* !defined (TEST_WITH_GTK_DRAWING_AREA) */
+	struct Graphics_buffer *buffer;
+
+	ENTER(create_Graphics_buffer_gtkglarea);
+
+#if !defined (TEST_WITH_GTK_DRAWING_AREA)
+	if (gdk_gl_query() == TRUE)
+	{
+#endif /* !defined (TEST_WITH_GTK_DRAWING_AREA) */
+		if (buffer = CREATE(Graphics_buffer)())
+		{
+#if defined (TEST_WITH_GTK_DRAWING_AREA)
+			if (buffer->glarea = gtk_drawing_area_new())
+			{
+				g_object_set_data(G_OBJECT(buffer->glarea), "graphics_buffer_ptr",
+					(gpointer)buffer);
+#else /* defined (TEST_WITH_GTK_DRAWING_AREA) */
+			if (share_glarea)
+			{
+				share = GTK_GL_AREA(share_glarea);
+			}
+			else
+			{
+				share = (GtkGLArea *)NULL;
+			}
+			if (buffer->glarea = gtk_gl_area_share_new(attrlist, share))
+			{
+				if (!share_glarea)
+				{
+					share_glarea = buffer->glarea;
+				}
+#endif /* defined (TEST_WITH_GTK_DRAWING_AREA) */
+				buffer->type = GRAPHICS_BUFFER_GTKGLAREA_TYPE;
+				gtk_widget_set_events(GTK_WIDGET(buffer->glarea),
+					GDK_EXPOSURE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|
+					GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|
+					GDK_KEY_PRESS_MASK|GDK_KEY_RELEASE_MASK);
+				g_signal_connect(G_OBJECT(buffer->glarea), "realize",
+					G_CALLBACK(Graphics_buffer_gtkglarea_initialise_callback),
+					(gpointer)buffer);
+				g_signal_connect(G_OBJECT(buffer->glarea), "size-allocate",
+					G_CALLBACK(Graphics_buffer_gtkglarea_resize_callback),
+					(gpointer)buffer);
+				g_signal_connect(G_OBJECT(buffer->glarea), "expose-event",
+					G_CALLBACK(Graphics_buffer_gtkglarea_expose_callback),
+					(gpointer)buffer);
+				g_signal_connect(G_OBJECT(buffer->glarea), "button-press-event",
+					G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
+					(gpointer)buffer);
+				g_signal_connect(G_OBJECT(buffer->glarea), "button-release-event",
+					G_CALLBACK(Graphics_buffer_gtkglarea_button_callback),
+					(gpointer)buffer);
+				g_signal_connect(G_OBJECT(buffer->glarea), "key-press-event",
+					G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
+					(gpointer)buffer);
+				g_signal_connect(G_OBJECT(buffer->glarea), "key-release-event",
+					G_CALLBACK(Graphics_buffer_gtkglarea_key_callback),
+					(gpointer)buffer);
+				g_signal_connect(G_OBJECT(buffer->glarea), "motion-notify-event",
+					G_CALLBACK(Graphics_buffer_gtkglarea_motion_notify_callback),
+					(gpointer)buffer);
+				gtk_container_add(parent, GTK_WIDGET(buffer->glarea));
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkglarea.  "
+					"Unable to create gtk gl area.");
+				DESTROY(Graphics_buffer)(&buffer);
+				buffer = (struct Graphics_buffer *)NULL;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkglarea.  "
+				"Unable to create generic Graphics_buffer.");
+			buffer = (struct Graphics_buffer *)NULL;
+		}
+#if !defined (TEST_WITH_GTK_DRAWING_AREA)
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_Graphics_buffer_gtkglarea.  "
+			"Gdk Open GL not supported.");				
+		buffer = (struct Graphics_buffer *)NULL;
+	}
+#endif /* !defined (TEST_WITH_GTK_DRAWING_AREA) */
+	LEAVE;
+
+	return (buffer);
+} /* create_Graphics_buffer_X3d */
+#endif /* defined (GTK_USER_INTERFACE) */
+
 int Graphics_buffer_make_current(struct Graphics_buffer *buffer)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
@@ -486,6 +950,16 @@ DESCRIPTION :
 				return_code = 1;
 			} break;
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+			{
+#if defined (TEST_WITH_GTK_DRAWING_AREA)
+#else /* defined (TEST_WITH_GTK_DRAWING_AREA) */
+				gtk_gl_area_make_current(GTK_GL_AREA(buffer->glarea));
+#endif /* defined (TEST_WITH_GTK_DRAWING_AREA) */
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_make_current.  "
@@ -527,6 +1001,16 @@ DESCRIPTION :
 				return_code = 1;
 			} break;
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+			{
+#if defined (TEST_WITH_GTK_DRAWING_AREA)
+#else /* defined (TEST_WITH_GTK_DRAWING_AREA) */
+				gtk_gl_area_swapbuffers(GTK_GL_AREA(buffer->glarea));
+#endif /* defined (TEST_WITH_GTK_DRAWING_AREA) */
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_swap_buffers.  "
@@ -634,6 +1118,12 @@ Returns the width of buffer represented by <buffer>.
 				width = xwidth;
 			} break;
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+			{
+				width = buffer->glarea->allocation.width;
+			} break;
+#endif /* defined (GTKGLAREA) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_width.  "
@@ -664,6 +1154,9 @@ Sets the width of buffer represented by <buffer>.
 	int return_code;
 
 	ENTER(Graphics_buffer_set_width);
+#if !defined (MOTIF)
+	USE_PARAMETER(width);
+#endif /* !defined (MOTIF) */
 	if (buffer)
 	{
 		switch (buffer->type)
@@ -725,6 +1218,12 @@ Returns the height of buffer represented by <buffer>.
 				height = xheight;
 			} break;
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+			{
+				height = buffer->glarea->allocation.height;
+			} break;
+#endif /* defined (GTKGLAREA) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_get_height.  "
@@ -755,6 +1254,9 @@ Sets the height of buffer represented by <buffer>.
 	int return_code;
 
 	ENTER(Graphics_buffer_set_height);
+#if !defined (MOTIF)
+	USE_PARAMETER(height);
+#endif /* !defined (MOTIF) */
 	if (buffer)
 	{
 		switch (buffer->type)
@@ -846,6 +1348,9 @@ Sets the border width of buffer represented by <buffer>.
 	int return_code;
 
 	ENTER(Graphics_buffer_set_border_width);
+#if !defined (MOTIF)
+	USE_PARAMETER(border_width);
+#endif /* !defined (MOTIF) */
 	if (buffer)
 	{
 		switch (buffer->type)
@@ -910,6 +1415,12 @@ into unmanaged or invisible widgets.
 					XtIsManaged(buffer->parent);
 			} break;
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+			{
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USER_INTERFACE) */
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_buffer_is_visible.  "
@@ -950,9 +1461,16 @@ Activates the graphics <buffer>.
 				XtManageChild(buffer->drawing_widget);
 			} break;
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+			{
+				gtk_widget_show(buffer->glarea);
+				return_code = 1;
+			} break;
+#endif /* defined (GTK_USER_INTERFACE) */
 			default:
 			{
-				display_message(ERROR_MESSAGE,"Graphics_buffer_is_visible.  "
+				display_message(ERROR_MESSAGE,"Graphics_buffer_awaken.  "
 					"Graphics_bufffer type unknown or not supported.");				
 				return_code = 0;
 			} break;
@@ -961,7 +1479,7 @@ Activates the graphics <buffer>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Graphics_buffer_is_visible.  Invalid buffer");
+			"Graphics_buffer_awaken.  Invalid buffer");
 		return_code=0;
 	}
 	LEAVE;
@@ -1102,6 +1620,12 @@ x==============================================================================*
 	{
 		return_code=1;
 
+#if defined (GTK_USER_INTERFACE)
+		if (share_glarea == buffer->glarea)
+		{
+			share_glarea = (GtkWidget *)NULL;
+		}
+#endif /* defined (GTK_USER_INTERFACE) */
 		if (buffer->initialise_callback_list)
 		{
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Graphics_buffer_callback)))(

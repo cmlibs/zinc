@@ -37,23 +37,25 @@ from the back end.
 returns a string for it.  This too must be DEALLOCATED by the calling function.
 ==============================================================================*/
 {
+	char *return_string;
+#if defined (UNIX)
 #define BLOCKSIZE (100)
-	char end[3] = {04, 10, 00}, *filename, last_char, *new_string, *return_string,
-		*space_offset;
+	char end[3] = {04, 10, 00}, *filename, last_char, *new_string, *space_offset;
 	fd_set readfds;
 	int flags, index, string_size, stdin_filedes[2], stdout_filedes[2], 
 		timeout;
 	pid_t process_id;
 	ssize_t number_read;
 	struct timeval timeout_struct;
+#endif /* defined (UNIX) */
 
 	ENTER(resolve_example_path);
-
-	timeout = 20; /* seconds */
 
 	if (example_path && directory_name)
 	{
 #if defined (UNIX)
+	   timeout = 20; /* seconds */
+
 		if (ALLOCATE(filename, char, strlen(example_path) + 
 			strlen(directory_name) +50))
 		{

@@ -54,7 +54,8 @@ struct Graphics_buffer_input
 enum Graphics_buffer_type
 {
 	GRAPHICS_BUFFER_INVALID_TYPE,
-	GRAPHICS_BUFFER_X3D_TYPE
+	GRAPHICS_BUFFER_X3D_TYPE,
+	GRAPHICS_BUFFER_GTKGLAREA_TYPE
 };
 
 struct Graphics_buffer;
@@ -83,6 +84,15 @@ DESCRIPTION :
 If <specified_visual_id> is not zero then this visual is required.
 ==============================================================================*/
 #endif /* defined (MOTIF) */
+
+#if defined (GTK_USER_INTERFACE)
+struct Graphics_buffer *create_Graphics_buffer_gtkglarea(GtkContainer *parent);
+/*******************************************************************************
+LAST MODIFIED : 10 July 2002
+
+DESCRIPTION :
+==============================================================================*/
+#endif /* defined (GTK_USER_INTERFACE) */
 
 int Graphics_buffer_make_current(struct Graphics_buffer *buffer);
 /*******************************************************************************

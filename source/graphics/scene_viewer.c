@@ -19,11 +19,15 @@ November 97 Created from rendering part of Drawing.
 ==============================================================================*/
 #include <stdio.h>
 #include <math.h>
+#if defined (MOTIF)
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
 #include <GL/glx.h>
+#endif /* defined (MOTIF) */
 #include "three_d_drawing/dm_interface.h"
+#if defined (MOTIF)
 #include "three_d_drawing/ThreeDDraw.h"
+#endif /* defined (MOTIF) */
 #include "three_d_drawing/movie_extensions.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
@@ -88,7 +92,7 @@ DESCRIPTION :
 	/* overlay scene for showing spectrum scale, annotation, etc. This is always
 		 set up with a parallel projection fitting the largest cube in the window
 		 with coordinates ranging from -1 to +1 from left to right, bottom to top
-		 and far to near. If the window is non-square, coordinates outside -1 to +1
+		 and far to near_plane. If the window is non-square, coordinates outside -1 to +1
 		 are visible in the longer dimension, while 0,0 is the centre of the screen.
 		 The overlay_scene is NULL by default (ie. no overlay). */
 	struct Scene *overlay_scene;
@@ -101,7 +105,7 @@ DESCRIPTION :
 	double lookatx,lookaty,lookatz;
 	double upx,upy,upz;
 	/* Viewing volume for PARALLEL and PERSPECTIVE projections. */
-	double left,right,bottom,top,near,far;
+	double left,right,bottom,top,near_plane,far_plane;
 	/* Scale factors for controlling how rate of translate, tumble and zoom
 		 transformations in relation to mouse movements. Setting a value to
 		 zero turns off that transform capability. */
@@ -115,7 +119,7 @@ DESCRIPTION :
 		 calculated for PARALLEL and PERSPECTIVE projections using the viewing
 		 volume, converts 3-D positions into Normalized Device Coordinates (NDCs) in
 		 a cube from -1 to +1 in each direction.  In the z (depth) direction the
-		 values from -1 (=near plane) to +1 (=far plane) are already where we want
+		 values from -1 (=near_plane plane) to +1 (=far plane) are already where we want
 		 and need no further processing.  In general, however, the real x,y size and
 		 origin in user coordinates are needed to display the image in an
 		 undistorted manner. The following NDC_ variables are used for this purpose.
@@ -527,7 +531,7 @@ modes, so push/pop them if you want them preserved.
 				{
 					glOrtho(scene_viewer->left, scene_viewer->right,
 						scene_viewer->bottom, scene_viewer->top,
-						scene_viewer->near, scene_viewer->far);
+						scene_viewer->near_plane, scene_viewer->far_plane);
 				} break;
 				case SCENE_VIEWER_PERSPECTIVE:
 				{
@@ -535,11 +539,11 @@ modes, so push/pop them if you want them preserved.
 					dx = scene_viewer->eyex-scene_viewer->lookatx;
 					dy = scene_viewer->eyey-scene_viewer->lookaty;
 					dz = scene_viewer->eyez-scene_viewer->lookatz;
-					factor = scene_viewer->near/sqrt(dx*dx+dy*dy+dz*dz);
+					factor = scene_viewer->near_plane/sqrt(dx*dx+dy*dy+dz*dz);
 					/* perspective projection */
 					glFrustum(scene_viewer->left*factor, scene_viewer->right*factor,
 						scene_viewer->bottom*factor, scene_viewer->top*factor,
-						scene_viewer->near, scene_viewer->far);
+						scene_viewer->near_plane, scene_viewer->far_plane);
 				} break;
 			}
 			glGetDoublev(GL_PROJECTION_MATRIX,temp_matrix);
@@ -748,7 +752,7 @@ access this function.
 					glGetDoublev(GL_MODELVIEW_MATRIX,modelview_matrix);
 					glGetDoublev(GL_PROJECTION_MATRIX,projection_matrix);
 					/*				glGetIntegerv(GL_VIEWPORT,viewport);*/
-					/* for OpenGL window z coordinates, 0.0=near, 1.0=far */
+					/* for OpenGL window z coordinates, 0.0=near_plane, 1.0=far */
 					if (GL_TRUE==gluUnProject(0.0001,0.0001,0.1,modelview_matrix,
 						projection_matrix,viewport,&obj_x,&obj_y,&obj_z))
 					{
@@ -1012,7 +1016,7 @@ access this function.
 								/* set up parallel projection/modelview combination that gives
 									 coordinates ranging from -1 to +1 from left to right and
 									 bottom to top in the largest square that fits inside the
-									 viewer. Also has -1 to +1 range from far to near */
+									 viewer. Also has -1 to +1 range from far to near_plane */
 								glMatrixMode(GL_PROJECTION);
 								glLoadIdentity();
 								if (antialias)
@@ -1295,7 +1299,7 @@ access this function.
 
 						if (double_buffer && !picking_on)
 						{
-							/* for OpenGL window z coordinates, 0.0=near, 1.0=far */
+							/* for OpenGL window z coordinates, 0.0=near_plane, 1.0=far */
 							if (GL_TRUE==gluUnProject(0.0001,0.0001,0.0001,
 								modelview_matrix,projection_matrix,viewport,
 								&obj_x,&obj_y,&obj_z))
@@ -1743,7 +1747,7 @@ static int Scene_viewer_unproject(int pointer_x,int pointer_y,
 LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
-Converts the pointer location into locations on the near and far planes in
+Converts the pointer location into locations on the near_plane and far planes in
 world space.
 ==============================================================================*/
 {
@@ -1761,7 +1765,7 @@ world space.
 		return_code=0;
 		win_x=(GLdouble)pointer_x;
 		win_y=(GLdouble)(viewport[3]-pointer_y);
-		/* for OpenGL window z coordinates, 0.0=near, 1.0=far */
+		/* for OpenGL window z coordinates, 0.0=near_plane, 1.0=far */
 		if (GL_TRUE==gluUnProject(win_x,win_y,0.0,
 			modelview_matrix,projection_matrix,viewport,&obj_x,&obj_y,&obj_z))
 		{
@@ -2300,12 +2304,12 @@ Converts mouse button-press and motion events into viewing transformations in
 							a[2]=scene_viewer->eyez-scene_viewer->lookatz;
 							eye_distance=normalize3(a);
 							/* translate at lookat point; proportion from near to far */
-							if ((scene_viewer->far > scene_viewer->near)&&
-								(eye_distance >= scene_viewer->near)&&
-								(eye_distance <= scene_viewer->far))
+							if ((scene_viewer->far_plane > scene_viewer->near_plane)&&
+								(eye_distance >= scene_viewer->near_plane)&&
+								(eye_distance <= scene_viewer->far_plane))
 							{
-								fact = (eye_distance-scene_viewer->near)/
-									(scene_viewer->far-scene_viewer->near);
+								fact = (eye_distance-scene_viewer->near_plane)/
+									(scene_viewer->far_plane-scene_viewer->near_plane);
 							}
 							else
 							{
@@ -2921,8 +2925,8 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->right=1.0;
 				scene_viewer->bottom=-1.0;
 				scene_viewer->top=1.0;
-				scene_viewer->near=0.1;
-				scene_viewer->far=1000.0;
+				scene_viewer->near_plane=0.1;
+				scene_viewer->far_plane=1000.0;
 				scene_viewer->projection_mode=SCENE_VIEWER_PARALLEL;
 				scene_viewer->translate_rate=1.0;
 				scene_viewer->tumble_rate=1.5;
@@ -2987,7 +2991,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->tumble_axis[2] = 0.0;
 				scene_viewer->tumble_angle = 0;
 				scene_viewer->tumble_active = 0;
-				scene_viewer->tumble_callback_id = (XtIntervalId)NULL;
+				scene_viewer->tumble_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 				/* by default, use undistort stuff on textures */
 				scene_viewer->bk_texture_undistort_on=1;
 				scene_viewer->bk_texture_max_pixels_per_polygon=16.0;
@@ -4936,14 +4940,14 @@ eye_distance*0.99 in front of it.
 		scene_viewer->right= radius;
 		scene_viewer->bottom= -radius;
 		scene_viewer->top= radius;
-		scene_viewer->far=eye_distance+clip_distance;
+		scene_viewer->far_plane=eye_distance+clip_distance;
 		if (clip_distance>=eye_distance)
 		{
-			scene_viewer->near=0.01*eye_distance;
+			scene_viewer->near_plane=0.01*eye_distance;
 		}
 		else
 		{
-			scene_viewer->near=eye_distance-clip_distance;
+			scene_viewer->near_plane=eye_distance-clip_distance;
 		}
 		scene_viewer->transform_flag = 1;
 		return_code=1;
@@ -4960,8 +4964,8 @@ eye_distance*0.99 in front of it.
 } /* Scene_viewer_set_view_simple */
 
 int Scene_viewer_get_viewing_volume(struct Scene_viewer *scene_viewer,
-	double *left,double *right,double *bottom,double *top,double *near,
-	double *far)
+	double *left,double *right,double *bottom,double *top,
+	double *near_plane, double *far_plane)
 /*******************************************************************************
 LAST MODIFIED : 21 November 1997
 
@@ -4972,14 +4976,14 @@ Gets the viewing volume of the Scene_viewer.
 	int return_code;
 
 	ENTER(Scene_viewer_get_viewing_volume);
-	if (scene_viewer&&left&&right&&bottom&&top&&near&&far)
+	if (scene_viewer&&left&&right&&bottom&&top&&near_plane&&far_plane)
 	{
 		*left=scene_viewer->left;
 		*right=scene_viewer->right;
 		*bottom=scene_viewer->bottom;
 		*top=scene_viewer->top;
-		*near=scene_viewer->near;
-		*far=scene_viewer->far;
+		*near_plane=scene_viewer->near_plane;
+		*far_plane=scene_viewer->far_plane;
 		return_code=1;
 	}
 	else
@@ -4994,7 +4998,8 @@ Gets the viewing volume of the Scene_viewer.
 } /* Scene_viewer_get_viewing_volume */
 
 int Scene_viewer_set_viewing_volume(struct Scene_viewer *scene_viewer,
-	double left,double right,double bottom,double top,double near,double far)
+	double left,double right,double bottom,double top,
+	double near_plane,double far_plane)
 /*******************************************************************************
 LAST MODIFIED : 15 December 1997
 
@@ -5014,14 +5019,15 @@ rendering a higher resolution image in parts.
 	ENTER(Scene_viewer_set_viewing_volume);
 	if (scene_viewer)
 	{
-		if ((right>left)&&(top>bottom)&&(0<near)&&(near<far))
+		if ((right>left)&&(top>bottom)&&(0<near_plane)&&
+		   (near_plane<far_plane))
 		{
 			scene_viewer->left=left;
 			scene_viewer->right=right;
 			scene_viewer->bottom=bottom;
 			scene_viewer->top=top;
-			scene_viewer->near=near;
-			scene_viewer->far=far;
+			scene_viewer->near_plane=near_plane;
+			scene_viewer->far_plane=far_plane;
 			scene_viewer->transform_flag = 1;
 			return_code=1;
 		}

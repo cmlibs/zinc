@@ -6,6 +6,7 @@ LAST MODIFIED : 26 November 2001
 DESCRIPTION :
 Interface routines for CMISS commands to work with the help window.
 ==============================================================================*/
+#if defined (MOTIF)
 #if defined (NETSCAPE_HELP)
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,9 +23,11 @@ Interface routines for CMISS commands to work with the help window.
 #include <Xm/TextF.h>
 #endif
 #endif /* defined (NETSCAPE_HELP) */
+#endif /* defined (MOTIF) */
 
 #include "general/debug.h"
 #include "general/mystring.h"
+#if defined (MOTIF)
 #if defined (NETSCAPE_HELP)
 #include "command/command.h"
 #else /* defined (NETSCAPE_HELP) */
@@ -36,6 +39,7 @@ Interface routines for CMISS commands to work with the help window.
 #include "help/help_work.h"
 #endif
 #endif /* defined (NETSCAPE_HELP) */
+#endif /* defined (MOTIF) */
 #include "help/help_interface.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -44,6 +48,7 @@ Interface routines for CMISS commands to work with the help window.
 Module constants
 ----------------
 */
+#if defined (MOTIF)
 #if defined (NETSCAPE_HELP)
 #define MOZILLA_VERSION_PROPERTY "_MOZILLA_VERSION"
 #define MOZILLA_LOCK_PROPERTY "_MOZILLA_LOCK"
@@ -51,11 +56,13 @@ Module constants
 #define MOZILLA_RESPONSE_PROPERTY "_MOZILLA_RESPONSE"
 #define WINDOW_NAME "WM_NAME"
 #endif /* defined (NETSCAPE_HELP) */
+#endif /* defined (MOTIF) */
 
 /*
 Module variables
 ----------------
 */
+#if defined (MOTIF)
 #if defined (NETSCAPE_HELP)
 static Atom XA_MOZILLA_VERSION=0;
 static Atom XA_MOZILLA_LOCK=0;
@@ -73,11 +80,13 @@ struct Execute_command *help_execute_command=(struct Execute_command *)NULL;
 #else
 struct Help_window *help_window_structure=(struct Help_window *)NULL;
 #endif
+#endif /* defined (MOTIF) */
 
 /*
 Module functions
 ----------------
 */
+#if defined (MOTIF)
 #if defined (HYPERTEXT_HELP)
 static void example_url_callback(char *example_string)
 /*******************************************************************************
@@ -196,7 +205,9 @@ the <example_string>, parses it and opens the appropriate comfile.
 	LEAVE;
 } /* example_url_callback */
 #endif
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 #if defined (NETSCAPE_HELP)
 static Window get_netscape_window(Display *display)
 /*******************************************************************************
@@ -282,7 +293,9 @@ Determines if there is a netscape on the <display>.
 	return (netscape_window);
 } /* get_cmiss_netscape_window */
 #endif /* defined (NETSCAPE_HELP) */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 #if defined (NETSCAPE_HELP)
 static int lock_netscape(Display *display,Window netscape_window)
 /*******************************************************************************
@@ -379,7 +392,9 @@ Locks netscape so that other processes cannot interact with it.
 	return (return_code);
 } /* lock_netscape */
 #endif /* defined (NETSCAPE_HELP) */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 #if defined (NETSCAPE_HELP)
 static int unlock_netscape(Display *display,Window netscape_window)
 /*******************************************************************************
@@ -421,7 +436,9 @@ Unlocks netscape so that other processes can interact with it.
 	return (return_code);
 } /* lock_netscape */
 #endif /* defined (NETSCAPE_HELP) */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 #if defined (NETSCAPE_HELP)
 static int set_netscape_url(Display *display,Window netscape_window,char *url)
 /*******************************************************************************
@@ -457,6 +474,7 @@ Executes the netscape url.
 	return (return_code);
 } /* set_netscape_url */
 #endif /* defined (NETSCAPE_HELP) */
+#endif /* defined (MOTIF) */
 
 /*
 Global functions
@@ -476,6 +494,7 @@ If the help window is popped down it pops it up.
 Then it sets the help topic edit field and gets the help on the string.
 ==============================================================================*/
 {
+#if defined (MOTIF)
 #if defined (NETSCAPE_HELP)
 	char *temp_string;
 	Display *display;
@@ -504,8 +523,10 @@ Then it sets the help topic edit field and gets the help on the string.
 	short num_strings;
 #endif /* defined (HYPERTEXT_HELP) */
 #endif /* defined (NETSCAPE_HELP) */
+#endif /* defined (MOTIF) */
 
 	ENTER(do_help);
+#if defined (MOTIF)
 #if !defined (HYPERTEXT_HELP)
 	USE_PARAMETER(help_examples_directory);
 #endif /* !defined (HYPERTEXT_HELP) */
@@ -635,6 +656,14 @@ Then it sets the help topic edit field and gets the help on the string.
 	}
 #endif /* defined (HYPERTEXT_HELP) */
 #endif /* defined (NETSCAPE_HELP) */
+#else /* defined (MOTIF) */
+	USE_PARAMETER(help_string);
+	USE_PARAMETER(help_examples_directory);
+	USE_PARAMETER(execute_command);
+	USE_PARAMETER(user_interface);
+	display_message(ERROR_MESSAGE,"do_help.  "
+		"Not implemented for the user interface.");
+#endif /* defined (MOTIF) */
 #if defined (DEBUG)
 	/*???debug */
 	printf("leave do_help\n");
@@ -651,6 +680,7 @@ Pops down the help window.
 ==============================================================================*/
 {
 	ENTER(pop_down_help);
+#if defined (MOTIF)
 #if defined (NETSCAPE_HELP)
 #else /* defined (NETSCAPE_HELP) */
 #if !defined (HYPERTEXT_HELP)
@@ -663,6 +693,10 @@ Pops down the help window.
 	}
 #endif /* !defined (HYPERTEXT_HELP) */
 #endif /* defined (NETSCAPE_HELP) */
+#else /* defined (MOTIF) */
+	display_message(ERROR_MESSAGE,"pop_down_help.  "
+		"Not implemented for the user interface.");
+#endif /* defined (MOTIF) */
 	LEAVE;
 } /* pop_down_help */
 
@@ -675,6 +709,7 @@ Destroys the help window.
 ==============================================================================*/
 {
 	ENTER(destroy_help);
+#if defined (MOTIF)
 #if defined (NETSCAPE_HELP)
 #else /* defined (NETSCAPE_HELP) */
 #if !defined (HYPERTEXT_HELP)
@@ -684,5 +719,9 @@ Destroys the help window.
 	}
 #endif /* !defined (HYPERTEXT_HELP) */
 #endif /* defined (NETSCAPE_HELP) */
+#else /* defined (MOTIF) */
+	display_message(ERROR_MESSAGE,"destroy_help.  "
+		"Not implemented for the user interface.");
+#endif /* defined (MOTIF) */
 	LEAVE;
 } /* destroy_help */

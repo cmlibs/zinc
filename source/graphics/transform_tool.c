@@ -111,6 +111,8 @@ Fetches the appropriate icon for the interactive tool.
 			image = (struct Cmgui_image *)NULL;
 		}
 #else /* defined (MOTIF) */
+		USE_PARAMETER(foreground);
+		USE_PARAMETER(background);
 		display_message(WARNING_MESSAGE, "Transform_tool_get_icon.  "
 			"Not implemented for this version.");
 		image = (struct Cmgui_image *)NULL;

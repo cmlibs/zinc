@@ -9,8 +9,8 @@ Management routines for the main command window.
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <termios.h>
 #if defined (UNIX)
+#include <termios.h>
 #include <sgtty.h>
 #endif /* defined (UNIX) */
 #include "general/debug.h"

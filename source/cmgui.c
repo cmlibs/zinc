@@ -67,9 +67,9 @@ DESCRIPTION :
 #include "general/myio.h"
 #include "graphics/environment_map.h"
 #include "graphics/glyph.h"
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 #include "graphics/graphics_window.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/material.h"
@@ -81,9 +81,7 @@ DESCRIPTION :
 #include "graphics/scene_editor.h"
 #endif /* defined (MOTIF) */
 #include "graphics/spectrum.h"
-#if defined (MOTIF)
 #include "graphics/transform_tool.h"
-#endif /* defined (MOTIF) */
 #include "graphics/volume_texture.h"
 #if defined (MOTIF)
 #include "interaction/interactive_tool.h"
@@ -93,8 +91,8 @@ DESCRIPTION :
 #if defined (SELECT_DESCRIPTORS)
 #include "io_devices/io_device.h"
 #endif /* defined (SELECT_DESCRIPTORS) */
-#if defined (MOTIF)
 #include "node/node_tool.h"
+#if defined (MOTIF)
 #include "node/node_viewer.h"
 #endif /* defined (MOTIF) */
 #include "selection/any_object_selection.h"
@@ -449,8 +447,8 @@ Parses command line options from <state>.
 		Option_table_add_entry(option_table, "-execute",
 			&(command_line_options->execute_string),
 			(void *)" EXECUTE_STRING", set_string);
-		/* -h */
-		Option_table_add_entry(option_table, "-h",
+		/* -help */
+		Option_table_add_entry(option_table, "-help",
 			&(command_line_options->write_help_flag), NULL, set_char_flag);
 		/* -id */
 		Option_table_add_entry(option_table, "-id",
@@ -695,9 +693,9 @@ Main program for the CMISS Graphical User Interface
 	command_data.graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
 	command_data.default_spectrum=(struct Spectrum *)NULL;
 	command_data.spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
-#if defined (MOTIF)
+#if defined (MOTIF) || (GTK_USER_INTERFACE)
 	command_data.graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) */
 	command_data.control_curve_manager=(struct MANAGER(Control_curve) *)NULL;
 	command_data.basis_manager=(struct MANAGER(FE_basis) *)NULL;
 	command_data.element_manager=(struct MANAGER(FE_element) *)NULL;
@@ -726,8 +724,8 @@ Main program for the CMISS Graphical User Interface
 #if defined (SGI_MOVIE_FILE)
 	command_data.movie_graphics_manager=(struct MANAGER(Movie_graphics) *)NULL;
 #endif /* defined (SGI_MOVIE_FILE) */
-#if defined (MOTIF)
 	command_data.transform_tool=(struct Interactive_tool *)NULL;
+#if defined (MOTIF)
 	command_data.node_tool=(struct Node_tool *)NULL;
 	command_data.element_tool=(struct Element_tool *)NULL;
 	command_data.data_tool=(struct Node_tool *)NULL;
@@ -866,7 +864,7 @@ Main program for the CMISS Graphical User Interface
 		{
 			if (!no_display)
 			{
-#if defined (UNIX) /* switch (Operating_System) */
+#if !defined (WIN32_USER_INTERFACE)
 				if (!(command_data.user_interface = CREATE(User_interface)
 					(&argc, argv, command_data.event_dispatcher, "Cmgui",
 					"cmgui")))
@@ -874,7 +872,7 @@ Main program for the CMISS Graphical User Interface
 					display_message(ERROR_MESSAGE,"Could not create User interface");
 					return_code=0;
 				}
-#elif defined (WIN32_USER_INTERFACE) /* switch (Operating_System) */
+#else /* !defined (WIN32_USER_INTERFACE) */
 				if (!(command_data.user_interface = CREATE(User_interface)
 					(current_instance, previous_instance, command_line,
 					 initial_main_window_state, command_data.event_dispatcher)))
@@ -882,7 +880,7 @@ Main program for the CMISS Graphical User Interface
 					display_message(ERROR_MESSAGE,"Could not create User interface");
 					return_code=0;
 				}
-#endif  /* switch (Operating_System) */
+#endif /* !defined (WIN32_USER_INTERFACE) */
 			}
 		}
 		else
@@ -1062,10 +1060,10 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 	/* graphics window manager.  Note there is no default window. */
 	command_data.graphics_window_manager=CREATE(MANAGER(Graphics_window))();
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 	/* FE_element_field_info manager */
 		/*???DB.  To be done */
 	all_FE_element_field_info=CREATE(LIST(FE_element_field_info))();
@@ -1110,10 +1108,8 @@ Main program for the CMISS Graphical User Interface
 	command_data.data_selection=CREATE(FE_node_selection)();
 	command_data.node_selection=CREATE(FE_node_selection)();
 
-#if defined (MOTIF)
 	/* interactive_tool manager */
 	command_data.interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
-#endif /* defined (MOTIF) */
 
 	/* computed field manager and default computed fields zero, xi,
 		 default_coordinate, etc. */
@@ -1279,6 +1275,9 @@ Main program for the CMISS Graphical User Interface
 
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
 	create_interpreter(argc, argv, comfile_name, &status);
+
+	/* Set a useful default for the interpreter variable */
+	interpreter_set_string("example", ".", &status);
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 	command_data.default_time_keeper=ACCESS(Time_keeper)(
@@ -1309,7 +1308,6 @@ Main program for the CMISS Graphical User Interface
 		Open_image_environment("cmgui");
 #endif /* switch (Operating_System) */
 
-#if defined (MOTIF)
 		command_data.transform_tool=create_Interactive_tool_transform(
 			command_data.user_interface);
 		ADD_OBJECT_TO_MANAGER(Interactive_tool)(command_data.transform_tool,
@@ -1325,23 +1323,24 @@ Main program for the CMISS Graphical User Interface
 			command_data.user_interface,
 			command_data.default_time_keeper,
 			command_data.execute_command);
-		command_data.element_tool=CREATE(Element_tool)(
-			command_data.interactive_tool_manager,
-			command_data.element_manager,
-			command_data.element_group_manager,
-			command_data.element_selection,
-			command_data.element_point_ranges_selection,
-			command_data.computed_field_package,
-			command_data.default_graphical_material,
-			command_data.user_interface,
-			command_data.default_time_keeper,
-			command_data.execute_command);
 		command_data.data_tool=CREATE(Node_tool)(
 			command_data.interactive_tool_manager,
 			command_data.data_manager,/*use_data*/1,
 			command_data.data_group_manager,
 			(struct MANAGER(FE_element) *)NULL,
 			command_data.data_selection,
+			command_data.computed_field_package,
+			command_data.default_graphical_material,
+			command_data.user_interface,
+			command_data.default_time_keeper,
+			command_data.execute_command);
+#if defined (MOTIF)
+		command_data.element_tool=CREATE(Element_tool)(
+			command_data.interactive_tool_manager,
+			command_data.element_manager,
+			command_data.element_group_manager,
+			command_data.element_selection,
+			command_data.element_point_ranges_selection,
 			command_data.computed_field_package,
 			command_data.default_graphical_material,
 			command_data.user_interface,
@@ -1524,7 +1523,6 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (MOTIF) */
 	}	
 
-#if defined (MOTIF)
 	if (return_code && (!command_list) && (!write_help))
 	{
 		if (start_cm||start_mycm)
@@ -1567,7 +1565,6 @@ Main program for the CMISS Graphical User Interface
 				execute_command);
 		}
 	}
-#endif /* defined (MOTIF) */
 
 	if ((!command_list) && (!write_help))
 	{
@@ -1655,10 +1652,12 @@ Main program for the CMISS Graphical User Interface
 	{
 		DESTROY(Scene_editor)(&(command_data.scene_editor));
 	}
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 	DESTROY(MANAGER(Graphics_window))(
 		&command_data.graphics_window_manager);
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF)|| defined (GTK_USER_INTERFACE) */
 
 	if (computed_field_finite_element_package)
 	{
@@ -1680,13 +1679,14 @@ Main program for the CMISS Graphical User Interface
 	{
 		DESTROY(Element_point_tool)(&command_data.element_point_tool);
 	}
-	if (command_data.data_tool)
-	{
-		DESTROY(Node_tool)(&command_data.data_tool);
-	}
 	if (command_data.element_tool)
 	{
 		DESTROY(Element_tool)(&command_data.element_tool);
+	}
+#endif /* defined (MOTIF) */
+	if (command_data.data_tool)
+	{
+		DESTROY(Node_tool)(&command_data.data_tool);
 	}
 	if (command_data.node_tool)
 	{
@@ -1694,7 +1694,6 @@ Main program for the CMISS Graphical User Interface
 	}
 	DESTROY(MANAGER(Interactive_tool))(
 		&(command_data.interactive_tool_manager));
-#endif /* defined (MOTIF) */
 
 	DEACCESS(Scene)(&(command_data.default_scene));
 	DESTROY(MANAGER(Scene))(&command_data.scene_manager);

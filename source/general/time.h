@@ -12,13 +12,8 @@ Defines the gettimeofday and relevant structure for UNIX and WIN32_SYSTEM
 #if defined (UNIX) /* switch (OPERATING_SYSTEM) */
 #include <sys/time.h>
 #elif defined (WIN32_SYSTEM) /* switch (OPERATING_SYSTEM) */
+#include <windows.h>
 typedef long time_t;
-struct timeval
-{
-  time_t    tv_sec;
-  long      tv_usec;
-};
-
 int gettimeofday(struct timeval *time, void *timezone);
 #endif /* switch (OPERATING_SYSTEM) */
 

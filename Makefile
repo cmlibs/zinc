@@ -182,6 +182,19 @@ $(SOURCE_PATH)/cmgui_linux_console.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PA
 	$(COMMON_IMAKE_RULE) \
 	imake -DLINUX -DCONSOLE -DOPTIMISED $${CMISS_ROOT_DEF} -s cmgui_linux_console.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
+#Linux gtk version
+cmgui_linux_gtk : force $(SOURCE_PATH)/cmgui_linux_gtk.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cmgui_linux_gtk.make ]; then \
+		$(MAKE) -f cmgui_linux_gtk.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_linux_gtk.make $(TARGET) ; \
+	fi
+
+$(SOURCE_PATH)/cmgui_linux_gtk.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DLINUX -DGTK_USER_INTERFACE -DDYNAMIC_GL_LINUX $${CMISS_ROOT_DEF} -s cmgui_linux_gtk.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
 #AIX version
 cmgui_aix : force $(SOURCE_PATH)/cmgui_aix.make
 	$(COMMON_MAKE_RULE) \
@@ -256,6 +269,19 @@ cmgui_win32_console : force $(SOURCE_PATH)/cmgui_win32_console.make
 $(SOURCE_PATH)/cmgui_win32_console.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
 	$(COMMON_IMAKE_RULE) \
 	imake -DWIN32 -DCONSOLE $${CMISS_ROOT_DEF} -s cmgui_win32_console.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
+#Win32 gtk version
+cmgui_win32_gtk : force $(SOURCE_PATH)/cmgui_win32_gtk.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cmgui_win32_gtk.make ]; then \
+		$(MAKE) -f cmgui_win32_gtk.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_win32_gtk.make $(TARGET) ; \
+	fi
+
+$(SOURCE_PATH)/cmgui_win32_gtk.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DWIN32 -DGTK_USER_INTERFACE $${CMISS_ROOT_DEF} -s cmgui_win32_gtk.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 update_sources :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \

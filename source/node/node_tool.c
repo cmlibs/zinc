@@ -8,12 +8,14 @@ Functions for mouse controlled node position and vector editing based on
 Scene input.
 ==============================================================================*/
 #include <math.h>
+#if defined (MOTIF)
 #include <Xm/Protocols.h>
 #include <Xm/MwmUtil.h>
 #include <Xm/Xm.h>
 #include <Xm/ToggleBG.h>
 #include "choose/choose_computed_field.h"
 #include "choose/choose_node_group.h"
+#endif /* defined (MOTIF) */
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -29,8 +31,10 @@ Scene input.
 #include "interaction/interactive_event.h"
 #include "node/node_operations.h"
 #include "node/node_tool.h"
+#if defined (MOTIF)
 #include "node/node_tool.uidh"
 #include "motif/image_utilities.h"
+#endif /* defined (MOTIF) */
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 
@@ -104,12 +108,12 @@ changes in node position and derivatives etc.
 
 #if defined (MOTIF)
 	Display *display;
-#endif /* defined (MOTIF) */
 	Widget coordinate_field_form,coordinate_field_widget,create_button,
 		define_button,edit_button,motion_update_button,node_group_form,
 		node_group_widget,select_button,streaming_create_button,
 		url_field_button,url_field_form,url_field_widget;
 	Widget widget,window_shell;
+#endif /* defined (MOTIF) */
 }; /* struct Node_tool */
 
 struct FE_node_edit_information
@@ -158,6 +162,7 @@ Module functions
 ----------------
 */
 
+#if defined (MOTIF)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,coordinate_field_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,create_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,define_button)
@@ -168,6 +173,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,select_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,streaming_create_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,url_field_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,url_field_form)
+#endif /* defined (MOTIF) */
 
 static int Node_tool_define_field_at_node(struct Node_tool *node_tool,
 	struct FE_node *node)
@@ -1136,6 +1142,7 @@ the new node.
 	return (node);
 } /* Node_tool_create_node_at_interaction_volume */
 
+#if defined (MOTIF)
 static void Node_tool_close_CB(Widget widget,void *node_tool_void,
 	void *call_data)
 /*******************************************************************************
@@ -1165,7 +1172,9 @@ Function pops down dialog as a response,
 	}
 	LEAVE;
 } /* Node_tool_close_CB */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static void Node_tool_create_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1192,7 +1201,9 @@ response to interactive events.
 	}
 	LEAVE;
 } /* Node_tool_create_button_CB */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static void Node_tool_define_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1219,7 +1230,9 @@ response to interactive events.
 	}
 	LEAVE;
 } /* Node_tool_define_button_CB */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static void Node_tool_edit_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1246,7 +1259,9 @@ response to interactive events.
 	}
 	LEAVE;
 } /* Node_tool_edit_button_CB */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static void Node_tool_motion_update_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1273,7 +1288,9 @@ during the edit - if off then updates only once at the end.
 	}
 	LEAVE;
 } /* Node_tool_motion_update_button_CB */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static void Node_tool_select_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1300,7 +1317,9 @@ response to interactive events.
 	}
 	LEAVE;
 } /* Node_tool_select_button_CB */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static void Node_tool_streaming_create_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1327,7 +1346,9 @@ ie. streaming in response to interactive events = user drags.
 	}
 	LEAVE;
 } /* Node_tool_streaming_create_button_CB */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static void Node_tool_url_field_button_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1371,7 +1392,9 @@ Callback from toggle button enabling a url_field to be selected.
 	}
 	LEAVE;
 } /* Node_tool_url_field_button_CB */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static void Node_tool_update_url_field(Widget widget,
 	void *node_tool_void, void *url_field_void)
 /*******************************************************************************
@@ -1401,7 +1424,9 @@ Callback for change of url_field.
 	}
 	LEAVE;
 } /* Node_tool_update_url_field */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static void Node_tool_update_node_group(Widget widget,
 	void *node_tool_void,void *node_group_void)
 /*******************************************************************************
@@ -1428,7 +1453,9 @@ Callback for change of node group to put the new nodes in.
 	}
 	LEAVE;
 } /* Node_tool_update_node_group */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static void Node_tool_update_coordinate_field(Widget widget,
 	void *node_tool_void,void *coordinate_field_void)
 /*******************************************************************************
@@ -1454,7 +1481,9 @@ Callback for change of coordinate_field.
 	}
 	LEAVE;
 } /* Node_tool_update_coordinate_field */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static void Node_tool_destroy_selected_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1489,7 +1518,9 @@ Attempts to destroy all the nodes currently in the global selection.
 	}
 	LEAVE;
 } /* Node_tool_destroy_selected_CB */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static void Node_tool_undefine_selected_CB(Widget widget,
 	void *node_tool_void,void *call_data)
 /*******************************************************************************
@@ -1542,6 +1573,7 @@ Attempts to undefine all the nodes currently in the global selection.
 	}
 	LEAVE;
 } /* Node_tool_undefine_selected_CB */
+#endif /* defined (MOTIF) */
 
 static void Node_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *node_tool_void)
@@ -1978,16 +2010,19 @@ DESCRIPTION :
 Fetches the appropriate icon for the interactive tool.
 ==============================================================================*/
 {
+#if defined (MOTIF)
 	char *icon_name;
 	Display *display;
 	Pixel background_pixel, foreground_pixel;
 	Pixmap pixmap;
+#endif /* defined (MOTIF) */
 	struct Cmgui_image *image;
 	struct Node_tool *node_tool;
 
 	ENTER(node_tool_get_icon);
 	if ((node_tool=(struct Node_tool *)node_tool_void))
 	{
+#if defined (MOTIF)
 		if (MrmOpenHierarchy_base64_string(node_tool_uidh,
 			&node_tool_hierarchy,&node_tool_hierarchy_open))
 		{
@@ -2021,6 +2056,12 @@ Fetches the appropriate icon for the interactive tool.
 				"Could not open heirarchy");
 			image = (struct Cmgui_image *)NULL;
 		}
+#else /* defined (MOTIF) */
+		USE_PARAMETER(foreground);
+		USE_PARAMETER(background);
+		display_message(WARNING_MESSAGE, "Node_tool_get_icon.  "
+			"Not implemented for this user interface.");
+#endif /* defined (MOTIF) */
 	}
 	else
 	{
@@ -2060,8 +2101,9 @@ refer to data, not nodes, needed since different GT_element_settings types are
 used to represent them. <element_manager> should be NULL if <use_data> is true.
 ==============================================================================*/
 {
-	Atom WM_DELETE_WINDOW;
 	char *tool_display_name,*tool_name;
+#if defined (MOTIF)
+	Atom WM_DELETE_WINDOW;
 	int init_widgets;
 	MrmType node_tool_dialog_class;
 	static MrmRegisterArg callback_list[]=
@@ -2110,6 +2152,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 		{"node_tool_structure",(XtPointer)NULL}
 	};
 	struct Callback_data callback;
+#endif /* defined (MOTIF) */
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Node_tool *node_tool;
 
@@ -2121,91 +2164,92 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			Computed_field_package_get_computed_field_manager(computed_field_package))
 		&&rubber_band_material&&user_interface&&execute_command)
 	{
-		if (MrmOpenHierarchy_base64_string(node_tool_uidh,
-			&node_tool_hierarchy,&node_tool_hierarchy_open))
+		if (ALLOCATE(node_tool,struct Node_tool,1))
 		{
-			if (ALLOCATE(node_tool,struct Node_tool,1))
+			node_tool->execute_command=execute_command;
+			node_tool->interactive_tool_manager=interactive_tool_manager;
+			node_tool->node_manager=node_manager;
+			node_tool->use_data=use_data;
+			node_tool->node_group_manager=node_group_manager;
+			node_tool->element_manager=element_manager;
+			node_tool->node_selection=node_selection;
+			node_tool->computed_field_package=computed_field_package;
+			node_tool->rubber_band_material=
+				ACCESS(Graphical_material)(rubber_band_material);
+			node_tool->user_interface=user_interface;
+			node_tool->time_keeper = (struct Time_keeper *)NULL;
+			if (time_keeper)
 			{
-				node_tool->execute_command=execute_command;
-				node_tool->interactive_tool_manager=interactive_tool_manager;
-				node_tool->node_manager=node_manager;
-				node_tool->use_data=use_data;
-				node_tool->node_group_manager=node_group_manager;
-				node_tool->element_manager=element_manager;
-				node_tool->node_selection=node_selection;
-				node_tool->computed_field_package=computed_field_package;
-				node_tool->rubber_band_material=
-					ACCESS(Graphical_material)(rubber_band_material);
-				node_tool->user_interface=user_interface;
-				node_tool->time_keeper = (struct Time_keeper *)NULL;
-				if (time_keeper)
-				{
-					node_tool->time_keeper = ACCESS(Time_keeper)(time_keeper);
-				}
-				/* user-settable flags */
-				node_tool->select_enabled=1;
-				node_tool->edit_enabled=0;
-				node_tool->motion_update_enabled=1;
-				node_tool->define_enabled=0;
-				node_tool->create_enabled=0;
-				node_tool->streaming_create_enabled=0;
-				node_tool->edit_mode=NODE_TOOL_EDIT_AUTOMATIC;
-				node_tool->node_group=FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_node))(
-					(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
-					(void *)NULL,node_group_manager);
-				node_tool->coordinate_field =
-					FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-						Computed_field_has_up_to_3_numerical_components, (void *)NULL,
-						computed_field_manager);
-				node_tool->url_field = (struct Computed_field *)NULL;
-				node_tool->template_node=(struct FE_node *)NULL;
-				/* interactive_tool */
-				if (use_data)
-				{
-					tool_name="data_tool";
-					tool_display_name="Data tool";
-				}
-				else
-				{
-					tool_name="node_tool";
-					tool_display_name="Node tool";
-				}
-				node_tool->interactive_tool=CREATE(Interactive_tool)(
-					tool_name,tool_display_name,
-					Interactive_tool_node_type_string,
-					Node_tool_interactive_event_handler,
-					Node_tool_get_icon,
-					Node_tool_bring_up_interactive_tool_dialog,
-					(Interactive_tool_destroy_tool_data_function *)NULL,
-					(void *)node_tool);
-				ADD_OBJECT_TO_MANAGER(Interactive_tool)(
-					node_tool->interactive_tool,
-					node_tool->interactive_tool_manager);
-				node_tool->scene_picked_object=(struct Scene_picked_object *)NULL;
-				node_tool->last_picked_node=(struct FE_node *)NULL;
-				node_tool->gt_element_group=(struct GT_element_group *)NULL;
-				node_tool->gt_element_settings=(struct GT_element_settings *)NULL;
-				node_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
-				node_tool->rubber_band=(struct GT_object *)NULL;
-				/* initialise widgets */
-				node_tool->coordinate_field_form=(Widget)NULL;
-				node_tool->coordinate_field_widget=(Widget)NULL;
-				node_tool->create_button=(Widget)NULL;
-				node_tool->define_button=(Widget)NULL;
-				node_tool->display = User_interface_get_display(user_interface);
-				node_tool->edit_button=(Widget)NULL;
-				node_tool->motion_update_button=(Widget)NULL;
-				node_tool->node_group_form=(Widget)NULL;
-				node_tool->node_group_widget=(Widget)NULL;
-				node_tool->select_button=(Widget)NULL;
-				node_tool->streaming_create_button=(Widget)NULL;
-				node_tool->url_field_button=(Widget)NULL;
-				node_tool->url_field_form=(Widget)NULL;
-				node_tool->url_field_widget=(Widget)NULL;
-				node_tool->widget=(Widget)NULL;
-				node_tool->window_shell=(Widget)NULL;
+				node_tool->time_keeper = ACCESS(Time_keeper)(time_keeper);
+			}
+			/* user-settable flags */
+			node_tool->select_enabled=1;
+			node_tool->edit_enabled=0;
+			node_tool->motion_update_enabled=1;
+			node_tool->define_enabled=0;
+			node_tool->create_enabled=0;
+			node_tool->streaming_create_enabled=0;
+			node_tool->edit_mode=NODE_TOOL_EDIT_AUTOMATIC;
+			node_tool->node_group=FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_node))(
+				(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
+				(void *)NULL,node_group_manager);
+			node_tool->coordinate_field =
+				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+					Computed_field_has_up_to_3_numerical_components, (void *)NULL,
+					computed_field_manager);
+			node_tool->url_field = (struct Computed_field *)NULL;
+			node_tool->template_node=(struct FE_node *)NULL;
+			/* interactive_tool */
+			if (use_data)
+			{
+				tool_name="data_tool";
+				tool_display_name="Data tool";
+			}
+			else
+			{
+				tool_name="node_tool";
+				tool_display_name="Node tool";
+			}
+			node_tool->interactive_tool=CREATE(Interactive_tool)(
+				tool_name,tool_display_name,
+				Interactive_tool_node_type_string,
+				Node_tool_interactive_event_handler,
+				Node_tool_get_icon,
+				Node_tool_bring_up_interactive_tool_dialog,
+				(Interactive_tool_destroy_tool_data_function *)NULL,
+				(void *)node_tool);
+			ADD_OBJECT_TO_MANAGER(Interactive_tool)(
+				node_tool->interactive_tool,
+				node_tool->interactive_tool_manager);
+			node_tool->scene_picked_object=(struct Scene_picked_object *)NULL;
+			node_tool->last_picked_node=(struct FE_node *)NULL;
+			node_tool->gt_element_group=(struct GT_element_group *)NULL;
+			node_tool->gt_element_settings=(struct GT_element_settings *)NULL;
+			node_tool->last_interaction_volume=(struct Interaction_volume *)NULL;
+			node_tool->rubber_band=(struct GT_object *)NULL;
+#if defined (MOTIF)
+			/* initialise widgets */
+			node_tool->coordinate_field_form=(Widget)NULL;
+			node_tool->coordinate_field_widget=(Widget)NULL;
+			node_tool->create_button=(Widget)NULL;
+			node_tool->define_button=(Widget)NULL;
+			node_tool->display = User_interface_get_display(user_interface);
+			node_tool->edit_button=(Widget)NULL;
+			node_tool->motion_update_button=(Widget)NULL;
+			node_tool->node_group_form=(Widget)NULL;
+			node_tool->node_group_widget=(Widget)NULL;
+			node_tool->select_button=(Widget)NULL;
+			node_tool->streaming_create_button=(Widget)NULL;
+			node_tool->url_field_button=(Widget)NULL;
+			node_tool->url_field_form=(Widget)NULL;
+			node_tool->url_field_widget=(Widget)NULL;
+			node_tool->widget=(Widget)NULL;
+			node_tool->window_shell=(Widget)NULL;
 
-				/* make the dialog shell */
+			/* make the dialog shell */
+			if (MrmOpenHierarchy_base64_string(node_tool_uidh,
+				&node_tool_hierarchy,&node_tool_hierarchy_open))
+			{
 				if (node_tool->window_shell=
 					XtVaCreatePopupShell(tool_display_name,
 						topLevelShellWidgetClass,
@@ -2348,14 +2392,15 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"CREATE(Node_tool).  Not enough memory");
-				DEALLOCATE(node_tool);
+					"CREATE(Node_tool).  Could not open hierarchy");
 			}
+#endif /* defined (MOTIF) */
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"CREATE(Node_tool).  Could not open hierarchy");
+				"CREATE(Node_tool).  Not enough memory");
+			DEALLOCATE(node_tool);
 		}
 	}
 	else
@@ -2408,12 +2453,14 @@ structure itself.
 		{
 			DEACCESS(Time_keeper)(&(node_tool->time_keeper));
 		}
+#if defined (MOTIF)
 		if (node_tool->window_shell)
 		{
 			destroy_Shell_list_item_from_shell(&(node_tool->window_shell),
 				node_tool->user_interface);
 			XtDestroyWidget(node_tool->window_shell);
 		}
+#endif /* defined (MOTIF) */
 		DEALLOCATE(*node_tool_address);
 		return_code=1;
 	}
@@ -2440,9 +2487,14 @@ Pops up a dialog for editing settings of the Node_tool.
 	ENTER(Node_tool_pop_up_dialog);
 	if (node_tool)
 	{
+#if defined (MOTIF)
 		XtPopup(node_tool->window_shell, XtGrabNone);
 		/* make sure in addition that it is not shown as an icon */
 		XtVaSetValues(node_tool->window_shell, XmNiconic, False, NULL);
+#else /* defined (MOTIF) */
+		display_message(ERROR_MESSAGE, "Node_tool_pop_up_dialog.  "
+			"No dialog implemented for this User Interface");
+#endif /* defined (MOTIF) */
 		return_code = 1;
 	}
 	else
@@ -2469,7 +2521,12 @@ Hides the dialog for editing settings of the Node_tool.
 	ENTER(Node_tool_pop_down_dialog);
 	if (node_tool)
 	{
+#if defined (MOTIF)
 		XtPopdown(node_tool->window_shell);
+#else /* defined (MOTIF) */
+		display_message(ERROR_MESSAGE, "Node_tool_pop_down_dialog.  "
+			"No dialog implemented for this User Interface");
+#endif /* defined (MOTIF) */
 		return_code = 1;
 	}
 	else
@@ -2531,9 +2588,11 @@ are on.
 			node_tool->coordinate_field=coordinate_field;
 			/* lose the current template node, if any */
 			REACCESS(FE_node)(&(node_tool->template_node),(struct FE_node *)NULL);
+#if defined (MOTIF)
 			/* make sure the current field is shown on the widget */
 			CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
 				node_tool->coordinate_field_widget,node_tool->coordinate_field);
+#endif /* defined (MOTIF) */
 		}
 	}
 	else
@@ -2584,7 +2643,10 @@ Sets flag controlling whether nodes can be created when none are selected
 on a mouse button press. Also ensures define is enabled if create is.
 ==============================================================================*/
 {
-	int button_state,return_code;
+	int return_code;
+#if defined (MOTIF)
+	int button_state;
+#endif /* defined (MOTIF) */
 
 	ENTER(Node_tool_set_create_enabled);
 	if (node_tool)
@@ -2611,6 +2673,7 @@ on a mouse button press. Also ensures define is enabled if create is.
 		{
 			node_tool->create_enabled=create_enabled;
 			/* make sure button shows current state */
+#if defined (MOTIF)
 			if (XmToggleButtonGadgetGetState(node_tool->create_button))
 			{
 				button_state=1;
@@ -2624,6 +2687,7 @@ on a mouse button press. Also ensures define is enabled if create is.
 				XmToggleButtonGadgetSetState(node_tool->create_button,
 					/*state*/node_tool->create_enabled,/*notify*/False);
 			}
+#endif /* defined (MOTIF) */
 		}
 	}
 	else
@@ -2674,7 +2738,10 @@ Sets flag controlling whether the coordinate_field can be defined on any new
 or individually selected existing nodes.
 ==============================================================================*/
 {
-	int button_state,return_code;
+	int return_code;
+#if defined (MOTIF)
+	int button_state;
+#endif /* defined (MOTIF) */
 
 	ENTER(Node_tool_set_define_enabled);
 	if (node_tool)
@@ -2703,6 +2770,7 @@ or individually selected existing nodes.
 		if (define_enabled != node_tool->define_enabled)
 		{
 			node_tool->define_enabled=define_enabled;
+#if defined (MOTIF)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(node_tool->define_button))
 			{
@@ -2717,6 +2785,7 @@ or individually selected existing nodes.
 				XmToggleButtonGadgetSetState(node_tool->define_button,
 					/*state*/node_tool->define_enabled,/*notify*/False);
 			}
+#endif /* defined (MOTIF) */
 		}
 	}
 	else
@@ -2766,7 +2835,10 @@ Sets flag controlling whether node edits are updated during motion_notify
 events, not just at the end of a mouse gesture.
 ==============================================================================*/
 {
-	int button_state,return_code;
+	int return_code;
+#if defined (MOTIF)
+	int button_state;
+#endif /* defined (MOTIF) */
 
 	ENTER(Node_tool_set_edit_enabled);
 	if (node_tool)
@@ -2779,6 +2851,7 @@ events, not just at the end of a mouse gesture.
 		if (edit_enabled != node_tool->edit_enabled)
 		{
 			node_tool->edit_enabled=edit_enabled;
+#if defined (MOTIF)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(node_tool->edit_button))
 			{
@@ -2793,6 +2866,7 @@ events, not just at the end of a mouse gesture.
 				XmToggleButtonGadgetSetState(node_tool->edit_button,
 					/*state*/node_tool->edit_enabled,/*notify*/False);
 			}
+#endif /* defined (MOTIF) */
 		}
 		return_code=1;
 	}
@@ -2901,7 +2975,10 @@ Sets flag controlling whether node edits are updated during motion_notify
 events, not just at the end of a mouse gesture.
 ==============================================================================*/
 {
-	int button_state,return_code;
+	int return_code;
+#if defined (MOTIF)
+	int button_state;
+#endif /* defined (MOTIF) */
 
 	ENTER(Node_tool_set_motion_update_enabled);
 	if (node_tool)
@@ -2914,6 +2991,7 @@ events, not just at the end of a mouse gesture.
 		if (motion_update_enabled != node_tool->motion_update_enabled)
 		{
 			node_tool->motion_update_enabled=motion_update_enabled;
+#if defined (MOTIF)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(node_tool->motion_update_button))
 			{
@@ -2928,6 +3006,7 @@ events, not just at the end of a mouse gesture.
 				XmToggleButtonGadgetSetState(node_tool->motion_update_button,
 					/*state*/node_tool->motion_update_enabled,/*notify*/False);
 			}
+#endif /* defined (MOTIF) */
 		}
 		return_code=1;
 	}
@@ -2986,9 +3065,11 @@ Sets the node group new nodes are created in by <node_tool>.
 		if (node_group != node_tool->node_group)
 		{
 			node_tool->node_group=node_group;
+#if defined (MOTIF)
 			/* make sure the current group is shown */
 			CHOOSE_OBJECT_SET_OBJECT(GROUP(FE_node))(
 				node_tool->node_group_widget,node_tool->node_group);
+#endif /* defined (MOTIF) */
 		}
 	}
 	else
@@ -3037,7 +3118,10 @@ DESCRIPTION :
 Sets flag controlling whether existing nodes can be selected.
 ==============================================================================*/
 {
-	int button_state,return_code;
+	int return_code;
+#if defined (MOTIF)
+	int button_state;
+#endif /* defined (MOTIF) */
 
 	ENTER(Node_tool_set_select_enabled);
 	if (node_tool)
@@ -3050,6 +3134,7 @@ Sets flag controlling whether existing nodes can be selected.
 		if (select_enabled != node_tool->select_enabled)
 		{
 			node_tool->select_enabled=select_enabled;
+#if defined (MOTIF)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(node_tool->select_button))
 			{
@@ -3064,6 +3149,7 @@ Sets flag controlling whether existing nodes can be selected.
 				XmToggleButtonGadgetSetState(node_tool->select_button,
 					/*state*/node_tool->select_enabled,/*notify*/False);
 			}
+#endif /* defined (MOTIF) */
 		}
 		return_code=1;
 	}
@@ -3115,7 +3201,10 @@ Sets flag controlling, if create_enabled, whether a stream of nodes is
 created as the user drags the mouse around.
 ==============================================================================*/
 {
-	int button_state, return_code;
+	int return_code;
+#if defined (MOTIF)
+	int button_state;
+#endif /* defined (MOTIF) */
 
 	ENTER(Node_tool_set_streaming_create_enabled);
 	if (node_tool)
@@ -3128,6 +3217,7 @@ created as the user drags the mouse around.
 		if (streaming_create_enabled != node_tool->streaming_create_enabled)
 		{
 			node_tool->streaming_create_enabled = streaming_create_enabled;
+#if defined (MOTIF)
 			/* make sure button shows current state */
 			if (XmToggleButtonGadgetGetState(node_tool->streaming_create_button))
 			{
@@ -3142,6 +3232,7 @@ created as the user drags the mouse around.
 				XmToggleButtonGadgetSetState(node_tool->streaming_create_button,
 					/*state*/node_tool->streaming_create_enabled, /*notify*/False);
 			}
+#endif /* defined (MOTIF) */
 		}
 		return_code = 1;
 	}
@@ -3204,15 +3295,19 @@ in the <node_tool>.
 		if (url_field != node_tool->url_field)
 		{
 			node_tool->url_field = url_field;
+#if defined (MOTIF)
 			if (url_field)
 			{
 				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
 					node_tool->url_field_widget,node_tool->url_field);
 			}
+#endif /* defined (MOTIF) */
 			field_set = ((struct Computed_field *)NULL != url_field);
+#if defined (MOTIF)
 			XtVaSetValues(node_tool->url_field_button,
 				XmNset, (XtPointer)field_set, NULL);
 			XtSetSensitive(node_tool->url_field_widget, field_set);
+#endif /* defined (MOTIF) */
 		}
 	}
 	else
