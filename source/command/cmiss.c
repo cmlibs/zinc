@@ -21463,11 +21463,57 @@ Executes a SET DIR command.
 				{
 					if (example_flag)
 					{
-						/* construct the example directory path */
-						if ((directory_name_length=strlen(directory_name))>0)
+						if (directory_name)
 						{
-							file_name_length=
-								1+(directory_name_length*(directory_name_length+3))/2;
+							/* construct the example directory path */
+							if ((directory_name_length=strlen(directory_name))>0)
+							{
+								file_name_length=
+									1+(directory_name_length*(directory_name_length+3))/2;
+								if (command_data->examples_directory)
+								{
+									file_name_length += strlen(command_data->examples_directory);
+								}
+								if (ALLOCATE(example_directory,char,file_name_length))
+								{
+									*example_directory='\0';
+									if (command_data->examples_directory)
+									{
+										strcat(example_directory,command_data->examples_directory);
+									}
+									temp_char=example_directory+strlen(example_directory);
+									for (i=1;i<=directory_name_length;i++)
+									{
+										strncpy(temp_char,directory_name,i);
+										temp_char += i;
+										*temp_char='/';
+										temp_char++;
+									}
+									*temp_char='\0';
+									DEALLOCATE(command_data->example_directory);
+									command_data->example_directory=example_directory;
+									/* send command to the back end */
+									/* have to reset the token position to get it to
+										export the command */
+									state->current_token = token;
+									return_code=execute_command_cm(state,(void *)NULL,
+										command_data_void);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"set_dir.  Insufficient memory");
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"set_dir.  Invalid example name");
+							}
+						}
+						else
+						{
+							file_name_length = 1;
 							if (command_data->examples_directory)
 							{
 								file_name_length += strlen(command_data->examples_directory);
@@ -21479,34 +21525,14 @@ Executes a SET DIR command.
 								{
 									strcat(example_directory,command_data->examples_directory);
 								}
-								temp_char=example_directory+strlen(example_directory);
-								for (i=1;i<=directory_name_length;i++)
-								{
-									strncpy(temp_char,directory_name,i);
-									temp_char += i;
-									*temp_char='/';
-									temp_char++;
-								}
-								*temp_char='\0';
 								DEALLOCATE(command_data->example_directory);
 								command_data->example_directory=example_directory;
-								/* send command to the back end */
-								/* have to reset the token position to get it to
-									export the command */
-								state->current_token = token;
-								return_code=execute_command_cm(state,(void *)NULL,
-									command_data_void);
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
 									"set_dir.  Insufficient memory");
 							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"set_dir.  Invalid example name");
 						}
 					} 
 					else
