@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 23 September 2000
+LAST MODIFIED : 24 September 2000
 
 DESCRIPTION :
 
@@ -2386,7 +2386,7 @@ Writes the minimum for the current channel into the minimum field.
 static int page_window_set_gain(struct Page_window *page_window,
 	int channel_number,float gain)
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 24 September 2000
 
 DESCRIPTION :
 A simplified/specialized version of unemap_set_gain.
@@ -2407,8 +2407,8 @@ A simplified/specialized version of unemap_set_gain.
 			} break;
 			case UnEmap_2V1:
 			case UnEmap_2V2:
+			case UnEmap_2V1|UnEmap_2V2:
 			{
-				/*???DB.  For UNEMAP_2V1 and UNEMAP_2V2 */
 				pre_filter_gain=gain/(float)11;
 				if (pre_filter_gain>(float)8)
 				{
@@ -4093,7 +4093,7 @@ Assumes that the calibration file is normalized.
 
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 24 September 2000
 
 DESCRIPTION :
 Called to start experiment on the <page_window>.
@@ -4125,441 +4125,455 @@ Called to start experiment on the <page_window>.
 	return_code=0;
 	if (page_window&&(page_window->rig_address))
 	{
-#if defined (NEW_CODE)
-		/*???DB.  Motif isn't picking up the current directory ? */
-		confirmation_change_current_working_directory(page_window->user_interface);
-#endif /* defined (NEW_CODE) */
-		/* make sure that there is a rig */
-		if (!(*(page_window->rig_address)))
+		if ((UnEmap_1V2==page_window->unemap_hardware_version)||
+			(UnEmap_2V1==page_window->unemap_hardware_version)||
+			(UnEmap_2V2==page_window->unemap_hardware_version)||
+			((UnEmap_2V1|UnEmap_2V2)==page_window->unemap_hardware_version))
 		{
-#if defined (OLD_CODE)
-			display_message(WARNING_MESSAGE,
-				"No rig defined.  Specify configuration file or cancel for default");
-#endif /* defined (OLD_CODE) */
-			if (acquisition_rig_filename=confirmation_get_read_filename(".cnfg",
-				page_window->user_interface))
-			{
-				read_configuration_file(acquisition_rig_filename,
-					page_window->rig_address
-#if defined (UNEMAP_USE_3D)
-					/*??JW perhaps should pass down from somewhere? */
-					,(struct Unemap_package *)NULL
-#endif /* defined (UNEMAP_USE_3D) */
-					);
-			}
+#if defined (NEW_CODE)
+			/*???DB.  Motif isn't picking up the current directory ? */
+			confirmation_change_current_working_directory(
+				page_window->user_interface);
+#endif /* defined (NEW_CODE) */
+			/* make sure that there is a rig */
 			if (!(*(page_window->rig_address)))
 			{
-				display_message(INFORMATION_MESSAGE,"Creating default rig");
-				number_of_rows=((int)(page_window->number_of_channels)-1)/8+1;
-				if (ALLOCATE(electrodes_in_row,int,number_of_rows))
+#if defined (OLD_CODE)
+				display_message(WARNING_MESSAGE,
+					"No rig defined.  Specify configuration file or cancel for default");
+#endif /* defined (OLD_CODE) */
+				if (acquisition_rig_filename=confirmation_get_read_filename(".cnfg",
+					page_window->user_interface))
 				{
-					index=number_of_rows-1;
-					electrodes_in_row[index]=
-						(int)(page_window->number_of_channels)-8*index;
-					while (index>0)
-					{
-						index--;
-						electrodes_in_row[index]=8;
-					}
-					if (!(*(page_window->rig_address)=create_standard_Rig("default",PATCH,
-						MONITORING_OFF,EXPERIMENT_OFF,number_of_rows,electrodes_in_row,1,0,
-						(float)1
+					read_configuration_file(acquisition_rig_filename,
+						page_window->rig_address
 #if defined (UNEMAP_USE_3D)
-						/*??JWperhaps we should pass this down from above*/
+						/*??JW perhaps should pass down from somewhere? */
 						,(struct Unemap_package *)NULL
 #endif /* defined (UNEMAP_USE_3D) */
-						)))
+						);
+				}
+				if (!(*(page_window->rig_address)))
+				{
+					display_message(INFORMATION_MESSAGE,"Creating default rig");
+					number_of_rows=((int)(page_window->number_of_channels)-1)/8+1;
+					if (ALLOCATE(electrodes_in_row,int,number_of_rows))
+					{
+						index=number_of_rows-1;
+						electrodes_in_row[index]=
+							(int)(page_window->number_of_channels)-8*index;
+						while (index>0)
+						{
+							index--;
+							electrodes_in_row[index]=8;
+						}
+						if (!(*(page_window->rig_address)=create_standard_Rig("default",
+							PATCH,MONITORING_OFF,EXPERIMENT_OFF,number_of_rows,
+							electrodes_in_row,1,0,(float)1
+#if defined (UNEMAP_USE_3D)
+							/*??JWperhaps we should pass this down from above*/
+							,(struct Unemap_package *)NULL
+#endif /* defined (UNEMAP_USE_3D) */
+							)))
+						{
+							display_message(ERROR_MESSAGE,
+								"start_experiment.  Error creating default rig");
+						}
+						DEALLOCATE(electrodes_in_row);
+					}
+					else
 					{
 						display_message(ERROR_MESSAGE,
-							"start_experiment.  Error creating default rig");
+							"start_experiment.  Could not allocate electrodes_in_row");
 					}
-					DEALLOCATE(electrodes_in_row);
 				}
-				else
+				if (*(page_window->rig_address))
 				{
-					display_message(ERROR_MESSAGE,
-						"start_experiment.  Could not allocate electrodes_in_row");
+					/* set the display device (deliberately excluding auxiliary devices
+						that are linear combinations */
+					display_device=(struct Device *)NULL;
+					page_window->display_maximum=(float)1;
+					page_window->display_minimum=(float)-1;
+					for (j=0;j<page_window->number_of_stimulators;j++)
+					{
+						(page_window->stimulate_devices)[j]=(struct Device *)NULL;
+						(page_window->stimulate_device_numbers)[j]= -1;
+						(page_window->stimulator_on)[j]=0;
+					}
+					if ((0<(number_of_devices=(*(page_window->rig_address))->
+						number_of_devices))&&(device_address=(*(page_window->rig_address))->
+						devices))
+					{
+						channel_number=(int)((page_window->number_of_channels)+1);
+						for (i=0;i<number_of_devices;i++)
+						{
+							if ((*device_address)&&
+								((*device_address)->channel)&&
+								(0<(*device_address)->channel->number)&&
+								((*device_address)->channel->number<channel_number)&&
+								((*device_address)->description)&&
+								((*device_address)->description->name))
+							{
+								display_device= *device_address;
+								device_number=i;
+								channel_number=display_device->channel->number;
+							}
+							device_address++;
+						}
+					}
+					if (page_window->display_device=display_device)
+					{
+						page_window->display_device_number=device_number;
+						if (!unemap_get_voltage_range(display_device->channel->number,
+							&(page_window->display_minimum),&(page_window->display_maximum)))
+						{
+							page_window->display_minimum=(float)-1;
+							page_window->display_maximum=(float)1;
+						}
+						page_window->display_minimum *= 1000;
+						page_window->display_maximum *= 1000;
+#if defined (OLD_CODE)
+						channel_gain=display_device->channel->gain;
+						channel_offset=display_device->channel->offset;
+						if (unemap_get_gain(display_device->channel->number,
+							&pre_filter_gain,&post_filter_gain))
+						{
+							channel_gain /= pre_filter_gain*post_filter_gain;
+							page_window->display_maximum=
+								channel_gain*((float)maximum_signal_value-channel_offset);
+							page_window->display_minimum=
+								channel_gain*((float)minimum_signal_value-channel_offset);
+						}
+#endif /* defined (OLD_CODE) */
+#if defined (DEBUG)
+						/*???debug */
+						printf("before setting stimulate devices %d\n",
+							page_window->number_of_stimulators);
+#endif /* defined (DEBUG) */
+						/* set the stimulate devices */
+						device_address=(*(page_window->rig_address))->devices;
+						for (i=0;i<number_of_devices;i++)
+						{
+							if ((*device_address)&&((*device_address)->channel)&&
+								(0<(channel_number=(*device_address)->channel->number))&&
+								(channel_number<=(int)(page_window->number_of_channels))&&
+								((*device_address)->description)&&
+								((*device_address)->description->name))
+							{
+								for (j=0;j<page_window->number_of_stimulators;j++)
+								{
+									if (unemap_channel_valid_for_stimulator(j+1,channel_number))
+									{
+										if ((-1==(page_window->stimulate_device_numbers)[j])||
+											(channel_number<
+											(page_window->stimulate_device_numbers)[j]))
+										{
+#if defined (DEBUG)
+											/*???debug */
+											printf("%d %d %d\n",channel_number,i,j);
+#endif /* defined (DEBUG) */
+											(page_window->stimulate_device_numbers)[j]=i;
+											(page_window->stimulate_devices)[j]= *device_address;
+											(page_window->stimulator_on)[j]=0;
+										}
+									}
+								}
+							}
+							device_address++;
+						}
+#if defined (DEBUG)
+						/*???debug */
+						printf("after setting stimulate devices\n");
+#endif /* defined (DEBUG) */
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"No device with a valid channel number in the rig");
+						page_window->display_device_number= -1;
+					}
 				}
 			}
 			if (*(page_window->rig_address))
 			{
-				/* set the display device (deliberately excluding auxiliary devices that
-					are linear combinations */
-				display_device=(struct Device *)NULL;
-				page_window->display_maximum=(float)1;
-				page_window->display_minimum=(float)-1;
-				for (j=0;j<page_window->number_of_stimulators;j++)
+				/* set up signal storage assuming that it doesn't exist (removed in
+					stop_experiment */
+				/* set up the signal buffer */
+				if (signal_buffer=create_Signal_buffer(SHORT_INT_VALUE,
+					(int)(page_window->number_of_channels),
+					(int)(page_window->number_of_samples),
+					page_window->sampling_frequency))
 				{
-					(page_window->stimulate_devices)[j]=(struct Device *)NULL;
-					(page_window->stimulate_device_numbers)[j]= -1;
-					(page_window->stimulator_on)[j]=0;
-				}
-				if ((0<(number_of_devices=(*(page_window->rig_address))->
-					number_of_devices))&&(device_address=(*(page_window->rig_address))->
-					devices))
-				{
-					channel_number=(int)((page_window->number_of_channels)+1);
-					for (i=0;i<number_of_devices;i++)
+					/* set the times */
+					for (index=0;index<(int)(page_window->number_of_samples);index++)
 					{
-						if ((*device_address)&&
-							((*device_address)->channel)&&
-							(0<(*device_address)->channel->number)&&
-							((*device_address)->channel->number<channel_number)&&
-							((*device_address)->description)&&
-							((*device_address)->description->name))
-						{
-							display_device= *device_address;
-							device_number=i;
-							channel_number=display_device->channel->number;
-						}
-						device_address++;
+						(signal_buffer->times)[index]=index;
 					}
-				}
-				if (page_window->display_device=display_device)
-				{
-					page_window->display_device_number=device_number;
-					if (!unemap_get_voltage_range(display_device->channel->number,
-						&(page_window->display_minimum),&(page_window->display_maximum)))
-					{
-						page_window->display_minimum=(float)-1;
-						page_window->display_maximum=(float)1;
-					}
-					page_window->display_minimum *= 1000;
-					page_window->display_maximum *= 1000;
-#if defined (OLD_CODE)
-					channel_gain=display_device->channel->gain;
-					channel_offset=display_device->channel->offset;
-					if (unemap_get_gain(display_device->channel->number,
-						&pre_filter_gain,&post_filter_gain))
-					{
-						channel_gain /= pre_filter_gain*post_filter_gain;
-						page_window->display_maximum=
-							channel_gain*((float)maximum_signal_value-channel_offset);
-						page_window->display_minimum=
-							channel_gain*((float)minimum_signal_value-channel_offset);
-					}
-#endif /* defined (OLD_CODE) */
-#if defined (DEBUG)
-					/*???debug */
-					printf("before setting stimulate devices %d\n",
-						page_window->number_of_stimulators);
-#endif /* defined (DEBUG) */
-					/* set the stimulate devices */
 					device_address=(*(page_window->rig_address))->devices;
-					for (i=0;i<number_of_devices;i++)
+					i=(*(page_window->rig_address))->number_of_devices;
+					return_code=1;
+					while (return_code&&(i>0))
 					{
-						if ((*device_address)&&((*device_address)->channel)&&
-							(0<(channel_number=(*device_address)->channel->number))&&
-							(channel_number<=(int)(page_window->number_of_channels))&&
-							((*device_address)->description)&&
-							((*device_address)->description->name))
+						if ((*device_address)->channel)
 						{
-							for (j=0;j<page_window->number_of_stimulators;j++)
+							channel_number=((*device_address)->channel->number)-1;
+							if ((0<=channel_number)&&
+								(channel_number<(int)(page_window->number_of_channels)))
 							{
-								if (unemap_channel_valid_for_stimulator(j+1,channel_number))
+	#if defined (MIRADA)
+								index=16*(channel_number/16)+8*(channel_number%2)+
+									(channel_number%16)/2;
+	#else /* defined (MIRADA) */
+								index=channel_number;
+	#endif /* defined (MIRADA) */
+								if (!((*device_address)->signal=create_Signal(index,
+									signal_buffer,UNDECIDED,0)))
 								{
-									if ((-1==(page_window->stimulate_device_numbers)[j])||
-										(channel_number<
-										(page_window->stimulate_device_numbers)[j]))
-									{
-#if defined (DEBUG)
-										/*???debug */
-										printf("%d %d %d\n",channel_number,i,j);
-#endif /* defined (DEBUG) */
-										(page_window->stimulate_device_numbers)[j]=i;
-										(page_window->stimulate_devices)[j]= *device_address;
-										(page_window->stimulator_on)[j]=0;
-									}
+									display_message(ERROR_MESSAGE,
+										"start_experiment.  Could not create signal");
+									return_code=0;
 								}
 							}
 						}
 						device_address++;
+						i--;
 					}
-#if defined (DEBUG)
-					/*???debug */
-					printf("after setting stimulate devices\n");
-#endif /* defined (DEBUG) */
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,
-						"No device with a valid channel number in the rig");
-					page_window->display_device_number= -1;
-				}
-			}
-		}
-		if (*(page_window->rig_address))
-		{
-			/* set up signal storage assuming that it doesn't exist (removed in
-				stop_experiment */
-			/* set up the signal buffer */
-			if (signal_buffer=create_Signal_buffer(SHORT_INT_VALUE,
-				(int)(page_window->number_of_channels),
-				(int)(page_window->number_of_samples),page_window->sampling_frequency))
-			{
-				/* set the times */
-				for (index=0;index<(int)(page_window->number_of_samples);index++)
-				{
-					(signal_buffer->times)[index]=index;
-				}
-				device_address=(*(page_window->rig_address))->devices;
-				i=(*(page_window->rig_address))->number_of_devices;
-				return_code=1;
-				while (return_code&&(i>0))
-				{
-					if ((*device_address)->channel)
+					if (return_code)
 					{
-						channel_number=((*device_address)->channel->number)-1;
-						if ((0<=channel_number)&&
-							(channel_number<(int)(page_window->number_of_channels)))
-						{
-#if defined (MIRADA)
-							index=16*(channel_number/16)+8*(channel_number%2)+
-								(channel_number%16)/2;
-#else /* defined (MIRADA) */
-							index=channel_number;
-#endif /* defined (MIRADA) */
-							if (!((*device_address)->signal=create_Signal(index,signal_buffer,
-								UNDECIDED,0)))
-							{
-								display_message(ERROR_MESSAGE,
-									"start_experiment.  Could not create signal");
-								return_code=0;
-							}
-						}
-					}
-					device_address++;
-					i--;
-				}
-				if (return_code)
-				{
-					if (!(page_window->hardware_initialized))
-					{
-#if defined (DEBUG)
-						/*???debug */
-						printf("before page_window_set_gain\n");
-#endif /* defined (DEBUG) */
-						page_window_set_gain(page_window,0,page_window->initial_gain);
-						/* initialize the hardware */
-#if defined (MIRADA)
-						/* start the interrupting */
-						if (INVALID_HANDLE_VALUE!=page_window->device_driver)
-						{
-							start_interrupting(page_window->device_driver,
-								page_window->drawing_area,WM_USER,(LPARAM)page_window);
-							page_window->hardware_initialized=1;
-						}
-#else /* defined (MIRADA) */
-#if defined (DEBUG)
-						/*???debug */
-						printf("before unemap_deconfigure\n");
-#endif /* defined (DEBUG) */
-						/* make sure that unemap closed down */
-						unemap_deconfigure();
-#if defined (DEBUG)
-						/*???debug */
-						printf("after unemap_deconfigure\n");
-#endif /* defined (DEBUG) */
-						if (unemap_configure(page_window->sampling_frequency,
-							(int)(page_window->number_of_samples),
-#if defined (MOTIF)
-							page_window->user_interface->application_context,
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
-							(HWND)NULL,(UINT)0,
-#endif /* defined (WINDOWS) */
-							scrolling_hardware_callback,(void *)page_window,(float)25,
-							page_window->synchronization_card))
+						if (!(page_window->hardware_initialized))
 						{
 #if defined (DEBUG)
 							/*???debug */
-							printf("after unemap_configure\n");
+							printf("before page_window_set_gain\n");
 #endif /* defined (DEBUG) */
-							page_window->hardware_initialized=1;
-							unemap_get_sampling_frequency(&(page_window->sampling_frequency));
-							unemap_get_maximum_number_of_samples(
-								&(page_window->number_of_samples));
-							/* read in the calibration file */
-							if ((page_window->calibration_directory)&&
-								(0<strlen(page_window->calibration_directory)))
+							page_window_set_gain(page_window,0,page_window->initial_gain);
+							/* initialize the hardware */
+#if defined (MIRADA)
+							/* start the interrupting */
+							if (INVALID_HANDLE_VALUE!=page_window->device_driver)
 							{
-								if (ALLOCATE(calibration_file_name,char,
-									strlen(page_window->calibration_directory)+16))
+								start_interrupting(page_window->device_driver,
+									page_window->drawing_area,WM_USER,(LPARAM)page_window);
+								page_window->hardware_initialized=1;
+							}
+#else /* defined (MIRADA) */
+#if defined (DEBUG)
+							/*???debug */
+							printf("before unemap_deconfigure\n");
+#endif /* defined (DEBUG) */
+							/* make sure that unemap closed down */
+							unemap_deconfigure();
+#if defined (DEBUG)
+							/*???debug */
+							printf("after unemap_deconfigure\n");
+#endif /* defined (DEBUG) */
+							if (unemap_configure(page_window->sampling_frequency,
+								(int)(page_window->number_of_samples),
+#if defined (MOTIF)
+								page_window->user_interface->application_context,
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+								(HWND)NULL,(UINT)0,
+#endif /* defined (WINDOWS) */
+								scrolling_hardware_callback,(void *)page_window,(float)25,
+								page_window->synchronization_card))
+							{
+#if defined (DEBUG)
+								/*???debug */
+								printf("after unemap_configure\n");
+#endif /* defined (DEBUG) */
+								page_window->hardware_initialized=1;
+								unemap_get_sampling_frequency(
+									&(page_window->sampling_frequency));
+								unemap_get_maximum_number_of_samples(
+									&(page_window->number_of_samples));
+								/* read in the calibration file */
+								if ((page_window->calibration_directory)&&
+									(0<strlen(page_window->calibration_directory)))
 								{
-									strcpy(calibration_file_name,
-										page_window->calibration_directory);
+									if (ALLOCATE(calibration_file_name,char,
+										strlen(page_window->calibration_directory)+16))
+									{
+										strcpy(calibration_file_name,
+											page_window->calibration_directory);
 #if defined (WIN32)
-									if ('\\'!=
-										calibration_file_name[strlen(calibration_file_name)-1])
-									{
-										strcat(calibration_file_name,"\\");
-									}
+										if ('\\'!=
+											calibration_file_name[strlen(calibration_file_name)-1])
+										{
+											strcat(calibration_file_name,"\\");
+										}
 #else /* defined (WIN32) */
-									if ('/'!=
-										calibration_file_name[strlen(calibration_file_name)-1])
-									{
-										strcat(calibration_file_name,"/");
-									}
+										if ('/'!=
+											calibration_file_name[strlen(calibration_file_name)-1])
+										{
+											strcat(calibration_file_name,"/");
+										}
 #endif /* defined (WIN32) */
-									strcat(calibration_file_name,"calibrate.dat");
+										strcat(calibration_file_name,"calibrate.dat");
+									}
 								}
-							}
-							else
-							{
-								if (ALLOCATE(calibration_file_name,char,14))
+								else
 								{
-									strcpy(calibration_file_name,"calibrate.dat");
+									if (ALLOCATE(calibration_file_name,char,14))
+									{
+										strcpy(calibration_file_name,"calibrate.dat");
+									}
 								}
-							}
-							if (calibration_file_name)
-							{
-								page_read_calibration_file(calibration_file_name,
-									(void *)(*(page_window->rig_address)));
-								DEALLOCATE(calibration_file_name);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
+								if (calibration_file_name)
+								{
+									page_read_calibration_file(calibration_file_name,
+										(void *)(*(page_window->rig_address)));
+									DEALLOCATE(calibration_file_name);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
 						"start_experiment.  Insufficient memory for calibration file name");
-							}
-							if (page_window->display_device)
-							{
-								set_scrolling_device(page_window,page_window->display_device);
-								show_display_maximum(page_window);
-								show_display_minimum(page_window);
-								show_display_gain(page_window);
+								}
+								if (page_window->display_device)
+								{
+									set_scrolling_device(page_window,page_window->display_device);
+									show_display_maximum(page_window);
+									show_display_minimum(page_window);
+									show_display_gain(page_window);
 #if defined (MOTIF)
-								XtVaSetValues((page_window->electrode).value,XmNvalue,
-									page_window->display_device->description->name,NULL);
+									XtVaSetValues((page_window->electrode).value,XmNvalue,
+										page_window->display_device->description->name,NULL);
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
-								Edit_SetText((page_window->channel).edit,
-									page_window->display_device->description->name);
+									Edit_SetText((page_window->channel).edit,
+										page_window->display_device->description->name);
 #endif /* defined (WINDOWS) */
-							}
-							if ((0<page_window->number_of_stimulators)&&
-								(page_window->stimulate_devices)[(page_window->
-								stimulator_number)-1])
-							{
+								}
+								if ((0<page_window->number_of_stimulators)&&
+									(page_window->stimulate_devices)[(page_window->
+									stimulator_number)-1])
+								{
 #if defined (MOTIF)
-								XtVaSetValues((page_window->stimulator).stimulate.value,
-									XmNvalue,((page_window->stimulate_devices)[(page_window->
-									stimulator_number)-1])->description->name,NULL);
+									XtVaSetValues((page_window->stimulator).stimulate.value,
+										XmNvalue,((page_window->stimulate_devices)[(page_window->
+										stimulator_number)-1])->description->name,NULL);
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
-								Edit_SetText((page_window->stimulate_channel).edit,
-									((page_window->stimulate_devices)[(page_window->
-									stimulator_number)-1])->description->name);
+									Edit_SetText((page_window->stimulate_channel).edit,
+										((page_window->stimulate_devices)[(page_window->
+										stimulator_number)-1])->description->name);
 #endif /* defined (WINDOWS) */
-							}
-							unemap_start_scrolling();
-							unemap_get_antialiasing_filter_frequency(1,&filter_frequency);
-							sprintf(working_string,"%.0f",filter_frequency);
+								}
+								unemap_start_scrolling();
+								unemap_get_antialiasing_filter_frequency(1,&filter_frequency);
+								sprintf(working_string,"%.0f",filter_frequency);
 #if defined (MOTIF)
-							XtVaSetValues((page_window->low_pass).value,XmNvalue,
-								working_string,NULL);
+								XtVaSetValues((page_window->low_pass).value,XmNvalue,
+									working_string,NULL);
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
-							Edit_SetText((page_window->low_pass_filter).edit,working_string);
+								Edit_SetText((page_window->low_pass_filter).edit,
+									working_string);
 #endif /* defined (WINDOWS) */
-						}
+							}
 #endif /* defined (MIRADA) */
-					}
+						}
 #if defined (MOTIF)
-					XmToggleButtonSetState(page_window->experiment_checkbox,True,False);
-					XtSetSensitive(page_window->save_button,False);
-					if (page_window->isolate_checkbox)
-					{
-						XtSetSensitive(page_window->isolate_checkbox,True);
-					}
-					XtSetSensitive(page_window->sample_checkbox,True);
-					if (page_window->calibrate_button)
-					{
-						XtSetSensitive(page_window->calibrate_button,True);
-					}
-					if (page_window->test_checkbox)
-					{
-						XtSetSensitive(page_window->test_checkbox,True);
-					}
-					if ((page_window->low_pass).form)
-					{
-						XtSetSensitive((page_window->low_pass).form,True);
-					}
-					XtSetSensitive((page_window->electrode).form,True);
-					XtSetSensitive((page_window->gain).form,True);
-					XtSetSensitive((page_window->maximum).form,True);
-					XtSetSensitive((page_window->minimum).form,True);
-					XtSetSensitive(page_window->reset_scale_button,True);
-					XtSetSensitive(page_window->scale_button,True);
+						XmToggleButtonSetState(page_window->experiment_checkbox,True,False);
+						XtSetSensitive(page_window->save_button,False);
+						if (page_window->isolate_checkbox)
+						{
+							XtSetSensitive(page_window->isolate_checkbox,True);
+						}
+						XtSetSensitive(page_window->sample_checkbox,True);
+						if (page_window->calibrate_button)
+						{
+							XtSetSensitive(page_window->calibrate_button,True);
+						}
+						if (page_window->test_checkbox)
+						{
+							XtSetSensitive(page_window->test_checkbox,True);
+						}
+						if ((page_window->low_pass).form)
+						{
+							XtSetSensitive((page_window->low_pass).form,True);
+						}
+						XtSetSensitive((page_window->electrode).form,True);
+						XtSetSensitive((page_window->gain).form,True);
+						XtSetSensitive((page_window->maximum).form,True);
+						XtSetSensitive((page_window->minimum).form,True);
+						XtSetSensitive(page_window->reset_scale_button,True);
+						XtSetSensitive(page_window->scale_button,True);
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
-					CheckDlgButton(page_window->window,EXPERIMENT_CHECKBOX,BST_CHECKED);
-					EnableWindow(page_window->save_button,FALSE);
-					if (page_window->isolate_checkbox)
-					{
-						EnableWindow(page_window->isolate_checkbox,TRUE);
-					}
-					EnableWindow(page_window->sample_checkbox,TRUE);
-					if (page_window->calibrate_button)
-					{
-						EnableWindow(page_window->calibrate_button,TRUE);
-					}
-					if (page_window->test_checkbox)
-					{
-						EnableWindow(page_window->test_checkbox,TRUE);
-					}
-					if ((page_window->low_pass_filter).edit)
-					{
-						EnableWindow((page_window->low_pass_filter).edit,TRUE);
-						EnableWindow((page_window->low_pass_filter).text,TRUE);
-					}
-					EnableWindow((page_window->channel).edit,TRUE);
-					EnableWindow((page_window->channel).arrows,TRUE);
-					EnableWindow((page_window->channel).text,TRUE);
-					EnableWindow((page_window->gain).edit,TRUE);
-					EnableWindow((page_window->gain).text,TRUE);
-					EnableWindow((page_window->maximum).edit,TRUE);
-					EnableWindow((page_window->maximum).text,TRUE);
-					EnableWindow((page_window->minimum).edit,TRUE);
-					EnableWindow((page_window->minimum).text,TRUE);
-					EnableWindow(page_window->reset_scale_button,TRUE);
-					EnableWindow(page_window->scale_button,TRUE);
+						CheckDlgButton(page_window->window,EXPERIMENT_CHECKBOX,BST_CHECKED);
+						EnableWindow(page_window->save_button,FALSE);
+						if (page_window->isolate_checkbox)
+						{
+							EnableWindow(page_window->isolate_checkbox,TRUE);
+						}
+						EnableWindow(page_window->sample_checkbox,TRUE);
+						if (page_window->calibrate_button)
+						{
+							EnableWindow(page_window->calibrate_button,TRUE);
+						}
+						if (page_window->test_checkbox)
+						{
+							EnableWindow(page_window->test_checkbox,TRUE);
+						}
+						if ((page_window->low_pass_filter).edit)
+						{
+							EnableWindow((page_window->low_pass_filter).edit,TRUE);
+							EnableWindow((page_window->low_pass_filter).text,TRUE);
+						}
+						EnableWindow((page_window->channel).edit,TRUE);
+						EnableWindow((page_window->channel).arrows,TRUE);
+						EnableWindow((page_window->channel).text,TRUE);
+						EnableWindow((page_window->gain).edit,TRUE);
+						EnableWindow((page_window->gain).text,TRUE);
+						EnableWindow((page_window->maximum).edit,TRUE);
+						EnableWindow((page_window->maximum).text,TRUE);
+						EnableWindow((page_window->minimum).edit,TRUE);
+						EnableWindow((page_window->minimum).text,TRUE);
+						EnableWindow(page_window->reset_scale_button,TRUE);
+						EnableWindow(page_window->scale_button,TRUE);
 #endif /* defined (WINDOWS) */
-					/* force update */
-					stimulator_number=page_window->stimulator_number;
-					page_window->stimulator_number=0;
-					update_stimulator(page_window,stimulator_number);
-					unemap_set_power(1);
-					if (UnEmap_1V2==page_window->unemap_hardware_version)
-					{
-						stop_isolating(page_window);
+						/* force update */
+						stimulator_number=page_window->stimulator_number;
+						page_window->stimulator_number=0;
+						update_stimulator(page_window,stimulator_number);
+						unemap_set_power(1);
+						if (UnEmap_1V2==page_window->unemap_hardware_version)
+						{
+							stop_isolating(page_window);
+						}
+						else
+						{
+							start_isolating(page_window);
+						}
+						stop_sampling(page_window);
+						stop_testing(page_window);
+						page_window->data_saved=1;
 					}
 					else
 					{
-						start_isolating(page_window);
+						i++;
+						i=(*(page_window->rig_address))->number_of_devices-i;
+						while (i>0)
+						{
+							device_address--;
+							destroy_Signal(&((*device_address)->signal));
+							i--;
+						}
+						destroy_Signal_buffer(&signal_buffer);
 					}
-					stop_sampling(page_window);
-					stop_testing(page_window);
-					page_window->data_saved=1;
 				}
 				else
 				{
-					i++;
-					i=(*(page_window->rig_address))->number_of_devices-i;
-					while (i>0)
-					{
-						device_address--;
-						destroy_Signal(&((*device_address)->signal));
-						i--;
-					}
-					destroy_Signal_buffer(&signal_buffer);
+					display_message(ERROR_MESSAGE,
+						"start_experiment.  Could not create signal buffer");
 				}
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"start_experiment.  Could not create signal buffer");
-			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Invalid hardware");
 		}
 	}
 #if defined (DEBUG)
@@ -6130,6 +6144,7 @@ DESCRIPTION :
 					} break;
 					case UnEmap_2V1:
 					case UnEmap_2V2:
+					case UnEmap_2V1|UnEmap_2V2:
 					{
 						EnableWindow(page_window->isolate_checkbox,FALSE);
 						GetWindowRect(page_window->isolate_checkbox,&rectangle);
@@ -7672,6 +7687,7 @@ the created page window.  If unsuccessful, NULL is returned.
 								} break;
 								case UnEmap_2V1:
 								case UnEmap_2V2:
+								case UnEmap_2V1|UnEmap_2V2:
 								{
 									XtSetSensitive(page_window->isolate_checkbox,False);
 									XtSetSensitive(page_window->calibrate_button,False);
