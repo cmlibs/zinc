@@ -364,7 +364,7 @@ Perform K_Nearest Neighborhood averaging on the image cache.
 	FE_value *data_index, *result_index, *kernel, local_mean;
 	int filter_size, i, j, k, m, *offsets, return_code, kernel_size, storage_size;
 	int kernel_step, image_step;
-	int sign;
+	int s;
 	FE_value swap;
 
 	ENTER(Image_cache_k_nearest_mean);
@@ -432,11 +432,10 @@ Perform K_Nearest Neighborhood averaging on the image cache.
 						        kernel[j] = *(data_index + offsets[j] + k);
 						}
 					}
-					sign = kernel_size;
-					while (sign > 1) /* Bubble sort to determine the order */
+
+					for (s = 0; s < kernel_size -1; s++) /* Bubble sort to determine the order */
 					{
-					        sign--;
-					        for (j = 0; j <= sign - 1; j++)
+					        for (j = 0; j < kernel_size -1 - s; j++)
 						{
 						        if (fabs(kernel[j] - *(data_index + k)) > fabs(kernel[j+1] - *(data_index + k)))
 							{
