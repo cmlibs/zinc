@@ -6,11 +6,21 @@ LAST MODIFIED : 17 November 1999
 DESCRIPTION :
 Functions for CELL to interact with CMGUI control_curves.
 ==============================================================================*/
+#if defined (MOTIF)
+#include <Xm/Xm.h>
+#include <Xm/AtomMgr.h>
+#include <Xm/MwmUtil.h>
+#include <Xm/DialogS.h>
+#include <Xm/Protocols.h>
+#include <Xm/ToggleB.h>
+#endif /* if defined (MOTIF) */
 #include <stdio.h>
 #include "cell/cell_window.h"
 #include "cell/cell_parameter.h"
 #include "cell/cell_variable.h"
 #include "cell/cell_control_curve.h"
+#include "cell/export_control_curves_dialog.uidh"
+#include "user_interface/filedir.h"
 /*
 Local types
 ===========
@@ -20,11 +30,499 @@ Local types
 Local variables
 ===============
 */
+#if defined (MOTIF)
+static int export_control_curves_dialog_hierarchy_open=0;
+static MrmHierarchy export_control_curves_dialog_hierarchy;
+#endif /* defined (MOTIF) */
 
 /*
 Local functions
 ===============
 */
+static void export_control_curves_dialog_destroy_callback(Widget widget,
+  XtPointer cell_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1999
+
+DESCRIPTION :
+Callback for when the export time variables dialog is destroy via the 
+window manager menu ??
+==============================================================================*/
+{
+  struct Cell_window *cell = (struct Cell_window *)NULL;
+  
+  ENTER(export_control_curves_dialog_destroy_callback);
+  USE_PARAMETER(widget);
+  USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    if (cell->export_control_curve_dialog)
+    {
+      if (cell->export_control_curve_dialog->shell)
+      {
+        /* remove the shell from the shell list */
+        destroy_Shell_list_item_from_shell(
+					&(cell->export_control_curve_dialog->shell),cell->user_interface);
+        /* make sure the dialog is no longer visible */
+        XtPopdown(cell->export_control_curve_dialog->shell);
+        /* Unmanage the shell */
+        XtUnmanageChild(cell->export_control_curve_dialog->shell);
+      }
+      DEALLOCATE(cell->export_control_curve_dialog);
+      cell->export_control_curve_dialog = 
+				(struct Export_control_curve_dialog *)NULL;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,
+			"export_control_curves_dialog_destroy_callback. "
+      "Missing Cell window");
+  }
+  LEAVE;
+} /* END export_control_curves_dialog_destroy_callback() */
+
+int file_open_iptime_callback(char *filename,
+	XtPointer export_control_curve_dialog)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1999
+
+DESCRIPTION :
+Callback for the file selection dialog for the file in the export time 
+variables dialog.
+==============================================================================*/
+{
+  int return_code = 0;
+  struct Export_control_curve_dialog *export = 
+		(struct Export_control_curve_dialog *)NULL;
+
+  ENTER(file_open_callback);
+  if (export = (struct Export_control_curve_dialog *)
+		export_control_curve_dialog)
+  {
+    /* set the label widget */
+    if (export->file_label)
+    {
+      XtVaSetValues(export->file_label,
+        XmNlabelString,XmStringCreateSimple(filename),
+				NULL);
+    }
+    /* and save the file name */
+    if (export->file_name)
+    {
+      DEALLOCATE(export->file_name);
+    }
+    if (ALLOCATE(export->file_name,char,strlen(filename)))
+    {
+      sprintf(export->file_name,"%s\0",filename);
+      return_code = 1;
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"file_open_callback. "
+        "Unable to allocate memory for the file name");
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"file_open_callback. "
+      "Missing export dialog");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* END file_open_callback() */
+
+static void identify_variables_rowcol(Widget widget,
+  XtPointer cell_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1999
+
+DESCRIPTION :
+Identifies the rowcolumn for the list of time variables.
+==============================================================================*/
+{
+  struct Cell_window *cell = (struct Cell_window *)NULL;
+  
+  ENTER(identify_variables_rowcol);
+  USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    cell->export_control_curve_dialog->variables_rowcol = widget;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"identify_variables_rowcol. "
+      "Missing cell window");
+  }
+  LEAVE;
+} /* END identify_variables_rowcol() */
+
+static void identify_file_label(Widget widget,
+  XtPointer cell_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1999
+
+DESCRIPTION :
+Identifies the label widget for the file name
+==============================================================================*/
+{
+  struct Cell_window *cell = (struct Cell_window *)NULL;
+  
+  ENTER(identify_file_label);
+  USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    cell->export_control_curve_dialog->file_label = widget;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"identify_file_label. "
+      "Missing cell window");
+  }
+  LEAVE;
+} /* END identify_file_label() */
+
+static void browse_callback(Widget widget,
+  XtPointer cell_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1999
+
+DESCRIPTION :
+Callback for the browse button for the file.
+==============================================================================*/
+{
+  struct Cell_window *cell = (struct Cell_window *)NULL;
+  struct File_open_data *file_open_data;
+  
+  ENTER(browse_callback);
+  USE_PARAMETER(widget);
+  USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    if (file_open_data = create_File_open_data(".iptime",REGULAR,
+      file_open_iptime_callback,(XtPointer)(cell->export_control_curve_dialog),
+			0,cell->user_interface))
+    {
+      open_file_and_write(widget,(XtPointer)file_open_data,call_data);
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"browse_callback. "
+      "Missing Cell window");
+  }
+  LEAVE;
+} /* END browse_callback() */
+
+static void ok_button_callback(Widget widget,
+  XtPointer cell_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 17 September 1999
+
+DESCRIPTION :
+Callback for the OK button in the export time variable dialog.
+==============================================================================*/
+{
+  struct Cell_window *cell = (struct Cell_window *)NULL;
+
+  ENTER(ok_button_callback);
+  USE_PARAMETER(widget);
+  USE_PARAMETER(call_data);
+  USE_PARAMETER(cell);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+		/* destroy the dialog */
+		export_control_curves_dialog_destroy_callback((Widget)NULL,
+			(XtPointer)cell,(XtPointer)NULL);
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"ok_button_callback. "
+      "Missing Cell window");
+  }
+  LEAVE;
+} /* END ok_button_callback() */
+
+static void cancel_button_callback(Widget widget,
+  XtPointer cell_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1999
+
+DESCRIPTION :
+Callback for the cancel button in the export time variable dialog.
+==============================================================================*/
+{
+  struct Cell_window *cell = (struct Cell_window *)NULL;
+
+  ENTER(cancel_button_callback);
+  USE_PARAMETER(widget);
+  USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+		/* destroy the dialog */
+		export_control_curves_dialog_destroy_callback((Widget)NULL,
+			(XtPointer)cell,(XtPointer)NULL);
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"cancel_button_callback. "
+      "Missing Cell window");
+  }
+  LEAVE;
+} /* END cancel_button_callback() */
+
+static int create_control_curve_toggle(struct Control_curve *variable,
+	void *parent_void)
+/*******************************************************************************
+LAST MODIFIED : 1 July 1999
+
+DESCRIPTION :
+control_curve iterator function for writing out the names of variables.
+==============================================================================*/
+{
+	int return_code;
+	Widget parent;
+	char *name;
+	
+	ENTER(create_control_curve_toggle);
+	if (parent = (Widget)parent_void)
+	{
+		GET_NAME(Control_curve)(variable,&name);
+		XtVaCreateManagedWidget("cell_control_curve_toggle",
+			xmToggleButtonWidgetClass,parent,
+			XmNlabelString,XmStringCreateSimple(name),
+			NULL);
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+	return(return_code);
+} /* END create_control_curve_toggle() */
+
+static int create_variable_widgets(Widget parent,
+	struct MANAGER(Control_curve) *control_curve_manager)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1999
+
+DESCRIPTION :
+Creates the toggle button widgets for all of the currently managed time 
+variables.
+==============================================================================*/
+{
+	int return_code = 0;
+
+	ENTER(create_variable_widgets);
+	return_code = FOR_EACH_OBJECT_IN_MANAGER(Control_curve)(
+		create_control_curve_toggle,(void *)parent,control_curve_manager);
+	LEAVE;
+	return(return_code);
+} /* END create_variable_widgets() */
+
+static int create_export_control_curves_dialog(struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1999
+
+DESCRIPTION :
+Create a new export dialog.
+==============================================================================*/
+{
+  int return_code = 0;
+  Atom WM_DELETE_WINDOW;
+  MrmType export_control_curves_dialog_class;
+  static MrmRegisterArg callback_list[] = {
+    {"identify_variables_rowcol",(XtPointer)identify_variables_rowcol},
+    {"identify_file_label",(XtPointer)identify_file_label},
+    {"browse_callback",(XtPointer)browse_callback},
+    {"ok_button_callback",(XtPointer)ok_button_callback},
+    {"cancel_button_callback",(XtPointer)cancel_button_callback}
+  }; /* callback_list */
+  static MrmRegisterArg identifier_list[] = {
+    {"cell_window_structure",(XtPointer)NULL},
+    {"window_width",(XtPointer)NULL},
+    {"window_height",(XtPointer)NULL},
+    {"default_file_name",(XtPointer)NULL}
+  }; /* identifier_list */
+  unsigned int width,height;
+  
+  ENTER(create_export_control_curves_dialog);
+  if (cell != (struct Cell_window *)NULL)
+  {
+    if (cell->export_control_curve_dialog != 
+			(struct Export_control_curve_dialog *)NULL)
+    {
+      /* destroy any existing variables_dialog */
+      export_control_curves_dialog_destroy_callback((Widget)NULL,
+				(XtPointer)cell,(XtPointer)NULL);
+    }
+    if (MrmOpenHierarchy_base64_string(export_control_curves_dialog_uidh,
+      &export_control_curves_dialog_hierarchy,
+			&export_control_curves_dialog_hierarchy_open))
+    {
+      if (ALLOCATE(cell->export_control_curve_dialog,
+				struct Export_control_curve_dialog,1))
+      {
+        /* initialise the structure */
+        cell->export_control_curve_dialog->shell = (Widget)NULL;
+        cell->export_control_curve_dialog->window = (Widget)NULL;
+				cell->export_control_curve_dialog->variables_rowcol = (Widget)NULL;
+				cell->export_control_curve_dialog->file_label = (Widget)NULL;
+				cell->export_control_curve_dialog->file_name = (char *)NULL;
+				/* set the default file names */
+				if (ALLOCATE(cell->export_control_curve_dialog->file_name,char,
+					strlen("cell.iptime")))
+				{
+					sprintf(cell->export_control_curve_dialog->file_name,
+						"cell.iptime\0");
+				}
+        /* make the dialog shell */
+        if (cell->export_control_curve_dialog->shell =
+          XtVaCreatePopupShell("export_control_curves_dialog_shell",
+            xmDialogShellWidgetClass,cell->shell,
+            XmNmwmDecorations,MWM_DECOR_ALL,
+            XmNmwmFunctions,MWM_FUNC_ALL,
+            XmNdeleteResponse,XmDESTROY,
+            XmNtransient,FALSE,
+            NULL))
+        {
+          /* identify the shell for the busy icon */
+          create_Shell_list_item(&(cell->export_control_curve_dialog->shell),
+            cell->user_interface);
+          /* add the destroy callback */
+          XtAddCallback(cell->export_control_curve_dialog->shell,
+						XmNdestroyCallback,export_control_curves_dialog_destroy_callback,
+						(XtPointer)cell);
+          WM_DELETE_WINDOW=XmInternAtom(
+            XtDisplay(cell->export_control_curve_dialog->shell),
+            "WM_DELETE_WINDOW",FALSE);
+          XmAddWMProtocolCallback(cell->export_control_curve_dialog->shell,
+            WM_DELETE_WINDOW,export_control_curves_dialog_destroy_callback,
+						(XtPointer)cell);
+          /* register cellbacks in UIL */
+          if (MrmSUCCESS == MrmRegisterNamesInHierarchy(
+            export_control_curves_dialog_hierarchy,callback_list,
+						XtNumber(callback_list)))
+          {
+            /* set the identifier's values */
+            width = cell->user_interface->screen_width/2;
+            height = cell->user_interface->screen_height/4;
+						identifier_list[0].value = (XtPointer)cell;
+            identifier_list[1].value = (XtPointer)width;
+            identifier_list[2].value = (XtPointer)height;
+						identifier_list[3].value = (XtPointer)
+							(XmStringCreateSimple(
+								cell->export_control_curve_dialog->file_name));
+            /* register the identifiers */
+            if (MrmSUCCESS ==
+              MrmRegisterNamesInHierarchy(
+								export_control_curves_dialog_hierarchy,
+                identifier_list,XtNumber(identifier_list)))
+            {
+              /* fetch the window widget */
+              if (MrmSUCCESS == MrmFetchWidget(
+								export_control_curves_dialog_hierarchy,
+                "export_control_curves_dialog",
+								cell->export_control_curve_dialog->shell,
+                &(cell->export_control_curve_dialog->window),
+								&export_control_curves_dialog_class))
+              {
+								if (create_variable_widgets(
+									cell->export_control_curve_dialog->variables_rowcol,
+									(cell->control_curve).control_curve_manager))
+								{
+									XtManageChild(cell->export_control_curve_dialog->window);
+									XtRealizeWidget(cell->export_control_curve_dialog->shell);
+									return_code = 1;
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"create_export_control_curves_dialog. "
+										"Unable to create the variable widgets");
+									DEALLOCATE(cell->export_control_curve_dialog);
+									cell->export_control_curve_dialog = 
+										(struct Export_control_curve_dialog *)NULL;
+									return_code = 0;
+								}
+              }
+              else
+              {
+                display_message(ERROR_MESSAGE,
+									"create_export_control_curves_dialog. "
+                  "Unable to fetch the window widget");
+                DEALLOCATE(cell->export_control_curve_dialog);
+                cell->export_control_curve_dialog = 
+									(struct Export_control_curve_dialog *)NULL;
+                return_code = 0;
+              }
+            }
+            else
+            {
+              display_message(ERROR_MESSAGE,
+								"create_export_control_curves_dialog. "
+                "Unable to register the identifiers");
+              DEALLOCATE(cell->export_control_curve_dialog);
+              cell->export_control_curve_dialog = 
+								(struct Export_control_curve_dialog *)NULL;
+              return_code = 0;  
+            }
+          }
+          else
+          {
+            display_message(ERROR_MESSAGE,
+							"create_export_control_curves_dialog. "
+              "Unable to register the callbacks");
+            DEALLOCATE(cell->export_control_curve_dialog);
+            cell->export_control_curve_dialog = 
+							(struct Export_control_curve_dialog *)NULL;
+            return_code = 0;  
+          }
+        }
+        else
+        {
+					display_message(ERROR_MESSAGE,
+						"create_export_control_curves_dialog. "
+						"Unable to create the dialog shell for the export dialog");
+					DEALLOCATE(cell->export_control_curve_dialog);
+					cell->export_control_curve_dialog = 
+						(struct Export_control_curve_dialog *)NULL;
+					return_code = 0;          
+        }
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,
+					"create_export_time_varaibles_dialog. "
+          "Unable to allocate memory for the export dialog");
+        cell->export_control_curve_dialog = 
+					(struct Export_control_curve_dialog *)NULL;
+        return_code = 0;
+      }
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"create_export_control_curves_dialog. "
+        "Unable to open the export dialog hierarchy");
+      cell->export_control_curve_dialog = 
+				(struct Export_control_curve_dialog *)NULL;
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"create_export_control_curves_dialog. "
+      "Missing Cell window");
+    cell->export_control_curve_dialog = 
+			(struct Export_control_curve_dialog *)NULL;
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* END create_export_control_curves_dialog() */
 
 /*
 Global functions
@@ -314,3 +812,65 @@ Destroys the <variable> if it exists.
   }
   LEAVE;
 } /* END destroy_cell_control_curve() */
+
+int bring_up_export_control_curves_dialog(struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1999
+
+DESCRIPTION :
+If a export window exists, pop it up, otherwise create it.
+==============================================================================*/
+{
+  int return_code = 0;
+  
+  ENTER(bring_up_export_control_curves_dialog);
+  if (cell != (struct Cell_window *)NULL)
+  {
+    if (cell->export_control_curve_dialog == 
+			(struct Export_control_curve_dialog *)NULL)
+    {
+      /* Export window does not exist, so create it */
+      if (create_export_control_curves_dialog(cell))
+      {
+        XtPopup(cell->export_control_curve_dialog->shell,XtGrabNone);
+        return_code = 1;
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,"bring_up_export_control_curves_dialog. "
+          "Error creating the export dialog");
+        cell->export_control_curve_dialog = 
+					(struct Export_control_curve_dialog *)NULL;
+        return_code = 0;
+      }
+    }
+    else
+    {
+      /* dialog already exists so just pop it up */
+      XtPopup(cell->export_control_curve_dialog->shell,XtGrabNone);
+      return_code = 1;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"bring_up_export_control_curves_dialog. "
+      "Invalid arguments");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* END bring_up_export_control_curves_dialog() */
+
+void close_export_control_curves_dialog(struct Cell_window *cell)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1999
+
+DESCRIPTION :
+If there is a export dialog in existence, then destroy it.
+==============================================================================*/
+{
+  ENTER(close_export_dialog);
+  export_control_curves_dialog_destroy_callback((Widget)NULL,(XtPointer)cell,
+    (XtPointer)NULL);
+  LEAVE;
+} /* END close_export_control_curves_dialog() */

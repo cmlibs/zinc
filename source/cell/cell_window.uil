@@ -11,6 +11,7 @@ module Cell_Window
 
 procedure
 	export_to_cmiss_files;
+	export_control_curves;
 	apply_button_callback;
 	reset_button_callback;
 	identify_export_button;
@@ -53,7 +54,6 @@ identifier
 	variables_file_write_data;
 	model_file_write_data;
 	cmiss_file_write_data;
-	time_variable_file_write_data;
 
 value
 	sash_width : 50;
@@ -484,7 +484,7 @@ object
 			XmPushButton write_variables_button;
 			XmPushButton write_cmiss_button;
 			XmPushButton export_to_cmiss_button;
-			XmPushButton write_time_variable_button;
+			XmPushButton export_control_curve_button;
 			};
 		};
 	write_model_button: XmPushButton
@@ -535,18 +535,17 @@ object
 				};
 			};
 		};
-	write_time_variable_button: XmPushButton
+	export_control_curve_button: XmPushButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Time variables file");
+			XmNlabelString = compound_string("Export control curves");
 			};
 		callbacks 
 			{
 			XmNactivateCallback = procedures
 				{
-				file_open_and_write(
-					time_variable_file_write_data);
+				export_control_curves(cell_window_structure);
 				};
 			};
 		};

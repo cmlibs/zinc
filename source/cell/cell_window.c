@@ -29,6 +29,7 @@ Functions for using the Cell_window structure.
 #include "cell/cell_variable.h"
 #include "cell/cmgui_connection.h"
 #include "choose/text_choose_fe_node.h"
+#include "command/command.h"
 #include "unemap/unemap_package.h"
 #include "user_interface/user_interface.h"
 #include "user_interface/filedir.h"
@@ -116,6 +117,7 @@ Cell window.
     close_model_dialog(cell);
     close_variables_dialog(cell);
     close_export_dialog(cell);
+    close_export_control_curves_dialog(cell);
     component = cell->components;
     while (component != (struct Cell_component *)NULL)
     {
@@ -728,27 +730,149 @@ Callback for the "Write->CMISS" choice in the "File" menu.
 static void calculate_button_callback(Widget widget,XtPointer cell_window,
   XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 28 February 1999
+LAST MODIFIED : 24 November 1999
 
 DESCRIPTION :
 Callback for the "Calculate" button in the menu bar.
 ==============================================================================*/
 {
   struct Cell_window *cell = (struct Cell_window *)NULL;
+	char *define_commands[] = {
+		"fem define parameters;r;cell_tmp",
+		"fem define bases;d",
+		"fem define nodes;d",
+		"fem define elements;d",
+		"fem define grid;d",
+		"fem update grid geometry",
+		"fem update grid metric",
+		"fem define equation;r;cell_tmp",
+		"fem define cell;r;cell_tmp",
+		"fem define material;r;cell_tmp cell",
+		"fem define material;d",
+		"fem define initial;r;cell_tmp",
+		"fem define solve;r;cell_tmp"
+	};
+	int number_of_define_commands = 13;
+	char *initialise_commands[] = {
+		"fem solve to 0"
+	};
+	int number_of_initialise_commands = 1;
+	char *finish_commands[] = {
+		"fem close history binary",
+		"fem evaluate electrode;cell_tmp history cell_tmp from grid yq binary",
+		"fem define export;r;cell_tmp",
+		"fem export signal;cell_tmp electrode signal cell_tmp"
+	};
+	int number_of_finish_commands = 4;
+	char command[250];
+	int command_number,return_code;
+	int time;
   
   ENTER(calculate_button_callback);
   USE_PARAMETER(widget);
   USE_PARAMETER(call_data);
   if (cell = (struct Cell_window *)cell_window)
   {
-    USE_PARAMETER(cell);
-    display_message(INFORMATION_MESSAGE,"calculate_button_callback. "
-      "Sorry, have not done this stuff yet!!\n");
-#if defined (OLD_CODE)
-    busy_cursor_on((Widget)NULL,cell->user_interface);
-    calculate_cell_window(cell);
-    busy_cursor_off((Widget)NULL,cell->user_interface);
-#endif /* defined (OLD_CODE) */
+		/* turn on the busy cursor */
+		busy_cursor_on((Widget)NULL,cell->user_interface);
+
+		/* create the files required by CMISS */
+		write_ippara_file("cell_tmp.ippara");
+		write_ipequa_file("cell_tmp.ipequa",cell->current_model);
+		write_cmiss_file("cell_tmp.ipcell",(XtPointer)cell);
+		write_ipmatc_file("cell_tmp.ipmatc");
+		write_ipinit_file("cell_tmp.ipinit");
+		write_ipsolv_file("cell_tmp.ipsolv");
+		write_ipexpo_file("cell_tmp.ipexpo");
+
+		/* execute the commands required to define the model */
+		command_number = 0;
+		return_code = 1;
+		for (command_number=0;return_code && 
+					 (command_number<number_of_define_commands);command_number++)
+		{
+			return_code = Execute_command_execute_string(cell->execute_command,
+				define_commands[command_number]);
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,"calculate_button_callback. "
+					"There was an error defining the model");	
+				display_message(INFORMATION_MESSAGE,"Bad command: %s\n",
+					define_commands[command_number]);
+			}
+		}
+		/* execute the commands required to intialise the model */
+		command_number = 0;
+		for (command_number=0;return_code && 
+					 (command_number<number_of_initialise_commands);command_number++)
+		{
+			return_code = Execute_command_execute_string(cell->execute_command,
+				initialise_commands[command_number]);
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,"calculate_button_callback. "
+					"There was an error initialising the model");	
+				display_message(INFORMATION_MESSAGE,"Bad command: %s\n",
+					initialise_commands[command_number]);
+			}
+		}
+		/* open the history file - for now only use the potential, but eventually
+			 want to write out all variables ?? */
+		sprintf(command,"fem open history;cell_tmp write variables yq niqlist 1 "
+			"binary\0");
+		return_code = Execute_command_execute_string(cell->execute_command,
+			command);
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE,"calculate_button_callback. "
+				"There was an error opening the history file");	
+			display_message(INFORMATION_MESSAGE,"Bad command: %s\n",command);
+		}
+		/* now solve the model - eventually want to get the start/stop/steps etc..
+			 from the user ?? */
+		for (time=0;return_code && (time<300);time++)
+		{
+			sprintf(command,"fem solve restart to %d",time);
+			return_code = Execute_command_execute_string(cell->execute_command,
+				command);
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,"calculate_button_callback. "
+					"There was an error solving the model");	
+				display_message(INFORMATION_MESSAGE,"Bad command: %s\n",command);
+			}
+			else
+			{
+				sprintf(command,"fem write history time %d variables yq binary",time);
+				return_code = Execute_command_execute_string(cell->execute_command,
+					command);
+				if (!return_code)
+				{
+					display_message(ERROR_MESSAGE,"calculate_button_callback. "
+						"There was an error writing to the history file");
+					display_message(INFORMATION_MESSAGE,"Bad command: %s\n",command);
+				}
+			}
+		} /* time loop */
+		/* execute the commands required to finish the model */
+		command_number = 0;
+		for (command_number=0;return_code && 
+					 (command_number<number_of_finish_commands);command_number++)
+		{
+			return_code = Execute_command_execute_string(cell->execute_command,
+				finish_commands[command_number]);
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,"calculate_button_callback. "
+					"There was an error finishing the model");	
+				display_message(INFORMATION_MESSAGE,"Bad command: %s\n",
+					finish_commands[command_number]);
+			}
+		}
+
+		/* turn off the busy cursor */
+		busy_cursor_off((Widget)NULL,cell->user_interface);
+		
   }
   else
   {
@@ -1443,6 +1567,32 @@ Callback for File | Write | Export to CMISS files
   LEAVE;
 } /* END export_to_cmiss_files() */
 
+static void export_control_curves(Widget widget,XtPointer cell_window,
+  XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1999
+
+DESCRIPTION :
+Callback for File | Write | Export time variables
+==============================================================================*/
+{
+  struct Cell_window *cell = (struct Cell_window *)NULL;
+  
+  ENTER(export_control_curves);
+  USE_PARAMETER(widget);
+  USE_PARAMETER(call_data);
+  if (cell = (struct Cell_window *)cell_window)
+  {
+    bring_up_export_control_curves_dialog(cell);
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"export_control_curves. "
+      "Missing cell window");
+  }
+  LEAVE;
+} /* END export_control_curves() */
+
 /*
 Global functions
 ================
@@ -1459,12 +1609,14 @@ struct Cell_window *create_Cell_window(struct User_interface *user_interface,
   struct LIST(GT_object) *glyph_list,struct MANAGER(FE_field) *fe_field_manager,
   struct MANAGER(GROUP(FE_element)) *element_group_manager,
   struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
   struct MANAGER(GROUP(FE_node)) *node_group_manager,
   struct MANAGER(GROUP(FE_node)) *data_group_manager,
   struct Graphical_material *default_graphical_material,
-  struct MANAGER(Spectrum) *spectrum_manager,struct Spectrum *default_spectrum)
+  struct MANAGER(Spectrum) *spectrum_manager,struct Spectrum *default_spectrum,
+  struct Execute_command *execute_command)
 /*******************************************************************************
-LAST MODIFIED : 9 November 1999
+LAST MODIFIED : 8 December 1999
 
 DESCRIPTION :
 Create the structures and retrieve the cell window from the uil file. <filename>
@@ -1475,8 +1627,7 @@ specifies a file to print messages to, if non-NULL.
 #if defined (MOTIF)
   struct File_open_data *variables_file_open_data,*variables_file_write_data;
   struct File_open_data *parameters_file_open_data;
-  struct File_open_data *model_file_write_data,*cmiss_file_write_data,
-    *time_variable_file_write_data;
+  struct File_open_data *model_file_write_data,*cmiss_file_write_data;
   Atom WM_DELETE_WINDOW;
 	struct Callback_data callback;
   struct Scene_input_callback scene_input_callback;
@@ -1484,6 +1635,7 @@ specifies a file to print messages to, if non-NULL.
 	MrmType cell_window_class;
   static MrmRegisterArg callback_list[] = {
     {"export_to_cmiss_files",(XtPointer)export_to_cmiss_files},
+    {"export_control_curves",(XtPointer)export_control_curves},
     {"apply_button_callback",(XtPointer)apply_button_callback},
     {"reset_button_callback",(XtPointer)reset_button_callback},
     {"identify_export_button",(XtPointer)identify_export_button},
@@ -1530,8 +1682,7 @@ specifies a file to print messages to, if non-NULL.
     {"parameters_file_open_data",(XtPointer)NULL},
     {"parameters_file_write_data",(XtPointer)NULL},
     {"model_file_write_data",(XtPointer)NULL},
-    {"cmiss_file_write_data",(XtPointer)NULL},
-    {"time_variable_file_write_data",(XtPointer)NULL}
+    {"cmiss_file_write_data",(XtPointer)NULL}
   }; /* identifier_list */
 #define XmNdefaultBackground "defaultBackground"
 #define XmCDefaultBackground "DefaultBackground"
@@ -1714,7 +1865,9 @@ specifies a file to print messages to, if non-NULL.
           cell->output_file = (FILE *)NULL;
         }
         cell->user_interface = user_interface;
-				(cell->unemap).package = package;
+		  cell->single_cell = 0;
+		  cell->execute_command = execute_command;
+		  (cell->unemap).package = package;
 #if defined(MOTIF)
         cell->default_values = 0;
         cell->current_model = (char *)NULL;
@@ -1781,6 +1934,7 @@ specifies a file to print messages to, if non-NULL.
         (cell->cell_3d).fe_field_manager=fe_field_manager;
         (cell->cell_3d).element_group_manager=element_group_manager;
         (cell->cell_3d).node_manager=node_manager;
+        (cell->cell_3d).element_manager=element_manager;
         (cell->cell_3d).node_group_manager=node_group_manager;
         (cell->cell_3d).data_group_manager=data_group_manager;
         (cell->cell_3d).spectrum_manager=spectrum_manager;
@@ -1830,6 +1984,8 @@ specifies a file to print messages to, if non-NULL.
         cell->outputs = (struct Cell_output *)NULL;
         cell->graphics = (struct Cell_graphic *)NULL;
         cell->export_dialog = (struct Export_dialog *)NULL;
+        cell->export_control_curve_dialog = 
+					(struct Export_control_curve_dialog *)NULL;
         /* create the cell window shell */
         if (cell->shell = XtVaCreatePopupShell("cell_window_shell",
           xmDialogShellWidgetClass,user_interface->application_shell,
@@ -1930,17 +2086,6 @@ specifies a file to print messages to, if non-NULL.
             else
             {
               identifier_list[8].value = (XtPointer)NULL;
-            }
-            if (time_variable_file_write_data = create_File_open_data(".iptime",
-              REGULAR,write_time_variable_file,(XtPointer)cell,0,
-              user_interface))
-            {
-              identifier_list[9].value =
-                (XtPointer)time_variable_file_write_data;
-            }
-            else
-            {
-              identifier_list[9].value = (XtPointer)NULL;
             }
             /* register the identifiers */
             if (MrmSUCCESS == MrmRegisterNamesInHierarchy(cell_window_hierarchy,

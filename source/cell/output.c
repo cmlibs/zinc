@@ -247,7 +247,7 @@ should be 1 for real and 2 for integer.
 	struct FE_field *field;
 	struct Output_data output_data;
 
-	ENTER(write_real_array_information_saptially_varying);
+	ENTER(write_array_information_saptially_varying);
 	if ((number_of_parameters > 0) && cell)
 	{
 		current = array;
@@ -567,7 +567,7 @@ Writes the current model variables and parameters to the given <file>
   int return_code = 0;
   struct Cell_variable *current_variable = (struct Cell_variable *)NULL;
   struct Cell_parameter *current_parameter = (struct Cell_parameter *)NULL;
-  char spatial_string[6],time_variable_string[6],array_string[15];
+  char spatial_string[6],control_curve_string[6],array_string[15];
 
   ENTER(write_model_to_file);
   if (cell != (struct Cell_window *)NULL)
@@ -667,25 +667,25 @@ Writes the current model variables and parameters to the given <file>
           {
             sprintf(spatial_string,"false\0");
           }
-          if (current_parameter->time_variable_allowed)
+          if (current_parameter->control_curve_allowed)
           {
-            if (current_parameter->time_variable_switch)
+            if (current_parameter->control_curve_switch)
             {
-              sprintf(time_variable_string,"true\0");
+              sprintf(control_curve_string,"true\0");
             }
             else
             {
-              sprintf(time_variable_string,"false\0");
+              sprintf(control_curve_string,"false\0");
             }
           }
           else
           {
-            sprintf(time_variable_string,"false\0");
+            sprintf(control_curve_string,"false\0");
           }
           fprintf(file,"      <value units=\"%s\" spatially-variant=\"%s\""
             "time-variable=\"%s\">"
             "%f</value>\n",current_parameter->units,spatial_string,
-            time_variable_string,current_parameter->value);
+            control_curve_string,current_parameter->value);
           fprintf(file,"    </parameter>\n");
           current_parameter = current_parameter->next;
         } /* while parameters .. */
@@ -808,10 +808,13 @@ Writes the current model variables and parameters to the given CMISS <file>
 
 static int write_to_cmiss_file(FILE *file,struct Cell_window *cell)
 /*******************************************************************************
-LAST MODIFIED : 25 May 1999
+LAST MODIFIED : 29 September 1999
 
 DESCRIPTION :
-Writes the current model variables and parameters to the given CMISS <file>
+Writes the current model variables and parameters to the given CMISS <file>.
+
+If cell->single_cell is true, then all parameters are written out as 
+non-spatially varying parameters, regardless of their actual state!
 ==============================================================================*/
 {
   int return_code = 0,i,model_id,num_state,num_parameters,num_protocol,
@@ -918,8 +921,16 @@ Writes the current model variables and parameters to the given CMISS <file>
       current = state;
       for (i=0;i<num_state;i++)
       {
-        fprintf(file,"  %3d%s%9.6E \t%s\n",current->number,current->spatial,
-          (current->value).real_value,current->label);
+				if (cell->single_cell)
+				{
+					fprintf(file,"  %3d %9.6E \t%s\n",current->number,
+						(current->value).real_value,current->label);
+				}
+				else
+				{
+					fprintf(file,"  %3d%s%9.6E \t%s\n",current->number,current->spatial,
+						(current->value).real_value,current->label);
+				}
         current = current->next;
       }
     }
@@ -1014,7 +1025,7 @@ Writes the current model variables and parameters to the given CMISS <file>
   return(return_code);
 } /* END write_to_cmiss_file() */
 
-static int write_time_variable_to_file(struct Control_curve *variable,
+static int write_control_curve_to_file(struct Control_curve *variable,
   FILE *file,char *name)
 /*******************************************************************************
 LAST MODIFIED : 17 November 1999
@@ -1028,7 +1039,7 @@ Write the given <variable> to the specified <file>.
   int return_code = 0,element_no,node_no,comp_no,number_of_components;
   int number_of_elements,nodes_per_element,number_of_derivs;
   
-  ENTER(write_time_variable_to_file);
+  ENTER(write_control_curve_to_file);
   /* check arguments */
   if (variable)
   {
@@ -1121,14 +1132,14 @@ Write the given <variable> to the specified <file>.
 								else
 								{
 									return_code = 0;
-									display_message(ERROR_MESSAGE,"write_time_variable_to_file. "
+									display_message(ERROR_MESSAGE,"write_control_curve_to_file. "
 										"can not get node scale factor");
 								}
 							}
 							else
 							{
 								return_code = 0;
-								display_message(ERROR_MESSAGE,"write_time_variable_to_file. "
+								display_message(ERROR_MESSAGE,"write_control_curve_to_file. "
 									"can not get node derivs");
 							}
 						}
@@ -1136,7 +1147,7 @@ Write the given <variable> to the specified <file>.
 					else
 					{
 						return_code = 0;
-						display_message(ERROR_MESSAGE,"write_time_variable_to_file. "
+						display_message(ERROR_MESSAGE,"write_control_curve_to_file. "
 							"can not get node coords or time");
 					}
 					DEALLOCATE(values);
@@ -1144,7 +1155,7 @@ Write the given <variable> to the specified <file>.
         else
         {
           return_code = 0;
-          display_message(ERROR_MESSAGE,"write_time_variable_to_file.  "
+          display_message(ERROR_MESSAGE,"write_control_curve_to_file.  "
             "Not enough memory");
         }
         fprintf(file,"\n");
@@ -1154,12 +1165,12 @@ Write the given <variable> to the specified <file>.
   else
   {
     return_code = 0;
-    display_message(ERROR_MESSAGE,"write_time_variable_to_file. "
+    display_message(ERROR_MESSAGE,"write_control_curve_to_file. "
       "Invalid argument");
   }
   LEAVE;
   return (return_code);
-} /* END write_time_variable_to_file() */
+} /* END write_control_curve_to_file() */
 
 /*
 Global functions
@@ -1281,7 +1292,7 @@ dialog box, file -> write -> cmiss file.
   return(return_code);
 } /* END write_cmiss_file() */
 
-int write_time_variable_file(char *filename,XtPointer cell_window)
+int write_control_curve_file(char *filename,XtPointer cell_window)
 /*******************************************************************************
 LAST MODIFIED : 9 November 1999
 
@@ -1297,7 +1308,7 @@ dialog box, file -> write -> time variables file.
   char *name;
   FILE *output;
 
-  ENTER(write_time_variable_file);
+  ENTER(write_control_curve_file);
   if (cell = (struct Cell_window *)cell_window)
   {
     if (output = fopen(filename,"w"))
@@ -1315,7 +1326,7 @@ dialog box, file -> write -> time variables file.
       } /* while variables */
       if (variable != (struct Control_curve *)NULL)
       {
-        return_code = write_time_variable_to_file(variable,output,name);
+        return_code = write_control_curve_to_file(variable,output,name);
       }
       else
       {
@@ -1326,20 +1337,20 @@ dialog box, file -> write -> time variables file.
     }
     else
     {
-      display_message(ERROR_MESSAGE,"write_time_variable_file. "
+      display_message(ERROR_MESSAGE,"write_control_curve_file. "
         "Unable to open file - %s",filename);
       return_code = 0;
     }
   }
   else
   {
-    display_message(ERROR_MESSAGE,"write_time_variable_file. "
+    display_message(ERROR_MESSAGE,"write_control_curve_file. "
       "Missing Cell window");
     return_code = 0;
   }
   LEAVE;
   return(return_code);
-} /* END write_time_variable_file() */
+} /* END write_control_curve_file() */
 
 int export_FE_node_to_ipcell(char *filename,struct FE_node *node,
   struct Cell_window *cell)
@@ -1667,3 +1678,448 @@ Exports the spatially varying parameters to a ipmatc file, from the node group.
 	LEAVE;
 	return(return_code);
 } /* END export_FE_node_group_to_ipmatc() */
+
+void write_ippara_file(char *filename)
+/*******************************************************************************
+LAST MODIFIED : 24 November 1999
+
+DESCRIPTION :
+Writes out an ippara file for calculating.
+==============================================================================*/
+{
+	FILE *file;
+	char *file_string = {
+		" CMISS Version 1.21 ippara File Version 1\n"
+		" Heading: ippara file generated by CELL\n"
+		" \n"
+		" Max# auxiliary parameters          (NAM)[1]:         2\n"
+		" Max# basis functions               (NBM)[1]:         3\n"
+		" Max# var. types for a  dep. var.   (NCM)[1]:         2\n"
+		" Max# data points                   (NDM)[1]:         1\n"
+		" Max# elements                      (NEM)[1]:         1\n"
+		" Max# elements in a region       (NE_R_M)[1]:        64\n"
+		" Max# global face segments          (NFM)[1]:        64\n"
+		" Max# faces in a region          (NF_R_M)[1]:        64\n"
+		" Max# local Voronoi faces         (NFVCM)[1]:         1\n"
+		" Max# Gauss points per element      (NGM)[1]:        27\n"
+		" Max# dependent variables           (NHM)[1]:         1\n"
+		" Max# local Xi coordinates          (NIM)[1]:         2\n"
+		" Max# global reference coordinates  (NJM)[1]:         4\n"
+		" Max# derivatives per variable      (NKM)[1]:         1\n"
+		" Max# global line segments          (NLM)[1]:       144\n"
+		" Max# lines in a region          (NL_R_M)[1]:       144\n"
+		" Max# material parameters           (NMM)[1]:        13\n"
+		" Max# element nodes                 (NNM)[1]:        27\n"
+		" Max# degrees of freedom            (NOM)[1]:        99\n"
+		" Max# global nodes                  (NPM)[1]:        81\n"
+		" Max# global nodes in a region   (NP_R_M)[1]:        81\n"
+		" Max# global grid points            (NQM)[1]:        99\n"
+		" Max# grid degrees of freedom      (NYQM)[1]:        99\n"
+		" Max# regions                       (NRM)[1]:         1\n"
+		" Max# element dofs per variable     (NSM)[1]:        64\n"
+		" Max# face dofs per variable       (NSFM)[1]:         1\n"
+		" Max# eigenvalues                   (NTM)[1]:         1\n"
+		" Max# time samples                 (NTSM)[1]:         1\n"
+		" Max# derivatives up to 2nd order   (NUM)[1]:        11\n"
+		" Max# Voronoi boundary nodes      (NVCBM)[1]:         1\n"
+		" Max# Voronoi cells                (NVCM)[1]:         1\n"
+		" Max# versions of a variable        (NVM)[1]:         1\n"
+		" Max# workstations                  (NWM)[1]:         1\n"
+		" Max# problem types                 (NXM)[1]:         1\n"
+		" Max# mesh dofs                     (NYM)[1]:       181\n"
+		" Max# mesh dofs in a region      (NY_R_M)[1]:       181\n"
+		" Max# dimension of GD           (NZ_GD_M)[1]:         1\n"
+		" Max# dimension of GK           (NZ_GK_M)[1]:         1\n"
+		" Max# dimension of GKK         (NZ_GKK_M)[1]:  17850625\n"
+		" Max# dimension of GM           (NZ_GM_M)[1]:         1\n"
+		" Max# dimension of GMM         (NZ_GMM_M)[1]:         1\n"
+		" Max# dimension of GQ           (NZ_GQ_M)[1]:         1\n"
+		" Max# dimension of ISC_GD      (NISC_GDM)[1]:         1\n"
+		" Max# dimension of ISR_GD      (NISR_GDM)[1]:         1\n"
+		" Max# dimension of ISC_GK      (NISC_GKM)[1]:         1\n"
+		" Max# dimension of ISR_GK      (NISR_GKM)[1]:         1\n"
+		" Max# dimension of ISC_GKK    (NISC_GKKM)[1]:  17850625\n"
+		" Max# dimension of ISR_GKK    (NISR_GKKM)[1]:  17850625\n"
+		" Max# dimension of ISC_GM      (NISC_GMM)[1]:         1\n"
+		" Max# dimension of ISR_GM      (NISR_GMM)[1]:         1\n"
+		" Max# dimension of ISC_GMM    (NISC_GMMM)[1]:         1\n"
+		" Max# dimension of ISR_GMM    (NISR_GMMM)[1]:         1\n"
+		" Max# dimension of ISC_GQ      (NISC_GQM)[1]:         1\n"
+		" Max# dimension of ISR_GQ      (NISR_GQM)[1]:         1\n"
+		" Max# size of Minos arrays    (NZ_MINOSM)[1]:         1\n"
+		" Max# basis function families      (NBFM)[1]:         3\n"
+		" Max# nonlin. optim.n constraints  (NCOM)[1]:         1\n"
+		" Max# data points in one element   (NDEM)[1]:        81\n"
+		" Max# dipoles in a region      (NDIPOLEM)[1]:         1\n"
+		" Max# time points for a dipole (NDIPTIMM)[1]:         1\n"
+		" Max# elements along a line        (NELM)[1]:         2\n"
+		" Max# elements a node can be in    (NEPM)[1]:         4\n"
+		" Max# segments                  (NGRSEGM)[1]:         6\n"
+		" Max# variables per grid point     (NIQM)[1]:        16\n"
+		" Max# cell state variables        (NIQSM)[1]:        14\n"
+		" Max# variables for fibre extens(NIFEXTM)[1]:         1\n"
+		" Max# variables per mesh dof       (NIYM)[1]:         8\n"
+		" Max# variables / mesh dof(fix) (NIYFIXM)[1]:         5\n"
+		" Max# vars. at each gauss point   (NIYGM)[1]:         1\n"
+		" Max# vars. at face gauss points (NIYGFM)[1]:         0\n"
+		" Max# linear optimis.n constraints (NLCM)[1]:         1\n"
+		" Max# auxiliary grid parameters   (NMAQM)[1]:         9\n"
+		" Max# cell material parameters     (NMQM)[1]:         1\n"
+		" Max# optimisation variables       (NOPM)[1]:         1\n"
+		" Max size fractal tree order array (NORM)[1]:         1\n"
+		" Max# soln dofs for mesh dof       (NOYM)[1]:         1\n"
+		" Max# domain nodes for BE problems (NPDM)[1]:         1\n"
+		" Max# grid points per element      (NQEM)[1]:        81\n"
+		" Max# cell integer variables       (NQIM)[1]:       100\n"
+		" Max# cell real variables          (NQRM)[1]:       100\n"
+		" Max# spatial var cell int vars  (NQISVM)[1]: 100\n"
+		" Max# spatial var cell real vars (NQRSVM)[1]: 100\n"
+		" Max# number of grid schemes      (NQSCM)[1]:         1\n"
+		" Max# cell variants                (NQVM)[1]:         3\n"
+		" Max# rows and columns (sb 2)      (NRCM)[1]:         2\n"
+		" Max# optimisation residuals       (NREM)[1]:         1\n"
+		" Max# mesh dofs for soln dof       (NYOM)[1]:         1\n"
+		" Max# rows in a problem          (NYROWM)[1]:         1\n"
+		" Max image cell array dimension (NIMAGEM)[1]:         0\n"
+		" Size of transfer matrix  (NY_TRANSFER_M)[1]:         1\n"
+		" Size iter. solver array (NZ_ITERATIVE_M)[1]:  17850625\n"
+		" 2nd dimen. iter. solver  (N_ITERATIVE_M)[1]:      4229\n"
+		" USE_BEM       (0 or 1)[1]: 0\n"
+		" USE_CELL      (0 or 1)[1]: 1\n"
+		" USE_ITERATIVE (0 or 1)[1]: 1\n"
+		" USE_DATA      (0 or 1)[1]: 1\n"
+		" USE_DIPOLE    (0 or 1)[1]: 0\n"
+		" USE_GAUSS_PT_MATERIALS  (0 or 1)[0]: 0\n"
+		" USE_GRAPHICS  (0 or 1)[1]: 1\n"
+		" USE_GRID      (0 or 1)[1]: 1\n"
+		" USE_LUNG      (0 or 1)[1]: 0\n"
+		" USE_MINOS     (0 or 1)[1]: 0\n"
+		" USE_NLSTRIPE  (0 or 1)[1]: 0\n"
+		" USE_NONLIN    (0 or 1)[1]: 0\n"
+		" USE_NPSOL     (0 or 1)[1]: 0\n"
+		" USE_SPARSE    (0 or 1)[1]: 1\n"
+		" USE_TRANSFER  (0 or 1)[1]: 0\n"
+		" USE_TRIANGLE  (0 or 1)[1]: 0\n"
+		" USE_VORONOI   (0 or 1)[1]: 0\n"
+		" USE_TIME      (0 or 1)[1]: 0\n"
+	};
+
+	ENTER(write_ippara_file);
+	if (file = fopen(filename,"w"))
+	{
+		fprintf(file,"%s\n",file_string);
+		fclose(file);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"write_ippara_file. "
+			"Unable to open the file: %s",filename);
+	}
+	LEAVE;
+} /* END write_ippara_file() */
+
+
+void write_ipequa_file(char *filename,char *model_name)
+/*******************************************************************************
+LAST MODIFIED : 24 November 1999
+
+DESCRIPTION :
+Writes out an ipequa file for calculating.
+==============================================================================*/
+{
+	FILE *file;
+	char *file_string1 = {
+		" CMISS Version 1.21 ipequa File Version 2\n"
+		" Heading: ipequa file generated by CELL\n"
+		" \n"
+		" Specify whether [1]:\n"
+		"   (1) Static analysis\n"
+		"   (2) Time integration\n"
+		"   (3) Modal analysis\n"
+		"   (4) Quasi-static analysis\n"
+		"   (5) Wavefront path analysis\n"
+		"   (6) Buckling analysis\n"
+		"    2\n"
+		" Specify equation [1]:\n"
+		"   (1) Linear elasticity\n"
+		"   (2) Finite elasticity\n"
+		"   (3) Advection-diffusion\n"
+		"   (4) Wave equation\n"
+		"   (5) Navier-Stokes equations\n"
+		"   (6) Bio-heat transfer\n"
+		"  *(7) Maxwell equations\n"
+		"   (8) Huygens activation\n"
+		"   (9) Cellular based modelling\n"
+		"  (10) Oxygen transport\n"
+		"  (11) Humidity transport in lung\n"
+		"  (12) Cellular modelling\n"
+		"   9\n"
+		" Specify cellular model type [1]:\n"
+		"   (1) Electrical\n"
+		"   (2) Mechanical\n"
+		"   (3) Metabolism\n"
+		"   (4) Signalling Pathways\n"
+		"   (5) Drug Interaction\n"
+		"   (6)\n"
+		"   (7) Coupled\n"
+		"    1\n"
+		" Specify electrical model [1]:\n"
+		"   (1) Cubic - no recovery\n"
+		"   (2) FitzHugh-Nagumo\n"
+		"   (3) van Capelle-Durrer\n"
+		"   (4) Beeler-Reuter\n"
+		"   (5) Jafri-Rice-Winslow\n"
+		"   (6) Luo-Rudy\n"
+		"   (7) diFrancesco-Noble\n"
+		"   (8) Noble-98\n"
+		"   (9) Hodgkin-Huxley\n"
+		"  (10) User defined\n"
+	};
+	char *file_string2 = {
+		" Enter (1) monodomain, or (2) bidomain [1]:1\n"
+		" \n"
+		" Is the basis function type for dependent variable 1\n"
+		" different in each element [N]? N\n"
+		" The basis type number is [1]: 1\n"
+		" The max # of versions of variable 1 is [1]: 1\n"
+		" \n"
+		" Do you want the global matrices stored as sparse matrices [Y]? Y\n"
+	};
+
+	ENTER(write_ipequa_file);
+	if (file = fopen(filename,"w"))
+	{
+		fprintf(file,"%s",file_string1);
+		if (!strncmp(model_name,"Luo",2))
+    {
+			fprintf(file,"    6\n");
+		}
+		else
+		{
+			fprintf(file,"    1\n");
+		}
+		fprintf(file,"%s\n",file_string2);
+		fclose(file);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"write_ippara_file. "
+			"Unable to open the file: %s",filename);
+	}
+	LEAVE;
+} /* END write_ipequa_file() */
+
+
+void write_ipmatc_file(char *filename)
+/*******************************************************************************
+LAST MODIFIED : 29 November 1999
+
+DESCRIPTION :
+Writes out an ipmatc file for a single cell calculation. For single cell stuff,
+no parameters are spatially varying ?!?
+==============================================================================*/
+{
+	FILE *file;
+	char *file_string = {
+		" CMISS Version 1.21 ipmatc File Version 2\n"
+		" Heading: ipmatc file generated by CELL\n"
+		"\n"
+		" Enter the cell variant for each collocation point:\n"
+		" Enter collocation point #s/name [EXIT]: 1\n"
+		" The cell variant number is [1]: 1\n"
+		" Enter collocation point #s/name [EXIT]: 0\n"
+		"\n"
+		" State variables:\n"
+		"\n"
+		" Model variables:\n"
+		"\n"
+		" Control variables:\n"
+		"\n"
+		" Parameter variables:\n"
+		"\n"
+		" Protocol variables:\n"
+		"\n"
+		" Additional integer input variables:\n"
+		"\n"
+		" Additional real input variables:\n"
+	};
+
+	ENTER(write_ipmatc_file);
+	if (file = fopen(filename,"w"))
+	{
+		fprintf(file,"%s\n",file_string);
+		fclose(file);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"write_ipmatc_file. "
+			"Unable to open the file: %s",filename);
+	}
+	LEAVE;
+} /* END write_ipmatc_file() */
+
+
+void write_ipinit_file(char *filename)
+/*******************************************************************************
+LAST MODIFIED : 29 November 1999
+
+DESCRIPTION :
+Writes out an ipinit file for a single cell calculation.
+==============================================================================*/
+{
+	FILE *file;
+	char *file_string = {
+		" CMISS Version 1.21 ipmatc File Version 3\n"
+		" Heading: ipinit file generated by CELL\n"
+		"\n"
+		" Are any bdry conditions time-varying [N]? N\n"
+		" Do you want to fix any boundary transmembrane potentials? [N]? N\n"
+		" Do you want to fix any boundary transmembrane fluxes? [Y]? Y\n"
+		" Enter collocation point #s/name [EXIT]: 0\n"
+	};
+
+	ENTER(write_ipinit_file);
+	if (file = fopen(filename,"w"))
+	{
+		fprintf(file,"%s\n",file_string);
+		fclose(file);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"write_ipinit_file. "
+			"Unable to open the file: %s",filename);
+	}
+	LEAVE;
+} /* END write_ipinit_file() */
+
+
+void write_ipsolv_file(char *filename)
+/*******************************************************************************
+LAST MODIFIED : 29 November 1999
+
+DESCRIPTION :
+Writes out an ipsolv file for a single cell calculation.
+==============================================================================*/
+{
+	FILE *file;
+	char *file_string = {
+		" CMISS Version 1.21 ipsolv File Version 3\n"
+		" Heading: ipsolv file generated by CELL\n"
+		" \n"
+		" Specify whether time integration algorithm is [1]:\n"
+		"   (1) Linear\n"
+		"  *(2) Quadratic\n"
+		"  *(3) Cubic\n"
+		"    1\n"
+		" Specify whether [1]:\n"
+		"   (1) Fixed time step\n"
+		"   (2) Automatic stepping\n"
+		"    1\n"
+		" Specify the time integration parameter [2/3]: 0.0\n"
+		" Specify the initial time (msec) [0]: 0.00000D+00\n"
+		" Specify the  final time (msec) [10]: 1000\n"
+		" Specify the time increment (initial if automatic stepping) [1.0]: 0.01\n"
+		" Enter #time step intervals for history file o/p (0 for no o/p)[1]: 0\n"
+		" Specify timing output for time integration [0]:\n"
+		"   (0) No output\n"
+		"   (1) Simple\n"
+		"   (2) Verbose\n"
+		"    0\n"
+		" Specify type of integration procedure [1]:\n"
+		"   (1) Euler\n"
+		"   (2) Improved Euler\n"
+		"   (3) Runge-Kutta (4th order)\n"
+		"  *(4) Adams-Moulton (2nd order, adaptive time step)\n"
+		"  *(5) Adams-Moulton (variable order, adaptive time step)\n"
+		"    5\n"
+		" Enter the maximum Adams polynomial order [4]: 10\n"
+		" Enter the maximum Adams step size [0.100]: 1.0\n"
+		" Enter the maximum number of Adams iterations [100]: 999\n"
+		" Specify type of error control [1]:\n"
+		"   (1) Pure absolute\n"
+		"   (2) Relative to Y\n"
+		"   (3) Relative to DY\n"
+		"   (4) Mixed relative/absolute\n"
+		"    1\n"
+		" Enter the absolute error component [0.05]: 0.1d-5\n"
+		" Enter the relative error component [0.05]: 0.1d-5\n"
+		" Use rounding control [N]? n\n"
+		" Use DTAR (Dynamic Tracking of Active Region) [N]? n\n"
+	};
+
+	ENTER(write_ipsolv_file);
+	if (file = fopen(filename,"w"))
+	{
+		fprintf(file,"%s\n",file_string);
+		fclose(file);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"write_ipsolv_file. "
+			"Unable to open the file: %s",filename);
+	}
+	LEAVE;
+} /* END write_ipsolv_file() */
+
+
+void write_ipexpo_file(char *filename)
+/*******************************************************************************
+LAST MODIFIED : 29 November 1999
+
+DESCRIPTION :
+Writes out an ipexpo file for a single cell calculation.
+==============================================================================*/
+{
+	FILE *file;
+	char *file_string = {
+		" CMISS Version 1.21 ipexpo File Version 1\n"
+		" Heading: ipexpo file generated by CELL\n"
+		" \n"
+		" \n"
+		" Specify the export type [1]:\n"
+		"   (1) Signal\n"
+		"   (2) ZCROSSING\n"
+		"    1\n"
+		" \n"
+		" Specify the signal export type [1]:\n"
+		"   (1) UNEMAP\n"
+		"   (2) CMGUI\n"
+		"   (3) Data file\n"
+		"    1\n"
+		" \n"
+		" Do you wish to set the frequency to map between time steps & "
+		"real time [N]? Y\n"
+		" Enter frequency to map between time and tstep [1000.0]: 0.10000D+04\n"
+		" \n"
+		" Specify the rig type [1]:\n"
+		"   (1) Sock\n"
+		"   (2) Patch\n"
+		"   (3) Torso\n"
+		"   (4) Mixed\n"
+		"   (5) Unused\n"
+		"    2\n"
+		" Enter the rig name [CMISS]: CMISS\n"
+		" \n"
+		" Enter the number UNEMAP regions [1]: 1\n"
+		" Enter the regions: 1\n"
+		" \n"
+		" Enter the region name [CMISSregion1]: CMISSregion1\n"
+		" \n"
+		" Enter the start electrode number for region 1 [1]: 1\n"
+		" \n"
+		" Enter the stop electrode number for region 1 [1]: 1\n"
+	};
+
+	ENTER(write_ipexpo_file);
+	if (file = fopen(filename,"w"))
+	{
+		fprintf(file,"%s\n",file_string);
+		fclose(file);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"write_ipexpo_file. "
+			"Unable to open the file: %s",filename);
+	}
+	LEAVE;
+} /* END write_ipexpo_file() */

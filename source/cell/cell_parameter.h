@@ -31,8 +31,8 @@ Structure containing information related to the individual parameters.
   char *units;
   char *spatial_label; /* set the spatial label to be the parameter's name */
   int spatial_switch;
-  int time_variable_allowed;
-  int time_variable_switch;
+  int control_curve_allowed;
+  int control_curve_switch;
   enum Cell_array array;
   int position;
   float value;
@@ -50,7 +50,7 @@ Global functions
 */
 int set_parameter_information(struct Cell_window *cell,char *array,
   char *position,char *name,char *label,char *units,char *spatial,
-  char *time_variable,char *value,int default_value);
+  char *control_curve,char *value,int default_value);
 /*******************************************************************************
 LAST MODIFIED : 24 May 1999
 

@@ -203,8 +203,11 @@ values
           XtVaSetValues(current->dialog->spatial_toggles[i],
             XmNset,state,
             NULL);
-					XtVaSetValues(current->dialog->time_variable_toggles[i],
-            XmNsensitive,current->parameters[i]->time_variable_allowed,
+					XtVaSetValues(current->dialog->control_curve_toggles[i],
+            XmNsensitive,current->parameters[i]->control_curve_allowed,
+            NULL);
+					XtVaSetValues(current->dialog->control_curve_buttons[i],
+            XmNsensitive,current->parameters[i]->control_curve_allowed,
             NULL);
         } /* for (i..) */
       } /* if widgets exist */
@@ -492,7 +495,7 @@ Callback for when the spatial toggle's state is changed.
   LEAVE;
 } /* END spatial_toggle_changed() */
 
-static void time_variable_toggle_changed(Widget widget,XtPointer cell_window,
+static void control_curve_toggle_changed(Widget widget,XtPointer cell_window,
   XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 15 March 1999
@@ -510,7 +513,7 @@ Callback for when the time variable toggle's state is changed.
   XmString str;
   char *string;
   
-  ENTER(time_variable_toggle_changed);
+  ENTER(control_curve_toggle_changed);
   USE_PARAMETER(call_data);
   if (cell = (struct Cell_window *)cell_window)
   {
@@ -522,11 +525,11 @@ Callback for when the time variable toggle's state is changed.
     {
       if (state)
       {
-        parameter->time_variable_switch = 1;
+        parameter->control_curve_switch = 1;
       }
       else
       {
-        parameter->time_variable_switch = 0;
+        parameter->control_curve_switch = 0;
       }
       /* loop through all the components for this parameter, updating the time
          variable widgets (based on there always being more components in
@@ -553,7 +556,7 @@ Callback for when the time variable toggle's state is changed.
 									if ((component->cell->distributed).edit)
 									{
 										XtVaSetValues(component->dialog->values[j],
-											XmNsensitive,!parameter->time_variable_switch,
+											XmNsensitive,!parameter->control_curve_switch,
 											NULL);
 									}
 									else
@@ -562,8 +565,8 @@ Callback for when the time variable toggle's state is changed.
 											XmNsensitive,True,
 											NULL);
 									}
-                  XtVaSetValues(component->dialog->time_variable_buttons[j],
-                    XmNsensitive,parameter->time_variable_switch,
+                  XtVaSetValues(component->dialog->control_curve_buttons[j],
+                    XmNsensitive,parameter->control_curve_switch,
                     NULL);
                 }
                 XmStringFree(str);
@@ -577,19 +580,19 @@ Callback for when the time variable toggle's state is changed.
     }
     else
     {
-      display_message(ERROR_MESSAGE,"time_variable_toggle_changed. "
+      display_message(ERROR_MESSAGE,"control_curve_toggle_changed. "
         "Missing cell parameter");
     }
   }
   else
   {
-    display_message(ERROR_MESSAGE,"time_variable_toggle_changed. "
+    display_message(ERROR_MESSAGE,"control_curve_toggle_changed. "
       "Missing Cell window");
   }
   LEAVE;
-} /* END time_variable_toggle_changed() */
+} /* END control_curve_toggle_changed() */
 
-static void time_variable_button_callback(Widget widget,
+static void control_curve_button_callback(Widget widget,
   XtPointer cell_parameter,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 9 November 1999
@@ -602,11 +605,11 @@ Callback for when the time variable button is pushed.
   struct Cell_parameter *parameter = (struct Cell_parameter *)NULL;
   XtPointer cell_window;
   
-  ENTER(time_variable_button_callback);
+  ENTER(control_curve_button_callback);
   USE_PARAMETER(call_data);
   if (parameter = (struct Cell_parameter *)cell_parameter)
   {
-    if (parameter->time_variable_switch)
+    if (parameter->control_curve_switch)
     {
       XtVaGetValues(widget,
         XmNuserData,&cell_window,
@@ -615,24 +618,24 @@ Callback for when the time variable button is pushed.
       {
         if (!bring_up_parameter_control_curve_dialog(cell,parameter))
         {
-          display_message(ERROR_MESSAGE,"time_variable_button_callback. "
+          display_message(ERROR_MESSAGE,"control_curve_button_callback. "
             "Unable to bring up time variable dialog");
         }
       }
       else
       {
-        display_message(ERROR_MESSAGE,"time_variable_button_callback. "
+        display_message(ERROR_MESSAGE,"control_curve_button_callback. "
           "Missing Cell window");
       }
     }
   }
   else
   {
-    display_message(ERROR_MESSAGE,"time_variable_button_callback. "
+    display_message(ERROR_MESSAGE,"control_curve_button_callback. "
       "Missing Cell parameter");
   }
   LEAVE;
-} /* END time_variable_button_callback() */
+} /* END control_curve_button_callback() */
 
 static int create_parameter_widgets(Widget parent,
   struct Parameter_dialog *dialog,struct Cell_parameter *parameter,
@@ -672,13 +675,13 @@ NOTE - need to keep the parameter widgets separate from the Cell_parameter
       {
         dialog->values = (Widget *)NULL;
       }
-      if (!ALLOCATE(dialog->time_variable_toggles,Widget,1))
+      if (!ALLOCATE(dialog->control_curve_toggles,Widget,1))
       {
-        dialog->time_variable_toggles = (Widget *)NULL;
+        dialog->control_curve_toggles = (Widget *)NULL;
       }
-      if (!ALLOCATE(dialog->time_variable_buttons,Widget,1))
+      if (!ALLOCATE(dialog->control_curve_buttons,Widget,1))
       {
-        dialog->time_variable_buttons = (Widget *)NULL;
+        dialog->control_curve_buttons = (Widget *)NULL;
       }
       if (!ALLOCATE(dialog->spatial_toggles,Widget,1))
       {
@@ -702,17 +705,17 @@ NOTE - need to keep the parameter widgets separate from the Cell_parameter
       {
         dialog->values = (Widget *)NULL;
       }
-      if (!REALLOCATE(dialog->time_variable_toggles,
-        dialog->time_variable_toggles,Widget,
+      if (!REALLOCATE(dialog->control_curve_toggles,
+        dialog->control_curve_toggles,Widget,
         parameter_position+1))
       {
-        dialog->time_variable_toggles = (Widget *)NULL;
+        dialog->control_curve_toggles = (Widget *)NULL;
       }
-      if (!REALLOCATE(dialog->time_variable_buttons,
-        dialog->time_variable_buttons,Widget,
+      if (!REALLOCATE(dialog->control_curve_buttons,
+        dialog->control_curve_buttons,Widget,
         parameter_position+1))
       {
-        dialog->time_variable_buttons = (Widget *)NULL;
+        dialog->control_curve_buttons = (Widget *)NULL;
       }
       if (!REALLOCATE(dialog->spatial_toggles,dialog->spatial_toggles,Widget,
         parameter_position+1))
@@ -723,8 +726,8 @@ NOTE - need to keep the parameter widgets separate from the Cell_parameter
     if ((dialog->labels != (Widget *)NULL) &&
       (dialog->units != (Widget *)NULL) &&
       (dialog->values != (Widget *)NULL) &&
-      (dialog->time_variable_toggles != (Widget *)NULL) &&
-      (dialog->time_variable_buttons != (Widget *)NULL) &&
+      (dialog->control_curve_toggles != (Widget *)NULL) &&
+      (dialog->control_curve_buttons != (Widget *)NULL) &&
       (dialog->spatial_toggles != (Widget *)NULL))
     {
       form = XtVaCreateManagedWidget("cell_variable",
@@ -749,7 +752,7 @@ NOTE - need to keep the parameter widgets separate from the Cell_parameter
       XtAddCallback(dialog->spatial_toggles[parameter_position],
         XmNvalueChangedCallback,spatial_toggle_changed,(XtPointer)parameter);
       /* the time variable toggle */
-      dialog->time_variable_toggles[parameter_position] =
+      dialog->control_curve_toggles[parameter_position] =
         XtVaCreateManagedWidget("cell_parameter_toggle",
           xmToggleButtonWidgetClass,form,
           XmNleftOffset,large_widget_spacing,
@@ -757,8 +760,8 @@ NOTE - need to keep the parameter widgets separate from the Cell_parameter
           XmNbottomOffset,small_widget_spacing,
           XmNlabelString,XmStringCreateSimple(" "),
           XmNalignment,XmALIGNMENT_BEGINNING,
-          XmNset,parameter->time_variable_switch,
-          XmNsensitive,parameter->time_variable_allowed,
+          XmNset,parameter->control_curve_switch,
+          XmNsensitive,parameter->control_curve_allowed,
           XmNleftAttachment,XmATTACH_WIDGET,
           XmNleftWidget,dialog->spatial_toggles[parameter_position],
           XmNtopAttachment,XmATTACH_FORM,
@@ -767,11 +770,11 @@ NOTE - need to keep the parameter widgets separate from the Cell_parameter
           XmNuserData,(XtPointer)parameter,
           NULL);
       /* add the value changed callback for the time variable toggle */
-      XtAddCallback(dialog->time_variable_toggles[parameter_position],
-        XmNvalueChangedCallback,time_variable_toggle_changed,
+      XtAddCallback(dialog->control_curve_toggles[parameter_position],
+        XmNvalueChangedCallback,control_curve_toggle_changed,
         (XtPointer)cell);
       /* add the push button for the time variable */
-      dialog->time_variable_buttons[parameter_position] =
+      dialog->control_curve_buttons[parameter_position] =
         XtVaCreateManagedWidget("cell_parameter_button",
           xmPushButtonWidgetClass,form,
           XmNleftOffset,0,
@@ -779,9 +782,9 @@ NOTE - need to keep the parameter widgets separate from the Cell_parameter
           XmNbottomOffset,small_widget_spacing,
           XmNlabelString,XmStringCreateSimple("TV"),
           XmNalignment,XmALIGNMENT_BEGINNING,
-          XmNsensitive,parameter->time_variable_allowed,
+          XmNsensitive,parameter->control_curve_allowed,
           XmNleftAttachment,XmATTACH_WIDGET,
-          XmNleftWidget,dialog->time_variable_toggles[parameter_position],
+          XmNleftWidget,dialog->control_curve_toggles[parameter_position],
           XmNtopAttachment,XmATTACH_FORM,
           XmNbottomAttachment,XmATTACH_FORM,
           XmNforeground,user_settings->value_colour,
@@ -790,8 +793,8 @@ NOTE - need to keep the parameter widgets separate from the Cell_parameter
           XmNuserData,(XtPointer)cell,
           NULL);
       /* add the callback for the time variable button */
-      XtAddCallback(dialog->time_variable_buttons[parameter_position],
-        XmNactivateCallback,time_variable_button_callback,(XtPointer)parameter);
+      XtAddCallback(dialog->control_curve_buttons[parameter_position],
+        XmNactivateCallback,control_curve_button_callback,(XtPointer)parameter);
       /* create the text field for the value of the variable */
       sprintf(buf,"%g\0",parameter->value);
       dialog->values[parameter_position] =
@@ -802,10 +805,10 @@ NOTE - need to keep the parameter widgets separate from the Cell_parameter
           XmNbottomOffset,small_widget_spacing,
           XmNvalue,buf,
           XmNeditable,True,
-          XmNsensitive,!parameter->time_variable_switch,
+          XmNsensitive,!parameter->control_curve_switch,
           XmNcolumns,15,
           XmNleftAttachment,XmATTACH_WIDGET,
-          XmNleftWidget,dialog->time_variable_buttons[parameter_position],
+          XmNleftWidget,dialog->control_curve_buttons[parameter_position],
           XmNtopAttachment,XmATTACH_FORM,
           XmNbottomAttachment,XmATTACH_FORM,
           XmNforeground,user_settings->value_colour,

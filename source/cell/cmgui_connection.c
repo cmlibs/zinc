@@ -590,6 +590,50 @@ Create a new export dialog.
   return(return_code);
 } /* END create_export_dialog() */
 
+static FE_value calculate_field_value_from_control_curves(
+	struct Control_curve **xi_variables,FE_value *element_xi,FE_value value)
+/*******************************************************************************
+LAST MODIFIED : 30 September 1999
+
+DESCRIPTION :
+Takes the <element_xi> position and converts it to a "time" for each of the
+three time variables, and then uses the value of each time variable at this
+"time" to scale the <value>.
+==============================================================================*/
+{
+	FE_value return_value;
+	float start_time,finish_time;
+	float value_return,*scale,time;
+	int i;
+
+	ENTER(calculate_field_value_from_control_curves);
+	if (xi_variables && element_xi)
+	{
+		value_return = 1.0;
+		for (i=0;i<3;i++)
+		{
+#if defined(OLD_CODE)
+			if (Control_curve_get_number_of_components(xi_variables[i]) == 1)
+			{
+				Control_curve_get_start_time(xi_variables[i],&start_time);
+				Control_curve_get_finish_time(xi_variables[i],&finish_time);
+				time = (float)element_xi[i] * (finish_time - start_time) + start_time;
+				scale = Control_curve_get_values_at_time(xi_variables[i],time);
+				value_return *= *scale;
+			}
+#endif /* defined(OLD_CODE) */
+		} /* for (i) */
+		return_value = (FE_value)value_return * value;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"calculate_field_value_from_control_curves. "
+			"Invalid arguments");
+		return_value = (FE_value)0.0;
+	}
+	LEAVE;
+	return(return_value);
+} /* END calculate_field_value_from_control_curves() */
 
 /*
 Global functions
@@ -854,14 +898,14 @@ Extracts values from a FE_node and sets up the cell window.
               case GENERAL_FE_FIELD:
               {
                 parameter->spatial_switch = 1;
-								parameter->time_variable_allowed = 1;
+								parameter->control_curve_allowed = 1;
               } break;
               case CONSTANT_FE_FIELD:
               case INDEXED_FE_FIELD:
               default:
               {
                 parameter->spatial_switch = 0;
-								parameter->time_variable_allowed = 0;
+								parameter->control_curve_allowed = 0;
               } break;
             } /* switch (field_type) */
           }
@@ -1273,3 +1317,165 @@ the FIELD_TYPE of the <field>.
 	LEAVE;
 	return(return_code);
 } /* END check_field_type() */
+
+int Cell_window_update_field(struct Cell_window *cell,char *control_curve_name,
+	char *field_name,char *file_name,char *element_number,float value)
+/*******************************************************************************
+LAST MODIFIED : 29 September 1999
+
+DESCRIPTION :
+Temp. hack to use time variables to assign values to element based fields.
+==============================================================================*/
+{
+	int cells_in_xi1,cells_in_xi2,cells_in_xi3, 
+	  number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], return_code = 0;
+	char *xi1_name,*xi2_name,*xi3_name;
+	struct Control_curve *xi_variables[3];
+	struct FE_field_component field_component;
+	struct FE_element *element;
+	struct CM_element_information element_identifier;
+	FE_value step_xi1,step_xi2,step_xi3;
+	FE_value xi[3],*values,average_value;
+	int i,j,k;
+
+	ENTER(Cell_window_update_node);
+	if (cell && control_curve_name && field_name && file_name && element_number)
+	{
+		/* get the three full names for the time variables */
+		if (ALLOCATE(xi1_name,char,strlen(control_curve_name)+5) &&
+			ALLOCATE(xi2_name,char,strlen(control_curve_name)+5) &&
+			ALLOCATE(xi3_name,char,strlen(control_curve_name)+5))
+		{
+			sprintf(xi1_name,"%s_xi1\0",control_curve_name);
+			sprintf(xi2_name,"%s_xi2\0",control_curve_name);
+			sprintf(xi3_name,"%s_xi3\0",control_curve_name);
+			/* get the field */
+			if (field_component.field = FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(
+				field_name,(cell->cell_3d).fe_field_manager))
+			{
+				field_component.number = 0;
+				/* get the three time variables */
+				if ((xi_variables[0] = 
+					FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
+						xi1_name,(cell->control_curve).control_curve_manager)) &&
+					(xi_variables[1] = FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
+						xi2_name,(cell->control_curve).control_curve_manager)) &&
+					(xi_variables[2] = FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
+						xi3_name,(cell->control_curve).control_curve_manager)))
+				{
+					/* get the element */
+					element_identifier.type = CM_ELEMENT;
+					sscanf(element_number,"%d",&(element_identifier.number));
+					if (element = FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
+						&element_identifier,(cell->cell_3d).element_manager))
+					{
+						/* check that the field is element based, and get the number of
+							 grid points in each direction */
+					  if (FE_element_field_is_grid_based(element,
+						 field_component.field)&&
+						 get_FE_element_field_grid_map_number_in_xi(element,
+							field_component.field,number_in_xi))
+						{
+							cells_in_xi1 = number_in_xi[0];
+							cells_in_xi2 = number_in_xi[1];
+							cells_in_xi3 = number_in_xi[2];
+							if (ALLOCATE(values,FE_value,
+								(cells_in_xi1+1)*(cells_in_xi2+1)*(cells_in_xi3+1)))
+							{
+								step_xi1 = ((FE_value)1.0)/((FE_value)(cells_in_xi1));
+								step_xi2 = ((FE_value)1.0)/((FE_value)(cells_in_xi2));
+								step_xi3 = ((FE_value)1.0)/((FE_value)(cells_in_xi3));
+								xi[0] = (FE_value)0.0;
+								xi[1] = (FE_value)0.0;
+								xi[2] = (FE_value)0.0;
+								average_value = (FE_value)value;
+								for (k=0;k<=cells_in_xi3;k++)
+								{
+									for (j=0;j<=cells_in_xi2;j++)
+									{
+										for (i=0;i<=cells_in_xi1;i++)
+										{
+											xi[0] = (FE_value)i * step_xi1;
+											xi[1] = (FE_value)j * step_xi2;
+											xi[2] = (FE_value)k * step_xi3;
+											/*calculate_FE_field(field_component.field,0,
+												(struct FE_node *)NULL,element,xi,
+												values+i+j*(cells_in_xi1+1)+
+												k*(cells_in_xi1+1)*(cells_in_xi2+1));*/
+											values[i+j*(cells_in_xi1+1)+
+												k*(cells_in_xi1+1)*(cells_in_xi2+1)] = 
+												calculate_field_value_from_control_curves(xi_variables,
+													xi,average_value);
+										} /* for i (xi1) */
+									} /* for j (xi2) */
+								} /* for k (xi3) */
+								i = 0;
+								k = 0;
+								while (k<((cells_in_xi1+1)*(cells_in_xi2+1)*(cells_in_xi3+1)))
+								{
+									printf("     ");
+									for (j=0;j<5;j++)
+									{
+										if (k<((cells_in_xi1+1)*(cells_in_xi2+1)*(cells_in_xi3+1)))
+										{
+											printf("%12.5E ",values[j+i*5]);
+											k++;
+										}
+									}
+									printf("\n");
+									i++;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"Cell_window_update_field. "
+									"Unable to allocate memory for the values of the field");
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"Cell_window_update_field. "
+								"Field %s is not a element based field in element %d",
+								field_name,element_identifier.number);
+							return_code = 0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Cell_window_update_field. "
+							"Unable to find the element: %s",element_number);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Cell_window_update_field. "
+						"Unable to find some/all of the time variables required "
+						"(%s,%s,%s)",xi1_name,xi2_name,xi3_name);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Cell_window_update_field. "
+					"Unable to find a field named: %s",field_name);
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Cell_window_update_field. "
+				"Unable to allocate memory for the time variable names");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cell_window_update_field. "
+			"Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+	return(return_code);
+} /* END Cell_window_update_field() */

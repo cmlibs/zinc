@@ -43,7 +43,7 @@ Global functions
 */
 int set_parameter_information(struct Cell_window *cell,char *array,
   char *position,char *name,char *label,char *units,char *spatial,
-  char *time_variable,char *value,int default_value)
+  char *control_curve,char *value,int default_value)
 /*******************************************************************************
 LAST MODIFIED : 24 May 1999
 
@@ -87,9 +87,9 @@ the newer ones, keeping the order the same. ??
       new->edit_distributed = &((cell->distributed).edit);
       if (default_value)
       {
-        new->time_variable_allowed = 0;
+        new->control_curve_allowed = 0;
       }
-      new->time_variable_switch = 0;
+      new->control_curve_switch = 0;
       new->value = 0.0;
       new->number_of_components = 0;
       /*new->components = (enum Cell_components *)NULL;*/
@@ -157,13 +157,13 @@ the newer ones, keeping the order the same. ??
         }
         if (default_value)
         {
-          if (!strncmp(time_variable,"true",strlen("true")))
+          if (!strncmp(control_curve,"true",strlen("true")))
           {
-            new->time_variable_allowed = 1;
+            new->control_curve_allowed = 1;
           }
           else
           {
-            new->time_variable_allowed = 0;
+            new->control_curve_allowed = 0;
           }
         }
         sscanf(value,"%f",&(new->value));

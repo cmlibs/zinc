@@ -61,7 +61,7 @@ Stores the user settings for the Cell window.
 
 struct Cell_window
 /*******************************************************************************
-LAST MODIFIED : 14 September 1999
+LAST MODIFIED : 29 November 1999
 
 DESCRIPTION :
 Main structure containing all CELL data.
@@ -70,9 +70,12 @@ Main structure containing all CELL data.
 {
   int default_values; /* used to distinguish between reading default values
                          and new, user defined values */
+	int single_cell; /* set to 1 when wrinting out ipcell files for single
+											cell calculations */
   struct XML_Tree tree;
   char *current_model,*current_model_id;
   struct User_interface *user_interface;
+  struct Execute_command *execute_command;
   FILE *output_file;
   Widget window;
   Widget shell;
@@ -129,6 +132,7 @@ Main structure containing all CELL data.
     struct MANAGER(FE_field) *fe_field_manager;
     struct MANAGER(GROUP(FE_element)) *element_group_manager;
     struct MANAGER(FE_node) *node_manager;
+	 struct MANAGER(FE_element) *element_manager;
     struct MANAGER(GROUP(FE_node)) *node_group_manager;
     struct MANAGER(GROUP(FE_node)) *data_group_manager;
     struct MANAGER(Spectrum) *spectrum_manager;
@@ -151,6 +155,7 @@ Main structure containing all CELL data.
   struct Cell_output *outputs;
   struct Cell_graphic *graphics;
   struct Export_dialog *export_dialog;
+  struct Export_control_curve_dialog *export_control_curve_dialog;
 }; /* struct Cell_window */
 
 /*
@@ -169,12 +174,14 @@ struct Cell_window *create_Cell_window(struct User_interface *user_interface,
   struct LIST(GT_object) *glyph_list,struct MANAGER(FE_field) *fe_field_manager,
   struct MANAGER(GROUP(FE_element)) *element_group_manager,
   struct MANAGER(FE_node) *node_manager,
+  struct MANAGER(FE_element) *element_manager,
   struct MANAGER(GROUP(FE_node)) *node_group_manager,
   struct MANAGER(GROUP(FE_node)) *data_group_manager,
   struct Graphical_material *default_graphical_material,
-  struct MANAGER(Spectrum) *spectrum_manager,struct Spectrum *default_spectrum);
+  struct MANAGER(Spectrum) *spectrum_manager,struct Spectrum *default_spectrum,
+  struct Execute_command *execute_command);
 /*******************************************************************************
-LAST MODIFIED : 25 September 1999
+LAST MODIFIED : 8 December 1999
 
 DESCRIPTION :
 Create the structures and retrieve the cell window from the uil file. <filename>

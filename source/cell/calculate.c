@@ -307,7 +307,7 @@ Calculates the cell model.
               if (rparam != (double *)NULL)
               {
                 rparam[number_of_parameters-1] = (double)(current->value);
-                if (current->time_variable_switch)
+                if (current->control_curve_switch)
                 {
                   /* this parameter is using a time variable to set its value */
                   L_CONTROL += 2;

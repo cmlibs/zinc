@@ -72,7 +72,7 @@ Callback for when the spatial toggle's state is changed.
   LEAVE;
 } /* END spatial_toggle_changed() */
 
-static void time_variable_toggle_changed(Widget widget,XtPointer cell_window,
+static void control_curve_toggle_changed(Widget widget,XtPointer cell_window,
   XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 25 March 1999
@@ -87,7 +87,7 @@ dialog.
   Boolean state;
   XtPointer cell_variable;
   
-  ENTER(time_variable_toggle_changed);
+  ENTER(control_curve_toggle_changed);
   USE_PARAMETER(call_data);
   USE_PARAMETER(cell);
   if (cell = (struct Cell_window *)cell_window)
@@ -100,31 +100,31 @@ dialog.
     {
       if (state)
       {
-        variable->time_variable_switch = 1;
+        variable->control_curve_switch = 1;
       }
       else
       {
-        variable->time_variable_switch = 0;
+        variable->control_curve_switch = 0;
       }
       XtVaSetValues(variable->value_widget,
-        XmNsensitive,!variable->time_variable_switch,
+        XmNsensitive,!variable->control_curve_switch,
         NULL);
     }
     else
     {
-      display_message(ERROR_MESSAGE,"time_variable_toggle_changed. "
+      display_message(ERROR_MESSAGE,"control_curve_toggle_changed. "
         "Missing cell variable");
     }
   }
   else
   {
-    display_message(ERROR_MESSAGE,"time_variable_toggle_changed. "
+    display_message(ERROR_MESSAGE,"control_curve_toggle_changed. "
       "Missing Cell window");
   }
   LEAVE;
-} /* END time_variable_toggle_changed() */
+} /* END control_curve_toggle_changed() */
 
-static void time_variable_button_callback(Widget widget,
+static void control_curve_button_callback(Widget widget,
   XtPointer cell_variable,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 9 November 1999
@@ -137,11 +137,11 @@ Callback for when the time variable button is pushed in the variables dialog.
   struct Cell_variable *variable = (struct Cell_variable *)NULL;
   XtPointer cell_window;
   
-  ENTER(time_variable_button_callback);
+  ENTER(control_curve_button_callback);
   USE_PARAMETER(call_data);
   if (variable = (struct Cell_variable *)cell_variable)
   {
-    if (variable->time_variable_switch)
+    if (variable->control_curve_switch)
     {
       XtVaGetValues(widget,
         XmNuserData,&cell_window,
@@ -150,24 +150,24 @@ Callback for when the time variable button is pushed in the variables dialog.
       {
         if (!bring_up_variable_control_curve_dialog(cell,variable))
         {
-          display_message(ERROR_MESSAGE,"time_variable_button_callback. "
+          display_message(ERROR_MESSAGE,"control_curve_button_callback. "
             "Unable to bring up time variable dialog");
         }
       }
       else
       {
-        display_message(ERROR_MESSAGE,"time_variable_button_callback. "
+        display_message(ERROR_MESSAGE,"control_curve_button_callback. "
           "Missing Cell window");
       }
     }
   }
   else
   {
-    display_message(ERROR_MESSAGE,"time_variable_button_callback. "
+    display_message(ERROR_MESSAGE,"control_curve_button_callback. "
       "Missing Cell variable");
   }
   LEAVE;
-} /* END time_variable_button_callback() */
+} /* END control_curve_button_callback() */
 
 static int create_variable_widgets(Widget parent,struct Cell_variable *variable,
   struct Variables_dialog_user_settings *user_settings,struct Cell_window *cell)
@@ -207,7 +207,7 @@ Add the variables widgets to the variables dialog.
     XtAddCallback(variable->spatial_switch_widget,XmNvalueChangedCallback,
       spatial_toggle_changed,(XtPointer)variable);
     /* create the toggle to switch to a time variable for the variable */
-    variable->time_variable_toggle =
+    variable->control_curve_toggle =
       XtVaCreateManagedWidget("cell_variable_toggle",
         xmToggleButtonWidgetClass,form,
         XmNleftOffset,large_widget_spacing,
@@ -215,8 +215,8 @@ Add the variables widgets to the variables dialog.
         XmNbottomOffset,small_widget_spacing,
         XmNlabelString,XmStringCreateSimple(" "),
         XmNalignment,XmALIGNMENT_BEGINNING,
-        XmNset,variable->time_variable_switch,
-        XmNsensitive,variable->time_variable_allowed,
+        XmNset,variable->control_curve_switch,
+        XmNsensitive,variable->control_curve_allowed,
         XmNleftAttachment,XmATTACH_WIDGET,
         XmNleftWidget,variable->spatial_switch_widget,
         XmNtopAttachment,XmATTACH_FORM,
@@ -225,21 +225,21 @@ Add the variables widgets to the variables dialog.
         XmNuserData,(XtPointer)variable,
         NULL);
     /* add the value changed callback for the time variable toggle */
-    XtAddCallback(variable->time_variable_toggle,
-      XmNvalueChangedCallback,time_variable_toggle_changed,
+    XtAddCallback(variable->control_curve_toggle,
+      XmNvalueChangedCallback,control_curve_toggle_changed,
       (XtPointer)cell);
     /* add the push button for the time variable */
-    variable->time_variable_button =
+    variable->control_curve_button =
       XtVaCreateManagedWidget("cell_variable_button",
         xmPushButtonWidgetClass,form,
         XmNleftOffset,0,
         XmNtopOffset,small_widget_spacing,
         XmNbottomOffset,small_widget_spacing,
-        XmNlabelString,XmStringCreateSimple(variable->time_variable_label),
+        XmNlabelString,XmStringCreateSimple(variable->control_curve_label),
         XmNalignment,XmALIGNMENT_BEGINNING,
-        XmNsensitive,variable->time_variable_allowed,
+        XmNsensitive,variable->control_curve_allowed,
         XmNleftAttachment,XmATTACH_WIDGET,
-        XmNleftWidget,variable->time_variable_toggle,
+        XmNleftWidget,variable->control_curve_toggle,
         XmNtopAttachment,XmATTACH_FORM,
         XmNbottomAttachment,XmATTACH_FORM,
         XmNforeground,user_settings->value_colour,
@@ -248,8 +248,8 @@ Add the variables widgets to the variables dialog.
         XmNuserData,(XtPointer)cell,
         NULL);
     /* add the callback for the time variable button */
-    XtAddCallback(variable->time_variable_button,
-      XmNactivateCallback,time_variable_button_callback,(XtPointer)variable);
+    XtAddCallback(variable->control_curve_button,
+      XmNactivateCallback,control_curve_button_callback,(XtPointer)variable);
     /* create the text field for the value of the variable */
     sprintf(buf,"%g\0",variable->value);
     variable->value_widget = XtVaCreateManagedWidget("cell_variable_text",
@@ -262,7 +262,7 @@ Add the variables widgets to the variables dialog.
       XmNsensitive,True,
       XmNcolumns,15,
       XmNleftAttachment,XmATTACH_WIDGET,
-      XmNleftWidget,variable->time_variable_button,
+      XmNleftWidget,variable->control_curve_button,
       XmNtopAttachment,XmATTACH_FORM,
       XmNbottomAttachment,XmATTACH_FORM,
       XmNforeground,user_settings->value_colour,
@@ -317,7 +317,7 @@ Global functions
 */
 int set_variable_information(struct Cell_window *cell,char *array,
   char *position,char *name,char *label,char *units,char *spatial,
-  char *time_variable,char *value,int default_value)
+  char *control_curve,char *value,int default_value)
 /*******************************************************************************
 LAST MODIFIED : 8 November 1999
 
@@ -359,16 +359,16 @@ the newer ones, keeping the order the same. ??
       new->spatial_switch_widget = (Widget)NULL;
       new->value = 0.0;
       new->value_widget = (Widget)NULL;
-      new->time_variable_switch = 0;
-      new->time_variable_allowed = 0;
-      new->time_variable_toggle = (Widget)NULL;
-      new->time_variable_button = (Widget)NULL;
+      new->control_curve_switch = 0;
+      new->control_curve_allowed = 0;
+      new->control_curve_toggle = (Widget)NULL;
+      new->control_curve_button = (Widget)NULL;
       new->control_curve = (struct Control_curve *)NULL;
       new->next = (struct Cell_variable *)NULL;
       if ((ALLOCATE(new->label,char,strlen(label)+1)) &&
         (ALLOCATE(new->units,char,strlen(units)+1)) &&
         (ALLOCATE(new->spatial_label,char,strlen(name)+1)) &&
-        (ALLOCATE(new->time_variable_label,char,strlen("TV")+1)))
+        (ALLOCATE(new->control_curve_label,char,strlen("TV")+1)))
       {
         sprintf(new->label,"%s\0",label);
         sprintf(new->units,"%s\0",units);
@@ -390,7 +390,7 @@ the newer ones, keeping the order the same. ??
           new->array = ARRAY_UNKNOWN;
         }
         sscanf(position,"%d",&(new->position));
-        sprintf(new->time_variable_label,"%s\0","TV");
+        sprintf(new->control_curve_label,"%s\0","TV");
         if (!strncmp(spatial,"true",strlen("true")))
         {
           new->spatial_switch = 1;
@@ -401,13 +401,13 @@ the newer ones, keeping the order the same. ??
         }
         if (default_value)
         {
-          if (!strncmp(time_variable,"true",strlen("true")))
+          if (!strncmp(control_curve,"true",strlen("true")))
           {
-            new->time_variable_allowed = 1;
+            new->control_curve_allowed = 1;
           }
           else
           {
-            new->time_variable_allowed = 0;
+            new->control_curve_allowed = 0;
           }
         }
         sscanf(value,"%f",&(new->value));
@@ -614,7 +614,7 @@ Formats the widget placement for all the <variables>
       {
         max_spatial_width = width;
       }
-      XtVaGetValues(current->time_variable_toggle,
+      XtVaGetValues(current->control_curve_toggle,
         XmNwidth,&width,
         NULL);
       if (width > max_tv_toggle_width)
@@ -636,7 +636,7 @@ Formats the widget placement for all the <variables>
         max_height = height;
       }
 #if 0
-      XtVaGetValues(current->time_variable_button,
+      XtVaGetValues(current->control_curve_button,
         XmNwidth,&width,
         XmNheight,&height,
         NULL);
@@ -666,7 +666,7 @@ Formats the widget placement for all the <variables>
       XtVaSetValues(current->spatial_switch_widget,
         XmNwidth,max_spatial_width,
         NULL);
-      XtVaSetValues(current->time_variable_toggle,
+      XtVaSetValues(current->control_curve_toggle,
         XmNwidth,max_tv_toggle_width,
         NULL);
       XtVaSetValues(current->value_widget,
@@ -674,7 +674,7 @@ Formats the widget placement for all the <variables>
         XmNheight,max_height,
         NULL);
 #if 0
-      XtVaSetValues(current->time_variable_button,
+      XtVaSetValues(current->control_curve_button,
         XmNwidth,max_value_width,
         XmNheight,max_height,
         NULL);

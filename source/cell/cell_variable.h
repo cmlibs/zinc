@@ -37,11 +37,11 @@ Structure containing information related to the individual variables.
   Widget spatial_switch_widget;
   float value;
   Widget value_widget;
-  char *time_variable_label;
-  int time_variable_switch;
-  int time_variable_allowed;
-  Widget time_variable_toggle;
-  Widget time_variable_button;
+  char *control_curve_label;
+  int control_curve_switch;
+  int control_curve_allowed;
+  Widget control_curve_toggle;
+  Widget control_curve_button;
   struct Control_curve *control_curve;
   struct Cell_variable *next;
 }; /* Cell_variable */
@@ -52,7 +52,7 @@ Global functions
 */
 int set_variable_information(struct Cell_window *cell,char *array,
   char *position,char *name,char *label,char *units,char *spatial,
-  char *time_variable,char *value,int default_value);
+  char *control_curve,char *value,int default_value);
 /*******************************************************************************
 LAST MODIFIED : 25 March 1999
 

@@ -34,8 +34,8 @@ Structure containing information related to the "Parameter" dialogs.
   Widget *labels;
   Widget *units;
   Widget *values;
-  Widget *time_variable_toggles;
-  Widget *time_variable_buttons;
+  Widget *control_curve_toggles;
+  Widget *control_curve_buttons;
   Widget *spatial_toggles;
 }; /* Parameter_dialog */
 

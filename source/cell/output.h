@@ -16,7 +16,7 @@ Functions for handling all file output for CELL.
 Global functions
 ================
 */
-int write_time_variable_file(char *filename,XtPointer cell_window);
+int write_control_curve_file(char *filename,XtPointer cell_window);
 /*******************************************************************************
 LAST MODIFIED : 02 August 1999
 
@@ -67,6 +67,49 @@ LAST MODIFIED : 21 September 1999
 DESCRIPTION :
 Exports the spatially varying parameters to a ipmatc file, from the node group.
 <offset> specifies the offset of the grid point number from the node number.
+==============================================================================*/
+void write_ippara_file(char *filename);
+/*******************************************************************************
+LAST MODIFIED : 24 November 1999
+
+DESCRIPTION :
+Writes out an ippara file for calculating.
+==============================================================================*/
+void write_ipequa_file(char *filename,char *model_name);
+/*******************************************************************************
+LAST MODIFIED : 24 November 1999
+
+DESCRIPTION :
+Writes out an ipequa file for calculating.
+==============================================================================*/
+void write_ipmatc_file(char *filename);
+/*******************************************************************************
+LAST MODIFIED : 29 November 1999
+
+DESCRIPTION :
+Writes out an ipmatc file for a single cell calculation. For single cell stuff,
+no parameters are spatially varying ?!?
+==============================================================================*/
+void write_ipinit_file(char *filename);
+/*******************************************************************************
+LAST MODIFIED : 29 November 1999
+
+DESCRIPTION :
+Writes out an ipinit file for a single cell calculation.
+==============================================================================*/
+void write_ipsolv_file(char *filename);
+/*******************************************************************************
+LAST MODIFIED : 29 November 1999
+
+DESCRIPTION :
+Writes out an ipsolv file for a single cell calculation.
+==============================================================================*/
+void write_ipexpo_file(char *filename);
+/*******************************************************************************
+LAST MODIFIED : 29 November 1999
+
+DESCRIPTION :
+Writes out an ipexpo file for a single cell calculation.
 ==============================================================================*/
 
 #endif /* defined (CELL_OUTPUT_H) */

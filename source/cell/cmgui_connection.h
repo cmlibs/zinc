@@ -98,5 +98,13 @@ DESCRIPTION :
 Returns true if the FIELD_TYPE specified in the <field_type_void> matches
 the FIELD_TYPE of the <field>.
 ==============================================================================*/
+int Cell_window_update_field(struct Cell_window *cell,char *control_curve_name,
+	char *field_name,char *file_name,char *element_number,float value);
+/*******************************************************************************
+LAST MODIFIED : 27 September 1999
+
+DESCRIPTION :
+Temp. hack to use control curves to assign values to element based fields.
+==============================================================================*/
 
 #endif /* !defined (CMGUI_CONNECTION_H) */
