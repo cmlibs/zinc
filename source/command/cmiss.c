@@ -265,153 +265,838 @@ Does not report any errors if the node is already in the list.
 	return (return_code);
 } /* add_FE_node_to_list_if_in_range */
 
-#if !defined (WINDOWS_DEV_FLAG)
-static int gfx_change_identifier(struct Parse_state *state,void *dummy_to_be_modified,
-	void *command_data_void)
+struct FE_element_values_number
 /*******************************************************************************
-LAST MODIFIED : 7 October 1999
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+Data for changing element identifiers.
+==============================================================================*/
+{
+	struct FE_element *element;
+	int number_of_values;
+	FE_value *values;
+	int new_number;
+};
+
+static int compare_FE_element_values_number_values(
+	const void *element_values1_void, const void *element_values2_void)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+Compares the values in <element_values1> and <element_values2> from the last to
+then first, returning -1 as soon as a value in <element_values1> is less than
+its counterpart in <element_values2>, or 1 if greater. 0 is returned if all
+values are identival. Used as a compare function for qsort.
+==============================================================================*/
+{
+	int i, number_of_values, return_code;
+	struct FE_element_values_number *element_values1, *element_values2;
+
+	ENTER(compare_FE_element_values_number_values);
+	return_code = 0;
+	if ((element_values1 =
+		(struct FE_element_values_number *)element_values1_void) &&
+		(element_values2 =
+			(struct FE_element_values_number *)element_values2_void) &&
+		(0 < (number_of_values = element_values1->number_of_values)) &&
+		(number_of_values == element_values2->number_of_values))
+	{
+		for (i = number_of_values - 1; (!return_code) && (0 <= i); i--)
+		{
+			if (element_values1->values[i] < element_values2->values[i])
+			{
+				return_code = -1;
+			}
+			else if (element_values1->values[i] > element_values2->values[i])
+			{
+				return_code = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"compare_FE_element_values_number_values.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* compare_FE_element_values_number_values */
+
+struct FE_element_count_if_type_data
+{
+	enum CM_element_type cm_type;
+	int number_of_elements;
+};
+
+static int FE_element_count_if_type(struct FE_element *element,
+	void *count_data_void)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+If <element> is of the given CM_type, increment number_of_elements.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element_count_if_type_data *count_data;
+
+	ENTER(FE_element_count_if_type);
+	if (element && (count_data =
+		(struct FE_element_count_if_type_data *)count_data_void))
+	{
+		return_code = 1;
+		if (element->cm.type == count_data->cm_type)
+		{
+			(count_data->number_of_elements)++;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_count_if_type.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_count_if_type */
+
+struct FE_element_and_values_to_array_data
+{
+	enum CM_element_type cm_type;
+	struct FE_element_values_number *element_values;
+	struct Computed_field *sort_by_field;
+}; /* FE_element_and_values_to_array_data */
+
+static int FE_element_and_values_to_array(struct FE_element *element,
+	void *array_data_void)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FE_value xi[3] = {0.5,0.5,0.5};
+	int return_code;
+	struct FE_element_and_values_to_array_data *array_data;
+
+	ENTER(FE_element_and_values_to_array);
+	if (element && (array_data =
+		(struct FE_element_and_values_to_array_data *)array_data_void) &&
+		array_data->element_values)
+	{
+		return_code = 1;
+		if (element->cm.type == array_data->cm_type)
+		{
+			array_data->element_values->element = element;
+			if (array_data->sort_by_field)
+			{
+				if (!(array_data->element_values->values &&
+					Computed_field_evaluate_in_element(array_data->sort_by_field, element,
+						xi, /*top_level_element*/(struct FE_element *)NULL,
+						array_data->element_values->values,
+						/*derivatives*/(FE_value *)NULL)))
+				{
+					display_message(ERROR_MESSAGE, "FE_element_and_values_to_array.  "
+						"sort_by field could not be evaluated in element");
+					return_code = 0;
+				}
+			}
+			(array_data->element_values)++;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_and_values_to_array.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_and_values_to_array */
+
+static int FE_element_manager_change_element_group_identifiers(
+	struct MANAGER(FE_element) *element_manager,
+	struct GROUP(FE_element) *element_group, enum CM_element_type cm_type,
+	int element_offset, struct Computed_field *sort_by_field)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+Changes the identifiers of all elements of <cm_type> in <element_group>.
+If <sort_by_field> is NULL, adds <element_offset> to the identifiers.
+If <sort_by_field> is specified, it is evaluated at the centre of all elements
+in the group and the elements are sorted by it - changing fastest with the first
+component and keeping the current order where the field has the same values.
+Checks for and fails if attempting to give any of the elements in the group an
+identifier already used by a element not in the group.
+Caching the manager should be done outside this function so that more than one
+group of elements can be renumbered at once.
+Note function avoids iterating through the group as this is not allowed during
+identifier changes.
+==============================================================================*/
+{
+	int i, number_of_elements, number_of_values, return_code;
+	struct CM_element_information cm, next_spare_element_identifier;
+	struct FE_element *element_with_same_number;
+	struct FE_element_and_values_to_array_data array_data;
+	struct FE_element_count_if_type_data count_data;
+	struct FE_element_values_number *element_values;
+
+	ENTER(FE_element_manager_change_element_group_identifiers);
+	if (element_manager && element_group)
+	{
+		return_code = 1;
+		count_data.cm_type = cm_type;
+		count_data.number_of_elements = 0;
+		if (!FOR_EACH_OBJECT_IN_GROUP(FE_element)(FE_element_count_if_type,
+			(void *)&count_data, element_group))
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_manager_change_element_group_identifiers.  "
+				"Could not count elements of given type");
+			return_code = 0;
+		}
+		number_of_elements = count_data.number_of_elements;
+		if ((0 < number_of_elements) && return_code)
+		{
+			cm.type = cm_type;
+			if (sort_by_field)
+			{
+				number_of_values =
+					Computed_field_get_number_of_components(sort_by_field);
+			}
+			else
+			{
+				number_of_values = 0;
+			}
+			if (ALLOCATE(element_values, struct FE_element_values_number,
+				number_of_elements))
+			{
+				for (i = 0; i < number_of_elements; i++)
+				{
+					element_values[i].number_of_values = number_of_values;
+					element_values[i].values = (FE_value *)NULL;
+				}
+				if (sort_by_field)
+				{
+					for (i = 0; (i < number_of_elements) && return_code; i++)
+					{
+						if (!ALLOCATE(element_values[i].values, FE_value, number_of_values))
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_manager_change_element_group_identifiers.  "
+								"Not enough memory");
+							return_code = 0;
+						}
+					}
+				}
+				if (return_code)
+				{
+					/* make a linear array of elements in the group in current order */
+					array_data.element_values = element_values;
+					array_data.sort_by_field = sort_by_field;
+					array_data.cm_type = cm_type;
+					if (!FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+						FE_element_and_values_to_array, (void *)&array_data, element_group))
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_manager_change_element_group_identifiers.  "
+							"Could not build element/field values array");
+						return_code = 0;
+					}
+				}
+				if (return_code)
+				{
+					if (sort_by_field)
+					{
+						/* sort by field values with higher components more significant */
+						qsort(element_values, number_of_elements,
+							sizeof(struct FE_element_values_number),
+							compare_FE_element_values_number_values);
+						/* give the elements sequential values starting at element_offset */
+						for (i = 0; i < number_of_elements; i++)
+						{
+							element_values[i].new_number = element_offset + i;
+						}
+					}
+					else
+					{
+						/* offset element numbers by element_offset */
+						for (i = 0; i < number_of_elements; i++)
+						{
+							element_values[i].new_number =
+								element_values[i].element->cm.number + element_offset;
+						}
+					}
+					/* check element numbers are positive and ascending */
+					for (i = 0; (i < number_of_elements) && return_code; i++)
+					{
+						if (0 >= element_values[i].new_number)
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_manager_change_element_group_identifiers.  "
+								"element_offset would give negative element numbers");
+							return_code = 0;
+						}
+						else if ((0 < i) && (element_values[i].new_number <=
+							element_values[i - 1].new_number))
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_manager_change_element_group_identifiers.  "
+								"Element numbers are not strictly increasing");
+							return_code = 0;
+						}
+					}
+				}
+				if (return_code)
+				{
+					/* check no new numbers are in use by elements not in element_group */
+					for (i = 0; (i < number_of_elements) && return_code; i++)
+					{
+						cm.number = element_values[i].new_number;
+						if ((element_with_same_number =
+							FIND_BY_IDENTIFIER_IN_MANAGER(FE_element, identifier)(
+								&cm, element_manager)) &&
+							(!IS_OBJECT_IN_GROUP(FE_element)(element_with_same_number,
+								element_group)))
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_manager_change_element_group_identifiers.  "
+								"Element using new number exists outside of group");
+							return_code = 0;
+						}
+					}
+				}
+				if (return_code)
+				{
+					/* change identifiers */
+					/* maintain next_spare_element_number to renumber elements in same
+						 group which already have the same number as the new_number */
+					next_spare_element_identifier.type = cm_type;
+					next_spare_element_identifier.number =
+						element_values[number_of_elements - 1].new_number + 1;
+					for (i = 0; (i < number_of_elements) && return_code; i++)
+					{
+						cm.number = element_values[i].new_number;
+						if (element_with_same_number =
+							FIND_BY_IDENTIFIER_IN_GROUP(FE_element, identifier)(
+								&cm, element_group))
+						{
+							while (((struct FE_element *)NULL !=
+								FIND_BY_IDENTIFIER_IN_MANAGER(FE_element, identifier)(
+									&next_spare_element_identifier, element_manager)))
+							{
+								next_spare_element_identifier.number++;
+							}
+							if (!MANAGER_MODIFY_IDENTIFIER(FE_element, identifier)(
+								element_with_same_number, &next_spare_element_identifier,
+								element_manager))
+							{
+								return_code = 0;
+							}
+						}
+						if (!MANAGER_MODIFY_IDENTIFIER(FE_element, identifier)(
+							element_values[i].element, &cm, element_manager))
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_manager_change_element_group_identifiers.  "
+								"Could not change element identifier");
+							return_code = 0;
+						}
+					}
+				}
+				for (i = 0; i < number_of_elements; i++)
+				{
+					if (element_values[i].values)
+					{
+						DEALLOCATE(element_values[i].values);
+					}
+				}
+				DEALLOCATE(element_values);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_manager_change_element_group_identifiers.  "
+					"Not enough memory");
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_manager_change_element_group_identifiers.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_manager_change_element_group_identifiers */
+
+struct FE_node_values_number
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+Data for changing node identifiers.
+==============================================================================*/
+{
+	struct FE_node *node;
+	int number_of_values;
+	FE_value *values;
+	int new_number;
+};
+
+static int compare_FE_node_values_number_values(
+	const void *node_values1_void, const void *node_values2_void)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+Compares the values in <node_values1> and <node_values2> from the last to the
+first, returning -1 as soon as a value in <node_values1> is less than its
+counterpart in <node_values2>, or 1 if greater. 0 is returned if all values
+are identival. Used as a compare function for qsort.
+==============================================================================*/
+{
+	int i, number_of_values, return_code;
+	struct FE_node_values_number *node_values1, *node_values2;
+
+	ENTER(compare_FE_node_values_number_values);
+	return_code = 0;
+	if ((node_values1 = (struct FE_node_values_number *)node_values1_void) &&
+		(node_values2 = (struct FE_node_values_number *)node_values2_void) &&
+		(0 < (number_of_values = node_values1->number_of_values)) &&
+		(number_of_values == node_values2->number_of_values))
+	{
+		for (i = number_of_values - 1; (!return_code) && (0 <= i); i--)
+		{
+			if (node_values1->values[i] < node_values2->values[i])
+			{
+				return_code = -1;
+			}
+			else if (node_values1->values[i] > node_values2->values[i])
+			{
+				return_code = 1;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"compare_FE_node_values_number_values.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* compare_FE_node_values_number_values */
+
+struct FE_node_and_values_to_array_data
+{
+	struct FE_node_values_number *node_values;
+	struct Computed_field *sort_by_field;
+}; /* FE_node_and_values_to_array_data */
+
+static int FE_node_and_values_to_array(struct FE_node *node,
+	void *array_data_void)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"dgroup",NULL,NULL,set_FE_node_group},
-		{"egroup",NULL,NULL,set_FE_element_group},
-		{"element_offset",NULL,NULL,set_int},
-		{"face_offset",NULL,NULL,set_int},
-		{"line_offset",NULL,NULL,set_int},
-		{"ngroup",NULL,NULL,set_FE_node_group},
-		{"node_offset",NULL,NULL,set_int},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Cmiss_command_data *command_data;
-	struct Change_identifier_data data;
-	struct GROUP(FE_element) *element_group;
-	struct GROUP(FE_node) *data_group, *node_group;
+	struct FE_node_and_values_to_array_data *array_data;
 
-	ENTER(gfx_change_identifier);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	ENTER(FE_node_and_values_to_array);
+	if (node && (array_data =
+		(struct FE_node_and_values_to_array_data *)array_data_void) &&
+		array_data->node_values)
 	{
-		if (command_data = (struct Cmiss_command_data *)command_data_void)
+		return_code = 1;
+		array_data->node_values->node = node;
+		if (array_data->sort_by_field)
 		{
-			data_group = (struct GROUP(FE_node) *) NULL;
-			element_group = (struct GROUP(FE_element) *) NULL;
-			node_group = (struct GROUP(FE_node) *) NULL;
-			data.node_manager = (struct MANAGER(FE_node) *)NULL;
-			data.element_manager = (struct MANAGER(FE_element) *)NULL;
-			data.element_offset = 0;
-			data.face_offset = 0;
-			data.line_offset = 0;
-			data.node_offset = 0;
-			(option_table[0]).to_be_modified= &data_group;
-			(option_table[0]).user_data=command_data->data_group_manager;
-			(option_table[1]).to_be_modified= &element_group;
-			(option_table[1]).user_data=command_data->element_group_manager;
-			(option_table[2]).to_be_modified= &(data.element_offset);
-			(option_table[3]).to_be_modified= &(data.face_offset);
-			(option_table[4]).to_be_modified= &(data.line_offset);
-			(option_table[5]).to_be_modified= &node_group;
-			(option_table[5]).user_data=command_data->node_group_manager;
-			(option_table[6]).to_be_modified= &(data.node_offset);
-			if (return_code=process_multiple_options(state,option_table))
+			if (!(array_data->node_values->values && Computed_field_evaluate_at_node(
+				array_data->sort_by_field, node, array_data->node_values->values)))
 			{
-				if ((!node_group)&&(!data_group)&&(!element_group))
+				display_message(ERROR_MESSAGE, "FE_node_and_values_to_array.  "
+					"sort_by field could not be evaluated at node");
+				return_code = 0;
+			}
+		}
+		(array_data->node_values)++;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_and_values_to_array.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_and_values_to_array */
+
+static int FE_node_manager_change_node_group_identifiers(
+	struct MANAGER(FE_node) *node_manager, struct GROUP(FE_node) *node_group,
+	int node_offset, struct Computed_field *sort_by_field)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+Changes the identifiers of all nodes in <node_group>.
+If <sort_by_field> is NULL, adds <node_offset> to the identifiers.
+If <sort_by_field> is specified, it is evaluated for all nodes
+in the group and the nodes are sorted by it - changing fastest with the first
+component and keeping the current order where the field has the same values.
+Checks for and fails if attempting to give any of the nodes in the group an
+identifier already used by a node not in the group.
+Caching the manager should be done outside this function so that more than one
+group of nodes can be renumbered at once.
+Note function avoids iterating through the group as this is not allowed during
+identifier changes.
+==============================================================================*/
+{
+	int i, next_spare_node_number, number_of_nodes, number_of_values, return_code;
+	struct FE_node *node_with_same_number;
+	struct FE_node_and_values_to_array_data array_data;
+	struct FE_node_values_number *node_values;
+
+	ENTER(FE_node_manager_change_node_group_identifiers);
+	if (node_manager && node_group)
+	{
+		return_code = 1;
+		number_of_nodes = NUMBER_IN_GROUP(FE_node)(node_group);
+		if (0 < number_of_nodes)
+		{
+			if (sort_by_field)
+			{
+				number_of_values =
+					Computed_field_get_number_of_components(sort_by_field);
+			}
+			else
+			{
+				number_of_values = 0;
+			}
+			if (ALLOCATE(node_values, struct FE_node_values_number,
+				number_of_nodes))
+			{
+				for (i = 0; i < number_of_nodes; i++)
 				{
-					display_message(ERROR_MESSAGE,
-						"gfx_change_identifier."
-						"  Specify at least one of dgroup, egroup or ngroup");
-					return_code = 1;
+					node_values[i].number_of_values = number_of_values;
+					node_values[i].values = (FE_value *)NULL;
+				}
+				if (sort_by_field)
+				{
+					for (i = 0; (i < number_of_nodes) && return_code; i++)
+					{
+						if (!ALLOCATE(node_values[i].values, FE_value, number_of_values))
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_node_manager_change_node_group_identifiers.  "
+								"Not enough memory");
+							return_code = 0;
+						}
+					}
 				}
 				if (return_code)
 				{
-					if (node_group)
+					/* make a linear array of the nodes in the group in current order */
+					array_data.node_values = node_values;
+					array_data.sort_by_field = sort_by_field;
+					if (!FOR_EACH_OBJECT_IN_GROUP(FE_node)(FE_node_and_values_to_array,
+						(void *)&array_data, node_group))
 					{
-						data.count = 0;
-						data.node_manager = command_data->node_manager;
-						MANAGER_BEGIN_CACHE(FE_node)(command_data->node_manager);
-						FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-							FE_node_change_identifier_sub,
-							(void *)&data, node_group);
-						MANAGER_END_CACHE(FE_node)(command_data->node_manager);
-						if (data.count != NUMBER_IN_GROUP(FE_node)(node_group))
+						display_message(ERROR_MESSAGE,
+							"FE_node_manager_change_node_group_identifiers.  "
+							"Could not build node/field values array");
+						return_code = 0;
+					}
+				}
+				if (return_code)
+				{
+					if (sort_by_field)
+					{
+						/* sort by field values with higher components more significant */
+						qsort(node_values, number_of_nodes,
+							sizeof(struct FE_node_values_number),
+							compare_FE_node_values_number_values);
+						/* give the nodes sequential values starting at node_offset */
+						for (i = 0; i < number_of_nodes; i++)
 						{
-							display_message(ERROR_MESSAGE,
-								"gfx_change_identifier."
-								"  Only able to update node numbers for %d nodes out of %d\n",
-								data.count, NUMBER_IN_GROUP(FE_node)(node_group));
+							node_values[i].new_number = node_offset + i;
 						}
 					}
-					if (data_group)
+					else
 					{
-						data.count = 0;
-						data.node_manager = command_data->data_manager;
-						MANAGER_BEGIN_CACHE(FE_node)(command_data->data_manager);
-						FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-							FE_node_change_identifier_sub,
-							(void *)&data, data_group);
-						MANAGER_END_CACHE(FE_node)(command_data->data_manager);
-						if (data.count != NUMBER_IN_GROUP(FE_node)(data_group))
+						/* offset node numbers by node_offset */
+						for (i = 0; i < number_of_nodes; i++)
 						{
-							display_message(ERROR_MESSAGE,
-								"gfx_change_identifier."
-								"  Only able to update node numbers for %d nodes out of %d\n",
-								data.count, NUMBER_IN_GROUP(FE_node)(data_group));
+							node_values[i].new_number =
+								get_FE_node_cm_node_identifier(node_values[i].node) +
+								node_offset;
 						}
 					}
-					if (element_group)
+					/* check node numbers are positive and ascending */
+					for (i = 0; (i < number_of_nodes) && return_code; i++)
 					{
-						data.count = 0;
-						data.element_manager = command_data->element_manager;
-						MANAGER_BEGIN_CACHE(FE_element)(command_data->element_manager);
-						FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-							FE_element_change_identifier_sub,
-							(void *)&data, element_group);
-						MANAGER_END_CACHE(FE_element)(command_data->element_manager);
-						if (data.count != NUMBER_IN_GROUP(FE_element)(element_group))
+						if (0 >= node_values[i].new_number)
 						{
 							display_message(ERROR_MESSAGE,
-								"gfx_change_identifier."
-								"  Only able to update element numbers for %d elements out of %d\n",
-								data.count, NUMBER_IN_GROUP(FE_element)(element_group));
+								"FE_node_manager_change_node_group_identifiers.  "
+								"node_offset would give negative node numbers");
+							return_code = 0;
+						}
+						else if ((0 < i) &&
+							(node_values[i].new_number <= node_values[i - 1].new_number))
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_node_manager_change_node_group_identifiers.  "
+								"Node numbers are not strictly increasing");
+							return_code = 0;
 						}
 					}
 				}
+				if (return_code)
+				{
+					/* check no new numbers are in use by nodes not in node_group */
+					for (i = 0; (i < number_of_nodes) && return_code; i++)
+					{
+						if ((node_with_same_number =
+							FIND_BY_IDENTIFIER_IN_MANAGER(FE_node, cm_node_identifier)(
+								node_values[i].new_number, node_manager)) &&
+							(!IS_OBJECT_IN_GROUP(FE_node)(node_with_same_number, node_group)))
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_node_manager_change_node_group_identifiers.  "
+								"Node using new number exists outside of group");
+							return_code = 0;
+						}
+					}
+				}
+				if (return_code)
+				{
+					/* change identifiers */
+					/* maintain next_spare_node_number to renumber nodes in same group
+						 which already have the same number as the new_number */
+					next_spare_node_number =
+						node_values[number_of_nodes - 1].new_number + 1;
+					for (i = 0; (i < number_of_nodes) && return_code; i++)
+					{
+						if (node_with_same_number =
+							FIND_BY_IDENTIFIER_IN_GROUP(FE_node, cm_node_identifier)(
+								node_values[i].new_number, node_group))
+						{
+							next_spare_node_number =
+								get_next_FE_node_number(node_manager, next_spare_node_number);
+							if (!MANAGER_MODIFY_IDENTIFIER(FE_node, cm_node_identifier)(
+								node_with_same_number, next_spare_node_number, node_manager))
+							{
+								return_code = 0;
+							}
+						}
+						if (!MANAGER_MODIFY_IDENTIFIER(FE_node, cm_node_identifier)(
+							node_values[i].node, node_values[i].new_number, node_manager))
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_node_manager_change_node_group_identifiers.  "
+								"Could not change node identifier");
+							return_code = 0;
+						}
+					}
+				}
+				for (i = 0; i < number_of_nodes; i++)
+				{
+					if (node_values[i].values)
+					{
+						DEALLOCATE(node_values[i].values);
+					}
+				}
+				DEALLOCATE(node_values);
 			}
-			/* must deaccess computed_field since accessed by set_FE_node_group */
-			if (node_group)
+			else
 			{
-				DEACCESS(GROUP(FE_node))(&node_group);
-			}				
-			if (data_group)
-			{
-				DEACCESS(GROUP(FE_node))(&data_group);
-			}				
-			if (element_group)
-			{
-				DEACCESS(GROUP(FE_element))(&element_group);
-			}				
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_change_identifier.  Missing command data");
-			return_code=0;
+				display_message(ERROR_MESSAGE,
+					"FE_node_manager_change_node_group_identifiers.  "
+					"Not enough memory");
+				return_code = 0;
+			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_change_identifier.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"FE_node_manager_change_node_group_identifiers.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_manager_change_node_group_identifiers */
+
+static int gfx_change_identifier(struct Parse_state *state,
+	void *dummy_to_be_modified, void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 22 December 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char data_flag, element_flag, face_flag, *group_name, line_flag, node_flag;
+	int data_offset, element_offset, face_offset, line_offset, node_offset;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Computed_field *sort_by_field;
+	struct GROUP(FE_element) *element_group;
+	struct GROUP(FE_node) *data_group, *node_group;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_sort_by_field_data;
+
+	ENTER(gfx_change_identifier);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	{
+		element_group = (struct GROUP(FE_element) *) NULL;
+		data_flag = 0;
+		data_offset = 0;
+		element_flag = 0;
+		element_offset = 0;
+		face_flag = 0;
+		face_offset = 0;
+		line_flag = 0;
+		line_offset = 0;
+		node_flag = 0;
+		node_offset = 0;
+		sort_by_field = (struct Computed_field *)NULL;
+
+		option_table = CREATE(Option_table)();
+		/* data_offset */
+		Option_table_add_entry(option_table, "data_offset", &data_offset,
+			&data_flag, set_int_and_char_flag);
+		/* element_offset */
+		Option_table_add_entry(option_table, "element_offset", &element_offset,
+			&element_flag, set_int_and_char_flag);
+		/* face_offset */
+		Option_table_add_entry(option_table, "face_offset", &face_offset,
+			&face_flag, set_int_and_char_flag);
+		/* group */
+		Option_table_add_entry(option_table, "group", &element_group,
+			command_data->element_group_manager, set_FE_element_group);
+		/* line_offset */
+		Option_table_add_entry(option_table, "line_offset", &line_offset,
+			&line_flag, set_int_and_char_flag);
+		/* node_offset */
+		Option_table_add_entry(option_table, "node_offset", &node_offset,
+			&node_flag, set_int_and_char_flag);
+		/* sort_by */
+		set_sort_by_field_data.computed_field_manager =
+			Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package);
+		set_sort_by_field_data.conditional_function =
+			Computed_field_has_numerical_components;
+		set_sort_by_field_data.conditional_function_user_data = (void *)NULL;
+		Option_table_add_entry(option_table, "sort_by", &sort_by_field,
+			&set_sort_by_field_data, set_Computed_field_conditional);
+
+		if (return_code = Option_table_multi_parse(option_table,state))
+		{
+			if (element_group)
+			{
+				GET_NAME(GROUP(FE_element))(element_group,&group_name);
+				if (data_flag)
+				{
+					data_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node), name)(
+						group_name, command_data->data_group_manager);
+					MANAGER_BEGIN_CACHE(FE_node)(command_data->data_manager);
+					if (!FE_node_manager_change_node_group_identifiers(
+						command_data->data_manager, data_group, data_offset, sort_by_field))
+					{
+						return_code = 0;
+					}
+					MANAGER_END_CACHE(FE_node)(command_data->data_manager);
+				}
+				if (element_flag || face_flag || line_flag)
+				{
+					MANAGER_BEGIN_CACHE(FE_element)(command_data->element_manager);
+					if (element_flag)
+					{
+						if (!FE_element_manager_change_element_group_identifiers(
+							command_data->element_manager, element_group, CM_ELEMENT,
+							element_offset, sort_by_field))
+						{
+							return_code = 0;
+						}
+					}
+					if (face_flag)
+					{
+						if (!FE_element_manager_change_element_group_identifiers(
+							command_data->element_manager, element_group, CM_FACE,
+							face_offset, sort_by_field))
+						{
+							return_code = 0;
+						}
+					}
+					if (line_flag)
+					{
+						if (!FE_element_manager_change_element_group_identifiers(
+							command_data->element_manager, element_group, CM_LINE,
+							line_offset, sort_by_field))
+						{
+							return_code = 0;
+						}
+					}
+					MANAGER_END_CACHE(FE_element)(command_data->element_manager);
+				}
+				if (node_flag)
+				{
+					node_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node), name)(
+						group_name, command_data->node_group_manager);
+					MANAGER_BEGIN_CACHE(FE_node)(command_data->node_manager);
+					if (!FE_node_manager_change_node_group_identifiers(
+						command_data->node_manager, node_group, node_offset, sort_by_field))
+					{
+						return_code = 0;
+					}
+					MANAGER_END_CACHE(FE_node)(command_data->node_manager);
+				}
+				DEALLOCATE(group_name);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_change_identifier.  Must specify a group to change");
+				return_code = 1;
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+		if (element_group)
+		{
+			DEACCESS(GROUP(FE_element))(&element_group);
+		}
+		if (sort_by_field)
+		{
+			DEACCESS(Computed_field)(&sort_by_field);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"gfx_change_identifier.  Invalid argument(s)");
+		return_code = 0;
 	}
 
 	LEAVE;
 
 	return (return_code);
 } /* gfx_change_identifier */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_create_annotation(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
