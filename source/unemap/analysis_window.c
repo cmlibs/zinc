@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3315,13 +3315,14 @@ struct Analysis_window *create_Analysis_window(
 	enum Event_detection_algorithm *detection,int *threshold,
 	int *minimum_separation,float *level,int *level_width,
 	Pixel identifying_colour,enum Signal_order order,enum Signal_layout layout,
-	int *start_search_interval,int *end_search_interval,int screen_height,
+	int *start_search_interval,int **search_interval_divisions,
+	int *end_search_interval,int screen_height,
 		/*???DB.  height of interval drawing area.  Better ? */
 	char *postscript_file_extension,char *events_file_extension,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 This function allocates the memory for an analysis window and sets the fields
@@ -3524,6 +3525,7 @@ returned.
 				analysis->level=level;
 				analysis->level_width=level_width;
 				analysis->start_search_interval=start_search_interval;
+				analysis->search_interval_divisions=search_interval_divisions;
 				analysis->end_search_interval=end_search_interval;
 				/* create the structure for writing event time files */
 				analysis->write_times_file_open_data=create_File_open_data(

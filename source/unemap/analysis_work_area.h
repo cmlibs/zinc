@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.h
 
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -28,7 +28,7 @@ Global types
 */
 struct Analysis_work_area
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -60,7 +60,10 @@ DESCRIPTION :
 	enum Map_type map_type;
 	struct File_open_data *bard_signal_file_data,*cardiomapp_signal_file_data,
 		*neurosoft_signal_file_data;
-	int end_search_interval,start_search_interval;
+	/* the <search_interval_divisions> mark the internal boundaries between beats
+		(<number_of_events>-1 values).  If <search_interval_divisions> is NULL then
+		the beats are assumed to be of equal length */
+	int end_search_interval,*search_interval_divisions,start_search_interval;
 	struct Signal_drawing_information *signal_drawing_information;
 	struct Map_drawing_information *map_drawing_information;
 	struct User_interface *user_interface;
@@ -70,15 +73,15 @@ DESCRIPTION :
 	char *events_file_extension;
 	int gradient_average_width;
 	Pixel identifying_colour;
-	/* These flags ensure that when the next update occurs the XOR graphics
-		are drawn correctly */
+	/* these flags ensure that when the next update occurs the XOR graphics are
+		drawn correctly */
 	enum Analysis_window_update_flags analysis_update_flags;
 	enum Trace_window_update_flags trace_update_flags;
-	/* The potential_time_object is controlled by the time_keeper */
+	/* the potential_time_object is controlled by the time_keeper */
 	struct Time_object *potential_time_object;
 	struct Time_keeper *time_keeper;
-	/* The datum_time_object is internal and handles events between the
-		different parts of the analysis work area but is not input to a timekeeper */
+	/* the datum_time_object is internal and handles events between the different
+		parts of the analysis work area but is not input to a timekeeper */
 	struct Time_object *datum_time_object;
 	struct Unemap_package *unemap_package;
 }; /* struct Analysis_work_area */

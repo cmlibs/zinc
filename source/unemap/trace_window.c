@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 29 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4357,13 +4357,13 @@ static struct Trace_window *create_Trace_window(
 	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
 	int *threshold,int *minimum_separation,float *level,int *level_width,
-	int *start_search_interval,int *end_search_interval,
-	int screen_height,
+	int *start_search_interval,int **search_interval_divisions,
+	int *end_search_interval,int screen_height,
 		/*???DB.  height of interval drawing area ? */
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 29 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 This function allocates the memory for an trace window and sets the fields to
@@ -4782,6 +4782,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->event_detection.level=level;
 				trace->event_detection.level_width=level_width;
 				trace->event_detection.start_search_interval=start_search_interval;
+				trace->event_detection.search_interval_divisions=
+					search_interval_divisions;
 				trace->event_detection.end_search_interval=end_search_interval;
 				trace->frequency_domain.display_mode=AMPLITUDE_PHASE;
 				trace->valid_processing=0;
@@ -6001,12 +6003,12 @@ int open_trace_window(struct Trace_window **trace_address,Widget parent,
 	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
 	int *threshold,int *minimum_separation,float *level,int *level_width,
-	int *start_search_interval,int *end_search_interval,int screen_width,
-	int screen_height,
+	int *start_search_interval,int **search_interval_divisions,
+	int *end_search_interval,int screen_width,int screen_height,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 If <*trace_address> is NULL, a trace window with the specified <parent> and
@@ -6029,8 +6031,9 @@ If <*trace_address> is NULL, a trace window with the specified <parent> and
 					trace_window_shell,identifying_colour,analysis_mode,detection,
 					objective,datum_type,edit_order,highlight,rig,datum,potential_time,
 					event_number,number_of_events,threshold,minimum_separation,level,
-					level_width,start_search_interval,end_search_interval,screen_height,
-					signal_drawing_information,user_interface))
+					level_width,start_search_interval,search_interval_divisions,
+					end_search_interval,screen_height,signal_drawing_information,
+					user_interface))
 				{
 					/* add the destroy callback */
 					XtAddCallback(trace->shell,XmNdestroyCallback,destroy_window_shell,
@@ -6249,6 +6252,7 @@ The callback for redrawing part of the drawing area in trace area 1.
 									if ((analysis_range=end_analysis_interval-
 										start_analysis_interval)>0)
 									{
+										/*???DB.  To be done for search_interval_divisions */
 										x_scale=SCALE_FACTOR(analysis_range,axes_width-1);
 										trace_area_1->enlarge.left_box=SCALE_X(
 											*(trace->event_detection.start_search_interval),
@@ -6845,7 +6849,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 
 int trace_change_signal(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 30 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 Called when the "highlighted_device" is changed.
@@ -6858,9 +6862,10 @@ Called when the "highlighted_device" is changed.
 		*times,*value,value_end,*values,value_start,x,x_2,y,y_2;
 	int average_end,average_start,average_width=5,
 		/*???DB.  average_width should be analysis->gradient_average_width */
-		beat_number,beat_start,beat_end,buffer_offset,buffer_offset_2,end,high_pass,
-		i,low_pass,notch,number_of_beats,number_of_samples,*processed_time,
-		return_code,start,start_time,*time;
+		*beat_count,*beat_counts,beat_number,beat_start,beat_end,buffer_offset,
+		buffer_offset_2,*divisions,end,high_pass,i,low_pass,max_times,notch,
+		number_of_beats,number_of_samples,*processed_time,return_code,start,
+		start_time,*time;
 	struct Device *device,*processed_device;
 	struct Signal_buffer *buffer,*processed_buffer;
 
@@ -6948,6 +6953,7 @@ Called when the "highlighted_device" is changed.
 								beat_averaging.baseline_toggle))
 							{
 								start= *(trace->event_detection.start_search_interval);
+								divisions= *(trace->event_detection.search_interval_divisions);
 								end= *(trace->event_detection.end_search_interval);
 								number_of_beats= *(trace->event_detection.number_of_events);
 								beat_start=start;
@@ -6974,8 +6980,22 @@ Called when the "highlighted_device" is changed.
 								{
 									value_start=value_end;
 									beat_start=beat_end+1;
-									beat_end=start+(int)((float)((end-start)*beat_number)/
-										(float)number_of_beats+0.5);
+									if (beat_number<number_of_beats)
+									{
+										if (divisions)
+										{
+											beat_end=divisions[beat_number-1]-1;
+										}
+										else
+										{
+											beat_end=start+(int)((float)((end-start)*beat_number)/
+												(float)number_of_beats+0.5)-1;
+										}
+									}
+									else
+									{
+										beat_end=end;
+									}
 									average_start=beat_end-average_width/2;
 									if (average_start<0)
 									{
@@ -7009,53 +7029,159 @@ Called when the "highlighted_device" is changed.
 								beat_averaging.beat_averaging_toggle))
 							{
 								start= *(trace->event_detection.start_search_interval);
+								divisions= *(trace->event_detection.search_interval_divisions);
 								end= *(trace->event_detection.end_search_interval);
 								number_of_beats= *(trace->event_detection.number_of_events);
 								beat_start=start;
-								beat_end=beat_start+(end-start)/number_of_beats;
-								if (0<beat_start)
+								if (divisions)
 								{
-									averaged_value=(processed_buffer->signals).float_values;
-									value=averaged_value+beat_start;
-									processed_time=processed_buffer->times;
-									time=processed_time+beat_start;
-									/* averaged beat starts from time 0 */
-									start_time= *time;
-									for (i=beat_end-beat_start;i>0;i--)
+									beat_end=divisions[0];
+									max_times=beat_end-beat_start;
+									if (max_times<end-divisions[number_of_beats-1]+1)
 									{
-										*averaged_value= *value;
-										*value=0;
-										*processed_time=(*time)-start_time;
-										processed_time++;
-										time++;
-										averaged_value++;
-										value++;
+										max_times=end-divisions[number_of_beats-1]+1;
+									}
+									for (i=1;i<number_of_beats;i++)
+									{
+										if (max_times<divisions[i]-divisions[i-1])
+										{
+											max_times=divisions[i]-divisions[i-1];
+										}
 									}
 								}
-								for (beat_number=1;beat_number<number_of_beats;beat_number++)
+								else
 								{
-									beat_start=start+(int)((float)((end-start)*beat_number)/
-										(float)number_of_beats+0.5);
 									beat_end=beat_start+(end-start)/number_of_beats;
+									max_times=(end-start)/number_of_beats+1;
+								}
+								if (ALLOCATE(beat_counts,int,max_times))
+								{
+									beat_count=beat_counts;
+									for (i=max_times;i>0;i--)
+									{
+										*beat_count=0;
+										beat_count++;
+										beat_counts[i]=0;
+									}
+									if ((0<beat_start)||(0<(processed_buffer->times)[beat_start]))
+									{
+										processed_time=processed_buffer->times;
+										time=processed_time+beat_start;
+										/* averaged beat starts from time 0 */
+										start_time= *time;
+										for (i=max_times;i>0;i--)
+										{
+											*processed_time=(*time)-start_time;
+											processed_time++;
+											time++;
+										}
+									}
+									beat_end=start-1;
+									for (beat_number=1;beat_number<=number_of_beats;beat_number++)
+									{
+										beat_start=beat_end+1;
+										if (beat_number<number_of_beats)
+										{
+											if (divisions)
+											{
+												beat_end=divisions[beat_number-1]-1;
+											}
+											else
+											{
+												beat_end=start+(int)((float)((end-start)*beat_number)/
+													(float)number_of_beats+0.5)-1;
+											}
+										}
+										else
+										{
+											beat_end=end;
+										}
+										averaged_value=(processed_buffer->signals).float_values;
+										value=averaged_value+beat_start;
+										beat_count=beat_counts;
+										for (i=beat_end-beat_start;i>0;i--)
+										{
+											if (0< *beat_count)
+											{
+												*averaged_value += *value;
+											}
+											else
+											{
+												*averaged_value= *value;
+											}
+											(*beat_count)++;
+											beat_count++;
+											averaged_value++;
+											value++;
+										}
+									}
 									averaged_value=(processed_buffer->signals).float_values;
-									value=averaged_value+beat_start;
+									beat_count=beat_counts;
 									for (i=beat_end-beat_start;i>0;i--)
 									{
-										*averaged_value += *value;
-										*value=0;
+										if (0< *beat_count)
+										{
+											*averaged_value /= (float)(*beat_count);
+										}
+										else
+										{
+											*averaged_value=(float)0;
+										}
 										averaged_value++;
-										value++;
+										beat_count++;
 									}
+#if defined (OLD_CODE)
+									if (0<beat_start)
+									{
+										averaged_value=(processed_buffer->signals).float_values;
+										value=averaged_value+beat_start;
+										processed_time=processed_buffer->times;
+										time=processed_time+beat_start;
+										/* averaged beat starts from time 0 */
+										start_time= *time;
+										for (i=beat_end-beat_start;i>0;i--)
+										{
+											*averaged_value= *value;
+											*value=0;
+											*processed_time=(*time)-start_time;
+											processed_time++;
+											time++;
+											averaged_value++;
+											value++;
+										}
+									}
+									for (beat_number=1;beat_number<number_of_beats;beat_number++)
+									{
+										beat_start=start+(int)((float)((end-start)*beat_number)/
+											(float)number_of_beats+0.5);
+										beat_end=beat_start+(end-start)/number_of_beats;
+										averaged_value=(processed_buffer->signals).float_values;
+										value=averaged_value+beat_start;
+										for (i=beat_end-beat_start;i>0;i--)
+										{
+											*averaged_value += *value;
+											*value=0;
+											averaged_value++;
+											value++;
+										}
+									}
+									averaged_value=(processed_buffer->signals).float_values;
+									for (i=beat_end-beat_start;i>0;i--)
+									{
+										*averaged_value /= (float)number_of_beats;
+										averaged_value++;
+									}
+#endif /* defined (OLD_CODE) */
+									processed_buffer->start=0;
+									processed_buffer->end=beat_end-beat_start-1;
+									processed_buffer->number_of_samples=beat_end-beat_start;
+									DEALLOCATE(beat_counts);
 								}
-								averaged_value=(processed_buffer->signals).float_values;
-								for (i=beat_end-beat_start;i>0;i--)
+								else
 								{
-									*averaged_value /= (float)number_of_beats;
-									averaged_value++;
+									display_message(ERROR_MESSAGE,
+										"trace_change_signal.  Could not allocate beat_counts");
 								}
-								processed_buffer->start=0;
-								processed_buffer->end=beat_end-beat_start-1;
-								processed_buffer->number_of_samples=beat_end-beat_start;
 							}
 						}
 					}
@@ -7170,6 +7296,7 @@ Called when the "highlighted_device" is changed.
 							if (True==XmToggleButtonGadgetGetState((trace->area_3).
 								beat_averaging.baseline_toggle))
 							{
+								/*???DB.  To be done for search_interval_divisions */
 								start= *(trace->event_detection.start_search_interval);
 								end= *(trace->event_detection.end_search_interval);
 								number_of_beats= *(trace->event_detection.number_of_events);
@@ -7231,6 +7358,7 @@ Called when the "highlighted_device" is changed.
 							if (True==XmToggleButtonGadgetGetState((trace->area_3).
 								beat_averaging.beat_averaging_toggle))
 							{
+								/*???DB.  To be done for search_interval_divisions */
 								start= *(trace->event_detection.start_search_interval);
 								end= *(trace->event_detection.end_search_interval);
 								number_of_beats= *(trace->event_detection.number_of_events);
@@ -8720,6 +8848,7 @@ has been moved.
 					(trace->event_detection.start_search_interval)&&
 					(trace->event_detection.end_search_interval))
 				{
+					/*???DB.  To be done for search_interval_divisions */
 					edit_start= *(trace->event_detection.start_search_interval);
 					edit_diff= *(trace->event_detection.end_search_interval)-edit_start;
 					trace->area_3.edit.first_data=edit_start+(int)((float)(edit_diff*

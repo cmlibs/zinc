@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.h
 
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -142,7 +142,7 @@ The area of the analysis window where the interval is drawn.
 
 struct Analysis_window
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 The analysis window object.
@@ -193,7 +193,7 @@ The analysis window object.
 	enum Event_detection_algorithm *detection;
 	struct Device ***highlight;
 	/* search interval display information */
-	int *end_search_interval,*start_search_interval;
+	int *end_search_interval,**search_interval_divisions,*start_search_interval;
 	struct User_interface *user_interface;
 	/* user settings */
 	float signal_aspect_ratio;
@@ -271,13 +271,14 @@ struct Analysis_window *create_Analysis_window(
 	enum Event_detection_algorithm *detection,int *threshold,
 	int *minimum_separation,float *level,int *level_width,
 	Pixel identifying_colour,enum Signal_order order,enum Signal_layout layout,
-	int *start_search_interval,int *end_search_interval,int screen_height,
+	int *start_search_interval,int **search_interval_divisions,
+	int *end_search_interval,int screen_height,
 		/*???DB.  height of interval drawing area.  Better ? */
 	char *postscript_file_extension,char *events_file_extension,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 This function allocates the memory for an analysis window and sets the fields

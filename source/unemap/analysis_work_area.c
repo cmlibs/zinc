@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 30 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -21,7 +21,7 @@ DESCRIPTION :
 		peak[n-1]-start_offset) and average
 3 Questions
 	- QRS is coincident for body surface electrodes, but not for epicardial.  This
-		means that using the same averaging times for all electrodes is could cause
+		means that using the same averaging times for all electrodes could cause
 		problems.  If we use different averaging times for each electrode, how do we
 		get the offsets?  Ignore at present - see how Greg's algorithm works
 	- How does the edit box (white) work for threshold/level?
@@ -83,6 +83,9 @@ DESCRIPTION :
 		from option menus
 	- increase the maximum number of beats to average over
 		DONE
+		???DB.  Linux version crashes when go past 9
+	- start_search_interval and end_search_interval assume no missing samples
+	- not updating beat window properly when reset (maybe others as well)
 ==============================================================================*/
 #include <stddef.h>
 #include <stdlib.h>
@@ -1127,7 +1130,6 @@ LAST MODIFIED : 15 December 1999
 
 DESCRIPTION :
 Sets the detection algorithm to level.
-???DB.  To be done
 ==============================================================================*/
 {
 	Dimension left_margin;
@@ -1873,7 +1875,7 @@ Called when the "Save interval" button is clicked.
 
 static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 30 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -2300,6 +2302,7 @@ Sets up the analysis work area for analysing a set of signals.
 					analysis->potential_time=potential_time;
 					analysis->start_search_interval=start_search_interval;
 					analysis->end_search_interval=end_search_interval;
+					DEALLOCATE(analysis->search_interval_divisions);
 					/* set the edit interval */
 					if (trace)
 					{
@@ -2429,6 +2432,7 @@ Sets up the analysis work area for analysing a set of signals.
 				/* initialize the search interval */
 				analysis->start_search_interval=buffer_start;
 				analysis->end_search_interval=buffer_end;
+				DEALLOCATE(analysis->search_interval_divisions);
 				/* initialize the potential time */
 				analysis->potential_time=(buffer_end-buffer_start)/3;
 				/* initialize the datum */
@@ -2517,7 +2521,8 @@ Sets up the analysis work area for analysing a set of signals.
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
 				&(analysis->level_width),&(analysis->start_search_interval),
-				&(analysis->end_search_interval),analysis->user_interface->screen_width,
+				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
+				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
 				analysis->signal_drawing_information,analysis->user_interface))
 			{
@@ -2600,7 +2605,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 30 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -3023,6 +3028,7 @@ signals.
 								analysis->start_search_interval=buffer->start;
 								analysis->end_search_interval=buffer->end;
 							}
+							DEALLOCATE(analysis->search_interval_divisions);
 							/* read the heading line */
 							read_string(input_file,"[^\n]",&device_line);
 							DEALLOCATE(device_line);
@@ -3406,6 +3412,7 @@ signals.
 							/* initialize the search interval */
 							analysis->start_search_interval=buffer->start;
 							analysis->end_search_interval=buffer->end;
+							DEALLOCATE(analysis->search_interval_divisions);
 							/* initialize the datum */
 							analysis->datum=2*(analysis->potential_time);
 						}
@@ -3446,6 +3453,7 @@ signals.
 							&(analysis->number_of_events),&(analysis->threshold),
 							&(analysis->minimum_separation),&(analysis->level),
 							&(analysis->level_width),&(analysis->start_search_interval),
+							&(analysis->search_interval_divisions),
 							&(analysis->end_search_interval),
 							analysis->user_interface->screen_width,
 							analysis->user_interface->screen_height,
@@ -3574,7 +3582,7 @@ signals.
 static int analysis_read_bard_signal_file(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 Reads in the signals from the Bard file and sets up the analysis work area for
@@ -3676,6 +3684,7 @@ analysing the signals.
 					/* initialize the search interval */
 					analysis->start_search_interval=buffer->start;
 					analysis->end_search_interval=buffer->end;
+					DEALLOCATE(analysis->search_interval_divisions);
 					/* initialize potential time */
 					analysis->potential_time=(buffer->number_of_samples-1)/3;
 					/* initialize datum */
@@ -3692,7 +3701,8 @@ analysing the signals.
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
 				&(analysis->level_width),&(analysis->start_search_interval),
-				&(analysis->end_search_interval),analysis->user_interface->screen_width,
+				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
+				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
 				analysis->signal_drawing_information,analysis->user_interface))
 			{
@@ -3780,7 +3790,7 @@ Bard signal file (window.dat).
 static int analysis_read_beekeeper_eeg_fil(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 Reads in the signals from the Beekeeper file and sets up the analysis work area
@@ -3881,6 +3891,7 @@ for analysing the signals.
 					/* initialize the search interval */
 					analysis->start_search_interval=buffer->start;
 					analysis->end_search_interval=buffer->end;
+					DEALLOCATE(analysis->search_interval_divisions);
 					/* initialize potential time */
 					analysis->potential_time=(buffer->number_of_samples-1)/3;
 					/* initialize datum */
@@ -3897,7 +3908,8 @@ for analysing the signals.
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
 				&(analysis->level_width),&(analysis->start_search_interval),
-				&(analysis->end_search_interval),analysis->user_interface->screen_width,
+				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
+				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
 				analysis->signal_drawing_information,analysis->user_interface))
 			{
@@ -3928,7 +3940,7 @@ for analysing the signals.
 static int analysis_read_neurosoft_sig_fil(char *file_name,
 	void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 Reads in the signals from the Neurosoft file and sets up the analysis work area
@@ -4031,6 +4043,7 @@ for analysing the signals.
 					/* initialize the search interval */
 					analysis->start_search_interval=buffer->start;
 					analysis->end_search_interval=buffer->end;
+					DEALLOCATE(analysis->search_interval_divisions);
 					/* initialize potential time */
 					analysis->potential_time=(buffer->number_of_samples-1)/3;
 					/* initialize datum */
@@ -4047,7 +4060,8 @@ for analysing the signals.
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
 				&(analysis->level_width),&(analysis->start_search_interval),
-				&(analysis->end_search_interval),analysis->user_interface->screen_width,
+				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
+				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
 				analysis->signal_drawing_information,analysis->user_interface))
 			{
@@ -4237,6 +4251,7 @@ for analysing the signals.
 					/* initialize the search interval */
 					analysis->start_search_interval=buffer->start;
 					analysis->end_search_interval=buffer->end;
+					DEALLOCATE(analysis->search_interval_divisions);
 					/* initialize potential time */
 					analysis->potential_time=(buffer->number_of_samples-1)/3;
 					/* initialize datum */
@@ -4253,7 +4268,8 @@ for analysing the signals.
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
 				&(analysis->level_width),&(analysis->start_search_interval),
-				&(analysis->end_search_interval),analysis->user_interface->screen_width,
+				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
+				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
 				analysis->signal_drawing_information,analysis->user_interface))
 			{
@@ -4341,7 +4357,7 @@ the user for the CardioMapp signal file.
 static void select_signals_drawing_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 The callback for selecting a device in the analysis work area (signals drawing
@@ -4427,6 +4443,7 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 									&(analysis->number_of_events),&(analysis->threshold),
 									&(analysis->minimum_separation),&(analysis->level),
 									&(analysis->level_width),&(analysis->start_search_interval),
+									&(analysis->search_interval_divisions),
 									&(analysis->end_search_interval),
 									analysis->user_interface->screen_width,
 									analysis->user_interface->screen_height,
@@ -5571,7 +5588,7 @@ enum Moving_status
 static void select_analysis_interval(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 The callback for modifying the analysis interval in the analysis interval
@@ -5919,6 +5936,8 @@ drawing area.
 																interval->right_box=right_box;
 															}
 															/* update the search interval */
+															/*???DB.  To be done for
+																search_interval_divisions */
 															temp=analysis->end_search_interval-
 																analysis->start_search_interval;
 															search_interval_changed=0;
@@ -7202,6 +7221,8 @@ should be done as a callback from the trace_window.
 														{
 															if (xevent.xbutton.window==working_window)
 															{
+																/*???DB.  To be done for
+																	search_interval_divisions */
 																if ((EDA_INTERVAL==detection)||!edit_box)
 																{
 																	if ((left_box!=trace_area_1->enlarge.
@@ -10667,7 +10688,7 @@ DESCRIPTION :
 static void trace_analysis_mode_apply(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 30 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 Applies the current analysis mode settings to all signals.
@@ -10677,10 +10698,10 @@ Applies the current analysis mode settings to all signals.
 		value_end,value_start,*value_1,*value_2;
 	int average_end,average_start,average_width=5,
 		/*???DB.  average_width should be analysis->gradient_average_width */
-		beat_end,beat_number,beat_start,buffer_offset_1,buffer_offset_2,end,
-		high_pass,i,j,low_pass,notch,number_of_beats,number_of_samples,
-		*processed_time,start,start_time,*time,transform_buffer_offset,
-		transform_number_of_samples;
+		*beat_count,*beat_counts,beat_end,beat_number,beat_start,buffer_offset_1,
+		buffer_offset_2,*divisions,end,high_pass,i,j,low_pass,notch,max_times,
+		number_of_beats,number_of_samples,*processed_time,start,start_time,*time,
+		transform_buffer_offset,transform_number_of_samples;
 	struct Analysis_work_area *analysis;
 	struct Device **device,*highlight;
 	struct Map *map;
@@ -10755,6 +10776,7 @@ Applies the current analysis mode settings to all signals.
 					{
 						device=rig->devices;
 						start= *(trace->event_detection.start_search_interval);
+						divisions= *(trace->event_detection.search_interval_divisions);
 						end= *(trace->event_detection.end_search_interval);
 						number_of_beats= *(trace->event_detection.number_of_events);
 						/* update the times */
@@ -10762,11 +10784,9 @@ Applies the current analysis mode settings to all signals.
 						{
 							processed_time=buffer->times;
 							time=processed_time+start;
-							/* averaged beat starts from time 0 */
-							start_time= *time;
 							for (i=end-start;i>=0;i--)
 							{
-								*processed_time=(*time)-start_time;
+								*processed_time= *time;
 								time++;
 								processed_time++;
 							}
@@ -10803,8 +10823,22 @@ Applies the current analysis mode settings to all signals.
 								{
 									value_start=value_end;
 									beat_start=beat_end+1;
-									beat_end=start+(int)((float)((end-start)*beat_number)/
-										(float)number_of_beats+0.5);
+									if (beat_number<number_of_beats)
+									{
+										if (divisions)
+										{
+											beat_end=divisions[beat_number-1]-1;
+										}
+										else
+										{
+											beat_end=start+(int)((float)((end-start)*beat_number)/
+												(float)number_of_beats+0.5)-1;
+										}
+									}
+									else
+									{
+										beat_end=end;
+									}
 									average_start=beat_end-average_width/2;
 									if (average_start<0)
 									{
@@ -10863,8 +10897,139 @@ Applies the current analysis mode settings to all signals.
 					{
 						device=rig->devices;
 						start= *(trace->event_detection.start_search_interval);
+						divisions= *(trace->event_detection.search_interval_divisions);
 						end= *(trace->event_detection.end_search_interval);
 						number_of_beats= *(trace->event_detection.number_of_events);
+						beat_start=start;
+						if (divisions)
+						{
+							beat_end=divisions[0];
+							max_times=beat_end-beat_start;
+							if (max_times<end-divisions[number_of_beats-1]+1)
+							{
+								max_times=end-divisions[number_of_beats-1]+1;
+							}
+							for (i=1;i<number_of_beats;i++)
+							{
+								if (max_times<divisions[i]-divisions[i-1])
+								{
+									max_times=divisions[i]-divisions[i-1];
+								}
+							}
+						}
+						else
+						{
+							beat_end=beat_start+(end-start)/number_of_beats;
+							max_times=(end-start)/number_of_beats+1;
+						}
+						if (ALLOCATE(beat_counts,int,max_times))
+						{
+							if ((0<start)||(0<(buffer->times)[start]))
+							{
+								processed_time=buffer->times;
+								time=processed_time+start;
+								/* averaged beat starts from time 0 */
+								start_time= *time;
+								for (i=max_times;i>0;i--)
+								{
+									*processed_time=(*time)-start_time;
+									processed_time++;
+									time++;
+								}
+							}
+							/* run through all the signals */
+							for (j=rig->number_of_devices;j>0;j--)
+							{
+								if ((*device)->signal)
+								{
+									beat_count=beat_counts;
+									for (i=max_times;i>0;i--)
+									{
+										*beat_count=0;
+										beat_count++;
+										beat_counts[i]=0;
+									}
+									beat_end=start-1;
+									for (beat_number=1;beat_number<=number_of_beats;beat_number++)
+									{
+										beat_start=beat_end+1;
+										if (beat_number<number_of_beats)
+										{
+											if (divisions)
+											{
+												beat_end=divisions[beat_number-1]-1;
+											}
+											else
+											{
+												beat_end=start+(int)((float)((end-start)*beat_number)/
+													(float)number_of_beats+0.5)-1;
+											}
+										}
+										else
+										{
+											beat_end=end;
+										}
+										processed_value=(buffer->signals).float_values+
+											((*device)->signal->index);
+										value=processed_value+(beat_start*buffer_offset_1);
+										beat_count=beat_counts;
+										for (i=beat_end-beat_start;i>0;i--)
+										{
+											if (0< *beat_count)
+											{
+												*processed_value += *value;
+											}
+											else
+											{
+												*processed_value= *value;
+											}
+											(*beat_count)++;
+											beat_count++;
+											processed_value += buffer_offset_1;
+											value += buffer_offset_1;
+										}
+									}
+									processed_value=(buffer->signals).float_values+
+										((*device)->signal->index);
+									beat_count=beat_counts;
+									for (i=beat_end-beat_start;i>0;i--)
+									{
+										if (0< *beat_count)
+										{
+											*processed_value /= (float)(*beat_count);
+										}
+										else
+										{
+											*processed_value=(float)0;
+										}
+										processed_value += buffer_offset_1;
+										beat_count++;
+									}
+								}
+								device++;
+							}
+							DEALLOCATE(beat_counts);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"trace_analysis_mode_apply.  Could not allocate beat_counts");
+						}
+#if defined (OLD_CODE)
+						/* update the times */
+						if ((0<start)||(0<(buffer->times)[start]))
+						{
+							processed_time=buffer->times;
+							time=processed_time+start;
+							/* averaged beat starts from time 0 */
+							start_time= *time;
+							for (i=end-start;i>=0;i--)
+							{
+								*processed_time=(*time)-start_time;
+								time++;
+								processed_time++;
+							}
+						}
 						/* run through all the signals */
 						for (j=rig->number_of_devices;j>0;j--)
 						{
@@ -10877,14 +11042,18 @@ Applies the current analysis mode settings to all signals.
 									processed_value=(buffer->signals).float_values+
 										((*device)->signal->index);
 									value=processed_value+(beat_start*buffer_offset_1);
+#if defined (OLD_CODE)
 									processed_time=buffer->times;
 									time=processed_time+beat_start;
+#endif /* defined (OLD_CODE) */
 									for (i=beat_end-beat_start;i>0;i--)
 									{
 										*processed_value= *value;
+#if defined (OLD_CODE)
 										*processed_time= *time;
 										processed_time++;
 										time++;
+#endif /* defined (OLD_CODE) */
 										processed_value += buffer_offset_1;
 										value += buffer_offset_1;
 									}
@@ -10915,6 +11084,7 @@ Applies the current analysis mode settings to all signals.
 							}
 							device++;
 						}
+#endif /* defined (OLD_CODE) */
 						buffer->start=0;
 						buffer->end=beat_end-beat_start-1;
 						buffer->number_of_samples=beat_end-beat_start;
@@ -10932,6 +11102,7 @@ Applies the current analysis mode settings to all signals.
 						(trace->area_3).edit.last_data=beat_end-beat_start-1;
 						analysis->start_search_interval=0;
 						analysis->end_search_interval=beat_end-beat_start-1;
+						DEALLOCATE(analysis->search_interval_divisions);
 						if (1!=analysis->number_of_events)
 						{
 							analysis->number_of_events=1;
@@ -13044,7 +13215,7 @@ int create_analysis_work_area(struct Analysis_work_area *analysis,
 	struct User_interface *user_interface, struct Time_keeper *time_keeper,
 	struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 Creates the windows associated with the analysis work area.
@@ -13140,7 +13311,7 @@ Creates the windows associated with the analysis work area.
 		analysis->potential_time_object=
 			ACCESS(Time_object)(CREATE(Time_object)("UNEMAP Potential Time"));
 		Time_object_set_next_time_function(analysis->potential_time_object,
-			analysis_potential_time_next_time_callback, (void *)analysis);
+			analysis_potential_time_next_time_callback,(void *)analysis);
 		if (time_keeper)
 		{
 			analysis->time_keeper=ACCESS(Time_keeper)(time_keeper);
@@ -13154,13 +13325,13 @@ Creates the windows associated with the analysis work area.
 			analysis->time_keeper = (struct Time_keeper *)NULL;
 		}
 		Time_object_add_callback(analysis->potential_time_object,
-			analysis_potential_time_update_callback, (void *)analysis);
-		/* The datum_time_object is internal and not controlled by a time_keeper */
-		analysis->datum_time_object = ACCESS(Time_object)(CREATE(Time_object)
-			("UNEMAP Datum Time"));
+			analysis_potential_time_update_callback,(void *)analysis);
+		/* the datum_time_object is internal and not controlled by a time_keeper */
+		analysis->datum_time_object=
+			ACCESS(Time_object)(CREATE(Time_object)("UNEMAP Datum Time"));
 		Time_object_add_callback(analysis->datum_time_object,
-			analysis_datum_time_update_callback, (void *)analysis);
-
+			analysis_datum_time_update_callback,(void *)analysis);
+		analysis->search_interval_divisions=(int *)NULL;
 		/* retrieve the settings */
 		XtVaGetApplicationResources(user_interface->application_shell,analysis,
 			resources,XtNumber(resources),NULL);
@@ -13248,6 +13419,7 @@ Creates the windows associated with the analysis work area.
 							&(analysis->level),&(analysis->level_width),
 							analysis->identifying_colour,analysis->signal_order,
 							SEPARATE_LAYOUT,&(analysis->start_search_interval),
+							&(analysis->search_interval_divisions),
 							&(analysis->end_search_interval),user_interface->screen_height,
 							postscript_file_extension,analysis->events_file_extension,
 							analysis->signal_drawing_information,user_interface))
@@ -13298,7 +13470,7 @@ Creates the windows associated with the analysis work area.
 void close_analysis_work_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 June 1997
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 Closes the windows associated with the analysis work area.
@@ -13317,13 +13489,13 @@ Closes the windows associated with the analysis work area.
 				analysis_potential_time_update_callback, (void *)analysis);
 			DEACCESS(Time_object)(&(analysis->potential_time_object));
 		}
-		if(analysis->time_keeper)
+		if (analysis->time_keeper)
 		{
 			Time_keeper_remove_callback(analysis->time_keeper,
 				analysis_time_keeper_callback, (void *)analysis);
 			DEACCESS(Time_keeper)(&(analysis->time_keeper));
 		}
-		if(analysis->datum_time_object)
+		if (analysis->datum_time_object)
 		{
 			Time_object_remove_callback(analysis->datum_time_object,
 				analysis_datum_time_update_callback, (void *)analysis);
@@ -13346,6 +13518,7 @@ Closes the windows associated with the analysis work area.
 			display_message(ERROR_MESSAGE,
 				"close_analysis_work_area.  analysis window shell is missing");
 		}
+		DEALLOCATE(analysis->search_interval_divisions);
 	}
 	else
 	{

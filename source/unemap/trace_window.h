@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.h
 
-LAST MODIFIED : 28 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -142,7 +142,7 @@ The area of the trace window where the event time is edited.
 
 struct Event_detection
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 The information for detecting events.
@@ -156,7 +156,7 @@ The information for detecting events.
 	int *datum,*event_number,*level_width,*minimum_separation,*number_of_events,
 		*potential_time,*threshold;
 	/* search interval display information */
-	int *end_search_interval,*start_search_interval;
+	int *end_search_interval,**search_interval_divisions,*start_search_interval;
 }; /* struct Event_detection */
 
 enum Frequency_domain_display_mode
@@ -487,12 +487,12 @@ int open_trace_window(struct Trace_window **trace_address,Widget parent,
 	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
 	int *threshold,int *minimum_separation,float *level,int *level_width,
-	int *start_search_interval,int *end_search_interval,int screen_width,
-	int screen_height,
+	int *start_search_interval,int **search_interval_divisions,
+	int *end_search_interval,int screen_width,int screen_height,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 3 January 2000
 
 DESCRIPTION :
 If <*trace_address> is NULL, a trace window with the specified <parent> and 
