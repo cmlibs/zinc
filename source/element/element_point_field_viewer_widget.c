@@ -264,7 +264,7 @@ all dynamic memory allocations and pointers.
 static void element_point_field_viewer_widget_value_CB(Widget widget,
 	void *element_point_field_viewer_void,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 6 June 2001
+LAST MODIFIED : 10 October 2003
 
 DESCRIPTION :
 Called when the user has changed the data in the text widget.  Processes the
@@ -276,6 +276,7 @@ data, and then changes the correct value in the array structure.
 	int component_number,dimension,element_point_number,i,int_value,*int_values,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],number_of_grid_values,
 		return_code;
+	XtPointer user_data;
 	struct Computed_field *field;
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer;
 	XmAnyCallbackStruct *any_callback;
@@ -283,8 +284,9 @@ data, and then changes the correct value in the array structure.
 	struct FE_field *fe_field;
 
 	ENTER(element_point_field_viewer_value_CB);
-	component_number=-1;
-	XtVaGetValues(widget,XmNuserData,&component_number,NULL);
+	user_data = INT2VOIDPTR(-1);
+	XtVaGetValues(widget,XmNuserData,&user_data,NULL);
+	component_number = VOIDPTR2INT(user_data);
 	if ((element_point_field_viewer=
 		(struct Element_point_field_viewer_widget_struct *)
 		element_point_field_viewer_void)&&
@@ -471,7 +473,7 @@ is supplied.
 static int element_point_field_viewer_widget_setup_components(
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer)
 /*******************************************************************************
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 10 October 2003
 
 DESCRIPTION :
 Creates the array of cells containing field component names and values.
@@ -570,7 +572,7 @@ Creates the array of cells containing field component names and values.
 						return_code=0;
 					}
 					/* value text field */
-					XtSetArg(args[0],XmNuserData,(XtPointer)comp_no);
+					XtSetArg(args[0],XmNuserData,(XtPointer)INT2VOIDPTR(comp_no));
 					XtSetArg(args[1],XmNeditMode,XmSINGLE_LINE_EDIT);
 					XtSetArg(args[2],XmNcolumns,10);
 					XtSetArg(args[3],XmNeditable,editable);

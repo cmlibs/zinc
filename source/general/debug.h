@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : debug.h
 
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 10 October 2003
 
 DESCRIPTION :
 Function definitions for debugging.
@@ -65,6 +65,51 @@ if (!(expression)) \
 else
 
 #endif /* defined (OPTIMISED) */
+
+/* Treatment of an int to store the value in a void* and to extract it later.
+   The pointer to/from integer conversions are not necessary portable so a
+   macro is defined here.  */
+/*
+  The following would would on many machines but the pointer difference is
+  only defined if both pointers point at the same object.  Pointers could
+  contain segment information and this may be bad if the segment doesn't
+  exist.
+#define INT2VOIDPTR( i ) ( (void *)((char *)0 - i ) )
+#define VOIDPTR2INT( vp ) ( (char *) vp - (char *)0 )
+
+  gcc complains about conversions between integer and pointer types when the
+  types are of different sizes.  A double explicit cast with an intermediate
+  integer the same size as a pointer silences these errors.  One explicit cast
+  allows the pointer/integer conversion while the other silences the possible
+  truncation warning.
+
+  An integer type is required for this intermediate type.  It should be at
+  least as large as the smallest of the integer or pointer types to avoid an
+  unnecessary truncation.
+
+  ptrdiff_t is widely available (in stddef.h) and large enough to hold the
+  difference between two pointers (to the same object).
+*/
+#define INT2VOIDPTR( i ) ( (void *)(ptrdiff_t) i )
+#define VOIDPTR2INT( vp ) ( (ptrdiff_t) vp )
+/*
+  It is possible that on some platforms the integer type (long maybe) and the
+  pointer are both larger than ptrdiff_t, in which case the above would cause
+  an unnecessary truncation.
+
+  intptr_t is defined as an integer large enough to hold a pointer, but is not
+  necessarily defined.  If available, this would provide an intermediate type
+  that would avoid an unnecessary truncation.  If not defined in standard
+  headers, we may be able to define it ourselves.
+
+#if defined (AIX)
+#include <inttypes.h>
+#else
+#include <stdint.h>
+#endif
+#define INT2VOIDPTR( i ) ( (void *)(intptr_t) i )
+#define VOIDPTR2INT( vp ) ( (intptr_t) vp )
+*/
 
 /*
 Global variables

@@ -1501,7 +1501,7 @@ struct User_interface *CREATE(User_interface)(HINSTANCE current_instance,
 	struct Event_dispatcher *event_dispatcher)
 #endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
-LAST MODIFIED : 28 March 2002
+LAST MODIFIED : 10 October 2003
 
 DESCRIPTION :
 Open the <user_interface>.
@@ -1855,7 +1855,7 @@ Open the <user_interface>.
 						user_interface->normal_font, XmSTRING_DEFAULT_CHARSET);
 					user_interface->button_fontlist = XmFontListCreate(
 						user_interface->button_font, XmSTRING_DEFAULT_CHARSET);
-					identifiers[0].value = (XtPointer)user_interface->widget_spacing;
+					identifiers[0].value = INT2VOIDPTR(user_interface->widget_spacing);
 					/*???DB.  widget_spacing based on screen_width ? */
 					identifiers[1].value = (XtPointer)XmFontListCreate(
 						user_interface->menu_font,XmSTRING_DEFAULT_CHARSET);

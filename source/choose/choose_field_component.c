@@ -129,7 +129,7 @@ Callback for change of coordinate field.
 static int choose_field_component_get_items(struct FE_field *field,
 	int *number_of_items,void ***items_address,char ***item_names_address)
 /*******************************************************************************
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 10 October 2003
 
 DESCRIPTION :
 Returns the components of <field> in a form suitable for Choosers.
@@ -155,7 +155,7 @@ All returned strings and arrays must be deallocated by the calling function.
 			return_code=1;
 			for (i=0;(i<number_of_components)&&return_code;i++)
 			{
-				items[i] = (void *)i;
+				items[i] = INT2VOIDPTR(i);
 				if (!(item_names[i]=get_FE_field_component_name(field,i)))
 				{
 					display_message(ERROR_MESSAGE,"choose_field_component_get_items.  "
@@ -212,7 +212,7 @@ Widget create_choose_field_component_widget(Widget parent,
 	struct FE_field *field, int component_no,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 10 October 2003
 
 DESCRIPTION :
 Creates an option menu from which a component of the <field> may be chosen,
@@ -249,7 +249,7 @@ Note: Choose_field_component will be automatically DESTROYed with its widgets.
 					&item_names))
 			{
 				if (choose_field_component->chooser = CREATE(Chooser)(parent,
-					number_of_items, items, item_names, (void *)component_no,
+					number_of_items, items, item_names, INT2VOIDPTR(component_no),
 					&(choose_field_component->widget), user_interface))
 				{
 					/* add choose_field_component as user data to chooser widget */
@@ -395,7 +395,7 @@ int choose_field_component_get_field_component(
 	Widget choose_field_component_widget,struct FE_field **field,
 	int *component_no)
 /*******************************************************************************
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 10 October 2003
 
 DESCRIPTION :
 Returns the current field and component number in the
@@ -414,7 +414,8 @@ choose_field_component_widget.
 		if (choose_field_component)
 		{
 			*field=choose_field_component->field;
-			*component_no=(int)Chooser_get_item(choose_field_component->chooser);
+			*component_no=
+				VOIDPTR2INT(Chooser_get_item(choose_field_component->chooser));
 			return_code=1;
 		}
 		else
@@ -439,7 +440,7 @@ int choose_field_component_set_field_component(
 	Widget choose_field_component_widget,
 	struct FE_field *field,int component_no)
 /*******************************************************************************
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 10 October 2003
 
 DESCRIPTION :
 Changes the field component in the choose_field_component_widget.
@@ -469,7 +470,7 @@ Changes the field component in the choose_field_component_widget.
 			{
 				if (Chooser_build_main_menu(
 					choose_field_component->chooser,number_of_items,
-					(void **)items,item_names,(void *)component_no))
+					items,item_names,INT2VOIDPTR(component_no)))
 				{
 					return_code=1;
 				}
