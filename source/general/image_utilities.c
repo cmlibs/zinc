@@ -5568,7 +5568,7 @@ Clears 'valid' flag if fails.
 	return (return_code);
 } /* Cmgui_image_information_add_file_name */
 
-int Cmgui_image_information_add_file_name_series(
+int Cmgui_image_information_set_file_name_series(
 	struct Cmgui_image_information *cmgui_image_information,
 	char *file_name_template, char *file_number_pattern, int start_file_number,
 	int stop_file_number, int file_number_increment)
@@ -5581,6 +5581,8 @@ Adds a series of file names based on the <file_name_template> to the
 <stop_file_number> with <file_number_increment> are substituted for the first
 instance of <file_number_pattern> in <file_name_template>.
 The number appears with leading zeros up to the length of <file_number_pattern>.
+The <keep_current> flag determines whether the new file list is appended or
+replaces andy existing file list in the <cmgui_image_information>.
 Clears 'valid' flag if fails.
 ==============================================================================*/
 {
@@ -5589,7 +5591,7 @@ Clears 'valid' flag if fails.
 	int error, file_number, i, new_number_of_file_names, old_number_of_file_names,
 		pattern_width, return_code;
 
-	ENTER(Cmgui_image_information_add_file_name_series);
+	ENTER(Cmgui_image_information_set_file_name_series);
 	if (cmgui_image_information && file_name_template && file_number_pattern &&
 		(0 < (pattern_width = strlen(file_number_pattern))) && (
 		((start_file_number <= stop_file_number) && (0 < file_number_increment) &&
@@ -5598,16 +5600,10 @@ Clears 'valid' flag if fails.
 			(0 == (start_file_number - stop_file_number) % -file_number_increment)))
 		&& (pattern_position = strstr(file_name_template, file_number_pattern)))
 	{
-		old_number_of_file_names = cmgui_image_information->number_of_file_names;
-		new_number_of_file_names = old_number_of_file_names + 1 +
-			((stop_file_number - start_file_number) / file_number_increment);
+		new_number_of_file_names = 1 + ((stop_file_number - start_file_number) /
+			file_number_increment);
 		if (ALLOCATE(temp_file_names, char *, new_number_of_file_names))
 		{
-			/* copy pointers to existing names, if any */
-			for (i = 0; i < old_number_of_file_names; i++)
-			{
-				temp_file_names[i] = cmgui_image_information->file_names[i];
-			}
 			sprintf(format, "%%0%dd", pattern_width);
 			prefix = file_name_template;
 			*pattern_position = '\0';
@@ -5624,8 +5620,7 @@ Clears 'valid' flag if fails.
 			if (ALLOCATE(file_number_string, char, 20 + pattern_width))
 			{
 				file_number = start_file_number;
-				for (i = old_number_of_file_names;
-					(i < new_number_of_file_names) && !error; i++)
+				for (i = 0; (i < new_number_of_file_names) && !error; i++)
 				{
 					temp_file_name = (char *)NULL;
 					if (prefix)
@@ -5668,6 +5663,13 @@ Clears 'valid' flag if fails.
 			}
 			else
 			{
+				if (cmgui_image_information->number_of_file_names)
+				{
+					for (i = 0; i < cmgui_image_information->number_of_file_names ; i++)
+					{
+						DEALLOCATE(cmgui_image_information->file_names[i]);
+					}
+				}
 				DEALLOCATE(cmgui_image_information->file_names);
 				cmgui_image_information->file_names = temp_file_names;
 				cmgui_image_information->number_of_file_names =

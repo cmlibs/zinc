@@ -174,7 +174,7 @@ Adds the <file_name> to the end of the list in <cmgui_image_information>.
 Clears 'valid' flag if fails.
 ==============================================================================*/
 
-int Cmgui_image_information_add_file_name_series(
+int Cmgui_image_information_set_file_name_series(
 	struct Cmgui_image_information *cmgui_image_information,
 	char *file_name_template, char *file_number_pattern, int start_file_number,
 	int stop_file_number, int file_number_increment);

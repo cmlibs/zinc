@@ -340,6 +340,16 @@ and must be at least width*number_of_components*number_of_bytes_per_component
 in size.
 ==============================================================================*/
 
+int Texture_add_image(struct Texture *texture,
+	struct Cmgui_image *cmgui_image,
+	int crop_left, int crop_bottom, int crop_width, int crop_height);
+/*******************************************************************************
+LAST MODIFIED : 14 February 2003
+
+DESCRIPTION :
+Adds <cmgui_image> into <texture> making a 3D image from 2D images.
+==============================================================================*/
+
 struct X3d_movie;
 
 struct X3d_movie *Texture_get_movie(struct Texture *texture);

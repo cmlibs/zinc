@@ -2927,6 +2927,168 @@ in size.
 	return (return_code);
 } /* Texture_set_image_block */
 
+int Texture_add_image(struct Texture *texture,
+	struct Cmgui_image *cmgui_image,
+	int crop_left, int crop_bottom, int crop_width, int crop_height)
+/*******************************************************************************
+LAST MODIFIED : 14 February 2003
+
+DESCRIPTION :
+Adds <cmgui_image> into <texture> making a 3D image from 2D images.
+==============================================================================*/
+{
+	static unsigned char fill_byte = 0;
+	int bytes_per_pixel, dimension, padded_width_bytes,
+		final_bottom, final_depth, final_height, final_left, final_width,
+		i, image_height, image_width, k, number_of_bytes_per_component,
+		number_of_components, number_of_images, image_padding_bytes,
+		return_code, texture_depth, texture_height, texture_width;
+	unsigned char *texture_image;
+	unsigned char *destination;
+
+	ENTER(Texture_set_image);
+	if (texture && cmgui_image &&
+		(0 < (image_width = Cmgui_image_get_width(cmgui_image))) &&
+		(0 < (image_height = Cmgui_image_get_height(cmgui_image))) &&
+		(0 < (number_of_components =
+			Cmgui_image_get_number_of_components(cmgui_image))) &&
+		(0 < (number_of_bytes_per_component =
+			Cmgui_image_get_number_of_bytes_per_component(cmgui_image))) &&
+		(0 < (number_of_images = Cmgui_image_get_number_of_images(cmgui_image))))
+	{
+		return_code = 1;
+		if ((0 == crop_left) && (0 == crop_width) &&
+			(0 == crop_bottom) && (0 == crop_height))
+		{
+			final_width = image_width;
+			final_height = image_height;
+			final_left = 0;
+			final_bottom = 0;
+		}
+		else if ((0 <= crop_left) && (0 < crop_width) &&
+			(crop_left + crop_width <= image_width) &&
+			(0 <= crop_bottom) && (0 < crop_height) &&
+			(crop_bottom + crop_height <= image_height))
+		{
+			final_width = crop_width;
+			final_height = crop_height;
+			final_left = crop_left;
+			final_bottom = crop_bottom;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Texture_add_image.  Invalid cropping parameters");
+			return_code = 0;
+		}
+		final_depth = number_of_images + texture->original_depth_texels;
+		if (number_of_components != Texture_storage_type_get_number_of_components
+			(texture->storage))
+		{
+			display_message(ERROR_MESSAGE, "Texture_add_image.  "
+				"Number of components in new images are not consistent with existing texture.");
+			return_code = 0;
+		}
+		if (final_width != texture->original_width_texels)
+		{
+			display_message(ERROR_MESSAGE, "Texture_add_image.  "
+				"Width of new images are not consistent with existing texture.");
+			return_code = 0;
+		}
+		if (final_height != texture->original_height_texels)
+		{
+			display_message(ERROR_MESSAGE, "Texture_add_image.  "
+				"Height of new images are not consistent with existing texture.");
+			return_code = 0;
+		}
+		if (return_code)
+		{
+			texture_width = texture->width_texels;
+			texture_height = texture->height_texels;
+			/* ensure depth is a power of 2 */
+			texture_depth = 1;
+			while (texture_depth < final_depth)
+			{
+				texture_depth *= 2;
+			}
+			if (1 < texture_depth)
+			{
+				dimension = 3;
+			}
+			else if (1 < texture_height)
+			{
+				dimension = 2;
+			}
+			else
+			{
+				dimension = 1;
+			}
+			/* ensure texture images are row aligned to 4-byte boundary */
+			bytes_per_pixel = number_of_components * number_of_bytes_per_component;
+			padded_width_bytes =
+				4*((texture_width*bytes_per_pixel + 3)/4);
+			image_padding_bytes =
+				padded_width_bytes*(texture_height - final_height);
+			if (REALLOCATE(texture_image, texture->image, unsigned char,
+				texture_depth*texture_height*padded_width_bytes))
+			{
+				destination = texture_image + texture->original_depth_texels *
+					padded_width_bytes * texture_height;
+				i = 0;
+				for (k = texture->original_depth_texels ;
+					  (k < final_depth) && return_code; k++)
+				{
+					/* fill image from bottom to top */
+					return_code = Cmgui_image_dispatch(cmgui_image, /*image_number*/i,
+						final_left, final_bottom, final_width, final_height,
+						padded_width_bytes, /*number_of_fill_bytes*/1, &fill_byte,
+						destination);
+					i++;
+					destination += padded_width_bytes * final_height;
+					if (0 < image_padding_bytes)
+					{
+						/* fill the padding rows of the image */
+						memset(destination, fill_byte, image_padding_bytes);
+						destination += image_padding_bytes;
+					}
+				}
+				if (final_depth < texture_depth)
+				{
+					memset(destination, fill_byte, padded_width_bytes *
+						texture_height * (texture_depth - final_depth));
+				}
+
+				/* assign values in the texture */
+				texture->dimension = dimension;
+				/* original size is intended to specify useful part of texture */
+				texture->original_width_texels = final_width;
+				texture->original_height_texels = final_height;
+				texture->original_depth_texels = final_depth;
+				texture->width_texels = texture_width;
+				texture->height_texels = texture_height;
+				texture->depth_texels = texture_depth;
+				/* display list needs to be compiled again */
+				texture->display_list_current = 0;
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Texture_set_image.  Could not allocate texture image");
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "Texture_add_image.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Texture_add_image */
+
 struct X3d_movie *Texture_get_movie(struct Texture *texture)
 /*******************************************************************************
 LAST MODIFIED : 3 February 2000

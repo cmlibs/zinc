@@ -8588,8 +8588,9 @@ Modifies the properties of a texture.
 	enum Texture_wrap_mode wrap_mode;
 	float alpha, depth, distortion_centre_x, distortion_centre_y,
 		distortion_factor_k1, height, width;
-	int number_of_valid_strings, process, return_code, specify_depth, specify_height, 
-		specify_number_of_bytes_per_component, specify_width, texture_is_managed;
+	int i, number_of_valid_strings, process, return_code, specify_depth,
+		specify_height, specify_number_of_bytes_per_component, specify_width,
+		texture_is_managed;
 	struct Cmgui_image *cmgui_image;
 	struct Cmgui_image_information *cmgui_image_information;
 	struct Cmiss_command_data *command_data;
@@ -8904,13 +8905,13 @@ Modifies the properties of a texture.
 							{
 								if (strstr(image_data.image_file_name, file_number_pattern))
 								{
-									Cmgui_image_information_add_file_name_series(
+									Cmgui_image_information_set_file_name_series(
 										cmgui_image_information,
 										/*file_name_template*/image_data.image_file_name,
 										file_number_pattern,
 										file_number_series_data.start,
-										file_number_series_data.stop,
-										file_number_series_data.increment);
+										file_number_series_data.start,
+										/*increment*/1);
 								}
 								else
 								{
@@ -8974,8 +8975,7 @@ Modifies the properties of a texture.
 									Texture_set_image(texture, cmgui_image,
 										image_data.image_file_name, file_number_pattern,
 										file_number_series_data.start,
-										file_number_series_data.stop,
-										file_number_series_data.increment,
+										file_number_series_data.start, /*increment*/1,
 										image_data.crop_left_margin, image_data.crop_bottom_margin,
 										image_data.crop_width, image_data.crop_height);
 									DESTROY(Cmgui_image)(&cmgui_image);
@@ -8985,6 +8985,27 @@ Modifies the properties of a texture.
 									display_message(ERROR_MESSAGE,
 										"gfx modify texture:  Could not read image file");
 									return_code = 0;
+								}
+								if (0 != file_number_series_data.increment)
+								{
+									for (i = file_number_series_data.start +
+											  file_number_series_data.increment ; 
+										  i <= file_number_series_data.stop ;
+										  i += file_number_series_data.increment)
+									{
+										Cmgui_image_information_set_file_name_series(
+											cmgui_image_information,
+											/*file_name_template*/image_data.image_file_name,
+											file_number_pattern, /*start*/i, /*end*/i,
+											/*increment*/1);
+										if (cmgui_image = Cmgui_image_read(cmgui_image_information))
+										{
+											Texture_add_image(texture, cmgui_image,
+												image_data.crop_left_margin, image_data.crop_bottom_margin,
+												image_data.crop_width, image_data.crop_height);
+											DESTROY(Cmgui_image)(&cmgui_image);
+										}
+									}
 								}
 							}
 							DESTROY(Cmgui_image_information)(&cmgui_image_information);
@@ -24679,7 +24700,7 @@ Executes a GFX WRITE TEXTURE command.
 						if (Texture_get_original_size(texture, &original_width_texels,
 							&original_height_texels, &original_depth_texels))
 						{
-							Cmgui_image_information_add_file_name_series(
+							Cmgui_image_information_set_file_name_series(
 								cmgui_image_information, file_name, file_number_pattern,
 								/*start_file_number*/1,
 								/*stop_file_number*/original_depth_texels,
