@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_vector.hpp
 //
-// LAST MODIFIED : 15 December 2003
+// LAST MODIFIED : 23 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -13,7 +13,7 @@
 
 class Variable_vector : public Variable
 //******************************************************************************
-// LAST MODIFIED : 15 December 2003
+// LAST MODIFIED : 23 December 2003
 //
 // DESCRIPTION :
 // An identity variable whose input/output is a vector.
@@ -30,7 +30,7 @@ class Variable_vector : public Variable
 		// destructor
 		~Variable_vector();
 		// indexing
-		const Scalar operator[](Variable_size_type) const;
+		Scalar operator[](Variable_size_type) const;
 		Scalar& operator[](Variable_size_type);
 		// get the number of scalars in the result
 		Variable_size_type size() const;

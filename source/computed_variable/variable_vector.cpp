@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_vector.cpp
 //
-// LAST MODIFIED : 15 December 2003
+// LAST MODIFIED : 23 December 2003
 //
 // DESCRIPTION :
 //???DB.  Should be template?
@@ -171,9 +171,9 @@ Scalar& Variable_vector::operator[](Variable_size_type i)
 	return (values[i]);
 }
 
-const Scalar Variable_vector::operator[](Variable_size_type i) const
+Scalar Variable_vector::operator[](Variable_size_type i) const
 //******************************************************************************
-// LAST MODIFIED : 9 November 2003
+// LAST MODIFIED : 23 December 2003
 //
 // DESCRIPTION :
 // Indexing.
