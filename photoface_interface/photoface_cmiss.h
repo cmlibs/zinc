@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : photoface_cmiss.h
 
-LAST MODIFIED : 9 May 2001
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 The functions that interface Photoface to cmiss.  All functions have an integer
@@ -11,6 +11,20 @@ return code - zero is success, non-zero is failure.
 #define PHOTOFACE_CMISS_H
 
 #define LINUX_CMISS
+
+#if defined (WIN32) && defined (PHOTOFACE_CMISS_EXPORTS)
+#if defined (CMISSDLLEXPORT)
+#define CMISSDECLSPEC __declspec( dllexport )
+#else /* defined (CMISSDLLEXPORT)*/
+#define CMISSDECLSPEC __declspec( dllimport )
+#endif /* defined (CMISSDLLEXPORT)*/
+#else /* defined (WIN32) && defined (PHOTOFACE_CMISS_EXPORTS) */
+#define CMISSDECLSPEC
+#endif /* defined (WIN32) && defined (PHOTOFACE_CMISS_EXPORTS) */
+
+#if defined (__cplusplus)
+extern "C" {
+#endif /* defined (__cplusplus) */
 
 /*
 Global constants
@@ -52,22 +66,22 @@ Global functions
 ----------------
 */
 #if defined (LINUX_CMISS)
-int pf_specify_paths(char *photoface_main_windows_path,
+CMISSDECLSPEC int pf_specify_paths(char *photoface_main_windows_path,
 	char *photoface_main_linux_path);
 /*******************************************************************************
 LAST MODIFIED : 13 February 2001
 
 DESCRIPTION :
 Specifies the main directory under which the model, working and cmiss directory
-are expected to be located under Windows and Linux.  The path should end in a
+are expected to be located under Windows and Linux.  The paths should end in a
 delimiting /.  This function will be obsolete once a windows only version of the
 Photoface cmiss library is built.
 
-If either path is NULL the internal storage for that path is free'd.
+If either path is NULL then the internal storage for that path is free'd.
 ==============================================================================*/
 #endif /* defined (LINUX_CMISS) */
 
-int pf_setup(char *model_name,char *state,int *pf_job_id);
+CMISSDECLSPEC int pf_setup(char *model_name,char *state,int *pf_job_id);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
 
@@ -78,7 +92,7 @@ information about the face in the image, such as "smiling", which may allow
 adjustment of the generic head.  On success, the <pf_job_id> is set.
 ==============================================================================*/
 
-int pf_close(int pf_job_id);
+CMISSDECLSPEC int pf_close(int pf_job_id);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
 
@@ -87,7 +101,7 @@ Closes the photoface job, freeing any internal memory and stopping any
 internal processes associated with the job.
 ==============================================================================*/
 
-int pf_define_markers(int pf_job_id,int number_of_markers,char **marker_names,
+CMISSDECLSPEC int pf_define_markers(int pf_job_id,int number_of_markers,char **marker_names,
   float *marker_3d_generic_positions);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -109,7 +123,7 @@ Please note that
   points.
 ==============================================================================*/
 
-int pf_specify_markers(int pf_job_id,int number_of_markers,char **marker_names,
+CMISSDECLSPEC int pf_specify_markers(int pf_job_id,int number_of_markers,char **marker_names,
   float *marker_2d_positions,float *marker_confidences);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -128,7 +142,7 @@ Specify <number_of_markers> using
   one with the larger confidence has a better position estimate.
 ==============================================================================*/
 
-int pf_get_marker_fitted_positions(int pf_job_id,int number_of_markers,
+CMISSDECLSPEC int pf_get_marker_fitted_positions(int pf_job_id,int number_of_markers,
 	char **marker_names,float *marker_fitted_3d_positions);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -139,7 +153,7 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 (marker number varying slowest).
 ==============================================================================*/
 
-int pf_view_align(int pf_job_id,float *error_measure);
+CMISSDECLSPEC int pf_view_align(int pf_job_id,float *error_measure);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
 
@@ -148,7 +162,7 @@ Calculates the view that aligns the model to the specified markers and returns
 an <error_measure>.
 ==============================================================================*/
 
-int pf_get_view(int pf_job_id,float *eye_point,float *interest_point,
+CMISSDECLSPEC int pf_get_view(int pf_job_id,float *eye_point,float *interest_point,
 	float *up_vector,float *view_angle);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -159,7 +173,7 @@ Returns the current view as an <eye_point> (3 component vector), an
 <view_angle> (scalar).  Assumes that all storage has been assigned large enough.
 ==============================================================================*/
 
-int pf_specify_view(int pf_job_id,float *eye_point,float *interest_point,
+CMISSDECLSPEC int pf_specify_view(int pf_job_id,float *eye_point,float *interest_point,
 	float *up_vector,float view_angle);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -170,7 +184,7 @@ Sets the current view as an <eye_point> (3 component vector), an
 <view_angle> (scalar).  It is an alternative/override for pf_view_align.
 ==============================================================================*/
 
-int pf_fit(int pf_job_id,float *error_measure);
+CMISSDECLSPEC int pf_fit(int pf_job_id,float *error_measure);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
 
@@ -179,7 +193,7 @@ Fits the model to the specified markers, using the current transformation
 matrix, and returns an <error_measure>.
 ==============================================================================*/
 
-int pf_get_head_model(int pf_job_id,int *number_of_vertices,
+CMISSDECLSPEC int pf_get_head_model(int pf_job_id,int *number_of_vertices,
 	float **vertex_3d_locations,int *number_of_texture_vertices,
 	float **texture_vertex_3d_locations,int *number_of_triangles,
 	int **triangle_vertices,int **triangle_texture_vertices);
@@ -199,7 +213,7 @@ Returns the current transformed generic head as
   the texture vertex numbers for each triangle
 ==============================================================================*/
 
-int pf_get_basis(int pf_job_id,int *number_of_modes,int *number_of_vertices,
+CMISSDECLSPEC int pf_get_basis(int pf_job_id,int *number_of_modes,int *number_of_vertices,
   float **vertex_3d_locations_or_offsets);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -211,7 +225,7 @@ Returns the basis for the current transformed model in
 mode number fastest.
 ==============================================================================*/
 
-int pf_specify_image(int pf_job_id,int width,int height,
+CMISSDECLSPEC int pf_specify_image(int pf_job_id,int width,int height,
 	enum PF_image_format image_format,char *image);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
@@ -220,7 +234,7 @@ DESCRIPTION :
 Used to specify the image to be texture mapped onto the model.
 ==============================================================================*/
 
-int pf_get_texture(int pf_job_id,int width,int height,char *texture);
+CMISSDECLSPEC int pf_get_texture(int pf_job_id,int width,int height,char *texture);
 /*******************************************************************************
 LAST MODIFIED : 9 May 2001
 
@@ -228,5 +242,9 @@ DESCRIPTION :
 The caller specifies the texture size and provides the storage.  The <texture>
 is filled in based on the current model.
 ==============================================================================*/
+
+#if defined (__cplusplus)
+}
+#endif /* defined (__cplusplus) */
 
 #endif /* !defined (PHOTOFACE_CMISS_H) */

@@ -214,7 +214,7 @@ used.
 		sprintf(command_string,"rsh %s -l %s setenv DISPLAY :0.0;",host,user);
 		vsprintf(command_string+strlen(command_string),format,ap);
 #else /* defined (WIN32) */
-		sprintf(command_string,"rsh %s -l %s 'setenv DISPLAY :0.0;",host,user);
+		sprintf(command_string,"ssh -1 %s -l %s 'setenv DISPLAY :0.0;",host,user);
 		vsprintf(command_string+strlen(command_string),format,ap);
 		sprintf(command_string+strlen(command_string)," '");
 #if defined (DEBUG)
@@ -225,6 +225,8 @@ used.
 	{
 		vsprintf(command_string,format,ap);
 #endif /* defined (OLD_CODE) */
+		printf (command_string);
+		printf ("\n");
 		if (-1!=system(command_string))
 		{
 			return_code=1;
@@ -1728,6 +1730,7 @@ giving this process exclusive access.
 				{
 					/* Wait */
 					sleep (2);
+					printf("Waiting on lock %s\n", working_path);
 				}
 				else
 				{
@@ -1819,17 +1822,16 @@ the memory associated with it and unlocks the access to that job.
 	return_code = PF_SUCCESS_RC;
 	if (pf_job = *pf_job_address)
 	{
-		if (ALLOCATE(working_path, char, strlen(photoface_local_path) + 100))
+		if (ALLOCATE(working_path, char, strlen(pf_job->working_path) + 100))
 		{
 			/* Look for the correct working directory */
-			sprintf(working_path, "%sworking/job%06d/%s", photoface_local_path,
-				pf_job->pf_job_id, PF_LOCK_DIRNAME);
+			sprintf(working_path, "%s/%s", pf_job->working_path, PF_LOCK_DIRNAME);
 			if ((0 == stat(working_path, &stat_buffer)) && 
 				S_ISDIR(stat_buffer.st_mode))
 			{
 				/* Save the data for the pf_job */
-				sprintf(working_path, "%sworking/job%06d/%s", 
-					photoface_local_path, pf_job->pf_job_id, PF_STRUCTURE_FILENAME);
+				sprintf(working_path, "%s/%s", 
+					pf_job->working_path, PF_STRUCTURE_FILENAME);
 				if (pf_job_file = fopen(working_path, "w"))
 				{
 					fprintf(pf_job_file, "%f\n", pf_job->ndc_texture_scaling);
@@ -1845,14 +1847,15 @@ the memory associated with it and unlocks the access to that job.
 					return_code= PF_OPEN_FILE_FAILURE_RC;
 				}					
 
+				/* Set the lock filename now before we deallocate everything */
+				sprintf(working_path, "%s/%s", pf_job->working_path, PF_LOCK_DIRNAME);
 				DEALLOCATE(pf_job->working_path);
 				DEALLOCATE(pf_job->remote_working_path);
 				/* Deallocate the pf_job structure */
 				DEALLOCATE(*pf_job_address);
 
 				/* Unlock the directory */
-				sprintf(working_path, "%sworking/job%06d/%s", photoface_local_path,
-					pf_job->pf_job_id, PF_LOCK_DIRNAME);
+				printf("Removing lock %s\n", working_path);
 				rmdir(working_path);
 			}
 			else
@@ -1863,6 +1866,7 @@ the memory associated with it and unlocks the access to that job.
 #endif /* defined (MANUAL_CMISS) */
 				return_code= PF_FIND_FILE_FAILURE_RC;
 			}
+			DEALLOCATE(working_path);
 		}
 		else
 		{
@@ -2043,7 +2047,7 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 	{
 		/* Check that we have the files available for the specified model and state */
 		if (ALLOCATE(model_path,char,
-			strlen(photoface_local_path)+strlen(model_name)+30))
+			strlen(photoface_local_path)+strlen(model_name)+100))
 		{
 #if defined (WIN32)
 			/* Have to remove the trailing / unless it is the root of a drive specification */
@@ -2104,6 +2108,8 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 										photoface_remote_path);
 									fprintf(setup_comfile, "$LFX_MODELER_CMISS = \"%s../lfx_modeler/cmiss\"\n",
 										photoface_remote_path);
+									fprintf(setup_comfile, "$PHOTOFACE_MODEL = \"%s\"\n",
+										model_name);
 									fprintf(setup_comfile, "open comfile $PHOTOFACE_CMISS/pf_setup.com exec\n");
 
 									fclose(setup_comfile);
@@ -2129,8 +2135,8 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 									/* Main process comes here */
 									sleep(10);
 #endif /* defined (WIN32) */
-									if (linux_execute("cmgui_control 'open comfile %s/pf_setup_main.com exec'",
-										pf_job->working_path))
+									if (linux_execute("%sbin/cmgui_control 'open comfile %s/pf_setup_main.com exec'",
+										photoface_remote_path, pf_job->working_path))
 									{
 										return_code=PF_SUCCESS_RC;
 									}
@@ -2252,7 +2258,7 @@ internal processes.
 		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
 		/* close cmgui */
-		if (linux_execute("cmgui_control 'quit'"))
+		if (linux_execute("%sbin/cmgui_control 'quit'", photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
@@ -2425,7 +2431,7 @@ Specify <number_of_markers> using
 	if(PF_SUCCESS_RC == (return_code = 
 		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-		if (ALLOCATE(filename,char,strlen(photoface_local_path)+50))
+		if (ALLOCATE(filename,char,strlen(photoface_local_path)+100))
 		{
 			/* If we haven't already done so read the marker definition file */
 			if (!markers)
@@ -2507,8 +2513,8 @@ Specify <number_of_markers> using
 								{
 									/* Define these fields and nodes */
 									if (linux_execute(
-										"cmgui_control 'open comfile %scmiss/pf_specify_markers.com exec'",
-										photoface_remote_path))
+										"%sbin/cmgui_control 'open comfile %scmiss/pf_specify_markers.com exec'",
+										photoface_remote_path, photoface_remote_path))
 									{
 										return_code=PF_SUCCESS_RC;
 									}
@@ -2668,8 +2674,8 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 					{
 						/* Define these fields and nodes */
 						if (linux_execute(
-							"cmgui_control 'open comfile %scmiss/pf_get_marker_fitted_positions.com exec'",
-							photoface_remote_path))
+							"%sbin/cmgui_control 'open comfile %scmiss/pf_get_marker_fitted_positions.com exec'",
+							photoface_remote_path, photoface_remote_path))
 						{
 							return_code=PF_SUCCESS_RC;
 						}
@@ -2788,8 +2794,8 @@ an <error_measure>.
 		/* For now this is all done by the comfile, until we have more direct control
 			over cmgui */
 		if (linux_execute(
-			"cmgui_control 'open comfile %scmiss/pf_view_align.com exec'",
-			photoface_remote_path))
+			"%sbin/cmgui_control 'open comfile %scmiss/pf_view_align.com exec'",
+			photoface_remote_path, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
@@ -2835,8 +2841,8 @@ Returns the current view as an <eye_point> (3 component vector), an
 		/* Get the current viewing parameters from cmgui */
 		/* Export the window projection from cmgui to a file */
 		if (linux_execute(
-			"cmgui_control 'open comfile %scmiss/pf_get_view.com exec'",
-			photoface_remote_path))
+			"%sbin/cmgui_control 'open comfile %scmiss/pf_get_view.com exec'",
+			photoface_remote_path, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
@@ -2908,9 +2914,9 @@ Sets the current view as an <eye_point> (3 component vector), an
 	{
 		/* Set the viewing parameters in cmgui */
 		if (linux_execute(
-			"cmgui_control 'gfx modify window 1 view eye %f %f %f "
+			"%sbin/cmgui_control 'gfx modify window 1 view eye %f %f %f "
 			"interest %f %f %f up %f %f %f view_angle %f'",
-			eye_point[0], eye_point[1], eye_point[2],
+			photoface_remote_path, eye_point[0], eye_point[1], eye_point[2],
 			interest_point[0], interest_point[1], interest_point[2],
 			up_vector[0], up_vector[1], up_vector[2], view_angle))
 		{
@@ -2950,8 +2956,8 @@ matrix, and returns an <error_measure>.
 		/* For now this is all done by the comfile, until we have more direct
 			control over cmgui */
 		if (linux_execute(
-			"cmgui_control 'open comfile %scmiss/pf_fit.com exec'",
-			photoface_remote_path))
+			"%sbin/cmgui_control 'open comfile %scmiss/pf_fit.com exec'",
+			photoface_remote_path, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
@@ -3065,8 +3071,8 @@ mode number fastest.
 		/* Calculate the basis based on the current host mesh transformation
 			??? (or do this as a separate step, or as part of doing the fit) */
 		if (linux_execute(
-			"cmgui_control 'open comfile %scmiss/pf_get_basis.com exec'",
-			photoface_remote_path))
+			"%sbin/cmgui_control 'open comfile %scmiss/pf_get_basis.com exec'",
+			photoface_remote_path, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
@@ -3188,8 +3194,8 @@ Used to specify the image to be texture mapped onto the model.
 				fclose(image_comfile);
 
 				if (linux_execute(
-					"cmgui_control 'open comfile %s/pf_specify_image.com exec'",
-					pf_job->remote_working_path))
+					"%sbin/cmgui_control 'open comfile %s/pf_specify_image.com exec'",
+					photoface_remote_path, pf_job->remote_working_path))
 				{
 					return_code=PF_SUCCESS_RC;
 				}
@@ -3272,7 +3278,9 @@ is filled in based on the current model.
 		fprintf(texture_comfile, "gfx set transformation name objface5 scene texture_projection 1 0 0 0 0 1 0 0 0 0 1 0 -0.001 -0.001 -4 1\n");		
 		fprintf(texture_comfile, "gfx modify g_element objface surfaces coordinate texture select_on material source_image texture_coordinates projection selected_material default_selected render_shaded scene texture_projection\n");
 
-		fprintf(texture_comfile, "gfx create window texture_projection single\n");
+		/* 	Some Linux X servers don't do single	
+				fprintf(texture_comfile, "gfx create window texture_projection single\n"); */
+		fprintf(texture_comfile, "gfx create window texture_projection\n");
 		fprintf(texture_comfile, "gfx modify window texture_projection layout 2d ortho_axes z -y width $width height $height\n");
 		fprintf(texture_comfile, "gfx modify window texture_projection image scene texture_projection\n");
 		fprintf(texture_comfile, "gfx modify window texture_projection view parallel eye_point 0.5 0.5 3 interest_point 0.5 0.5 0 up_vector 0.00580574 0.999983 0 view_angle 26.525435202 near_clipping_plane 0.0288485 far_clipping_plane 10.3095 relative_viewport ndc_placement -1 -1 2 2 viewport_coordinates -1 -1 400 400\n");
@@ -3287,13 +3295,9 @@ is filled in based on the current model.
 		fprintf(texture_comfile, "gfx modify g_element objface surfaces select_on material skin texture_coord texture\n");
 		fprintf(texture_comfile, "gfx mod win 1 back texture none\n");
 		fclose(texture_comfile);
-#if defined (MANUAL_CMISS)
-		if (display_message(PF_INFORMATION_MESSAGE,
-#else /* defined (MANUAL_CMISS) */
 		if (linux_execute(
-#endif /* defined (MANUAL_CMISS) */
-			"cmgui_control 'open comfile %s/pf_get_texture.com exec'",
-			pf_job->remote_working_path))
+			"%sbin/cmgui_control 'open comfile %s/pf_get_texture.com exec'",
+			photoface_remote_path, pf_job->remote_working_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
