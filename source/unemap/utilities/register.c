@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 24 April 2002
+LAST MODIFIED : 10 June 2002
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -116,7 +116,6 @@ Module constants
 Module types
 ------------
 */
-#if defined (MOTIF)
 struct Process_keyboard_data
 /*******************************************************************************
 LAST MODIFIED : 28 June 1999
@@ -131,7 +130,6 @@ For passing to the process_keyboard callback.
 	unsigned sampling_delay;
 	unsigned long number_of_channels,number_of_samples;
 }; /* struct Process_keyboard_data */
-#endif /* defined (MOTIF) */
 
 /*
 Module variables
@@ -688,9 +686,7 @@ static void print_menu(int channel_number,unsigned long number_of_channels)
 
 static void process_keyboard(
 #if defined (WINDOWS)
-	int channel_number,unsigned long number_of_channels,
-	unsigned long number_of_samples,unsigned sampling_delay,short int *samples,
-	float sampling_frequency
+	struct Process_keyboard_data *process_keyboard_data
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
 	XtPointer process_keyboard_data_void,int *source,XtInputId *id
@@ -729,14 +725,14 @@ static void process_keyboard(
 	static int calibrate_DA_on[MAXIMUM_NUMBER_OF_NI_CARDS],first_call=1,
 		stimulate_DA_on[MAXIMUM_NUMBER_OF_NI_CARDS];
 	unsigned char shift_registers[10];
-#if defined (MOTIF)
 	float sampling_frequency;
 	int channel_number;
 	short int *samples;
+#if defined (MOTIF)
 	struct Process_keyboard_data *process_keyboard_data;
+#endif /* defined (MOTIF) */
 	unsigned sampling_delay;
 	unsigned long number_of_channels,number_of_samples;
-#endif /* defined (MOTIF) */
 #if defined (CALIBRATE_SQUARE_WAVE)
 	float *sorted_signal;
 #endif /* defined (CALIBRATE_SQUARE_WAVE) */
@@ -746,13 +742,13 @@ static void process_keyboard(
 	USE_PARAMETER(id);
 	process_keyboard_data=
 		(struct Process_keyboard_data *)process_keyboard_data_void;
+#endif /* defined (MOTIF) */
 	sampling_frequency=process_keyboard_data->sampling_frequency;
 	channel_number=process_keyboard_data->channel_number;
 	samples=process_keyboard_data->samples;
 	sampling_delay=process_keyboard_data->sampling_delay;
 	number_of_channels=process_keyboard_data->number_of_channels;
 	number_of_samples=process_keyboard_data->number_of_samples;
-#endif /* defined (MOTIF) */
 	if (first_call)
 	{
 		first_call=0;
@@ -6530,14 +6526,12 @@ static void process_keyboard(
 			exit(0);
 		}
 	}
-#if defined (MOTIF)
 	process_keyboard_data->sampling_frequency=sampling_frequency;
 	process_keyboard_data->channel_number=channel_number;
 	process_keyboard_data->samples=samples;
 	process_keyboard_data->sampling_delay=sampling_delay;
 	process_keyboard_data->number_of_channels=number_of_channels;
 	process_keyboard_data->number_of_samples=number_of_samples;
-#endif /* defined (MOTIF) */
 } /* process_keyboard */
 
 /*
@@ -6551,9 +6545,7 @@ int main(void)
 	long maximum_sample_value,minimum_sample_value;
 	short int *samples;
 	unsigned long number_of_samples,sampling_delay;
-#if defined (MOTIF)
 	struct Process_keyboard_data process_keyboard_data;
-#endif /* defined (MOTIF) */
 
 	/* initialize */
 	return_code=1;
@@ -6618,13 +6610,13 @@ int main(void)
 			{
 				sampling_delay=1+number_of_samples/(unsigned)sampling_frequency;
 				channel_number=1;
-#if defined (MOTIF)
 				process_keyboard_data.sampling_frequency=sampling_frequency;
 				process_keyboard_data.channel_number=channel_number;
 				process_keyboard_data.samples=samples;
 				process_keyboard_data.sampling_delay=sampling_delay;
 				process_keyboard_data.number_of_channels=number_of_channels;
 				process_keyboard_data.number_of_samples=number_of_samples;
+#if defined (MOTIF)
 				if (XtAppAddInput(application_context,fileno(stdin),
 					(XtPointer)XtInputReadMask,process_keyboard,
 					(XtPointer)&process_keyboard_data))
@@ -6637,8 +6629,7 @@ int main(void)
 #if defined (WINDOWS)
 					while (1)
 					{
-						process_keyboard(channel_number,number_of_channels,
-							number_of_samples,sampling_delay,samples,sampling_frequency);
+						process_keyboard(&process_keyboard_data);
 					}
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
