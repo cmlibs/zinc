@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : manager_private.h
 
-LAST MODIFIED : 30 June 2000
+LAST MODIFIED : 6 December 2000
 
 DESCRIPTION :
 Managers oversee the creation, deletion and modification of global objects -
@@ -61,13 +61,16 @@ the objects being managed \
 \
 DECLARE_MANAGER_TYPE(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 30 June 2000 \
+LAST MODIFIED : 6 December 2000 \
 \
 DESCRIPTION : \
 The structure for the manager. \
 ============================================================================*/ \
 { \
+	/* the list of objects in the manager */ \
 	struct LIST(object_type) *object_list; \
+	/* the list of objects removed since the last update message */ \
+	struct LIST(object_type) *removed_object_list; \
 	struct MANAGER_CALLBACK_ITEM(object_type) *callback_list; \
 	int locked; \
 	/* cache the changes to send one message when cache ends */ \
@@ -89,7 +92,7 @@ Local functions
 static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager, \
 	struct MANAGER_MESSAGE(object_type) *message) \
 /***************************************************************************** \
-LAST MODIFIED : 30 June 2000 \
+LAST MODIFIED : 6 December 2000 \
 \
 DESCRIPTION : \
 If <message> indicates changes have been made in the <manager>, sends \
@@ -99,7 +102,7 @@ callbacks to all the clients registered with it. \
 	struct MANAGER_CALLBACK_ITEM(object_type) *item; \
 \
 	ENTER(MANAGER_UPDATE(object_type)); \
-	if (manager&&message) \
+	if (manager && message) \
 	{ \
 		if (MANAGER_CHANGE_NONE(object_type) != message->change) \
 		{ \
@@ -110,6 +113,8 @@ callbacks to all the clients registered with it. \
 				item=item->next; \
 			} \
 		} \
+		/* no longer need to hang on to removed objects, so flush out */ \
+		REMOVE_ALL_OBJECTS_FROM_LIST(object_type)(manager->removed_object_list); \
 	} \
 	else \
 	{ \
@@ -130,7 +135,7 @@ static void MANAGER_NOTE_CHANGE(object_type)( \
 	enum MANAGER_CHANGE(object_type) change,struct object_type *object_changed, \
 	struct MANAGER(object_type) *manager) \
 /***************************************************************************** \
-LAST MODIFIED : 30 June 2000 \
+LAST MODIFIED : 6 December 2000 \
 \
 DESCRIPTION : \
 If the manager has a cache, combines <change> and <object_changed> with what \
@@ -313,6 +318,56 @@ Remove the reference to the manager from the object \
 	return (return_code); \
 } /* OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type) */
 
+#if defined (FULL_NAMES)
+#define REMOVE_OBJECT_FROM_MANAGER_PRIVATE( object_type ) \
+	manager_remove_object_private_ ## object_type
+#else
+#define REMOVE_OBJECT_FROM_MANAGER_PRIVATE( object_type )  rmp ## object_type
+#endif
+
+#define DECLARE_REMOVE_OBJECT_FROM_MANAGER_PRIVATE_FUNCTION( object_type ) \
+static int REMOVE_OBJECT_FROM_MANAGER_PRIVATE(object_type)( \
+	struct object_type *object, struct MANAGER(object_type) *manager) \
+/***************************************************************************** \
+LAST MODIFIED : 6 December 2000 \
+\
+DESCRIPTION : \
+Unconditionally removes <object> from <manager> and notes the change to any \
+clients of the manager. Stores <object> in <removed_object_list> until after \
+clients receive the update message so they can still use the contents of the \
+object, including the indentifier. \
+============================================================================*/ \
+{ \
+	int return_code; \
+\
+	ENTER(REMOVE_OBJECT_FROM_MANAGER(object_type)); \
+	if (manager && object) \
+	{ \
+		ADD_OBJECT_TO_LIST(object_type)(object, manager->removed_object_list); \
+		if (return_code = \
+			REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->object_list)) \
+		{ \
+			/* make sure the change is incorporated in manager message */ \
+			MANAGER_NOTE_CHANGE(object_type)( \
+				MANAGER_CHANGE_DELETE(object_type), object, manager); \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"REMOVE_OBJECT_FROM_MANAGER_PRIVATE(" #object_type ").  Failed"); \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, "REMOVE_OBJECT_FROM_MANAGER_PRIVATE(" \
+			#object_type ").  Invalid argument(s)"); \
+		return_code = 0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* REMOVE_OBJECT_FROM_MANAGER_PRIVATE(object_type) */
+
 /*
 Global functions
 ----------------
@@ -325,17 +380,21 @@ PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type) \
 	ENTER(CREATE_MANAGER(object_type)); \
 	if (ALLOCATE(manager,struct MANAGER(object_type),1)) \
 	{ \
-		if (manager->object_list=CREATE_LIST(object_type)()) \
+		manager->object_list = CREATE_LIST(object_type)(); \
+		manager->removed_object_list = CREATE_LIST(object_type)(); \
+		if (manager->object_list && manager->removed_object_list) \
 		{ \
-			manager->callback_list= \
+			manager->callback_list = \
 				(struct MANAGER_CALLBACK_ITEM(object_type) *)NULL; \
-			manager->locked=0; \
-			manager->cache=(struct MANAGER_MESSAGE(object_type) *)NULL; \
+			manager->locked = 0; \
+			manager->cache = (struct MANAGER_MESSAGE(object_type) *)NULL; \
 		} \
 		else \
 		{ \
 			display_message(ERROR_MESSAGE, \
 				"MANAGER_CREATE(" #object_type ").  Could not create object list"); \
+			DESTROY(LIST(object_type))(&(manager->object_list)); \
+			DESTROY(LIST(object_type))(&(manager->removed_object_list)); \
 			DEALLOCATE(manager); \
 		} \
 	} \
@@ -349,45 +408,58 @@ PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type) \
 	return (manager); \
 } /* MANAGER_CREATE(object_type) */
 
+/* Note!!! there are 2 DESTROY functions - the extra one is for destroying
+	 objects that store a pointer to their manager! Keep them constistent! */
 #define DECLARE_DESTROY_MANAGER_FUNCTION( object_type ) \
 PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 { \
 	int return_code; \
 	struct MANAGER(object_type) *manager; \
-	struct MANAGER_CALLBACK_ITEM(object_type) *current,*next; \
+	struct MANAGER_CALLBACK_ITEM(object_type) *current, *next; \
+	struct object_type *object; \
 \
 	ENTER(DESTROY_MANAGER(object_type)); \
 	if (manager_address&&(manager= *manager_address)) \
 	{ \
+		return_code = 1; \
 		/* start the cache */ \
 		if (!manager->cache) \
 		{ \
-         MANAGER_BEGIN_CACHE(object_type)(manager); \
+			MANAGER_BEGIN_CACHE(object_type)(manager); \
 		} \
-		/* destroy the object list */ \
+		/* remove all objects from the manager */ \
+		while (return_code && (object = FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+			(LIST_CONDITIONAL_FUNCTION(object_type) *)NULL, (void *)NULL, \
+			manager->object_list))) \
+		{ \
+			return_code = \
+				REMOVE_OBJECT_FROM_MANAGER_PRIVATE(object_type)(object, manager); \
+		} \
 		DESTROY_LIST(object_type)(&(manager->object_list)); \
-		/* Send last message */ \
-      MANAGER_END_CACHE(object_type)(manager); \
+		/* send last message */ \
+    MANAGER_END_CACHE(object_type)(manager); \
 		/* destroy the callback list */ \
 		current=manager->callback_list; \
 		while (current) \
 		{ \
-			next=current->next; \
+			next = current->next; \
 			DEALLOCATE(current); \
-			current=next; \
+			current = next; \
 		} \
+    DESTROY(LIST(object_type))(&(manager->removed_object_list)); \
     DEALLOCATE(manager); \
-		return_code=1; \
 	} \
 	else \
 	{ \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
 	return (return_code); \
 } /* DESTROY_MANAGER(object_type) */
 
+/* Note!!! there are 2 DESTROY functions - the extra one is for destroying
+	 objects that store a pointer to their manager! Keep them constistent! */
 #define DECLARE_DESTROY_OBJECT_WITH_MANAGER_MANAGER_FUNCTION( object_type , \
 	object_manager ) \
 PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
@@ -395,32 +467,42 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 	int return_code; \
 	struct MANAGER(object_type) *manager; \
 	struct MANAGER_CALLBACK_ITEM(object_type) *current,*next; \
+	struct object_type *object; \
 \
 	ENTER(DESTROY_OBJECT_WITH_MANAGER_MANAGER(object_type)); \
-	if (manager_address&&(manager= *manager_address)) \
+	if (manager_address && (manager= *manager_address)) \
 	{ \
+		return_code = 1; \
 		/* start the cache */ \
 		if (!manager->cache) \
 		{ \
-         MANAGER_BEGIN_CACHE(object_type)(manager); \
+      MANAGER_BEGIN_CACHE(object_type)(manager); \
 		} \
-      /* remove the manager_pointer from each object */ \
-      FOR_EACH_OBJECT_IN_LIST(object_type)(OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type), \
-         (void *)NULL, manager->object_list); \
-		/* destroy the object list */ \
+		/* remove the manager_pointer from each object */ \
+		FOR_EACH_OBJECT_IN_LIST(object_type)( \
+			OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type), \
+			(void *)NULL, manager->object_list); \
+		/* remove all objects from the manager */ \
+		while (return_code && (object = FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+			(LIST_CONDITIONAL_FUNCTION(object_type) *)NULL, (void *)NULL, \
+			manager->object_list))) \
+		{ \
+			return_code = \
+				REMOVE_OBJECT_FROM_MANAGER_PRIVATE(object_type)(object, manager); \
+		} \
 		DESTROY_LIST(object_type)(&(manager->object_list)); \
-		/* Send last message */ \
-      MANAGER_END_CACHE(object_type)(manager); \
+		/* send last message */ \
+		MANAGER_END_CACHE(object_type)(manager); \
 		/* destroy the callback list */ \
-		current=manager->callback_list; \
+		current = manager->callback_list; \
 		while (current) \
 		{ \
-			next=current->next; \
+			next = current->next; \
 			DEALLOCATE(current); \
-			current=next; \
+			current = next; \
 		} \
+    DESTROY(LIST(object_type))(&(manager->removed_object_list)); \
     DEALLOCATE(manager); \
-		return_code=1; \
 	} \
 	else \
 	{ \
@@ -435,7 +517,6 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
 { \
 	int return_code; \
-	struct object_type *deleted_object; \
 \
 	ENTER(REMOVE_OBJECT_FROM_MANAGER(object_type)); \
 	if (manager&&object) \
@@ -446,22 +527,8 @@ PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
 			{ \
 				if (1==object->access_count) \
 				{ \
-					/* access while removing so not passing pointer to destroyed object \
-						 with manager message */ \
-					deleted_object=ACCESS(object_type)(object); \
-					if (return_code=REMOVE_OBJECT_FROM_LIST(object_type)(object, \
-						manager->object_list)) \
-					{ \
-						/* make sure the change is incorporated in manager message */ \
-						MANAGER_NOTE_CHANGE(object_type)( \
-							MANAGER_CHANGE_DELETE(object_type),deleted_object,manager); \
-					} \
-					else \
-					{ \
-						display_message(ERROR_MESSAGE, \
-							"REMOVE_OBJECT_FROM_MANAGER(" #object_type ").  Failed"); \
-					} \
-					DEACCESS(object_type)(&deleted_object); \
+					return_code = \
+						REMOVE_OBJECT_FROM_MANAGER_PRIVATE(object_type)(object, manager); \
 				} \
 				else \
 				{ \
@@ -501,29 +568,20 @@ PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
 PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type) \
 { \
 	int return_code; \
-	struct object_type *object,*deleted_object; \
+	struct object_type *object; \
 \
 	ENTER(REMOVE_ALL_OBJECTS_FROM_MANAGER(object_type)); \
 	if (manager) \
 	{ \
 		if (!(manager->locked)) \
 		{ \
-			return_code=1; \
-			while (return_code&&(object=FIRST_OBJECT_IN_LIST_THAT(object_type)( \
-				MANAGER_NOT_IN_USE_CONDITIONAL(object_type),(void *)NULL, \
+			return_code = 1; \
+			while (return_code && (object = FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+				MANAGER_NOT_IN_USE_CONDITIONAL(object_type), (void *)NULL, \
 				manager->object_list))) \
 			{ \
-				/* access while removing so not passing pointer to destroyed object \
-					 with manager message */ \
-				deleted_object=ACCESS(object_type)(object); \
-				if (return_code=REMOVE_OBJECT_FROM_LIST(object_type)(object, \
-					manager->object_list)) \
-				{ \
-					/* make sure the change is incorporated in manager message */ \
-					MANAGER_NOTE_CHANGE(object_type)( \
-						MANAGER_CHANGE_DELETE(object_type),deleted_object,manager); \
-				} \
-				DEACCESS(object_type)(&deleted_object); \
+				return_code = \
+					REMOVE_OBJECT_FROM_MANAGER_PRIVATE(object_type)(object, manager); \
 			} \
 			if (0 != NUMBER_IN_MANAGER(object_type)(manager)) \
 			{ \
@@ -1165,12 +1223,12 @@ PROTOTYPE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
 		} \
 		else \
 		{ \
-			if (ALLOCATE(manager->cache,struct MANAGER_MESSAGE(object_type),1)) \
+			if (ALLOCATE(manager->cache, struct MANAGER_MESSAGE(object_type), 1)) \
 			{ \
 				/* clear cache so can tell what has changed while cache is on */ \
-				manager->cache->change=MANAGER_CHANGE_NONE(object_type); \
-				manager->cache->object_changed=(struct object_type *)NULL; \
-				return_code=1; \
+				manager->cache->change = MANAGER_CHANGE_NONE(object_type); \
+				manager->cache->object_changed = (struct object_type *)NULL; \
+				return_code = 1; \
 			} \
 			else \
 			{ \
@@ -1335,7 +1393,8 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(GROUP(object_type),name) \
 DECLARE_MANAGER_UPDATE_FUNCTION(object_type) \
 DECLARE_MANAGER_NOTE_CHANGE_FUNCTION(object_type) \
 DECLARE_MANAGER_FIND_CLIENT_FUNCTION(object_type) \
-DECLARE_MANAGER_NOT_IN_USE_CONDITIONAL(object_type)
+DECLARE_MANAGER_NOT_IN_USE_CONDITIONAL(object_type) \
+DECLARE_REMOVE_OBJECT_FROM_MANAGER_PRIVATE_FUNCTION(object_type)
 
 #define DECLARE_MANAGER_FUNCTIONS( object_type ) \
 DECLARE_CREATE_MANAGER_FUNCTION(object_type) \
