@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 4 October 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 See cmiss.h for interface details.
@@ -234,7 +234,7 @@ same and 1 if <information_1> is "greater than" <information_2>.
 ==============================================================================*/
 {
 	int return_code;
-	struct CM_field_information *cm_information_1,*cm_information_2;
+	struct CM_field_information *cm_information_1, *cm_information_2;
 
 	ENTER(compare_FE_field_cm_information);
 	return_code=0;
@@ -433,13 +433,15 @@ same and 1 if <information_1> is "greater than" <information_2>.
 			}
 			else
 			{
-				if (information_1->compare<information_2->compare)
+				/*???RC This has compiler warnings until I cast the pointer-to-functions
+					to void *.  Perhaps we are not meant to compare these? */
+				if ((void *)(information_1->compare) < (void *)(information_2->compare))
 				{
 					return_code=1;
 				}
 				else
 				{
-					if (information_1->compare>information_2->compare)
+					if ((void *)(information_1->compare) > (void *)(information_2->compare))
 					{
 						return_code= -1;
 					}
@@ -1139,7 +1141,7 @@ Receives any data from the output data wormhole.
 										connection->template_node))
 									{
 										FE_value *start;
-										int length,number_of_fields,ok;
+										int length, ok;
 										struct FE_field **field_address;
 
 										/* have to assign values field by field in the order that
@@ -1568,15 +1570,14 @@ while (wh_output_can_open(connection->data_output))
 static int CMISS_connection_count_node_field(struct FE_node *node,
 	struct FE_field *field,void *count_void)
 /*******************************************************************************
-LAST MODIFIED : 3 September 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Increments the <count_void> if the field is a cm field.
+???RC external_information is not checked in any way.
 ==============================================================================*/
 {
 	int *count,return_code;
-	struct CM_field_information *cm_information;
-	struct CMISS_connection_send_node_struct *send_node_struct;
 	struct FE_field_external_information *external;
 
 	ENTER(CMISS_connection_count_node_field);
@@ -1584,9 +1585,9 @@ Increments the <count_void> if the field is a cm field.
 	if (node&&field&&(count=(int *)count_void))
 	{
 		return_code=1;
-		if (get_FE_field_external_information(field,&external)&&external&&
-			(compare_FE_field_cm_information==external->compare)&&(cm_information=
-			(struct CM_field_information *)(external->information)))
+		if (get_FE_field_external_information(field, &external) && external &&
+			(compare_FE_field_cm_information == external->compare) &&
+			(external->information))
 		{
 			(*count)++;
 		}
@@ -2125,6 +2126,9 @@ Something has changed globally about the objects this widget uses, so refresh.
 	LEAVE;
 } /* CMISS_connection_data_global_change */
 
+#if defined (NOT_DEBUG)
+#if defined (NOT_TEMPORARY)
+
 struct CMISS_connection_send_element_struct
 /*******************************************************************************
 LAST MODIFIED : 24 February 1997
@@ -2582,10 +2586,14 @@ Something has changed globally about the objects this widget uses, so refresh.
 	LEAVE;
 } /* CMISS_connection_element_global_change */
 
+#endif /* defined (NOT_TEMPORARY) */
+#endif /* defined (NOT_DEBUG) */
+
 /*
 Global functions
 ----------------
 */
+
 struct CMISS_connection *CREATE(CMISS_connection)(char *machine,
 	enum Machine_type type,int attach,double wormhole_timeout,char mycm_flag,
 	char asynchronous_commands,struct MANAGER(FE_element) *element_manager,
