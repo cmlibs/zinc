@@ -202,34 +202,33 @@ endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
 
 GRAPHICS_LIBRARY_DEFINES = -DOPENGL_API
 GRAPHICS_LIB =
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-   ifeq ($(SYSNAME:IRIX%=),)
-      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-      ifneq ($(ABI),64)
-         GRAPHICS_LIBRARY_DEFINES += -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
-         GRAPHICS_LIB += -delay_load -lmoviefile -delay_load -ldmedia
-      endif # ABI != 64
-   endif # SYSNAME == IRIX%=
-   ifeq ($(SYSNAME),Linux)
-      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-   endif # SYSNAME == Linux
-   ifeq ($(SYSNAME),AIX)
-      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-   endif # SYSNAME == AIX
-   ifeq ($(SYSNAME:CYGWIN%=),)
-      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
-   endif # SYSNAME == CYGWIN%=
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
-
+GRAPHICS_INC =
 ifdef USE_UNEMAP_3D
-   ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
-   #For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES automatically
+   ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
+      ifeq ($(SYSNAME:IRIX%=),)
+         GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
+         ifneq ($(ABI),64)
+            GRAPHICS_LIBRARY_DEFINES += -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
+            GRAPHICS_LIB += -delay_load -lmoviefile -delay_load -ldmedia
+         endif # ABI != 64
+      endif # SYSNAME == IRIX%=
       ifeq ($(SYSNAME),Linux)
-         GRAPHICS_LIB += -L$(firstword $(wildcard /usr/local/Mesa/lib /usr/X11R6/lib))
-      endif # $(SYSNAME) == Linux
-      ifeq ($(SYSNAME),win32)
-         GRAPHICS_LIB += -L/usr/X11R6/lib
-      endif # $(SYSNAME) == win32
+         GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
+      endif # SYSNAME == Linux
+      ifeq ($(SYSNAME),AIX)
+         GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
+      endif # SYSNAME == AIX
+      ifeq ($(SYSNAME:CYGWIN%=),)
+         GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
+      endif # SYSNAME == CYGWIN%=
+   endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
+
+   ifneq ($(USER_INTERFACE), GTK_USER_INTERFACE)
+      #For GTK_USER_INTERFACE the OpenGL comes from the GTK_LIBRARIES automatically
+      ifneq ($(wildcard $(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)),)
+         GRAPHICS_INC += -I$(CMISS_ROOT)/mesa/include/$(LIB_ARCH_DIR)
+      endif
+      GRAPHICS_LIB += $(patsubst %,-L%,$(firstword $(wildcard $(CMISS_ROOT)/mesa/lib/$(LIB_ARCH_DIR) /usr/X11R6/lib)))
       ifeq ($(SYSNAME),win32)
          GRAPHICS_LIB += -lopengl32 -lglu32
       else # $(SYSNAME) == win32
@@ -253,7 +252,7 @@ else # ! IMAGEMAGICK
    IMAGEMAGICK_DEFINES += -DIMAGEMAGICK
    IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_libraries
    IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include/$(LIB_ARCH_DIR)
-   IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libMagick.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libtiff.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libpng.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libjpeg.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libxml2.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a
+   IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libMagick.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libtiff.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libpng.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libjpeg.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libxml2.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a
    ifeq ($(SYSNAME),AIX)
       IMAGEMAGICK_LIB += /usr/lib/libiconv.a
    endif # SYSNAME == AIX
