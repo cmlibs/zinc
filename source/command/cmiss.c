@@ -16969,7 +16969,7 @@ otherwise the wavefront obj file is read.
 	{
 		if ((command_data=(struct Cmiss_command_data *)command_data_void))
 		{
-			graphics_object_name=0;
+			graphics_object_name=(char *)NULL;
 			time = 0;
 			file_name=(char *)NULL;
 
@@ -17028,7 +17028,14 @@ otherwise the wavefront obj file is read.
 					}
 				}
 			}
-			DEALLOCATE(file_name);
+			if (file_name)
+			{
+				DEALLOCATE(file_name);
+			}
+			if (graphics_object_name)
+			{
+				DEALLOCATE(graphics_object_name);
+			}
 		}
 		else
 		{
