@@ -191,6 +191,9 @@ The analysis window object.
 	int *average_width;
 	enum Event_detection_algorithm *detection;
 	struct Device ***highlight;
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node **highlight_rig_node;
+#endif /* defined (UNEMAP_USE_NODES) */
 	/* search interval display information */
 	int *end_search_interval,**search_interval_divisions,*start_search_interval;
 	struct User_interface *user_interface;
@@ -268,7 +271,11 @@ DESCRIPTION :
 struct Analysis_window *create_Analysis_window(
 	struct Analysis_window **address,Widget activation,Widget parent,
 	struct Rig **rig,struct Signal_drawing_package **signal_drawing_package,
-	struct Device ***highlight,int *datum,int *event_number,
+	struct Device ***highlight,
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node **highlight_rig_node,
+#endif /* defined (UNEMAP_USE_NODES) */
+	int *datum,int *event_number,
 	int *number_of_events,int *potential_time,
 	enum Event_detection_algorithm *detection,int *threshold,
 	int *minimum_separation,float *level,int *average_width,
@@ -334,14 +341,44 @@ DESCRIPTION :
 Updates the analysis down menu to be consistent with the current rig.
 ==============================================================================*/
 
-int highlight_signal(struct Device *device,int device_number,int start_data,
+int highlight_signal(struct Device *device,
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node *device_rig_node,
+	struct Signal_drawing_package *signal_drawing_package,
+#endif /* defined (UNEMAP_USE_NODES)*/
+	int device_number,int start_data,
 	int end_data,int datum,int potential_time,struct Signals_area *signals,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 23 December 1996
+LAST MODIFIED : 17 August 2000
 
 DESCRIPTION :
 Highlights/dehighlights the <device> in the <signals> area.
 ==============================================================================*/
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_node_order_info *get_Analysis_window_rig_node_order_info(
+	struct Analysis_window *analysis_window);
+/*******************************************************************************
+LAST MODIFIED : 10 August 2000
+
+DESCRIPTION : returns the rig_node_order_info of <analysis_window>
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_node_order_info *create_and_sort_FE_node_order_info_from_rig_node_group(
+	struct GROUP(FE_node) *rig_node_group,enum Signal_order signal_order,
+	struct Signal_drawing_package *signal_drawing_package);
+/*******************************************************************************
+LAST MODIFIED : 10 August 2000
+
+DESCRIPTION :
+Given <rig_node_group> <signal_drawing_package>, and <signal_order>
+creates (and returns) an FE_node_order_info containing the nodes of 
+<rig_node_group>, sorted by <signal_order>
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+
 #endif

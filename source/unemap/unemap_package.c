@@ -66,6 +66,7 @@ The fields are filed in with set_unemap_package_fields()
 			package->display_start_time_field=(struct FE_field *)NULL;
 			package->channel_number_field=(struct FE_field *)NULL;
 			package->read_order_field=(struct FE_field *)NULL;
+			package->highlight_field=(struct FE_field *)NULL;
 			package->signal_field=(struct FE_field *)NULL;
 			package->signal_minimum_field=(struct FE_field *)NULL;
 			package->signal_maximum_field=(struct FE_field *)NULL;	
@@ -115,6 +116,7 @@ to NULL.
 		DEACCESS(FE_field)(&(package->display_start_time_field));
 		DEACCESS(FE_field)(&(package->display_end_time_field));
 		DEACCESS(FE_field)(&(package->read_order_field));
+		DEACCESS(FE_field)(&(package->highlight_field));
 		DEACCESS(FE_field)(&(package->signal_field));
 		DEACCESS(FE_field)(&(package->signal_minimum_field));
 		DEACCESS(FE_field)(&(package->signal_maximum_field));	
@@ -451,6 +453,58 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_read_order_field */
+
+struct FE_field *get_unemap_package_highlight_field(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : July 12 1999
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+{
+	struct FE_field *highlight_field;
+	ENTER(get_unemap_package_highlight_field);
+	if(package)
+	{
+		highlight_field=package->highlight_field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_highlight_field."
+				" invalid arguments");
+		highlight_field = (struct FE_field *)NULL;
+	}
+	LEAVE;
+	return (highlight_field);
+} /* get_unemap_package_highlight_field */
+
+int set_unemap_package_highlight_field(struct Unemap_package *package,
+	struct FE_field *highlight_field)
+/*******************************************************************************
+LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_highlight_field);
+	if(package)
+	{
+		return_code =1;		
+		REACCESS(FE_field)(&(package->highlight_field),highlight_field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_unemap_package_highlight_field."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_highlight_field */
 
 struct FE_field *get_unemap_package_signal_field(
 	struct Unemap_package *package)
@@ -1240,6 +1294,16 @@ Frees the <unemap_package> rig's computed and fe fields
 				unemap_package->read_order_field))
 			{
 				unemap_package->read_order_field=(struct FE_field *)NULL;
+			}
+		}		
+		if(unemap_package->highlight_field)
+		{
+			temp_field=unemap_package->highlight_field;
+			DEACCESS(FE_field)(&temp_field);
+			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
+				unemap_package->highlight_field))
+			{
+				unemap_package->highlight_field=(struct FE_field *)NULL;
 			}
 		}	
 		if(unemap_package->signal_field)

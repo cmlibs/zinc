@@ -874,14 +874,17 @@ beware of name clashes if loading multiple rigs of the same node_type.
 Also returns the created electrode_position_field.
 ==============================================================================*/
 {		
-  #define AUXILIARY_NUM_CONFIG_FIELDS 4 /*,device_name_field,*/
-	/* device_type_field channel_number,read_order_field */
-  #define PATCH_NUM_CONFIG_FIELDS 5 /* electrode_position_field,*/ 
-	/*device_name_field,device_type_field,channel_number,read_order_field*/	
-  #define SOCK_NUM_CONFIG_FIELDS 5 /* electrode_position_field,*/
-	/*device_name_field,device_type_field,channel_number,read_order_field */
-  #define TORSO_NUM_CONFIG_FIELDS 5/* electrode_position_field,*/ 
-  /*device_name_field,device_type_field,channel_number,read_order_field */
+  #define AUXILIARY_NUM_CONFIG_FIELDS 5 /*,device_name_field,*/
+	/* device_type_field channel_number,read_order_field, highlight_field */
+  #define PATCH_NUM_CONFIG_FIELDS 6 /* electrode_position_field,*/ 
+	/*device_name_field,device_type_field,channel_number,read_order_field,*/
+	/*highlight_field */	
+  #define SOCK_NUM_CONFIG_FIELDS 6 /* electrode_position_field,*/
+	/*device_name_field,device_type_field,channel_number,read_order_field,*/
+	/*highlight_field */
+  #define TORSO_NUM_CONFIG_FIELDS 6/* electrode_position_field,*/ 
+  /*device_name_field,device_type_field,channel_number,read_order_field,*/
+	/*highlight_field */
 
 	char *electrode_name;
 	char *rig_type_str;
@@ -893,6 +896,7 @@ Also returns the created electrode_position_field.
 	struct FE_field *device_type_field;
 	struct FE_field *the_electrode_position_field;
 	struct FE_field *read_order_field;
+	struct FE_field *highlight_field;
 	struct FE_field_order_info *the_field_order_info;
 	struct FE_node *node;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -916,12 +920,15 @@ Also returns the created electrode_position_field.
 	char *channel_number_component_names[1]=
 	{
 		"channel number"
+	};	
+	char *highlight_component_names[1]=
+	{
+		"highlight"
 	};		
 	char *read_order_component_names[1]=
 	{
 		"read order"
 	};
-
 	enum FE_nodal_value_type *device_name_components_nodal_value_types[1]=
 	{
 		{
@@ -952,12 +959,18 @@ Also returns the created electrode_position_field.
 			FE_NODAL_VALUE
 		}
 	};		
+	enum FE_nodal_value_type *highlight_components_nodal_value_types[1]=
+	{
+		{
+			FE_NODAL_VALUE
+		}
+	};			
 	enum FE_nodal_value_type *read_order_components_nodal_value_types[1]=
 	{
 		{
 			FE_NODAL_VALUE
 		}
-	};	
+	};
 	int device_name_components_number_of_derivatives[1]={0},
 	  device_name_components_number_of_versions[1]={1};	
 	int device_type_components_number_of_derivatives[1]={0},
@@ -965,16 +978,20 @@ Also returns the created electrode_position_field.
 	int electrode_components_number_of_derivatives[3]={0,0,0},
 		  electrode_components_number_of_versions[3]={1,1,1};
 	int channel_number_components_number_of_derivatives[1]={0},
-	  channel_number_components_number_of_versions[1]={1};	
+	  channel_number_components_number_of_versions[1]={1};
+	int highlight_components_number_of_derivatives[1]={0},
+	  highlight_components_number_of_versions[1]={1};	
 	int read_order_components_number_of_derivatives[1]={0},
 	  read_order_components_number_of_versions[1]={1};
- 
+	
+
 	ENTER(create_config_template_node);
 	if(package)
 	{		
 		electrode_name =(char *)NULL;
 		rig_type_str =(char *)NULL;	
-		channel_number_field=(struct FE_field *)NULL;
+		channel_number_field=(struct FE_field *)NULL;	
+		highlight_field=(struct FE_field *)NULL;
 		read_order_field=(struct FE_field *)NULL;
 		device_name_field=(struct FE_field *)NULL;
 		device_type_field=(struct FE_field *)NULL;			
@@ -1236,9 +1253,35 @@ Also returns the created electrode_position_field.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"create_config_template_node. Could not retrieve channel number field");
+						"create_config_template_node. Could not retrieve read order field");
+					success=0;
+				}	
+				/* set up the info needed to create the highlight field */			
+				set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
+				coordinate_system.type=NOT_APPLICABLE;				
+				/* create the channel number field, add it to the node */			
+				if (highlight_field=get_FE_field_manager_matched_field(
+					fe_field_manager,"highlight",
+					GENERAL_FE_FIELD,/*indexer_field*/(struct FE_field *)NULL,
+					/*number_of_indexed_values*/0,&field_info,
+					&coordinate_system,INT_VALUE,
+					/*number_of_components*/1,highlight_component_names,
+					/*number_of_times*/0,/*time_value_type*/UNKNOWN_VALUE))
+				{	
+					set_unemap_package_highlight_field(package,highlight_field);					
+					success =define_node_field_and_field_order_info(node,
+						highlight_field,highlight_components_number_of_derivatives
+						,highlight_components_number_of_versions,&field_number,
+						number_of_fields,highlight_components_nodal_value_types,
+						the_field_order_info); 
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"create_config_template_node. Could not retrieve highlight field");
 					success=0;
 				}			
+		
 			} /* if(success) */		
 		}	
 		else
@@ -1270,15 +1313,15 @@ Also returns the created electrode_position_field.
 static struct FE_node *set_config_FE_node(FILE *input_file,
 	struct FE_node *template_node,struct MANAGER(FE_node) *node_manager,
 	enum Config_node_type	config_node_type,int node_number,int read_order_number,
-	struct FE_field_order_info *field_order_info,char *name,
+	int highlight,struct FE_field_order_info *field_order_info,char *name,
 	int channel_number,FE_value xpos,FE_value ypos,FE_value zpos)
 /*******************************************************************************
 LAST MODIFIED : 24 July 2000
 
 DESCRIPTION :
-sets a node's values storage with the passed, name, channel_number,
-xpos, ypos, zpos using the template node created in create_config_template_node,
-and the field_order_info
+sets a node's values storage with the passed, name, channel_number,read_order_number,
+highlight  xpos, ypos, zpos using the template node created in 
+create_config_template_node, and the field_order_info. 
 ==============================================================================*/
 {
 	FE_value lambda,mu,theta;	
@@ -1341,7 +1384,14 @@ and the field_order_info
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,read_order_number);
+						FE_NODAL_VALUE,read_order_number);	
+					/* 6th field contains highlight */
+					component.field=get_FE_field_order_info_field(
+						field_order_info,field_number);
+					field_number++;
+					component.number=0;
+					set_FE_nodal_int_value(node,&component,/*version*/0,
+						FE_NODAL_VALUE,highlight);
 				} break;
 				case TORSO_ELECTRODE_TYPE:
 				{
@@ -1382,7 +1432,14 @@ and the field_order_info
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,read_order_number);
+						FE_NODAL_VALUE,read_order_number);	
+					/* 6th field contains highlight */
+					component.field=get_FE_field_order_info_field(
+						field_order_info,field_number);
+					field_number++;
+					component.number=0;
+					set_FE_nodal_int_value(node,&component,/*version*/0,
+						FE_NODAL_VALUE,highlight);
 				} break;		
 				case PATCH_ELECTRODE_TYPE:
 				{	 
@@ -1421,7 +1478,14 @@ and the field_order_info
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,read_order_number);
+						FE_NODAL_VALUE,read_order_number);	
+					/* 6th field contains highlight */
+					component.field=get_FE_field_order_info_field(
+						field_order_info,field_number);
+					field_number++;
+					component.number=0;
+					set_FE_nodal_int_value(node,&component,/*version*/0,
+						FE_NODAL_VALUE,highlight);
 				} break;
 				case AUXILIARY_TYPE:
 				{					
@@ -1438,7 +1502,7 @@ and the field_order_info
 					field_number++;
 					component_number=0;
 					set_FE_nodal_string_value(node,field,component_number,/*version*/0,
-						FE_NODAL_VALUE,name);
+						FE_NODAL_VALUE,"AUXILIARY");
 					/* 3rd field contains channel number */					
 					component.field=get_FE_field_order_info_field(
 						field_order_info,field_number);
@@ -1452,7 +1516,14 @@ and the field_order_info
 					field_number++;
 					component.number=0;
 					set_FE_nodal_int_value(node,&component,/*version*/0,
-						FE_NODAL_VALUE,read_order_number);
+						FE_NODAL_VALUE,read_order_number);	
+					/* 5th field contains highlight */
+					component.field=get_FE_field_order_info_field(
+						field_order_info,field_number);
+					field_number++;
+					component.number=0;
+					set_FE_nodal_int_value(node,&component,/*version*/0,
+						FE_NODAL_VALUE,highlight);
 				} break;
 			}	/* switch() */
 			if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
@@ -1695,8 +1766,8 @@ cf read_FE_node() in import_finite_element.c
 			if (success)
 			{
 				if (!(node=set_config_FE_node(input_file,template_node,node_manager,
-					config_node_type,node_number,read_order_number,field_order_info,name,
-					channel_number,xpos,ypos,zpos)))
+					config_node_type,node_number,read_order_number,0/*highlight*/,
+					field_order_info,name,channel_number,xpos,ypos,zpos)))
 				{		
 					display_message(ERROR_MESSAGE,
 						"read_text_config_FE_node.  Error creating node");
@@ -1815,8 +1886,8 @@ cf read_FE_node() in import_finite_element.c
 			if (success)
 			{
 				if (!(node=set_config_FE_node(input_file,template_node,node_manager,
-					config_node_type,node_number,read_order_number,field_order_info,name,
-					channel_number,xpos,ypos,zpos)))
+					config_node_type,node_number,read_order_number,0/*highlight*/,
+					field_order_info,name,channel_number,xpos,ypos,zpos)))
 				{
 					display_message(ERROR_MESSAGE,
 						"read_binary_config_FE_node.  Error creating node");
@@ -4024,6 +4095,7 @@ Create a Signal_drawing_package, set all it's fields to NULL.
 		package->display_start_time_field=(struct FE_field *)NULL;
 		package->display_end_time_field=(struct FE_field *)NULL;
 		package->read_order_field=(struct FE_field *)NULL;
+		package->highlight_field=(struct FE_field *)NULL;
 		package->signal_field=(struct FE_field *)NULL;		
 		package->signal_status_field=(struct FE_field *)NULL;	
 		package->signal_minimum_field=(struct FE_field *)NULL;
@@ -4066,6 +4138,7 @@ sets <*package_address> to NULL.
 		DEACCESS(FE_field)(&(package->display_start_time_field));
 		DEACCESS(FE_field)(&(package->display_end_time_field));
 		DEACCESS(FE_field)(&(package->read_order_field));
+		DEACCESS(FE_field)(&(package->highlight_field));
 		DEACCESS(FE_field)(&(package->signal_field));	
 		DEACCESS(FE_field)(&(package->signal_status_field)); 
 		DEACCESS(FE_field)(&(package->signal_minimum_field));
@@ -4437,6 +4510,65 @@ Sets the field of the Signal_drawing_package.
 
 	return (return_code);
 } /* set_Signal_drawing_package_read_order_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_field *get_Signal_drawing_package_highlight_field(
+	struct Signal_drawing_package *package)
+/*******************************************************************************
+LAST MODIFIED : 26 July 2000
+
+DESCRIPTION :
+Gets the field of the Signal_drawing_package.
+==============================================================================*/
+{	
+	struct FE_field *highlight_field;
+
+	ENTER(get_Signal_drawing_package_highlight_field);
+	if (package)
+	{	
+		highlight_field=package->highlight_field; 	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_Signal_drawing_package_highlight_field.  Invalid argument");
+		highlight_field=(struct FE_field *)NULL;
+	}
+	LEAVE;
+
+	return (highlight_field);
+} /* get_Signal_drawing_package_highlight_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Signal_drawing_package_highlight_field(struct Signal_drawing_package *package,
+	struct FE_field *highlight_field)
+/*******************************************************************************
+LAST MODIFIED : 26 July 2000
+
+DESCRIPTION :
+Sets the field of the Signal_drawing_package.
+==============================================================================*/
+{
+	int return_code;	
+
+	ENTER(set_Signal_drawing_package_highlight_field);
+	if (package)
+	{
+		return_code=1;		
+		REACCESS(FE_field)(&(package->highlight_field),highlight_field);		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_Signal_drawing_package_highlight_field.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_Signal_drawing_package_highlight_field */
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
@@ -5580,8 +5712,11 @@ The extraction arguments are:
 				if (return_code)
 				{
 					/*???DB.  In future get highlight from active group */
-					highlight=0;
-					component.number=0;										
+					/*get highligh, signal_minimum,signal_maximum from fields*/
+					component.number=0;				
+					component.field=signal_drawing_package->highlight_field;
+					get_FE_nodal_int_value(device_node,&component,0,FE_NODAL_VALUE,
+						&highlight);									
 					component.field=signal_drawing_package->signal_minimum_field;
 					get_FE_nodal_FE_value_value(device_node,&component,0,FE_NODAL_VALUE,
 						&signal_minimum);

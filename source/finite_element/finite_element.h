@@ -886,10 +886,10 @@ LAST MODIFIED : 11 August  1999
 
 DESCRIPTION :
 Use to pass info about a node group's nodes, their number, and their order.
-c.f.  FE_field_order_info
+c.f.  FE_field_order_info. Also store a current node, so can iterate, etc
 ==============================================================================*/
 {
-	int number_of_nodes;
+	int number_of_nodes,current_node_number;
 	struct FE_node **nodes;
 	int access_count;
 }; /* FE_node_order_info */ 
@@ -4308,6 +4308,53 @@ LAST MODIFIED : 13 July 1999
 
 DESCRIPTION : 
 Sets the <node_order_info> node at the specified node_number
+==============================================================================*/
+
+int get_FE_node_order_info_current_node_number(
+	struct FE_node_order_info *node_order_info);
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+gets the <node_order_info> <current_node_number>
+==============================================================================*/
+
+int set_FE_node_order_info_current_node_number(
+	struct FE_node_order_info *node_order_info,int current_node_number);
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+Sets the <node_order_info> <current_node_number>
+==============================================================================*/
+
+struct FE_node *get_FE_node_order_info_current_node(
+	struct FE_node_order_info *node_order_info);
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+Gets the <node_order_info> node at the current_node_number
+==============================================================================*/
+
+struct FE_node *get_FE_node_order_info_next_node(
+	struct FE_node_order_info *node_order_info);
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+Gets the <node_order_info> next node by incrementing the current_node_number,
+and returning the new current node. If at the end of the array, return null.
+==============================================================================*/
+
+struct FE_node *get_FE_node_order_info_prev_node(
+	struct FE_node_order_info *node_order_info);
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+Gets the <node_order_info> next node by incrementing the current_node_number,
+and returning the new current node. If at the start of the array, return null.
 ==============================================================================*/
 
 int add_nodes_FE_node_order_info(int number_of_nodes_to_add,

@@ -2246,55 +2246,113 @@ Finds the id of the analysis drawing area.
 } /* identify_signals_drawing_area */
 
 #if defined (UNEMAP_USE_NODES)
-static int Analysis_window_set_and_sort_rig_node_order_info
-   (struct Analysis_window *analysis_window)
+struct FE_node_order_info *get_Analysis_window_rig_node_order_info(
+	struct Analysis_window *analysis_window)
 /*******************************************************************************
-LAST MODIFIED : 26 July 2000
+LAST MODIFIED : 10 August 2000
 
-DESCRIPTION : Creates and sets the <analysis_window> ->rig_node_order_info,
-from the rig_node_group at the <analysis_window> rig or region. 
-Sorts rig_node_order_info according to <analysis_window> ->signal_order
+DESCRIPTION : returns the rig_node_order_info of <analysis_window>
 ==============================================================================*/
 {
-	enum Signal_order signal_order;
-	int count,number_of_nodes,return_code;
+	struct FE_node_order_info *rig_node_order_info;
+
+	ENTER(get_Analysis_window_rig_node_order_info);
+	rig_node_order_info=(struct FE_node_order_info *)NULL;
+	if(analysis_window)
+	{
+		rig_node_order_info=analysis_window->rig_node_order_info;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_Analysis_window_rig_node_order_info. invalid arguments");
+	}
+	LEAVE;
+	return(rig_node_order_info);
+}
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+static int node_order_info_make_first_highlighted_node_current_node(
+	struct FE_node_order_info *node_order_info,struct FE_field *highlight_field)	
+/*******************************************************************************
+LAST MODIFIED : 18 August 2000
+
+DESCRIPTION : find the first highlighted node of  <node_order_info>
+make it the current node of <node_order_info>
+==============================================================================*/
+
+{
+	struct FE_field_component component;
+	struct FE_node *current_node;
+	int highlight,return_code;
+
+	ENTER(node_order_info_make_first_highlighted_node_current_node);
+	if(node_order_info&&highlight_field)
+	{
+		current_node=(struct FE_node *)NULL;
+		highlight=0;
+		component.number=0;
+		component.field=highlight_field;
+		set_FE_node_order_info_current_node_number(node_order_info,0);
+		current_node=get_FE_node_order_info_current_node(node_order_info);
+		get_FE_nodal_int_value(current_node,&component,0,FE_NODAL_VALUE,
+			&highlight);
+		while(current_node&&!highlight)
+		{
+			get_FE_nodal_int_value(current_node,&component,0,FE_NODAL_VALUE,
+				&highlight);
+			current_node=get_FE_node_order_info_next_node(node_order_info);							
+		}
+		/*if nothing highlighted, just make the first the current */
+		if(!highlight)
+		{
+			set_FE_node_order_info_current_node_number(node_order_info,0);
+		}
+		return_code=1;
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"node_order_info_make_first_highlighted_node_current_node. invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* node_order_info_make_first_highlighted_node_current_node */
+#endif /* defined (UNEMAP_USE_NODES)*/
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_node_order_info *create_and_sort_FE_node_order_info_from_rig_node_group(
+	struct GROUP(FE_node) *rig_node_group,enum Signal_order signal_order,
+	struct Signal_drawing_package *signal_drawing_package)
+/*******************************************************************************
+LAST MODIFIED : 10 August 2000
+
+DESCRIPTION :
+Given <rig_node_group> <signal_drawing_package>, and <signal_order>
+creates (and returns) an FE_node_order_info containing the nodes of 
+<rig_node_group>, sorted by <signal_order>
+==============================================================================*/
+{
+	int count,number_of_nodes,success;
 	struct FE_field_component component;
 	struct FE_node_order_info *node_order_info;
-	struct GROUP(FE_node) *rig_node_group;
 	struct Rig_node_sort **rig_node_sort_array;
 	struct Rig_node_sort *rig_node_sort;
-	struct Region *current_region;
-	struct Rig *rig;	
-	struct Signal_drawing_package *signal_drawing_package;
+	struct FE_field *highlight_field;
 
-	ENTER(Analysis_window_set_and_sort_rig_node_order_info);
+	ENTER(create_and_sort_FE_node_order_info_from_rig_node_group);
+	node_order_info=(struct FE_node_order_info *)NULL;	
 	node_order_info=(struct FE_node_order_info *)NULL;
 	rig_node_sort_array=(struct Rig_node_sort **)NULL;
-	rig_node_sort=(struct Rig_node_sort *)NULL;	
-	current_region=(struct Region *)NULL;
-	rig=(struct Rig *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
-	signal_drawing_package=(struct Signal_drawing_package *)NULL;
-	if (analysis_window)
-	{	
-		rig=*(analysis_window->rig);
-		signal_order=*(analysis_window->signal_order);
-		return_code=0;
-		signal_drawing_package=*(analysis_window->signal_drawing_package);	
-		/* create an array of pointers to the nodes, in node_order_info */
-		/* so can increment through nodes similar to devices. */
-		/* should use GROUP NEXT operator (when it's ready!) */		
+	rig_node_sort=(struct Rig_node_sort *)NULL;
+	highlight_field=(struct FE_field *)NULL;
+	if(rig_node_group&&signal_drawing_package)
+	{
 		if (node_order_info=CREATE(FE_node_order_info)(0))
-		{		
-			if (current_region=get_Rig_current_region(rig))
-			{	
-				rig_node_group=get_Region_rig_node_group(current_region);						
-			}
-			else
-			{
-				rig_node_group=get_Rig_all_devices_rig_node_group(rig);
-			}
-			if (return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+		{	
+			if (success=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
 				fill_FE_node_order_info,(void *)node_order_info,
 				rig_node_group))
 			{												
@@ -2318,7 +2376,7 @@ Sorts rig_node_order_info according to <analysis_window> ->signal_order
 						}break;
 					}/* switch(signal_order) */
 					count=0;
-					while((count<number_of_nodes)&&(return_code))
+					while((count<number_of_nodes)&&(success))
 					{
 						/*create and fill a rig_node_sort */
 						if(ALLOCATE(rig_node_sort,struct Rig_node_sort,1))
@@ -2329,7 +2387,7 @@ Sorts rig_node_order_info according to <analysis_window> ->signal_order
 								case CHANNEL_ORDER:
 								default:
 								{
-									return_code=get_FE_nodal_int_value(rig_node_sort->node,&component,0,
+									success=get_FE_nodal_int_value(rig_node_sort->node,&component,0,
 										FE_NODAL_VALUE,&(rig_node_sort->read_order));
 									rig_node_sort->event_time=0;
 								}break;
@@ -2345,10 +2403,11 @@ Sorts rig_node_order_info according to <analysis_window> ->signal_order
 							count++;
 						}/* if(ALLOCATE(rig_node_sort */
 						else
-						{
-							return_code=0;
-							display_message(ERROR_MESSAGE,"draw_all_signals. "
+						{						
+							display_message(ERROR_MESSAGE,
+								"create_and_sort_FE_node_order_info_from_rig_node_group. "
 								"ALLOCATE(node_sorter failed");
+							success=0;
 						}
 					}/* while(( */
 					/*sort the array*/	
@@ -2366,12 +2425,12 @@ Sorts rig_node_order_info according to <analysis_window> ->signal_order
 								sizeof(struct Rig_node_sort *),sort_rig_node_sorts_by_event_time);
 						}break;
 					}/* switch(signal_order) */
-#if defined (DEBUG)
+#if defined (DEBUG) 
 					for(count=0;count<number_of_nodes;count++)
 					{								
-						printf("%d\n",node_sorter_array[count]->sort_number);
+						printf("%d\n",rig_node_sort_array[count]->read_order);
 					}
-#endif /*  defined (DEBUG) */
+#endif /*  defined (DEBUG) */				
 					/*reset the sorted array into the node_order_info*/
 					for(count=0;count<number_of_nodes;count++)
 					{								
@@ -2380,22 +2439,99 @@ Sorts rig_node_order_info according to <analysis_window> ->signal_order
 						DEALLOCATE(rig_node_sort_array[count]);
 					}
 					DEALLOCATE(rig_node_sort_array);
-					/* save the rig_node_order_info */				
-					REACCESS(FE_node_order_info)(&(analysis_window->rig_node_order_info),
-						node_order_info);
+					highlight_field=get_Signal_drawing_package_highlight_field(
+							signal_drawing_package);
+					node_order_info_make_first_highlighted_node_current_node(node_order_info,
+						highlight_field);
 				}/* if(ALLOCATE(node_sort */
 				else
 				{
-					display_message(ERROR_MESSAGE,"draw_all_signals. "
+					display_message(ERROR_MESSAGE,
+						"create_and_sort_FE_node_order_info_from_rig_node_group. "
 						"ALLOCATE(node_sorter_array failed");
-					return_code=0;
+					success=0;
 				}			
-			}/* if (return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)( */
+			}/* if (success=FOR_EACH_OBJECT_IN_GROUP(FE_node)( */
 		}/* if (node_order_info=CREATE(FE_node_order_info)(0)) */
 		else
 		{
-			display_message(ERROR_MESSAGE,"draw_all_signals. "
+			display_message(ERROR_MESSAGE,
+				"create_and_sort_FE_node_order_info_from_rig_node_group. "
 				"CREATE(FE_node_order_info) failed");
+			success=0;
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"create_and_sort_FE_node_order_info_from_rig_node_group. "
+			"invalid arguments");	
+		success=0;	
+	}
+	if((!success)&&node_order_info)
+	{
+		DESTROY(FE_node_order_info)(&node_order_info);
+		node_order_info=(struct FE_node_order_info *)NULL;
+	}
+	LEAVE;
+	return(node_order_info);
+}/* create_and_sort_FE_node_order_info_from_rig_node_group */
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+static int Analysis_window_set_and_sort_rig_node_order_info
+   (struct Analysis_window *analysis_window)
+/*******************************************************************************
+LAST MODIFIED : 26 July 2000
+
+DESCRIPTION : Creates and sets the <analysis_window> ->rig_node_order_info,
+from the rig_node_group at the <analysis_window> rig or region. 
+Sorts rig_node_order_info according to <analysis_window> ->signal_order
+==============================================================================*/
+{
+	enum Signal_order signal_order;
+	int return_code;
+	struct FE_node_order_info *node_order_info;
+	struct GROUP(FE_node) *rig_node_group;
+	struct Region *current_region;
+	struct Rig *rig;	
+	struct Signal_drawing_package *signal_drawing_package;
+
+	ENTER(Analysis_window_set_and_sort_rig_node_order_info);
+	node_order_info=(struct FE_node_order_info *)NULL;
+	current_region=(struct Region *)NULL;
+	rig=(struct Rig *)NULL;
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	signal_drawing_package=(struct Signal_drawing_package *)NULL;
+	if (analysis_window)
+	{	
+		rig=*(analysis_window->rig);
+		signal_order=*(analysis_window->signal_order);
+		return_code=0;
+		signal_drawing_package=*(analysis_window->signal_drawing_package);	
+		/* create an array of pointers to the nodes, in node_order_info */
+		/* so can increment through nodes similar to devices. */
+		/* should use GROUP NEXT operator (when it's ready!) */					
+		if (current_region=get_Rig_current_region(rig))
+		{	
+			rig_node_group=get_Region_rig_node_group(current_region);						
+		}
+		else
+		{
+			rig_node_group=get_Rig_all_devices_rig_node_group(rig);
+		}				
+		if(node_order_info=create_and_sort_FE_node_order_info_from_rig_node_group(
+			rig_node_group,signal_order,signal_drawing_package))
+		{
+			/* save the rig_node_order_info */
+			REACCESS(FE_node_order_info)(&(analysis_window->rig_node_order_info),
+				node_order_info);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+			"Analysis_window_set_and_sort_rig_node_order_info. node_order_info not created");
 			return_code=0;
 		}
 	}
@@ -3868,7 +4004,11 @@ DESCRIPTION :
 struct Analysis_window *create_Analysis_window(
 	struct Analysis_window **address,Widget activation,Widget parent,
 	struct Rig **rig,struct Signal_drawing_package **signal_drawing_package,
-	struct Device ***highlight,int *datum,int *event_number,
+	struct Device ***highlight,
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node **highlight_rig_node,
+#endif /* defined (UNEMAP_USE_NODES) */
+	int *datum,int *event_number,
 	int *number_of_events,int *potential_time,
 	enum Event_detection_algorithm *detection,int *threshold,
 	int *minimum_separation,float *level,int *average_width,
@@ -4075,6 +4215,9 @@ returned.
 				analysis->rig=rig;
 				analysis->signal_drawing_package=signal_drawing_package;
 				analysis->highlight=highlight;
+#if defined (UNEMAP_USE_NODES)
+				analysis->highlight_rig_node=highlight_rig_node;
+#endif
 				analysis->datum=datum;
 				analysis->event_number=event_number;
 				analysis->number_of_events=number_of_events;
@@ -4494,16 +4637,27 @@ The function for redrawing the analysis interval drawing area.
 {
 	Display *display;
 	float x_scale;
-	int device_number,first_data,i,last_data,return_code;
-	struct Device **device,**highlight_device;
+	int device_number,first_data,last_data,return_code;
+#if !defined (UNEMAP_USE_NODES)
+	int i;	
+	struct Device **device;
+#endif
+	struct Device **highlight_device;
 	struct Interval_area *interval;
 	struct Region *current_region;
 	struct Signal_buffer *buffer;
 
 	ENTER(update_interval_drawing_area);
+	current_region=(struct Region *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	interval=(struct Interval_area *)NULL;
+#if !defined (UNEMAP_USE_NODES)
+	device=(struct Device **)NULL;
+#endif
+	highlight_device=(struct Device **)NULL;
+
 	if (analysis&&((analysis->interval).drawing)&&
 		((analysis->interval).drawing_area))
-	if (analysis)
 	{
 		display=analysis->user_interface->display;
 		interval= &(analysis->interval);
@@ -4545,25 +4699,18 @@ The function for redrawing the analysis interval drawing area.
 				(ELECTRODE==(*highlight_device)->description->type))
 			{
 				XtSetSensitive(interval->accept_button,True);
-#if defined (OLD_CODE)
-				XtSetSensitive(interval->accelerator.accept_button,True);
-#endif
 				XtSetSensitive(interval->reject_button,True);
-#if defined (OLD_CODE)
-				XtSetSensitive(interval->accelerator.reject_button,True);
-#endif
 			}
 			else
 			{
 				XtSetSensitive(interval->accept_button,False);
-#if defined (OLD_CODE)
-				XtSetSensitive(interval->accelerator.accept_button,False);
-#endif
 				XtSetSensitive(interval->reject_button,False);
-#if defined (OLD_CODE)
-				XtSetSensitive(interval->accelerator.reject_button,False);
-#endif
-			}			
+			}
+#if defined (UNEMAP_USE_NODES)
+			current_region=get_Rig_current_region(*(analysis->rig));
+			device_number=get_FE_node_order_info_current_node_number(
+				analysis->rig_node_order_info);
+#else			
 			if(current_region=get_Rig_current_region(*(analysis->rig)))
 			{
 				device_number=0;
@@ -4581,35 +4728,24 @@ The function for redrawing the analysis interval drawing area.
 			{
 				device_number=highlight_device-((*(analysis->rig))->devices);
 			}
+#endif
 			if ((!current_region&&(device_number==((*(analysis->rig))->
 				number_of_devices)-1))||(current_region&&(device_number==
 				current_region->number_of_devices-1)))
 			{
 				XtSetSensitive(interval->next_button,False);
-#if defined (OLD_CODE)
-				XtSetSensitive(interval->accelerator.next_button,False);
-#endif
 			}
 			else
 			{
 				XtSetSensitive(interval->next_button,True);
-#if defined (OLD_CODE)
-				XtSetSensitive(interval->accelerator.next_button,True);
-#endif
 			}
 			if (0==device_number)
 			{
 				XtSetSensitive(interval->previous_button,False);
-#if defined (OLD_CODE)
-				XtSetSensitive(interval->accelerator.previous_button,False);
-#endif
 			}
 			else
 			{
 				XtSetSensitive(interval->previous_button,True);
-#if defined (OLD_CODE)
-				XtSetSensitive(interval->accelerator.previous_button,True);
-#endif
 			}
 		}
 		XCopyArea(display,interval->drawing->pixel_map,
@@ -4807,12 +4943,17 @@ Updates the analysis region menu to be consistent with the current rig.
 	return (return_code);
 } /* update_analysis_window_menu */
 
-int highlight_signal(struct Device *device,int device_number,int start_data,
+int highlight_signal(struct Device *device,
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node *device_rig_node,
+	struct Signal_drawing_package *signal_drawing_package,
+#endif /* defined (UNEMAP_USE_NODES)*/
+	int device_number,int start_data,
 	int end_data,int datum,int potential_time,struct Signals_area *signals,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 30 July 1999
+LAST MODIFIED : 17 August 2000
 
 DESCRIPTION :
 Highlights/dehighlights the <device> in the <signals> area.
@@ -4821,7 +4962,14 @@ Highlights/dehighlights the <device> in the <signals> area.
 	int axes_height,axes_left,axes_top,axes_width,return_code,xpos,ypos;
 
 	ENTER(highlight_signal);
-	if (signals&&signal_drawing_information&&user_interface)
+	if (signals&&signal_drawing_information&&user_interface
+#if defined (UNEMAP_USE_NODES)
+		 &&((device&&!device_rig_node&&!signal_drawing_package)||
+		 (!device&&device_rig_node&&signal_drawing_package))
+#else 
+		&&device
+#endif /* defined (UNEMAP_USE_NODES)*/
+			)
 	{
 		switch (signals->layout)
 		{
@@ -4840,7 +4988,22 @@ Highlights/dehighlights the <device> in the <signals> area.
 					(signals->drawing->height))/(signals->number_of_rows+3);
 			} break;
 		}
-		/* redraw the signal */
+#if defined (UNEMAP_USE_NODES)
+		/* use the node if we have it*/
+		if(device_rig_node)
+		{
+			/*??JW need to do draw_device_markers with node */
+			draw_signal(device_rig_node,signal_drawing_package,
+				(struct Device *)NULL,SIGNAL_AREA_DETAIL,1,0,&start_data,&end_data,xpos,ypos,
+				signals->signal_width,signals->signal_height,signals->drawing->pixel_map,
+				&axes_left,&axes_top,&axes_width,&axes_height,signal_drawing_information,
+				user_interface);
+		}
+		else
+		/* use the device*/
+		{	
+#endif /* defined (UNEMAP_USE_NODES)*/
+			/* redraw the signal */
 		draw_device_markers(device,start_data,end_data,datum,1,potential_time,1,
 			SIGNAL_AREA_DETAIL,0,xpos+signals->axes_left,
 			ypos+signals->axes_top,signals->axes_width,signals->axes_height,
@@ -4856,6 +5019,9 @@ Highlights/dehighlights the <device> in the <signals> area.
 			ypos+signals->axes_top,signals->axes_width,signals->axes_height,
 			(Window)NULL,signals->drawing->pixel_map,signal_drawing_information,
 			user_interface);
+#if defined (UNEMAP_USE_NODES)
+		}
+#endif /* defined (UNEMAP_USE_NODES)*/
 		XCopyArea(user_interface->display,signals->drawing->pixel_map,
 			XtWindow(signals->drawing_area),
 			(signal_drawing_information->graphics_context).copy,xpos,ypos,

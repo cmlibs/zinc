@@ -943,11 +943,11 @@ Notes:
 				number_of_points=NUMBER_IN_MANAGER(FE_node)(node_manager);
 			}
 			if (number_of_points>computed_fields_of_node->number_of_nodes)
-			{
+			{			
 				display_message(WARNING_MESSAGE,
 					"create_GT_glyph_set_from_FE_node_group.  %d nodes/data not drawn "
 					"because one or more fields not defined for them",
-					number_of_points-computed_fields_of_node->number_of_nodes);
+					number_of_points-computed_fields_of_node->number_of_nodes);			
 			}		
 			glyph_set=(struct GT_glyph_set *)NULL;
 			if (return_code) 

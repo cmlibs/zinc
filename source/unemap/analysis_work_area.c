@@ -158,6 +158,19 @@ Module constants
 Module types
 ------------
 */
+
+struct Set_highlight_iterator
+/*******************************************************************************
+LAST MODIFIED : 15 August 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int highlight;
+	int count;
+	struct FE_field *highlight_field;
+};
+
 typedef struct Analysis_work_area Analysis_work_area_settings;
 
 /*
@@ -2162,7 +2175,10 @@ Sets up the analysis work area for analysing a set of signals.
 	struct Trace_window *trace;
 	XmString new_dialog_title,old_dialog_title,value_xmstring;
 #if defined (UNEMAP_USE_NODES)
-	struct FE_field *field;	
+	struct FE_field *field,*highlight_field;
+	struct FE_field_component component;
+	struct FE_node *rig_node;			
+	struct GROUP(FE_node) *rig_node_group;		
 #endif /* defined (UNEMAP_USE_NODES) */
 
 	ENTER(analysis_read_signal_file);
@@ -2700,6 +2716,7 @@ Sets up the analysis work area for analysing a set of signals.
 		}
 		if (return_code)
 		{
+			/*highlight the first device*/
 			if (analysis->highlight=analysis->rig->devices)
 			{
 				(*(analysis->highlight))->highlight=1;
@@ -2844,11 +2861,14 @@ Sets up the analysis work area for analysing a set of signals.
 				ACCESS(Signal_drawing_package)(analysis->signal_drawing_package);
 			}
 			field=get_unemap_package_device_name_field(analysis->unemap_package);
-			set_Signal_drawing_package_device_name_field(analysis->signal_drawing_package,field);
+			set_Signal_drawing_package_device_name_field(analysis->signal_drawing_package,
+				field);
 			field=get_unemap_package_device_type_field(analysis->unemap_package);
-			set_Signal_drawing_package_device_type_field(analysis->signal_drawing_package,field);
+			set_Signal_drawing_package_device_type_field(analysis->signal_drawing_package,
+				field);
 			field=get_unemap_package_channel_number_field(analysis->unemap_package);
-			set_Signal_drawing_package_channel_number_field(analysis->signal_drawing_package,field);
+			set_Signal_drawing_package_channel_number_field(analysis->signal_drawing_package,
+				field);
 			field=get_unemap_package_display_start_time_field(analysis->unemap_package);
 			set_Signal_drawing_package_display_start_time_field(analysis->signal_drawing_package,
 				field);
@@ -2856,21 +2876,44 @@ Sets up the analysis work area for analysing a set of signals.
 			set_Signal_drawing_package_display_end_time_field(analysis->signal_drawing_package,
 				field);
 			field=get_unemap_package_read_order_field(analysis->unemap_package);
-			set_Signal_drawing_package_read_order_field(analysis->signal_drawing_package,field);
+			set_Signal_drawing_package_read_order_field(analysis->signal_drawing_package,field);	
+			field=get_unemap_package_highlight_field(analysis->unemap_package);
+			set_Signal_drawing_package_highlight_field(analysis->signal_drawing_package,field);
 			field=get_unemap_package_signal_field(analysis->unemap_package);
 			set_Signal_drawing_package_signal_field(analysis->signal_drawing_package,field);
 			field=get_unemap_package_channel_offset_field(analysis->unemap_package);
-			set_Signal_drawing_package_channel_offset_field(analysis->signal_drawing_package,field);
+			set_Signal_drawing_package_channel_offset_field(analysis->signal_drawing_package,
+				field);
 			field=get_unemap_package_channel_gain_field(analysis->unemap_package);
-			set_Signal_drawing_package_channel_gain_field(analysis->signal_drawing_package,field);
+			set_Signal_drawing_package_channel_gain_field(analysis->signal_drawing_package,
+				field);
 			field=get_unemap_package_signal_minimum_field(analysis->unemap_package);
-			set_Signal_drawing_package_signal_minimum_field(analysis->signal_drawing_package,field);
+			set_Signal_drawing_package_signal_minimum_field(analysis->signal_drawing_package,
+				field);
 			field=get_unemap_package_signal_maximum_field(analysis->unemap_package);
-			set_Signal_drawing_package_signal_maximum_field(analysis->signal_drawing_package,field);
+			set_Signal_drawing_package_signal_maximum_field(analysis->signal_drawing_package,
+				field);
 			field=get_unemap_package_signal_status_field(analysis->unemap_package);
-			set_Signal_drawing_package_signal_status_field(analysis->signal_drawing_package,field);
+			set_Signal_drawing_package_signal_status_field(analysis->signal_drawing_package,
+				field);
 			/* for the moment assuming only one signal per node, ie only one
-				signal_field */
+				 signal_field */
+			/* highlight the first rig_node */						
+			highlight_field=(struct FE_field *)NULL;
+			rig_node=(struct FE_node *)NULL;
+			rig_node_group=(struct GROUP(FE_node) *)NULL;
+			if((rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig))&&
+				(rig_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
+					((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,rig_node_group))&&
+				(highlight_field=get_Signal_drawing_package_highlight_field(
+					analysis->signal_drawing_package)))
+			{
+				analysis->highlight_rig_node=rig_node;
+				component.number=0;
+				component.field=highlight_field;
+				set_FE_nodal_int_value(rig_node,&component,/*version*/0,FE_NODAL_VALUE,
+					1/*highlight*/);
+			}		
 		}
 		else
 		{
@@ -4738,9 +4781,15 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 							if ((signal_number>=0)&&
 								(signal_number<signals->number_of_signals))
 							{
+#if defined (UNEMAP_USE_NODES)
+								highlight_analysis_device_node((event->state)&ControlMask,
+									(struct FE_node *)NULL,&signal_number,(int *)NULL,
+									(int *)NULL,analysis);
+#else
 								highlight_analysis_device((event->state)&ControlMask,
-									(struct Device **)NULL,&signal_number,(int *)NULL,(int *)NULL,
-									analysis);
+									(struct Device **)NULL,&signal_number,(int *)NULL,
+									(int *)NULL,analysis);
+#endif /*  defined (UNEMAP_USE_NODES) */
 								/* make sure that the trace window is open */
 								open_trace_window(&(analysis->trace),analysis->window_shell,
 									analysis->identifying_colour,EVENT_DETECTION,
@@ -4895,7 +4944,7 @@ DESCRIPTION :
 static void analysis_previous_event(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 29 November 1993
+LAST MODIFIED : 17 August 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -10699,7 +10748,6 @@ same as the range for the current signal.
 				{
 					rig_node_group=get_Rig_all_devices_rig_node_group(rig);
 				}					
-				
 				component.number=0;
 				component.field=signal_field;
 				set_Min_max_iterator_signal_component(min_max_iterator,&component);
@@ -11797,6 +11845,7 @@ DESCRIPTION :
 				if ((mapping=analysis->mapping_window)&&(mapping->map)&&
 					(SHOW_ELECTRODE_VALUES==mapping->map->electrodes_option))
 				{
+
 					update_mapping_drawing_area(mapping,0);
 				}
 			}
@@ -11916,11 +11965,63 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct Analysis_work_area *analysis;
+#if defined (UNEMAP_USE_NODES)
+	char *device_type_string,*signal_status_string;		
+	struct FE_field *device_type_field,*signal_status_field;	
+	struct FE_node *highlight_rig_node;
+	struct Signal_drawing_package *signal_drawing_package;
+	struct FE_node_order_info *rig_node_order_info;
+#else
 	struct Device **highlight;
+#endif /* defined (UNEMAP_USE_NODES)*/
 
 	ENTER(analysis_previous_signal);
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
 	{
+#if defined (UNEMAP_USE_NODES)
+		/*??JW until have analysis_accept_signal for nodes*/
+		USE_PARAMETER(widget);
+		USE_PARAMETER(call_data);
+		device_type_string=(char *)NULL;
+		signal_status_string=(char *)NULL;
+		device_type_field=(struct FE_field *)NULL;
+		signal_status_field=(struct FE_field *)NULL;
+		signal_drawing_package=(struct Signal_drawing_package *)NULL;	
+		rig_node_order_info=(struct FE_node_order_info *)NULL;
+		highlight_rig_node=(struct FE_node *)NULL;
+		if ((analysis->rig)&&(highlight_rig_node=analysis->highlight_rig_node)&&
+			(signal_drawing_package=analysis->signal_drawing_package)&&(device_type_field=
+			get_Signal_drawing_package_device_type_field(signal_drawing_package))
+			&&(signal_status_field=
+			get_Signal_drawing_package_signal_status_field(signal_drawing_package))
+			&&(rig_node_order_info=get_Analysis_window_rig_node_order_info(analysis->window)))
+		{			
+			get_FE_nodal_string_value(highlight_rig_node,device_type_field,0,0,
+						FE_NODAL_VALUE,&device_type_string);
+			if(!strcmp(device_type_string,"ELECTRODE"))
+			{
+				/* accept the current signal if undecided */
+				get_FE_nodal_string_value(highlight_rig_node,signal_status_field,0,0,
+						FE_NODAL_VALUE,&signal_status_string);
+				if(!strcmp(device_type_string,"UNDECIDED"))
+				{
+					/*??JW need a nodal version of this */
+					/*
+					analysis_accept_signal(widget,analysis_work_area,call_data);
+					*/
+				}
+				DEALLOCATE(signal_status_string);											
+			}	
+			DEALLOCATE(device_type_string);	
+			/* move to the prev signal */			
+			highlight_rig_node=get_FE_node_order_info_prev_node(rig_node_order_info);
+			if(highlight_rig_node)
+			{
+				highlight_analysis_device_node(0,highlight_rig_node,(int *)NULL,(int *)NULL,
+					(int *)NULL,analysis);
+			}
+		}
+#else
 		if ((analysis->rig)&&(highlight=analysis->highlight))
 		{
 			if (ELECTRODE==(*highlight)->description->type)
@@ -11933,9 +12034,10 @@ DESCRIPTION :
 			}
 			/* move to the previous signal */
 			highlight--;
-			highlight_analysis_device(0,highlight,(int *)NULL,(int *)NULL,(int *)NULL,
-				analysis);
+			highlight_analysis_device(0,highlight,(int *)NULL,(int *)NULL,
+				(int *)NULL,analysis);
 		}
+#endif /* defined (UNEMAP_USE_NODES)*/
 	}
 	else
 	{
@@ -11948,17 +12050,68 @@ DESCRIPTION :
 static void analysis_next_signal(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 December 1996
+LAST MODIFIED : 17 August 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	struct Analysis_work_area *analysis;
+#if defined (UNEMAP_USE_NODES)
+	char *device_type_string,*signal_status_string;		
+	struct FE_field *device_type_field,*signal_status_field;	
+	struct FE_node *highlight_rig_node;
+	struct Signal_drawing_package *signal_drawing_package;
+	struct FE_node_order_info *rig_node_order_info;
+#else
 	struct Device **highlight;
-
+#endif /* defined (UNEMAP_USE_NODES)*/
 	ENTER(analysis_next_signal);
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
 	{
+#if defined (UNEMAP_USE_NODES)
+		/*??JW until have analysis_accept_signal for nodes*/
+		USE_PARAMETER(widget);
+		USE_PARAMETER(call_data);
+		device_type_string=(char *)NULL;
+		signal_status_string=(char *)NULL;
+		device_type_field=(struct FE_field *)NULL;
+		signal_status_field=(struct FE_field *)NULL;
+		signal_drawing_package=(struct Signal_drawing_package *)NULL;	
+		rig_node_order_info=(struct FE_node_order_info *)NULL;
+		highlight_rig_node=(struct FE_node *)NULL;
+		if ((analysis->rig)&&(highlight_rig_node=analysis->highlight_rig_node)&&
+			(signal_drawing_package=analysis->signal_drawing_package)&&(device_type_field=
+			get_Signal_drawing_package_device_type_field(signal_drawing_package))
+			&&(signal_status_field=
+			get_Signal_drawing_package_signal_status_field(signal_drawing_package))
+			&&(rig_node_order_info=get_Analysis_window_rig_node_order_info(analysis->window)))
+		{			
+			get_FE_nodal_string_value(highlight_rig_node,device_type_field,0,0,
+						FE_NODAL_VALUE,&device_type_string);
+			if(!strcmp(device_type_string,"ELECTRODE"))
+			{
+				/* accept the current signal if undecided */
+				get_FE_nodal_string_value(highlight_rig_node,signal_status_field,0,0,
+						FE_NODAL_VALUE,&signal_status_string);
+				if(!strcmp(device_type_string,"UNDECIDED"))
+				{
+					/*??JW need a nodal version of this */
+					/*
+					analysis_accept_signal(widget,analysis_work_area,call_data);
+					*/
+				}
+				DEALLOCATE(signal_status_string);											
+			}	
+			DEALLOCATE(device_type_string);	
+			/* move to the next signal */			
+			highlight_rig_node=get_FE_node_order_info_next_node(rig_node_order_info);
+			if(highlight_rig_node)
+			{
+				highlight_analysis_device_node(0,highlight_rig_node,(int *)NULL,(int *)NULL,
+					(int *)NULL,analysis);
+			}
+		}
+#else
 		if ((analysis->rig)&&(highlight=analysis->highlight))
 		{
 			if (ELECTRODE==(*highlight)->description->type)
@@ -11971,9 +12124,10 @@ DESCRIPTION :
 			}
 			/* move to the next signal */
 			highlight++;
-			highlight_analysis_device(0,highlight,(int *)NULL,(int *)NULL,(int *)NULL,
-				analysis);
+			highlight_analysis_device(0,highlight,(int *)NULL,(int *)NULL,
+				(int *)NULL,analysis);
 		}
+#endif /* defined (UNEMAP_USE_NODES)*/
 	}
 	else
 	{
@@ -13604,12 +13758,60 @@ Responds to update callbacks from the time object.
 	return (return_code);
 } /* analysis_datum_time_update_callback */
 
+#if defined (UNEMAP_USE_NODES)
+static int iterative_set_highlight_field(struct FE_node *node,
+	void *set_highlight_iterator_void)
+/*******************************************************************************
+LAST MODIFIED : 
+
+DESCRIPTION :
+==============================================================================*/
+{		
+	int return_code;
+	struct Set_highlight_iterator *set_highlight_iterator;
+	struct FE_field_component component;
+
+	return_code=1;
+	ENTER(iterative_set_highlight_field);
+	if(node&&set_highlight_iterator_void)
+	{
+		set_highlight_iterator=(struct Set_highlight_iterator *)set_highlight_iterator_void;	
+		if(set_highlight_iterator)
+		{
+			if(FE_field_is_defined_at_node(set_highlight_iterator->highlight_field,node))			
+				/* nothing to do, but NOT an error if no signal at node*/			
+			{	
+				component.number=0;
+				component.field=set_highlight_iterator->highlight_field;
+				set_FE_nodal_int_value(node,&component,/*version*/0,FE_NODAL_VALUE,
+					set_highlight_iterator->highlight);
+				set_highlight_iterator->count++;
+			}/* if(FE_field_is_defined_at_node*/
+		}	/* if(set_highlight_iterator */
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"iterative_set_highlight_field.  set_highlight_iterator NULL ");
+			return_code=0;
+		}	
+	}/* if((node)&&(set_highlight_iterator_void )) */
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"iterative_set_highlight_field. Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* iterative_set_highlight_field */
+#endif /* defined (UNEMAP_USE_NODES) */
+
 /*
 Global functions
 ----------------
 */
 int highlight_analysis_device(unsigned int multiple_selection,
-	struct Device **device,int *device_number,int *electrode_number,
+	struct Device **device,	int *device_number,int *electrode_number,
 	int *auxiliary_number,struct Analysis_work_area *analysis)
 /*******************************************************************************
 LAST MODIFIED : 4 August 1999
@@ -13911,9 +14113,12 @@ else
 					{
 						/* dehighlight the selected device */
 						(*new_highlight)->highlight=0;
-						highlight_signal(*new_highlight,new_device_number,
-							start_analysis_interval,end_analysis_interval,analysis->datum,
-							analysis->potential_time,signals,
+						highlight_signal(*new_highlight,
+#if defined (UNEMAP_USE_NODES)
+							(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
+#endif /* defined (UNEMAP_USE_NODES)*/
+							new_device_number,start_analysis_interval,end_analysis_interval,
+							analysis->datum,analysis->potential_time,signals,
 							analysis->signal_drawing_information,analysis->user_interface);
 						highlight_electrode_or_auxiliar(*new_highlight,new_electrode_number,
 							new_auxiliary_number,map,mapping);
@@ -13925,9 +14130,12 @@ else
 						work area */
 					analysis->highlight=new_highlight;
 					(*new_highlight)->highlight=1;
-					highlight_signal(*new_highlight,new_device_number,
-						start_analysis_interval,end_analysis_interval,analysis->datum,
-						analysis->potential_time,signals,
+					highlight_signal(*new_highlight,
+#if defined (UNEMAP_USE_NODES)
+							(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
+#endif /* defined (UNEMAP_USE_NODES)*/
+						new_device_number,start_analysis_interval,end_analysis_interval,
+						analysis->datum,analysis->potential_time,signals,
 						analysis->signal_drawing_information,analysis->user_interface);
 					if (interval)
 					{
@@ -13956,9 +14164,12 @@ else
 							if ((*old_highlight)->highlight)
 							{
 								(*old_highlight)->highlight=0;
-								highlight_signal(*old_highlight,old_device_number,
-									start_analysis_interval,end_analysis_interval,analysis->datum,
-									analysis->potential_time,signals,
+								highlight_signal(*old_highlight,
+#if defined (UNEMAP_USE_NODES)
+									(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
+#endif /* defined (UNEMAP_USE_NODES)*/
+									old_device_number,start_analysis_interval,end_analysis_interval,
+									analysis->datum,analysis->potential_time,signals,
 									analysis->signal_drawing_information,
 									analysis->user_interface);
 								highlight_electrode_or_auxiliar(*old_highlight,
@@ -13973,8 +14184,11 @@ else
 								if ((*old_highlight)->highlight)
 								{
 									(*old_highlight)->highlight=0;
-									highlight_signal(*old_highlight,old_device_number,
-										start_analysis_interval,end_analysis_interval,
+									highlight_signal(*old_highlight,
+#if defined (UNEMAP_USE_NODES)
+										(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
+#endif /* defined (UNEMAP_USE_NODES)*/
+										old_device_number,start_analysis_interval,end_analysis_interval,
 										analysis->datum,analysis->potential_time,signals,
 										analysis->signal_drawing_information,
 										analysis->user_interface);
@@ -14000,9 +14214,12 @@ else
 				if (new_highlight)
 				{
 					(*new_highlight)->highlight=1;
-					highlight_signal(*new_highlight,new_device_number,
-						start_analysis_interval,end_analysis_interval,analysis->datum,
-						analysis->potential_time,signals,
+					highlight_signal(*new_highlight,
+#if defined (UNEMAP_USE_NODES)
+						(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
+#endif /* defined (UNEMAP_USE_NODES)*/
+						new_device_number,start_analysis_interval,end_analysis_interval,
+						analysis->datum,analysis->potential_time,signals,
 						analysis->signal_drawing_information,analysis->user_interface);
 					if (interval)
 					{
@@ -14025,7 +14242,573 @@ else
 	LEAVE;
 
 	return (return_code);
-} /* highlight_analysis_device */
+} /* highlight_analysis_device */ 
+
+#if defined (UNEMAP_USE_NODES) 
+/* still keep highlight_analysis_device, as will use both for a while */
+int highlight_analysis_device_node(unsigned int multiple_selection,
+	struct FE_node *device_node,	int *device_number,int *electrode_number,
+	int *auxiliary_number,struct Analysis_work_area *analysis)
+/*******************************************************************************
+LAST MODIFIED : 10 August 2000
+
+DESCRIPTION :
+If the highlight is part of a multiple selection
+then
+  If the <device_node> is not highlighted
+  then
+    highlight it and make it THE highlighted device for the analysis work area
+  else
+    if it is the only highlighted device
+    then
+      do nothing
+    else
+      dehighlight it
+      if it is THE highlighted device for the analysis work area
+      then
+        make the first highlighted device THE highlighted device
+else
+  highlight it and dehighlight all other devices
+  make it THE highlighted device for the analysis work area
+
+cf highlight_analysis_device
+==============================================================================*/
+{
+	char *device_type_string;	
+	int i,count,highlighted,new_auxiliary_number,new_device_number,new_electrode_number,
+		number_of_devices,old_auxiliary_number,old_device_number,old_electrode_number,
+		return_code,success;	
+	struct FE_field_component component;
+	struct FE_node *new_highlight_rig_node,*old_highlight_rig_node,
+		*temp_device_rig_node;
+	struct Interval_area *interval;
+	struct Map *map;
+	struct Mapping_window *mapping;
+	struct Region *current_region;
+	struct GROUP(FE_node) *rig_node_group,*all_devices_rig_node_group;
+	struct FE_node_order_info *rig_node_order_info,*all_devices_rig_node_order_info;
+	struct Signals_area *signals;
+	struct FE_field *device_type_field;
+	struct Signal_drawing_package *signal_drawing_package;
+
+	ENTER(highlight_analysis_device_node);
+	rig_node_order_info=(struct FE_node_order_info *)NULL;
+	all_devices_rig_node_order_info=(struct FE_node_order_info *)NULL;
+	map=(struct Map *)NULL;
+	mapping=(struct Mapping_window *)NULL;
+	current_region=(struct Region *)NULL;
+	signals=(struct Signals_area *)NULL;
+	new_highlight_rig_node=(struct FE_node *)NULL;
+	old_highlight_rig_node=(struct FE_node *)NULL;
+	temp_device_rig_node=(struct FE_node *)NULL;
+	interval=(struct Interval_area *)NULL;
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
+	all_devices_rig_node_group=(struct GROUP(FE_node) *)NULL;
+	device_type_string=(char *)NULL;
+	device_type_field=(struct FE_field *)NULL;
+	signal_drawing_package=(struct Signal_drawing_package *)NULL;
+	if (analysis&&(analysis->rig)&&(signal_drawing_package=
+		analysis->signal_drawing_package)&&(device_type_field=
+			get_Signal_drawing_package_device_type_field(signal_drawing_package))&&	
+		(device_node||device_number||electrode_number||auxiliary_number))
+	{		
+		current_region=get_Rig_current_region(analysis->rig);			
+		rig_node_order_info=get_Analysis_window_rig_node_order_info(analysis->window);		
+		if(rig_node_order_info)
+		{	
+			if (analysis->window)
+			{
+				signals= &(analysis->window->signals);
+				interval= &(analysis->window->interval);
+			}
+			else
+			{
+				signals=(struct Signals_area *)NULL;
+				interval=(struct Interval_area *)NULL;
+			}
+			if ((analysis->mapping_window)&&(analysis->mapping_window->map))
+			{
+				mapping=analysis->mapping_window;
+				map=mapping->map;
+			}
+			else
+			{
+				mapping=(struct Mapping_window *)NULL;
+				map=(struct Map *)NULL;
+			}
+			if (new_highlight_rig_node=device_node)
+			{
+				/* have specified a device_node */
+				/* determine the device, electrode and auxiliary numbers */			
+				temp_device_rig_node=get_FE_node_order_info_node(rig_node_order_info,0);
+				new_device_number=0;
+				new_electrode_number=0;
+				new_auxiliary_number=0;			
+				number_of_devices=get_FE_node_order_info_number_of_nodes(rig_node_order_info);
+				i=0;
+				success=0;
+				while((i<number_of_devices)&&(!success))
+				{				
+					temp_device_rig_node=get_FE_node_order_info_node(rig_node_order_info,i);
+					get_FE_nodal_string_value(temp_device_rig_node,device_type_field,0,0,
+						FE_NODAL_VALUE,&device_type_string);
+					if(!strcmp(device_type_string,"ELECTRODE"))
+					{
+						new_electrode_number++;									
+					}
+					else if(!strcmp(device_type_string,"AUXILIARY"))
+					{
+						new_auxiliary_number++;																						
+					}
+					DEALLOCATE(device_type_string);			
+					i++;
+					if(temp_device_rig_node==device_node)
+					{
+						success=1;
+					}
+					else
+					{
+						new_device_number++;
+					}
+				}
+				/* success should ALWAYS be 1 when we get here*/
+				if(return_code=success)
+				{
+					get_FE_nodal_string_value(device_node,device_type_field,0,0,
+						FE_NODAL_VALUE,&device_type_string);
+					if(!strcmp(device_type_string,"ELECTRODE"))
+					{
+						new_auxiliary_number= -1;
+						return_code=1;								
+					}
+					else if(!strcmp(device_type_string,"AUXILIARY"))
+					{
+						new_electrode_number= -1;
+						return_code=1;																					
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"highlight_analysis_device_node.  Invalid device type in rig");
+						return_code=0;
+					}
+					/*finished with this*/
+					DEALLOCATE(device_type_string);
+				}
+				if (return_code&&
+					((device_number&&!(*device_number==new_device_number))||
+						(electrode_number&&!(*electrode_number==new_electrode_number))||
+						(auxiliary_number&&!(*auxiliary_number==new_auxiliary_number))))
+				{
+					display_message(ERROR_MESSAGE,
+						"highlight_analysis_device_node.  device item %s",
+						"incompatible with device, electrode and auxiliary numbers");
+					return_code=0;
+				}				
+			}/* if (new_highlight_rig_node=devic*/
+			else
+			{
+				/* have not specified the device */
+				if (device_number&&signals&&((new_device_number= *device_number)>=0)&&
+					(new_device_number<signals->number_of_signals))
+				{
+					/* have specified a device_number */
+					/* determine the device and the electrode and auxiliary numbers */				
+					new_electrode_number=0;
+					new_auxiliary_number=0;					
+					for(i=0;i<new_device_number;i++)
+					{
+						temp_device_rig_node=get_FE_node_order_info_node(rig_node_order_info,i);
+						get_FE_nodal_string_value(temp_device_rig_node,device_type_field,0,0,
+							FE_NODAL_VALUE,&device_type_string);
+						if(!strcmp(device_type_string,"ELECTRODE"))
+						{
+							new_electrode_number++;									
+						}
+						else if(!strcmp(device_type_string,"AUXILIARY"))
+						{
+							new_auxiliary_number++;																						
+						}
+						DEALLOCATE(device_type_string);
+					}
+					new_highlight_rig_node=get_FE_node_order_info_node(
+						rig_node_order_info,new_device_number);
+					get_FE_nodal_string_value(new_highlight_rig_node,device_type_field,0,0,
+						FE_NODAL_VALUE,&device_type_string);
+					if(!strcmp(device_type_string,"ELECTRODE"))
+					{
+						new_auxiliary_number= -1;
+						return_code=1;								
+					}
+					else if(!strcmp(device_type_string,"AUXILIARY"))
+					{
+						new_electrode_number= -1;
+						return_code=1;																					
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"highlight_analysis_device_node.  Invalid device type in rig");
+						return_code=0;
+					}
+					/*finished with this*/
+					DEALLOCATE(device_type_string);
+					if (return_code&&
+						((electrode_number&&!(*electrode_number==new_electrode_number))||
+							(auxiliary_number&&!(*auxiliary_number==new_auxiliary_number))))
+					{
+						display_message(ERROR_MESSAGE,"highlight_analysis_device_node.  %s",
+							"device number incompatible with electrode and auxiliary numbers");
+						return_code=0;
+					}
+				}/* if (device_number */
+				else
+				{
+					if (mapping&&map)
+					{
+						if (electrode_number&&((new_electrode_number= *electrode_number)>=0)&&
+							(new_electrode_number<map->number_of_electrodes))
+						{	
+							/* have specified an electrode number */
+							/* determine the device and the device and auxiliary numbers */
+							new_device_number=0;
+							new_auxiliary_number= -1;		
+							i=0;
+							number_of_devices=get_FE_node_order_info_number_of_nodes(
+								rig_node_order_info);
+							success=0;
+							while((new_device_number<number_of_devices)&&(!success))
+							{				
+								temp_device_rig_node=get_FE_node_order_info_node(rig_node_order_info,
+									new_device_number);
+								get_FE_nodal_string_value(temp_device_rig_node,device_type_field,0,0,
+									FE_NODAL_VALUE,&device_type_string);
+								if(!strcmp(device_type_string,"ELECTRODE"))
+								{
+									i++;																						
+								}
+								DEALLOCATE(device_type_string);									
+								if(i>new_electrode_number)
+								{
+									success=1;
+								}
+								else
+								{
+									new_device_number++;
+								}
+							}
+							if(i<new_electrode_number)
+								/* weren't enough electodes*/
+							{
+								display_message(ERROR_MESSAGE,"highlight_analysis_device_node.",
+									"bad electrode number");
+								new_highlight_rig_node=(struct FE_node *)NULL;
+								return_code=0;
+							}
+							else
+							{
+								new_highlight_rig_node=get_FE_node_order_info_node(
+									rig_node_order_info,new_device_number);
+								return_code=1;
+							}
+
+						}/* if (electrode_number&*/
+						else
+						{
+							if (auxiliary_number&&
+								((new_auxiliary_number= *auxiliary_number)>=0)&&
+								(new_auxiliary_number<map->number_of_auxiliary))
+							{
+								/* have specified an auxiliary number */
+								/* determine the device and the device and electrode numbers */							
+								new_device_number=0;
+								new_electrode_number= -1;	
+								i=0;
+								number_of_devices=get_FE_node_order_info_number_of_nodes(
+									rig_node_order_info);
+								success=0;
+								while((new_device_number<number_of_devices)&&(!success))
+								{				
+									temp_device_rig_node=get_FE_node_order_info_node(rig_node_order_info,
+										new_device_number);
+									get_FE_nodal_string_value(temp_device_rig_node,device_type_field,0,0,
+										FE_NODAL_VALUE,&device_type_string);
+									if(!strcmp(device_type_string,"AUXILIARY"))
+									{
+										i++;																						
+									}
+									DEALLOCATE(device_type_string);									
+									if(i>new_auxiliary_number)
+									{
+										success=1;
+									}
+									else
+									{
+										new_device_number++;
+									}
+								}
+								if(i<new_auxiliary_number)
+									/* weren't enough auxiliarys*/
+								{
+									display_message(ERROR_MESSAGE,"highlight_analysis_device_node.",
+										"bad auxiliary number");
+									new_highlight_rig_node=(struct FE_node *)NULL;
+									return_code=0;
+								}
+								else
+								{
+									new_highlight_rig_node=get_FE_node_order_info_node(
+										rig_node_order_info,new_device_number);
+									return_code=1;
+								}
+							}/* if (auxiliary_number&& */
+							else
+							{
+								return_code=0;
+							}
+						}/* if (electrode_number& */
+					}/* if (mapping&&map) */
+				}/* if (device_number */
+			}/* if (new_highlight_rig_node=devic */		
+			if (return_code)
+			{
+				if (device_node)
+				{
+					device_node= new_highlight_rig_node;
+				}
+				if (device_number)
+				{
+					*device_number=new_device_number;
+				}
+				if (electrode_number)
+				{
+					*electrode_number=new_electrode_number;
+				}
+				if (auxiliary_number)
+				{
+					*auxiliary_number=new_auxiliary_number;
+				}																				
+				component.field=signal_drawing_package->highlight_field;
+				component.number=0;
+				/*update the node_order_info current node to the highlighted node */
+				set_FE_node_order_info_current_node_number(rig_node_order_info,
+					new_device_number);
+				/* if the highlight is part of a multiple selection */ 	
+				if (multiple_selection)
+				{
+					/* if the device is highlighted */				
+					get_FE_nodal_int_value(new_highlight_rig_node,&component,0,FE_NODAL_VALUE,
+						&highlighted);
+					if(highlighted)				
+					{
+						/* determine whether or not the device is the only highlighted
+							 device */
+						if (new_highlight_rig_node==analysis->highlight_rig_node)
+						{		
+							all_devices_rig_node_group=
+								get_Rig_all_devices_rig_node_group(analysis->rig);	
+							all_devices_rig_node_order_info=
+								create_and_sort_FE_node_order_info_from_rig_node_group(
+									all_devices_rig_node_group,analysis->signal_order,
+									signal_drawing_package);
+							count=0;
+							number_of_devices=get_FE_node_order_info_number_of_nodes(
+								all_devices_rig_node_order_info);
+							temp_device_rig_node=get_FE_node_order_info_node(
+								all_devices_rig_node_order_info,count);
+							get_FE_nodal_int_value(temp_device_rig_node,&component,
+								0,FE_NODAL_VALUE,&highlighted);
+							while ((count<number_of_devices)&&
+								(!(highlighted)||(temp_device_rig_node==new_highlight_rig_node)))
+							{
+								count++;								
+								temp_device_rig_node=get_FE_node_order_info_node(
+									all_devices_rig_node_order_info,count);
+								get_FE_nodal_int_value(temp_device_rig_node,&component,
+									0,FE_NODAL_VALUE,&highlighted);
+							}
+							/*finished with this */		
+							DESTROY(FE_node_order_info)(&all_devices_rig_node_order_info);
+							if (count<number_of_devices)
+							{
+								analysis->highlight_rig_node=temp_device_rig_node;
+								if (interval)
+								{
+									update_interval_drawing_area(analysis->window);
+								}
+								/* update the trace window */
+								trace_change_signal(analysis->trace);
+							}
+						}
+						/* if it is not the only highlighted device */
+						if (new_highlight_rig_node!=analysis->highlight_rig_node)
+						{
+							/* dehighlight the selected device */							
+							set_FE_nodal_int_value(new_highlight_rig_node,&component,/*version*/0,
+								FE_NODAL_VALUE,0/*highlight*/);
+							highlight_signal((struct Device *)NULL,new_highlight_rig_node,
+								analysis->signal_drawing_package,new_device_number,0,0,
+								analysis->datum,analysis->potential_time,signals,
+								analysis->signal_drawing_information,analysis->user_interface);
+							/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
+							/*
+							highlight_electrode_or_auxiliar(*new_highlight,new_electrode_number,
+								new_auxiliary_number,map,mapping);
+							*/
+						}
+					}
+					else
+					{
+						/* highlight it and make it THE highlighted device for the analysis
+							 work area */
+						analysis->highlight_rig_node=new_highlight_rig_node;					
+						set_FE_nodal_int_value(new_highlight_rig_node,&component,/*version*/0,
+								FE_NODAL_VALUE,1/*highlight*/);
+						highlight_signal((struct Device *)NULL,new_highlight_rig_node,
+							analysis->signal_drawing_package,new_device_number,
+							0,0,analysis->datum,analysis->potential_time,signals,
+							analysis->signal_drawing_information,analysis->user_interface);
+						if (interval)
+						{
+							update_interval_drawing_area(analysis->window);
+						}
+						/* update the trace window */
+						trace_change_signal(analysis->trace);
+						/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
+						/*
+						highlight_electrode_or_auxiliar(*new_highlight,new_electrode_number,
+							new_auxiliary_number,map,mapping);
+						*/
+					}
+				}/* if (multiple_selection) */
+				else
+				{
+					/* highlight the new device and dehighlight all other devices */				
+					old_device_number=0;
+					old_electrode_number=0;
+					old_auxiliary_number=0;
+					number_of_devices=get_FE_node_order_info_number_of_nodes
+						(rig_node_order_info);
+					for (i=0;i<number_of_devices;i++)
+					{
+						old_highlight_rig_node=get_FE_node_order_info_node(rig_node_order_info,i);	
+						get_FE_nodal_string_value(old_highlight_rig_node,device_type_field,0,0,
+							FE_NODAL_VALUE,&device_type_string);
+						get_FE_nodal_int_value(old_highlight_rig_node,&component,0,
+							FE_NODAL_VALUE,&highlighted);												
+						if(!strcmp(device_type_string,"ELECTRODE"))
+						{
+							if(highlighted)	
+							{								
+								set_FE_nodal_int_value(old_highlight_rig_node,&component,
+									/*version*/0,FE_NODAL_VALUE,0/*highlight*/);
+								highlight_signal((struct Device *)NULL,old_highlight_rig_node,
+									analysis->signal_drawing_package,old_device_number,
+									0,0,analysis->datum,analysis->potential_time,signals,
+									analysis->signal_drawing_information,
+									analysis->user_interface);
+								/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
+								/*
+								highlight_electrode_or_auxiliar(*old_highlight,
+									old_electrode_number,-1,map,mapping);
+								*/
+							}
+							old_electrode_number++;
+						}
+						else if(!strcmp(device_type_string,"AUXILIARY"))
+						{
+							if(highlighted)
+							{									
+								set_FE_nodal_int_value(old_highlight_rig_node,&component,
+									/*version*/0,FE_NODAL_VALUE,0/*highlight*/);
+								highlight_signal((struct Device *)NULL,old_highlight_rig_node,
+									analysis->signal_drawing_package,old_device_number,
+									0,0,analysis->datum,analysis->potential_time,signals,
+									analysis->signal_drawing_information,
+									analysis->user_interface);
+								/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
+								/*
+								highlight_electrode_or_auxiliar(*old_highlight,-1,
+									old_auxiliary_number,map,mapping);
+								*/
+							}
+							old_auxiliary_number++;
+						}							
+						DEALLOCATE(device_type_string);		
+						old_device_number++;											
+					}
+          /* unhighlight devices that AREN'T in current region*/
+          if(current_region)
+					/*if !current region, previous rig_node_order_info is for all devices */
+					/*so nothing to do*/ 
+					{					 
+						struct Region_list_item *region_item=(struct Region_list_item *)NULL;	
+						struct Region *region=(struct Region *)NULL;
+						struct Set_highlight_iterator highlight_iterator;
+
+						region_item=get_Rig_region_list(analysis->rig);
+						while(region_item)
+						{
+							region=get_Region_list_item_region(region_item);
+							if(region!=current_region)
+							{
+								rig_node_group=get_Region_rig_node_group(region);
+								if(rig_node_group)
+								{			
+									highlight_iterator.highlight=0;
+									highlight_iterator.count=0;
+									highlight_iterator.highlight_field=
+										signal_drawing_package->highlight_field;
+									FOR_EACH_OBJECT_IN_GROUP(FE_node)(iterative_set_highlight_field,
+										(void *)(&highlight_iterator),rig_node_group);
+								}
+							}
+							region_item=get_Region_list_item_next(region_item);
+						}/* while(region_item)*/		
+					}
+					/* highlight the new device */
+					analysis->highlight_rig_node=new_highlight_rig_node;
+					if (new_highlight_rig_node)
+					{					
+						set_FE_nodal_int_value(new_highlight_rig_node,&component,
+							/*version*/0,FE_NODAL_VALUE,1/*highlight*/);
+						highlight_signal((struct Device *)NULL,new_highlight_rig_node,
+							analysis->signal_drawing_package,new_device_number,
+							0,0,analysis->datum,analysis->potential_time,signals,
+							analysis->signal_drawing_information,analysis->user_interface);
+						if (interval)
+						{
+							update_interval_drawing_area(analysis->window);
+						}
+						/* update the trace window */
+						trace_change_signal(analysis->trace);
+						/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
+						/*
+						highlight_electrode_or_auxiliar(*new_highlight,new_electrode_number,
+							new_auxiliary_number,map,mapping);
+						*/
+					}/* if (new_highlight_rig_node) */
+				}/* if (multiple_selection) */
+			}	/* if (return_code) */
+		}/* if(rig_node_order_info) */				
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"highlight_analysis_device_node. couln't create rig_node_order_info");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"highlight_analysis_device_node.  Missing arguments");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* highlight_analysis_device_node */
+#endif /*defined (UNEMAP_USE_NODES) */
 
 void set_mapping_analysis_region(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
@@ -14598,9 +15381,15 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 										auxiliary_x++;
 										auxiliary_y++;
 									}
+#if defined (UNEMAP_USE_NODES)
+									highlight_analysis_device_node((button_event->state)&ControlMask,
+										(struct FE_node *)NULL,(int *)NULL,(int *)NULL,
+										&auxiliary_number,analysis);
+#else
 									highlight_analysis_device((button_event->state)&ControlMask,
 										(struct Device **)NULL,(int *)NULL,(int *)NULL,
 										&auxiliary_number,analysis);
+#endif /*  defined (UNEMAP_USE_NODES) */
 								}
 							}
 						}
@@ -14679,9 +15468,15 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 								electrode_y++;
 								electrode_drawn++;
 							}
+#if defined (UNEMAP_USE_NODES)
+							highlight_analysis_device_node((event->state)&ControlMask,
+								(struct FE_node *)NULL,(int *)NULL,&electrode_number,
+								(int *)NULL,analysis);
+#else
 							highlight_analysis_device((event->state)&ControlMask,
 								(struct Device **)NULL,(int *)NULL,&electrode_number,
 								(int *)NULL,analysis);
+#endif /*  defined (UNEMAP_USE_NODES) */
 						}
 					}
 				}
@@ -14794,6 +15589,9 @@ Creates the windows associated with the analysis work area.
 	{
 		analysis->unemap_package=package;
 		analysis->signal_drawing_package=(struct Signal_drawing_package *)NULL;
+#if defined (UNEMAP_USE_NODES)
+		analysis->highlight_rig_node=(struct FE_node *)NULL;
+#endif /* defined (UNEMAP_USE_NODES) */
 		analysis->activation=activation;
 		analysis->map_type=NO_MAP_FIELD;
 		analysis->map_type_changed=0;
@@ -14911,7 +15709,11 @@ Creates the windows associated with the analysis work area.
 						if (create_Analysis_window(&(analysis->window),activation,
 							analysis->window_shell,&(analysis->rig),
 							&(analysis->signal_drawing_package),
-							&(analysis->highlight),&(analysis->datum),
+							&(analysis->highlight),
+#if defined (UNEMAP_USE_NODES)
+							&(analysis->highlight_rig_node),
+#endif /* defined (UNEMAP_USE_NODES) */
+							&(analysis->datum),
 							&(analysis->event_number),&(analysis->number_of_events),
 							&(analysis->potential_time),&(analysis->detection),
 							&(analysis->threshold),&(analysis->minimum_separation),

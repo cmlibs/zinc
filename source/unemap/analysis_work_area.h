@@ -45,6 +45,9 @@ DESCRIPTION :
 	struct Signal_drawing_package *signal_drawing_package;
 	int datum;
 	struct Device **highlight;
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node *highlight_rig_node;
+#endif /* defined (UNEMAP_USE_NODES) */
 	char calculate_events;
 	enum Event_detection_objective objective;
 	enum Event_detection_algorithm detection;
@@ -114,6 +117,35 @@ else
   highlight it and dehighlight all other devices
   make it THE highlighted device for the analysis work area
 ==============================================================================*/
+
+#if defined (UNEMAP_USE_NODES) 
+/* still keep highlight_analysis_device, as will use both for a while */
+int highlight_analysis_device_node(unsigned int multiple_selection,
+	struct FE_node *device_node,	int *device_number,int *electrode_number,
+	int *auxiliary_number,struct Analysis_work_area *analysis);
+/*******************************************************************************
+LAST MODIFIED : 10 August 2000
+
+DESCRIPTION :
+If the highlight is part of a multiple selection
+then
+  If the <device_node> is not highlighted
+  then
+    highlight it and make it THE highlighted device for the analysis work area
+  else
+    if it is the only highlighted device
+    then
+      do nothing
+    else
+      dehighlight it
+      if it is THE highlighted device for the analysis work area
+      then
+        make the first highlighted device THE highlighted device
+else
+  highlight it and dehighlight all other devices
+  make it THE highlighted device for the analysis work area
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES)  */
 
 void set_mapping_analysis_region(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data);

@@ -51,6 +51,7 @@ element,nodes, fields when they are no longer required.
 	struct FE_field *display_end_time_field;
 	struct FE_field *display_start_time_field;
 	struct FE_field *read_order_field;
+	struct FE_field *highlight_field;
 	struct FE_field *signal_field;
 	struct FE_field *signal_minimum_field;
 	struct FE_field *signal_maximum_field;
@@ -192,6 +193,24 @@ gets the field of the unemap package.
 
 int set_unemap_package_read_order_field(struct Unemap_package *package,
 	struct FE_field *read_order_field);
+/*******************************************************************************
+LAST MODIFIED : July 8 1999
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+
+struct FE_field *get_unemap_package_highlight_field(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : July 12 1999
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+
+int set_unemap_package_highlight_field(struct Unemap_package *package,
+	struct FE_field *highlight_field);
 /*******************************************************************************
 LAST MODIFIED : July 8 1999
 

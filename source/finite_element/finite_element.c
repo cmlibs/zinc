@@ -35930,6 +35930,7 @@ set these to NULL, copy the number_of_nodes.
 			node_order_info->nodes=(struct FE_node **)NULL;	
 			node_order_info->access_count=0;
 		}
+		node_order_info->current_node_number=0;
 	}
 	else
 	{
@@ -36093,7 +36094,8 @@ int set_FE_node_order_info_node(
 LAST MODIFIED : 16 August 1999
 
 DESCRIPTION : 
-Sets the <node_order_info> node at the specified node_number
+Sets the <node_order_info> node at the specified node_number.
+Also sets the current_node_number to <the node_number>
 ==============================================================================*/
 {
 	int return_code
@@ -36104,6 +36106,7 @@ Sets the <node_order_info> node at the specified node_number
 		(node_number<=node_order_info->number_of_nodes)&&(node))
 	{	
 		REACCESS(FE_node)(&(node_order_info->nodes[node_number]),node);
+		node_order_info->current_node_number=node_number;
 		return_code=1;
 	}
 	else
@@ -36116,6 +36119,171 @@ Sets the <node_order_info> node at the specified node_number
 
 	return (return_code);
 } /* set_FE_node_group_order_node */
+
+int get_FE_node_order_info_current_node_number(
+	struct FE_node_order_info *node_order_info)
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+gets the <node_order_info> <current_node_number>
+==============================================================================*/
+{
+	int current_node_number;
+
+	ENTER(get_FE_node_order_info_current_node_number);	
+	if (node_order_info&&(node_order_info->number_of_nodes>0))
+	{			
+		current_node_number=node_order_info->current_node_number;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_node_order_info_current_node_number.  Invalid argument");		
+		current_node_number=-1;
+	}
+	LEAVE;
+
+	return (current_node_number);
+} /* set_FE_node_order_info_current_node_number */
+
+int set_FE_node_order_info_current_node_number(
+	struct FE_node_order_info *node_order_info,int current_node_number)
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+Sets the <node_order_info> <current_node_number>
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_FE_node_order_info_current_node_number);
+	return_code=0;
+	if ((node_order_info)&&(current_node_number>-1)&&
+		(current_node_number<=node_order_info->number_of_nodes))
+	{			
+		node_order_info->current_node_number=current_node_number;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_node_order_info_current_node_number.  Invalid argument");		
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_FE_node_order_info_current_node_number */
+
+struct FE_node *get_FE_node_order_info_current_node(
+	struct FE_node_order_info *node_order_info)
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+Gets the <node_order_info> node at the current_node_number
+==============================================================================*/
+{
+	struct FE_node *node;
+
+	ENTER(get_FE_node_order_info_current_node);
+	if (node_order_info)
+	{		
+		if(node_order_info->number_of_nodes)
+		{
+			node=node_order_info->nodes[node_order_info->current_node_number];
+		}
+		else
+		{
+			node=(struct FE_node *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_node_order_info_current_node.  Invalid argument");		
+		node=(struct FE_node *)NULL;
+	}
+	LEAVE;
+
+	return (node);
+} /*get_FE_node_order_info_current_node  */
+
+struct FE_node *get_FE_node_order_info_next_node(
+	struct FE_node_order_info *node_order_info)
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+Gets the <node_order_info> next node by incrementing the current_node_number,
+and returning the new current node. If at the end of the array, return null.
+==============================================================================*/
+{
+	struct FE_node *node;
+
+	ENTER(get_FE_node_order_info_next_node);
+	if (node_order_info)
+	{		
+		if((node_order_info->number_of_nodes)&&
+			(node_order_info->current_node_number<(node_order_info->number_of_nodes-1)))
+		{			
+			node_order_info->current_node_number++;
+			node=node_order_info->nodes[node_order_info->current_node_number];		
+		}
+		else
+		{
+			node=(struct FE_node *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_node_order_info_next_node.  Invalid argument");		
+		node=(struct FE_node *)NULL;
+	}
+	LEAVE;
+
+	return (node);
+} /*get_FE_node_order_info_next_node  */
+
+struct FE_node *get_FE_node_order_info_prev_node(
+	struct FE_node_order_info *node_order_info)
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+Gets the <node_order_info> next node by incrementing the current_node_number,
+and returning the new current node. If at the start of the array, return null.
+==============================================================================*/
+{
+	struct FE_node *node;
+
+	ENTER(get_FE_node_order_info_prev_node);
+	if (node_order_info)
+	{		
+		if((node_order_info->number_of_nodes)&&
+			(node_order_info->current_node_number>0))
+		{			
+			node_order_info->current_node_number--;
+			node=node_order_info->nodes[node_order_info->current_node_number];		
+		}
+		else
+		{
+			node=(struct FE_node *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_node_order_info_prev_node.  Invalid argument");		
+		node=(struct FE_node *)NULL;
+	}
+	LEAVE;
+
+	return (node);
+} /*get_FE_node_order_info_prev_node  */
 
 int add_nodes_FE_node_order_info(int number_of_nodes_to_add,
 	struct FE_node_order_info *node_order_info)
@@ -36193,6 +36361,7 @@ Called iteratively.
 			/* set the pointer to the node */
 			node_order_info->nodes[node_order_info->number_of_nodes-1]=
 				ACCESS(FE_node)(node);
+			node_order_info->current_node_number=node_order_info->number_of_nodes-1;
 			return_code=1;	
 		}		
 	}

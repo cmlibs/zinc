@@ -72,7 +72,8 @@ unemap_package struct. If a field is set to NULL, then it isn't drawn.
 	struct FE_field *device_type_field;	
 	struct FE_field *display_end_time_field;
 	struct FE_field *display_start_time_field;
-	struct FE_field *read_order_field;	
+	struct FE_field *read_order_field;
+	struct FE_field *highlight_field;	
 	struct FE_field *channel_gain_field;
 	struct FE_field *channel_offset_field; 
 	struct FE_field *signal_field;	
@@ -507,6 +508,28 @@ Gets the field of the signal_drawing_package.
 #if defined (UNEMAP_USE_NODES)
 int set_Signal_drawing_package_read_order_field(struct Signal_drawing_package *package,
 	struct FE_field *read_order_field);
+/*******************************************************************************
+LAST MODIFIED : July 26 2000
+
+DESCRIPTION :
+Sets the field of the signal_drawing_package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+struct FE_field *get_Signal_drawing_package_highlight_field(
+	struct Signal_drawing_package *package);
+/*******************************************************************************
+LAST MODIFIED : July 26 2000
+
+DESCRIPTION :
+Gets the field of the signal_drawing_package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+int set_Signal_drawing_package_highlight_field(struct Signal_drawing_package *package,
+	struct FE_field *highlight_field);
 /*******************************************************************************
 LAST MODIFIED : July 26 2000
 
