@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new.h
 
-LAST MODIFIED : 9 September 2003
+LAST MODIFIED : 10 September 2003
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new object.
@@ -139,9 +139,10 @@ DESCRIPTION :
 Creates the variable input.
 ==============================================================================*/
 
-int Cmiss_variable_new_input_destroy(Cmiss_variable_new_input_id *input);
+int Cmiss_variable_new_input_destroy(
+	Cmiss_variable_new_input_id *input_address);
 /*******************************************************************************
-LAST MODIFIED : 8 September 2003
+LAST MODIFIED : 10 September 2003
 
 DESCRIPTION :
 Destroys the variable input.
@@ -156,9 +157,9 @@ Creates an input list.
 ==============================================================================*/
 
 int Cmiss_variable_new_input_list_destroy(
-	Cmiss_variable_new_input_list_id *list);
+	Cmiss_variable_new_input_list_id *list_address);
 /*******************************************************************************
-LAST MODIFIED : 7 September 2003
+LAST MODIFIED : 10 September 2003
 
 DESCRIPTION :
 Destroys an input list.
@@ -183,9 +184,9 @@ Creates an input value list.
 ==============================================================================*/
 
 int Cmiss_variable_new_input_value_list_destroy(
-	Cmiss_variable_new_input_value_list_id *list);
+	Cmiss_variable_new_input_value_list_id *list_address);
 /*******************************************************************************
-LAST MODIFIED : 7 September 2003
+LAST MODIFIED : 10 September 2003
 
 DESCRIPTION :
 Destroys an input value list.
