@@ -1469,7 +1469,7 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 	return ((void *)NULL);
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
-	return ((DWORD0return_code);
+	return ((DWORD)return_code);
 #endif /* defined (WINDOWS) */
 } /* save_write_signal_file_process */
 
