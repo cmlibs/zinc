@@ -1200,6 +1200,10 @@ Wrapper function for send.
 			return_code=buffer_length;
 		}
 	}
+	/*???debug */
+	printf("socket_send %d %d\n",buffer_length,return_code);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 
 	return (return_code);
 } /* socket_send */
@@ -2895,6 +2899,7 @@ See <unemap_configure> for more details.
 									{
 										if (0<number_of_channels)
 										{
+#if defined (DEBUG)
 											/*???debug */
 											{
 												int ii;
@@ -2906,7 +2911,6 @@ See <unemap_configure> for more details.
 												}
 												printf("\n");
 											}
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 											retval=socket_send(crate->command_socket,
 												(unsigned char *)(crate->configured_channels),
