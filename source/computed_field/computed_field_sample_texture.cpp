@@ -275,8 +275,8 @@ Evaluate the fields cache at the node.
 			{
 				for (i = 0 ; i < number_of_components ; i++)
 				{
-					field->values[i] =  (texture_values[i] - data->minimum) 
-						* (data->maximum - data->minimum);
+					field->values[i] = data->minimum +
+						texture_values[i] * (data->maximum - data->minimum);
 				}
 			}
 			field->derivatives_valid = 0;
@@ -352,8 +352,8 @@ Evaluate the fields cache at the node.
 			{
 				for (i = 0 ; i < number_of_components ; i++)
 				{
-					field->values[i] =  (texture_values[i] - data->minimum) 
-						* (data->maximum - data->minimum);
+					field->values[i] =  data->minimum +
+						texture_values[i] * (data->maximum - data->minimum);
 				}
 			}
 			field->derivatives_valid = 0;
