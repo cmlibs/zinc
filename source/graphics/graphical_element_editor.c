@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -1015,7 +1015,7 @@ Called when switching between Points/Lines/Surfaces/Iso-surfaces etc.
 static void graphical_element_editor_settings_visibility_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
 Called when a settings visibility toggle button is selected.
@@ -1033,21 +1033,20 @@ Called when a settings visibility toggle button is selected.
 		/* the settings is kept as XmNuserData with the parent settings form */
 		if (settings_form=XtParent(widget))
 		{
-			/* Get the material this menu visibility represents and make it current */
+			settings=(struct GT_element_settings *)NULL;
+			/* Get the settings this menu visibility represents */
 			XtVaGetValues(settings_form,XmNuserData,&settings,NULL);
-			if (settings)
+			GT_element_settings_set_visibility(settings,
+				XmToggleButtonGetState(widget));
+			gelem_editor_update_settings_item(gelem_editor,settings);
+			/* ensure this settings is the currently selected one */
+			if (settings != gelem_editor->current_settings)
 			{
-				GT_element_settings_set_visibility(settings,
-					XmToggleButtonGetState(widget));
-				gelem_editor_update_settings_item(gelem_editor,settings);
-				/* inform the client of the changes */
-				graphical_element_editor_update(gelem_editor);
+				gelem_editor->current_settings=settings;
+				gelem_editor_select_settings_item(gelem_editor);
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"graphical_element_editor_settings_visibility_CB.  Missing settings");
-			}
+			/* inform the client of the changes */
+			graphical_element_editor_update(gelem_editor);
 		}
 		else
 		{
@@ -1067,7 +1066,7 @@ Called when a settings visibility toggle button is selected.
 static void graphical_element_editor_settings_select_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 10 July 2000
 
 DESCRIPTION :
 Called when a settings select toggle button is selected.
@@ -1085,13 +1084,14 @@ Called when a settings select toggle button is selected.
 		/* the settings is kept as XmNuserData with the parent settings form */
 		if (settings_form=XtParent(widget))
 		{
-			/* Get the material this menu select represents and make it current */
+			settings=(struct GT_element_settings *)NULL;
+			/* Get the settings this menu select represents and make it current */
 			XtVaGetValues(settings_form,XmNuserData,&settings,NULL);
 			if (settings != gelem_editor->current_settings)
 			{
 				gelem_editor->current_settings=settings;
+				gelem_editor_select_settings_item(gelem_editor);
 			}
-			gelem_editor_select_settings_item(gelem_editor);
 		}
 		else
 		{
