@@ -230,7 +230,8 @@ ifeq ($(SYSNAME),win32)
    TARGET_TYPE_DEFINES =
 endif # SYSNAME == win32
 
-PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities/$(BIN_ARCH_DIR)
+#Always look in cmgui utilities so that gx finds it.
+PRODUCT_UTILITIES_PATH=$(CMISS_ROOT)/cmgui/utilities/$(BIN_ARCH_DIR)
 UTILITIES_PATH=$(CMGUI_DEV_ROOT)/utilities/$(BIN_ARCH_DIR)
 
 # DSO Link command
