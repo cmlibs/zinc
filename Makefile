@@ -126,6 +126,8 @@ $(SOURCE_PATH)/cmgui_linux.make : $(SOURCE_PATH)/cmgui.imake cmgui.make
 
 update :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
+		cvs update cmgui.make && \
+		cd $(PRODUCT_SOURCE_PATH) && \
 		cvs update && \
 		chgrp -R cmgui_programmers * && \
 		make -f cmgui.make cmgui cmgui_optimised cmgui64 cmgui_lite cmgui_memorycheck && \
@@ -135,14 +137,14 @@ update :
 		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
 	fi
 
-depend : cmgui_sgi.make cmgui_sgioptimised.make cmgui_sgi64.make cmgui_linux.make cmgui_sgi_memorycheck.make
+depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(SOURCE_PATH)/cmgui_sgi64.make $(SOURCE_PATH)/cmgui_linux.make $(SOURCE_PATH)/cmgui_sgi_memorycheck.make
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(PRODUCT_SOURCE_PATH); \
 		make -f cmgui_sgi.make depend ; \
 		make -f cmgui_sgioptimised.make depend ; \
 		make -f cmgui_sgi_memorycheck.make depend ; \
 		make -f cmgui_sgi64.make depend ; \
-		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(VPATH) ; make -f cmgui_linux.make depend ' ; \
+		rsh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_SOURCE_PATH) ; make -f cmgui_linux.make depend ' ; \
 	else \
 		echo "Must be cmiss"; \
 	fi
