@@ -58,7 +58,7 @@ typedef struct USTMSCpair
 	some point.
 	The code should still run on an older GLX even if it is compiled on a GLX 1.3.
         On hpc1 this code compiles but no valid pbuffers can be created for any FBConfigs
-        returned and so I have disablled it. */
+        returned and so I have disabled it. */
 /*???DB.  The old version of GLX (glx.h 1999/12/11), has GLX_VERSION_1_3
 	defined, but doesn't define GLX_PBUFFER_WIDTH, GLX_PBUFFER_HEIGHT and
 	GLX_RGBA_BIT */
