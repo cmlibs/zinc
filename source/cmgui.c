@@ -70,6 +70,13 @@ DESCRIPTION :
 #include "view/coord.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "unemap/unemap_package.h"
+#if defined (F90_INTERPRETER)
+#include "command/f90_interpreter.h"
+#else /* defined (F90_INTERPRETER) */
+#if defined (PERL_INTERPRETER)
+#include "command/perl_interpreter.h"
+#endif /* defined (PERL_INTERPRETER) */
+#endif /* defined (F90_INTERPRETER) */
 
 /*
 Global variables
@@ -630,6 +637,10 @@ Main program for the CMISS Graphical User Interface
 	{
 		batch_mode = 1;
 	}
+
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+	initialise_interpreter(argc, argv);
+#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 	/* initialize application specific global variables */
 	execute_command = CREATE(Execute_command)(cmiss_execute_command,
@@ -1796,6 +1807,12 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (UNEMAP) */
 				DESTROY(Execute_command)(&execute_command);
 				DESTROY(Execute_command)(&set_command);
+
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+				destroy_interpreter();
+#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
+
+		
 
 				/* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is
 					on.  When MEMORY_CHECKING is off this function does nothing */
