@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : io_device.h
 
-LAST MODIFIED : 16 May 2001
+LAST MODIFIED : 27 January 2005
 
 DESCRIPTION :
 Device structure.  Used to keep information about external devices attached to
@@ -19,6 +19,10 @@ X events or poll frequently with timeouts.
 Global types
 ------------
 */
+
+/* Declare the type here to allow the struct to be used in the
+	Io_device_set_perl_action function */
+struct Interpreter;
 
 struct Io_device;
 /*******************************************************************************
@@ -77,12 +81,13 @@ Finalises the detection of active file desriptors.  All descriptors activated
 between the start and end detection are assumed to belong to the <device>.
 ==============================================================================*/
 
-int Io_device_set_perl_action(struct Io_device *device, char *perl_action);
+int Io_device_set_perl_action(struct Io_device *device,
+	struct Interpreter *interpreter, char *perl_action);
 /*******************************************************************************
-LAST MODIFIED : 16 May 2001
+LAST MODIFIED : 27 January 2005
 
 DESCRIPTION :
-The string <perl_action> is called "eval"ed in perl whenever the <device> is
-activated.
+The string <perl_action> is called "eval"ed in the <interpreter> whenever the
+<device> is activated.
 ==============================================================================*/
 #endif /* !defined (DEVICE_H) */

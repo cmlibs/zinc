@@ -1,7 +1,7 @@
 /*******************************************************************************
-FILE : graphics_object.c
+FILE : io_device.c
 
-LAST MODIFIED : 16 May 2001
+LAST MODIFIED : 27 January 2005
 
 DESCRIPTION :
 ==============================================================================*/
@@ -41,6 +41,7 @@ Io_device structure.
 #if defined (SELECT_DESCRIPTORS)
 	char *perl_action;
 	char *file_descriptor_flags;
+	struct Interpreter *interpreter;
 	struct User_interface *user_interface;
 	struct Event_dispatcher_descriptor_callback *callback_id;
 #endif /* defined (SELECT_DESCRIPTORS) */
@@ -90,8 +91,8 @@ Called when this device has file descriptors that are waiting.
 #if defined (DEBUG)
 		  printf ("Action function %s\n", device->perl_action);
 #endif /* defined (DEBUG) */
-		  interpreter_evaluate_string(device->perl_action,
-			  &callback_result, &return_code);
+		  interpreter_evaluate_string(device->interpreter,
+			  device->perl_action, &callback_result, &return_code);
 		  if (callback_result)
 		  {
 			  DEALLOCATE(callback_result);
@@ -144,6 +145,7 @@ Allocates memory and assigns fields for a device.
 #if defined (SELECT_DESCRIPTORS)
 			device->perl_action = (char *)NULL;
 			device->file_descriptor_flags = (char *)NULL;
+			device->interpreter = (struct Interpreter *)NULL;
 			device->callback_id = (struct Event_dispatcher_descriptor_callback *)NULL;
 #endif /* defined (SELECT_DESCRIPTORS) */
 			strcpy(device->name,name);
@@ -327,13 +329,14 @@ between the start and end detection are assumed to belong to the <device>.
 	return (return_code);
 } /* Io_device_end_detection */
 
-int Io_device_set_perl_action(struct Io_device *device, char *perl_action)
+int Io_device_set_perl_action(struct Io_device *device,
+	struct Interpreter *interpreter, char *perl_action)
 /*******************************************************************************
-LAST MODIFIED : 16 May 2001
+LAST MODIFIED : 27 January 2004
 
 DESCRIPTION :
-The string <perl_action> is called "eval"ed in perl whenever the <device> is
-activated.
+The string <perl_action> is called "eval"ed in the <interpreter> whenever the
+<device> is activated.
 ==============================================================================*/
 {
 	int return_code;
@@ -349,6 +352,7 @@ activated.
 		if (ALLOCATE(device->perl_action, char, strlen(perl_action) + 1))
 		{
 			strcpy(device->perl_action, perl_action);
+			device->interpreter = interpreter;
 			return_code = 1;
 		}
 		else

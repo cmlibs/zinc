@@ -8419,7 +8419,8 @@ Executes an ATTACH command.
 				}
 				if (perl_action)
 				{
-					Io_device_set_perl_action(device, perl_action);
+					Io_device_set_perl_action(device, command_data->interpreter,
+						perl_action);
 				}
 			}
 			if (perl_action)
