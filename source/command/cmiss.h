@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 31 October 2000
+LAST MODIFIED : 21 March 2001
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -33,7 +33,7 @@ DESCRIPTION :
 		*examples_directory,*example_comfile,*help_directory,*help_url;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #if defined (CELL)
-	struct Cell_window *cell_window;
+	struct Cell_interface *cell_interface;
 #endif /* defined (CELL) */
 	struct Command_window *command_window;
 #if !defined (WINDOWS_DEV_FLAG)

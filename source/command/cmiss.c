@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 20 March 2001
+LAST MODIFIED : 21 March 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -18,8 +18,8 @@ Functions for executing cmiss commands.
 #if !defined (WINDOWS_DEV_FLAG)
 #include "application/application.h"
 #if defined (CELL)
+#include "cell/cell_interface.h"
 #include "cell/cell_window.h"
-#include "cell/cmgui_connection.h"
 #endif /* defined (CELL) */
 #include "comfile/comfile_window.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
@@ -22549,7 +22549,6 @@ Executes a UNEMAP command.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if defined (CELL)
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_cell_open(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -22561,7 +22560,7 @@ Executes a CELL OPEN command.
 {
 	char *current_token;
 	int return_code;
-	struct Cell_window *cell_window;
+	struct Cell_interface *cell_interface;
 	struct Cmiss_command_data *command_data;
 	struct Execute_command *execute_command;
 	
@@ -22576,91 +22575,66 @@ Executes a CELL OPEN command.
 				!(strcmp(PARSER_HELP_STRING,current_token)&&
 				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
 			{
-				if (!(cell_window=command_data->cell_window))
+				if (!(cell_interface=command_data->cell_interface))
 				{
 					if (execute_command = CREATE(Execute_command)(cmiss_execute_command,
 						(void *)(command_data)))
 					{
-						/* create a shell */
-						if (XtVaCreatePopupShell("cell_window_shell",
-							topLevelShellWidgetClass,
-							command_data->user_interface->application_shell,
-							XmNallowShellResize,False,NULL))
-						{
-							/* add Cell 3D */
-							if (cell_window=create_Cell_window(command_data->user_interface,
-								(char *)NULL,command_data->control_curve_manager,
-								command_data->unemap_package, 
-								command_data->any_object_selection,
-								command_data->interactive_tool_manager,
-								&(command_data->background_colour),command_data->light_manager,
-								command_data->default_light,command_data->light_model_manager,
-								command_data->default_light_model,command_data->scene_manager,
-								command_data->default_scene,command_data->texture_manager,
-								command_data->graphics_object_list,
-								command_data->graphical_material_manager,
-								command_data->glyph_list,command_data->fe_field_manager,
-								command_data->element_group_manager,command_data->node_manager,
-								command_data->element_manager,command_data->node_group_manager,
-								command_data->data_group_manager,
-								command_data->default_graphical_material,
-								command_data->spectrum_manager,command_data->default_spectrum,
-                command_data->computed_field_package,
-                command_data->element_point_ranges_selection,
-								execute_command))
-							{
-								return_code=1;
-								command_data->cell_window=cell_window;
-#if defined (CELL)
-								/*create_Shell_list_item(&(cell_window->window_shell),
-								  command_data->user_interface);
-								  XtAddCallback(cell_window->window_shell,XmNdestroyCallback,
-								  close_cell,(XtPointer)cell_window);*/
-								/* manage the cell window */
-								/*XtManageChild(cell_window->shell);*/
-								/* realize the cell window shell */
-								/*XtRealizeWidget(cell_window->window_shell);*/
-#endif /* defined (CELL) */
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"execute_command_cell_open.  Could not create cell_window");
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"execute_command_cell_open.  Could not create cell_window shell");
-							return_code=0;
-						}
+            /* add Cell 3D */
+            if (cell_interface = CREATE(Cell_interface)(
+              command_data->any_object_selection,
+              &(command_data->background_colour),
+              command_data->default_graphical_material,
+              command_data->default_light,
+              command_data->default_light_model,
+              command_data->default_scene,
+              command_data->default_spectrum,
+              command_data->default_time_keeper,
+              command_data->graphics_object_list,
+              command_data->glyph_list,
+              command_data->interactive_tool_manager,
+              command_data->light_manager,
+              command_data->light_model_manager,
+              command_data->graphical_material_manager,
+              command_data->scene_manager,
+              command_data->spectrum_manager,
+              command_data->texture_manager,
+              command_data->user_interface,
+              close_cell_window
+#if defined (CELL_DISTRIBUTED)
+              ,command_data->element_point_ranges_selection,
+              command_data->computed_field_package,
+              command_data->element_manager,
+              command_data->element_group_manager,
+              command_data->fe_field_manager
+#endif /* defined (CELL_DISTRIBUTED) */
+              ))
+            {
+              command_data->cell_interface=cell_interface;
+              return_code = 1;
+            }
+            else
+            {
+              display_message(ERROR_MESSAGE,"execute_command_cell_open.  "
+                "Could not create the cell_interface");
+            }
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"execute_command_cell_open.  Could not ALLOCATE Execute_command structure");
-						return_code=0;
+						display_message(ERROR_MESSAGE,"execute_command_cell_open.  "
+              "Could not ALLOCATE Execute_command structure");
 					}	
 				}
-				if (cell_window->shell)
-				{
-					return_code=1;
-#if defined (CELL)
-					/* pop up the CELL window shell */
-					XtPopup(cell_window->shell,XtGrabNone);
-#endif /* defined (CELL) */
-				}
-				else
-				{
-					return_code=0;
-				}
+        else
+        {
+          /* Cell already exists, so pop it up */
+          return_code = Cell_interface_pop_up(command_data->cell_interface);
+        }
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"Unknown option: %s",current_token);
-				display_parse_state_location(state);
-				return_code=0;
+				/* no help */
+				return_code=1;
 			}
 		}
 		else
@@ -22680,11 +22654,72 @@ Executes a CELL OPEN command.
 
 	return (return_code);
 } /* execute_command_cell_open */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 #endif /* defined (CELL) */
 
 #if defined (CELL)
-#if !defined (WINDOWS_DEV_FLAG)
+static int execute_command_cell_close(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Executes a CELL CLOSE command.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code;
+	struct Cell_interface *cell_interface;
+	struct Cmiss_command_data *command_data;
+  
+	ENTER(execute_command_cell_close);
+	USE_PARAMETER(dummy_to_be_modified);
+	/* check argument */
+	if (state)
+	{
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		{
+			if (!((current_token=state->current_token)&&
+				!(strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
+			{
+        if (cell_interface=command_data->cell_interface)
+        {
+          return_code = DESTROY(Cell_interface)(&cell_interface);
+          command_data->cell_interface = (struct Cell_interface *)NULL;
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"execute_command_close.  "
+            "Missing Cell interface");
+          return_code = 0;
+        }
+      }
+			else
+			{
+				/* no help */
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"execute_command_cell_close.  Missing command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_command_cell_close.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_cell_close() */
+#endif /* defined (CELL) */
+
+#if defined (CELL)
 static int execute_command_cell_read_model(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -22696,7 +22731,7 @@ Executes a CELL READ MODEL command.
 {
 	char *current_token,*file_name;
 	int return_code;
-	struct Cell_window *cell_window;
+	struct Cell_interface *cell_interface;
 	struct Cmiss_command_data *command_data;
 	struct Modifier_entry *entry;
   
@@ -22722,18 +22757,35 @@ Executes a CELL READ MODEL command.
         if (return_code=process_multiple_options(state,
           command_data->set_file_name_option_table))
         {
-          if (cell_window=command_data->cell_window)
+          if (!file_name)
           {
-            return_code = Cell_read_model(file_name,cell_window);
+            if (!(file_name = confirmation_get_read_filename(".xml",
+              command_data->user_interface)))
+          {
+              return_code = 0;
+            }
+          }
+          if (file_name)
+          {
+            if (cell_interface=command_data->cell_interface)
+            {
+              return_code = Cell_interface_read_model(cell_interface,file_name);
+            }
+            else
+            {
+              display_message(ERROR_MESSAGE,"execute_command_cell_read_model. "
+                "Missing Cell interface");
+              return_code = 0;
+            }
+            DEALLOCATE(file_name);
           }
           else
           {
             display_message(ERROR_MESSAGE,"execute_command_cell_read_model. "
-              "Missing Cell window");
+              "Unable to get the file name");
             return_code = 0;
           }
         }
-        DEALLOCATE(file_name);
       }
 			else
 			{
@@ -22758,11 +22810,9 @@ Executes a CELL READ MODEL command.
 
 	return (return_code);
 } /* execute_command_cell_read_model */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 #endif /* defined (CELL) */
         
 #if defined (CELL)
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_cell_read(struct Parse_state *state,
 	void *prompt_void,void *command_data_void)
 /*******************************************************************************
@@ -22773,20 +22823,18 @@ Executes a CELL READ command.
 ==============================================================================*/
 {
 	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"model",NULL,NULL,execute_command_cell_read_model},
-		{NULL,NULL,NULL,execute_command_cm}
-	};
+	static struct Option_table *option_table;
 
 	ENTER(execute_command_cell_read);
+  USE_PARAMETER(prompt_void);
 	/* check argument */
 	if (state)
 	{
-		(option_table[0]).user_data=command_data_void;
-		(option_table[1]).user_data=command_data_void;
-		(option_table[1]).to_be_modified=prompt_void;
-		return_code=process_option(state,option_table);
+		option_table = CREATE(Option_table)();
+    Option_table_add_entry(option_table,"model",NULL,
+      command_data_void,execute_command_cell_read_model);
+    return_code = Option_table_parse(option_table,state);
+    DESTROY(Option_table)(&option_table);
 	}
 	else
 	{
@@ -22797,44 +22845,690 @@ Executes a CELL READ command.
 
 	return (return_code);
 } /* execute_command_cell_read */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 #endif /* defined (CELL) */
 
+#if defined (CELL)
+static int cell_list_XMLParser_properties(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
 
-#if !defined (WINDOWS_DEV_FLAG)
+DESCRIPTION :
+Executes a CELL LIST XMLPARSER_PROPERTIES command.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Cell_interface *cell_interface;
+
+	ENTER(cell_list_XMLParser_properties);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+    if (!((state->current_token)&&
+      !(strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
+    {
+      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      {
+        if (cell_interface = command_data->cell_interface)
+        {
+          /* ??? Should just do a get_XMLParser_properties and then do the
+           * listing here ???
+           */
+          return_code =
+            Cell_interface_list_XMLParser_properties(cell_interface);
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"cell_list_XMLParser_properties.  "
+            "Missing Cell interface");
+          return_code=0;
+        }
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,
+          "cell_list_XMLParser_properties.  Missing command_data");
+        return_code=0;
+      }
+    }
+    else
+    {
+      /* no help */
+      return_code = 1;
+    }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"cell_list_XMLParser_properties.  "
+      "Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* cell_list_XMLParser_properties() */
+#endif /* defined (CELL) */
+
+#if defined (CELL)
+static int cell_set_XMLParser_properties(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 02 July 2000
+
+DESCRIPTION :
+Executes a CELL SET XMLPARSER_PROPERTIES command.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Cell_interface *cell_interface;
+  static struct Option_table *option_table;
+  int *XMLParser_properties,i;
+
+	ENTER(cell_set_XMLParser_properties);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+    if (!((state->current_token)&&
+      !(strcmp(PARSER_HELP_STRING,state->current_token)&&
+      strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
+    {
+      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      {
+        if (cell_interface = command_data->cell_interface)
+        {
+          /* initialise defaults */
+          if (XMLParser_properties =
+            Cell_interface_get_XMLParser_properties(cell_interface))
+          {
+            option_table = CREATE(Option_table)();
+            i = 0;
+            /* validation */
+            Option_table_add_entry(option_table,"do_validation",
+              XMLParser_properties+i,NULL,set_int);
+            i++;
+            /* namespaces */
+            Option_table_add_entry(option_table,"do_namespaces",
+              XMLParser_properties+i,NULL,set_int);
+            i++;
+            /* entity expansion */
+            Option_table_add_entry(option_table,"do_expand",
+              XMLParser_properties+i,NULL,set_int);
+            if (return_code = Option_table_multi_parse(option_table,state))
+            {
+              if (!Cell_interface_set_XMLParser_properties(cell_interface,
+                XMLParser_properties))
+              {
+                display_message(ERROR_MESSAGE,"cell_set_XMLParser_properties.  "
+                  "Unable to set the current XML parser properties");
+                return_code=0;
+              }
+            }
+            DESTROY(Option_table)(&option_table);
+            DEALLOCATE(XMLParser_properties);
+          }
+          else
+          {
+            display_message(ERROR_MESSAGE,"cell_set_XMLParser_properties.  "
+              "Unable to get the current XML parser properties");
+            return_code=0;
+          }
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"cell_set_XMLParser_properties.  "
+            "Missing Cell interface");
+          return_code=0;
+        }
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,
+          "cell_set_XMLParser_properties.  Missing command_data");
+        return_code=0;
+      }
+    }
+    else
+    {
+      /* no help ?? */
+      return_code = 1;
+    }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"cell_set_XMLParser_properties.  "
+      "Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* cell_set_XMLParser_properties() */
+#endif /* defined (CELL) */
+
+#if defined (CELL)
+static int cell_list_copy_tags(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Executes a CELL LIST COPY_TAGS command.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Cell_interface *cell_interface;
+
+	ENTER(cell_list_copy_tags);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+    if (!((state->current_token)&&
+      !(strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
+    {
+      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      {
+        if (cell_interface = command_data->cell_interface)
+        {
+          return_code =
+            Cell_interface_list_copy_tags(cell_interface);
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"cell_list_copy_tags.  "
+            "Missing Cell interface");
+          return_code=0;
+        }
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,
+          "cell_list_copy_tags.  Missing command_data");
+        return_code=0;
+      }
+    }
+    else
+    {
+      /* no help */
+      return_code = 1;
+    }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"cell_list_copy_tags.  "
+      "Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* cell_list_copy_tags() */
+#endif /* defined (CELL) */
+
+#if defined (HOW_CAN_I_DO_THIS)
+#if defined (CELL)
+static int cell_set_copy_tags(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 09 July 2000
+
+DESCRIPTION :
+Executes a CELL SET COPY_TAGS command.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Cell_interface *cell_interface;
+  static struct Option_table *option_table;
+  int i;
+  char **copy_tags;
+
+	ENTER(cell_set_copy_tags);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+    if (!((state->current_token)&&
+      !(strcmp(PARSER_HELP_STRING,state->current_token)&&
+      strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
+    {
+      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      {
+        if (cell_interface = command_data->cell_interface)
+        {
+          /* initialise defaults */
+          if (copy_tags =
+            Cell_interface_get_copy_tags(cell_interface))
+          {
+          }
+          else
+          {
+            display_message(ERROR_MESSAGE,"cell_set_XMLParser_properties.  "
+              "Unable to get the current XML parser properties");
+            return_code=0;
+          }
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"cell_set_XMLParser_properties.  "
+            "Missing Cell interface");
+          return_code=0;
+        }
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,
+          "cell_set_XMLParser_properties.  Missing command_data");
+        return_code=0;
+      }
+    }
+    else
+    {
+      /* no help ?? */
+      return_code = 1;
+    }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"cell_set_XMLParser_properties.  "
+      "Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* cell_set_XMLParser_properties() */
+#endif /* defined (CELL) */
+#endif /* defined (HOW_CAN_I_DO_THIS) */
+
+#if defined (CELL)
+static int cell_list_ref_tags(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Executes a CELL LIST REF_TAGS command.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Cell_interface *cell_interface;
+
+	ENTER(cell_list_ref_tags);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+    if (!((state->current_token)&&
+      !(strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
+    {
+      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      {
+        if (cell_interface = command_data->cell_interface)
+        {
+          return_code =
+            Cell_interface_list_ref_tags(cell_interface);
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"cell_list_ref_tags.  "
+            "Missing Cell interface");
+          return_code=0;
+        }
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,
+          "cell_list_ref_tags.  Missing command_data");
+        return_code=0;
+      }
+    }
+    else
+    {
+      /* no help */
+      return_code = 1;
+    }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"cell_list_ref_tags.  "
+      "Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* cell_list_ref_tags() */
+#endif /* defined (CELL) */
+
+#if defined (CELL)
+static int cell_list_components(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 09 July 2000
+
+DESCRIPTION :
+Executes a CELL LIST COMPONENTS command.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Cell_interface *cell_interface;
+  struct Option_table *option_table;
+  char full;
+
+	ENTER(cell_list_components);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+    if (!((state->current_token)&&
+      !(strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
+    {
+      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      {
+        if (cell_interface = command_data->cell_interface)
+        {
+          option_table = CREATE(Option_table)();
+          full = 0;
+          Option_table_add_entry(option_table,"full",&full,NULL,set_char_flag);
+          if (return_code = Option_table_multi_parse(option_table,state))
+          {
+            Cell_interface_list_components(cell_interface,(int)full);
+          }
+          DESTROY(Option_table)(&option_table);
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"cell_list_components.  "
+            "Missing Cell interface");
+          return_code=0;
+        }
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,
+          "cell_list_components.  Missing command_data");
+        return_code=0;
+      }
+    }
+    else
+    {
+      /* no help */
+      return_code = 1;
+    }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"cell_list_components.  "
+      "Missing state");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* cell_list_components() */
+#endif /* defined (CELL) */
+
+#if defined (CELL)
+static int cell_list_variables(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 10 July 2000
+
+DESCRIPTION :
+Executes a CELL LIST VARIABLES command.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Cell_interface *cell_interface;
+  struct Option_table *option_table;
+  char full;
+
+	ENTER(cell_list_variables);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+    if (!((state->current_token)&&
+      !(strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
+    {
+      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      {
+        if (cell_interface = command_data->cell_interface)
+        {
+          option_table = CREATE(Option_table)();
+          full = 0;
+          Option_table_add_entry(option_table,"full",&full,NULL,set_char_flag);
+          if (return_code = Option_table_multi_parse(option_table,state))
+          {
+            Cell_interface_list_variables(cell_interface,(int)full);
+          }
+          DESTROY(Option_table)(&option_table);
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"cell_list_variables.  "
+            "Missing Cell interface");
+          return_code=0;
+        }
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,
+          "cell_list_variables.  Missing command_data");
+        return_code=0;
+      }
+    }
+    else
+    {
+      /* no help */
+      return_code = 1;
+    }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"cell_list_variables.  "
+      "Missing state");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* cell_list_variables() */
+#endif /* defined (CELL) */
+
+#if defined (CELL)
+static int cell_list_hierarchy(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Executes a CELL LIST HIERARCHY command.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Cell_interface *cell_interface;
+  struct Option_table *option_table;
+  char full,*name;
+
+	ENTER(cell_list_hierarchy);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+    if (!((state->current_token)&&
+      !(strcmp(PARSER_HELP_STRING,state->current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))))
+    {
+      if (command_data=(struct Cmiss_command_data *)command_data_void)
+      {
+        if (cell_interface = command_data->cell_interface)
+        {
+          option_table = CREATE(Option_table)();
+          full = 0;
+          Option_table_add_entry(option_table,"full",&full,NULL,set_char_flag);
+          name = (char *)NULL;
+          Option_table_add_entry(option_table,"name",&name,NULL,set_name);
+          if (return_code = Option_table_multi_parse(option_table,state))
+          {
+            Cell_interface_list_hierarchy(cell_interface,(int)full,name);
+          }
+          DESTROY(Option_table)(&option_table);
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,"cell_list_hierarchy.  "
+            "Missing Cell interface");
+          return_code=0;
+        }
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,
+          "cell_list_hierarchy.  Missing command_data");
+        return_code=0;
+      }
+    }
+    else
+    {
+      /* no help */
+      return_code = 1;
+    }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"cell_list_hierarchy.  "
+      "Missing state");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* cell_list_hierarchy() */
+#endif /* defined (CELL) */
+
+#if defined (CELL)
+static int execute_command_cell_list(struct Parse_state *state,
+	void *prompt_void,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 29 June 2000
+
+DESCRIPTION :
+Executes a CELL LIST command.
+==============================================================================*/
+{
+	int return_code;
+	static struct Option_table *option_table;
+
+	ENTER(execute_command_cell_list);
+  USE_PARAMETER(prompt_void);
+	/* check argument */
+	if (state)
+	{
+    option_table = CREATE(Option_table)();
+    Option_table_add_entry(option_table,"XMLParser_properties",NULL,
+      command_data_void,cell_list_XMLParser_properties);
+    Option_table_add_entry(option_table,"copy_tags",NULL,
+      command_data_void,cell_list_copy_tags);
+    Option_table_add_entry(option_table,"ref_tags",NULL,
+      command_data_void,cell_list_ref_tags);
+    Option_table_add_entry(option_table,"components",NULL,
+      command_data_void,cell_list_components);
+    Option_table_add_entry(option_table,"variables",NULL,
+      command_data_void,cell_list_variables);
+    Option_table_add_entry(option_table,"hierarchy",NULL,
+      command_data_void,cell_list_hierarchy);
+    return_code = Option_table_parse(option_table,state);
+    DESTROY(Option_table)(&option_table);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"execute_command_cell_list.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_cell_list() */
+#endif /* defined (CELL) */
+
+#if defined (CELL)
+static int execute_command_cell_set(struct Parse_state *state,
+	void *prompt_void,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 02 July 2000
+
+DESCRIPTION :
+Executes a CELL SET command.
+==============================================================================*/
+{
+	int return_code;
+	static struct Option_table *option_table;
+
+	ENTER(execute_command_cell_set);
+  USE_PARAMETER(prompt_void);
+	/* check argument */
+	if (state)
+	{
+    option_table = CREATE(Option_table)();
+    Option_table_add_entry(option_table,"XMLParser_properties",NULL,
+      command_data_void,cell_set_XMLParser_properties);
+#if defined (HOW_CAN_I_DO_THIS)
+    Option_table_add_entry(option_table,"copy_tags",NULL,
+      command_data_void,cell_set_copy_tags);
+#endif /* defined (HOW_CAN_I_DO_THIS) */
+    return_code = Option_table_parse(option_table,state);
+    DESTROY(Option_table)(&option_table);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"execute_command_cell_set.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_cell_set() */
+#endif /* defined (CELL) */
+
 static int execute_command_cell(struct Parse_state *state,
 	void *prompt_void,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 30 September 1998
+LAST MODIFIED : 06 July 2000
 
 DESCRIPTION :
 Executes a CELL command.
 ==============================================================================*/
 {
 	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-#if defined (CELL)
-		{"open",NULL,NULL,execute_command_cell_open},
-		{"read",NULL,NULL,execute_command_cell_read},
-#endif /* defined (CELL) */
-		{NULL,NULL,NULL,execute_command_cm}
-	};
+	static struct Option_table *option_table;
 
 	ENTER(execute_command_cell);
+  USE_PARAMETER(prompt_void);
 	/* check argument */
 	if (state)
 	{
+    option_table = CREATE(Option_table)();
 #if defined (CELL)
-		(option_table[0]).user_data=command_data_void;
-		(option_table[1]).user_data=command_data_void;
-		(option_table[2]).user_data=command_data_void;
-		(option_table[2]).to_be_modified=prompt_void;
+    Option_table_add_entry(option_table,"open",NULL,command_data_void,
+      execute_command_cell_open);
+    Option_table_add_entry(option_table,"close",NULL,command_data_void,
+      execute_command_cell_close);
+    Option_table_add_entry(option_table,"list",NULL,command_data_void,
+      execute_command_cell_list);
+    Option_table_add_entry(option_table,"set",NULL,command_data_void,
+      execute_command_cell_set);
+    Option_table_add_entry(option_table,"read",NULL,command_data_void,
+      execute_command_cell_read);
+    return_code = Option_table_parse(option_table,state);
+    DESTROY(Option_table)(&option_table);
 #else
-		(option_table[0]).user_data=command_data_void;
-		(option_table[0]).to_be_modified=prompt_void;
+    return_code = 1;
 #endif /* defined (CELL) */
-		return_code=process_option(state,option_table);
 	}
 	else
 	{
@@ -22845,7 +23539,6 @@ Executes a CELL command.
 
 	return (return_code);
 } /* execute_command_cell */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_assign(struct Parse_state *state,
@@ -22923,7 +23616,7 @@ in the "new interpreter".
 static int execute_command_create(struct Parse_state *state,
 	void *prompt_void,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 October 1998
+LAST MODIFIED : 21 March 2001
 
 DESCRIPTION :
 Executes a CREATE command.
@@ -22936,7 +23629,7 @@ Executes a CREATE command.
 		{NULL,NULL,NULL,execute_command_cm}
 	};
 
-	ENTER(execute_command_cell);
+	ENTER(execute_command_create);
 	/* check argument */
 	if (state)
 	{
