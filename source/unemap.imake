@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM  FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 18 January 2000
+XCOMM LAST MODIFIED : 30 January 2000
 XCOMM
 XCOMM  DESCRIPTION :
 XCOMM  Makefile for unemap
@@ -40,6 +40,7 @@ UTILITIES_PATH=$(CMISS_ROOT)/cmgui/source/utilities
 /* the O64 version can be either OPTIMISED or not but only one version is kept
 	at the moment */
 #define Target unemap64
+#define AffineTarget unemap/affine64
 #define Bmsi2sigTarget unemap/bmsi2sig64
 #define Biosense2sigTarget unemap/biosense2sig64
 #define ChangeCalibrationTarget unemap/change_calibration64
@@ -55,6 +56,7 @@ UTILITIES_PATH=$(CMISS_ROOT)/cmgui/source/utilities
 #define Posdat2sigTarget unemap/posdat2sig64
 #define RegisterTarget unemap/register64
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware64
+#define UniqueChannelsTarget unemap/unique_channels64
 #define Uid2uidhTarget uid2uidh64
 #define Makefile unemap_sgi64.make
 #define DependMake unemap_sgi64.depend
@@ -69,6 +71,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 /* 1.2.1 IRIX-N32-OPTIMISED */
 #define Target unemap_optimised
 #define Makefile unemap_sgioptimised.make
+#define AffineTarget unemap/affine_optimised
 #define Bmsi2sigTarget unemap/bmsi2sig_optimised
 #define Biosense2sigTarget unemap/biosense2sig_optimised
 #define ChangeCalibrationTarget unemap/change_calibration_optimised
@@ -84,6 +87,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 #define Posdat2sigTarget unemap/posdat2sig_optimised
 #define RegisterTarget unemap/register_optimised
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_optimised
+#define UniqueChannelsTarget unemap/unique_channels_optimised
 #define Uid2uidhTarget uid2uidh
 #define DependMake unemap_sgioptimised.depend
 #define ObjSuffix o
@@ -97,6 +101,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 /* 1.2.2.1 IRIX-N32-!OPTIMISED-USE_UNEMAP_NODES */
 /* currently only version with nodes */
 #define Target unemap_nodes
+#define AffineTarget unemap/affine_nodes
 #define Bmsi2sigTarget unemap/bmsi2sig_nodes
 #define Biosense2sigTarget unemap/biosense2sig_nodes
 #define ChangeCalibrationTarget unemap/change_calibration_nodes
@@ -112,6 +117,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Posdat2sigTarget unemap/posdat2sig_nodes
 #define RegisterTarget unemap/register_nodes
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_nodes
+#define UniqueChannelsTarget unemap/unique_channels_nodes
 #define Uid2uidhTarget uid2uidh
 #define Makefile unemap_sginodes.make
 #define DependMake unemap_sginodes.depend
@@ -127,6 +133,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #if !defined (MEMORY_CHECK)
 /* 1.2.2.2.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-!MEMORY_CHECK */
 #define Target unemap32
+#define AffineTarget unemap/affine32
 #define Bmsi2sigTarget unemap/bmsi2sig32
 #define Biosense2sigTarget unemap/biosense2sig32
 #define ChangeCalibrationTarget unemap/change_calibration32
@@ -142,6 +149,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Posdat2sigTarget unemap/posdat2sig32
 #define RegisterTarget unemap/register32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
+#define UniqueChannelsTarget unemap/unique_channels32
 #define Uid2uidhTarget uid2uidh32
 #define Makefile unemap_sgi.make
 #define DependMake unemap_sgi.depend
@@ -153,6 +161,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #else /* !defined (MEMORY_CHECK) */
 /* 1.2.2.2.1 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES-MEMORY_CHECK */
 #define Target unemap_memorycheck
+#define AffineTarget unemap/affine32
 #define Bmsi2sigTarget unemap/bmsi2sig32
 #define Biosense2sigTarget unemap/biosense2sig32
 #define ChangeCalibrationTarget unemap/change_calibration32
@@ -168,6 +177,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Posdat2sigTarget unemap/posdat2sig32
 #define RegisterTarget unemap/register32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
+#define UniqueChannelsTarget unemap/unique_channels32
 #define Uid2uidhTarget uid2uidh32
 #define Makefile unemap_sgi_memorycheck.make
 #define DependMake unemap_sgi_memorycheck.depend
@@ -183,6 +193,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #elif defined (LINUX) /* switch OperatingSystem */
 /* 2 LINUX */
 #define Target unemap_linux
+#define AffineTarget unemap/affine_linux
 #define Bmsi2sigTarget unemap/bmsi2sig_linux
 #define Biosense2sigTarget unemap/biosense2sig_linux
 #define ChangeCalibrationTarget unemap/change_calibration_linux
@@ -198,6 +209,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Posdat2sigTarget unemap/posdat2sig_linux
 #define RegisterTarget unemap/register_linux
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux
+#define UniqueChannelsTarget unemap/unique_channels_linux
 #define Uid2uidhTarget uid2uidh_linux
 #define Makefile unemap_linux.make
 #define DependMake unemap_linux.depend
@@ -634,11 +646,25 @@ general/debug_memory_check.ObjSuffix: general/debug.c general/debug.h
 	fi
 #endif /* defined (MEMORY_CHECK) */
 
-utilities : Bmsi2sigTarget Biosense2sigTarget ChangeCalibrationTarget \
-ChangeChannelsTarget ChangeConfigurationTarget ChangeEventsTarget \
-ChangeFrequencyTarget CombineSignalsTarget DifferenceSignalsTarget \
-ExtractSignalTarget Img2sigTarget Plt2cnfgTarget Posdat2sigTarget \
-RegisterTarget TestUnemapHardwareTarget
+utilities : AffineTarget Bmsi2sigTarget Biosense2sigTarget \
+ChangeCalibrationTarget ChangeChannelsTarget ChangeConfigurationTarget \
+ChangeEventsTarget ChangeFrequencyTarget CombineSignalsTarget \
+DifferenceSignalsTarget ExtractSignalTarget Img2sigTarget Plt2cnfgTarget \
+Posdat2sigTarget RegisterTarget TestUnemapHardwareTarget UniqueChannelsTarget
+
+AFFINE_SRCS = \
+	unemap/utilities/affine.c \
+	command/parser.c \
+	general/debug.c \
+	general/geometry.c \
+	general/matrix_vector.c \
+	general/myio.c \
+	general/mystring.c \
+	unemap/interpolate.c \
+	unemap/rig.c \
+	user_interface/message.c
+
+BuildNormalTarget(AffineTarget,$(UTILITIES_PATH),AFFINE_SRCS,AFFINE_OBJSA,AFFINE_OBJSB,AFFINE_OBJS,-lm) 
 
 BMSI2SIG_SRCS = \
 	unemap/utilities/bmsi2sig.c \
@@ -826,6 +852,20 @@ TEST_UNEMAP_HARDWARE_SRCS = \
 	user_interface/message.c
 
 BuildNormalTarget(TestUnemapHardwareTarget,$(UTILITIES_PATH),TEST_UNEMAP_HARDWARE_SRCS,TEST_UNEMAP_HARDWARE_OBJSA,TEST_UNEMAP_HARDWARE_OBJSB,TEST_UNEMAP_HARDWARE_OBJS,$(LIB)) 
+
+UNIQUE_CHANNELS_SRCS = \
+	unemap/utilities/unique_channels.c \
+	command/parser.c \
+	general/debug.c \
+	general/geometry.c \
+	general/matrix_vector.c \
+	general/myio.c \
+	general/mystring.c \
+	unemap/interpolate.c \
+	unemap/rig.c \
+	user_interface/message.c
+
+BuildNormalTarget(UniqueChannelsTarget,$(UTILITIES_PATH),UNIQUE_CHANNELS_SRCS,UNIQUE_CHANNELS_OBJSA,UNIQUE_CHANNELS_OBJSB,UNIQUE_CHANNELS_OBJS,-lm) 
 
 /* sinclude used so that the makefile can be run when the dependency file doesn't exist,
  it should then make one */
