@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.c
 
-LAST MODIFIED : 26 February 2000
+LAST MODIFIED : 3 April 2000
 
 DESCRIPTION :
 Essentially the same functionality as rig.c, but using nodes and fields to store
@@ -25,48 +25,20 @@ the rig and signal information. rather that special structures.
 
 
 #if defined (UNEMAP_USE_NODES)
+
 /*
-Module variables
+Module Constants
 ----------------
 */
-char *sock_electrode_position_str = "sock_electrode_position";
-char *patch_electrode_position_str = "patch_electrode_position";
-char *torso_electrode_position_str = "torso_electrode_position";
-char *auxiliary_str = "auxiliary";
+const char auxiliary_str[] = "auxiliary";
+const char patch_electrode_position_str[] = "patch_electrode_position";
+const char sock_electrode_position_str[] = "sock_electrode_position";
+const char torso_electrode_position_str[] = "torso_electrode_position";
 
 /*
 Module types
 ------------
 */
-struct Min_max_info
-/* Used by get_rig_node_group_signal_min_max_at_time to store info */
-/* about the minimum and maximum signal values at a rig node group at time*/
-{
-	int count;
-	FE_value min,max,time;
-	struct FE_field_component *signal_component;
-	struct FE_field *signal_status_field;
-};
-
-struct Set_map_electrode_position_info		
-/* Used by rig_node_group_set_map_electrode_position_lambda_r, */
-/* to store info when iterating */
-{
-	struct FE_field *map_electrode_position_field;
-	FE_value value;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_field) *field_manager;
-	enum Region_type region_type;
-};
-
-struct Add_map_electrode_position_info		
-/* Used by  rig_node_group_map_add_electrode_position_field*/
-/* to store info when iterating */
-{
-	struct FE_field *map_electrode_position_field;	
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_field) *field_manager;
-};
 
 enum Config_node_type
 /*******************************************************************************
@@ -81,7 +53,59 @@ The type of the rig.
 	SOCK_ELECTRODE_TYPE,
 	TORSO_ELECTRODE_TYPE
 }; /* enum Config_node_type */
+
+struct Add_map_electrode_position_info
+/*******************************************************************************
+LAST MODIFIED : 3 April 2000
+
+DESCRIPTION :
+Used by  rig_node_group_map_add_electrode_position_field
+to store info when iterating 
+==============================================================================*/
+{
+	struct FE_field *map_electrode_position_field;	
+	struct MANAGER(FE_field) *field_manager;
+	struct MANAGER(FE_node) *node_manager;
+};
+
+struct Min_max_info
+/*******************************************************************************
+LAST MODIFIED : 3 April 2000
+
+DESCRIPTION :
+Used by get_rig_node_group_signal_min_max_at_time to store info
+about the minimum and maximum signal values at a rig node group at time
+==============================================================================*/
+{
+	FE_value max,min,time;
+	int count;
+	struct FE_field_component *signal_component;
+	struct FE_field *signal_status_field;
+};
+
+struct Set_map_electrode_position_info
+/*******************************************************************************
+LAST MODIFIED : 3 April 2000
+
+DESCRIPTION 	
+Used by rig_node_group_set_map_electrode_position_lambda_r
+to store info when iterating
+==============================================================================*/
+{	
+	enum Region_type region_type;
+	FE_value value;
+	struct FE_field *map_electrode_position_field;
+	struct MANAGER(FE_field) *field_manager;
+	struct MANAGER(FE_node) *node_manager;
+};
+
 #endif /* defined (UNEMAP_USE_NODES) */
+
+/*
+Module variables
+----------------
+*/
+
 
 /*
 Module functions
@@ -117,14 +141,15 @@ beware of name clashes if loading multiple rigs of the same node_type.
     /*device_name_field,device_type_field,channel_number */
 
 	char *electrode_name,*rig_type_str;
+	int field_number,number_of_fields,success,string_length;
 	struct CM_field_information field_info;	
 	struct Coordinate_system coordinate_system;	
+
 	struct FE_field *channel_number_field,*device_name_field,*device_type_field,
 		*electrode_position_field;
-	struct FE_node *node;
-	int field_number,number_of_fields,success,string_length;
 	struct FE_field_order_info *the_field_order_info = 
 		(struct FE_field_order_info *)NULL;
+	struct FE_node *node;
 	struct MANAGER(FE_field) *fe_field_manager;
 	
 	char *device_name_component_names[1]=
@@ -207,28 +232,28 @@ beware of name clashes if loading multiple rigs of the same node_type.
 					the_field_order_info=
 						CREATE(FE_field_order_info)(SOCK_NUM_CONFIG_FIELDS);
 					number_of_fields = SOCK_NUM_CONFIG_FIELDS; 
-					rig_type_str = sock_electrode_position_str;
+					rig_type_str = (char *)sock_electrode_position_str;
 				}break;
 				case PATCH_ELECTRODE_TYPE:
 				{		
 					the_field_order_info=
 						CREATE(FE_field_order_info)(PATCH_NUM_CONFIG_FIELDS);	
 					number_of_fields = PATCH_NUM_CONFIG_FIELDS;				
-					rig_type_str = patch_electrode_position_str;
+					rig_type_str = (char *)patch_electrode_position_str;
 				}break;
 				case TORSO_ELECTRODE_TYPE:
 				{	
 					the_field_order_info=
 						CREATE(FE_field_order_info)(TORSO_NUM_CONFIG_FIELDS);
 					number_of_fields = TORSO_NUM_CONFIG_FIELDS;
-					rig_type_str = torso_electrode_position_str;
+					rig_type_str = (char *)torso_electrode_position_str;
 				}break;
 				case AUXILIARY_TYPE:
 				{						
 					the_field_order_info=
 						CREATE(FE_field_order_info)(AUXILIARY_NUM_CONFIG_FIELDS);
 					number_of_fields = AUXILIARY_NUM_CONFIG_FIELDS;
-					rig_type_str = auxiliary_str;
+					rig_type_str = (char *)auxiliary_str;
 				}break;
 			}
 			if(!the_field_order_info)
@@ -312,7 +337,7 @@ beware of name clashes if loading multiple rigs of the same node_type.
 						{
 							/* set up the info needed to create the  electrode position field */
 							set_CM_field_information(&field_info,CM_COORDINATE_FIELD,(int *)NULL);	
-							coordinate_system.type=RECTANGULAR_CARTESIAN;																			
+							coordinate_system.type=RECTANGULAR_CARTESIAN;
 							/* create the electrode position field, add it to the node */
 							/* create the electrode position field, add it to the node */
 							if ((electrode_position_field=get_FE_field_manager_matched_field(
@@ -468,10 +493,10 @@ sets a node's values storage with the passed, name, channel_number,
 xpos, ypos, zpos using the template node created in create_config_template_node,
 and the field_order_info
 ==============================================================================*/
-{	
-	struct Coordinate_system *coordinate_system;
+{
+	FE_value lambda,mu,theta;	
 	int component_number,field_number;
-	FE_value lambda,mu,theta;
+	struct Coordinate_system *coordinate_system;
 	struct FE_field *field;
 	struct FE_field_component component;
 	struct FE_node *node;
@@ -1144,18 +1169,18 @@ in rig.c
 	char *page_name,*rig_name,*region_name,*device_name;	
 	enum Config_node_type config_node_type;	
 	enum Device_type device_type;
+	enum Region_type region_type;
 	FE_value focus;	
 	int count,device_count,device_number,last_node_number,node_number,
 		number_of_pages,number_of_regions,region_number,region_number_of_devices,
 		success,string_length,number_of_page_devices;
-	enum Region_type region_type;
 	struct FE_field_order_info *field_order_info;	
-	struct FE_node *node,*template_node;		
-	struct GROUP(FE_node) *node_group,*all_devices_node_group;
-	struct FE_node_order_info *node_order_info;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_node *node,*template_node;
+	struct FE_node_order_info *node_order_info;	
+	struct GROUP(FE_node) *node_group,*all_devices_node_group;	
 	struct MANAGER(FE_element) *element_manager;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_element))	*element_group_manager;	
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;	
 
@@ -1259,8 +1284,9 @@ in rig.c
 								}			
 								template_node = create_config_template_node(SOCK_ELECTRODE_TYPE,	
 									focus,&field_order_info,package);						
-								node_group = make_node_and_element_and_data_groups(node_group_manager,node_manager,
-									element_manager,element_group_manager,data_group_manager,"sock");
+								node_group = make_node_and_element_and_data_groups(node_group_manager,
+									node_manager,element_manager,element_group_manager,data_group_manager,
+									"sock");
 								set_unemap_package_rig_node_group(package,node_group);
 							} break;
 							case TORSO:
@@ -1276,8 +1302,9 @@ in rig.c
 								}	
 								template_node = create_config_template_node(TORSO_ELECTRODE_TYPE,
 									0,&field_order_info,package);
-								node_group = make_node_and_element_and_data_groups(node_group_manager,node_manager,
-									element_manager,element_group_manager,data_group_manager,"torso");
+								node_group = make_node_and_element_and_data_groups(node_group_manager,
+									node_manager,element_manager,element_group_manager,data_group_manager,
+									"torso");
 								set_unemap_package_rig_node_group(package,node_group);
 							} break;
 							case PATCH:
@@ -1293,8 +1320,9 @@ in rig.c
 								}		
 								template_node = create_config_template_node(PATCH_ELECTRODE_TYPE,
 									0,&field_order_info,package);
-								node_group = make_node_and_element_and_data_groups(node_group_manager,node_manager,
-									element_manager,element_group_manager,data_group_manager,"patch");
+								node_group = make_node_and_element_and_data_groups(node_group_manager,
+									node_manager,element_manager,element_group_manager,data_group_manager,
+									"patch");
 								set_unemap_package_rig_node_group(package,node_group);
 							}break;
 						}/*	switch (region_type) */	
@@ -1306,8 +1334,9 @@ in rig.c
 							MANAGED_GROUP_END_CACHE(FE_node)(node_group);
 						}								
 						/* Get group */
-						node_group = make_node_and_element_and_data_groups(node_group_manager,node_manager,
-							element_manager,element_group_manager,data_group_manager,region_name);
+						node_group = make_node_and_element_and_data_groups(node_group_manager,
+							node_manager,element_manager,element_group_manager,data_group_manager,
+							region_name);
 						set_unemap_package_rig_node_group(package,node_group);
 						/* destroy any exisiting template and field_order_info*/
 						/* create the template node,( but may change it to auxiliary later) */					
@@ -1382,10 +1411,8 @@ in rig.c
 								case AUXILIARY:
 								{	
 									config_node_type = AUXILIARY_TYPE;	
-
 									DESTROY(FE_node)(&template_node);
 									DESTROY(FE_field_order_info)(&field_order_info);	
-
 									template_node = create_config_template_node(config_node_type,
 										0,&field_order_info,package);
 									node=read_binary_config_FE_node(input_file,template_node,node_manager,
@@ -1504,7 +1531,8 @@ in rig.c
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group. Can't read rig name");	
+			display_message(ERROR_MESSAGE,"read_binary_config_FE_node_group. "
+				"Can't read rig name");	
 			success =0;		
 		}	
 		/* We've finished. Clean up */	
@@ -1572,14 +1600,14 @@ files, and there are no text signal files.
 	char *dummy_str,input_str[6],*region_name,*rig_name,*name,*dummy,separator;	
 	enum Config_node_type config_node_type;
 	FE_value focus;
-	int device_number,finished,is_electrode,is_auxiliary,last_node_number,
+	int device_number,finished,is_auxiliary,is_electrode,last_node_number,
 		node_number,success;
 	struct FE_node *node,*template_node;			
 	struct FE_field_order_info *field_order_info;	
-	struct GROUP(FE_node) *node_group,*all_devices_node_group;			
+	struct GROUP(FE_node) *node_group,*all_devices_node_group;
+	struct MANAGER(FE_element) *element_manager;			
 	struct MANAGER(FE_node) *node_manager;
 	struct MANAGER(GROUP(FE_element))	*element_group_manager;
-	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;	
 
@@ -2056,45 +2084,21 @@ FE_node_order_info.
 Performs the same loading functions as read_signal_file, but using the rig_node group
 ==============================================================================*/
 {
-	  char
-		*channel_gain_component_names[1]=
-		{
-			"gain_value"
-		},
-		*channel_offset_component_names[1]=
-		{
-			"offset_value"
-		},
-		*signal_component_names[1]=
-		{
-			"signal_value"
-		},
-		*signal_minimum_component_names[1]=
-		{
-			"minimum_value"
-		},
-		*signal_maximum_component_names[1]=
-		{
-			"maximum_value"
-		},
-		*signal_status_component_names[1]=
-		{
-			"status"
-		};
+
 		enum FE_nodal_value_type
+		*signal_components_nodal_value_types[1]=
+		{
+			{
+				FE_NODAL_VALUE
+			}
+		},	
 		*channel_gain_components_nodal_value_types[1]=
 		{
 			{
 				FE_NODAL_VALUE
 			}
-		},	 
-		*channel_offset_components_nodal_value_types[1]=
-		{
-			{
-				FE_NODAL_VALUE
-			}
-		},	 
-		*signal_components_nodal_value_types[1]=
+		},	
+		*signal_maximum_components_nodal_value_types[1]=
 		{
 			{
 				FE_NODAL_VALUE
@@ -2106,7 +2110,7 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 				FE_NODAL_VALUE
 			}
 		},	
-		*signal_maximum_components_nodal_value_types[1]=
+		*channel_offset_components_nodal_value_types[1]=
 		{
 			{
 				FE_NODAL_VALUE
@@ -2119,13 +2123,40 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 			}
 		};
 
+	  char
+		*channel_gain_component_names[1]=
+		{
+			"gain_value"
+		},	
+		*signal_maximum_component_names[1]=
+		{
+			"maximum_value"
+		},
+		*signal_minimum_component_names[1]=
+		{
+			"minimum_value"
+		},
+		*channel_offset_component_names[1]=
+		{
+			"offset_value"
+		},
+		*signal_component_names[1]=
+		{
+			"signal_value"
+		},	
+		*signal_status_component_names[1]=
+		{
+			"status"
+		};
+	
+
 	char *device_type_string;
 	enum Signal_value_type signal_value_type;	
-	FE_value *node_signals_fe_value,period,*times,fe_value_min,fe_value_max;
-	float *buffer_signals_float,*channel_gains,*channel_offsets,frequency,*buffer_value;
-	int *buffer_times,fread_result,i,j,number_of_samples,number_of_devices,
-		number_of_signals,return_code,temp_int;		
-	int count,channel_gain_components_number_of_derivatives[1]={0},
+	FE_value fe_value_max,fe_value_min,*node_signals_fe_value,period,*times;
+	float *buffer_signals_float,*buffer_value,*channel_gains,*channel_offsets,frequency;
+	int *buffer_times, count,fread_result,i,j,number_of_samples,number_of_devices,
+		number_of_signals,return_code,temp_int,		
+	  channel_gain_components_number_of_derivatives[1]={0},
 	  channel_gain_components_number_of_versions[1]={1},
 		channel_offset_components_number_of_derivatives[1]={0},
 	  channel_offset_components_number_of_versions[1]={1},
@@ -2137,7 +2168,7 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 	  signal_maximum_components_number_of_versions[1]={1},	
 		signal_status_components_number_of_derivatives[1]={0},
 	  signal_status_components_number_of_versions[1]={1};
-	short int *buffer_signals_short,*node_signals_short,short_min,short_max;
+	short int *buffer_signals_short,*node_signals_short,short_max,short_min;
 	struct CM_field_information field_info;	
 	struct Coordinate_system coordinate_system;		
 	struct FE_field *channel_gain_field,*channel_offset_field,*signal_field,
@@ -2288,7 +2319,8 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 													else
 													{
 														display_message(ERROR_MESSAGE,
-															"read_signal_FE_node_group. Error reading file - signal index");
+															"read_signal_FE_node_group. Error reading file -"
+															" signal index");
 														return_code=0;
 													}
 												}/* while (return_code&&(temp_int<0)) */
@@ -2299,7 +2331,8 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 										else
 										{
 											display_message(ERROR_MESSAGE,
-												"read_signal_FE_node_group. Error reading file - offsets and gains");
+												"read_signal_FE_node_group. Error reading file - "
+												"offsets and gains");
 											return_code=0;
 										}
 									}	/* while (return_code&&(number_of_devices>0)) */
@@ -2327,7 +2360,8 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 												"read_signal_FE_node_group. No memory for times ");	
 											return_code =0;
 										}
-										/* allocate memory for signals to be stored at node, create signal field */
+										/* allocate memory for signals to be stored at node, 
+											 create signal field */
 										switch (signal_value_type)
 										{
 											case SHORT_INT_VALUE:
@@ -2351,7 +2385,7 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 												else
 												{
 													display_message(ERROR_MESSAGE,
-														"read_signal_FE_node_group. No memory for node_signals_short ");	
+														"read_signal_FE_node_group. No memory for node_signals_short ");
 													return_code =0;
 												}
 											} break;
@@ -2375,7 +2409,8 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 												else
 												{
 													display_message(ERROR_MESSAGE,
-														"read_signal_FE_node_group. No memory for node_signals_fe_value ");	
+														"read_signal_FE_node_group. No memory for "
+														"node_signals_fe_value");
 													return_code =0;
 												}
 											} break;
@@ -2419,7 +2454,8 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 												{
 													case SHORT_INT_VALUE:
 													{
-														node_signals_short[j] = buffer_signals_short[(j*number_of_signals)+i];
+														node_signals_short[j] = 
+															buffer_signals_short[(j*number_of_signals)+i];
 														if(node_signals_short[j]>short_max)
 														{
 															short_max=node_signals_short[j];
@@ -2473,7 +2509,8 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 														channel_gain_components_nodal_value_types))
 													{	
 														/* add it to the unemap package */
-														set_unemap_package_channel_gain_field(package,channel_gain_field);
+														set_unemap_package_channel_gain_field(package,
+															channel_gain_field);
 														/* set the values*/
 														component.number = 0;
 														component.field = channel_gain_field; 
@@ -2507,7 +2544,8 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 														channel_offset_components_nodal_value_types))
 													{	
 														/* add it to the unemap package */
-														set_unemap_package_channel_offset_field(package,channel_offset_field);
+														set_unemap_package_channel_offset_field(package,
+															channel_offset_field);
 														/* set the values*/
 														component.number = 0;
 														component.field = channel_offset_field; 
@@ -2542,8 +2580,9 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 														signal_minimum_components_nodal_value_types))
 													{	
 														/* add it to the unemap package */
-														set_unemap_package_signal_minimum_field(package,signal_minimum_field);
-														/* set the signal_minimum_field and signal_maximum_field fields */
+														set_unemap_package_signal_minimum_field(package,
+															signal_minimum_field);
+														/*set the signal_minimum_field and signal_maximum_field fields */
 														component.number = 0;
 														component.field = signal_minimum_field;												
 														set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
@@ -2577,7 +2616,8 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 														signal_maximum_components_nodal_value_types))
 													{	
 														/* add it to the unemap package */
-														set_unemap_package_signal_maximum_field(package,signal_maximum_field);
+														set_unemap_package_signal_maximum_field(package,
+															signal_maximum_field);
 														component.number = 0;
 														component.field = signal_maximum_field; 
 														set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
@@ -2613,7 +2653,8 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 														signal_status_components_nodal_value_types))
 													{	
 														/* add it to the unemap package */													
-														set_unemap_package_signal_status_field(package,signal_status_field);
+														set_unemap_package_signal_status_field(package,
+															signal_status_field);
 														/* need to set status based upon the nodal device_type */ 
 														/* status may be 'loaded over' later */ 
 														get_FE_nodal_string_value(node,
@@ -2621,12 +2662,14 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 															0,0,FE_NODAL_VALUE,&device_type_string);
 														if(strcmp(device_type_string,"ELECTRODE"))
 														{
-															set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
+															set_FE_nodal_string_value(node,signal_status_field,0,0,
+																FE_NODAL_VALUE,
 																"REJECTED");
 														}
 														else
 														{
-															set_FE_nodal_string_value(node,signal_status_field,0,0,FE_NODAL_VALUE,
+															set_FE_nodal_string_value(node,signal_status_field,0,0,
+																FE_NODAL_VALUE,
 																"UNDECIDED");														
 														}
 														DEALLOCATE(device_type_string);
@@ -2660,7 +2703,7 @@ Performs the same loading functions as read_signal_file, but using the rig_node 
 														case SHORT_INT_VALUE:
 														{
 															set_FE_nodal_short_array(node,&component,0,FE_NODAL_VALUE,
-																node_signals_short,number_of_samples);													
+																node_signals_short,number_of_samples);
 														} break;
 														case FLOAT_VALUE:
 														{
@@ -2779,21 +2822,21 @@ but using the rig_node group, and doens't yet do anything with the event
 setting information.
 Must call after read_signal_FE_node_group
 ==============================================================================*/
-{
-	int datum,event_number,event_time,i,number_of_devices,number_of_events,
-		potential_time,minimum_separation,threshold,end_search_interval,
-		start_search_interval,return_code;
+{	
 	char calculate_events;
-	enum Event_detection_algorithm detection;	
+	enum Edit_order edit_order;
+	enum Event_detection_algorithm detection;
 	enum Event_signal_status signal_status,event_status;
 	enum Datum_type datum_type;
-	enum Signal_order signal_order;	
-	enum Edit_order edit_order;
+	enum Signal_order signal_order;
 	float signal_maximum,signal_minimum;
-	struct MANAGER(FE_node) *node_manager;
+	int datum,end_search_interval,event_number,event_time,i,number_of_devices,
+		number_of_events,potential_time,minimum_separation,start_search_interval,
+		threshold,return_code;
 	struct FE_node *node,*node_managed;
 	struct FE_field *signal_maximum_field,*signal_minimum_field,*signal_status_field;
 	struct FE_field_component component;
+	struct MANAGER(FE_node) *node_manager;
 
 	ENTER(read_event_settings_and_signal_status_FE_node_group);
 	node=(struct FE_node *)NULL;
@@ -4527,14 +4570,14 @@ Compares this value to <min_max_info->max>,<min_max_info->min>, and adjusts thes
 accordingly.
 This function is called iteratively by get_rig_node_group_signal_min_max_at_time
 ==============================================================================*/
-{
-	int return_code;	
-	struct Min_max_info *min_max_info;
-	FE_value fe_value;
-	short short_value;
+{	
+	char *signal_status_string;	
 	enum Value_type value_type;
-	char *signal_status_string;
-
+	FE_value fe_value;
+	int return_code;		
+	short short_value;
+	struct Min_max_info *min_max_info;
+	
 	return_code=1;
 	ENTER(get_rig_node_signal_min_max_at_time);
 	if((node)&&(min_max_info_void))
@@ -4555,12 +4598,14 @@ This function is called iteratively by get_rig_node_group_signal_min_max_at_time
 						case FE_VALUE_ARRAY_VALUE:
 						{
 							return_code=get_FE_nodal_FE_value_array_value_at_FE_value_time(node,
-								min_max_info->signal_component,0,FE_NODAL_VALUE,min_max_info->time,&fe_value);
+								min_max_info->signal_component,0,FE_NODAL_VALUE,min_max_info->time,
+								&fe_value);
 						}break;
 						case SHORT_ARRAY_VALUE:
 						{
 							return_code=get_FE_nodal_short_array_value_at_FE_value_time(node,
-								min_max_info->signal_component,0,FE_NODAL_VALUE,min_max_info->time,&short_value);
+								min_max_info->signal_component,0,FE_NODAL_VALUE,min_max_info->time,
+								&short_value);
 							fe_value=short_value;
 						}break;
 						default :
@@ -4620,14 +4665,14 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 <node_group>, field <signal_field>, time <time>
 ==============================================================================*/
 {	
-	int return_code;	
-	struct Min_max_info min_max_info;
+	enum Value_type value_type;
 	FE_value fe_value;
-	short short_value;
+	int return_code;
+	short short_value;	
+	struct Min_max_info min_max_info;
 	struct FE_node *node;
 	struct FE_field_component component;
-	enum Value_type value_type;
-
+	
 	ENTER(get_rig_node_group_signal_min_max_at_time);
 	if (node_group&&min&&max&&signal_field)
 	{	
@@ -4700,14 +4745,14 @@ This function is called iteratively by
 rig_node_group_set_map_electrode_position_lambda_r
 ==============================================================================*/
 {
+	FE_value lambda,mu,theta,r,x,y,z_cp,z_rc;
 	int return_code;	
-	struct Set_map_electrode_position_info *set_map_electrode_position_info;	
+	struct FE_field_component component;	
 	struct FE_field *electrode_position_field,*map_electrode_position_field;
-	struct FE_field_component component;
-	struct FE_node *node_unmanaged;
-	struct MANAGER(FE_node) *node_manager;
+	struct FE_node *node_unmanaged;	
 	struct MANAGER(FE_field) *field_manager;
-	FE_value x,y,z_rc,lambda,mu,theta,r,z_cp;
+	struct MANAGER(FE_node) *node_manager;
+	struct Set_map_electrode_position_info *set_map_electrode_position_info;
 
 	ENTER(rig_node_set_map_electrode_position_lambda_r);
 	return_code=1;
@@ -4723,15 +4768,16 @@ rig_node_group_set_map_electrode_position_lambda_r
 				set_map_electrode_position_info->map_electrode_position_field))
 		{						
 			if ((electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(sock_electrode_position_str,
+				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)sock_electrode_position_str,
 				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
 				(electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(torso_electrode_position_str,
+				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)torso_electrode_position_str,
 				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
 				(electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(patch_electrode_position_str,
+				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)patch_electrode_position_str,
 				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node)))
-				/* if we don't have an electrode_position_field, it's an auxilliary node-do nothing */
+				/* if we don't have an electrode_position_field, it's an auxilliary node-do 
+					 nothing */
 			{				
 				node_unmanaged=CREATE(FE_node)(0,(struct FE_node *)NULL);
 				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
@@ -4866,14 +4912,14 @@ Sets the node group's nodal map_electrode_postions from the nodal electrode_posi
 and changes the node group's map_electrode_postions lambda or r values to <value>
 ==============================================================================*/
 {	
-	int return_code,node_group_number;	
-	struct Set_map_electrode_position_info set_map_electrode_position_info;
+	enum Region_type region_type;
+	FE_value value;
+	int node_group_number,return_code;	
+	struct FE_field *map_electrode_position_field;
 	struct GROUP(FE_node) *node_group;
 	struct MANAGER(FE_node) *node_manager;
 	struct MANAGER(FE_field) *field_manager;
-	struct FE_field *map_electrode_position_field;
-	enum Region_type region_type;
-	FE_value value;
+	struct Set_map_electrode_position_info set_map_electrode_position_info;
 
 	ENTER(rig_node_group_set_map_electrode_position_lambda_r);
 	node_group=(struct GROUP(FE_node) *)NULL;
@@ -4927,7 +4973,8 @@ and changes the node group's map_electrode_postions lambda or r values to <value
 			set_map_electrode_position_info.value=value;
 			set_map_electrode_position_info.region_type=region_type;
 			MANAGER_BEGIN_CACHE(FE_node)(node_manager);				
-			return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(rig_node_set_map_electrode_position_lambda_r,
+			return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+				rig_node_set_map_electrode_position_lambda_r,
 				(void *)&set_map_electrode_position_info,node_group);
 			MANAGER_END_CACHE(FE_node)(node_manager);	
 		}	
@@ -4953,14 +5000,7 @@ in addition to the one created with create_config_template_node.
 
 Called by rig_node_group_add_map_electrode_position_field
 ==============================================================================*/
-{
-	int return_code;	
-	struct Add_map_electrode_position_info *add_map_electrode_position_info;	
-	struct FE_field *map_electrode_position_field,*electrode_position_field;
-	struct FE_node *node_unmanaged;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(FE_field) *field_manager;
-
+{	
 	enum FE_nodal_value_type *map_electrode_components_nodal_value_types[3]=
 	{
 		{
@@ -4973,8 +5013,13 @@ Called by rig_node_group_add_map_electrode_position_field
 			FE_NODAL_VALUE
 		}
 	};
-	int map_electrode_components_number_of_derivatives[3]={0,0,0};
-	int map_electrode_components_number_of_versions[3]={1,1,1};
+	int  map_electrode_components_number_of_derivatives[3]={0,0,0},
+		 map_electrode_components_number_of_versions[3]={1,1,1},return_code;	
+	struct Add_map_electrode_position_info *add_map_electrode_position_info;	
+	struct FE_field *map_electrode_position_field,*electrode_position_field;
+	struct FE_node *node_unmanaged;
+	struct MANAGER(FE_field) *field_manager;
+	struct MANAGER(FE_node) *node_manager;
 
 	ENTER(rig_node_add_map_electrode_position_field);
 	return_code=1;
@@ -4993,15 +5038,16 @@ Called by rig_node_group_add_map_electrode_position_field
 			(field_manager=add_map_electrode_position_info->field_manager))
 		{					
 			if ((electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(sock_electrode_position_str,
+				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)sock_electrode_position_str,
 				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
 				(electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(torso_electrode_position_str,
+				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)torso_electrode_position_str,
 				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
 				(electrode_position_field=
-				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(patch_electrode_position_str,
+				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)patch_electrode_position_str,
 				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node)))
-				/* if we don't have an electrode_position_field, it's an auxilliary node-do nothing */
+				/* if we don't have an electrode_position_field, it's an auxilliary
+					 node-do nothing */
 			{	
 				node_unmanaged=CREATE(FE_node)(0,(struct FE_node *)NULL);
 				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
@@ -5063,17 +5109,15 @@ in addition to the one created with create_config_template_node.
 
 ==============================================================================*/
 {	
-	int return_code,node_group_number;
-	struct GROUP(FE_node) *node_group;
-	struct MANAGER(FE_node) *node_manager;
+	int node_group_number,return_code;
 	struct Add_map_electrode_position_info add_map_electrode_position_info;
-
+	struct GROUP(FE_node) *node_group;
 	struct MANAGER(FE_field) *field_manager;
-
+	struct MANAGER(FE_node) *node_manager;
+	
 	ENTER(rig_node_group_change_electrode_position_focus);
 	node_group=(struct GROUP(FE_node) *)NULL;
 	node_manager=(struct MANAGER(FE_node) *)NULL;
-
 	if (package&&map_electrode_position_field)
 	{				
 		node_group_number=get_unemap_package_map_rig_node_group_number(package,map_number);
@@ -5081,7 +5125,8 @@ in addition to the one created with create_config_template_node.
 		node_manager=	get_unemap_package_node_manager(package);
 		field_manager=get_unemap_package_FE_field_manager(package);
 		add_map_electrode_position_info.field_manager=field_manager;	
-		add_map_electrode_position_info.map_electrode_position_field=map_electrode_position_field;
+		add_map_electrode_position_info.map_electrode_position_field=
+			map_electrode_position_field;
 		add_map_electrode_position_info.node_manager=node_manager;		
 		MANAGER_BEGIN_CACHE(FE_node)(node_manager);				
 		return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(rig_node_add_map_electrode_position_field,

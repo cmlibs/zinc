@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.h
 
-LAST MODIFIED : 16 August 1999
+LAST MODIFIED : 3 April 2000
 
 DESCRIPTION :
 Essentially the same functionality as rig.h, but using nodes and fields to store
@@ -30,18 +30,18 @@ Draw_package struct usually constructed from the fields stored in a
 unemap_package struct. If a field is set to NULL, then it isn't drawn.
 ==============================================================================*/
 {	
+	int access_count;
 	/* fields of the rig_nodes */
 	/* so we know what fields to get from the nodes*/
+	struct FE_field *channel_number_field;
 	struct FE_field *device_name_field;
 	struct FE_field *device_type_field;
-	struct FE_field *channel_number_field;
-	/* the time series for the signals */
-	struct FE_field *signal_field;	
-	struct FE_field *signal_minimum_field;
-	struct FE_field *signal_maximum_field;
+	/* the time series for the signals */	
 	struct FE_field *channel_gain_field;
 	struct FE_field *channel_offset_field; 
-	int access_count;
+	struct FE_field *signal_field;	
+	struct FE_field *signal_maximum_field;	
+	struct FE_field *signal_minimum_field;	
 }; /* struct Draw_package */
 
 /*
