@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_sum.cpp
 //
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 6 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -12,6 +12,7 @@
 #include "computed_variable/function_matrix_sum.hpp"
 #endif // defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 
+#if !defined (AIX)
 template<>
 bool Function_matrix_sum<Scalar>::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
@@ -52,3 +53,4 @@ bool Function_matrix_sum<Scalar>::evaluate_derivative(Scalar& derivative,
 
 	return (result);
 }
+#endif // !defined (AIX)

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_sum_implementation.cpp
 //
-// LAST MODIFIED : 3 September 2004
+// LAST MODIFIED : 6 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -87,12 +87,12 @@ ublas::matrix<Value_type,ublas::column_major>
 
 EXPORT template<typename Value_type>
 Function_matrix_sum<Value_type>::Function_matrix_sum(
-	const Function_variable_handle& sumand_1,
-	const Function_variable_handle& sumand_2):Function_matrix<Value_type>(
+	const Function_variable_handle& summand_1,
+	const Function_variable_handle& summand_2):Function_matrix<Value_type>(
 	Function_matrix_sum<Value_type>::constructor_values),summand_1_private(0),
 	summand_2_private(0)
 //******************************************************************************
-// LAST MODIFIED : 2 September 2004
+// LAST MODIFIED : 6 September 2004
 //
 // DESCRIPTION :
 // Constructor.
@@ -102,9 +102,9 @@ Function_matrix_sum<Value_type>::Function_matrix_sum(
 		matrix_2;
 
 	if ((matrix_1=boost::dynamic_pointer_cast<
-		Function_variable_matrix<Value_type>,Function_variable>(sumand_1))&&
+		Function_variable_matrix<Value_type>,Function_variable>(summand_1))&&
 		(matrix_2=boost::dynamic_pointer_cast<Function_variable_matrix<Value_type>,
-		Function_variable>(sumand_2)))
+		Function_variable>(summand_2)))
 	{
 		Function_size_type number_of_columns,number_of_rows;
 
@@ -242,7 +242,7 @@ EXPORT template<typename Value_type>
 Function_handle Function_matrix_sum<Value_type>::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 3 September 2004
+// LAST MODIFIED : 6 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -259,8 +259,7 @@ Function_handle Function_matrix_sum<Value_type>::evaluate(
 		atomic_variable))&&(0<(row=atomic_variable_matrix_sum->row()))&&
 		(0<(column=atomic_variable_matrix_sum->column())))
 	{
-		boost::intrusive_ptr< Function_variable_matrix<Value_type> >
-			temp_variable;
+		boost::intrusive_ptr< Function_variable_matrix<Value_type> > temp_variable;
 		ublas::matrix<Value_type,ublas::column_major> result_matrix(1,1);
 		Value_type value_1,value_2;
 
@@ -290,10 +289,12 @@ bool Function_matrix_sum<Value_type>::evaluate_derivative(Scalar&,
 	return (false);
 }
 
+#if !defined (AIX)
 template<>
 bool Function_matrix_sum<Scalar>::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables);
+#endif // !defined (AIX)
 
 EXPORT template<typename Value_type>
 bool Function_matrix_sum<Value_type>::set_value(
@@ -386,9 +387,11 @@ Function_handle Function_matrix_sum<Value_type>::get_value(
 EXPORT template<typename Value_type>
 Function_matrix_sum<Value_type>::Function_matrix_sum(
 	const Function_matrix_sum<Value_type>& function_matrix_sum):
-	Function_matrix<Value_type>(function_matrix_sum){}
+	Function_matrix<Value_type>(function_matrix_sum),
+	summand_1_private(function_matrix_sum.summand_1_private),
+	summand_2_private(function_matrix_sum.summand_2_private){}
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 6 September 2004
 //
 // DESCRIPTION :
 // Copy constructor.
@@ -398,12 +401,14 @@ EXPORT template<typename Value_type>
 Function_matrix_sum<Value_type>& Function_matrix_sum<Value_type>::operator=(
 	const Function_matrix_sum<Value_type>& function_matrix_sum)
 //******************************************************************************
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 6 September 2004
 //
 // DESCRIPTION :
 // Assignment operator.
 //==============================================================================
 {
+	this->summand_1_private=function_matrix_sum.summand_1_private;
+	this->summand_2_private=function_matrix_sum.summand_2_private;
 	this->values=function_matrix_sum.values;
 
 	return (*this);
