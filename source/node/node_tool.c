@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 18 October 2000
+LAST MODIFIED : 20 November 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -101,7 +101,7 @@ changes in node position and derivatives etc.
 
 struct FE_node_edit_information
 /*******************************************************************************
-LAST MODIFIED : 12 September 2000
+LAST MODIFIED : 20 November 2000
 
 DESCRIPTION :
 Describes how to move a node in space. The node will move on the plane normal
@@ -123,8 +123,8 @@ to its position between these two planes.
 	struct Computed_field *rc_coordinate_field;
 	/* following required for EDIT_VECTOR only */
 	struct Computed_field *orientation_scale_field,
-		*wrapper_orientation_scale_field;
-	Triple glyph_centre,glyph_scale_factors,glyph_size;
+		*wrapper_orientation_scale_field, *variable_scale_field;
+	Triple glyph_centre, glyph_scale_factors, glyph_size;
 	/* need the node manager for global modify */
 	struct MANAGER(FE_node) *node_manager;
 	/* only edit the node if in the node_group, if supplied */
@@ -587,13 +587,14 @@ stored in the <edit_info>.
 static int FE_node_calculate_delta_vector(struct FE_node *node,
 	void *edit_info_void)
 /*******************************************************************************
-LAST MODIFIED : 27 April 2000
+LAST MODIFIED : 20 November 2000
 
 DESCRIPTION :
 Moves the end of the vector to exactly under the mouse, in the plane normal to the view direction at its current depth. Hence, this function should only be
 called for a single node.
 Note that you must supply an orientation_scale field, while glyph_size[0] and
 glyph_centre[0] must be 0.0, and glyph_scale_factors[0] must be non-zero.
+NOTE: currently does not tolerate having a variable_scale_field.
 ==============================================================================*/
 {
 	double model_coordinates[3],normalised_coordinates[3];
@@ -615,7 +616,8 @@ glyph_centre[0] must be 0.0, and glyph_scale_factors[0] must be non-zero.
 		(9>=number_of_orientation_scale_components)&&
 		(0.0 == edit_info->glyph_centre[0])&&
 		(0.0 == edit_info->glyph_size[0])&&
-		(0.0 != (scale_factor=edit_info->glyph_scale_factors[0])))
+		(0.0 != (scale_factor=edit_info->glyph_scale_factors[0])) &&
+		((struct Computed_field *)NULL == edit_info->variable_scale_field))
 	{
 		return_code=1;
 		/* clear coordinates in case less than 3 dimensions */
@@ -627,7 +629,7 @@ glyph_centre[0] must be 0.0, and glyph_scale_factors[0] must be non-zero.
 			Computed_field_evaluate_at_node(edit_info->rc_coordinate_field,
 				node,coordinates)&&
 			make_glyph_orientation_scale_axes(number_of_orientation_scale_components,
-				orientation_scale,a,b,c,size))
+				orientation_scale, a, b, c, size))
 		{
 			/* save old coordinates since will not change when converted back to
 				 model coordinates */
@@ -1409,7 +1411,7 @@ Attempts to undefine all the nodes currently in the global selection.
 static void Node_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *node_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 12 September 2000
+LAST MODIFIED : 20 November 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -1420,6 +1422,7 @@ release.
 ==============================================================================*/
 {
 	double d;
+	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Interactive_event_type event_type;
 	int clear_selection,input_modifier,return_code,shift_pressed;
 	struct Computed_field *coordinate_field;
@@ -1582,10 +1585,11 @@ release.
 								edit_info.wrapper_orientation_scale_field=
 									(struct Computed_field *)NULL;
 								if (GT_element_settings_get_glyph_parameters(
-									node_tool->gt_element_settings,&glyph,
+									node_tool->gt_element_settings, &glyph, &glyph_scaling_mode,
 									edit_info.glyph_centre,edit_info.glyph_size,
-									&edit_info.orientation_scale_field,
-									edit_info.glyph_scale_factors))
+									&(edit_info.orientation_scale_field),
+									edit_info.glyph_scale_factors,
+									&(edit_info.variable_scale_field)))
 								{
 									if (edit_info.orientation_scale_field)
 									{
