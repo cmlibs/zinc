@@ -77,6 +77,7 @@ get_FE_field_component_name
 create_Cmiss_region
 access_Cmiss_region
 deaccess_Cmiss_region
+create_manager_FE_basis
 create_FE_region
 Cmiss_region_attach_FE_region
 Cmiss_regions_FE_regions_can_be_merged
