@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 14 April 2004
+LAST MODIFIED : 22 April 2004
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -6574,7 +6574,7 @@ enum Moving_status
 
 static int change_analysis_interval(struct Analysis_work_area *analysis)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2004
+LAST MODIFIED : 22 April 2004
 
 DESCRIPTION :
 What needs to be done when the analysis interval (buffer range) is changed.
@@ -6742,7 +6742,8 @@ What needs to be done when the analysis interval (buffer range) is changed.
 				XtSetSensitive(analysis->mapping_window->animate_button,False);
 			}
 		}
-		trace_change_display_interval(analysis->trace);
+		trace_update_edit_interval(analysis->trace);
+		trace_change_signal(analysis->trace);
 		update_signals_drawing_area(analysis->window);
 		update_analysis_window_buffer_range_menu(analysis->window);
 	}
