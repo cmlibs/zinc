@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_derivatives.c
 
-LAST MODIFIED : 2 November 2000
+LAST MODIFIED : 12 December 2000
 
 DESCRIPTION :
 Implements computed_fields for calculating various derivative quantities such
@@ -281,7 +281,7 @@ Evaluate the fields cache at the node.
 
 	ENTER(Computed_field_derivative_evaluate_cache_in_element);
 	USE_PARAMETER(calculate_derivatives);
-	if (field && Computed_field_has_at_least_2_components(field, NULL) && 
+	if (field && Computed_field_has_numerical_components(field, NULL) && 
 		element && xi 
 		&& (data = (struct Computed_field_derivatives_type_specific_data *)
 		field->type_specific_data))
@@ -576,7 +576,7 @@ If the field is of type COMPUTED_FIELD_DERIVATIVE, the
 static int define_Computed_field_type_derivative(struct Parse_state *state,
 	void *field_void,void *computed_field_derivatives_package_void)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 12 December 2000
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_DERIVATIVE (if it is not 
@@ -599,30 +599,13 @@ already) and allows its contents to be modified.
 		return_code=1;
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
+		xi_index = 1;
 		if (computed_field_derivative_type_string ==
 			Computed_field_get_type_string(field))
 		{
 			return_code=Computed_field_get_type_derivative(field,
 				&source_field, &xi_index);
 			xi_index++;
-		}
-		else
-		{
-			xi_index = 1;
-			if (!((source_field=
-				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_derivatives_package->computed_field_manager))))
-			{
-				if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
-				{
-					/* This is only a failure if we aren't asking for help */
-					display_message(ERROR_MESSAGE,
-						"At least one field of 3 components must exist for a derivative field.");
-					return_code = 0;
-				}
-			}
 		}
 		if (return_code)
 		{
@@ -631,12 +614,12 @@ already) and allows its contents to be modified.
 			{
 				ACCESS(Computed_field)(source_field);
 			}
-
 			option_table = CREATE(Option_table)();
 			/* field */
 			set_source_field_data.computed_field_manager=
 				computed_field_derivatives_package->computed_field_manager;
-			set_source_field_data.conditional_function=Computed_field_has_numerical_components;
+			set_source_field_data.conditional_function =
+				Computed_field_has_numerical_components;
 			set_source_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"field",&source_field,
 				&set_source_field_data,set_Computed_field_conditional);
