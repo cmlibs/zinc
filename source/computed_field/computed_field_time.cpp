@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_time.c
 
-LAST MODIFIED : 16 December 2002
+LAST MODIFIED : 29 September 2003
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -884,7 +884,7 @@ Always has multiple times.
 {
 	int return_code;
 
-	ENTER(Computed_field_default_has_multiple_times);
+	ENTER(Computed_field_time_value_has_multiple_times);
 	if (field)
 	{
 		return_code=1;
