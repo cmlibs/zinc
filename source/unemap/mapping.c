@@ -2881,7 +2881,7 @@ nodes z values are defined by the electrodes.
 		list_conditional_data.function=torso_node_is_in_z_range;
 		list_conditional_data.user_data=(void *)(&z_value_data);
 		FOR_EACH_OBJECT_IN_GROUP(FE_node)(ensure_FE_node_is_in_list_conditional,
-			(void *)&list_conditional_data,default_torso_node_group);
+			(void *)&list_conditional_data,default_torso_node_group);		
 		/* create same name node,element,data groups so can do graphics */
 		mapped_torso_node_group=make_node_and_element_and_data_groups(
 			node_group_manager,node_manager,element_manager,element_group_manager,
@@ -2896,7 +2896,15 @@ nodes z values are defined by the electrodes.
 		element_torso_data.mapped_torso_element_group=mapped_torso_element_group;
 		/* add torso elements to group if all nodes have are in z range */	
 		FOR_EACH_OBJECT_IN_GROUP(FE_element)(add_torso_elements_if_nodes_in_z_range,
-			(void *)&element_torso_data,default_torso_element_group);			
+			(void *)&element_torso_data,default_torso_element_group);
+		/* did we get any matches?*/
+		if(0==NUMBER_IN_GROUP(FE_element)(mapped_torso_element_group))
+		{
+			/* this is more of a warning than an error, I've made it an ERROR_MESSAGE */
+			/* to ensure the user notices it!*/
+			display_message(ERROR_MESSAGE,
+				"None of the rig's torso electrodes match the Default Torso");
+		}				
 		/* no longer needed, so destroy */
 		DESTROY_LIST(FE_node)(&torso_correct_z_node_list);
 		/* to fill node group */
