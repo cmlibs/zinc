@@ -1889,7 +1889,7 @@ int calculate_device_objective(struct Device *device,
 	enum Event_detection_objective objective,float *objective_values,
 	int number_of_objective_values,int objective_values_step,int average_width)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 26 February 2000
 
 DESCRIPTION :
 Calculates the specified <objective>/<detection> function for the <device>.
@@ -2244,10 +2244,36 @@ Storing the values in the array (<objective_values> every
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"calculate_device_objective.  Invalid argument(s).  %p %d %d %d",
-			objective_values,number_of_objective_values,objective_values_step,
-			number_of_samples);
+		if (device)
+		{
+			if (device->signal)
+			{
+				if (device->signal->buffer)
+				{
+					display_message(ERROR_MESSAGE,
+"calculate_device_objective.  Invalid argument(s).  %d (%d %d) %p %p %p %d %d %d",
+						buffer->value_type,SHORT_INT_VALUE,FLOAT_VALUE,
+						buffer->signals.short_int_values,buffer->signals.float_values,
+						objective_values,number_of_objective_values,objective_values_step,
+						number_of_samples);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"calculate_device_objective.  Missing signal buffer");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"calculate_device_objective.  Missing signal");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"calculate_device_objective.  Missing device");
+		}
 		return_code=0;
 	}
 	LEAVE;

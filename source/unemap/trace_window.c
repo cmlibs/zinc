@@ -6221,9 +6221,13 @@ Calculates the processed device.
 				times=(float *)NULL;
 				signals_status=(enum Event_signal_status *)NULL;
 				name=(char *)NULL;
+				/* extract_signal_information with first_data>last_data returns the
+					buffer from start to end.  Here, the whole buffer is required */
 				if ((trace->highlight)&&(*(trace->highlight))&&
-					(device= **(trace->highlight))&&extract_signal_information(
-					(struct FE_node *)NULL,(struct Draw_package *)NULL,device,1,1,0,
+					(device= **(trace->highlight))&&(device->signal)&&
+					(device->signal->buffer)&&extract_signal_information(
+					(struct FE_node *)NULL,(struct Draw_package *)NULL,device,1,0,
+					(device->signal->buffer->number_of_samples)-1,
 					(int *)NULL,&number_of_samples,&times,&values,&signals_status,&name,
 					&highlight,&minimum,&maximum)&&(0<number_of_samples)&&
 					(processed_device=trace->processed_device)&&

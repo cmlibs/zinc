@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.c
 
-LAST MODIFIED : 12 October 1999
+LAST MODIFIED : 26 February 2000
 
 DESCRIPTION :
 Essentially the same functionality as rig.c, but using nodes and fields to store
@@ -3686,7 +3686,8 @@ The extraction arguments are:
 					(last_data_local<buffer->number_of_samples)))
 				{
 					display_message(ERROR_MESSAGE,
-						"extract_signal_information.  Invalid signal range");
+				"extract_signal_information.  Invalid signal range.  Device.  %d %d %d",
+						first_data_local,last_data_local,buffer->number_of_samples);
 					return_code=0;
 				}
 				if (return_code)
@@ -4016,7 +4017,8 @@ The extraction arguments are:
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"extract_signal_information.  Invalid signal range");
+					"extract_signal_information.  Invalid signal range.  Node.  %d %d %d",
+						first_data_local,last_data_local,number_of_nodal_values);
 					return_code=0;
 				}
 			}
