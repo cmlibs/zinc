@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : material_editor.uil
 !
-! LAST MODIFIED : 3 February 2000
+! LAST MODIFIED : 12 August 2002
 !
 ! DESCRIPTION :
 ! The widgets for the material_editor material_editor widget.
@@ -11,7 +11,6 @@ module mat_editor
 
 procedure
 	mat_editor_identify_button    (integer);
-	mat_editor_destroy_CB          ();
 	mat_editor_texture_btn_CB;
 
 value
@@ -71,10 +70,6 @@ object
 			XmFrame mat_editor_colours_frame;
 			XmFrame mat_editor_edit_frame;
 			XmForm mat_editor_3d;
-			};
-		callbacks
-			{
-			XmNdestroyCallback = procedure mat_editor_destroy_CB();
 			};
 		};
 	mat_editor_colours_frame: XmFrame

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : volume_texture_editor.h
 
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -185,7 +185,7 @@ DESCRIPTION :
 		isovalue;
 	double   displacement[3];
 	double select_value, select_value2;
-	Widget *material_editor_address;
+	struct Material_editor_dialog **material_editor_dialog_address;
 	struct Graphical_material *current_material;
 	struct Environment_map *current_env_map;
 	struct GT_voltex *voltex;
@@ -221,10 +221,11 @@ struct Texture_window *create_texture_edit_window(
 	struct Graphical_material *default_graphical_material,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Environment_map) *environment_map_manager,
-	struct MANAGER(Texture) *texture_manager,Widget *material_editor_address,
+	struct MANAGER(Texture) *texture_manager,
+	struct Material_editor_dialog **material_editor_dialog_address,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 Create the structures and retrieve the texture window from the uil file.

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material_editor_dialog.h
 
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 Header description for material_editor_dialog widget.
@@ -14,58 +14,77 @@ Header description for material_editor_dialog widget.
 #include "user_interface/user_interface.h"
 
 /*
+Global Types
+------------
+*/
+
+struct Material_editor_dialog;
+
+/*
 Global Functions
 ----------------
 */
-int material_editor_dialog_get_callback(Widget material_editor_dialog_widget,
-	struct Callback_data *callback);
+
+int DESTROY(Material_editor_dialog)(
+	struct Material_editor_dialog **material_editor_dialog_address);
 /*******************************************************************************
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Returns the update_callback for the material editor_dialog widget.
+Destroys the <*material_editor_dialog_address> and sets
+<*material_editor_dialog_address> to NULL.
 ==============================================================================*/
 
-int material_editor_dialog_set_callback(Widget material_editor_dialog_widget,
-	struct Callback_data *callback);
-/*******************************************************************************
-LAST MODIFIED : 1 December 1997
-
-DESCRIPTION :
-Changes the update_callback for the material editor_dialog widget.
-==============================================================================*/
-
-struct Graphical_material *material_editor_dialog_get_material(
-	Widget material_editor_dialog_widget);
-/*******************************************************************************
-LAST MODIFIED : 1 December 1997
-
-DESCRIPTION :
-If <material_editor_dialog_widget> is not NULL, then get the data item from
-<material_editor_dialog widget>.  Otherwise, get the data item from
-<material_editor_dialog>.
-==============================================================================*/
-
-int material_editor_dialog_set_material(Widget material_editor_dialog_widget,
-	struct Graphical_material *material);
-/*******************************************************************************
-LAST MODIFIED : 1 December 1997
-
-DESCRIPTION :
-If <material_editor_dialog_widget> is not NULL, then change the data item on
-<material_editor_dialog widget>.  Otherwise, change the data item on
-<material_editor_dialog>.
-==============================================================================*/
-
-int bring_up_material_editor_dialog(Widget *material_editor_dialog_address,
-	Widget parent,struct MANAGER(Graphical_material) *graphical_material_manager,
+int bring_up_material_editor_dialog(
+	struct Material_editor_dialog **material_editor_dialog_address,
+	Widget parent, struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Texture) *texture_manager,struct Graphical_material *material,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 If there is a material_editor dialog in existence, then bring it to the front,
 else create a new one.
 ==============================================================================*/
+
+int material_editor_dialog_get_callback(
+	struct Material_editor_dialog *material_editor_dialog,
+	struct Callback_data *callback);
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Get the update <callback> information for the <material_editor_dialog>.
+==============================================================================*/
+
+int material_editor_dialog_set_callback(
+	struct Material_editor_dialog *material_editor_dialog,
+	struct Callback_data *callback);
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Set the update <callback> information for the <material_editor_dialog>.
+==============================================================================*/
+
+struct Graphical_material *material_editor_dialog_get_material(
+	struct Material_editor_dialog *material_editor_dialog);
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Returns the material edited by the <material_editor_dialog>.
+==============================================================================*/
+
+int material_editor_dialog_set_material(
+	struct Material_editor_dialog *material_editor_dialog,
+	struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Set the <material> for the <material_editor_dialog>.
+==============================================================================*/
+
 #endif

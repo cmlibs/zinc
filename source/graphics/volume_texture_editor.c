@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : volume_texture_editor.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 12 August 2002
 
 DISCRIPTION :
 Creation & Callback code for Motif texture window
@@ -1107,7 +1107,9 @@ printf("******* Material Index = %d *******\n",index);
 			if ((index<pick_index)&&(index >= 0)&&material_pick_list[index])
 			{
 				texture_window->current_material=material_pick_list[index];
-				material_editor_dialog_set_material((Widget)NULL,
+				/*???RC Yep, this was already passing a NULL pointer */
+				material_editor_dialog_set_material(
+					(struct Material_editor_dialog *)NULL,
 					texture_window->current_material);
 			}
 /*???debug */
@@ -1435,7 +1437,7 @@ DESCRIPTION :
 	USE_PARAMETER(call_data);
 	if (window=(struct Texture_window *)texture_window)
 	{
-		bring_up_material_editor_dialog(window->material_editor_address,
+		bring_up_material_editor_dialog(window->material_editor_dialog_address,
 			User_interface_get_application_shell(window->user_interface),
 			window->graphical_material_manager,window->texture_manager,
 			window->current_material,window->user_interface);
@@ -4617,7 +4619,8 @@ DESCRIPTION :
 	if (texture_window)
 	{
 		texture_window->current_material=material;
-		material_editor_dialog_set_material((Widget)NULL,
+		/*???RC Yep, this was already passing a NULL pointer */
+		material_editor_dialog_set_material((struct Material_editor_dialog *)NULL,
 			texture_window->current_material);
 		printf("current_material = %s \n",
 			Graphical_material_name(texture_window->current_material));
@@ -5100,17 +5103,15 @@ printf("xi ranges\n");
 	LEAVE;
 } /* printVT */
 
-
-
-
 struct Texture_window *create_texture_edit_window(
 	struct Graphical_material *default_graphical_material,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(Environment_map) *environment_map_manager,
-	struct MANAGER(Texture) *texture_manager,Widget *material_editor_address,
+	struct MANAGER(Texture) *texture_manager,
+	struct Material_editor_dialog **material_editor_dialog_address,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 27 July 1998
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 Create the structures and retrieve the texture window from the uil file.
@@ -5180,7 +5181,7 @@ Create the structures and retrieve the texture window from the uil file.
 	ENTER(create_texture_edit_window);
 	/* check arguments */
 	if (user_interface&&graphical_material_manager&&environment_map_manager&&
-		texture_manager&&material_editor_address&&
+		texture_manager&&material_editor_dialog_address&&
 		default_graphical_material)
 	{
 		if (MrmOpenHierarchy_base64_string(volume_texture_editor_uidh,
@@ -5198,7 +5199,8 @@ Create the structures and retrieve the texture window from the uil file.
 				texture_window->envmap_palette_shell=(Widget)NULL;
 				texture_window->create_finite_elements_dialog=
 					(struct Create_finite_elements_dialog *)NULL;
-				texture_window->material_editor_address=material_editor_address;
+				texture_window->material_editor_dialog_address =
+					material_editor_dialog_address;
 				texture_window->texture_window_shell=(Widget)NULL;
 				texture_window->texture_window_widget=(Widget)NULL;
 				texture_window->prompt_text_field=(Widget)NULL;

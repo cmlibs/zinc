@@ -94,6 +94,9 @@ DESCRIPTION :
 #if defined (SELECT_DESCRIPTORS)
 #include "io_devices/io_device.h"
 #endif /* defined (SELECT_DESCRIPTORS) */
+#if defined (MOTIF)
+#include "material/material_editor_dialog.h"
+#endif /* defined (MOTIF) */
 #include "node/node_tool.h"
 #if defined (MOTIF)
 #include "node/node_viewer.h"
@@ -722,13 +725,13 @@ Main program for the CMISS Graphical User Interface
 	command_data.input_module_dialog=(Widget)NULL;
 	command_data.interactive_data_editor_dialog=(Widget)NULL;
 	command_data.interactive_node_editor_dialog=(Widget)NULL;
-	command_data.material_editor_dialog=(Widget)NULL;
 	command_data.node_group_slider_dialog=(Widget)NULL;
 	command_data.data_viewer=(struct Node_viewer *)NULL;
 	command_data.node_viewer=(struct Node_viewer *)NULL;
 	command_data.element_point_viewer=(struct Element_point_viewer *)NULL;
 	command_data.prompt_window=(struct Prompt_window *)NULL;
 	command_data.projection_window=(struct Projection_window *)NULL;
+	command_data.material_editor_dialog = (struct Material_editor_dialog *)NULL;
 	command_data.scene_editor = (struct Scene_editor *)NULL;
 	/*???RC.  Temporary - should allow more than one */
 	command_data.spectrum_editor_dialog = (struct Spectrum_editor_dialog *)NULL;
@@ -1730,6 +1733,10 @@ Main program for the CMISS Graphical User Interface
 	if (command_data.scene_editor)
 	{
 		DESTROY(Scene_editor)(&(command_data.scene_editor));
+	}
+	if (command_data.material_editor_dialog)
+	{
+		DESTROY(Material_editor_dialog)(&(command_data.material_editor_dialog));
 	}
 #endif /* defined (MOTIF) */
 

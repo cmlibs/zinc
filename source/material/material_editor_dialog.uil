@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : material_editor_d.uil
 !
-! LAST MODIFIED : 24 July 1995
+! LAST MODIFIED : 12 August 2002
 !
 ! DESCRIPTION :
 ! The widgets for the material_editor_d material_editor_d widget.
@@ -11,7 +11,6 @@ module material_editor_dialog
 
 procedure
 	mat_editor_d_identify_button    (integer);
-	mat_editor_d_destroy_CB          ();
 	mat_editor_d_control_CB          (integer);
 
 value
@@ -61,10 +60,6 @@ object
 			{
 			XmPanedWindow mat_editor_main_pw;
 			XmRowColumn mat_editor_d_control;
-			};
-		callbacks
-			{
-			XmNdestroyCallback = procedure mat_editor_d_destroy_CB();
 			};
 		};
 	mat_editor_main_pw: XmPanedWindow

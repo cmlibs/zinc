@@ -1,9 +1,10 @@
 /*******************************************************************************
 FILE : material_editor.c
 
-LAST MODIFIED : 13 March 2002
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
+Widgets for editing a graphical material.
 ==============================================================================*/
 #include <math.h>
 #define PI 3.1415927
@@ -67,7 +68,6 @@ deaccess it.
 #if defined (MATERIAL_EDITOR_NAME)
 	Widget name;
 #endif
-	Widget *widget_address;
 }; /* Material_editor */
 
 /*
@@ -719,50 +719,6 @@ Finds the id of the buttons on the material_editor widget.
 	LEAVE;
 } /* material_editor_identify_button */
 
-static void material_editor_destroy_CB(Widget widget,int *tag,
-	unsigned long *reason)
-/*******************************************************************************
-LAST MODIFIED : 23 September 1996
-
-DESCRIPTION :
-Callback for the material_editor dialog - tidies up all details - mem etc
-==============================================================================*/
-{
-	struct Material_editor *material_editor;
-
-	ENTER(material_editor_destroy_CB);
-	USE_PARAMETER(tag);
-	USE_PARAMETER(reason);
-	if (widget)
-	{
-		/* Get the pointer to the data for the material_editor widget */
-		XtVaGetValues(widget,XmNuserData,&material_editor,NULL);
-		if (material_editor)
-		{
-			if (material_editor->edit_material)
-			{
-				DESTROY(Graphical_material)(&(material_editor->edit_material));
-			}
-			*(material_editor->widget_address)=(Widget)NULL;
-			/* MANAGER_DEREGISTER(Graphical_material)(
-				material_editor->manager_callback_id,
-				material_editor->graphical_material_manager); */
-			DEALLOCATE(material_editor);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"material_editor_destroy_CB.  Missing material_editor");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"material_editor_destroy_CB.  Missing widget");
-	}
-	LEAVE;
-} /* material_editor_destroy_CB */
-
 #if defined (MATERIAL_EDITOR_NAME)
 static void material_editor_set_name(
 	struct Material_editor *material_editor)
@@ -797,24 +753,24 @@ Writes the correct name on the label.
 Global functions
 ----------------
 */
-Widget create_material_editor_widget(Widget *material_editor_widget,
-	Widget parent,struct MANAGER(Texture) *texture_manager,
-	struct Graphical_material *material,struct User_interface *user_interface)
+
+struct Material_editor *CREATE(Material_editor)(Widget parent,
+	struct MANAGER(Texture) *texture_manager,
+	struct Graphical_material *material, struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 21 November 2001
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Creates a material_editor widget.
+Creates a Material_editor.
 ==============================================================================*/
 {
 	int init_widgets;
 	MrmType material_editor_dialog_class;
 	struct Callback_data callback;
-	struct Material_editor *material_editor=NULL;
+	struct Material_editor *material_editor;
 	static MrmRegisterArg callback_list[]=
 	{
 		{"mat_editor_identify_button",(XtPointer)material_editor_identify_button},
-		{"mat_editor_destroy_CB",(XtPointer)material_editor_destroy_CB},
 		{"mat_editor_texture_btn_CB",(XtPointer)
 			material_editor_texture_button_CB},
 	};
@@ -843,23 +799,20 @@ Creates a material_editor widget.
 		{"mat_editor_a3d_form_ID",
 		 (XtPointer)material_editor_a3d_form_ID}
 	};
-	Widget return_widget;
 
-	ENTER(create_material_editor_widget);
-	return_widget=(Widget)NULL;
-	/* check arguments */
-	if (material_editor_widget&&parent&&texture_manager&&user_interface)
+	ENTER(CREATE(Material_editor));
+	material_editor = (struct Material_editor *)NULL;
+	if (parent && texture_manager && user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(material_editor_uidh,
 			&material_editor_hierarchy,&material_editor_hierarchy_open))
 		{
 			/* allocate memory */
-			if (ALLOCATE(material_editor,struct Material_editor,1))
+			if (ALLOCATE(material_editor, struct Material_editor, 1))
 			{
 				/* initialise the structure */
 				/* material_editor->manager_callback_id=(void *)NULL; */
 				material_editor->widget_parent=parent;
-				material_editor->widget_address=material_editor_widget;
 				material_editor->widget=(Widget)NULL;
 				material_editor->background=0; /* tri-colour */
 				material_editor->texture_manager=texture_manager;
@@ -911,7 +864,7 @@ Creates a material_editor widget.
 								COLOUR_EDITOR_RGB,(struct Colour *)NULL,user_interface)))
 							{
 								display_message(ERROR_MESSAGE,
-			"create_material_editor_widget.  Could not create ambient colour widget");
+			"CREATE(Material_editor).  Could not create ambient colour widget");
 								init_widgets=0;
 							}
 							if (!(material_editor->diffuse_widget=
@@ -919,7 +872,7 @@ Creates a material_editor widget.
 								COLOUR_EDITOR_RGB,(struct Colour *)NULL,user_interface)))
 							{
 								display_message(ERROR_MESSAGE,
-			"create_material_editor_widget.  Could not create diffuse colour widget");
+			"CREATE(Material_editor).  Could not create diffuse colour widget");
 								init_widgets=0;
 							}
 							if (!(material_editor->emission_widget=
@@ -927,7 +880,7 @@ Creates a material_editor widget.
 								COLOUR_EDITOR_RGB,(struct Colour *)NULL,user_interface)))
 							{
 								display_message(ERROR_MESSAGE,
-		"create_material_editor_widget.  Could not create emission colour widget");
+		"CREATE(Material_editor).  Could not create emission colour widget");
 								init_widgets=0;
 							}
 							if (!(material_editor->specular_widget=
@@ -935,7 +888,7 @@ Creates a material_editor widget.
 								COLOUR_EDITOR_RGB,(struct Colour *)NULL,user_interface)))
 							{
 								display_message(ERROR_MESSAGE,
-		"create_material_editor_widget.  Could not create specular colour widget");
+		"CREATE(Material_editor).  Could not create specular colour widget");
 								init_widgets=0;
 							}
 							if (!(material_editor->alpha_widget=
@@ -943,7 +896,7 @@ Creates a material_editor widget.
 								"Alpha",0.0,0.0,1.0)))
 							{
 								display_message(ERROR_MESSAGE,
-							"create_material_editor_widget.  Could not create alpha widget");
+							"CREATE(Material_editor).  Could not create alpha widget");
 								init_widgets=0;
 							}
 							if (!(material_editor->shininess_widget=
@@ -951,7 +904,7 @@ Creates a material_editor widget.
 								"Shininess",0.0,0.0,1.0)))
 							{
 								display_message(ERROR_MESSAGE,
-					"create_material_editor_widget.  Could not create shininess widget");
+					"CREATE(Material_editor).  Could not create shininess widget");
 								init_widgets=0;
 							}
 							if (!(material_editor->texture_widget=
@@ -982,13 +935,12 @@ Creates a material_editor widget.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-								"create_material_editor_widget.  Could not create 3d widget.");
+								"CREATE(Material_editor).  Could not create 3d widget.");
 								init_widgets=0;
 							}
 							if (init_widgets)
 							{
-								material_editor_set_material(material_editor->widget,
-									material);
+								material_editor_set_material(material_editor, material);
 								/*???RC should do following in ~set_material */
 								/* add a callback to the 3d widget */
 								XtAddCallback(material_editor->a3d_widget,
@@ -1024,17 +976,6 @@ Creates a material_editor widget.
 								/* set the name of the material_editor */
 								material_editor_set_name(material_editor);
 #endif /* defined (MATERIAL_EDITOR_SET_NAME) */
-								/* register for any changes */
-								/* material_editor->manager_callback_id=
-									MANAGER_REGISTER(Graphical_material)(
-									material_editor_global_object_change,material_editor,
-									graphical_material_manager); */
-								/* if (material_editor->global_value==
-									material_editor->default_value)
-								{
-									XtUnmanageChild(material_editor->widget);
-								} */
-								return_widget=material_editor->widget;
 							}
 							else
 							{
@@ -1044,78 +985,101 @@ Creates a material_editor widget.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-			"create_material_editor_widget.  Could not fetch material_editor dialog");
+			"CREATE(Material_editor).  Could not fetch material_editor dialog");
 							DEALLOCATE(material_editor);
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"create_material_editor_widget.  Could not register identifiers");
+							"CREATE(Material_editor).  Could not register identifiers");
 						DEALLOCATE(material_editor);
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"create_material_editor_widget.  Could not register callbacks");
+						"CREATE(Material_editor).  Could not register callbacks");
 					DEALLOCATE(material_editor);
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"create_material_editor_widget.  "
+				display_message(ERROR_MESSAGE,"CREATE(Material_editor).  "
 					"Could not allocate material_editor widget structure");
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_material_editor_widget.  Could not open hierarchy");
+				"CREATE(Material_editor).  Could not open hierarchy");
 		}
-		*material_editor_widget=return_widget;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_material_editor_widget.  Invalid argument(s)");
+			"CREATE(Material_editor).  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (return_widget);
-} /* create_material_editor_widget */
+	return (material_editor);
+} /* CREATE(Material_editor) */
 
-int material_editor_get_callback(Widget material_editor_widget,
-	struct Callback_data *callback)
+int DESTROY(Material_editor)(struct Material_editor **material_editor_address)
 /*******************************************************************************
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Returns the update_callback for the material editor widget.
+Destroys the <*material_editor_address> and sets
+<*material_editor_address> to NULL.
 ==============================================================================*/
 {
 	int return_code;
 	struct Material_editor *material_editor;
 
-	ENTER(material_editor_get_callback);
-	/* check arguments */
-	if (material_editor_widget&&callback)
+	ENTER(DESTROY(Material_editor));
+	if (material_editor_address &&
+		(material_editor = *material_editor_address))
 	{
-		/* Get the pointer to the data for the dialog */
-		XtVaGetValues(material_editor_widget,
-			XmNuserData,&material_editor,NULL);
-		if (material_editor)
+		if (material_editor->edit_material)
 		{
-			callback->procedure=material_editor->update_callback.procedure;
-			callback->data=material_editor->update_callback.data;
-			return_code=1;
+			DESTROY(Graphical_material)(&(material_editor->edit_material));
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"material_editor_get_callback.  Missing widget data");
-			return_code=0;
-		}
+		XtDestroyWidget(material_editor->widget);
+		DEALLOCATE(*material_editor_address);
+		*material_editor_address = (struct Material_editor *)NULL;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Material_editor).  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Material_editor) */
+
+int material_editor_get_callback(
+	struct Material_editor *material_editor,struct Callback_data *callback)
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Get the update <callback> information for the <material_editor>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(material_editor_get_callback);
+	return_code=0;
+	/* check arguments */
+	if (material_editor&&callback)
+	{
+		callback->procedure=material_editor->update_callback.procedure;
+		callback->data=material_editor->update_callback.data;
+		return_code=1;
 	}
 	else
 	{
@@ -1128,36 +1092,25 @@ Returns the update_callback for the material editor widget.
 	return (return_code);
 } /* material_editor_get_callback */
 
-int material_editor_set_callback(Widget material_editor_widget,
-	struct Callback_data *callback)
+int material_editor_set_callback(
+	struct Material_editor *material_editor,struct Callback_data *callback)
 /*******************************************************************************
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Changes the update_callback for the material editor widget.
+Set the update <callback> information for the <material_editor>.
 ==============================================================================*/
 {
 	int return_code;
-	struct Material_editor *material_editor=NULL;
 
 	ENTER(material_editor_set_callback);
-	if (material_editor_widget&&callback)
+	return_code=0;
+	/* check arguments */
+	if (material_editor&&callback)
 	{
-		/* Get the pointer to the data for the material_editor dialog */
-		XtVaGetValues(material_editor_widget,
-			XmNuserData,&material_editor,NULL);
-		if (material_editor)
-		{
-			material_editor->update_callback.procedure=callback->procedure;
-			material_editor->update_callback.data=callback->data;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"material_editor_set_callback.  Missing widget data");
-			return_code=0;
-		}
+		material_editor->update_callback.procedure=callback->procedure;
+		material_editor->update_callback.data=callback->data;
+		return_code=1;
 	}
 	else
 	{
@@ -1171,173 +1124,146 @@ Changes the update_callback for the material editor widget.
 } /* material_editor_set_callback */
 
 struct Graphical_material *material_editor_get_material(
-	Widget material_editor_widget)
+	struct Material_editor *material_editor)
 /*******************************************************************************
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Returns the address of the material being edited in the material_editor widget.
-Do not modify or DEALLOCATE the returned material; copy it to another material.
+Returns the material edited by the <material_editor>.
 ==============================================================================*/
 {
-	struct Graphical_material *return_material;
-	struct Material_editor *material_editor;
+	struct Graphical_material *material;
 
-	ENTER(material_editor_set_material);
-	if (material_editor_widget)
+	ENTER(material_editor_get_material);
+	if (material_editor)
 	{
-		/* Get the pointer to the data for the material_editor dialog */
-		XtVaGetValues(material_editor_widget,
-			XmNuserData,&material_editor,NULL);
-		if (material_editor)
-		{
-			return_material=material_editor->edit_material;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"material_editor_get_material.  Missing widget data.");
-			return_material=(struct Graphical_material *)NULL;
-		}
+		material = material_editor->edit_material;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"material_editor_get_material.  Missing widget.");
-		return_material=(struct Graphical_material *)NULL;
+			"material_editor_get_material.  Invalid argument(s)");
+		material = (struct Graphical_material *)NULL;
 	}
 	LEAVE;
 
-	return (return_material);
+	return (material);
 } /* material_editor_get_material */
 
-int material_editor_set_material(Widget material_editor_widget,
-	struct Graphical_material *material)
+int material_editor_set_material(
+	struct Material_editor *material_editor, struct Graphical_material *material)
 /*******************************************************************************
-LAST MODIFIED : 3 February 2000
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Changes the material in the material_editor widget.
+Sets the <material> to be edited by the <material_editor>.
 ==============================================================================*/
 {
 	int return_code,texture_set;
 	MATERIAL_PRECISION alpha,shininess;
 	struct Colour temp_colour;
-	struct Material_editor *material_editor;
 	struct Texture *texture;
 
 	ENTER(material_editor_set_material);
-	if (material_editor_widget)
+	if (material_editor)
 	{
-		/* Get the pointer to the data for the material_editor dialog */
-		XtVaGetValues(material_editor_widget,
-			XmNuserData,&material_editor,NULL);
-		if (material_editor)
+		return_code=1;
+		if (material_editor->edit_material)
 		{
-			return_code=1;
-			if (material_editor->edit_material)
+			DESTROY(Graphical_material)(&(material_editor->edit_material));
+		}
+		if (material)
+		{
+			/* create a copy for editing */
+			if ((material_editor->edit_material=
+				CREATE(Graphical_material)("copy"))&&
+				MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
+				(material_editor->edit_material,material))
 			{
-				DESTROY(Graphical_material)(&(material_editor->edit_material));
-			}
-			if (material)
-			{
-				/* create a copy for editing */
-				if ((material_editor->edit_material=
-					CREATE(Graphical_material)("copy"))&&
-					MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
-					(material_editor->edit_material,material))
-				{
 #if defined (MATERIAL_EDITOR_NAME)
-					/* set the name of the material_editor */
-					material_editor_set_name(material_editor);
+				/* set the name of the material_editor */
+				material_editor_set_name(material_editor);
 #endif /* defined (MATERIAL_EDITOR_NAME) */
-					/* now make all the sub widgets reflect the new data */
-					if (Graphical_material_get_ambient(
-						material_editor->edit_material,&temp_colour))
-					{
-						colour_editor_set_colour(material_editor->ambient_widget,
-							&temp_colour);
-					}
-					if (Graphical_material_get_diffuse(
-						material_editor->edit_material,&temp_colour))
-					{
-						colour_editor_set_colour(material_editor->diffuse_widget,
-							&temp_colour);
-					}
-					if (Graphical_material_get_emission(
-						material_editor->edit_material,&temp_colour))
-					{
-						colour_editor_set_colour(material_editor->emission_widget,
-							&temp_colour);
-					}
-					if (Graphical_material_get_specular(
-						material_editor->edit_material,&temp_colour))
-					{
-						colour_editor_set_colour(material_editor->specular_widget,
-							&temp_colour);
-					}
-					if (Graphical_material_get_alpha(material_editor->edit_material,
-						&alpha))
-					{
-						edit_var_set_data(material_editor->alpha_widget,
-							EDIT_VAR_VALUE,(EDIT_VAR_PRECISION)alpha);
-					}
-					if (Graphical_material_get_shininess(
-						material_editor->edit_material,&shininess))
-					{
-						edit_var_set_data(material_editor->shininess_widget,
-							EDIT_VAR_VALUE,(EDIT_VAR_PRECISION)shininess);
-					}
-					if (texture=
-						Graphical_material_get_texture(material_editor->edit_material))
-					{
-						CHOOSE_OBJECT_SET_OBJECT(Texture)(
-							material_editor->texture_widget,texture);
-						texture_set=True;
-					}
-					else
-					{
-						texture_set=False;
-					}
-					XtVaSetValues(material_editor->texture_button,
-						XmNset,(XtPointer)texture_set,NULL);
-					XtSetSensitive(material_editor->texture_widget,texture_set);
-					/* need to check window is there the first time else error occurs */
-					if (XtWindow(material_editor->a3d_widget))
-					{
-						material_editor_update_picture(material_editor);
-					}
-					XtManageChild(material_editor->widget);
+				/* now make all the sub widgets reflect the new data */
+				if (Graphical_material_get_ambient(
+					material_editor->edit_material,&temp_colour))
+				{
+					colour_editor_set_colour(material_editor->ambient_widget,
+						&temp_colour);
+				}
+				if (Graphical_material_get_diffuse(
+					material_editor->edit_material,&temp_colour))
+				{
+					colour_editor_set_colour(material_editor->diffuse_widget,
+						&temp_colour);
+				}
+				if (Graphical_material_get_emission(
+					material_editor->edit_material,&temp_colour))
+				{
+					colour_editor_set_colour(material_editor->emission_widget,
+						&temp_colour);
+				}
+				if (Graphical_material_get_specular(
+					material_editor->edit_material,&temp_colour))
+				{
+					colour_editor_set_colour(material_editor->specular_widget,
+						&temp_colour);
+				}
+				if (Graphical_material_get_alpha(material_editor->edit_material,
+					&alpha))
+				{
+					edit_var_set_data(material_editor->alpha_widget,
+						EDIT_VAR_VALUE,(EDIT_VAR_PRECISION)alpha);
+				}
+				if (Graphical_material_get_shininess(
+					material_editor->edit_material,&shininess))
+				{
+					edit_var_set_data(material_editor->shininess_widget,
+						EDIT_VAR_VALUE,(EDIT_VAR_PRECISION)shininess);
+				}
+				if (texture=
+					Graphical_material_get_texture(material_editor->edit_material))
+				{
+					CHOOSE_OBJECT_SET_OBJECT(Texture)(
+						material_editor->texture_widget,texture);
+					texture_set=True;
 				}
 				else
 				{
-					if (material_editor->edit_material)
-					{
-						DESTROY(Graphical_material)(&(material_editor->edit_material));
-					}
-					display_message(ERROR_MESSAGE,
-						"material_editor_set_material.  Could not make copy of material");
-					material=(struct Graphical_material *)NULL;
-					return_code=0;
+					texture_set=False;
 				}
+				XtVaSetValues(material_editor->texture_button,
+					XmNset,(XtPointer)texture_set,NULL);
+				XtSetSensitive(material_editor->texture_widget,texture_set);
+				/* need to check window is there the first time else error occurs */
+				if (XtWindow(material_editor->a3d_widget))
+				{
+					material_editor_update_picture(material_editor);
+				}
+				XtManageChild(material_editor->widget);
 			}
-			if (!material)
+			else
 			{
-				XtUnmanageChild(material_editor->widget);
+				if (material_editor->edit_material)
+				{
+					DESTROY(Graphical_material)(&(material_editor->edit_material));
+				}
+				display_message(ERROR_MESSAGE,
+					"material_editor_set_material.  Could not make copy of material");
+				material=(struct Graphical_material *)NULL;
+				return_code=0;
 			}
 		}
-		else
+		if (!material)
 		{
-			display_message(ERROR_MESSAGE,
-				"material_editor_set_material.  Missing widget data.");
-			return_code=0;
+			XtUnmanageChild(material_editor->widget);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"material_editor_set_material.  Invalid argument(s).");
-		return_code=0;
+			"material_editor_set_material.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 

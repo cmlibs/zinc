@@ -1,12 +1,10 @@
 /*******************************************************************************
 FILE : material_editor.h
 
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-This module creates a free material_editor input device, using two dof3, two
-control and one input widget.  The position is given relative to some coordinate
-system, and the returned value is a global one.
+Widgets for editing a graphical material.
 ==============================================================================*/
 #if !defined (MATERIAL_EDITOR_H)
 #define MATERIAL_EDITOR_H
@@ -16,54 +14,70 @@ system, and the returned value is a global one.
 #include "user_interface/user_interface.h"
 
 /*
+Global Types
+------------
+*/
+
+struct Material_editor;
+
+/*
 Global Functions
 ----------------
 */
-Widget create_material_editor_widget(Widget *material_editor_widget,
-	Widget parent,struct MANAGER(Texture) *texture_manager,
-	struct Graphical_material *material,struct User_interface *user_interface);
+
+struct Material_editor *CREATE(Material_editor)(Widget parent,
+	struct MANAGER(Texture) *texture_manager,
+	struct Graphical_material *material, struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Creates a material_editor widget.
-???RC what is the texture_manager needed for?
+Creates a Material_editor.
 ==============================================================================*/
 
-int material_editor_get_callback(Widget material_editor_widget,
-	struct Callback_data *callback);
+int DESTROY(Material_editor)(struct Material_editor **material_editor_address);
 /*******************************************************************************
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Returns the update_callback for the material editor widget.
+Destroys the <*material_editor_address> and sets
+<*material_editor_address> to NULL.
 ==============================================================================*/
 
-int material_editor_set_callback(Widget material_editor_widget,
-	struct Callback_data *callback);
+int material_editor_get_callback(
+	struct Material_editor *material_editor,struct Callback_data *callback);
 /*******************************************************************************
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Changes the update_callback for the material editor widget.
+Get the update <callback> information for the <material_editor>.
+==============================================================================*/
+
+int material_editor_set_callback(
+	struct Material_editor *material_editor,struct Callback_data *callback);
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Set the update <callback> information for the <material_editor>.
 ==============================================================================*/
 
 struct Graphical_material *material_editor_get_material(
-	Widget material_editor_widget);
+	struct Material_editor *material_editor);
 /*******************************************************************************
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Returns the address of the material being edited in the material_editor widget.
-Do not modify or DEALLOCATE the returned material; copy it to another material.
+Returns the material edited by the <material_editor>.
 ==============================================================================*/
 
-int material_editor_set_material(Widget material_editor_widget,
-	struct Graphical_material *material);
+int material_editor_set_material(
+	struct Material_editor *material_editor, struct Graphical_material *material);
 /*******************************************************************************
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Changes the material in the material_editor widget.
+Sets the <material> to be edited by the <material_editor>.
 ==============================================================================*/
+
 #endif

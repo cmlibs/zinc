@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 16 July 2002
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -21,7 +21,7 @@ Global types
 */
 struct Cmiss_command_data
 /*******************************************************************************
-LAST MODIFIED : 16 July 2002
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -112,11 +112,11 @@ DESCRIPTION :
 	Widget control_curve_editor_dialog,data_grabber_dialog,
 		emoter_slider_dialog,grid_field_calculator_dialog,input_module_dialog,
 		interactive_data_editor_dialog,interactive_node_editor_dialog,
-		material_editor_dialog,
 		node_group_slider_dialog, sync_2d_3d_dialog;
 	struct Node_viewer *data_viewer,*node_viewer;
 	struct Element_point_viewer *element_point_viewer;
 	struct Element_creator *element_creator;
+	struct Material_editor_dialog *material_editor_dialog;
 	struct Scene_editor *scene_editor;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 	struct Time_editor_dialog *time_editor_dialog;
