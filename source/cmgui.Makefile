@@ -546,7 +546,7 @@ ifeq ($(SYSNAME),win32)
    LIB = -lg2c -lgdi32  -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32 -lstdc++
 endif # SYSNAME == win32
 
-BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2
+BOOST_INC = -I$(CMISS_ROOT)/boost-1.30.2 -I$(CMISS_ROOT)/boost-1.30.2/boost/compatibility/cpp_c_headers
 
 ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(PLATFORM_DEFINES) $(OPERATING_SYSTEM_DEFINES) $(USER_INTERFACE_DEFINES) \
