@@ -61,9 +61,9 @@ sub new
 	my ($class, %arg) = @_;
 	my ($objref,$value);
 
-	$value=$arg{value};
-	if ($value)
+	if (exists $arg{value})
 	{
+		$value=$arg{value};
 		$objref=create($value);
 		if ($objref)
 		{
@@ -72,7 +72,7 @@ sub new
 	}
 	else
 	{
-		croak "Missing value";
+		croak "Missing independent";
 	}
 }
 
