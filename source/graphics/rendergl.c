@@ -138,7 +138,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								glBegin(GL_POINTS);
 								glVertex3f(x, y, z);
 								glEnd();
-								if (labels)
+								if (labels && *label)
 								{
 									glRasterPos3f(x, y, z);
 									wrapperPrintText(*label);
@@ -212,7 +212,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								x = (*point)[0] + f0*(*axis1)[0];
 								y = (*point)[1] + f0*(*axis1)[1];
 								z = (*point)[2] + f0*(*axis1)[2];
-								if (labels)
+								if (labels && *label)
 								{
 									glRasterPos3f(x,y,z);
 									wrapperPrintText(*label);
@@ -306,7 +306,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 								x = temp_point[0];
 								y = temp_point[1];
 								z = temp_point[2];
-								if (labels)
+								if (labels && *label)
 								{
 									glRasterPos3f(x,y,z);
 									wrapperPrintText(*label);
@@ -515,7 +515,7 @@ are selected, or all points if <selected_name_ranges> is NULL.
 						{
 							if (draw_all||((name_selected=Multi_range_is_value_in_range(
 								selected_name_ranges,*name))&&draw_selected)||
-								((!name_selected)&&(!draw_selected)))
+								((!name_selected)&&(!draw_selected))&&(*label))
 							{
 								if (names)
 								{
