@@ -241,3 +241,5 @@ cmgui.*.graphicsWindowZoomRate:       1.0
 !Torso: (Normal!)
 !cmgui.*.graphicsWindowOrthoUpAxis:      Z
 !cmgui.*.graphicsWindowOrthoFrontAxis:  -Y
+! Controls whether the free spin mode of the transform tool is on or off by default.
+cmgui.*.transformFreeSpin: False
