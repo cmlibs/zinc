@@ -1073,7 +1073,9 @@ points  given by the positions in <point_list> and oriented and scaled by
 								}
 							}
 							fprintf(vrml_file,"    ]\n");
-							if ((0.0 != a_angle)&&(0.0 != b_angle))
+/*							if ((0.0 != a_angle)&&(0.0 != b_angle))*/
+							if ((ZERO_ROTATION_TOLERANCE < fabs(a_angle))&&
+								(ZERO_ROTATION_TOLERANCE < fabs(b_angle)))
 							{
 								fprintf(vrml_file,"    } #Transform\n");
 								fprintf(vrml_file,"  ]\n");
