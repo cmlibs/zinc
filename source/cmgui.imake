@@ -1040,6 +1040,7 @@ GRAPHICS_SRCS = \
 	graphics/rendervrml.c \
 	graphics/renderwavefront.c \
 	graphics/scene.c \
+	graphics/scene_viewer.c \
 	graphics/selected_graphic.c \
 	graphics/spectrum.c \
 	graphics/spectrum_settings.c \
@@ -1052,7 +1053,6 @@ GRAPHICS_INTERFACE_SRCS = \
 	graphics/graphics_window.c \
 	graphics/movie_graphics.c \
 	graphics/scene_editor.c \
-	graphics/scene_viewer.c \
 	graphics/settings_editor.c \
 	graphics/spectrum_editor.c \
 	graphics/spectrum_editor_dialog.c \
@@ -1115,6 +1115,8 @@ SELECTION_SRCS = \
 	selection/node_selection.c
 SLIDER_INTERFACE_SRCS = \
 	slider/node_group_slider_dialog.c
+THREE_D_DRAWING_SRCS = \
+	three_d_drawing/graphics_buffer.c
 THREE_D_DRAWING_INTERFACE_SRCS = \
 	three_d_drawing/dm_interface.c \
 	three_d_drawing/movie_extensions.c \
@@ -1162,6 +1164,7 @@ SRCS_1 = \
 	$(NODE_SRCS) \
 	$(SELECTION_SRCS) \
 	$(INTERPRETER_SRCS) \
+	$(THREE_D_DRAWING_SRCS) \
 	$(TIME_SRCS) \
 	$(USER_INTERFACE_SRCS)
 

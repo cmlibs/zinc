@@ -50,7 +50,6 @@ typedef struct USTMSCpair
 #include "three_d_drawing/dm_interface.h"
 #include "user_interface/message.h"
 
-#if defined (NEW_CODE)
 /* SAB 20 March 2002
 	These calls should be available in every system with GLX 1.3 or greater
 	but on the SGI the original code seems to work better with movies and
@@ -63,7 +62,6 @@ typedef struct USTMSCpair
 #define GLX_pbuffer 1
 #define GLX_fbconfig 1
 #endif /* defined (GLX_VERSION_1_3) */
-#endif /* defined (NEW_CODE) */
 
 struct Dm_buffer
 {

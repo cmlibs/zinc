@@ -25,6 +25,7 @@ translating and zooming with mouse button press and motion events.
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "interaction/interactive_tool.h"
+#include "three_d_drawing/graphics_buffer.h"
 
 /*
 Global types
@@ -113,17 +114,17 @@ DESCRIPTION :
 Members of the Scene_viewer structure are private.
 ==============================================================================*/
 
-DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_transform, \
+DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
 	struct Scene_viewer *, void *);
 
-DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_destroy, \
-	struct Scene_viewer *, void *);
+DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_input_callback, \
+	struct Scene_viewer *, struct Graphics_buffer_input *);
 
 /*
 Global functions
 ----------------
 */
-struct Scene_viewer *CREATE(Scene_viewer)(Widget parent,
+struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,enum Scene_viewer_buffer_mode buffer_mode,
 	struct MANAGER(Light) *light_manager,struct Light *default_light,
 	struct MANAGER(Light_model) *light_model_manager,
@@ -612,7 +613,7 @@ Negative values reverse the effects of mouse movement.
 ==============================================================================*/
 
 int Scene_viewer_add_sync_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -620,7 +621,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Scene_viewer_remove_sync_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -630,7 +631,7 @@ Removes the callback calling <function> with <user_data> from
 ==============================================================================*/
 
 int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -638,7 +639,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Scene_viewer_remove_transform_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -648,7 +649,7 @@ Removes the callback calling <function> with <user_data> from
 ==============================================================================*/
 
 int Scene_viewer_add_destroy_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_destroy) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
 
@@ -658,7 +659,7 @@ viewer is destroyed.
 ==============================================================================*/
 
 int Scene_viewer_remove_destroy_callback(struct Scene_viewer *scene_viewer,
-	CMISS_CALLBACK_FUNCTION(Scene_viewer_destroy) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
 
@@ -850,9 +851,9 @@ viewport coordinates, which are specified relative to the window.
 ==============================================================================*/
 
 int Scene_viewer_get_viewport_size(struct Scene_viewer *scene_viewer,
-	Dimension *width,Dimension *height);
+	int *width, int *height);
 /*******************************************************************************
-LAST MODIFIED : 21 January 1998
+LAST MODIFIED : 2 July 2002
 
 DESCRIPTION :
 Returns the width and height of the Scene_viewers drawing area.
@@ -868,9 +869,9 @@ Returns the actual projection matrix applied to fill the window.
 ==============================================================================*/
 
 int Scene_viewer_set_viewport_size(struct Scene_viewer *scene_viewer,
-	Dimension width,Dimension height);
+	int width, int height);
 /*******************************************************************************
-LAST MODIFIED : 21 January 1998
+LAST MODIFIED : 2 July 2002
 
 DESCRIPTION :
 Sets the width and height of the Scene_viewers drawing area.
@@ -1014,14 +1015,26 @@ DESCRIPTION :
 Scales of the absolute image while keeping the same centre point.
 ==============================================================================*/
 
-int Scene_viewer_set_input_callback(struct Scene_viewer *scene_viewer,
-	struct Callback_data *callback );
+int Scene_viewer_add_input_callback(struct Scene_viewer *scene_viewer,
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
+	void *user_data);
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 2 July 2002
 
 DESCRIPTION :
-Sets a callback that will be activated each time input is received by the 
+Adds callback that will be activated each time input is received by the 
 scene_viewer.
+==============================================================================*/
+
+int Scene_viewer_remove_input_callback(struct Scene_viewer *scene_viewer,
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_input_callback) *function,
+	void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 2 July 2002
+
+DESCRIPTION :
+Removes the callback calling <function> with <user_data> from
+<scene_viewer>.
 ==============================================================================*/
 
 char *Scene_viewer_buffer_mode_string(

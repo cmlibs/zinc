@@ -2062,6 +2062,7 @@ the mapping_area of the <mapping_window>.
 ==============================================================================*/
 {
 	int return_code;
+	struct Graphics_buffer *graphics_buffer;
 	struct Map_drawing_information *drawing_information=
 		(struct Map_drawing_information *)NULL;
 	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
@@ -2075,9 +2076,14 @@ the mapping_area of the <mapping_window>.
 		map_drawing_information_make_map_scene(drawing_information,unemap_package);
 		if (!mapping_window->scene_viewer)
 		{
+			graphics_buffer = create_Graphics_buffer_X3d(
+				mapping_window->map3d_viewing_form, X3dCOLOUR_RGB_MODE, 
+				X3dDOUBLE_BUFFERING, 
+				User_interface_get_specified_visual_id(
+				get_map_drawing_information_user_interface(drawing_information)));
 			mapping_window->scene_viewer=
 				/* map3d_viewing_form is a sub-form of mapping_area_3d */
-				CREATE(Scene_viewer)(mapping_window->map3d_viewing_form,
+				CREATE(Scene_viewer)(graphics_buffer,
 					get_map_drawing_information_background_colour(drawing_information),
 					SCENE_VIEWER_DOUBLE_BUFFER,
 					get_map_drawing_information_Light_manager(drawing_information),

@@ -48,6 +48,7 @@ interest and set scene_viewer values directly.
 #include "user_interface/user_interface.h"
 /* for writing bitmap to file: */
 #include "general/image_utilities.h"
+#include "three_d_drawing/graphics_buffer.h"
 #include "three_d_drawing/dm_interface.h"
 #include "time/time_keeper.h"
 #include "user_interface/confirmation.h"
@@ -2512,8 +2513,10 @@ will be printed on the windows title bar.
 		{"gwin_structure",(XtPointer)NULL}
 	};
 	struct Callback_data callback;
+	struct Graphics_buffer *graphics_buffer;
 	struct Graphics_window *graphics_window=NULL;
 	Widget viewing_area[4];
+	X3dBufferingMode x3d_buffering_mode;
 
 	ENTER(create_graphics_window);
 	if (name&&((SCENE_VIEWER_SINGLE_BUFFER==buffer_mode)||
@@ -2738,39 +2741,62 @@ will be printed on the windows title bar.
 									viewing_area[2]=graphics_window->viewing_area3;
 									viewing_area[3]=graphics_window->viewing_area4;
 									return_code=1;
+									switch (buffer_mode)
+									{
+										case SCENE_VIEWER_SINGLE_BUFFER:
+										{
+											x3d_buffering_mode=X3dSINGLE_BUFFERING;
+										} break;
+										case SCENE_VIEWER_DOUBLE_BUFFER:
+										{
+											x3d_buffering_mode=X3dDOUBLE_BUFFERING;
+										} break;
+										default:
+										{
+											display_message(ERROR_MESSAGE,
+												"CREATE(Scene_viewer).  Invalid buffering mode");
+											return_code=0;
+										}
+									}
 									for (pane_no=0;return_code&&
 										(pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES);pane_no++)
 									{
-										if (graphics_window->scene_viewer[pane_no]=
-											CREATE(Scene_viewer)(viewing_area[pane_no],
-											background_colour,buffer_mode,
-											light_manager,default_light,
-											light_model_manager,default_light_model,
-											scene_manager,graphics_window->scene,
-											texture_manager,graphics_window->user_interface))
+										if (graphics_buffer = create_Graphics_buffer_X3d(
+											viewing_area[pane_no], X3dCOLOUR_RGB_MODE, 
+											x3d_buffering_mode, 
+											User_interface_get_specified_visual_id(
+											graphics_window->user_interface)))
 										{
-											Scene_viewer_set_interactive_tool(
-												graphics_window->scene_viewer[pane_no],
-												graphics_window->interactive_tool);
-											/* get scene_viewer transform callbacks to allow
-												 synchronising of views in multiple panes */
-											Scene_viewer_add_sync_callback(
-												graphics_window->scene_viewer[pane_no],
-												Graphics_window_Scene_viewer_view_changed,
-												graphics_window);
-											/*???RC temporary */
-											Scene_viewer_set_transform_rate(
-												graphics_window->scene_viewer[pane_no],2.0,1.5,2.0);
-										}
-										else
-										{
-											while (0<pane_no)
+											if (graphics_window->scene_viewer[pane_no]=
+												CREATE(Scene_viewer)(graphics_buffer,
+												background_colour,buffer_mode,
+												light_manager,default_light,
+												light_model_manager,default_light_model,
+											   scene_manager,graphics_window->scene,
+											   texture_manager,graphics_window->user_interface))
 											{
-												pane_no--;
-												DESTROY(Scene_viewer)(
-													&(graphics_window->scene_viewer[pane_no]));
+												Scene_viewer_set_interactive_tool(
+													graphics_window->scene_viewer[pane_no],
+													graphics_window->interactive_tool);
+												/* get scene_viewer transform callbacks to allow
+													synchronising of views in multiple panes */
+												Scene_viewer_add_sync_callback(
+													graphics_window->scene_viewer[pane_no],
+													Graphics_window_Scene_viewer_view_changed,
+													graphics_window);
+												Scene_viewer_set_transform_rate(
+													graphics_window->scene_viewer[pane_no],2.0,1.5,2.0);
 											}
-											return_code=0;
+											else
+											{
+												while (0<pane_no)
+												{
+													pane_no--;
+													DESTROY(Scene_viewer)(
+														&(graphics_window->scene_viewer[pane_no]));
+												}
+												return_code=0;
+											}
 										}
 									}
 									if (!return_code)

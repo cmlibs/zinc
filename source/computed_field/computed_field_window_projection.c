@@ -212,7 +212,6 @@ LAST MODIFIED : 11 February 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	Dimension viewport_width, viewport_height;
 	double lu_d, modelview_matrix[16], window_projection_matrix[16],
 		texture_projection_matrix[16], total_projection_matrix[16], 
 		viewport_matrix[16], viewport_left, viewport_top, 
@@ -221,7 +220,8 @@ DESCRIPTION :
 		bk_texture_max_pixels_per_polygon;
 	float distortion_centre_x, distortion_centre_y, distortion_factor_k1,
 		texture_width, texture_height, texture_depth;
-	int bk_texture_undistort_on, i, j, k, lu_index[4], return_code;
+	int bk_texture_undistort_on, i, j, k, lu_index[4], return_code,
+		viewport_width, viewport_height;
 	struct Computed_field_window_projection_type_specific_data *data;
 	struct Scene_viewer *scene_viewer;
 	struct Texture *texture;

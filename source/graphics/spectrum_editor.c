@@ -864,28 +864,23 @@ Callback for when changes made in the settings editor.
 	LEAVE;
 } /* spectrum_editor_update_settings */
 
-static void spectrum_editor_viewer_input_CB(
-	Widget scene_viewer_widget,
-	void *spectrum_editor_void,XtPointer call_data)
+static void spectrum_editor_viewer_input_callback(
+	struct Scene_viewer *scene_viewer, struct Graphics_buffer_input *input,
+	void *spectrum_editor_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 2 July 2002
 
 DESCRIPTION :
 Callback for when input is received by the scene_viewer.
 ==============================================================================*/
 {
 	struct Spectrum_editor *spectrum_editor;
-	X3dThreeDDrawCallbackStruct *input_callback_data;
-	XEvent *event;
 
 	ENTER(spectrum_editor_viewer_input_CB);
-	USE_PARAMETER(scene_viewer_widget);
-	if ((spectrum_editor=(struct Spectrum_editor *)spectrum_editor_void)&&
-		(input_callback_data=(X3dThreeDDrawCallbackStruct *)call_data)&&
-		(X3dCR_INPUT==input_callback_data->reason)&&
-		(event=(XEvent *)(input_callback_data->event)))
+	USE_PARAMETER(scene_viewer);
+	if (spectrum_editor=(struct Spectrum_editor *)spectrum_editor_void)
 	{
-		if (ButtonPress==event->type)
+		if (GRAPHICS_BUFFER_BUTTON_PRESS==input->type)
 		{
 			/* Increment the type */
 			spectrum_editor->viewer_type++;
@@ -981,7 +976,6 @@ Creates a spectrum_editor widget.
 	GTDATA *data;
 	MrmType spectrum_editor_dialog_class;
 	struct Spectrum_editor *spectrum_editor=NULL;
-	struct Callback_data callback;
 	static MrmRegisterArg callback_list[]=
 	{
 		{"spec_ed_destroy_CB",(XtPointer)spectrum_editor_destroy_CB},
@@ -1019,6 +1013,7 @@ Creates a spectrum_editor widget.
 	struct Colour background_colour = {0.1, 0.1, 0.1},
 		ambient_colour = {0.2, 0.2, 0.2}, black ={0, 0, 0},
 		off_white = {0.9, 0.8, 0.8};
+	struct Graphics_buffer *graphics_buffer;
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
 	Widget return_widget;
@@ -1255,37 +1250,44 @@ Creates a spectrum_editor widget.
 										set_Light_direction(viewer_light, light_direction);
 										viewer_light_model = CREATE(Light_model)("spectrum_editor_light_model");
 										Light_model_set_ambient(viewer_light_model, &ambient_colour);
-										spectrum_editor->spectrum_editor_scene_viewer = CREATE(Scene_viewer)(
-											spectrum_editor->viewer_form,
-											&background_colour,SCENE_VIEWER_DOUBLE_BUFFER,
-											(struct MANAGER(Light) *)NULL,viewer_light,
-											(struct MANAGER(Light_model) *)NULL,viewer_light_model,
-											(struct MANAGER(Scene) *)NULL,
-											spectrum_editor->spectrum_editor_scene,
-											(struct MANAGER(Texture) *)NULL,
-											user_interface );
-										return_code=Scene_add_graphics_object(
-											spectrum_editor->spectrum_editor_scene,
-											spectrum_editor->graphics_object, 0,
-											spectrum_editor->graphics_object->name,
-											/*fast_changing*/0);
-										Scene_viewer_set_input_mode(
-											spectrum_editor->spectrum_editor_scene_viewer,
-											SCENE_VIEWER_NO_INPUT );
-										callback.procedure = spectrum_editor_viewer_input_CB;
-										callback.data = (void *)spectrum_editor;
-										Scene_viewer_set_input_callback(
-											spectrum_editor->spectrum_editor_scene_viewer,&callback);
-										Scene_viewer_set_viewport_size(
-											spectrum_editor->spectrum_editor_scene_viewer,400,150);
-										Scene_viewer_set_lookat_parameters(
-											spectrum_editor->spectrum_editor_scene_viewer,0,-1,0,0,0,
-											0,0,0,1);
-										Scene_viewer_set_view_simple(
-											spectrum_editor->spectrum_editor_scene_viewer,0,0,0,2.3,
-											46,10);
-										Scene_viewer_redraw(
-											spectrum_editor->spectrum_editor_scene_viewer);
+										if (graphics_buffer = create_Graphics_buffer_X3d(
+											spectrum_editor->viewer_form, X3dCOLOUR_RGB_MODE, 
+											X3dDOUBLE_BUFFERING, 
+											User_interface_get_specified_visual_id(
+											user_interface)))
+										{
+											spectrum_editor->spectrum_editor_scene_viewer = 
+												CREATE(Scene_viewer)(graphics_buffer,
+												&background_colour,SCENE_VIEWER_DOUBLE_BUFFER,
+												(struct MANAGER(Light) *)NULL,viewer_light,
+												(struct MANAGER(Light_model) *)NULL,viewer_light_model,
+												(struct MANAGER(Scene) *)NULL,
+												spectrum_editor->spectrum_editor_scene,
+												(struct MANAGER(Texture) *)NULL,
+												user_interface );
+											return_code=Scene_add_graphics_object(
+												spectrum_editor->spectrum_editor_scene,
+												spectrum_editor->graphics_object, 0,
+												spectrum_editor->graphics_object->name,
+												/*fast_changing*/0);
+											Scene_viewer_set_input_mode(
+												spectrum_editor->spectrum_editor_scene_viewer,
+												SCENE_VIEWER_NO_INPUT );
+											Scene_viewer_add_input_callback(
+												spectrum_editor->spectrum_editor_scene_viewer,
+												spectrum_editor_viewer_input_callback,
+												(void *)spectrum_editor);
+											Scene_viewer_set_viewport_size(
+												spectrum_editor->spectrum_editor_scene_viewer,400,150);
+											Scene_viewer_set_lookat_parameters(
+												spectrum_editor->spectrum_editor_scene_viewer,0,-1,0,0,0,
+												0,0,0,1);
+											Scene_viewer_set_view_simple(
+												spectrum_editor->spectrum_editor_scene_viewer,0,0,0,2.3,
+												46,10);
+											Scene_viewer_redraw(
+												spectrum_editor->spectrum_editor_scene_viewer);
+										}
 									}
 								}
 								if (spectrum)

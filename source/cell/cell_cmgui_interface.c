@@ -422,6 +422,7 @@ Creates a Cell_cmgui_interface object, setting the data fields.
 {
   struct Cell_cmgui_interface *cmgui_interface;
   struct Callback_data callback;
+  struct Graphics_buffer *graphics_buffer;
   Widget form;
 
   ENTER(CREATE(Cell_cmgui_interface));
@@ -503,58 +504,72 @@ Creates a Cell_cmgui_interface object, setting the data fields.
         cmgui_interface->scene = default_scene;
       }
       form = Cell_window_get_scene_form(cmgui_interface->cell_window);
-      if (cmgui_interface->scene_viewer =
-        CREATE(Scene_viewer)(form,cmgui_interface->background_colour,
-          SCENE_VIEWER_DOUBLE_BUFFER,cmgui_interface->light_manager,
-          cmgui_interface->default_light,cmgui_interface->light_model_manager,
-          cmgui_interface->default_light_model,cmgui_interface->scene_manager,
-          cmgui_interface->scene,cmgui_interface->texture_manager,
-          cmgui_interface->user_interface))
-      {
-        /* Set-up the scene */
-        initialise_cell_scene(cmgui_interface);
-        /* Create the Toolbar */
-        form = Cell_window_get_toolbar_form(cmgui_interface->cell_window);
-        if (cmgui_interface->toolbar_widget =
-          create_interactive_toolbar_widget(form,
-            cmgui_interface->interactive_tool_manager,
-            INTERACTIVE_TOOLBAR_HORIZONTAL))
-        {
-          if (cmgui_interface->transform_tool)
-          {
-            add_interactive_tool_to_interactive_toolbar_widget(
-              cmgui_interface->transform_tool,
-              (void *)(cmgui_interface->toolbar_widget));
-          }
-          if (cmgui_interface->select_tool)
-          {
-            add_interactive_tool_to_interactive_toolbar_widget(
-              cmgui_interface->select_tool,
-              (void *)(cmgui_interface->toolbar_widget));
-          }
-          /* Make sure that the select tool is initially set */
-          set_interactive_tool(cmgui_interface,cmgui_interface->select_tool);
-          /* Set the callback for interactive toolbar */
-          callback.data = (void *)cmgui_interface;
-          callback.procedure = update_interactive_tool;
-          interactive_toolbar_widget_set_callback(
-            cmgui_interface->toolbar_widget,&callback);
-          /* Set the callback for any object selection */
-          Any_object_selection_add_callback(any_object_selection,
-            cell_any_object_selection_change,(void *)cmgui_interface);
-        }
-        else
-        {
-          display_message(ERROR_MESSAGE,"CREATE(Cell_cmgui_interface).  "
-            "Unable to create the toolbar widget");
-          DESTROY(Cell_cmgui_interface)(&cmgui_interface);
-          cmgui_interface = (struct Cell_cmgui_interface *)NULL;
-        }
+		if (graphics_buffer = create_Graphics_buffer_X3d(
+			form, X3dCOLOUR_RGB_MODE, 
+			X3dDOUBLE_BUFFERING, 
+			User_interface_get_specified_visual_id(
+			cmgui_interface->user_interface)))
+		{
+			if (cmgui_interface->scene_viewer =
+				CREATE(Scene_viewer)(graphics_buffer,cmgui_interface->background_colour,
+				SCENE_VIEWER_DOUBLE_BUFFER,cmgui_interface->light_manager,
+				cmgui_interface->default_light,cmgui_interface->light_model_manager,
+				cmgui_interface->default_light_model,cmgui_interface->scene_manager,
+				cmgui_interface->scene,cmgui_interface->texture_manager,
+				cmgui_interface->user_interface))
+			{
+				/* Set-up the scene */
+				initialise_cell_scene(cmgui_interface);
+				/* Create the Toolbar */
+				form = Cell_window_get_toolbar_form(cmgui_interface->cell_window);
+				if (cmgui_interface->toolbar_widget =
+					create_interactive_toolbar_widget(form,
+						cmgui_interface->interactive_tool_manager,
+						INTERACTIVE_TOOLBAR_HORIZONTAL))
+				{
+					if (cmgui_interface->transform_tool)
+					{
+						add_interactive_tool_to_interactive_toolbar_widget(
+							cmgui_interface->transform_tool,
+							(void *)(cmgui_interface->toolbar_widget));
+					}
+					if (cmgui_interface->select_tool)
+					{
+						add_interactive_tool_to_interactive_toolbar_widget(
+							cmgui_interface->select_tool,
+							(void *)(cmgui_interface->toolbar_widget));
+					}
+					/* Make sure that the select tool is initially set */
+					set_interactive_tool(cmgui_interface,cmgui_interface->select_tool);
+					/* Set the callback for interactive toolbar */
+					callback.data = (void *)cmgui_interface;
+					callback.procedure = update_interactive_tool;
+					interactive_toolbar_widget_set_callback(
+						cmgui_interface->toolbar_widget,&callback);
+					/* Set the callback for any object selection */
+					Any_object_selection_add_callback(any_object_selection,
+						cell_any_object_selection_change,(void *)cmgui_interface);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"CREATE(Cell_cmgui_interface).  "
+						"Unable to create the toolbar widget");
+					DESTROY(Cell_cmgui_interface)(&cmgui_interface);
+					cmgui_interface = (struct Cell_cmgui_interface *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"CREATE(Cell_cmgui_interface).  "
+					"Unable to create the scene viewer");
+				DESTROY(Cell_cmgui_interface)(&cmgui_interface);
+				cmgui_interface = (struct Cell_cmgui_interface *)NULL;
+			}
       }
       else
       {
         display_message(ERROR_MESSAGE,"CREATE(Cell_cmgui_interface).  "
-          "Unable to create the scene viewer");
+          "Unable to create the graphics buffer");
         DESTROY(Cell_cmgui_interface)(&cmgui_interface);
         cmgui_interface = (struct Cell_cmgui_interface *)NULL;
       }

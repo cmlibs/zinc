@@ -2957,6 +2957,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 		{"emoter_slider_name",(XtPointer)NULL},
 	};
 	struct Emoter_slider *emoter_slider;
+	struct Graphics_buffer *graphics_buffer;
 	XmString label_string;
 	void *icon_data;
 	int icon_width, icon_height;
@@ -3049,8 +3050,13 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 								}
 								return_code = 1;
 							}
+							graphics_buffer = create_Graphics_buffer_X3d(
+								emoter_slider->animated_pixmap, X3dCOLOUR_RGB_MODE, 
+								X3dSINGLE_BUFFERING, 
+								User_interface_get_specified_visual_id(
+								shared_data->user_interface));
 							emoter_slider->scene_viewer = CREATE(Scene_viewer)(
-								emoter_slider->animated_pixmap,
+								graphics_buffer,
 								&(shared_data->viewer_background_colour),
 								SCENE_VIEWER_PIXEL_BUFFER,
 								(struct MANAGER(Light) *)NULL,shared_data->viewer_light,

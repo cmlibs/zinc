@@ -499,7 +499,7 @@ Also makes sure viewport_left and viewport_top are whole numbers of units from
 the origin of the NDC area.
 ==============================================================================*/
 {
-	Dimension width,height;
+	int width,height;
 	double viewport_left,viewport_top,viewport_pixels_per_unit_x,
 		viewport_pixels_per_unit_y,NDC_left,NDC_top,NDC_width,NDC_height;
 	struct Digitiser_window *digitiser_window;
@@ -716,7 +716,9 @@ will be printed on the windows title bar.
 		{"digwin_structure",(XtPointer)NULL}
 	};
 	struct Digitiser_window *digitiser_window=NULL;
+	struct Graphics_buffer *graphics_buffer;
 	struct Mirage_view *view;
+	X3dBufferingMode x3d_buffering_mode;
 
 	ENTER(create_digitiser_window);
 	/* check arguments */
@@ -830,38 +832,54 @@ will be printed on the windows title bar.
 								if (DIGITISER_WINDOW_SINGLE_BUFFER==buffer_mode)
 								{
 									scene_viewer_buffer_mode=SCENE_VIEWER_SINGLE_BUFFER;
+									x3d_buffering_mode=X3dSINGLE_BUFFERING;
 								}
 								else
 								{
 									scene_viewer_buffer_mode=SCENE_VIEWER_DOUBLE_BUFFER;
+									x3d_buffering_mode=X3dDOUBLE_BUFFERING;
 								}
-								if (!(digitiser_window->scene_viewer=CREATE(Scene_viewer)(
-									digitiser_window->viewing_area,
-									background_colour,scene_viewer_buffer_mode,
-									digitiser_window->light_manager,default_light,
-									digitiser_window->light_model_manager,default_light_model,
-									digitiser_window->scene_manager,view->scene,
-									digitiser_window->texture_manager,
+								if (graphics_buffer = create_Graphics_buffer_X3d(
+									digitiser_window->viewing_area, X3dCOLOUR_RGB_MODE, 
+									x3d_buffering_mode, 
+									User_interface_get_specified_visual_id(
 									digitiser_window->user_interface)))
+								{
+									if ((digitiser_window->scene_viewer=CREATE(Scene_viewer)(
+										graphics_buffer,
+										background_colour,scene_viewer_buffer_mode,
+										digitiser_window->light_manager,default_light,
+										digitiser_window->light_model_manager,default_light_model,
+										digitiser_window->scene_manager,view->scene,
+										digitiser_window->texture_manager,
+										digitiser_window->user_interface)))
+									{
+										Scene_viewer_set_input_mode(digitiser_window->scene_viewer,
+											SCENE_VIEWER_SELECT);
+										Scene_viewer_set_viewport_info(digitiser_window->scene_viewer,
+											view->NDC_left,view->NDC_bottom+view->NDC_height,1,1);
+										/*view->image_pixel_size_x,view->image_pixel_size_y);*/
+										Digitiser_window_set_view(digitiser_window,view_no);
+										Digitiser_window_make_view_buttons(digitiser_window);
+										/* deferred from above for OpenGL */
+										XtManageChild(digitiser_window->main_window);
+										/*XtRealizeWidget(digitiser_window->window_shell);*/
+										XtPopup(digitiser_window->window_shell,XtGrabNone);
+									}
+									else
+									{
+										XtDestroyWidget(digitiser_window->window_shell);
+										DEALLOCATE(digitiser_window);
+										display_message(ERROR_MESSAGE,"CREATE(digitiser_window).  "
+											"Could not create Scene_viewer");
+									}
+								}
+								else
 								{
 									XtDestroyWidget(digitiser_window->window_shell);
 									DEALLOCATE(digitiser_window);
 									display_message(ERROR_MESSAGE,"CREATE(digitiser_window).  "
-										"Could not create Scene_viewer");
-								}
-								else
-								{
-									Scene_viewer_set_input_mode(digitiser_window->scene_viewer,
-										SCENE_VIEWER_SELECT);
-									Scene_viewer_set_viewport_info(digitiser_window->scene_viewer,
-										view->NDC_left,view->NDC_bottom+view->NDC_height,1,1);
-									/*view->image_pixel_size_x,view->image_pixel_size_y);*/
-									Digitiser_window_set_view(digitiser_window,view_no);
-									Digitiser_window_make_view_buttons(digitiser_window);
-									/* deferred from above for OpenGL */
-									XtManageChild(digitiser_window->main_window);
-									/*XtRealizeWidget(digitiser_window->window_shell);*/
-									XtPopup(digitiser_window->window_shell,XtGrabNone);
+										"Could not create Graphics_buffer");
 								}
 							}
 						}
