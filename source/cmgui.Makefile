@@ -827,15 +827,31 @@ GRAPHICS_INTERFACE_SRCS = \
 	graphics/volume_texture_editor.c \
 	graphics/volume_texture_editor_dialog.c
 IMAGE_PROCESSING_SRCS = \
-        image_processing/image_cache.c \
-	image_processing/computed_field_image_contour.c \
+	image_processing/computed_field_adaptive_adjust_contrast.c \
+	image_processing/computed_field_adjust_contrast.c \
+	image_processing/computed_field_canny_filter.c \
+	image_processing/computed_field_color_based_segment.c \
 	image_processing/computed_field_dilate_filter.c \
 	image_processing/computed_field_erode_filter.c \
+	image_processing/computed_field_gaussian_filter.c \
+	image_processing/computed_field_haar_wavelet_decomp.c \
+	image_processing/computed_field_haar_wavelet_reconstruct.c \
+	image_processing/computed_field_histogram_based_threshold.c \
 	image_processing/computed_field_histogram_equalize.c \
-	image_processing/computed_field_color_based_segment.c \
+	image_processing/computed_field_image_contour.c \
+	image_processing/computed_field_image_enhancement.c \
+	image_processing/computed_field_image_mask.c \
 	image_processing/computed_field_intensity_based_segment.c \
+	image_processing/computed_field_image_mean_value.c \
+	image_processing/computed_field_image_threshold.c \
+	image_processing/computed_field_iteration_threshold.c \
+	image_processing/computed_field_local_std.c \
 	image_processing/computed_field_median_filter.c \
-	image_processing/computed_field_sobel_filter.c
+	image_processing/computed_field_sobel_filter.c \
+	image_processing/computed_field_throw_away_weakest.c \
+	image_processing/computed_field_wavelet_decomp.c \
+	image_processing/computed_field_wavelet_reconstruct.c \
+	image_processing/image_cache.c
 INTERACTION_SRCS = \
 	interaction/interaction_graphics.c \
 	interaction/interaction_volume.c \

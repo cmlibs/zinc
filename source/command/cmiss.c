@@ -49,14 +49,31 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_fibres.h"
 
+#include "image_processing/computed_field_adaptive_adjust_contrast.h"
+#include "image_processing/computed_field_adjust_contrast.h"
+#include "image_processing/computed_field_canny_filter.h"
+#include "image_processing/computed_field_color_based_segment.h"
 #include "image_processing/computed_field_dilate_filter.h"
 #include "image_processing/computed_field_erode_filter.h"
+#include "image_processing/computed_field_gaussian_filter.h"
+#include "image_processing/computed_field_haar_wavelet_decomp.h"
+#include "image_processing/computed_field_haar_wavelet_reconstruct.h"
+#include "image_processing/computed_field_histogram_based_threshold.h"
 #include "image_processing/computed_field_histogram_equalize.h"
 #include "image_processing/computed_field_image_contour.h"
-#include "image_processing/computed_field_color_based_segment.h"
+#include "image_processing/computed_field_image_enhancement.h"
+#include "image_processing/computed_field_image_mask.h"
 #include "image_processing/computed_field_intensity_based_segment.h"
+#include "image_processing/computed_field_image_mean_value.h"
+#include "image_processing/computed_field_image_threshold.h"
+#include "image_processing/computed_field_iteration_threshold.h"
+#include "image_processing/computed_field_local_std.h"
 #include "image_processing/computed_field_median_filter.h"
+#include "image_processing/computed_field_wavelet_decomp.h"
 #include "image_processing/computed_field_sobel_filter.h"
+#include "image_processing/computed_field_throw_away_weakest.h"
+#include "image_processing/computed_field_wavelet_decomp.h"
+#include "image_processing/computed_field_wavelet_reconstruct.h"
 
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_lookup.h"
@@ -24176,23 +24193,65 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			Computed_field_register_types_deformation(
 				command_data->computed_field_package);
 
-                        if (command_data->root_region)
+			if (command_data->root_region)
 			{
 				/* Image processing computed fields still work with a NULL user_interface
 					but they cannot use the find_element_xi_special 2D acceleration */
-				Computed_field_register_types_erode_filter(
+				Computed_field_register_types_adaptive_adjust_contrast(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->user_interface);
-				Computed_field_register_types_dilate_filter(
+				Computed_field_register_types_adjust_contrast(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->user_interface);
-				Computed_field_register_types_histogram_equalize(
+				Computed_field_register_types_canny_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->user_interface);
 				Computed_field_register_types_color_based_segment(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_dilate_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_erode_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_gaussian_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_haar_wavelet_decomp(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_haar_wavelet_reconstruct(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_histogram_based_threshold(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_histogram_equalize(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_image_contour(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_image_enhancement(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
 				Computed_field_register_types_intensity_based_segment(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_image_mask(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_image_mean_value(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_image_threshold(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_iteration_threshold(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_local_std(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->user_interface);
 				Computed_field_register_types_median_filter(
@@ -24201,7 +24260,13 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_sobel_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->user_interface);
-				Computed_field_register_types_image_contour(
+				Computed_field_register_types_throw_away_weakest(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_wavelet_decomp(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->user_interface);
+				Computed_field_register_types_wavelet_reconstruct(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->user_interface);
 			}
