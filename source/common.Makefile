@@ -459,13 +459,13 @@ ifeq ($(SYSNAME),Linux)
    BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list) ;
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME:CYGWIN%=),)
-   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $($(3)) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 endif # SYSNAME == CYGWIN%=
 ifeq ($(SYSNAME),AIX)
-   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $($(3)) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $($(3)) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 endif # SYSNAME == win32
 
 define BuildNormalTarget
