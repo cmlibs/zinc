@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cell.imake
 XCOMM
-XCOMM LAST MODIFIED : 26 August 1999
+XCOMM LAST MODIFIED : 3 January 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM SAB.  I have changed all this to use cell.imake now, if you want to
@@ -735,7 +735,7 @@ sed "s/./diff/;s/,.*/ >> out.diff/;h;G;G;s/\n//2;s%>> out\.diffdiff %tmp/%;s/dif
 
 $(CMGUI_BASE_DIRECTORY)/version.ObjSuffix.h : $(OBJS)
 	date > date.h
-	sed 's/"//;s/./#define VERSION "CELL version 002.000.000  &/;s/.$$/&\\nCopyright 1996-1999, Auckland UniServices Ltd."/' < date.h > version.ObjSuffix.h
+	sed 's/"//;s/./#define VERSION "CELL version 002.000.000  &/;s/.$$/&\\nCopyright 1996-2000, Auckland UniServices Ltd."/' < date.h > version.ObjSuffix.h
 
 cell.ObjSuffix : cell.c $(CMGUI_BASE_DIRECTORY)/version.ObjSuffix.h
 	if [ -f $*.c ]; \

@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap_ni.imake
 XCOMM 
-XCOMM LAST MODIFIED : 24 June 1999
+XCOMM LAST MODIFIED : 3 January 2000
 XCOMM 
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap_ni
@@ -472,7 +472,7 @@ transfer_uid :
 
 $(CMGUI_BASE_DIRECTORY)/unemap_version.ObjSuffix.h : $(OBJS:.o=.ObjSuffix)
 	date > date.h
-	sed 's/"//;s/./#define VERSION "unemap version 001.001.010  &/;s/.$$/&\\nCopyright 1996-1999, Auckland UniServices Ltd."/' < date.h > unemap_version.ObjSuffix.h
+	sed 's/"//;s/./#define VERSION "unemap version 001.001.010  &/;s/.$$/&\\nCopyright 1996-2000, Auckland UniServices Ltd."/' < date.h > unemap_version.ObjSuffix.h
 #if defined (OLD_CODE)
 	sed 's/./#define VERSION "unemap version 001.001.009  &/;s/.$$/&\\nCopyright 1996-1997, Auckland UniServices Ltd."/' < date.h > version.ObjSuffix.h
 #endif /* defined (OLD_CODE) */
