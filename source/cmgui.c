@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 12 June 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -46,6 +46,7 @@ DESCRIPTION :
 #include "graphics/movie_graphics.h"
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
+#include "graphics/transform_tool.h"
 #include "graphics/volume_texture.h"
 #include "interaction/interactive_tool.h"
 #include "io_devices/conversion.h"
@@ -1103,15 +1104,17 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
-	command_data.data_tool=CREATE(Node_tool)(
-		command_data.interactive_tool_manager,
-		command_data.data_manager,/*data_manager*/1,
-		command_data.data_selection,
-		command_data.computed_field_package);
+	command_data.transform_tool=CREATE(Transform_tool)(
+		command_data.interactive_tool_manager);
 	command_data.node_tool=CREATE(Node_tool)(
 		command_data.interactive_tool_manager,
 		command_data.node_manager,/*data_manager*/0,
 		command_data.node_selection,
+		command_data.computed_field_package);
+	command_data.data_tool=CREATE(Node_tool)(
+		command_data.interactive_tool_manager,
+		command_data.data_manager,/*data_manager*/1,
+		command_data.data_selection,
 		command_data.computed_field_package);
 	command_data.element_point_tool=CREATE(Element_point_tool)(
 		command_data.interactive_tool_manager,
@@ -1781,6 +1784,7 @@ Main program for the CMISS Graphical User Interface
 					DESTROY(Element_creator)(&command_data.element_creator);
 				}
 				/* destroy Interactive_tools and manager */
+				DESTROY(Transform_tool)(&command_data.transform_tool);
 				DESTROY(Element_point_tool)(&command_data.element_point_tool);
 				DESTROY(Node_tool)(&command_data.node_tool);
 				DESTROY(Node_tool)(&command_data.data_tool);

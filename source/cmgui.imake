@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 23 May 2000
+XCOMM LAST MODIFIED : 13 June 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -779,6 +779,7 @@ GRAPHICS_SRCS = \
 	graphics/texture_graphics.c \
 	graphics/texture_line.c \
 	graphics/texturemap.c \
+	graphics/transform_tool.c \
 	graphics/userdef_objects.c \
 	graphics/volume_texture.c \
 	graphics/volume_texture_editor.c \
