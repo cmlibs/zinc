@@ -115,6 +115,8 @@ Avoids sending repeated updates if the object address has not changed.
 		if (chooser->force_update||
 			(chooser->current_item != chooser->last_updated_item))
 		{
+			chooser->last_updated_item = chooser->current_item;
+			chooser->force_update=0;
 			if (chooser->update_callback.procedure)
 			{
 				/* now call the procedure with the user data */
@@ -122,8 +124,6 @@ Avoids sending repeated updates if the object address has not changed.
 					chooser->widget,chooser->update_callback.data,
 					chooser->current_item);
 			}
-			chooser->last_updated_item = chooser->current_item;
-			chooser->force_update=0;
 		}
 		return_code=1;
 	}
