@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : input_module_dialog.c
 
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Brings up a window which holds a data_grabber.  Allows the user to change what
@@ -381,7 +381,8 @@ static gtMatrix transform_matrix={
 									return_code=
 										Scene_add_graphics_object(input_module_dialog->scene,
 											input_module_dialog->graphics_object, 0,
-											input_module_dialog->graphics_object->name);
+											input_module_dialog->graphics_object->name,
+											/*fast_changing*/0);
 								}
 							}
 						}
@@ -491,8 +492,9 @@ static gtMatrix transform_matrix={
 									printf(" to scene\n");
 									return_code=
 										Scene_add_graphics_object(input_module_dialog->scene,
-										input_module_dialog->graphics_object, 0,
-										input_module_dialog->graphics_object->name);
+											input_module_dialog->graphics_object, 0,
+											input_module_dialog->graphics_object->name,
+											/*fast_changing*/0);
 								}
 								else
 								{
@@ -691,7 +693,8 @@ Called when scene is changed.
 		{
 			Scene_add_graphics_object(input_module_dialog->scene,
 				input_module_dialog->graphics_object, 0,
-				input_module_dialog->graphics_object->name);
+				input_module_dialog->graphics_object->name,
+				/*fast_changing*/0);
 		}
 	}
 	else

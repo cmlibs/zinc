@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_3d.c
 
-LAST MODIFIED : 14 June 2000
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Functions for Cell 3d.
@@ -448,7 +448,7 @@ properties. If <filename> is NULL, then a simple arrow is used.
 
 int draw_cell_3d(struct Cell_window *cell)
 /*******************************************************************************
-LAST MODIFIED : 08 September 1999
+LAST MODIFIED : 11 July 2000
 
 DESCRIPTION :
 Draws all defined components into the Cell 3D scene and adds the manager
@@ -472,7 +472,8 @@ callbacks.
       {
         /* draw the component into the scene */
         Scene_add_graphics_object((cell->cell_3d).scene,
-          component->graphic->graphics_object,0,component->name);
+          component->graphic->graphics_object,0,component->name,
+					/*fast_changing*/0);
         /* grab the scene object */
         if (scene_object = Scene_get_scene_object_by_name(
           (cell->cell_3d).scene,component->name))
