@@ -124,7 +124,7 @@ update :
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
 		$(MAKE) -f unemap.make unemap32 unemap_nodes unemap_optimised unemap_64 unemap_memorycheck utilities; \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f unemap.make unemap_linux unemap_linux_nodes utilities_linux' ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f unemap.make unemap_linux utilities_linux' ; \
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers *; \
 	else \
