@@ -199,7 +199,7 @@ endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
 
 # MOTIF_USER_INTERFACE or GTK_USER_INTERFACE
 ifeq ($(filter-out MOTIF_USER_INTERFACE GTK_USER_INTERFACE,$(USER_INTERFACE)),)
-  ifeq ($(SYSNAME),Linux))
+  ifeq ($(SYSNAME),Linux)
     #Don't put the system X_LIB into the compiler if we are cross compiling
     GCC_LIBC = $(shell gcc -print-libgcc-file-name)
     GLIBC_CROSS_COMPILE = $(CMISS_ROOT)/cross-compile/i386-glibc21-linux
