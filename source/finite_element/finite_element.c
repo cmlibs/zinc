@@ -27263,6 +27263,139 @@ Frees the memory for the field and sets <*field_address> to NULL.
 	return (return_code);
 } /* DESTROY(FE_field) */
 
+int list_FE_field(struct FE_field *field,void *dummy)
+/*******************************************************************************
+LAST MODIFIED : 29 February 2000
+
+DESCRIPTION :
+Outputs the information contained in <field>.
+==============================================================================*/
+{
+	char line[91];
+	int i, number_of_components, return_code;
+
+	ENTER(list_FE_field);
+	USE_PARAMETER(dummy);
+	if (field)
+	{
+		return_code=1;
+		/* write the identifier */
+		sprintf(line,"field : %s \n",field->name);
+		display_message(INFORMATION_MESSAGE,line);
+		sprintf(line,"  access count=%d\n",field->access_count);
+		display_message(INFORMATION_MESSAGE,line);
+
+		switch (field->cm.type)
+		{
+			case CM_COORDINATE_FIELD:
+			{
+				display_message(INFORMATION_MESSAGE,", coordinate");
+			} break;
+			case CM_ANATOMICAL_FIELD:
+			{
+				display_message(INFORMATION_MESSAGE,", anatomical");
+			} break;
+			case CM_FIELD:
+			{
+				display_message(INFORMATION_MESSAGE,", field");
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"list_FE_node_field.  Invalid field type");
+				return_code=0;
+			} break;
+		}
+		switch (field->coordinate_system.type)
+		{
+			case RECTANGULAR_CARTESIAN:
+			{
+				display_message(INFORMATION_MESSAGE,", rectangular cartesian");
+			} break;
+			case CYLINDRICAL_POLAR:
+			{
+				display_message(INFORMATION_MESSAGE,", cylindrical polar");
+			} break;
+			case SPHERICAL_POLAR:
+			{
+				display_message(INFORMATION_MESSAGE,", spherical polar");
+			} break;
+			case PROLATE_SPHEROIDAL:
+			{
+				display_message(INFORMATION_MESSAGE,", prolate spheroidal");
+			} break;
+			case OBLATE_SPHEROIDAL:
+			{
+				display_message(INFORMATION_MESSAGE,", oblate spheroidal");
+			} break;
+			case FIBRE:
+			{
+				display_message(INFORMATION_MESSAGE,", fibre");
+			} break;
+			case NOT_APPLICABLE:
+			{
+				display_message(INFORMATION_MESSAGE,", no coordinate system");
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"list_FE_node_field.  Invalid field coordinate system");
+				return_code=0;
+			} break;
+		}
+		number_of_components=field->number_of_components;
+		display_message(INFORMATION_MESSAGE,", #Components=%d\n",
+			number_of_components);
+		i=0;
+		while (return_code&&(i<number_of_components))
+		{
+			display_message(INFORMATION_MESSAGE,"    %s",
+				(field->component_names)[i]);
+			/* display field based information*/
+			if(field->number_of_values)
+			{	
+				int count;
+
+				display_message(INFORMATION_MESSAGE,"field based values: ");							
+				switch(field->value_type)
+				{
+					case FE_VALUE_VALUE:
+					{
+						display_message(INFORMATION_MESSAGE,"\n");
+						/* output in columns if FE_VALUE_MAX_OUTPUT_COLUMNS > 0 */
+						for (count=0;count<field->number_of_values;count++)
+						{
+							display_message(INFORMATION_MESSAGE," %"FE_VALUE_STRING,
+								*((FE_value*)(field->values_storage + count*sizeof(FE_value)) ));
+							if ((0<FE_VALUE_MAX_OUTPUT_COLUMNS)&&
+								(0==((count+1) % DOUBLE_VALUE_MAX_OUTPUT_COLUMNS)))
+							{
+								display_message(INFORMATION_MESSAGE,"\n");
+							}											
+						}																							
+					} break;
+					default:
+					{
+						display_message(INFORMATION_MESSAGE,"list_FE_node_field: "
+							"Can't display that field value_type yet. Write the code!");
+					} break;
+				}	/* switch() */							
+			}
+			display_message(INFORMATION_MESSAGE,"\n");
+			i++;
+		}
+		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"list_FE_field.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_FE_field */
+
 DECLARE_OBJECT_FUNCTIONS(FE_field)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(FE_field)
 
