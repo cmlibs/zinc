@@ -184,7 +184,6 @@ $(SOURCE_PATH)/cmgui_linux_optimised_dynamic.make : $(SOURCE_PATH)/cmgui.imake $
 
 update :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
-		cvs update && \
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
@@ -225,6 +224,7 @@ run_tests :
 cronjob :
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(PRODUCT_PATH); \
+		cvs update ; \
 		echo -n > $(MAILFILE_PATH)/programmer.mail ; \
 		if ! $(MAKE) -f cmgui.make depend; then \
 			cat $(MAILFILE_PATH)/dependfail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
