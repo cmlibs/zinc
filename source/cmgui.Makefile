@@ -879,6 +879,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_median_filter.c \
 	image_processing/computed_field_shock_filter.c \
 	image_processing/computed_field_sobel_filter.c \
+	image_processing/computed_field_steerable_filter.c \
 	image_processing/computed_field_sterology_measures.c \
 	image_processing/computed_field_throw_away_weakest.c \
 	image_processing/computed_field_wavelet_decomp.c \

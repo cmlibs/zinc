@@ -86,6 +86,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_median_filter.h"
 #include "image_processing/computed_field_shock_filter.h"
 #include "image_processing/computed_field_sobel_filter.h"
+#include "image_processing/computed_field_steerable_filter.h"
 #include "image_processing/computed_field_sterology_measures.h"
 
 #include "image_processing/computed_field_throw_away_weakest.h"
@@ -24340,6 +24341,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_sobel_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_steerable_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_sterology_measures(
