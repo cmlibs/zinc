@@ -626,6 +626,7 @@ Sets the nodes according to all the values of the sliders
 {
 	int i;
 	float *total_shape_vector;
+	struct Graphics_window *graphics_window;
 
 	ENTER(emoter_update_face);
 
@@ -646,6 +647,15 @@ Sets the nodes according to all the values of the sliders
 			/*			(*(emoter_dialog->shared->execute_command->function))(
 						"open comfile redraw execute",
 						emoter_dialog->shared->execute_command->data);*/
+			/* SAB This would be better implemented by adding a special
+				manager message to the Scene Manager and then calling that. */
+			if (graphics_window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
+				(MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
+				(void *)NULL,emoter_dialog->shared->graphics_window_manager))
+			{
+				Graphics_window_update_now(graphics_window);
+			}
+
 			DEALLOCATE( total_shape_vector );
 		}
 	}
