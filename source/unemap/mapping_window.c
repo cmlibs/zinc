@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 23 October 2001
+LAST MODIFIED : 27 October 2001
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -865,9 +865,9 @@ necessary.
 					recalculate=3;
 				}
 			}
-			if (number_of_frames!=map->number_of_movie_frames)
+			if (number_of_frames!=map->number_of_frames)
 			{
-				map->number_of_movie_frames=number_of_frames;
+				map->number_of_frames=number_of_frames;
 			}	
 			/* no animation if only one frame*/
 			if (1<number_of_frames)
@@ -2993,7 +2993,7 @@ The callback for redrawing part of a mapping drawing area.
 										drawing_information->graphics_context).
 										background_drawing_colour,0,0,drawing->width,
 										drawing->height);							
-									/* draw the map */
+									/* draw the map */									
 									draw_map(mapping->map,3,drawing);
 									update_mapping_colour_or_auxili(mapping);
 									/* set the sensitivity of the save electrode values button */

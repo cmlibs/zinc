@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 17 October 2001
+LAST MODIFIED : 27 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -380,7 +380,7 @@ DESCRIPTION : The Map.
 #endif /* defined (OLD_CODE) */
 	struct Unemap_package *unemap_package;
 	float end_time,start_time;
-	int number_of_sub_maps,number_of_movie_frames,sub_map_number;
+	int number_of_sub_maps,number_of_frames,sub_map_number;
 	struct Sub_map **sub_map;
 	int contour_x_spacing,contour_y_spacing;
 	/* rows and columns for drawing regions */

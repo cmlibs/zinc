@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 23 October 2001
+LAST MODIFIED : 27 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2901,7 +2901,7 @@ nodes z values are defined by the electrodes.
 		if(0==NUMBER_IN_GROUP(FE_element)(mapped_torso_element_group))
 		{
 			/* this is more of a warning than an error, I've made it an ERROR_MESSAGE */
-			/* to ensure the user notices it!*/
+			/* to ensure the user notices it! (warning messages go to the console) */
 			display_message(ERROR_MESSAGE,
 				"None of the rig's torso electrodes match the Default Torso");
 		}				
@@ -6479,7 +6479,7 @@ NULL if not successful.
 			map->start_time=0;
 			map->end_time=0;
 			map->number_of_sub_maps=0;
-			map->number_of_movie_frames=0;
+			map->number_of_frames=0;
 			map->sub_map_number=0;
 			map->sub_map=(struct Sub_map **)NULL;
 			map->contour_x_spacing=0;
@@ -11520,11 +11520,9 @@ DESCRIPTION :
 This function draws the <map> in the <drawing>, with <map_width>, <map_height> 
 at <map_x_offset> <map_y_offset>. <map_width>, <map_height> <map_x_offset> 
 <map_y_offset> must be inside drawing->width,drawing->height. (This is checked)
-If <recalculate> is >0 then the
-colours for the pixels are recalculated.  If <recalculate> is >1 then the
-interpolation functions are also recalculated.  If <recalculate> is >2 then the
-<map> is resized to match the <drawing>.
-
+If <recalculate> is >0 then the colours for the pixels are recalculated.  
+If <recalculate> is >1 then the interpolation functions are also recalculated.  
+If <recalculate> is >2 then the <map> is resized to match the <drawing>.
 
 ???Would like to develop a "PostScript driver" for X.  To get an idea of whats
 involved I'll put a PostScript switch into this routine so that it either draws
@@ -11920,7 +11918,9 @@ Draw multiple sub maps on the same window for Electrical Imaging.
 		eimaging_event=*map->first_eimaging_event;
 		frame_time=(int)((float)((times)[*(map->potential_time)])
 			*1000./buffer->frequency);
-		map->number_of_movie_frames=0;
+		/* will have num_maps sub_maps, but not displaying as movie, so set*/
+		/* map->number_of_frames to 1. Not used in this function, anyway */
+		map->number_of_frames=1;
 		map->start_time=frame_time;
 		map->end_time=map->start_time;	
 
@@ -11981,17 +11981,18 @@ Draw multiple sub maps on the same window for Electrical Imaging.
 static int draw_map_2d(struct Map *map,int recalculate,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 17 October 2001
+LAST MODIFIED : 26 October 2001
 
 DESCRIPTION:
 Draws all the sub maps of the 2D <map>, by first making it with
 draw_2d_make_map, then drawing it with draw_2d_show_map. Arranges the sub maps
 on the page.
+See draw_2d_make_map for meanings of recalculate.
 ==============================================================================*/
 {
 	float end_time,start_time,frame_time;
 	int frame_number,number_of_frames,map_width,map_height,map_x_offset,
-		map_y_offset,return_code;			 	
+		map_y_offset,return_code,use_potential_time;			 	
 
 	ENTER(draw_map_2d);
 	return_code=0;
@@ -12005,68 +12006,59 @@ on the page.
 			draw_2d_electrical_imaging_maps(map,recalculate,drawing);
 		}
 		else
-		{
-			if (map->number_of_movie_frames)
-			{											
-				if (recalculate>2)
-				{	
-					/*making movies, on location*/				
-					/* Destroy any existing sub maps */
-					map_destroy_Sub_maps(map);				
-					map_width=drawing->width;
-					map_height=drawing->height;				
-					map_x_offset=0;
-					map_y_offset=0;
-					map->sub_map_number=0;
-					start_time=map->start_time;
-					end_time=map->end_time;
-					number_of_frames=map->number_of_movie_frames;
-					frame_number=0;				 				
-					/* make the sub_maps(frames) */
-					for(frame_number=0;frame_number<number_of_frames;frame_number++)
-					{
-						frame_time=((float)(number_of_frames-frame_number-1)*(start_time)+
-							(float)frame_number*(end_time))/(float)(number_of_frames-1);
-						return_code=draw_2d_make_map(map,recalculate,drawing,map_width,
-							map_height,map_x_offset,map_y_offset,frame_time,0);
-					}
-					/* draw the first frame of movie */
-					recalculate=1;
-					set_map_2d_map_min_max(map);	
-					update_colour_map_unemap(map,drawing);				
-					draw_2d_show_map(map,0,recalculate,drawing);
-				}
-				else if (recalculate==0)
-				{	
-					/* draw the current frame of a movie*/
-					recalculate=1;				
-					draw_2d_show_map(map,map->sub_map_number,recalculate,drawing);
-				}	
-				else
-				{
-					map->number_of_movie_frames=0;
-				}
-			}
-			/* could have changed from above */
-			if (!map->number_of_movie_frames)
+		{				
+			if((recalculate>0)&&(recalculate<3))
 			{
-				map->number_of_movie_frames=0;	
-				/* set the (single) sub_map's times from the map. map times
-					controlled from the time object */
-				frame_time=0;
-				map->start_time=frame_time;
-				map->end_time=map->start_time;	
+				/*we've stopped making movies (3=making) (0=displaying frames) */
+				map->number_of_frames=1; 
+			}
+			if (recalculate==0)
+			{	
+				/* draw the current frame */
+				if(map->number_of_frames>1)
+				{
+					/*showing a movie*/
+					recalculate=1;
+				}
+				draw_2d_show_map(map,map->sub_map_number,recalculate,drawing);
+			}	
+			else 
+			{	
+				/*making frame(s) */				
 				/* Destroy any existing sub maps */
-				map_destroy_Sub_maps(map);
-				/*just one sub map*/
+				map_destroy_Sub_maps(map);				
 				map_width=drawing->width;
 				map_height=drawing->height;				
 				map_x_offset=0;
 				map_y_offset=0;
-				map->sub_map_number=0;			
-				return_code=draw_2d_make_map(map,recalculate,drawing,map_width,
-					map_height,map_x_offset,map_y_offset,frame_time,/*use_potential_time*/1);
-				if(return_code)
+				map->sub_map_number=0;
+				start_time=map->start_time;
+				end_time=map->end_time;
+				number_of_frames=map->number_of_frames;
+				frame_number=0;				 				
+				/* make the sub_maps(frames) */
+				for(frame_number=0;frame_number<number_of_frames;frame_number++)
+				{
+					if(number_of_frames==1)
+					{
+						use_potential_time=1;
+						frame_time=0;						
+					}
+					else
+					{
+						use_potential_time=0;
+						frame_time=((float)(number_of_frames-frame_number-1)*(start_time)+
+							(float)frame_number*(end_time))/(float)(number_of_frames-1);
+					}
+					return_code=draw_2d_make_map(map,recalculate,drawing,map_width,
+						map_height,map_x_offset,map_y_offset,frame_time,use_potential_time);						
+				}
+				if(number_of_frames>1)
+				{
+					/* draw the first frame of movie */
+					set_map_2d_map_min_max(map);
+				}
+				else
 				{
 					/*??JW What has DB done with the frame_time/use potential time thing?*/
 					/*need to update the map->start_time,end_time from sub_map->frame_time */
@@ -12078,10 +12070,10 @@ on the page.
 					{
 						set_map_2d_map_min_max(map);
 					}
-					update_colour_map_unemap(map,drawing);
-					draw_2d_show_map(map,0,recalculate,drawing);
 				}
-			}
+				update_colour_map_unemap(map,drawing);				
+				draw_2d_show_map(map,map->sub_map_number,recalculate,drawing);
+			}								 
 		}
 	}
 	else
