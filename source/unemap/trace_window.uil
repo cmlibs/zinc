@@ -529,9 +529,9 @@ object
 			XmForm trace_enlarge_events_number;
 			XmTextField trace_enlarge_level_value;
 			XmScrollBar trace_enlarge_threshold_scroll;
-			XmLabelGadget trace_enlarge_threshold_label;
+			XmLabel trace_enlarge_threshold_label;
 			XmScrollBar trace_enlarge_separation_scroll;
-			XmLabelGadget trace_enlarge_separation_label;
+			XmLabel trace_enlarge_separation_label;
 			XmOptionMenu trace_enlarge_all_current_choic;
 			};
 		callbacks
@@ -964,6 +964,7 @@ object
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
+			XmNmappedWhenManaged = false;
 			};
 		callbacks
 			{
@@ -1003,7 +1004,7 @@ object
 				};
 			};
 		};
-	trace_enlarge_threshold_label: XmLabelGadget
+	trace_enlarge_threshold_label: XmLabel
 		{
 		arguments
 			{
@@ -1036,7 +1037,7 @@ object
 			XmNmaximum = 550;
 			XmNorientation = XmHORIZONTAL;
 			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = XmLabelGadget trace_enlarge_threshold_label;
+			XmNleftWidget = XmLabel trace_enlarge_threshold_label;
 			XmNleftOffset = widget_spacing;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
@@ -1057,7 +1058,7 @@ object
 				};
 			};
 		};
-	trace_enlarge_separation_label: XmLabelGadget
+	trace_enlarge_separation_label: XmLabel
 		{
 		arguments
 			{

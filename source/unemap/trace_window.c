@@ -5958,6 +5958,12 @@ If <*trace_address> is NULL, a trace window with the specified <parent> and
 							trace->area_1.beat_averaging.number_of_beats.down_arrow);
 					}
 					*trace_address=trace;
+					/*???DB.  Temp */
+					XtMapWidget(trace->area_1.enlarge.detection_choice);
+					XtMapWidget(trace->area_1.enlarge.objective_choice);
+					XtMapWidget(trace->area_1.enlarge.number_of_events_form);
+					XtMapWidget(trace->area_1.enlarge.calculate_button);
+					XtMapWidget(trace->area_1.enlarge.datum_choice);
 					/* pop up the trace window shell */
 					XtPopup(trace->shell,XtGrabNone);
 					trace->open=1;

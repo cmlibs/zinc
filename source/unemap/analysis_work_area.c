@@ -995,7 +995,7 @@ DESCRIPTION :
 static void set_detection_interval(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 15 December 1999
 
 DESCRIPTION :
 Sets the detection algorithm to interval.
@@ -1048,6 +1048,15 @@ Sets the detection algorithm to interval.
 						XmNleftOffset,widget_spacing-left_margin,
 						NULL);
 				}
+				XtUnmapWidget(enlarge->threshold_scroll);
+				XtUnmapWidget(enlarge->threshold_label);
+				XtUnmapWidget(enlarge->minimum_separation_scroll);
+				XtUnmapWidget(enlarge->minimum_separation_label);
+				XtUnmapWidget(enlarge->all_current_choice);
+				XtUnmapWidget(enlarge->level_value);
+				XtMapWidget(enlarge->number_of_events_form);
+				XtMapWidget(enlarge->objective_choice);
+#if defined (OLD_CODE)
 				XtUnmanageChild(enlarge->threshold_scroll);
 				XtUnmanageChild(enlarge->threshold_label);
 				XtUnmanageChild(enlarge->minimum_separation_scroll);
@@ -1056,6 +1065,7 @@ Sets the detection algorithm to interval.
 				XtUnmanageChild(enlarge->level_value);
 				XtManageChild(enlarge->number_of_events_form);
 				XtManageChild(enlarge->objective_choice);
+#endif /* defined (OLD_CODE) */
 				enlarge->calculate_all_events=1;
 				if (analysis->event_number>analysis->number_of_events)
 				{
@@ -1111,7 +1121,7 @@ Sets the detection algorithm to interval.
 static void set_detection_level(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 15 December 1999
 
 DESCRIPTION :
 Sets the detection algorithm to level.
@@ -1165,6 +1175,15 @@ Sets the detection algorithm to level.
 						XmNleftOffset,widget_spacing-left_margin,
 						NULL);
 				}
+				XtUnmapWidget(enlarge->threshold_scroll);
+				XtUnmapWidget(enlarge->threshold_label);
+				XtUnmapWidget(enlarge->minimum_separation_scroll);
+				XtUnmapWidget(enlarge->minimum_separation_label);
+				XtUnmapWidget(enlarge->all_current_choice);
+				XtUnmapWidget(enlarge->number_of_events_form);
+				XtUnmapWidget(enlarge->objective_choice);
+				XtMapWidget(enlarge->level_value);
+#if defined (OLD_CODE)
 				XtUnmanageChild(enlarge->threshold_scroll);
 				XtUnmanageChild(enlarge->threshold_label);
 				XtUnmanageChild(enlarge->minimum_separation_scroll);
@@ -1173,6 +1192,7 @@ Sets the detection algorithm to level.
 				XtUnmanageChild(enlarge->number_of_events_form);
 				XtUnmanageChild(enlarge->objective_choice);
 				XtManageChild(enlarge->level_value);
+#endif /* defined (OLD_CODE) */
 				enlarge->calculate_all_events=1;
 				if (analysis->event_number>analysis->number_of_events)
 				{
@@ -1247,7 +1267,7 @@ Sets the detection algorithm to level.
 static void set_detection_threshold(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 15 December 1999
 
 DESCRIPTION :
 Sets the detection algorithm to threshold.
@@ -1304,6 +1324,15 @@ Sets the detection algorithm to threshold.
 						XmNleftOffset,widget_spacing-(left_margin+right_margin),
 						NULL);
 				}
+				XtUnmapWidget(enlarge->level_value);
+				XtUnmapWidget(enlarge->number_of_events_form);
+				XtMapWidget(enlarge->threshold_scroll);
+				XtMapWidget(enlarge->threshold_label);
+				XtMapWidget(enlarge->minimum_separation_scroll);
+				XtMapWidget(enlarge->minimum_separation_label);
+				XtMapWidget(enlarge->all_current_choice);
+				XtMapWidget(enlarge->objective_choice);
+#if defined (OLD_CODE)
 				XtUnmanageChild(enlarge->level_value);
 				XtUnmanageChild(enlarge->number_of_events_form);
 				XtManageChild(enlarge->threshold_scroll);
@@ -1312,6 +1341,7 @@ Sets the detection algorithm to threshold.
 				XtManageChild(enlarge->minimum_separation_label);
 				XtManageChild(enlarge->all_current_choice);
 				XtManageChild(enlarge->objective_choice);
+#endif /* defined (OLD_CODE) */
 				enlarge->calculate_all_events=1;
 				XtVaSetValues(enlarge->all_current_choice,
 					XmNmenuHistory,enlarge->all_current.all_button,
