@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative.cpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 21 October 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -9,6 +9,7 @@
 #include <sstream>
 
 #include "computed_variable/function_derivative.hpp"
+#include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable.hpp"
 
 // module classes
@@ -67,7 +68,7 @@ class Function_variable_iterator_representation_atomic_derivative:
 
 class Function_variable_derivative : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 21 October 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -232,13 +233,25 @@ class Function_variable_derivative : public Function_variable
 					order=(function_derivative->independent_variables_private).size();
 					if (0<order)
 					{
+						boost::intrusive_ptr< Function_matrix<Scalar> >
+							derivative_matrix(0);
+						Function_size_type number_of_independent_values;
 						std::list<Function_variable_handle> independent_variables_local=
 							function_derivative->independent_variables_private;
+						std::list<Function_variable_handle>::iterator iterator_1,
+							iterator_1_end;
 
+						iterator_1_end=independent_variables.end();
+						number_of_independent_values=1;
+						for (iterator_1=independent_variables.begin();
+							iterator_1!=iterator_1_end;iterator_1++)
+						{
+							number_of_independent_values *=
+								(*iterator_1)->number_differentiable();
+						}
 						if (order==atomic_independent_variables.size())
 						{
-							std::list<Function_variable_handle>::iterator iterator_1,
-								iterator_1_end,iterator_2;
+							std::list<Function_variable_handle>::iterator iterator_2;
 
 							iterator_1_end=atomic_independent_variables.end();
 							iterator_2=independent_variables_local.begin();
@@ -255,8 +268,45 @@ class Function_variable_derivative : public Function_variable
 						independent_variables_local.insert(
 							independent_variables_local.end(),independent_variables.begin(),
 							independent_variables.end());
-						result=dependent_variable->evaluate_derivative(
-							independent_variables_local);
+						if (derivative_matrix=boost::dynamic_pointer_cast<
+							Function_matrix<Scalar>,Function>(dependent_variable->
+							evaluate_derivative(independent_variables_local)))
+						{
+							Function_size_type
+								number_of_columns=derivative_matrix->number_of_columns(),
+								number_of_rows=derivative_matrix->number_of_rows();
+
+							if (number_of_columns==number_of_independent_values)
+							{
+								result=derivative_matrix;
+							}
+							else
+							{
+								Function_size_type number_of_dependent_values=number_of_rows*
+									(number_of_columns/number_of_independent_values);
+								Function_size_type column,i,j,row;
+								Matrix result_matrix(number_of_dependent_values,
+									number_of_independent_values);
+
+								row=1;
+								column=1;
+								for (i=0;i<number_of_dependent_values;i++)
+								{
+									for (j=0;j<number_of_independent_values;j++)
+									{
+										result_matrix(i,j)=(*derivative_matrix)(row,column);
+										column++;
+									}
+									if (column>number_of_columns)
+									{
+										row++;
+										column=1;
+									}
+								}
+								result=
+									Function_handle(new Function_matrix<Scalar>(result_matrix));
+							}
+						}
 					}
 				}
 			}
