@@ -73,4 +73,12 @@ LAST MODIFIED : 31 March 2004
 DESCRIPTION :
 Returns the computed_field manager from the <command_data>.
 ==============================================================================*/
+
+int Cmiss_command_data_main_loop(struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 19 December 2002
+
+DESCRIPTION :
+Process events until some events request the program to finish.
+==============================================================================*/
 #endif /* __CMISS_COMMAND_H__ */

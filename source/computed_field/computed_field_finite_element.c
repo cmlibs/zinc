@@ -1448,83 +1448,19 @@ FE_field being made and/or modified.
 				value_type = Value_type_from_string(value_type_string);
 				STRING_TO_ENUMERATOR(CM_field_type)(cm_field_type_string,
 					&cm_field_type);
-				/* now make an FE_field to match the options entered */
-				if (fe_field = CREATE(FE_field)(field->name,
-					computed_field_finite_element_package->fe_region))
+
+				/* create FE_field */
+				Computed_field_get_coordinate_system(field);
+				if (fe_field = FE_region_get_FE_field_with_properties(
+					computed_field_finite_element_package->fe_region,
+					field->name, GENERAL_FE_FIELD,
+					/*indexer_field*/(struct FE_field *)NULL, /*number_of_indexed_values*/0,
+					cm_field_type, coordinate_system,
+					value_type, number_of_components, component_names,
+					/*number_of_times*/0, /*time_value_type*/UNKNOWN_VALUE,
+					/*external*/(struct FE_field_external_information *)NULL))
 				{
 					ACCESS(FE_field)(fe_field);
-					if (return_code&&existing_fe_field)
-					{
-						/* copy existing field to get as much in common with it as
-							 possible */
-						return_code=FE_field_copy_without_identifier(fe_field,
-							existing_fe_field);
-					}
-					if (return_code&&set_FE_field_value_type(fe_field,value_type)&&
-						set_FE_field_number_of_components(fe_field,number_of_components)&&
-						set_FE_field_CM_field_type(fe_field,cm_field_type)&&
-						(coordinate_system=Computed_field_get_coordinate_system(field))&&
-						set_FE_field_coordinate_system(fe_field,coordinate_system))
-					{
-						for (i=0;i<number_of_components;i++)
-						{
-							if (component_names[i])
-							{
-								set_FE_field_component_name(fe_field,i,component_names[i]);
-							}
-						}
-						if ((!existing_fe_field) ||
-							FE_fields_match_fundamental(fe_field, existing_fe_field))
-						{
-							if (FE_region_merge_FE_field(
-								computed_field_finite_element_package->fe_region, fe_field))
-							{
-								return_code = 1;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"define_Computed_field_type_finite_element.  "
-									"Unable to merge FE_field");
-								return_code = 0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"Cannot fundamentally redefine finite_element field "
-								"while it is in use");
-							display_parse_state_location(state);
-							return_code = 0;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"define_Computed_field_type_finite_element.  "
-							"Could not set up fe_field");
-						return_code=0;
-					}
-					if (return_code)
-					{
-						/* must make sure the computed field is set to type
-							 FINITE_ELEMENT for correct handling in define_Computed_field */
-						if (return_code =
-							Computed_field_set_type_finite_element(field, fe_field,
-								computed_field_finite_element_package->fe_region))
-						{
-							Computed_field_set_coordinate_system(field,
-								get_FE_field_coordinate_system(fe_field));
-						}
-					}
-					DEACCESS(FE_field)(&fe_field);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_finite_element.  "
-						"Could not create fe_field");
-					return_code=0;
 				}
 			}
 			/* clean up the component_names array */

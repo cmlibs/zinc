@@ -212,7 +212,7 @@ Defines the appropriate FE_field upon which the <coordinate_field> depends in
 					/*number_of_components*/3))
 				{
 					if (define_FE_field_at_node(node,fe_field,
-						(struct FE_time_version *)NULL,
+						(struct FE_time_sequence *)NULL,
 						node_field_creator))
 					{
 						return_code=1;

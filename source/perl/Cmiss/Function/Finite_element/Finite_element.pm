@@ -38,17 +38,25 @@ sub AUTOLOAD {
     our $AUTOLOAD;
     ($constname = $AUTOLOAD) =~ s/.*:://;
     croak "&Cmiss::Function::Finite_element::constant not defined" if $constname eq 'constant';
-    my ($error, $val) = constant($constname);
-    if ($error) { croak $error; }
-    {
+    my ($val) = constant($constname, @_ ? $_[0] : 0);
+    if ($! != 0) {
+		if ($! =~ /Invalid/ || $!{EINVAL}) {
+	    $AutoLoader::AUTOLOAD = $AUTOLOAD;
+	    goto &AutoLoader::AUTOLOAD;
+	}
+	else {
+	    croak "Your vendor has not defined Cmiss::Function::Finite_element macro $constname";
+	}
+    }
+     {
 	no strict 'refs';
 	# Fixed between 5.005_53 and 5.005_61
-#XXX	if ($] >= 5.00561) {
-#XXX	    *$AUTOLOAD = sub () { $val };
-#XXX	}
-#XXX	else {
+	if ($] >= 5.00561) {
+	    *$AUTOLOAD = sub () { $val };
+	}
+	else {
 	    *$AUTOLOAD = sub { $val };
-#XXX	}
+	}
     }
     goto &$AUTOLOAD;
 }
@@ -89,6 +97,55 @@ sub new
 	else
 	{
 		croak "Could not create $class";
+	}
+}
+
+sub create_standard_interpolation_rc_constant_time
+{
+	my (%arg)=@_;
+	my ($region,$name,$number_of_components,$component_names,$objref);
+
+	$region=$arg{region};
+	if (defined($region)&&($region))
+	{
+	  $name=$arg{name};
+	  if (defined($name)&&($name))
+	  {
+		 $number_of_components=$arg{number_of_components};
+		 if (defined($number_of_components)&&($number_of_components))
+		 {
+			$component_names=$arg{component_names};
+			if (defined($component_names)&&($component_names))
+			{
+			  $objref = create_standard_interpolation_rc_constant_time_xs(
+				  $region,$name,$number_of_components,$component_names);
+			  if (defined($objref)&&($objref))
+			  {
+				 bless $objref,"Cmiss::Function::Finite_element";
+			  }
+			  else
+			  {
+				 croak "Could not create Cmiss::Function::Finite_element";
+			  }
+			}
+			else
+			{
+			  croak "Missing component names";
+			}
+		 }
+		 else
+		 {
+			croak "Missing number of components";
+		 }
+	  }
+	  else
+	  {
+		 croak "Missing name";
+	  }
+	}
+	else
+	{
+	  croak "Missing region";
 	}
 }
 
@@ -153,7 +210,7 @@ sub nodal_values
 	my ($self,%args)=@_;
 	my %defaults=(type=>"all",version=>0);
 	my %args_with_defaults=(%defaults,%args);
-	my ($node,$node_null,$objref,$type,$version);
+	my ($node,$node_null,$objref,$type,$version,$time_sequence,$time_sequence_null);
 	my ($component_name,$component_name_null,$component_number);
 
 	$component_name=$args_with_defaults{component_name};
@@ -174,12 +231,86 @@ sub nodal_values
 		# make a NULL pointer
 		$node_null=0;
 		$node=\$node_null;
-		bless $node,"Cmiss::node";
+		bless $node,"Cmiss::Node";
 	}
 	$type=$args_with_defaults{type};
 	$version=$args_with_defaults{version};
+	$time_sequence=$args_with_defaults{time_sequence};
+	if (!(defined($time_sequence)&&($time_sequence)))
+	{
+		# make a NULL pointer
+		$time_sequence_null=0;
+		$time_sequence=\$time_sequence_null;
+		bless $time_sequence,"Cmiss::Time_sequence";
+	}
 	$objref=nodal_values_xs($self,$component_name,$component_number,$node,$type,
-		$version);
+		$version,$time_sequence);
+}
+
+sub define_on_Cmiss_node
+{
+	my ($self,%arg)=@_;
+	my ($node,$time_sequence,$time_sequence_null,$node_field_creator);
+
+	$node=$arg{node};
+	if (defined($node)&&($node))
+	{
+		$node_field_creator=$arg{node_field_creator};
+		if (defined($node_field_creator)&&($node_field_creator))
+		{
+		  #Time sequence is not required
+		  $time_sequence=$arg{time_sequence};
+		  if (!defined($time_sequence))
+		  {
+			 $time_sequence_null = 0;
+			 $time_sequence = \$time_sequence_null;
+			 bless $time_sequence, "Cmiss::Time_sequence";
+		  }
+		  define_on_Cmiss_node_xs($self, $node, $time_sequence,
+			  $node_field_creator);
+		}
+		else
+		{
+			croak "Missing node field creator";
+		}
+	}
+	else
+	{
+	  croak "Missing node";
+	}
+}
+
+sub define_tensor_product_basis_on_element
+{
+	my ($self,%arg)=@_;
+	my ($element,$dimension,$basis_type);
+
+	$element=$arg{element};
+	if (defined($element)&&($element))
+	{
+		$dimension=$arg{dimension};
+		if (defined($dimension)&&($dimension))
+		{
+		  $basis_type=$arg{basis_type};
+		  if (defined($basis_type)&&($basis_type))
+		  {
+			 define_tensor_product_basis_on_element_xs($self,
+				 $element, $dimension, $basis_type);
+		  }
+		  else
+		  {
+			 croak "Missing basis type";
+		  }
+		}
+		else
+		{
+			croak "Missing dimension";
+		}
+	}
+	else
+	{
+	  croak "Missing element";
+	}
 }
 
 # Inherit string conversion

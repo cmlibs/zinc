@@ -11,7 +11,7 @@ MODULE = Cmiss::Function::Element_xi  PACKAGE = Cmiss::Function::Element_xi  PRE
 PROTOTYPES: DISABLE
 
 Cmiss::Function
-new_xs(Cmiss::element element,AV *xi_array)
+new_xs(Cmiss::Element element,AV *xi_array)
 	CODE:
 		{
 			unsigned int number_of_xi;

@@ -64,6 +64,64 @@ Creates an empty Cmiss_region.
 	return (region);
 } /* CREATE(Cmiss_region_API) */
 
+int Cmiss_region_begin_change_API(Cmiss_region_id region)
+/*******************************************************************************
+LAST MODIFIED : 10 November 2004
+
+DESCRIPTION :
+Changes made to the <region> between Cmiss_region_begin_change and
+Cmiss_region_end_change do not generate events in the rest of cmgui until
+the change count returns to zero.  This allows many changes to be made 
+efficiently, resulting in only one update of the dependent objects.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_region *fe_region;
+
+	ENTER(Cmiss_region_begin_change_API);
+	return_code = 0;
+	if (region)
+	{
+		Cmiss_region_begin_change(region);
+		if (fe_region=Cmiss_region_get_FE_region(region))
+		{
+			return_code = FE_region_begin_change(fe_region);
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_region_begin_change_API */
+
+int Cmiss_region_end_change_API(Cmiss_region_id region)
+/*******************************************************************************
+LAST MODIFIED : 10 November 2004
+
+DESCRIPTION :
+Changes made to the <region> between Cmiss_region_begin_change and
+Cmiss_region_end_change do not generate events in the rest of cmgui until
+the change count returns to zero.  This allows many changes to be made 
+efficiently, resulting in only one update of the dependent objects.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_region *fe_region;
+
+	ENTER(Cmiss_region_end_change_API);
+	return_code = 0;
+	if (region)
+	{
+		Cmiss_region_end_change(region);
+		if (fe_region=Cmiss_region_get_FE_region(region))
+		{
+			return_code = FE_region_end_change(fe_region);
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_region_end_change_API */
+
 int Cmiss_region_read_file(struct Cmiss_region *region, char *file_name)
 /*******************************************************************************
 LAST MODIFIED : 13 August 2002
@@ -221,6 +279,36 @@ Returns element with <name> in <region> if it exists.
 	return (number_of_nodes);
 } /* Cmiss_region_get_node */
 
+Cmiss_node_id Cmiss_region_merge_Cmiss_node(Cmiss_region_id region,
+	Cmiss_node_id node)
+/*******************************************************************************
+LAST MODIFIED : 10 November 2004
+
+DESCRIPTION :
+Checks <node> is compatible with <region> and any existing Cmiss_node
+using the same identifier, then merges it into <region>.
+If no FE_node of the same identifier exists in FE_region, <node> is added
+to <fe_region> and returned by this function, otherwise changes are merged into
+the existing FE_node and it is returned.
+==============================================================================*/
+{
+	Cmiss_node_id returned_node;
+	struct FE_region *fe_region;
+
+	ENTER(Cmiss_region_merge_Cmiss_node);
+	returned_node = (Cmiss_node_id)NULL;
+	if (region&&node)
+	{
+		if (fe_region=Cmiss_region_get_FE_region(region))
+		{
+			returned_node = FE_region_merge_FE_node(fe_region, node);
+		}
+	}
+	LEAVE;
+
+	return (returned_node);
+} /* Cmiss_region_merge_Cmiss_node */
+
 int Cmiss_region_for_each_node_in_region(struct Cmiss_region *region,
 	Cmiss_node_iterator_function iterator_function, void *user_data)
 /*******************************************************************************
@@ -247,3 +335,33 @@ Iterates over each node in <region>.
 
 	return (return_code);
 } /* Cmiss_region_for_each_node_in_region */
+
+Cmiss_element_id Cmiss_region_merge_Cmiss_element(Cmiss_region_id region,
+	Cmiss_element_id element)
+/*******************************************************************************
+LAST MODIFIED : 10 November 2004
+
+DESCRIPTION :
+Checks <element> is compatible with <region> and any existing Cmiss_element
+using the same identifier, then merges it into <region>.
+If no Cmiss_element of the same identifier exists in Cmiss_region, <element> is added
+to <region> and returned by this function, otherwise changes are merged into
+the existing Cmiss_element and it is returned.
+==============================================================================*/
+{
+	Cmiss_element_id returned_element;
+	struct FE_region *fe_region;
+
+	ENTER(Cmiss_region_merge_Cmiss_element);
+	returned_element = (Cmiss_element_id)NULL;
+	if (region&&element)
+	{
+		if (fe_region=Cmiss_region_get_FE_region(region))
+		{
+			returned_element = FE_region_merge_FE_element(fe_region, element);
+		}
+	}
+	LEAVE;
+
+	return (returned_element);
+} /* Cmiss_region_merge_Cmiss_element */

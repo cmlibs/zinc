@@ -170,6 +170,9 @@ DECLARE_LIST_TYPES(FE_node);
 
 DECLARE_CHANGE_LOG_TYPES(FE_node);
 
+#if defined (OLD_CODE)
+Shifted to API
+
 enum FE_basis_type
 /*******************************************************************************
 LAST MODIFIED : 20 October 1997
@@ -198,6 +201,7 @@ FE_basis_type_string
 	SINGULAR,
 	TRANSITION
 }; /* enum FE_basis_type */
+#endif /* defined (OLD_CODE) */
 
 typedef int (Standard_basis_function)(void *,FE_value *,FE_value *);
 
@@ -571,7 +575,7 @@ their FE_field listed in <fe_field_list>.
 ==============================================================================*/
 
 int define_FE_field_at_node(struct FE_node *node,struct FE_field *field,
-	struct FE_time_version *fe_time_version, 
+	struct FE_time_sequence *fe_time_seqence, 
 	struct FE_node_field_creator *fe_node_field_creator);
 /*******************************************************************************
 LAST MODIFIED : 16 November 2001
@@ -1417,6 +1421,16 @@ DESCRIPTION :
 Returns the number of fields stored at the <node>.
 ==============================================================================*/
 
+struct FE_time_sequence *get_FE_node_field_FE_time_sequence(struct FE_node *node,
+	struct FE_field *field);
+/*******************************************************************************
+LAST MODIFIED : 15 November 2004
+
+DESCRIPTION :
+Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
+<node> and <field> have no time dependence then the function will return NULL.
+==============================================================================*/
+
 enum FE_nodal_value_type *get_FE_node_field_component_nodal_value_types(
 	struct FE_node *node,struct FE_field *field,int component_number);
 /*******************************************************************************
@@ -1556,6 +1570,7 @@ LAST MODIFIED : 1 November 2004
 DESCRIPTION :
 Creates a type array from the <basis_description_string>.  Returns the type
 array which can be used in CREATE(FE_basis) and make_FE_basis.
+It is up to the calling function to DEALLOCATE the returned array.
 
 Some examples of basis descriptions are:
 1. c.Hermite*c.Hermite*l.Lagrange  This has cubic variation in xi1 and xi2 and
@@ -3189,7 +3204,7 @@ int FE_field_has_multiple_times(struct FE_field *fe_field);
 LAST MODIFIED : 26 February 2003
 
 DESCRIPTION :
-Returns true if any node_fields corresponding to <field> have time_versions.
+Returns true if any node_fields corresponding to <field> have time_seqences.
 This will be improved when regionalised, so that hopefully the node field
 list we will be looking at will not be global but will belong to the region.
 ==============================================================================*/
@@ -4812,16 +4827,22 @@ no adjacent element is found then the <xi> will be on the element boundary and
 the <increment> will contain the fraction of the increment not used.
 ==============================================================================*/
 
-int make_square_FE_element(struct FE_element **element_ptr,
-	struct FE_region *fe_region, int element_dimension, int basis_type,
-	struct FE_field *field);
+struct FE_element *create_FE_element_with_line_shape(int identifier,
+	struct FE_region *fe_region, int dimension);
 /*******************************************************************************
-LAST MODIFIED : 5 August 2003
+LAST MODIFIED : 1 December 2004
 
 DESCRIPTION :
-Generates a square element with the specified <element_dimension>, <fe_region> and
-<basis_type>.  If a <field> is supplied it is defined on the element with unit
-scale factors.
-Shifted and generalised from element_creator.c.
+Creates an element that has a line shape product of the specified <dimension>.
+==============================================================================*/
+
+int FE_element_define_tensor_product_basis(struct FE_element *element,
+	int dimension, enum FE_basis_type basis_type, struct FE_field *field);
+/*******************************************************************************
+LAST MODIFIED : 1 December 2004
+
+DESCRIPTION :
+Defines a tensor product basis on <element> with the specified <dimension> 
+and <basis_type>.  This does not support mixed basis types in the tensor product.
 ==============================================================================*/
 #endif /* !defined (FINITE_ELEMENT_H) */

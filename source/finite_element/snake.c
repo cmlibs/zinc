@@ -258,7 +258,7 @@ and <nodal_value_types> for each component, and only 1 version.
 						/*component_number*/n, nodal_value_types[j + 1]);
 				}
 			}
-			if (!define_FE_field_at_node(node, field, (struct FE_time_version *)NULL,
+			if (!define_FE_field_at_node(node, field, (struct FE_time_sequence *)NULL,
 				node_field_creator))
 			{
 				display_message(ERROR_MESSAGE, "define_FE_field_at_node_simple.  "

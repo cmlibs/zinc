@@ -177,14 +177,15 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_node_field,field, \
 
 struct LIST(FE_node_field) *FE_node_field_list_clone_with_FE_field_list(
 	struct LIST(FE_node_field) *node_field_list,
-	struct LIST(FE_field) *fe_field_list, struct FE_time *fe_time);
+	struct LIST(FE_field) *fe_field_list,
+	struct FE_time_sequence_package *fe_time_sequence_package);
 /*******************************************************************************
 LAST MODIFIED : 24 February 2003
 
 DESCRIPTION :
 Returns a new FE_node_field list that is identical to <node_field_list>
 except that it references equivalent same-name fields from <fe_field_list> and
-uses FE_time_versions in <fe_time>.
+uses FE_time_sequences in <fe_time_sequence_package>.
 It is an error if an equivalent FE_field is not found.
 ==============================================================================*/
 

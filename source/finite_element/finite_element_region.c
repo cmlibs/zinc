@@ -126,7 +126,7 @@ DESCRIPTION :
 	int data_hack;
 
 	/* field information, ignored if master_fe_region is used */
-	struct FE_time *fe_time;
+	struct FE_time_sequence_package *fe_time;
 	struct LIST(FE_field) *fe_field_list;
 	struct FE_field_info *fe_field_info;
 	struct LIST(FE_node_field_info) *fe_node_field_info_list;
@@ -936,7 +936,7 @@ LAST MODIFIED : 27 February 2003
 
 DESCRIPTION :
 Returns a clone of <fe_node_field_info> that belongs to <fe_region> and
-uses equivalent FE_fields and FE_time_versions from <fe_region>.
+uses equivalent FE_fields and FE_time_sequences from <fe_region>.
 <fe_region> is expected to be its own ultimate master FE_region.
 Used to merge nodes from other FE_regions into.
 It is an error if an equivalent/same name FE_field is not found in <fe_region>.
@@ -1088,7 +1088,7 @@ LAST MODIFIED : 27 February 2003
 
 DESCRIPTION :
 Returns a clone of <fe_element_field_info> that belongs to <fe_region> and
-uses equivalent FE_fields and FE_time_versions from <fe_region>.
+uses equivalent FE_fields and FE_time_sequences from <fe_region>.
 <fe_region> is expected to be its own ultimate master FE_region.
 Used to merge elements from other FE_regions into.
 It is an error if an equivalent/same name FE_field is not found in <fe_region>.
@@ -1229,7 +1229,7 @@ elements and fields and the <basis_manager> must be supplied in this case.
 				fe_region->master_fe_region = ACCESS(FE_region)(master_fe_region);
 				fe_region->basis_manager = (struct MANAGER(FE_basis) *)NULL;
 				fe_region->element_shape_list = (struct LIST(FE_element_shape) *)NULL;
-				fe_region->fe_time = (struct FE_time *)NULL;
+				fe_region->fe_time = (struct FE_time_sequence_package *)NULL;
 				fe_region->fe_field_list = (struct LIST(FE_field) *)NULL;
 				fe_region->fe_node_field_info_list =
 					(struct LIST(FE_node_field_info) *)NULL;
@@ -1244,7 +1244,7 @@ elements and fields and the <basis_manager> must be supplied in this case.
 				fe_region->master_fe_region = (struct FE_region *)NULL;
 				fe_region->basis_manager = basis_manager;
 				fe_region->element_shape_list = element_shape_list;
-				fe_region->fe_time = CREATE(FE_time)();
+				fe_region->fe_time = CREATE(FE_time_sequence_package)();
 				fe_region->fe_field_list = CREATE(LIST(FE_field))();
 				fe_region->fe_node_field_info_list = CREATE(LIST(FE_node_field_info))();
 				fe_region->fe_element_field_info_list =
@@ -1443,7 +1443,7 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 			}
 			if (fe_region->fe_time)
 			{
-				DESTROY(FE_time)(&(fe_region->fe_time));
+				DESTROY(FE_time_sequence_package)(&(fe_region->fe_time));
 			}
 			DESTROY(CHANGE_LOG(FE_field))(&(fe_region->fe_field_changes));
 			DESTROY(CHANGE_LOG(FE_node))(&(fe_region->fe_node_changes));
@@ -2927,7 +2927,7 @@ Returns true if <node> is not in <fe_region>.
 
 int FE_region_define_FE_field_at_FE_node(struct FE_region *fe_region,
 	struct FE_node *node, struct FE_field *fe_field,
-	struct FE_time_version *fe_time_version,
+	struct FE_time_sequence *fe_time_sequence,
 	struct FE_node_field_creator *node_field_creator)
 /*******************************************************************************
 LAST MODIFIED : 28 April 2003
@@ -2935,7 +2935,7 @@ LAST MODIFIED : 28 April 2003
 DESCRIPTION :
 Checks <fe_region> contains <node>. If <fe_field> is already defined on it,
 returns successfully, otherwise defines the field at the node using optional
-<fe_time_version> and <node_field_creator>. Change messages are broadcast for
+<fe_time_sequence> and <node_field_creator>. Change messages are broadcast for
 the ultimate master FE_region of <fe_region>.
 Should place multiple calls to this function between begin_change/end_change.
 ==============================================================================*/
@@ -2963,8 +2963,8 @@ Should place multiple calls to this function between begin_change/end_change.
 						"Field is not of this finite element region");
 					return_code = 0;
 				}
-				if (fe_time_version && (!FE_time_has_FE_time_version(
-					master_fe_region->fe_time, fe_time_version)))
+				if (fe_time_sequence && (!FE_time_sequence_package_has_FE_time_sequence(
+					master_fe_region->fe_time, fe_time_sequence)))
 				{
 					display_message(ERROR_MESSAGE,
 						"FE_region_define_FE_field_at_FE_node.  "
@@ -2974,7 +2974,7 @@ Should place multiple calls to this function between begin_change/end_change.
 				if (return_code)
 				{
 					if (return_code = define_FE_field_at_node(node, fe_field,
-						fe_time_version, node_field_creator))
+						fe_time_sequence, node_field_creator))
 					{
 						FE_REGION_FE_NODE_FIELD_CHANGE(master_fe_region, node, fe_field);
 					}
@@ -5887,21 +5887,21 @@ Smooths node-based <fe_field> over its nodes and elements in <fe_region>.
 	return (return_code);
 } /* FE_region_smooth_FE_field */
 
-struct FE_time_version *FE_region_get_FE_time_version_matching_series(
+struct FE_time_sequence *FE_region_get_FE_time_sequence_matching_series(
 	struct FE_region *fe_region, int number_of_times, FE_value *times)
 /*******************************************************************************
 LAST MODIFIED : 20 February 2003
 
 DESCRIPTION :
-Finds or creates a struct FE_time_version in <fe_region> with the given
+Finds or creates a struct FE_time_sequence in <fe_region> with the given
 <number_of_times> and <times>.
 ==============================================================================*/
 {
-	struct FE_time_version *fe_time_version;
+	struct FE_time_sequence *fe_time_sequence;
 	struct FE_region *master_fe_region;
 
-	ENTER(FE_region_get_FE_time_version_matching_series);
-	fe_time_version = (struct FE_time_version *)NULL;
+	ENTER(FE_region_get_FE_time_sequence_matching_series);
+	fe_time_sequence = (struct FE_time_sequence *)NULL;
 	if (fe_region && (0 < number_of_times) && times)
 	{
 		/* get the ultimate master FE_region; only it has FE_time */
@@ -5910,41 +5910,41 @@ Finds or creates a struct FE_time_version in <fe_region> with the given
 		{
 			master_fe_region = master_fe_region->master_fe_region;
 		}
-		if (!(fe_time_version = get_FE_time_version_matching_time_series(
+		if (!(fe_time_sequence = get_FE_time_sequence_matching_time_series(
 			master_fe_region->fe_time, number_of_times, times)))
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_region_get_FE_time_version_matching_series.  "
+				"FE_region_get_FE_time_sequence_matching_series.  "
 				"Could not get time version");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_region_get_FE_time_version_matching_series.  Invalid argument(s)");
+			"FE_region_get_FE_time_sequence_matching_series.  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (fe_time_version);
-} /* FE_region_get_FE_time_version_matching_series */
+	return (fe_time_sequence);
+} /* FE_region_get_FE_time_sequence_matching_series */
 
-struct FE_time_version *FE_region_get_FE_time_version_merging_two_time_series(
-	struct FE_region *fe_region, struct FE_time_version *time_version_one,
-	struct FE_time_version *time_version_two)
+struct FE_time_sequence *FE_region_get_FE_time_sequence_merging_two_time_series(
+	struct FE_region *fe_region, struct FE_time_sequence *time_sequence_one,
+	struct FE_time_sequence *time_sequence_two)
 /*******************************************************************************
 LAST MODIFIED : 20 February 2003
 
 DESCRIPTION :
-Finds or creates a struct FE_time_version in <fe_region> which has the list of
-times formed by merging the two time_versions supplied.
+Finds or creates a struct FE_time_sequence in <fe_region> which has the list of
+times formed by merging the two time_sequences supplied.
 ==============================================================================*/
 {
-	struct FE_time_version *fe_time_version;
+	struct FE_time_sequence *fe_time_sequence;
 	struct FE_region *master_fe_region;
 
-	ENTER(FE_region_get_FE_time_version_merging_two_time_series);
-	fe_time_version = (struct FE_time_version *)NULL;
-	if (fe_region && time_version_one && time_version_two)
+	ENTER(FE_region_get_FE_time_sequence_merging_two_time_series);
+	fe_time_sequence = (struct FE_time_sequence *)NULL;
+	if (fe_region && time_sequence_one && time_sequence_two)
 	{
 		/* get the ultimate master FE_region; only it has FE_time */
 		master_fe_region = fe_region;
@@ -5952,24 +5952,24 @@ times formed by merging the two time_versions supplied.
 		{
 			master_fe_region = master_fe_region->master_fe_region;
 		}
-		if (!(fe_time_version = get_FE_time_version_merging_two_time_series(
-			master_fe_region->fe_time, time_version_one, time_version_two)))
+		if (!(fe_time_sequence = get_FE_time_sequence_merging_two_time_series(
+			master_fe_region->fe_time, time_sequence_one, time_sequence_two)))
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_region_get_FE_time_version_merging_two_time_series.  "
+				"FE_region_get_FE_time_sequence_merging_two_time_series.  "
 				"Could not get time version");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_region_get_FE_time_version_merging_two_time_series.  "
+			"FE_region_get_FE_time_sequence_merging_two_time_series.  "
 			"Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (fe_time_version);
-} /* FE_region_get_FE_time_version_merging_two_time_series */
+	return (fe_time_sequence);
+} /* FE_region_get_FE_time_sequence_merging_two_time_series */
 
 struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
 	struct FE_region *fe_region, int *basis_type)

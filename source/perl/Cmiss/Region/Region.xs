@@ -120,7 +120,7 @@ region_read_file(Cmiss::Region region,char *file_name);
 	OUTPUT:
 		RETVAL
 
-Cmiss::element
+Cmiss::Element
 region_get_element(Cmiss::Region region,char *path,char *name,char *type)
 	CODE:
 		RETVAL=0;
@@ -165,14 +165,18 @@ region_get_element(Cmiss::Region region,char *path,char *name,char *type)
 				}
 			}
 		}
-		if (!RETVAL)
+		if (RETVAL)
+		{
+			ACCESS(Cmiss_element)(RETVAL);
+		}
+		else
 		{
 			XSRETURN_UNDEF;
 		}
 	OUTPUT:
 		RETVAL
 
-Cmiss::node
+Cmiss::Node
 region_get_node(Cmiss::Region region,char *path,char *name)
 	CODE:
 		RETVAL=0;
@@ -190,7 +194,11 @@ region_get_node(Cmiss::Region region,char *path,char *name)
 				RETVAL=FE_region_get_FE_node_from_identifier(fe_region,node_number);
 			}
 		}
-		if (!RETVAL)
+		if (RETVAL)
+		{
+			ACCESS(Cmiss_node)(RETVAL);
+		}
+		else
 		{
 			XSRETURN_UNDEF;
 		}
@@ -214,3 +222,54 @@ region_get_sub_region(Cmiss::Region region,char *name)
 		}
 	OUTPUT:
 		RETVAL
+
+int
+begin_change(Cmiss::Region region)
+	CODE:
+		RETVAL=0;
+		if (region)
+		{
+			RETVAL=Cmiss_region_begin_change_API(region);
+		}
+	OUTPUT:
+		RETVAL
+
+int
+end_change(Cmiss::Region region)
+	CODE:
+		RETVAL=0;
+		if (region)
+		{
+			RETVAL=Cmiss_region_end_change_API(region);
+		}
+	OUTPUT:
+		RETVAL
+
+Cmiss::Node
+merge_Cmiss_node_xs(Cmiss::Region region, Cmiss::Node node)
+	CODE:
+		if (region && node)
+		{
+			RETVAL=Cmiss_region_merge_Cmiss_node(region, node);
+		}
+		if (!RETVAL)
+		{
+			XSRETURN_UNDEF;
+		}
+	OUTPUT:
+		RETVAL
+
+Cmiss::Element
+merge_Cmiss_element_xs(Cmiss::Region region, Cmiss::Element element)
+	CODE:
+		if (region && element)
+		{
+			RETVAL=Cmiss_region_merge_Cmiss_element(region, element);
+		}
+		if (!RETVAL)
+		{
+			XSRETURN_UNDEF;
+		}
+	OUTPUT:
+		RETVAL
+

@@ -99,7 +99,7 @@ See the include file.
 ==============================================================================*/
 {
 	Cmiss_function_id result;
-	Function_handle *value_handle_address;
+	Function_handle temp,*value_handle_address;
 	Function_variable_handle *input_handle_address,*variable_handle_address;
 
 	result=0;
@@ -110,14 +110,17 @@ See the include file.
 		value_handle_address=reinterpret_cast<Function_handle *>(value);
 		if (input_handle_address&&value_handle_address)
 		{
-			result=reinterpret_cast<Cmiss_function_id>(
-				new Function_handle(((*variable_handle_address)->evaluate)(
-				*input_handle_address,*value_handle_address)));
+			temp=(*variable_handle_address)->evaluate(
+				*input_handle_address,*value_handle_address);
 		}
 		else
 		{
+			temp=(*variable_handle_address)->evaluate();
+		}
+		if (temp)
+		{
 			result=reinterpret_cast<Cmiss_function_id>(
-				new Function_handle(((*variable_handle_address)->evaluate)()));
+				new Function_handle(temp));
 		}
 	}
 

@@ -2329,7 +2329,7 @@ linear combinations of other channels.
 	struct FE_node *device_node,*node,*node_managed;
 	struct FE_node_field_creator *node_field_creator;
 	struct FE_region *root_fe_region;
-	struct FE_time_version *fe_time_version;
+	struct FE_time_sequence *fe_time_version;
 #if defined(NEW_CODE) /* not using yet, may use later*/
 	int index;
 #endif
@@ -2340,7 +2340,7 @@ linear combinations of other channels.
 	buffer_signals_short=(short int *)NULL;
 	buffer_times=(int *)NULL;
 	buffer_signals_float=(float *)NULL;
-	fe_time_version = (struct FE_time_version *)NULL;
+	fe_time_version = (struct FE_time_sequence *)NULL;
 	node_signals_short=(short int *)NULL;
 	node_signals_fe_value=(FE_value *)NULL;
 	node=(struct FE_node *)NULL;
@@ -2597,7 +2597,7 @@ linear combinations of other channels.
 												set_FE_field_time_FE_value(signal_field,j,times[j]);
 											}
 											if (!(fe_time_version =
-												FE_region_get_FE_time_version_matching_series(
+												FE_region_get_FE_time_sequence_matching_series(
 													root_fe_region, number_of_samples, times)))
 											{
 												return_code = 0;
@@ -2654,7 +2654,7 @@ linear combinations of other channels.
 														(struct FE_field_external_information *)NULL))
 													{
 														if (define_FE_field_at_node(node,channel_gain_field,
-															(struct FE_time_version *)NULL,
+															(struct FE_time_sequence *)NULL,
 															node_field_creator))
 														{	
 															/* add it to the unemap package */
@@ -2689,7 +2689,7 @@ linear combinations of other channels.
 														(struct FE_field_external_information *)NULL))
 													{ 
 														if (define_FE_field_at_node(node,channel_offset_field,
-																 (struct FE_time_version *)NULL,
+																 (struct FE_time_sequence *)NULL,
 																 node_field_creator))
 														{	
 															/* add it to the unemap package */
@@ -2726,7 +2726,7 @@ linear combinations of other channels.
 														(struct FE_field_external_information *)NULL))
 													{
 														if (define_FE_field_at_node(node,signal_minimum_field,
-															(struct FE_time_version *)NULL,
+															(struct FE_time_sequence *)NULL,
 															node_field_creator))
 														{	
 															/* add it to the unemap package */
@@ -2763,7 +2763,7 @@ linear combinations of other channels.
 														(struct FE_field_external_information *)NULL))
 													{
 														if (define_FE_field_at_node(node,signal_maximum_field,
-															(struct FE_time_version *)NULL,
+															(struct FE_time_sequence *)NULL,
 															node_field_creator))
 														{	
 															/* add it to the unemap package */
@@ -2800,7 +2800,7 @@ linear combinations of other channels.
 														(struct FE_field_external_information *)NULL))
 													{ 
 														if (define_FE_field_at_node(node,signal_status_field,
-																 (struct FE_time_version *)NULL,
+																 (struct FE_time_sequence *)NULL,
 																 node_field_creator))
 														{	
 															/* add it to the unemap package */													
@@ -2887,7 +2887,7 @@ linear combinations of other channels.
 														(struct FE_field_external_information *)NULL))
 													{
 														if (define_FE_field_at_node(node,display_start_time_field,
-															(struct FE_time_version *)NULL,
+															(struct FE_time_sequence *)NULL,
 															node_field_creator))
 														{	
 															/* add it to the unemap package */
@@ -2920,7 +2920,7 @@ linear combinations of other channels.
 														(struct FE_field_external_information *)NULL))
 													{
 														if (define_FE_field_at_node(node,display_end_time_field,
-															(struct FE_time_version *)NULL,
+															(struct FE_time_sequence *)NULL,
 															node_field_creator))
 														{	
 															/* add it to the unemap package */
@@ -3650,7 +3650,7 @@ Called by rig_node_group_add_map_electrode_position_field
 							/*number_of_components*/3))
 						{
 							if (!define_FE_field_at_node(node_unmanaged,map_electrode_position_field,
-								(struct FE_time_version *)NULL, node_field_creator))
+								(struct FE_time_sequence *)NULL, node_field_creator))
 							{
 								display_message(ERROR_MESSAGE,"rig_node_add_map_electrode_position_field."
 									"error defining electrode_position_field");	
@@ -7831,7 +7831,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 	struct FE_node *node,*node_managed;
 	struct FE_node_field_creator *node_field_creator;
 	struct FE_region *root_fe_region;
-	struct FE_time_version *fe_time_version;
+	struct FE_time_sequence *fe_time_version;
 	struct Signal_buffer *buffer;
 	struct Unemap_package *package;
 
@@ -7851,7 +7851,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 	times=(FE_value *)NULL;
 	node_signals_fe_value=(FE_value *)NULL;
 	device=(struct Device **)NULL;
-	fe_time_version=(struct FE_time_version *)NULL;
+	fe_time_version=(struct FE_time_sequence *)NULL;
 	package=(struct Unemap_package *)NULL;
 	/*assumes all devices share the same signal buffer*/
 	/*is this necessarily true for multiple regions? */
@@ -7880,7 +7880,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 				{
 					times[j] = buffer_times[j]*period;										
 				}											
-				if (!(fe_time_version = FE_region_get_FE_time_version_matching_series(
+				if (!(fe_time_version = FE_region_get_FE_time_sequence_matching_series(
 					root_fe_region, number_of_samples, times)))
 				{
 					return_code = 0;
@@ -8000,7 +8000,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 							(struct FE_field_external_information *)NULL))
 						{
 							if (define_FE_field_at_node(node,channel_gain_field,
-								(struct FE_time_version *)NULL, node_field_creator))
+								(struct FE_time_sequence *)NULL, node_field_creator))
 							{	
 								/* add it to the unemap package */
 								set_unemap_package_channel_gain_field(package,
@@ -8043,7 +8043,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 							(struct FE_field_external_information *)NULL))
 						{ 
 							if (define_FE_field_at_node(node,channel_offset_field,
-								(struct FE_time_version *)NULL, node_field_creator))
+								(struct FE_time_sequence *)NULL, node_field_creator))
 							{	
 								/* add it to the unemap package */
 								set_unemap_package_channel_offset_field(package,
@@ -8088,7 +8088,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 							(struct FE_field_external_information *)NULL))
 						{
 							if (define_FE_field_at_node(node,signal_minimum_field,
-								(struct FE_time_version *)NULL, node_field_creator))
+								(struct FE_time_sequence *)NULL, node_field_creator))
 							{	
 								/* add it to the unemap package */
 								set_unemap_package_signal_minimum_field(package,
@@ -8124,7 +8124,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 							(struct FE_field_external_information *)NULL))
 						{
 							if (define_FE_field_at_node(node,signal_maximum_field,
-								(struct FE_time_version *)NULL, node_field_creator))
+								(struct FE_time_sequence *)NULL, node_field_creator))
 							{	
 								/* add it to the unemap package */
 								set_unemap_package_signal_maximum_field(package,
@@ -8160,7 +8160,7 @@ Assumes that convert_config_rig_to_nodes has been called first.
 							(struct FE_field_external_information *)NULL))
 						{ 
 							if (define_FE_field_at_node(node,signal_status_field,
-								(struct FE_time_version *)NULL, node_field_creator))
+								(struct FE_time_sequence *)NULL, node_field_creator))
 							{	
 								/* add it to the unemap package */													
 								set_unemap_package_signal_status_field(package,

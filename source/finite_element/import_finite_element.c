@@ -1052,7 +1052,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 		number_of_derivatives, number_of_versions, return_code, temp_int;
 	struct FE_field *field, *merged_fe_field;
 	struct FE_node_field_creator *node_field_creator;
-	struct FE_time_version *fe_time_version;
+	struct FE_time_sequence *fe_time_sequence;
 	
 	ENTER(read_FE_node_field);
 	return_code = 0;
@@ -1292,7 +1292,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 				/* define merged_fe_field at the node */
 				if (time_index)
 				{
-					if (!(fe_time_version = FE_region_get_FE_time_version_matching_series(
+					if (!(fe_time_sequence = FE_region_get_FE_time_sequence_matching_series(
 						fe_region, 1, &(time_index->time))))
 					{
 						display_message(ERROR_MESSAGE,
@@ -1302,11 +1302,11 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 				}
 				else
 				{
-					fe_time_version = (struct FE_time_version *)NULL;
+					fe_time_sequence = (struct FE_time_sequence *)NULL;
 				}
 				if (return_code)
 				{
-					if (define_FE_field_at_node(node, merged_fe_field, fe_time_version,
+					if (define_FE_field_at_node(node, merged_fe_field, fe_time_sequence,
 						node_field_creator))
 					{
 						*field_address = merged_fe_field;

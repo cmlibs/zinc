@@ -79,7 +79,7 @@ input_xi_xs(Cmiss::Variable_new::Finite_element variable_finite_element, \
 Cmiss::Variable_new_input
 input_nodal_values_xs( \
 	Cmiss::Variable_new::Finite_element variable_finite_element, \
-	Cmiss::node node,char *type,int version)
+	Cmiss::Node node,char *type,int version)
 	CODE:
 		if (variable_finite_element)
 		{

@@ -303,6 +303,48 @@ Creates a Cmiss_function which represents the <field> in <region>.
 	return (result);
 }
 
+Cmiss_function_id 
+   Cmiss_function_finite_element_create_standard_interpolation_rc_constant_time
+   (Cmiss_region_id region, char *name, int number_of_components, 
+	char **component_names)
+/*******************************************************************************
+LAST MODIFIED : 8 November 2004
+
+DESCRIPTION :
+Creates a Cmiss_function which represents a field named <name> in <region>.
+The field will have a standard FE type interpolation, have a rectangular
+cartesian coordinate system, it will have <number_of_components> components
+which will be named <component_names>.
+==============================================================================*/
+{
+	struct Coordinate_system coordinate_system;
+	struct FE_field *field;
+	struct FE_region *fe_region;
+	
+	field = (struct FE_field *)NULL;
+	if (fe_region = Cmiss_region_get_FE_region(region))
+	{
+		coordinate_system.type = RECTANGULAR_CARTESIAN;
+
+		field = FE_region_get_FE_field_with_properties(
+			fe_region, name, /*fe_field_type*/GENERAL_FE_FIELD,
+			/*indexer_field*/(struct FE_field *)NULL, /*number_of_indexed_values*/0,
+	      /*cm_field_type, I am using the CM_COORDINATE_FIELD cause cmgui selects
+			 the fields availability to be a coordinate field from this parameter,
+			 maybe some better system should be made*/CM_COORDINATE_FIELD, 
+			&coordinate_system, 
+			/*We need to use FE_VALUES to get everything to work well.
+			  It may be useful to be able to change to doubles*/FE_VALUE_VALUE,
+			number_of_components, component_names, /*number_of_times*/0, 
+			/*time_value_type*/UNKNOWN_VALUE,
+			/*Stuff to help the wormhole communicate with cm*/
+			(struct FE_field_external_information *)NULL);
+	}
+
+	return (reinterpret_cast<Cmiss_function_id>(new Function_handle(
+		new Function_finite_element(field))));
+}
+
 Cmiss_function_variable_id Cmiss_function_finite_element_component(
 	Cmiss_function_id function_finite_element,char *name,unsigned int number)
 /*******************************************************************************
@@ -346,9 +388,10 @@ If <name> is not NULL, then the component with the <name> is specified.  If
 Cmiss_function_variable_id Cmiss_function_finite_element_nodal_values(
 	Cmiss_function_id function_finite_element,char *component_name,
 	unsigned int component_number,Cmiss_node_id node,
-	enum FE_nodal_value_type value_type,unsigned int version)
+	enum FE_nodal_value_type value_type,unsigned int version,
+	Cmiss_time_sequence_id time_sequence)
 /*******************************************************************************
-LAST MODIFIED : 4 May 2004
+LAST MODIFIED : 18 November 2004
 
 DESCRIPTION :
 Returns a variable that refers to a subset of the nodal values for the
@@ -379,17 +422,14 @@ If <version> is not zero then the nodal values must be for that <version>.
 			result=reinterpret_cast<Cmiss_function_variable_id>(
 				new Function_variable_handle(
 				((*function_finite_element_handle_address)->nodal_values)(
-				component_name,node,value_type,version)));
+					component_name,node,value_type,version,time_sequence)));
 		}
 		else
 		{
-			if (0<component_number)
-			{
-				result=reinterpret_cast<Cmiss_function_variable_id>(
-					new Function_variable_handle(
-					((*function_finite_element_handle_address)->nodal_values)(
-					component_number,node,value_type,version)));
-			}
+			result=reinterpret_cast<Cmiss_function_variable_id>(
+				new Function_variable_handle(
+				((*function_finite_element_handle_address)->nodal_values)(
+				component_number,node,value_type,version,time_sequence)));
 		}
 	}
 
@@ -641,9 +681,9 @@ longer needed.
 int Cmiss_function_finite_element_get_nodal_value(
 	Cmiss_function_id function_finite_element,unsigned int component_number,
 	Cmiss_node_id node,enum FE_nodal_value_type value_type,unsigned int version,
-	Scalar *value_address)
+	Scalar time,Scalar *value_address)
 /*******************************************************************************
-LAST MODIFIED : 4 May 2004
+LAST MODIFIED : 22 Novemeber 2004
 
 DESCRIPTION :
 Returns a non-zero and gets the value if exactly one nodal value is specified,
@@ -659,7 +699,7 @@ otherwise return zero.
 		function_finite_element))&&(*function_finite_element_handle_address))
 	{
 		if ((*function_finite_element_handle_address)->get_nodal_value(
-			component_number,node,value_type,version,*value_address))
+			component_number,node,value_type,version,time,*value_address))
 		{
 			return_code=1;
 		}
@@ -671,9 +711,9 @@ otherwise return zero.
 int Cmiss_function_finite_element_set_nodal_value(
 	Cmiss_function_id function_finite_element,unsigned int component_number,
 	Cmiss_node_id node,enum FE_nodal_value_type value_type,unsigned int version,
-	Scalar value)
+	Scalar time,Scalar value)
 /*******************************************************************************
-LAST MODIFIED : 4 May 2004
+LAST MODIFIED : 22 November 2004
 
 DESCRIPTION :
 Returns a non-zero and sets the value if exactly one nodal value is specified,
@@ -689,7 +729,7 @@ otherwise return zero.
 		function_finite_element))&&(*function_finite_element_handle_address))
 	{
 		if ((*function_finite_element_handle_address)->set_nodal_value(
-			component_number,node,value_type,version,value))
+			component_number,node,value_type,version,time,value))
 		{
 			return_code=1;
 		}
@@ -780,3 +820,59 @@ non-zero for success.
 
 	return (return_code);
 }
+
+int Cmiss_function_finite_element_define_on_Cmiss_node(
+	Cmiss_function_id function_finite_element,
+	Cmiss_node_id node,
+	Cmiss_time_sequence_id time_sequence, 
+	Cmiss_node_field_creator_id node_field_creator)
+/*******************************************************************************
+LAST MODIFIED : 10 November 2004
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	Function_finite_element_handle *function_finite_element_handle_address;
+
+	return_code=0;
+	if (function_finite_element&&node&&node_field_creator&&
+		(function_finite_element_handle_address=
+		reinterpret_cast<Function_finite_element_handle *>(
+		function_finite_element))&&(*function_finite_element_handle_address))
+	{
+		return_code=((*function_finite_element_handle_address)->define_on_Cmiss_node)
+			(node, time_sequence, node_field_creator);
+	}
+
+	return (return_code);
+}
+
+int Cmiss_function_finite_element_define_tensor_product_basis_on_element(
+	Cmiss_function_id function_finite_element, Cmiss_element_id element,
+	int dimension, enum Cmiss_basis_type basis_type)
+/*******************************************************************************
+LAST MODIFIED : 1 December 2004
+
+DESCRIPTION :
+Defines a tensor product basis on the element with the specified <dimension>
+and <basis_type>.  This does not support mixed basis types in the tensor product.
+==============================================================================*/
+{
+	int result;
+	Function_finite_element_handle *function_finite_element_handle_address;
+
+	result=0;
+	if (function_finite_element && element && dimension && basis_type &&
+		(function_finite_element_handle_address=
+		reinterpret_cast<Function_finite_element_handle *>(
+		function_finite_element))&&(*function_finite_element_handle_address))
+	{
+		result=((*function_finite_element_handle_address)->
+			define_tensor_product_basis_on_element)
+			(element, dimension, basis_type);
+	}
+
+	return (result);
+}
+

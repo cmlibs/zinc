@@ -184,8 +184,8 @@ How to access the the global values and derivatives for a field at a node.
 	struct FE_node_field_component *components;
 	/* the time dependence of all components below this point,
 	   if it is non-NULL then every value storage must be an array of 
-	   values that matches this fe_time_version */
-	struct FE_time_version *time_version;
+	   values that matches this fe_time_sequence */
+	struct FE_time_sequence *time_sequence;
 	/* the number of structures that point to this node field.  The node field
 		cannot be destroyed while this is greater than 0 */
 	int access_count;
@@ -1041,7 +1041,7 @@ Module functions
 */
 
 static int get_Value_storage_size(enum Value_type value_type,
-	struct FE_time_version *time_version)
+	struct FE_time_sequence *time_sequence)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2001
 
@@ -1057,7 +1057,7 @@ for time depedant types, a pointer to the values.
 	int size;
 
 	ENTER(get_Value_storage_size);
-	if (time_version)
+	if (time_sequence)
 	{
 		switch (value_type)
 		{
@@ -1179,7 +1179,7 @@ for time depedant types, a pointer to the values.
 } /* get_Value_storage_size */
 
 static int free_value_storage_array(Value_storage *values_storage,
-	enum Value_type value_type, struct FE_time_version *time_version,
+	enum Value_type value_type, struct FE_time_sequence *time_sequence,
 	int number_of_values)
 /*******************************************************************************
 LAST MODIFIED: 20 November 2001
@@ -1187,7 +1187,7 @@ LAST MODIFIED: 20 November 2001
 DESCRIPTION:
 DEACCESSes objects and DEALLOCATEs dynamic storage in use by <values_storage>,
 which is assumed to have <number_of_values> of the given <value_type> and
-whether <time_version> is set.
+whether <time_sequence> is set.
 Note that the values_storage array itself is not DEALLOCATED - up to the
 calling function to do this.
 Only certain value types, eg. arrays, strings, element_xi require this.
@@ -1197,12 +1197,12 @@ Only certain value types, eg. arrays, strings, element_xi require this.
 	int i,return_code,size;
 
 	ENTER(free_value_storage_array);
-	if (values_storage&&(size=get_Value_storage_size(value_type, time_version))&&
+	if (values_storage&&(size=get_Value_storage_size(value_type, time_sequence))&&
 		(0<number_of_values))
 	{
 		return_code=1;
 		the_values_storage = values_storage;
-		if (time_version)
+		if (time_sequence)
 		{
 			switch (value_type)
 			{
@@ -1670,9 +1670,9 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 	return (return_code);
 } /* allocate_and_copy_values_storage_array */
 
-static int copy_time_version_values_storage_array(Value_storage *source, 
-	enum Value_type value_type, struct FE_time_version *source_time_version,
-	struct FE_time_version *destination_time_version, Value_storage *dest)
+static int copy_time_sequence_values_storage_array(Value_storage *source, 
+	enum Value_type value_type, struct FE_time_sequence *source_time_sequence,
+	struct FE_time_sequence *destination_time_sequence, Value_storage *dest)
 /************************************************************************
 LAST MODIFIED : 21 November 2001
 
@@ -1681,7 +1681,7 @@ Copy the data from the array referenced by the pointer in <source> to the
 array referenced by the pointer in <dest>.
 
 The destination must already have arrays allocated corresponding to the
-<destination_time_version>.
+<destination_time_sequence>.
 
 NOTE:
 For array types, the contents of values_storage is:
@@ -1695,12 +1695,12 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 		source_time_index, return_code;
 	FE_value time;
 	
-	ENTER(copy_time_version_values_storage_array);	
+	ENTER(copy_time_sequence_values_storage_array);	
 	if (source)
 	{	
 		return_code = 1;
-		source_number_of_times = FE_time_version_get_number_of_times(
-			source_time_version);
+		source_number_of_times = FE_time_sequence_get_number_of_times(
+			source_time_sequence);
 		/* Copy the values into the correct places */
 		/* Will need to make some sort of cache structure based on the
 			two time versions so that we know exactly how to copy these 
@@ -1708,9 +1708,9 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 		for (source_time_index = 0 ; source_time_index < source_number_of_times
 			 ; source_time_index++)
 		{
-			if (FE_time_version_get_time_for_index(source_time_version,
+			if (FE_time_sequence_get_time_for_index(source_time_sequence,
 					 source_time_index, &time) &&
-				FE_time_version_get_index_for_time(destination_time_version,
+				FE_time_sequence_get_index_for_time(destination_time_sequence,
 					time, &destination_time_index))
 			{
 				switch (value_type)
@@ -1784,14 +1784,14 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 					case STRING_VALUE:
 					{
 						display_message(ERROR_MESSAGE,
-							"copy_time_version_values_storage_array.  "
+							"copy_time_sequence_values_storage_array.  "
 							"String type not implemented for multiple times yet.");
 						return_code = 0;				
 					} break;		
 					default:
 					{	
 						display_message(ERROR_MESSAGE,
-							"copy_time_version_values_storage_array.  Invalid type");
+							"copy_time_sequence_values_storage_array.  Invalid type");
 						return_code = 0;
 					} break;
 				} /*switch (the_value_type) */
@@ -1799,7 +1799,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"copy_time_version_values_storage_array.  "
+				display_message(ERROR_MESSAGE,"copy_time_sequence_values_storage_array.  "
 					"Unable to find destination space for source time index %d",
 					source_time_index);
 				return_code = 0;
@@ -1808,45 +1808,45 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"copy_time_version_values_storage_array."
+		display_message(ERROR_MESSAGE,"copy_time_sequence_values_storage_array."
 			"Invalid arguments");
 		return_code = 0;
 	}
 	LEAVE;
 	return (return_code);
-} /* copy_time_version_values_storage_array */
+} /* copy_time_sequence_values_storage_array */
 
-int copy_time_version_values_storage_arrays(Value_storage *destination, 
-	enum Value_type value_type, struct FE_time_version *destination_time_version,
-	struct FE_time_version *source_time_version, int number_of_values,
+int copy_time_sequence_values_storage_arrays(Value_storage *destination, 
+	enum Value_type value_type, struct FE_time_sequence *destination_time_sequence,
+	struct FE_time_sequence *source_time_sequence, int number_of_values,
 	Value_storage *source)
 /*******************************************************************************
 LAST MODIFIED : 1 November 2002
 
 DESCRIPTION :
-Calls copy_time_version_values_storage for all <number_of_values> items of
+Calls copy_time_sequence_values_storage for all <number_of_values> items of
 the appropriate value size to transfer time value arrays from <source> with
-<source_time_version> to <destination> with <destination_time_version>.
+<source_time_sequence> to <destination> with <destination_time_sequence>.
 ==============================================================================*/
 {
 	int i, return_code, value_size;
 	Value_storage *src,*dest;
 
-	ENTER(copy_time_version_values_storage_arrays);
-	if (destination && destination_time_version && source_time_version &&
+	ENTER(copy_time_sequence_values_storage_arrays);
+	if (destination && destination_time_sequence && source_time_sequence &&
 		(0 < number_of_values) && source)
 	{
 		return_code = 1;
 		dest = destination;
 		src = source;
-		value_size = get_Value_storage_size(value_type, destination_time_version);
+		value_size = get_Value_storage_size(value_type, destination_time_sequence);
 		for (i = 0; (i < number_of_values) && return_code; i++)
 		{
-			if (!copy_time_version_values_storage_array(src, value_type,
-				source_time_version, destination_time_version, dest))
+			if (!copy_time_sequence_values_storage_array(src, value_type,
+				source_time_sequence, destination_time_sequence, dest))
 			{
 				display_message(ERROR_MESSAGE,
-					"copy_time_version_values_storage_arrays.  Failed to copy array");
+					"copy_time_sequence_values_storage_arrays.  Failed to copy array");
 				return_code = 0;
 			}
 			dest += value_size;
@@ -1856,22 +1856,22 @@ the appropriate value size to transfer time value arrays from <source> with
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"copy_time_version_values_storage_arrays.  Invalid argument(s)");
+			"copy_time_sequence_values_storage_arrays.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* copy_time_version_values_storage_arrays */
+} /* copy_time_sequence_values_storage_arrays */
 
 static int allocate_time_values_storage_array(enum Value_type value_type, 
-	struct FE_time_version *destination_time_version, Value_storage *dest)
+	struct FE_time_sequence *destination_time_sequence, Value_storage *dest)
 /************************************************************************
 LAST MODIFIED : 21 November 2001
 
 DESCRIPTION
 Allocate an array of type value_type with size determined by the 
-destination_time_version.
+destination_time_sequence.
 
 NOTE:
 For time types, the contents of values_storage is:
@@ -1887,8 +1887,8 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 	if (dest)
 	{	
 		return_code = 1;
-		destination_number_of_times = FE_time_version_get_number_of_times(
-			destination_time_version);
+		destination_number_of_times = FE_time_sequence_get_number_of_times(
+			destination_time_sequence);
 		/* Allocate the array */
 		switch (value_type)
 		{				
@@ -2019,8 +2019,8 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 } /* allocate_time_values_storage_array */
 
 static int copy_value_storage_array(Value_storage *destination,
-	enum Value_type value_type, struct FE_time_version *destination_time_version,
-	struct FE_time_version *source_time_version,int number_of_values,
+	enum Value_type value_type, struct FE_time_sequence *destination_time_sequence,
+	struct FE_time_sequence *source_time_sequence,int number_of_values,
 	Value_storage *source)
 /*******************************************************************************
 LAST MODIFIED : 21 November 2001
@@ -2029,7 +2029,7 @@ DESCRIPTION :
 Copies the <number_of_values> of <value_type> stored in <source> into
 <destination>. Arrays, strings and other dynamic values are allocated afresh
 for <destination>. <destination> is assumed to be blank and large enough to
-contain such values.  If <source_time_version> and <destination_time_version>
+contain such values.  If <source_time_sequence> and <destination_time_sequence>
 are non NULL then the value storage correspond to an arrays of values at those
 times.
 ==============================================================================*/
@@ -2040,9 +2040,9 @@ times.
 	if (destination&&(0<number_of_values)&&source)
 	{
 		return_code=1;
-		if (source_time_version || destination_time_version)
+		if (source_time_sequence || destination_time_sequence)
 		{
-			if (source_time_version && destination_time_version)
+			if (source_time_sequence && destination_time_sequence)
 			{
 				int value_size;
 				Value_storage *src,*dest;
@@ -2050,13 +2050,13 @@ times.
 				dest = destination;
 				src = source;
 				value_size=get_Value_storage_size(value_type,
-					destination_time_version);
+					destination_time_sequence);
 				for (i=0;(i<number_of_values)&&return_code;i++)
 				{
 					if (!(allocate_time_values_storage_array(value_type,
-						destination_time_version,dest)&&
-						copy_time_version_values_storage_array(src,value_type,
-						source_time_version,destination_time_version,dest)))
+						destination_time_sequence,dest)&&
+						copy_time_sequence_values_storage_array(src,value_type,
+						source_time_sequence,destination_time_sequence,dest)))
 					{
 						display_message(ERROR_MESSAGE,
 							"copy_value_storage_array.  Failed to copy array");
@@ -2064,7 +2064,7 @@ times.
 						{
 							/* free any arrays allocated to date */
 							free_value_storage_array(destination,value_type,
-								destination_time_version,i);
+								destination_time_sequence,i);
 					}
 						return_code = 0;
 					}
@@ -2198,7 +2198,7 @@ times.
 					dest = destination;
 					src = source;
 					value_size=get_Value_storage_size(value_type,
-						(struct FE_time_version *)NULL);
+						(struct FE_time_sequence *)NULL);
 					for (i=0;(i<number_of_values)&&return_code;i++)
 					{
 						if (!allocate_and_copy_values_storage_array(src,value_type,dest))
@@ -2209,7 +2209,7 @@ times.
 							{
 								/* free any arrays allocated to date */
 								free_value_storage_array(destination,value_type,
-									(struct FE_time_version *)NULL,i);
+									(struct FE_time_sequence *)NULL,i);
 							}
 							return_code = 0;
 						}
@@ -2238,21 +2238,21 @@ times.
 } /* copy_value_storage_array */
 
 static int initialise_value_storage_array(Value_storage *values_storage,
-	enum Value_type value_type, struct FE_time_version *time_version,
+	enum Value_type value_type, struct FE_time_sequence *time_sequence,
 	int number_of_values)
 /*******************************************************************************
 LAST MODIFIED : 6 May 2003
 
 DESCRIPTION :
 Clears values_storage array to suitable defaults for the <value_type> and
-<time_version>.
+<time_sequence>.
 <number_of_values> of the given <value_type>.
 For non-array types, the contents of field->values_storage is:
    | data type (eg FE_value) | x number_of_values
 For array types, the contents of field->values_storage is:
    ( | int (number of array values) | pointer to array (eg double *) |
    x number_of_values )
-For time types where the <time_version> is nonNULL then then values_storage is:
+For time types where the <time_sequence> is nonNULL then then values_storage is:
    ( | pointer to array (eg double *) | x number_of_values )
 Sets data in this memory to 0, pointers to NULL.
 ==============================================================================*/
@@ -2262,12 +2262,12 @@ Sets data in this memory to 0, pointers to NULL.
 
 	ENTER(initialise_value_storage_array);
 	if (values_storage &&
-		(size = get_Value_storage_size(value_type, time_version)) &&
+		(size = get_Value_storage_size(value_type, time_sequence)) &&
 		(0 < number_of_values))
 	{
 		return_code = 1;
 		temp_values_storage = values_storage;
-		if (time_version)
+		if (time_sequence)
 		{
 			/* set pointers to NULL */
 			switch (value_type) 
@@ -2323,7 +2323,7 @@ Sets data in this memory to 0, pointers to NULL.
 				default:
 				{
 					display_message(ERROR_MESSAGE, "initialise_value_storage_array.  "
-						"Value type does not support time_versions");
+						"Value type does not support time_sequences");
 					return_code = 0;
 				} break;
 			}
@@ -2499,7 +2499,7 @@ Sets data in this memory to 0, pointers to NULL.
 } /* initialise_value_storage_array */
 
 static Value_storage *make_value_storage_array(enum Value_type value_type,
-	struct FE_time_version *time_version, int number_of_values)
+	struct FE_time_sequence *time_sequence, int number_of_values)
 /*******************************************************************************
 LAST MODIFIED : 26 February 2003
 
@@ -2511,7 +2511,7 @@ For non-array types, the contents of field->values_storage is:
 For array types, the contents of field->values_storage is:
    ( | int (number of array values) | pointer to array (eg double *) |
    x number_of_values )
-For time types where the <time_version> is nonNULL then then values_storage is:
+For time types where the <time_sequence> is nonNULL then then values_storage is:
    ( | pointer to array (eg double *) | x number_of_values )
 Initialises the contents to be zero for values, NULL for pointers.
 ==============================================================================*/
@@ -2521,7 +2521,7 @@ Initialises the contents to be zero for values, NULL for pointers.
 
 	ENTER(make_value_storage_array);
 	values_storage = (Value_storage *)NULL;
-	if ((size = get_Value_storage_size(value_type ,time_version)) &&
+	if ((size = get_Value_storage_size(value_type ,time_sequence)) &&
 		(0 < number_of_values))
 	{
 		values_storage_size = size*number_of_values;
@@ -2529,7 +2529,7 @@ Initialises the contents to be zero for values, NULL for pointers.
 		if (ALLOCATE(values_storage, Value_storage, values_storage_size))
 		{
 			if (!initialise_value_storage_array(values_storage, value_type,
-				time_version, number_of_values))
+				time_sequence, number_of_values))
 			{
 				DEALLOCATE(values_storage);
 				values_storage = (Value_storage *)NULL;
@@ -2677,7 +2677,7 @@ A debug function to print all a node's node fields (to stdout)
 #endif /* defined (DEBUG) */
 
 static int FE_node_fields_match(struct FE_node_field *node_field_1,
-	struct FE_node_field *node_field_2, int ignore_field_and_time_version,
+	struct FE_node_field *node_field_2, int ignore_field_and_time_sequence,
 	int ignore_component_value)
 /*******************************************************************************
 LAST MODIFIED : 6 May 2003
@@ -2686,8 +2686,8 @@ DESCRIPTION :
 Returns true if <node_field_1> and <node_field_2> are equivalent.
 Note that the component value pointers do not have to match since the position
 of the data in the values_storage can be different.
-No comparison of field and time_version members will be made if
-<ignore_field_and_time_version> is set.
+No comparison of field and time_sequence members will be made if
+<ignore_field_and_time_sequence> is set.
 No comparison of the component value, the offset into the nodal values_storage
 where the data is kept it <ignore_component_value> is set.
 Use with caution!
@@ -2700,9 +2700,9 @@ Use with caution!
 	ENTER(FE_node_fields_match);
 	if (node_field_1 && node_field_2)
 	{
-		if (ignore_field_and_time_version ||
+		if (ignore_field_and_time_sequence ||
 			((node_field_1->field == node_field_2->field) &&
-				(node_field_1->time_version == node_field_2->time_version)))
+				(node_field_1->time_sequence == node_field_2->time_sequence)))
 		{
 			if (((number_of_components =
 				get_FE_field_number_of_components(node_field_1->field)) ==
@@ -2787,7 +2787,7 @@ Returns true if a node field exactly matching <node_field> is found in
 		if ((node_field_2 = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
 			node_field->field, node_field_list)) &&
 			FE_node_fields_match(node_field, node_field_2,
-				/*ignore_field_and_time_version*/0, /*ignore_component_value*/0))
+				/*ignore_field_and_time_sequence*/0, /*ignore_component_value*/0))
 		{
 			return_code = 1;
 		}
@@ -2889,35 +2889,35 @@ for all components.
 	return (number_of_values);
 } /* FE_node_field_get_number_of_values */
 
-static int FE_node_field_set_FE_time_version(struct FE_node_field *node_field,
-	struct FE_time_version *time_version)
+static int FE_node_field_set_FE_time_sequence(struct FE_node_field *node_field,
+	struct FE_time_sequence *time_sequence)
 /*******************************************************************************
 LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
-Sets the fe_time_version for this object.  If this FE_node_field is being
+Sets the fe_time_sequence for this object.  If this FE_node_field is being
 accessed more than once it will fail as there will be other nodes that would
 then have mismatched node_fields and values_storage.
 ==============================================================================*/
 {
 	int return_code;
 	
-	ENTER(FE_node_field_set_FE_time_version);
+	ENTER(FE_node_field_set_FE_time_sequence);
 	if (node_field && (node_field->access_count < 2))
 	{
-		REACCESS(FE_time_version)(&(node_field->time_version), time_version);
+		REACCESS(FE_time_sequence)(&(node_field->time_sequence), time_sequence);
 		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_node_field_set_FE_time_version.  Invalid arguments");
+			"FE_node_field_set_FE_time_sequence.  Invalid arguments");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_node_field_set_FE_time_version */
+} /* FE_node_field_set_FE_time_sequence */
 
 static int FE_node_field_add_values_storage_size(
 	struct FE_node_field *node_field, void *values_storage_size_void)
@@ -2940,7 +2940,7 @@ in the node, adjusted for word alignment, is added on to <*values_storage_size>.
 		{
 			this_values_storage_size =
 				FE_node_field_get_number_of_values(node_field) *
-				get_Value_storage_size(field->value_type, node_field->time_version);
+				get_Value_storage_size(field->value_type, node_field->time_sequence);
 			ADJUST_VALUE_STORAGE_SIZE(this_values_storage_size);
 			(*values_storage_size) += this_values_storage_size;
 		}
@@ -2981,10 +2981,10 @@ Assumes values_storage has already been allocated.
 		/* only GENERAL_FE_FIELD has values stored with node and only
 		   time based fields need initialising */
 		if ((GENERAL_FE_FIELD == field->fe_field_type) &&
-			(new_node_field->time_version))
+			(new_node_field->time_sequence))
 		{
 			value_type = field->value_type;
-			size=get_Value_storage_size(value_type,new_node_field->time_version);
+			size=get_Value_storage_size(value_type,new_node_field->time_sequence);
 			number_of_values = FE_node_field_get_number_of_values(new_node_field);
 			/* start at first component->value */
 			component = new_node_field->components;
@@ -2993,7 +2993,7 @@ Assumes values_storage has already been allocated.
 			for (i = 0 ; i < number_of_values ; i++)
 			{
 				allocate_time_values_storage_array(value_type,
-					new_node_field->time_version, destination);
+					new_node_field->time_sequence, destination);
 				destination += size;
 			}
 		}
@@ -3085,7 +3085,7 @@ Assumes component nodal values are consecutive and start at first component.
 					value_type = field->value_type;
 					number_of_values = FE_node_field_get_number_of_values(new_node_field);
 					if ((!add_node_field) ||
-						(old_node_field && new_node_field->time_version))
+						(old_node_field && new_node_field->time_sequence))
 					{
 						/* source in old_values_storage according to old_node_field */
 						if (copy_data->old_values_storage && old_node_field->components)
@@ -3093,7 +3093,7 @@ Assumes component nodal values are consecutive and start at first component.
 							source = copy_data->old_values_storage +
 								old_node_field->components->value;
 							return_code = copy_value_storage_array(destination, value_type,
-								new_node_field->time_version, old_node_field->time_version,
+								new_node_field->time_sequence, old_node_field->time_sequence,
 								number_of_values, source);
 						}
 						else
@@ -3108,16 +3108,16 @@ Assumes component nodal values are consecutive and start at first component.
 						{
 							source = copy_data->add_values_storage +
 								add_node_field->components->value;
-							if (old_node_field && new_node_field->time_version)
+							if (old_node_field && new_node_field->time_sequence)
 							{
-								return_code = copy_time_version_values_storage_arrays(
-									destination, value_type, new_node_field->time_version,
-									add_node_field->time_version, number_of_values, source);
+								return_code = copy_time_sequence_values_storage_arrays(
+									destination, value_type, new_node_field->time_sequence,
+									add_node_field->time_sequence, number_of_values, source);
 							}
 							else
 							{
 								return_code = copy_value_storage_array(destination, value_type,
-									new_node_field->time_version, add_node_field->time_version,
+									new_node_field->time_sequence, add_node_field->time_sequence,
 									number_of_values, source);
 							}
 						}
@@ -3351,7 +3351,7 @@ Only certain value types, eg. arrays, strings, element_xi require this.
 				number_of_values=
 					(1+component->number_of_derivatives)*component->number_of_versions;
 				free_value_storage_array(values_storage,value_type,
-					node_field->time_version,number_of_values);
+					node_field->time_sequence,number_of_values);
 				component++;
 			}
 		}
@@ -3539,7 +3539,7 @@ allocated and set to "zero".
 			ALLOCATE(component,struct FE_node_field_component,number_of_components))
 		{
 			node_field->field=ACCESS(FE_field)(field);
-			node_field->time_version=(struct FE_time_version *)NULL;
+			node_field->time_sequence=(struct FE_time_sequence *)NULL;
 			node_field->components=component;
 			while (number_of_components>0)
 			{
@@ -3595,9 +3595,9 @@ Frees the memory for the node field and sets <*node_field_address> to NULL.
 			}
 			/* free the components */
 			DEALLOCATE(node_field->components);
-			if (node_field->time_version)
+			if (node_field->time_sequence)
 			{
-				DEACCESS(FE_time_version)(&(node_field->time_version));
+				DEACCESS(FE_time_sequence)(&(node_field->time_sequence));
 			}
 			(void)DEACCESS(FE_field)(&(node_field->field));
 			DEALLOCATE(*node_field_address);
@@ -3641,10 +3641,10 @@ types, the value is not changed.
 	{
 		if (node_field=CREATE(FE_node_field)(field))
 		{
-			if (source_node_field->time_version)
+			if (source_node_field->time_sequence)
 			{
-				node_field->time_version = ACCESS(FE_time_version)
-					(source_node_field->time_version);
+				node_field->time_sequence = ACCESS(FE_time_sequence)
+					(source_node_field->time_sequence);
 			}
 			if (GENERAL_FE_FIELD != field->fe_field_type)
 			{
@@ -3705,7 +3705,7 @@ DESCRIPTION :
 Data for passing to FE_node_field_copy_with_equivalent_field.
 ==============================================================================*/
 {
-	struct FE_time *fe_time;
+	struct FE_time_sequence_package *fe_time;
 	struct LIST(FE_field) *fe_field_list;
 	struct LIST(FE_node_field) *node_field_list;
 };
@@ -3718,7 +3718,7 @@ LAST MODIFIED : 1 May 2003
 DESCRIPTION :
 Creates a copy of <node_field> using the same named field in <fe_field_list>
 and adds it to <node_field_list>. Checks fields are equivalent.
-Also creates an equivalent FE_time_version in the new <fe_time> for this
+Also creates an equivalent FE_time_sequence in the new <fe_time> for this
 node field.
 <data_void> points at a struct FE_node_field_copy_with_equivalent_field_data.
 ==============================================================================*/
@@ -3741,11 +3741,11 @@ node field.
 			{
 				if (copy_node_field = CREATE(FE_node_field)(equivalent_field))
 				{
-					if (node_field->time_version)
+					if (node_field->time_sequence)
 					{
-						if (!(copy_node_field->time_version = ACCESS(FE_time_version)(
-							get_FE_time_version_matching_FE_time_version(data->fe_time,
-								node_field->time_version))))
+						if (!(copy_node_field->time_sequence = ACCESS(FE_time_sequence)(
+							get_FE_time_sequence_matching_FE_time_sequence(data->fe_time,
+								node_field->time_sequence))))
 						{
 							return_code = 0;
 						}
@@ -3822,14 +3822,14 @@ node field.
 struct LIST(FE_node_field) *
 	FE_node_field_list_clone_with_FE_field_list(
 		struct LIST(FE_node_field) *node_field_list,
-		struct LIST(FE_field) *fe_field_list, struct FE_time *fe_time)
+		struct LIST(FE_field) *fe_field_list, struct FE_time_sequence_package *fe_time)
 /*******************************************************************************
 LAST MODIFIED : 6 May 2003
 
 DESCRIPTION :
 Returns a new FE_node_field list that is identical to <node_field_list>
 except that it references equivalent same-name fields from <fe_field_list> and
-uses FE_time_versions in <fe_time>.
+uses FE_time_sequences in <fe_time>.
 It is an error if an equivalent FE_field is not found.
 ==============================================================================*/
 {
@@ -4197,7 +4197,7 @@ Returns true if <node_field_info> has a node_field that references
 		if (node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field, field)(field,
 			node_field_info->node_field_list))
 		{
-			if (node_field->time_version)
+			if (node_field->time_sequence)
 			{
 				return_code = 1;
 			}
@@ -5466,7 +5466,7 @@ times the size of <node_field->field->value_type> .
 		(number_of_values=(int *)number_of_nodal_values))
 	{
 		size=get_Value_storage_size(node_field->field->value_type,
-			node_field->time_version);
+			node_field->time_sequence);
 		this_values_storage_size=0;
 		for (i=node_field->field->number_of_components;0<i;i--)
 		{
@@ -5515,7 +5515,7 @@ appropriately.
 	struct FE_node_field *existing_node_field, *new_node_field;
 	struct FE_node_field_component *component, *existing_component,
 		*new_component;
-	struct FE_time_version *merged_time_version;
+	struct FE_time_sequence *merged_time_sequence;
 	struct Merge_FE_node_field_into_list_data *merge_data;
 
 	ENTER(merge_FE_node_field_into_list);
@@ -5559,21 +5559,21 @@ appropriately.
 			if (return_code)
 			{
 				/* if the new node_field is a time based node field merge it in */
-				if (node_field->time_version)
+				if (node_field->time_sequence)
 				{
-					if (existing_node_field->time_version)
+					if (existing_node_field->time_sequence)
 					{
 						/* Merging two time fields.  Make a node_field with the 
 							 combined list */
-						if (merged_time_version =
-							FE_region_get_FE_time_version_merging_two_time_series(
-								FE_field_get_FE_region(field), node_field->time_version,
-								existing_node_field->time_version))
+						if (merged_time_sequence =
+							FE_region_get_FE_time_sequence_merging_two_time_series(
+								FE_field_get_FE_region(field), node_field->time_sequence,
+								existing_node_field->time_sequence))
 						{
 							new_node_field = copy_create_FE_node_field_with_offset(
 								existing_node_field, /*offset*/0);
-							REACCESS(FE_time_version)(&(new_node_field->time_version),
-								merged_time_version);
+							REACCESS(FE_time_sequence)(&(new_node_field->time_sequence),
+								merged_time_sequence);
 							if (REMOVE_OBJECT_FROM_LIST(FE_node_field)(
 								existing_node_field, merge_data->list) &&
 							   ADD_OBJECT_TO_LIST(FE_node_field)(new_node_field,
@@ -5610,7 +5610,7 @@ appropriately.
 				}
 				else
 				{
-					if (existing_node_field->time_version)
+					if (existing_node_field->time_sequence)
 					{
 						/* Overwriting a time based field with a single valued
 							 field, the values storage size will change, need to 
@@ -5631,10 +5631,10 @@ appropriately.
 			if ((component = node_field->components) &&
 				(new_node_field = CREATE(FE_node_field)(field)))
 			{
-				FE_node_field_set_FE_time_version(new_node_field,
-					node_field->time_version);
+				FE_node_field_set_FE_time_sequence(new_node_field,
+					node_field->time_sequence);
 				size = get_Value_storage_size(field->value_type,
-					node_field->time_version);
+					node_field->time_sequence);
 				new_component = new_node_field->components;
 				i = field->number_of_components;
 				return_code = 1;
@@ -5759,10 +5759,10 @@ Outputs the information contained by the node field.
 			number_of_components=field->number_of_components;
 			display_message(INFORMATION_MESSAGE,", #Components=%d\n",
 				number_of_components);
-			if (node_field->time_version)
+			if (node_field->time_sequence)
 			{
-				number_of_times = FE_time_version_get_number_of_times(
-					node_field->time_version);
+				number_of_times = FE_time_sequence_get_number_of_times(
+					node_field->time_sequence);
 			}
 			else
 			{
@@ -5771,9 +5771,9 @@ Outputs the information contained by the node field.
 			for (time_index = 0 ; return_code && (time_index < number_of_times) ;
 				  time_index++)
 			{
-				if (node_field->time_version)
+				if (node_field->time_sequence)
 				{
-					FE_time_version_get_time_for_index(node_field->time_version,
+					FE_time_sequence_get_time_for_index(node_field->time_sequence,
 						time_index, &time);
 					display_message(INFORMATION_MESSAGE,"   Time: %g\n", time);
 				}
@@ -5903,7 +5903,7 @@ Outputs the information contained by the node field.
 								}
 								else
 								{							
-									if (node_field->time_version)
+									if (node_field->time_sequence)
 									{
 										switch (field->value_type)
 										{
@@ -5924,7 +5924,7 @@ Outputs the information contained by the node field.
 											} break;
 										}/* switch*/
 									}
-									else /* (node_field->time_version) */
+									else /* (node_field->time_sequence) */
 									{
 										switch (field->value_type)
 										{
@@ -6106,10 +6106,10 @@ Outputs the information contained by the node field.
 													"Can't display that Value_type yet. Write the code!");
 											} break;
 										}/* switch*/
-									} /* (node_field->time_version) */
+									} /* (node_field->time_sequence) */
 								} /* if (field->number_of_times) */
 								values_storage += get_Value_storage_size(field->value_type,
-									node_field->time_version); 
+									node_field->time_sequence); 
 								type++;
 								k--;
 								if (k>0)
@@ -6395,7 +6395,7 @@ obtained from the node_field_component for the field at the node.
 	struct FE_node_field *node_field;
 	struct FE_node_field_component *node_field_component;
 	struct FE_node_field_info *node_field_info;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	struct General_node_to_element_map *general_node_map,
 		**general_node_map_address;
 	struct Linear_combination_of_global_values *linear_combination,
@@ -6479,7 +6479,7 @@ obtained from the node_field_component for the field at the node.
 								get node_field_component each time if it is not changing */
 							node_field_info=(struct FE_node_field_info *)NULL;
 							node_field_component=(struct FE_node_field_component *)NULL;
-							time_version = (struct FE_time_version *)NULL;
+							time_sequence = (struct FE_time_sequence *)NULL;
 							while (return_code&&(j>0))
 							{
 								/* retrieve the scaled nodal values */
@@ -6507,11 +6507,11 @@ obtained from the node_field_component for the field at the node.
 										node_field_component=(struct FE_node_field_component *)NULL;
 									}
 									node_field_info=node->fields;
-									time_version = node_field->time_version;
-									if (time_version)
+									time_sequence = node_field->time_sequence;
+									if (time_sequence)
 									{
-										FE_time_version_get_interpolation_for_time(
-											time_version, time, &time_index_one, &time_index_two,
+										FE_time_sequence_get_interpolation_for_time(
+											time_sequence, time, &time_index_one, &time_index_two,
 											&xi);
 									}
 								}
@@ -6532,7 +6532,7 @@ obtained from the node_field_component for the field at the node.
 											{
 												case FE_VALUE_VALUE:
 												{
-													if (time_version)
+													if (time_sequence)
 													{
 														array = *(((FE_value **)global_values+value_index));
 														/* if there is not a scale factor use 1 as the scale
@@ -6568,7 +6568,7 @@ obtained from the node_field_component for the field at the node.
 												} break;
 												case SHORT_VALUE:
 												{
-													if (time_version)
+													if (time_sequence)
 													{
 														short_array = *(((short **)global_values+value_index));
 														/* if there is not a scale factor use 1 as the scale
@@ -10950,7 +10950,7 @@ check_sum.
 		if (GENERAL_FE_FIELD==element_field->field->fe_field_type)
 		{
 			size=get_Value_storage_size(element_field->field->value_type,
-				(struct FE_time_version *)NULL);
+				(struct FE_time_sequence *)NULL);
 			component=element_field->components;
 			for (i=element_field->field->number_of_components;(0<i)&&return_code;i--)
 			{
@@ -11138,12 +11138,12 @@ Returns the FE_node_field structure describing how <fe_field> is defined at
 static int find_FE_nodal_values_storage_dest(struct FE_node *node,
 	struct FE_field_component *component,int version,
 	enum FE_nodal_value_type type,enum Value_type value_type,
-	Value_storage **values_storage, struct FE_time_version **time_version)
+	Value_storage **values_storage, struct FE_time_sequence **time_sequence)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2003
 
 DESCRIPTION :
-Returns a pointer to the nodal values_storage and the matching time_version
+Returns a pointer to the nodal values_storage and the matching time_sequence
 for the given node, component, version, type and value_type.
 Returns 0 with no error in cases where the version or type is not stored, hence
 can use this function to determing if either are defined.
@@ -11180,11 +11180,11 @@ can use this function to determing if either are defined.
 							if (i<length)
 							{
 								size = get_Value_storage_size(value_type,
-									node_field->time_version);
+									node_field->time_sequence);
 								the_values_storage = node->values_storage +
 									(node_field_component->value) + ((version*length+i)*size);
 								*values_storage = the_values_storage;
-								*time_version = node_field->time_version;
+								*time_sequence = node_field->time_sequence;
 								return_code=1;
 							}
 						}
@@ -12080,7 +12080,7 @@ Frees the memory for the field and sets <*field_address> to NULL.
 			{
 				/* free any arrays pointed to by field->values_storage */
 				free_value_storage_array(field->values_storage,field->value_type,
-					(struct FE_time_version *)NULL,field->number_of_values);		
+					(struct FE_time_sequence *)NULL,field->number_of_values);		
 				/* free the global values */
 				DEALLOCATE(field->values_storage);
 			}
@@ -12260,9 +12260,9 @@ Function prototype should be in finite_element_private.h, so not public.
 		if (0<source->number_of_values)
 		{
 			if (!((values_storage=make_value_storage_array(source->value_type,
-				(struct FE_time_version *)NULL,source->number_of_values))&&
+				(struct FE_time_sequence *)NULL,source->number_of_values))&&
 				copy_value_storage_array(values_storage,source->value_type,
-					(struct FE_time_version *)NULL,(struct FE_time_version *)NULL,
+					(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
 					source->number_of_values,source->values_storage)))
 			{
 				return_code=0;
@@ -12271,9 +12271,9 @@ Function prototype should be in finite_element_private.h, so not public.
 		if (0<source->number_of_times)
 		{
 			if (!((times=make_value_storage_array(source->time_value_type,
-				(struct FE_time_version *)NULL,source->number_of_times))&&
+				(struct FE_time_sequence *)NULL,source->number_of_times))&&
 				copy_value_storage_array(times,source->time_value_type,
-					(struct FE_time_version *)NULL,(struct FE_time_version *)NULL,
+					(struct FE_time_sequence *)NULL,(struct FE_time_sequence *)NULL,
 					source->number_of_times,source->times)))
 			{
 				return_code=0;
@@ -12336,7 +12336,7 @@ Function prototype should be in finite_element_private.h, so not public.
 			if (0<destination->number_of_values)
 			{
 				free_value_storage_array(destination->values_storage,
-					destination->value_type,(struct FE_time_version *)NULL,
+					destination->value_type,(struct FE_time_sequence *)NULL,
 					destination->number_of_values);
 				DEALLOCATE(destination->values_storage);
 			}
@@ -12346,7 +12346,7 @@ Function prototype should be in finite_element_private.h, so not public.
 			if (0<destination->number_of_times)
 			{
 				free_value_storage_array(destination->times,
-					destination->time_value_type,(struct FE_time_version *)NULL,
+					destination->time_value_type,(struct FE_time_sequence *)NULL,
 					destination->number_of_times);
 				DEALLOCATE(destination->times);
 			}
@@ -12375,13 +12375,13 @@ Function prototype should be in finite_element_private.h, so not public.
 			if (values_storage)
 			{
 				free_value_storage_array(values_storage,source->value_type,
-					(struct FE_time_version *)NULL,source->number_of_values);
+					(struct FE_time_sequence *)NULL,source->number_of_values);
 				DEALLOCATE(values_storage);
 			}
 			if (times)
 			{
 				free_value_storage_array(times,source->time_value_type,
-					(struct FE_time_version *)NULL,source->number_of_times);
+					(struct FE_time_sequence *)NULL,source->number_of_times);
 				DEALLOCATE(times);
 			}
 		}
@@ -12692,7 +12692,7 @@ int FE_field_has_multiple_times(struct FE_field *fe_field)
 LAST MODIFIED : 2 April 2003
 
 DESCRIPTION :
-Returns true if any node_fields corresponding to <field> have time_versions.
+Returns true if any node_fields corresponding to <field> have time_sequences.
 This will be improved when regionalised, so that hopefully the node field
 list we will be looking at will not be global but will belong to the region.
 ==============================================================================*/
@@ -13423,7 +13423,7 @@ Should only call this function for unmanaged fields.
 			if (number_of_values != field->number_of_values)
 			{
 				if (!(values_storage=make_value_storage_array(field->value_type,
-					(struct FE_time_version *)NULL,number_of_values)))
+					(struct FE_time_sequence *)NULL,number_of_values)))
 				{
 					return_code=0;
 				}
@@ -13446,7 +13446,7 @@ Should only call this function for unmanaged fields.
 				if (field->values_storage)
 				{
 					free_value_storage_array(field->values_storage,field->value_type,
-						(struct FE_time_version *)NULL,field->number_of_values);		
+						(struct FE_time_sequence *)NULL,field->number_of_values);		
 					DEALLOCATE(field->values_storage);
 				}
 				/* 3. establish the new number_of_components and associated data */
@@ -13560,7 +13560,7 @@ Should only call this function for unmanaged fields.
 		{	
 			field->number_of_times=number_of_times;			
 			size = get_Value_storage_size(field->time_value_type,
-				(struct FE_time_version *)NULL);		
+				(struct FE_time_sequence *)NULL);		
 
 			if (REALLOCATE(times,field->times,Value_storage,
 				size*number_of_times))	
@@ -13810,13 +13810,13 @@ Should only call this function for unmanaged fields.
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_values=field->number_of_components;
 		if (values_storage=make_value_storage_array(field->value_type,
-			(struct FE_time_version *)NULL,number_of_values))
+			(struct FE_time_sequence *)NULL,number_of_values))
 		{
 			/* 2. free current type-specific data */
 			if (field->values_storage)
 			{
 				free_value_storage_array(field->values_storage,field->value_type,
-					(struct FE_time_version *)NULL,field->number_of_values);		
+					(struct FE_time_sequence *)NULL,field->number_of_values);		
 				DEALLOCATE(field->values_storage);
 			}
 			REACCESS(FE_field)(&(field->indexer_field),NULL);
@@ -13866,7 +13866,7 @@ Should only call this function for unmanaged fields.
 		if (field->values_storage)
 		{
 			free_value_storage_array(field->values_storage,field->value_type,
-				(struct FE_time_version *)NULL,field->number_of_values);		
+				(struct FE_time_sequence *)NULL,field->number_of_values);		
 			DEALLOCATE(field->values_storage);
 		}
 		REACCESS(FE_field)(&(field->indexer_field),NULL);
@@ -13946,13 +13946,13 @@ Should only call this function for unmanaged fields.
 		/* 1. make dynamic allocations for any new type-specific data */
 		number_of_values=field->number_of_components*number_of_indexed_values;
 		if (values_storage=make_value_storage_array(field->value_type,
-			(struct FE_time_version *)NULL,number_of_values))
+			(struct FE_time_sequence *)NULL,number_of_values))
 		{
 			/* 2. free current type-specific data */
 			if (field->values_storage)
 			{
 				free_value_storage_array(field->values_storage,field->value_type,
-					(struct FE_time_version *)NULL,field->number_of_values);		
+					(struct FE_time_sequence *)NULL,field->number_of_values);		
 				DEALLOCATE(field->values_storage);
 			}
 			/* 3. establish the new type */
@@ -14091,7 +14091,7 @@ it was. Should only call this function for unmanaged fields.
 			if (0!=number_of_values)
 			{
 				if (!(values_storage=make_value_storage_array(value_type,
-					(struct FE_time_version *)NULL,number_of_values)))
+					(struct FE_time_sequence *)NULL,number_of_values)))
 				{
 					return_code=0;
 				}
@@ -14102,7 +14102,7 @@ it was. Should only call this function for unmanaged fields.
 				if (field->values_storage)
 				{
 					free_value_storage_array(field->values_storage,field->value_type,
-						(struct FE_time_version *)NULL,field->number_of_values);		
+						(struct FE_time_sequence *)NULL,field->number_of_values);		
 					DEALLOCATE(field->values_storage);
 				}
 				/* 3. establish the new value_type and associated data */
@@ -14214,7 +14214,7 @@ max_number_of_array_values. Return the field value_type.
 				{	
 					*max_number_of_array_values = 0;
 					size = get_Value_storage_size(*value_type,
-						(struct FE_time_version *)NULL);
+						(struct FE_time_sequence *)NULL);
 					values_storage = field->values_storage;
 					for (i=0;i<field->number_of_values;i++)
 					{		
@@ -14300,7 +14300,7 @@ Give an error if field->values_storage isn't storing array types.
 				{				
 					/* get the correct offset*/	
 					size = get_Value_storage_size(*value_type,
-						(struct FE_time_version *)NULL);
+						(struct FE_time_sequence *)NULL);
 					values_storage = field->values_storage+(value_number*size);
 					/* get the number of array values  for the specified array in vaules_storage */			
 					*number_of_array_values = *((int *)values_storage);
@@ -14310,7 +14310,7 @@ Give an error if field->values_storage isn't storing array types.
 					char *the_string,**str_address;
 					/* get the correct offset*/	
 					size = get_Value_storage_size(*value_type,
-						(struct FE_time_version *)NULL);
+						(struct FE_time_sequence *)NULL);
 					values_storage = field->values_storage+(value_number*size);
 					/* get the string*/	
 					str_address = (char **)(values_storage);
@@ -14369,7 +14369,7 @@ to get the size of an array.
 		{
 			return_code=1;	 			 
 			size = get_Value_storage_size(DOUBLE_ARRAY_VALUE,
-				(struct FE_time_version *)NULL);
+				(struct FE_time_sequence *)NULL);
 			/* get the correct offset*/
 			values_storage = field->values_storage+(value_number*size);
 			/* get the number of array values  for the specified array in vaules_storage */	
@@ -14440,7 +14440,7 @@ The <field> must be of the correct FE_field_type to have such values and
 		}								
 
 		size = get_Value_storage_size(DOUBLE_ARRAY_VALUE,
-			(struct FE_time_version *)NULL);
+			(struct FE_time_sequence *)NULL);
 
 		/* get the correct offset*/
 		values_storage = field->values_storage+(value_number*size);
@@ -14493,7 +14493,7 @@ Returned <*string> may be a valid NULL if that is what is in the field.
 	if (field&&(0<=value_number)&&(value_number<field->number_of_values)&&string)
 	{
 		/* get the pointer to the stored string */			
-		size = get_Value_storage_size(STRING_VALUE,(struct FE_time_version *)NULL);
+		size = get_Value_storage_size(STRING_VALUE,(struct FE_time_sequence *)NULL);
 		string_address = (char **)(field->values_storage+value_number*size);
 		if (the_string = *string_address)
 		{
@@ -14544,7 +14544,7 @@ Copies and sets the <string> stored at <value_number> in the <field>.
 	if (field&&(0<=value_number)&&(value_number<field->number_of_values))
 	{
 		/* get the pointer to the stored string */			
-		size = get_Value_storage_size(STRING_VALUE,(struct FE_time_version *)NULL);
+		size = get_Value_storage_size(STRING_VALUE,(struct FE_time_sequence *)NULL);
 		string_address = (char **)(field->values_storage+value_number*size);
 		if (string)
 		{
@@ -15700,7 +15700,7 @@ the copy is set to the current <value_storage_size>, and both it and the
 				number_of_values = FE_node_field_get_number_of_values(node_field);
 				values_storage_size = number_of_values *
 					get_Value_storage_size(node_field->field->value_type,
-						node_field->time_version);
+						node_field->time_sequence);
 				/* adjust size for proper word alignment in memory */
 				ADJUST_VALUE_STORAGE_SIZE(values_storage_size);
 				
@@ -15865,7 +15865,7 @@ Up to the calling routine to deallocate the returned char string!
 } /* GET_NAME(FE_node) */
 
 int define_FE_field_at_node(struct FE_node *node, struct FE_field *field,
-	struct FE_time_version *fe_time_version, 
+	struct FE_time_sequence *fe_time_sequence, 
 	struct FE_node_field_creator *fe_node_field_creator)
 /*******************************************************************************
 LAST MODIFIED : 1 May 2003
@@ -15899,7 +15899,7 @@ Defines a field at a node (does not assign values)
 			fe_node_field_creator->nodal_value_types))
 	{
 		value_type = field->value_type;
-		size = get_Value_storage_size(value_type, fe_time_version);
+		size = get_Value_storage_size(value_type, fe_time_sequence);
 		return_code = 1;
 		/* check if the field is already defined at the node */
 		if (FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
@@ -15933,12 +15933,12 @@ Defines a field at a node (does not assign values)
 			{
 				/* access now, deaccess at end to clean up if fails */
 				ACCESS(FE_node_field)(node_field);
-				if (fe_time_version)
+				if (fe_time_sequence)
 				{
-					FE_node_field_set_FE_time_version(node_field, 
-						fe_time_version);
-					number_of_times = FE_time_version_get_number_of_times(
-						fe_time_version);
+					FE_node_field_set_FE_time_sequence(node_field, 
+						fe_time_sequence);
+					number_of_times = FE_time_sequence_get_number_of_times(
+						fe_time_sequence);
 				}
 				number_of_values = existing_node_field_info->number_of_values;
 				if (GENERAL_FE_FIELD == field->fe_field_type)
@@ -15996,7 +15996,7 @@ Defines a field at a node (does not assign values)
 										for (i = number_of_values -
 											(existing_node_field_info->number_of_values); i > 0; i--)
 										{
-											if (fe_time_version)
+											if (fe_time_sequence)
 											{
 												switch (value_type)
 												{
@@ -16435,7 +16435,7 @@ is undefined!
 				exclusion_data.value_exclusion_start = node_field->components->value;
 				exclusion_data.value_exclusion_length = field_number_of_values *
 					get_Value_storage_size(node_field->field->value_type,
-						node_field->time_version);
+						node_field->time_sequence);
 				/* adjust size for proper word alignment in memory */
 				ADJUST_VALUE_STORAGE_SIZE(exclusion_data.value_exclusion_length);
 			}
@@ -16851,7 +16851,7 @@ Note this will also return true if <field> is not defined at both nodes.
 			return_code = ((!node_field_1) && (!node_field_2)) || (
 				node_field_1 && node_field_2 && 
 				FE_node_fields_match(node_field_1, node_field_2,
-					/*ignore_field_and_time_version*/0, /*ignore_component_value*/1));
+					/*ignore_field_and_time_sequence*/0, /*ignore_component_value*/1));
 		}
 	}
 	else
@@ -16904,7 +16904,7 @@ node and valid at <time>.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	ENTER(FE_nodal_value_version_exists);
@@ -16914,7 +16914,7 @@ node and valid at <time>.
 	{
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
 			get_FE_field_value_type(component->field),&values_storage,
-			&time_version))
+			&time_sequence))
 		{
 			return_code=1;
 		}
@@ -17065,7 +17065,7 @@ at the <node> and <time>. \
 	FE_value xi; \
 	int return_code, time_index_one, time_index_two; \
 	struct FE_field *field; \
-	struct FE_time_version *time_version; \
+	struct FE_time_sequence *time_sequence; \
 	Value_storage *values_storage = NULL; \
  \
 	ENTER(get_FE_nodal_ ## value_type ## _value); \
@@ -17083,11 +17083,11 @@ at the <node> and <time>. \
 			case GENERAL_FE_FIELD: \
 			{ \
 				if (find_FE_nodal_values_storage_dest(node,component,version,type, \
-					value_enum ,&values_storage,&time_version)) \
+					value_enum ,&values_storage,&time_sequence)) \
 				{ \
-					if (time_version) \
+					if (time_sequence) \
 					{ \
-						FE_time_version_get_interpolation_for_time(time_version, \
+						FE_time_sequence_get_interpolation_for_time(time_sequence, \
 							time, &time_index_one, &time_index_two, &xi); \
 	               array = *((value_type **)values_storage); \
 						*value = array[time_index_one] * (1.0 - xi) + \
@@ -17168,7 +17168,7 @@ at the <node>. \
 { \
    value_type *array; \
 	int return_code, time_index;  \
-	struct FE_time_version *time_version; \
+	struct FE_time_sequence *time_sequence; \
 	Value_storage *values_storage = NULL; \
  \
 	ENTER(set_FE_nodal_ ## value_type ## _value); \
@@ -17179,11 +17179,11 @@ at the <node>. \
 	{ \
 		/* get the values storage */ \
 		if (find_FE_nodal_values_storage_dest(node,component,version,type, \
-			value_enum,&values_storage,&time_version)) \
+			value_enum,&values_storage,&time_sequence)) \
 		{ \
-			if (time_version) \
+			if (time_sequence) \
 			{ \
-				if (FE_time_version_get_index_for_time(time_version, time, &time_index)) \
+				if (FE_time_sequence_get_index_for_time(time_sequence, time, &time_index)) \
 				{ \
 					array = *((value_type **)values_storage); \
 					array[time_index] = value; \
@@ -17244,7 +17244,7 @@ at the <node>.
 {
 	int i,return_code;
 	struct FE_field_component component;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	ENTER(get_FE_nodal_element_xi_value);
@@ -17260,7 +17260,7 @@ at the <node>.
 			{
 				values_storage=field->values_storage +
 					get_Value_storage_size(ELEMENT_XI_VALUE,
-						(struct FE_time_version *)NULL)*component_number;
+						(struct FE_time_sequence *)NULL)*component_number;
 				return_code=1;
 			} break;
 			case GENERAL_FE_FIELD:
@@ -17269,7 +17269,7 @@ at the <node>.
 				component.field = field;
 				component.number = component_number;
 				if (find_FE_nodal_values_storage_dest(node,&component,version,type,
-					ELEMENT_XI_VALUE,&values_storage,&time_version))
+					ELEMENT_XI_VALUE,&values_storage,&time_sequence))
 				{
 					return_code=1;
 				}
@@ -17294,7 +17294,7 @@ at the <node>.
 					{
 						values_storage=field->values_storage+
 							get_Value_storage_size(ELEMENT_XI_VALUE,
-							(struct FE_time_version *)NULL)*
+							(struct FE_time_sequence *)NULL)*
 							(field->number_of_indexed_values*component_number+index-1);
 						return_code=1;	
 					}
@@ -17362,7 +17362,7 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 {
 	int i, number_of_xi_dimensions, return_code; 
 	struct FE_field_component component;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	ENTER(set_FE_nodal_element_xi_value);
@@ -17376,7 +17376,7 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 		component.number = component_number;
 		/* get the values storage */
 		if (find_FE_nodal_values_storage_dest(node,&component,version,type,
-			ELEMENT_XI_VALUE,&values_storage,&time_version))
+			ELEMENT_XI_VALUE,&values_storage,&time_sequence))
 		{
 			number_of_xi_dimensions = element->shape->dimension;
 			/* copy in the element_xi_value */		
@@ -17808,7 +17808,7 @@ Checks first that the FE_fields match.
 			if (FE_fields_match_exact(node_field->field, other_node_field->field))
 			{
 				if (FE_node_fields_match(node_field, other_node_field,
-					/*ignore_field_and_time_version*/1, /*ignore_component_value*/1))
+					/*ignore_field_and_time_sequence*/1, /*ignore_component_value*/1))
 				{
 					return_code = 1;
 				}
@@ -18253,7 +18253,7 @@ Give an error if field->values_storage isn't storing array types.
 							if (i<length)
 							{/* get the value type*/			
 								size = get_Value_storage_size(node_field->field->value_type,
-									(struct FE_time_version *)NULL);
+									(struct FE_time_sequence *)NULL);
 								/* get the offset into nodal values_storage*/
 								values_storage = node->values_storage+(node_field_component->value)+
 									((version*length+i)*size);
@@ -18315,7 +18315,7 @@ if need to locally and repetatively get many arrays.
 ==============================================================================*/
 {
 	int return_code,the_array_number_of_values,array_size;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	double *the_array,**array_address;
@@ -18327,7 +18327,7 @@ if need to locally and repetatively get many arrays.
 		array)
 	{
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			DOUBLE_ARRAY_VALUE,&values_storage,&time_version))
+			DOUBLE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
 			if (number_of_array_values>the_array_number_of_values)
@@ -18383,7 +18383,7 @@ define_FE_field_at_node.
 ==============================================================================*/
 {
 	int return_code,array_size;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 	double *pointer,*the_array,**array_address;
 
@@ -18395,7 +18395,7 @@ define_FE_field_at_node.
 	{
 		/* get the values storage */
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			DOUBLE_ARRAY_VALUE,&values_storage,&time_version))
+			DOUBLE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{				
 			/* get the pointer to stored the array, free any existing one */
 			array_address = (double **)(values_storage+sizeof(int));
@@ -18460,7 +18460,7 @@ if need to locally and repetatively get many arrays.
 ==============================================================================*/
 {
 	int return_code,the_array_number_of_values,array_size;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	short *the_array,**array_address;
@@ -18472,7 +18472,7 @@ if need to locally and repetatively get many arrays.
 		array)
 	{
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			SHORT_ARRAY_VALUE,&values_storage,&time_version))
+			SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
 			if (number_of_array_values>the_array_number_of_values)
@@ -18528,7 +18528,7 @@ define_FE_field_at_node.
 ==============================================================================*/
 {
 	int return_code,array_size; 
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 	short *pointer,*the_array,**array_address;
 
@@ -18540,7 +18540,7 @@ define_FE_field_at_node.
 	{
 		/* get the values storage */
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			SHORT_ARRAY_VALUE,&values_storage,&time_version))
+			SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
 		{				
 			/* get the pointer to stored the array, free any existing one */
 			array_address = (short **)(values_storage+sizeof(int));
@@ -18605,7 +18605,7 @@ if need to locally and repetatively get many arrays.
 ==============================================================================*/
 {
 	int return_code,the_array_number_of_values,array_size;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	FE_value *the_array,**array_address;
@@ -18617,7 +18617,7 @@ if need to locally and repetatively get many arrays.
 		array)
 	{
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			FE_VALUE_ARRAY_VALUE,&values_storage,&time_version))
+			FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
 			if (number_of_array_values>the_array_number_of_values)
@@ -18674,7 +18674,7 @@ define_FE_field_at_node.
 ==============================================================================*/
 {
 	int return_code,array_size;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 	FE_value *pointer,*the_array,**array_address;
 
@@ -18686,7 +18686,7 @@ define_FE_field_at_node.
 	{
 		/* get the values storage */
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-         FE_VALUE_ARRAY_VALUE,&values_storage,&time_version))
+         FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{				
 			/* get the pointer to stored the array, free any existing one */
 			array_address = (FE_value **)(values_storage+sizeof(int));
@@ -18755,7 +18755,7 @@ at the <node>.
 ==============================================================================*/
 {
 	int the_array_number_of_values;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	FE_value *the_array,**array_address,value;
@@ -18767,7 +18767,7 @@ at the <node>.
 		(element_number>-1))
 	{
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-         FE_VALUE_ARRAY_VALUE,&values_storage,&time_version))
+         FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
 			if (element_number<the_array_number_of_values)
@@ -18812,7 +18812,7 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 ==============================================================================*/
 {
 	int the_array_number_of_values;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	FE_value *the_array,**array_address,value,value_low,value_high;
@@ -18826,7 +18826,7 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 		(element_number>-1))
 	{
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-         FE_VALUE_ARRAY_VALUE,&values_storage,&time_version))
+         FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
 			if (element_number<the_array_number_of_values)
@@ -18883,7 +18883,7 @@ at the <node>.
 ==============================================================================*/
 {
 	int the_array_number_of_values,return_code;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	FE_value *the_array,**array_address
@@ -18895,7 +18895,7 @@ at the <node>.
 		(element_number>-1))
 	{
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			FE_VALUE_ARRAY_VALUE,&values_storage,&time_version))
+			FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
 			if (element_number<the_array_number_of_values)
@@ -18942,7 +18942,7 @@ at the <node>.
 ==============================================================================*/
 {
 	int the_array_number_of_values;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	short *the_array,**array_address,value;
@@ -18954,7 +18954,7 @@ at the <node>.
 		(element_number>-1))
 	{
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			SHORT_ARRAY_VALUE,&values_storage,&time_version))
+			SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
 			if (element_number<the_array_number_of_values)
@@ -18999,7 +18999,7 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 ==============================================================================*/
 {
 	int the_array_number_of_values;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	short *the_array,**array_address,value,value_low,value_high;
@@ -19013,7 +19013,7 @@ value=<proportion>*value_low+(1-<proportion>)*value_high;
 		(element_number>-1))
 	{
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-         SHORT_ARRAY_VALUE,&values_storage,&time_version))
+         SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
 			if (element_number<the_array_number_of_values)
@@ -19069,7 +19069,7 @@ at the <node>.
 ==============================================================================*/
 {
 	int the_array_number_of_values,return_code;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	short *the_array,**array_address
@@ -19081,7 +19081,7 @@ at the <node>.
 		(element_number>-1))
 	{
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-			FE_VALUE_ARRAY_VALUE,&values_storage,&time_version))
+			FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{					
 			the_array_number_of_values = *((int *)values_storage);
 			if (element_number<the_array_number_of_values)
@@ -19411,7 +19411,7 @@ Gets a the minimum and maximum values for the FE_value_array
 {
 	FE_value *array,**array_address,min,max;
 	int return_code,array_number_of_values,count;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	ENTER(get_FE_nodal_FE_value_array_min_max);
@@ -19420,7 +19420,7 @@ Gets a the minimum and maximum values for the FE_value_array
 		(component->number<component->field->number_of_components)&&(0<=version))
 	{
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-         FE_VALUE_ARRAY_VALUE,&values_storage,&time_version))
+         FE_VALUE_ARRAY_VALUE,&values_storage,&time_sequence))
 		{							
 			array_number_of_values = *((int *)values_storage);		
 			/* get the address to copy from*/		
@@ -19474,7 +19474,7 @@ Gets a the minimum and maximum values for the _value_array
 {
 	int return_code,array_number_of_values,count;
 	short *array,**array_address,min,max;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	ENTER(get_FE_nodal_short_array_min_max);
@@ -19483,7 +19483,7 @@ Gets a the minimum and maximum values for the _value_array
 		(component->number<component->field->number_of_components)&&(0<=version))
 	{
 		if (find_FE_nodal_values_storage_dest(node,component,version,type,
-         SHORT_ARRAY_VALUE,&values_storage,&time_version))
+         SHORT_ARRAY_VALUE,&values_storage,&time_sequence))
 		{							
 			array_number_of_values = *((int *)values_storage);		
 			/* get the address to copy from*/		
@@ -19537,7 +19537,7 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 	char *the_string;
 	int return_code;
 	struct FE_field_component component;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	ENTER(get_FE_nodal_string_value);
@@ -19551,7 +19551,7 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 			case CONSTANT_FE_FIELD:
 			{
 				values_storage=field->values_storage +
-					get_Value_storage_size(STRING_VALUE,(struct FE_time_version *)NULL)
+					get_Value_storage_size(STRING_VALUE,(struct FE_time_sequence *)NULL)
 					*component_number;
 				return_code=1;
 			} break;
@@ -19561,7 +19561,7 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 				component.field = field;
 				component.number = component_number;
 				if (find_FE_nodal_values_storage_dest(node,&component,version,type,
-					STRING_VALUE,&values_storage,&time_version))
+					STRING_VALUE,&values_storage,&time_sequence))
 				{
 					return_code=1;
 				}
@@ -19586,7 +19586,7 @@ Returned <*string> may be a valid NULL if that is what is in the node.
 					{
 						values_storage=field->values_storage+
 							get_Value_storage_size(STRING_VALUE,
-							(struct FE_time_version *)NULL)*
+							(struct FE_time_sequence *)NULL)*
 							(field->number_of_indexed_values*component_number+index-1);
 						return_code=1;	
 					}
@@ -19666,7 +19666,7 @@ at the <node>. <string> may be NULL.
 	char *the_string,**string_address;
 	int return_code; 
 	struct FE_field_component component;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
 	ENTER(set_FE_nodal_string_value);
@@ -19678,7 +19678,7 @@ at the <node>. <string> may be NULL.
 		component.number=component_number;
 		/* get the values storage */
 		if (find_FE_nodal_values_storage_dest(node,&component,version,type,
-			STRING_VALUE,&values_storage,&time_version))
+			STRING_VALUE,&values_storage,&time_sequence))
 		{
 			/* get the pointer to the stored string */			
 			string_address = (char **)(values_storage);
@@ -20020,9 +20020,9 @@ place the values.
 			if (node_field =FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
 				node->fields->node_field_list))
 			{
-				if ((node_field->time_version) &&
-					(FE_time_version_get_index_for_time(
-					node_field->time_version, time, &time_index)))
+				if ((node_field->time_sequence) &&
+					(FE_time_sequence_get_index_for_time(
+					node_field->time_sequence, time, &time_index)))
 				{
 					return_code=1;
 					number_of_components = node_field->field->number_of_components;
@@ -20359,6 +20359,46 @@ Returns the number of fields stored at the <node>.
 
 	return (number_of_fields);
 } /* get_FE_node_number_of_fields */
+
+struct FE_time_sequence *get_FE_node_field_FE_time_sequence(struct FE_node *node,
+	struct FE_field *field)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2004
+
+DESCRIPTION :
+Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
+<node> and <field> have no time dependence then the function will return NULL.
+==============================================================================*/
+{
+	struct FE_node_field *node_field;
+	struct FE_time_sequence *time_sequence;
+
+	ENTER(get_FE_node_field_FE_time_sequence);
+	if (node&&field)
+	{
+		if (node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+			field,node->fields->node_field_list))
+		{
+			time_sequence = node_field->time_sequence;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"get_FE_node_field_component_FE_time_sequence.  "
+				"Field %s not defined at node %d",field->name,node->cm_node_identifier);
+			time_sequence = (struct FE_time_sequence *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_node_field_FE_time_sequence.  Invalid argument(s)");
+		time_sequence = (struct FE_time_sequence *)NULL;
+	}
+	LEAVE;
+
+	return (time_sequence);
+} /* get_FE_node_field_FE_time_sequence */
 
 enum FE_nodal_value_type *get_FE_node_field_component_nodal_value_types(
 	struct FE_node *node,struct FE_field *field,int component_number)
@@ -22753,6 +22793,7 @@ LAST MODIFIED : 3 November 2004
 DESCRIPTION :
 Creates a type array from the <basis_description_string>.  Returns the type
 array which can be used in CREATE(FE_basis) and make_FE_basis.
+It is up to the calling function to DEALLOCATE the returned array.
 
 Some examples of basis descriptions are:
 1. c.Hermite*c.Hermite*l.Lagrange  This has cubic variation in xi1 and xi2 and
@@ -25752,14 +25793,14 @@ static int FE_element_fields_match(struct FE_element_field *element_field_1,
 	struct LIST(FE_node) *global_node_list1,
 	struct FE_element_field *element_field_2,
 	struct FE_element_node_scale_field_info *info_2,
-	int ignore_field_and_time_version, int differences_are_errors)
+	int ignore_field_and_time_sequence, int differences_are_errors)
 /*******************************************************************************
 LAST MODIFIED : 7 May 2003
 
 DESCRIPTION :
 Returns true if <element_field_1> and <element_field_2> produce equivalent
 results with <info_1> and <info_2>, respectively. No comparison of field and
-time_version members will be made if <ignore_field_and_time_version> is set.
+time_sequence members will be made if <ignore_field_and_time_sequence> is set.
 If the <global_node_list1> is supplied, instead of matching node pointers from
 <info_1>, the global node of the same identifier is compared. Used in
 "can be merged" code when used non-global nodes are in the element.
@@ -25767,7 +25808,7 @@ Use with caution!
 If <differences_are_errors> is set, differences are reported as errors. This
 will be the case for 'can be merged' code, but not for determining if field
 headers have to change in output files.
-???RC FE_element_field does not have time_version -- yet.
+???RC FE_element_field does not have time_sequence -- yet.
 ==============================================================================*/
 {
 	int i, number_of_components, return_code;
@@ -25776,7 +25817,7 @@ headers have to change in output files.
 	ENTER(FE_element_fields_match);
 	if (element_field_1 && info_1 && element_field_2 && info_2)
 	{
-		if (ignore_field_and_time_version || (element_field_1->field &&
+		if (ignore_field_and_time_sequence || (element_field_1->field &&
 			(element_field_1->field == element_field_2->field)))
 		{
 			if ((number_of_components =
@@ -26881,7 +26922,7 @@ No values_storage arrays are allocated or copied by this function.
 												new_number_in_xi++;
 											}
 											size = get_Value_storage_size(
-												field->value_type, (struct FE_time_version *)NULL);
+												field->value_type, (struct FE_time_sequence *)NULL);
 											new_values_storage_size = size*number_of_values;
 											ADJUST_VALUE_STORAGE_SIZE(new_values_storage_size);
 											/* point the component to new space after the current
@@ -27910,7 +27951,7 @@ they are, should follow pattern of FE_node_field_copy_values_storage.
 							source = copy_data->add_values_storage +
 								add_component->map.element_grid_based.value_index;
 							return_code = copy_value_storage_array(destination, value_type,
-								(struct FE_time_version *)NULL, (struct FE_time_version *)NULL,
+								(struct FE_time_sequence *)NULL, (struct FE_time_sequence *)NULL,
 								number_of_values, source);
 						}
 						else
@@ -27928,7 +27969,7 @@ they are, should follow pattern of FE_node_field_copy_values_storage.
 							source = copy_data->old_values_storage +
 								old_component->map.element_grid_based.value_index;
 							return_code = copy_value_storage_array(destination, value_type,
-								(struct FE_time_version *)NULL, (struct FE_time_version *)NULL,
+								(struct FE_time_sequence *)NULL, (struct FE_time_sequence *)NULL,
 								number_of_values, source);
 						}
 						else
@@ -28278,7 +28319,7 @@ in them. Only certain value types, eg. arrays, strings, element_xi require this.
 					value_index=((*component)->map).element_grid_based.value_index;
 					return_code=free_value_storage_array(
 						values_storage+value_index,value_type,
-						(struct FE_time_version *)NULL,number_of_values);
+						(struct FE_time_sequence *)NULL,number_of_values);
 				}
 				component++;
 			}
@@ -28802,8 +28843,8 @@ been allocated but is uninitialised.
 					{
 						return_code=copy_value_storage_array(
 							copy_data->destination_values_storage+value_index,
-							value_type,(struct FE_time_version *)NULL,
-							(struct FE_time_version *)NULL,number_of_values,
+							value_type,(struct FE_time_sequence *)NULL,
+							(struct FE_time_sequence *)NULL,number_of_values,
 							copy_data->source_values_storage+value_index);
 					}
 					else
@@ -35479,7 +35520,7 @@ the derivatives will start at the first position of <jacobian>.
 						if (return_code)
 						{
 							size=get_Value_storage_size(field->value_type,
-								(struct FE_time_version *)NULL);
+								(struct FE_time_sequence *)NULL);
 							component_grid_values_storage=
 								element_field_values->component_grid_values_storage;
 							calculated_value=values;
@@ -35944,7 +35985,7 @@ single component, the value will be put in the first position of <values>.
 						if (return_code)
 						{
 							size=get_Value_storage_size(field->value_type,
-								(struct FE_time_version *)NULL);
+								(struct FE_time_sequence *)NULL);
 							component_grid_values_storage=
 								element_field_values->component_grid_values_storage;
 							calculated_value=values;
@@ -36566,7 +36607,7 @@ do but the field is not defined in either, this is also equivalent.
 				FE_element_fields_match(element_field_1, element_1->information,
 					/*global_node_list1*/(struct LIST(FE_node) *)NULL,
 					element_field_2, element_2->information,
-					/*ignore_field_and_time_version*/0, /*differences_are_errors*/0));
+					/*ignore_field_and_time_sequence*/0, /*differences_are_errors*/0));
 		}
 	}
 	LEAVE;
@@ -37904,7 +37945,7 @@ Should only be called for unmanaged elements.
 										element->information->values_storage = values_storage;
 										if (initialise_value_storage_array(
 											values_storage + old_values_storage_size,
-											field->value_type, (struct FE_time_version *)NULL,
+											field->value_type, (struct FE_time_sequence *)NULL,
 											number_of_values))
 										{
 											element->information->values_storage_size =
@@ -41675,7 +41716,7 @@ field itself. Checks first that the FE_fields match.
 			{
 				if (FE_element_fields_match(element_field, data->info,
 					data->global_node_list1, other_element_field, data->other_info,
-					/*ignore_field_and_time_version*/1, /*differences_are_errors*/1))
+					/*ignore_field_and_time_sequence*/1, /*differences_are_errors*/1))
 				{
 					return_code = 1;
 				}
@@ -43173,7 +43214,7 @@ It is up to the calling function to DEALLOCATE the returned values.
 					{
 						values_storage += component->map.element_grid_based.value_index;
 						size = get_Value_storage_size(FE_VALUE_VALUE,
-							(struct FE_time_version *)NULL);
+							(struct FE_time_sequence *)NULL);
 						number_of_grid_values=1;
 						for (i=0;i<dimension;i++)
 						{
@@ -43278,7 +43319,7 @@ get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest.
 						return_code=1;
 						values_storage += component->map.element_grid_based.value_index;
 						size = get_Value_storage_size(FE_VALUE_VALUE,
-							(struct FE_time_version *)NULL);
+							(struct FE_time_sequence *)NULL);
 						number_of_grid_values=1;
 						for (i=0;i<dimension;i++)
 						{
@@ -43373,7 +43414,7 @@ It is up to the calling function to DEALLOCATE the returned values.
 					{
 						values_storage += component->map.element_grid_based.value_index;
 						size = get_Value_storage_size(INT_VALUE,
-							(struct FE_time_version *)NULL);
+							(struct FE_time_sequence *)NULL);
 						number_of_grid_values=1;
 						for (i=0;i<dimension;i++)
 						{
@@ -43477,7 +43518,7 @@ get_FE_element_field_number_of_grid_values; Grids change in xi0 fastest.
 						return_code=1;
 						values_storage += component->map.element_grid_based.value_index;
 						size = get_Value_storage_size(INT_VALUE,
-							(struct FE_time_version *)NULL);
+							(struct FE_time_sequence *)NULL);
 						number_of_grid_values=1;
 						for (i=0;i<dimension;i++)
 						{
@@ -43893,7 +43934,7 @@ Notes:
 										create_FE_node_field_creator_from_node_field(node,
 											fe_field)) &&
 									define_FE_field_at_node(copy_node[n], element_count_fe_field,
-										(struct FE_time_version *)NULL, fe_node_field_creator) &&
+										(struct FE_time_sequence *)NULL, fe_node_field_creator) &&
 									ADD_OBJECT_TO_LIST(FE_node)(copy_node[n], copy_node_list))
 								{
 									/* assume that element_count_fe_field values are cleared to
@@ -44415,7 +44456,7 @@ the field_order_info list.
 	if (node && field && field_order_info && node_field_creator)
 	{
 		return_code = 1;
-		if (define_FE_field_at_node(node, field, (struct FE_time_version *)NULL,
+		if (define_FE_field_at_node(node, field, (struct FE_time_sequence *)NULL,
 			node_field_creator))
 		{
 			if (!add_FE_field_order_info_field(field_order_info, field))
@@ -46118,85 +46159,129 @@ the <increment> will contain the fraction of the increment not used.
 	return (return_code);
 } /* FE_element_xi_increment */
 
-int make_square_FE_element(struct FE_element **element_ptr,
-	struct FE_region *fe_region, int element_dimension, int basis_type,
-	struct FE_field *field)
+struct FE_element *create_FE_element_with_line_shape(int identifier,
+	struct FE_region *fe_region, int dimension)
 /*******************************************************************************
-LAST MODIFIED : 5 August 2003
+LAST MODIFIED : 1 December 2004
 
 DESCRIPTION :
-Generates a square element with the specified <element_dimension>, <fe_region> and
-<basis_type>.  If a <field> is supplied it is defined on the element with unit
-scale factors.
-Shifted and generalised from element_creator.c.
+Creates an element that has a line shape product of the specified <dimension>.
 ==============================================================================*/
 {
-	int *basis_type_array,i,j,k,number_of_components,number_of_nodes,
-		number_of_nodes_per_xi,
-		number_of_scale_factors,return_code,*type,*type_entry,*xi_basis_type;
+	int i,j,return_code,*type,*type_entry;
 	struct CM_element_information element_identifier;
-	struct FE_basis *element_basis;
 	struct FE_element *element;
-	struct FE_element_field_component *component,**components;
-			struct FE_element_shape *element_shape;
-	struct Standard_node_to_element_map *standard_node_map;
+	struct FE_element_shape *element_shape;
 
-	ENTER(make_square_FE_element);
+	ENTER(create_FE_element_with_tensor_product_basis);
 	return_code=1;
 	element = (struct FE_element *)NULL;
-	if (element_ptr && fe_region && (element_dimension > 0))
+	if (identifier && fe_region && (dimension > 0))
 	{
 		/* make shape */
 		element_shape=(struct FE_element_shape *)NULL;
-		if (return_code)
+		/* make default n-D "square" element shape */
+		if (ALLOCATE(type,int,(dimension*(dimension+1))/2))
 		{
-			/* make default n-D "square" element shape */
-			if (ALLOCATE(type,int,(element_dimension*(element_dimension+1))/2))
+			/* retrieve a "square" element of the specified dimension */
+			type_entry=type;
+			for (i=dimension-1;i>=0;i--)
 			{
-				/* retrieve a "square" element of the specified element_dimension */
-				type_entry=type;
-				for (i=element_dimension-1;i>=0;i--)
+				*type_entry=LINE_SHAPE;
+				type_entry++;
+				for (j=i;j>0;j--)
 				{
-					*type_entry=LINE_SHAPE;
+					*type_entry=0;
 					type_entry++;
-					for (j=i;j>0;j--)
-					{
-						*type_entry=0;
-						type_entry++;
-					}
 				}
-				if (element_shape=CREATE(FE_element_shape)(element_dimension,type,
-						 fe_region))
-				{
-					ACCESS(FE_element_shape)(element_shape);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"make_square_FE_element.  Error creating shape");
-					return_code=0;
-				}
-				DEALLOCATE(type);
+			}
+			if (element_shape=CREATE(FE_element_shape)(dimension,type,
+					fe_region))
+			{
+				ACCESS(FE_element_shape)(element_shape);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"make_square_FE_element.  Not enough memory");
+					"create_FE_element_with_line_shape.  Error creating shape");
+				return_code=0;
+			}
+			DEALLOCATE(type);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"create_FE_element_with_line_shape.  Not enough memory");
+			return_code=0;
+		}
+		/* make element */
+		if (return_code)
+		{
+			element_identifier.type=CM_ELEMENT;
+			element_identifier.number=identifier;
+			if (!(element = CREATE(FE_element)(
+				&element_identifier, element_shape, fe_region, (struct FE_element *)NULL)))
+			{
+				display_message(ERROR_MESSAGE,
+					"create_FE_element_with_line_shape.  "
+					"Could not set element shape and field info");
+				DESTROY(FE_element)(&(element));
 				return_code=0;
 			}
 		}
+		/* deaccess shape so at most used by template element */
+		if (element_shape)
+		{
+			DEACCESS(FE_element_shape)(&element_shape);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"create_FE_element_with_line_shape.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (element);
+} /* create_FE_element_with_line_shape */
+
+int FE_element_define_tensor_product_basis(struct FE_element *element,
+	int dimension, enum FE_basis_type basis_type, struct FE_field *field)
+/*******************************************************************************
+LAST MODIFIED : 1 December 2004
+
+DESCRIPTION :
+Defines a tensor product basis on <element> with the specified <dimension> 
+and <basis_type>.  This does not support mixed basis types in the tensor product.
+==============================================================================*/
+{
+	int *basis_type_array,i,j,k,number_of_components,number_of_nodes,
+		number_of_nodes_per_xi,number_of_scale_factors,
+		old_number_of_nodes,old_number_of_scale_factor_sets,return_code,
+		*xi_basis_type;
+	struct FE_basis *element_basis;
+	struct FE_element_field_component *component,**components;
+	struct Standard_node_to_element_map *standard_node_map;
+	void *scale_factor_identifier;
+
+	ENTER(FE_element_define_tensor_product_basis);
+	return_code=1;
+	if (element && (dimension > 0) && 
+		(dimension == element->shape->dimension) && field)
+	{
 		/* make basis */
 		element_basis=(struct FE_basis *)NULL;
 		if (return_code)
 		{
 			/* make default N-linear basis */
 			if (ALLOCATE(basis_type_array,int,
-					 1+(element_dimension*(1+element_dimension))/2))
+					 1+(dimension*(1+dimension))/2))
 			{
 				xi_basis_type=basis_type_array;
-				*xi_basis_type=element_dimension;
+				*xi_basis_type=dimension;
 				xi_basis_type++;
-				for (i=element_dimension;0<i;i--)
+				for (i=dimension;0<i;i--)
 				{
 					for (j=i;0<j;j--)
 					{
@@ -46211,16 +46296,15 @@ Shifted and generalised from element_creator.c.
 						xi_basis_type++;
 					}
 				}
-				if (element_basis =
-					make_FE_basis(basis_type_array,
-						FE_region_get_basis_manager(fe_region)))
+				if (element_basis = make_FE_basis(basis_type_array,
+						FE_region_get_basis_manager(FE_element_get_FE_region(element))))
 				{
 					ACCESS(FE_basis)(element_basis);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"make_square_FE_element.  Error creating shape");
+						"FE_element_define_tensor_product_basis.  Error creating shape");
 					return_code=0;
 				}
 				DEALLOCATE(basis_type_array);
@@ -46228,64 +46312,83 @@ Shifted and generalised from element_creator.c.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"make_square_FE_element.  Not enough memory");
+					"FE_element_define_tensor_product_basis.  Not enough memory");
 				return_code=0;
 			}
 		}
-		/* make template_element */
 		if (return_code)
 		{
-			element_identifier.type=CM_ELEMENT;
-			element_identifier.number=0;
-			if (element = CREATE(FE_element)(
-					 &element_identifier, element_shape, fe_region,
-					 (struct FE_element *)NULL))
+			switch (basis_type)
 			{
-				switch (basis_type)
+				case QUADRATIC_LAGRANGE:
 				{
-					case QUADRATIC_LAGRANGE:
-					{
-						number_of_nodes_per_xi = 3;
-					} break;
-					case CUBIC_LAGRANGE:
-					{
-						number_of_nodes_per_xi = 4;
-					} break;
-					default:
-					{
-						number_of_nodes_per_xi = 2;
-					} break;
-				}
-				number_of_nodes=1;
-				for (i=0;i<element_dimension;i++)
+					number_of_nodes_per_xi = 3;
+				} break;
+				case CUBIC_LAGRANGE:
 				{
-					number_of_nodes *= number_of_nodes_per_xi;
-				}
-				switch (basis_type)
+					number_of_nodes_per_xi = 4;
+				} break;
+				default:
 				{
-					case CUBIC_HERMITE:
+					number_of_nodes_per_xi = 2;
+				} break;
+			}
+			number_of_nodes=1;
+			for (i=0;i<dimension;i++)
+			{
+				number_of_nodes *= number_of_nodes_per_xi;
+			}
+			switch (basis_type)
+			{
+				case CUBIC_HERMITE:
+				{
+					number_of_scale_factors = number_of_nodes * 4;
+				} break;
+				default:
+				{
+					number_of_scale_factors = number_of_nodes;
+				} break;
+			}
+			if (get_FE_element_number_of_nodes(element,&old_number_of_nodes) &&
+				get_FE_element_number_of_scale_factor_sets(element,
+					&old_number_of_scale_factor_sets))
+			{
+				number_of_nodes += old_number_of_nodes;
+				if (old_number_of_scale_factor_sets)
+				{
+					/* Currently this cannot be increased so we must find it */
+					i = 0;
+					while ((i < old_number_of_scale_factor_sets) && 
+						get_FE_element_scale_factor_set_identifier(element, i,
+							&scale_factor_identifier) &&
+						(element_basis != scale_factor_identifier))
 					{
-						number_of_scale_factors = number_of_nodes * 4;
-					} break;
-					default:
+						i++;
+					}
+					if (i == old_number_of_scale_factor_sets)
 					{
-						number_of_scale_factors = number_of_nodes;
-					} break;
+						display_message(ERROR_MESSAGE,
+							"FE_element_define_tensor_product_basis.  "
+							"Currently unable to add to an existing list of scale factors sets");
+						return_code = 0;
+					}
 				}
-				if (set_FE_element_number_of_nodes(element,
-						 number_of_nodes) &&
+				else
+				{
 					set_FE_element_number_of_scale_factor_sets(
-						element,
-						/*number_of_scale_factor_sets*/1,
+						element, /*number_of_scale_factor_sets*/1,
 						/*scale_factor_set_identifiers*/(void *)&element_basis,
-						/*numbers_in_scale_factor_sets*/&number_of_scale_factors))
+						/*numbers_in_scale_factor_sets*/&number_of_scale_factors);
+				}
+				if (return_code)
 				{
-					if (field)
+					if (set_FE_element_number_of_nodes(element,
+							number_of_nodes))
 					{
 						number_of_components = get_FE_field_number_of_components(
 							field);
 						if (ALLOCATE(components,struct FE_element_field_component *,
-								 number_of_components))
+								number_of_components))
 						{
 							for (i=0;i<number_of_components;i++)
 							{
@@ -46310,12 +46413,12 @@ Shifted and generalised from element_creator.c.
 													for (k = 0 ; return_code && (k < 4) ; k++)
 													{
 														if (!(Standard_node_to_element_map_set_nodal_value_index(
-															standard_node_map, k, k) &&
-															Standard_node_to_element_map_set_scale_factor_index(
-															standard_node_map, k, j * 4 + k) &&
-															/* set scale_factors to 1 */
-															set_FE_element_scale_factor(element,
-															/*scale_factor_number*/j * 4 + k, 1.0)))
+																	standard_node_map, k, k) &&
+																Standard_node_to_element_map_set_scale_factor_index(
+																	standard_node_map, k, j * 4 + k) &&
+																/* set scale_factors to 1 */
+																set_FE_element_scale_factor(element,
+																	/*scale_factor_number*/j * 4 + k, 1.0)))
 														{
 															return_code = 0;
 														}
@@ -46342,14 +46445,14 @@ Shifted and generalised from element_creator.c.
 														/*node_index*/j, /*number_of_values*/1))
 												{
 													if (!(Standard_node_to_element_map_set_nodal_value_index(
-														standard_node_map, 0, 0) &&
-														Standard_node_to_element_map_set_scale_factor_index(
-														standard_node_map, 0, j) &&
-														/* set scale_factors to 1 */
-														set_FE_element_scale_factor(element,
-														/*scale_factor_number*/j, 1.0) &&
-														FE_element_field_component_set_standard_node_map(
-														component, /*node_number*/j, standard_node_map)))
+																standard_node_map, 0, 0) &&
+															Standard_node_to_element_map_set_scale_factor_index(
+																standard_node_map, 0, j) &&
+															/* set scale_factors to 1 */
+															set_FE_element_scale_factor(element,
+																/*scale_factor_number*/j, 1.0) &&
+															FE_element_field_component_set_standard_node_map(
+																component, /*node_number*/j, standard_node_map)))
 													{
 														DESTROY(Standard_node_to_element_map)(
 															&standard_node_map);
@@ -46376,18 +46479,17 @@ Shifted and generalised from element_creator.c.
 										 element,field,components))
 								{
 									display_message(ERROR_MESSAGE,
-										"make_square_FE_element.  "
+										"FE_element_define_tensor_product_basis.  "
 										"Could not define coordinate field at template_element");
-									DESTROY(FE_element)(&(element));
 									return_code=0;
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"make_square_FE_element.  "
+									"FE_element_define_tensor_product_basis.  "
 									"Could not create components");
-								DESTROY(FE_element)(&(element));
+								return_code = 0;
 							}
 							for (i=0;i<number_of_components;i++)
 							{
@@ -46399,50 +46501,27 @@ Shifted and generalised from element_creator.c.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"make_square_FE_element.  "
+							"FE_element_define_tensor_product_basis.  "
 							"Could not allocate components");
-						DESTROY(FE_element)(&(element));
 						return_code=0;
 					}
 				}
-				if (return_code && element)
-				{
-					*element_ptr = element;
-				}
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"make_square_FE_element.  "
-					"Could not set element shape and field info");
-				DESTROY(FE_element)(&(element));
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"make_square_FE_element.  "
-				"Could not create template element");
-			return_code=0;
 		}
 		/* deaccess basis and shape so at most used by template element */
 		if (element_basis)
 		{
 			DEACCESS(FE_basis)(&element_basis);
 		}
-		if (element_shape)
-		{
-			DEACCESS(FE_element_shape)(&element_shape);
-		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"make_square_FE_element.  Invalid argument(s)");
+			"FE_element_define_tensor_product_basis.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* make_square_FE_element */
+} /* FE_element_define_tensor_product_basis */
+

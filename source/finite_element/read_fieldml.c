@@ -609,7 +609,7 @@ DESCRIPTION :
 						{
 							/* Then define this field on the node */
 							define_FE_field_at_node(fieldml_data->current_node, label->field,
-								(struct FE_time_version *)NULL, 
+								(struct FE_time_sequence *)NULL, 
 								label->node_field_creator);
 						}
 					}
@@ -621,7 +621,7 @@ DESCRIPTION :
 							{
 								/* Then define this field on the node */
 								define_FE_field_at_node(fieldml_data->current_node, label->field,
-									(struct FE_time_version *)NULL, 
+									(struct FE_time_sequence *)NULL, 
 									fieldml_data->current_node_field_creator);
 							}
 						}

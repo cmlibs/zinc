@@ -137,7 +137,7 @@ sub input_nodal_values
 		# make a NULL pointer
 		$node_null=0;
 		$node=\$node_null;
-		bless $node,"Cmiss::node";
+		bless $node,"Cmiss::Node";
 	}
 	$type=$args_with_defaults{type};
 	$version=$args_with_defaults{version};

@@ -11,7 +11,7 @@ MODULE = Cmiss::Function::Element  PACKAGE = Cmiss::Function::Element  PREFIX = 
 PROTOTYPES: DISABLE
 
 Cmiss::Function
-new_xs(Cmiss::element element)
+new_xs(Cmiss::Element element)
 	CODE:
 		{
 			RETVAL=Cmiss_function_element_create(element);

@@ -534,7 +534,13 @@ ifeq ($(SYSNAME),Linux)
    ifneq ($(STATIC_LINK),true)
       #For the dynamic link we really need to statically link the c++ as this
       #seems to be particularly variable between distributions.
-      LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc++
+      LIBSTDC++ = $(shell g++ --print-file-name=libstdc++.a)
+      #Link g2c statically as this only comes with g77 which many people don't have
+      LIBG2C = $(shell g++ --print-file-name=libg2c.a)
+      LIB = $(LIBG2C) $(LIBSTDC++) -lcrypt -lm -ldl -lc -lpthread
+      # For the shared object libraries the stdc++ is included several times, do thsi
+      # dynamically.
+      SOLIB_LIB = $(LIBG2C) -lstdc++ -lcrypt -lm -ldl -lc -lpthread
 #???DB.  Need setenv LD_RUN_PATH /home/bullivan/gcc-3.3.1/lib
 #      LIB = -L/home/bullivan/gcc-3.3.1/lib -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc++
    else # $(STATIC_LINK) != true
@@ -592,6 +598,7 @@ API_SRCS = \
 	api/cmiss_command.c \
 	api/cmiss_computed_field.c \
 	api/cmiss_core.c \
+	api/cmiss_finite_element.c \
 	api/cmiss_function.cpp \
 	api/cmiss_function_composite.cpp \
 	api/cmiss_function_composition.cpp \
@@ -616,6 +623,7 @@ API_SRCS = \
 	api/cmiss_function_variable_union.cpp \
 	api/cmiss_region.c \
 	api/cmiss_scene_viewer.c \
+	api/cmiss_time_sequence.c \
 	api/cmiss_value_derivative_matrix.c \
 	api/cmiss_value_element_xi.c \
 	api/cmiss_value_fe_value.c \
@@ -1372,12 +1380,15 @@ LIB_GENERAL_SRCS = \
 	user_interface/message.c
 LIB_GENERAL_OBJS = $(addsuffix .o,$(basename $(LIB_GENERAL_SRCS)))
 $(SO_LIB_GENERAL_TARGET) : $(LIB_GENERAL_OBJS) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_GENERAL_TARGET),$(BIN_PATH),$(LIB_GENERAL_OBJS),$(ALL_SO_LINK_FLAGS) $(LIB),$(SO_LIB_GENERAL_SONAME))
+	$(call BuildSharedLibraryTarget,$(SO_LIB_GENERAL_TARGET),$(BIN_PATH),$(LIB_GENERAL_OBJS),$(ALL_SO_LINK_FLAGS) $(SOLIB_LIB),$(SO_LIB_GENERAL_SONAME))
 
 SO_LIB_FINITE_ELEMENT = cmgui_finite_element
 SO_LIB_FINITE_ELEMENT_TARGET = lib$(SO_LIB_FINITE_ELEMENT)$(TARGET_SUFFIX)$(SO_LIB_SUFFIX)
 SO_LIB_FINITE_ELEMENT_SONAME = lib$(SO_LIB_FINITE_ELEMENT)$(SO_LIB_SUFFIX)
 LIB_FINITE_ELEMENT_SRCS = \
+	api/cmiss_finite_element.c \
+	api/cmiss_region.c \
+	api/cmiss_time_sequence.c \
 	finite_element/export_finite_element.c \
 	finite_element/finite_element.c \
 	finite_element/finite_element_region.c \
@@ -1389,8 +1400,8 @@ LIB_FINITE_ELEMENT_SRCS = \
 	$(REGION_SRCS)
 LIB_FINITE_ELEMENT_OBJS = $(addsuffix .o,$(basename $(LIB_FINITE_ELEMENT_SRCS)))
 $(SO_LIB_FINITE_ELEMENT_TARGET) : $(LIB_FINITE_ELEMENT_OBJS) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a $(LIB),$(SO_LIB_FINITE_ELEMENT_SONAME))
-#	$(call BuildSharedLibraryTarget,$(SO_LIB_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(XML2_LIB) $(LIB),$(SO_LIB_FINITE_ELEMENT_SONAME))
+	$(call BuildSharedLibraryTarget,$(SO_LIB_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a $(SOLIB_LIB),$(SO_LIB_FINITE_ELEMENT_SONAME))
+#	$(call BuildSharedLibraryTarget,$(SO_LIB_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(XML2_LIB) $(SOLIB_LIB),$(SO_LIB_FINITE_ELEMENT_SONAME))
 
 SO_LIB_COMPUTED_VARIABLE = cmgui_computed_variable
 SO_LIB_COMPUTED_VARIABLE_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE)$(TARGET_SUFFIX)$(SO_LIB_SUFFIX)
@@ -1441,7 +1452,7 @@ LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_variable_identity.c	
 LIB_COMPUTED_VARIABLE_OBJS = $(addsuffix .o,$(basename $(LIB_COMPUTED_VARIABLE_SRCS)))
 $(SO_LIB_COMPUTED_VARIABLE_TARGET) : $(LIB_COMPUTED_VARIABLE_OBJS) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_COMPUTED_VARIABLE_TARGET),$(BIN_PATH),$(LIB_COMPUTED_VARIABLE_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(MATRIX_LIB) $(LIB),$(SO_LIB_COMPUTED_VARIABLE_SONAME))
+	$(call BuildSharedLibraryTarget,$(SO_LIB_COMPUTED_VARIABLE_TARGET),$(BIN_PATH),$(LIB_COMPUTED_VARIABLE_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(MATRIX_LIB) $(SOLIB_LIB),$(SO_LIB_COMPUTED_VARIABLE_SONAME))
 
 SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT = cmgui_computed_variable_finite_element
 SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT)$(TARGET_SUFFIX)$(SO_LIB_SUFFIX)
@@ -1452,7 +1463,6 @@ LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS = \
 	$(filter %element_xi.cpp,$(COMPUTED_VARIABLE_SRCS)) \
 	api/cmiss_function_finite_element.cpp \
 	api/cmiss_function_integral.cpp \
-	api/cmiss_region.c \
 	api/cmiss_value_element_xi.c \
 	api/cmiss_variable_finite_element.c \
 	api/cmiss_variable_new_finite_element.cpp \
@@ -1465,7 +1475,7 @@ SO_ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(WORMHOLE_LIB) $(IMAGEMAGICK_LIB) \
 	$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
 	$(MOVIE_FILE_LIB) $(XML_LIB) $(MEMORYCHECK_LIB) \
-	$(LIB)
+	$(SOLIB_LIB)
 
 SO_LIB_TARGET = lib$(TARGET_EXECUTABLE_BASENAME)$(TARGET_SUFFIX)$(SO_LIB_SUFFIX)
 SO_LIB_SONAME = lib$(TARGET_EXECUTABLE_BASENAME)$(SO_LIB_SUFFIX)

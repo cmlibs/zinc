@@ -1305,7 +1305,7 @@ value will be zero in its initial state.
 						FE_node_field_creator_define_derivative(node_field_creator, 
 							0, FE_NODAL_D_DS1);
 						if (!define_FE_field_at_node(curve->template_node,
-							curve->parameter_field,(struct FE_time_version *)NULL,
+							curve->parameter_field,(struct FE_time_sequence *)NULL,
 							node_field_creator))
 						{
 							return_code=0;
@@ -1323,7 +1323,7 @@ value will be zero in its initial state.
 							}
 						}
 						if (!define_FE_field_at_node(curve->template_node,
-							curve->value_field,(struct FE_time_version *)NULL,
+							curve->value_field,(struct FE_time_sequence *)NULL,
 							node_field_creator))
 						{
 							return_code=0;

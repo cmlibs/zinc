@@ -1330,7 +1330,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 					FE_node_field_creator_define_versions(node_field_creator,
 						/*component_number*/1, coords_comp_1_num_versions);
 					success=define_FE_field_at_node(node,position_field,
-						(struct FE_time_version *)NULL,
+						(struct FE_time_sequence *)NULL,
 						node_field_creator);
 					DESTROY(FE_node_field_creator)(&node_field_creator);
 				} break;
@@ -1353,7 +1353,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 					FE_node_field_creator_define_versions(node_field_creator,
 						/*component_number*/2, coords_comp_2_num_versions);
 					success=define_FE_field_at_node(node,position_field,
-						(struct FE_time_version *)NULL,
+						(struct FE_time_sequence *)NULL,
 						node_field_creator);
 					DESTROY(FE_node_field_creator)(&node_field_creator);
 				} break;
@@ -1370,7 +1370,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 					FE_node_field_creator_define_versions(node_field_creator,
 						/*component_number*/2, coords_comp_2_num_versions);
 					success=define_FE_field_at_node(node,position_field,
-						(struct FE_time_version *)NULL,
+						(struct FE_time_sequence *)NULL,
 						node_field_creator);
 					DESTROY(FE_node_field_creator)(&node_field_creator);
 				} break;
@@ -1389,7 +1389,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 				FE_node_field_creator_define_derivative(node_field_creator,
 					/*component_number*/0, FE_NODAL_D2_DS1DS2);
 				success=define_FE_field_at_node(node,fit_field,
-					(struct FE_time_version *)NULL,
+					(struct FE_time_sequence *)NULL,
 					node_field_creator);
 				DESTROY(FE_node_field_creator)(&node_field_creator);
 			} /* if (success)*/
@@ -5299,7 +5299,7 @@ defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
 				if (return_code = get_FE_element_node(torso_element, i, &node))
 				{
 					return_code = FE_region_define_FE_field_at_FE_node(fe_region,
-						node, fit_field, (struct FE_time_version *)NULL,
+						node, fit_field, (struct FE_time_sequence *)NULL,
 						node_field_creator);
 				}
 			}
@@ -18470,7 +18470,7 @@ struct Torso_node_data
 		*transformed_rect_cart_coords,*rect_cart_coords_wrapper;
 	struct FE_field *cylindrical_polar_coords,*rect_cart_coords;
 	struct FE_region *fe_region;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_version;
 	struct LIST(Computed_field) *computed_field_list;
 }; /* Torso_node_data */
 
@@ -18499,7 +18499,7 @@ Called by
 	struct FE_node *node_copy;
 	struct FE_node_field_creator *node_field_creator;
 	struct FE_region *fe_region;
-	struct FE_time_version *time_version;
+	struct FE_time_sequence *time_version;
 	struct Torso_node_data  *torso_node_data;
 	struct LIST(Computed_field) *computed_field_list;
 
@@ -18515,7 +18515,7 @@ Called by
 	node_copy=(struct FE_node *)NULL;
 	torso_node_data=(struct Torso_node_data  *)NULL;
 	fe_region = (struct FE_region *)NULL;
-	time_version = (struct FE_time_version *)NULL;
+	time_version = (struct FE_time_sequence *)NULL;
 	computed_field_list=(struct LIST(Computed_field) *)NULL;
 	if (torso_node&&torso_node_data_void&&(torso_node_data=
 		(struct Torso_node_data *)torso_node_data_void))
@@ -18955,7 +18955,7 @@ texture map.
 			torso_node_data.cylindrical_polar_coords=cylindrical_polar_coords;
 			torso_node_data.fe_region = torso_group;
 			torso_node_data.time_version=
-				(struct FE_time_version *)NULL;
+				(struct FE_time_sequence *)NULL;
 			torso_node_data.cylindrical_polar_coords_wrapper=
 				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 					Computed_field_is_read_only_with_fe_field,

@@ -14898,7 +14898,7 @@ use node_manager and node_selection.
 									{
 										return_code = FE_region_define_FE_field_at_FE_node(
 											fe_region, node, define_field,
-											(struct FE_time_version *)NULL, node_field_creator) &&
+											(struct FE_time_sequence *)NULL, node_field_creator) &&
 											REMOVE_OBJECT_FROM_LIST(FE_node)(node, node_list);
 									}
 								}

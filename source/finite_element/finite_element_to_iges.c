@@ -747,7 +747,7 @@ basis type, however every element type will be converted to a cubic.
 						{
 							ACCESS(FE_node)(get_data->nodes[i]);
 							if (!define_FE_field_at_node(get_data->nodes[i], get_data->fe_field,
-									 (struct FE_time_version *)NULL, node_field_creator))
+									 (struct FE_time_sequence *)NULL, node_field_creator))
 							{
 								display_message(ERROR_MESSAGE,
 									"get_iges_entity_as_cubic_from_any_2D_element.  "
@@ -768,8 +768,10 @@ basis type, however every element type will be converted to a cubic.
 				}
 				if (return_code)
 				{
-					if (return_code = make_square_FE_element(&get_data->element, get_data->fe_region,
-							 /*dimension*/2, /*basis_type*/CUBIC_LAGRANGE, get_data->fe_field))
+					if ((get_data->element = create_FE_element_with_line_shape(
+							  /*identifier*/1,get_data->fe_region, /*dimension*/2)) &&
+						FE_element_define_tensor_product_basis(get_data->element,
+						/*dimension*/2,/*basis_type*/CUBIC_LAGRANGE, get_data->fe_field))
 					{
 						ACCESS(FE_element)(get_data->element);
 						for (i = 0 ; return_code && (i < NUMBER_OF_NODES) ; i++)
@@ -782,6 +784,10 @@ basis type, however every element type will be converted to a cubic.
 								return_code=0;
 							}
 						}
+					}
+					else
+					{
+						return_code = 0;
 					}
 				}
 				if (return_code)

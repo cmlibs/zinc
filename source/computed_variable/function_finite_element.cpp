@@ -894,6 +894,8 @@ class Function_variable_iterator_representation_atomic_nodal_values:public
 		struct FE_region *fe_region;
 		Function_size_type number_of_versions;
 		Function_variable_matrix_nodal_values_handle atomic_variable,variable;
+	   int time_index;
+	   struct FE_time_sequence *time_sequence;
 };
 
 // class Function_variable_matrix_nodal_values
@@ -907,6 +909,7 @@ struct Count_nodal_values_data
 	struct FE_field *fe_field;
 	int *node_offsets,number_of_node_offsets,*number_of_node_values;
 	struct FE_node **offset_nodes;
+	struct FE_time_sequence *time_sequence;
 }; /* struct Count_nodal_values_data */
 
 static int component_count_nodal_values(struct FE_node *node,
@@ -937,7 +940,7 @@ DESCRIPTION :
 			i=number_of_values;
 			number_of_values=0;
 			if (nodal_value_types=get_FE_node_field_component_nodal_value_types(node,
-				fe_field,local_component_number))
+					fe_field,local_component_number))
 			{
 				nodal_value_type=nodal_value_types;
 				while ((i>0)&&(value_type!= *nodal_value_type))
@@ -969,7 +972,7 @@ DESCRIPTION :
 static int count_nodal_values(struct FE_node *node,
 	void *count_nodal_values_data_void)
 /*******************************************************************************
-LAST MODIFIED : 27 April 2004
+LAST MODIFIED : 17 November 2004
 
 DESCRIPTION :
 Counts the number of nodal values specified by <count_nodal_values_data_void> at
@@ -977,9 +980,10 @@ the <node>.
 ==============================================================================*/
 {
 	Function_size_type component_number;
-	int node_number,number_of_values,return_code;
+	int node_number,number_of_values,number_of_times,return_code;
 	struct Count_nodal_values_data *count_nodal_values_data;
 	struct FE_node **offset_nodes;
+	struct FE_time_sequence *time_sequence;
 
 	ENTER(count_nodal_values);
 	return_code=0;
@@ -987,6 +991,7 @@ the <node>.
 	if (node&&(count_nodal_values_data=(struct Count_nodal_values_data *)
 		count_nodal_values_data_void))
 	{
+		return_code=1;
 		if (offset_nodes=count_nodal_values_data->offset_nodes)
 		{
 			node_number=0;
@@ -1001,25 +1006,82 @@ the <node>.
 					count_nodal_values_data->number_of_values;
 			}
 		}
-		if ((0<(component_number=count_nodal_values_data->component_number))&&
-			(component_number<=count_nodal_values_data->number_of_components))
+		if (FE_field_is_defined_at_node(count_nodal_values_data->fe_field, node))
 		{
-			number_of_values=component_count_nodal_values(node,
-				count_nodal_values_data->fe_field,component_number,
-				count_nodal_values_data->value_type,
-				count_nodal_values_data->version);
-		}
-		else
-		{
-			number_of_values=0;
-			for (component_number=1;component_number<=
-				count_nodal_values_data->number_of_components;component_number++)
+			if (time_sequence = get_FE_node_field_FE_time_sequence(node, 
+					count_nodal_values_data->fe_field))
 			{
-				number_of_values += component_count_nodal_values(node,
+				if (count_nodal_values_data->time_sequence)
+				{
+					// Check all the values are in the total sequence
+					if (number_of_times = FE_time_sequence_get_number_of_times(
+							 time_sequence))
+					{
+						FE_value time;
+						int i, index, valid_times;
+						
+						valid_times = 1;
+						for (i = 0 ; valid_times && (i < number_of_times) ; i++)
+						{
+							if ((!FE_time_sequence_get_time_for_index(
+								  count_nodal_values_data->time_sequence,
+								  /*time_index*/i, &time)) ||
+								(!FE_time_sequence_get_index_for_time(time_sequence,
+									time, &index)))
+							{
+								valid_times = 0;
+							}
+						}
+						// If so just use the filtered set
+						if (valid_times)
+						{
+							number_of_times = FE_time_sequence_get_number_of_times(
+								count_nodal_values_data->time_sequence);
+						}
+						else
+						{
+							return_code = 0;
+							number_of_times = 0;
+						}
+					}										
+				}
+				else
+				{
+					number_of_times = FE_time_sequence_get_number_of_times(time_sequence);
+				}
+			}
+			else
+			{
+				number_of_times = 1;
+			}
+			if ((0<(component_number=count_nodal_values_data->component_number))&&
+				(component_number<=count_nodal_values_data->number_of_components))
+			{
+				number_of_values=component_count_nodal_values(node,
 					count_nodal_values_data->fe_field,component_number,
 					count_nodal_values_data->value_type,
 					count_nodal_values_data->version);
 			}
+			else
+			{
+				number_of_values=0;
+				for (component_number=1;component_number<=
+						  count_nodal_values_data->number_of_components;component_number++)
+				{
+					number_of_values += component_count_nodal_values(node,
+						count_nodal_values_data->fe_field,component_number,
+						count_nodal_values_data->value_type,
+						count_nodal_values_data->version);
+				}
+			}
+			if (number_of_times > 1)
+			{
+				number_of_values *= number_of_times;
+			}
+		}
+		else
+		{
+			number_of_values = 0;
 		}
 		if ((offset_nodes=count_nodal_values_data->offset_nodes)&&
 			(node_number<count_nodal_values_data->number_of_node_offsets))
@@ -1028,7 +1090,6 @@ the <node>.
 				number_of_values;
 		}
 		count_nodal_values_data->number_of_values += number_of_values;
-		return_code=1;
 	}
 	LEAVE;
 
@@ -1038,7 +1099,7 @@ the <node>.
 class Function_variable_matrix_nodal_values :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 3 November 2004
+// LAST MODIFIED : 17 November 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1052,13 +1113,16 @@ class Function_variable_matrix_nodal_values :
 			const Function_finite_element_handle& function_finite_element):
 			Function_variable_matrix<Scalar>(function_finite_element),
 			value_type(FE_NODAL_UNKNOWN),node((struct FE_node *)NULL),
-			component_number(0),version(0){};
+			component_number(0),version(0),
+			time_sequence((struct FE_time_sequence *)NULL){};
 		Function_variable_matrix_nodal_values(
 			const Function_finite_element_handle& function_finite_element,
 			const std::string component_name,struct FE_node *node,
-			enum FE_nodal_value_type value_type,Function_size_type version):
+			enum FE_nodal_value_type value_type,Function_size_type version,
+			struct FE_time_sequence *time_sequence):
 			Function_variable_matrix<Scalar>(function_finite_element),
-			value_type(value_type),node(node),component_number(0),version(version)
+			value_type(value_type),node(node),component_number(0),version(version),
+			time_sequence(time_sequence)
 		{
 			if (function_finite_element)
 			{
@@ -1091,23 +1155,33 @@ class Function_variable_matrix_nodal_values :
 			{
 				ACCESS(FE_node)(node);
 			}
+			if (time_sequence)
+			{
+				ACCESS(FE_time_sequence)(time_sequence);
+			}
 		};
 		Function_variable_matrix_nodal_values(
 			const Function_finite_element_handle& function_finite_element,
 			Function_size_type component_number,struct FE_node *node,
-			enum FE_nodal_value_type value_type,Function_size_type version):
+			enum FE_nodal_value_type value_type,Function_size_type version,
+			struct FE_time_sequence *time_sequence):
 			Function_variable_matrix<Scalar>(function_finite_element),
 			value_type(value_type),node(node),component_number(component_number),
-			version(version)
+			version(version), time_sequence(time_sequence)
 		{
 			if (node)
 			{
 				ACCESS(FE_node)(node);
 			}
+			if (time_sequence)
+			{
+				ACCESS(FE_time_sequence)(time_sequence);
+			}
 		};
 		~Function_variable_matrix_nodal_values()
 		{
 			DEACCESS(FE_node)(&node);
+			DEACCESS(FE_time_sequence)(&time_sequence);
 		};
 	// inherited
 	public:
@@ -1176,6 +1250,25 @@ class Function_variable_matrix_nodal_values :
 				{
 					out << ENUMERATOR_STRING(FE_nodal_value_type)(value_type);
 				}
+				out << ",";
+				if (time_sequence)
+				{
+					FE_value fe_value;
+					int i, number_of_times = FE_time_sequence_get_number_of_times(time_sequence);
+					Matrix matrix_temp(number_of_times, 1);
+					
+					for (i = 0 ; i < number_of_times ; i++)
+					{
+						FE_time_sequence_get_time_for_index(time_sequence,
+							i, &fe_value);
+						matrix_temp(i, 0) = (Scalar)fe_value;
+					}
+					out << matrix_temp;
+				}
+				else
+				{
+					out << "all times";
+				}				
 				out << ")";
 				*return_string=out.str();
 			}
@@ -1259,6 +1352,7 @@ class Function_variable_matrix_nodal_values :
 				count_nodal_values_data.number_of_values=0;
 				count_nodal_values_data.value_type=value_type;
 				count_nodal_values_data.version=version;
+				count_nodal_values_data.time_sequence=time_sequence;
 				count_nodal_values_data.fe_field=fe_field;
 				count_nodal_values_data.component_number=component_number;
 				count_nodal_values_data.number_of_components=
@@ -1291,14 +1385,25 @@ class Function_variable_matrix_nodal_values :
 		bool get_entry(Scalar& value) const
 		{
 			bool result;
+			FE_value fe_time;
 			Function_finite_element_handle function_finite_element;
+			Scalar time = 0.0;
 
 			result=false;
 			if (this&&(function_finite_element=boost::dynamic_pointer_cast<
 				Function_finite_element,Function>(function())))
 			{
+				if (time_sequence && 
+					(1 == FE_time_sequence_get_number_of_times(time_sequence)))
+				{
+					if (FE_time_sequence_get_time_for_index(time_sequence, /*time_index*/0,
+						&fe_time))
+					{
+						time = fe_time;
+					}
+				}
 				result=(function_finite_element->get_nodal_value)(component_number,node,
-					value_type,version,value);
+					value_type,version,time,value);
 			}
 
 			return (result);
@@ -1318,7 +1423,9 @@ class Function_variable_matrix_nodal_values :
 					(variable_nodal_values->component_number==component_number)&&
 					(variable_nodal_values->value_type==value_type)&&
 					(variable_nodal_values->version==version)&&
-					(variable_nodal_values->node==node);
+					(((!variable_nodal_values->time_sequence) && !time_sequence) ||
+					(!compare_FE_time_sequence(variable_nodal_values->time_sequence,
+					time_sequence)))&&(variable_nodal_values->node==node);
 			}
 
 			return (result);
@@ -1331,11 +1438,16 @@ class Function_variable_matrix_nodal_values :
 			value_type(variable_nodal_values.value_type),
 			node(variable_nodal_values.node),
 			component_number(variable_nodal_values.component_number),
-			version(variable_nodal_values.version)
+			version(variable_nodal_values.version),
+			time_sequence(variable_nodal_values.time_sequence)
 		{
 			if (node)
 			{
 				ACCESS(FE_node)(node);
+			}
+			if (time_sequence)
+			{
+				ACCESS(FE_time_sequence)(time_sequence);
 			}
 		};
 	private:
@@ -1344,6 +1456,7 @@ class Function_variable_matrix_nodal_values :
 		// for Function_variable_matrix_nodal_values the first version is number 1
 		//   and the first component is number 1
 		Function_size_type component_number,version;
+	   struct FE_time_sequence *time_sequence;
 };
 
 struct Get_previous_node_data
@@ -1352,11 +1465,12 @@ struct Get_previous_node_data
 	Function_finite_element_handle function_finite_element;
 	Function_size_type component_number,version;
 	struct FE_node *current_node,*previous_node;
+	struct FE_time_sequence *time_sequence;
 }; /* struct Get_previous_node_data */
 
 int get_previous_node(struct FE_node *node,void *get_previous_node_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 May 2004
+LAST MODIFIED : 17 November 2004
 
 DESCRIPTION :
 Iterator for nodes in a region to find the node before the <current_node> in
@@ -1382,7 +1496,8 @@ Iterator for nodes in a region to find the node before the <current_node> in
 		{
 			Function_variable_handle variable=(function_finite_element->nodal_values)(
 				get_previous_node_data->component_number,node,
-				get_previous_node_data->value_type,get_previous_node_data->version);
+				get_previous_node_data->value_type,get_previous_node_data->version,
+				get_previous_node_data->time_sequence);
 
 			if (variable&&(0<(variable->number_differentiable)()))
 			{
@@ -1402,11 +1517,12 @@ struct Get_next_node_data
 	Function_size_type component_number,version;
 	int found;
 	struct FE_node *current_node;
+	struct FE_time_sequence *time_sequence;
 }; /* struct Get_next_node_data */
 
 int get_next_node(struct FE_node *node,void *get_next_node_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 May 2004
+LAST MODIFIED : 17 November 2004
 
 DESCRIPTION :
 Iterator for nodes in a region to find the node after the <current_node> in
@@ -1428,7 +1544,8 @@ Iterator for nodes in a region to find the node after the <current_node> in
 		{
 			Function_variable_handle variable=(function_finite_element->nodal_values)(
 				get_next_node_data->component_number,node,
-				get_next_node_data->value_type,get_next_node_data->version);
+				get_next_node_data->value_type,get_next_node_data->version,
+				get_next_node_data->time_sequence);
 
 			if (variable&&(0<(variable->number_differentiable)()))
 			{
@@ -1456,9 +1573,10 @@ Function_variable_iterator_representation_atomic_nodal_values::
 	Function_variable_iterator_representation_atomic_nodal_values(
 	const bool begin,Function_variable_matrix_nodal_values_handle variable):
 	value_types(0),number_of_values(0),value_type_index(0),fe_region(0),
-	number_of_versions(0),atomic_variable(0),variable(variable)
+	number_of_versions(0),atomic_variable(0),variable(variable),
+	time_index(0), time_sequence((struct FE_time_sequence *)NULL)
 //******************************************************************************
-// LAST MODIFIED : 4 November 2004
+// LAST MODIFIED : 18 November 2004
 //
 // DESCRIPTION :
 // Constructor.  If <begin> then the constructed iterator points to the first
@@ -1491,6 +1609,7 @@ Function_variable_iterator_representation_atomic_nodal_values::
 				get_next_node_data.function_finite_element=function_finite_element;
 				get_next_node_data.component_number=variable->component_number;
 				get_next_node_data.version=variable->version;
+				get_next_node_data.time_sequence=variable->time_sequence;
 				get_next_node_data.value_type=variable->value_type;
 				node=FE_region_get_first_FE_node_that(fe_region,get_next_node,
 					&get_next_node_data);
@@ -1561,16 +1680,78 @@ Function_variable_iterator_representation_atomic_nodal_values::
 							}
 							if (FE_NODAL_UNKNOWN!=value_type)
 							{
-								if (atomic_variable=
-									Function_variable_matrix_nodal_values_handle(
-									new Function_variable_matrix_nodal_values(
-									function_finite_element,component_number,node,value_type,
-									version)))
+								int number_of_times, valid_times;
+								// The atomic sequence should be a single time from the 
+								// total time sequence
+								struct FE_time_sequence *particular_time_sequence = 
+									(struct FE_time_sequence *)NULL;
+
+								valid_times = 1;
+								if (time_sequence = (function_finite_element->time_sequence)(
+									node))
 								{
-									atomic_variable->value_private=Function_variable_value_handle(
-										new Function_variable_value_specific<Scalar>(
-										Function_variable_matrix_set_value_function<Scalar>));
+									FE_value time;
+
+									if (variable->time_sequence)
+									{
+										// Check all the values are in the total sequence
+										if (number_of_times = FE_time_sequence_get_number_of_times(
+											time_sequence))
+										{
+											int i, index;
+
+											for (i = 0 ; valid_times && (i < number_of_times) ; i++)
+											{
+												if ((!FE_time_sequence_get_time_for_index(variable->time_sequence,
+													/*time_index*/i, &time)) ||
+													(!FE_time_sequence_get_index_for_time(time_sequence,
+													time, &index)))
+												{
+													valid_times = 0;
+												}
+											}
+											// If so just use the filtered set
+											if (valid_times)
+											{
+												time_sequence = variable->time_sequence;
+											}
+										}										
+									}
+									if (valid_times)
+									{
+										particular_time_sequence = ACCESS(FE_time_sequence)(
+											CREATE(FE_time_sequence)());
+										if (number_of_times = FE_time_sequence_get_number_of_times(
+												 time_sequence))
+										{
+											FE_time_sequence_get_time_for_index(time_sequence,
+												/*time_index*/0, &time);
+											FE_time_sequence_set_time_and_index(particular_time_sequence,
+												/*time_index*/0, time);
+											time_index = 0;
+										}
+										ACCESS(FE_time_sequence)(time_sequence);
+									}
+									else
+									{
+										time_sequence = (struct FE_time_sequence *)NULL;
+									}
 								}
+								if (valid_times)
+								{
+									//Either we have a specific time or are non time varying field
+									if (atomic_variable=
+										Function_variable_matrix_nodal_values_handle(
+										new Function_variable_matrix_nodal_values(
+										function_finite_element,component_number,node,value_type,
+										version,particular_time_sequence)))
+									{
+										atomic_variable->value_private=Function_variable_value_handle(
+											new Function_variable_value_specific<Scalar>(
+											Function_variable_matrix_set_value_function<Scalar>));
+									}
+								}
+								DEACCESS(FE_time_sequence)(&particular_time_sequence);
 							}
 						}
 					}
@@ -1619,11 +1800,12 @@ Function_variable_iterator_representation_atomic_nodal_values::
 {
 	DEALLOCATE(value_types);
 	DEACCESS(FE_region)(&fe_region);
+	DEACCESS(FE_time_sequence)(&time_sequence);
 }
 
 void Function_variable_iterator_representation_atomic_nodal_values::increment()
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 18 November 2004
 //
 // DESCRIPTION :
 // Increments the iterator to the next atomic variable.  The incrementing order
@@ -1639,161 +1821,189 @@ void Function_variable_iterator_representation_atomic_nodal_values::increment()
 		bool finished;
 
 		finished=false;
-		if (FE_NODAL_UNKNOWN==variable->value_type)
+		if (time_sequence)
 		{
-			value_type_index++;
-			if (value_type_index<number_of_values)
+			FE_value time;
+			int number_of_times;
+			
+			if (number_of_times = FE_time_sequence_get_number_of_times(
+				time_sequence))
 			{
-				finished=true;
+				// Find what time index are we up to
+				time_index++;
+				if (time_index < number_of_times)
+				{
+					finished = true;
+				}
+				else
+				{
+					time_index = 0;
+				}
+				// Set the time in the atomic variable sequence to the next time
+				FE_time_sequence_get_time_for_index(time_sequence,
+					time_index, &time);
+				FE_time_sequence_set_time_and_index(atomic_variable->time_sequence,
+					/*time_index*/0, time);
 			}
-			else
-			{
-				value_type_index=0;
-			}
-			atomic_variable->value_type=value_types[value_type_index];
 		}
 		if (!finished)
 		{
-			if (0==variable->version)
+			if (FE_NODAL_UNKNOWN==variable->value_type)
 			{
-				(atomic_variable->version)++;
-				if (atomic_variable->version<=number_of_versions)
+				value_type_index++;
+				if (value_type_index<number_of_values)
 				{
 					finished=true;
 				}
 				else
 				{
-					atomic_variable->version=1;
+					value_type_index=0;
 				}
+				atomic_variable->value_type=value_types[value_type_index];
 			}
 			if (!finished)
 			{
-				struct Get_next_node_data get_next_node_data;
-
-				if (0==variable->component_number)
+				if (0==variable->version)
 				{
-					Function_size_type component_number;
-					Function_variable_matrix_components_handle variable_finite_element(0);
-					Function_variable_handle out_variable;
-					Function_variable_iterator component_end,component_iterator;
-
-					out_variable=function_finite_element->output();
-					component_iterator=out_variable->begin_atomic();
-					component_end=out_variable->end_atomic();
-					component_number=1;
-					while ((component_iterator!=component_end)&&
-						(component_number!=atomic_variable->component_number))
+					(atomic_variable->version)++;
+					if (atomic_variable->version<=number_of_versions)
 					{
-						component_iterator++;
-						component_number++;
+						finished=true;
 					}
-					if (component_iterator!=component_end)
+					else
 					{
-						component_iterator++;
-						component_number++;
-						while ((component_iterator!=component_end)&&
-							((!(variable_finite_element=boost::dynamic_pointer_cast<
-							Function_variable_matrix_components,Function_variable>(
-							*component_iterator)))||!equivalent(atomic_variable->function(),
-							variable_finite_element->function())))
-						{
-							component_iterator++;
-							component_number++;
-						}
-						if (component_iterator!=component_end)
-						{
-							atomic_variable->component_number=component_number;
-							finished=true;
-							DEALLOCATE(value_types);
-							if ((0<(number_of_versions=(function_finite_element->
-								number_of_versions)(atomic_variable->component_number,
-								atomic_variable->node)))&&(0<(number_of_values=1+
-								(function_finite_element->number_of_derivatives)(
-								atomic_variable->component_number,atomic_variable->node)))&&
-								(value_types=(function_finite_element->nodal_value_types)(
-								atomic_variable->component_number,atomic_variable->node)))
-							{
-								atomic_variable->value_type=value_types[value_type_index];
-							}
-							else
-							{
-								atomic_variable=0;
-							}
-						}
+						atomic_variable->version=1;
 					}
 				}
 				if (!finished)
 				{
 					struct Get_next_node_data get_next_node_data;
 
-					if ((struct FE_node *)NULL==variable->node)
+					if (0==variable->component_number)
 					{
-						get_next_node_data.found=0;
-						get_next_node_data.current_node=atomic_variable->node;
-						get_next_node_data.function_finite_element=function_finite_element;
-						get_next_node_data.component_number=variable->component_number;
-						get_next_node_data.version=variable->version;
-						get_next_node_data.value_type=variable->value_type;
-						if (atomic_variable->node=FE_region_get_first_FE_node_that(
-							fe_region,get_next_node,&get_next_node_data))
-						{
-							ACCESS(FE_node)(atomic_variable->node);
-							finished=true;
-							if (0==variable->component_number)
-							{
-								Function_size_type component_number;
-								Function_variable_matrix_components_handle
-									variable_finite_element(0);
-								Function_variable_handle out_variable;
-								Function_variable_iterator component_end,component_iterator;
+						Function_size_type component_number;
+						Function_variable_matrix_components_handle variable_finite_element(0);
+						Function_variable_handle out_variable;
+						Function_variable_iterator component_end,component_iterator;
 
-								out_variable=function_finite_element->output();
-								component_iterator=out_variable->begin_atomic();
-								component_end=out_variable->end_atomic();
-								component_number=1;
-								while ((component_iterator!=component_end)&&
-									((!(variable_finite_element=boost::dynamic_pointer_cast<
-									Function_variable_matrix_components,Function_variable>(
-									*component_iterator)))||
-									(1!=variable_finite_element->number_differentiable())))
+						out_variable=function_finite_element->output();
+						component_iterator=out_variable->begin_atomic();
+						component_end=out_variable->end_atomic();
+						component_number=1;
+						while ((component_iterator!=component_end)&&
+							(component_number!=atomic_variable->component_number))
+						{
+							component_iterator++;
+							component_number++;
+						}
+						if (component_iterator!=component_end)
+						{
+							component_iterator++;
+							component_number++;
+							while ((component_iterator!=component_end)&&
+								((!(variable_finite_element=boost::dynamic_pointer_cast<
+										Function_variable_matrix_components,Function_variable>(
+											*component_iterator)))||!equivalent(atomic_variable->function(),
+												variable_finite_element->function())))
+							{
+								component_iterator++;
+								component_number++;
+							}
+							if (component_iterator!=component_end)
+							{
+								atomic_variable->component_number=component_number;
+								finished=true;
+								DEALLOCATE(value_types);
+								if ((0<(number_of_versions=(function_finite_element->
+												number_of_versions)(atomic_variable->component_number,
+													atomic_variable->node)))&&(0<(number_of_values=1+
+															(function_finite_element->number_of_derivatives)(
+																atomic_variable->component_number,atomic_variable->node)))&&
+									(value_types=(function_finite_element->nodal_value_types)(
+										atomic_variable->component_number,atomic_variable->node)))
 								{
-									component_iterator++;
-									component_number++;
-								}
-								if ((component_iterator!=component_end)&&
-									(variable_finite_element=boost::dynamic_pointer_cast<
-									Function_variable_matrix_components,Function_variable>(
-									*component_iterator))&&
-									(1==variable_finite_element->number_differentiable()))
-								{
-									atomic_variable->component_number=component_number;
+									atomic_variable->value_type=value_types[value_type_index];
 								}
 								else
 								{
 									atomic_variable=0;
 								}
 							}
-							if (atomic_variable)
-							{
-								DEALLOCATE(value_types);
-								if ((0<(number_of_versions=(function_finite_element->
-									number_of_versions)(atomic_variable->component_number,
-									atomic_variable->node)))&&(0<(number_of_values=1+
-									(function_finite_element->number_of_derivatives)(
-									atomic_variable->component_number,atomic_variable->node)))&&
-									(value_types=(function_finite_element->nodal_value_types)(
-									atomic_variable->component_number,atomic_variable->node)))
-								{
-									atomic_variable->value_type=value_types[value_type_index];
-								}
-							}
 						}
-						DEACCESS(FE_node)(&(get_next_node_data.current_node));
 					}
 					if (!finished)
 					{
-						// end
-						atomic_variable=0;
+						struct Get_next_node_data get_next_node_data;
+
+						if ((struct FE_node *)NULL==variable->node)
+						{
+							get_next_node_data.found=0;
+							get_next_node_data.current_node=atomic_variable->node;
+							get_next_node_data.function_finite_element=function_finite_element;
+							get_next_node_data.component_number=variable->component_number;
+							get_next_node_data.version=variable->version;
+							get_next_node_data.value_type=variable->value_type;
+							if (atomic_variable->node=FE_region_get_first_FE_node_that(
+									 fe_region,get_next_node,&get_next_node_data))
+							{
+								ACCESS(FE_node)(atomic_variable->node);
+								finished=true;
+								if (0==variable->component_number)
+								{
+									Function_size_type component_number;
+									Function_variable_matrix_components_handle
+										variable_finite_element(0);
+									Function_variable_handle out_variable;
+									Function_variable_iterator component_end,component_iterator;
+
+									out_variable=function_finite_element->output();
+									component_iterator=out_variable->begin_atomic();
+									component_end=out_variable->end_atomic();
+									component_number=1;
+									while ((component_iterator!=component_end)&&
+										((!(variable_finite_element=boost::dynamic_pointer_cast<
+												Function_variable_matrix_components,Function_variable>(
+													*component_iterator)))||
+											(1!=variable_finite_element->number_differentiable())))
+									{
+										component_iterator++;
+										component_number++;
+									}
+									if ((component_iterator!=component_end)&&
+										(variable_finite_element=boost::dynamic_pointer_cast<
+											Function_variable_matrix_components,Function_variable>(
+												*component_iterator))&&
+										(1==variable_finite_element->number_differentiable()))
+									{
+										atomic_variable->component_number=component_number;
+									}
+									else
+									{
+										atomic_variable=0;
+									}
+								}
+								if (atomic_variable)
+								{
+									DEALLOCATE(value_types);
+									if ((0<(number_of_versions=(function_finite_element->
+													number_of_versions)(atomic_variable->component_number,
+														atomic_variable->node)))&&(0<(number_of_values=1+
+																(function_finite_element->number_of_derivatives)(
+																	atomic_variable->component_number,atomic_variable->node)))&&
+										(value_types=(function_finite_element->nodal_value_types)(
+											atomic_variable->component_number,atomic_variable->node)))
+									{
+										atomic_variable->value_type=value_types[value_type_index];
+									}
+								}
+							}
+							DEACCESS(FE_node)(&(get_next_node_data.current_node));
+						}
+						if (!finished)
+						{
+							// end
+							atomic_variable=0;
+						}
 					}
 				}
 			}
@@ -1803,7 +2013,7 @@ void Function_variable_iterator_representation_atomic_nodal_values::increment()
 
 void Function_variable_iterator_representation_atomic_nodal_values::decrement()
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 18 November 2004
 //
 // DESCRIPTION :
 // Decrements the iterator to the next atomic variable.  The decrementing order
@@ -1820,176 +2030,204 @@ void Function_variable_iterator_representation_atomic_nodal_values::decrement()
 			bool finished;
 
 			finished=false;
-			if (FE_NODAL_UNKNOWN==variable->value_type)
+			if (time_sequence)
 			{
-				if (0<value_type_index)
+				FE_value time;
+				int number_of_times;
+			
+				if (number_of_times = FE_time_sequence_get_number_of_times(
+						 time_sequence))
 				{
-					value_type_index--;
-					finished=true;
+					// Find what time index are we up to
+					time_index--;
+					if (0 <= time_index)
+					{
+						finished = true;
+					}
+					else
+					{
+						time_index = number_of_times - 1;
+					}
+					// Set the time in the atomic variable sequence to the next time
+					FE_time_sequence_get_time_for_index(time_sequence,
+						time_index, &time);
+					FE_time_sequence_set_time_and_index(atomic_variable->time_sequence,
+						/*time_index*/0, time);
 				}
-				else
-				{
-					value_type_index=number_of_values-1;
-				}
-				atomic_variable->value_type=value_types[value_type_index];
 			}
 			if (!finished)
 			{
-				if (0==variable->version)
+				if (FE_NODAL_UNKNOWN==variable->value_type)
 				{
-					if (1<atomic_variable->version)
+					if (0<value_type_index)
 					{
-						(atomic_variable->version)--;
+						value_type_index--;
 						finished=true;
 					}
 					else
 					{
-						atomic_variable->version=number_of_versions;
+						value_type_index=number_of_values-1;
 					}
+					atomic_variable->value_type=value_types[value_type_index];
 				}
 				if (!finished)
 				{
-					if (0==variable->component_number)
+					if (0==variable->version)
 					{
-						Function_size_type component_number;
-						Function_variable_matrix_components_handle variable_finite_element;
-						Function_variable_handle out_variable;
-						Function_variable_iterator component_begin,component_end,
-							component_iterator;
-
-						out_variable=function_finite_element->output();
-						component_begin=out_variable->begin_atomic();
-						component_end=out_variable->end_atomic();
-						component_iterator=component_begin;
-						component_number=1;
-						while ((component_iterator!=component_end)&&
-							(component_number!=atomic_variable->component_number))
+						if (1<atomic_variable->version)
 						{
-							component_iterator++;
-							component_number++;
+							(atomic_variable->version)--;
+							finished=true;
 						}
-						if (component_iterator!=component_begin)
+						else
 						{
-							component_iterator--;
-							component_number--;
-							while ((component_iterator!=component_begin)&&
-								((!(variable_finite_element=boost::dynamic_pointer_cast<
-								Function_variable_matrix_components,Function_variable>(
-								*component_iterator)))||!equivalent(atomic_variable->function(),
-								variable_finite_element->function())))
-							{
-								component_iterator--;
-								component_number--;
-							}
-							if ((variable_finite_element=boost::dynamic_pointer_cast<
-								Function_variable_matrix_components,Function_variable>(
-								*component_iterator))&&equivalent(atomic_variable->function(),
-								variable_finite_element->function()))
-							{
-								atomic_variable->component_number=component_number;
-								finished=true;
-								DEALLOCATE(value_types);
-								if ((0<(number_of_versions=(function_finite_element->
-									number_of_versions)(atomic_variable->component_number,
-									atomic_variable->node)))&&(0<(number_of_values=1+
-									(function_finite_element->number_of_derivatives)(
-									atomic_variable->component_number,atomic_variable->node)))&&
-									(value_types=(function_finite_element->nodal_value_types)(
-									atomic_variable->component_number,atomic_variable->node)))
-								{
-									atomic_variable->value_type=value_types[value_type_index];
-								}
-								else
-								{
-									atomic_variable=0;
-								}
-							}
+							atomic_variable->version=number_of_versions;
 						}
 					}
 					if (!finished)
 					{
-						if ((struct FE_node *)NULL==variable->node)
+						if (0==variable->component_number)
 						{
-							struct Get_previous_node_data get_previous_node_data;
+							Function_size_type component_number;
+							Function_variable_matrix_components_handle variable_finite_element;
+							Function_variable_handle out_variable;
+							Function_variable_iterator component_begin,component_end,
+								component_iterator;
 
-							//???DB.  This can be made more efficient by adding iterators to
-							//  LISTs or by adding a GET_PREVIOUS function to LISTs
-							get_previous_node_data.previous_node=(struct FE_node *)NULL;
-							get_previous_node_data.current_node=atomic_variable->node;
-							get_previous_node_data.function_finite_element=
-								function_finite_element;
-							get_previous_node_data.component_number=
-								variable->component_number;
-							get_previous_node_data.version=variable->version;
-							get_previous_node_data.value_type=variable->value_type;
-							FE_region_get_first_FE_node_that(fe_region,get_previous_node,
-								&get_previous_node_data);
-							if (get_previous_node_data.previous_node)
+							out_variable=function_finite_element->output();
+							component_begin=out_variable->begin_atomic();
+							component_end=out_variable->end_atomic();
+							component_iterator=component_begin;
+							component_number=1;
+							while ((component_iterator!=component_end)&&
+								(component_number!=atomic_variable->component_number))
 							{
-								DEACCESS(FE_node)(&(atomic_variable->node));
-								atomic_variable->node=ACCESS(FE_node)(
-									get_previous_node_data.previous_node);
-								finished=true;
-								//???DB.  This can be made more efficient by adding iterators to
-								//  LISTs or by adding a GET_PREVIOUS function to LISTs
-								if (0==variable->component_number)
+								component_iterator++;
+								component_number++;
+							}
+							if (component_iterator!=component_begin)
+							{
+								component_iterator--;
+								component_number--;
+								while ((component_iterator!=component_begin)&&
+									((!(variable_finite_element=boost::dynamic_pointer_cast<
+											Function_variable_matrix_components,Function_variable>(
+												*component_iterator)))||!equivalent(atomic_variable->function(),
+													variable_finite_element->function())))
 								{
-									Function_size_type component_number;
-									Function_variable_matrix_components_handle
-										variable_finite_element;
-									Function_variable_handle out_variable;
-									Function_variable_iterator component_begin,component_end,
-										component_iterator;
-
-									out_variable=function_finite_element->output();
-									component_begin=out_variable->begin_atomic();
-									component_end=out_variable->end_atomic();
-									component_number=
-										(function_finite_element->number_of_components)();
-									component_iterator=component_end;
 									component_iterator--;
-									while ((component_iterator!=component_begin)&&
-										((!(variable_finite_element=boost::dynamic_pointer_cast<
+									component_number--;
+								}
+								if ((variable_finite_element=boost::dynamic_pointer_cast<
 										Function_variable_matrix_components,Function_variable>(
-										*component_iterator)))||
-										(1!=variable_finite_element->number_differentiable())))
+											*component_iterator))&&equivalent(atomic_variable->function(),
+												variable_finite_element->function()))
+								{
+									atomic_variable->component_number=component_number;
+									finished=true;
+									DEALLOCATE(value_types);
+									if ((0<(number_of_versions=(function_finite_element->
+													number_of_versions)(atomic_variable->component_number,
+														atomic_variable->node)))&&(0<(number_of_values=1+
+																(function_finite_element->number_of_derivatives)(
+																	atomic_variable->component_number,atomic_variable->node)))&&
+										(value_types=(function_finite_element->nodal_value_types)(
+											atomic_variable->component_number,atomic_variable->node)))
 									{
-										component_iterator--;
-										component_number--;
-									}
-									if ((component_iterator!=component_end)&&
-										(variable_finite_element=boost::dynamic_pointer_cast<
-										Function_variable_matrix_components,Function_variable>(
-										*component_iterator))&&
-										(1==variable_finite_element->number_differentiable()))
-									{
-										atomic_variable->component_number=component_number;
+										atomic_variable->value_type=value_types[value_type_index];
 									}
 									else
 									{
 										atomic_variable=0;
 									}
 								}
-								if (atomic_variable)
-								{
-									DEALLOCATE(value_types);
-									if ((0<(number_of_versions=(function_finite_element->
-										number_of_versions)(atomic_variable->component_number,
-										atomic_variable->node)))&&(0<(number_of_values=1+
-										(function_finite_element->number_of_derivatives)(
-										atomic_variable->component_number,atomic_variable->node)))&&
-										(value_types=(function_finite_element->nodal_value_types)(
-										atomic_variable->component_number,atomic_variable->node)))
-									{
-										atomic_variable->value_type=value_types[value_type_index];
-									}
-								}
 							}
 						}
 						if (!finished)
 						{
-							// end
-							atomic_variable=0;
+							if ((struct FE_node *)NULL==variable->node)
+							{
+								struct Get_previous_node_data get_previous_node_data;
+
+								//???DB.  This can be made more efficient by adding iterators to
+								//  LISTs or by adding a GET_PREVIOUS function to LISTs
+								get_previous_node_data.previous_node=(struct FE_node *)NULL;
+								get_previous_node_data.current_node=atomic_variable->node;
+								get_previous_node_data.function_finite_element=
+									function_finite_element;
+								get_previous_node_data.component_number=
+									variable->component_number;
+								get_previous_node_data.version=variable->version;
+								get_previous_node_data.value_type=variable->value_type;
+								FE_region_get_first_FE_node_that(fe_region,get_previous_node,
+									&get_previous_node_data);
+								if (get_previous_node_data.previous_node)
+								{
+									DEACCESS(FE_node)(&(atomic_variable->node));
+									atomic_variable->node=ACCESS(FE_node)(
+										get_previous_node_data.previous_node);
+									finished=true;
+									//???DB.  This can be made more efficient by adding iterators to
+									//  LISTs or by adding a GET_PREVIOUS function to LISTs
+									if (0==variable->component_number)
+									{
+										Function_size_type component_number;
+										Function_variable_matrix_components_handle
+											variable_finite_element;
+										Function_variable_handle out_variable;
+										Function_variable_iterator component_begin,component_end,
+											component_iterator;
+
+										out_variable=function_finite_element->output();
+										component_begin=out_variable->begin_atomic();
+										component_end=out_variable->end_atomic();
+										component_number=
+											(function_finite_element->number_of_components)();
+										component_iterator=component_end;
+										component_iterator--;
+										while ((component_iterator!=component_begin)&&
+											((!(variable_finite_element=boost::dynamic_pointer_cast<
+													Function_variable_matrix_components,Function_variable>(
+														*component_iterator)))||
+												(1!=variable_finite_element->number_differentiable())))
+										{
+											component_iterator--;
+											component_number--;
+										}
+										if ((component_iterator!=component_end)&&
+											(variable_finite_element=boost::dynamic_pointer_cast<
+												Function_variable_matrix_components,Function_variable>(
+													*component_iterator))&&
+											(1==variable_finite_element->number_differentiable()))
+										{
+											atomic_variable->component_number=component_number;
+										}
+										else
+										{
+											atomic_variable=0;
+										}
+									}
+									if (atomic_variable)
+									{
+										DEALLOCATE(value_types);
+										if ((0<(number_of_versions=(function_finite_element->
+														number_of_versions)(atomic_variable->component_number,
+															atomic_variable->node)))&&(0<(number_of_values=1+
+																	(function_finite_element->number_of_derivatives)(
+																		atomic_variable->component_number,atomic_variable->node)))&&
+											(value_types=(function_finite_element->nodal_value_types)(
+												atomic_variable->component_number,atomic_variable->node)))
+										{
+											atomic_variable->value_type=value_types[value_type_index];
+										}
+									}
+								}
+							}
+							if (!finished)
+							{
+								// end
+								atomic_variable=0;
+							}
 						}
 					}
 				}
@@ -2106,16 +2344,77 @@ void Function_variable_iterator_representation_atomic_nodal_values::decrement()
 								}
 								if (FE_NODAL_UNKNOWN!=value_type)
 								{
-									if (atomic_variable=
-										Function_variable_matrix_nodal_values_handle(new
-										Function_variable_matrix_nodal_values(
-										function_finite_element,component_number,node,value_type,
-										version)))
+									int number_of_times, valid_times;
+									// The atomic sequence should be a single time from the 
+									// total time sequence
+									struct FE_time_sequence *particular_time_sequence = 
+										(struct FE_time_sequence *)NULL;
+
+									valid_times = 1;
+									if (time_sequence = (function_finite_element->time_sequence)(
+										node))
 									{
-										atomic_variable->value_private=
-											Function_variable_value_handle(
-											new Function_variable_value_specific<Scalar>(
-											Function_variable_matrix_set_value_function<Scalar>));
+										FE_value time;
+
+										if (variable->time_sequence)
+										{
+											// Check all the values are in the total sequence
+											if (number_of_times = FE_time_sequence_get_number_of_times(
+												time_sequence))
+											{
+												int i, index;
+
+												for (i = 0 ; valid_times && (i < number_of_times) ; i++)
+												{
+													if ((!FE_time_sequence_get_time_for_index(variable->time_sequence,
+														/*time_index*/i, &time)) ||
+														(!FE_time_sequence_get_index_for_time(time_sequence,
+														time, &index)))
+													{
+														valid_times = 0;
+													}
+												}
+												// If so just use the filtered set
+												if (valid_times)
+												{
+													time_sequence = variable->time_sequence;
+												}
+											}										
+										}
+										if (valid_times)
+										{
+											particular_time_sequence = ACCESS(FE_time_sequence)(
+												CREATE(FE_time_sequence)());
+											if (number_of_times = FE_time_sequence_get_number_of_times(
+													 time_sequence))
+											{
+												FE_time_sequence_get_time_for_index(time_sequence,
+													/*time_index*/number_of_times - 1, &time);
+												FE_time_sequence_set_time_and_index(particular_time_sequence,
+													/*time_index*/0, time);
+												time_index = 0;
+											}
+											ACCESS(FE_time_sequence)(time_sequence);
+										}
+										else
+										{
+											time_sequence = (struct FE_time_sequence *)NULL;
+										}
+									}
+									if (valid_times)
+									{
+										//Either we have a specific time or are non time varying field
+										if (atomic_variable=
+											Function_variable_matrix_nodal_values_handle(new
+												Function_variable_matrix_nodal_values(
+													function_finite_element,component_number,node,value_type,
+													version,particular_time_sequence)))
+										{
+											atomic_variable->value_private=
+												Function_variable_value_handle(
+													new Function_variable_value_specific<Scalar>(
+														Function_variable_matrix_set_value_function<Scalar>));
+										}
 									}
 								}
 							}
@@ -2182,9 +2481,10 @@ Function_variable_iterator_representation_atomic_nodal_values::
 	value_type_index(representation.value_type_index),
 	fe_region(representation.fe_region),
 	number_of_versions(representation.number_of_versions),
-	atomic_variable(0),variable(representation.variable)
+	atomic_variable(0),variable(representation.variable),
+	time_index(0),time_sequence(representation.time_sequence)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 18 November 2004
 //
 // DESCRIPTION :
 // Copy constructor
@@ -2211,6 +2511,10 @@ Function_variable_iterator_representation_atomic_nodal_values::
 	if (fe_region)
 	{
 		ACCESS(FE_region)(fe_region);
+	}
+	if (time_sequence)
+	{
+		ACCESS(FE_time_sequence)(time_sequence);
 	}
 	if (representation.atomic_variable)
 	{
@@ -3060,9 +3364,10 @@ Function_variable_handle Function_finite_element::nodal_values()
 
 Function_variable_handle Function_finite_element::nodal_values(
 	std::string component_name,struct FE_node *node,
-	enum FE_nodal_value_type value_type,Function_size_type version)
+	enum FE_nodal_value_type value_type,Function_size_type version,
+	struct FE_time_sequence *time_sequence)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 18 November 2004
 //
 // DESCRIPTION :
 // Returns the nodal values input.
@@ -3070,12 +3375,13 @@ Function_variable_handle Function_finite_element::nodal_values(
 {
 	return (Function_variable_handle(new Function_variable_matrix_nodal_values(
 		Function_finite_element_handle(this),component_name,node,value_type,
-		version)));
+		version,time_sequence)));
 }
 
 Function_variable_handle Function_finite_element::nodal_values(
 	Function_size_type component_number,struct FE_node *node,
-	enum FE_nodal_value_type value_type,Function_size_type version)
+	enum FE_nodal_value_type value_type,Function_size_type version,
+	struct FE_time_sequence *time_sequence)
 //******************************************************************************
 // LAST MODIFIED : 19 July 2004
 //
@@ -3085,7 +3391,7 @@ Function_variable_handle Function_finite_element::nodal_values(
 {
 	return (Function_variable_handle(new Function_variable_matrix_nodal_values(
 		Function_finite_element_handle(this),component_number,node,value_type,
-		version)));
+		version,time_sequence)));
 }
 
 Function_variable_handle Function_finite_element::nodal_values_component(
@@ -3099,7 +3405,7 @@ Function_variable_handle Function_finite_element::nodal_values_component(
 {
 	return (Function_variable_handle(new Function_variable_matrix_nodal_values(
 		Function_finite_element_handle(this),component_name,(struct FE_node *)NULL,
-		FE_NODAL_UNKNOWN,0)));
+		FE_NODAL_UNKNOWN,0,(struct FE_time_sequence *)NULL)));
 }
 
 Function_variable_handle Function_finite_element::nodal_values_component(
@@ -3113,7 +3419,7 @@ Function_variable_handle Function_finite_element::nodal_values_component(
 {
 	return (Function_variable_handle(new Function_variable_matrix_nodal_values(
 		Function_finite_element_handle(this),component_number,
-		(struct FE_node *)NULL,FE_NODAL_UNKNOWN,0)));
+		(struct FE_node *)NULL,FE_NODAL_UNKNOWN,0,(struct FE_time_sequence *)NULL)));
 }
 
 Function_variable_handle
@@ -3127,7 +3433,7 @@ Function_variable_handle
 {
 	return (Function_variable_handle(new Function_variable_matrix_nodal_values(
 		Function_finite_element_handle(this),(Function_size_type)0,node,
-		FE_NODAL_UNKNOWN,0)));
+		FE_NODAL_UNKNOWN,0,(struct FE_time_sequence *)NULL)));
 }
 
 Function_variable_handle Function_finite_element::nodal_values(
@@ -3141,7 +3447,7 @@ Function_variable_handle Function_finite_element::nodal_values(
 {
 	return (Function_variable_handle(new Function_variable_matrix_nodal_values(
 		Function_finite_element_handle(this),(Function_size_type)0,
-		(struct FE_node *)NULL,value_type,0)));
+		(struct FE_node *)NULL,value_type,0,(struct FE_time_sequence *)NULL)));
 }
 
 Function_variable_handle Function_finite_element::nodal_values(
@@ -3155,7 +3461,8 @@ Function_variable_handle Function_finite_element::nodal_values(
 {
 	return (Function_variable_handle(new Function_variable_matrix_nodal_values(
 		Function_finite_element_handle(this),(Function_size_type)0,
-		(struct FE_node *)NULL,FE_NODAL_UNKNOWN,version)));
+		(struct FE_node *)NULL,FE_NODAL_UNKNOWN,version,
+		(struct FE_time_sequence *)NULL)));
 }
 
 Function_variable_handle Function_finite_element::xi()
@@ -3273,97 +3580,22 @@ enum FE_nodal_value_type *Function_finite_element::nodal_value_types(
 		local_component_number));
 }
 
-static int get_nodal_value_index(struct FE_field *field,
-	Function_size_type component_number,struct FE_node *node,
-	enum FE_nodal_value_type value_type,Function_size_type version)
+struct FE_time_sequence *Function_finite_element::time_sequence(
+	struct FE_node *node) const
 //******************************************************************************
-// LAST MODIFIED : 24 May 2004
+// LAST MODIFIED : 22 November 2004
 //
 // DESCRIPTION :
-// Used by get_nodal_value and set_nodal_value.  Success if result>=0.  Failure
-// if result<0.
-//
-//???DB.  There should be get_nodal_value and set_nodal_value functions in
-//  finite_element rather than having to use get_FE_nodal_field_FE_value_values
-//  and know the storage scheme
+// Return the time sequence at the node.
 //==============================================================================
 {
-	enum FE_nodal_value_type *nodal_value_type,*nodal_value_types;
-	Function_size_type number_of_components,number_of_versions;
-	int i,local_component_number,number_of_values,result;
-
-	result= -1;
-	if (node&&field&&((1==(number_of_components=(Function_size_type)
-		get_FE_field_number_of_components(field)))||
-		((0<component_number)&&(component_number<=number_of_components)))&&
-		(FE_NODAL_UNKNOWN!=value_type)&&(0<version))
-	{
-		result=0;
-		if (1==number_of_components)
-		{
-			local_component_number=0;
-		}
-		else
-		{
-			local_component_number=(int)component_number-1;
-		}
-		i=0;
-		// loop of components before the one specified
-		while (i<local_component_number)
-		{
-			number_of_versions=
-				(Function_size_type)get_FE_node_field_component_number_of_versions(
-				node,field,i);
-			number_of_values=1+get_FE_node_field_component_number_of_derivatives(
-				node,field,i);
-			result += number_of_versions*number_of_values;
-			i++;
-		}
-		number_of_versions=
-			(Function_size_type)get_FE_node_field_component_number_of_versions(node,
-			field,local_component_number);
-		if (version<=number_of_versions)
-		{
-			number_of_values=1+get_FE_node_field_component_number_of_derivatives(
-				node,field,local_component_number);
-			result += (version-1)*number_of_values;
-			if (nodal_value_types=get_FE_node_field_component_nodal_value_types(
-				node,field,local_component_number))
-			{
-				i=0;
-				nodal_value_type=nodal_value_types;
-				while ((i<number_of_values)&&(value_type!= *nodal_value_type))
-				{
-					nodal_value_type++;
-					i++;
-				}
-				if (i<number_of_values)
-				{
-					result += i;
-				}
-				else
-				{
-					result= -1;
-				}
-				DEALLOCATE(nodal_value_types);
-			}
-			else
-			{
-				result= -1;
-			}
-		}
-		else
-		{
-			result= -1;
-		}
-	}
-
-	return (result);
+	return (get_FE_node_field_FE_time_sequence(node,field_private));
 }
 
 bool Function_finite_element::get_nodal_value(
 	Function_size_type component_number,struct FE_node *node,
-	enum FE_nodal_value_type value_type,Function_size_type version,Scalar& value)
+	enum FE_nodal_value_type value_type,Function_size_type version,
+	Scalar time,Scalar& value)
 //******************************************************************************
 // LAST MODIFIED : 24 May 2004
 //
@@ -3371,22 +3603,19 @@ bool Function_finite_element::get_nodal_value(
 //==============================================================================
 {
 	bool result;
-	FE_value *fe_values;
-	int index,number_of_values;
+	FE_value fe_value;
+	struct FE_field_component fe_field_component;
 
 	result=false;
 	if (this)
 	{
-		if ((0<=(index=get_nodal_value_index(field_private,component_number,node,
-			value_type,version)))&&get_FE_nodal_field_FE_value_values(field_private,
-			node,&number_of_values,&fe_values))
+		fe_field_component.field = field_private;
+		fe_field_component.number = component_number - 1;
+		if (get_FE_nodal_FE_value_value(node,
+			&fe_field_component,(version - 1),value_type,time,&fe_value))
 		{
-			if (index<number_of_values)
-			{
-				value=fe_values[index];
-				result=true;
-			}
-			DEALLOCATE(fe_values);
+			value = (Scalar)fe_value;
+			result = true;
 		}
 	}
 
@@ -3395,7 +3624,8 @@ bool Function_finite_element::get_nodal_value(
 
 bool Function_finite_element::set_nodal_value(
 	Function_size_type component_number,struct FE_node *node,
-	enum FE_nodal_value_type value_type,Function_size_type version,Scalar& value)
+	enum FE_nodal_value_type value_type,Function_size_type version,Scalar time,
+	Scalar value)
 //******************************************************************************
 // LAST MODIFIED : 24 May 2004
 //
@@ -3403,26 +3633,19 @@ bool Function_finite_element::set_nodal_value(
 //==============================================================================
 {
 	bool result;
-	FE_value *fe_values;
-	int index,number_of_values;
+	FE_value fe_value;
+	struct FE_field_component fe_field_component;
 
 	result=false;
 	if (this)
 	{
-		if ((0<=(index=get_nodal_value_index(field_private,component_number,node,
-			value_type,version)))&&get_FE_nodal_field_FE_value_values(field_private,
-			node,&number_of_values,&fe_values))
+		fe_field_component.field = field_private;
+		fe_field_component.number = component_number - 1;
+		fe_value = (FE_value)value;
+		if (set_FE_nodal_FE_value_value(node,
+			&fe_field_component,(version - 1),value_type,time,fe_value))
 		{
-			if (index<number_of_values)
-			{
-				fe_values[index]=(FE_value)value;
-				if (set_FE_nodal_field_FE_value_values(field_private,node,fe_values,
-					&number_of_values))
-				{
-					result=true;
-				}
-			}
-			DEALLOCATE(fe_values);
+			result = true;
 		}
 	}
 
@@ -3480,6 +3703,50 @@ bool Function_finite_element::component_value(Function_size_type number,
 	{
 		result=true;
 		value=components_private[number-1];
+	}
+
+	return (result);
+}
+
+int Function_finite_element::define_on_Cmiss_node(struct FE_node *node,
+	struct FE_time_sequence *fe_time_sequence, 
+	struct FE_node_field_creator *fe_node_field_creator)
+//******************************************************************************
+// LAST MODIFIED : 9 November 2004
+//
+// DESCRIPTION :
+// .
+//==============================================================================
+{
+	int result;
+
+	result=0;
+	if (node && fe_node_field_creator)
+	{
+		result = define_FE_field_at_node(node, field_private,
+			fe_time_sequence, fe_node_field_creator);
+	}
+
+	return (result);
+}
+
+int Function_finite_element::define_tensor_product_basis_on_element(
+	struct FE_element *element, int dimension, enum FE_basis_type basis_type)
+/*******************************************************************************
+LAST MODIFIED : 10 November 2004
+
+DESCRIPTION :
+Defines a tensor product basis on <element> with the specified <dimension> 
+and <basis_type>.  This does not support mixed basis types in the tensor product.
+==============================================================================*/
+{
+	int result;
+
+	result=0;
+	if (element && dimension && basis_type)
+	{
+		result = FE_element_define_tensor_product_basis(element,
+			dimension, basis_type, field_private);
 	}
 
 	return (result);
@@ -4617,7 +4884,7 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 										Function>(nodal_values_variable->function()),
 										nodal_values_variable->component_number,
 										element_field_nodes[number_of_saved_element_field_nodes],
-										FE_NODAL_UNKNOWN,0));
+										FE_NODAL_UNKNOWN,0,(struct FE_time_sequence *)NULL));
 
 									if (element_field_saved_nodal_values[
 										number_of_saved_element_field_nodes]=variable->get_value())
@@ -4679,7 +4946,8 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 											boost::dynamic_pointer_cast<Function_finite_element,
 											Function>(nodal_values_variable->function()),
 											nodal_values_variable->component_number,
-											element_field_nodes[i],FE_NODAL_UNKNOWN,0));
+											element_field_nodes[i],FE_NODAL_UNKNOWN,0,
+											(struct FE_time_sequence *)NULL));
 
 										(variable->set_value)(
 											element_field_saved_nodal_values[i]);
@@ -5213,7 +5481,19 @@ bool Function_finite_element::set_value(
 		equivalent(Function_handle(this),atomic_variable_nodal_values->function()))
 	{
 		Function_variable_value_scalar_handle value_scalar;
+		FE_value fe_time;
+		Scalar time = 0.0;
 
+		if (atomic_variable_nodal_values->time_sequence &&
+			(1 == FE_time_sequence_get_number_of_times(
+			atomic_variable_nodal_values->time_sequence)))
+		{
+			if (FE_time_sequence_get_time_for_index(atomic_variable_nodal_values->time_sequence,
+					/*time_index*/0, &fe_time))
+			{
+				time = fe_time;
+			}
+		}
 		if ((std::string("Scalar")==(atomic_value->value())->type())&&
 			(value_scalar=boost::dynamic_pointer_cast<Function_variable_value_scalar,
 			Function_variable_value>(atomic_value->value())))
@@ -5225,7 +5505,7 @@ bool Function_finite_element::set_value(
 				result=set_nodal_value(atomic_variable_nodal_values->component_number,
 					atomic_variable_nodal_values->node,
 					atomic_variable_nodal_values->value_type,
-					atomic_variable_nodal_values->version,temp_scalar);
+					atomic_variable_nodal_values->version,time,temp_scalar);
 			}
 		}
 	}
@@ -5283,12 +5563,23 @@ Function_handle Function_finite_element::get_value(
 		Function_variable_matrix_nodal_values,Function_variable>(atomic_variable))&&
 		equivalent(Function_handle(this),atomic_variable_nodal_values->function()))
 	{
-		Scalar value;
+		FE_value fe_time;
+		Scalar time = 0.0,value;
 
+		if (atomic_variable_nodal_values->time_sequence &&
+			(1 == FE_time_sequence_get_number_of_times(
+			atomic_variable_nodal_values->time_sequence)))
+		{
+			if (FE_time_sequence_get_time_for_index(atomic_variable_nodal_values->time_sequence,
+					/*time_index*/0, &fe_time))
+			{
+				time = fe_time;
+			}
+		}
 		if (get_nodal_value(atomic_variable_nodal_values->component_number,
 			atomic_variable_nodal_values->node,
 			atomic_variable_nodal_values->value_type,
-			atomic_variable_nodal_values->version,value))
+			atomic_variable_nodal_values->version, time, value))
 		{
 			Matrix result_matrix(1,1);
 

@@ -403,7 +403,7 @@ Returns true if <node> is not in <fe_region>.
 
 int FE_region_define_FE_field_at_FE_node(struct FE_region *fe_region,
 	struct FE_node *node, struct FE_field *fe_field,
-	struct FE_time_version *fe_time_version,
+	struct FE_time_sequence *fe_time_sequence,
 	struct FE_node_field_creator *node_field_creator);
 /*******************************************************************************
 LAST MODIFIED : 28 April 2003
@@ -411,7 +411,7 @@ LAST MODIFIED : 28 April 2003
 DESCRIPTION :
 Checks <fe_region> contains <node>. If <fe_field> is already defined on it,
 returns successfully, otherwise defines the field at the node using optional
-<fe_time_version> and <node_field_creator>. Change messages are broadcast for
+<fe_time_sequence> and <node_field_creator>. Change messages are broadcast for
 the ultimate master FE_region of <fe_region>.
 Should place multiple calls to this function between begin_change/end_change.
 ==============================================================================*/
@@ -949,25 +949,25 @@ DESCRIPTION :
 Smooths node-based <fe_field> over its nodes and elements in <fe_region>.
 ==============================================================================*/
 
-struct FE_time_version *FE_region_get_FE_time_version_matching_series(
+struct FE_time_sequence *FE_region_get_FE_time_sequence_matching_series(
 	struct FE_region *fe_region, int number_of_times, FE_value *times);
 /*******************************************************************************
 LAST MODIFIED : 20 February 2003
 
 DESCRIPTION :
-Finds or creates a struct FE_time_version in <fe_region> with the given
+Finds or creates a struct FE_time_sequence in <fe_region> with the given
 <number_of_times> and <times>.
 ==============================================================================*/
 
-struct FE_time_version *FE_region_get_FE_time_version_merging_two_time_series(
-	struct FE_region *fe_region, struct FE_time_version *time_version_one,
-	struct FE_time_version *time_version_two);
+struct FE_time_sequence *FE_region_get_FE_time_sequence_merging_two_time_series(
+	struct FE_region *fe_region, struct FE_time_sequence *time_sequence_one,
+	struct FE_time_sequence *time_sequence_two);
 /*******************************************************************************
 LAST MODIFIED : 20 February 2003
 
 DESCRIPTION :
-Finds or creates a struct FE_time_version in <fe_region> which has the list of
-times formed by merging the two time_versions supplied.
+Finds or creates a struct FE_time_sequence in <fe_region> which has the list of
+times formed by merging the two time_sequences supplied.
 ==============================================================================*/
 
 struct FE_basis *FE_region_get_FE_basis_matching_basis_type(

@@ -17,7 +17,7 @@ our @ISA = qw(Exporter DynaLoader);
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
-	cmgui_command_data
+	Cmgui_command_data
 ) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
@@ -68,7 +68,7 @@ sub require_library_actual
 
 {
   no strict 'vars';
-  if (defined ($cmgui_command_data))
+  if (defined ($Cmgui_command_data))
   {
 	 #Then presumably we have all the cmgui libraries
 	 *require_library = \&require_library_stub;

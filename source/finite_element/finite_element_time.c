@@ -20,72 +20,82 @@ Module types
 ------------
 */
 
-struct FE_time
+struct FE_time_sequence_package
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct MANAGER(FE_time_version) *fe_time_version_manager;
+	struct MANAGER(FE_time_sequence) *fe_time_sequence_manager;
 
 	int access_count;
-}; /* struct FE_time */
+}; /* struct FE_time_sequence_package */
 
-struct FE_time_version
+struct FE_time_sequence
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	enum FE_time_version_type type;
+	enum FE_time_sequence_type type;
 
-	/* For FE_TIME_SERIES */
+	/* For FE_TIME_SEQUENCE */
 	int number_of_times;
 	FE_value *times;
 
 	/* A pointer to itself so that we can make the INDEX functions work with
 		multiple parts of the object as the identifier */
-	struct FE_time_version *self;
+	struct FE_time_sequence *self;
 
 	int access_count;
-}; /* struct FE_time_version */
+}; /* struct FE_time_sequence */
 
-FULL_DECLARE_INDEXED_LIST_TYPE(FE_time_version);
+FULL_DECLARE_INDEXED_LIST_TYPE(FE_time_sequence);
 
-FULL_DECLARE_MANAGER_TYPE(FE_time_version);
+FULL_DECLARE_MANAGER_TYPE(FE_time_sequence);
 
 /*
 Module functions
 ----------------
 */
-DECLARE_OBJECT_FUNCTIONS(FE_time)
+DECLARE_OBJECT_FUNCTIONS(FE_time_sequence_package)
  
-static int compare_FE_time_version(struct FE_time_version *fe_time_version_1,
-	struct FE_time_version *fe_time_version_2)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_time_sequence,self,struct FE_time_sequence *,
+	compare_FE_time_sequence)
+
+DECLARE_LOCAL_MANAGER_FUNCTIONS(FE_time_sequence)
+
+/*
+Global functions
+----------------
+*/
+
+int compare_FE_time_sequence(struct FE_time_sequence *fe_time_sequence_1,
+	struct FE_time_sequence *fe_time_sequence_2)
 /*******************************************************************************
-LAST MODIFIED : 9 November 2001
+LAST MODIFIED : 17 November 2004
 
 DESCRIPTION :
-Returns -1 if fe_time_version_1 < fe_time_version_2, 
-0 if fe_time_version_1 = fe_time_version_2 and 1 if
-fe_time_version_1 > fe_time_version_2.
+Returns -1 if fe_time_sequence_1 < fe_time_sequence_2, 
+0 if fe_time_sequence_1 = fe_time_sequence_2 and 1 if
+fe_time_sequence_1 > fe_time_sequence_2.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(compare_FE_time_version);
-	if (fe_time_version_1 && fe_time_version_2)
+	ENTER(compare_FE_time_sequence);
+	if (fe_time_sequence_1 && fe_time_sequence_2)
 	{
-		if (fe_time_version_1->type == fe_time_version_2->type)
+		if (fe_time_sequence_1->type == fe_time_sequence_2->type)
 		{
-			switch(fe_time_version_1->type)
+			switch(fe_time_sequence_1->type)
 			{
-				case FE_TIME_SERIES:
+				case FE_TIME_SEQUENCE:
 				{
-					if (fe_time_version_1->number_of_times == 
-						fe_time_version_2->number_of_times)
+					if (fe_time_sequence_1->number_of_times == 
+						fe_time_sequence_2->number_of_times)
 					{
 						/* Using a char based memcmp for speed.  I think that
 							it is OK to misrepresent these FE_values as chars
@@ -93,8 +103,8 @@ fe_time_version_1 > fe_time_version_2.
 							if we wanted different representations of the same
 							number to match we would have to compare FE_values
 							instead. */
-						return_code = memcmp(fe_time_version_1->times,
-							fe_time_version_2->times, fe_time_version_1->number_of_times
+						return_code = memcmp(fe_time_sequence_1->times,
+							fe_time_sequence_2->times, fe_time_sequence_1->number_of_times
 							* sizeof(FE_value));
 						if (return_code != 0)
 						{
@@ -111,8 +121,8 @@ fe_time_version_1 > fe_time_version_2.
 					}
 					else
 					{
-						if (fe_time_version_1->number_of_times > 
-							fe_time_version_2->number_of_times)
+						if (fe_time_sequence_1->number_of_times > 
+							fe_time_sequence_2->number_of_times)
 						{
 							return_code = 1;
 						}
@@ -125,14 +135,14 @@ fe_time_version_1 > fe_time_version_2.
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"compare_FE_time_version.  Unimplemented FE_time_version type");
+						"compare_FE_time_sequence.  Unimplemented FE_time_sequence type");
 					return_code = 0;
 				} break;
 			}
 		}
 		else
 		{
-			if (fe_time_version_1->type > fe_time_version_2->type)
+			if (fe_time_sequence_1->type > fe_time_sequence_2->type)
 			{
 				return_code = 1;
 			}
@@ -145,266 +155,256 @@ fe_time_version_1 > fe_time_version_2.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"compare_FE_time_version.  Invalid arguments");
+			"compare_FE_time_sequence.  Invalid arguments");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* compare_FE_time_version */
+} /* compare_FE_time_sequence */
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_time_version,self,struct FE_time_version *,
-	compare_FE_time_version)
-
-DECLARE_LOCAL_MANAGER_FUNCTIONS(FE_time_version)
-
-/*
-Global functions
-----------------
-*/
-
-struct FE_time *CREATE(FE_time)(void)
+struct FE_time_sequence_package *CREATE(FE_time_sequence_package)(void)
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
-Creates FE_time.
+Creates FE_time_sequence_package.
 ==============================================================================*/
 {
-	struct FE_time *fe_time;
+	struct FE_time_sequence_package *fe_time;
 
-	ENTER(CREATE(FE_time));
+	ENTER(CREATE(FE_time_sequence_package));
 
-	if (ALLOCATE(fe_time,struct FE_time,1) && 
-		(fe_time->fe_time_version_manager = CREATE(MANAGER(FE_time_version))()))
+	if (ALLOCATE(fe_time, struct FE_time_sequence_package,1) && 
+		(fe_time->fe_time_sequence_manager = CREATE(MANAGER(FE_time_sequence))()))
 	{
 		fe_time->access_count=0;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(FE_time).  Not enough memory");
+			"CREATE(FE_time_sequence_package).  Not enough memory");
 		DEALLOCATE(fe_time);
 	}
 	LEAVE;
 
 	return (fe_time);
-} /* CREATE(FE_time) */
+} /* CREATE(FE_time_sequence_package) */
 
-int DESTROY(FE_time)(struct FE_time **fe_time_address)
+int DESTROY(FE_time_sequence_package)(struct FE_time_sequence_package **fe_time_address)
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
-Frees memory/deaccess objects in FE_time at <*fe_time_address>.
+Frees memory/deaccess objects in FE_time_sequence_package at <*fe_time_address>.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_time *fe_time;
+	struct FE_time_sequence_package *fe_time;
 
-	ENTER(DESTROY(FE_time));
+	ENTER(DESTROY(FE_time_sequence_package));
 	if (fe_time_address&&(fe_time= *fe_time_address))
 	{
 		if (0 >= fe_time->access_count)
 		{
-			DESTROY(MANAGER(FE_time_version))(&(fe_time->fe_time_version_manager));
+			DESTROY(MANAGER(FE_time_sequence))(&(fe_time->fe_time_sequence_manager));
 			DEALLOCATE(*fe_time_address);
 			return_code=1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"DESTROY(FE_time).  Positive access_count");
+				"DESTROY(FE_time_sequence_package).  Positive access_count");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"DESTROY(FE_time).  Missing fe_time");
+			"DESTROY(FE_time_sequence_package).  Missing fe_time");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* DESTROY(FE_time) */
+} /* DESTROY(FE_time_sequence_package) */
 
-struct FE_time_version *CREATE(FE_time_version)(void)
+struct FE_time_sequence *CREATE(FE_time_sequence)(void)
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
-Creates a basic FE_time_version.
+Creates a basic FE_time_sequence.
 ==============================================================================*/
 {
-	struct FE_time_version *fe_time_version;
+	struct FE_time_sequence *fe_time_sequence;
 
-	ENTER(CREATE(FE_time_version));
-	if (ALLOCATE(fe_time_version,struct FE_time_version,1))
+	ENTER(CREATE(FE_time_sequence));
+	if (ALLOCATE(fe_time_sequence,struct FE_time_sequence,1))
 	{
-		/* initialise all members of computed_fe_time_version */
-		fe_time_version->type = FE_TIME_SERIES;
-		fe_time_version->number_of_times = 0;
-		fe_time_version->times = (FE_value *)NULL;
+		/* initialise all members of computed_fe_time_sequence */
+		fe_time_sequence->type = FE_TIME_SEQUENCE;
+		fe_time_sequence->number_of_times = 0;
+		fe_time_sequence->times = (FE_value *)NULL;
 
-		fe_time_version->self = fe_time_version;
+		fe_time_sequence->self = fe_time_sequence;
 
-		fe_time_version->access_count=0;
+		fe_time_sequence->access_count=0;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(FE_time_version).  Not enough memory");
-		DEALLOCATE(fe_time_version);
+			"CREATE(FE_time_sequence).  Not enough memory");
+		DEALLOCATE(fe_time_sequence);
 	}
 	LEAVE;
 
-	return (fe_time_version);
-} /* CREATE(FE_time_version) */
+	return (fe_time_sequence);
+} /* CREATE(FE_time_sequence) */
 
-int DESTROY(FE_time_version)(struct FE_time_version **fe_time_version_address)
+int DESTROY(FE_time_sequence)(struct FE_time_sequence **fe_time_sequence_address)
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
-Frees memory/deaccess objects in fe_time_version at <*fe_time_version_address>.
+Frees memory/deaccess objects in fe_time_sequence at <*fe_time_sequence_address>.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_time_version *fe_time_version;
+	struct FE_time_sequence *fe_time_sequence;
 
-	ENTER(DESTROY(FE_time_version));
-	if (fe_time_version_address&&(fe_time_version= *fe_time_version_address))
+	ENTER(DESTROY(FE_time_sequence));
+	if (fe_time_sequence_address&&(fe_time_sequence= *fe_time_sequence_address))
 	{
-		if (0 >= fe_time_version->access_count)
+		if (0 >= fe_time_sequence->access_count)
 		{
-			if (fe_time_version->times)
+			if (fe_time_sequence->times)
 			{
-				DEALLOCATE(fe_time_version->times);
+				DEALLOCATE(fe_time_sequence->times);
 			}
-			DEALLOCATE(*fe_time_version_address);
+			DEALLOCATE(*fe_time_sequence_address);
 			return_code=1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"DESTROY(FE_time_version).  Positive access_count");
+				"DESTROY(FE_time_sequence).  Positive access_count");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"DESTROY(FE_time_version).  Missing fe_time_version");
+			"DESTROY(FE_time_sequence).  Missing fe_time_sequence");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* DESTROY(FE_time_version) */
+} /* DESTROY(FE_time_sequence) */
 
-DECLARE_OBJECT_FUNCTIONS(FE_time_version)
+DECLARE_OBJECT_FUNCTIONS(FE_time_sequence)
 
-DECLARE_INDEXED_LIST_FUNCTIONS(FE_time_version)
+DECLARE_INDEXED_LIST_FUNCTIONS(FE_time_sequence)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_time_version,self,
-	struct FE_time_version *, compare_FE_time_version)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_time_sequence,self,
+	struct FE_time_sequence *, compare_FE_time_sequence)
 
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_time_version,self)
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_time_sequence,self)
 
-PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(FE_time_version,self)
+PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(FE_time_sequence,self)
 {
 	int return_code;
 
-	ENTER(MANAGER_COPY_WITH_IDENTIFIER(FE_time_version,self));
+	ENTER(MANAGER_COPY_WITH_IDENTIFIER(FE_time_sequence,self));
 	USE_PARAMETER(destination);
 	USE_PARAMETER(source);
 	display_message(ERROR_MESSAGE,
-		"MANAGER_COPY_WITH_IDENTIFIER(FE_time_version,self).  "
-		"You cannot do this on an FE_time_version, make a new one");
+		"MANAGER_COPY_WITH_IDENTIFIER(FE_time_sequence,self).  "
+		"You cannot do this on an FE_time_sequence, make a new one");
 	return_code=0;
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_WITH_IDENTIFIER(FE_time_version,name) */
+} /* MANAGER_COPY_WITH_IDENTIFIER(FE_time_sequence,name) */
 
-PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_time_version,self)
+PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_time_sequence,self)
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
 Do not allow copy if:
-- it creates a self-referencing fe_time_version (one that depends on itself) which will
+- it creates a self-referencing fe_time_sequence (one that depends on itself) which will
   result in an infinite loop;
-- it changes the number of components of a fe_time_version in use;
+- it changes the number of components of a fe_time_sequence in use;
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(FE_time_version,self));
+	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(FE_time_sequence,self));
 	USE_PARAMETER(destination);
 	USE_PARAMETER(source);
 	display_message(ERROR_MESSAGE,
-		"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_time_version,self).  "
-		"You cannot do this on an FE_time_version, make a new one");
+		"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_time_sequence,self).  "
+		"You cannot do this on an FE_time_sequence, make a new one");
 	return_code=0;
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(FE_time_version,name) */
+} /* MANAGER_COPY_WITHOUT_IDENTIFIER(FE_time_sequence,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_time_version,self,struct FE_time_version *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_time_sequence,self,struct FE_time_sequence *)
 {
 	int return_code;
 
-	ENTER(MANAGER_COPY_IDENTIFIER(FE_time_version,self));
+	ENTER(MANAGER_COPY_IDENTIFIER(FE_time_sequence,self));
 	USE_PARAMETER(destination);
 	USE_PARAMETER(self);
 	display_message(ERROR_MESSAGE,
-		"MANAGER_COPY_IDENTIFIER(FE_time_version,self).  "
-		"You cannot do this on an FE_time_version, make a new one");
+		"MANAGER_COPY_IDENTIFIER(FE_time_sequence,self).  "
+		"You cannot do this on an FE_time_sequence, make a new one");
 	return_code=0;
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_IDENTIFIER(FE_time_version,name) */
+} /* MANAGER_COPY_IDENTIFIER(FE_time_sequence,name) */
 
-DECLARE_MANAGER_FUNCTIONS(FE_time_version)
+DECLARE_MANAGER_FUNCTIONS(FE_time_sequence)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_time_version)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_time_sequence)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_time_version,self,struct FE_time_version *)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_time_sequence,self,struct FE_time_sequence *)
 
-int FE_time_version_get_number_of_times(
-	struct FE_time_version *fe_time_version)
+int FE_time_sequence_get_number_of_times(
+	struct FE_time_sequence *fe_time_sequence)
 /*******************************************************************************
 LAST MODIFIED : 15 November 2001
 
 DESCRIPTION :
-Returns the number of times that a particular FE_time_version references to.
+Returns the number of times that a particular FE_time_sequence references to.
 ==============================================================================*/
 {
 	int number_of_times;
 
-	ENTER(FE_time_version_get_number_of_times);
+	ENTER(FE_time_sequence_get_number_of_times);
 
-	if (fe_time_version)
+	if (fe_time_sequence)
 	{
-		number_of_times = fe_time_version->number_of_times;
+		number_of_times = fe_time_sequence->number_of_times;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_time_version_get_number_of_times.  Invalid arguments");
+			"FE_time_sequence_get_number_of_times.  Invalid arguments");
 		number_of_times = 0;
 	}
 	LEAVE;
 	
 	return (number_of_times);
-} /* FE_time_version_get_number_of_times */
+} /* FE_time_sequence_get_number_of_times */
 
-int FE_time_version_get_index_for_time(
-	struct FE_time_version *fe_time_version, FE_value time, int *time_index)
+int FE_time_sequence_get_index_for_time(
+	struct FE_time_sequence *fe_time_sequence, FE_value time, int *time_index)
 /*******************************************************************************
 LAST MODIFIED : 16 November 2001
 
@@ -417,12 +417,12 @@ and 1 if it is.
 	int return_code, time_index_one, time_index_two;
 	FE_value xi;
 	
-	ENTER(FE_time_version_get_index_for_time);
+	ENTER(FE_time_sequence_get_index_for_time);
 	
-	if (fe_time_version)
+	if (fe_time_sequence)
 	{
 		return_code = 0;
-		if (FE_time_version_get_interpolation_for_time(fe_time_version, 
+		if (FE_time_sequence_get_interpolation_for_time(fe_time_sequence, 
 			time, &time_index_one, &time_index_two, &xi))
 		{
 			if (0 == xi)
@@ -435,16 +435,16 @@ and 1 if it is.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_time_version_get_index_for_time.  Invalid arguments");
+			"FE_time_sequence_get_index_for_time.  Invalid arguments");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_time_version_get_index_for_time */
+} /* FE_time_sequence_get_index_for_time */
 
-int FE_time_version_get_interpolation_for_time(
-	struct FE_time_version *fe_time_version, FE_value time, int *time_index_one,
+int FE_time_sequence_get_interpolation_for_time(
+	struct FE_time_sequence *fe_time_sequence, FE_value time, int *time_index_one,
 	int *time_index_two, FE_value *xi)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2001
@@ -460,15 +460,15 @@ of the time index array.
 	int array_index,done,index_high,index_low,number_of_times,return_code,step;	
 	FE_value first_time,last_time,this_time,fe_value_index,time_high,time_low;
 	
-	ENTER(FE_time_version_get_index_for_time);
+	ENTER(FE_time_sequence_get_index_for_time);
 	
-	if (fe_time_version)
+	if (fe_time_sequence)
 	{
 		return_code = 0;
-		number_of_times = fe_time_version->number_of_times;
+		number_of_times = fe_time_sequence->number_of_times;
 
-		first_time = fe_time_version->times[0];
-		last_time = fe_time_version->times[number_of_times-1];
+		first_time = fe_time_sequence->times[0];
+		last_time = fe_time_sequence->times[number_of_times-1];
 		/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
 		/*This assumption and hence estimate is true for most signal files. */
 		if (last_time>first_time)
@@ -493,14 +493,14 @@ of the time index array.
 		{	
 			if ((array_index >= 0) && (array_index < number_of_times))
 			{
-				this_time = fe_time_version->times[array_index];
+				this_time = fe_time_sequence->times[array_index];
 				if (this_time>time)
 				{ 
 					index_high=array_index;					
 					if (array_index>0)
 					{
 						/* get adjacent array element*/
-						time_low = fe_time_version->times[array_index - 1];
+						time_low = fe_time_sequence->times[array_index - 1];
 						/* are we between elements?*/
 						if (time_low<time)
 						{			
@@ -516,7 +516,7 @@ of the time index array.
 					else
 					{
 						/* can't get lower adjacent array element when array_index=0. Finished*/
-						time_low = fe_time_version->times[array_index];
+						time_low = fe_time_sequence->times[array_index];
 						index_low=array_index;
 						return_code=1;
 						done=1;
@@ -528,7 +528,7 @@ of the time index array.
 					if (array_index<(number_of_times-1))
 					{
 						/* get adjacent array element*/
-						time_high = fe_time_version->times[array_index + 1];
+						time_high = fe_time_sequence->times[array_index + 1];
 						/* are we between elements?*/
 						if (time_high>time)
 						{		
@@ -545,7 +545,7 @@ of the time index array.
 					{
 						/* can't get higher adjacent array element when */
 						/*array_index=(number_of_times-1). Finished*/
-						time_high = fe_time_version->times[array_index];
+						time_high = fe_time_sequence->times[array_index];
 						index_high=array_index;
 						return_code=1;
 						done=1;
@@ -601,11 +601,11 @@ of the time index array.
 		/* index_low and index_high should now be adjacent */
 		if (!time_low)
 		{
-			time_low = fe_time_version->times[index_low];
+			time_low = fe_time_sequence->times[index_low];
 		}
 		if (!time_high)
 		{
-			time_high = fe_time_version->times[index_high];
+			time_high = fe_time_sequence->times[index_high];
 		}
 		*time_index_one = index_low;
 		*time_index_two = index_high;
@@ -621,17 +621,17 @@ of the time index array.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_time_version_get_interpolation_for_time.  "
+			"FE_time_sequence_get_interpolation_for_time.  "
 			"Invalid arguments time out of range");
 		return_code=0;
 	}	
 	LEAVE;
 
 	return (return_code);
-} /* FE_time_version_get_interpolation_for_time */
+} /* FE_time_sequence_get_interpolation_for_time */
 
-int FE_time_version_get_time_for_index(
-	struct FE_time_version *fe_time_version, int time_index, FE_value *time)
+int FE_time_sequence_get_time_for_index(
+	struct FE_time_sequence *fe_time_sequence, int time_index, FE_value *time)
 /*******************************************************************************
 LAST MODIFIED : 15 November 2001
 
@@ -641,72 +641,138 @@ If the <time_index> is valid returns the corresponding <time>.
 {
 	int return_code;
 	
-	ENTER(FE_time_version_get_index_for_time);
+	ENTER(FE_time_sequence_get_index_for_time);
 	
-	if (fe_time_version)
+	if (fe_time_sequence)
 	{
-		if ((time_index >= 0) && (time_index < fe_time_version->number_of_times))
+		if ((time_index >= 0) && (time_index < fe_time_sequence->number_of_times))
 		{
-			*time = fe_time_version->times[time_index];
+			*time = fe_time_sequence->times[time_index];
 			return_code = 1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_time_version_get_time_for_index.  Time index out of range");
+				"FE_time_sequence_get_time_for_index.  Time index out of range");
 			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_time_version_get_time_for_index.  Invalid arguments");
+			"FE_time_sequence_get_time_for_index.  Invalid arguments");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_time_version_get_index_for_time */
+} /* FE_time_sequence_get_index_for_time */
 
-struct FE_time_version *get_FE_time_version_matching_FE_time_version(
-	struct FE_time *fe_time, struct FE_time_version *source_fe_time_version)
+int FE_time_sequence_set_time_and_index(
+	struct FE_time_sequence *fe_time_sequence, int time_index, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 18 November 2004
+
+DESCRIPTION :
+Sets the <time> for the given <time_index> in the <fe_time_sequence>.  This 
+should only be done for unmanaged time sequences (as otherwise this sequence
+may be shared by many other objects which are not expecting changes).
+If the sequence does not have as many times as the <time_index> then it will
+be expanded and the unspecified times also set to <time>.
+==============================================================================*/
+{
+	FE_value *new_times;
+	int i, return_code;
+	
+	ENTER(FE_time_sequence_set_time_and_index);
+	
+	if (fe_time_sequence)
+	{
+		if (time_index >= 0)
+		{
+			return_code = 1;
+			if (time_index >= fe_time_sequence->number_of_times)
+			{
+				if (REALLOCATE(new_times, fe_time_sequence->times, 
+					FE_value, time_index + 1))
+				{
+					fe_time_sequence->times = new_times;
+					for (i = fe_time_sequence->number_of_times ; 
+						i <= time_index ; i++)
+					{
+						new_times[i] = time;
+					}
+					fe_time_sequence->number_of_times = time_index + 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_time_sequence_set_time_and_index.  Unable to reallocate times");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				fe_time_sequence->times[time_index] = time;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_time_sequence_set_time_and_index.  Time index out of range");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_time_sequence_set_time_and_index.  Invalid arguments");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_time_sequence_set_time_and_index */
+
+struct FE_time_sequence *get_FE_time_sequence_matching_FE_time_sequence(
+	struct FE_time_sequence_package *fe_time, struct FE_time_sequence *source_fe_time_sequence)
 /*******************************************************************************
 LAST MODIFIED : 27 November 2002
 
 DESCRIPTION :
-Searches <fe_time> for a FE_time_version matching <source_fe_time_version>.
-If no equivalent fe_time_version is found one is created in <fe_time> and
+Searches <fe_time> for a FE_time_sequence matching <source_fe_time_sequence>.
+If no equivalent fe_time_sequence is found one is created in <fe_time> and
 returned.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_time_version *fe_time_version;
+	struct FE_time_sequence *fe_time_sequence;
 
-	ENTER(get_FE_time_version_matching_FE_time_version);
-	if (fe_time && fe_time->fe_time_version_manager && source_fe_time_version)
+	ENTER(get_FE_time_sequence_matching_FE_time_sequence);
+	if (fe_time && fe_time->fe_time_sequence_manager && source_fe_time_sequence)
 	{
-		/* first try to find a matching fe_time_version in the manager */
-		if (!(fe_time_version = FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_version,self)(
-			source_fe_time_version, fe_time->fe_time_version_manager)))
+		/* first try to find a matching fe_time_sequence in the manager */
+		if (!(fe_time_sequence = FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_sequence,self)(
+			source_fe_time_sequence, fe_time->fe_time_sequence_manager)))
 		{
-			if (fe_time_version = CREATE(FE_time_version)())
+			if (fe_time_sequence = CREATE(FE_time_sequence)())
 			{
 				return_code = 1;
-				switch (source_fe_time_version->type)
+				switch (source_fe_time_sequence->type)
 				{
-					case FE_TIME_SERIES:
+					case FE_TIME_SEQUENCE:
 					{
-						fe_time_version->type = FE_TIME_SERIES;
-						fe_time_version->number_of_times =
-							source_fe_time_version->number_of_times;
-						fe_time_version->times = (FE_value *)NULL;
-						if (ALLOCATE(fe_time_version->times, FE_value,
-							source_fe_time_version->number_of_times))
+						fe_time_sequence->type = FE_TIME_SEQUENCE;
+						fe_time_sequence->number_of_times =
+							source_fe_time_sequence->number_of_times;
+						fe_time_sequence->times = (FE_value *)NULL;
+						if (ALLOCATE(fe_time_sequence->times, FE_value,
+							source_fe_time_sequence->number_of_times))
 						{
-							memcpy(fe_time_version->times, source_fe_time_version->times,
-								source_fe_time_version->number_of_times*sizeof(FE_value));
-							if (!ADD_OBJECT_TO_MANAGER(FE_time_version)(fe_time_version,
-								fe_time->fe_time_version_manager))
+							memcpy(fe_time_sequence->times, source_fe_time_sequence->times,
+								source_fe_time_sequence->number_of_times*sizeof(FE_value));
+							if (!ADD_OBJECT_TO_MANAGER(FE_time_sequence)(fe_time_sequence,
+								fe_time->fe_time_sequence_manager))
 							{
 								return_code = 0;
 							}
@@ -719,151 +785,151 @@ returned.
 					default:
 					{
 						display_message(ERROR_MESSAGE,
-							"get_FE_time_version_matching_FE_time_version.  "
-							"Unimplemented FE_time_version type");
+							"get_FE_time_sequence_matching_FE_time_sequence.  "
+							"Unimplemented FE_time_sequence type");
 						return_code = 0;
 					} break;
 				}
 				if (!return_code)
 				{
 					display_message(ERROR_MESSAGE,
-						"get_FE_time_version_matching_FE_time_version.  "
-						"Could not copy contents of FE_time_version");
-					DESTROY(FE_time_version)(&fe_time_version);
-					fe_time_version = (struct FE_time_version *)NULL;
+						"get_FE_time_sequence_matching_FE_time_sequence.  "
+						"Could not copy contents of FE_time_sequence");
+					DESTROY(FE_time_sequence)(&fe_time_sequence);
+					fe_time_sequence = (struct FE_time_sequence *)NULL;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"get_FE_time_version_matching_FE_time_version.  "
-					"Could not create FE_time_version");
+					"get_FE_time_sequence_matching_FE_time_sequence.  "
+					"Could not create FE_time_sequence");
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_time_version_matching_FE_time_version.  Invalid argument(s)");
-		fe_time_version = (struct FE_time_version *)NULL;
+			"get_FE_time_sequence_matching_FE_time_sequence.  Invalid argument(s)");
+		fe_time_sequence = (struct FE_time_sequence *)NULL;
 	}
 	LEAVE;
 
-	return (fe_time_version);
-} /* get_FE_time_version_matching_FE_time_version */
+	return (fe_time_sequence);
+} /* get_FE_time_sequence_matching_FE_time_sequence */
 
-struct FE_time_version *get_FE_time_version_matching_time_series(
-	struct FE_time *fe_time, int number_of_times, FE_value *times)
+struct FE_time_sequence *get_FE_time_sequence_matching_time_series(
+	struct FE_time_sequence_package *fe_time, int number_of_times, FE_value *times)
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
 DESCRIPTION :
-Searches <fe_time> for a fe_time_version which has the time series specified. 
-If no equivalent fe_time_version is found one is created and returned.
+Searches <fe_time> for a fe_time_sequence which has the time series specified. 
+If no equivalent fe_time_sequence is found one is created and returned.
 ==============================================================================*/
 {
-	struct FE_time_version *fe_time_version, *local_fe_time_version;
+	struct FE_time_sequence *fe_time_sequence, *local_fe_time_sequence;
 
-	ENTER(get_FE_time_version_matching_time_series);
-	fe_time_version=(struct FE_time_version *)NULL;
-	if (fe_time&&fe_time->fe_time_version_manager&&number_of_times&&times)
+	ENTER(get_FE_time_sequence_matching_time_series);
+	fe_time_sequence=(struct FE_time_sequence *)NULL;
+	if (fe_time&&fe_time->fe_time_sequence_manager&&number_of_times&&times)
 	{
-		/* Create a FE_time_version into which we will poke a reference to this 
+		/* Create a FE_time_sequence into which we will poke a reference to this 
 			number of times and times array so that we can look for another one the
 			same.  I really want to avoid copying the array unnecessarily but if 
-			the CREATE(FE_time_version) routine was changed to allocate the times array
+			the CREATE(FE_time_sequence) routine was changed to allocate the times array
 			by default then this would leak.*/
-		local_fe_time_version = CREATE(FE_time_version)();
-		local_fe_time_version->type = FE_TIME_SERIES;
-		local_fe_time_version->number_of_times = number_of_times;
-		local_fe_time_version->times = times;
-		/* search the manager for a fe_time_version of that name */
-		if (fe_time_version=
-			FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_version,self)(local_fe_time_version,
-				fe_time->fe_time_version_manager))
+		local_fe_time_sequence = CREATE(FE_time_sequence)();
+		local_fe_time_sequence->type = FE_TIME_SEQUENCE;
+		local_fe_time_sequence->number_of_times = number_of_times;
+		local_fe_time_sequence->times = times;
+		/* search the manager for a fe_time_sequence of that name */
+		if (fe_time_sequence=
+			FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_sequence,self)(local_fe_time_sequence,
+				fe_time->fe_time_sequence_manager))
 		{
 			/* Found so get rid of our local one. */
-			local_fe_time_version->number_of_times = 0;
-			local_fe_time_version->times = (FE_value *)NULL;
-			DESTROY(FE_time_version)(&local_fe_time_version);
+			local_fe_time_sequence->number_of_times = 0;
+			local_fe_time_sequence->times = (FE_value *)NULL;
+			DESTROY(FE_time_sequence)(&local_fe_time_sequence);
 		}
 		else
 		{
 			/* Finish establishing our local one correctly. */
-			local_fe_time_version->times = (FE_value *)NULL;
-			if (ALLOCATE(local_fe_time_version->times, FE_value, number_of_times))
+			local_fe_time_sequence->times = (FE_value *)NULL;
+			if (ALLOCATE(local_fe_time_sequence->times, FE_value, number_of_times))
 			{
-				memcpy(local_fe_time_version->times, times, number_of_times *
+				memcpy(local_fe_time_sequence->times, times, number_of_times *
 					sizeof(FE_value));
-				if (ADD_OBJECT_TO_MANAGER(FE_time_version)(local_fe_time_version,
-					fe_time->fe_time_version_manager))
+				if (ADD_OBJECT_TO_MANAGER(FE_time_sequence)(local_fe_time_sequence,
+					fe_time->fe_time_sequence_manager))
 				{
-					fe_time_version = local_fe_time_version;
+					fe_time_sequence = local_fe_time_sequence;
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"get_FE_time_version_matching_time_series.  "
+						"get_FE_time_sequence_matching_time_series.  "
 						"Unable to add object to manager");
-					fe_time_version=(struct FE_time_version *)NULL;
+					fe_time_sequence=(struct FE_time_sequence *)NULL;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"get_FE_time_version_matching_time_series.  "
+					"get_FE_time_sequence_matching_time_series.  "
 					"Unable to allocate memory");
-				fe_time_version=(struct FE_time_version *)NULL;
+				fe_time_sequence=(struct FE_time_sequence *)NULL;
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_time_version_matching_time_series.  Invalid argument(s)");
-		fe_time_version=(struct FE_time_version *)NULL;
+			"get_FE_time_sequence_matching_time_series.  Invalid argument(s)");
+		fe_time_sequence=(struct FE_time_sequence *)NULL;
 	}
 	LEAVE;
 
-	return (fe_time_version);
-} /* get_FE_time_version_matching_time_series */
+	return (fe_time_sequence);
+} /* get_FE_time_sequence_matching_time_series */
 
-struct FE_time_version *get_FE_time_version_merging_two_time_series(
-	struct FE_time *fe_time, struct FE_time_version *time_version_one,
-	struct FE_time_version *time_version_two)
+struct FE_time_sequence *get_FE_time_sequence_merging_two_time_series(
+	struct FE_time_sequence_package *fe_time, struct FE_time_sequence *time_sequence_one,
+	struct FE_time_sequence *time_sequence_two)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2001
 
 DESCRIPTION :
-Searches <fe_time> for a fe_time_version which has the list of times formed
-by merging the two time_versions supplied.
+Searches <fe_time> for a fe_time_sequence which has the list of times formed
+by merging the two time_sequences supplied.
 ==============================================================================*/
 {
 	int maximum_number_of_times, number_of_times;
 	FE_value *end_one, *end_two, *index_one, *index_two, *merged_index, *times;
-	struct FE_time_version *fe_time_version;
+	struct FE_time_sequence *fe_time_sequence;
 
-	ENTER(get_FE_time_version_matching_time_series);
-	fe_time_version=(struct FE_time_version *)NULL;
-	if (fe_time&&fe_time->fe_time_version_manager&&time_version_one&&
-		time_version_two)
+	ENTER(get_FE_time_sequence_matching_time_series);
+	fe_time_sequence=(struct FE_time_sequence *)NULL;
+	if (fe_time&&fe_time->fe_time_sequence_manager&&time_sequence_one&&
+		time_sequence_two)
 	{
-		if (time_version_one == time_version_two)
+		if (time_sequence_one == time_sequence_two)
 		{
-			fe_time_version = time_version_one;
+			fe_time_sequence = time_sequence_one;
 		}
 		else
 		{
-			maximum_number_of_times = time_version_one->number_of_times + 
-				time_version_two->number_of_times;
+			maximum_number_of_times = time_sequence_one->number_of_times + 
+				time_sequence_two->number_of_times;
 			if (ALLOCATE(times, FE_value, maximum_number_of_times))
 			{
 				number_of_times = 0;
 				merged_index = times;
-				index_one = time_version_one->times;
-				index_two = time_version_two->times;
-				end_one = time_version_one->times + time_version_one->number_of_times;
-				end_two = time_version_two->times + time_version_two->number_of_times;
+				index_one = time_sequence_one->times;
+				index_two = time_sequence_two->times;
+				end_one = time_sequence_one->times + time_sequence_one->number_of_times;
+				end_two = time_sequence_two->times + time_sequence_two->number_of_times;
 
 				while ((index_one < end_one) && (index_two < end_two))
 				{
@@ -913,7 +979,7 @@ by merging the two time_versions supplied.
 					}
 				}
 
-				fe_time_version = get_FE_time_version_matching_time_series(
+				fe_time_sequence = get_FE_time_sequence_matching_time_series(
 					fe_time, number_of_times, times);
 
 				DEALLOCATE(times);
@@ -921,39 +987,39 @@ by merging the two time_versions supplied.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"get_FE_time_version_matching_time_series.  "
+					"get_FE_time_sequence_matching_time_series.  "
 					"Could not ALLOCATE temporary time array.");
-				fe_time_version=(struct FE_time_version *)NULL;
+				fe_time_sequence=(struct FE_time_sequence *)NULL;
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_FE_time_version_matching_time_series.  Invalid argument(s)");
-		fe_time_version=(struct FE_time_version *)NULL;
+			"get_FE_time_sequence_matching_time_series.  Invalid argument(s)");
+		fe_time_sequence=(struct FE_time_sequence *)NULL;
 	}
 	LEAVE;
 
-	return (fe_time_version);
-} /* get_FE_time_version_matching_time_series */
+	return (fe_time_sequence);
+} /* get_FE_time_sequence_matching_time_series */
 
-int FE_time_has_FE_time_version(struct FE_time *fe_time,
-	struct FE_time_version *fe_time_version)
+int FE_time_sequence_package_has_FE_time_sequence(struct FE_time_sequence_package *fe_time,
+	struct FE_time_sequence *fe_time_sequence)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2002
+LAST MODIFIED : 12 November 2004
 
 DESCRIPTION :
-Returns true if <fe_time> contains the <fe_time_version>.
+Returns true if <fe_time> contains the <fe_time_sequence>.
 ==============================================================================*/
 {
 	int return_code;
 	
-	ENTER(FE_time_has_FE_time_version);
-	if (fe_time && fe_time_version)
+	ENTER(FE_time_has_FE_time_sequence);
+	if (fe_time && fe_time_sequence)
 	{
-		if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_version,self)(fe_time_version,
-			fe_time->fe_time_version_manager))
+		if (FIND_BY_IDENTIFIER_IN_MANAGER(FE_time_sequence,self)(fe_time_sequence,
+			fe_time->fe_time_sequence_manager))
 		{
 			return_code = 1;
 		}
@@ -965,10 +1031,10 @@ Returns true if <fe_time> contains the <fe_time_version>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_time_has_FE_time_version.  Invalid argument(s)");
+			"FE_time_has_FE_time_sequence.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_time_has_FE_time_version */
+} /* FE_time_has_FE_time_sequence */

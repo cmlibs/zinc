@@ -11,7 +11,7 @@ MODULE = Cmiss::Variable::Nodal_value  PACKAGE = Cmiss::Variable::Nodal_value  P
 PROTOTYPES: DISABLE
 
 Cmiss::Variable
-create(char *name,Cmiss::Variable::Finite_element fe_variable,Cmiss::node node,char *type,int version)
+create(char *name,Cmiss::Variable::Finite_element fe_variable,Cmiss::Node node,char *type,int version)
 	CODE:
 		/* the result, in Perl, is a reference to a stash (which is a pointer to the
 			Cmiss_variable structure).  This means that don't need to worry about

@@ -13,6 +13,7 @@ and Cmiss_function_finite_element objects.
 #include "api/cmiss_finite_element.h"
 #include "api/cmiss_function.h"
 #include "api/cmiss_region.h"
+#include "api/cmiss_time_sequence.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -131,6 +132,20 @@ DESCRIPTION :
 Creates a Cmiss_function which represents the <field> in <region>.
 ==============================================================================*/
 
+Cmiss_function_id 
+   Cmiss_function_finite_element_create_standard_interpolation_rc_constant_time
+   (Cmiss_region_id region, char *name, int number_of_components, 
+	char **component_names);
+/*******************************************************************************
+LAST MODIFIED : 8 November 2004
+
+DESCRIPTION :
+Creates a Cmiss_function which represents a field named <name> in <region>.
+The field will have a standard FE type interpolation, have a rectangular
+cartesian coordinate system, it will have <number_of_components> components
+which will be named <component_names>.
+==============================================================================*/
+
 Cmiss_function_variable_id Cmiss_function_finite_element_component(
 	Cmiss_function_id function_finite_element,char *name,unsigned int number);
 /*******************************************************************************
@@ -146,9 +161,10 @@ If <name> is not NULL, then the component with the <name> is specified.  If
 Cmiss_function_variable_id Cmiss_function_finite_element_nodal_values(
 	Cmiss_function_id function_finite_element,char *component_name,
 	unsigned int component_number,Cmiss_node_id node,
-	enum FE_nodal_value_type value_type,unsigned int version);
+	enum FE_nodal_value_type value_type,unsigned int version,
+	Cmiss_time_sequence_id time_sequence);
 /*******************************************************************************
-LAST MODIFIED : 26 April 2004
+LAST MODIFIED : 18 November 2004
 
 DESCRIPTION :
 Returns a variable that refers to a subset of the nodal values for the
@@ -268,9 +284,9 @@ longer needed.
 int Cmiss_function_finite_element_get_nodal_value(
 	Cmiss_function_id function_finite_element,unsigned int component_number,
 	Cmiss_node_id node,enum FE_nodal_value_type value_type,unsigned int version,
-	Scalar *value_address);
+	Scalar time,Scalar *value_address);
 /*******************************************************************************
-LAST MODIFIED : 26 April 2004
+LAST MODIFIED : 22 November 2004
 
 DESCRIPTION :
 Returns a non-zero and gets the value if exactly one nodal value is specified,
@@ -280,9 +296,9 @@ otherwise return zero.
 int Cmiss_function_finite_element_set_nodal_value(
 	Cmiss_function_id function_finite_element,unsigned int component_number,
 	Cmiss_node_id node,enum FE_nodal_value_type value_type,unsigned int version,
-	Scalar value);
+	Scalar time,Scalar value);
 /*******************************************************************************
-LAST MODIFIED : 26 April 2004
+LAST MODIFIED : 22 November 2004
 
 DESCRIPTION :
 Returns a non-zero and sets the value if exactly one nodal value is specified,
@@ -325,6 +341,27 @@ Gets the <*value_address> for the specified xi entry (<index>) of the
 non-zero for success.
 ==============================================================================*/
 
+int Cmiss_function_finite_element_define_on_Cmiss_node(
+	Cmiss_function_id finite_element_function,
+	Cmiss_node_id node,
+	Cmiss_time_sequence_id time_sequence, 
+	Cmiss_node_field_creator_id node_field_creator);
+/*******************************************************************************
+LAST MODIFIED : 10 November 2004
+
+DESCRIPTION :
+==============================================================================*/
+
+int Cmiss_function_finite_element_define_tensor_product_basis_on_element(
+	Cmiss_function_id finite_element_function, Cmiss_element_id element,
+	int dimension, enum Cmiss_basis_type basis_type);
+/*******************************************************************************
+LAST MODIFIED : 1 December 2004
+
+DESCRIPTION :
+Defines a tensor product basis on the element with the specified <dimension>
+and <basis_type>.  This does not support mixed basis types in the tensor product.
+==============================================================================*/
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

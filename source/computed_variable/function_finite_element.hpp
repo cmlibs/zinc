@@ -135,7 +135,7 @@ typedef boost::intrusive_ptr<Function_finite_element>
 
 class Function_finite_element : public Function
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 18 November 2004
 //
 // DESCRIPTION :
 // A function for a finite element interpolation field.
@@ -167,9 +167,11 @@ class Function_finite_element : public Function
 			element_xi(),
 			nodal_values(),
 			nodal_values(std::string component_name,struct FE_node *node,
-				enum FE_nodal_value_type value_type,Function_size_type version),
+				enum FE_nodal_value_type value_type,Function_size_type version,
+				struct FE_time_sequence *time_sequence),
 			nodal_values(Function_size_type component_number,struct FE_node *node,
-				enum FE_nodal_value_type value_type,Function_size_type version),
+				enum FE_nodal_value_type value_type,Function_size_type version,
+				struct FE_time_sequence *time_sequence),
 			// use nodal_values_component instead of overloading nodal_values to
 			//   prevent same argument signature as for version
 			nodal_values_component(std::string component_name),
@@ -195,18 +197,21 @@ class Function_finite_element : public Function
 		// at the node
 		// NB.  The calling program should DEALLOCATE the returned array when it is
 		//   no longer needed
+	   struct FE_time_sequence *Function_finite_element::time_sequence(
+		   struct FE_node *node) const;
+	   // Return the time sequence at the node.
 		enum FE_nodal_value_type *nodal_value_types(
 			Function_size_type component_number,struct FE_node *node) const;
 		// return true and get the value if exactly one nodal value is specified,
 		//   otherwise return false
 		bool get_nodal_value(Function_size_type component_number,
 			struct FE_node *node,enum FE_nodal_value_type value_type,
-			Function_size_type version,Scalar& value);
+			Function_size_type version,Scalar time,Scalar& value);
 		// return true and set the value if exactly one nodal value is specified,
 		//   otherwise return false
 		bool set_nodal_value(Function_size_type component_number,
 			struct FE_node *node,enum FE_nodal_value_type value_type,
-			Function_size_type version,Scalar& value);
+			Function_size_type version,Scalar time,Scalar value);
 		// return the dimension of the element and the number of xi
 		Function_size_type number_of_xi() const;
 		// return the element.  NB.  The calling program should use
@@ -217,6 +222,14 @@ class Function_finite_element : public Function
 		Scalar xi_value(Function_size_type index) const;
 		// get the component value 1<=number<=number_of_components
 		bool component_value(Function_size_type number,Scalar& value) const;
+	   // define the field represented by this function on the given node
+	   int define_on_Cmiss_node(struct FE_node *node,
+		   struct FE_time_sequence *fe_time_sequence, 
+	      struct FE_node_field_creator *fe_node_field_creator);
+ 	   // defines a tensor product basis on element for the field represented by
+	   // this function.
+	   int define_tensor_product_basis_on_element(
+			struct FE_element *element, int dimension, enum FE_basis_type basis_type);
 	private:
 		Function_handle evaluate(Function_variable_handle atomic_variable);
 		bool evaluate_derivative(Scalar& derivative,

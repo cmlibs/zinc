@@ -11,7 +11,7 @@ MODULE = Cmiss::Variable_new::Element_xi  PACKAGE = Cmiss::Variable_new::Element
 PROTOTYPES: DISABLE
 
 Cmiss::Variable_new
-new_xs(Cmiss::element element=(struct Cmiss_element *)NULL, \
+new_xs(Cmiss::Element element=(struct Cmiss_element *)NULL, \
 	AV *xi_array=(AV *)NULL)
 	CODE:
 		if (element)

@@ -19,13 +19,16 @@ streams.
 #include "user_interface/message.h"
 #include "general/io_stream.h"
 
-#if defined __GLIBC__
 /* SAB 16 Sept 2004
 	Unfortunately sscanf does a strlen on the buffer.  If the buffer is large
 	this can be prohibitively slow, so we need to set a reduced lookahead and
 	modify the buffer so that the strlen doesn't go very far */
-#  define IO_STREAM_SPEED_UP_SSCANF
-#endif
+/* SAB 2 December 2004
+	Turning this on all the time, cause if you are given a memory stream
+	it may not be NULL terminated at all so there is no delimiter to stop
+	running into memory that shouldn't be accessed, so copying in chunks 
+	guarantees a NULL delimiter. */
+#define IO_STREAM_SPEED_UP_SSCANF
 
 /*
 Module types

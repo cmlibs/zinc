@@ -154,6 +154,40 @@ sub get_sub_region
 	}
 }
 
+sub merge_Cmiss_node
+{
+	my ($self, %args) = @_;
+	my %defaults=();
+	my %args_with_defaults=(%defaults,%args);
+	my $node=$args_with_defaults{node};
+
+	if (defined ($node) && $node)
+	{
+		merge_Cmiss_node_xs($self, $node);
+	}
+	else
+	{
+		croak "Missing node";
+	}
+}
+
+sub merge_Cmiss_element
+{
+	my ($self, %args) = @_;
+	my %defaults=();
+	my %args_with_defaults=(%defaults,%args);
+	my $element=$args_with_defaults{element};
+
+	if (defined ($element) && $element)
+	{
+		merge_Cmiss_element_xs($self, $element);
+	}
+	else
+	{
+		croak "Missing element";
+	}
+}
+
 require XSLoader;
 XSLoader::load('Cmiss::Region', $VERSION);
 

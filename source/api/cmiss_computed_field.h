@@ -5,6 +5,10 @@ LAST MODIFIED : 31 March 2004
 
 DESCRIPTION :
 The public interface to the Cmiss computed_fields.
+
+Preferable to base new projects on the cmiss_function.h and 
+cmiss_function_finite_element.h interface as this functionality should replace
+computed fields.
 ==============================================================================*/
 #ifndef __CMISS_COMPUTED_FIELD_H__
 #define __CMISS_COMPUTED_FIELD_H__

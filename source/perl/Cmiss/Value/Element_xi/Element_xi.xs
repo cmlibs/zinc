@@ -12,7 +12,7 @@ MODULE = Cmiss::Value::Element_xi		PACKAGE = Cmiss::Value::Element_xi		PREFIX = 
 PROTOTYPES: DISABLE
 
 Cmiss::Value
-create(int dimension=0,Cmiss::element element=(struct Cmiss_element *)NULL, \
+create(int dimension=0,Cmiss::Element element=(struct Cmiss_element *)NULL, \
 	AV *xi_array=(AV *)NULL)
 	CODE:
 		if (element||(0<dimension))

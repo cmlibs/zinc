@@ -4699,11 +4699,11 @@ the position of the point, with appropriate coordinate conversion.
 												((!fe_coordinate_field) ||
 													define_FE_field_at_node(template_node,
 														fe_coordinate_field,
-														(struct FE_time_version *)NULL,
+														(struct FE_time_sequence *)NULL,
 														coordinate_node_field_creator)) &&
 												define_FE_field_at_node(template_node,
 													fe_element_xi_field,
-													(struct FE_time_version *)NULL,
+													(struct FE_time_sequence *)NULL,
 													element_xi_node_field_creator))
 											{
 												return_code=1;	
