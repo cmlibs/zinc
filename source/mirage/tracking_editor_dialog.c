@@ -120,7 +120,7 @@ DESCRIPTION :
 	int tracking_port;
 
    /* The socket processes input callback id */
-	struct Event_dispatcher_file_descriptor_handler *input_id;
+	struct Event_dispatcher_descriptor_callback *input_id;
 
    /* The kill process timeout callback id */
 	struct Event_dispatcher_timeout_callback *kill_process_callback_id;
@@ -2738,10 +2738,10 @@ If there are it processes them, updating the bar chart accordingly.
 				allow X callbacks */
 			if (track_ed->input_id)
 			{
-				Event_dispatcher_remove_file_descriptor_handler(
+				Event_dispatcher_remove_descriptor_callback(
 					User_interface_get_event_dispatcher(track_ed->user_interface),
 					track_ed->input_id);
-				track_ed->input_id = (struct Event_dispatcher_file_descriptor_handler *)NULL;
+				track_ed->input_id = (struct Event_dispatcher_descriptor_callback *)NULL;
 			}
 
 			/********* decode incoming message **********/
@@ -2911,7 +2911,7 @@ If there are it processes them, updating the bar chart accordingly.
 		if (track_ed->processing)
 		{
 			/* Reinstate the callback */
-			track_ed->input_id = Event_dispatcher_add_file_descriptor_handler(
+			track_ed->input_id = Event_dispatcher_add_simple_descriptor_callback(
 				User_interface_get_event_dispatcher(track_ed->user_interface),
 				track_ed->process_remote_client,
 				tracking_editor_process_input_cb, (void *)track_ed);
@@ -2978,7 +2978,7 @@ Turns on the Abort button.
 			track_ed->node_group_manager_callback_id=NULL;
 		}
 
-		track_ed->input_id = Event_dispatcher_add_file_descriptor_handler(
+		track_ed->input_id = Event_dispatcher_add_simple_descriptor_callback(
 			User_interface_get_event_dispatcher(track_ed->user_interface),
 			track_ed->process_remote_client, tracking_editor_process_input_cb, (void *)track_ed);
 	}
@@ -3011,10 +3011,10 @@ Turns on the Abort button.
 	{
 		if (track_ed->input_id)
 		{
-			Event_dispatcher_remove_file_descriptor_handler(
+			Event_dispatcher_remove_descriptor_callback(
 				User_interface_get_event_dispatcher(track_ed->user_interface),
 				track_ed->input_id);
-			track_ed->input_id = (struct Event_dispatcher_file_descriptor_handler *)NULL;
+			track_ed->input_id = (struct Event_dispatcher_descriptor_callback *)NULL;
 		}
 		if (track_ed->process_remote_client)
 		{
@@ -4675,7 +4675,7 @@ Tidys up when the user destroys the map dialog box.
 		/*???DB.  Is a workproc really necessary ? */
 		if (track_ed->idle_update_callback_id)
 		{
-			Event_dispatcher_remove_idle_event_callback(
+			Event_dispatcher_remove_idle_callback(
 				User_interface_get_event_dispatcher(track_ed->user_interface),
 				track_ed->idle_update_callback_id);
 		}
@@ -4775,7 +4775,7 @@ pending.
 		{
 			if (!track_ed->idle_update_callback_id)
 			{
-				track_ed->idle_update_callback_id=Event_dispatcher_add_idle_event_callback(
+				track_ed->idle_update_callback_id=Event_dispatcher_add_idle_callback(
 					User_interface_get_event_dispatcher(track_ed->user_interface),
 					tracking_editor_bar_chart_idle_update,track_ed,
 					EVENT_DISPATCHER_TRACKING_EDITOR_PRIORITY);

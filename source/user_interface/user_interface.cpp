@@ -41,7 +41,8 @@ Functions for opening and closing the user interface.
 #endif /* !defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
-#include "gtk/gtk.h"
+#include <gtk/gtk.h>
+#include <glib.h>
 #endif /* defined (GTK_USER_INTERFACE) */
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
@@ -91,13 +92,23 @@ DESCRIPTION :
 	XmFontList button_fontlist, normal_fontlist;
 	XtAppContext application_context;
 #if ! defined (USE_XTAPP_CONTEXT)
-	struct Event_dispatcher_file_descriptor_handler *main_x_connection_handler;
+	struct Event_dispatcher_descriptor_callback *main_x_connection_handler;
 	struct Event_dispatcher_idle_callback *special_idle_x_callback;
 	struct Event_dispatcher_timeout_callback *timeout_x_callback;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
 	GtkWidget *main_window;
+#if ! defined (USE_GTK_MAIN_STEP)
+	GMainContext *g_context;
+#define MAX_GTK_FDS (50)
+	GPollFD gtk_fds[MAX_GTK_FDS];
+	gint records_in_gtk_fds;
+	struct Event_dispatcher_descriptor_callback *gtk_descriptor_callback;
+	int g_context_needs_prepare_and_query;
+	gint g_context_timeout;
+	gint max_priority;
+#endif /* ! defined (USE_GTK_MAIN_STEP) */
 #endif /* defined (GTK_USER_INTERFACE) */
 
 	struct Event_dispatcher *event_dispatcher;
@@ -355,7 +366,7 @@ DESCRIPTION :
 This function is called to register and deregister X connections.
 ==============================================================================*/
 {
-	struct Event_dispatcher_file_descriptor_handler *handler;
+	struct Event_dispatcher_descriptor_callback *handler;
 	struct User_interface *user_interface;
 
 	ENTER(User_interface_X_connection_callback);
@@ -366,7 +377,7 @@ This function is called to register and deregister X connections.
 		{
 			case True:
 			{
-				if (handler = Event_dispatcher_add_file_descriptor_handler(
+				if (handler = Event_dispatcher_add_simple_descriptor_callback(
 					user_interface->event_dispatcher, file_descriptor,
 					User_interface_additional_X_callback, user_interface_void))
 				{
@@ -375,8 +386,8 @@ This function is called to register and deregister X connections.
 			} break;
 			case False:
 			{
-				handler = (struct Event_dispatcher_file_descriptor_handler *)*watch_data;
-				Event_dispatcher_remove_file_descriptor_handler(
+				handler = (struct Event_dispatcher_descriptor_callback *)*watch_data;
+				Event_dispatcher_remove_descriptor_callback(
 					user_interface->event_dispatcher, handler);
 			} break;
 			default:
@@ -395,6 +406,176 @@ This function is called to register and deregister X connections.
 } /* User_interface_X_connection_callback */
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF) */
+
+#if defined (GTK_USER_INTERFACE)
+#if ! defined (USE_GTK_MAIN_STEP)
+static int User_interface_gtk_query_callback(
+	struct Event_dispatcher_descriptor_set *descriptor_set, void *user_interface_void)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+This function is called to add file descriptors from a gtk context to
+those processed by the event dispatcher.
+==============================================================================*/
+{
+	int i, return_code;
+	struct User_interface *user_interface;
+
+	ENTER(User_interface_gtk_query_callback);
+	if (user_interface=(struct User_interface *)user_interface_void)
+	{
+		if (user_interface->g_context_needs_prepare_and_query)
+		{
+			if (g_main_context_prepare(user_interface->g_context,
+				&user_interface->max_priority))
+			{
+				/* display_message(INFORMATION_MESSAGE,
+					"User_interface_gtk_query_callback.  "
+					"Sources ready for dispatch in prepare.\n"); */
+			}
+
+			user_interface->records_in_gtk_fds = g_main_context_query(user_interface->g_context,
+				user_interface->max_priority, &user_interface->g_context_timeout,
+				user_interface->gtk_fds, MAX_GTK_FDS);
+
+			user_interface->g_context_needs_prepare_and_query = 0;
+		}
+
+		if (user_interface->records_in_gtk_fds <= MAX_GTK_FDS)
+		{
+			return_code = 1;
+			for (i = 0 ; i < user_interface->records_in_gtk_fds ; i++)
+			{
+				if (user_interface->gtk_fds[i].events & G_IO_IN)
+				{
+					FD_SET(user_interface->gtk_fds[i].fd, &(descriptor_set->read_set));
+				}
+				if (user_interface->gtk_fds[i].events & G_IO_OUT)
+				{
+					FD_SET(user_interface->gtk_fds[i].fd, &(descriptor_set->write_set));
+				}
+				if (user_interface->gtk_fds[i].events & G_IO_ERR)
+				{
+					FD_SET(user_interface->gtk_fds[i].fd, &(descriptor_set->error_set));
+				}
+			}
+			if ((user_interface->g_context_timeout >= 0) && 
+				((descriptor_set->max_timeout_ns < 0) || 
+				(user_interface->g_context_timeout < descriptor_set->max_timeout_ns)))
+			{
+				descriptor_set->max_timeout_ns = user_interface->g_context_timeout * 1000;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"User_interface_gtk_query_callback.  "
+				"Insufficient file descriptor records.");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"User_interface_gtk_query_callback.  Missing user_interface");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* User_interface_gtk_query_callback */
+#endif /* ! defined (USE_GTK_MAIN_STEP) */
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
+#if ! defined (USE_GTK_MAIN_STEP)
+static int User_interface_gtk_check_callback(
+	struct Event_dispatcher_descriptor_set *descriptor_set,
+	void *user_interface_void)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i, return_code;
+	struct User_interface *user_interface;
+
+	ENTER(User_interface_gtk_check_callback);
+	if (user_interface=(struct User_interface *)user_interface_void)
+	{
+		for (i = 0 ; i < user_interface->records_in_gtk_fds ; i++)
+		{
+			user_interface->gtk_fds[i].revents = 0;
+			if (FD_ISSET(user_interface->gtk_fds[i].fd, &(descriptor_set->read_set)))
+			{
+				user_interface->gtk_fds[i].revents |= G_IO_IN;
+			}
+			if (FD_ISSET(user_interface->gtk_fds[i].fd, &(descriptor_set->write_set)))
+			{
+				user_interface->gtk_fds[i].revents |= G_IO_OUT;
+			}
+			if (FD_ISSET(user_interface->gtk_fds[i].fd, &(descriptor_set->error_set)))
+			{
+				user_interface->gtk_fds[i].revents |= G_IO_ERR;
+			}
+		}
+		if (g_main_context_check(user_interface->g_context, 
+			user_interface->max_priority, user_interface->gtk_fds, 
+			user_interface->records_in_gtk_fds))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+		user_interface->g_context_needs_prepare_and_query = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"User_interface_gtk_check_callback.  Missing user_interface");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* User_interface_gtk_check_callback */
+#endif /* ! defined (USE_GTK_MAIN_STEP) */
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
+#if ! defined (USE_GTK_MAIN_STEP)
+static int User_interface_gtk_dispatch_callback(void *user_interface_void)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct User_interface *user_interface;
+
+	ENTER(User_interface_gtk_dispatch_callback);
+	if (user_interface=(struct User_interface *)user_interface_void)
+	{
+		g_main_context_dispatch(user_interface->g_context);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"User_interface_gtk_dispatch_callback.  Missing user_interface");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* User_interface_gtk_dispatch_callback */
+#endif /* ! defined (USE_GTK_MAIN_STEP) */
+#endif /* defined (GTK_USER_INTERFACE) */
 
 #if defined (MOTIF)
 #if defined (EXT_INPUT)
@@ -1120,7 +1301,7 @@ Open the <user_interface>.
 		user_interface->display=(Display *)NULL;
 #if ! defined (USE_XTAPP_CONTEXT)
 		user_interface->main_x_connection_handler = 
-			(struct Event_dispatcher_file_descriptor_handler *)NULL;
+			(struct Event_dispatcher_descriptor_callback *)NULL;
 		user_interface->special_idle_x_callback = 
 			(struct Event_dispatcher_idle_callback *)NULL;
 		user_interface->timeout_x_callback = 
@@ -1138,6 +1319,18 @@ Open the <user_interface>.
 		user_interface->application_name=application_name;
 		user_interface->class_name=class_name;
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (GTK_USER_INTERFACE)
+		user_interface->main_window = (GtkWidget *)NULL;
+#if ! defined (USE_GTK_MAIN_STEP)
+		user_interface->g_context = (GMainContext *)NULL;
+		user_interface->records_in_gtk_fds = 0;
+		user_interface->gtk_descriptor_callback = 
+			(struct Event_dispatcher_descriptor_callback *)NULL;
+		user_interface->g_context_needs_prepare_and_query = 1;
+		user_interface->g_context_timeout = -1;
+		user_interface->max_priority = 0;
+#endif /* ! defined (USE_GTK_MAIN_STEP) */
+#endif /* defined (GTK_USER_INTERFACE) */
 
 #if defined (OPENGL_API)
 		user_interface->specified_visual_id = 0;
@@ -1189,7 +1382,7 @@ Open the <user_interface>.
 				user_interface->application_context);
 #else /* defined (USE_XTAPP_CONTEXT) */
 		/* ask X for it's file handle connections */
-			if (user_interface->main_x_connection_handler = Event_dispatcher_add_file_descriptor_handler(
+			if (user_interface->main_x_connection_handler = Event_dispatcher_add_simple_descriptor_callback(
 				user_interface->event_dispatcher, ConnectionNumber(user_interface->display),
 				User_interface_X_callback, (void *)user_interface))
 			{
@@ -1370,6 +1563,28 @@ Open the <user_interface>.
 
 		/* Create the main window */
 		user_interface->main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+
+#if ! defined (USE_GTK_MAIN_STEP)
+		if ((user_interface->g_context = g_main_context_default())
+			&& (g_main_context_acquire(user_interface->g_context)))
+		{
+			g_main_context_ref(user_interface->g_context);
+			user_interface->gtk_descriptor_callback = 
+				Event_dispatcher_add_descriptor_callback(
+				user_interface->event_dispatcher,
+				User_interface_gtk_query_callback,
+				User_interface_gtk_check_callback,
+				User_interface_gtk_dispatch_callback,
+				user_interface); 
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"CREATE(User_interface).  Unable to acquire main g_context");
+			DESTROY(User_interface)(&user_interface);
+			user_interface = (struct User_interface *)NULL;
+		}
+#endif /* ! defined (USE_GTK_MAIN_STEP) */
 #endif /* defined (GTK_USER_INTERFACE) */
 
 	}
@@ -1433,12 +1648,31 @@ DESCRIPTION :
 #if ! defined (USE_XTAPP_CONTEXT)
 		if (user_interface->main_x_connection_handler)
 		{
-			Event_dispatcher_remove_file_descriptor_handler(
+			Event_dispatcher_remove_descriptor_callback(
 				user_interface->event_dispatcher,
 				user_interface->main_x_connection_handler);
 		}
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+		if (user_interface->main_window)
+		{
+			gtk_widget_destroy(user_interface->main_window);
+		}
+#if ! defined (USE_GTK_MAIN_STEP)
+		if (user_interface->g_context)
+		{
+			g_main_context_release(user_interface->g_context);
+			g_main_context_unref(user_interface->g_context);
+		}
+		if (user_interface->gtk_descriptor_callback)
+		{
+			Event_dispatcher_remove_descriptor_callback(
+				user_interface->event_dispatcher,
+				user_interface->gtk_descriptor_callback);
+		}
+#endif /* ! defined (USE_GTK_MAIN_STEP) */
+#endif /* defined (GTK_USER_INTERFACE) */
 		DEALLOCATE(user_interface);
 		*user_interface_address=(struct User_interface *)NULL;
 		return_code=1;

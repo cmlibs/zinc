@@ -10,22 +10,6 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
 #include <stdio.h>
 #include <general/time.h>
 
-#if defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
-#include <Xm/Xm.h>
-#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
-#include <windows.h>
-#elif defined (GTK_USER_INTERFACE) /* switch (USER_INTERFACE) */
-/* This should not remain the default, the normal select main loop should be
-	given control rather than GTK */
-#define USE_GTK_MAIN_STEP
-#include <gtk/gtk.h>
-#elif 1 /* switch (USER_INTERFACE) */
-/* This is the default code, it is an event dispatcher designed to run 
-	without any particular user interface, I defined a string here to
-	make it easy to switch through the code */
-#define USE_GENERIC_EVENT_DISPATCHER
-#endif /* switch (USER_INTERFACE) */
-
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/list.h"
@@ -34,43 +18,73 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
 #include "user_interface/message.h"
 #include "user_interface/event_dispatcher.h"
 
+/* After the event_dispatcher.h has set up these variables */
+#if defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
+#include <Xm/Xm.h>
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#include <windows.h>
+#elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
+#include <gtk/gtk.h>
+#endif /* switch (USER_INTERFACE) */
+
 /*
 Module types
 ------------
 */
 
-struct Event_dispatcher_file_descriptor_handler
+struct Event_dispatcher_simple_descriptor_data
 /*******************************************************************************
-LAST MODIFIED : 6 March 2002
+LAST MODIFIED : 13 November 2002
 
 DESCRIPTION :
-Contains all information necessary for a file descriptor handler.
+Contains data for the simple wrapper around the descriptor callbacks that 
+handles a single file_descriptor and single callback.
 ==============================================================================*/
 {
-	struct Event_dispatcher_file_descriptor_handler *self;	
-	int access_count;
 	int file_descriptor;
-	int pending;
-	Event_dispatcher_handler_function *handler_function;
+	Event_dispatcher_simple_descriptor_callback_function *simple_callback;
 	void *user_data;
+}; /* struct Event_dispatcher_simple_descriptor_data */
+
+struct Event_dispatcher_descriptor_callback
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+Contains all information necessary for a descriptor callback.
+==============================================================================*/
+{
+	struct Event_dispatcher_descriptor_callback *self;	
+	int access_count;
+	int pending;
+	void *user_data;
+	/* When using the simple descriptor callbacks the user_data is an 
+		internal ALLOCATED structure. This flag is set so that the DESTROY
+		DEALLOCATES this user_data. */
+	int deallocate_user_data_on_destroy;
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
+	Event_dispatcher_descriptor_query_function *query_callback;
+	Event_dispatcher_descriptor_check_function *check_callback;
+	Event_dispatcher_descriptor_dispatch_function *dispatch_callback;
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 #if defined (USE_XTAPP_CONTEXT)
 	XtInputId xt_input_id;
 #endif /* defined (USE_XTAPP_CONTEXT) */
 #if defined (USE_GTK_MAIN_STEP)
 	guint gtk_input_id;
 #endif /* defined (USE_GTK_MAIN_STEP) */
-}; /* struct Event_dispatcher_file_descriptor_handler */
+}; /* struct Event_dispatcher_descriptor_callback */
 
-PROTOTYPE_OBJECT_FUNCTIONS(Event_dispatcher_file_descriptor_handler);
-DECLARE_LIST_TYPES(Event_dispatcher_file_descriptor_handler);
-FULL_DECLARE_INDEXED_LIST_TYPE(Event_dispatcher_file_descriptor_handler);
+PROTOTYPE_OBJECT_FUNCTIONS(Event_dispatcher_descriptor_callback);
+DECLARE_LIST_TYPES(Event_dispatcher_descriptor_callback);
+FULL_DECLARE_INDEXED_LIST_TYPE(Event_dispatcher_descriptor_callback);
 
 struct Event_dispatcher_timeout_callback
 /*******************************************************************************
 LAST MODIFIED : 6 March 2002
 
 DESCRIPTION :
-Contains all information necessary for a file descriptor handler.
+Contains all information necessary for a file descriptor callback.
 ==============================================================================*/
 {
 	struct Event_dispatcher_timeout_callback *self;	
@@ -93,7 +107,7 @@ struct Event_dispatcher_idle_callback
 LAST MODIFIED : 6 March 2002
 
 DESCRIPTION :
-Contains all information necessary for a file descriptor handler.
+Contains all information necessary for a file descriptor callback.
 ==============================================================================*/
 {
 	struct Event_dispatcher_idle_callback *self;	
@@ -121,7 +135,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int continue_flag;
-	struct LIST(Event_dispatcher_file_descriptor_handler) *handler_list;
+	struct LIST(Event_dispatcher_descriptor_callback) *descriptor_list;
 	struct LIST(Event_dispatcher_timeout_callback) *timeout_list;
 	struct LIST(Event_dispatcher_idle_callback) *idle_list;
 #if defined (USE_XTAPP_CONTEXT)
@@ -141,8 +155,12 @@ Module functions
 ----------------
 */
 
-static struct Event_dispatcher_file_descriptor_handler *CREATE(Event_dispatcher_file_descriptor_handler)(
-	int file_descriptor, Event_dispatcher_handler_function handler_function,
+static struct Event_dispatcher_descriptor_callback *CREATE(Event_dispatcher_descriptor_callback)(
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
+	Event_dispatcher_descriptor_query_function *query_function,
+	Event_dispatcher_descriptor_check_function *check_function,
+	Event_dispatcher_descriptor_dispatch_function *dispatch_function,
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 	void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 4 March 2002
@@ -151,38 +169,42 @@ DESCRIPTION :
 Create a single object that belongs to a specific file descriptor.
 ==============================================================================*/
 {
-	struct Event_dispatcher_file_descriptor_handler *handler;
+	struct Event_dispatcher_descriptor_callback *callback;
 
-	ENTER(CREATE(Event_dispatcher_file_descriptor_handler));
+	ENTER(CREATE(Event_dispatcher_descriptor_callback));
 
-	if (ALLOCATE(handler, struct Event_dispatcher_file_descriptor_handler, 1))
+	if (ALLOCATE(callback, struct Event_dispatcher_descriptor_callback, 1))
 	{
-		handler->self = handler;
-		handler->file_descriptor = file_descriptor;
-		handler->handler_function = handler_function;
-		handler->pending = 0;
-		handler->user_data = user_data;
-		handler->access_count = 0;
+		callback->self = callback;
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
+		callback->query_callback = query_function;
+		callback->check_callback = check_function;
+		callback->dispatch_callback = dispatch_function;
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
+		callback->user_data = user_data;
+		callback->pending = 0;
+		callback->deallocate_user_data_on_destroy = 0;
+		callback->access_count = 0;
 #if defined (USE_XTAPP_CONTEXT)
-		handler->xt_input_id = (XtInputId)NULL;
+		callback->xt_input_id = (XtInputId)NULL;
 #endif /* defined (USE_XTAPP_CONTEXT) */
 #if defined (USE_GTK_MAIN_STEP)
-		handler->gtk_input_id = 0;
+		callback->gtk_input_id = 0;
 #endif /* defined (USE_GTK_MAIN_STEP) */
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"CREATE(Event_dispatcher_file_descriptor_handler).  "
+		display_message(ERROR_MESSAGE,"CREATE(Event_dispatcher_descriptor_callback).  "
 			"Unable to allocate structure");
-		handler = (struct Event_dispatcher_file_descriptor_handler *)NULL;
+		callback = (struct Event_dispatcher_descriptor_callback *)NULL;
 	}
 	LEAVE;
 
-	return (handler);
-} /* CREATE(Event_dispatcher_file_descriptor_handler) */
+	return (callback);
+} /* CREATE(Event_dispatcher_descriptor_callback) */
 
-static int DESTROY(Event_dispatcher_file_descriptor_handler)(
-	struct Event_dispatcher_file_descriptor_handler **handler_address)
+static int DESTROY(Event_dispatcher_descriptor_callback)(
+	struct Event_dispatcher_descriptor_callback **callback_address)
 /*******************************************************************************
 LAST MODIFIED : 4 March 2002
 
@@ -192,134 +214,237 @@ Destroys the object associated with the file descriptor.
 {
 	int return_code;
 
-	ENTER(DESTROY(Event_dispatcher_file_descriptor_handler));
+	ENTER(DESTROY(Event_dispatcher_descriptor_callback));
 
-	if (handler_address)
+	if (callback_address)
 	{
 		return_code=1;
 
-		DEALLOCATE(*handler_address);
-		*handler_address = (struct Event_dispatcher_file_descriptor_handler *)NULL;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Event_dispatcher_file_descriptor_handler).  Missing event_dispatcher object");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Event_dispatcher_file_descriptor_handler) */
-
-#if defined (USE_GENERIC_EVENT_DISPATCHER)
-static int Event_dispatcher_file_descriptor_handler_add_file_descriptor_to_read_set(
-	struct Event_dispatcher_file_descriptor_handler *handler, void *read_set_void)
-/*******************************************************************************
-LAST MODIFIED : 4 March 2002
-
-DESCRIPTION :
-Adds the <handler>'s file descriptor to the <read_set> for the select call.
-==============================================================================*/
-{
-	fd_set *read_set;
-	int return_code;
-
-	ENTER(Event_dispatcher_file_descriptor_handler_add_file_descriptor_to_read_set);
-
-	if (handler && (read_set = (fd_set *)read_set_void))
-	{
-		FD_SET(handler->file_descriptor, read_set);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_file_descriptor_handler_add_file_descriptor_to_read_set.  "
-			"Invalid arguments.");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Event_dispatcher_file_descriptor_handler_add_file_descriptor_to_read_set */
-#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
-
-#if defined (USE_GENERIC_EVENT_DISPATCHER)
-static int Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set(
-	struct Event_dispatcher_file_descriptor_handler *handler, void *read_set_void)
-/*******************************************************************************
-LAST MODIFIED : 14 June 2002
-
-DESCRIPTION :
-If the <handler>'s file descriptor is still set then set the pending flag so
-that we know to call it.
-==============================================================================*/
-{
-	fd_set *read_set;
-	int return_code;
-
-	ENTER(Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set);
-
-	if (handler && (read_set = (fd_set *)read_set_void))
-	{
-		if (FD_ISSET(handler->file_descriptor, read_set))
+		if ((*callback_address)->deallocate_user_data_on_destroy &&
+			(*callback_address)->user_data)
 		{
-			handler->pending = 1;
+			DEALLOCATE((*callback_address)->user_data);
 		}
+
+		DEALLOCATE(*callback_address);
+		*callback_address = (struct Event_dispatcher_descriptor_callback *)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Event_dispatcher_descriptor_callback).  Missing event_dispatcher object");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Event_dispatcher_descriptor_callback) */
+
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
+static int Event_dispatcher_simple_descriptor_query_callback(
+	struct Event_dispatcher_descriptor_set *descriptor_set, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+Adds the file descriptor in <user_data> to the <descriptor_set>.
+==============================================================================*/
+{
+	int return_code;
+	struct Event_dispatcher_simple_descriptor_data *data;
+
+	ENTER(Event_dispatcher_simple_descriptor_query_callback);
+
+	if (descriptor_set &&
+		(data = (struct Event_dispatcher_simple_descriptor_data *)user_data))
+	{
+		FD_SET(data->file_descriptor, &(descriptor_set->read_set));
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set.  "
+			"Event_dispatcher_simple_descriptor_query_callback.  "
 			"Invalid arguments.");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set */
+} /* Event_dispatcher_simple_descriptor_query_callback */
 #endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
-static int Event_dispatcher_file_descriptor_handler_is_pending(
-	struct Event_dispatcher_file_descriptor_handler *handler, void *user_data)
+static int Event_dispatcher_simple_descriptor_check_callback(
+	struct Event_dispatcher_descriptor_set *descriptor_set,
+	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 14 June 2002
+LAST MODIFIED : 13 November 2002
 
 DESCRIPTION :
-If the <handler>'s file descriptor is still set then set the pending flag so
-that we know to call it.
+Checks if the file descriptor in <user_data> is set in the <descriptor_set>.
+Returns true if it is and false if not.
 ==============================================================================*/
 {
 	int return_code;
+	struct Event_dispatcher_simple_descriptor_data *data;
 
-	ENTER(Event_dispatcher_file_descriptor_handler_is_pending);
-	USE_PARAMETER(user_data);
-	if (handler)
-	{	
-		return_code=handler->pending;
+	ENTER(Event_dispatcher_simple_descriptor_check_callback);
+
+	if (descriptor_set &&
+		(data = (struct Event_dispatcher_simple_descriptor_data *)user_data))
+	{
+		return_code = FD_ISSET(data->file_descriptor, &(descriptor_set->read_set));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_file_descriptor_handler_is_pending.  "
+			"Event_dispatcher_simple_descriptor_check_callback.  "
 			"Invalid arguments.");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Event_dispatcher_file_descriptor_handler_is_pending */
+} /* Event_dispatcher_simple_descriptor_check_callback */
 #endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Event_dispatcher_file_descriptor_handler, \
-	self,struct Event_dispatcher_file_descriptor_handler *,compare_pointer)
-DECLARE_OBJECT_FUNCTIONS(Event_dispatcher_file_descriptor_handler)
-DECLARE_INDEXED_LIST_FUNCTIONS(Event_dispatcher_file_descriptor_handler)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Event_dispatcher_file_descriptor_handler, \
-	self,struct Event_dispatcher_file_descriptor_handler *,compare_pointer)
+static int Event_dispatcher_simple_descriptor_dispatch_callback(void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+Calls the callback in <user_data>.
+==============================================================================*/
+{
+	int return_code;
+	struct Event_dispatcher_simple_descriptor_data *data;
+
+	ENTER(Event_dispatcher_simple_descriptor_check_callback);
+
+	if (data = (struct Event_dispatcher_simple_descriptor_data *)user_data)
+	{
+		return_code = data->simple_callback(data->file_descriptor, data->user_data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_simple_descriptor_dispatch_callback.  "
+			"Invalid arguments.");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Event_dispatcher_simple_descriptor_dispatch_callback */
+
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
+static int Event_dispatcher_descriptor_do_query_callback(
+	struct Event_dispatcher_descriptor_callback *callback,
+	void *descriptor_set_void)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+Calls the query callback for the <callback>.
+==============================================================================*/
+{
+	int return_code;
+	struct Event_dispatcher_descriptor_set *descriptor_set;
+
+	ENTER(Event_dispatcher_descriptor_do_query_callback);
+
+	if (callback && callback->query_callback && (descriptor_set = 
+		(struct Event_dispatcher_descriptor_set *)descriptor_set_void))
+	{
+		return_code = callback->query_callback(descriptor_set, callback->user_data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_do_query_callback.  "
+			"Invalid arguments.");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Event_dispatcher_do_query_callback */
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
+
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
+static int Event_dispatcher_descriptor_do_check_callback(
+	struct Event_dispatcher_descriptor_callback *callback,
+	void *descriptor_set_void)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+Calls the check callback for the <callback>, if the check_callback function
+returns true then the pending flag is set in the <callback>.
+==============================================================================*/
+{
+	int return_code;
+	struct Event_dispatcher_descriptor_set *descriptor_set;
+
+	ENTER(Event_dispatcher_descriptor_do_check_callback);
+
+	if (callback && callback->check_callback && (descriptor_set = 
+		(struct Event_dispatcher_descriptor_set *)descriptor_set_void))
+	{
+		callback->pending = callback->check_callback(descriptor_set,
+			callback->user_data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_do_check_callback.  "
+			"Invalid arguments.");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Event_dispatcher_do_check_callback */
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
+
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
+static int Event_dispatcher_descriptor_callback_is_pending(
+	struct Event_dispatcher_descriptor_callback *callback, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+An iterator function that finds a pending callback.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Event_dispatcher_descriptor_callback_is_pending);
+	USE_PARAMETER(user_data);
+	if (callback)
+	{	
+		return_code=callback->pending;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_descriptor_callback_is_pending.  "
+			"Invalid arguments.");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Event_dispatcher_descriptor_callback_is_pending */
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
+
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Event_dispatcher_descriptor_callback, \
+	self,struct Event_dispatcher_descriptor_callback *,compare_pointer)
+DECLARE_OBJECT_FUNCTIONS(Event_dispatcher_descriptor_callback)
+DECLARE_INDEXED_LIST_FUNCTIONS(Event_dispatcher_descriptor_callback)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Event_dispatcher_descriptor_callback, \
+	self,struct Event_dispatcher_descriptor_callback *,compare_pointer)
 
 static struct Event_dispatcher_timeout_callback *CREATE(Event_dispatcher_timeout_callback)(
 	unsigned long timeout_s, unsigned long timeout_ns, 
@@ -588,21 +713,21 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Event_dispatcher_idle_callba
 
 #if defined (USE_XTAPP_CONTEXT)
 void Event_dispatcher_xt_input_callback(
-	XtPointer handler_void, int *source, XtInputId *id)
+	XtPointer callback_void, int *source, XtInputId *id)
 /*******************************************************************************
 LAST MODIFIED : 4 June 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Event_dispatcher_file_descriptor_handler *handler;
+	struct Event_dispatcher_descriptor_callback *callback;
 
 	ENTER(Event_dispatcher_xt_input_callback);
 	USE_PARAMETER(source);
 	USE_PARAMETER(id);
-	if (handler = (struct Event_dispatcher_file_descriptor_handler *)handler_void)
+	if (callback = (struct Event_dispatcher_descriptor_callback *)callback_void)
 	{
-		(*handler->handler_function)(handler->file_descriptor, handler->user_data);		
+		Event_dispatcher_simple_descriptor_dispatch_callback(callback->user_data);		
 	}
 	else
 	{
@@ -676,21 +801,21 @@ DESCRIPTION :
 
 #if defined (USE_GTK_MAIN_STEP)
 void Event_dispatcher_gtk_input_callback(
-	gpointer handler_void, gint source, GdkInputCondition condition)
+	gpointer callback_void, gint source, GdkInputCondition condition)
 /*******************************************************************************
 LAST MODIFIED : 11 July 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Event_dispatcher_file_descriptor_handler *handler;
+	struct Event_dispatcher_descriptor_callback *callback;
 
 	ENTER(Event_dispatcher_gtk_input_callback);
 	USE_PARAMETER(source);
 	USE_PARAMETER(condition);
-	if (handler = (struct Event_dispatcher_file_descriptor_handler *)handler_void)
+	if (callback = (struct Event_dispatcher_descriptor_callback *)callback_void)
 	{
-		(*handler->handler_function)(handler->file_descriptor, handler->user_data);		
+		Event_dispatcher_simple_descriptor_dispatch_callback(callback->user_data);		
 	}
 	else
 	{
@@ -758,8 +883,8 @@ Creates a connection to a event_dispatcher of the specified type.
 
 	if (ALLOCATE(event_dispatcher, struct Event_dispatcher, 1))
 	{
-		event_dispatcher->handler_list = 
-			CREATE(LIST(Event_dispatcher_file_descriptor_handler))();
+		event_dispatcher->descriptor_list = 
+			CREATE(LIST(Event_dispatcher_descriptor_callback))();
 		event_dispatcher->timeout_list = 
 			CREATE(LIST(Event_dispatcher_timeout_callback))();
 		event_dispatcher->idle_list = 
@@ -799,10 +924,10 @@ Destroys a Event_dispatcher object
 	if (event_dispatcher_address && (event_dispatcher = *event_dispatcher_address))
 	{
 		return_code=1;
-		if (event_dispatcher->handler_list)
+		if (event_dispatcher->descriptor_list)
 		{
-			DESTROY(LIST(Event_dispatcher_file_descriptor_handler))
-				(&event_dispatcher->handler_list);
+			DESTROY(LIST(Event_dispatcher_descriptor_callback))
+				(&event_dispatcher->descriptor_list);
 		}
 		if (event_dispatcher->timeout_list)
 		{
@@ -836,78 +961,153 @@ Destroys a Event_dispatcher object
 	return (return_code);
 } /* DESTROY(Event_dispatcher) */
 
-struct Event_dispatcher_file_descriptor_handler *Event_dispatcher_add_file_descriptor_handler(
-	struct Event_dispatcher *event_dispatcher, int file_descriptor,
-	Event_dispatcher_handler_function *handler_function, void *user_data)
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
+struct Event_dispatcher_descriptor_callback *Event_dispatcher_add_descriptor_callback(
+	struct Event_dispatcher *event_dispatcher,
+	Event_dispatcher_descriptor_query_function *query_function,
+	Event_dispatcher_descriptor_check_function *check_function,
+	Event_dispatcher_descriptor_dispatch_function *dispatch_function,
+	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2002
+LAST MODIFIED : 13 November 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Event_dispatcher_file_descriptor_handler *handler;
+	struct Event_dispatcher_descriptor_callback *callback;
 
-	ENTER(Event_dispatcher_add_file_descriptor_handler);
+	ENTER(Event_dispatcher_add_descriptor_callback);
 
-	if (event_dispatcher && handler_function)
+	if (event_dispatcher && query_function && check_function && dispatch_function)
 	{
-		if (handler = CREATE(Event_dispatcher_file_descriptor_handler)(file_descriptor,
-			handler_function, user_data))
+		if (callback = CREATE(Event_dispatcher_descriptor_callback)(
+			query_function, check_function, dispatch_function, user_data))
 		{
-			if (!(ADD_OBJECT_TO_LIST(Event_dispatcher_file_descriptor_handler)(
-						handler, event_dispatcher->handler_list)))
+			if (!(ADD_OBJECT_TO_LIST(Event_dispatcher_descriptor_callback)(
+						callback, event_dispatcher->descriptor_list)))
 			{
-				DESTROY(Event_dispatcher_file_descriptor_handler)(&handler);
-				handler = (struct Event_dispatcher_file_descriptor_handler *)NULL;
+				DESTROY(Event_dispatcher_descriptor_callback)(&callback);
+				callback = (struct Event_dispatcher_descriptor_callback *)NULL;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Event_dispatcher_add_descriptor_callback.  "
+				"Could not create callback object.");
+			callback = (struct Event_dispatcher_descriptor_callback *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Event_dispatcher_add_descriptor_callback.  Invalid arguments.");
+		callback = (struct Event_dispatcher_descriptor_callback *)NULL;
+	}
+	LEAVE;
+
+	return (callback);
+} /* Event_dispatcher_add_descriptor_callback */
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
+
+struct Event_dispatcher_descriptor_callback *Event_dispatcher_add_simple_descriptor_callback(
+	struct Event_dispatcher *event_dispatcher, int file_descriptor,
+	Event_dispatcher_simple_descriptor_callback_function *callback_function,
+	void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 13 November 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Event_dispatcher_simple_descriptor_data *data;
+	struct Event_dispatcher_descriptor_callback *callback;
+
+	ENTER(Event_dispatcher_add_simple_descriptor_callback);
+
+	if (event_dispatcher && callback_function)
+	{
+		if (ALLOCATE(data, struct Event_dispatcher_simple_descriptor_data, 1))
+		{
+			data->file_descriptor = file_descriptor;
+			data->simple_callback = callback_function;
+			data->user_data = user_data;
+#if defined (USE_GENERIC_EVENT_DISPATCHER)
+			callback = Event_dispatcher_add_descriptor_callback(event_dispatcher,
+				Event_dispatcher_simple_descriptor_query_callback,
+				Event_dispatcher_simple_descriptor_check_callback,
+				Event_dispatcher_simple_descriptor_dispatch_callback,
+				data);
+#else /* defined (USE_GENERIC_EVENT_DISPATCHER) */
+			if (callback = CREATE(Event_dispatcher_descriptor_callback)(user_data))
+			{
+				if (!(ADD_OBJECT_TO_LIST(Event_dispatcher_descriptor_callback)(
+							callback, event_dispatcher->descriptor_list)))
+				{
+					DESTROY(Event_dispatcher_descriptor_callback)(&callback);
+					callback = (struct Event_dispatcher_descriptor_callback *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Event_dispatcher_add_simple_descriptor_callback.  "
+					"Could not create callback object.");
+				callback = (struct Event_dispatcher_descriptor_callback *)NULL;
+			}
+#endif /* defined (USE_GENERIC_EVENT_DISPATCHER) */
+			if (callback)
+			{
+				callback->deallocate_user_data_on_destroy = 1;
 			}
 #if defined (USE_XTAPP_CONTEXT) /* switch (USER_INTERFACE) */
-			else
+			if (callback)
 			{
 				if (event_dispatcher->application_context)
 				{
-					handler->xt_input_id = XtAppAddInput(event_dispatcher->application_context, 
+					callback->xt_input_id = XtAppAddInput(event_dispatcher->application_context, 
 						file_descriptor, (XtPointer)XtInputReadMask, Event_dispatcher_xt_input_callback,
-						handler);
+						callback);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Event_dispatcher_add_file_descriptor_handler.  "
+						"Event_dispatcher_add_simple_descriptor_callback.  "
 						"Missing application context.");
-					handler = (struct Event_dispatcher_file_descriptor_handler *)NULL;
+					callback = (struct Event_dispatcher_descriptor_callback *)NULL;
 				}
 			}
 #elif defined (USE_GTK_MAIN_STEP) /* switch (USER_INTERFACE) */
-			else
+			if (callback)
 			{
-				handler->gtk_input_id = gdk_input_add(file_descriptor,
+				callback->gtk_input_id = gdk_input_add(file_descriptor,
 					GDK_INPUT_READ, Event_dispatcher_gtk_input_callback,
-					(void *)handler);
+					(void *)callback);
 			}
 #endif /* defined (USER_INTERFACE) */
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Event_dispatcher_add_file_descriptor_handler.  "
-				"Could not create handler object.");
-			handler = (struct Event_dispatcher_file_descriptor_handler *)NULL;
+				"Event_dispatcher_add_simple_descriptor_callback.  "
+				"Unable to allocate memory for data structure.");
+			callback = (struct Event_dispatcher_descriptor_callback *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_add_file_descriptor_handler.  Invalid arguments.");
-		handler = (struct Event_dispatcher_file_descriptor_handler *)NULL;
+			"Event_dispatcher_add_simple_descriptor_callback.  Invalid arguments.");
+		callback = (struct Event_dispatcher_descriptor_callback *)NULL;
 	}
 	LEAVE;
 
-	return (handler);
-} /* Event_dispatcher_add_file_descriptor_handler */
+	return (callback);
+} /* Event_dispatcher_add_simple_descriptor_callback */
 
-int Event_dispatcher_remove_file_descriptor_handler(
+int Event_dispatcher_remove_descriptor_callback(
 	struct Event_dispatcher *event_dispatcher, 
-	struct Event_dispatcher_file_descriptor_handler *callback_id)
+	struct Event_dispatcher_descriptor_callback *callback_id)
 /*******************************************************************************
 LAST MODIFIED : 6 March 2002
 
@@ -916,25 +1116,25 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(Event_dispatcher_remove_file_descriptor_handler);
-	if (event_dispatcher && event_dispatcher->handler_list && callback_id)
+	ENTER(Event_dispatcher_remove_descriptor_callback);
+	if (event_dispatcher && event_dispatcher->descriptor_list && callback_id)
 	{
 #if defined (USE_XTAPP_CONTEXT)
 		XtRemoveInput(callback_id->xt_input_id);
 #endif /* defined (USE_XTAPP_CONTEXT) */
-		return_code = REMOVE_OBJECT_FROM_LIST(Event_dispatcher_file_descriptor_handler)
-			(callback_id, event_dispatcher->handler_list);
+		return_code = REMOVE_OBJECT_FROM_LIST(Event_dispatcher_descriptor_callback)
+			(callback_id, event_dispatcher->descriptor_list);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_remove_file_descriptor_handler.  Invalid arguments.");
+			"Event_dispatcher_remove_descriptor_callback.  Invalid arguments.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Event_dispatcher_remove_file_descriptor_handler */
+} /* Event_dispatcher_remove_descriptor_callback */
 
 #if defined (USE_XTAPP_CONTEXT)
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback(
@@ -949,7 +1149,7 @@ DESCRIPTION :
 	long interval_ms;
 	struct Event_dispatcher_timeout_callback *timeout_callback;
 
-	ENTER(Event_dispatcher_register_file_descriptor_handler);
+	ENTER(Event_dispatcher_register_descriptor_callback);
 
 	if (event_dispatcher && timeout_function)
 	{
@@ -1050,7 +1250,7 @@ DESCRIPTION :
 {
 	struct Event_dispatcher_timeout_callback *timeout_callback;
 
-	ENTER(Event_dispatcher_register_file_descriptor_handler);
+	ENTER(Event_dispatcher_register_descriptor_callback);
 
 	if (event_dispatcher && timeout_function)
 	{
@@ -1067,7 +1267,7 @@ DESCRIPTION :
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Event_dispatcher_add_timeout_callback.  "
+				"Event_dispatcher_add_timeout_callback_at_time.  "
 				"Could not create timeout_callback object.");
 			timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
 		}
@@ -1075,13 +1275,13 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_add_file_descriptor_timeout_callback.  Invalid arguments.");
+			"Event_dispatcher_add_timeout_callback_at_time.  Invalid arguments.");
 		timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
 	}
 	LEAVE;
 
 	return (timeout_callback);
-} /* Event_dispatcher_add_file_descriptor_timeout_callback */
+} /* Event_dispatcher_add_timeout_callback_at_time */
 
 struct Event_dispatcher_timeout_callback *Event_dispatcher_add_timeout_callback(
 	struct Event_dispatcher *event_dispatcher, unsigned long timeout_s, unsigned long timeout_ns,
@@ -1095,7 +1295,7 @@ DESCRIPTION :
 	struct Event_dispatcher_timeout_callback *timeout_callback;
 	struct timeval timeofday;
 
-	ENTER(Event_dispatcher_register_file_descriptor_handler);
+	ENTER(Event_dispatcher_register_descriptor_callback);
 
 	if (event_dispatcher && timeout_function)
 	{
@@ -1108,13 +1308,13 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Event_dispatcher_add_file_descriptor_timeout_callback.  Invalid arguments.");
+			"Event_dispatcher_add_timeout_callback.  Invalid arguments.");
 		timeout_callback = (struct Event_dispatcher_timeout_callback *)NULL;
 	}
 	LEAVE;
 
 	return (timeout_callback);
-} /* Event_dispatcher_add_file_descriptor_timeout_callback */
+} /* Event_dispatcher_add_timeout_callback */
 #endif /* defined (USE_XTAPP_CONTEXT) */
 
 int Event_dispatcher_remove_timeout_callback(
@@ -1149,7 +1349,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Event_dispatcher_remove_timeout_callback */
 
-struct Event_dispatcher_idle_callback *Event_dispatcher_add_idle_event_callback(
+struct Event_dispatcher_idle_callback *Event_dispatcher_add_idle_callback(
 	struct Event_dispatcher *event_dispatcher, 
 	Event_dispatcher_idle_function *idle_function, void *user_data,
 	enum Event_dispatcher_idle_priority priority)
@@ -1267,7 +1467,7 @@ DESCRIPTION :
 	return (idle_callback);
 } /* Event_dispatcher_set_special_idle_callback */
 
-int Event_dispatcher_remove_idle_event_callback(
+int Event_dispatcher_remove_idle_callback(
 	struct Event_dispatcher *event_dispatcher, 
 	struct Event_dispatcher_idle_callback *callback_id)
 /*******************************************************************************
@@ -1311,9 +1511,9 @@ DESCRIPTION :
 	int return_code;
 #if defined (USE_GENERIC_EVENT_DISPATCHER)
 	int callback_code, select_code;
-	fd_set read_set;
+	struct Event_dispatcher_descriptor_set descriptor_set;
 	struct timeval timeofday, timeout, *timeout_ptr;
-	struct Event_dispatcher_file_descriptor_handler *file_descriptor_callback;
+	struct Event_dispatcher_descriptor_callback *descriptor_callback;
 	struct Event_dispatcher_idle_callback *idle_callback;
 	struct Event_dispatcher_timeout_callback *timeout_callback;
 #endif /*  defined (USE_GENERIC_EVENT_DISPATCHER) */
@@ -1340,10 +1540,13 @@ DESCRIPTION :
 		return_code = 1;
 #elif defined (USE_GENERIC_EVENT_DISPATCHER) /* switch (USER_INTERFACE) */
 		return_code=1;
-		FD_ZERO(&read_set);
-		FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_file_descriptor_handler)
-			(Event_dispatcher_file_descriptor_handler_add_file_descriptor_to_read_set,
-			&read_set, event_dispatcher->handler_list);
+		FD_ZERO(&(descriptor_set.read_set));
+		FD_ZERO(&(descriptor_set.write_set));
+		FD_ZERO(&(descriptor_set.error_set));
+ 		descriptor_set.max_timeout_ns = -1;
+		FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_descriptor_callback)
+			(Event_dispatcher_descriptor_do_query_callback,
+			&descriptor_set, event_dispatcher->descriptor_list);
 		timeout_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_timeout_callback)
 			((LIST_CONDITIONAL_FUNCTION(Event_dispatcher_timeout_callback) *)NULL,
 			(void *)NULL, event_dispatcher->timeout_list);
@@ -1398,36 +1601,53 @@ DESCRIPTION :
 				}
 				else
 				{
-					/* Indefinite */
-					timeout_ptr = (struct timeval *)NULL;
+					if (descriptor_set.max_timeout_ns >= 0)
+					{
+						timeout.tv_sec = 0;
+						timeout.tv_usec = descriptor_set.max_timeout_ns / 1000;
+						timeout_ptr = &timeout;
+					}
+					else
+					{
+						/* Indefinite */
+						timeout_ptr = (struct timeval *)NULL;
+					}
 				}
 			}
 			select_code = 0;
-			if (!(file_descriptor_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_file_descriptor_handler)
-					 (Event_dispatcher_file_descriptor_handler_is_pending,
-						 (void *)NULL, event_dispatcher->handler_list)))
+			if (!(descriptor_callback = FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_descriptor_callback)
+					 (Event_dispatcher_descriptor_callback_is_pending,
+						 (void *)NULL, event_dispatcher->descriptor_list)))
 			{
-				if (0 < (select_code = select(100, &read_set, NULL, NULL, timeout_ptr)))
+				if (-1 < (select_code = select(100, &(descriptor_set.read_set),
+					&(descriptor_set.write_set), &(descriptor_set.error_set),
+					timeout_ptr)))
 				{
 					/* The select leaves only those descriptors that are pending in the read set,
 						we set the pending flag and then work through them one by one.  This makes sure
-						that each file handler that is waiting gets an equal chance and we don't just
+						that each file callback that is waiting gets an equal chance and we don't just
 						call them directly from the iterator as any of the events could modify the list */
-					FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_file_descriptor_handler)
-						(Event_dispatcher_file_descriptor_handler_set_pending_if_in_read_set,
-							&read_set, event_dispatcher->handler_list);
+					/* For Gtk I need to call check so long as there wasn't an error,
+						even if no file_descriptors selected at this level, Gtk will then
+						change its maximum priority and ask for a new select */
+					FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_descriptor_callback)
+						(Event_dispatcher_descriptor_do_check_callback,
+							&descriptor_set, event_dispatcher->descriptor_list);
+					descriptor_callback =
+						FIRST_OBJECT_IN_LIST_THAT(Event_dispatcher_descriptor_callback)
+						(Event_dispatcher_descriptor_callback_is_pending,
+						(void *)NULL, event_dispatcher->descriptor_list);
 				}
 			}
-			if (file_descriptor_callback)
+			if (descriptor_callback)
 			{
 				if (event_dispatcher->special_idle_callback)
 				{
 					event_dispatcher->special_idle_callback_pending = 1;
 				}
-				/* Call the file handler then */
-				file_descriptor_callback->pending = 0;
-				(*file_descriptor_callback->handler_function)(file_descriptor_callback->file_descriptor,
-					file_descriptor_callback->user_data);
+				/* Call the descriptor dispatch callback then */
+				descriptor_callback->pending = 0;
+				(*descriptor_callback->dispatch_callback)(descriptor_callback->user_data);
 			}
 			else
 			{

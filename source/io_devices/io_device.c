@@ -42,7 +42,7 @@ Io_device structure.
 	char *perl_action;
 	char *file_descriptor_flags;
 	struct User_interface *user_interface;
-	struct Event_dispatcher_file_descriptor_handler *callback_id;
+	struct Event_dispatcher_descriptor_callback *callback_id;
 #endif /* defined (SELECT_DESCRIPTORS) */
 	int access_count;
 };
@@ -142,7 +142,7 @@ Allocates memory and assigns fields for a device.
 #if defined (SELECT_DESCRIPTORS)
 			device->perl_action = (char *)NULL;
 			device->file_descriptor_flags = (char *)NULL;
-			device->callback_id = (struct Event_dispatcher_file_descriptor_handler *)NULL;
+			device->callback_id = (struct Event_dispatcher_descriptor_callback *)NULL;
 #endif /* defined (SELECT_DESCRIPTORS) */
 			strcpy(device->name,name);
 		}
@@ -197,7 +197,7 @@ and sets <*device> to NULL.
 			}
 			if (device->callback_id)
 			{
-				Event_dispatcher_remove_file_descriptor_handler(
+				Event_dispatcher_remove_descriptor_callback(
 					User_interface_get_event_dispatcher(device->user_interface),
 					device->callback_id);
 			}
@@ -297,7 +297,7 @@ between the start and end detection are assumed to belong to the <device>.
 					if (-1 != fcntl(i, F_GETFD))
 					{
 						printf ("Adding Io_device callback %d\n", i);
-						device->callback_id = Event_dispatcher_add_file_descriptor_handler(
+						device->callback_id = Event_dispatcher_add_simple_descriptor_callback(
 							User_interface_get_event_dispatcher(device->user_interface),
 							i, Io_device_descriptor_callback, (void *)device);
 					}

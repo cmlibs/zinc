@@ -1674,7 +1674,7 @@ Updates the scene_viewer.
 		{
 			if(!scene_viewer->tumble_callback_id)
 			{
-				scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_event_callback(
+				scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_callback(
 					User_interface_get_event_dispatcher(scene_viewer->user_interface),
 					Scene_viewer_automatic_tumble_callback, (void *)scene_viewer,
 					EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY);			
@@ -1716,7 +1716,7 @@ put in the queue, but the old one will update the window to the new state.
 	{
 		if (!scene_viewer->idle_update_callback_id)
 		{
-			scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_event_callback(
+			scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_callback(
 				User_interface_get_event_dispatcher(scene_viewer->user_interface),
 				Scene_viewer_idle_update_callback, (void *)scene_viewer,
 				EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
@@ -2451,7 +2451,7 @@ Converts mouse button-press and motion events into viewing transformations in
 													 rotate if not it will happen after the button
 													 release */
 												scene_viewer->tumble_callback_id = 
-													Event_dispatcher_add_idle_event_callback(
+													Event_dispatcher_add_idle_callback(
 													User_interface_get_event_dispatcher(scene_viewer->user_interface),
 													Scene_viewer_automatic_tumble_callback, (void *)scene_viewer,
 													EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY);			
@@ -3314,7 +3314,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		/* Remove Tumble callback */
 		if (scene_viewer->tumble_callback_id)
 		{
-			Event_dispatcher_remove_idle_event_callback(
+			Event_dispatcher_remove_idle_callback(
 				User_interface_get_event_dispatcher(scene_viewer->user_interface),
 				scene_viewer->tumble_callback_id);
 			scene_viewer->tumble_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
@@ -3412,7 +3412,7 @@ eg. automatic tumble.
 	{
 		if (scene_viewer->tumble_callback_id)
 		{
-			Event_dispatcher_remove_idle_event_callback(
+			Event_dispatcher_remove_idle_callback(
 				User_interface_get_event_dispatcher(scene_viewer->user_interface),
 				scene_viewer->tumble_callback_id);
 			scene_viewer->tumble_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
@@ -3450,14 +3450,14 @@ Must call this in DESTROY function.
 	{
 		if (scene_viewer->idle_update_callback_id)
 		{
-			Event_dispatcher_remove_idle_event_callback(
+			Event_dispatcher_remove_idle_callback(
 				User_interface_get_event_dispatcher(scene_viewer->user_interface),
 				scene_viewer->idle_update_callback_id);
 			scene_viewer->idle_update_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
 		}
 		if (scene_viewer->tumble_callback_id)
 		{
-			Event_dispatcher_remove_idle_event_callback(
+			Event_dispatcher_remove_idle_callback(
 				User_interface_get_event_dispatcher(scene_viewer->user_interface),
 				scene_viewer->tumble_callback_id);
 			scene_viewer->tumble_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
@@ -3881,7 +3881,7 @@ Sets the input_mode of the Scene_viewer.
 		/* clear automatic tumble since cannot make successful input while on */
 		if (scene_viewer->tumble_callback_id)
 		{
-			Event_dispatcher_remove_idle_event_callback(
+			Event_dispatcher_remove_idle_callback(
 				User_interface_get_event_dispatcher(scene_viewer->user_interface),
 				scene_viewer->tumble_callback_id);
 			scene_viewer->tumble_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
@@ -5934,7 +5934,7 @@ Requests a full redraw immediately.
 		{
 			event_dispatcher = User_interface_get_event_dispatcher(
 				scene_viewer->user_interface);
-			Event_dispatcher_remove_idle_event_callback(
+			Event_dispatcher_remove_idle_callback(
 				event_dispatcher, scene_viewer->idle_update_callback_id);
 			scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 			if (scene_viewer->tumble_active)
@@ -5942,7 +5942,7 @@ Requests a full redraw immediately.
 				Scene_viewer_automatic_tumble_callback((void *)scene_viewer);
 				if(!scene_viewer->tumble_callback_id)
 				{
-					scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_event_callback(
+					scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_callback(
 						event_dispatcher, Scene_viewer_automatic_tumble_callback, (void *)scene_viewer,
 						EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY);
 				}
@@ -5993,7 +5993,7 @@ and <transparency_layers> are used for just this render.
 		{
 			event_dispatcher = User_interface_get_event_dispatcher(
 				scene_viewer->user_interface);
-			Event_dispatcher_remove_idle_event_callback(
+			Event_dispatcher_remove_idle_callback(
 				event_dispatcher, scene_viewer->idle_update_callback_id);
 			scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 			if (scene_viewer->tumble_active)
@@ -6001,7 +6001,7 @@ and <transparency_layers> are used for just this render.
 				Scene_viewer_automatic_tumble_callback((void *)scene_viewer);
 				if(!scene_viewer->tumble_callback_id)
 				{
-					scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_event_callback(
+					scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_callback(
 						event_dispatcher, Scene_viewer_automatic_tumble_callback, (void *)scene_viewer,
 						EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY);
 				}

@@ -34,7 +34,7 @@ DESCRIPTION :
 {
 	char *command_prompt;
 	struct Event_dispatcher *event_dispatcher;
-	struct Event_dispatcher_file_descriptor_handler *console_handler;
+	struct Event_dispatcher_descriptor_callback *console_callback;
 	struct Execute_command *execute_command;
 }; /* struct Console */
 
@@ -119,7 +119,7 @@ Create the structures and retrieve the command window from the uil file.
 			console->command_prompt = (char *)NULL;
 			console->execute_command=execute_command;
 			console->event_dispatcher=event_dispatcher;
-			if (!(console->console_handler = Event_dispatcher_add_file_descriptor_handler(
+			if (!(console->console_callback = Event_dispatcher_add_simple_descriptor_callback(
 				event_dispatcher, file_descriptor,
 				Console_callback, (void *)console)))
 			{
@@ -159,8 +159,8 @@ DESCRIPTION:
 
 	if (console_pointer && (console = *console_pointer))
 	{
-		Event_dispatcher_remove_file_descriptor_handler(console->event_dispatcher,
-			console->console_handler);
+		Event_dispatcher_remove_descriptor_callback(console->event_dispatcher,
+			console->console_callback);
 		DEALLOCATE(*console_pointer);
 		return_code = 1;
 	}

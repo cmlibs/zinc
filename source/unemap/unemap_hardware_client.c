@@ -190,9 +190,9 @@ Information needed for each SCU crate/NI computer pair.
 #if !defined (CREATE_MUTEX)
 	pthread_mutex_t event_dispatcher_mutex_storage;
 #endif /* !defined (CREATE_MUTEX) */
-	struct Event_dispatcher_file_descriptor_handler *acquired_socket_xid;
-	struct Event_dispatcher_file_descriptor_handler *calibration_socket_xid;
-	struct Event_dispatcher_file_descriptor_handler *scrolling_socket_xid;
+	struct Event_dispatcher_descriptor_callback *acquired_socket_xid;
+	struct Event_dispatcher_descriptor_callback *calibration_socket_xid;
+	struct Event_dispatcher_descriptor_callback *scrolling_socket_xid;
 #endif /* defined (UNIX) */
 #endif /* defined (USE_SOCKETS) */
 	unsigned short acquired_port,calibration_port,command_port,scrolling_port;
@@ -1216,7 +1216,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 		crate=(struct Unemap_crate *)crate_void;
 #if defined (BACKGROUND_SAVING) && defined (UNIX)
 		lock_mutex(crate->event_dispatcher_mutex);
-		crate->acquired_socket_xid=Event_dispatcher_add_file_descriptor_handler(
+		crate->acquired_socket_xid=Event_dispatcher_add_simple_descriptor_callback(
 			crate->event_dispatcher,crate->acquired_socket,
 			acquired_socket_callback,(void *)crate);
 		unlock_mutex(crate->event_dispatcher_mutex);
@@ -1270,11 +1270,11 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 #endif /* defined (DEBUG) */
 		/* so that don't get multiple acquired_socket_callback calls */
 		lock_mutex(crate->event_dispatcher_mutex);
-		Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
+		Event_dispatcher_remove_descriptor_callback(crate->event_dispatcher,
 			crate->acquired_socket_xid);
 		unlock_mutex(crate->event_dispatcher_mutex);
 		crate->acquired_socket_xid=
-			(struct Event_dispatcher_file_descriptor_handler *)NULL;
+			(struct Event_dispatcher_descriptor_callback *)NULL;
 		if (pthread_create(&thread_id,(pthread_attr_t *)NULL,
 			acquired_socket_callback_process,(void *)crate_void))
 		{
@@ -2164,7 +2164,7 @@ See <unemap_configure> for more details.
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 				if (!(crate->scrolling_socket_xid)&&(crate->scrolling_socket_xid=
-					Event_dispatcher_add_file_descriptor_handler(
+					Event_dispatcher_add_simple_descriptor_callback(
 					event_dispatcher,crate->scrolling_socket,
 					scrolling_socket_callback,(void *)crate)))
 #endif /* defined (UNIX) */
@@ -2177,7 +2177,7 @@ See <unemap_configure> for more details.
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 					if (!(crate->calibration_socket_xid)&&(crate->calibration_socket_xid=
-						Event_dispatcher_add_file_descriptor_handler(
+						Event_dispatcher_add_simple_descriptor_callback(
 						event_dispatcher,crate->calibration_socket,
 						calibration_socket_callback,(void *)crate)))
 #endif /* defined (UNIX) */
@@ -2190,7 +2190,7 @@ See <unemap_configure> for more details.
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 						if (!(crate->acquired_socket_xid)&&(crate->acquired_socket_xid=
-							Event_dispatcher_add_file_descriptor_handler(
+							Event_dispatcher_add_simple_descriptor_callback(
 							event_dispatcher,crate->acquired_socket,
 							acquired_socket_callback,(void *)crate)))
 #endif /* defined (UNIX) */
@@ -2282,18 +2282,18 @@ See <unemap_configure> for more details.
 								SetEvent(crate->scrolling_socket_thread_stop_event);
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
-								Event_dispatcher_remove_file_descriptor_handler(
+								Event_dispatcher_remove_descriptor_callback(
 									crate->event_dispatcher,crate->acquired_socket_xid);
 								crate->acquired_socket_xid=
-									(struct Event_dispatcher_file_descriptor_handler *)NULL;
-								Event_dispatcher_remove_file_descriptor_handler(
+									(struct Event_dispatcher_descriptor_callback *)NULL;
+								Event_dispatcher_remove_descriptor_callback(
 									crate->event_dispatcher,crate->calibration_socket_xid);
 								crate->calibration_socket_xid=
-									(struct Event_dispatcher_file_descriptor_handler *)NULL;
-								Event_dispatcher_remove_file_descriptor_handler(
+									(struct Event_dispatcher_descriptor_callback *)NULL;
+								Event_dispatcher_remove_descriptor_callback(
 									crate->event_dispatcher,crate->scrolling_socket_xid);
 								crate->scrolling_socket_xid=
-									(struct Event_dispatcher_file_descriptor_handler *)NULL;
+									(struct Event_dispatcher_descriptor_callback *)NULL;
 #endif /* defined (UNIX) */
 #if defined (UNIX)
 								unlock_mutex(crate->event_dispatcher_mutex);
@@ -2314,7 +2314,7 @@ See <unemap_configure> for more details.
 								"CreateThread failed for acquired socket");
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
-								"Event_dispatcher_add_file_descriptor_handler failed for "
+								"Event_dispatcher_add_simple_descriptor_callback failed for "
 								"acquired socket.  %p",crate->acquired_socket_xid);
 #endif /* defined (UNIX) */
 #if defined (WIN32_SYSTEM)
@@ -2324,14 +2324,14 @@ See <unemap_configure> for more details.
 							SetEvent(crate->scrolling_socket_thread_stop_event);
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
-							Event_dispatcher_remove_file_descriptor_handler(
+							Event_dispatcher_remove_descriptor_callback(
 								crate->event_dispatcher,crate->calibration_socket_xid);
 							crate->calibration_socket_xid=
-								(struct Event_dispatcher_file_descriptor_handler *)NULL;
-							Event_dispatcher_remove_file_descriptor_handler(
+								(struct Event_dispatcher_descriptor_callback *)NULL;
+							Event_dispatcher_remove_descriptor_callback(
 								crate->event_dispatcher,crate->scrolling_socket_xid);
 							crate->scrolling_socket_xid=
-								(struct Event_dispatcher_file_descriptor_handler *)NULL;
+								(struct Event_dispatcher_descriptor_callback *)NULL;
 #endif /* defined (UNIX) */
 #if defined (UNIX)
 							unlock_mutex(crate->event_dispatcher_mutex);
@@ -2352,7 +2352,7 @@ See <unemap_configure> for more details.
 							"CreateThread failed for calibration socket");
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
-							"Event_dispatcher_add_file_descriptor_handler failed for "
+							"Event_dispatcher_add_simple_descriptor_callback failed for "
 							"calibration socket.  %p",crate->calibration_socket_xid);
 #endif /* defined (UNIX) */
 #if defined (WIN32_SYSTEM)
@@ -2360,10 +2360,10 @@ See <unemap_configure> for more details.
 						SetEvent(crate->scrolling_socket_thread_stop_event);
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
-						Event_dispatcher_remove_file_descriptor_handler(
+						Event_dispatcher_remove_descriptor_callback(
 							crate->event_dispatcher,crate->scrolling_socket_xid);
 						crate->scrolling_socket_xid=
-							(struct Event_dispatcher_file_descriptor_handler *)NULL;
+							(struct Event_dispatcher_descriptor_callback *)NULL;
 #endif /* defined (UNIX) */
 #if defined (UNIX)
 						unlock_mutex(crate->event_dispatcher_mutex);
@@ -2384,7 +2384,7 @@ See <unemap_configure> for more details.
 						"CreateThread failed for scrolling socket");
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
-						"Event_dispatcher_add_file_descriptor_handler failed for scrolling "
+						"Event_dispatcher_add_simple_descriptor_callback failed for scrolling "
 						"socket.  %p",crate->scrolling_socket_xid);
 #endif /* defined (UNIX) */
 #if defined (UNIX)
@@ -2744,29 +2744,29 @@ associated with the hardware.
 			if (crate->scrolling_socket_xid)
 			{
 				lock_mutex(crate->event_dispatcher_mutex);
-				Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
+				Event_dispatcher_remove_descriptor_callback(crate->event_dispatcher,
 					crate->scrolling_socket_xid);
 				unlock_mutex(crate->event_dispatcher_mutex);
 				crate->scrolling_socket_xid=
-					(struct Event_dispatcher_file_descriptor_handler *)NULL;
+					(struct Event_dispatcher_descriptor_callback *)NULL;
 			}
 			if (crate->calibration_socket_xid)
 			{
 				lock_mutex(crate->event_dispatcher_mutex);
-				Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
+				Event_dispatcher_remove_descriptor_callback(crate->event_dispatcher,
 					crate->calibration_socket_xid);
 				unlock_mutex(crate->event_dispatcher_mutex);
 				crate->calibration_socket_xid=
-					(struct Event_dispatcher_file_descriptor_handler *)NULL;
+					(struct Event_dispatcher_descriptor_callback *)NULL;
 			}
 			if (crate->acquired_socket_xid)
 			{
 				lock_mutex(crate->event_dispatcher_mutex);
-				Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
+				Event_dispatcher_remove_descriptor_callback(crate->event_dispatcher,
 					crate->acquired_socket_xid);
 				unlock_mutex(crate->event_dispatcher_mutex);
 				crate->acquired_socket_xid=
-					(struct Event_dispatcher_file_descriptor_handler *)NULL;
+					(struct Event_dispatcher_descriptor_callback *)NULL;
 			}
 #if defined (CREATE_MUTEX)
 			destroy_mutex(&(crate->event_dispatcher_mutex));
@@ -9405,11 +9405,11 @@ Sets up the connections with the unemap crates.
 #if defined (UNIX)
 						crate->event_dispatcher=(struct Event_dispatcher *)NULL;
 						crate->acquired_socket_xid=
-							(struct Event_dispatcher_file_descriptor_handler *)NULL;
+							(struct Event_dispatcher_descriptor_callback *)NULL;
 						crate->calibration_socket_xid=
-							(struct Event_dispatcher_file_descriptor_handler *)NULL;
+							(struct Event_dispatcher_descriptor_callback *)NULL;
 						crate->scrolling_socket_xid=
-							(struct Event_dispatcher_file_descriptor_handler *)NULL;
+							(struct Event_dispatcher_descriptor_callback *)NULL;
 #endif /* defined (UNIX) */
 						/*???DB.  The port doesn't have to be unique, only the port and
 							machine being connected to */
