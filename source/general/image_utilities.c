@@ -33,6 +33,8 @@ Utilities for handling images.
 Module constants
 ----------------
 */
+#define MagickFalse (unsigned int)0
+#define MagickTrue (unsigned int)1
 
 #if ! defined (IMAGEMAGICK)
 
