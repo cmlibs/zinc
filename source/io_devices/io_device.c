@@ -69,7 +69,9 @@ DESCRIPTION :
 Called when this device has file descriptors that are waiting.
 ==============================================================================*/
 {
+#if defined (PERL_INTERPRETER)
 	char *callback_result;
+#endif /* defined (PERL_INTERPRETER) */
 	int return_code;
 	struct Io_device *device;
 
