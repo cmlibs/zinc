@@ -1735,6 +1735,8 @@ adjustment of the generic head.
 									photoface_linux_path);
 								fprintf(setup_comfile, "$PHOTOFACE_BIN = \"%sbin\"\n",
 									photoface_linux_path);
+								fprintf(setup_comfile, "$LFX_MODELER_CMISS = \"%s../lfx_modeler/cmiss\"\n",
+									photoface_linux_path);
 								fprintf(setup_comfile, "open comfile $PHOTOFACE_CMISS/pf_setup.com exec\n");
 
 								fclose(setup_comfile);
@@ -2271,7 +2273,7 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 						return_code=PF_SUCCESS_RC;
 					}
 					/* Read the generated exnode file and return the results */
-					sprintf(filename, "%sworking/warped.00001.exnode",
+					sprintf(filename, "%sworking/warped.exnode",
 						photoface_windows_path);
 					if (warped_file = fopen(filename, "r"))
 					{
@@ -2558,7 +2560,7 @@ Returns the current transformed generic head as
 	ENTER(pf_get_head_model);
 	return_code=PF_SUCCESS_RC;
 	/* Read the fitted obj file and return all the values */
-	sprintf(filename, "%sworking/target.fit.obj", photoface_windows_path);
+	sprintf(filename, "%sworking/standin.obj", photoface_windows_path);
 	if(obj = read_obj(filename))
 	{
 		*number_of_vertices = obj->number_of_vertices;
@@ -2611,7 +2613,7 @@ mode number fastest.
 	}
 
 	/* Read the fitted basis file and return all the values */
-	sprintf(filename, "%sworking/target.fit.basis", photoface_windows_path);
+	sprintf(filename, "%sworking/standin.basis", photoface_windows_path);
 	if (0 == (return_code = read_basis_version1and2(filename, number_of_vertices,
 		number_of_modes, vertex_3d_locations_or_offsets, 1)))
 	{
@@ -2627,7 +2629,7 @@ mode number fastest.
 	return (return_code);
 } /* pf_get_basis */
 
-#define CMGUI_BUG_PAD_HACK
+/* #define CMGUI_BUG_PAD_HACK */
 
 int pf_specify_image(int width,int height,enum PF_image_format image_format,
 	char *image)
@@ -2702,8 +2704,8 @@ Used to specify the image to be texture mapped onto the model.
 		sprintf(filename, "%sworking/pf_specify_image.com", photoface_windows_path);
 		if (image_comfile = fopen(filename, "w"))
 		{
-			fprintf(image_comfile, "gfx modify texture source_image image %sworking/source_image.raw specify_width %d raw_interleaved\n",
-				photoface_linux_path, width);
+			fprintf(image_comfile, "gfx modify texture source_image image rgb:%sworking/source_image.raw specify_width %d specify_height %d raw_interleaved\n",
+				photoface_linux_path, width, height);
 			fprintf(image_comfile, "gfx modify window 1 background tex_placement %f %f %f %f\n",
 				texture_ndc_x, texture_ndc_y, texture_ndc_width, texture_ndc_height);
 
@@ -2763,7 +2765,7 @@ is filled in based on the current model.
 #if defined (BACKWARD_PROJECTION)
 		/* This is the original precise texture calculation */
 		fprintf(texture_comfile, "gfx modify texture face_mapped width 1 height 1 evaluate_image field mapped_texture spectrum rgba_spectrum width $width height $height texture_coord texture element_group objface format rgba\n");
-		fprintf(texture_comfile, "gfx write texture face_mapped file %sworking/target.fit.rgb rgb\n",
+		fprintf(texture_comfile, "gfx write texture face_mapped file %sworking/standin.rgb rgb\n",
 			photoface_linux_path);
 #else /* defined (BACKWARD_PROJECTION) */
 		/* This is the projection just involving drawing the image in texture space which is 
@@ -2789,9 +2791,9 @@ is filled in based on the current model.
 		fprintf(texture_comfile, "gfx modify window texture_projection layout 2d ortho_axes z -y width $width height $height\n");
 		fprintf(texture_comfile, "gfx modify window texture_projection image scene texture_projection\n");
 		fprintf(texture_comfile, "gfx modify window texture_projection view parallel eye_point 0.5 0.5 3 interest_point 0.5 0.5 0 up_vector 0.00580574 0.999983 0 view_angle 26.525435202 near_clipping_plane 0.0288485 far_clipping_plane 10.3095 relative_viewport ndc_placement -1 -1 2 2 viewport_coordinates -1 -1 400 400\n");
-		fprintf(texture_comfile, "gfx print window texture_projection rgb file %sworking/target.fit.rgb width $width height $height\n",
+		fprintf(texture_comfile, "gfx print window texture_projection rgb file %sworking/standin.rgb width $width height $height\n",
 			photoface_linux_path);
-		fprintf(texture_comfile, "gfx modify texture face_mapped image %sworking/target.fit.rgb\n",
+		fprintf(texture_comfile, "gfx modify texture face_mapped image %sworking/standin.rgb\n",
 			photoface_linux_path);
 #endif /* defined (BACKWARD_PROJECTION) */
 		fprintf(texture_comfile, "open comfile %scmiss/pf_make_standin_texture.com exec\n",
@@ -2811,7 +2813,7 @@ is filled in based on the current model.
 			return_code=PF_SUCCESS_RC;
 		}
 
-		sprintf(filename, "%sworking/target.fit.rgb", photoface_windows_path);
+		sprintf(filename, "%sworking/standin.rgb", photoface_windows_path);
 		if (read_rgb_image_file(filename, &number_of_components,
 			&number_of_bytes_per_component, &file_height, &file_width, &image))
 		{
