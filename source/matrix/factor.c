@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : factor.c
 
-LAST MODIFIED : 4 May 2003
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
 Structures and functions for factorising Matricies, and solving linear systems.
@@ -752,7 +752,7 @@ residual and the norms of the various arrays.
 int Matrix_solve(struct Matrix *A,struct Matrix *b,struct Matrix *x,
   enum Factor_type factor_type,FILE *stream)
 /*******************************************************************************
-LAST MODIFIED : 2 May 2003
+LAST MODIFIED : 30 July 2003
 
 DESCRIPTION :
 Solve the system <A><x> = <b>, using the solver <factor_type>. If <stream> is
@@ -763,6 +763,7 @@ not null, the esidual of the system  is calculated and printed to that stream.
   struct Factor *factor;
 
   ENTER(Matrix_solve);
+	return_code=0;
   if (A&&b&&x)
   {
     if (factor=CREATE(Factor)())
