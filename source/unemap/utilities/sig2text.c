@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : sig2text.c
 
-LAST MODIFIED : 03 February 2004
+LAST MODIFIED : 13 May 2004
 
 DESCRIPTION :
 Writes out a signal file as text with devices across and time down.  The columns
@@ -14,33 +14,113 @@ are tab separated.
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include "general/debug.h"
 #include "unemap/rig.h"
 #include "user_interface/message.h"
 
+enum Output_signals
+{
+	ALL_SIGNALS,
+	NOT_REJECTED_SIGNALS
+}; /* enum Output_signals */
+
 int main(int argc,char *argv[])
 {
+	char *cnfg_file_name,*output_file_name,*signal_file_name,*temp_string;
+	enum Output_signals output_signals;
 	FILE *output_file,*signal_file;
 	float frequency,gain,offset;
-	int arg_number,i,j,number_of_devices,number_of_signals,return_code,*time;
+	int arg_number,i,j,length,number_of_devices,number_of_signals,return_code,
+		*time;
 	struct Device **device;
 	struct Rig *signal_rig;
 	struct Signal_buffer *buffer;
 
-	/* check arguments */
 	return_code=0;
-	if ((3==argc)||(4==argc))
+	output_signals=ALL_SIGNALS;
+	signal_file_name=(char *)NULL;
+	output_file_name=(char *)NULL;
+	cnfg_file_name=(char *)NULL;
+	/* check arguments */
+	if (3<=argc)
 	{
-		arg_number=0;
+		return_code=1;
+		arg_number=1;
+		if ('-'==argv[arg_number][0])
+		{
+			length=strlen(argv[arg_number]);
+			if (ALLOCATE(temp_string,char,length+1))
+			{
+				for (i=0;i<length;i++)
+				{
+					if (isupper(argv[arg_number][i]))
+					{
+						temp_string[i]=tolower(argv[arg_number][i]);
+					}
+					else
+					{
+						temp_string[i]=argv[arg_number][i];
+					}
+				}
+				if (!strncmp(temp_string,"-out=",5))
+				{
+					if (!strcmp(temp_string+5,"all"))
+					{
+						output_signals=ALL_SIGNALS;
+					}
+					else if (!strcmp(temp_string+5,"not_reject"))
+					{
+						output_signals=NOT_REJECTED_SIGNALS;
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+				else
+				{
+					return_code=0;
+				}
+				DEALLOCATE(temp_string);
+			}
+			else
+			{
+				return_code=0;
+			}
+			arg_number++;
+		}
+		if (return_code&&(2<=argc-arg_number))
+		{
+			signal_file_name=argv[arg_number];
+			arg_number++;
+			output_file_name=argv[arg_number];
+			arg_number++;
+			cnfg_file_name=(char *)NULL;
+			if (1<=argc-arg_number)
+			{
+				if (1==argc-arg_number)
+				{
+					cnfg_file_name=argv[arg_number];
+					arg_number++;
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+		}
+	}
+	if (return_code)
+	{
+		return_code=0;
 		/* read the signal file */
 		signal_rig=(struct Rig *)NULL;
-		arg_number++;
-		if ((signal_file=fopen(argv[arg_number],"rb"))&&
+		if ((signal_file=fopen(signal_file_name,"rb"))&&
 			read_signal_file(signal_file,&signal_rig))
 		{
 			fclose(signal_file);
 			/* open the signal text file */
-			arg_number++;
-			if (output_file=fopen(argv[arg_number],"w"))
+			if (output_file=fopen(output_file_name,"w"))
 			{
 				device=signal_rig->devices;
 				if (device&&(*device)&&((*device)->signal)&&
@@ -54,7 +134,13 @@ int main(int argc,char *argv[])
 					fprintf(output_file,"time");
 					for (i=number_of_devices;i>0;i--)
 					{
-						fprintf(output_file,"\t%s",(*device)->description->name);
+						if ((ALL_SIGNALS==output_signals)||
+							((NOT_REJECTED_SIGNALS==output_signals)&&
+							((ACCEPTED==(*device)->signal->status)||
+							(UNDECIDED==(*device)->signal->status))))
+						{
+							fprintf(output_file,"\t%s",(*device)->description->name);
+						}
 						device++;
 					}
 					fprintf(output_file,"\n");
@@ -72,10 +158,16 @@ int main(int argc,char *argv[])
 								device=signal_rig->devices;
 								for (j=number_of_devices;j>0;j--)
 								{
-									offset=(*device)->channel->offset;
-									gain=(*device)->channel->gain;
-									fprintf(output_file,"\t%g",
-										gain*(value[(*device)->signal->index]-offset));
+									if ((ALL_SIGNALS==output_signals)||
+										((NOT_REJECTED_SIGNALS==output_signals)&&
+										((ACCEPTED==(*device)->signal->status)||
+										(UNDECIDED==(*device)->signal->status))))
+									{
+										offset=(*device)->channel->offset;
+										gain=(*device)->channel->gain;
+										fprintf(output_file,"\t%g",
+											gain*(value[(*device)->signal->index]-offset));
+									}
 									device++;
 								}
 								fprintf(output_file,"\n");
@@ -94,10 +186,16 @@ int main(int argc,char *argv[])
 								device=signal_rig->devices;
 								for (j=number_of_devices;j>0;j--)
 								{
-									offset=(*device)->channel->offset;
-									gain=(*device)->channel->gain;
-									fprintf(output_file,"\t%g",
-										gain*((float)value[(*device)->signal->index]-offset));
+									if ((ALL_SIGNALS==output_signals)||
+										((NOT_REJECTED_SIGNALS==output_signals)&&
+										((ACCEPTED==(*device)->signal->status)||
+										(UNDECIDED==(*device)->signal->status))))
+									{
+										offset=(*device)->channel->offset;
+										gain=(*device)->channel->gain;
+										fprintf(output_file,"\t%g",
+											gain*((float)value[(*device)->signal->index]-offset));
+									}
 									device++;
 								}
 								fprintf(output_file,"\n");
@@ -113,11 +211,10 @@ int main(int argc,char *argv[])
 					return_code=0;
 				}
 				fclose(output_file);
-				if (4==argc)
+				if (cnfg_file_name)
 				{
 					/* open the signal text file */
-					arg_number++;
-					if (output_file=fopen(argv[arg_number],"w"))
+					if (output_file=fopen(cnfg_file_name,"w"))
 					{
 						write_configuration(signal_rig,output_file,TEXT);
 						fclose(output_file);
@@ -125,7 +222,7 @@ int main(int argc,char *argv[])
 					else
 					{
 						printf("ERROR.  Could not open configuration file.  %s\n",
-							argv[arg_number]);
+							cnfg_file_name);
 						return_code=0;
 					}
 				}
@@ -133,33 +230,33 @@ int main(int argc,char *argv[])
 			else
 			{
 				printf("ERROR.  Could not open text signal file.  %s\n",
-					argv[arg_number]);
+					output_file_name);
 				return_code=0;
 			}
 		}
 		else
 		{
-			printf("ERROR.  Could not read signal file.  %s\n",argv[arg_number]);
+			printf("ERROR.  Could not read signal file.  %s\n",signal_file_name);
 			return_code=0;
 		}
 	}
 	else
 	{
-		printf("usage: sig2text in_signal_file out_text_file <out_cnfg_file>\n");
+		printf("usage: sig2text <-out=all|not_reject> in_signal_file out_text_file <out_cnfg_file>\n");
+		printf("  -out= is an option for specifying the signals to be written.  The default is all.  not_reject means that rejected signals will not be written");
 		printf("  in_signal_file is the name of the signal file to be converted\n");
 		printf("  out_text_file is the name for the text file that is output\n");
 		printf("  out_cnfg_file is the name for the configuration file that is output.  This is optional\n");
 		return_code=0;
 	}
-
-  /* DPN 03-FEB-2004 Returning 0 for non-error */
-  if (return_code == 0)
+  if (0==return_code)
   {
-    return_code = -1;
+    return_code= -1;
   }
   else
   {
-    return_code = 0;
+    return_code=0;
   }
+
 	return (return_code);
 } /* main */
