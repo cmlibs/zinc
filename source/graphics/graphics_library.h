@@ -20,6 +20,8 @@ Functions and structures for interfacing with the graphics library.
 #include <gl/gl.h>
 #endif
 #if defined (OPENGL_API)
+#define GL_GLEXT_PROTOTYPES
+#define GLX_GLXEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glu.h>
 #if defined (WIN32_SYSTEM)

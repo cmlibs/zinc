@@ -16,6 +16,8 @@ Private header file for the 3-D drawing widget.
 #include "ThreeDDraw.h"
 /* header for 3-D graphics application programming interface */
 #if defined (OPENGL_API)
+#define GL_GLEXT_PROTOTYPES
+#define GLX_GLXEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glx.h>
 #endif
