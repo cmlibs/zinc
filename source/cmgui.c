@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 2 February 2000
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -780,6 +780,9 @@ Main program for the CMISS Graphical User Interface
 	if (command_data.graphical_material_manager=
 		CREATE_MANAGER(Graphical_material)())
 	{
+		struct Graphical_material *default_selected_material;
+		struct Colour colour;
+
 		if (command_data.default_graphical_material=
 			CREATE(Graphical_material)("default"))
 		{
@@ -791,6 +794,24 @@ Main program for the CMISS Graphical User Interface
 			{
 				DEACCESS(Graphical_material)(
 					&(command_data.default_graphical_material));
+			}
+		}
+		/* create material "default_selected" to be bright red for highlighting
+			 selected graphics */
+		if (default_selected_material=CREATE(Graphical_material)(
+			"default_selected"))
+		{
+			colour.red=1.0;
+			colour.green=0.0;
+			colour.blue=0.0;
+			Graphical_material_set_ambient(default_selected_material,&colour);
+			Graphical_material_set_diffuse(default_selected_material,&colour);
+			/* ACCESS so can never be destroyed */
+			ACCESS(Graphical_material)(default_selected_material);
+			if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(default_selected_material,
+				command_data.graphical_material_manager))
+			{
+				DEACCESS(Graphical_material)(&default_selected_material);
 			}
 		}
 	}
@@ -1076,34 +1097,10 @@ Main program for the CMISS Graphical User Interface
 	}
 	if (return_code)
 	{
-		/* add "active" node/element/data groups to managers */
-		/*???RC this must be done after call to open_user_interface so that the
-			application_shell is created - needed for discretization defaults etc. */
-		if (command_data.active_node_group=CREATE(GROUP(FE_node))("active"))
-		{
-			ACCESS(GROUP(FE_node))(command_data.active_node_group);
-			ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(command_data.active_node_group,
-				command_data.node_group_manager);
-		}
-		if (command_data.active_data_group=CREATE(GROUP(FE_node))("active"))
-		{
-			ACCESS(GROUP(FE_node))(command_data.active_data_group);
-			ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(command_data.active_data_group,
-				command_data.data_group_manager);
-		}
-		if (command_data.active_element_group=CREATE(GROUP(FE_element))("active"))
-		{
-			ACCESS(GROUP(FE_element))(command_data.active_element_group);
-			ADD_OBJECT_TO_MANAGER(GROUP(FE_element))(
-				command_data.active_element_group,command_data.element_group_manager);
-		}
-		/* the mesh editor requires the "active" groups */
 		if (command_data.default_scene)
 		{
 			command_data.graphical_node_editor=CREATE(Graphical_node_editor)(
-				command_data.default_scene,command_data.active_element_group,
-				command_data.active_data_group,command_data.active_node_group,
-				command_data.node_manager);
+				command_data.default_scene,command_data.node_manager);
 		}
 		else
 		{
