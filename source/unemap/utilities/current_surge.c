@@ -4244,7 +4244,7 @@ static void process_keyboard(
 {
 	char option;
 	float mean_VCC,mean_VCCm,mean_VCCp,ratio_VCCm_VCC,ratio_VCC_VCCp;
-	int count,i,return_code;
+	int count,i,offset,return_code;
 	short int *sample;
 #if defined (MOTIF)
 	float sampling_frequency;
@@ -4356,7 +4356,11 @@ static void process_keyboard(
 							mean_VCCp=0;
 							mean_VCCm=0;
 							sample=samples;
-							for (i=number_of_samples;i>0;i--)
+							/* only average "steady state" */
+/*							for (i=number_of_samples;i>0;i--) */
+							offset=(int)(0.1*sampling_frequency);
+							sample += offset*number_of_channels;
+							for (i=number_of_samples-2*offset;i>0;i--)
 							{
 								mean_VCC += sample[0];
 								mean_VCCm += sample[1];
@@ -4394,7 +4398,13 @@ static void process_keyboard(
 						printf("  mean VCC = %g\n",mean_VCC);
 						printf("  mean VCC- = %g\n",mean_VCCm);
 						printf("  mean VCC+ = %g\n",mean_VCCp);
-					} while (return_code&&(ratio_VCCm_VCC< -1)&&(1<ratio_VCC_VCCp));
+						/* give time for capacitors to discharge */
+#if defined (WINDOWS)
+						/* in milliseconds */
+						Sleep((DWORD)2000);
+#endif /* defined (WINDOWS) */
+/*					} while (return_code&&(ratio_VCCm_VCC< -1)&&(1<ratio_VCC_VCCp));*/
+					} while (return_code&&(ratio_VCCm_VCC< -0.9)&&(0.9<ratio_VCC_VCCp));
 					printf("number of power on/off cycles = %d\n",count);
 					printf("mean VCC = %g\n",mean_VCC);
 					printf("mean VCC- = %g\n",mean_VCCm);
