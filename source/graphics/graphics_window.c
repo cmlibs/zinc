@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -5112,7 +5112,7 @@ Writes the properties of the <window> to the command window.
 int list_Graphics_window_commands(struct Graphics_window *window,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Writes the commands for creating the <window> and establishing the views in it
@@ -5151,7 +5151,7 @@ to the command window.
 			display_message(INFORMATION_MESSAGE," %s",
 				Scene_viewer_buffer_mode_string(buffer_mode));
 		}
-		display_message(INFORMATION_MESSAGE,"\n");
+		display_message(INFORMATION_MESSAGE,";\n");
 		/* image */
 		display_message(INFORMATION_MESSAGE,"gfx modify window %s image",
 			window->name);
@@ -5170,15 +5170,15 @@ to the command window.
 			display_message(INFORMATION_MESSAGE," light_model %s",name);
 			DEALLOCATE(name);
 		}
-		display_message(INFORMATION_MESSAGE,"\n");
+		display_message(INFORMATION_MESSAGE,";\n");
 		sprintf(prefix,"gfx modify window %s image add_light ",window->name);
-		for_each_Light_in_Scene_viewer(window->scene_viewer[0],list_Light_name,
-			(void *)prefix);
+		for_each_Light_in_Scene_viewer(window->scene_viewer[0],
+			list_Light_name_command, (void *)prefix);
 		/* layout */
 		Graphics_window_get_viewing_area_size(window,&width,&height);
 		display_message(INFORMATION_MESSAGE,
 			"gfx modify window %s layout %s ortho_axes %s %s eye_spacing %g"
-			" width %d height %d\n",window->name,
+			" width %d height %d;\n",window->name,
 			Graphics_window_layout_mode_string(window->layout_mode),
 			axis_name[window->ortho_up_axis],axis_name[window->ortho_front_axis],
 			window->eye_spacing,width,height);
@@ -5187,7 +5187,7 @@ to the command window.
 		{
 			scene_viewer=window->scene_viewer[pane_no];
 			display_message(INFORMATION_MESSAGE,
-				"gfx modify window %s set current_pane %d\n",
+				"gfx modify window %s set current_pane %d;\n",
 				window->name,pane_no+1);
 			/* background */
 			display_message(INFORMATION_MESSAGE,
@@ -5222,7 +5222,7 @@ to the command window.
 			{
 				display_message(INFORMATION_MESSAGE," texture none");
 			}
-			display_message(INFORMATION_MESSAGE,"\n");
+			display_message(INFORMATION_MESSAGE,";\n");
 			/* view */
 			display_message(INFORMATION_MESSAGE,
 				"gfx modify window %s view",window->name);
@@ -5289,7 +5289,7 @@ to the command window.
 			display_message(INFORMATION_MESSAGE,
 				" viewport_coordinates %g %g %g %g",viewport_left,viewport_top,
 				viewport_pixels_per_unit_x,viewport_pixels_per_unit_y);
-			display_message(INFORMATION_MESSAGE,"\n");
+			display_message(INFORMATION_MESSAGE,";\n");
 			/* overlay */
 			display_message(INFORMATION_MESSAGE,
 				"gfx modify window %s overlay",window->name);
@@ -5307,7 +5307,7 @@ to the command window.
 			{
 				display_message(INFORMATION_MESSAGE," scene none");
 			}
-			display_message(INFORMATION_MESSAGE,"\n");
+			display_message(INFORMATION_MESSAGE,";\n");
 		}
 		/* settings */
 		display_message(INFORMATION_MESSAGE,
@@ -5347,7 +5347,7 @@ to the command window.
 			display_message(INFORMATION_MESSAGE,
 				" %d",Scene_viewer_get_transparency_layers(scene_viewer));
 		}
-		display_message(INFORMATION_MESSAGE,"\n");
+		display_message(INFORMATION_MESSAGE,";\n");
 		DEALLOCATE(prefix);
 		return_code=1;
 	}

@@ -2374,7 +2374,7 @@ Returns the data_group used by <gt_element_group>.
 int GT_element_group_list_commands(struct GT_element_group *gt_element_group,
 	char *command_prefix,char *command_suffix)
 /*******************************************************************************
-LAST MODIFIED : 14 December 1999
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Lists the general settings and graphics defined for <gt_element_group> - as a

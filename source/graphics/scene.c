@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -4237,7 +4237,7 @@ in an easy-to-interpret matrix multiplication form.
 int list_Scene_object_transformation_commands(struct Scene_object *scene_object,
 	void *command_prefix_void)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Iterator function for writing the transformation in effect for <scene_object>
@@ -4268,7 +4268,7 @@ as a command, using the given <command_prefix>.
 						(transformation_matrix)[i][j]);
 				}
 			}
-			display_message(INFORMATION_MESSAGE,"\n");
+			display_message(INFORMATION_MESSAGE,";\n");
 		}
 	}
 	else

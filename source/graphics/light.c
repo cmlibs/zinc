@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : light.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 The functions for manipulating lights.
@@ -1554,7 +1554,7 @@ Writes the properties of the <light> to the command window.
 
 int list_Light_name(struct Light *light,void *preceding_text_void)
 /*******************************************************************************
-LAST MODIFIED : 2 December 1998
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Writes the name of the <light> to the command window, preceded on each line by
@@ -1590,6 +1590,46 @@ name of the light if it contains any special characters.
 
 	return (return_code);
 } /* list_Light_name */
+
+int list_Light_name_command(struct Light *light,void *preceding_text_void)
+/*******************************************************************************
+LAST MODIFIED : 22 January 2002
+
+DESCRIPTION :
+Writes the name of the <light> to the command window, preceded on each line by
+the optional <preceding_text> string. Makes sure quotes are put around the
+name of the light if it contains any special characters.
+Follows the light name with semicolon and carriage return.
+==============================================================================*/
+{
+	char *name,*preceding_text;
+	int return_code;
+
+	ENTER(list_Light_name_command);
+	if (light)
+	{
+		if (preceding_text=(char *)preceding_text_void)
+		{
+			display_message(INFORMATION_MESSAGE,preceding_text);
+		}
+		if (name=duplicate_string(light->name))
+		{
+			/* put quotes around name if it contains special characters */
+			make_valid_token(&name);
+			display_message(INFORMATION_MESSAGE,"%s;\n",name);
+			DEALLOCATE(name);
+		}
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"list_Light_name_command.  Missing light");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Light_name_command */
 
 #if defined (OLD_CODE)
 int activate_Light(struct Light *light)

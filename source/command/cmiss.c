@@ -14159,7 +14159,11 @@ Executes a GFX LIST G_ELEMENT.
 					if ((scene != command_data->default_scene)&&
 						ALLOCATE(command_suffix,char,strlen(scene_name)+8))
 					{
-						sprintf(command_suffix," scene %s",scene_name);
+						sprintf(command_suffix," scene %s;",scene_name);
+					}
+					else
+					{
+						command_suffix = duplicate_string(";");
 					}
 					if (element_group&&(gt_element_group=
 						Scene_get_graphical_element_group(scene,element_group)))

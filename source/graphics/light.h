@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : light.h
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 The data structures used for representing graphical lights.
@@ -207,6 +207,17 @@ LAST MODIFIED : 14 October 1998
 DESCRIPTION :
 Writes the name of the <light> to the command window, preceded on each line by
 the optional <preceding_text> string.
+==============================================================================*/
+
+int list_Light_name_command(struct Light *light,void *preceding_text_void);
+/*******************************************************************************
+LAST MODIFIED : 22 January 2002
+
+DESCRIPTION :
+Writes the name of the <light> to the command window, preceded on each line by
+the optional <preceding_text> string. Makes sure quotes are put around the
+name of the light if it contains any special characters.
+Follows the light name with semicolon and carriage return.
 ==============================================================================*/
 
 int reset_Lights(void);

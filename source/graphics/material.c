@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -1345,7 +1345,7 @@ Writes the properties of the <material> to the command window.
 int list_Graphical_material_commands(struct Graphical_material *material,
 	void *command_prefix_void)
 /*******************************************************************************
-LAST MODIFIED : 2 December 1998
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Writes on the command window the command needed to recreate the <material>.
@@ -1393,7 +1393,7 @@ The command is started with the string pointed to by <command_prefix>.
 			display_message(INFORMATION_MESSAGE," texture %s",name);
 			DEALLOCATE(name);
 		}
-		display_message(INFORMATION_MESSAGE,"\n");
+		display_message(INFORMATION_MESSAGE,";\n");
 		return_code=1;
 	}
 	else

@@ -3,7 +3,7 @@ FILE : spectrum_settings.c
 
 Largely pillaged from graphics/element_group_settings.c
 
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Spectrum_settings structure and routines for describing and manipulating the
@@ -2742,7 +2742,7 @@ DESCRIPTION :
 int Spectrum_settings_list_contents(struct Spectrum_settings *settings,
 	void *list_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 August 1998
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Writes out the <settings> as a text string in the command window with the
@@ -2777,7 +2777,7 @@ Writes out the <settings> as a text string in the command window with the
 				sprintf(line," (access count = %i)",settings->access_count);
 				display_message(INFORMATION_MESSAGE,line);
 			}
-			display_message(INFORMATION_MESSAGE,"\n");
+			display_message(INFORMATION_MESSAGE,";\n");
 			DEALLOCATE(settings_string);
 			return_code=1;
 		}

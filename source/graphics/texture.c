@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -3340,7 +3340,7 @@ Writes the properties of the <texture> to the command window.
 
 int list_Texture_commands(struct Texture *texture,void *command_prefix_void)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2000
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Writes on the command window the command needed to recreate the <texture>.
@@ -3395,7 +3395,7 @@ The command is started with the string pointed to by <command_prefix>.
 		/* write the type of wrapping */
 		display_message(INFORMATION_MESSAGE," %s",
 			Texture_wrap_mode_string(texture->wrap_mode));
-		display_message(INFORMATION_MESSAGE,"\n");
+		display_message(INFORMATION_MESSAGE,";\n");
 		return_code=1;
 	}
 	else

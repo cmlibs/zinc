@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Spectrum functions and support code.
@@ -1904,7 +1904,7 @@ Executes a GFX DESTROY SPECTRUM command.
 int Spectrum_list_commands(struct Spectrum *spectrum,
 	char *command_prefix,char *command_suffix)
 /*******************************************************************************
-LAST MODIFIED : 21 December 1998
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Writes the properties of the <spectrum> to the command window.
@@ -1940,7 +1940,7 @@ Writes the properties of the <spectrum> to the command window.
 				{
 					display_message(INFORMATION_MESSAGE,command_suffix);
 				}
-				display_message(INFORMATION_MESSAGE,"\n");
+				display_message(INFORMATION_MESSAGE,";\n");
 				list_data.settings_string_detail=SPECTRUM_SETTINGS_STRING_COMPLETE;
 				list_data.line_prefix=line_prefix;
 				list_data.line_suffix=command_suffix;
