@@ -858,22 +858,26 @@ depend :
 	(makedepend -f $(DEPENDFILE) -o.o -Y -a -- $(ALL_FLAGS) -- $(SRCS_1) 2>> $(DEPENDFILE).tmp)
 	(makedepend -f $(DEPENDFILE) -o.o -Y -a -- $(ALL_FLAGS) -- $(SRCS_2) 2>> $(DEPENDFILE).tmp)
 	(makedepend -f $(DEPENDFILE) -o.o -Y -a -- $(ALL_FLAGS) -- filt/exnodecmgui.c 2>> $(DEPENDFILE).tmp)
+ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    # The uidh get their full path in the dependencies which stops the VPATH
    #.uil.uidh rule from picking up dependencies so I remove this PATH
 	sed "s%$(UIDH_PATH)/%%g" $(DEPENDFILE) > $(DEPENDFILE).tmp2
 	mv $(DEPENDFILE).tmp2 $(DEPENDFILE)
+endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(SYSNAME:IRIX%=),)
 	(ls $(SRCS) 2>&1 | sed "s%Cannot access %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%;s%UX:ls: ERROR: %%" >> $(DEPENDFILE))
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
 	(ls $(SRCS) 2>&1 | sed "s%ls: %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> $(DEPENDFILE))
 endif # SYSNAME == Linux
+ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    # Try and make a rule for the uidhs if they don't exist already,
    # It is bad, based on the format of the error output from makedepend and it only
    # gets the first inclusion.  If it fails then you can get the correct makedepend 
    # by ensuring all the uidh files already exist before you makedepend
 	( grep uidh $(DEPENDFILE).tmp | grep makedepend | awk -v Obj=o -F "[ ,]" '{printf("%s.%s:",substr($$4, 1, length($$4) - 2),Obj); for(i = 1 ; i <= NF ; i++)  { if (match($$i,"uidh")) printf(" %s", substr($$i, 2, length($$i) -2)) } printf("\n");}' >> $(DEPENDFILE))
-#	rm $(DEPENDFILE).tmp
+endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
+	rm $(DEPENDFILE).tmp
 
 transfer :
 	tar -cvf - \
