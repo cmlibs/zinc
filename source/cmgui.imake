@@ -710,6 +710,7 @@ ELEMENT_SRCS = \
 	element/element_point_tool.c
 FINITE_ELEMENT_SRCS = \
 	finite_element/computed_field.c \
+	finite_element/computed_field_find_xi.c \
 	finite_element/export_finite_element.c \
 	finite_element/field_value_index_ranges.c \
 	finite_element/finite_element.c \
