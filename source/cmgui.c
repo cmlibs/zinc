@@ -581,9 +581,10 @@ Main program for the CMISS Graphical User Interface
 	struct Cmiss_command_data command_data;
 	struct Computed_field *computed_field;
 	struct Command_window *command_window;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Execute_command *execute_command, *set_command;
+	struct Graphical_material *default_selected_material;
 	struct GT_object *glyph;
+	struct MANAGER(Computed_field) *computed_field_manager;
 #if !defined (WINDOWS_DEV_FLAG)
 	struct Modifier_entry set_file_name_option_table[]=
 	{
@@ -780,7 +781,6 @@ Main program for the CMISS Graphical User Interface
 	if (command_data.graphical_material_manager=
 		CREATE_MANAGER(Graphical_material)())
 	{
-		struct Graphical_material *default_selected_material;
 		struct Colour colour;
 
 		if (command_data.default_graphical_material=
@@ -1024,7 +1024,7 @@ Main program for the CMISS Graphical User Interface
 		command_data.spectrum_manager,command_data.graphical_material_manager,
 		command_data.data_manager,command_data.glyph_list);	
 	set_unemap_package_background_colour(command_data.unemap_package,
-		command_data.background_colour);
+		&(command_data.background_colour));
 	set_unemap_package_light(command_data.unemap_package,command_data.default_light);
 	set_unemap_package_light_model(command_data.unemap_package,
 		command_data.default_light_model);
@@ -1731,18 +1731,69 @@ Main program for the CMISS Graphical User Interface
 					/*???DB.  Should this actually be inside the application and be used to
 					  set a flag that terminates the main loop ? */
 					DESTROY(Machine_information)(&user_interface.local_machine_info);		
-				}						
-				DESTROY(MANAGER(FE_field))(&	command_data.fe_field_manager);					
-				DESTROY(MANAGER(GROUP(FE_node)))(&	command_data.node_group_manager);					
-				DESTROY(MANAGER(FE_node))(&	command_data.node_manager);							
-				DESTROY(MANAGER(GROUP(FE_node)))(&	command_data.data_group_manager);	
-				DESTROY(MANAGER(GROUP(FE_element)))(&	command_data.element_group_manager);					
+				}
+
+#if defined (SGI_MOVIE_FILE)
+				DESTROY(MANAGER(Movie_graphics))(&command_data.movie_graphics_manager);
+#endif /* defined (SGI_MOVIE_FILE) */
+
+				DESTROY(MANAGER(Graphics_window))(&command_data.graphics_window_manager);
+
+				DESTROY(Graphical_element_creator)(&command_data.graphical_element_creator);
+				DESTROY(Graphical_node_editor)(&command_data.graphical_node_editor);
+
+				DEACCESS(Scene)(&(command_data.default_scene));
+				DESTROY(MANAGER(Scene))(&command_data.scene_manager);
+
+				DESTROY(LIST(GT_object))(&command_data.graphics_object_list);
+				DESTROY(LIST(GT_object))(&command_data.glyph_list);
+
+				DESTROY(MANAGER(Interactive_streamline))
+					(&command_data.interactive_streamline_manager);
+
+				DESTROY(Computed_field_package)(&command_data.computed_field_package);
+
+				DESTROY(MANAGER(FE_field))(&command_data.fe_field_manager);
+
+				DESTROY(MANAGER(Control_curve))(&command_data.control_curve_manager);
+
+				DESTROY(MANAGER(GROUP(FE_element)))(&command_data.element_group_manager);
+				DESTROY(MANAGER(FE_element))(&command_data.element_manager);
+				DESTROY(MANAGER(GROUP(FE_node)))(&command_data.node_group_manager);
+				DESTROY(MANAGER(FE_node))(&command_data.node_manager);
+				DESTROY(MANAGER(GROUP(FE_node)))(&command_data.data_group_manager);
+				DESTROY(MANAGER(FE_node))(&command_data.data_manager);
+				DESTROY(MANAGER(FE_basis))(&command_data.basis_manager);
+
+				DESTROY_LIST(FE_element_field_info)(&all_FE_element_field_info);
+				DESTROY_LIST(FE_element_shape)(&all_FE_element_shape);
+
+				DEACCESS(Spectrum)(&(command_data.default_spectrum));
+				DESTROY(MANAGER(Spectrum))(&command_data.spectrum_manager);
+				DEACCESS(Graphical_material)(&(command_data.default_graphical_material));
+				DEACCESS(Graphical_material)(&(default_selected_material));
+				DESTROY(MANAGER(Graphical_material))(&command_data.graphical_material_manager);
+
+				DESTROY(MANAGER(VT_volume_texture))(&command_data.volume_texture_manager);
+				DESTROY(MANAGER(Texture))(&command_data.texture_manager);
+				DESTROY(MANAGER(Environment_map))(&command_data.environment_map_manager);
+
+				DEACCESS(Light_model)(&(command_data.default_light_model));
+				DESTROY(MANAGER(Light_model))(&command_data.light_model_manager);
+				DEACCESS(Light)(&(command_data.default_light));
+				DESTROY(MANAGER(Light))(&command_data.light_manager);
+
+				coord_widget_finish();
+
 #if defined (UNEMAP)
 				DESTROY(Unemap_package)(&command_data.unemap_package); 
 #endif /* defined (UNEMAP) */
+				DESTROY(Execute_command)(&execute_command);
+				DESTROY(Execute_command)(&set_command);
+
 				/* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is
 					on.  When MEMORY_CHECKING is off this function does nothing */
-				list_memory(/*count_number*/-1, /*show_pointers*/0, /*increment_counter*/0);
+				list_memory(/*count_number*/1, /*show_pointers*/0, /*increment_counter*/0);
 			}
 		}
 	}
