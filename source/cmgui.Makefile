@@ -679,6 +679,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_sample_texture.c \
 	computed_field/computed_field_set.c \
 	computed_field/computed_field_time.c \
+	computed_field/computed_field_trigonometry.c \
 	computed_field/computed_field_update.c \
 	computed_field/computed_field_value_index_ranges.c \
 	computed_field/computed_field_vector_operations.c \

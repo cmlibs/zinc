@@ -81,6 +81,7 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_sample_texture.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_time.h"
+#include "computed_field/computed_field_trigonometry.h"
 #include "computed_field/computed_field_update.h"
 #include "computed_field/computed_field_vector_operations.h"
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)
@@ -821,14 +822,14 @@ a single point in 3-D space with a text string drawn beside it.
 static int gfx_create_axes(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 October 2001
+LAST MODIFIED : 10 June 2004
 
 DESCRIPTION :
 Executes a GFX CREATE AXES command. Creates a graphics object containing
 a single point in 3-D space with an axes glyph.
 ==============================================================================*/
 {
-	char *graphics_object_name;
+	char *glyph_name, *graphics_object_name;
 	float time;
 	int number_of_components, return_code;
 	struct Cmiss_command_data *command_data;
@@ -844,6 +845,7 @@ a single point in 3-D space with an axes glyph.
 	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		graphics_object_name = duplicate_string("axes");
+		glyph_name = duplicate_string("axes_xyz");
 		material =
 			ACCESS(Graphical_material)(Material_package_get_default_material(command_data->material_package));
 		axis_origin[0] = 0.0;
@@ -853,15 +855,13 @@ a single point in 3-D space with an axes glyph.
 		axis_lengths[1] = 1.0;
 		axis_lengths[2] = 1.0;
 		time = 0.0;
-		if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("axes",
-			command_data->glyph_list))
-		{
-			ACCESS(GT_object)(glyph);
-		}
 
 		option_table=CREATE(Option_table)();
 		/* as */
 		Option_table_add_entry(option_table, "as", &graphics_object_name,
+			(void *)1, set_name);
+		/* glyph */
+		Option_table_add_entry(option_table, "glyph", &glyph_name,
 			(void *)1, set_name);
 		/* material */
 		Option_table_add_set_Material_entry(option_table, "material", &material,
@@ -919,6 +919,15 @@ a single point in 3-D space with an axes glyph.
 					return_code = 0;
 				}
 			}
+			if (return_code)
+			{
+				if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(glyph_name,
+					command_data->glyph_list))
+				{
+					ACCESS(GT_object)(glyph);
+				}
+			}
+
 			if (return_code)
 			{
 				/* create the pointset used to display the axes */
@@ -981,6 +990,7 @@ a single point in 3-D space with an axes glyph.
 		DEACCESS(Graphical_material)(&material);
 		DEALLOCATE(graphics_object_name);
 		DEACCESS(GT_object)(&glyph);
+		DEALLOCATE(glyph_name);
 	}
 	else
 	{
@@ -24113,6 +24123,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			Computed_field_register_types_coordinate(
 				command_data->computed_field_package);
 			Computed_field_register_types_component_operations(
+				command_data->computed_field_package);
+			Computed_field_register_types_trigonometry(
 				command_data->computed_field_package);
 			if (command_data->root_region)
 			{
