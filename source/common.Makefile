@@ -384,3 +384,18 @@ define BuildNormalTarget
 	$(LINK) -o $(2)/$(1) $(ALL_FLAGS) `cat object.list` $(4)
 endef
 
+define BuildLibraryTarget
+	echo 'Building library $(2)/$(1)'
+	if [ ! -d $(OBJECT_PATH) ]; then \
+		mkdir -p $(OBJECT_PATH); \
+	fi
+	if [ ! -d $(dir $(2)/$(1)) ]; then \
+		mkdir -p $(dir $(2)/$(1)) ; \
+	fi
+	cd $(OBJECT_PATH) ; \
+	rm -f product_object ; \
+	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
+	(ls $($(3)) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)  ; \
+	rm -f $(2)/$(1) ; \
+	ar $(AR_FLAGS) cr $(2)/$(1) $(OBJS)
+endef
