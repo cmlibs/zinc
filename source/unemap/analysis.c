@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 18 June 2001
+LAST MODIFIED : 10 July 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2730,12 +2730,13 @@ DESCRIPTION : destroys the Signal_drawing_information
         XFreeGC(display,(signal_drawing_information->graphics_context).
           unhighlighted_colour);
       }
-      if ((signal_drawing_information->graphics_context).
-        accepted_colour)
-      {
-        XFreeGC(display,(signal_drawing_information->graphics_context).
-          accepted_colour);
-      }
+      /* DPN 10 July 2001 - This one is done above */
+      /* if ((signal_drawing_information->graphics_context).
+         accepted_colour)
+         {
+         XFreeGC(display,(signal_drawing_information->graphics_context).
+         accepted_colour);
+         }*/
     }
     if (signal_drawing_information->signal_overlay_colours)
     {
