@@ -1789,7 +1789,8 @@ is avoided.
 {
 	char buffer[100], *temp_string;
 	FE_value sum,*temp,*temp2,compose_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int cache_is_valid,element_dimension,i,index,j,k,return_code,total_values;
+	int cache_is_valid,element_dimension,i,index,j,k,number_of_components,
+		return_code,total_values;
 	struct FE_element *compose_element;
 
 	ENTER(Computed_field_evaluate_cache_in_element);
@@ -1963,28 +1964,29 @@ is avoided.
 							} break;
 							case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
 							{
+								number_of_components = field->number_of_components;
 								temp=field->source_fields[0]->values;
-								field->values[3] = fabs(*temp);
+								field->values[number_of_components - 1] = fabs(*temp);
 								temp++;
 								j = 0;
-								for (i=1;i < field->source_fields[0]->number_of_components;i++)
+								for (i=1;i<number_of_components;i++)
 								{
-									if (fabs(*temp) > field->values[3])
+									if (fabs(*temp) > field->values[number_of_components - 1])
 									{
-										field->values[3] = fabs(*temp);
+										field->values[number_of_components - 1] = fabs(*temp);
 										j = i;
 									}
 									temp++;
 								}
 								temp=field->source_fields[0]->values;
-								for (i=0;i < field->source_fields[0]->number_of_components - 1;i++)
+								for (i=0;i < number_of_components - 1;i++)
 								{
 									if ( i == j )
 									{
 										/* Skip over the maximum coordinate */
 										temp++;
 									}
-									field->values[i] = *temp / field->values[3];
+									field->values[i] = *temp / field->values[number_of_components - 1];
 									temp++;
 								}
 								field->derivatives_valid = 0;
@@ -2597,7 +2599,7 @@ fields with the name 'coordinates' are quite pervasive.
 {
 	char *temp_string;
 	FE_value sum,*temp;
-	int i,j,k,return_code,total_values;
+	int i,j,k,number_of_components,return_code,total_values;
 	/* For COMPUTED_FIELD_EMBEDDED and COMPUTED_FIELD_COMPOSE only */
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct FE_element *element;	
@@ -2711,28 +2713,29 @@ fields with the name 'coordinates' are quite pervasive.
 							} break;
 							case COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES:
 							{
+								number_of_components = field->number_of_components;
 								temp=field->source_fields[0]->values;
-								field->values[3] = fabs(*temp);
+								field->values[number_of_components - 1] = fabs(*temp);
 								temp++;
 								j = 0;
-								for (i=1;i < field->source_fields[0]->number_of_components;i++)
+								for (i=1;i <number_of_components;i++)
 								{
-									if (fabs(*temp) > field->values[3])
+									if (fabs(*temp) > field->values[number_of_components - 1])
 									{
-										field->values[3] = fabs(*temp);
+										field->values[number_of_components - 1] = fabs(*temp);
 										j = i;
 									}
 									temp++;
 								}
 								temp=field->source_fields[0]->values;
-								for (i=0;i < field->source_fields[0]->number_of_components - 1;i++)
+								for (i=0;i < number_of_components - 1;i++)
 								{
 									if ( i == j )
 									{
 										/* Skip over the maximum coordinate */
 										temp++;
 									}
-									field->values[i] = *temp / field->values[3];
+									field->values[i] = *temp / field->values[number_of_components - 1];
 									temp++;
 								}
 							} break;
@@ -5166,7 +5169,7 @@ LAST MODIFIED : 11 March 1999
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES, 
 which returns texture coordinates based on a cubic projection from the origin.
-Sets the number of components to 3.
+Sets the number of components to the same as the source field.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
@@ -5185,7 +5188,7 @@ although its cache may be lost.
 			Computed_field_clear_type(field);
 			/* 3. establish the new type */
 			field->type=COMPUTED_FIELD_CUBIC_TEXTURE_COORDINATES;
-			field->number_of_components=3;
+			field->number_of_components=source_field->number_of_components;
 			source_fields[0]=ACCESS(Computed_field)(source_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;
