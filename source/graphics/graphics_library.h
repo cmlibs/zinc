@@ -443,8 +443,6 @@ GRAPHICS_LIBRARY_EXTERN PFNGLMULTITEXCOORD3FVPROC GLHANDLE(glMultiTexCoord3fv);
 #if defined (GL_VERSION_1_4)
 GRAPHICS_LIBRARY_EXTERN PFNGLBLENDFUNCSEPARATEPROC GLHANDLE(glBlendFuncSeparate);
 #define glBlendFuncSeparate (GLHANDLE(glBlendFuncSeparate))
-GRAPHICS_LIBRARY_EXTERN PFNGLMULTITEXCOORD3FVPROC GLHANDLE(glMultiTexCoord3fv);
-#define glMultiTexCoord3fv (GLHANDLE(glMultiTexCoord3fv))
 #endif /* defined (GL_VERSION_1_4) */
 #if defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program)
 GRAPHICS_LIBRARY_EXTERN PFNGLGENPROGRAMSARBPROC GLHANDLE(glGenProgramsARB);
