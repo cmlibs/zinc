@@ -13928,16 +13928,10 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 {
 	char glyph_flag;
 	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"glyph",NULL,NULL,set_char_flag},
-		{"material",NULL,NULL,set_Graphical_material},
-		{"spectrum",NULL,NULL,set_Spectrum},
-		{NULL,NULL,NULL,NULL}
-	};
 	struct Cmiss_command_data *command_data;
 	struct GT_object *graphics_object;
 	struct Graphical_material *material;
+	struct Option_table *option_table;
 	struct Spectrum *spectrum;
 
 	ENTER(gfx_modify_graphics_object);
@@ -13963,13 +13957,14 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 				{
 					ACCESS(Spectrum)(spectrum);
 				}
-				(option_table[0]).to_be_modified=&glyph_flag;
-				(option_table[1]).to_be_modified=&material;
-				(option_table[1]).user_data=Material_package_get_material_manager(command_data->material_package);
-				(option_table[2]).to_be_modified=&spectrum;
-				(option_table[2]).user_data=command_data->spectrum_manager;
-				return_code=process_multiple_options(state,option_table);
-				/* no errors, not asking for help */
+				option_table = CREATE(Option_table)();
+				Option_table_add_char_flag_entry(option_table, "glyph", &glyph_flag);
+				Option_table_add_set_Material_entry(option_table, "material",&material,
+					command_data->material_package);
+				Option_table_add_entry(option_table,"spectrum",&spectrum,
+					command_data->spectrum_manager,set_Spectrum);
+				return_code = Option_table_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
 				if (return_code)
 				{
 					set_GT_object_default_material(graphics_object, material);
@@ -14009,9 +14004,22 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 			}
 		}
 		else
-		{
-			display_message(INFORMATION_MESSAGE," GRAPHICS_OBJECT_NAME");
-			return_code=1;
+		{	
+			/* Help */
+			display_message(INFORMATION_MESSAGE,
+				"\n      GRAPHICS_OBJECT_NAME");
+
+			glyph_flag = 0;
+			spectrum = (struct Spectrum *)NULL;
+			material = (struct Graphical_material *)NULL;
+			option_table=CREATE(Option_table)();
+			Option_table_add_char_flag_entry(option_table, "glyph", &glyph_flag);
+			Option_table_add_set_Material_entry(option_table, "material",&material,
+				command_data->material_package);
+			Option_table_add_entry(option_table,"spectrum",&spectrum,
+				command_data->spectrum_manager,set_Spectrum);
+			return_code=Option_table_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
 		}
 	}
 	else
