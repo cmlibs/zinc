@@ -46,6 +46,8 @@ typedef float FE_value;
 #define DOUBLE_VALUE_MAX_OUTPUT_COLUMNS 5
 /* used when reading Double values */
 #define SHORT_VALUE_MAX_OUTPUT_COLUMNS 10
+/* Compare with FE_value to determine a "zero" value */
+#define FE_VALUE_ZERO_TOLERANCE (1e-8)
 
 /* May get probs if != unsigned char, see set_FE_field_XXX_value */
 typedef unsigned char Value_storage;

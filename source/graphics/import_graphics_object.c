@@ -24,7 +24,6 @@ Functions for reading graphics object data from a file.
 Module functions
 ----------------
 */
-#define FE_VALUE_ZERO_TOLERANCE (1e-8)
 #define FLOAT_ZERO_TOLERANCE (1e-8)
 
 static int normalize(float vector[3])

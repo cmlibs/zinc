@@ -2918,12 +2918,23 @@ normals are used.
 						/* tangent is dX/d_xi * inv(dT/dxi) */
 						texture_determinant = texture_derivative[0] * texture_derivative[3]
 							- texture_derivative[1] * texture_derivative[2];
-						(*tangent)[0] = (derivative_xi[0] * texture_derivative[0]
-							- derivative_xi[1] * texture_derivative[2]) / texture_determinant;
-						(*tangent)[1] = (derivative_xi[2] * texture_derivative[0]
-							- derivative_xi[3] * texture_derivative[2]) / texture_determinant;
-						(*tangent)[2] = (derivative_xi[4] * texture_derivative[0]
-							- derivative_xi[5] * texture_derivative[2]) / texture_determinant;
+						if ((texture_determinant < FE_VALUE_ZERO_TOLERANCE) && 
+							(texture_determinant > -FE_VALUE_ZERO_TOLERANCE))
+						{
+							/* Cannot invert the texture derivative so just use the first xi derivative */
+							(*tangent)[0] = derivative_xi[0];
+							(*tangent)[1] = derivative_xi[2];
+							(*tangent)[2] = derivative_xi[4];
+						}
+						else
+						{
+							(*tangent)[0] = (derivative_xi[0] * texture_derivative[0]
+								- derivative_xi[1] * texture_derivative[2]) / texture_determinant;
+							(*tangent)[1] = (derivative_xi[2] * texture_derivative[0]
+								- derivative_xi[3] * texture_derivative[2]) / texture_determinant;
+							(*tangent)[2] = (derivative_xi[4] * texture_derivative[0]
+								- derivative_xi[5] * texture_derivative[2]) / texture_determinant;
+						}
 						tangent++;
 					}
 					if (special_normals)
