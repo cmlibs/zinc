@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 7 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4349,6 +4349,162 @@ shell widget.  It sets the widget to NULL.
 } /* destroy_trace_window_shell */
 #endif /* defined (OLD_CODE) */
 
+void trace_align_beats_to_events(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 5 January 2000
+
+DESCRIPTION :
+The callback for aligning the beats (search box divisions) to the events while
+beat averaging.
+==============================================================================*/
+{
+	float x_scale;
+	int axes_left,*divisions,end_analysis_interval,end_search_interval,
+		event_number,i,number_of_events,offset,*search_interval_divisions,
+		start_analysis_interval,start_search_interval;
+	struct Enlarge_area *enlarge;
+	struct Event *event;
+	struct Signal_buffer *buffer;
+	struct Signal_drawing_information *signal_drawing_information;
+	struct Trace_window *trace;
+
+	ENTER(trace_align_beats_to_events);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if ((trace=(struct Trace_window *)trace_window)&&
+		(signal_drawing_information=trace->signal_drawing_information))
+	{
+		if ((trace->highlight)&&(*(trace->highlight))&&
+			(**(trace->highlight))&&(buffer=get_Device_signal_buffer(
+			**(trace->highlight)))&&((**(trace->highlight))->signal)&&
+			(event=(**(trace->highlight))->signal->first_event))
+		{
+			start_search_interval= *(trace->event_detection.start_search_interval);
+			end_search_interval= *(trace->event_detection.end_search_interval);
+			start_analysis_interval=buffer->start;
+			end_analysis_interval=buffer->end;
+			while (event&&(event->time<start_search_interval))
+			{
+				event=event->next;
+			}
+			if (event&&(event->time<=end_search_interval)&&
+				(start_analysis_interval<end_analysis_interval))
+			{
+				number_of_events= *(trace->event_detection.number_of_events);
+				ALLOCATE(search_interval_divisions,int,number_of_events-1);
+				ALLOCATE(divisions,int,number_of_events-1);
+				if (search_interval_divisions&&divisions)
+				{
+					enlarge= &(trace->area_1.enlarge);
+					offset=(event->time)-start_search_interval;
+					x_scale=SCALE_FACTOR(end_analysis_interval-start_analysis_interval,
+						(trace->area_1.axes_width)-1);
+					axes_left=trace->area_1.axes_left;
+					i=0;
+					event=event->next;
+					while ((i<number_of_events-1)&&event&&
+						((event->time)<=end_search_interval))
+					{
+						search_interval_divisions[i]=(event->time)-offset;
+						divisions[i]=SCALE_X(search_interval_divisions[i],
+							start_analysis_interval,axes_left,x_scale);
+						event=event->next;
+						i++;
+					}
+					while (i<number_of_events-1)
+					{
+						search_interval_divisions[i]=end_search_interval;
+						divisions[i]=SCALE_X(search_interval_divisions[i],
+							start_analysis_interval,axes_left,x_scale);
+						i++;
+					}
+					/* clear the search and edit interval boxes */
+					draw_search_box(enlarge->left_box,trace->area_1.axes_top,
+						enlarge->right_box-enlarge->left_box,trace->area_1.axes_height,
+						*(trace->event_detection.detection),number_of_events,
+						enlarge->divisions,trace->area_1.drawing_area,trace->area_1.drawing,
+						signal_drawing_information);
+					draw_highlight_event_box(enlarge->left_edit_box,
+						trace->area_1.axes_top,
+						enlarge->right_edit_box-enlarge->left_edit_box,
+						trace->area_1.axes_height,*(trace->event_detection.detection),
+						trace->area_1.drawing_area,trace->area_1.drawing,
+						signal_drawing_information);
+					DEALLOCATE(*(trace->event_detection.search_interval_divisions));
+					*(trace->event_detection.search_interval_divisions)=
+						search_interval_divisions;
+					DEALLOCATE(enlarge->divisions);
+					enlarge->divisions=divisions;
+					event_number= *(trace->event_detection.event_number);
+					if (1<event_number)
+					{
+						enlarge->left_edit_box=(enlarge->divisions)[event_number-2];
+					}
+					else
+					{
+						enlarge->left_edit_box=enlarge->left_box;
+					}
+					if (event_number<number_of_events)
+					{
+						enlarge->right_edit_box=(enlarge->divisions)[event_number-1];
+					}
+					else
+					{
+						enlarge->right_edit_box=enlarge->right_box;
+					}
+					/* draw the new search and edit interval boxes */
+					draw_search_box(enlarge->left_box,trace->area_1.axes_top,
+						enlarge->right_box-enlarge->left_box,trace->area_1.axes_height,
+						*(trace->event_detection.detection),number_of_events,
+						enlarge->divisions,trace->area_1.drawing_area,trace->area_1.drawing,
+						signal_drawing_information);
+					draw_highlight_event_box(enlarge->left_edit_box,
+						trace->area_1.axes_top,
+						enlarge->right_edit_box-enlarge->left_edit_box,
+						trace->area_1.axes_height,*(trace->event_detection.detection),
+						trace->area_1.drawing_area,trace->area_1.drawing,
+						signal_drawing_information);
+					redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)(trace),
+						(XtPointer)NULL);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"trace_align_beats_to_events.  "
+						"Could not allocate search_interval_divisions/divisions %d",
+						number_of_events);
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"trace_align_beats_to_events.  Missing trace_window");
+	}
+	LEAVE;
+} /* trace_align_beats_to_events */
+
+void trace_overlay_beats(Widget widget,XtPointer trace_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 5 January 2000
+
+DESCRIPTION :
+The callback for toggling overlaying beats while beat averaging.
+
+Can't just be <redraw_trace_3_drawing_area> because don't want to pass <widget>
+and <call_data>.
+==============================================================================*/
+{
+	ENTER(trace_overlay_beats);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace_window,
+		(XtPointer)NULL);
+	LEAVE;
+} /* trace_overlay_beats */
+
 static struct Trace_window *create_Trace_window(
 	struct Trace_window **address,Widget activation,Widget parent,
 	Pixel identifying_colour,enum Signal_analysis_mode analysis_mode,
@@ -4363,7 +4519,7 @@ static struct Trace_window *create_Trace_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 5 January 2000
 
 DESCRIPTION :
 This function allocates the memory for an trace window and sets the fields to
@@ -4496,6 +4652,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)identify_trace_beat_averaging_u},
 		{"identify_trace_beat_averaging_a",
 			(XtPointer)identify_trace_beat_averaging_a},
+		{"trace_align_beats_to_events",(XtPointer)trace_align_beats_to_events},
 		{"identify_trace_1_drawing_area",(XtPointer)identify_trace_1_drawing_area},
 		{"expose_trace_1_drawing_area",(XtPointer)redraw_trace_1_drawing_area},
 		{"resize_trace_1_drawing_area",(XtPointer)redraw_trace_1_drawing_area},
@@ -4595,6 +4752,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)id_trace_beat_averaging_toggle},
 		{"id_trace_beat_averaging_overlay",
 			(XtPointer)id_trace_beat_averaging_overlay},
+		{"trace_overlay_beats",(XtPointer)trace_overlay_beats},
 		{"identify_trace_3_drawing_area",(XtPointer)identify_trace_3_drawing_area},
 		{"expose_trace_3_drawing_area",(XtPointer)redraw_trace_3_drawing_area},
 		{"resize_trace_3_drawing_area",(XtPointer)redraw_trace_3_drawing_area}};
@@ -4656,6 +4814,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->menu.analysis_mode.beat_averaging_button=(Widget)NULL;
 				trace->menu.apply_button=(Widget)NULL;
 				trace->menu.close_button=(Widget)NULL;
+				trace->area_1.enlarge.divisions=(int *)NULL;
 				trace->area_1.enlarge.calculate_button=(Widget)NULL;
 				trace->area_1.enlarge.detection_choice=(Widget)NULL;
 				trace->area_1.enlarge.detection.interval_button=(Widget)NULL;
@@ -5946,11 +6105,11 @@ DESCRIPTION :
 } /* draw_highlight_event_box */
 
 int draw_search_box(int left,int top,int width,int height,
-	enum Event_detection_algorithm detection,int number_of_events,
+	enum Event_detection_algorithm detection,int number_of_events,int *divisions,
 	Widget drawing_area,struct Drawing_2d *drawing,
 	struct Signal_drawing_information *signal_drawing_information)
 /*******************************************************************************
-LAST MODIFIED : 1 January 1997
+LAST MODIFIED : 4 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5976,7 +6135,14 @@ DESCRIPTION :
 			bottom=top+height-1;
 			for (i=number_of_events-1;i>0;i--)
 			{
-				x_division=left+(i*width)/number_of_events;
+				if (divisions)
+				{
+					x_division=divisions[i-1];
+				}
+				else
+				{
+					x_division=left+(i*width)/number_of_events;
+				}
 				XDrawLine(display,XtWindow(drawing_area),graphics_context,x_division,
 					top,x_division,bottom);
 				XDrawLine(display,drawing->pixel_map,graphics_context,x_division,top,
@@ -6103,7 +6269,7 @@ If <*trace_address> is NULL, a trace window with the specified <parent> and
 void redraw_trace_1_drawing_area(Widget widget,XtPointer trace_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 29 December 1999
+LAST MODIFIED : 4 January 2000
 
 DESCRIPTION :
 The callback for redrawing part of the drawing area in trace area 1.
@@ -6113,7 +6279,7 @@ The callback for redrawing part of the drawing area in trace area 1.
 	Display *display;
 	float x_scale;
 	int analysis_range,axes_left,axes_height,axes_top,axes_width,
-		end_analysis_interval,height,redraw,start_analysis_interval,width;
+		end_analysis_interval,height,i,redraw,start_analysis_interval,width;
 	struct Device *device;
 	struct Signal_buffer *buffer;
 	struct Signal_drawing_information *signal_drawing_information;
@@ -6252,7 +6418,6 @@ The callback for redrawing part of the drawing area in trace area 1.
 									if ((analysis_range=end_analysis_interval-
 										start_analysis_interval)>0)
 									{
-										/*???DB.  To be done for search_interval_divisions */
 										x_scale=SCALE_FACTOR(analysis_range,axes_width-1);
 										trace_area_1->enlarge.left_box=SCALE_X(
 											*(trace->event_detection.start_search_interval),
@@ -6260,22 +6425,66 @@ The callback for redrawing part of the drawing area in trace area 1.
 										trace_area_1->enlarge.right_box=SCALE_X(
 											*(trace->event_detection.end_search_interval),
 											start_analysis_interval,axes_left,x_scale);
+										if ((*(trace->event_detection.search_interval_divisions))&&
+											(trace_area_1->enlarge.divisions))
+										{
+											for (i= *(trace->event_detection.number_of_events)-2;i>=0;
+												i--)
+											{
+												(trace_area_1->enlarge.divisions)[i]=SCALE_X(
+													(*(trace->event_detection.search_interval_divisions))[
+													i],start_analysis_interval,axes_left,x_scale);
+											}
+										}
 										switch (*(trace->event_detection.detection))
 										{
 											case EDA_INTERVAL:
 											{
-												trace_area_1->enlarge.left_edit_box=
-													(trace_area_1->enlarge.left_box)+
-													((*(trace->event_detection.event_number)-1)*
-													((trace_area_1->enlarge.right_box)-
-													(trace_area_1->enlarge.left_box)))/
-													(*(trace->event_detection.number_of_events));
-												trace_area_1->enlarge.right_edit_box=
-													(trace_area_1->enlarge.left_box)+
-													((*(trace->event_detection.event_number))*
-													((trace_area_1->enlarge.right_box)-
-													(trace_area_1->enlarge.left_box)))/
-													(*(trace->event_detection.number_of_events));
+												if (*(trace->event_detection.search_interval_divisions))
+												{
+													if (1< *(trace->event_detection.event_number))
+													{
+														trace_area_1->enlarge.left_edit_box=SCALE_X(
+															(*(trace->event_detection.
+															search_interval_divisions))[
+															*(trace->event_detection.event_number)-2],
+															start_analysis_interval,axes_left,x_scale);
+													}
+													else
+													{
+														trace_area_1->enlarge.left_edit_box=
+															trace_area_1->enlarge.left_box;
+													}
+													if (*(trace->event_detection.event_number)<
+														*(trace->event_detection.number_of_events))
+													{
+														trace_area_1->enlarge.right_edit_box=SCALE_X(
+															(*(trace->event_detection.
+															search_interval_divisions))[
+															*(trace->event_detection.event_number)-1],
+															start_analysis_interval,axes_left,x_scale);
+													}
+													else
+													{
+														trace_area_1->enlarge.right_edit_box=
+															trace_area_1->enlarge.right_box;
+													}
+												}
+												else
+												{
+													trace_area_1->enlarge.left_edit_box=
+														(trace_area_1->enlarge.left_box)+
+														((*(trace->event_detection.event_number)-1)*
+														((trace_area_1->enlarge.right_box)-
+														(trace_area_1->enlarge.left_box)))/
+														(*(trace->event_detection.number_of_events));
+													trace_area_1->enlarge.right_edit_box=
+														(trace_area_1->enlarge.left_box)+
+														((*(trace->event_detection.event_number))*
+														((trace_area_1->enlarge.right_box)-
+														(trace_area_1->enlarge.left_box)))/
+														(*(trace->event_detection.number_of_events));
+												}
 											} break;
 											case EDA_LEVEL:
 											case EDA_THRESHOLD:
@@ -6301,6 +6510,7 @@ The callback for redrawing part of the drawing area in trace area 1.
 										trace_area_1->enlarge.left_box,axes_height,
 										*(trace->event_detection.detection),
 										*(trace->event_detection.number_of_events),
+										trace_area_1->enlarge.divisions,
 										trace_area_1->drawing_area,trace_area_1->drawing,
 										signal_drawing_information);
 									draw_highlight_event_box(trace_area_1->enlarge.left_edit_box,
@@ -6443,7 +6653,7 @@ The callback for redrawing part of the drawing area in trace area 1.
 void redraw_trace_3_drawing_area(Widget widget,XtPointer trace_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 13 August 1997
+LAST MODIFIED : 7 January 2000
 
 DESCRIPTION :
 The callback for redrawing part of the drawing area in trace area 3.
@@ -6464,6 +6674,11 @@ The callback for redrawing part of the drawing area in trace area 3.
 
 	ENTER(redraw_trace_3_drawing_area);
 	USE_PARAMETER(widget);
+#if defined (DEBUG)
+	/*???debug */
+	printf("enter redraw_trace_3_drawing_area\n");
+	list_memory(-1,0,0);
+#endif /* defined (DEBUG) */
 	if ((trace=(struct Trace_window *)trace_window)&&
 		(user_interface=trace->user_interface)&&
 		(signal_drawing_information=trace->signal_drawing_information))
@@ -6607,6 +6822,11 @@ The callback for redrawing part of the drawing area in trace area 3.
 								}
 								if (device&&(buffer=get_Device_signal_buffer(device)))
 								{
+									if (True==XmToggleButtonGadgetGetState((trace->area_3).
+										beat_averaging.overlay_beats_toggle))
+									{
+										/* draw the other beats */
+									}
 									if (True==XmToggleButtonGadgetGetState((trace->area_3).
 										beat_averaging.beat_averaging_toggle))
 									{
@@ -6844,6 +7064,10 @@ The callback for redrawing part of the drawing area in trace area 3.
 		display_message(ERROR_MESSAGE,
 			"redraw_trace_3_drawing_area.  Missing trace_window");
 	}
+#if defined (DEBUG)
+	/*???debug */
+	printf("leave redraw_trace_3_drawing_area\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 } /* redraw_trace_3_drawing_area */
 
@@ -7037,11 +7261,11 @@ Called when the "highlighted_device" is changed.
 								{
 									beat_end=divisions[0];
 									max_times=beat_end-beat_start;
-									if (max_times<end-divisions[number_of_beats-1]+1)
+									if (max_times<end-divisions[number_of_beats-2]+1)
 									{
-										max_times=end-divisions[number_of_beats-1]+1;
+										max_times=end-divisions[number_of_beats-2]+1;
 									}
-									for (i=1;i<number_of_beats;i++)
+									for (i=1;i<number_of_beats-1;i++)
 									{
 										if (max_times<divisions[i]-divisions[i-1])
 										{
@@ -7061,7 +7285,6 @@ Called when the "highlighted_device" is changed.
 									{
 										*beat_count=0;
 										beat_count++;
-										beat_counts[i]=0;
 									}
 									if ((0<beat_start)||(0<(processed_buffer->times)[beat_start]))
 									{
@@ -7296,7 +7519,6 @@ Called when the "highlighted_device" is changed.
 							if (True==XmToggleButtonGadgetGetState((trace->area_3).
 								beat_averaging.baseline_toggle))
 							{
-								/*???DB.  To be done for search_interval_divisions */
 								start= *(trace->event_detection.start_search_interval);
 								end= *(trace->event_detection.end_search_interval);
 								number_of_beats= *(trace->event_detection.number_of_events);
@@ -7358,7 +7580,6 @@ Called when the "highlighted_device" is changed.
 							if (True==XmToggleButtonGadgetGetState((trace->area_3).
 								beat_averaging.beat_averaging_toggle))
 							{
-								/*???DB.  To be done for search_interval_divisions */
 								start= *(trace->event_detection.start_search_interval);
 								end= *(trace->event_detection.end_search_interval);
 								number_of_beats= *(trace->event_detection.number_of_events);
@@ -8825,7 +9046,7 @@ Draws the markers in the <trace> window.
 
 int trace_update_edit_interval(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 29 December 1999
+LAST MODIFIED : 4 January 2000
 
 DESCRIPTION :
 ???DB.  Should be a module function.  Wait until select_trace_1_drawing_area
@@ -8848,15 +9069,43 @@ has been moved.
 					(trace->event_detection.start_search_interval)&&
 					(trace->event_detection.end_search_interval))
 				{
-					/*???DB.  To be done for search_interval_divisions */
-					edit_start= *(trace->event_detection.start_search_interval);
-					edit_diff= *(trace->event_detection.end_search_interval)-edit_start;
-					trace->area_3.edit.first_data=edit_start+(int)((float)(edit_diff*
-						((*(trace->event_detection.event_number))-1))/
-						(float)(*(trace->event_detection.number_of_events))+0.5);
-					trace->area_3.edit.last_data=edit_start+(int)((float)(edit_diff*
-						(*(trace->event_detection.event_number)))/
-						(float)(*(trace->event_detection.number_of_events))+0.5);
+					if (*(trace->event_detection.search_interval_divisions))
+					{
+						if (1< *(trace->event_detection.event_number))
+						{
+							trace->area_3.edit.first_data=
+								(*(trace->event_detection.search_interval_divisions))[
+								*(trace->event_detection.event_number)-2];
+						}
+						else
+						{
+							trace->area_3.edit.first_data=
+								*(trace->event_detection.start_search_interval);
+						}
+						if (*(trace->event_detection.event_number)<
+							*(trace->event_detection.number_of_events))
+						{
+							trace->area_3.edit.last_data=
+								(*(trace->event_detection.search_interval_divisions))[
+								*(trace->event_detection.event_number)-1];
+						}
+						else
+						{
+							trace->area_3.edit.last_data=
+								*(trace->event_detection.end_search_interval);
+						}
+					}
+					else
+					{
+						edit_start= *(trace->event_detection.start_search_interval);
+						edit_diff= *(trace->event_detection.end_search_interval)-edit_start;
+						trace->area_3.edit.first_data=edit_start+(int)((float)(edit_diff*
+							((*(trace->event_detection.event_number))-1))/
+							(float)(*(trace->event_detection.number_of_events))+0.5);
+						trace->area_3.edit.last_data=edit_start+(int)((float)(edit_diff*
+							(*(trace->event_detection.event_number)))/
+							(float)(*(trace->event_detection.number_of_events))+0.5);
+					}
 					return_code=1;
 				}
 				else

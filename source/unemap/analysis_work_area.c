@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 5 January 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -34,17 +34,21 @@ DESCRIPTION :
 4 How should the interface work?
 	- extend the search box so that the intervals are specified rather than
 		assumed to be constant width
+		DONE
 	- extend moving the search box so that up to the end of the first interval
 		can go off the left and up to the beginning of the last interval can go off
 		the right
 	- change dragging the search box ends so that internal divisions don't change
 		when the ends are moved (limited by first and last internal divisions)
+		DONE.  Instead of limiting, the divisions "concertina"
 	- add an "Align with events" button.  This redraws the search box (see
 		draw_search_box in trace_window.c) so that the start of each search
 		interval is an event time (starting with the first event in the initial
 		search box)
+		DONE
 	- retain constant beat width version by having that when the number of
 		intervals is changed, it goes to constant width intervals
+		DONE
 	- be able to reject beats by rejecting the corresponding events (the nth
 		event corresponds to the nth beat)
 ???DB.  What is the correspondence between beats and events?
@@ -1197,8 +1201,9 @@ Sets the detection algorithm to level.
 				draw_search_box(enlarge->left_box,analysis->trace->area_1.axes_top,
 					enlarge->right_box-enlarge->left_box,
 					analysis->trace->area_1.axes_height,analysis->detection,
-					analysis->number_of_events,analysis->trace->area_1.drawing_area,
-					analysis->trace->area_1.drawing,analysis->signal_drawing_information);
+					analysis->number_of_events,enlarge->divisions,
+					analysis->trace->area_1.drawing_area,analysis->trace->area_1.drawing,
+					analysis->signal_drawing_information);
 				draw_highlight_event_box(enlarge->left_edit_box,
 					analysis->trace->area_1.axes_top,
 					enlarge->right_edit_box-enlarge->left_edit_box,
@@ -1239,8 +1244,9 @@ Sets the detection algorithm to level.
 				draw_search_box(enlarge->left_box,analysis->trace->area_1.axes_top,
 					enlarge->right_box-enlarge->left_box,
 					analysis->trace->area_1.axes_height,analysis->detection,
-					analysis->number_of_events,analysis->trace->area_1.drawing_area,
-					analysis->trace->area_1.drawing,analysis->signal_drawing_information);
+					analysis->number_of_events,enlarge->divisions,
+					analysis->trace->area_1.drawing_area,analysis->trace->area_1.drawing,
+					analysis->signal_drawing_information);
 				draw_highlight_event_box(enlarge->left_edit_box,
 					analysis->trace->area_1.axes_top,
 					enlarge->right_edit_box-enlarge->left_edit_box,
@@ -1336,8 +1342,9 @@ Sets the detection algorithm to threshold.
 				draw_search_box(enlarge->left_box,analysis->trace->area_1.axes_top,
 					enlarge->right_box-enlarge->left_box,
 					analysis->trace->area_1.axes_height,analysis->detection,
-					analysis->number_of_events,analysis->trace->area_1.drawing_area,
-					analysis->trace->area_1.drawing,analysis->signal_drawing_information);
+					analysis->number_of_events,enlarge->divisions,
+					analysis->trace->area_1.drawing_area,analysis->trace->area_1.drawing,
+					analysis->signal_drawing_information);
 				draw_highlight_event_box(enlarge->left_edit_box,
 					analysis->trace->area_1.axes_top,
 					enlarge->right_edit_box-enlarge->left_edit_box,
@@ -1378,8 +1385,9 @@ Sets the detection algorithm to threshold.
 				draw_search_box(enlarge->left_box,analysis->trace->area_1.axes_top,
 					enlarge->right_box-enlarge->left_box,
 					analysis->trace->area_1.axes_height,analysis->detection,
-					analysis->number_of_events,analysis->trace->area_1.drawing_area,
-					analysis->trace->area_1.drawing,analysis->signal_drawing_information);
+					analysis->number_of_events,enlarge->divisions,
+					analysis->trace->area_1.drawing_area,analysis->trace->area_1.drawing,
+					analysis->signal_drawing_information);
 				draw_highlight_event_box(enlarge->left_edit_box,
 					analysis->trace->area_1.axes_top,
 					enlarge->right_edit_box-enlarge->left_edit_box,
@@ -5588,7 +5596,7 @@ enum Moving_status
 static void select_analysis_interval(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 4 January 2000
 
 DESCRIPTION :
 The callback for modifying the analysis interval in the analysis interval
@@ -5605,7 +5613,7 @@ drawing area.
 	float frequency,x_scale;
 	GC potential_time_colour,potential_time_colour_text;
 	int ascent,axes_bottom,axes_left,axes_right,axes_top,box_range,descent,
-		direction,initial_potential_time,left_box,length,
+		direction,i,initial_potential_time,left_box,length,
 		minimum_box_range,pointer_sensitivity,pointer_x,pointer_y,
 		potential_time,previous_right_box,previous_pointer_x,
 		previous_potential_time,previous_left_box,right_box,temp,*times,x_string,
@@ -5936,14 +5944,21 @@ drawing area.
 																interval->right_box=right_box;
 															}
 															/* update the search interval */
-															/*???DB.  To be done for
-																search_interval_divisions */
 															temp=analysis->end_search_interval-
 																analysis->start_search_interval;
 															search_interval_changed=0;
 															if (buffer->start>analysis->start_search_interval)
 															{
 																search_interval_changed=1;
+																if (analysis->search_interval_divisions)
+																{
+																	for (i=analysis->number_of_events-2;i>=0;i--)
+																	{
+																		(analysis->search_interval_divisions)[i] +=
+																			(buffer->start)-
+																			(analysis->start_search_interval);
+																	}
+																}
 																analysis->start_search_interval=buffer->start;
 																analysis->end_search_interval=
 																	analysis->start_search_interval+temp;
@@ -5951,12 +5966,37 @@ drawing area.
 															if (buffer->end<analysis->end_search_interval)
 															{
 																search_interval_changed=1;
+																if (analysis->search_interval_divisions)
+																{
+																	for (i=analysis->number_of_events-2;i>=0;i--)
+																	{
+																		(analysis->search_interval_divisions)[i] +=
+																			(buffer->end)-
+																			(analysis->end_search_interval);
+																	}
+																}
 																analysis->end_search_interval=buffer->end;
 																analysis->start_search_interval=
 																	analysis->end_search_interval-temp;
 																if (buffer->start>analysis->
 																	start_search_interval)
 																{
+																	if (analysis->search_interval_divisions)
+																	{
+																		for (i=analysis->number_of_events-2;i>=0;
+																			i--)
+																		{
+																			(analysis->search_interval_divisions)[
+																				i] += (buffer->start)-
+																				(analysis->start_search_interval);
+																			if ((analysis->search_interval_divisions)[
+																				i]>buffer->end)
+																			{
+																				(analysis->search_interval_divisions)[
+																					i]=buffer->end;
+																			}
+																		}
+																	}
 																	analysis->start_search_interval=buffer->start;
 																}
 															}
@@ -6336,7 +6376,7 @@ drawing area.
 static void decrement_number_of_events(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 30 December 1999
+LAST MODIFIED : 4 January 2000
 
 DESCRIPTION :
 Decrement the number of events.
@@ -6389,6 +6429,9 @@ trace window.
 				XtUnmanageChild(
 					trace->area_1.beat_averaging.number_of_beats.down_arrow);
 			}
+			/* go back to constant width divisions */
+			DEALLOCATE(*(trace->event_detection.search_interval_divisions));
+			DEALLOCATE(trace->area_1.enlarge.divisions);
 			trace_update_edit_interval(trace);
 			redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
 				(XtPointer)NULL);
@@ -6433,7 +6476,7 @@ trace window.
 static void increment_number_of_events(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 30 December 1999
+LAST MODIFIED : 4 January 2000
 
 DESCRIPTION :
 Increment the number of events.
@@ -6479,6 +6522,9 @@ trace window.
 				XtUnmanageChild(trace->area_1.enlarge.number_of_events.up_arrow);
 				XtUnmanageChild(trace->area_1.beat_averaging.number_of_beats.up_arrow);
 			}
+			/* go back to constant width divisions */
+			DEALLOCATE(*(trace->event_detection.search_interval_divisions));
+			DEALLOCATE(trace->area_1.enlarge.divisions);
 			trace_update_edit_interval(trace);
 			redraw_trace_1_drawing_area((Widget)NULL,(XtPointer)trace,
 				(XtPointer)NULL);
@@ -6522,7 +6568,7 @@ trace window.
 static void select_trace_1_drawing_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 4 January 2000
 
 DESCRIPTION :
 ???DB.  Update comment ?
@@ -6540,12 +6586,13 @@ should be done as a callback from the trace_window.
 	enum Moving_status moving;
 	float frequency,x_scale;
 	int axes_bottom,axes_left,axes_right,axes_top,axes_width,box_range,
-		datum,end_analysis_interval,event_number,initial_marker,keyboard_mode,
-		left_box,marker,minimum_box_range,number_of_events,
-		pointer_mode,pointer_sensitivity,pointer_x,pointer_y,
-		potential_time,previous_left_box,previous_marker,previous_pointer_x,
-		previous_right_box,right_box,
-		start_analysis_interval,temp,*times,width;
+		datum,*divisions,end_analysis_interval,event_number,i,initial_marker,
+		keyboard_mode,left_box,left_edit_box,marker,minimum_box_range,
+		number_of_events,pointer_mode,pointer_sensitivity,pointer_x,pointer_y,
+		potential_time,*previous_divisions,previous_left_box,previous_left_edit_box,
+		previous_marker,previous_pointer_x,previous_right_box,
+		previous_right_edit_box,right_box,right_edit_box,start_analysis_interval,
+		temp,*temp_divisions,temp_2,*times,width;
 	GC marker_graphics_context;
 	/*???Needed because of problem with X driver for the Color Graphics Display
 		Adapter (#2770) */
@@ -6602,6 +6649,8 @@ should be done as a callback from the trace_window.
 							axes_right=axes_left+axes_width-1;
 							axes_top=trace_area_1->axes_top;
 							axes_bottom=axes_top+(trace_area_1->axes_height)-1;
+							divisions=(int *)NULL;
+							previous_divisions=(int *)NULL;
 							if ((pointer_x>=axes_left-pointer_sensitivity)&&
 								(pointer_x<=axes_right+pointer_sensitivity)&&
 								(pointer_y>=axes_top-pointer_sensitivity)&&
@@ -6754,19 +6803,25 @@ should be done as a callback from the trace_window.
 																{
 																	case MOVING_POTENTIAL_TIME_MARKER:
 																	{
-																		/* This conversion to time_keeper time should
-																			be much more robust.  The frequency is not
-																			guaranteed to divide the potential time and
-																			this takes no account of time transformations */
-																		analysis->trace_update_flags |= TRACE_1_NO_POTENTIAL_ERASE;
+																		/*???SAB.  This conversion to time_keeper
+																			time should be much more robust.  The
+																			frequency is not guaranteed to divide the
+																			potential time and this takes no account
+																			of time transformations */
+																		analysis->trace_update_flags |=
+																			TRACE_1_NO_POTENTIAL_ERASE;
 																		Time_keeper_request_new_time(
-																			Time_object_get_time_keeper(analysis->potential_time_object),
-																			((double)times[potential_time] * 1000.0 / frequency));
+																			Time_object_get_time_keeper(
+																			analysis->potential_time_object),
+																			((double)times[potential_time]*1000.0/
+																			frequency));
 																	} break;
 																	case MOVING_DATUM_MARKER:
 																	{
-																		analysis->trace_update_flags |= TRACE_1_NO_DATUM_ERASE;
-																		Time_object_set_current_time_privileged(analysis->datum_time_object,
+																		analysis->trace_update_flags |=
+																			TRACE_1_NO_DATUM_ERASE;
+																		Time_object_set_current_time_privileged(
+																			analysis->datum_time_object,
 																			(double)datum);
 																	} break;
 																}
@@ -6891,6 +6946,28 @@ should be done as a callback from the trace_window.
 								{
 									left_box=trace_area_1->enlarge.left_box;
 									right_box=trace_area_1->enlarge.right_box;
+									left_edit_box=trace_area_1->enlarge.left_edit_box;
+									right_edit_box=trace_area_1->enlarge.right_edit_box;
+									number_of_events=analysis->number_of_events;
+									if (trace_area_1->enlarge.divisions)
+									{
+										divisions=(int *)NULL;
+										previous_divisions=(int *)NULL;
+										if (ALLOCATE(divisions,int,number_of_events-1)&&
+											ALLOCATE(previous_divisions,int,number_of_events-1))
+										{
+											for (i=number_of_events-2;i>=0;i--)
+											{
+												divisions[i]=(trace_area_1->enlarge.divisions)[i];
+												previous_divisions[i]=divisions[i];
+											}
+										}
+										else
+										{
+											DEALLOCATE(divisions);
+											DEALLOCATE(previous_divisions);
+										}
+									}
 									box_range=right_box-left_box;
 									edit_box=0;
 									if ((pointer_x>=left_box-pointer_sensitivity)&&
@@ -6928,7 +7005,6 @@ should be done as a callback from the trace_window.
 														(BEAT_AVERAGING==analysis->trace->analysis_mode))
 													{
 														temp=pointer_x-left_box;
-														number_of_events=analysis->number_of_events;
 														event_number=
 															((temp*number_of_events)/box_range)+1;
 														if ((temp<=(((event_number-1)*box_range)/
@@ -7038,6 +7114,11 @@ should be done as a callback from the trace_window.
 													{
 														previous_left_box=left_box;
 														previous_right_box=right_box;
+														previous_left_edit_box=left_edit_box;
+														previous_right_edit_box=right_edit_box;
+														temp_divisions=previous_divisions;
+														previous_divisions=divisions;
+														divisions=temp_divisions;
 														previous_pointer_x=pointer_x;
 														/* reduce the number of motion events displayed */
 														while (True==XCheckMaskEvent(display,
@@ -7067,6 +7148,20 @@ should be done as a callback from the trace_window.
 																			left_box=pointer_x;
 																		}
 																	}
+																	if (divisions)
+																	{
+																		for (i=number_of_events-2;i>=0;i--)
+																		{
+																			if (left_box>previous_divisions[i])
+																			{
+																				divisions[i]=left_box;
+																			}
+																			else
+																			{
+																				divisions[i]=previous_divisions[i];
+																			}
+																		}
+																	}
 																} break;
 																case MOVING_RIGHT:
 																{
@@ -7084,6 +7179,20 @@ should be done as a callback from the trace_window.
 																		else
 																		{
 																			right_box=pointer_x;
+																		}
+																	}
+																	if (divisions)
+																	{
+																		for (i=number_of_events-2;i>=0;i--)
+																		{
+																			if (right_box<previous_divisions[i])
+																			{
+																				divisions[i]=right_box;
+																			}
+																			else
+																			{
+																				divisions[i]=previous_divisions[i];
+																			}
 																		}
 																	}
 																} break;
@@ -7123,20 +7232,65 @@ should be done as a callback from the trace_window.
 																			}
 																		}
 																	}
+																	if (divisions)
+																	{
+																		for (i=number_of_events-2;i>=0;i--)
+																		{
+																			divisions[i]=previous_divisions[i]-
+																				left_box-previous_left_box;
+																		}
+																	}
 																} break;
 															}
 															if ((left_box!=previous_left_box)||
 																(right_box!=previous_right_box))
 															{
+																if (divisions)
+																{
+																	if (event_number>1)
+																	{
+																		left_edit_box=divisions[event_number-2];
+																	}
+																	else
+																	{
+																		left_edit_box=left_box;
+																	}
+																	if (event_number<number_of_events)
+																	{
+																		right_edit_box=divisions[event_number-1];
+																	}
+																	else
+																	{
+																		right_edit_box=right_box;
+																	}
+																}
+																else
+																{
+																	width=right_box-left_box;
+																	left_edit_box=left_box+((event_number-1)*
+																		width)/number_of_events;
+																	right_edit_box=left_box+(event_number*width)/
+																		number_of_events;
+																}
 																if (EDA_INTERVAL==detection)
 																{
 																	/* clear the old box */
 																	width=previous_right_box-previous_left_box,
 																	draw_search_box(previous_left_box,axes_top,
 																		width,trace_area_1->axes_height,detection,
-																		number_of_events,trace_area_1->drawing_area,
+																		number_of_events,previous_divisions,
+																		trace_area_1->drawing_area,
 																		trace_area_1->drawing,
 																		signal_drawing_information);
+																	draw_highlight_event_box(
+																		previous_left_edit_box,axes_top,
+																		previous_right_edit_box-
+																		previous_left_edit_box,
+																		trace_area_1->axes_height,detection,
+																		trace_area_1->drawing_area,
+																		trace_area_1->drawing,
+																		signal_drawing_information);
+#if defined (OLD_CODE)
 																	draw_highlight_event_box(
 																		previous_left_box+((event_number-1)*width)/
 																		number_of_events,axes_top,
@@ -7146,13 +7300,22 @@ should be done as a callback from the trace_window.
 																		trace_area_1->drawing_area,
 																		trace_area_1->drawing,
 																		signal_drawing_information);
+#endif /* defined (OLD_CODE) */
 																	/* draw the new box */
 																	width=right_box-left_box;
 																	draw_search_box(left_box,axes_top,width,
 																		trace_area_1->axes_height,detection,
-																		number_of_events,trace_area_1->drawing_area,
+																		number_of_events,divisions,
+																		trace_area_1->drawing_area,
 																		trace_area_1->drawing,
 																		signal_drawing_information);
+																	draw_highlight_event_box(left_edit_box,
+																		axes_top,right_edit_box-left_edit_box,
+																		trace_area_1->axes_height,detection,
+																		trace_area_1->drawing_area,
+																		trace_area_1->drawing,
+																		signal_drawing_information);
+#if defined (OLD_CODE)
 																	draw_highlight_event_box(
 																		left_box+((event_number-1)*width)/
 																		number_of_events,axes_top,
@@ -7162,6 +7325,7 @@ should be done as a callback from the trace_window.
 																		trace_area_1->drawing_area,
 																		trace_area_1->drawing,
 																		signal_drawing_information);
+#endif /* defined (OLD_CODE) */
 																}
 																else
 																{
@@ -7189,7 +7353,7 @@ should be done as a callback from the trace_window.
 																		draw_search_box(previous_left_box,axes_top,
 																			previous_right_box-previous_left_box,
 																			trace_area_1->axes_height,detection,
-																			number_of_events,
+																			number_of_events,previous_divisions,
 																			trace_area_1->drawing_area,
 																			trace_area_1->drawing,
 																			signal_drawing_information);
@@ -7197,7 +7361,7 @@ should be done as a callback from the trace_window.
 																		draw_search_box(left_box,axes_top,
 																			right_box-left_box,
 																			trace_area_1->axes_height,detection,
-																			number_of_events,
+																			number_of_events,divisions,
 																			trace_area_1->drawing_area,
 																			trace_area_1->drawing,
 																			signal_drawing_information);
@@ -7221,8 +7385,6 @@ should be done as a callback from the trace_window.
 														{
 															if (xevent.xbutton.window==working_window)
 															{
-																/*???DB.  To be done for
-																	search_interval_divisions */
 																if ((EDA_INTERVAL==detection)||!edit_box)
 																{
 																	if ((left_box!=trace_area_1->enlarge.
@@ -7232,33 +7394,130 @@ should be done as a callback from the trace_window.
 																		if (left_box!=trace_area_1->enlarge.
 																			left_box)
 																		{
-																			analysis->start_search_interval=
-																				SCALE_X(left_box,axes_left,
+																			temp=SCALE_X(left_box,axes_left,
 																				start_analysis_interval,1/x_scale);
+																			if (analysis->search_interval_divisions)
+																			{
+																				if (MOVING_BOX==moving)
+																				{
+																					temp_2=temp-
+																						analysis->start_search_interval;
+																					for (i=number_of_events-2;
+																						i>=0;i--)
+																					{
+																						(analysis->
+																							search_interval_divisions)[i] +=
+																							temp_2;
+																					}
+																				}
+																				else
+																				{
+																					/* must be MOVING_LEFT */
+																					i=0;
+																					while ((i<number_of_events-1)&&
+																						((analysis->
+																						search_interval_divisions)[i]<temp))
+																					{
+																						(analysis->
+																							search_interval_divisions)[i]=
+																							temp;
+																						i++;
+																					}
+																				}
+																			}
+																			analysis->start_search_interval=temp;
 																			trace_area_1->enlarge.left_box=left_box;
 																		}
 																		if (right_box!=
 																			trace_area_1->enlarge.right_box)
 																		{
-																			analysis->end_search_interval=
-																				SCALE_X(right_box,axes_left,
+																			temp=SCALE_X(right_box,axes_left,
 																				start_analysis_interval,1/x_scale);
+																			if (analysis->search_interval_divisions)
+																			{
+																				/* have already done adjusting (above)
+																					for MOVING_BOX */
+																				if (MOVING_BOX!=moving)
+																				{
+																					/* must be MOVING_RIGHT */
+																					i=number_of_events-2;
+																					while ((i>=0)&&((analysis->
+																						search_interval_divisions)[i]>temp))
+																					{
+																						(analysis->
+																							search_interval_divisions)[i]=
+																							temp;
+																						i--;
+																					}
+																				}
+																			}
+																			analysis->end_search_interval=temp;
 																			trace_area_1->enlarge.right_box=right_box;
+																		}
+																		if (divisions&&
+																			(trace_area_1->enlarge.divisions))
+																		{
+																			for (i=number_of_events-2;i>=0;i--)
+																			{
+																				(trace_area_1->enlarge.divisions)[i]=
+																					divisions[i];
+																			}
 																		}
 																		if (EDA_INTERVAL==detection)
 																		{
-																			trace_area_1->enlarge.left_edit_box=
-																				(trace_area_1->enlarge.left_box)+
-																				((event_number-1)*
-																				((trace_area_1->enlarge.right_box)-
-																				(trace_area_1->enlarge.left_box)))/
-																				number_of_events;
-																			trace_area_1->enlarge.right_edit_box=
-																				(trace_area_1->enlarge.left_box)+
-																				(event_number*
-																				((trace_area_1->enlarge.right_box)-
-																				(trace_area_1->enlarge.left_box)))/
-																				number_of_events;
+																			if (analysis->search_interval_divisions)
+																			{
+																				temp=analysis->start_search_interval;
+																				temp_2=(analysis->end_search_interval)-
+																					temp;
+																				if (event_number>1)
+																				{
+																					trace_area_1->enlarge.left_edit_box=
+																						(trace_area_1->enlarge.left_box)+
+																						(((analysis->
+																						search_interval_divisions)[
+																						event_number-2]-temp)*
+																						((trace_area_1->enlarge.right_box)-
+																						(trace_area_1->enlarge.left_box)))/
+																						temp_2;
+																				}
+																				else
+																				{
+																					trace_area_1->enlarge.left_edit_box=
+																						trace_area_1->enlarge.left_box;
+																				}
+																				if (event_number<number_of_events)
+																				{
+																					trace_area_1->enlarge.right_edit_box=
+																						(trace_area_1->enlarge.left_box)+
+																						(((analysis->
+																						search_interval_divisions)[
+																						event_number-1]-temp)*
+																						((trace_area_1->enlarge.right_box)-
+																						(trace_area_1->enlarge.left_box)))/
+																						temp_2;
+																				}
+																				else
+																				{
+																					trace_area_1->enlarge.right_edit_box=
+																						trace_area_1->enlarge.right_box;
+																				}
+																			}
+																			else
+																			{
+																				trace_area_1->enlarge.left_edit_box=
+																					(trace_area_1->enlarge.left_box)+
+																					((event_number-1)*
+																					((trace_area_1->enlarge.right_box)-
+																					(trace_area_1->enlarge.left_box)))/
+																					number_of_events;
+																				trace_area_1->enlarge.right_edit_box=
+																					(trace_area_1->enlarge.left_box)+
+																					(event_number*
+																					((trace_area_1->enlarge.right_box)-
+																					(trace_area_1->enlarge.left_box)))/
+																					number_of_events;
+																			}
 																		}
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 																		if (EDA_INTERVAL==detection)
@@ -7357,12 +7616,19 @@ should be done as a callback from the trace_window.
 																		width=right_box-left_box;
 																		draw_search_box(left_box,axes_top,width,
 																			trace_area_1->axes_height,detection,
-																			number_of_events,
+																			number_of_events,divisions,
 																			trace_area_1->drawing_area,
 																			trace_area_1->drawing,
 																			signal_drawing_information);
 																		if (EDA_INTERVAL==detection)
 																		{
+																			draw_highlight_event_box(left_edit_box,
+																				axes_top,right_edit_box-left_edit_box,
+																				trace_area_1->axes_height,detection,
+																				trace_area_1->drawing_area,
+																				trace_area_1->drawing,
+																				signal_drawing_information);
+#if defined (OLD_CODE)
 																			draw_highlight_event_box(
 																				left_box+((event_number-1)*width)/
 																				number_of_events,axes_top,
@@ -7373,6 +7639,7 @@ should be done as a callback from the trace_window.
 																				trace_area_1->drawing_area,
 																				trace_area_1->drawing,
 																				signal_drawing_information);
+#endif /* defined (OLD_CODE) */
 																		}
 																		/* draw the old box */
 																		draw_search_box(
@@ -7381,6 +7648,7 @@ should be done as a callback from the trace_window.
 																			trace_area_1->enlarge.left_box,
 																			trace_area_1->axes_height,detection,
 																			number_of_events,
+																			trace_area_1->enlarge.divisions,
 																			trace_area_1->drawing_area,
 																			trace_area_1->drawing,
 																			signal_drawing_information);
@@ -7440,6 +7708,8 @@ should be done as a callback from the trace_window.
 									}
 								}
 							}
+							DEALLOCATE(divisions);
+							DEALLOCATE(previous_divisions);
 						}
 					} break;
 				}

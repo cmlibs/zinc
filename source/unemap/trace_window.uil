@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : trace_window.uil
 !
-!LAST MODIFIED : 30 December 1999
+!LAST MODIFIED : 5 January 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the trace window in the analysis work area.
@@ -83,6 +83,7 @@ procedure
 	identify_trace_beat_averaging_l;
 	identify_trace_beat_averaging_u;
 	identify_trace_beat_averaging_a;
+	trace_align_beats_to_events;
 	identify_trace_1_drawing_area;
 	expose_trace_1_drawing_area;
 	resize_trace_1_drawing_area;
@@ -156,6 +157,7 @@ procedure
 	change_beat_averaging;
 	id_trace_beat_averaging_toggle;
 	id_trace_beat_averaging_overlay;
+	trace_overlay_beats;
 	identify_trace_3_drawing_area;
 	expose_trace_3_drawing_area;
 	resize_trace_3_drawing_area;
@@ -1406,7 +1408,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-!				trace_analysis_mode_apply(analysis_work_area_structure);
+				trace_align_beats_to_events(trace_window_structure);
 				};
 			};
 		};
@@ -2795,7 +2797,7 @@ object
 				};
 			XmNvalueChangedCallback = procedures
 				{
-!				change_beat_averaging(trace_window_structure);
+				trace_overlay_beats(trace_window_structure);
 				};
 			};
 		};

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.h
 
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 4 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -54,7 +54,7 @@ The order in which the events are traversed while editing.
 
 struct Enlarge_area
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 4 January 2000
 
 DESCRIPTION :
 The area of the trace window where the enlarged signal is drawn.
@@ -102,7 +102,7 @@ The area of the trace window where the enlarged signal is drawn.
 		Widget current_button;
 	} all_current;
 	/* search box information */
-	int left_box,right_box;
+	int *divisions,left_box,right_box;
 	/* edit box information */
 	int left_edit_box,right_edit_box;
 	char calculate_all_events;
@@ -471,11 +471,11 @@ DESCRIPTION :
 ==============================================================================*/
 
 int draw_search_box(int left,int top,int width,int height,
-	enum Event_detection_algorithm detection,int number_of_events,
+	enum Event_detection_algorithm detection,int number_of_events,int *divisions,
 	Widget drawing_area,struct Drawing_2d *drawing,
 	struct Signal_drawing_information *signal_drawing_information);
 /*******************************************************************************
-LAST MODIFIED : 1 January 1997
+LAST MODIFIED : 4 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
