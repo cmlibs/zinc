@@ -14092,6 +14092,7 @@ and allows its contents to be modified.
 			return_code=process_multiple_options(state,option_table)&&
 				Computed_field_set_type_sample_texture(field,source_field,texture);
 			DEACCESS(Computed_field)(&source_field);
+			DEACCESS(Texture)(&texture);
 		}
 	}
 	else
