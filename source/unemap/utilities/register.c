@@ -6630,7 +6630,7 @@ int main(void)
 				process_keyboard_data.number_of_channels=number_of_channels;
 				process_keyboard_data.number_of_samples=number_of_samples;
 #if defined (UNIX)
-				if (Event_dispatcher_add_file_descriptor_handler(
+				if (Event_dispatcher_add_simple_descriptor_callback(
 					event_dispatcher, fileno(stdin),
 					process_keyboard, &process_keyboard_data))
 				{

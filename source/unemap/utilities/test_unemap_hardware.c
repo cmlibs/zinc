@@ -840,7 +840,7 @@ int main(void)
 #if defined (UNIX)
 	if (event_dispatcher=CREATE(Event_dispatcher)())
 	{
-		if (Event_dispatcher_add_file_descriptor_handler(event_dispatcher,
+		if (Event_dispatcher_add_simple_descriptor_callback(event_dispatcher,
 			fileno(stdin),process_keyboard,NULL))
 		{
 			print_menu();
