@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : beekeeper.c
 
-LAST MODIFIED : 17 June 1998
+LAST MODIFIED : 18 March 2001
 
 DESCRIPTION :
 Functions for reading Beekeeper data files (EEG signals).  The format was
@@ -1236,7 +1236,7 @@ Global functions
 */
 int read_beekeeper_eeg_file(char *file_name,void *rig_pointer)
 /*******************************************************************************
-LAST MODIFIED : 21 September 1998
+LAST MODIFIED : 18 March 2001
 
 DESCRIPTION :
 Reads the signal data from a Beekeeper EEG file and creates a rig with a default
@@ -1248,18 +1248,20 @@ configuration (electrode information is not available).
 		calibration_table2[CALIBRATION_TABLE_SIZE],*record,sync_byte,temp_char;
 	FILE *beekeeper_file;
 	float frequency,full_range;
-	int buffer_size,calibration_index,calibration_size,data_gap_length,
-		*electrodes_in_row,found,i,index,j,number_of_channels,number_of_data_gaps,
-		number_of_devices,number_of_DTM,number_of_rows,number_of_samples,
-		number_of_128,number_of_400,number_of_64,record_size,return_code,
-		*signal_time;
+	int buffer_size,calibration_index,calibration_size,*electrodes_in_row,found,i,
+		index,j,number_of_channels,number_of_data_gaps,number_of_devices,
+		number_of_DTM,number_of_rows,number_of_samples,number_of_128,number_of_400,
+		number_of_64,record_size,return_code,*signal_time;
 	short *signal_value;
 	struct Device **device;
 	struct Rig *rig;
 	struct Signal_buffer *signal_buffer;
 	unsigned char *packed;
-	unsigned long end_time,start_time,time;
+	unsigned long data_gap_length,end_time,start_time,time;
 	unsigned short gain[128],*unpacked,value[128],value_1,value_2;
+#if defined (FILL_IN_DATA_GAPS)
+	int max_data_gap_length;
+#endif /* defined (FILL_IN_DATA_GAPS) */
 
 	ENTER(read_beekeeper_eeg_file);
 /*???debug */
@@ -1420,6 +1422,9 @@ printf("number_of_400=%d\n",number_of_400);
 				buffer_size=fread(buffer,sizeof(char),BUFFER_SIZE+record_size,
 					beekeeper_file);
 				record=buffer;
+#if defined (FILL_IN_DATA_GAPS)
+				max_data_gap_length=number_of_samples;
+#endif /* defined (FILL_IN_DATA_GAPS) */
 				while (record_size<=buffer_size)
 				{
 					while (record_size<=buffer_size)
@@ -1442,6 +1447,17 @@ printf("number_of_400=%d\n",number_of_400);
 								if (end_time+1!=time)
 								{
 									number_of_data_gaps++;
+									data_gap_length += time-end_time-1;
+#if defined (FILL_IN_DATA_GAPS)
+									if (time-end_time-1<max_data_gap_length)
+									{
+										number_of_samples += time-end_time-1;
+									}
+									else
+									{
+										number_of_samples += max_data_gap_length;
+									}
+#endif /* defined (FILL_IN_DATA_GAPS) */
 								}
 							}
 							else
@@ -1468,12 +1484,11 @@ printf("number_of_400=%d\n",number_of_400);
 printf("number of records = %d\n",found);
 printf("number_of_data_gaps = %d\n",number_of_data_gaps);
 printf("start=%lu, end=%lu\n",start_time,end_time);
+printf("data length=%lu, no data length=%lu\n",
+	end_time-start_time+1-data_gap_length,data_gap_length);
 #if defined (FILL_IN_DATA_GAPS)
-/*???debug */
 printf("Filling in data gaps\n");
-				number_of_samples=(int)(end_time-start_time+1);
 #else /* defined (FILL_IN_DATA_GAPS) */
-/*???debug */
 printf("Not filling in data gaps\n");
 #endif /* defined (FILL_IN_DATA_GAPS) */
 				/* extract the calibration table */
@@ -1647,6 +1662,9 @@ for (i=0;i<16;i++)
 						{
 							frequency=200.;
 						}
+						/*???debug */
+						printf("number_of_devices=%d, number_of_samples=%d\n",
+							number_of_devices,number_of_samples);
 						if (signal_buffer=create_Signal_buffer(SHORT_INT_VALUE,
 							number_of_devices,number_of_samples,frequency))
 						{
@@ -1658,6 +1676,7 @@ for (i=0;i<16;i++)
 							buffer_size=fread(buffer,sizeof(char),BUFFER_SIZE+record_size,
 								beekeeper_file);
 							record=buffer;
+							end_time=start_time;
 							while (record_size<=buffer_size)
 							{
 								while (record_size<=buffer_size)
@@ -1714,29 +1733,59 @@ if (!found)
 found++;
 #if defined (FILL_IN_DATA_GAPS)
 										if ((time>start_time)&&
-											((data_gap_length=(int)(time-start_time-(*(signal_time-1))))>1))
+											((data_gap_length=(int)(time-end_time))>1))
 										{
-											for (j=1;j<=data_gap_length;j++)
+											if (data_gap_length<=max_data_gap_length)
 											{
+												for (j=1;j<=data_gap_length;j++)
+												{
+													*signal_time=(*(signal_time-1))+1;
+													signal_time++;
+													for (i=0;i<number_of_channels;i++)
+													{
+														if (0xFFFF!=gain[i])
+														{
+															*signal_value=(short)(((long)(data_gap_length-j)*
+																(long)(*(signal_value-j*number_of_devices))+
+																(long)j*((((long)(value[i])*(long)(gain[i]))>>
+																14)-(long)2048))/(long)data_gap_length);
+															signal_value++;
+														}
+													}
+												}
+											}
+											else
+											{
+												for (j=1;j<=max_data_gap_length;j++)
+												{
+													*signal_time=(*(signal_time-1))+1;
+													signal_time++;
+													for (i=0;i<number_of_channels;i++)
+													{
+														if (0xFFFF!=gain[i])
+														{
+															*signal_value=(short)8192;
+															signal_value++;
+														}
+													}
+												}
 												*signal_time=(*(signal_time-1))+1;
 												signal_time++;
 												for (i=0;i<number_of_channels;i++)
 												{
 													if (0xFFFF!=gain[i])
 													{
-														*signal_value=(short)(((long)(data_gap_length-j)*
-															(long)(*(signal_value-j*number_of_devices))+
-															(long)j*((((long)(value[i])*(long)(gain[i]))>>14)-
-															(long)2048))/(long)data_gap_length);
+														*signal_value=
+															(short)(((long)(value[i])*(long)(gain[i]))>>14)-
+															2048;
 														signal_value++;
 													}
 												}
 											}
 										}
 										else
-#endif /* defined (FILL_IN_DATA_GAPS) */
 										{
-											*signal_time=(int)(time-start_time);
+											*signal_time=(*(signal_time-1))+1;
 											signal_time++;
 											for (i=0;i<number_of_channels;i++)
 											{
@@ -1749,6 +1798,21 @@ found++;
 												}
 											}
 										}
+										end_time=time;
+#else /* defined (FILL_IN_DATA_GAPS) */
+										*signal_time=(int)(time-start_time);
+										signal_time++;
+										for (i=0;i<number_of_channels;i++)
+										{
+											if (0xFFFF!=gain[i])
+											{
+												*signal_value=
+													(short)(((long)(value[i])*(long)(gain[i]))>>14)-
+													2048;
+												signal_value++;
+											}
+										}
+#endif /* defined (FILL_IN_DATA_GAPS) */
 										record += record_size;
 										buffer_size -= record_size;
 									}
