@@ -2269,6 +2269,7 @@ structure itself.
 		display_message(ERROR_MESSAGE,"DESTROY(Node_tool).  Invalid argument(s)");
 		return_code=0;
 	}
+	LEAVE;
 
 	return (return_code);
 } /* DESTROY(Node_tool) */
