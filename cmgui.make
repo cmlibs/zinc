@@ -5,6 +5,9 @@ TEST_PATH=$(CMISS_ROOT)/cmgui/test_examples
 BIN_PATH=bin
 SOURCE_PATH=source
 MAILFILE_PATH=mailfiles
+#By overriding the TARGET on the command line you can specify
+#a sub object to be compiled i.e. make cmgui_linux TARGET=command/cmiss.o
+TARGET= 
 
 VPATH=$(PRODUCT_PATH)
 
@@ -40,9 +43,9 @@ COMMON_MAKE_RULE= \
 cmgui : force $(SOURCE_PATH)/cmgui_sgi.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f cmgui_sgi.make ]; then \
-		$(MAKE) -f cmgui_sgi.make ; \
+		$(MAKE) -f cmgui_sgi.make $(TARGET) ; \
 	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi.make ; \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi.make $(TARGET) ; \
 	fi
 
 $(SOURCE_PATH)/cmgui_sgi.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
@@ -53,9 +56,9 @@ $(SOURCE_PATH)/cmgui_sgi.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common
 cmgui_optimised : force $(SOURCE_PATH)/cmgui_sgioptimised.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f cmgui_sgioptimised.make ]; then \
-		$(MAKE) -f cmgui_sgioptimised.make ; \
+		$(MAKE) -f cmgui_sgioptimised.make $(TARGET) ; \
 	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgioptimised.make ; \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgioptimised.make $(TARGET) ; \
 	fi	
 
 $(SOURCE_PATH)/cmgui_sgioptimised.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
@@ -66,9 +69,9 @@ $(SOURCE_PATH)/cmgui_sgioptimised.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PAT
 cmgui_lite : force $(SOURCE_PATH)/cmgui_sgilite.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f cmgui_sgilite.make ]; then \
-		$(MAKE) -f cmgui_sgilite.make ; \
+		$(MAKE) -f cmgui_sgilite.make $(TARGET) ; \
 	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgilite.make ; \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgilite.make $(TARGET) ; \
 	fi	
 
 $(SOURCE_PATH)/cmgui_sgilite.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
@@ -79,9 +82,9 @@ $(SOURCE_PATH)/cmgui_sgilite.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/co
 cmgui_memorycheck : force $(SOURCE_PATH)/cmgui_sgi_memorycheck.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f cmgui_sgi_memorycheck.make ]; then \
-		$(MAKE) -f cmgui_sgi_memorycheck.make ; \
+		$(MAKE) -f cmgui_sgi_memorycheck.make $(TARGET) ; \
 	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi_memorycheck.make ; \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi_memorycheck.make $(TARGET) ; \
 	fi
 
 $(SOURCE_PATH)/cmgui_sgi_memorycheck.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
@@ -92,9 +95,9 @@ $(SOURCE_PATH)/cmgui_sgi_memorycheck.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_
 cmgui64 : force $(SOURCE_PATH)/cmgui_sgi64.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f cmgui_sgi64.make ]; then \
-		$(MAKE) -f cmgui_sgi64.make ; \
+		$(MAKE) -f cmgui_sgi64.make $(TARGET) ; \
 	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi64.make ; \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgi64.make $(TARGET) ; \
 	fi	
 
 $(SOURCE_PATH)/cmgui_sgi64.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
@@ -105,9 +108,9 @@ $(SOURCE_PATH)/cmgui_sgi64.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/comm
 cmgui_linux : force $(SOURCE_PATH)/cmgui_linux.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f cmgui_linux.make ]; then \
-		$(MAKE) -f cmgui_linux.make ; \
+		$(MAKE) -f cmgui_linux.make $(TARGET) ; \
 	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_linux.make ; \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_linux.make $(TARGET) ; \
 	fi
 
 $(SOURCE_PATH)/cmgui_linux.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
