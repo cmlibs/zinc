@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 22 May 2001
+LAST MODIFIED : 28 June 2001
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -6482,7 +6482,7 @@ static void Computed_field_FE_field_change(
 	struct MANAGER_MESSAGE(FE_field) *message,
 	void *computed_field_finite_element_package_void)
 /*******************************************************************************
-LAST MODIFIED : 22 May 2001
+LAST MODIFIED : 28 June 2001
 
 DESCRIPTION :
 Updates definitions of Computed_field wrappers for changed FE_fields in the
@@ -6501,25 +6501,38 @@ that may result from this process.
 		(struct Computed_field_finite_element_package *)
 		computed_field_finite_element_package_void))
 	{
-		field_change_data.computed_field_manager =
-			computed_field_finite_element_package->computed_field_manager;
-		field_change_data.identifier_changed = 
-			(MANAGER_CHANGE_IDENTIFIER(FE_field) == message->change) ||
-			(MANAGER_CHANGE_OBJECT(FE_field) == message->change);
-		field_change_data.contents_changed = 
-			(MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_field) == message->change) ||
-			(MANAGER_CHANGE_OBJECT(FE_field) == message->change);
-		MANAGER_BEGIN_CACHE(Computed_field)(
-			computed_field_finite_element_package->computed_field_manager);
-		if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(
-			FE_field_to_Computed_field_change, (void *)&field_change_data,
-			message->changed_object_list))
+		switch (message->change)
 		{
-			display_message(ERROR_MESSAGE,
-				"Computed_field_FE_field_change.  Unable to propagate change(s)");
+			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_field):
+			case MANAGER_CHANGE_OBJECT(FE_field):
+			case MANAGER_CHANGE_IDENTIFIER(FE_field):
+			case MANAGER_CHANGE_ADD(FE_field):
+			{
+				field_change_data.computed_field_manager =
+					computed_field_finite_element_package->computed_field_manager;
+				field_change_data.identifier_changed = 
+					(MANAGER_CHANGE_IDENTIFIER(FE_field) == message->change) ||
+					(MANAGER_CHANGE_OBJECT(FE_field) == message->change);
+				field_change_data.contents_changed = 
+					(MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_field) == message->change) ||
+					(MANAGER_CHANGE_OBJECT(FE_field) == message->change);
+				MANAGER_BEGIN_CACHE(Computed_field)(
+					computed_field_finite_element_package->computed_field_manager);
+				if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(
+					FE_field_to_Computed_field_change, (void *)&field_change_data,
+					message->changed_object_list))
+				{
+					display_message(ERROR_MESSAGE,
+						"Computed_field_FE_field_change.  Unable to propagate change(s)");
+				}
+				MANAGER_END_CACHE(Computed_field)(
+					computed_field_finite_element_package->computed_field_manager);
+			} break;
+			case MANAGER_CHANGE_REMOVE(FE_field):
+			{
+				/* do nothing */
+			} break;
 		}
-		MANAGER_END_CACHE(Computed_field)(
-			computed_field_finite_element_package->computed_field_manager);
 	}
 	else
 	{
@@ -7362,7 +7375,7 @@ Given <fe_field>, destroys the associated computed field, and fe_field
 				/* also want to destroy (wrapped) FE_field */	
 				if (return_code=REMOVE_OBJECT_FROM_MANAGER(Computed_field)(
 					computed_field,computed_field_manager))
-				{							
+				{								
 					return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
 						fe_field,fe_field_manager);
 				}
