@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 24 May 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -28,6 +28,7 @@ DESCRIPTION :
 #if !defined (WINDOWS_DEV_FLAG)
 #include "element/element_creator.h"
 #include "element/element_point_tool.h"
+#include "element/element_point_viewer.h"
 #include "finite_element/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_streamlines.h"
@@ -691,6 +692,7 @@ Main program for the CMISS Graphical User Interface
 	command_data.node_group_slider_dialog=(Widget)NULL;
 	command_data.data_viewer=(struct Node_viewer *)NULL;
 	command_data.node_viewer=(struct Node_viewer *)NULL;
+	command_data.element_point_viewer=(struct Element_point_viewer *)NULL;
 	command_data.transformation_editor_dialog=(Widget)NULL;
 	command_data.prompt_window=(struct Prompt_window *)NULL;
 	command_data.projection_window=(struct Projection_window *)NULL;
@@ -1784,6 +1786,10 @@ Main program for the CMISS Graphical User Interface
 				if (command_data.node_viewer)
 				{
 					DESTROY(Node_viewer)(&(command_data.node_viewer));
+				}
+				if (command_data.element_point_viewer)
+				{
+					DESTROY(Element_point_viewer)(&(command_data.element_point_viewer));
 				}
 
 				DESTROY(MANAGER(Graphics_window))(
