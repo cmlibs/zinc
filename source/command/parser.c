@@ -2358,7 +2358,7 @@ Executes a VARIABLE command.
 		{"set",&set,(void *)NULL,execute_variable_command_operation},
 		{"show",NULL,(void *)NULL,execute_variable_command_show},
 		{"subtract",&subtract,(void *)NULL,execute_variable_command_operation},
-		{NULL,NULL,NULL}
+		{NULL,NULL,NULL,NULL}
 	};
 
 	ENTER(execute_variable_command);
