@@ -61,7 +61,7 @@ FE_node version uses the integer cm_node_identifier as an identifier.
 
 PROTOTYPE_SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME_FUNCTION(FE_node)
 /*****************************************************************************
-LAST MODIFIED : 9 May 1997
+LAST MODIFIED : 24 August 2000
 
 DESCRIPTION :
 Version for FE_node objects converts object_name into a node number and calls
@@ -70,12 +70,23 @@ MANAGER_MODIFY_IDENTIFIER function.
 ============================================================================*/
 {
 	int return_code;
+#if defined (OLD_CODE)
 	int new_number;
+#endif /* defined (OLD_CODE) */
 
 	ENTER(SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME(FE_node));
+	USE_PARAMETER(object_name);
+	USE_PARAMETER(object);
+	USE_PARAMETER(object_manager);
+	display_message(ERROR_MESSAGE,
+		"SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME(FE_node).  "
+		"Not allowed to rename nodes");
+	return_code=0;
+#if defined (OLD_CODE)
 	sscanf(object_name,"%i",&new_number);
 	return_code = MANAGER_MODIFY_IDENTIFIER(FE_node,cm_node_identifier)(
 		object,new_number,object_manager);
+#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return return_code;
