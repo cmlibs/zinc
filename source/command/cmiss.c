@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 3 October 2001
+LAST MODIFIED : 9 October 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -9830,7 +9830,7 @@ a time.  This implementation may be changed later.
 static int gfx_create_cmiss(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 26 September 2001
+LAST MODIFIED : 9 October 2001
 
 DESCRIPTION :
 Executes a GFX CREATE CMISS_CONNECTION command.
@@ -9940,13 +9940,12 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 			Option_table_add_entry(option_table,"connection_number",
 				&connection_number,(void *)NULL,set_int_non_negative);
 			Option_table_add_entry(option_table,"examples_directory",
-				&examples_directory,(void *)NULL,set_name);
-			Option_table_add_entry(option_table,"host",&host_name,(void *)NULL,
-				set_name);
+				&examples_directory,(void *)1,set_name);
+			Option_table_add_entry(option_table,"host",&host_name,(void *)1,set_name);
 			Option_table_add_entry(option_table,"mycm",&mycm_flag,(void *)NULL,
 				set_char_flag);
 			Option_table_add_entry(option_table,"parameters",&parameters_file_name,
-				(void *)NULL,set_name);
+				(void *)1,set_name);
 			Option_table_add_entry(option_table,"type",&host_type,(void *)NULL,
 				set_machine_type);
 			Option_table_add_entry(option_table,(char *)NULL,&host_name,(void *)NULL,
