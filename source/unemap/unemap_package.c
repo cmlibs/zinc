@@ -13,7 +13,6 @@ Contains function definitions for unemap package.
 #include "finite_element/computed_field.h"
 #include "general/debug.h"
 #include "graphics/colour.h"
-#include "graphics/graphics_window.h"
 #include "graphics/graphical_element.h"
 #include "unemap/unemap_package.h"
 #include "user_interface/message.h"
@@ -392,7 +391,6 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection *data_selection,
 	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(Graphics_window) *graphics_window_manager,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Scene) *scene_manager,
@@ -418,7 +416,7 @@ The fields are filed in with set_unemap_package_fields()
 		data_group_manager&&node_group_manager&&fe_basis_manager&&element_manager&&
 		element_point_ranges_selection&&element_selection&&node_selection&&
 		data_selection&&
-		computed_field_manager&&graphics_window_manager&&texture_manager&&
+		computed_field_manager&&texture_manager&&
 		interactive_tool_manager&&
 		scene_manager&&light_model_manager&&light_manager&&spectrum_manager&&
 		graphical_material_manager&&data_manager&&glyph_list&&colour)
@@ -460,7 +458,6 @@ The fields are filed in with set_unemap_package_fields()
 			/* for the cmgui graphics window */
 			package->viewed_scene=0; 
 			package->no_interpolation_colour=colour;
-			package->window=(struct Graphics_window *)NULL;
 			package->background_colour=create_Colour(0,0,0);
 			package->light=(struct Light *)NULL;			
 			package->light_model=(struct Light_model *)NULL;			
@@ -501,7 +498,6 @@ The fields are filed in with set_unemap_package_fields()
 					"CREATE(Unemap_package).  failed to createelectrode_graphical_material");
 				package->electrode_graphical_material=(struct Graphical_material *)NULL;
 			}
-			package->graphics_window_manager=graphics_window_manager;
 			package->light_manager=light_manager;
 			package->texture_manager=texture_manager;
 			package->interactive_tool_manager=interactive_tool_manager;
@@ -581,7 +577,6 @@ to NULL.
 		}
 		DEALLOCATE(package->maps_info);
 		package->number_of_maps=0;
-		DEACCESS(Graphics_window )(&package->window);		
 		DEACCESS(Light)(&package->light);
 		DEACCESS(Light_model)(&package->light_model);	
 		/* creation/destruction handled elsewhere. No access count to access*/
@@ -3373,32 +3368,6 @@ associated with the rig
 	return(return_code);
 }/* free_unemap_package_rig_info.*/
 
-struct MANAGER(Graphics_window) *get_unemap_package_Graphics_window_manager(
-	struct Unemap_package *package)
-/*******************************************************************************
-LAST MODIFIED : 2 September 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-{
-	struct MANAGER(Graphics_window) *graphics_window_manager;
-
-	ENTER(get_unemap_package_Graphics_window_manager);
-	if(package)
-	{
-		graphics_window_manager=package->graphics_window_manager;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_Graphics_window_manager."
-			" invalid arguments");
-		graphics_window_manager = (struct MANAGER(Graphics_window) *)NULL;
-	}
-	LEAVE;
-	return(graphics_window_manager);
-}/* get_unemap_package_Graphics_window_manager */
-
 struct MANAGER(Light) *get_unemap_package_Light_manager(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -3528,58 +3497,6 @@ gets a manager of the unemap package.
 	LEAVE;
 	return(graphical_material_manager);
 }/* get_unemap_package_Graphical_material_manager */
-
-struct Graphics_window *get_unemap_package_window(
-	struct Unemap_package *package)
-/*******************************************************************************
-LAST MODIFIED :  September 2 1999
-
-DESCRIPTION :
-gets the Graphics_window of the unemap package.
-==============================================================================*/
-{
-	struct Graphics_window *window;
-	ENTER(get_unemap_package_window);
-	if(package)
-	{
-		window=package->window;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_window."
-				" invalid arguments");
-		window = (struct Graphics_window *)NULL;
-	}
-	LEAVE;
-	return (window);
-} /* get_unemap_package_window */
-
-int set_unemap_package_window(struct Unemap_package *package,
-	struct Graphics_window *window)
-/*******************************************************************************
-LAST MODIFIED : September 2 1999
-
-DESCRIPTION :
-Sets the Graphics_window of the unemap package.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_unemap_package_window);
-	if(package)
-	{
-		return_code =1;	
-		REACCESS(Graphics_window)(&(package->window),window);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_unemap_package_window."
-				" invalid arguments");
-		return_code =0;
-	}
-	LEAVE;
-	return (return_code);
-} /* set_unemap_package_window */
 
 struct Colour *get_unemap_package_background_colour(
 	struct Unemap_package *package)

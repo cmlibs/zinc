@@ -509,7 +509,6 @@ GRAPHICS_SRCS = \
 	graphics/light.c \
 	graphics/light_model.c \
 	graphics/colour.c \
-	graphics/graphics_window.c \
 	graphics/scene_viewer.c \
 	graphics/scene.c \
 	graphics/selected_graphic.c \

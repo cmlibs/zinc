@@ -95,7 +95,6 @@ eg light model, and managers. Split into along these lines??JW
 	struct Colour *background_colour;
 	struct Colour *electrode_colour;
 	struct Colour *no_interpolation_colour; 
-	struct Graphics_window *window;	
 	struct Light *light;	
 	struct Light_model *light_model;	
 	struct Scene *scene;	
@@ -105,7 +104,6 @@ eg light model, and managers. Split into along these lines??JW
 	struct Graphical_material *electrode_graphical_material;
 	struct Time_keeper *time_keeper;	
 	struct Computed_field_package *computed_field_package;
-	struct MANAGER(Graphics_window) *graphics_window_manager;
 	struct MANAGER(Texture) *texture_manager;
 	struct MANAGER(Scene) *scene_manager;
 	struct MANAGER(Light_model) *light_model_manager;
@@ -134,7 +132,6 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection *data_selection,
 	struct MANAGER(Computed_field) *computed_field_manager,
-	struct MANAGER(Graphics_window) *graphics_window_manager,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Scene) *scene_manager,
@@ -801,15 +798,6 @@ Frees the fields, nodes, elements stored in unemap_package that are
 associated with the rig
 ==============================================================================*/
 
-struct MANAGER(Graphics_window) *get_unemap_package_Graphics_window_manager(
-	struct Unemap_package *package);
-/*******************************************************************************
-LAST MODIFIED : 2 September 1999
-
-DESCRIPTION :
-gets a manager of the unemap package.
-==============================================================================*/
-
 struct MANAGER(Light) *get_unemap_package_Light_manager(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -853,24 +841,6 @@ LAST MODIFIED : 22 September 1999
 
 DESCRIPTION :
 gets a manager of the unemap package.
-==============================================================================*/
-
-struct Graphics_window *get_unemap_package_window(
-	struct Unemap_package *package);
-/*******************************************************************************
-LAST MODIFIED :  September 2 1999
-
-DESCRIPTION :
-gets the Graphics_window of the unemap package.
-==============================================================================*/
-
-int set_unemap_package_window(struct Unemap_package *package,
-	struct Graphics_window *window);
-/*******************************************************************************
-LAST MODIFIED : September 2 1999
-
-DESCRIPTION :
-Sets the Graphics_window of the unemap package.
 ==============================================================================*/
 
 struct Colour *get_unemap_package_background_colour(

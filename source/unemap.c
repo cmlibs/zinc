@@ -21,7 +21,6 @@ Main program for unemap.  Based on cmgui.
 #if defined (UNEMAP_USE_NODES)
 #include "finite_element/computed_field.h"
 #include "graphics/glyph.h"
-#include "graphics/graphics_window.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/material.h"
@@ -298,8 +297,6 @@ Main program for unemap
 	struct MANAGER(FE_node) *node_manager=(struct MANAGER(FE_node) *)NULL;
 	struct MANAGER(Graphical_material) *graphical_material_manager=
 		(struct MANAGER(Graphical_material) *)NULL;
-	struct MANAGER(Graphics_window) *graphics_window_manager=
-		(struct MANAGER(Graphics_window) *)NULL;	
 	struct MANAGER(GROUP(FE_element)) *element_group_manager=
 		(struct MANAGER(GROUP(FE_element)) *)NULL;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager=
@@ -629,7 +626,6 @@ Main program for unemap
 		node_group_manager=CREATE_MANAGER(GROUP(FE_node))();
 		data_group_manager=CREATE_MANAGER(GROUP(FE_node))();
 		fe_basis_manager=CREATE_MANAGER(FE_basis)(); 
-		graphics_window_manager=CREATE_MANAGER(Graphics_window)();
 
 		/* global list of selected objects */
 		element_point_ranges_selection=
@@ -821,7 +817,7 @@ Main program for unemap
 			element_group_manager,node_manager,data_group_manager,node_group_manager,
 			fe_basis_manager,element_manager,element_point_ranges_selection,
 			element_selection,node_selection,data_selection,computed_field_manager,
-			graphics_window_manager,texture_manager,interactive_tool_manager,
+			texture_manager,interactive_tool_manager,
 			scene_manager,light_model_manager,light_manager,
 			spectrum_manager,graphical_material_manager,data_manager,
 			glyph_list,&no_interpolation_colour);
