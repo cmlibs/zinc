@@ -1512,8 +1512,8 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 			save_write_signal_file_background_data_void))
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
-		if (CreateThread(/*no security attributes*/NULL,/*use default stack size*/0,
-			save_write_signal_file_process,
+		if (!CreateThread(/*no security attributes*/NULL,
+			/*use default stack size*/0,save_write_signal_file_process,
 			(LPVOID)save_write_signal_file_background_data_void,
 			/*use default creation flags*/0,&thread_id))
 #endif /* defined (WINDOWS) */
