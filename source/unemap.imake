@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 16 May 2000
+XCOMM LAST MODIFIED : 21 May 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -55,6 +55,7 @@ UTILITIES_PATH=$(CMISS_ROOT)/cmgui/source/utilities
 #define Img2sigTarget unemap/img2sig64
 #define Plt2cnfgTarget unemap/plt2cnfg64
 #define Posdat2sigTarget unemap/posdat2sig64
+#define RatioSignalsTarget unemap/ratio_signals64
 #define RegisterTarget unemap/register64
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware64
 #define Tuff2sigTarget unemap/tuff2sig64
@@ -88,6 +89,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 #define Img2sigTarget unemap/img2sig_optimised
 #define Plt2cnfgTarget unemap/plt2cnfg_optimised
 #define Posdat2sigTarget unemap/posdat2sig_optimised
+#define RatioSignalsTarget unemap/ratio_signals_optimised
 #define RegisterTarget unemap/register_optimised
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_optimised
 #define Tuff2sigTarget unemap/tuff2sig_optimised
@@ -120,6 +122,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Img2sigTarget unemap/img2sig_nodes
 #define Plt2cnfgTarget unemap/plt2cnfg_nodes
 #define Posdat2sigTarget unemap/posdat2sig_nodes
+#define RatioSignalsTarget unemap/ratio_signals_nodes
 #define RegisterTarget unemap/register_nodes
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_nodes
 #define Tuff2sigTarget unemap/tuff2sig_nodes
@@ -154,6 +157,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Img2sigTarget unemap/img2sig32
 #define Plt2cnfgTarget unemap/plt2cnfg32
 #define Posdat2sigTarget unemap/posdat2sig32
+#define RatioSignalsTarget unemap/ratio_signals32
 #define RegisterTarget unemap/register32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
 #define Tuff2sigTarget unemap/tuff2sig32
@@ -184,6 +188,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Img2sigTarget unemap/img2sig32
 #define Plt2cnfgTarget unemap/plt2cnfg32
 #define Posdat2sigTarget unemap/posdat2sig32
+#define RatioSignalsTarget unemap/ratio_signals32
 #define RegisterTarget unemap/register32
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware32
 #define Tuff2sigTarget unemap/tuff2sig32
@@ -218,6 +223,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #define Img2sigTarget unemap/img2sig_linux
 #define Plt2cnfgTarget unemap/plt2cnfg_linux
 #define Posdat2sigTarget unemap/posdat2sig_linux
+#define RatioSignalsTarget unemap/ratio_signals_linux
 #define RegisterTarget unemap/register_linux
 #define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux
 #define Tuff2sigTarget unemap/tuff2sig_linux
@@ -685,8 +691,8 @@ utilities : AffineTarget Bmsi2sigTarget Biosense2sigTarget Biosense2vrmlTarget \
 ChangeCalibrationTarget ChangeChannelsTarget ChangeConfigurationTarget \
 ChangeEventsTarget ChangeFrequencyTarget CombineSignalsTarget \
 DifferenceSignalsTarget ExtractSignalTarget Img2sigTarget Plt2cnfgTarget \
-Posdat2sigTarget RegisterTarget TestUnemapHardwareTarget Tuff2sigTarget \
-UniqueChannelsTarget
+Posdat2sigTarget RatioSignalsTarget RegisterTarget TestUnemapHardwareTarget \
+Tuff2sigTarget UniqueChannelsTarget
 
 AFFINE_SRCS = \
 	unemap/utilities/affine.c \
@@ -874,6 +880,20 @@ POSDAT2SIG_SRCS = \
 	user_interface/message.c
 
 BuildNormalTarget(Posdat2sigTarget,$(UTILITIES_PATH),POSDAT2SIG_SRCS,POSDAT2SIG_OBJSA,POSDAT2SIG_OBJSB,POSDAT2SIG_OBJS,-lm) 
+
+RATIO_SIGNALS_SRCS = \
+	unemap/utilities/ratio_signals.c \
+	command/parser.c \
+	general/debug.c \
+	general/geometry.c \
+	general/matrix_vector.c \
+	general/myio.c \
+	general/mystring.c \
+	unemap/rig.c \
+	unemap/rig_node.c \
+	user_interface/message.c
+
+BuildNormalTarget(RatioSignalsTarget,$(UTILITIES_PATH),RATIO_SIGNALS_SRCS,RATIO_SIGNALS_OBJSA,RATIO_SIGNALS_OBJSB,RATIO_SIGNALS_OBJS,-lm) 
 
 REGISTER_SRCS = \
 	unemap/utilities/register.c \
