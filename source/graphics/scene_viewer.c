@@ -198,6 +198,18 @@ access this function.
 	int layer, layers, return_code,height,i,j,k,width;
 	void *new_data;
 	int accumulation_count,antialias;
+	float j2[2][2]=
+		{
+			{0.25,0.75},
+			{0.75,0.25}
+		};
+	float j4[4][2]=
+		{
+			{0.375,0.25},
+			{0.125,0.75},
+			{0.875,0.25},
+			{0.625,0.75}
+		};
 	float j8[8][2]=
 		{
 			{0.5625,0.4375},
@@ -635,9 +647,9 @@ access this function.
 					{
 						antialias = 0;
 					}
-					if (8==antialias)
+					if (antialias>1)
 					{
-						scene_redraws=8;
+						scene_redraws=antialias;
 					}
 					else
 					{
@@ -664,10 +676,34 @@ access this function.
 							glMatrixMode(GL_PROJECTION);
 							glLoadIdentity();
 						}
-						if (8==antialias)
+						switch(antialias)
 						{
-							pixel_offset_x=j8[accumulation_count][0]-0.5;
-							pixel_offset_y=j8[accumulation_count][1]-0.5;
+							case 0:
+							case 1:
+							{
+								/* Do nothing */
+							} break;
+							case 2:
+							{
+								pixel_offset_x=j2[accumulation_count][0]-0.5;
+								pixel_offset_y=j2[accumulation_count][1]-0.5;
+							} break;
+							case 4:
+							{
+								pixel_offset_x=j4[accumulation_count][0]-0.5;
+								pixel_offset_y=j4[accumulation_count][1]-0.5;
+							} break;
+							case 8:
+							{
+								pixel_offset_x=j8[accumulation_count][0]-0.5;
+								pixel_offset_y=j8[accumulation_count][1]-0.5;
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE,
+									"Scene_viewer_render_scene_private.  Invalid antialias number");
+								return_code=0;
+							} break;
 						}
 						/* the projection matrix converts the viewing volume into the
 							Normalised Device Coordinates ranging from -1 to +1 in each
@@ -4329,16 +4365,25 @@ Zero turns antialiasing off.
 	if (scene_viewer)
 	{
 		/* Could also check to see if an accumulation buffer is available */
-		if ((8==antialias_mode)||(0==antialias_mode))
+		if ((8==antialias_mode)||(4==antialias_mode)||(2==antialias_mode))
 		{
 			scene_viewer->antialias=antialias_mode;
 			return_code=1;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-"Scene_viewer_set_antialias_mode.  Only 8 point jitter supported at the moment");
-			return_code=0;
+			if ((1==antialias_mode)||(0==antialias_mode))
+			{
+				/* Turn antialias off */
+				scene_viewer->antialias=0;
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_viewer_set_antialias_mode.  Only 8, 4 or 2 point jitter supported at the moment");
+				return_code=0;
+			}
 		}
 	}
 	else
