@@ -16,6 +16,15 @@ Implements a number of basic component wise operations on computed fields.
 #include "user_interface/message.h"
 #include "computed_field/computed_field_finite_element.h"
 
+#if defined (DEBUG)
+/* SAB This field is useful for debugging when things don't clean up properly
+	but has to be used carefully, especially as operations such as caching
+	accesses the node or element being considered so you get effects like 
+	the first point evaluated in an element having a count one less than 
+	all the others */
+#define COMPUTED_FIELD_ACCESS_COUNT
+#endif /* defined (DEBUG) */
+
 /*
 Global types
 ------------
@@ -123,7 +132,9 @@ static char computed_field_finite_element_type_string[]="finite_element";
 static char computed_field_default_coordinate_type_string[]=
 	"default_coordinate";
 static char computed_field_cmiss_number_type_string[]="cmiss_number";
+#if defined (COMPUTED_FIELD_ACCESS_COUNT)
 static char computed_field_access_count_type_string[]="access_count";
+#endif /* defined (COMPUTED_FIELD_ACCESS_COUNT) */
 static char computed_field_node_value_type_string[]="node_value";
 static char computed_field_node_array_value_at_time_type_string[]=
 	"node_array_value_at_time";
@@ -2812,6 +2823,7 @@ Converts <field> into type COMPUTED_FIELD_CMISS_NUMBER.
 	return (return_code);
 } /* define_Computed_field_type_cmiss_number */
 
+#if defined (COMPUTED_FIELD_ACCESS_COUNT)
 static int Computed_field_access_count_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -3304,6 +3316,7 @@ Converts <field> into type COMPUTED_FIELD_ACCESS_COUNT.
 
 	return (return_code);
 } /* define_Computed_field_type_access_count */
+#endif /* defined (COMPUTED_FIELD_ACCESS_COUNT) */
 
 static char computed_field_xi_coordinates_type_string[] = "xi_coordinates";
 
@@ -6588,10 +6601,12 @@ automatically wrapped in corresponding computed_fields.
 			computed_field_cmiss_number_type_string,
 			define_Computed_field_type_cmiss_number,
 			&computed_field_finite_element_package);
+#if defined (COMPUTED_FIELD_ACCESS_COUNT)
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_access_count_type_string,
 			define_Computed_field_type_access_count,
 			&computed_field_finite_element_package);
+#endif /* defined (COMPUTED_FIELD_ACCESS_COUNT) */
 		Computed_field_package_add_type(computed_field_package,
 			computed_field_xi_coordinates_type_string,
 			define_Computed_field_type_xi_coordinates,
