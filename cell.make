@@ -67,23 +67,17 @@ ESU_BUILD_MACHINE = 130.216.208.35 #esu35
 ESP_BUILD_LIST = cell cell-debug cell-debug-memorycheck utilities
 ESP_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
 ESP_BUILD_MACHINE = 130.216.208.156 #esp56
-HPC1_BUILD_LIST = cell cell-debug cell64 
-HPC1_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
-HPC1_BUILD_MACHINE = 130.216.191.92 #hpc1
 
 update_sources :
-	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH)/source ; cvs update' && \
-	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH)/source ; cvs update' ;
+	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH)/source ; cvs update'
 
 update :
 	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST)' && \
-	ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)' && \
-	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST)' ;
+	ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)'
 
 depend:
 	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST) TARGET=depend' && \
-	ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST) TARGET=depend' && \
-	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST) TARGET=depend' ;
+	ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST) TARGET=depend'
 
 cronjob: update_sources
 	if [ "$(USER)" = "cmiss" ]; then \
