@@ -81,7 +81,6 @@ Creates a single Cmgui_image which stores the data from the X <pixmap>.
 	struct Cmgui_image *image;
 	unsigned char *char_ximage_data, *pixels, *pixel_data;
 	unsigned int border_width, depth, height, i, j, width;
- 	unsigned long *long_ximage_data;
 	Window root_window;
 	XColor xcolour, *xcolour_array;
 	XImage *ximage;
@@ -106,14 +105,17 @@ Creates a single Cmgui_image which stores the data from the X <pixmap>.
 					pixel_data = pixels;
 					for (j = 0 ; j < height ; j++)
 					{
-						long_ximage_data = (unsigned long *)(ximage->data + j * ximage->bytes_per_line);
+						char_ximage_data = (unsigned char *)(ximage->data + j * ximage->bytes_per_line);
 						for (i = 0 ; i < width ; i++)
 						{
-							pixel_data[0] = (unsigned char)(0xFF & (*long_ximage_data >> 8));
-							pixel_data[1] = (unsigned char)(0xFF & (*long_ximage_data >> 16));
-							pixel_data[2] = (unsigned char)(0xFF & (*long_ximage_data >> 24));
+							pixel_data[0] = (unsigned char)(0xFF &
+								(*((unsigned long *)char_ximage_data) >> 8));
+							pixel_data[1] = (unsigned char)(0xFF &
+								(*((unsigned long *)char_ximage_data) >> 16));
+							pixel_data[2] = (unsigned char)(0xFF &
+								(*((unsigned long *)char_ximage_data) >> 24));
 							pixel_data += 3;
-							long_ximage_data++;
+							char_ximage_data += 4;
 						}
 					}
 				}
@@ -123,14 +125,17 @@ Creates a single Cmgui_image which stores the data from the X <pixmap>.
 					pixel_data = pixels;
 					for (j = 0 ; j < height ; j++)
 					{
-						long_ximage_data = (unsigned long *)(ximage->data + j * ximage->bytes_per_line);
+						char_ximage_data = (unsigned char *)(ximage->data + j * ximage->bytes_per_line);
 						for (i = 0 ; i < width ; i++)
 						{
-							pixel_data[0] = (unsigned char)(0xFF & (*long_ximage_data >> 16));
-							pixel_data[1] = (unsigned char)(0xFF & (*long_ximage_data >> 8));
-							pixel_data[2] = (unsigned char)(0xFF & (*long_ximage_data));
+							pixel_data[0] = (unsigned char)(0xFF & 
+								(*((unsigned long *)char_ximage_data) >> 16));
+							pixel_data[1] = (unsigned char)(0xFF &
+								(*((unsigned long *)char_ximage_data) >> 8));
+							pixel_data[2] = (unsigned char)(0xFF & 
+								(*((unsigned long *)char_ximage_data)));
 							pixel_data += 3;
-							long_ximage_data++;
+							char_ximage_data += 4;
 						}
 					}
 				}
@@ -272,7 +277,6 @@ Generates an X Pixmap which represents the <cmgui_image>.
 	int height, i, j, k, number_of_allocated_colours, number_of_colours, width;
 	Pixmap pixmap;
 	unsigned char *char_ximage_data, *pixels, *pixel_data;
-	unsigned long *long_ximage_data;
 	XColor xcolour, *xcolour_array;
 	XImage *ximage;
 	XWindowAttributes window_attributes;
@@ -313,14 +317,15 @@ Generates an X Pixmap which represents the <cmgui_image>.
 						pixel_data = pixels;
 						for (j = 0 ; j < height ; j++)
 						{
-							long_ximage_data = (unsigned long *)(ximage->data + j * ximage->bytes_per_line);
+							char_ximage_data = (unsigned char *)(ximage->data + j * ximage->bytes_per_line);
 							for (i = 0 ; i < width ; i++)
 							{
-								*long_ximage_data = ((unsigned long)pixel_data[0] << 8) + 
-									((unsigned long)pixel_data[1] << 16) +
-									((unsigned long)pixel_data[2] << 24);
+								char_ximage_data[0] = 0;
+								char_ximage_data[1] = pixel_data[0];
+								char_ximage_data[2] = pixel_data[1];
+								char_ximage_data[3] = pixel_data[2];
 								pixel_data += 3;
-								long_ximage_data++;
+								char_ximage_data += 4;
 							}
 						}
 					}
@@ -330,14 +335,15 @@ Generates an X Pixmap which represents the <cmgui_image>.
 						pixel_data = pixels;
 						for (j = 0 ; j < height ; j++)
 						{
-							long_ximage_data = (unsigned long *)(ximage->data + j * ximage->bytes_per_line);
+							char_ximage_data = (unsigned char *)(ximage->data + j * ximage->bytes_per_line);
 							for (i = 0 ; i < width ; i++)
 							{
-								*long_ximage_data = ((unsigned long)pixel_data[0] << 16) + 
-									((unsigned long)pixel_data[1] << 8) +
-									((unsigned long)pixel_data[2]);
+								char_ximage_data[0] = pixel_data[2];
+								char_ximage_data[1] = pixel_data[1];
+								char_ximage_data[2] = pixel_data[0];
+								char_ximage_data[3] = 0;
 								pixel_data += 3;
-								long_ximage_data++;
+								char_ximage_data += 4;
 							}
 						}
 					}
