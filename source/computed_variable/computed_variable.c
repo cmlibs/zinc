@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.c
 
-LAST MODIFIED : 27 January 2003
+LAST MODIFIED : 28 January 2003
 
 DESCRIPTION :
 Computed_variable's are expressions that are constructed for:
@@ -297,14 +297,14 @@ Frees memory/deaccess objects for Computed_variable at <*variable_address>.
 	return (return_code);
 } /* DESTROY(Computed_variable) */
 
-DECLARE_OBJECT_FUNCTIONS(Computed_variable);
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Computed_variable);
+DECLARE_OBJECT_FUNCTIONS(Computed_variable)
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Computed_variable)
 
-DECLARE_INDEXED_LIST_FUNCTIONS(Computed_variable);
+DECLARE_INDEXED_LIST_FUNCTIONS(Computed_variable)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Computed_variable,name,
-	char *,strcmp);
+	char *,strcmp)
 
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Computed_variable,name);
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Computed_variable,name)
 
 PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Computed_variable,name)
 {
@@ -495,7 +495,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Computed_variable,name,char *)
 	return (return_code);
 } /* MANAGER_COPY_IDENTIFIER(Computed_variable,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Computed_variable);
+DECLARE_MANAGER_FUNCTIONS(Computed_variable)
 
 PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Computed_variable)
 /*******************************************************************************
@@ -790,9 +790,9 @@ Frees memory/deaccess objects for Computed_variable_value at
 	return (return_code);
 } /* DESTROY(Computed_variable_value) */
 
-DECLARE_OBJECT_FUNCTIONS(Computed_variable_value);
+DECLARE_OBJECT_FUNCTIONS(Computed_variable_value)
 
-DECLARE_LIST_FUNCTIONS(Computed_variable_value);
+DECLARE_LIST_FUNCTIONS(Computed_variable_value)
 
 int Computed_variables_are_defined(struct LIST(Computed_variable) *variables,
 	struct LIST(Computed_variable_value) *values);
