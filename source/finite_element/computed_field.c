@@ -5045,7 +5045,7 @@ Note that the values array will not be modified by this function.
 int Computed_field_set_values_at_node(struct Computed_field *field,
 	struct FE_node *node,FE_value *values,struct MANAGER(FE_node) *node_manager)
 /*******************************************************************************
-LAST MODIFIED : 22 July 1999
+LAST MODIFIED : 1 March 2000
 
 DESCRIPTION :
 Sets the <values> of the computed <field> at <node>. Only certain computed field
@@ -5083,12 +5083,16 @@ Note that the values array will not be modified by this function.
 			/* The node must be accessed as the use of cache on the nodes
 				by get values etc. access and deaccessess the nodes */
 			ACCESS(FE_node)(copy_node);
-			if (Computed_field_set_values_at_node_private(field,copy_node,values))
+			return_code=
+				Computed_field_set_values_at_node_private(field,copy_node,values);
+			/* must clear the cache before MANAGER_MODIFY as previously cached
+				 values may be invalid */
+			Computed_field_clear_cache(field);
+			if (return_code)
 			{
 				return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)(
 					node,copy_node,node_manager);
 			}
-			Computed_field_clear_cache(field);
 			DEACCESS(FE_node)(&copy_node);
 		}
 		if (!return_code)
