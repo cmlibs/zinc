@@ -7,10 +7,11 @@ DESCRIPTION :
 This provides a Cmgui interface to the Digital Media libraries on the SGI
 ******************************************************************************/
 /* These calls should be available in every system with GLX 1.3 or greater.
-	The code should still run on an older GLX even if it is compiled on a GLX 1.3.
-	Undefine if you need to compile on an older GLX. */
+	The code should still run on an older GLX even if it is compiled on a GLX 1.3. */
+#if defined (GLX_VERSION_1_3)
 #define GLX_pbuffer 1
 #define GLX_fbconfig 1
+#endif /* defined (GLX_VERSION_1_3) */
 
 #if defined (SGI_DIGITAL_MEDIA)
 /*???SAB.  This is defined here because needed in a header file */
