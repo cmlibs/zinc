@@ -24,6 +24,7 @@ return to direct rendering, as described with these routines.
 #include <stdlib.h>
 #include <string.h>
 #include "command/parser.h"
+#include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
@@ -51,12 +52,50 @@ Module constants
 Module types
 ------------
 */
+enum Material_program_type
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Enumerates the main different types of vertex/fragment program for materials
+==============================================================================*/
+{
+	MATERIAL_PROGRAM_PER_PIXEL_LIGHTING
+}; /* enum Material_program_type */
+
+struct Material_program
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Stores a display list which sets up the correct state for a particular
+material state.  This allows vertex/fragment programs to be used per material
+but shared between different materials with the same state.
+==============================================================================*/
+{
+	enum Material_program_type type;
+
+	GLuint vertex_program;
+	GLuint fragment_program;
+
+	/* Flag indicating whether the program is compiled or not */
+	int compiled;
+	/* Display list which enables the correct state for this program */
+	GLuint display_list;
+
+	int access_count;
+}; /* struct Material_program */
+
+DECLARE_LIST_TYPES(Material_program);
+PROTOTYPE_LIST_FUNCTIONS(Material_program);
+FULL_DECLARE_INDEXED_LIST_TYPE(Material_program);
+
 struct Graphical_material
 /*******************************************************************************
 LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
-The properties of a graphical material.
+The properties of a material.
 ==============================================================================*/
 {
 	/* the name of the material */
@@ -80,7 +119,7 @@ The properties of a graphical material.
 #endif /* defined (OPENGL_API) */
 	/* the spectrum_flag indicates to the direct render routine that
 		the material is being used to represent a spectrum and so the
-		commands generated from direct_render_Graphical_material can be 
+		commands generated from direct_render_Material can be 
 		compacted, all the bits indicate what has been changed */
 	int spectrum_flag;
 	int spectrum_flag_previous;
@@ -88,8 +127,11 @@ The properties of a graphical material.
 	enum Graphics_compile_status compile_status;
 	/* the texture for this material */
 	struct Texture *texture;
-	/* the number of structures that point to this material.  The material
-		cannot be destroyed while this is greater than 0 */
+	/* the shared information for Graphical Materials, allowing them to share
+	   Material_programs */
+	struct Material_package *package;
+	/* the graphics state program that represents this material */
+	struct Material_program *program;
 	int access_count;
 }; /* struct Graphical_material */
 
@@ -97,18 +139,350 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Graphical_material);
 
 FULL_DECLARE_MANAGER_TYPE(Graphical_material);
 
-/*
-Module variables
-----------------
-*/
-#if defined (GL_API)
-static short int next_graphical_material_index=1;
-#endif
+struct Material_package
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Provide an opaque container for shared material information.
+==============================================================================*/
+{
+	struct MANAGER(Graphical_material) *material_manager;
+	struct MANAGER(Texture) *texture_manager;
+	struct Graphical_material *default_material;
+	struct Graphical_material *default_selected_material;
+	struct LIST(Material_program) *material_program_list;
+	int access_count;
+}; /* struct Material_package */
 
 /*
 Module functions
 ----------------
 */
+
+static struct Material_program *CREATE(Material_program)(enum Material_program_type type)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Material_program *material_program;
+
+	ENTER(CREATE(Material_program));
+
+	if (ALLOCATE(material_program ,struct Material_program, 1))
+	{
+		material_program->type = type;
+		material_program->vertex_program = 0;
+		material_program->fragment_program = 0;
+		material_program->display_list = 0;
+		material_program->compiled = 0;
+		material_program->access_count = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Material_program).  Not enough memory");
+	}
+	LEAVE;
+
+	return (material_program);
+} /* CREATE(Material_program) */
+
+static int DESTROY(Material_program)(struct Material_program **material_program_address)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Frees the memory for the material_program.
+==============================================================================*/
+{
+	int return_code;
+	struct Material_program *material_program;
+
+	ENTER(DESTROY(Material_program));
+	if (material_program_address &&
+		(material_program = *material_program_address))
+	{
+		if (0==material_program->access_count)
+		{
+#if defined (OPENGL_API)
+			if (material_program->vertex_program)
+			{
+				glDeleteProgramsARB(1, &material_program->vertex_program);
+			}
+			if (material_program->fragment_program)
+			{
+				glDeleteProgramsARB(1, &material_program->fragment_program);
+			}
+			if (material_program->display_list)
+			{
+				glDeleteLists(material_program->display_list, 1);
+			}
+#endif /* defined (OPENGL_API) */
+			DEALLOCATE(*material_program_address);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Material_program).  Material program has non-zero access count");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Material_program).  Missing material");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Material_program) */
+
+DECLARE_OBJECT_FUNCTIONS(Material_program)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Material_program, type, \
+	enum Material_program_type, compare_int)
+DECLARE_INDEXED_LIST_FUNCTIONS(Material_program)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Material_program, type,
+	enum Material_program_type, compare_int)
+
+static int Material_program_compile(struct Material_program *material_program)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Material_program_compile);
+	if (material_program)
+	{
+		return_code = 1;
+		if (!material_program->compiled)
+		{
+			switch (material_program->type)
+			{
+				case MATERIAL_PROGRAM_PER_PIXEL_LIGHTING:
+				{
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
+					if (query_gl_extension("GL_ARB_vertex_program") &&
+						 query_gl_extension("GL_ARB_fragment_program"))
+					{
+						char vertex_program_string[] =
+							"!!ARBvp1.0\n"
+							"ATTRIB normal = vertex.normal;\n"
+							"ATTRIB position = vertex.position;\n"
+							"PARAM c0[4] = { state.matrix.mvp };\n"
+							"PARAM c1[4] = { state.matrix.modelview };\n"
+							"PARAM c2[4] = { state.matrix.modelview.invtrans };\n"
+							"PARAM eyeCameraPos = {0, 0, 100, 0};\n"
+							"PARAM eyeLightPos = state.light[0].position;\n"
+							"TEMP eyeVertex;\n"
+							"TEMP eyeNormal;\n"
+							"\n"
+							"#Vertex position in eyespace\n"
+							"DP4 eyeVertex.x, c1[0], position;\n"
+							"DP4 eyeVertex.y, c1[1], position;\n"
+							"DP4 eyeVertex.z, c1[2], position;\n"
+							"\n"
+							"DP4 eyeNormal.x, c2[0], normal;\n"
+							"DP4 eyeNormal.y, c2[1], normal;\n"
+							"DP4 eyeNormal.z, c2[2], normal;\n"
+							"DP3 eyeNormal.w, eyeNormal, eyeNormal;\n"
+							"RSQ eyeNormal.w, eyeNormal.w;\n"
+							"MUL eyeNormal.xyz, eyeNormal.w, eyeNormal;\n"
+							"#MOV eyeNormal, normal;\n"
+							"\n"
+							"MOV result.texcoord[0], vertex.texcoord[0];\n"
+							"SUB result.texcoord[1], eyeLightPos, eyeVertex;\n"
+							"SUB result.texcoord[2], eyeCameraPos, eyeVertex;\n"
+							"MOV result.texcoord[3], eyeNormal;\n"
+							"MOV result.color, vertex.color;\n"
+							"MOV result.color.back, vertex.color;\n"
+							"MOV result.color.secondary,  {1, 1, 1, 1};\n"
+							"MOV result.color.back.secondary,  {0, 0, 0, 0};\n"
+							"DP4 result.position.x, c0[0], position;\n"
+							"DP4 result.position.y, c0[1], position;\n"
+							"DP4 result.position.z, c0[2], position;\n"
+							"DP4 result.position.w, c0[3], position;\n"
+							"\n"
+							"END\n";
+						char fragment_program_string[] =
+							"!!ARBfp1.0\n"
+							"TEMP lightVec, viewVec, reflVec, normal, attenuation, Len, finalCol, lightContrib, reverse, tex;\n"
+							"PARAM two = {2.0, 2.0, 2.0, 2.0};\n"
+							"PARAM m_one = {-1.0, -1.0, -1.0, -1.0};\n"
+							"\n"
+							"TEX		tex, fragment.texcoord[0], texture[0], 2D;\n"
+							"\n"
+							"#Normalize normal, lightvec and viewvec.\n"
+							"DP3		Len.w, fragment.texcoord[1], fragment.texcoord[1];\n"
+							"RSQ		lightVec.w, Len.w;\n"
+							"MUL		lightVec.xyz, fragment.texcoord[1], lightVec.w;\n"
+							"\n"
+							"DP3		viewVec.w, fragment.texcoord[2], fragment.texcoord[2];\n"
+							"RSQ		viewVec.w, viewVec.w;\n"
+							"MUL		viewVec.xyz, fragment.texcoord[2], viewVec.w;\n"
+							"\n"
+							"DP3		normal.w, fragment.texcoord[3], fragment.texcoord[3];\n"
+							"RSQ		normal.w, normal.w;\n"
+							"MUL		normal.xyz, fragment.texcoord[3], normal.w;\n"
+							"\n"
+							"#Reverse the normal for the back faces based on the secondary colour\n"
+							"MAD      reverse, two, fragment.color.secondary.x, m_one;\n"
+							"MUL      normal, reverse, normal;\n"
+							"\n"
+							"#Calculate attenuation.\n"
+							"MAD		attenuation, state.light[0].attenuation.z, Len.w, state.light[0].attenuation.x;\n"
+							"RCP		Len, lightVec.w;\n"
+							"MAD		attenuation, Len.w, state.light[0].attenuation.y, attenuation.x;\n"
+							"RCP		attenuation.x, attenuation.x;\n"
+							"\n"
+							"#Diffuse\n"
+							"DP3_SAT	   lightContrib.x, normal, lightVec;\n"
+							"\n"
+							"#Specular\n"
+							"# Phong:\n"
+							"DP3		reflVec, lightVec, normal;\n"
+							"MUL		reflVec, reflVec, two;\n"
+							"MAD		reflVec, reflVec, normal, -lightVec;\n"
+							"\n"
+							"DP3_SAT	lightContrib.y, reflVec, viewVec;\n"
+							"\n"
+							"# Blinn:\n"
+							"#	ADD		reflVec, lightVec, viewVec;	# reflVec == Half-angle.\n"
+							"#	DP3		reflVec.w, reflVec, reflVec;\n"
+							"#	RSQ		reflVec.w, reflVec.w;\n"
+							"#	MUL		reflVec.xyz, reflVec, reflVec.w;\n"
+							"#	DP3		lightContrib.y, reflVec, normal;\n"
+							"\n"
+							"MOV		lightContrib.w, state.material.shininess.x;\n"
+							"\n"
+							"#Accelerates lighting computations\n"
+							"LIT	lightContrib, lightContrib;\n"
+							"\n"
+							"MAD		finalCol, lightContrib.y, fragment.color, state.lightprod[0].ambient;\n"
+							"\n"
+							"# Enable this line for textured models\n"
+							"#	MUL		finalCol, finalCol, tex;	# Texture?\n"
+							"\n"
+							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
+							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
+							"#MOV      finalCol, fragment.color.secondary;\n"
+							"#MOV      finalCol, fragment.color;\n"
+							"MOV      result.color.xyz, finalCol;\n"
+							"ADD		result.color.xyz, finalCol, state.lightmodel.scenecolor;\n"
+							"MOV		result.color.w, state.material.diffuse.w;\n"
+							"END\n";
+
+						if (!material_program->vertex_program)
+						{
+							glGenProgramsARB(1, &material_program->vertex_program);
+							glBindProgramARB(GL_VERTEX_PROGRAM_ARB, material_program->vertex_program);
+							glProgramStringARB(GL_VERTEX_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+								strlen(vertex_program_string), vertex_program_string);
+						}
+
+						if (!material_program->fragment_program)
+						{
+							glGenProgramsARB(1, &material_program->fragment_program);
+							glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, material_program->fragment_program);
+							glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB,
+								strlen(fragment_program_string), fragment_program_string);
+						}
+
+						if (!material_program->display_list)
+						{
+							material_program->display_list = glGenLists(/*number_of_lists*/1);
+						}
+
+						glNewList(material_program->display_list, GL_COMPILE);
+
+						glEnable(GL_VERTEX_PROGRAM_ARB);
+						glBindProgramNV(GL_VERTEX_PROGRAM_ARB,
+							material_program->vertex_program);
+					
+						glEnable(GL_FRAGMENT_PROGRAM_ARB);
+						glBindProgramNV(GL_FRAGMENT_PROGRAM_ARB,
+							material_program->fragment_program);
+
+						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+
+						glEndList();
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Material_program_compile.  "
+							"Support for PER_PIXEL_LIGHTING requires GL_ARB_vertex_program and GL_ARB_fragment_program extensions.");
+					}
+#else /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+					display_message(ERROR_MESSAGE, "Material_program_compile.  "
+						"Support for PER_PIXEL_LIGHTING was not compiled into this executable.");
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+
+				} break;
+				default:
+				{
+					/* Do nothing */
+				};
+			
+			}
+			material_program->compiled = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_program_compile.  Missing material_program");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Material_program_compile */
+
+static int Material_program_execute(struct Material_program *material_program)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Material_program_execute);
+	if (material_program)
+	{
+		if (material_program->compiled)
+		{
+			if (material_program->display_list)
+			{
+				glCallList(material_program->display_list);
+			}
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Material_program_execute.  Display list not current");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_program_execute.  Missing material_program object.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Material_program_execute */
+
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphical_material,name,char *,strcmp)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphical_material)
@@ -140,134 +514,44 @@ material results.
 	if (material)
 	{
 #if defined (OPENGL_API)
-#if defined (OLD_CODE)
-		switch (material->spectrum_flag)
-		{
-			case (MATERIAL_SPECTRUM_ENABLED | MATERIAL_SPECTRUM_STARTED | MATERIAL_SPECTRUM_DIFFUSE):
-			case (MATERIAL_SPECTRUM_ENABLED | MATERIAL_SPECTRUM_STARTED | MATERIAL_SPECTRUM_ALPHA):
-			case (MATERIAL_SPECTRUM_ENABLED | MATERIAL_SPECTRUM_STARTED | MATERIAL_SPECTRUM_DIFFUSE | MATERIAL_SPECTRUM_ALPHA):
-			{
-				if(material->spectrum_flag_previous != material->spectrum_flag)
-				{
-					material->spectrum_flag_previous = material->spectrum_flag;
-					glEnable(GL_COLOR_MATERIAL);
-					glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
-				}
-				values[0]=(material->diffuse).red;
-				values[1]=(material->diffuse).green;
-				values[2]=(material->diffuse).blue;
-				values[3]=material->alpha;
-				glColor4fv(values);				
-			} break;
-			case (MATERIAL_SPECTRUM_ENABLED | MATERIAL_SPECTRUM_STARTED | MATERIAL_SPECTRUM_AMBIENT | MATERIAL_SPECTRUM_DIFFUSE):
-			{
-				if(((material->diffuse).red==(material->ambient).red)
-					&& ((material->diffuse).green==(material->ambient).green)
-					&& ((material->diffuse).blue==(material->ambient).blue))
-				{
-					if(material->spectrum_flag_previous != material->spectrum_flag)
-					{
-						material->spectrum_flag_previous = material->spectrum_flag;
-						glEnable(GL_COLOR_MATERIAL);
-						glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-					}
-					values[0]=(material->diffuse).red;
-					values[1]=(material->diffuse).green;
-					values[2]=(material->diffuse).blue;
-					values[3]=material->alpha;
-					glColor4fv(values);				
-				}
-				else
-				{
-					values[0]=(material->diffuse).red;
-					values[1]=(material->diffuse).green;
-					values[2]=(material->diffuse).blue;
-					values[3]=material->alpha;
-					glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,values);
-					values[0]=(material->ambient).red;
-					values[1]=(material->ambient).green;
-					values[2]=(material->ambient).blue;
-					glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,values);
-				}
-			} break;
-			case (MATERIAL_SPECTRUM_ENABLED | MATERIAL_SPECTRUM_STARTED | MATERIAL_SPECTRUM_AMBIENT):
-			{
-				if(material->spectrum_flag_previous != material->spectrum_flag)
-				{
-					material->spectrum_flag_previous = material->spectrum_flag;
-					glEnable(GL_COLOR_MATERIAL);
-					glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT);
-				}
-				values[0]=(material->ambient).red;
-				values[1]=(material->ambient).green;
-				values[2]=(material->ambient).blue;
-				values[3]=material->alpha;
-				glColor4fv(values);				
-			} break;
-			case (MATERIAL_SPECTRUM_ENABLED | MATERIAL_SPECTRUM_STARTED | MATERIAL_SPECTRUM_EMISSION):
-			{
-				if(material->spectrum_flag_previous != material->spectrum_flag)
-				{
-					material->spectrum_flag_previous = material->spectrum_flag;
-					glEnable(GL_COLOR_MATERIAL);
-					glColorMaterial(GL_FRONT_AND_BACK, GL_EMISSION);
-				}
-				values[0]=(material->emission).red;
-				values[1]=(material->emission).green;
-				values[2]=(material->emission).blue;
-				glColor3fv(values);				
-			} break;
-			case (MATERIAL_SPECTRUM_ENABLED | MATERIAL_SPECTRUM_STARTED | MATERIAL_SPECTRUM_SPECULAR):
-			{
-				if(material->spectrum_flag_previous != material->spectrum_flag)
-				{
-					material->spectrum_flag_previous = material->spectrum_flag;
-					glEnable(GL_COLOR_MATERIAL);
-					glColorMaterial(GL_FRONT_AND_BACK, GL_SPECULAR);
-				}
-				values[0]=(material->specular).red;
-				values[1]=(material->specular).green;
-				values[2]=(material->specular).blue;
-				glColor3fv(values);				
-			} break;
-			default:
-			{
-#endif /* defined (OLD_CODE) */
-				values[0]=(material->diffuse).red;
-				values[1]=(material->diffuse).green;
-				values[2]=(material->diffuse).blue;
-				values[3]=material->alpha;
-				/* use diffuse colour for lines, which are unlit */
-#if defined (OLD_CODE)
-				glColor3fv(values);
-#endif /* defined (OLD_CODE) */
-				/*???RC alpha translucency now applies to lines too: */
-				glColor4fv(values);
-				glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,values);
-				values[0]=(material->ambient).red;
-				values[1]=(material->ambient).green;
-				values[2]=(material->ambient).blue;
-				glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,values);
-				values[0]=(material->emission).red;
-				values[1]=(material->emission).green;
-				values[2]=(material->emission).blue;
-				values[3]=1.0;
-				glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,values);
-				values[0]=(material->specular).red;
-				values[1]=(material->specular).green;
-				values[2]=(material->specular).blue;
-				glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,values);
-				glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,(material->shininess)*128.);
+		values[0]=(material->diffuse).red;
+		values[1]=(material->diffuse).green;
+		values[2]=(material->diffuse).blue;
+		values[3]=material->alpha;
+		/* use diffuse colour for lines, which are unlit */
+		glColor4fv(values);
+		glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,values);
+		values[0]=(material->ambient).red;
+		values[1]=(material->ambient).green;
+		values[2]=(material->ambient).blue;
+		glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,values);
+		values[0]=(material->emission).red;
+		values[1]=(material->emission).green;
+		values[2]=(material->emission).blue;
+		values[3]=1.0;
+		glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,values);
+		values[0]=(material->specular).red;
+		values[1]=(material->specular).green;
+		values[2]=(material->specular).blue;
+		glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,values);
+		glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,(material->shininess)*128.);
 
-				if (material->texture)
-				{
-					execute_Texture(material->texture);
-				}
-				return_code=1;
-#if defined (OLD_CODE)
-			} break;
+		if (material->texture)
+		{
+			execute_Texture(material->texture);
 		}
-#endif /* defined (OLD_CODE) */
+		if (material->program)
+		{
+			Material_program_execute(material->program);
+		}
+		else
+		{
+			glDisable(GL_VERTEX_PROGRAM_ARB);
+			glDisable(GL_FRAGMENT_PROGRAM_ARB);
+			glDisable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+		}
+		return_code=1;
+
 		material->spectrum_flag = MATERIAL_SPECTRUM_STARTED |
 			(MATERIAL_SPECTRUM_ENABLED & material->spectrum_flag);
 		/* Indicates first render has been done */
@@ -292,6 +576,271 @@ material results.
 Global functions
 ----------------
 */
+
+struct Material_package *CREATE(Material_package)(struct MANAGER(Texture) *texture_manager)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Create a shared information container for Materials.
+==============================================================================*/
+{
+	struct Material_package *material_package;
+	struct Colour colour;
+	struct Material_definition
+	{
+		MATERIAL_PRECISION ambient[3];
+		MATERIAL_PRECISION diffuse[3];
+		MATERIAL_PRECISION emission[3];
+		MATERIAL_PRECISION specular[3];
+		MATERIAL_PRECISION alpha;
+		MATERIAL_PRECISION shininess;
+	}
+	default_material = {
+		/*ambient*/ { 1.00, 1.00, 1.00},
+		/*diffuse*/ { 1.00, 1.00, 1.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.00, 0.00, 0.00},
+		/*alpha*/1.0,
+		/*shininess*/0.0},
+	default_selected = {
+		/*ambient*/ { 1.00, 0.20, 0.00},
+		/*diffuse*/ { 1.00, 0.20, 0.00},
+		/*emission*/{ 0.00, 0.00, 0.00},
+		/*specular*/{ 0.00, 0.00, 0.00},
+		/*alpha*/1.0,
+		/*shininess*/0.0};
+
+	ENTER(CREATE(Material_package));
+
+	if (ALLOCATE(material_package ,struct Material_package, 1))
+	{
+		material_package->material_manager = CREATE(MANAGER(Graphical_material))();
+		material_package->default_material = (struct Graphical_material *)NULL;
+		material_package->default_selected_material = (struct Graphical_material *)NULL;
+		material_package->material_program_list = CREATE(LIST(Material_program))();
+		material_package->texture_manager = texture_manager;
+		material_package->access_count = 0;
+
+		/* command/cmiss.c overrides the ambient and diffuse colours of the
+			default material to be the "foreground" colour. */
+		material_package->default_material = ACCESS(Graphical_material)(
+			CREATE(Graphical_material)("default"));
+		colour.red   = default_material.ambient[0];
+		colour.green = default_material.ambient[1];
+		colour.blue  = default_material.ambient[2];
+		Graphical_material_set_ambient(material_package->default_material, &colour);
+		colour.red   = default_material.diffuse[0];
+		colour.green = default_material.diffuse[1];
+		colour.blue  = default_material.diffuse[2];
+		Graphical_material_set_diffuse(material_package->default_material, &colour);
+		colour.red   = default_material.emission[0];
+		colour.green = default_material.emission[1];
+		colour.blue  = default_material.emission[2];
+		Graphical_material_set_emission(material_package->default_material, &colour);
+		colour.red   = default_material.specular[0];
+		colour.green = default_material.specular[1];
+		colour.blue  = default_material.specular[2];
+		Graphical_material_set_specular(material_package->default_material, &colour);
+		Graphical_material_set_alpha(material_package->default_material,
+			default_material.alpha);
+		Graphical_material_set_shininess(material_package->default_material,
+			default_material.shininess);
+		Material_package_manage_material(material_package,
+			material_package->default_material);
+
+		material_package->default_selected_material = ACCESS(Graphical_material)(
+			CREATE(Graphical_material)("default_selected"));
+		colour.red   = default_selected.ambient[0];
+		colour.green = default_selected.ambient[1];
+		colour.blue  = default_selected.ambient[2];
+		Graphical_material_set_ambient(material_package->default_selected_material, &colour);
+		colour.red   = default_selected.diffuse[0];
+		colour.green = default_selected.diffuse[1];
+		colour.blue  = default_selected.diffuse[2];
+		Graphical_material_set_diffuse(material_package->default_selected_material, &colour);
+		colour.red   = default_selected.emission[0];
+		colour.green = default_selected.emission[1];
+		colour.blue  = default_selected.emission[2];
+		Graphical_material_set_emission(material_package->default_selected_material, &colour);
+		colour.red   = default_selected.specular[0];
+		colour.green = default_selected.specular[1];
+		colour.blue  = default_selected.specular[2];
+		Graphical_material_set_specular(material_package->default_selected_material, &colour);
+		Graphical_material_set_alpha(material_package->default_selected_material,
+			default_selected.alpha);
+		Graphical_material_set_shininess(material_package->default_selected_material,
+			default_selected.shininess);
+		Material_package_manage_material(material_package,
+			material_package->default_selected_material);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Material_package).  Not enough memory");
+	}
+	LEAVE;
+
+	return (material_package);
+} /* CREATE(Material_package) */
+
+int DESTROY(Material_package)(struct Material_package **material_package_address)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Frees the memory for the material_package.
+==============================================================================*/
+{
+	int return_code;
+	struct Material_package *material_package;
+
+	ENTER(DESTROY(Material));
+	if (material_package_address &&
+		(material_package = *material_package_address))
+	{
+		if (0==material_package->access_count)
+		{
+			DESTROY(LIST(Material_program))(&material_package->material_program_list);
+			DEALLOCATE(*material_package_address);
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"DESTROY(Material_package).  Material_package has non-zero access count");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Material_package).  Missing material package");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Material_package) */
+
+DECLARE_OBJECT_FUNCTIONS(Material_package)
+
+int Material_package_manage_material(struct Material_package *material_package,
+	struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Material_package_manage_material);
+	if (material_package && material_package->material_manager && material)
+	{
+		if (material->package)
+		{
+			display_message(ERROR_MESSAGE,
+				"Material_package_manage_material.  This material is already being managed");
+		}
+		if (return_code = ADD_OBJECT_TO_MANAGER(Graphical_material)(
+			material, material_package->material_manager))
+		{
+			REACCESS(Material_package)(&material->package, material_package);
+		}
+	}
+	else
+	{
+ 		display_message(ERROR_MESSAGE,
+			"Material_package_manage_material.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Material_package_manage_material */
+
+struct Graphical_material *Material_package_get_default_material(
+	struct Material_package *material_package)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Returns the default material object.
+==============================================================================*/
+{
+	struct Graphical_material *material;
+
+	ENTER(Material_package_get_default_material);
+	if (material_package)
+	{
+		material = material_package->default_material;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_package_get_default_material.  Invalid argument(s)");
+		material = (struct Graphical_material *)NULL;
+	}
+	LEAVE;
+
+	return (material);
+} /* Material_package_get_default_material */
+
+struct Graphical_material *Material_package_get_default_selected_material(
+	struct Material_package *material_package)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Returns the default_selected material object.
+==============================================================================*/
+{
+	struct Graphical_material *material;
+
+	ENTER(Material_package_get_default_selected_material);
+	if (material_package)
+	{
+		material = material_package->default_selected_material;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_package_get_default_selected_material.  Invalid argument(s)");
+		material = (struct Graphical_material *)NULL;
+	}
+	LEAVE;
+
+	return (material);
+} /* Material_package_get_default_selected_material */
+
+struct MANAGER(Graphical_material) *Material_package_get_material_manager(
+	struct Material_package *material_package)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Returns the material manager.
+==============================================================================*/
+{
+	struct MANAGER(Graphical_material) *material_manager;
+
+	ENTER(Material_package_material_manager);
+	if (material_package)
+	{
+		material_manager = material_package->material_manager;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Material_package_get_material_manager.  Invalid argument(s)");
+		material_manager = (struct MANAGER(Graphical_material) *)NULL;
+	}
+	LEAVE;
+
+	return (material_manager);
+} /* Material_package_get_default_selected_material */
+
 struct Graphical_material *CREATE(Graphical_material)(char *name)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
@@ -328,6 +877,8 @@ Allocates memory and assigns fields for a material.
 			material->texture=(struct Texture *)NULL;
 			material->spectrum_flag=0;
 			material->spectrum_flag_previous=0;
+			material->package = (struct Material_package *)NULL;
+			material->program = (struct Material_program *)NULL;
 #if defined (OPENGL_API)
 			material->display_list=0;
 #endif /* defined (OPENGL_API) */
@@ -373,12 +924,20 @@ Frees the memory for the material and sets <*material_address> to NULL.
 #if defined (OPENGL_API)
 			if (material->display_list)
 			{
-				glDeleteLists(material->display_list,1);
+				glDeleteLists(material->display_list, 1);
 			}
 #endif /* defined (OPENGL_API) */
 			if (material->texture)
 			{
 				DEACCESS(Texture)(&(material->texture));
+			}
+			if (material->package)
+			{
+				DEACCESS(Material_package)(&(material->package));
+			}
+			if (material->program)
+			{
+				DEACCESS(Material_program)(&(material->program));
 			}
 			DEALLOCATE(*material_address);
 			return_code=1;
@@ -386,7 +945,7 @@ Frees the memory for the material and sets <*material_address> to NULL.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"DESTROY(Graphical_material).  Material %s has non-zero access count",
+				"DESTROY(Graphical_material).  Graphical_material %s has non-zero access count",
 				material->name);
 			return_code=0;
 		}
@@ -488,6 +1047,22 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 		(destination->specular).blue=(source->specular).blue;
 		destination->shininess=source->shininess;
 		destination->alpha=source->alpha;
+		if (source->package)
+		{
+			destination->package = ACCESS(Material_package)(source->package);
+		}
+		else
+		{
+			destination->package = (struct Material_package *)NULL;
+		}
+		if (source->program)
+		{
+			destination->program = ACCESS(Material_program)(source->program);
+		}
+		else
+		{
+			destination->program = (struct Material_program *)NULL;
+		}
 		REACCESS(Texture)(&(destination->texture), source->texture);
 		/* flag destination display list as no longer current */
 		destination->compile_status = GRAPHICS_NOT_COMPILED;
@@ -1128,42 +1703,123 @@ commands from direct_render_Graphical_material.
 	return (return_code);
 } /* Graphical_material_set_spectrum_flag */
 
+int gfx_create_material(struct Parse_state *state,
+	void *dummy_to_be_modified, void *material_package_void)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Shifted from command/cmiss.c now that there is a material package.
+If the material already exists, then behaves like gfx modify material.
+==============================================================================*/
+{
+	char *current_token;
+	int material_is_new,return_code;
+	struct Graphical_material *material;
+	struct Material_package *material_package;
+
+	ENTER(gfx_create_material);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (material_package=(struct Material_package *)material_package_void)
+			{
+				if (strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				{
+					/* if there is an existing material of that name, just modify it */
+					if (!(material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+						current_token,material_package->material_manager)))
+					{
+						if (material=CREATE(Graphical_material)(current_token))
+						{
+							/*???DB.  Temporary */
+							MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)(material,
+								material_package->default_material);
+						}
+						material_is_new=1;
+					}
+					else
+					{
+						material_is_new=0;
+					}
+					if (material)
+					{
+						shift_Parse_state(state,1);
+						if (state->current_token)
+						{
+							return_code=modify_Graphical_material(state,(void *)material,
+								material_package_void);
+						}
+						else
+						{
+							return_code=1;
+						}
+						if (material_is_new)
+						{
+							ADD_OBJECT_TO_MANAGER(Graphical_material)(material,
+								material_package->material_manager);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_create_material.  Error creating material");
+						return_code=0;
+					}
+				}
+				else
+				{
+					return_code=modify_Graphical_material(state,(void *)NULL,
+						material_package_void);
+					return_code=1;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_create_material.  Missing material_package_void");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing material name");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_create_material.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_create_material */
+
 int modify_Graphical_material(struct Parse_state *state,void *material_void,
-	void *modify_graphical_material_data_void)
+	void *material_package_void)
 /*******************************************************************************
 LAST MODIFIED : 17 February 1997
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	auto struct Modifier_entry
-		help_option_table[]=
-		{
-			{"MATERIAL_NAME",NULL,NULL,modify_Graphical_material},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{"alpha",NULL,NULL,set_float_0_to_1_inclusive},
-			{"ambient",NULL,NULL,set_Colour},
-			{"diffuse",NULL,NULL,set_Colour},
-			{"emission",NULL,NULL,set_Colour},
-			{"shininess",NULL,NULL,set_float_0_to_1_inclusive},
-			{"specular",NULL,NULL,set_Colour},
-			{"texture",NULL,NULL,set_Texture},
-			{NULL,NULL,NULL,NULL}
-		};
-	char *current_token;
+	char *current_token, normal_mode_flag, per_pixel_mode_flag;
 	int process,return_code;
 	struct Graphical_material *material_to_be_modified,
 		*material_to_be_modified_copy;
-	struct Modify_graphical_material_data *modify_graphical_material_data;
+	struct Material_package *material_package;
+	struct Option_table *help_option_table, *option_table, *mode_option_table;
 
 	ENTER(modify_Graphical_material);
 	if (state)
 	{
-		if (modify_graphical_material_data=(struct Modify_graphical_material_data *)
-			modify_graphical_material_data_void)
+		if (material_package = (struct Material_package *)material_package_void)
 		{
 			if (current_token=state->current_token)
 			{
@@ -1171,7 +1827,7 @@ DESCRIPTION :
 				if (material_to_be_modified=(struct Graphical_material *)material_void)
 				{
 					if (IS_MANAGED(Graphical_material)(material_to_be_modified,
-						modify_graphical_material_data->graphical_material_manager))
+						material_package->material_manager))
 					{
 						if (material_to_be_modified_copy=CREATE(Graphical_material)("copy"))
 						{
@@ -1200,7 +1856,7 @@ DESCRIPTION :
 					{
 						if (material_to_be_modified=FIND_BY_IDENTIFIER_IN_MANAGER(
 							Graphical_material,name)(current_token,
-							modify_graphical_material_data->graphical_material_manager))
+							material_package->material_manager))
 						{
 							if (return_code=shift_Parse_state(state,1))
 							{
@@ -1231,17 +1887,17 @@ DESCRIPTION :
 					{
 						if (material_to_be_modified=CREATE(Graphical_material)("help"))
 						{
-							if (modify_graphical_material_data->default_graphical_material)
+							if (material_package->default_material)
 							{
 								MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)(
-									material_to_be_modified,modify_graphical_material_data->
-									default_graphical_material);
+									material_to_be_modified,material_package->default_material);
 							}
-							(help_option_table[0]).to_be_modified=
-								(void *)material_to_be_modified;
-							(help_option_table[0]).user_data=
-								modify_graphical_material_data_void;
-							return_code=process_option(state,help_option_table);
+							help_option_table = CREATE(Option_table)();
+							Option_table_add_entry(help_option_table, "MATERIAL_NAME",
+								material_to_be_modified, material_package_void,
+								modify_Graphical_material);
+							return_code=Option_table_parse(help_option_table, state);
+							DESTROY(Option_table)(&help_option_table);
 							DESTROY(Graphical_material)(&material_to_be_modified);
 						}
 						else
@@ -1254,32 +1910,68 @@ DESCRIPTION :
 				}
 				if (process)
 				{
-					/*???RC shouldn't be passing addresses in object: */
-					/*why? so we can separate parsing from the object */
-					/* use local variables instead. Left for later. */
-					(option_table[0]).to_be_modified=
-						&(material_to_be_modified_copy->alpha);
-					(option_table[1]).to_be_modified=
-						&(material_to_be_modified_copy->ambient);
-					(option_table[2]).to_be_modified=
-						&(material_to_be_modified_copy->diffuse);
-					(option_table[3]).to_be_modified=
-						&(material_to_be_modified_copy->emission);
-					(option_table[4]).to_be_modified=
-						&(material_to_be_modified_copy->shininess);
-					(option_table[5]).to_be_modified=
-						&(material_to_be_modified_copy->specular);
-					(option_table[6]).to_be_modified=
-						&(material_to_be_modified_copy->texture);
-					(option_table[6]).user_data=
-						modify_graphical_material_data->texture_manager;
-					if (return_code=process_multiple_options(state,option_table))
+					normal_mode_flag = 0;
+					per_pixel_mode_flag = 0;
+					option_table = CREATE(Option_table)();
+					Option_table_add_entry(option_table, "alpha",
+						&(material_to_be_modified_copy->alpha), NULL,
+						set_float_0_to_1_inclusive);
+					Option_table_add_entry(option_table, "ambient",
+						&(material_to_be_modified_copy->ambient), NULL,
+						set_Colour);
+					Option_table_add_entry(option_table, "diffuse",
+						&(material_to_be_modified_copy->diffuse), NULL,
+						set_Colour);
+					Option_table_add_entry(option_table, "emission",
+						&(material_to_be_modified_copy->emission), NULL,
+						set_Colour);
+					mode_option_table = CREATE(Option_table)();
+					Option_table_add_char_flag_entry(mode_option_table,
+						"normal_mode", &normal_mode_flag);
+					Option_table_add_char_flag_entry(mode_option_table,
+						"per_pixel_mode", &per_pixel_mode_flag);
+					Option_table_add_suboption_table(option_table, mode_option_table);
+					Option_table_add_entry(option_table, "shininess",
+						&(material_to_be_modified_copy->shininess), NULL,
+						set_float_0_to_1_inclusive);
+					Option_table_add_entry(option_table, "specular",
+						&(material_to_be_modified_copy->specular), NULL,
+						set_Colour);
+					Option_table_add_entry(option_table, "texture",
+						&(material_to_be_modified_copy->texture), 
+						material_package->texture_manager,
+						set_Texture);
+					if (return_code=Option_table_multi_parse(option_table, state))
 					{
+						if (normal_mode_flag + per_pixel_mode_flag > 1)
+						{
+							display_message(ERROR_MESSAGE,
+								"Specify only one of normal_mode/per_pixel_mode.");
+						}
+						if (normal_mode_flag)
+						{
+							if (material_to_be_modified_copy->program)
+							{
+								DEACCESS(Material_program)(&material_to_be_modified_copy->program);
+							}
+						}
+						else if (per_pixel_mode_flag)
+						{
+							if (!(material_to_be_modified_copy->program = 
+								FIND_BY_IDENTIFIER_IN_LIST(Material_program,type)(
+									MATERIAL_PROGRAM_PER_PIXEL_LIGHTING, material_package->material_program_list)))
+							{
+								material_to_be_modified_copy->program = CREATE(Material_program)
+									(MATERIAL_PROGRAM_PER_PIXEL_LIGHTING);
+								ADD_OBJECT_TO_LIST(Material_program)(material_to_be_modified_copy->program,
+									material_package->material_program_list);
+							}
+						}
 						if (material_to_be_modified)
 						{
 							MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
 								material_to_be_modified,material_to_be_modified_copy,
-								modify_graphical_material_data->graphical_material_manager);
+								material_package->material_manager);
 							DESTROY(Graphical_material)(&material_to_be_modified_copy);
 						}
 						else
@@ -1287,6 +1979,7 @@ DESCRIPTION :
 							material_to_be_modified=material_to_be_modified_copy;
 						}
 					}
+					DESTROY(Option_table)(&option_table);
 				}
 			}
 			else
@@ -1553,6 +2246,10 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			{
 				compile_Texture(material->texture, NULL);
 			}
+			if (material->program)
+			{
+				Material_program_compile(material->program);
+			}
 			if (GRAPHICS_NOT_COMPILED == material->compile_status)
 			{
 #if defined (OPENGL_API)
@@ -1745,3 +2442,33 @@ Modifier function to set the material from a command.
 
 	return (return_code);
 } /* set_Graphical_material */
+
+int Option_table_add_set_Material_entry(
+	struct Option_table *option_table, char *token,
+	struct Graphical_material **material, struct Material_package *material_package)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <material> is selected from
+the <material_package> by name.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_double_vector_with_help_entry);
+	if (option_table && token)
+	{
+		return_code = Option_table_add_entry(option_table, token, (void *)material, 
+			(void *)material_package->material_manager, set_Graphical_material);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_double_vector_with_help_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_double_vector_with_help_entry */

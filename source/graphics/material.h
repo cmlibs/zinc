@@ -30,6 +30,13 @@ Global constants
 Global types
 ------------
 */
+struct Material_package;
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003;
+
+DESCRIPTION :
+==============================================================================*/
+
 struct Graphical_material;
 /*******************************************************************************
 LAST MODIFIED : 28 November 1997
@@ -42,18 +49,6 @@ DECLARE_LIST_TYPES(Graphical_material);
 
 DECLARE_MANAGER_TYPES(Graphical_material);
 
-struct Modify_graphical_material_data
-/*******************************************************************************
-LAST MODIFIED : 17 February 1997
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Graphical_material *default_graphical_material;
-	struct MANAGER(Texture) *texture_manager;
-	struct MANAGER(Graphical_material) *graphical_material_manager;
-}; /* struct Modify_graphical_material_data */
-
 struct Graphical_material_Texture_change_data
 {
 	struct LIST(Texture) *changed_texture_list;
@@ -65,12 +60,66 @@ Global functions
 ----------------
 */
 
-struct Graphical_material *CREATE(Graphical_material)(char *name);
+struct Material_package *CREATE(Material_package)(struct MANAGER(Texture) *texture_manager);
 /*******************************************************************************
-LAST MODIFIED : 20 June 1996
+LAST MODIFIED : 20 November 2003
 
 DESCRIPTION :
-Allocates memory and assigns fields for a material.
+Create a shared information container for Materials.
+==============================================================================*/
+
+int DESTROY(Material_package)(struct Material_package **material_package_address);
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+==============================================================================*/
+
+PROTOTYPE_OBJECT_FUNCTIONS(Material_package);
+
+int Material_package_manage_material(struct Material_package *material_package,
+	struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+This puts the <material> into the manager connected with the <material_package>
+and allows the OpenGL states within the materials mangaed by the package to be
+shared.
+==============================================================================*/
+
+struct Graphical_material *Material_package_get_default_material(
+	struct Material_package *material_package);
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Returns the default material object.
+==============================================================================*/
+
+struct Graphical_material *Material_package_get_default_selected_material(
+	struct Material_package *material_package);
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Returns the default_selected material object.
+==============================================================================*/
+
+struct MANAGER(Graphical_material) *Material_package_get_material_manager(
+	struct Material_package *material_package);
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Returns the material manager.
+==============================================================================*/
+
+struct Graphical_material *CREATE(Graphical_material)(char *name);
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
 ==============================================================================*/
 
 int DESTROY(Graphical_material)(struct Graphical_material **material_address);
@@ -267,8 +316,18 @@ Sets the spectrum_flag of a material giving it the cue to intelligently issue
 commands from direct_render_Graphical_material.
 ==============================================================================*/
 
+int gfx_create_material(struct Parse_state *state,
+	void *dummy_to_be_modified, void *material_package_void);
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Shifted from command/cmiss.c now that there is a material package.
+If the material already exists, then behaves like gfx modify material.
+==============================================================================*/
+
 int modify_Graphical_material(struct Parse_state *parse_state,void *material,
-	void *modify_graphical_material_data_void);
+	void *material_package_void);
 /*******************************************************************************
 LAST MODIFIED : 5 September 1996
 
@@ -353,5 +412,16 @@ LAST MODIFIED : 20 June 1996
 
 DESCRIPTION :
 Modifier function to set the material from a command.
+==============================================================================*/
+
+int Option_table_add_set_Material_entry(
+	struct Option_table *option_table, char *token,
+	struct Graphical_material **material, struct Material_package *material_package);
+/*******************************************************************************
+LAST MODIFIED : 20 November 2003
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <material> is selected from
+the <material_package> by name.
 ==============================================================================*/
 #endif
