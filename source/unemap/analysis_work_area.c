@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 13 November 2002
+LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -7594,7 +7594,7 @@ enum Moving_status
 static void select_analysis_interval(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
 The callback for modifying the analysis interval in the analysis interval
@@ -7619,6 +7619,7 @@ drawing area.
 	struct Interval_area *interval;
 	struct Map *map;
 	struct Signal_buffer *buffer;
+	struct Time_keeper *time_keeper;
 	struct Trace_window *trace;
 	unsigned int working_button;
 	Window working_window;
@@ -7682,6 +7683,16 @@ drawing area.
 						(pointer_y>=axes_top-pointer_sensitivity)&&
 						(pointer_y<=axes_bottom+pointer_sensitivity))
 					{
+						/* stop the time keeper */
+						time_keeper=(struct Time_keeper *)NULL;
+						if ((analysis->potential_time_object)&&(time_keeper=
+							Time_object_get_time_keeper(analysis->potential_time_object)))
+						{
+							if (Time_keeper_is_playing(time_keeper))
+							{
+								Time_keeper_stop(time_keeper);
+							}
+						}
 						if ((pointer_x>=potential_time-pointer_sensitivity)&&
 							(pointer_x<=potential_time+pointer_sensitivity))
 						{
@@ -8198,6 +8209,10 @@ drawing area.
 						}
 						XUndefineCursor(display,XtWindow(interval->drawing_area));
 						XFreeCursor(display,cursor);
+						if (time_keeper&&(analysis->mapping_window))
+						{
+							mapping_window_update_time_limits(analysis->mapping_window);
+						}
 					}
 				}
 			}
@@ -14764,7 +14779,7 @@ DESCRIPTION : move to the next analysis signal
 static void trace_analysis_mode_apply(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2000
+LAST MODIFIED : 15 January 2003
 
 DESCRIPTION :
 Applies the current analysis mode settings to all signals.
@@ -14775,7 +14790,7 @@ Applies the current analysis mode settings to all signals.
 	int average_end,average_start,average_width,*beat_count,*beat_counts,beat_end,
 		beat_number,beat_start,buffer_offset_1,buffer_offset_2,*divisions,end,
 		high_pass,i,j,low_pass,notch,max_times,number_of_beats,number_of_samples,
-		*processed_time,start,start_time,*time,transform_buffer_offset,
+		*processed_time,start,start_time,*time,*time_offset,transform_buffer_offset,
 		transform_number_of_samples;
 	struct Analysis_work_area *analysis;
 	struct Device **device,*highlight;
@@ -15357,8 +15372,48 @@ Applies the current analysis mode settings to all signals.
 						}
 						device++;
 					}
+					if (0<buffer->start)
+					{
+						time_offset=buffer->times;
+						time=time_offset+(buffer->start);
+						for (i=transform_number_of_samples;i>0;i--)
+						{
+							*time_offset= *time;
+							time_offset++;
+							time++;
+						}
+					}
 					buffer->start=0;
 					buffer->end=transform_number_of_samples-1;
+					buffer->number_of_samples=transform_number_of_samples;
+					analysis->datum=(buffer->end)/3;
+					analysis->potential_time=(2*(buffer->end))/3;
+					(trace->area_3).edit.first_data=buffer->start;
+					(trace->area_3).edit.last_data=buffer->end;
+					analysis->start_search_interval=buffer->start;
+					analysis->end_search_interval=buffer->end;
+					DEALLOCATE(analysis->search_interval_divisions);
+					if (1!=analysis->number_of_events)
+					{
+						analysis->number_of_events=1;
+						/*???DB.  Should this \/ be here ? */
+						XtUnmanageChild(
+							trace->area_1.enlarge.number_of_events.down_arrow);
+						XtUnmanageChild(
+							trace->area_1.beat_averaging.number_of_beats.down_arrow);
+						XtManageChild(trace->area_1.enlarge.number_of_events.up_arrow);
+						XtManageChild(
+							trace->area_1.beat_averaging.number_of_beats.up_arrow);
+						xm_string=XmStringCreate("1",XmSTRING_DEFAULT_CHARSET);
+						XtVaSetValues(trace->area_1.enlarge.number_of_events.label,
+							XmNlabelString,xm_string,
+							NULL);
+						XtVaSetValues(trace->area_1.beat_averaging.number_of_beats.label,
+							XmNlabelString,xm_string,
+							NULL);
+						XmStringFree(xm_string);
+						analysis->event_number=1;
+					}
 					/* update the display */
 					update_signals_drawing_area(analysis->window);
 					update_interval_drawing_area(analysis->window);
