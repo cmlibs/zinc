@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : cell_variable.c
 
-LAST MODIFIED : 15 September 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions and structures for using the Cell_variable structure.
 ==============================================================================*/
 #include <stdio.h>
+#include <string.h>
 #if defined (MOTIF)
 #include <Xm/Xm.h>
 #include <Xm/Label.h>
@@ -251,7 +252,7 @@ Add the variables widgets to the variables dialog.
     XtAddCallback(variable->control_curve_button,
       XmNactivateCallback,control_curve_button_callback,(XtPointer)variable);
     /* create the text field for the value of the variable */
-    sprintf(buf,"%g\0",variable->value);
+    sprintf(buf,"%g",variable->value);
     variable->value_widget = XtVaCreateManagedWidget("cell_variable_text",
       xmTextFieldWidgetClass,form,
       XmNleftOffset,large_widget_spacing,
@@ -319,7 +320,7 @@ int set_variable_information(struct Cell_window *cell,char *array,
   char *position,char *name,char *label,char *units,char *spatial,
   char *control_curve,char *value,int default_value)
 /*******************************************************************************
-LAST MODIFIED : 8 November 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Sets the information in the variables structure for use when creating the
@@ -370,9 +371,9 @@ the newer ones, keeping the order the same. ??
         (ALLOCATE(new->spatial_label,char,strlen(name)+1)) &&
         (ALLOCATE(new->control_curve_label,char,strlen("TV")+1)))
       {
-        sprintf(new->label,"%s\0",label);
-        sprintf(new->units,"%s\0",units);
-        sprintf(new->spatial_label,"%s\0",name);
+				strcpy(new->label,label);
+				strcpy(new->units,units);
+				strcpy(new->spatial_label,name);
         if (!strncmp(array,"state",strlen("state")))
         {
           new->array = ARRAY_STATE;
@@ -390,7 +391,7 @@ the newer ones, keeping the order the same. ??
           new->array = ARRAY_UNKNOWN;
         }
         sscanf(position,"%d",&(new->position));
-        sprintf(new->control_curve_label,"%s\0","TV");
+				strcpy(new->control_curve_label,"TV");
         if (!strncmp(spatial,"true",strlen("true")))
         {
           new->spatial_switch = 1;
@@ -717,7 +718,7 @@ Updates each of the <variables> from the value text field.
 
 void reset_variable_values(struct Cell_variable *variables)
 /*******************************************************************************
-LAST MODIFIED : 13 February 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Resets each of the <variables> to their respective values.
@@ -734,7 +735,7 @@ Resets each of the <variables> to their respective values.
     {
       if (current->value_widget != (Widget)NULL)
       {
-        sprintf(buf,"%g\0",current->value);
+        sprintf(buf,"%g",current->value);
         XtVaSetValues(current->value_widget,
           XmNvalue,buf,
           NULL);

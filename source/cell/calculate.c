@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : calculate.c
 
-LAST MODIFIED : 08 June 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions for calculating and displaying the model solutions.
 ==============================================================================*/
 #include <stdio.h>
+#include <string.h>
 #include "curve/control_curve.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
@@ -561,14 +562,13 @@ Global functions
 */
 void calculate_cell_window (struct Cell_window *cell)
 /*******************************************************************************
-LAST MODIFIED : 11 March 1999
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Calculates the cell window.
 ==============================================================================*/
 {
   Boolean save_signals,variable_calculate,currents;
-  char device_name[10];
   float frequency;
   int device_number,existing_device_number,existing_variable_number,i,
     number_of_devices,number_of_samples,number_of_saved_buffers,
@@ -938,44 +938,43 @@ Calculates the cell window.
                     currents = True;
                     if (currents)
                     {
-                      sprintf(device_name,"%s\0",
-                        current_output->name);
-                      if ((description=create_Device_description(device_name,
-                        AUXILIARY,region))&&(channel=create_Channel(
-                          signal_number+1,0,1))&&(signal=create_Signal(
-                            signal_number,buffer,REJECTED,
-                            number_of_saved_buffers-1))&&(*device=create_Device(
-                              signal_number,description,channel,signal)))
-                      {
-                        device++;
-                        device_number++;
-                      }
-                      else
-                      {
-                        if (description)
-                        {
-                          destroy_Device_description(&description);
-                          if (channel)
-                          {
-                            destroy_Channel(&channel);
-                            if (signal)
-                            {
-                              destroy_Signal(&signal);
-                            }
-                          }
-                        }
-                        while (device_number>0)
-                        {
-                          device--;
-                          device_number--;
-                          destroy_Device(device);
-                        }
-                        DEALLOCATE(devices);
-                        display_message(ERROR_MESSAGE,
-                          "calculate_cell_window.  Could not create device");
-                      }
-                    }
-                  }
+											if ((description=
+												create_Device_description(current_output->name,
+													AUXILIARY,region))&&(channel=create_Channel(
+														signal_number+1,0,1))&&(signal=create_Signal(
+															signal_number,buffer,REJECTED,
+															number_of_saved_buffers-1))&&(*device=create_Device(
+																signal_number,description,channel,signal)))
+											{
+												device++;
+												device_number++;
+											}
+											else
+											{
+												if (description)
+												{
+													destroy_Device_description(&description);
+													if (channel)
+													{
+														destroy_Channel(&channel);
+														if (signal)
+														{
+															destroy_Signal(&signal);
+														}
+													}
+												}
+												while (device_number>0)
+												{
+													device--;
+													device_number--;
+													destroy_Device(device);
+												}
+												DEALLOCATE(devices);
+												display_message(ERROR_MESSAGE,
+													"calculate_cell_window.  Could not create device");
+											}
+										}
+									}
                   signal_number++;
                 }
                 else
@@ -1237,7 +1236,7 @@ Calculates the cell window.
 void clear_signals_window(Widget *widget_id,XtPointer cell_window,
   XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 01 March 1999
+LAST MODIFIED : 1 March 1999
 
 DESCRIPTION :
 Clears the signals window.
@@ -1334,7 +1333,7 @@ be called when reading the default files.
       }
       if (ALLOCATE(new->name,char,strlen(name)+1))
       {
-        sprintf(new->name,"%s\0",name);
+				strcpy(new->name,name);
         /* now add to the output list */
         if (cell->outputs != (struct Cell_output *)NULL)
         {
@@ -1374,6 +1373,7 @@ be called when reading the default files.
     return_code = 0;
   }
   LEAVE;
+
   return(return_code);
 } /* END set_output_information() */
 

@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : cell_parameter.c
 
-LAST MODIFIED : 9 November 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions and structures for using the Cell_parameter structure.
 ==============================================================================*/
 #include <stdio.h>
+#include <string.h>
 #if defined (MOTIF)
 #include <Xm/Xm.h>
 #include <Xm/RowColumn.h>
@@ -45,7 +46,7 @@ int set_parameter_information(struct Cell_window *cell,char *array,
   char *position,char *name,char *label,char *units,char *spatial,
   char *control_curve,char *value,int default_value)
 /*******************************************************************************
-LAST MODIFIED : 24 May 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Sets the information in the parameter structure for use when creating the
@@ -99,9 +100,9 @@ the newer ones, keeping the order the same. ??
         (ALLOCATE(new->units,char,strlen(units)+1)) &&
         (ALLOCATE(new->spatial_label,char,strlen(name)+1)))
       {
-        sprintf(new->label,"%s\0",label);
-        sprintf(new->units,"%s\0",units);
-        sprintf(new->spatial_label,"%s\0",name);
+				strcpy(new->label,label);
+        strcpy(new->units,units);
+        strcpy(new->spatial_label,name);
         if (!strncmp(array,"state",strlen("state")))
         {
           new->array = ARRAY_STATE;
@@ -350,10 +351,10 @@ cell->parameters array.
       if (current->components != (char **)NULL)
       {
         if (ALLOCATE(current->components[current->number_of_components-1],
-          char,strlen(component)))
+          char,strlen(component)+1))
         {
-          sprintf(current->components[current->number_of_components-1],"%s\0",
-            component);
+					strcpy(current->components[current->number_of_components-1],
+						component);
           return_code = 1;
         }
         else

@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : parser.c
 
-LAST MODIFIED :  7 February 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions for handling all file parsing for CELL.
 ==============================================================================*/
 #include <stdio.h>
+#include <string.h>
 /* include the XML parsing header file, include directory defined in
    the make file */
 #include "cell/parser.h"
@@ -100,7 +101,7 @@ Global functions
 */
 struct XML_Tree parse_cell_uri(struct URI *uri,int *er)
 /*******************************************************************************
-LAST MODIFIED : 28 January 1999
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Parses the file specified by the <uri> and returns the corresponding tree.
@@ -115,7 +116,8 @@ good).
   /* assemble the full file name */
   if (ALLOCATE(filename,char,strlen(uri->path)+strlen(uri->filename)+1))
   {
-    sprintf(filename,"%s%s\0",uri->path,uri->filename);
+		strcpy(filename,uri->path);
+		strcat(filename,uri->filename);
     tree = parse_cell_file(filename,er);
   }
   else

@@ -19,6 +19,7 @@ Functions for handling all file input for CELL.
 Global types
 ============
 */
+
 struct URI
 /*******************************************************************************
 LAST MODIFIED : 27 January 1999

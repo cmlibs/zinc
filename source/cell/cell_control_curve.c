@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : cell_control_curve.c
 
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions for CELL to interact with CMGUI control_curves.
 ==============================================================================*/
 #if defined (MOTIF)
+#include <string.h>
 #include <Xm/Xm.h>
 #include <Xm/AtomMgr.h>
 #include <Xm/MwmUtil.h>
@@ -86,7 +87,7 @@ window manager menu ??
 int file_open_iptime_callback(char *filename,
 	XtPointer export_control_curve_dialog)
 /*******************************************************************************
-LAST MODIFIED : 29 September 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Callback for the file selection dialog for the file in the export time 
@@ -113,9 +114,9 @@ variables dialog.
     {
       DEALLOCATE(export->file_name);
     }
-    if (ALLOCATE(export->file_name,char,strlen(filename)))
-    {
-      sprintf(export->file_name,"%s\0",filename);
+    if (ALLOCATE(export->file_name,char,strlen(filename)+1))
+		{
+			strcpy(export->file_name,filename);
       return_code = 1;
     }
     else
@@ -348,7 +349,7 @@ variables.
 
 static int create_export_control_curves_dialog(struct Cell_window *cell)
 /*******************************************************************************
-LAST MODIFIED : 29 September 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Create a new export dialog.
@@ -401,10 +402,9 @@ Create a new export dialog.
           (cell->control_curve).control_curve_manager;
 				/* set the default file names */
 				if (ALLOCATE(cell->export_control_curve_dialog->file_name,char,
-					strlen("cell.iptime")))
+					strlen("cell.iptime")+1))
 				{
-					sprintf(cell->export_control_curve_dialog->file_name,
-						"cell.iptime\0");
+					strcpy(cell->export_control_curve_dialog->file_name,"cell.iptime");
 				}
         /* make the dialog shell */
         if (cell->export_control_curve_dialog->shell =
@@ -559,7 +559,7 @@ Global functions
 int bring_up_parameter_control_curve_dialog(struct Cell_window *cell,
   struct Cell_parameter *parameter)
 /*******************************************************************************
-LAST MODIFIED : 15 March 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Brings up the cell control curve dialog.
@@ -635,7 +635,7 @@ read/write control curves, set from default files, etc....
 				if (ALLOCATE(name,char,strlen(parameter->spatial_label)+
 					strlen("_xi1")+1))
 				{
-					sprintf(name,"%s_xi1\0",parameter->spatial_label);
+					sprintf(name,"%s_xi1",parameter->spatial_label);
 				}
 				if (parameter->control_curve[0] =
 					CREATE(Control_curve)(name,LINEAR_LAGRANGE,1))
@@ -664,7 +664,7 @@ read/write control curves, set from default files, etc....
 				if (ALLOCATE(name,char,strlen(parameter->spatial_label)+
 					strlen("_xi2")+1))
 				{
-					sprintf(name,"%s_xi2\0",parameter->spatial_label);
+					sprintf(name,"%s_xi2",parameter->spatial_label);
 				}
 				if (parameter->control_curve[1] =
 					CREATE(Control_curve)(name,LINEAR_LAGRANGE,1))
@@ -693,7 +693,7 @@ read/write control curves, set from default files, etc....
 				if (ALLOCATE(name,char,strlen(parameter->spatial_label)+
 					strlen("_xi3")+1))
 				{
-					sprintf(name,"%s_xi3\0",parameter->spatial_label);
+					sprintf(name,"%s_xi3",parameter->spatial_label);
 				}
 				if (parameter->control_curve[2] =
 					CREATE(Control_curve)(name,LINEAR_LAGRANGE,1))

@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : model_dialog.c
 
-LAST MODIFIED : 08 June 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions and structures for using the model dialog box.
 ==============================================================================*/
 #include <stdio.h>
+#include <string.h>
 #if defined (MOTIF)
 #include <Xm/Xm.h>
 #include <Xm/AtomMgr.h>
@@ -179,7 +180,7 @@ Grabs the id of the coupled list widget.
 
 static void update_current_model(struct Cell_window *cell)
 /*******************************************************************************
-LAST MODIFIED : 28 February 1999
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Updates the cell->current_model from the
@@ -197,7 +198,7 @@ cell->model_dialog->current_model_label widget.
     {
       if (ALLOCATE(str,char,strlen(start)+strlen("??")+1))
       {
-        sprintf(str,"%s??\0",start);
+        sprintf(str,"%s??",start);
         XtVaSetValues(cell->model_dialog->current_model_label,
           XmNlabelString,XmStringCreateSimple(str),
           NULL);
@@ -216,9 +217,8 @@ cell->model_dialog->current_model_label widget.
         (ALLOCATE(cell->current_model,char,
           strlen(cell->model_dialog->current_model_string)+1)))
       {
-        sprintf(cell->current_model,"%s\0",
-          cell->model_dialog->current_model_string);
-        sprintf(str,"%s%s\0",start,cell->model_dialog->current_model_string);
+				strcpy(cell->current_model,cell->model_dialog->current_model_string);
+        sprintf(str,"%s%s",start,cell->model_dialog->current_model_string);
         XtVaSetValues(cell->model_dialog->current_model_label,
           XmNlabelString,XmStringCreateSimple(str),
           NULL);
@@ -242,7 +242,7 @@ cell->model_dialog->current_model_label widget.
 static int find_model_name_and_read(char *model_name,struct Cell_window *cell,
   struct Model_name *names)
 /*******************************************************************************
-LAST MODIFIED : 14 September 1999
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Searches the <names> array for the <model_name>, and then reads the model in
@@ -269,7 +269,8 @@ from the model's uri. Also sets cell->current_model_id from the model name.
       if (ALLOCATE(filename,char,
         strlen(current->uri->path)+strlen(current->uri->filename)+1))
       {
-        sprintf(filename,"%s%s\0",current->uri->path,current->uri->filename);
+				strcpy(filename,current->uri->path);
+				strcat(filename,current->uri->filename);
         cell->default_values = 1;
         return_code = read_model_file(filename,(XtPointer)cell);
         if (return_code)
@@ -280,7 +281,7 @@ from the model's uri. Also sets cell->current_model_id from the model name.
           }*/
           if (ALLOCATE(cell->current_model_id,char,strlen(current->id)+1))
           {
-            sprintf(cell->current_model_id,"%s\0",current->id);
+						strcpy(cell->current_model_id,current->id);
             /* update from node, if required */
             if ((cell->distributed).edit)
             {
@@ -1096,7 +1097,7 @@ Create a new model dialog.
           if (MrmSUCCESS == MrmRegisterNamesInHierarchy(model_dialog_hierarchy,
             callback_list,XtNumber(callback_list)))
           {
-            /* set the identifier's values */
+           /* set the identifier's values */
             identifier_list[0].value = (XtPointer)cell;
             identifier_list[1].value =
               (XtPointer)(cell->user_settings->text_emphasis_colour);
@@ -1119,10 +1120,10 @@ Create a new model dialog.
                   /* parse the models file, setting up the model names */
                   if (read_model_names(cell,user_settings->models_file))
                   {
-                    /* add the model names to the dialog */
+                   /* add the model names to the dialog */
                     if (add_model_names(cell))
                     {
-                      /* update the current model string and the current
+                     /* update the current model string and the current
                          model label */
                       update_current_model(cell);
                       XtManageChild(cell->model_dialog->window);
@@ -1216,6 +1217,7 @@ Create a new model dialog.
     return_code = 0;
   }
   LEAVE;
+
   return(return_code);
 } /* END create_model_dialog() */
 
@@ -1275,13 +1277,14 @@ create a new one.
     return_code = 0;
   }
   LEAVE;
+
   return(return_code);
 } /* END bring_up_model_dialog() */
 
 void set_model_name(struct Cell_window *cell,int type,char *name,
   struct URI *uri,char *id)
 /*******************************************************************************
-LAST MODIFIED : 27 February 1999
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Adds the model <name> to the model_names array in <cell>. <type> = 1 for a
@@ -1305,8 +1308,8 @@ a model specified via a node.
       if (ALLOCATE(new->name,char,strlen(name)+1) &&
         ALLOCATE(new->id,char,strlen(id)+1))
       {
-        sprintf(new->name,"%s\0",name);
-        sprintf(new->id,"%s\0",id);
+				strcpy(new->name,name);
+				strcpy(new->id,id);
         switch (type)
         {
           case 1:

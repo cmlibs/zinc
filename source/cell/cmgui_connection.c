@@ -1,11 +1,12 @@
 /*******************************************************************************
 FILE : cmgui_connection.c
 
-LAST MODIFIED : 16 June 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions for talking between Cell and Cmgui.
 ==============================================================================*/
+#include <string.h>
 #if defined (MOTIF)
 #include <Xm/Xm.h>
 #include <Xm/AtomMgr.h>
@@ -416,12 +417,12 @@ Create a new export dialog.
 				cell->export_dialog->ipmatc_file_name = (char *)NULL;
 				/* set the default file names */
 				if (ALLOCATE(cell->export_dialog->ipcell_file_name,char,
-					strlen("cell.ipcell")) && 
+					strlen("cell.ipcell")+1) && 
 					ALLOCATE(cell->export_dialog->ipmatc_file_name,char,
-						strlen("cell.ipmatc")))
+						strlen("cell.ipmatc")+1))
 				{
-					sprintf(cell->export_dialog->ipcell_file_name,"cell.ipcell\0");
-					sprintf(cell->export_dialog->ipmatc_file_name,"cell.ipmatc\0");
+					strcpy(cell->export_dialog->ipcell_file_name,"cell.ipcell");
+					strcpy(cell->export_dialog->ipmatc_file_name,"cell.ipmatc");
 				}
         /* make the dialog shell */
         if (cell->export_dialog->shell =
@@ -1016,7 +1017,7 @@ nodes not just the cellular grid points.
 
 int file_open_ipcell_callback(char *filename,XtPointer export_dialog)
 /*******************************************************************************
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Callback for the file selection dialog for the ipcell file in the export dialog.
@@ -1040,9 +1041,9 @@ Callback for the file selection dialog for the ipcell file in the export dialog.
     {
       DEALLOCATE(export->ipcell_file_name);
     }
-    if (ALLOCATE(export->ipcell_file_name,char,strlen(filename)))
+    if (ALLOCATE(export->ipcell_file_name,char,strlen(filename)+1))
     {
-      sprintf(export->ipcell_file_name,"%s\0",filename);
+			strcpy(export->ipcell_file_name,filename);
       return_code = 1;
     }
     else
@@ -1064,7 +1065,7 @@ Callback for the file selection dialog for the ipcell file in the export dialog.
 
 int file_open_ipmatc_callback(char *filename,XtPointer export_dialog)
 /*******************************************************************************
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Callback for the file selection dialog for the ipmatc file in the export dialog.
@@ -1088,9 +1089,9 @@ Callback for the file selection dialog for the ipmatc file in the export dialog.
     {
       DEALLOCATE(export->ipmatc_file_name);
     }
-    if (ALLOCATE(export->ipmatc_file_name,char,strlen(filename)))
+    if (ALLOCATE(export->ipmatc_file_name,char,strlen(filename)+1))
     {
-      sprintf(export->ipmatc_file_name,"%s\0",filename);
+      strcpy(export->ipmatc_file_name,filename);
       return_code = 1;
     }
     else
@@ -1877,7 +1878,7 @@ the FIELD_TYPE of the <field>.
 int Cell_window_update_field(struct Cell_window *cell,char *control_curve_name,
 	char *field_name,char *file_name,char *element_number,float value)
 /*******************************************************************************
-LAST MODIFIED : 29 September 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Temp. hack to use time variables to assign values to element based fields.
@@ -1902,9 +1903,9 @@ Temp. hack to use time variables to assign values to element based fields.
 			ALLOCATE(xi2_name,char,strlen(control_curve_name)+5) &&
 			ALLOCATE(xi3_name,char,strlen(control_curve_name)+5))
 		{
-			sprintf(xi1_name,"%s_xi1\0",control_curve_name);
-			sprintf(xi2_name,"%s_xi2\0",control_curve_name);
-			sprintf(xi3_name,"%s_xi3\0",control_curve_name);
+			sprintf(xi1_name,"%s_xi1",control_curve_name);
+			sprintf(xi2_name,"%s_xi2",control_curve_name);
+			sprintf(xi3_name,"%s_xi3",control_curve_name);
 			/* get the field */
 			if (field_component.field = FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)(
 				field_name,(cell->cell_3d).fe_field_manager))

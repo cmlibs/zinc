@@ -1,14 +1,15 @@
 /*******************************************************************************
 FILE : output.c
 
-LAST MODIFIED : 16 August 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions for handling all file output for CELL.
 ==============================================================================*/
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #if defined (MOTIF)
 #include <Xm/Xm.h>
 #endif /* if defined (MOTIF) */
@@ -18,10 +19,13 @@ Functions for handling all file output for CELL.
 #include "cell/calculate.h"
 #include "cell/cmgui_connection.h"
 #include "curve/control_curve.h"
+#include "general/mystring.h"
 #include "finite_element/finite_element.h"
 
-#define CELL_SPATIALLY_VARYING  "* \0"
-#define CELL_SPATIALLY_CONSTANT " \0"
+/* CELL_SPATIALLY_VARYING and CELL_SPATIALLY_CONSTANT no more than 2 chars to
+	 fit char spatial[3] in Cell_array_information */
+#define CELL_SPATIALLY_VARYING "* "
+#define CELL_SPATIALLY_CONSTANT " "
 #define CELL_MAX_GROUP_LINE_LENGTH 30
 #define CELL_ZERO_TOLERANCE 1.0e-7
 
@@ -43,7 +47,7 @@ Stores the information required to write the ipcell files
 
 struct Cell_array_information
 /*******************************************************************************
-LAST MODIFIED : 25 May 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Stores the information required to write the ipcell files
@@ -51,7 +55,9 @@ Stores the information required to write the ipcell files
 {
   enum Array_value_type type;
   int number;
-  char spatial[2];
+	/* spatial is just big enough to take CELL_SPATIALLY_VARYING or
+		 CELL_SPATIALLY_CONSTANT - with \0 string terminator */
+  char spatial[3];
   char *label;
   union
   {
@@ -114,7 +120,7 @@ Local functions
 static int get_group_from_Sorting_data(struct Sorting_data *sorting,
   int start,char *group,int length)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Searches the <sorting> array from the <start> postion, and returns in <group>
@@ -153,14 +159,15 @@ array. Returns the start postion for the next group.
   }
   if (group_start < group_end)
   {
-    sprintf(group,"%d..%d\0",group_start,group_end);
+    sprintf(group,"%d..%d",group_start,group_end);
   }
   else
   {
-    sprintf(group,"%d\0",group_start);
+    sprintf(group,"%d",group_start);
   }
   end++;
   LEAVE;
+
   return(end);
 } /* get_group_from_Sorting_data() */
 
@@ -243,7 +250,7 @@ numbers. No error checking is done - assume it all works fine!!!
 static struct Group_data *create_Group_data_from_Sorting_data(
   struct Sorting_data *sorting,int sorting_data_length,int *group_data_length)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Takes the <sorting> data which has been sorted by value, and returns an array
@@ -309,7 +316,7 @@ of group data structures, with the grid point numbers appropriately grouped.
             /* set the value string */
             if (ALLOCATE(groups[(*group_data_length)-1].value,char,15))
             {
-              sprintf(groups[(*group_data_length)-1].value,"%10d\0",int_value);
+              sprintf(groups[(*group_data_length)-1].value,"%10d",int_value);
             }
             /* now set the grid point groups */
             pos = 0;
@@ -317,10 +324,11 @@ of group data structures, with the grid point numbers appropriately grouped.
             while (pos < length)
             {
               pos = get_group_from_Sorting_data(sort,pos,current_group,length);
-              sprintf(groups[(*group_data_length)-1].groups+j,"%s,\0",
+              sprintf(groups[(*group_data_length)-1].groups+j,"%s,",
                 current_group);
               j = strlen(groups[(*group_data_length)-1].groups);
             } /* while (pos < length) */
+						/* replace the last comma with a \0 string terminator */
             groups[(*group_data_length)-1].groups[
               strlen(groups[(*group_data_length)-1].groups)-1] = '\0';
           }
@@ -380,7 +388,7 @@ of group data structures, with the grid point numbers appropriately grouped.
             /* set the value string */
             if (ALLOCATE(groups[(*group_data_length)-1].value,char,15))
             {
-              sprintf(groups[(*group_data_length)-1].value,"%f\0",fe_value);
+              sprintf(groups[(*group_data_length)-1].value,"%f",fe_value);
             }
             /* now set the grid point groups */
             pos = 0;
@@ -388,7 +396,7 @@ of group data structures, with the grid point numbers appropriately grouped.
             while (pos < length)
             {
               pos = get_group_from_Sorting_data(sort,pos,current_group,length);
-              sprintf(groups[(*group_data_length)-1].groups+j,"%s,\0",
+              sprintf(groups[(*group_data_length)-1].groups+j,"%s,",
                 current_group);
               j = strlen(groups[(*group_data_length)-1].groups);
             } /* while (pos < length) */
@@ -577,7 +585,7 @@ Iterator function for writing out the variant of each node.
 			/* get the node number */
 			GET_NAME(FE_node)(node,&number);
 			sscanf(number,"%d",&node_number);
-			sprintf(grid_point,"%d\0",node_number-output_data->offset);
+			sprintf(grid_point,"%d",node_number-output_data->offset);
 			fprintf(output_data->file," Enter collocation point #s/name [EXIT]: ");
 			fprintf(output_data->file,"%s\n",grid_point);
 			fprintf(output_data->file," The cell variant number is [1]: %d\n",
@@ -624,7 +632,7 @@ node in the group.
 	{
 		GET_NAME(FE_node)(node,&number);
 		sscanf(number,"%d",&node_number);
-		sprintf(grid_point,"%d\0",node_number-output_data->offset);
+		sprintf(grid_point,"%d",node_number-output_data->offset);
 		fprintf(output_data->file," Enter collocation point #s/name [EXIT]: %s\n",
 			grid_point);
 		get_FE_nodal_value_as_string(node,output_data->field,0,0,FE_NODAL_VALUE,
@@ -1140,7 +1148,7 @@ static struct Cell_array_information *add_variables_to_array_information(
   struct Cell_array_information *array_info,struct Cell_variable *variables,
   enum Cell_array array,enum Array_value_type type,int *number_added)
 /*******************************************************************************
-LAST MODIFIED : 31 May 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Searches through the list of <variables> for array fields matching the given
@@ -1166,19 +1174,19 @@ to the start of the list.
       /* create the new structure */
       if (ALLOCATE(new,struct Cell_array_information,1))
       {
-        if (ALLOCATE(new->label,char,strlen(current->spatial_label)))
+        if (ALLOCATE(new->label,char,strlen(current->spatial_label)+1))
         {
+					strcpy(new->label,current->spatial_label);
           new->type = type;
           new->number = current->position;
           if (current->spatial_switch)
           {
-            sprintf(new->spatial,CELL_SPATIALLY_VARYING);
+						strcpy(new->spatial,CELL_SPATIALLY_VARYING);
           }
           else
           {
-            sprintf(new->spatial,CELL_SPATIALLY_CONSTANT);
+						strcpy(new->spatial,CELL_SPATIALLY_CONSTANT);
           }
-          sprintf(new->label,"%s\0",current->spatial_label);
           if (type == ARRAY_VALUE_REAL)
           {
             (new->value).real_value = current->value;
@@ -1217,7 +1225,7 @@ static struct Cell_array_information *add_parameters_to_array_information(
   struct Cell_array_information *array_info,struct Cell_parameter *parameters,
   enum Cell_array array,enum Array_value_type type,int *number_added)
 /*******************************************************************************
-LAST MODIFIED : 25 May 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Searches through the list of <parameters> for array fields matching the given
@@ -1241,20 +1249,20 @@ to the start of the list.
       /* create the new structure */
       if (ALLOCATE(new,struct Cell_array_information,1))
       {
-        if (ALLOCATE(new->label,char,strlen(current->spatial_label)))
+        if (ALLOCATE(new->label,char,strlen(current->spatial_label)+1))
         {
+					strcpy(new->label,current->spatial_label);
           new->next = (struct Cell_array_information *)NULL;
           new->type = type;
           new->number = current->position;
           if (current->spatial_switch)
           {
-            sprintf(new->spatial,CELL_SPATIALLY_VARYING);
+						strcpy(new->spatial,CELL_SPATIALLY_VARYING);
           }
           else
           {
-            sprintf(new->spatial,CELL_SPATIALLY_CONSTANT);
+						strcpy(new->spatial,CELL_SPATIALLY_CONSTANT);
           }
-          sprintf(new->label,"%s\0",current->spatial_label);
           if (type == ARRAY_VALUE_REAL)
           {
             (new->value).real_value = current->value;
@@ -1304,7 +1312,7 @@ to the start of the list.
 #if defined (OLD_CODE)
 static int write_variables_to_file(FILE *file,struct Cell_variable *variables)
 /*******************************************************************************
-LAST MODIFIED : 13 February 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Writes the <variables> to the given <file>
@@ -1325,11 +1333,11 @@ Writes the <variables> to the given <file>
       fprintf(file,"    <label>%s</label>\n",current->label);
       if (current->spatial_switch)
       {
-        sprintf(spatial_string,"true\0");
+        sprintf(spatial_string,"true");
       }
       else
       {
-        sprintf(spatial_string,"false\0");
+        sprintf(spatial_string,"false");
       }
       fprintf(file,"    <value units=\"%s\" spatiall-variant=\"%s\">"
         "%f</value>\n",current->units,spatial_string,current->value);
@@ -1387,19 +1395,19 @@ Writes the current model variables and parameters to the given <file>
           {
             case ARRAY_STATE:
             {
-              sprintf(array_string,"state\0");
+              sprintf(array_string,"state");
             } break;
             case ARRAY_PARAMETERS:
             {
-              sprintf(array_string,"parameters\0");
+              sprintf(array_string,"parameters");
             } break;
             case ARRAY_PROTOCOL:
             {
-              sprintf(array_string,"protocol\0");
+              sprintf(array_string,"protocol");
             } break;
             default:
             {
-              sprintf(array_string,"unkown\0");
+              sprintf(array_string,"unkown");
             } break;
           }
           fprintf(file,"      <name array=\"%s\" position=\"%d\">%s</name>\n",
@@ -1408,11 +1416,11 @@ Writes the current model variables and parameters to the given <file>
           fprintf(file,"      <label>%s</label>\n",current_variable->label);
           if (current_variable->spatial_switch)
           {
-            sprintf(spatial_string,"true\0");
+            sprintf(spatial_string,"true");
           }
           else
           {
-            sprintf(spatial_string,"false\0");
+            sprintf(spatial_string,"false");
           }
           fprintf(file,"      <value units=\"%s\" spatially-variant=\"%s\">"
             "%f</value>\n",current_variable->units,spatial_string,
@@ -1434,19 +1442,19 @@ Writes the current model variables and parameters to the given <file>
           {
             case ARRAY_STATE:
             {
-              sprintf(array_string,"state\0");
+              sprintf(array_string,"state");
             } break;
             case ARRAY_PARAMETERS:
             {
-              sprintf(array_string,"parameters\0");
+              sprintf(array_string,"parameters");
             } break;
             case ARRAY_PROTOCOL:
             {
-              sprintf(array_string,"protocol\0");
+              sprintf(array_string,"protocol");
             } break;
             default:
             {
-              sprintf(array_string,"unkown\0");
+              sprintf(array_string,"unkown");
             } break;
           }
           fprintf(file,"      <name array=\"%s\" position=\"%d\">%s</name>\n",
@@ -1455,26 +1463,26 @@ Writes the current model variables and parameters to the given <file>
           fprintf(file,"      <label>%s</label>\n",current_parameter->label);
           if (current_parameter->spatial_switch)
           {
-            sprintf(spatial_string,"true\0");
+            sprintf(spatial_string,"true");
           }
           else
           {
-            sprintf(spatial_string,"false\0");
+            sprintf(spatial_string,"false");
           }
           if (current_parameter->control_curve_allowed)
           {
             if (current_parameter->control_curve_switch)
             {
-              sprintf(control_curve_string,"true\0");
+              sprintf(control_curve_string,"true");
             }
             else
             {
-              sprintf(control_curve_string,"false\0");
+              sprintf(control_curve_string,"false");
             }
           }
           else
           {
-            sprintf(control_curve_string,"false\0");
+            sprintf(control_curve_string,"false");
           }
           fprintf(file,"      <value units=\"%s\" spatially-variant=\"%s\""
             "time-variable=\"%s\">"

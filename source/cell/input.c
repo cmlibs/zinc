@@ -1,14 +1,15 @@
 /*******************************************************************************
 FILE : input.c
 
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Functions for handling all input for CELL.
 ==============================================================================*/
+#include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <ctype.h>
+#include <string.h>
 #include <Xm/Xm.h>
 #include "cell/cell_component.h"
 #include "cell/cell_window.h"
@@ -34,48 +35,44 @@ Local functions
 */
 static struct URI *get_uri(char *full_name,char *parent_path)
 /*******************************************************************************
-LAST MODIFIED : 27 January 1999
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Takes the <full_name> of a file and separates it into the path and the file
 name. <parent_path> is added to any relative paths.
 ==============================================================================*/
 {
-  struct URI *uri = (struct URI *)NULL;
-  int i,j;
+  struct URI *uri;
+  int path_length;
   char *tmp_string;
   
   ENTER(get_uri);
+	uri = (struct URI *)NULL;
   if (ALLOCATE(uri,struct URI,1))
   {
     uri->path = (char *)NULL;
     uri->filename = (char *)NULL;
-    i = strlen(full_name);
-    while ((full_name[i-1] != FILENAME_START_CHAR) && (i > 1))
+		/* calculate number of characters in path, if any */
+    path_length = strlen(full_name);
+    while ((0<path_length) && (full_name[path_length-1] != FILENAME_START_CHAR))
     {
-      i--;
+      path_length--;
     }
-    if (i > 1)
+    if (0 < path_length)
     {
       /* some path information included in the full_name */
-      if ((ALLOCATE(uri->path,char,i+1)) &&
-        ALLOCATE(uri->filename,char,strlen(full_name)-i+1))
+      if ((ALLOCATE(uri->path,char,path_length+1)) &&
+        ALLOCATE(uri->filename,char,strlen(full_name)-path_length+1))
       {
-        for (j=0;j<i;j++)
-        {
-          uri->path[j] = full_name[j];
-        }
-        uri->path[i] = '\0';
-        for (j=i;j<strlen(full_name);j++)
-        {
-          uri->filename[j-i] = full_name[j];
-        }
-        uri->filename[strlen(full_name)-i] = '\0';
+				strncpy(uri->path,full_name,path_length);
+				/* strncpy does not add zero terminator, hence do this ourselves: */
+				uri->path[path_length]='\0';
+				strcpy(uri->filename,full_name+path_length);
       }
       else
       {
         display_message(ERROR_MESSAGE,"get_uri. "
-          "Unable to allocate memmory for the path or filename (%s)",full_name);
+          "Unable to allocate memory for the path or filename (%s)",full_name);
         DEALLOCATE(uri);
         uri = (struct URI *)NULL;
       }
@@ -84,18 +81,14 @@ name. <parent_path> is added to any relative paths.
     {
       /* no path information */
       uri->path = (char *)NULL;
-      if (ALLOCATE(uri->filename,char,strlen(full_name)))
+      if (ALLOCATE(uri->filename,char,strlen(full_name)+1))
       {
-        for (j=0;j<strlen(full_name);j++)
-        {
-          uri->filename[j] = full_name[j];
-        }
-        uri->filename[strlen(full_name)] = '\0';
+				strcpy(uri->filename,full_name);
       }
       else
       {
         display_message(ERROR_MESSAGE,"get_uri. "
-          "Unable to allocate memmory for the filename (%s)",full_name);
+          "Unable to allocate memory for the filename (%s)",full_name);
         DEALLOCATE(uri);
         uri = (struct URI *)NULL;
       }
@@ -108,7 +101,7 @@ name. <parent_path> is added to any relative paths.
         /* only a file name specified so add parent path as the whole path */
         if (ALLOCATE(uri->path,char,strlen(parent_path)+1))
         {
-          sprintf(uri->path,"%s\0",parent_path);
+					strcpy(uri->path,parent_path);
         }
         else
         {
@@ -122,24 +115,24 @@ name. <parent_path> is added to any relative paths.
         (strncmp(uri->path,ABS_PATH_STRING,strlen(ABS_PATH_STRING))))
       {
         /* the path exists, but does not begin with either the URL_STRING or
-        the ABS_PATH_STRING, so add the parent path to the relative path. */
-        if (ALLOCATE(tmp_string,char,strlen(uri->path)))
-        {
-          strcpy(tmp_string,uri->path);
-          DEALLOCATE(uri->path);
-          if (ALLOCATE(uri->path,char,strlen(tmp_string)+strlen(parent_path)+1))
-          {
-            sprintf(uri->path,"%s%s\0",parent_path,tmp_string);
-            DEALLOCATE(tmp_string);
-          }
-        }
+					 the ABS_PATH_STRING, so add the parent path to the relative path. */
+				if (ALLOCATE(tmp_string,char,strlen(parent_path)+strlen(uri->path)+1))
+				{
+					strcpy(tmp_string,parent_path);
+					strcat(tmp_string,uri->path);
+					DEALLOCATE(uri->path);
+					uri->path = tmp_string;
+				}
       }
     } /* if ((uri != (struct URI *)NULL) && (parent_path != (char *)NULL)) */
     if ((uri != (struct URI *)NULL) && (uri->path == (char *)NULL))
     {
       /* need to set the path to a zero length string to avoid errors
-      with strlen() */
-      uri->path = "\0";
+				 with strlen() */
+			if (ALLOCATE(uri->path,char,1))
+			{
+				uri->path[0] = '\0';
+			}
     }
   }
   else
@@ -149,6 +142,7 @@ name. <parent_path> is added to any relative paths.
     uri = (struct URI *)NULL;
   }
   LEAVE;
+
   return(uri);
 } /* END get_uri() */
 
@@ -709,19 +703,20 @@ Read the model file <filename>, and set-up the <cell_window>.
                         != '/')
                       {
                         if (ALLOCATE(file_name,char,strlen(uri->path)+strlen(
-                          current_element->children[0]->attributes[0].content)))
+                          current_element->children[0]->attributes[0].content)+1))
                         {
-                          sprintf(file_name,"%s%s\0",uri->path,
-                           current_element->children[0]->attributes[0].content);
+													strcpy(file_name,uri->path);
+													strcat(file_name,
+														current_element->children[0]->attributes[0].content);
                         }
                       }
                       else
                       {
                         if (ALLOCATE(file_name,char,strlen(
-                          current_element->children[0]->attributes[0].content)))
+                          current_element->children[0]->attributes[0].content)+1))
                         {
-                          sprintf(file_name,"%s\0",
-                           current_element->children[0]->attributes[0].content);
+													strcpy(file_name,
+														current_element->children[0]->attributes[0].content);
                         }
                       }
                     }
@@ -978,6 +973,7 @@ Extracts a float <value> from the text field widget <text>.
     return_code = 0;
   }
   LEAVE;
+
   return(return_code);
 } /* END extract_float_from_text_field() */
 
@@ -1016,9 +1012,9 @@ Reads and sets the model names from <filename>
               get_uri(current_element->children[j]->attributes[0].content,
                 uri->path))
             {
-              set_model_name(cell,i+1,current_element->children[j]->content,
+             set_model_name(cell,i+1,current_element->children[j]->content,
                 model_uri,current_element->children[j]->attributes[1].content);
-              return_code = 1;
+             return_code = 1;
             }
             else
             {
@@ -1052,5 +1048,6 @@ Reads and sets the model names from <filename>
     return_code = 0;
   }  
   LEAVE;
+
   return(return_code);
 } /* END read_model_names() */
