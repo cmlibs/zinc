@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 5 January 2000
+LAST MODIFIED : 7 January 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -6376,7 +6376,7 @@ drawing area.
 static void decrement_number_of_events(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 January 2000
+LAST MODIFIED : 7 January 2000
 
 DESCRIPTION :
 Decrement the number of events.
@@ -6385,7 +6385,7 @@ trace window.
 ???DB.  Shared by beat averaging for the number of beats
 ==============================================================================*/
 {
-	char number_string[2];
+	char number_string[10*(MAX_EVENTS/10+1)+1];
 	struct Analysis_work_area *analysis;
 	struct Trace_window *trace;
 	XmString xm_string;
@@ -6476,7 +6476,7 @@ trace window.
 static void increment_number_of_events(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 January 2000
+LAST MODIFIED : 7 January 2000
 
 DESCRIPTION :
 Increment the number of events.
@@ -6485,7 +6485,7 @@ trace window.
 ???DB.  Shared by beat averaging for the number of beats
 ==============================================================================*/
 {
-	char number_string[2];
+	char number_string[10*(MAX_EVENTS/10+1)+1];
 	struct Analysis_work_area *analysis;
 	struct Trace_window *trace;
 	XmString xm_string;
