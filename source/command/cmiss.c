@@ -22089,10 +22089,19 @@ Executes a OPEN URL command.
 		{
 			if (state->current_token)
 			{
-				do_help(state->current_token,
-					/*help_examples_directory*/(char *)NULL,
-					command_data->execute_command,
-					command_data->user_interface);
+				if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
+				{
+					do_help(state->current_token,
+						/*help_examples_directory*/(char *)NULL,
+						command_data->execute_command,
+						command_data->user_interface);
+				}
+				else
+				{
+					display_message(INFORMATION_MESSAGE," URL");
+					return_code=1;
+				}
 			}
 			else
 			{
