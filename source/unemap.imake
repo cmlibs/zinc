@@ -607,7 +607,7 @@ GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
 #elif defined(LINUX) /* switch OperatingSystem */
 XCOMM for OpenGL without SGI movie
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
-GRAPHICS_LIB = -L/home/blackett/lib -lGL -lGLU
+GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU
 #endif /* switch OperatingSystem */
 #endif /* (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)*/
 
@@ -776,7 +776,6 @@ GENERAL_SRCS = \
 	general/heapsort.c \
 	general/image_utilities.c \
 	general/indexed_multi_range.c \
-	general/machine.c \
 	general/matrix_vector.c \
 	general/multi_range.c \
 	general/myio.c \
@@ -879,7 +878,6 @@ GENERAL_SRCS = \
 	general/geometry.c \
 	general/heapsort.c \
 	general/image_utilities.c \
-	general/machine.c \
 	general/matrix_vector.c \
 	general/myio.c \
 	general/mystring.c \
@@ -932,9 +930,7 @@ UNEMAP_SRCS = \
 	unemap/unemap_hardware_client.c
 #endif /* defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D) */
 USER_INTERFACE_SRCS = \
-	user_interface/call_work_procedures.c \
 	user_interface/confirmation.c \
-	user_interface/event_dispatcher.c \
 	user_interface/filedir.c \
 	user_interface/message.c \
 	user_interface/printer.c \
