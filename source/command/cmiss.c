@@ -15454,8 +15454,9 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 				shift_Parse_state(state,1);				
 				/* initialise defaults */
 				glyph_flag = 0;
-				material = get_GT_object_default_material(graphics_object);
-				spectrum = get_GT_object_spectrum(graphics_object);
+				material = ACCESS(Graphical_material)(
+					get_GT_object_default_material(graphics_object));
+				spectrum = ACCESS(Spectrum)(get_GT_object_spectrum(graphics_object));
 				(option_table[0]).to_be_modified=&glyph_flag;
 				(option_table[1]).to_be_modified=&material;
 				(option_table[1]).user_data=command_data->graphical_material_manager;
@@ -15476,6 +15477,14 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 							command_data->glyph_list);
 						}
 					}
+				}
+				if (material)
+				{
+					DEACCESS(Graphical_material)(&material);
+				}
+				if (spectrum)
+				{
+					DEACCESS(Spectrum)(&spectrum);
 				}
 			}
 			else
