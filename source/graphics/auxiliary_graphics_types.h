@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : auxiliary_graphics_types.h
 
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Structures and enumerated types needed to produce graphics primitives but not
@@ -239,6 +239,34 @@ Returns a pointer to a static string describing the <xi_discretization_mode>,
 eg. XI_DISCRETIZATION_MODE_CELL_CENTRES == "cell_centres". This string should
 match the command used to create that type of settings.
 The returned string must not be DEALLOCATEd!
+==============================================================================*/
+
+int Xi_discretization_mode_get_number_of_xi_points(
+	enum Xi_discretization_mode xi_discretization_mode,int dimension,
+	int *number_in_xi);
+/*******************************************************************************
+LAST MODIFIED : 28 March 2000
+
+DESCRIPTION :
+Returns the number of points that should be created for <xi_discretization_mode>
+in an element of the given <dimension> with <number_in_xi> cells in each
+xi direction. Returns zero if the number_in_xi are invalid (less than 1) in any
+direction.
+==============================================================================*/
+
+Triple *Xi_discretization_mode_get_xi_points(
+	enum Xi_discretization_mode xi_discretization_mode,int dimension,
+	int *number_in_xi,int *number_of_xi_points);
+/*******************************************************************************
+LAST MODIFIED : 28 March 2000
+
+DESCRIPTION :
+Allocates and returns the set of points for <xi_discretization_mode>
+in an element of the given <dimension> with <number_in_xi> cells in each
+xi direction. Layout of points is controlled by the <xi_discretization_mode>.
+Function also returns <number_of_xi_points> calculated. Xi positions are always
+returned as triples with remaining xi coordinates 0 for 1-D and 2-D cases.
+Note: xi changes from 0 to 1 over each element direction.
 ==============================================================================*/
 
 char **Xi_discretization_mode_get_valid_strings(int *number_of_valid_strings);

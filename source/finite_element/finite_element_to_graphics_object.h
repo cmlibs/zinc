@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -525,48 +525,6 @@ DESCRIPTION :
 Replaces voltex2 vertices with voltex1 vertices warped over an element block
 Vertices are normalized by their x, y, z range values.
 ???DB.  xi_order should be an enumerated type
-==============================================================================*/
-
-Triple *get_xi_points_at_cell_centres(int dimension,int *number_in_xi,
-	int *number_of_xi_points);
-/*******************************************************************************
-LAST MODIFIED : 21 December 1999
-
-DESCRIPTION :
-Allocates and returns an array of xi locations at the centres of
-<number_in_xi[0]>*<number_in_xi[1]>*<number_in_xi[2]> cells of equal size in xi
-over a 3-D element. Function also returns <number_of_xi_points> calculated.
-xi positions are always returned as triples with remaining xi coordinates 0 for
-1-D and 2-D cases.
-Note: xi changes from 0 to 1 over each element direction.
-==============================================================================*/
-
-Triple *get_xi_points_at_cell_corners(int dimension,int *number_in_xi,
-	int *number_of_xi_points);
-/*******************************************************************************
-LAST MODIFIED : 21 December 1999
-
-DESCRIPTION :
-Allocates and returns an array of xi locations at the corners of
-<number_in_xi[0]>*<number_in_xi[1]>*<number_in_xi[2]> cells of equal size in xi
-over a 3-D element. Function also returns <number_of_xi_points> calculated.
-xi positions are always returned as triples with remaining xi coordinates 0 for
-1-D and 2-D cases.
-Note: xi changes from 0 to 1 over each element direction.
-==============================================================================*/
-
-Triple *get_xi_points_in_cells_random(int dimension,int *number_in_xi,
-	int *number_of_xi_points);
-/*******************************************************************************
-LAST MODIFIED : 21 December 1999
-
-DESCRIPTION :
-Allocates and returns an array of xi locations each at random locations in
-<number_in_xi[0]>*<number_in_xi[1]>*<number_in_xi[2]> cells of equal size in xi
-over a 3-D element. Function also returns <number_of_xi_points> calculated.
-xi positions are always returned as triples with remaining xi coordinates 0 for
-1-D and 2-D cases.
-Note: xi changes from 0 to 1 over each element direction.
 ==============================================================================*/
 
 int convert_xi_points_from_element_to_parent(int number_of_xi_points,

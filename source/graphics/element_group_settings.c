@@ -4363,31 +4363,9 @@ Converts a finite element into a graphics object with the supplied settings.
 					} break;
 					case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 					{
-						switch (settings->xi_discretization_mode)
-						{
-							case XI_DISCRETIZATION_CELL_CENTRES:
-							{
-								xi_points=get_xi_points_at_cell_centres(dimension,number_in_xi,
-									&number_of_xi_points);
-							} break;
-							case XI_DISCRETIZATION_CELL_CORNERS:
-							{
-								xi_points=get_xi_points_at_cell_corners(dimension,number_in_xi,
-									&number_of_xi_points);
-							} break;
-							case XI_DISCRETIZATION_CELL_RANDOM:
-							{
-								xi_points=get_xi_points_in_cells_random(dimension,number_in_xi,
-									&number_of_xi_points);
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,"element_to_graphics_object.  "
-									"Unknown xi_discretization_mode");
-								xi_points=(Triple *)NULL;
-							} break;
-						}
-						if (xi_points)
+						if (xi_points=Xi_discretization_mode_get_xi_points(
+							settings->xi_discretization_mode,dimension,number_in_xi,
+							&number_of_xi_points))
 						{
 							if (edit_mode)
 							{

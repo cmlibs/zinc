@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : auxiliary_graphics_types.c
 
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Structures and enumerated types needed to produce graphics primitives but not
@@ -10,6 +10,8 @@ specific to any of them. Examples are:
 represent curvesin three xi-directions;
 - Triple;
 ==============================================================================*/
+#include <math.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include "command/parser.h"
 #include "general/debug.h"
@@ -836,6 +838,293 @@ The returned string must not be DEALLOCATEd!
 
 	return (return_string);
 } /* Xi_discretization_mode_string */
+
+int Xi_discretization_mode_get_number_of_xi_points(
+	enum Xi_discretization_mode xi_discretization_mode,int dimension,
+	int *number_in_xi)
+/*******************************************************************************
+LAST MODIFIED : 28 March 2000
+
+DESCRIPTION :
+Returns the number of points that should be created for <xi_discretization_mode>
+in an element of the given <dimension> with <number_in_xi> cells in each
+xi direction. Returns zero for invalid arguments, incl. if the number_in_xi are
+less than 1 in any direction.
+==============================================================================*/
+{
+	int i,number_of_xi_points;
+
+	ENTER(Xi_discretization_mode_get_number_of_xi_points);
+	if ((0<dimension)&&(3>=dimension)&&number_in_xi)
+	{
+		number_of_xi_points=1;
+		for (i=0;(i<dimension)&&number_of_xi_points;i++)
+		{
+			if (1>number_in_xi[i])
+			{
+				display_message(ERROR_MESSAGE,
+					"Xi_discretization_mode_get_number_of_xi_points.  "
+					"non-positive number in xi");
+				number_of_xi_points=0;
+			}
+		}
+		if (0<number_of_xi_points)
+		{
+			switch (xi_discretization_mode)
+			{
+				case XI_DISCRETIZATION_CELL_CENTRES:
+				case XI_DISCRETIZATION_CELL_RANDOM:
+				{
+					for (i=0;i<dimension;i++)
+					{
+						number_of_xi_points *= number_in_xi[i];
+					}
+				} break;
+				case XI_DISCRETIZATION_CELL_CORNERS:
+				{
+					for (i=0;i<dimension;i++)
+					{
+						number_of_xi_points *= (number_in_xi[i]+1);
+					}
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Xi_discretization_mode_get_number_of_xi_points.  "
+						"Unknown xi_discretization_mode");
+					number_of_xi_points=0;
+				} break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Xi_discretization_mode_get_number_of_xi_points.  Invalid argument(s)");
+		number_of_xi_points=0;
+	}
+	LEAVE;
+
+	return (number_of_xi_points);
+} /* Xi_discretization_mode_get_number_of_xi_points */
+
+Triple *Xi_discretization_mode_get_xi_points(
+	enum Xi_discretization_mode xi_discretization_mode,int dimension,
+	int *number_in_xi,int *number_of_xi_points)
+/*******************************************************************************
+LAST MODIFIED : 28 March 2000
+
+DESCRIPTION :
+Allocates and returns the set of points for <xi_discretization_mode>
+in an element of the given <dimension> with <number_in_xi> cells in each
+xi direction. Layout of points is controlled by the <xi_discretization_mode>.
+Function also returns <number_of_xi_points> calculated. Xi positions are always
+returned as triples with remaining xi coordinates 0 for 1-D and 2-D cases.
+Note: xi changes from 0 to 1 over each element direction.
+==============================================================================*/
+{
+	float spread[MAXIMUM_ELEMENT_XI_DIMENSIONS],xi_j,xi_k;
+	int i,j,k;
+	Triple *xi_points,*xi;
+
+	ENTER(Xi_discretization_mode_get_xi_points);
+	if ((0<dimension)&&(3>=dimension)&&number_in_xi&&number_of_xi_points)
+	{
+		if (0<(*number_of_xi_points=Xi_discretization_mode_get_number_of_xi_points(
+			xi_discretization_mode,dimension,number_in_xi)))
+		{
+			if (ALLOCATE(xi_points,Triple,*number_of_xi_points))
+			{
+				switch (xi_discretization_mode)
+				{
+					case XI_DISCRETIZATION_CELL_CENTRES:
+					{
+						xi=xi_points;
+						switch (dimension)
+						{
+							case 1:
+							{
+								for (i=0;i<number_in_xi[0];i++)
+								{
+									(*xi)[0]=((float)i + 0.5)/(float)number_in_xi[0];
+									(*xi)[1]=0.0;
+									(*xi)[2]=0.0;
+									xi++;
+								}
+							} break;
+							case 2:
+							{
+								for (j=0;j<number_in_xi[1];j++)
+								{
+									xi_j=((float)j + 0.5)/(float)number_in_xi[1];
+									for (i=0;i<number_in_xi[0];i++)
+									{
+										(*xi)[0]=((float)i + 0.5)/(float)number_in_xi[0];
+										(*xi)[1]=xi_j;
+										(*xi)[2]=0.0;
+										xi++;
+									}
+								}
+							} break;
+							case 3:
+							{
+								for (k=0;k<number_in_xi[2];k++)
+								{
+									xi_k=((float)k + 0.5)/(float)number_in_xi[2];
+									for (j=0;j<number_in_xi[1];j++)
+									{
+										xi_j=((float)j + 0.5)/(float)number_in_xi[1];
+										for (i=0;i<number_in_xi[0];i++)
+										{
+											(*xi)[0]=((float)i + 0.5)/(float)number_in_xi[0];
+											(*xi)[1]=xi_j;
+											(*xi)[2]=xi_k;
+											xi++;
+										}
+									}
+								}
+							} break;
+						}
+					} break;
+					case XI_DISCRETIZATION_CELL_CORNERS:
+					{
+						xi=xi_points;
+						switch (dimension)
+						{
+							case 1:
+							{
+								for (i=0;i<=number_in_xi[0];i++)
+								{
+									(*xi)[0]=(float)i/(float)number_in_xi[0];
+									(*xi)[1]=0.0;
+									(*xi)[2]=0.0;
+									xi++;
+								}
+							} break;
+							case 2:
+							{
+								for (j=0;j<=number_in_xi[1];j++)
+								{
+									xi_j=(float)j/(float)number_in_xi[1];
+									for (i=0;i<=number_in_xi[0];i++)
+									{
+										(*xi)[0]=(float)i/(float)number_in_xi[0];
+										(*xi)[1]=xi_j;
+										(*xi)[2]=0.0;
+										xi++;
+									}
+								}
+							} break;
+							case 3:
+							{
+								for (k=0;k<=number_in_xi[2];k++)
+								{
+									xi_k=(float)k/(float)number_in_xi[2];
+									for (j=0;j<=number_in_xi[1];j++)
+									{
+										xi_j=(float)j/(float)number_in_xi[1];
+										for (i=0;i<=number_in_xi[0];i++)
+										{
+											(*xi)[0]=(float)i/(float)number_in_xi[0];
+											(*xi)[1]=xi_j;
+											(*xi)[2]=xi_k;
+											xi++;
+										}
+									}
+								}
+							} break;
+						}
+					} break;
+					case XI_DISCRETIZATION_CELL_RANDOM:
+					{
+						xi=xi_points;
+						for (i=0;i<dimension;i++)
+						{
+							spread[i] = 1.0 / (float)number_in_xi[i];
+						}
+						switch (dimension)
+						{
+							case 1:
+							{
+								for (i=0;i<number_in_xi[0];i++)
+								{
+									(*xi)[0]=(float)i/(float)number_in_xi[0] +
+										(spread[0]*((float)(random()&0xFFFF))/65536.0);
+									(*xi)[1]=0.0;
+									(*xi)[2]=0.0;
+									xi++;
+								}
+							} break;
+							case 2:
+							{
+								for (j=0;j<number_in_xi[1];j++)
+								{
+									for (i=0;i<number_in_xi[0];i++)
+									{
+										(*xi)[0]=(float)i/(float)number_in_xi[0] +
+											(spread[0]*((float)(random()&0xFFFF))/65536.0);
+										(*xi)[1]=(float)j/(float)number_in_xi[1] +
+											(spread[1]*((float)(random()&0xFFFF))/65536.0);
+										(*xi)[2]=0.0;
+										xi++;
+									}
+								}
+							} break;
+							case 3:
+							{
+								for (k=0;k<number_in_xi[2];k++)
+								{
+									for (j=0;j<number_in_xi[1];j++)
+									{
+										for (i=0;i<number_in_xi[0];i++)
+										{
+											(*xi)[0]=(float)i/(float)number_in_xi[0] +
+												(spread[0]*((float)(random()&0xFFFF))/65536.0);
+											(*xi)[1]=(float)j/(float)number_in_xi[1] +
+												(spread[1]*((float)(random()&0xFFFF))/65536.0);
+											(*xi)[2]=(float)k/(float)number_in_xi[2] +
+												(spread[2]*((float)(random()&0xFFFF))/65536.0);
+											xi++;
+										}
+									}
+								}
+							} break;
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"Xi_discretization_mode_get_xi_points.  "
+							"Unknown xi_discretization_mode");
+						DEALLOCATE(xi_points);
+						*number_of_xi_points=0;
+					} break;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Xi_discretization_mode_get_xi_points.  Not enough memory");
+				*number_of_xi_points=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Xi_discretization_mode_get_xi_points.  Invalid number of xi points");
+			xi_points=(Triple *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Xi_discretization_mode_get_xi_points.  Invalid argument(s)");
+		xi_points=(Triple *)NULL;
+	}
+	LEAVE;
+
+	return (xi_points);
+} /* Xi_discretization_mode_get_xi_points */
 
 char **Xi_discretization_mode_get_valid_strings(int *number_of_valid_strings)
 /*******************************************************************************
