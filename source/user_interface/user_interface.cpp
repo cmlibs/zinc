@@ -1424,7 +1424,7 @@ DESCRIPTION :
 		}
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
 #endif /* defined (MOTIF) */
-		DEALLOCATE(*user_interface);
+		DEALLOCATE(user_interface);
 		*user_interface_address=(struct User_interface *)NULL;
 		return_code=1;
 	}
