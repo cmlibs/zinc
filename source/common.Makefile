@@ -144,6 +144,7 @@ ifeq ($(SYSNAME:IRIX%=),)
       COMPILE_FLAGS = -ansi -pedantic -woff 1521
       COMPILE_DEFINES = -DOPTIMISED
       STRICT_FLAGS = 
+      CPP_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
    else # DEBUG != true
@@ -152,6 +153,8 @@ ifeq ($(SYSNAME:IRIX%=),)
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON 
       # STRICT_FLAGS = -diag_error 1042,1174,1185,1196,1409,1551,1552,3201
       STRICT_FLAGS = -diag_error 1000-9999
+      # need to suppress for Boost mostly but also for STL
+      CPP_STRICT_FLAGS = -diag_error 1000-9999 -diag_suppress 1174,1209,1234,1375,1424,3201
       DIGITAL_MEDIA_NON_STRICT_FLAGS = -diag_warning 1429
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = three_d_drawing/dm_interface.c | three_d_drawing/movie_extensions.c
    endif # DEBUG != true
@@ -204,6 +207,7 @@ ifeq ($(SYSNAME),Linux)
       COMPILE_DEFINES = -DOPTIMISED
       COMPILE_FLAGS = -fPIC
       STRICT_FLAGS = -Werror
+      CPP_STRICT_FLAGS = -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
    else  # DEBUG != true
@@ -212,6 +216,7 @@ ifeq ($(SYSNAME),Linux)
       COMPILE_FLAGS = -fPIC
       # A bug with gcc on esp56 stops -Wformat from working */
       STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-format -Werror
+      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-format -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
       TARGET_TYPE_FLAGS =
@@ -245,6 +250,7 @@ ifeq ($(SYSNAME),AIX)
    COMPILE_FLAGS = 
    COMPILE_DEFINES = 
    STRICT_FLAGS = 
+   CPP_STRICT_FLAGS = 
    DIGITAL_MEDIA_NON_STRICT_FLAGS = 
    DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
    ifeq ($(ABI),64)
@@ -279,6 +285,7 @@ ifeq ($(SYSNAME),win32)
    COMPILE_FLAGS = 
    COMPILE_DEFINES = 
    STRICT_FLAGS = 
+   CPP_STRICT_FLAGS = 
    DIGITAL_MEDIA_NON_STRICT_FLAGS = 
    DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
    TARGET_TYPE_FLAGS =
@@ -305,6 +312,7 @@ ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
       COMPILE_DEFINES = -DOPTIMISED
       COMPILE_FLAGS = 
       STRICT_FLAGS = -Werror
+      CPP_STRICT_FLAGS = -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
    else  # DEBUG != true
@@ -313,6 +321,7 @@ ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
       COMPILE_FLAGS = 
       # A bug with gcc on esp56 stops -Wformat from working */
       STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-format -Werror
+      CPP_STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-format -Werror
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
       TARGET_TYPE_FLAGS =
@@ -372,24 +381,24 @@ ifdef CMISS_ROOT_DEFINED
 	@if [ -f $*.cpp ]; then \
 	   case $*.cpp in  \
 	      $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-            set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
+            set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
 	      * ) \
-	   	   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
+	   	   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $*.cpp;; \
 	   esac ; \
 	else \
 	   case $*.cpp in  \
 	      $(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
+	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
 	      * ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
+	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
 	   esac ; \
 	fi
 else # CMISS_ROOT_DEFINED
 	case $*.cpp in  \
 		$(DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN) ) \
-	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
+	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $(DIGITAL_MEDIA_NON_STRICT_FLAGS) $*.cpp;; \
 	  * ) \
-	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
+	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.o $(ALL_FLAGS) $(CPP_FLAGS) $(CPP_STRICT_FLAGS) $*.cpp;; \
 	esac ;
 endif # CMISS_ROOT_DEFINED)
 
