@@ -994,6 +994,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 										FE_node_field_creator_define_derivative(
 											node_field_creator, component_number,
 											FE_NODAL_UNKNOWN);
+										i--;
 									}
 								}
 								/* read in the number of versions (if present) */
