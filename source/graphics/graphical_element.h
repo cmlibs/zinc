@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.h
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 6 April 2000
 
 DESCRIPTION :
 Graphical element group data structure.
@@ -56,11 +56,18 @@ PROTOTYPE_OBJECT_FUNCTIONS(GT_element_group);
 struct GT_element_group *CREATE(GT_element_group)(
 	struct GROUP(FE_element) *element_group,struct GROUP(FE_node) *node_group,
 	struct GROUP(FE_node) *data_group,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(GROUP(FE_node)) *node_group_manager,
+	struct MANAGER(FE_node) *data_manager,
+	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct Computed_field_package *computed_field_package,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection);
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 6 April 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphical finite element group for
@@ -79,11 +86,11 @@ If supplied, callbacks are requested from the <element_selection> and
 struct GT_element_group *create_editor_copy_GT_element_group(
 	struct GT_element_group *existing_gt_element_group);
 /*******************************************************************************
-LAST MODIFIED : 24 March 2000
+LAST MODIFIED : 6 April 2000
 
 DESCRIPTION :
 Creates a GT_element_group that is a copy of <existing_gt_element_group> -
-WITHOUT copying graphics objects, and without selection callbacks.
+WITHOUT copying graphics objects, and WITHOUT manager and selection callbacks.
 ==============================================================================*/
 
 int DESTROY(GT_element_group)(struct GT_element_group **gt_element_group);
@@ -382,21 +389,6 @@ Returns true if <gt_element_group> contains settings which use embedded fields w
 are affected by the <changed_node> or <changed_element>.
 If <changed_node> and <changed_element> are both NULL then this returns true 
 if the group contains any settings using embedded fields.
-==============================================================================*/
-
-int GT_element_group_computed_field_change(
-	struct GT_element_group *gt_element_group,
-	struct Computed_field *changed_field);
-/*******************************************************************************
-LAST MODIFIED : 3 May 1999
-
-DESCRIPTION :
-Tells the <gt_element_group> about the <changed_field>, where NULL means all
-fields have changed. If any of the graphics objects in the settings need
-rebuilding, this function takes care of that, and returns true so that the
-scene knows it must invoke a scene redraw.
-???RC This should be done with callbacks... get GT_element_group out of
-graphics_object.c!
 ==============================================================================*/
 
 int compile_GT_element_group(struct GT_element_group *gt_element_group,

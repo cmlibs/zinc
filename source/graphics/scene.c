@@ -96,7 +96,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Scene_object);
 
 struct Scene
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 6 April 2000
 
 DESCRIPTION :
 Stores the collections of objects that make up a 3-D graphical model.
@@ -118,19 +118,16 @@ Stores the collections of objects that make up a 3-D graphical model.
 	struct MANAGER(FE_field) *fe_field_manager;
 	/* elements and element groups: */
 	struct MANAGER(FE_element) *element_manager;
-	void *element_manager_callback_id;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
+	/* have callbacks from element_group_manager for automatic creating and
+		 destroying of GT_element_groups */
 	void *element_group_manager_callback_id;
 	/* nodes and node groups: */
 	struct MANAGER(FE_node) *node_manager;
-	void *node_manager_callback_id;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
-	void *node_group_manager_callback_id;
 	/* data and data groups: */
 	struct MANAGER(FE_node) *data_manager;
-	void *data_manager_callback_id;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
-	void *data_group_manager_callback_id;
 
 	/* global stores of selected objects */
 	struct Element_point_ranges_selection *element_point_ranges_selection;
@@ -427,19 +424,23 @@ Responds to changes in the graphics object.
 static int Scene_object_element_group_update_callback(
 	struct GT_element_group *gt_element_group, void *scene_object_void)
 /*******************************************************************************
-LAST MODIFIED : 6 July 1999
+LAST MODIFIED : 6 April 2000
 
 DESCRIPTION :
-Responds to changes in GT_element_groups.
+Responds to changes in GT_element_groups. Only updates scene if group is
+visible.
 ==============================================================================*/
 {
 	int return_code;
 	struct Scene_object *scene_object;
 
 	ENTER(Scene_object_element_group_update_callback);
-	if (gt_element_group && (scene_object=(struct Scene_object *)scene_object_void))
+	if (gt_element_group&&(scene_object=(struct Scene_object *)scene_object_void))
 	{
-		Scene_changed_private(scene_object->scene);
+		if (g_VISIBLE==scene_object->visibility)
+		{
+			Scene_changed_private(scene_object->scene);
+		}
 		return_code=1;
 	}
 	else
@@ -1313,121 +1314,10 @@ First checks <element_group> not already in scene.
 	return (return_code);
 } /* element_group_to_scene */
 
-struct Computed_field_change_data
-{
-	/* only set the following redraw flag if visible gt_element_groups changed */
-	int scene_changed;
-	struct MANAGER_MESSAGE(Computed_field) *message;
-	struct Scene *scene;
-}; /* struct Computed_field_change_data */
-
-static int element_group_computed_field_change(
-	struct GROUP(FE_element) *element_group,void *field_change_data_void)
-/*******************************************************************************
-LAST MODIFIED : 3 May 1999
-
-DESCRIPTION :
-Tells element group about changed Computed_fields. If the changes affect the
-group, regenerate graphics.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field_change_data *field_change_data;
-	struct GT_element_group *gt_element_group;
-	struct MANAGER_MESSAGE(Computed_field) *message;
-	struct Scene *scene;
-
-	ENTER(element_group_computed_field_change);
-	if (element_group&&(field_change_data=(struct Computed_field_change_data *)
-		field_change_data_void)&&(message=field_change_data->message)&&
-		(scene=field_change_data->scene))
-	{
-		if (gt_element_group=Scene_get_graphical_element_group(scene,element_group))
-		{
-			switch (message->change)
-			{
-				case MANAGER_CHANGE_ALL(Computed_field):
-				case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field):
-				case MANAGER_CHANGE_OBJECT(Computed_field):
-				{
-					if (GT_element_group_computed_field_change(
-						gt_element_group,message->object_changed)&&
-						(g_VISIBLE==
-							Scene_get_element_group_visibility(scene,element_group)))
-					{
-						field_change_data->scene_changed=1;
-					}
-				} break;
-				case MANAGER_CHANGE_ADD(Computed_field):
-				case MANAGER_CHANGE_DELETE(Computed_field):
-				case MANAGER_CHANGE_IDENTIFIER(Computed_field):
-				{
-					/* do nothing */
-				} break;
-			}
-			return_code=1;
-		}
-		else
-		{
-			/*display_message(ERROR_MESSAGE,
-				"element_group_computed_field_change.  Element group not in Scene");
-			return_code=0;*/
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"element_group_computed_field_change.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* element_group_computed_field_change */
-
-static void Scene_computed_field_change(
-	struct MANAGER_MESSAGE(Computed_field) *message,void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 3 May 1999
-
-DESCRIPTION :
-One or more of the computed_fields have changed in the manager.
-This routine informs all graphical element_groups of the change, allowing them
-to regenerate their graphics. Afterwards sends a scene manager modify message
-if any of the affected groups are visible.
-==============================================================================*/
-{
-	struct Computed_field_change_data field_change_data;
-	struct Scene *scene;
-
-	ENTER(Scene_computed_field_change);
-	if (message&&(scene=(struct Scene *)scene_void))
-	{
-		/* pass the message to each graphical element_group to allow redraw */
-		field_change_data.message=message;
-		field_change_data.scene=scene;
-		field_change_data.scene_changed=0;
-		FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
-			element_group_computed_field_change,(void *)&field_change_data,
-			scene->element_group_manager);
-		if (field_change_data.scene_changed)
-		{
-			Scene_notify_object_changed(scene);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_computed_field_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Scene_computed_field_change */
-
 static void Scene_element_group_change(
 	struct MANAGER_MESSAGE(GROUP(FE_element)) *message,void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 4 April 2000
+LAST MODIFIED : 6 April 2000
 
 DESCRIPTION :
 Element group manager change callback. Adds/removes graphical element groups
@@ -1435,7 +1325,6 @@ from <scene> in response to manager messages.
 ==============================================================================*/
 {
 	struct GROUP(FE_element) *element_group;
-	struct GT_element_group *gt_element_group;
 	struct Scene *scene;
 	struct Scene_object *scene_object;
 
@@ -1447,7 +1336,8 @@ from <scene> in response to manager messages.
 		{
 			case MANAGER_CHANGE_ALL(GROUP(FE_element)):
 			{
-				if (GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode)
+				if ((GRAPHICAL_ELEMENT_NONE != scene->graphical_element_mode)&&
+					(GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode))
 				{
 					/* draw any new element_groups on window */
 					FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
@@ -1464,49 +1354,11 @@ from <scene> in response to manager messages.
 			} break;
 			case MANAGER_CHANGE_ADD(GROUP(FE_element)):
 			{
-				if (GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode)
+				if ((GRAPHICAL_ELEMENT_NONE != scene->graphical_element_mode)&&
+					(GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode))
 				{
 					Scene_add_graphical_finite_element(scene,message->object_changed,
 						(char *)NULL);
-				}
-			} break;
-			case MANAGER_CHANGE_OBJECT(GROUP(FE_element)):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_element)):
-			{
-				if ((scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-					Scene_object_has_element_group,(void *)message->object_changed,
-					scene->scene_object_list))&&
-					(gt_element_group=
-						Scene_object_get_graphical_element_group(scene_object)))
-				{
-					/* everything to do with elements changed */
-					for_each_settings_in_GT_element_group(gt_element_group,
-						GT_element_settings_element_change,(void *)NULL);
-					/* rebuild graphics */
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
-					if (g_VISIBLE==Scene_get_element_group_visibility(scene,
-						message->object_changed))
-					{
-#if defined (DEBUG)
-						/*???debug */
-						if (GET_NAME(GROUP(FE_element))(message->object_changed,
-							&group_name))
-						{
-							printf("Element group '%s' modified\n",group_name);
-							DEALLOCATE(group_name);
-						}
-#endif /* defined (DEBUG) */
-						Scene_notify_object_changed(scene);
-					}
-				}
-				else
-				{
-					if (GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode)
-					{
-						display_message(ERROR_MESSAGE,"Scene_element_group_change.  "
-							"Modify.  Missing element group on scene");
-					}
 				}
 			} break;
 			case MANAGER_CHANGE_DELETE(GROUP(FE_element)):
@@ -1520,18 +1372,12 @@ from <scene> in response to manager messages.
 				{
 					Scene_remove_scene_object(scene,scene_object);
 				}
-				else
-				{
-					if (GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode)
-					{
-						display_message(ERROR_MESSAGE,"Scene_element_group_change.  "
-							"Delete.  Missing element group on scene");
-					}
-				}
 			} break;
+			case MANAGER_CHANGE_OBJECT(GROUP(FE_element)):
+			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_element)):
 			case MANAGER_CHANGE_IDENTIFIER(GROUP(FE_element)):
 			{
-				/* do nothing */
+				/* nothing: object changes are handled by graphical element itself  */
 			} break;
 		}
 	}
@@ -1543,686 +1389,6 @@ from <scene> in response to manager messages.
 	LEAVE;
 } /* Scene_element_group_change */
 
-struct Element_change_data
-{
-	/* only set the following redraw flag if visible gt_element_groups changed */
-	int scene_changed;
-	struct MANAGER_MESSAGE(FE_element) *message;
-	struct Scene *scene;
-}; /* struct Element_change_data */
-
-static int element_group_element_change(struct GROUP(FE_element) *element_group,
-	void *element_change_data_void)
-/*******************************************************************************
-LAST MODIFIED : 20 April 1999
-
-DESCRIPTION :
-Tells element group about changed elements. If the changes affect the group,
-regenerate graphics.
-???RC this needs further work once the mesh editor is developed.
-==============================================================================*/
-{
-	int return_code;
-	struct Element_change_data *element_change_data;
-	struct GT_element_group *gt_element_group;
-	struct MANAGER_MESSAGE(FE_element) *message;
-	struct Scene *scene;
-
-	ENTER(element_group_element_change);
-	/* checking arguments */
-	if (element_group&&(element_change_data=(struct Element_change_data *)
-		element_change_data_void)&&(message=element_change_data->message)&&
-		(scene=element_change_data->scene))
-	{
-		if (gt_element_group=Scene_get_graphical_element_group(scene,element_group))
-		{
-			switch (message->change)
-			{
-				case MANAGER_CHANGE_ALL(FE_element):
-				{
-					/* all graphics using elements need rebuilding */
-					for_each_settings_in_GT_element_group(gt_element_group,
-						GT_element_settings_element_change,(void *)NULL);
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
-					if (g_VISIBLE==Scene_get_element_group_visibility(scene,
-						element_group))
-					{
-						element_change_data->scene_changed=1;
-					}
-				} break;
-				case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_element):
-				case MANAGER_CHANGE_OBJECT(FE_element):
-				{
-					if (IS_OBJECT_IN_GROUP(FE_element)(message->object_changed,
-						element_group))
-					{
-						/* regenerate those graphics affected by changed element */
-						GT_element_group_build_graphics_objects(gt_element_group,
-							message->object_changed,(struct FE_node *)NULL);
-						if (g_VISIBLE==Scene_get_element_group_visibility(scene,
-							element_group))
-						{
-							element_change_data->scene_changed=1;
-						}
-					}
-					else
-					{
-						/* Check to see if any embedded fields are affected by this
-							element change */
-						if (GT_element_group_has_embedded_field(gt_element_group,
-							message->object_changed, (struct FE_node *)NULL))
-						{
-							/* rebuild those graphics objects with embedded fields */
-							for_each_settings_in_GT_element_group(gt_element_group,
-								GT_element_settings_remove_graphics_object_if_embedded_field,
-								(void *)NULL);
-							GT_element_group_build_graphics_objects(gt_element_group,
-								(struct FE_element *)NULL,(struct FE_node *)NULL);
-							if (g_VISIBLE==Scene_get_element_group_visibility(scene,
-								element_group))
-							{
-								element_change_data->scene_changed=1;
-							}
-						}
-					}
-				} break;
-				case MANAGER_CHANGE_ADD(FE_element):
-				case MANAGER_CHANGE_DELETE(FE_element):
-				case MANAGER_CHANGE_IDENTIFIER(FE_element):
-				{
-					/* do nothing */
-				} break;
-			}
-			return_code=1;
-		}
-		else
-		{
-			/*display_message(ERROR_MESSAGE,
-				"element_group_element_change.  Element group not in Scene");
-			return_code=0;*/
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"element_group_element_change.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* element_group_element_change */
-
-static void Scene_element_change(
-	struct MANAGER_MESSAGE(FE_element) *message,void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 15 June 1998
-
-DESCRIPTION :
-One or several of the elements have changed in the manager.
-This routine informs all graphical element_groups of the change, allowing them
-to regenerate their graphics. Afterwards sends a scene manager modify message.
-==============================================================================*/
-{
-	struct Element_change_data element_change_data;
-	struct Scene *scene;
-
-	ENTER(Scene_element_change);
-	/* checking arguments */
-	if (message&&(scene=(struct Scene *)scene_void))
-	{
-		/* pass the message to each graphical element_group to allow redraw */
-		element_change_data.message=message;
-		element_change_data.scene=scene;
-		element_change_data.scene_changed=0;
-		FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
-			element_group_element_change,(void *)&element_change_data,
-			scene->element_group_manager);
-		if (element_change_data.scene_changed)
-		{
-			Scene_notify_object_changed(scene);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_element_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Scene_element_change */
-
-struct Node_change_data
-{
-	/* only set the following redraw flag if visible gt_element_groups changed */
-	int scene_changed;
-	struct MANAGER_MESSAGE(FE_node) *message;
-	struct Scene *scene;
-}; /* struct Node_change_data */
-
-static int element_group_node_change(struct GROUP(FE_element) *element_group,
-	void *node_change_data_void)
-/*******************************************************************************
-LAST MODIFIED : 21 July 1999
-
-DESCRIPTION :
-Tells element group about changed nodes. If the changes affect the group,
-regenerate graphics.
-???RC this needs further work once the mesh editor is developed.
-==============================================================================*/
-{
-	int return_code;
-	struct GT_element_group *gt_element_group;
-	struct MANAGER_MESSAGE(FE_node) *message;
-	struct Node_change_data *node_change_data;
-	struct Scene *scene;
-
-	ENTER(element_group_node_change);
-	/* checking arguments */
-	if (element_group&&(node_change_data=(struct Node_change_data *)
-		node_change_data_void)&&(message=node_change_data->message)&&
-		(scene=node_change_data->scene))
-	{
-		if (gt_element_group=Scene_get_graphical_element_group(scene,element_group))
-		{
-			switch (message->change)
-			{
-				case MANAGER_CHANGE_ALL(FE_node):
-				{
-					/* rebuild all graphics for gt_element_group */
-					for_each_settings_in_GT_element_group(gt_element_group,
-						GT_element_settings_remove_graphics_object,(void *)NULL);
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
-					if (g_VISIBLE==Scene_get_element_group_visibility(scene,
-						element_group))
-					{
-						node_change_data->scene_changed=1;
-					}
-				} break;
-				case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
-				case MANAGER_CHANGE_OBJECT(FE_node):
-				{
-					if (FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
-						get_FE_node_cm_node_identifier(message->object_changed),
-						GT_element_group_get_node_group(gt_element_group)))
-					{
-						/* rebuild those graphics affected by changed node */
-						GT_element_group_build_graphics_objects(gt_element_group,
-							(struct FE_element *)NULL,message->object_changed);
-						if (g_VISIBLE==Scene_get_element_group_visibility(scene,
-							element_group))
-						{
-							node_change_data->scene_changed=1;
-						}
-					}
-					else
-					{
-						/* Check to see if any embedded fields are affected by this
-							node change */
-						if (GT_element_group_has_embedded_field(gt_element_group,
-							(struct FE_element *)NULL, message->object_changed))
-						{
-							/* rebuild those graphics objects with embedded fields */
-							for_each_settings_in_GT_element_group(gt_element_group,
-								GT_element_settings_remove_graphics_object_if_embedded_field,
-								(void *)NULL);
-							GT_element_group_build_graphics_objects(gt_element_group,
-								(struct FE_element *)NULL,(struct FE_node *)NULL);
-							if (g_VISIBLE==Scene_get_element_group_visibility(scene,
-								element_group))
-							{
-								node_change_data->scene_changed=1;
-							}
-						}
-					}
-				} break;
-				case MANAGER_CHANGE_ADD(FE_node):
-				case MANAGER_CHANGE_DELETE(FE_node):
-				case MANAGER_CHANGE_IDENTIFIER(FE_node):
-				{
-					/* do nothing */
-				} break;
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"element_group_node_change.  Element_group not in Scene");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"element_group_node_change.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* element_group_node_change */
-
-static void Scene_node_change(
-	struct MANAGER_MESSAGE(FE_node) *message,void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 15 June 1998
-
-DESCRIPTION :
-One or several of the nodes have changed in the manager.
-This routine informs all graphical element_groups of the change, allowing them
-to regenerate their graphics. Afterwards sends a scene manager modify message.
-==============================================================================*/
-{
-	struct Node_change_data node_change_data;
-	struct Scene *scene;
-
-	ENTER(Scene_node_change);
-	/* checking arguments */
-	if (message&&(scene=(struct Scene *)scene_void))
-	{
-		/* pass the message to each graphical element_group to allow redraw */
-		node_change_data.message=message;
-		node_change_data.scene=scene;
-		node_change_data.scene_changed=0;
-		FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
-			element_group_node_change,(void *)&node_change_data,
-			scene->element_group_manager);
-		if (node_change_data.scene_changed)
-		{
-#if defined (DEBUG)
-			/*???debug */
-			printf("  Updating scene %s after node change\n",scene->name);
-#endif /* defined (DEBUG) */
-			Scene_notify_object_changed(scene);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_node_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Scene_node_change */
-
-struct Node_group_change_data
-{
-	/* only set the following redraw flag if visible gt_element_groups changed */
-	int scene_changed;
-	/* if node_group_changed is NULL, ALL node groups have changed */
-	struct GROUP(FE_node) *node_group_changed;
-	struct Scene *scene;
-}; /* struct Node_group_change_data */
-
-static int element_group_node_group_change(
-	struct GROUP(FE_element) *element_group,
-	void *node_group_change_data_void)
-/*******************************************************************************
-LAST MODIFIED : 19 October 1998
-
-DESCRIPTION :
-Tells element groups about changed node groups. If they are part of of the
-gt_element_group for this element_group in scene, then regenerate graphics for
-it. If in addition the element group is visible on this scene, signal that the
-scene has changed.
-==============================================================================*/
-{
-	char *group_name;
-	int return_code;
-	struct GROUP(FE_node) *node_group_changed;
-	struct GT_element_group *gt_element_group;
-	struct Node_group_change_data *node_group_change_data;
-	struct Scene *scene;
-
-	ENTER(element_group_node_group_change);
-	/* checking arguments */
-	if (element_group&&(node_group_change_data=(struct Node_group_change_data *)
-		node_group_change_data_void)&&
-		(scene=node_group_change_data->scene))
-	{
-		node_group_changed=node_group_change_data->node_group_changed;
-		if (gt_element_group=Scene_get_graphical_element_group(scene,element_group))
-		{
-			if (!node_group_changed ||
-				(GT_element_group_get_node_group(gt_element_group)==node_group_changed))
-			{
-				for_each_settings_in_GT_element_group(gt_element_group,
-					GT_element_settings_node_change,(void *)NULL);
-				GT_element_group_build_graphics_objects(gt_element_group,
-					(struct FE_element *)NULL,(struct FE_node *)NULL);
-				if (g_VISIBLE==Scene_get_element_group_visibility(scene,element_group))
-				{
-					node_group_change_data->scene_changed=1;
-				}
-			}
-			return_code=1;
-		}
-		else
-		{
-			if (GET_NAME(GROUP(FE_element))(element_group,&group_name))
-			{
-				display_message(ERROR_MESSAGE,
-					"element_group_node_group_change.  Element_group %s not in Scene %s",
-					group_name,scene->name);
-				DEALLOCATE(group_name);
-			}
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"element_group_node_group_change.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* element_group_node_group_change */
-
-static void Scene_node_group_change(
-	struct MANAGER_MESSAGE(GROUP(FE_node)) *message,void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 23 August 1999
-
-DESCRIPTION :
-Node group manager change callback.  Redraws GFEs and scene if affected by
-changes.
-==============================================================================*/
-{
-	struct Node_group_change_data node_group_change_data;
-	struct Scene *scene;
-
-	ENTER(Scene_node_group_change);
-	if (message&&(scene=(struct Scene *)scene_void))
-	{
-		/* pass the message to each graphical element_group to allow redraw */
-		node_group_change_data.node_group_changed=message->object_changed;
-		node_group_change_data.scene=scene;
-		node_group_change_data.scene_changed=0;
-		switch (message->change)
-		{
-			case MANAGER_CHANGE_ALL(GROUP(FE_node)):
-			case MANAGER_CHANGE_OBJECT(GROUP(FE_node)):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_node)):
-			{
-				FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
-					element_group_node_group_change,(void *)&node_group_change_data,
-					scene->element_group_manager);
-				if (node_group_change_data.scene_changed)
-				{
-					Scene_notify_object_changed(scene);
-				}
-			} break;
-			case MANAGER_CHANGE_DELETE(GROUP(FE_node)):
-			case MANAGER_CHANGE_ADD(GROUP(FE_node)):
-			case MANAGER_CHANGE_IDENTIFIER(GROUP(FE_node)):
-			{
-				/* do nothing */
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_node_group_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Scene_node_group_change */
-
-struct Data_change_data
-{
-	/* only set the following redraw flag if visible gt_element_groups changed */
-	int scene_changed;
-	struct MANAGER_MESSAGE(FE_node) *message;
-	struct Scene *scene;
-}; /* struct Data_change_data */
-
-static int element_group_data_change(struct GROUP(FE_element) *element_group,
-	void *data_change_data_void)
-/*******************************************************************************
-LAST MODIFIED : 10 September 1998
-
-DESCRIPTION :
-Tells element group about changed datas. If the changes affect the group,
-regenerate graphics.
-==============================================================================*/
-{
-	int return_code;
-	struct GT_element_group *gt_element_group;
-	struct MANAGER_MESSAGE(FE_node) *message;
-	struct Data_change_data *data_change_data;
-	struct Scene *scene;
-
-	ENTER(element_group_data_change);
-	if (element_group&&(data_change_data=(struct Data_change_data *)
-		data_change_data_void)&&(message=data_change_data->message)&&
-		(scene=data_change_data->scene))
-	{
-		if (gt_element_group=Scene_get_graphical_element_group(scene,element_group))
-		{
-			switch (message->change)
-			{
-				case MANAGER_CHANGE_ALL(FE_node):
-				{
-					/* rebuild all graphics for gt_element_group */
-					for_each_settings_in_GT_element_group(gt_element_group,
-						GT_element_settings_remove_graphics_object,(void *)NULL);
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
-					if (g_VISIBLE==Scene_get_element_group_visibility(scene,
-						element_group))
-					{
-						data_change_data->scene_changed=1;
-					}
-				} break;
-				case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
-				case MANAGER_CHANGE_OBJECT(FE_node):
-				{
-					if (IS_OBJECT_IN_GROUP(FE_node)(message->object_changed,
-						GT_element_group_get_data_group(gt_element_group)))
-					{
-						/* rebuild those graphics affected by changed data */
-						for_each_settings_in_GT_element_group(gt_element_group,
-							GT_element_settings_data_change,(void *)NULL);
-						GT_element_group_build_graphics_objects(gt_element_group,
-							(struct FE_element *)NULL,(struct FE_node *)NULL);
-						if (g_VISIBLE==Scene_get_element_group_visibility(scene,
-							element_group))
-						{
-							data_change_data->scene_changed=1;
-						}
-					}
-				} break;
-				case MANAGER_CHANGE_ADD(FE_node):
-				case MANAGER_CHANGE_DELETE(FE_node):
-				case MANAGER_CHANGE_IDENTIFIER(FE_node):
-				{
-					/* do nothing */
-				} break;
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"element_group_data_change.  Element_group not in Scene");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"element_group_data_change.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* element_group_data_change */
-
-static void Scene_data_change(
-	struct MANAGER_MESSAGE(FE_node) *message,void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 20 October 1998
-
-DESCRIPTION :
-One or several of the datas have changed in the manager.
-This routine informs all graphical element_groups of the change, allowing them
-to regenerate their graphics. Afterwards sends a scene manager modify message.
-==============================================================================*/
-{
-	struct Data_change_data data_change_data;
-	struct Scene *scene;
-
-	ENTER(Scene_data_change);
-	if (message&&(scene=(struct Scene *)scene_void))
-	{
-		/* pass the message to each graphical element_group to allow redraw */
-		data_change_data.message=message;
-		data_change_data.scene=scene;
-		data_change_data.scene_changed=0;
-		FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
-			element_group_data_change,(void *)&data_change_data,
-			scene->element_group_manager);
-		if (data_change_data.scene_changed)
-		{
-			Scene_notify_object_changed(scene);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_data_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Scene_data_change */
-
-struct Data_group_change_data
-{
-	/* only set the following redraw flag if visible gt_element_groups changed */
-	int scene_changed;
-	/* if data_group_changed is NULL, ALL data groups have changed */
-	struct GROUP(FE_node) *data_group_changed;
-	struct Scene *scene;
-}; /* struct Data_group_change_data */
-
-static int element_group_data_group_change(
-	struct GROUP(FE_element) *element_group,
-	void *data_group_change_data_void)
-/*******************************************************************************
-LAST MODIFIED :  10 September 1998
-
-DESCRIPTION :
-Tells element groups about changed data groups. If they are part of of the
-gt_element_group for this element_group in scene, then regenerate graphics for
-it. If in addition the element group is visible on this scene, signal that the
-scene has changed.
-==============================================================================*/
-{
-	char *group_name;
-	int return_code;
-	struct GROUP(FE_node) *data_group_changed;
-	struct GT_element_group *gt_element_group;
-	struct Data_group_change_data *data_group_change_data;
-	struct Scene *scene;
-
-	ENTER(element_group_data_group_change);
-	if (element_group&&(data_group_change_data=(struct Data_group_change_data *)
-		data_group_change_data_void)&&
-		(scene=data_group_change_data->scene))
-	{
-		data_group_changed=data_group_change_data->data_group_changed;
-		if (gt_element_group=Scene_get_graphical_element_group(scene,element_group))
-		{
-			if (!data_group_changed ||
-				(GT_element_group_get_data_group(gt_element_group)==data_group_changed))
-			{
-				for_each_settings_in_GT_element_group(gt_element_group,
-					GT_element_settings_data_change,(void *)NULL);
-				GT_element_group_build_graphics_objects(gt_element_group,
-					(struct FE_element *)NULL,(struct FE_node *)NULL);
-				if (g_VISIBLE==Scene_get_element_group_visibility(scene,element_group))
-				{
-					data_group_change_data->scene_changed=1;
-				}
-			}
-			return_code=1;
-		}
-		else
-		{
-			if (GET_NAME(GROUP(FE_element))(element_group,&group_name))
-			{
-				display_message(ERROR_MESSAGE,
-					"element_group_data_group_change.  Element_group %s not in Scene %s",
-					group_name,scene->name);
-				DEALLOCATE(group_name);
-			}
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"element_group_data_group_change.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* element_group_data_group_change */
-
-static void Scene_data_group_change(
-	struct MANAGER_MESSAGE(GROUP(FE_node)) *message,void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 20 October 1998
-
-DESCRIPTION :
-Data group manager change callback.  Redraws GFEs and scene if affected by
-changes.
-==============================================================================*/
-{
-	struct Data_group_change_data data_group_change_data;
-	struct Scene *scene;
-
-	ENTER(Scene_data_group_change);
-	if (message&&(scene=(struct Scene *)scene_void))
-	{
-		/* pass the message to each graphical element_group to allow redraw */
-		data_group_change_data.data_group_changed=message->object_changed;
-		data_group_change_data.scene=scene;
-		data_group_change_data.scene_changed=0;
-		switch (message->change)
-		{
-			case MANAGER_CHANGE_ALL(GROUP(FE_node)):
-			case MANAGER_CHANGE_OBJECT(GROUP(FE_node)):
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_node)):
-			{
-				FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
-					element_group_data_group_change,(void *)&data_group_change_data,
-					scene->element_group_manager);
-				if (data_group_change_data.scene_changed)
-				{
-					Scene_notify_object_changed(scene);
-				}
-			} break;
-			case MANAGER_CHANGE_DELETE(GROUP(FE_node)):
-			case MANAGER_CHANGE_ADD(GROUP(FE_node)):
-			case MANAGER_CHANGE_IDENTIFIER(GROUP(FE_node)):
-			{
-				/* do nothing */
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_data_group_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Scene_data_group_change */
 static void Scene_streamline_change(
 	struct MANAGER_MESSAGE(Interactive_streamline) *message,void *scene_void)
 /*******************************************************************************
@@ -3669,8 +2835,9 @@ LAST MODIFIED : 5 July 1999
 
 DESCRIPTION :
 Scene_object iterator function returning true if <scene_object> contains a
-gt_ELEMENT_GROUP which matches <gt_element_group_void>.  If <gt_element_group_void>
-is NULL the function returns true if the scene_object contains any gt_element_group.
+gt_ELEMENT_GROUP which matches <gt_element_group_void>. If
+<gt_element_group_void> is NULL the function returns true if the scene_object
+contains any gt_element_group.
 ==============================================================================*/
 {
 	int return_code;
@@ -4202,7 +3369,7 @@ as a command, using the given <command_prefix>.
 
 struct Scene *CREATE(Scene)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 6 April 2000
 
 DESCRIPTION :
 Scene now has pointer to its scene_manager, and it uses manager modify
@@ -4228,20 +3395,14 @@ from the default versions of these functions.
 			scene->scene_manager=(struct MANAGER(Scene) *)NULL;
 			/* fields, elements, nodes and data */
 			scene->computed_field_package=(struct Computed_field_package *)NULL;
-			scene->computed_field_manager_callback_id=(void *)NULL;
 			scene->fe_field_manager=(struct MANAGER(FE_field) *)NULL;
 			scene->element_manager=(struct MANAGER(FE_element) *)NULL;
-			scene->element_manager_callback_id=(void *)NULL;
 			scene->element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
 			scene->element_group_manager_callback_id=(void *)NULL;
 			scene->node_manager=(struct MANAGER(FE_node) *)NULL;
-			scene->node_manager_callback_id=(void *)NULL;
 			scene->node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-			scene->node_group_manager_callback_id=(void *)NULL;
 			scene->data_manager=(struct MANAGER(FE_node) *)NULL;
-			scene->data_manager_callback_id=(void *)NULL;
 			scene->data_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-			scene->data_group_manager_callback_id=(void *)NULL;
 			/* defaults to not adding GFEs - besides, need managers anyway */
 			scene->graphical_element_mode=GRAPHICAL_ELEMENT_NONE;
 			/* global stores of selected objects */
@@ -4719,6 +3880,7 @@ material and spectrum.
 ==============================================================================*/
 {
 	int return_code;
+	struct Scene_object *scene_object;
 
 	ENTER(Scene_set_graphical_element_mode);
 	if (scene&&((GRAPHICAL_ELEMENT_NONE == graphical_element_mode)||(
@@ -4730,23 +3892,10 @@ material and spectrum.
 		return_code=1;
 		if (GRAPHICAL_ELEMENT_NONE == graphical_element_mode)
 		{
-			/* clear manager messages and managers associated with last mode */
-			/* turn off manager messages */
-			if (scene->computed_field_manager_callback_id)
-			{
-				MANAGER_DEREGISTER(Computed_field)(
-					scene->computed_field_manager_callback_id,
-					Computed_field_package_get_computed_field_manager(
-						scene->computed_field_package));
-				scene->computed_field_manager_callback_id=(void *)NULL;
-			}
-			if (scene->element_manager_callback_id)
-			{
-				MANAGER_DEREGISTER(FE_element)(
-					scene->element_manager_callback_id,
-					scene->element_manager);
-				scene->element_manager_callback_id=(void *)NULL;
-			}
+			scene->graphical_element_mode=graphical_element_mode;
+			scene->computed_field_package=(struct Computed_field_package *)NULL;
+			scene->element_manager=(struct MANAGER(FE_element) *)NULL;
+			/* turn off element_group_manager callbacks */
 			if (scene->element_group_manager_callback_id)
 			{
 				MANAGER_DEREGISTER(GROUP(FE_element))(
@@ -4754,37 +3903,14 @@ material and spectrum.
 					scene->element_group_manager);
 				scene->element_group_manager_callback_id=(void *)NULL;
 			}
-			if (scene->node_manager_callback_id)
-			{
-				MANAGER_DEREGISTER(FE_node)(
-					scene->node_manager_callback_id,
-					scene->node_manager);
-				scene->node_manager_callback_id=(void *)NULL;
-			}
-			if (scene->node_group_manager_callback_id)
-			{
-				MANAGER_DEREGISTER(GROUP(FE_node))(
-					scene->node_group_manager_callback_id,
-					scene->node_group_manager);
-				scene->node_group_manager_callback_id=(void *)NULL;
-			}
-			if (scene->data_manager_callback_id)
-			{
-				MANAGER_DEREGISTER(FE_node)(
-					scene->data_manager_callback_id,
-					scene->data_manager);
-				scene->data_manager_callback_id=(void *)NULL;
-			}
-			if (scene->data_group_manager_callback_id)
-			{
-				MANAGER_DEREGISTER(GROUP(FE_node))(
-					scene->data_group_manager_callback_id,
-					scene->data_group_manager);
-				scene->data_group_manager_callback_id=(void *)NULL;
-			}
-			scene->computed_field_package=(struct Computed_field_package *)NULL;
-			scene->element_manager=(struct MANAGER(FE_element) *)NULL;
 			scene->element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
+			/* remove all graphical elements from scene */
+			while (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+				Scene_object_has_graphical_element_group,(void *)NULL,
+				scene->scene_object_list))
+			{
+				Scene_remove_scene_object(scene,scene_object);
+			}
 			scene->node_manager=(struct MANAGER(FE_node) *)NULL;
 			scene->node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
 			scene->data_manager=(struct MANAGER(FE_node) *)NULL;
@@ -4834,31 +3960,10 @@ material and spectrum.
 								element_group_to_scene,(void *)scene,
 								scene->element_group_manager);
 						}
-						/* register for any element, element_group, node, node_group and
-							 computed_field changes so GFEs automatically created and
-							 updated */
-						scene->element_manager_callback_id=MANAGER_REGISTER(FE_element)(
-							Scene_element_change,(void *)scene,scene->element_manager);
+						/* register for any element_group_manager changes */
 						scene->element_group_manager_callback_id=
 							MANAGER_REGISTER(GROUP(FE_element))(Scene_element_group_change,
 								(void *)scene,scene->element_group_manager);
-						/* register for any node_group changes */
-						scene->node_manager_callback_id=MANAGER_REGISTER(FE_node)(
-							Scene_node_change,(void *)scene,scene->node_manager);
-						scene->node_group_manager_callback_id=
-							MANAGER_REGISTER(GROUP(FE_node))(Scene_node_group_change,
-								(void *)scene,scene->node_group_manager);
-						/* register for any data_group changes */
-						scene->data_manager_callback_id=MANAGER_REGISTER(FE_node)(
-							Scene_data_change,(void *)scene,scene->data_manager);
-						scene->data_group_manager_callback_id=
-							MANAGER_REGISTER(GROUP(FE_node))(Scene_data_group_change,
-								(void *)scene,scene->data_group_manager);
-						/* register for any computed_field changes */
-						scene->computed_field_manager_callback_id=
-							MANAGER_REGISTER(Computed_field)(Scene_computed_field_change,
-								(void *)scene,Computed_field_package_get_computed_field_manager(
-									scene->computed_field_package));
 					}
 					else
 					{
@@ -6597,9 +5702,18 @@ the same element group to be added twice.
 					}
 					if (node_group&&data_group)
 					{
-						if (gt_element_group=CREATE(GT_element_group)(element_group,
-							node_group,data_group,scene->element_point_ranges_selection,
-							scene->element_selection,scene->node_selection))
+						if (gt_element_group=CREATE(GT_element_group)(
+							element_group,node_group,data_group,
+							scene->element_manager,
+							scene->element_group_manager,
+							scene->node_manager,
+							scene->node_group_manager,
+							scene->data_manager,
+							scene->data_group_manager,
+							scene->computed_field_package,
+							scene->element_point_ranges_selection,
+							scene->element_selection,
+							scene->node_selection))
 						{
 							if (!(scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
 								Scene_object_has_name, (void *)scene_object_name,
