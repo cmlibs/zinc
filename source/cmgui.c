@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 24 August 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -56,10 +56,12 @@ DESCRIPTION :
 #include "graphics/transform_tool.h"
 #include "graphics/volume_texture.h"
 #include "interaction/interactive_tool.h"
+#include "interaction/select_tool.h"
 #include "io_devices/conversion.h"
 #include "node/node_tool.h"
 #include "node/node_viewer.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
+#include "selection/any_object_selection.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
@@ -704,6 +706,7 @@ Main program for the CMISS Graphical User Interface
 	command_data.streampoint_list=(struct Streampoint *)NULL;
 	command_data.graphics_object_list=(struct LIST(GT_object) *)NULL;
 	command_data.glyph_list=(struct LIST(GT_object) *)NULL;	
+	command_data.any_object_selection=(struct Any_object_selection *)NULL;
 	command_data.element_point_ranges_selection=(struct Element_point_ranges_selection *)NULL;
 	command_data.element_selection=(struct FE_element_selection *)NULL;
 	command_data.data_selection=(struct FE_node_selection *)NULL;
@@ -722,11 +725,8 @@ Main program for the CMISS Graphical User Interface
 	command_data.element_tool=(struct Element_tool *)NULL;
 	command_data.data_tool=(struct Node_tool *)NULL;
 	command_data.element_point_tool=(struct Element_point_tool *)NULL;
-	command_data.transform_tool=(struct Transform_tool *)NULL;
-	command_data.node_tool=(struct Node_tool *)NULL;
-	command_data.element_tool=(struct Element_tool *)NULL;
-	command_data.data_tool=(struct Node_tool *)NULL;
-	command_data.element_point_tool=(struct Element_point_tool *)NULL;
+	command_data.select_tool=(struct Select_tool *)NULL;
+
 	command_data.element_creator=(struct Element_creator *)NULL;
 	command_data.examples_directory=(char *)NULL;
 	command_data.cm_examples_directory=(char *)NULL;
@@ -1012,6 +1012,7 @@ Main program for the CMISS Graphical User Interface
 	}
 
 	/* global list of selected objects */
+	command_data.any_object_selection=CREATE(Any_object_selection)();
 	command_data.element_point_ranges_selection=
 		CREATE(Element_point_ranges_selection)();
 	command_data.element_selection=CREATE(FE_element_selection)();
@@ -1251,6 +1252,10 @@ Main program for the CMISS Graphical User Interface
 		command_data.element_point_tool=CREATE(Element_point_tool)(
 			command_data.interactive_tool_manager,
 			command_data.element_point_ranges_selection,
+			command_data.default_graphical_material);
+		command_data.select_tool=CREATE(Select_tool)(
+			command_data.interactive_tool_manager,
+			command_data.any_object_selection,
 			command_data.default_graphical_material);
 	}
 
@@ -1725,7 +1730,7 @@ Main program for the CMISS Graphical User Interface
 									set_display_message_function(WARNING_MESSAGE,
 										display_warning_message,command_window);
 #if defined (PERL_INTERPRETER)
-									redirect_interpreter_output(&return_code);
+									/*redirect_interpreter_output(&return_code);*/
 #endif /* defined (PERL_INTERPRETER) */
 								}
 
@@ -1927,9 +1932,9 @@ Main program for the CMISS Graphical User Interface
 					DESTROY(Element_creator)(&command_data.element_creator);
 				}
 				/* destroy Interactive_tools and manager */
-				if (command_data.transform_tool)
+				if (command_data.select_tool)
 				{
-					DESTROY(Transform_tool)(&command_data.transform_tool);
+					DESTROY(Select_tool)(&command_data.select_tool);
 				}
 				if (command_data.element_point_tool)
 				{
@@ -1947,6 +1952,10 @@ Main program for the CMISS Graphical User Interface
 				{
 					DESTROY(Node_tool)(&command_data.node_tool);
 				}
+				if (command_data.transform_tool)
+				{
+					DESTROY(Transform_tool)(&command_data.transform_tool);
+				}
 				DESTROY(MANAGER(Interactive_tool))(
 					&(command_data.interactive_tool_manager));
 
@@ -1955,6 +1964,7 @@ Main program for the CMISS Graphical User Interface
 
 				DESTROY(Computed_field_package)(&command_data.computed_field_package);
 
+				DESTROY(Any_object_selection)(&(command_data.any_object_selection));
 				DESTROY(FE_node_selection)(&(command_data.data_selection));
 				DESTROY(FE_node_selection)(&(command_data.node_selection));
 				DESTROY(FE_element_selection)(&(command_data.element_selection));

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 24 August 2000
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -44,6 +44,7 @@ DESCRIPTION :
 	struct Element_point_tool *element_point_tool;
 	struct Element_tool *element_tool;
 	struct Node_tool *data_tool,*node_tool;
+	struct Select_tool *select_tool;
 	struct Transform_tool *transform_tool;
 	/*???RC.  Single list of graphics objects - eventually set up manager ? */
 	struct LIST(GT_object) *graphics_object_list;
@@ -80,6 +81,7 @@ DESCRIPTION :
 	struct Prompt_window *prompt_window;
 	struct Projection_window *projection_window;
 	/* global list of selected objects */
+	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *data_selection,*node_selection;
