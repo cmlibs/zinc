@@ -11,7 +11,8 @@ DESCRIPTION :
 typedef int (*Computed_field_clear_type_specific_function)(
 	struct Computed_field *field);
 typedef void* (*Computed_field_copy_type_specific_function)(
-	struct Computed_field *field);
+	struct Computed_field *source_field,
+	struct Computed_field *destination_field);
 typedef int (*Computed_field_clear_cache_type_specific_function)(
 	struct Computed_field *field);
 typedef int (*Computed_field_type_specific_contents_match_function)(
@@ -282,6 +283,35 @@ LAST MODIFIED : 22 January 1999
 DESCRIPTION :
 Iterator/conditional function returning true if contents of <field> other than
 its name matches the contents of the <other_computed_field_void>.
+==============================================================================*/
+
+int Computed_field_default_clear_type_specific(struct Computed_field *field);
+/*******************************************************************************
+LAST MODIFIED : 25 February 2002
+
+DESCRIPTION :
+A default implementation of this function to use when there is no type
+specific data.
+==============================================================================*/
+
+void *Computed_field_default_copy_type_specific(
+	struct Computed_field *source, struct Computed_field *destination);
+/*******************************************************************************
+LAST MODIFIED : 25 February 2002
+
+DESCRIPTION :
+A default implementation of this function to use when there is no type
+specific data.
+==============================================================================*/
+
+int Computed_field_default_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field);
+/*******************************************************************************
+LAST MODIFIED : 25 February 2002
+
+DESCRIPTION :
+A default implementation of this function to use when there is no type
+specific data.
 ==============================================================================*/
 
 int Computed_field_default_is_defined_in_element(struct Computed_field *field,

@@ -203,94 +203,41 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_is_type_coordinate_transformation */
 
-static int Computed_field_coordinate_transformation_clear_type_specific(
-	struct Computed_field *field)
+#define Computed_field_coordinate_transformation_clear_type_specific \
+   Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Clear the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
 
-	ENTER(Computed_field_coordinate_transformation_clear_type_specific);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_coordinate_transformation_clear_type_specific.  Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_coordinate_transformation_clear_type_specific */
-
-static void *Computed_field_coordinate_transformation_copy_type_specific(
-	struct Computed_field *field)
+#define Computed_field_coordinate_transformation_copy_type_specific \
+   Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Copy the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	void *destination;
-
-	ENTER(Computed_field_coordinate_transformation_copy_type_specific);
-	if (field)
-	{
-		/* Return a TRUE value */
-		destination = (void *)1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_coordinate_transformation_copy_type_specific.  Invalid arguments.");
-		destination = NULL;
-	}
-	LEAVE;
-
-	return (destination);
-} /* Computed_field_coordinate_transformation_copy_type_specific */
 
 #define Computed_field_coordinate_transformation_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
 This function is not needed for this type.
 ==============================================================================*/
 
-static int Computed_field_coordinate_transformation_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
+#define Computed_field_coordinate_transformation_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Compare the type specific data
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_vector_operations_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_vector_operations_type_specific_contents_match */
 
 #define Computed_field_coordinate_transformation_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
@@ -945,94 +892,41 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_is_type_vector_coordinate_transformation */
 
-static int Computed_field_vector_coordinate_transformation_clear_type_specific(
-	struct Computed_field *field)
+#define Computed_field_vector_coordinate_transformation_clear_type_specific \
+   Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Clear the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
 
-	ENTER(Computed_field_vector_coordinate_transformation_clear_type_specific);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_vector_coordinate_transformation_clear_type_specific.  Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_vector_coordinate_transformation_clear_type_specific */
-
-static void *Computed_field_vector_coordinate_transformation_copy_type_specific(
-	struct Computed_field *field)
+#define Computed_field_vector_coordinate_transformation_copy_type_specific \
+   Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Copy the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	void *destination;
-
-	ENTER(Computed_field_vector_coordinate_transformation_copy_type_specific);
-	if (field)
-	{
-		/* Return a TRUE value */
-		destination = (void *)1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_vector_coordinate_transformation_copy_type_specific.  Invalid arguments.");
-		destination = NULL;
-	}
-	LEAVE;
-
-	return (destination);
-} /* Computed_field_vector_coordinate_transformation_copy_type_specific */
 
 #define Computed_field_vector_coordinate_transformation_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
 This function is not needed for this type.
 ==============================================================================*/
 
-static int Computed_field_vector_coordinate_transformation_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
+#define Computed_field_vector_coordinate_transformation_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Compare the type specific data
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_vector_operations_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_vector_operations_type_specific_contents_match */
 
 #define Computed_field_vector_coordinate_transformation_is_defined_in_element \
 	Computed_field_default_is_defined_in_element

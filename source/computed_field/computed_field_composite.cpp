@@ -119,9 +119,9 @@ Clear the type specific data used by this type.
 } /* Computed_field_composite_clear_type_specific */
 
 static void *Computed_field_composite_copy_type_specific(
-	struct Computed_field *field)
+	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -131,18 +131,18 @@ Copy the type specific data used by this type.
 	struct Computed_field_composite_type_specific_data *destination,*source;
 
 	ENTER(Computed_field_composite_copy_type_specific);
-	if (field && (source = 
+	if (source_field && destination_field && (source = 
 		(struct Computed_field_composite_type_specific_data *)
-		field->type_specific_data))
+		source_field->type_specific_data))
 	{
 		if (ALLOCATE(destination,
 			struct Computed_field_composite_type_specific_data, 1) &&
 			ALLOCATE(destination->source_field_numbers,int,
-				field->number_of_components) &&
+				source_field->number_of_components) &&
 			ALLOCATE(destination->source_value_numbers,int,
-				field->number_of_components))
+				source_field->number_of_components))
 		{
-			for (i = 0; i < field->number_of_components; i++)
+			for (i = 0; i < source_field->number_of_components; i++)
 			{
 				destination->source_field_numbers[i] = source->source_field_numbers[i];
 				destination->source_value_numbers[i] = source->source_value_numbers[i];

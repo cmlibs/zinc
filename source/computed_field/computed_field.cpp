@@ -734,7 +734,8 @@ functions to check if read_only flag is set.
 				if ((!source->type_specific_data)||
 					(!source->computed_field_copy_type_specific_function)||
 					(type_specific_data = 
-						source->computed_field_copy_type_specific_function(source)))
+						source->computed_field_copy_type_specific_function(source,
+							destination)))
 				{
 					/* 2. free current type-specific data */
 					Computed_field_clear_type(destination);
@@ -2271,6 +2272,89 @@ It is up to the calling function to DEALLOCATE the returned string.
 
 	return (return_string);
 } /* Computed_field_evaluate_as_string_at_node */
+
+int Computed_field_default_clear_type_specific(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2002
+
+DESCRIPTION :
+A default implementation of this function to use when there is no type
+specific data.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_default_clear_type_specific);
+	if (field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_default_clear_type_specific.  "
+			"Invalid field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_default_clear_type_specific */
+
+void *Computed_field_default_copy_type_specific(
+	struct Computed_field *source, struct Computed_field *destination)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2002
+
+DESCRIPTION :
+A default implementation of this function to use when there is no type
+specific data.
+==============================================================================*/
+{
+	void *destination_data;
+
+	ENTER(Computed_field_default_copy_type_specific);
+	if (source && destination)
+	{
+		destination_data = (void *)1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_default_copy_type_specific.  "
+			"Invalid source or destination field.");
+		destination_data = NULL;
+	}
+	LEAVE;
+
+	return (destination_data);
+} /* Computed_field_default_copy_type_specific */
+
+int Computed_field_default_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2002
+
+DESCRIPTION :
+A default implementation of this function to use when there is no type
+specific data.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_default_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_default_type_specific_contents_match */
 
 char *Computed_field_default_evaluate_as_string_at_node(
 	struct Computed_field *field, int component_number, struct FE_node *node,

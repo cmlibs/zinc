@@ -704,9 +704,9 @@ Clear the type specific data used by this type.
 } /* Computed_field_integration_clear_type_specific */
 
 static void *Computed_field_integration_copy_type_specific(
-	struct Computed_field *field)
+	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -717,9 +717,9 @@ Copy the type specific data used by this type.
 	struct LIST(Computed_field_element_integration_mapping) *texture_mapping;
 
 	ENTER(Computed_field_integration_copy_type_specific);
-	if (field && (source = 
+	if (source_field && destination_field && (source = 
 		(struct Computed_field_integration_type_specific_data *)
-		field->type_specific_data))
+		source_field->type_specific_data))
 	{
 		if (ALLOCATE(destination,
 			struct Computed_field_integration_type_specific_data, 1)&&

@@ -47,61 +47,23 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_is_type_multiply_components */
 
-static int Computed_field_multiply_components_clear_type_specific(
-	struct Computed_field *field)
+#define Computed_field_multiply_components_clear_type_specific \
+   Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Clear the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
 
-	ENTER(Computed_field_multiply_components_clear_type_specific);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_multiply_components_clear_type_specific.  "
-			"Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_multiply_components_clear_type_specific */
-
-static void *Computed_field_multiply_components_copy_type_specific(
-	struct Computed_field *field)
+#define Computed_field_multiply_components_copy_type_specific \
+   Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Copy the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	void *destination
-
-	ENTER(Computed_field_multiply_components_copy_type_specific);
-	if (field)
-	{
-		destination = (void *)1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_multiply_components_copy_type_specific.  "
-			"Invalid field");
-		destination = NULL;
-	}
-	LEAVE;
-
-	return (destination);
-} /* Computed_field_multiply_components_copy_type_specific */
 
 #define Computed_field_multiply_components_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
@@ -112,30 +74,14 @@ DESCRIPTION :
 This function is not needed for this type.
 ==============================================================================*/
 
-static int Computed_field_multiply_components_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
+#define Computed_field_multiply_components_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Compare the type specific data
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_component_operations_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_component_operations_type_specific_contents_match */
 
 #define Computed_field_multiply_components_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
@@ -636,61 +582,23 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_is_type_divide_components */
 
-static int Computed_field_divide_components_clear_type_specific(
-	struct Computed_field *field)
+#define Computed_field_divide_components_clear_type_specific \
+   Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Clear the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
 
-	ENTER(Computed_field_divide_components_clear_type_specific);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_divide_components_clear_type_specific.  "
-			"Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_divide_components_clear_type_specific */
-
-static void *Computed_field_divide_components_copy_type_specific(
-	struct Computed_field *field)
+#define Computed_field_divide_components_copy_type_specific \
+   Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Copy the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	void *destination
-
-	ENTER(Computed_field_divide_components_copy_type_specific);
-	if (field)
-	{
-		destination = (void *)1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_divide_components_copy_type_specific.  "
-			"Invalid field");
-		destination = NULL;
-	}
-	LEAVE;
-
-	return (destination);
-} /* Computed_field_divide_components_copy_type_specific */
 
 #define Computed_field_divide_components_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
@@ -701,30 +609,14 @@ DESCRIPTION :
 This function is not needed for this type.
 ==============================================================================*/
 
-static int Computed_field_divide_components_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
+#define Computed_field_divide_components_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Compare the type specific data
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_component_operations_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_component_operations_type_specific_contents_match */
 
 #define Computed_field_divide_components_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
@@ -1228,95 +1120,41 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_is_type_add */
 
-static int Computed_field_add_clear_type_specific(
-	struct Computed_field *field)
+#define Computed_field_add_clear_type_specific \
+   Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Clear the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
 
-	ENTER(Computed_field_add_clear_type_specific);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_add_clear_type_specific.  "
-			"Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_add_clear_type_specific */
-
-static void *Computed_field_add_copy_type_specific(
-	struct Computed_field *field)
+#define Computed_field_add_copy_type_specific \
+   Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Copy the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	void *destination
-
-	ENTER(Computed_field_add_copy_type_specific);
-	if (field)
-	{
-		destination = (void *)1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_add_copy_type_specific.  "
-			"Invalid field");
-		destination = NULL;
-	}
-	LEAVE;
-
-	return (destination);
-} /* Computed_field_add_copy_type_specific */
 
 #define Computed_field_add_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 This function is not needed for this type.
 ==============================================================================*/
 
-static int Computed_field_add_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
+#define Computed_field_add_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Compare the type specific data
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_component_operations_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_component_operations_type_specific_contents_match */
 
 #define Computed_field_add_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
@@ -1843,95 +1681,41 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_is_type_scale */
 
-static int Computed_field_scale_clear_type_specific(
-	struct Computed_field *field)
+#define Computed_field_scale_clear_type_specific \
+   Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Clear the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
 
-	ENTER(Computed_field_scale_clear_type_specific);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_scale_clear_type_specific.  "
-			"Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_scale_clear_type_specific */
-
-static void *Computed_field_scale_copy_type_specific(
-	struct Computed_field *field)
+#define Computed_field_scale_copy_type_specific \
+   Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Copy the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	void *destination
-
-	ENTER(Computed_field_scale_copy_type_specific);
-	if (field)
-	{
-		destination = (void *)1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_scale_copy_type_specific.  "
-			"Invalid field");
-		destination = NULL;
-	}
-	LEAVE;
-
-	return (destination);
-} /* Computed_field_scale_copy_type_specific */
 
 #define Computed_field_scale_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 This function is not needed for this type.
 ==============================================================================*/
 
-static int Computed_field_scale_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
+#define Computed_field_scale_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Compare the type specific data
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_component_operations_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_component_operations_type_specific_contents_match */
 
 #define Computed_field_scale_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
@@ -2664,95 +2448,41 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_is_type_clamp_maximum */
 
-static int Computed_field_clamp_maximum_clear_type_specific(
-	struct Computed_field *field)
+#define Computed_field_clamp_maximum_clear_type_specific \
+   Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Clear the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
 
-	ENTER(Computed_field_clamp_maximum_clear_type_specific);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_clamp_maximum_clear_type_specific.  "
-			"Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_clamp_maximum_clear_type_specific */
-
-static void *Computed_field_clamp_maximum_copy_type_specific(
-	struct Computed_field *field)
+#define Computed_field_clamp_maximum_copy_type_specific \
+   Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Copy the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	void *destination
-
-	ENTER(Computed_field_clamp_maximum_copy_type_specific);
-	if (field)
-	{
-		destination = (void *)1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_clamp_maximum_copy_type_specific.  "
-			"Invalid field");
-		destination = NULL;
-	}
-	LEAVE;
-
-	return (destination);
-} /* Computed_field_clamp_maximum_copy_type_specific */
 
 #define Computed_field_clamp_maximum_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 This function is not needed for this type.
 ==============================================================================*/
 
-static int Computed_field_clamp_maximum_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
+#define Computed_field_clamp_maximum_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Compare the type specific data
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_component_operations_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_component_operations_type_specific_contents_match */
 
 #define Computed_field_clamp_maximum_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
@@ -3439,95 +3169,41 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_is_type_clamp_minimum */
 
-static int Computed_field_clamp_minimum_clear_type_specific(
-	struct Computed_field *field)
+#define Computed_field_clamp_minimum_clear_type_specific \
+   Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Clear the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
 
-	ENTER(Computed_field_clamp_minimum_clear_type_specific);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_clamp_minimum_clear_type_specific.  "
-			"Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_clamp_minimum_clear_type_specific */
-
-static void *Computed_field_clamp_minimum_copy_type_specific(
-	struct Computed_field *field)
+#define Computed_field_clamp_minimum_copy_type_specific \
+   Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Copy the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	void *destination
-
-	ENTER(Computed_field_clamp_minimum_copy_type_specific);
-	if (field)
-	{
-		destination = (void *)1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_clamp_minimum_copy_type_specific.  "
-			"Invalid field");
-		destination = NULL;
-	}
-	LEAVE;
-
-	return (destination);
-} /* Computed_field_clamp_minimum_copy_type_specific */
 
 #define Computed_field_clamp_minimum_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 This function is not needed for this type.
 ==============================================================================*/
 
-static int Computed_field_clamp_minimum_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
+#define Computed_field_clamp_minimum_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Compare the type specific data
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_component_operations_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_component_operations_type_specific_contents_match */
 
 #define Computed_field_clamp_minimum_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
@@ -4213,95 +3889,41 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_is_type_offset */
 
-static int Computed_field_offset_clear_type_specific(
-	struct Computed_field *field)
+#define Computed_field_offset_clear_type_specific \
+   Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Clear the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
 
-	ENTER(Computed_field_offset_clear_type_specific);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_offset_clear_type_specific.  "
-			"Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_offset_clear_type_specific */
-
-static void *Computed_field_offset_copy_type_specific(
-	struct Computed_field *field)
+#define Computed_field_offset_copy_type_specific \
+   Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Copy the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	void *destination
-
-	ENTER(Computed_field_offset_copy_type_specific);
-	if (field)
-	{
-		destination = (void *)1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_offset_copy_type_specific.  "
-			"Invalid field");
-		destination = NULL;
-	}
-	LEAVE;
-
-	return (destination);
-} /* Computed_field_offset_copy_type_specific */
 
 #define Computed_field_offset_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 This function is not needed for this type.
 ==============================================================================*/
 
-static int Computed_field_offset_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
+#define Computed_field_offset_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Compare the type specific data
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_component_operations_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_component_operations_type_specific_contents_match */
 
 #define Computed_field_offset_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
@@ -4995,95 +4617,41 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_is_type_sum_components */
 
-static int Computed_field_sum_components_clear_type_specific(
-	struct Computed_field *field)
+#define Computed_field_sum_components_clear_type_specific \
+   Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Clear the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
 
-	ENTER(Computed_field_sum_components_clear_type_specific);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_sum_components_clear_type_specific.  "
-			"Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_sum_components_clear_type_specific */
-
-static void *Computed_field_sum_components_copy_type_specific(
-	struct Computed_field *field)
+#define Computed_field_sum_components_copy_type_specific \
+   Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Copy the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	void *destination
-
-	ENTER(Computed_field_sum_components_copy_type_specific);
-	if (field)
-	{
-		destination = (void *)1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_sum_components_copy_type_specific.  "
-			"Invalid field");
-		destination = NULL;
-	}
-	LEAVE;
-
-	return (destination);
-} /* Computed_field_sum_components_copy_type_specific */
 
 #define Computed_field_sum_components_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 This function is not needed for this type.
 ==============================================================================*/
 
-static int Computed_field_sum_components_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
+#define Computed_field_sum_components_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Compare the type specific data
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_component_operations_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_component_operations_type_specific_contents_match */
 
 #define Computed_field_sum_components_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
@@ -5656,95 +5224,41 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_is_type_edit_mask */
 
-static int Computed_field_edit_mask_clear_type_specific(
-	struct Computed_field *field)
+#define Computed_field_edit_mask_clear_type_specific \
+   Computed_field_default_clear_type_specific
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Clear the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
 
-	ENTER(Computed_field_edit_mask_clear_type_specific);
-	if (field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_edit_mask_clear_type_specific.  "
-			"Invalid field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_edit_mask_clear_type_specific */
-
-static void *Computed_field_edit_mask_copy_type_specific(
-	struct Computed_field *field)
+#define Computed_field_edit_mask_copy_type_specific \
+   Computed_field_default_copy_type_specific
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Copy the type specific data used by this type.
+No type specific data
 ==============================================================================*/
-{
-	void *destination
-
-	ENTER(Computed_field_edit_mask_copy_type_specific);
-	if (field)
-	{
-		destination = (void *)1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_edit_mask_copy_type_specific.  "
-			"Invalid field");
-		destination = NULL;
-	}
-	LEAVE;
-
-	return (destination);
-} /* Computed_field_edit_mask_copy_type_specific */
 
 #define Computed_field_edit_mask_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 13 July 2000
 
 DESCRIPTION :
 This function is not needed for this type.
 ==============================================================================*/
 
-static int Computed_field_edit_mask_type_specific_contents_match(
-	struct Computed_field *field, struct Computed_field *other_computed_field)
+#define Computed_field_edit_mask_type_specific_contents_match \
+   Computed_field_default_type_specific_contents_match
 /*******************************************************************************
-LAST MODIFIED : 18 December 2001
+LAST MODIFIED : 25 February 2002
 
 DESCRIPTION :
-Compare the type specific data
+No type specific data
 ==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_component_operations_type_specific_contents_match);
-	if (field && other_computed_field)
-	{
-		return_code = 1;
-	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_component_operations_type_specific_contents_match */
 
 #define Computed_field_edit_mask_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
