@@ -30,6 +30,11 @@ XCOMM ==========================================================================
 
 SHELL=/bin/sh
 
+/* Perl interpreter is now std but I don't have it for O64 yet */
+#if ! defined (O64)
+#define PERL_INTERPRETER
+#endif /* ! defined (O64) */
+
 BIN_PATH=$(CMGUI_DEV_ROOT)/bin
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
 UTILITIES_PATH=$(CMGUI_DEV_ROOT)/utilities
@@ -89,19 +94,6 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_f90
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #else /* defined (F90_INTERPRETER) */
-#if defined (PERL_INTERPRETER)
-#define Target cmgui_perl
-#define SpacesToTabsTarget spaces_to_tabs
-#define TabsToSpacesTarget tabs_to_spaces
-#define Uid2uidhTarget uid2uidh
-#define Makefile cmgui_sgiperl.make
-#define DependMake cmgui_sgiperl.depend
-#define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32_perl
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_perl
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
-#else /* defined (PERL_INTERPRETER) */
 #if !defined (OPTIMISED)
 /* The normal debug and memory check versions keep the same extension
 	as they only differ in one file */
@@ -144,7 +136,6 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_optimised
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #endif /* !defined (OPTIMISED) */
-#endif /* defined (PERL_INTERPRETER) */
 #endif /* defined (F90_INTERPRETER) */
 #endif /* defined (LITEWEIGHT) */
 #else /* !defined (O64) */
@@ -326,11 +317,19 @@ INTERPRETER_SWITCH =
 INTERPRETER_SRCS =
 INTERPRETER_LIB =
 #else /* !defined (PERL_INTERPRETER) */
-PERL_PATH=
+#if defined (CMISS_ROOT_DEFINED)
+INTERPRETER_PATH = $(CMISS_ROOT)/perl_interpreter
+#else /* defined (CMISS_ROOT_DEFINED) */
+INTERPRETER_PATH = $(CMGUI_DEV_ROOT)/perl_interpreter
+#endif /* defined (CMISS_ROOT_DEFINED) */
 INTERPRETER_INC = 
 INTERPRETER_SWITCH = -DPERL_INTERPRETER
 INTERPRETER_SRCS =
-INTERPRETER_LIB = /usr/people/blackett/perl_interpreter/generated/mips3-n32-debug/libperlinterpreter.a
+#if defined (IRIX) /* switch OperatingSystem */
+INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/mips3-n32-debug/libperlinterpreter.a
+#elif defined(LINUX) /* switch OperatingSystem */
+INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/linux-debug/libperlinterpreter.a
+#endif /* switch OperatingSystem */
 #endif /* !defined (PERL_INTERPRETER) */
 #else /* !defined (F90_INTERPRETER) */
 #if defined (CMISS_ROOT_DEFINED)
@@ -1092,7 +1091,7 @@ $(OBJECT_PATH)/version.ObjSuffix.h : $(OBJS)
 XCOMM	sed 's/"//;s/./"CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1998, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.ObjSuffix.h
 XCOMM 	sed 's/./#define VERSION "CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1998, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.ObjSuffix.h
 
-cmgui.ObjSuffix : cmgui.c $(OBJECT_PATH)/version.ObjSuffix.h
+cmgui.ObjSuffix : cmgui.c $(OBJECT_PATH)/version.ObjSuffix.h $(INTERPRETER_LIB)
 	@if [ -f $*.c ]; then \
 		set -x; \
 		cat $(OBJECT_PATH)/version.ObjSuffix.h $*.c > $(OBJECT_PATH)/$*.ObjSuffix.c ; \
