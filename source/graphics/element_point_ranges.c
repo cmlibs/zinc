@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.c
 
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -804,7 +804,7 @@ int Element_point_ranges_remove_from_list(
 	struct Element_point_ranges *element_point_ranges,
 	void *element_point_ranges_list_void)
 /*******************************************************************************
-LAST MODIFIED : 28 February 2000
+LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
 Ensures the <element_point_ranges> is not in <element_point_ranges_list>.
@@ -824,26 +824,35 @@ Ensures the <element_point_ranges> is not in <element_point_ranges_list>.
 			FIND_BY_IDENTIFIER_IN_LIST(Element_point_ranges,identifier)(
 				element_point_ranges->identifier,element_point_ranges_list))
 		{
-			return_code=1;
-			for (i=0;(i<number_of_ranges)&&return_code;i++)
+			/* handle case where object from list is being removed */
+			if (existing_element_point_ranges == element_point_ranges)
 			{
-				if (!(Multi_range_get_range(element_point_ranges->ranges,i,
-					&start,&stop)&&
-					Multi_range_remove_range(existing_element_point_ranges->ranges,
-						start,stop)))
-				{
-					display_message(ERROR_MESSAGE,
-						"Element_point_ranges_remove_from_list.  Could not remove range");
-					return_code=0;
-				}
-			}
-			/* remove existing_element_point_ranges if empty */
-			if (0==Multi_range_get_number_of_ranges(
-				existing_element_point_ranges->ranges))
-			{
-				REMOVE_OBJECT_FROM_LIST(Element_point_ranges)(
+				return_code=REMOVE_OBJECT_FROM_LIST(Element_point_ranges)(
 					existing_element_point_ranges,element_point_ranges_list);
+			}
+			else
+			{
 				return_code=1;
+				for (i=0;(i<number_of_ranges)&&return_code;i++)
+				{
+					if (!(Multi_range_get_range(element_point_ranges->ranges,i,
+						&start,&stop)&&
+						Multi_range_remove_range(existing_element_point_ranges->ranges,
+							start,stop)))
+					{
+						display_message(ERROR_MESSAGE,
+							"Element_point_ranges_remove_from_list.  Could not remove range");
+						return_code=0;
+					}
+				}
+				/* remove existing_element_point_ranges if empty */
+				if (0==Multi_range_get_number_of_ranges(
+					existing_element_point_ranges->ranges))
+				{
+					REMOVE_OBJECT_FROM_LIST(Element_point_ranges)(
+						existing_element_point_ranges,element_point_ranges_list);
+					return_code=1;
+				}
 			}
 		}
 		else
@@ -930,6 +939,38 @@ Toggles the <element_point_ranges> in <element_point_ranges_list>.
 
 	return (return_code);
 } /* Element_point_ranges_toggle_in_list */
+
+int Element_point_ranges_uses_top_level_element_in_list(
+	struct Element_point_ranges *element_point_ranges,void *element_list_void)
+/*******************************************************************************
+LAST MODIFIED : 4 July 2000
+
+DESCRIPTION :
+Returns true if the top_level_element in the <element_point_ranges> identifier
+is in <element_list>.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_element) *element_list;
+
+	ENTER(Element_point_ranges_uses_top_level_element_in_list);
+	if (element_point_ranges&&
+		(element_list=(struct LIST(FE_element) *)element_list_void))
+	{
+		return_code=IS_OBJECT_IN_LIST(FE_element)(
+			element_point_ranges->id.top_level_element,element_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_ranges_uses_top_level_element_in_list.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Element_point_ranges_uses_top_level_element_in_list */
 
 int set_Element_point_ranges(struct Parse_state *state,
 	void *element_point_ranges_address_void,void *element_manager_void)
