@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : grid_field_calculator.c
 
-LAST MODIFIED : 18 September 2001
+LAST MODIFIED : 12 October 2001
 
 DESCRIPTION :
 An editor for setting values of grid fields in elements based on
@@ -18,6 +18,7 @@ control curve variation over coordinates - usually xi_texture_coordinates.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_control_curve.h"
 #include "computed_field/computed_field_integration.h"
+#include "computed_field/computed_field_update.h"
 #include "computed_field/computed_field_vector_operations.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/grid_field_calculator.h"
@@ -430,7 +431,9 @@ Applies the
 						ACCESS(Computed_field)(source_field);
 						return_code=Computed_field_update_element_values_from_source(
 							grid_field,source_field,(struct GROUP(FE_element) *)NULL,
-							grid_calc->element_manager);
+							grid_calc->element_manager,
+							(struct Element_point_ranges_selection *)NULL,
+							(struct FE_element_selection *)NULL);
 						DEACCESS(Computed_field)(&source_field);
 					}
 					else
