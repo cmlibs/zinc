@@ -8772,10 +8772,18 @@ Removes 3d drawing for non-current region(s).
 									make_mapped_torso_node_and_element_groups(region,unemap_package);	
 									map_define_scaled_offset_signal_at_time(unemap_package);
 								}											
-								get_rig_node_group_signal_min_max_at_time(unrejected_node_group,				
-									get_unemap_package_scaled_offset_signal_value_at_time_field(unemap_package),
-									get_unemap_package_signal_status_field(unemap_package),					
-									time,&minimum,&maximum);																
+								if(!map->fixed_range)
+								{
+									get_rig_node_group_signal_min_max_at_time(unrejected_node_group,				
+										get_unemap_package_scaled_offset_signal_value_at_time_field(unemap_package),
+										get_unemap_package_signal_status_field(unemap_package),					
+										time,&minimum,&maximum);
+								}
+								else
+								{
+									minimum=map->minimum_value;
+									maximum=map->maximum_value;
+								}
 								z_min=get_map_3d_package_electrodes_min_z(map_3d_package);
 								z_max=get_map_3d_package_electrodes_max_z(map_3d_package);
 								z_range=z_max-z_min;								
