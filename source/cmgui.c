@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -54,13 +54,13 @@ DESCRIPTION :
 #if !defined (WINDOWS_DEV_FLAG)
 #include "graphics/environment_map.h"
 #include "graphics/glyph.h"
-#include "graphics/graphical_element_editor_dialog.h"
 #include "graphics/graphics_window.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/material.h"
 #include "graphics/movie_graphics.h"
 #include "graphics/scene.h"
+#include "graphics/scene_editor.h"
 #include "graphics/spectrum.h"
 #include "graphics/transform_tool.h"
 #include "graphics/volume_texture.h"
@@ -410,7 +410,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -677,7 +677,7 @@ Main program for the CMISS Graphical User Interface
 	command_data.transformation_editor_dialog=(Widget)NULL;
 	command_data.prompt_window=(struct Prompt_window *)NULL;
 	command_data.projection_window=(struct Projection_window *)NULL;
-	command_data.graphical_element_editor_dialog=(struct Graphical_element_editor_dialog *)NULL;
+	command_data.scene_editor = (struct Scene_editor *)NULL;
 	/*???RC.  Temporary - should allow more than one */
 	command_data.spectrum_editor_dialog=(Widget)NULL;
 	command_data.time_editor_dialog=(Widget)NULL;
@@ -2011,10 +2011,9 @@ Main program for the CMISS Graphical User Interface
 				{
 					DESTROY(Element_point_viewer)(&(command_data.element_point_viewer));
 				}
-				if (command_data.graphical_element_editor_dialog)
+				if (command_data.scene_editor)
 				{
-					DESTROY(Graphical_element_editor_dialog)(
-						&(command_data.graphical_element_editor_dialog));
+					DESTROY(Scene_editor)(&(command_data.scene_editor));
 				}
 
 				DESTROY(MANAGER(Graphics_window))(

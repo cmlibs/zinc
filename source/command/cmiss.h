@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -13,9 +13,7 @@ This should only be included in cmgui.c and command/cmiss.c
 
 #include "command/command.h"
 #include "finite_element/finite_element.h"
-#if !defined (WINDOWS_DEV_FLAG)
 #include "graphics/graphics_object.h"
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 /*
 Global types
@@ -23,7 +21,7 @@ Global types
 */
 struct Cmiss_command_data
 /*******************************************************************************
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -116,7 +114,7 @@ DESCRIPTION :
 	struct Node_viewer *data_viewer,*node_viewer;
 	struct Element_point_viewer *element_point_viewer;
 	struct Element_creator *element_creator;
-	struct Graphical_element_editor_dialog *graphical_element_editor_dialog;
+	struct Scene_editor *scene_editor;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 	struct Unemap_package *unemap_package;
 	

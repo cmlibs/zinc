@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 17 October 2001
+XCOMM LAST MODIFIED : 22 November 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -856,7 +856,6 @@ GRAPHICS_SRCS = \
 	graphics/glyph.c \
 	graphics/graphical_element.c \
 	graphics/graphical_element_editor.c \
-	graphics/graphical_element_editor_dialog.c \
 	graphics/graphics_library.c \
 	graphics/graphics_object.c \
 	graphics/graphics_window.c \
@@ -875,6 +874,7 @@ GRAPHICS_SRCS = \
 	graphics/rendervrml.c \
 	graphics/renderwavefront.c \
 	graphics/scene.c \
+	graphics/scene_editor.c \
 	graphics/scene_viewer.c \
 	graphics/selected_graphic.c \
 	graphics/settings_editor.c \
