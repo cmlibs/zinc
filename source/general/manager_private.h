@@ -277,6 +277,42 @@ Returns true if the access count for the <object> is 1 (not in use) \
 	return (return_code); \
 } /* MANAGER_NOT_IN_USE_CONDITIONAL(object_type) */
 
+#if defined (FULL_NAMES)
+#define OBJECT_WITH_MANAGER_REMOVE_MANAGER( object_type ) \
+	object_with_manager_remove_manager ## object_type
+#else
+#define OBJECT_WITH_MANAGER_REMOVE_MANAGER( object_type )  owmrm ## object_type
+#endif
+
+#define DECLARE_OBJECT_WITH_MANAGER_REMOVE_MANAGER_FUNCTION( object_type , object_manager ) \
+static int OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type)(struct object_type *object, \
+	void *dummy_user_data) \
+/***************************************************************************** \
+LAST MODIFIED : 10 August 2000 \
+\
+DESCRIPTION : \
+Remove the reference to the manager from the object \
+============================================================================*/ \
+{ \
+	int return_code; \
+\
+	ENTER(OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type)); \
+   USE_PARAMETER(dummy_user_data); \
+	if (object) \
+	{ \
+      object->object_manager = (struct MANAGER(object_type) *)NULL; \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"OBJECT_WITH_MANAGER_REMOVE_MANAGER(" #object_type ").  Missing object"); \
+		return_code=0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type) */
+
 /*
 Global functions
 ----------------
@@ -323,13 +359,15 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 	ENTER(DESTROY_MANAGER(object_type)); \
 	if (manager_address&&(manager= *manager_address)) \
 	{ \
-		/* destroy the cache */ \
-		if (manager->cache) \
+		/* start the cache */ \
+		if (!manager->cache) \
 		{ \
-			DEALLOCATE(manager->cache); \
+         MANAGER_BEGIN_CACHE(object_type)(manager); \
 		} \
 		/* destroy the object list */ \
 		DESTROY_LIST(object_type)(&(manager->object_list)); \
+		/* Send last message */ \
+      MANAGER_END_CACHE(object_type)(manager); \
 		/* destroy the callback list */ \
 		current=manager->callback_list; \
 		while (current) \
@@ -349,6 +387,49 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 \
 	return (return_code); \
 } /* DESTROY_MANAGER(object_type) */
+
+#define DECLARE_DESTROY_OBJECT_WITH_MANAGER_MANAGER_FUNCTION( object_type , \
+	object_manager ) \
+PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
+{ \
+	int return_code; \
+	struct MANAGER(object_type) *manager; \
+	struct MANAGER_CALLBACK_ITEM(object_type) *current,*next; \
+\
+	ENTER(DESTROY_OBJECT_WITH_MANAGER_MANAGER(object_type)); \
+	if (manager_address&&(manager= *manager_address)) \
+	{ \
+		/* start the cache */ \
+		if (!manager->cache) \
+		{ \
+         MANAGER_BEGIN_CACHE(object_type)(manager); \
+		} \
+      /* remove the manager_pointer from each object */ \
+      FOR_EACH_OBJECT_IN_LIST(object_type)(OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type), \
+         (void *)NULL, manager->object_list); \
+		/* destroy the object list */ \
+		DESTROY_LIST(object_type)(&(manager->object_list)); \
+		/* Send last message */ \
+      MANAGER_END_CACHE(object_type)(manager); \
+		/* destroy the callback list */ \
+		current=manager->callback_list; \
+		while (current) \
+		{ \
+			next=current->next; \
+			DEALLOCATE(current); \
+			current=next; \
+		} \
+    DEALLOCATE(manager); \
+		return_code=1; \
+	} \
+	else \
+	{ \
+		return_code=0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* DESTROY_OBJECT_WITH_MANAGER_MANAGER(object_type) */
 
 #define DECLARE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION( object_type ) \
 PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
@@ -1282,6 +1363,21 @@ DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(object_type, \
 	identifier_field_name,identifier_type)
 
 /* special set of functions for object containing pointer to manager */
+#define DECLARE_OBJECT_WITH_MANAGER_MANAGER_FUNCTIONS( object_type , object_manager ) \
+DECLARE_CREATE_MANAGER_FUNCTION(object_type) \
+DECLARE_OBJECT_WITH_MANAGER_REMOVE_MANAGER_FUNCTION(object_type,object_manager) \
+DECLARE_DESTROY_OBJECT_WITH_MANAGER_MANAGER_FUNCTION(object_type,object_manager) \
+DECLARE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
+DECLARE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type) \
+DECLARE_NUMBER_IN_MANAGER_FUNCTION(object_type) \
+DECLARE_MANAGER_REGISTER_FUNCTION(object_type) \
+DECLARE_MANAGER_DEREGISTER_FUNCTION(object_type) \
+DECLARE_IS_MANAGED_FUNCTION(object_type) \
+DECLARE_FIRST_OBJECT_IN_MANAGER_THAT_FUNCTION(object_type) \
+DECLARE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type) \
+DECLARE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
+DECLARE_MANAGER_END_CACHE_FUNCTION(object_type)
+
 #define DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
 	object_type , identifier_field_name , identifier_type , object_manager ) \
 DECLARE_ADD_OBJECT_WITH_MANAGER_TO_MANAGER_FUNCTION(object_type, \
