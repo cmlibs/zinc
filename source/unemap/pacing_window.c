@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 14 May 2004
+LAST MODIFIED : 23 May 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -35,17 +35,17 @@ Module types
 */
 struct Pacing_window
 /*******************************************************************************
-LAST MODIFIED : 15 April 2004
+LAST MODIFIED : 22 May 2004
 
 DESCRIPTION :
 The window associated with the set up button.
 ==============================================================================*/
 {
-	char *decrement_threshold_pairs_string,negative_return_signal,pacing,
-		*pacing_electrodes,*return_electrodes;
-	float basic_cycle_length,basic_cycle_length_arrow_step,control_voltage,
-		control_voltage_arrow_step,control_width,control_width_arrow_step,
-		*decrement_threshold_pairs,*pacing_voltages,resolution,*si_length,sn_length,
+	char constant_current_stimulation,*decrement_threshold_pairs_string,
+		negative_return_signal,pacing,*pacing_electrodes,*return_electrodes;
+	float basic_cycle_length,basic_cycle_length_arrow_step,control_voltcur,
+		control_voltcur_arrow_step,control_width,control_width_arrow_step,
+		*decrement_threshold_pairs,*pacing_voltcurs,resolution,*si_length,sn_length,
 		sn_length_change,sn_length_change_save,sn_length_change_factor,
 		sn_length_change_factor_save,sn_length_decrement_threshold_pairs,
 		sn_s1_pause;
@@ -62,7 +62,8 @@ The window associated with the set up button.
 	Widget activation,window,shell;
 	Widget basic_cycle_length_form,basic_cycle_length_slider,
 		basic_cycle_length_value;
-	Widget control_voltage_form,control_voltage_slider,control_voltage_value;
+	Widget control_voltcur_form,control_voltcur_label,control_voltcur_slider,
+		control_voltcur_value;
 	Widget control_width_form,control_width_slider,control_width_value;
 	Widget decrement_threshold_pairs_form,decrement_threshold_pairs_value;
 	Widget number_of_s_types_decrement,number_of_s_types_form,
@@ -1343,7 +1344,7 @@ Called when the return electrodes widget is changed.
 
 static int start_basic_cycle_length_pacing(struct Pacing_window *pacing_window)
 /*******************************************************************************
-LAST MODIFIED : 15 April 2004
+LAST MODIFIED : 22 May 2004
 
 DESCRIPTION :
 Starts or re-starts the basic cycle length pacing.
@@ -1352,38 +1353,38 @@ Starts or re-starts the basic cycle length pacing.
 #if defined (MOTIF)
 	Boolean status;
 #endif /* defined (MOTIF) */
-	float *pacing_voltages,voltages_per_second;
-	int i,number_of_control_voltages,number_of_pacing_voltages,return_code;
+	float *pacing_voltcurs,voltcurs_per_second;
+	int i,number_of_control_voltcurs,number_of_pacing_voltcurs,return_code;
 
 	ENTER(start_basic_cycle_length_pacing);
 	return_code=0;
 	if (pacing_window)
 	{
-		number_of_pacing_voltages=(int)((pacing_window->basic_cycle_length)/
+		number_of_pacing_voltcurs=(int)((pacing_window->basic_cycle_length)/
 			(pacing_window->resolution)+0.5);
-		if (REALLOCATE(pacing_voltages,pacing_window->pacing_voltages,float,
-			number_of_pacing_voltages))
+		if (REALLOCATE(pacing_voltcurs,pacing_window->pacing_voltcurs,float,
+			number_of_pacing_voltcurs))
 		{
-			pacing_window->pacing_voltages=pacing_voltages;
+			pacing_window->pacing_voltcurs=pacing_voltcurs;
 			/* set control sensitivity */
 #if defined (MOTIF)
 			XtSetSensitive(pacing_window->restitution_time_pace_toggle,False);
 			XtSetSensitive(pacing_window->restitution_curve_pace_toggle,False);
 #endif /* defined (MOTIF) */
 			/* set up pacing */
-			pacing_voltages[0]=pacing_window->control_voltage;
-			for (i=0;i<number_of_pacing_voltages;i++)
+			pacing_voltcurs[0]=pacing_window->control_voltcur;
+			for (i=0;i<number_of_pacing_voltcurs;i++)
 			{
-				pacing_voltages[i]=0;
+				pacing_voltcurs[i]=0;
 			}
-			number_of_control_voltages=(int)((pacing_window->control_width)/
+			number_of_control_voltcurs=(int)((pacing_window->control_width)/
 				(pacing_window->resolution)+0.5);
-			for (i=(number_of_pacing_voltages-number_of_control_voltages)/2;
-				i<(number_of_pacing_voltages+number_of_control_voltages)/2;i++)
+			for (i=(number_of_pacing_voltcurs-number_of_control_voltcurs)/2;
+				i<(number_of_pacing_voltcurs+number_of_control_voltcurs)/2;i++)
 			{
-				pacing_voltages[i]=pacing_window->control_voltage;
+				pacing_voltcurs[i]=pacing_window->control_voltcur;
 			}
-			voltages_per_second=(float)1000./(pacing_window->resolution);
+			voltcurs_per_second=(float)1000./(pacing_window->resolution);
 			if (0<pacing_window->number_of_pacing_channels)
 			{
 				for (i=0;i<pacing_window->number_of_pacing_channels;i++)
@@ -1391,11 +1392,22 @@ Starts or re-starts the basic cycle length pacing.
 					unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],
 						1);
 				}
-				unemap_load_voltage_stimulating(
-					pacing_window->number_of_pacing_channels,
-					pacing_window->pacing_channels,number_of_pacing_voltages,
-					voltages_per_second,pacing_voltages,(unsigned int)0,
-					(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+				if (pacing_window->constant_current_stimulation)
+				{
+					unemap_load_current_stimulating(
+						pacing_window->number_of_pacing_channels,
+						pacing_window->pacing_channels,number_of_pacing_voltcurs,
+						voltcurs_per_second,pacing_voltcurs,(unsigned int)0,
+						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+				}
+				else
+				{
+					unemap_load_voltage_stimulating(
+						pacing_window->number_of_pacing_channels,
+						pacing_window->pacing_channels,number_of_pacing_voltcurs,
+						voltcurs_per_second,pacing_voltcurs,(unsigned int)0,
+						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+				}
 			}
 			if (0<pacing_window->number_of_return_channels)
 			{
@@ -1406,23 +1418,45 @@ Starts or re-starts the basic cycle length pacing.
 				}
 				if (pacing_window->negative_return_signal)
 				{
-					for (i=0;i<number_of_pacing_voltages;i++)
+					for (i=0;i<number_of_pacing_voltcurs;i++)
 					{
-						pacing_voltages[i]= -pacing_voltages[i];
+						pacing_voltcurs[i]= -pacing_voltcurs[i];
 					}
-					unemap_load_voltage_stimulating(
-						pacing_window->number_of_return_channels,
-						pacing_window->return_channels,number_of_pacing_voltages,
-						voltages_per_second,pacing_voltages,(unsigned int)0,
-						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+					if (pacing_window->constant_current_stimulation)
+					{
+						unemap_load_current_stimulating(
+							pacing_window->number_of_return_channels,
+							pacing_window->return_channels,number_of_pacing_voltcurs,
+							voltcurs_per_second,pacing_voltcurs,(unsigned int)0,
+							(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+					}
+					else
+					{
+						unemap_load_voltage_stimulating(
+							pacing_window->number_of_return_channels,
+							pacing_window->return_channels,number_of_pacing_voltcurs,
+							voltcurs_per_second,pacing_voltcurs,(unsigned int)0,
+							(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+					}
 				}
 				else
 				{
-					unemap_load_voltage_stimulating(
-						pacing_window->number_of_return_channels,
-						pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-						(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
-						(void *)NULL);
+					if (pacing_window->constant_current_stimulation)
+					{
+						unemap_load_current_stimulating(
+							pacing_window->number_of_return_channels,
+							pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+							(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+							(void *)NULL);
+					}
+					else
+					{
+						unemap_load_voltage_stimulating(
+							pacing_window->number_of_return_channels,
+							pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+							(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+							(void *)NULL);
+					}
 				}
 			}
 			/* start pacing */
@@ -1446,76 +1480,103 @@ Starts or re-starts the basic cycle length pacing.
 } /* start_basic_cycle_length_pacing */
 
 #if defined (MOTIF)
-static void id_pacing_control_voltage_form(Widget *widget_id,
+static void id_pacing_control_voltcur_form(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 14 October 2001
 
 DESCRIPTION :
-Finds the id of the control voltage form in the pacing window.
+Finds the id of the control voltage/current form in the pacing window.
 ==============================================================================*/
 {
 	struct Pacing_window *pacing_window;
 
-	ENTER(id_pacing_control_voltage_form);
+	ENTER(id_pacing_control_voltcur_form);
 	USE_PARAMETER(call_data);
 	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
 	{
-		pacing_window->control_voltage_form= *widget_id;
+		pacing_window->control_voltcur_form= *widget_id;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_pacing_control_voltage_form.  Missing pacing_window_structure");
+			"id_pacing_control_voltcur_form.  Missing pacing_window_structure");
 	}
 	LEAVE;
-} /* id_pacing_control_voltage_form */
+} /* id_pacing_control_voltcur_form */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-static void id_pacing_control_voltage_value(Widget *widget_id,
+static void id_pacing_control_voltcur_label(Widget *widget_id,
+	XtPointer pacing_window_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 22 May 2004
+
+DESCRIPTION :
+Finds the id of the control voltage/current label in the pacing window.
+==============================================================================*/
+{
+	struct Pacing_window *pacing_window;
+
+	ENTER(id_pacing_control_voltcur_label);
+	USE_PARAMETER(call_data);
+	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
+	{
+		pacing_window->control_voltcur_label= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_pacing_control_voltcur_label.  Missing pacing_window_structure");
+	}
+	LEAVE;
+} /* id_pacing_control_voltcur_label */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void id_pacing_control_voltcur_value(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 14 October 2001
 
 DESCRIPTION :
-Finds the id of the control voltage value in the pacing window.
+Finds the id of the control voltage/current value in the pacing window.
 ==============================================================================*/
 {
 	struct Pacing_window *pacing_window;
 
-	ENTER(id_pacing_control_voltage_value);
+	ENTER(id_pacing_control_voltcur_value);
 	USE_PARAMETER(call_data);
 	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
 	{
-		pacing_window->control_voltage_value= *widget_id;
+		pacing_window->control_voltcur_value= *widget_id;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_pacing_control_voltage_value.  Missing pacing_window_structure");
+			"id_pacing_control_voltcur_value.  Missing pacing_window_structure");
 	}
 	LEAVE;
-} /* id_pacing_control_voltage_value */
+} /* id_pacing_control_voltcur_value */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-static void ch_pacing_control_voltage_value(Widget *widget_id,
+static void ch_pacing_control_voltcur_value(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 26 January 2003
+LAST MODIFIED : 23 May 2004
 
 DESCRIPTION :
-Called when the control voltage widget is changed.
+Called when the control voltage/current widget is changed.
 ==============================================================================*/
 {
 	Boolean status;
 	char *new_value,value_string[20];
-	float control_voltage;
+	float control_voltcur;
 	struct Pacing_window *pacing_window;
 	XmAnyCallbackStruct *text_data
 
-	ENTER(ch_pacing_control_voltage_value);
+	ENTER(ch_pacing_control_voltcur_value);
 	USE_PARAMETER(widget_id);
 	if ((text_data=(XmAnyCallbackStruct *)call_data)&&
 		((XmCR_ACTIVATE==text_data->reason)||
@@ -1528,12 +1589,19 @@ Called when the control voltage widget is changed.
 				NULL);
 			if (!(pacing_window->pacing)||(True==status))
 			{
-				XtVaGetValues(pacing_window->control_voltage_value,
+				XtVaGetValues(pacing_window->control_voltcur_value,
 					XmNvalue,&new_value,
 					NULL);
-				if ((1==sscanf(new_value,"%f",&control_voltage))&&(0<control_voltage))
+				if ((1==sscanf(new_value,"%f",&control_voltcur))&&(0<control_voltcur))
 				{
-					pacing_window->control_voltage=control_voltage;
+					if (pacing_window->constant_current_stimulation)
+					{
+						if (control_voltcur>1)
+						{
+							control_voltcur=1;
+						}
+					}
+					pacing_window->control_voltcur=control_voltcur;
 					if (True==status)
 					{
 						unemap_stop_stimulating(0);
@@ -1541,8 +1609,8 @@ Called when the control voltage widget is changed.
 					}
 				}
 			}
-			sprintf(value_string,"%g",pacing_window->control_voltage);
-			XtVaSetValues(pacing_window->control_voltage_value,
+			sprintf(value_string,"%g",pacing_window->control_voltcur);
+			XtVaSetValues(pacing_window->control_voltcur_value,
 				XmNcursorPosition,strlen(value_string),
 				XmNvalue,value_string,
 				NULL);
@@ -1550,65 +1618,65 @@ Called when the control voltage widget is changed.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"ch_pacing_control_voltage_value.  Missing pacing_window_structure");
+				"ch_pacing_control_voltcur_value.  Missing pacing_window_structure");
 		}
 	}
 	LEAVE;
-} /* ch_pacing_control_voltage_value */
+} /* ch_pacing_control_voltcur_value */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-static void id_pacing_control_voltage_slide(Widget *widget_id,
+static void id_pacing_control_voltcur_slide(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
-Sets the id of the control voltage slider in the pacing window.
+Sets the id of the control voltage/current slider in the pacing window.
 ==============================================================================*/
 {
 	struct Pacing_window *pacing_window;
 
-	ENTER(id_pacing_control_voltage_slide);
+	ENTER(id_pacing_control_voltcur_slide);
 	USE_PARAMETER(call_data);
 	if (pacing_window=(struct Pacing_window *)pacing_window_structure)
 	{
-		pacing_window->control_voltage_slider= *widget_id;
+		pacing_window->control_voltcur_slider= *widget_id;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_pacing_control_voltage_slide.  Missing pacing_window_structure");
+			"id_pacing_control_voltcur_slide.  Missing pacing_window_structure");
 	}
 	LEAVE;
-} /* id_pacing_control_voltage_slide */
+} /* id_pacing_control_voltcur_slide */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
-static void ch_pacing_control_voltage_slide(Widget *widget_id,
+static void ch_pacing_control_voltcur_slide(Widget *widget_id,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2003
+LAST MODIFIED : 23 May 2004
 
 DESCRIPTION :
-Called when the control voltage slider is changed.
+Called when the control voltage/current slider is changed.
 ==============================================================================*/
 {
 	Boolean status;
 	char value_string[20];
-	float control_voltage;
+	float control_voltcur;
 	int slider_maximum,slider_minumum,slider_size;
 	struct Pacing_window *pacing_window;
 	XmScrollBarCallbackStruct *scroll_data;
 
-	ENTER(ch_pacing_control_voltage_slide);
+	ENTER(ch_pacing_control_voltcur_slide);
 	USE_PARAMETER(widget_id);
 	if ((scroll_data=(XmScrollBarCallbackStruct *)call_data)&&
 		(XmCR_VALUE_CHANGED==scroll_data->reason))
 	{
 		if (pacing_window=(struct Pacing_window *)pacing_window_structure)
 		{
-			XtVaGetValues(pacing_window->control_voltage_slider,
+			XtVaGetValues(pacing_window->control_voltcur_slider,
 				XmNminimum,&slider_minumum,
 				XmNmaximum,&slider_maximum,
 				XmNsliderSize,&slider_size,
@@ -1618,13 +1686,20 @@ Called when the control voltage slider is changed.
 				NULL);
 			if (!(pacing_window->pacing)||(True==status))
 			{
-				control_voltage=(pacing_window->control_voltage)+
-					(pacing_window->control_voltage_arrow_step)*
+				control_voltcur=(pacing_window->control_voltcur)+
+					(pacing_window->control_voltcur_arrow_step)*
 					((float)(scroll_data->value)-
 					(float)(slider_maximum-slider_minumum-slider_size)/2);
-				if (control_voltage>0)
+				if (control_voltcur>0)
 				{
-					pacing_window->control_voltage=control_voltage;
+					if (pacing_window->constant_current_stimulation)
+					{
+						if (control_voltcur>1)
+						{
+							control_voltcur=1;
+						}
+					}
+					pacing_window->control_voltcur=control_voltcur;
 					if (True==status)
 					{
 						unemap_stop_stimulating(0);
@@ -1632,23 +1707,23 @@ Called when the control voltage slider is changed.
 					}
 				}
 			}
-			sprintf(value_string,"%g",pacing_window->control_voltage);
-			XtVaSetValues(pacing_window->control_voltage_value,
+			sprintf(value_string,"%g",pacing_window->control_voltcur);
+			XtVaSetValues(pacing_window->control_voltcur_value,
 				XmNcursorPosition,strlen(value_string),
 				XmNvalue,value_string,
 				NULL);
-			XtVaSetValues(pacing_window->control_voltage_slider,
+			XtVaSetValues(pacing_window->control_voltcur_slider,
 				XmNvalue,(slider_maximum-slider_minumum-slider_size)/2,
 				NULL);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"ch_pacing_control_voltage_slide.  Missing pacing_window_structure");
+				"ch_pacing_control_voltcur_slide.  Missing pacing_window_structure");
 		}
 	}
 	LEAVE;
-} /* ch_pacing_control_voltage_slide */
+} /* ch_pacing_control_voltcur_slide */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
@@ -3524,90 +3599,90 @@ Finds the id of the restitution time pace button in the pacing window.
 
 static int restitution_time_pace(struct Pacing_window *pacing_window)
 /*******************************************************************************
-LAST MODIFIED : 15 April 2004
+LAST MODIFIED : 22 May 2004
 
 DESCRIPTION :
 Restarts the restitution time pacing.
 ==============================================================================*/
 {
-	float *pacing_voltage,voltages_per_second;
-	int i,j,k,number_of_control_voltages,number_of_pacing_voltages,
-		number_of_si_voltages,number_of_sn_s1_voltages,return_code;
+	float *pacing_voltcur,voltcurs_per_second;
+	int i,j,k,number_of_control_voltcurs,number_of_pacing_voltcurs,
+		number_of_si_voltcurs,number_of_sn_s1_voltcurs,return_code;
 
 	ENTER(restitution_time_pace);
 	return_code=0;
 	unemap_stop_stimulating(0);
 	if (pacing_window)
 	{
-		number_of_control_voltages=(int)((pacing_window->control_width)/
+		number_of_control_voltcurs=(int)((pacing_window->control_width)/
 			(pacing_window->resolution)+0.5);
-		number_of_sn_s1_voltages=(int)((pacing_window->sn_s1_pause)/
+		number_of_sn_s1_voltcurs=(int)((pacing_window->sn_s1_pause)/
 			(pacing_window->resolution)+0.5);
-		number_of_pacing_voltages=number_of_sn_s1_voltages;
+		number_of_pacing_voltcurs=number_of_sn_s1_voltcurs;
 		for (i=0;i<pacing_window->number_of_stimulus_types-1;i++)
 		{
-			number_of_si_voltages=(int)(((pacing_window->si_length)[i])/
+			number_of_si_voltcurs=(int)(((pacing_window->si_length)[i])/
 				(pacing_window->resolution)+0.5);
-			number_of_pacing_voltages += (pacing_window->number_of_si)[i]*
-				number_of_si_voltages;
+			number_of_pacing_voltcurs += (pacing_window->number_of_si)[i]*
+				number_of_si_voltcurs;
 		}
-		number_of_si_voltages=(int)((pacing_window->sn_length)/
+		number_of_si_voltcurs=(int)((pacing_window->sn_length)/
 			(pacing_window->resolution)+0.5);
-		number_of_pacing_voltages += (pacing_window->number_of_si)[
-			pacing_window->number_of_stimulus_types-1]*number_of_si_voltages;
-		number_of_pacing_voltages += number_of_control_voltages+1;
-		if (REALLOCATE(pacing_voltage,pacing_window->pacing_voltages,float,
-			number_of_pacing_voltages))
+		number_of_pacing_voltcurs += (pacing_window->number_of_si)[
+			pacing_window->number_of_stimulus_types-1]*number_of_si_voltcurs;
+		number_of_pacing_voltcurs += number_of_control_voltcurs+1;
+		if (REALLOCATE(pacing_voltcur,pacing_window->pacing_voltcurs,float,
+			number_of_pacing_voltcurs))
 		{
-			pacing_window->pacing_voltages=pacing_voltage;
+			pacing_window->pacing_voltcurs=pacing_voltcur;
 			/* set up pacing */
-			for (i=number_of_sn_s1_voltages;i>0;i--)
+			for (i=number_of_sn_s1_voltcurs;i>0;i--)
 			{
-				*pacing_voltage=0;
-				pacing_voltage++;
+				*pacing_voltcur=0;
+				pacing_voltcur++;
 			}
 			for (i=0;i<pacing_window->number_of_stimulus_types-1;i++)
 			{
-				number_of_si_voltages=(int)(((pacing_window->si_length)[i])/
+				number_of_si_voltcurs=(int)(((pacing_window->si_length)[i])/
 					(pacing_window->resolution)+0.5);
 				for (j=0;j<(pacing_window->number_of_si)[i];j++)
 				{
 					if ((i>0)||(j>0))
 					{
-						for (k=number_of_si_voltages-number_of_control_voltages;k>0;k--)
+						for (k=number_of_si_voltcurs-number_of_control_voltcurs;k>0;k--)
 						{
-							*pacing_voltage=0;
-							pacing_voltage++;
+							*pacing_voltcur=0;
+							pacing_voltcur++;
 						}
 					}
-					for (k=number_of_control_voltages;k>0;k--)
+					for (k=number_of_control_voltcurs;k>0;k--)
 					{
-						*pacing_voltage=pacing_window->control_voltage;
-						pacing_voltage++;
+						*pacing_voltcur=pacing_window->control_voltcur;
+						pacing_voltcur++;
 					}
 				}
 			}
-			number_of_si_voltages=(int)((pacing_window->sn_length)/
+			number_of_si_voltcurs=(int)((pacing_window->sn_length)/
 				(pacing_window->resolution)+0.5);
 			for (j=(pacing_window->number_of_si)[
 				(pacing_window->number_of_stimulus_types)-1];j>0;j--)
 			{
-				for (k=number_of_si_voltages-number_of_control_voltages;k>0;k--)
+				for (k=number_of_si_voltcurs-number_of_control_voltcurs;k>0;k--)
 				{
-					*pacing_voltage=0;
-					pacing_voltage++;
+					*pacing_voltcur=0;
+					pacing_voltcur++;
 				}
-				for (k=number_of_control_voltages;k>0;k--)
+				for (k=number_of_control_voltcurs;k>0;k--)
 				{
-					*pacing_voltage=pacing_window->control_voltage;
-					pacing_voltage++;
+					*pacing_voltcur=pacing_window->control_voltcur;
+					pacing_voltcur++;
 				}
 			}
-			*pacing_voltage=0;
-			pacing_voltage++;
-			number_of_pacing_voltages=
-				pacing_voltage-(pacing_window->pacing_voltages);
-			voltages_per_second=(float)1000./(pacing_window->resolution);
+			*pacing_voltcur=0;
+			pacing_voltcur++;
+			number_of_pacing_voltcurs=
+				pacing_voltcur-(pacing_window->pacing_voltcurs);
+			voltcurs_per_second=(float)1000./(pacing_window->resolution);
 			if (0<pacing_window->number_of_pacing_channels)
 			{
 				for (i=0;i<pacing_window->number_of_pacing_channels;i++)
@@ -3615,11 +3690,22 @@ Restarts the restitution time pacing.
 					unemap_set_channel_stimulating((pacing_window->pacing_channels)[i],
 						1);
 				}
-				unemap_load_voltage_stimulating(
-					pacing_window->number_of_pacing_channels,
-					pacing_window->pacing_channels,number_of_pacing_voltages,
-					voltages_per_second,pacing_window->pacing_voltages,(unsigned int)1,
-					(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+				if (pacing_window->constant_current_stimulation)
+				{
+					unemap_load_current_stimulating(
+						pacing_window->number_of_pacing_channels,
+						pacing_window->pacing_channels,number_of_pacing_voltcurs,
+						voltcurs_per_second,pacing_window->pacing_voltcurs,(unsigned int)1,
+						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+				}
+				else
+				{
+					unemap_load_voltage_stimulating(
+						pacing_window->number_of_pacing_channels,
+						pacing_window->pacing_channels,number_of_pacing_voltcurs,
+						voltcurs_per_second,pacing_window->pacing_voltcurs,(unsigned int)1,
+						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+				}
 			}
 			if (0<pacing_window->number_of_return_channels)
 			{
@@ -3630,29 +3716,53 @@ Restarts the restitution time pacing.
 				}
 				if (pacing_window->negative_return_signal)
 				{
-					for (i=0;i<number_of_pacing_voltages;i++)
+					for (i=0;i<number_of_pacing_voltcurs;i++)
 					{
-						(pacing_window->pacing_voltages)[i]=
-							-(pacing_window->pacing_voltages[i]);
+						(pacing_window->pacing_voltcurs)[i]=
+							-(pacing_window->pacing_voltcurs[i]);
 					}
-					unemap_load_voltage_stimulating(
-						pacing_window->number_of_return_channels,
-						pacing_window->return_channels,number_of_pacing_voltages,
-						voltages_per_second,pacing_window->pacing_voltages,(unsigned int)1,
-						(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
-					for (i=0;i<number_of_pacing_voltages;i++)
+					if (pacing_window->constant_current_stimulation)
 					{
-						(pacing_window->pacing_voltages)[i]=
-							-(pacing_window->pacing_voltages[i]);
+						unemap_load_current_stimulating(
+							pacing_window->number_of_return_channels,
+							pacing_window->return_channels,number_of_pacing_voltcurs,
+							voltcurs_per_second,pacing_window->pacing_voltcurs,
+							(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+							(void *)NULL);
+					}
+					else
+					{
+						unemap_load_voltage_stimulating(
+							pacing_window->number_of_return_channels,
+							pacing_window->return_channels,number_of_pacing_voltcurs,
+							voltcurs_per_second,pacing_window->pacing_voltcurs,
+							(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+							(void *)NULL);
+					}
+					for (i=0;i<number_of_pacing_voltcurs;i++)
+					{
+						(pacing_window->pacing_voltcurs)[i]=
+							-(pacing_window->pacing_voltcurs[i]);
 					}
 				}
 				else
 				{
-					unemap_load_voltage_stimulating(
-						pacing_window->number_of_return_channels,
-						pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-						(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
-						(void *)NULL);
+					if (pacing_window->constant_current_stimulation)
+					{
+						unemap_load_current_stimulating(
+							pacing_window->number_of_return_channels,
+							pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+							(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+							(void *)NULL);
+					}
+					else
+					{
+						unemap_load_voltage_stimulating(
+							pacing_window->number_of_return_channels,
+							pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+							(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+							(void *)NULL);
+					}
 				}
 			}
 			/* start pacing */
@@ -4389,15 +4499,15 @@ Called when the restitution curve pacing ends.
 
 static int restitution_curve_pace(void *pacing_window_void)
 /*******************************************************************************
-LAST MODIFIED : 15 April 2004
+LAST MODIFIED : 22 May 2004
 
 DESCRIPTION :
 Does one stimulus train in the restitution curve creation.
 ==============================================================================*/
 {
-	float *pacing_voltages,voltages_per_second;
-	int finished,j,k,l,number_of_control_voltages,number_of_pacing_voltages,
-		number_of_si_pacing_voltages,number_of_sn_s1_pacing_voltages,return_code;
+	float *pacing_voltcurs,voltcurs_per_second;
+	int finished,j,k,l,number_of_control_voltcurs,number_of_pacing_voltcurs,
+		number_of_si_pacing_voltcurs,number_of_sn_s1_pacing_voltcurs,return_code;
 	struct Pacing_window *pacing_window;
 
 	ENTER(restitution_curve_pace);
@@ -4417,25 +4527,25 @@ Does one stimulus train in the restitution curve creation.
 				(pacing_window->decrement_threshold_pairs)[
 				2*(pacing_window->decrement_threshold_pair_number)+1])))
 			{
-				number_of_control_voltages=(int)((pacing_window->control_width)/
+				number_of_control_voltcurs=(int)((pacing_window->control_width)/
 					(pacing_window->resolution)+0.5);
 				pacing_window->last_decrement_threshold_pairs=0;
-				number_of_sn_s1_pacing_voltages=(int)((pacing_window->sn_s1_pause)/
+				number_of_sn_s1_pacing_voltcurs=(int)((pacing_window->sn_s1_pause)/
 					(pacing_window->resolution)+0.5);
-				number_of_pacing_voltages=number_of_sn_s1_pacing_voltages+
+				number_of_pacing_voltcurs=number_of_sn_s1_pacing_voltcurs+
 					(int)((pacing_window->sn_length_decrement_threshold_pairs)/
 					(pacing_window->resolution)+0.5)*(pacing_window->number_of_si)[
 					(pacing_window->number_of_stimulus_types)-1];
 				for (l=0;l<(pacing_window->number_of_stimulus_types)-1;l++)
 				{
-					number_of_pacing_voltages +=
+					number_of_pacing_voltcurs +=
 						(int)(((pacing_window->si_length)[l])/
 						(pacing_window->resolution)+0.5)*
 						(pacing_window->number_of_si)[l];
 				}
-				number_of_pacing_voltages += number_of_control_voltages+1;
-				if (REALLOCATE(pacing_voltages,pacing_window->pacing_voltages,
-					float,number_of_pacing_voltages))
+				number_of_pacing_voltcurs += number_of_control_voltcurs+1;
+				if (REALLOCATE(pacing_voltcurs,pacing_window->pacing_voltcurs,
+					float,number_of_pacing_voltcurs))
 				{
 					(pacing_window->sn_length_count_decrement_threshold_pairs)++;
 					/* print information to standard out */
@@ -4443,57 +4553,57 @@ Does one stimulus train in the restitution curve creation.
 						pacing_window->sn_length_count_decrement_threshold_pairs,
 						pacing_window->number_of_stimulus_types,
 						pacing_window->sn_length_decrement_threshold_pairs);
-					pacing_window->pacing_voltages=pacing_voltages;
-					for (l=number_of_sn_s1_pacing_voltages;l>0;l--)
+					pacing_window->pacing_voltcurs=pacing_voltcurs;
+					for (l=number_of_sn_s1_pacing_voltcurs;l>0;l--)
 					{
-						*pacing_voltages=0;
-						pacing_voltages++;
+						*pacing_voltcurs=0;
+						pacing_voltcurs++;
 					}
 					for (l=0;l<(pacing_window->number_of_stimulus_types)-1;l++)
 					{
-						number_of_si_pacing_voltages=
+						number_of_si_pacing_voltcurs=
 							(int)(((pacing_window->si_length)[l])/
 							(pacing_window->resolution)+0.5);
 						for (j=0;j<(pacing_window->number_of_si)[l];j++)
 						{
 							if ((l>0)||(j>0))
 							{
-								for (k=number_of_si_pacing_voltages-number_of_control_voltages;
+								for (k=number_of_si_pacing_voltcurs-number_of_control_voltcurs;
 									k>0;k--)
 								{
-									*pacing_voltages=0;
-									pacing_voltages++;
+									*pacing_voltcurs=0;
+									pacing_voltcurs++;
 								}
 							}
-							for (k=number_of_control_voltages;k>0;k--)
+							for (k=number_of_control_voltcurs;k>0;k--)
 							{
-								*pacing_voltages=pacing_window->control_voltage;
-								pacing_voltages++;
+								*pacing_voltcurs=pacing_window->control_voltcur;
+								pacing_voltcurs++;
 							}
 						}
 					}
-					number_of_si_pacing_voltages=
+					number_of_si_pacing_voltcurs=
 						(int)((pacing_window->sn_length_decrement_threshold_pairs)/
 						(pacing_window->resolution)+0.5);
 					for (j=(pacing_window->number_of_si)[
 						(pacing_window->number_of_stimulus_types)-1];j>0;j--)
 					{
-						for (k=number_of_si_pacing_voltages-number_of_control_voltages;k>0;
+						for (k=number_of_si_pacing_voltcurs-number_of_control_voltcurs;k>0;
 							k--)
 						{
-							*pacing_voltages=0;
-							pacing_voltages++;
+							*pacing_voltcurs=0;
+							pacing_voltcurs++;
 						}
-						for (k=number_of_control_voltages;k>0;k--)
+						for (k=number_of_control_voltcurs;k>0;k--)
 						{
-							*pacing_voltages=pacing_window->control_voltage;
-							pacing_voltages++;
+							*pacing_voltcurs=pacing_window->control_voltcur;
+							pacing_voltcurs++;
 						}
 					}
-					*pacing_voltages=0;
-					pacing_voltages++;
-					number_of_pacing_voltages=
-						pacing_voltages-(pacing_window->pacing_voltages);
+					*pacing_voltcurs=0;
+					pacing_voltcurs++;
+					number_of_pacing_voltcurs=
+						pacing_voltcurs-(pacing_window->pacing_voltcurs);
 					pacing_window->sn_length_decrement_threshold_pairs -=
 						(pacing_window->decrement_threshold_pairs)[
 						2*(pacing_window->decrement_threshold_pair_number)];
@@ -4541,10 +4651,10 @@ Does one stimulus train in the restitution curve creation.
 							pacing_window->last_decrement_threshold_pairs=1;
 						}
 					}
-					if (0<number_of_pacing_voltages)
+					if (0<number_of_pacing_voltcurs)
 					{
 						/* set up pacing */
-						voltages_per_second=(float)1000./(pacing_window->resolution);
+						voltcurs_per_second=(float)1000./(pacing_window->resolution);
 						if (0<pacing_window->number_of_pacing_channels)
 						{
 							for (l=0;l<pacing_window->number_of_pacing_channels;l++)
@@ -4552,12 +4662,24 @@ Does one stimulus train in the restitution curve creation.
 								unemap_set_channel_stimulating(
 									(pacing_window->pacing_channels)[l],1);
 							}
-							unemap_load_voltage_stimulating(
-								pacing_window->number_of_pacing_channels,
-								pacing_window->pacing_channels,number_of_pacing_voltages,
-								voltages_per_second,pacing_window->pacing_voltages,
-								(unsigned int)1,restitution_curve_pace,
-								pacing_window_void);
+							if (pacing_window->constant_current_stimulation)
+							{
+								unemap_load_current_stimulating(
+									pacing_window->number_of_pacing_channels,
+									pacing_window->pacing_channels,number_of_pacing_voltcurs,
+									voltcurs_per_second,pacing_window->pacing_voltcurs,
+									(unsigned int)1,restitution_curve_pace,
+									pacing_window_void);
+							}
+							else
+							{
+								unemap_load_voltage_stimulating(
+									pacing_window->number_of_pacing_channels,
+									pacing_window->pacing_channels,number_of_pacing_voltcurs,
+									voltcurs_per_second,pacing_window->pacing_voltcurs,
+									(unsigned int)1,restitution_curve_pace,
+									pacing_window_void);
+							}
 						}
 						if (0<pacing_window->number_of_return_channels)
 						{
@@ -4568,30 +4690,53 @@ Does one stimulus train in the restitution curve creation.
 							}
 							if (pacing_window->negative_return_signal)
 							{
-								for (l=0;l<number_of_pacing_voltages;l++)
+								for (l=0;l<number_of_pacing_voltcurs;l++)
 								{
-									(pacing_window->pacing_voltages)[l]=
-										-(pacing_window->pacing_voltages[l]);
+									(pacing_window->pacing_voltcurs)[l]=
+										-(pacing_window->pacing_voltcurs[l]);
 								}
-								unemap_load_voltage_stimulating(
-									pacing_window->number_of_return_channels,
-									pacing_window->return_channels,number_of_pacing_voltages,
-									voltages_per_second,pacing_window->pacing_voltages,
-									(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
-									(void *)NULL);
-								for (l=0;l<number_of_pacing_voltages;l++)
+								if (pacing_window->constant_current_stimulation)
 								{
-									(pacing_window->pacing_voltages)[l]=
-										-(pacing_window->pacing_voltages[l]);
+									unemap_load_current_stimulating(
+										pacing_window->number_of_return_channels,
+										pacing_window->return_channels,number_of_pacing_voltcurs,
+										voltcurs_per_second,pacing_window->pacing_voltcurs,
+										(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+										(void *)NULL);
+								}
+								else
+								{
+									unemap_load_voltage_stimulating(
+										pacing_window->number_of_return_channels,
+										pacing_window->return_channels,number_of_pacing_voltcurs,
+										voltcurs_per_second,pacing_window->pacing_voltcurs,
+										(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+										(void *)NULL);
+								}
+								for (l=0;l<number_of_pacing_voltcurs;l++)
+								{
+									(pacing_window->pacing_voltcurs)[l]=
+										-(pacing_window->pacing_voltcurs[l]);
 								}
 							}
 							else
 							{
-								unemap_load_voltage_stimulating(
-									pacing_window->number_of_return_channels,
-									pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-									(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
-									(void *)NULL);
+								if (pacing_window->constant_current_stimulation)
+								{
+									unemap_load_current_stimulating(
+										pacing_window->number_of_return_channels,
+										pacing_window->return_channels,(int)0,(float)0,
+										(float *)NULL,(unsigned int)0,
+										(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+								}
+								else
+								{
+									unemap_load_voltage_stimulating(
+										pacing_window->number_of_return_channels,
+										pacing_window->return_channels,(int)0,(float)0,
+										(float *)NULL,(unsigned int)0,
+										(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+								}
 							}
 						}
 						/* start pacing */
@@ -4643,17 +4788,17 @@ Does one stimulus train in the restitution curve creation.
 static void ch_pacing_restitution_curve_pac(Widget widget,
 	XtPointer pacing_window_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 15 August 2003
+LAST MODIFIED : 22 May 2004
 
 DESCRIPTION :
 Called when the restitution curve pace button is toggled.
 ==============================================================================*/
 {
 	Boolean status;
-	float *pacing_voltages,sn_length,voltages_per_second;
-	int decrement_threshold_pair_number,j,k,l,last,number_of_control_voltages,
-		number_of_pacing_voltages,number_of_si_pacing_voltages,
-		number_of_sn_pacing_voltages,number_of_sn_s1_pacing_voltages,return_code,
+	float *pacing_voltcurs,sn_length,voltcurs_per_second;
+	int decrement_threshold_pair_number,j,k,l,last,number_of_control_voltcurs,
+		number_of_pacing_voltcurs,number_of_si_pacing_voltcurs,
+		number_of_sn_pacing_voltcurs,number_of_sn_s1_pacing_voltcurs,return_code,
 		sn_length_count,software_version;
 	struct Pacing_window *pacing_window;
 
@@ -4704,20 +4849,20 @@ Called when the restitution curve pace button is toggled.
 			else
 			{
 				/* no stimulation end callbacks */
-				number_of_control_voltages=(int)((pacing_window->control_width)/
+				number_of_control_voltcurs=(int)((pacing_window->control_width)/
 					(pacing_window->resolution)+0.5);
-				number_of_sn_s1_pacing_voltages=(int)((pacing_window->sn_s1_pause)/
+				number_of_sn_s1_pacing_voltcurs=(int)((pacing_window->sn_s1_pause)/
 					(pacing_window->resolution)+0.5);
-				if (REALLOCATE(pacing_voltages,pacing_window->pacing_voltages,float,
-					number_of_sn_s1_pacing_voltages))
+				if (REALLOCATE(pacing_voltcurs,pacing_window->pacing_voltcurs,float,
+					number_of_sn_s1_pacing_voltcurs))
 				{
-					pacing_window->pacing_voltages=pacing_voltages;
-					for (l=number_of_sn_s1_pacing_voltages;l>0;l--)
+					pacing_window->pacing_voltcurs=pacing_voltcurs;
+					for (l=number_of_sn_s1_pacing_voltcurs;l>0;l--)
 					{
-						*pacing_voltages=0;
-						pacing_voltages++;
+						*pacing_voltcurs=0;
+						pacing_voltcurs++;
 					}
-					number_of_pacing_voltages=number_of_sn_s1_pacing_voltages;
+					number_of_pacing_voltcurs=number_of_sn_s1_pacing_voltcurs;
 					sn_length=(pacing_window->si_length)[
 						(pacing_window->number_of_stimulus_types)-1];
 					return_code=1;
@@ -4732,74 +4877,74 @@ Called when the restitution curve pace button is toggled.
 							(sn_length>(pacing_window->decrement_threshold_pairs)[
 							2*decrement_threshold_pair_number+1]))))
 						{
-							number_of_sn_pacing_voltages=(int)(sn_length/
+							number_of_sn_pacing_voltcurs=(int)(sn_length/
 								(pacing_window->resolution)+0.5)*
 								(pacing_window->number_of_si)[
 								(pacing_window->number_of_stimulus_types)-1];
 							for (l=0;l<(pacing_window->number_of_stimulus_types)-1;l++)
 							{
-								number_of_sn_pacing_voltages +=
+								number_of_sn_pacing_voltcurs +=
 									(int)(((pacing_window->si_length)[l])/
 									(pacing_window->resolution)+0.5)*
 									(pacing_window->number_of_si)[l];
 							}
-							if (REALLOCATE(pacing_voltages,pacing_window->pacing_voltages,
-								float,number_of_pacing_voltages+number_of_sn_pacing_voltages+
-								number_of_sn_s1_pacing_voltages))
+							if (REALLOCATE(pacing_voltcurs,pacing_window->pacing_voltcurs,
+								float,number_of_pacing_voltcurs+number_of_sn_pacing_voltcurs+
+								number_of_sn_s1_pacing_voltcurs))
 							{
 								/* print information to standard out */
 								sn_length_count++;
 								printf("%d) S%d length = %g ms\n",sn_length_count,
 									pacing_window->number_of_stimulus_types,sn_length);
-								pacing_window->pacing_voltages=pacing_voltages;
-								pacing_voltages += number_of_pacing_voltages;
+								pacing_window->pacing_voltcurs=pacing_voltcurs;
+								pacing_voltcurs += number_of_pacing_voltcurs;
 								for (l=0;l<(pacing_window->number_of_stimulus_types)-1;l++)
 								{
-									number_of_si_pacing_voltages=
+									number_of_si_pacing_voltcurs=
 										(int)(((pacing_window->si_length)[l])/
 										(pacing_window->resolution)+0.5);
 									for (j=0;j<(pacing_window->number_of_si)[l];j++)
 									{
 										if ((l>0)||(j>0))
 										{
-											for (k=number_of_si_pacing_voltages-
-												number_of_control_voltages;k>0;k--)
+											for (k=number_of_si_pacing_voltcurs-
+												number_of_control_voltcurs;k>0;k--)
 											{
-												*pacing_voltages=0;
-												pacing_voltages++;
+												*pacing_voltcurs=0;
+												pacing_voltcurs++;
 											}
 										}
-										for (k=number_of_control_voltages;k>0;k--)
+										for (k=number_of_control_voltcurs;k>0;k--)
 										{
-											*pacing_voltages=pacing_window->control_voltage;
-											pacing_voltages++;
+											*pacing_voltcurs=pacing_window->control_voltcur;
+											pacing_voltcurs++;
 										}
 									}
 								}
-								number_of_si_pacing_voltages=(int)(sn_length/
+								number_of_si_pacing_voltcurs=(int)(sn_length/
 									(pacing_window->resolution)+0.5);
 								for (j=(pacing_window->number_of_si)[
 									(pacing_window->number_of_stimulus_types)-1];j>0;j--)
 								{
-									for (k=number_of_si_pacing_voltages-
-										number_of_control_voltages;k>0;k--)
+									for (k=number_of_si_pacing_voltcurs-
+										number_of_control_voltcurs;k>0;k--)
 									{
-										*pacing_voltages=0;
-										pacing_voltages++;
+										*pacing_voltcurs=0;
+										pacing_voltcurs++;
 									}
-									for (k=number_of_control_voltages;k>0;k--)
+									for (k=number_of_control_voltcurs;k>0;k--)
 									{
-										*pacing_voltages=pacing_window->control_voltage;
-										pacing_voltages++;
+										*pacing_voltcurs=pacing_window->control_voltcur;
+										pacing_voltcurs++;
 									}
 								}
-								for (l=number_of_sn_s1_pacing_voltages;l>0;l--)
+								for (l=number_of_sn_s1_pacing_voltcurs;l>0;l--)
 								{
-									*pacing_voltages=0;
-									pacing_voltages++;
+									*pacing_voltcurs=0;
+									pacing_voltcurs++;
 								}
-								number_of_pacing_voltages=
-									pacing_voltages-(pacing_window->pacing_voltages);
+								number_of_pacing_voltcurs=
+									pacing_voltcurs-(pacing_window->pacing_voltcurs);
 								sn_length -= (pacing_window->decrement_threshold_pairs)[
 									2*decrement_threshold_pair_number];
 								/* must be a multiple of the resolution and longer than the
@@ -4836,13 +4981,13 @@ Called when the restitution curve pace button is toggled.
 						decrement_threshold_pair_number++;
 					}
 				}
-				if (return_code&&(0<number_of_pacing_voltages))
+				if (return_code&&(0<number_of_pacing_voltcurs))
 				{
 					/* set control sensitivity */
 					XtSetSensitive(pacing_window->restitution_time_pace_toggle,False);
 					XtSetSensitive(pacing_window->basic_cycle_length_pace_toggle,False);
 					/* set up pacing */
-					voltages_per_second=1000./(pacing_window->resolution);
+					voltcurs_per_second=1000./(pacing_window->resolution);
 					if (0<pacing_window->number_of_pacing_channels)
 					{
 						for (l=0;l<pacing_window->number_of_pacing_channels;l++)
@@ -4850,12 +4995,24 @@ Called when the restitution curve pace button is toggled.
 							unemap_set_channel_stimulating(
 								(pacing_window->pacing_channels)[l],1);
 						}
-						unemap_load_voltage_stimulating(
-							pacing_window->number_of_pacing_channels,
-							pacing_window->pacing_channels,number_of_pacing_voltages,
-							voltages_per_second,pacing_window->pacing_voltages,
-							(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
-							(void *)NULL);
+						if (pacing_window->constant_current_stimulation)
+						{
+							unemap_load_current_stimulating(
+								pacing_window->number_of_pacing_channels,
+								pacing_window->pacing_channels,number_of_pacing_voltcurs,
+								voltcurs_per_second,pacing_window->pacing_voltcurs,
+								(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+								(void *)NULL);
+						}
+						else
+						{
+							unemap_load_voltage_stimulating(
+								pacing_window->number_of_pacing_channels,
+								pacing_window->pacing_channels,number_of_pacing_voltcurs,
+								voltcurs_per_second,pacing_window->pacing_voltcurs,
+								(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+								(void *)NULL);
+						}
 					}
 					if (0<pacing_window->number_of_return_channels)
 					{
@@ -4866,30 +5023,53 @@ Called when the restitution curve pace button is toggled.
 						}
 						if (pacing_window->negative_return_signal)
 						{
-							for (l=0;l<number_of_pacing_voltages;l++)
+							for (l=0;l<number_of_pacing_voltcurs;l++)
 							{
-								(pacing_window->pacing_voltages)[l]=
-									-(pacing_window->pacing_voltages[l]);
+								(pacing_window->pacing_voltcurs)[l]=
+									-(pacing_window->pacing_voltcurs[l]);
 							}
-							unemap_load_voltage_stimulating(
-								pacing_window->number_of_return_channels,
-								pacing_window->return_channels,number_of_pacing_voltages,
-								voltages_per_second,pacing_window->pacing_voltages,
-								(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
-								(void *)NULL);
-							for (l=0;l<number_of_pacing_voltages;l++)
+							if (pacing_window->constant_current_stimulation)
 							{
-								(pacing_window->pacing_voltages)[l]=
-									-(pacing_window->pacing_voltages[l]);
+								unemap_load_current_stimulating(
+									pacing_window->number_of_return_channels,
+									pacing_window->return_channels,number_of_pacing_voltcurs,
+									voltcurs_per_second,pacing_window->pacing_voltcurs,
+									(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+									(void *)NULL);
+							}
+							else
+							{
+								unemap_load_voltage_stimulating(
+									pacing_window->number_of_return_channels,
+									pacing_window->return_channels,number_of_pacing_voltcurs,
+									voltcurs_per_second,pacing_window->pacing_voltcurs,
+									(unsigned int)1,(Unemap_stimulation_end_callback *)NULL,
+									(void *)NULL);
+							}
+							for (l=0;l<number_of_pacing_voltcurs;l++)
+							{
+								(pacing_window->pacing_voltcurs)[l]=
+									-(pacing_window->pacing_voltcurs[l]);
 							}
 						}
 						else
 						{
-							unemap_load_voltage_stimulating(
-								pacing_window->number_of_return_channels,
-								pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
-								(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
-								(void *)NULL);
+							if (pacing_window->constant_current_stimulation)
+							{
+								unemap_load_current_stimulating(
+									pacing_window->number_of_return_channels,
+									pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+									(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+									(void *)NULL);
+							}
+							else
+							{
+								unemap_load_voltage_stimulating(
+									pacing_window->number_of_return_channels,
+									pacing_window->return_channels,(int)0,(float)0,(float *)NULL,
+									(unsigned int)0,(Unemap_stimulation_end_callback *)NULL,
+									(void *)NULL);
+							}
 						}
 					}
 					/* start pacing */
@@ -4971,7 +5151,7 @@ static struct Pacing_window *create_Pacing_window(
 #endif /* defined (MOTIF) */
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 14 May 2004
+LAST MODIFIED : 22 May 2004
 
 DESCRIPTION :
 Allocates the memory for a pacing window.  Retrieves the necessary widgets and
@@ -4979,7 +5159,7 @@ initializes the appropriate fields.
 ==============================================================================*/
 {
 #if defined (MOTIF)
-	Boolean negative_return_signal,sn_increment;
+	Boolean constant_current_stimulation,negative_return_signal,sn_increment;
 	char *decrement_threshold_pairs_string,*numbers_of_stimuli,*pacing_electrodes,
 		*return_electrodes,*stimuli_lengths,temp_string[20];
 	MrmType pacing_window_class;
@@ -4996,16 +5176,18 @@ initializes the appropriate fields.
 		(XtPointer)id_pacing_return_electrodes_val},
 		{"ch_pacing_return_electrodes_val",
 		(XtPointer)ch_pacing_return_electrodes_val},
-		{"id_pacing_control_voltage_form",
-		(XtPointer)id_pacing_control_voltage_form},
-		{"id_pacing_control_voltage_value",
-		(XtPointer)id_pacing_control_voltage_value},
-		{"ch_pacing_control_voltage_value",
-		(XtPointer)ch_pacing_control_voltage_value},
-		{"id_pacing_control_voltage_slide",
-		(XtPointer)id_pacing_control_voltage_slide},
-		{"ch_pacing_control_voltage_slide",
-		(XtPointer)ch_pacing_control_voltage_slide},
+		{"id_pacing_control_voltcur_form",
+		(XtPointer)id_pacing_control_voltcur_form},
+		{"id_pacing_control_voltcur_label",
+		(XtPointer)id_pacing_control_voltcur_label},
+		{"id_pacing_control_voltcur_value",
+		(XtPointer)id_pacing_control_voltcur_value},
+		{"ch_pacing_control_voltcur_value",
+		(XtPointer)ch_pacing_control_voltcur_value},
+		{"id_pacing_control_voltcur_slide",
+		(XtPointer)id_pacing_control_voltcur_slide},
+		{"ch_pacing_control_voltcur_slide",
+		(XtPointer)ch_pacing_control_voltcur_slide},
 		{"id_pacing_control_width_form",(XtPointer)id_pacing_control_width_form},
 		{"id_pacing_control_width_value",(XtPointer)id_pacing_control_width_value},
 		{"ch_pacing_control_width_value",(XtPointer)ch_pacing_control_width_value},
@@ -5124,6 +5306,12 @@ initializes the appropriate fields.
 #define XmCRestitutionBasicCycleLength "RestitutionBasicCycleLength"
 #define XmNrestitutionBasicCycleLengthArrowStep "restitutionBasicCycleLengthArrowStep"
 #define XmCRestitutionBasicCycleLengthArrowStep "RestitutionBasicCycleLengthArrowStep"
+#define XmNrestitutionConstantCurrentStimulation "restitutionConstantCurrentStimulation"
+#define XmCRestitutionConstantCurrentStimulation "RestitutionConstantCurrentStimulation"
+#define XmNrestitutionControlCurrent "restitutionControlCurrent"
+#define XmCRestitutionControlCurrent "RestitutionControlCurrent"
+#define XmNrestitutionControlCurrentArrowStep "restitutionControlCurrentArrowStep"
+#define XmCRestitutionControlCurrentArrowStep "RestitutionControlCurrentArrowStep"
 #define XmNrestitutionControlVoltage "restitutionControlVoltage"
 #define XmCRestitutionControlVoltage "RestitutionControlVoltage"
 #define XmNrestitutionControlVoltageArrowStep "restitutionControlVoltageArrowStep"
@@ -5181,7 +5369,7 @@ initializes the appropriate fields.
 			XmCRestitutionControlVoltage,
 			XmRFloat,
 			sizeof(float),
-			XtOffsetOf(Pacing_window_settings,control_voltage),
+			XtOffsetOf(Pacing_window_settings,control_voltcur),
 			XmRString,
 			"1"
 		},
@@ -5190,7 +5378,7 @@ initializes the appropriate fields.
 			XmCRestitutionControlVoltageArrowStep,
 			XmRFloat,
 			sizeof(float),
-			XtOffsetOf(Pacing_window_settings,control_voltage_arrow_step),
+			XtOffsetOf(Pacing_window_settings,control_voltcur_arrow_step),
 			XmRString,
 			"0.01"
 		},
@@ -5250,6 +5438,39 @@ initializes the appropriate fields.
 			0,
 			XmRString,
 			"false"
+		},
+	};
+	static XtResource constant_current_stimulation_resources[]=
+	{
+		{
+			XmNrestitutionConstantCurrentStimulation,
+			XmCRestitutionConstantCurrentStimulation,
+			XmRBoolean,
+			sizeof(Boolean),
+			0,
+			XmRString,
+			"false"
+		},
+	};
+	static XtResource control_current_resources[]=
+	{
+		{
+			XmNrestitutionControlCurrent,
+			XmCRestitutionControlCurrent,
+			XmRFloat,
+			sizeof(float),
+			XtOffsetOf(Pacing_window_settings,control_voltcur),
+			XmRString,
+			"1"
+		},
+		{
+			XmNrestitutionControlCurrentArrowStep,
+			XmCRestitutionControlCurrentArrowStep,
+			XmRFloat,
+			sizeof(float),
+			XtOffsetOf(Pacing_window_settings,control_voltcur_arrow_step),
+			XmRString,
+			"0.01"
 		},
 	};
 	static XtResource negative_return_signal_resources[]=
@@ -5364,13 +5585,14 @@ initializes the appropriate fields.
 				pacing_window->rig_address=rig_address;
 				pacing_window->user_interface=user_interface;
 				pacing_window->pacing=0;
-				pacing_window->pacing_voltages=(float *)NULL;
+				pacing_window->pacing_voltcurs=(float *)NULL;
 				pacing_window->number_of_pacing_channels=0;
 				pacing_window->pacing_channels=(int *)NULL;
 				pacing_window->pacing_electrodes=(char *)NULL;
 				pacing_window->number_of_return_channels=0;
 				pacing_window->return_channels=(int *)NULL;
 				pacing_window->return_electrodes=(char *)NULL;
+				pacing_window->constant_current_stimulation=0;
 				pacing_window->negative_return_signal=0;
 				pacing_window->number_of_decrement_threshold_pairs=0;
 				pacing_window->decrement_threshold_pairs=(float *)NULL;
@@ -5403,9 +5625,10 @@ initializes the appropriate fields.
 				pacing_window->basic_cycle_length_form=(Widget)NULL;
 				pacing_window->basic_cycle_length_value=(Widget)NULL;
 				pacing_window->basic_cycle_length_slider=(Widget)NULL;
-				pacing_window->control_voltage_form=(Widget)NULL;
-				pacing_window->control_voltage_value=(Widget)NULL;
-				pacing_window->control_voltage_slider=(Widget)NULL;
+				pacing_window->control_voltcur_form=(Widget)NULL;
+				pacing_window->control_voltcur_label=(Widget)NULL;
+				pacing_window->control_voltcur_value=(Widget)NULL;
+				pacing_window->control_voltcur_slider=(Widget)NULL;
 				pacing_window->control_width_form=(Widget)NULL;
 				pacing_window->control_width_value=(Widget)NULL;
 				pacing_window->control_width_slider=(Widget)NULL;
@@ -5493,6 +5716,22 @@ initializes the appropriate fields.
 				set_return_channels_from_string(pacing_window,return_electrodes);
 				XtVaGetApplicationResources(
 					User_interface_get_application_shell(user_interface),
+					&constant_current_stimulation,constant_current_stimulation_resources,
+					XtNumber(constant_current_stimulation_resources),NULL);
+				if (True==constant_current_stimulation)
+				{
+					pacing_window->constant_current_stimulation=1;
+					XtVaGetApplicationResources(
+						User_interface_get_application_shell(user_interface),
+						pacing_window,control_current_resources,
+						XtNumber(control_current_resources),NULL);
+				}
+				else
+				{
+					pacing_window->constant_current_stimulation=0;
+				}
+				XtVaGetApplicationResources(
+					User_interface_get_application_shell(user_interface),
 					&negative_return_signal,negative_return_signal_resources,
 					XtNumber(negative_return_signal_resources),NULL);
 				if (True==negative_return_signal)
@@ -5559,6 +5798,14 @@ initializes the appropriate fields.
 								"pacing_window",pacing_window->shell,&(pacing_window->window),
 								&pacing_window_class))
 							{
+								if (pacing_window->constant_current_stimulation)
+								{
+									XtVaSetValues(pacing_window->control_voltcur_label,
+										XmNlabelString,XmStringCreate(
+										"Control square wave amplitude (proportion of maximum current)",
+										XmSTRING_DEFAULT_CHARSET),
+										NULL);
+								}
 								XtManageChild(pacing_window->window);
 #endif /* defined (MOTIF) */
 								if (pacing_window_address)
@@ -5719,17 +5966,17 @@ opened.
 				XmNvalue,value_string,
 				NULL);
 #endif /* defined (MOTIF) */
-			if (pacing_window->control_voltage<=0)
+			if (pacing_window->control_voltcur<=0)
 			{
-				pacing_window->control_voltage=1;
+				pacing_window->control_voltcur=1;
 			}
-			if (pacing_window->control_voltage_arrow_step<=0)
+			if (pacing_window->control_voltcur_arrow_step<=0)
 			{
-				pacing_window->control_voltage_arrow_step=(float)0.01;
+				pacing_window->control_voltcur_arrow_step=(float)0.01;
 			}
 #if defined (MOTIF)
-			sprintf(value_string,"%g",pacing_window->control_voltage);
-			XtVaSetValues(pacing_window->control_voltage_value,
+			sprintf(value_string,"%g",pacing_window->control_voltcur);
+			XtVaSetValues(pacing_window->control_voltcur_value,
 				XmNcursorPosition,strlen(value_string),
 				XmNvalue,value_string,
 				NULL);
@@ -5913,7 +6160,7 @@ pacing window and frees the memory associated with the pacing window.
 			/* unghost the activation button */
 			XtSetSensitive(pacing_window->activation,True);
 #endif /* defined (MOTIF) */
-			DEALLOCATE(pacing_window->pacing_voltages);
+			DEALLOCATE(pacing_window->pacing_voltcurs);
 			DEALLOCATE(pacing_window->pacing_channels);
 			DEALLOCATE(pacing_window->pacing_electrodes);
 			DEALLOCATE(pacing_window->return_channels);

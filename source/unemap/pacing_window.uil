@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : pacing_window.uil
 !
-!LAST MODIFIED : 14 May 2004
+!LAST MODIFIED : 23 May 2004
 !
 !DESCRIPTION :
 !The widgets/gadgets for the pacing window in the acquisition work area.
@@ -18,11 +18,12 @@ procedure
 	id_pacing_return_electrodes_for;
 	id_pacing_return_electrodes_val;
 	ch_pacing_return_electrodes_val;
-	id_pacing_control_voltage_form;
-	id_pacing_control_voltage_value;
-	ch_pacing_control_voltage_value;
-	id_pacing_control_voltage_slide;
-	ch_pacing_control_voltage_slide;
+	id_pacing_control_voltcur_form;
+	id_pacing_control_voltcur_label;
+	id_pacing_control_voltcur_value;
+	ch_pacing_control_voltcur_value;
+	id_pacing_control_voltcur_slide;
+	ch_pacing_control_voltcur_slide;
 	id_pacing_control_width_form;
 	id_pacing_control_width_value;
 	ch_pacing_control_width_value;
@@ -144,7 +145,7 @@ object
 							XmForm pacing_electrodes_form;
 							XmForm pacing_return_electrodes_form;
 							XmSeparator pacing_return_electrodes_separa;
-							XmForm pacing_control_voltage_form;
+							XmForm pacing_control_voltcur_form;
 							XmForm pacing_control_width_form;
 							XmSeparator pacing_control_separator;
 							XmForm pacing_basic_cycle_control_form;
@@ -180,7 +181,7 @@ object
 !			XmForm pacing_electrodes_form;
 !			XmForm pacing_return_electrodes_form;
 !			XmSeparator pacing_return_electrodes_separa;
-!			XmForm pacing_control_voltage_form;
+!			XmForm pacing_control_voltcur_form;
 !			XmForm pacing_control_width_form;
 !			XmSeparator pacing_control_separator;
 !			XmForm pacing_basic_cycle_control_form;
@@ -363,7 +364,7 @@ object
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		};
-	pacing_control_voltage_form: XmForm
+	pacing_control_voltcur_form: XmForm
 		{
 		arguments
 			{
@@ -380,19 +381,19 @@ object
 			};
 		controls
 			{
-			XmLabel pacing_control_voltage_label;
-			XmTextField pacing_control_voltage_value;
-			XmScrollBar pacing_control_voltage_slide;
+			XmLabel pacing_control_voltcur_label;
+			XmTextField pacing_control_voltcur_value;
+			XmScrollBar pacing_control_voltcur_slide;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_control_voltage_form(pacing_window_structure);
+				id_pacing_control_voltcur_form(pacing_window_structure);
 				};
 			};
 		};
-	pacing_control_voltage_label: XmLabel
+	pacing_control_voltcur_label: XmLabel
 		{
 		arguments
 			{
@@ -407,8 +408,15 @@ object
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
 			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_pacing_control_voltcur_label(pacing_window_structure);
+				};
+			};
 		};
-	pacing_control_voltage_value: XmTextField
+	pacing_control_voltcur_value: XmTextField
 		{
 		arguments
 			{
@@ -416,7 +424,7 @@ object
 			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmLabel pacing_control_voltage_label;
+			XmNleftWidget = XmLabel pacing_control_voltcur_label;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
@@ -427,19 +435,19 @@ object
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_control_voltage_value(pacing_window_structure);
+				id_pacing_control_voltcur_value(pacing_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{
-				ch_pacing_control_voltage_value(pacing_window_structure);
+				ch_pacing_control_voltcur_value(pacing_window_structure);
 				};
 			XmNlosingFocusCallback = procedures
 				{
-				ch_pacing_control_voltage_value(pacing_window_structure);
+				ch_pacing_control_voltcur_value(pacing_window_structure);
 				};
 			};
 		};
-	pacing_control_voltage_slide: XmScrollBar
+	pacing_control_voltcur_slide: XmScrollBar
 		{
 		arguments
 			{
@@ -451,7 +459,7 @@ object
 			XmNorientation = XmHORIZONTAL;
 			XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = widget_spacing;
-			XmNleftWidget = XmTextField pacing_control_voltage_value;
+			XmNleftWidget = XmTextField pacing_control_voltcur_value;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
@@ -462,11 +470,11 @@ object
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_pacing_control_voltage_slide(pacing_window_structure);
+				id_pacing_control_voltcur_slide(pacing_window_structure);
 				};
 			XmNvalueChangedCallback = procedures
 				{
-				ch_pacing_control_voltage_slide(pacing_window_structure);
+				ch_pacing_control_voltcur_slide(pacing_window_structure);
 				};
 			};
 		};
@@ -482,7 +490,7 @@ object
 			XmNrightOffset = widget_spacing;
 			XmNtopAttachment = XmATTACH_WIDGET;
 			XmNtopOffset = widget_spacing;
-			XmNtopWidget = XmForm pacing_control_voltage_form;
+			XmNtopWidget = XmForm pacing_control_voltcur_form;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		controls
