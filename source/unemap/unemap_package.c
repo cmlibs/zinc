@@ -1651,11 +1651,11 @@ the rig.
 		computed_field_manager=unemap_package->computed_field_manager;
 		fe_field_manager=unemap_package->fe_field_manager;
 		if(unemap_package->device_name_field)
-		{
+		{		 
 			temp_field=unemap_package->device_name_field;
 			DEACCESS(FE_field)(&temp_field);
-			if(destroy_computed_field_given_fe_field(computed_field_manager,fe_field_manager,
-				unemap_package->device_name_field))
+			if(destroy_computed_field_given_fe_field(computed_field_manager,
+				fe_field_manager,unemap_package->device_name_field))
 			{
 				unemap_package->device_name_field=(struct FE_field *)NULL;
 			}
@@ -1857,7 +1857,8 @@ stored in the unemap package. Also frees any associated fe_fields
 					"Couldn't destroy scaled_offset_signal_value_at_time_field");
 			}				
 		}/* if(computed_field) */
-		computed_field=get_unemap_package_offset_signal_value_at_time_field(unemap_package);
+		computed_field=get_unemap_package_offset_signal_value_at_time_field
+			(unemap_package);
 		/* following does deaccess*/
 		set_unemap_package_offset_signal_value_at_time_field
 						(unemap_package,(struct Computed_field *)NULL);
