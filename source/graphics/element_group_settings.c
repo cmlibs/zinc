@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 13 March 2002
+LAST MODIFIED : 5 August 2002
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -5963,9 +5963,9 @@ Must call GT_element_settings_to_graphics_object afterwards to complete.
 } /* GT_element_settings_selected_data_change */
 
 int GT_element_settings_compile_visible_settings(
-	struct GT_element_settings *settings,void *time_void)
+	struct GT_element_settings *settings, void *time_void)
 /*******************************************************************************
-LAST MODIFIED : 28 June 1999
+LAST MODIFIED : 5 August 2002
 
 DESCRIPTION :
 If the settings visibility flag is set and it has a graphics_object, the
@@ -5979,15 +5979,11 @@ graphics_object is compiled.
 	{
 		if (settings->graphics_object && settings->visibility)
 		{
-			return_code=compile_GT_object(settings->graphics_object,time_void);
-			if (return_code && settings->glyph)
-			{
-				return_code=compile_GT_object(settings->glyph,time_void);
-			}
+			return_code = compile_GT_object(settings->graphics_object,time_void);
 		}
 		else
 		{
-			return_code=1;
+			return_code = 1;
 		}
 	}
 	else
@@ -5995,7 +5991,7 @@ graphics_object is compiled.
 		display_message(ERROR_MESSAGE,
 			"GT_element_settings_compile_visible_settings.  "
 			"Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
