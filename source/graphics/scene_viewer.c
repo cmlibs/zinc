@@ -42,8 +42,9 @@ November 97 Created from rendering part of Drawing.
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
+#define USE_LAYERZ
 #if defined (USE_LAYERZ)
-#include "nvidia/order_independent_transparency.h"
+#include "graphics/order_independent_transparency.h"
 #endif /* defined (USE_LAYERZ) */
 
 /*
@@ -206,6 +207,10 @@ DESCRIPTION :
 	double clip_planes[MAX_CLIP_PLANES * 4];
 	/* The distance between the two stereo views in world space */
 	double stereo_eye_spacing;
+	/* Special persistent data for order independent transparency */
+	struct Scene_viewer_order_independent_transparency_data
+	   *order_independent_transparency_data;
+	/* The connection to the systems user interface system */
 	struct User_interface *user_interface;
 }; /* struct Scene_viewer */
 
@@ -246,7 +251,7 @@ DECLARE_LIST_TYPES(Scene_viewer_render_object);
 typedef int (Scene_viewer_render_function)(
 	struct Scene_viewer_rendering_data *rendering_data);
 /*******************************************************************************
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 14 April 2003
 
 DESCRIPTION :
 A rendering function that exists in the rendering callstack.  See the 
@@ -261,9 +266,9 @@ DESCRIPTION :
 This object is used to implement a callstack of render functions.  Each render
 function may need to call those lower down multiple times and this provides
 a facility for building a calltree of such functions.  This enables us to break
-up the rendering into more sensible components.  Initially all these functions
-are sharing the same data, the Scene_viewer but it may be helpful to further
-isolate these objects from each other at a later stage.
+up the rendering into more sensible components.
+In addition to the <rendering_data> which is private to this module some rendering
+functions may have their own user data.
 ==============================================================================*/
 {
 	Scene_viewer_render_function *render_function;
@@ -286,9 +291,12 @@ PROTOTYPE_LIST_FUNCTIONS(Scene_viewer_render_object);
 static struct Scene_viewer_render_object *CREATE(Scene_viewer_render_object)(
 	Scene_viewer_render_function *render_function)
 /*******************************************************************************
-LAST MODIFIED : 4 April 2003
+LAST MODIFIED : 14 April 2003
 
 DESCRIPTION :
+A rendering pass that can be incoporated into the rendering callstack.  The
+render_function should implement the component of the rendering, calling
+Scene_viewer_call_next_renderer to execute the rest of the renderer.
 ==============================================================================*/
 {
 	struct Scene_viewer_render_object *render_object;
@@ -298,7 +306,7 @@ DESCRIPTION :
 	{
 		if (ALLOCATE(render_object,struct Scene_viewer_render_object,1))
 		{
-			render_object->render_function = render_function;
+ 			render_object->render_function = render_function;
 			render_object->already_processed = 0;
 			render_object->access_count = 0;
 		}
@@ -798,7 +806,7 @@ modes, so push/pop them if you want them preserved.
 	return (return_code);
 } /* Scene_viewer_calculate_transformation */
 
-static int Scene_viewer_call_next_renderer(
+int Scene_viewer_call_next_renderer(
 	struct Scene_viewer_rendering_data *rendering_data)
 /*******************************************************************************
 LAST MODIFIED : 9 April 2003
@@ -2026,11 +2034,10 @@ and then again with only semi transparent objects not changing the depth buffer.
 } /* Scene_viewer_per_pixel_lighting */
 #endif /* defined (USE_PER_PIXEL_LIGHTING) */
 
-#if defined (USE_LAYERZ)
 static int Scene_viewer_initialise_order_independent_transparency(
-	struct Scene_viewer *scene_viewer)
+	struct Scene_viewer_rendering_data *rendering_data)
 /*******************************************************************************
-LAST MODIFIED : 7 April 2003
+LAST MODIFIED : 14 April 2003
 
 DESCRIPTION :
 Render the scene twice.  Once with opaque objects filling the depth buffer
@@ -2038,15 +2045,29 @@ and then again with only semi transparent objects not changing the depth buffer.
 ==============================================================================*/
 {
 	int return_code;
+	struct Scene_viewer *scene_viewer;
 
 	ENTER(Scene_viewer_initialise_order_independent_transparency);
-	if (scene_viewer)
+	if (rendering_data && (scene_viewer = rendering_data->scene_viewer))
 	{
-		return_code = 1;
+		if (!scene_viewer->order_independent_transparency_data)
+		{
+			scene_viewer->order_independent_transparency_data = 
+				order_independent_initialise();
+		}
 
-		order_independent_initialise();
+		if (scene_viewer->order_independent_transparency_data)
+		{
+			order_independent_reshape(scene_viewer->order_independent_transparency_data,
+				rendering_data->viewport_width, rendering_data->viewport_height,
+				rendering_data->override_transparency_layers);
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
 		
-		order_independent_reshape(viewport_width, viewport_height);
 	}
 	else
 	{
@@ -2056,9 +2077,7 @@ and then again with only semi transparent objects not changing the depth buffer.
 
 	return (return_code);	
 } /* Scene_viewer_initialise_order_independent_transparency */
-#endif /* defined (USE_LAYERZ) */
 
-#if defined (USE_LAYERZ)
 static int Scene_viewer_order_independent_transparency(
 	struct Scene_viewer_rendering_data *rendering_data)
 /*******************************************************************************
@@ -2070,14 +2089,21 @@ and then again with only semi transparent objects not changing the depth buffer.
 ==============================================================================*/
 {
 	int return_code;
+	struct Scene_viewer *scene_viewer;
 
 	ENTER(Scene_viewer_order_independent_transparency);
-	if (scene_viewer)
+	if (rendering_data && (scene_viewer = rendering_data->scene_viewer))
 	{
 		return_code = 1;
 
-		order_independent_display(scene_viewer_render_scene, scene_viewer,
-			scene_viewer->projection_matrix, scene_viewer->modelview_matrix);
+		if (scene_viewer->order_independent_transparency_data)
+		{
+			order_independent_display(rendering_data, 
+				scene_viewer->order_independent_transparency_data,
+				scene_viewer->projection_matrix, scene_viewer->modelview_matrix);
+			
+			scene_viewer->swap_buffers = 1;
+		}
 	}
 	else
 	{
@@ -2087,7 +2113,6 @@ and then again with only semi transparent objects not changing the depth buffer.
 
 	return (return_code);	
 } /* Scene_viewer_order_independent_transparency */
-#endif /* defined (USE_LAYERZ) */
 
 static int Scene_viewer_render_scene_private(struct Scene_viewer *scene_viewer,
 	int left, int bottom, int right, int top,
@@ -2186,6 +2211,10 @@ access this function.
 			}
 			else
 			{
+				/* in picking mode the transformations are left unchanged */
+				Scene_viewer_calculate_transformation(scene_viewer,
+					rendering_data.viewport_width,rendering_data.viewport_height);
+
 				render_object = CREATE(Scene_viewer_render_object)(
 					Scene_viewer_handle_fastchanging);
 				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
@@ -2260,16 +2289,16 @@ access this function.
 						ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 							rendering_data.render_callstack);
 					} break;
+					case SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY:
+					{
+						Scene_viewer_initialise_order_independent_transparency(&rendering_data);
+
+						render_object = CREATE(Scene_viewer_render_object)(
+							Scene_viewer_order_independent_transparency);
+						ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
+							rendering_data.render_callstack);						
+					}
 				}
-
-#if defined (USE_LAYERZ)
-				render_object = CREATE(Scene_viewer_render_object)(
-					Scene_viewer_order_independent_transparency);
-				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
-					rendering_data.render_callstack);
-
-				Scene_viewer_initialise_order_independent_transparency(scene_viewer);
-#endif /* defined (USE_LAYERZ) */
 
 				render_object = CREATE(Scene_viewer_render_object)(
 					Scene_viewer_apply_projection_matrix);
@@ -2290,10 +2319,6 @@ access this function.
 				glGetBooleanv(GL_DOUBLEBUFFER,&double_buffer);
 				/* Make this visible to the rendering routines */
 				rendering_data.rendering_double_buffered = double_buffer;
-
-				/* in picking mode the transformations are left unchanged */
-				Scene_viewer_calculate_transformation(scene_viewer,
-					rendering_data.viewport_width,rendering_data.viewport_height);
 
 				if (scene_viewer->perturb_lines)
 				{
@@ -2681,8 +2706,8 @@ DESCRIPTION :
 	struct Scene_viewer *scene_viewer;
 
 	ENTER(Scene_viewer_initialise_callback);
-	USE_PARAMETER(graphics_buffer);
 	USE_PARAMETER(dummy_void);
+	USE_PARAMETER(graphics_buffer);
 	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
 	{
 		/* initialise graphics library to load XFont */
@@ -3838,6 +3863,8 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->texture_manager_callback_id=(void *)NULL;
 				/* no current interactive_tool */
 				scene_viewer->interactive_tool=(struct Interactive_tool *)NULL;
+				scene_viewer->order_independent_transparency_data = 
+					(struct Scene_viewer_order_independent_transparency_data *)NULL;
 
 				/* set projection matrices to identity */
 				for (i=0;i<16;i++)
@@ -3880,6 +3907,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->bk_texture_undistort_on=1;
 				scene_viewer->bk_texture_max_pixels_per_polygon=16.0;
 				scene_viewer->transparency_mode=SCENE_VIEWER_FAST_TRANSPARENCY;
+				scene_viewer->transparency_layers=1;
 				scene_viewer->input_callback_list=
 					CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_input_callback)))();
 				scene_viewer->sync_callback_list=
@@ -3979,6 +4007,12 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 			DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_input_callback)))(
 				&scene_viewer->input_callback_list);
 		}
+		if (scene_viewer->order_independent_transparency_data)
+		{
+			order_independent_finalise(
+				&scene_viewer->order_independent_transparency_data);
+		}
+
 		/* must destroy the widget */
 		DEACCESS(Graphics_buffer)(&scene_viewer->graphics_buffer);				
 		if (scene_viewer->pixel_data)
@@ -5614,8 +5648,17 @@ you can even see through the first semi-transparent surface drawn.
 	ENTER(Scene_viewer_set_transparency_mode);
 	if (scene_viewer&&((SCENE_VIEWER_FAST_TRANSPARENCY==transparency_mode)||
 		(SCENE_VIEWER_SLOW_TRANSPARENCY==transparency_mode)||
-		(SCENE_VIEWER_LAYERED_TRANSPARENCY==transparency_mode)))
+		(SCENE_VIEWER_LAYERED_TRANSPARENCY==transparency_mode)||
+		(SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY==transparency_mode)))
 	{
+		if (SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY==transparency_mode)
+		{
+			if (!order_independent_capable())
+			{
+				/* If we can't do it don't change */
+				transparency_mode = scene_viewer->transparency_mode;
+			}
+		}
 		scene_viewer->transparency_mode=transparency_mode;
 		Scene_viewer_redraw(scene_viewer);
 		return_code=1;
@@ -7578,6 +7621,10 @@ NOTE: Calling function must not deallocate returned string.
 		case SCENE_VIEWER_LAYERED_TRANSPARENCY:
 		{
 			return_string="layered_transparency";
+		} break;
+		case SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY:
+		{
+			return_string="order_indedependent_transparency";
 		} break;
 		default:
 		{

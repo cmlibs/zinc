@@ -81,15 +81,21 @@ this ensures everything is drawn but multiple layers of transparency will
 always draw on top of each other which means a surface that is behind another
 may be drawn over the top of one that is supposed to be in front.
 CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY divides the viewing volume between the
-near and far clip planes into "transapency_layers" slices and renders each
+near and far clip planes into "transparency_layers" slices and renders each
 slice from back to front.  This is very slow and can still have artefacts at 
 the edges of the layers.  Best use of the slices is made if the near and far
 clip planes are tight around the objects in the scene.
+CMISS_SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY uses some Nvidia extensions
+to implement a full back to front perl pixel fragment sort correctly rendering
+transparency with a small number of passes, specified by "transparency layers".
+This uses all the texturing resources of the current Nvidia hardware and so
+no materials used in the scene can contain textures.
 ==============================================================================*/
 {
 	CMISS_SCENE_VIEWER_FAST_TRANSPARENCY,
 	CMISS_SCENE_VIEWER_SLOW_TRANSPARENCY,
-	CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY
+	CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY,
+	CMISS_SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY
 };
 
 typedef struct Cmiss_scene_viewer *Cmiss_scene_viewer_id;

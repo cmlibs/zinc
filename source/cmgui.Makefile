@@ -693,6 +693,7 @@ GRAPHICS_SRCS = \
 	graphics/material.c \
 	graphics/makegtobj.c \
 	graphics/mcubes.c \
+	graphics/order_independent_transparency.c \
 	graphics/renderbinarywavefront.c \
 	graphics/rendergl.c \
 	graphics/rendervrml.c \
@@ -1024,7 +1025,9 @@ ifeq ($(SYSNAME:IRIX%=),)
 			@if [ ! -d $(OBJECT_PATH) ]; then \
 				mkdir -p $(OBJECT_PATH); \
 			fi
-			rm $(OBJECT_PATH)/$(EXPORTS_FILE).c;
+			@if [-f $(OBJECT_PATH)/$(EXPORTS_FILE).c]; then \
+				rm $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+			fi
       ifdef CMISS_ROOT_DEFINED
 			if [ -f $(SRC_EXPORTS_FILE) ]; then \
 				cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
@@ -1060,7 +1063,9 @@ ifeq ($(SYSNAME),Linux)
 					@if [ ! -d $(OBJECT_PATH) ]; then \
 						mkdir -p $(OBJECT_PATH); \
 					fi
-					rm $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c;
+					@if [-f $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c]; then \
+						rm $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
+					fi
             ifdef CMISS_ROOT_DEFINED
 					if [ -f $(SRC_EXPORTS_FILE) ]; then \
 						cp -f $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
@@ -1092,7 +1097,9 @@ ifeq ($(SYSNAME),Linux)
 					@if [ ! -d $(OBJECT_PATH) ]; then \
 						mkdir -p $(OBJECT_PATH); \
 					fi
-					rm $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c;
+					@if [ -f $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c ]; then \
+						rm $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
+					fi
             ifdef CMISS_ROOT_DEFINED
 					if [ -f $(SRC_EXPORTS_FILE) ]; then \
 						cp -f $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \

@@ -1889,7 +1889,8 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 	double std_view_angle;
 	enum Scene_viewer_transparency_mode transparency_mode;
 	int antialias_mode,current_pane,i,layered_transparency,number_of_tools,
-		pane_no,perturb_lines,redraw,return_code;
+		order_independent_transparency,pane_no,perturb_lines,redraw,return_code,
+		transparency_layers;
 	struct Graphics_window *graphics_window;
 	struct Interactive_tool *interactive_tool;
 	struct Modify_graphics_window_data *modify_graphics_window_data;
@@ -1926,6 +1927,7 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 				fast_transparency_flag=0;
 				slow_transparency_flag=0;
 				layered_transparency = 0;
+				order_independent_transparency = 0;
 
 				option_table=CREATE(Option_table)();
 				/* antialias/no_antialias */
@@ -1960,6 +1962,9 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 				Option_table_add_entry(transparency_option_table,
 					"layered_transparency",&layered_transparency,(void *)NULL,
 					set_int_positive);
+				Option_table_add_entry(transparency_option_table,
+					"order_independent_transparency",&order_independent_transparency,(void *)NULL,
+					set_int_positive);
 				Option_table_add_entry(transparency_option_table,"slow_transparency",
 					&slow_transparency_flag,(void *)NULL,set_char_flag);
 				Option_table_add_suboption_table(option_table,
@@ -1970,18 +1975,16 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 					{
 						display_message(WARNING_MESSAGE,"current_pane may be from 1 to %d",
 							graphics_window->number_of_panes);
-						current_pane=graphics_window->current_pane+1;
+						return_code = 0;
 					}
 					if (fast_transparency_flag&&slow_transparency_flag&&
-						 layered_transparency)
+						 layered_transparency&&order_independent_transparency)
 					{
 						display_message(ERROR_MESSAGE,"Only one of "
-							"fast_transparency/slow_transparency/layered_transparency");
-						fast_transparency_flag=0;
-						slow_transparency_flag=0;
-						layered_transparency=0;
+							"fast_transparency/slow_transparency/layered_transparency/order_independent_transparency");
+						return_code = 0;
 					}
-					if (graphics_window)
+					if (return_code && graphics_window)
 					{
 						redraw=0;
 						/* user deals with pane numbers one higher than internally */
@@ -2014,7 +2017,7 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 							redraw=1;
 						}
 						if (fast_transparency_flag||slow_transparency_flag||
-							layered_transparency)
+							layered_transparency||order_independent_transparency)
 						{
 							if (fast_transparency_flag)
 							{
@@ -2023,6 +2026,12 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 							else if (layered_transparency)
 							{
 								transparency_mode=SCENE_VIEWER_LAYERED_TRANSPARENCY;
+								transparency_layers = layered_transparency;
+							}
+							else if (order_independent_transparency)
+							{
+								transparency_mode=SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY;
+								transparency_layers = order_independent_transparency;
 							}
 							else
 							{
@@ -2034,11 +2043,11 @@ Parser commands for setting simple parameters applicable to the whole <window>.
 								Scene_viewer_set_transparency_mode(
 									graphics_window->scene_viewer_array[pane_no],
 									transparency_mode);
-								if (layered_transparency)
+								if (layered_transparency||order_independent_transparency)
 								{
 									Scene_viewer_set_transparency_layers(
 										graphics_window->scene_viewer_array[pane_no],
-										layered_transparency);
+										transparency_layers);
 								}
 							}
 							redraw=1;

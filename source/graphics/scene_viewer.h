@@ -45,6 +45,7 @@ and the functions given their public names.
 #define SCENE_VIEWER_FAST_TRANSPARENCY CMISS_SCENE_VIEWER_FAST_TRANSPARENCY
 #define SCENE_VIEWER_SLOW_TRANSPARENCY CMISS_SCENE_VIEWER_SLOW_TRANSPARENCY
 #define SCENE_VIEWER_LAYERED_TRANSPARENCY CMISS_SCENE_VIEWER_LAYERED_TRANSPARENCY
+#define SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY CMISS_SCENE_VIEWER_ORDER_INDEPENDENT_TRANSPARENCY
 
 /* Convert the functions that have identical interfaces */
 #define Scene_viewer_set_lookat_parameters_non_skew \
@@ -73,6 +74,14 @@ and the functions given their public names.
 Global types
 ------------
 */
+
+struct Scene_viewer_rendering_data;
+/*******************************************************************************
+LAST MODIFIED : 11 April 2003
+
+DESCRIPTION :
+Private rendering information.
+==============================================================================*/
 
 enum Scene_viewer_input_mode
 /*******************************************************************************
@@ -1209,5 +1218,14 @@ LAST MODIFIED : 14 October 1998
 DESCRIPTION :
 Returns a string label for the <viewport_mode>.
 NOTE: Calling function must not deallocate returned string.
+==============================================================================*/
+
+int Scene_viewer_call_next_renderer(
+	struct Scene_viewer_rendering_data *rendering_data);
+/*******************************************************************************
+LAST MODIFIED : 11 April 2003
+
+DESCRIPTION :
+Used by rendering functions to call the rest of the rendering callstack.
 ==============================================================================*/
 #endif /* !defined (SCENE_VIEWER_H) */
