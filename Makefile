@@ -72,13 +72,13 @@ cmgui cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl cmgui-dynamicgl-debug 
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
 ESU_BUILD_LIST = cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck
-ESU_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+ESU_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
 ESU_BUILD_MACHINE = 130.216.208.35 #esu35
 ESP_BUILD_LIST = cmgui cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl cmgui-dynamicgl-debug cmgui-console
-ESP_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+ESP_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
 ESP_BUILD_MACHINE = 130.216.208.156 #esp56
 HPC1_BUILD_LIST = cmgui cmgui-debug cmgui64 cmgui64-debug
-HPC1_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+HPC1_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
 HPC1_BUILD_MACHINE = 130.216.191.92 #hpc1
 
 
