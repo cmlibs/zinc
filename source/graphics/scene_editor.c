@@ -1034,10 +1034,10 @@ Sets the current_object in the <scene_editor> for editing. Updates widgets.
 				{
 					scene_editor->gt_element_group =
 						ACCESS(GT_element_group)(gt_element_group);
-					graphical_element_editor_set_gt_element_group(
-						scene_editor->graphical_element_editor, gt_element_group);
 					GT_element_group_add_callback(gt_element_group,
 						Scene_editor_graphical_element_change, (void *)scene_editor);
+					graphical_element_editor_set_gt_element_group(
+						scene_editor->graphical_element_editor, gt_element_group);
 					XtManageChild(scene_editor->graphical_element_editor);
 				}
 				else
