@@ -98,6 +98,7 @@ DESCRIPTION :
 	/* FIELDML_LABEL_TYPE_ELEMENT_INTERPOLATION */
 	struct FE_element *element_template;
 	struct LIST(Fieldml_label_name) *element_template_node_index_list;	
+	struct LIST(Fieldml_label_name) *element_template_element_lookup_list;	
 
 	int access_count;
 };
@@ -468,6 +469,8 @@ DESCRIPTION :
 			label_name->element_template = (struct FE_element *)NULL;
 			label_name->element_template_node_index_list = 
 				(struct LIST(Fieldml_label_name) *)NULL;
+			label_name->element_template_element_lookup_list = 
+				(struct LIST(Fieldml_label_name) *)NULL;
 			label_name->access_count = 0;
 		}
 		else
@@ -520,6 +523,11 @@ Frees the memory for the node field and sets <*label_name_address> to NULL.
 			{
 				DESTROY(LIST(Fieldml_label_name))
 					(&label_name->element_template_node_index_list);
+			}
+			if (label_name->element_template_element_lookup_list)
+			{
+				DESTROY(LIST(Fieldml_label_name))
+					(&label_name->element_template_element_lookup_list);
 			}
 			if (label_name->value)
 			{
@@ -1157,66 +1165,6 @@ DESCRIPTION :
 	return(return_code);
 } /* Fieldml_label_references_same_value */
 
-static int Fieldml_label_name_create_node_and_element_lookup_lists(
-   struct Fieldml_label_name *label, void *fieldml_data_void)
-/*******************************************************************************
-LAST MODIFIED : 24 February 2003
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct Fieldml_sax_data *fieldml_data;
-
-	ENTER(Fieldml_label_name_create_node_and_element_lookup_lists);
-
-	if (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void)
-	{
-		return_code = 1;
-		if (FIELDML_LABEL_TYPE_NODE_INDEX == label->type)
-		{
-			if (!FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
-				Fieldml_label_references_same_value, (void *)label,
-				fieldml_data->element_node_index_list))
-			{
-				ADD_OBJECT_TO_LIST(Fieldml_label_name)(label,
-					fieldml_data->element_node_index_list);
-			}
-		}
-		else if (FIELDML_LABEL_TYPE_ELEMENT_LOOKUP == label->type)
-		{
-			if (!FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
-				Fieldml_label_references_same_value, (void *)label,
-				fieldml_data->element_lookup_list))
-			{
-				ADD_OBJECT_TO_LIST(Fieldml_label_name)(label,
-					fieldml_data->element_lookup_list);
-			}
-		}
-		/* Don't follow this down as we treat the element_lookups referenced by
-			the node_lookup differently. */
-		else if (label->child_labels)
-		{
-			ADD_OBJECT_TO_LIST(Fieldml_label_name)(label, fieldml_data->label_name_stack);
-			return_code = FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
-				Fieldml_label_name_create_node_and_element_lookup_lists,
-				fieldml_data_void, label->child_labels);
-			REMOVE_OBJECT_FROM_LIST(Fieldml_label_name)(label, fieldml_data->label_name_stack);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Fieldml_label_name_create_node_and_element_lookup_lists.  "
-			"Missing fieldml data.");
-		return_code = 0;
-	}
-	
-	LEAVE;
-
-	return(return_code);
-} /* Fieldml_label_name_create_node_and_element_lookup_lists */
-
 static int Fieldml_label_name_assign_local_index(
    struct Fieldml_label_name *label, void *local_index_void)
 /*******************************************************************************
@@ -1468,6 +1416,73 @@ DESCRIPTION :
 	return(return_label);
 } /* Fieldml_label_name_resolve_element_lookup */
 
+static int Fieldml_label_name_create_node_and_element_lookup_lists(
+   struct Fieldml_label_name *label, void *fieldml_data_void)
+/*******************************************************************************
+LAST MODIFIED : 24 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Fieldml_label_name *returned_label;
+	struct Fieldml_sax_data *fieldml_data;
+
+	ENTER(Fieldml_label_name_create_node_and_element_lookup_lists);
+
+	if (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void)
+	{
+		return_code = 1;
+		if (FIELDML_LABEL_TYPE_NODE_INDEX == label->type)
+		{
+			if (!FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
+				Fieldml_label_references_same_value, (void *)label,
+				fieldml_data->element_node_index_list))
+			{
+				ADD_OBJECT_TO_LIST(Fieldml_label_name)(label,
+					fieldml_data->element_node_index_list);
+			}
+		}
+		else if (FIELDML_LABEL_TYPE_ELEMENT_LOOKUP == label->type)
+		{
+			if (!FIRST_OBJECT_IN_LIST_THAT(Fieldml_label_name)(
+				Fieldml_label_references_same_value, (void *)label,
+				fieldml_data->element_lookup_list))
+			{
+				/* If we can resolve it now then the values are stored in 
+					the element */
+				if (returned_label = Fieldml_label_name_resolve_element_lookup(
+					label, fieldml_data))
+				{
+					ADD_OBJECT_TO_LIST(Fieldml_label_name)(label,
+						fieldml_data->element_lookup_list);
+				}
+			}
+		}
+		/* Don't follow this down as we treat the element_lookups referenced by
+			the node_lookup differently. */
+		else if (label->child_labels)
+		{
+			ADD_OBJECT_TO_LIST(Fieldml_label_name)(label, fieldml_data->label_name_stack);
+			return_code = FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
+				Fieldml_label_name_create_node_and_element_lookup_lists,
+				fieldml_data_void, label->child_labels);
+			REMOVE_OBJECT_FROM_LIST(Fieldml_label_name)(label, fieldml_data->label_name_stack);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Fieldml_label_name_create_node_and_element_lookup_lists.  "
+			"Missing fieldml data.");
+		return_code = 0;
+	}
+	
+	LEAVE;
+
+	return(return_code);
+} /* Fieldml_label_name_create_node_and_element_lookup_lists */
+
 static int Fieldml_label_name_assign_scale_factor_lists(
    struct Fieldml_label_name *label, void *fieldml_data_void)
 /*******************************************************************************
@@ -1484,10 +1499,13 @@ DESCRIPTION :
 
 	if (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void)
 	{
+		/* We need the offsets in the parent as we are going to use this
+			as a template with many referenced lookups */
+		label->scale_factor_list_offset = fieldml_data->scale_factor_list_offset;
 		if (returned_label = Fieldml_label_name_resolve_element_lookup(
 			label, fieldml_data))
 		{
-			returned_label->local_index = fieldml_data->scale_factor_list_offset;
+			returned_label->scale_factor_list_offset = label->scale_factor_list_offset;
 			returned_label->scale_factor_list_size = label->scale_factor_list_size;
 			returned_label->scale_factor_list_identifier = 
 				label->scale_factor_list_identifier;
@@ -1497,9 +1515,6 @@ DESCRIPTION :
 			fieldml_data->scale_factor_list_sizes[
 				fieldml_data->number_of_scale_factor_lists] = 
 				returned_label->scale_factor_list_size;
-			display_message(WARNING_MESSAGE,
-				"Fieldml_label_name_assign_scale_factor_lists.  "
-				"Scale factor size %d.", returned_label->scale_factor_list_size);
 			fieldml_data->number_of_scale_factor_lists++;
 			fieldml_data->scale_factor_list_offset += returned_label->scale_factor_list_size;
 		}
@@ -2095,6 +2110,77 @@ DESCRIPTION :
 
 	return(return_code);
 } /* Fieldml_label_name_set_nodes_in_element */
+
+static int Fieldml_label_name_set_scale_factors_in_element(
+   struct Fieldml_label_name *label, void *fieldml_data_void)
+/*******************************************************************************
+LAST MODIFIED : 24 February 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	float scale_factor;
+	int follow_children, return_code;
+	struct Fieldml_label_name *returned_label;
+	struct Fieldml_sax_data *fieldml_data;
+
+	ENTER(Fieldml_label_name_set_scale_factors_in_element);
+
+	if (fieldml_data = (struct Fieldml_sax_data *)fieldml_data_void)
+	{
+		follow_children = 1;
+		if (FIELDML_LABEL_TYPE_ELEMENT_LOOKUP == label->type)
+		{
+			if (returned_label = Fieldml_label_name_resolve_element_lookup(
+				label, fieldml_data))
+			{
+				/* The element_lookup list is used as a template for
+					many elements so the offset must be fetched from there */
+				fieldml_data->scale_factor_list_offset = 
+					label->scale_factor_list_offset;
+				Fieldml_label_name_set_scale_factors_in_element(
+					returned_label, fieldml_data_void);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Fieldml_label_name_set_scale_factors_in_element.  "
+					"Unable to find scale factor set in element.");
+			}
+			follow_children = 0;
+		}
+		else if (FIELDML_LABEL_TYPE_LABEL == label->type)
+		{
+			if (label->value)
+			{
+				sscanf(label->value, "%f", &scale_factor);
+				fieldml_data->current_element->information->scale_factors[
+					fieldml_data->scale_factor_list_offset] = scale_factor;
+				fieldml_data->scale_factor_list_offset++;				
+			}
+		}
+		if (follow_children && label->child_labels)
+		{
+			return_code = FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
+				Fieldml_label_name_set_scale_factors_in_element,
+				fieldml_data_void, label->child_labels);
+		}
+		/* We always want to work through the whole list irrespective 
+			of whether this label was resolved or not */
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Fieldml_label_name_set_scale_factors_in_element.  "
+			"Missing fieldml data.");
+		return_code = 0;
+	}
+	
+	LEAVE;
+
+	return(return_code);
+} /* Fieldml_label_name_set_scale_factors_in_element */
 
 static void fieldml_start_fieldml(struct Fieldml_sax_data *fieldml_data,
 	char **attributes)
@@ -2698,7 +2784,7 @@ DESCRIPTION :
 			(void *)fieldml_data->current_basis_mapping->basis;
 		fieldml_data->current_label_name->scale_factor_list_size =
 			fieldml_data->current_basis_mapping->basis->
-			number_of_standard_basis_functions;
+			number_of_basis_functions;
 	}
 	
 	LEAVE;
@@ -3764,12 +3850,14 @@ DESCRIPTION :
 			if (fieldml_data->current_element_interpolation_ref)
 			{
 				if (fieldml_data->current_element_interpolation_ref->element_template
-					 && fieldml_data->current_element_interpolation_ref->element_template_node_index_list)
+					&& fieldml_data->current_element_interpolation_ref->element_template_node_index_list
+					&& fieldml_data->current_element_interpolation_ref->element_template_element_lookup_list)
 				{
 					number_of_local_nodes = 0;
 					FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
 						Fieldml_label_name_assign_local_index, (void *)&number_of_local_nodes,
-						fieldml_data->element_node_index_list);
+						fieldml_data->current_element_interpolation_ref->element_template_node_index_list);
+
 					FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
 						Fieldml_label_name_process_label_in_element, (void *)fieldml_data,
 						fieldml_data->current_element_interpolation_ref->element_template_node_index_list);
@@ -3777,6 +3865,11 @@ DESCRIPTION :
 						Fieldml_label_name_set_nodes_in_element,
 						(void *)fieldml_data->current_element,
 						fieldml_data->current_element_interpolation_ref->element_template_node_index_list);					
+
+					FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
+						Fieldml_label_name_set_scale_factors_in_element,
+						(void *)fieldml_data,
+						fieldml_data->current_element_interpolation_ref->element_template_element_lookup_list);
 				}
 				else
 				{
@@ -3792,8 +3885,6 @@ DESCRIPTION :
 					FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
 						Fieldml_label_name_assign_local_index, (void *)&number_of_local_nodes,
 						fieldml_data->element_node_index_list);
-					display_message(WARNING_MESSAGE, "fieldml_end_element.  "
-						"Number of nodes %d.", number_of_local_nodes);
 				
 					maximum_number_of_scale_factor_lists =
 						NUMBER_IN_LIST(Fieldml_label_name)(fieldml_data->element_lookup_list);
@@ -3811,9 +3902,6 @@ DESCRIPTION :
 							FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
 								Fieldml_label_name_assign_scale_factor_lists, 
 								(void *)fieldml_data, fieldml_data->element_lookup_list);
-							display_message(WARNING_MESSAGE, "fieldml_end_element.  "
-								"Number of scale factor sets %d.",
-								fieldml_data->number_of_scale_factor_lists);
 							/* When we get Richard's API separate the node scale field
 								info call */
 						}
@@ -3834,6 +3922,11 @@ DESCRIPTION :
 						(void *)fieldml_data->current_element,
 						fieldml_data->element_node_index_list);
 
+					FOR_EACH_OBJECT_IN_LIST(Fieldml_label_name)(
+						Fieldml_label_name_set_scale_factors_in_element,
+						(void *)fieldml_data,
+						fieldml_data->element_lookup_list);
+
 					if (fieldml_data->scale_factor_list_identifiers)
 					{
 						DEALLOCATE(fieldml_data->scale_factor_list_identifiers);
@@ -3849,7 +3942,10 @@ DESCRIPTION :
 						fieldml_data->current_element;
 					fieldml_data->current_element_interpolation_ref->element_template_node_index_list =
 						fieldml_data->element_node_index_list;
-					DESTROY(LIST(Fieldml_label_name))(&fieldml_data->element_lookup_list);
+					fieldml_data->current_element_interpolation_ref->element_template_element_lookup_list =
+						fieldml_data->element_lookup_list;
+					fieldml_data->element_lookup_list = (struct LIST (Fieldml_label_name) *)NULL;
+					fieldml_data->element_node_index_list = (struct LIST (Fieldml_label_name) *)NULL;
 				}
 			}
 			else
@@ -3917,21 +4013,21 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	char *index;
-	int face_element_number, face_number, i, *face_number_list;
+	int face_element_number, i, *face_number_list;
 
 	ENTER(fieldml_end_element_faces);
 
 	if (fieldml_data->current_element_number)
 	{
 		index = fieldml_data->character_buffer;
-		face_number = 0;
+		face_element_number = 0;
 		while ((index < fieldml_data->character_buffer + fieldml_data->buffer_length)
 			&& (1 == sscanf(index, " %d%n", &face_element_number, &i)))
 		{
 			if (REALLOCATE(face_number_list, fieldml_data->face_numbers,
 				int, fieldml_data->number_of_faces + 1))
 			{
-				face_number_list[fieldml_data->number_of_faces] = face_number;
+				face_number_list[fieldml_data->number_of_faces] = face_element_number;
 				fieldml_data->face_numbers = face_number_list;
 				fieldml_data->number_of_faces++;
 			}
