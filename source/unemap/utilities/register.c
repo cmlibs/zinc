@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 16 December 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -183,7 +183,7 @@ int draw_histogram(FILE *file,int channel_number)
 		if (unemap_get_number_of_samples_acquired(&number_of_samples)&&
 			(0<number_of_samples)&&ALLOCATE(samples,short int,number_of_samples))
 		{
-			if (unemap_get_samples_acquired(channel_number,samples))
+			if (unemap_get_samples_acquired(channel_number,0,samples,(int *)NULL))
 			{
 				buffer=samples;
 				min= *buffer;
@@ -289,7 +289,7 @@ int register_write_signal_file(char *file_name,int channel_number)
 			(0<number_of_samples)&&ALLOCATE(samples,short int,number_of_samples*
 			number_of_channels))
 		{
-			if (unemap_get_samples_acquired(0,samples)&&
+			if (unemap_get_samples_acquired(0,0,samples,(int *)NULL)&&
 				unemap_get_sampling_frequency(&sampling_frequency))
 			{
 				/* create a rig for saving signals */
@@ -495,7 +495,7 @@ static int allow_to_settle(int test_channel,int *test_cards,int *channel_check,
 		sleep(4+sampling_delay);
 		/*???debug */
 		unemap_stop_sampling();
-		unemap_get_samples_acquired(0,samples);
+		unemap_get_samples_acquired(0,0,samples,(int *)NULL);
 		channel_number=0;
 		for (l=0;l<MAXIMUM_NUMBER_OF_NI_CARDS;l++)
 		{
@@ -932,7 +932,7 @@ static void process_keyboard(
 					sleep(sampling_delay);
 					unemap_stop_sampling();
 					register_write_signal_file("noise.sig",channel_number);
-					if (unemap_get_samples_acquired(0,samples))
+					if (unemap_get_samples_acquired(0,0,samples,(int *)NULL))
 					{
 						printf("means:\n");
 						for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
@@ -3162,7 +3162,7 @@ static void process_keyboard(
 											unemap_start_sampling();
 											sleep(sampling_delay);
 											unemap_stop_sampling();
-											unemap_get_samples_acquired(0,samples);
+											unemap_get_samples_acquired(0,0,samples,(int *)NULL);
 											if (0!=tested_card)
 											{
 												register_write_signal_file("phase4.sig",
