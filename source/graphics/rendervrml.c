@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendervrml.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Renders gtObjects to VRML file
@@ -14,11 +14,11 @@ Renders gtObjects to VRML file
 #include "general/list.h"
 #include "general/list_private.h"
 #include "general/object.h"
-#include "graphics/animation_window.h"
-#include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
+#if defined (OLD_CODE)
 #include "graphics/light.h"
 #include "graphics/light_model.h"
+#endif /* defined (OLD_CODE) */
 #include "graphics/material.h"
 #include "graphics/rendervrml.h"
 #include "graphics/scene.h"

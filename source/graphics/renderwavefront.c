@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : renderwavefront.c
 
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Renders gtObjects to Wavefront OBJ file
@@ -12,12 +12,12 @@ Renders gtObjects to Wavefront OBJ file
 #include <math.h>
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
-#include "graphics/animation_window.h"
-#include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_window.h"
+#if defined (OLD_CODE)
 #include "graphics/light.h"
 #include "graphics/light_model.h"
+#endif /* defined (OLD_CODE) */
 #include "graphics/material.h"
 #include "graphics/renderwavefront.h"
 #include "graphics/scene.h"

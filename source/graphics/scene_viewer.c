@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.c
 
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -46,7 +46,6 @@ November 97 Created from rendering part of Drawing.
 #include "graphics/scene_viewer.h"
 #include "graphics/texture.h"
 #include "graphics/transform_tool.h"
-/* #include "graphics/write_to_video.h" */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
