@@ -2904,24 +2904,24 @@ initializes the appropriate fields.
 				pacing_window->decrement_threshold_pairs_value=(Widget)NULL;
 				pacing_window->restitution_curve_pace_toggle=(Widget)NULL;
 				/* retrieve the settings */
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					pacing_window,resources,XtNumber(resources),NULL);
 				pacing_electrodes=(char *)NULL;
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&pacing_electrodes,pacing_electrodes_resources,
 					XtNumber(pacing_electrodes_resources),NULL);
 				/* NB.  XtVaGetApplicationResources does not allocate memory for
 					pacing_electrodes, so it does not need to be free'd */
 				set_pacing_channels_from_string(pacing_window,pacing_electrodes);
 				return_electrodes=(char *)NULL;
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&return_electrodes,return_electrodes_resources,
 					XtNumber(return_electrodes_resources),NULL);
 				/* NB.  XtVaGetApplicationResources does not allocate memory for
 					return_electrodes, so it does not need to be free'd */
 				set_return_channels_from_string(pacing_window,return_electrodes);
 				decrement_threshold_pairs_string=(char *)NULL;
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&decrement_threshold_pairs_string,decrement_threshold_pairs_resources,
 					XtNumber(decrement_threshold_pairs_resources),NULL);
 				/* NB.  XtVaGetApplicationResources does not allocate memory for
@@ -2933,7 +2933,7 @@ initializes the appropriate fields.
 				/* create the window shell */
 				if (pacing_window->shell=XtVaCreatePopupShell(
 					"pacing_window_shell",
-					topLevelShellWidgetClass,user_interface->application_shell,
+					topLevelShellWidgetClass,User_interface_get_application_shell(user_interface),
 					XmNallowShellResize,False,
 					XmNuserData,user_interface,
 					NULL))

@@ -233,7 +233,7 @@ it to the window with the mouse on it.
 				/* we have to send the message to the one with the mouse */
 				do
 				{
-					if (XQueryPointer(user_interface->display,temp->client_window,
+					if (XQueryPointer(User_interface_get_display(user_interface),temp->client_window,
 						&root_ret,&child_ret,&root_x_ret,&root_y_ret,&win_x_ret,&win_y_ret,
 						&mask_ret))
 					{
@@ -280,9 +280,9 @@ Sets the spaceball so that any input is recognised
 #if defined (IBM)
 		spaceball_motion_event_type=XInternAtom(display,"SpaceballMotionEventType",
 			False);
-		spaceball_button_press_event_type=XInternAtom(user_interface->display,
+		spaceball_button_press_event_type=XInternAtom(User_interface_get_display(user_interface),
 			"SpaceballButtonPressEventType",False);
-		spaceball_button_release_event_type=XInternAtom(user_interface->display,
+		spaceball_button_release_event_type=XInternAtom(User_interface_get_display(user_interface),
 			"SpaceballButtonReleaseEventType",False);
 #if defined (SPACEBALL_DIAG)
 /*???debug */
@@ -297,7 +297,7 @@ printf("input_module_spaceball_init.  Spaceball initialised\n");
 			if (0==strcmp(device_list[i].name,"spaceball"))
 			{
 				/* open the spaceball */
-				spaceball_device=XOpenDevice(user_interface->display,device_list[i].id);
+				spaceball_device=XOpenDevice(User_interface_get_display(user_interface),device_list[i].id);
 			};
 		};
 		if (spaceball_device)
@@ -346,7 +346,7 @@ Closes the spaceball.
 	if (user_interface)
 	{
 #if defined (SGI)
-		XCloseDevice(user_interface->display,spaceball_device);
+		XCloseDevice(User_interface_get_display(user_interface),spaceball_device);
 #endif
 		return_code=1;
 	}
@@ -917,7 +917,7 @@ Sets the dials so that any input is recognised, and messages are received.
 			if (0==strcmp(device_list[i].name,"dial+buttons"))
 			{
 				/* open the dials */
-				dials_device=XOpenDevice(user_interface->display,device_list[i].id);
+				dials_device=XOpenDevice(User_interface_get_display(user_interface),device_list[i].id);
 			};
 		};
 		if (dials_device)
@@ -970,7 +970,7 @@ Closes the dials.
 	ENTER(input_module_dials_close);
 	if (user_interface)
 	{
-		XCloseDevice(user_interface->display,dials_device);
+		XCloseDevice(User_interface_get_display(user_interface),dials_device);
 		return_code=1;
 	}
 	else
@@ -1010,7 +1010,7 @@ Sets up any devices correctly, and initialises the callback stack.
 		}
 		/* find out which devices are present */
 #if defined (SGI)
-		device_list=(XDeviceInfoPtr)XListInputDevices(user_interface->display,
+		device_list=(XDeviceInfoPtr)XListInputDevices(User_interface_get_display(user_interface),
 			&ndevices);
 #endif
 		return_code=1;
@@ -1499,6 +1499,7 @@ Forces the input_module to see if there are any periodic updates
 	return (return_code);
 } /* input_module_update */
 
+#if defined (OLD_CODE)
 int input_module_process(XEvent *event,struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 23 June 1996
@@ -1780,6 +1781,7 @@ else
 
 	return (return_code);
 } /* input_module_process */
+#endif /* defined (OLD_CODE) */
 
 int input_module_add_input_window(Widget widget,
 	struct User_interface *user_interface)
@@ -1801,7 +1803,7 @@ Let us receive events (ie from spaceball) if the mouse is in this window.
 		if (spaceball_valid && spaceball_device)
 		{
 #if defined (SGI)
-			XSelectExtensionEvent(user_interface->display,XtWindow(widget),
+			XSelectExtensionEvent(User_interface_get_display(user_interface),XtWindow(widget),
 				ListOfSpaceballEventClass,3);
 #endif
 		}
@@ -1809,7 +1811,7 @@ Let us receive events (ie from spaceball) if the mouse is in this window.
 #if defined (DIALS)
 		if (dials_valid && dials_device)
 		{
-			XSelectExtensionEvent(user_interface->display,XtWindow(widget),
+			XSelectExtensionEvent(User_interface_get_display(user_interface),XtWindow(widget),
 				ListOfDialsEventClass,3);
 		}
 #endif

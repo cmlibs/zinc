@@ -328,7 +328,7 @@ DESCRIPTION :
 			ANALYSIS_ASSOCIATE,(XtPointer)set_mapping_analysis_region,
 			(XtPointer)analysis_select_map_drawing_are,
 			(XtPointer)analysis_select_auxiliary_drawi,analysis_work_area,
-			user_interface->screen_width,user_interface->screen_height,
+			User_interface_get_screen_width(user_interface),User_interface_get_screen_height(user_interface),
 			analysis->configuration_file_extension,
 			analysis->postscript_file_extension,analysis->map_drawing_information,
 			analysis->user_interface,analysis->unemap_package,
@@ -682,7 +682,7 @@ continuation.  Display the map.
 				{
 					if ((!(parent=widget))||(True!=XtIsWidget(parent)))
 					{
-						parent=user_interface->application_shell;
+						parent=User_interface_get_application_shell(user_interface);
 					}
 					if (warning_box_shell=XtVaCreatePopupShell(
 						"display_map_warning_shell",
@@ -1116,7 +1116,7 @@ Sets the detection algorithm to interval.
 	{
 		if (EDA_INTERVAL!=analysis->detection)
 		{
-			widget_spacing=analysis->user_interface->widget_spacing;
+			widget_spacing=User_interface_get_widget_spacing(analysis->user_interface);
 			if (analysis->trace)
 			{
 				/* enlarge area */
@@ -1255,7 +1255,7 @@ Sets the detection algorithm to level.
 	{
 		if (EDA_LEVEL!=analysis->detection)
 		{
-			widget_spacing=analysis->user_interface->widget_spacing;
+			widget_spacing=User_interface_get_widget_spacing(analysis->user_interface);
 			if (analysis->trace)
 			{
 				/* enlarge area */
@@ -1418,7 +1418,7 @@ Sets the detection algorithm to threshold.
 	{
 		if (EDA_THRESHOLD!=analysis->detection)
 		{
-			widget_spacing=analysis->user_interface->widget_spacing;
+			widget_spacing=User_interface_get_widget_spacing(analysis->user_interface);
 			if (analysis->trace)
 			{
 				/* enlarge area */
@@ -3058,8 +3058,8 @@ Sets up the analysis work area for analysing a set of signals.
 				&(analysis->minimum_separation),&(analysis->level),
 				&(analysis->average_width),&(analysis->start_search_interval),
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
-				analysis->user_interface->screen_width,
-				analysis->user_interface->screen_height,
+				User_interface_get_screen_width(analysis->user_interface),
+				User_interface_get_screen_height(analysis->user_interface),
 				analysis->signal_drawing_information,analysis->user_interface,
 				&(analysis->first_eimaging_event)))
 			{
@@ -4047,8 +4047,8 @@ signals.
 							&(analysis->start_search_interval),
 							&(analysis->search_interval_divisions),
 							&(analysis->end_search_interval),
-							analysis->user_interface->screen_width,
-							analysis->user_interface->screen_height,
+							User_interface_get_screen_width(analysis->user_interface),
+							User_interface_get_screen_height(analysis->user_interface),
 							analysis->signal_drawing_information,analysis->user_interface,
 							&(analysis->first_eimaging_event)))
 						{
@@ -4340,8 +4340,8 @@ analysing the signals.
 				&(analysis->minimum_separation),&(analysis->level),
 				&(analysis->average_width),&(analysis->start_search_interval),
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
-				analysis->user_interface->screen_width,
-				analysis->user_interface->screen_height,
+				User_interface_get_screen_width(analysis->user_interface),
+				User_interface_get_screen_height(analysis->user_interface),
 				analysis->signal_drawing_information,analysis->user_interface,
 				&(analysis->first_eimaging_event)))
 			{
@@ -4552,8 +4552,8 @@ for analysing the signals.
 				&(analysis->minimum_separation),&(analysis->level),
 				&(analysis->average_width),&(analysis->start_search_interval),
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
-				analysis->user_interface->screen_width,
-				analysis->user_interface->screen_height,
+				User_interface_get_screen_width(analysis->user_interface),
+				User_interface_get_screen_height(analysis->user_interface),
 				analysis->signal_drawing_information,analysis->user_interface,
 				&(analysis->first_eimaging_event)))
 			{
@@ -4775,8 +4775,8 @@ for analysing the signals.  <bdf>!=0 reads bdf files, else reads edf files
 					&(analysis->start_search_interval),
 					&(analysis->search_interval_divisions),
 					&(analysis->end_search_interval),
-					analysis->user_interface->screen_width,
-					analysis->user_interface->screen_height,
+					User_interface_get_screen_width(analysis->user_interface),
+					User_interface_get_screen_height(analysis->user_interface),
 					analysis->signal_drawing_information,analysis->user_interface,
 					&(analysis->first_eimaging_event)))
 				{
@@ -5069,8 +5069,8 @@ for analysing the signals.
 				&(analysis->minimum_separation),&(analysis->level),
 				&(analysis->average_width),&(analysis->start_search_interval),
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
-				analysis->user_interface->screen_width,
-				analysis->user_interface->screen_height,
+				User_interface_get_screen_width(analysis->user_interface),
+				User_interface_get_screen_height(analysis->user_interface),
 				analysis->signal_drawing_information,analysis->user_interface,
 				&(analysis->first_eimaging_event)))
 			{
@@ -5286,8 +5286,8 @@ for analysing the signals.
 				&(analysis->minimum_separation),&(analysis->level),
 				&(analysis->average_width),&(analysis->start_search_interval),
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
-				analysis->user_interface->screen_width,
-				analysis->user_interface->screen_height,
+				User_interface_get_screen_width(analysis->user_interface),
+				User_interface_get_screen_height(analysis->user_interface),
 				analysis->signal_drawing_information,analysis->user_interface,
 				&(analysis->first_eimaging_event)))
 			{
@@ -5478,8 +5478,8 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 									&(analysis->average_width),&(analysis->start_search_interval),
 									&(analysis->search_interval_divisions),
 									&(analysis->end_search_interval),
-									analysis->user_interface->screen_width,
-									analysis->user_interface->screen_height,
+									User_interface_get_screen_width(analysis->user_interface),
+									User_interface_get_screen_height(analysis->user_interface),
 									analysis->signal_drawing_information,
 									analysis->user_interface,&(analysis->first_eimaging_event));
 							}
@@ -6058,7 +6058,7 @@ The hot key handler for the <widget>.
 		trace)&&(user_interface=((struct Analysis_work_area *)
 		analysis_work_area_structure)->user_interface))
 	{
-		display=user_interface->display;
+		display=User_interface_get_display(user_interface);
 		if (EVENT_DETECTION==*trace_window->analysis_mode)
 		{
 			if (!((key_press->state)&(~(ShiftMask|LockMask))))
@@ -6733,7 +6733,7 @@ drawing area.
 			{
 				if ((callback->event)&&(ButtonPress==callback->event->type))
 				{
-					display=analysis->user_interface->display;
+					display=User_interface_get_display(analysis->user_interface);
 					pointer_sensitivity=analysis->pointer_sensitivity;
 					potential_time_colour=(analysis->signal_drawing_information->
 						graphics_context).potential_time_colour;
@@ -7752,7 +7752,7 @@ Electrical_imaging_event.
 			event=*trace->first_eimaging_event;
 			drawing_area=trace_area_3->drawing_area;
 			drawing=trace_area_3->drawing;
-			display=user_interface->display;
+			display=User_interface_get_display(user_interface);
 			button_event= &(callback->event->xbutton);
 			working_button=button_event->button;
 			pointer_x=button_event->x;
@@ -8124,7 +8124,7 @@ should be done as a callback from the trace_window.
 					{
 						if ((callback->event)&&(ButtonPress==callback->event->type))
 						{
-							display=user_interface->display;
+							display=User_interface_get_display(user_interface);
 							pointer_sensitivity=analysis->pointer_sensitivity;
 							detection=analysis->detection;
 							button_event= &(callback->event->xbutton);
@@ -9209,7 +9209,7 @@ should be done as a callback from the trace_window.
 								signal=trace_area_3_device->signal;
 								if ((callback->event)&&(ButtonPress==callback->event->type))
 								{
-									display=user_interface->display;
+									display=User_interface_get_display(user_interface);
 									font=signal_drawing_information->font;
 									button_event= &(callback->event->xbutton);
 									pointer_x=button_event->x;
@@ -14508,7 +14508,7 @@ The hot key handler for the <widget>.
 	{
 		if (!((key_press->state)&(~(ShiftMask|LockMask))))
 		{
-			display=user_interface->display;
+			display=User_interface_get_display(user_interface);
 			if (0==a_key_code)
 			{
 				a_key_code=(unsigned int)XKeysymToKeycode(display,97);
@@ -14995,7 +14995,7 @@ Responds to update callbacks from the time object.
 									}
 									else
 									{
-										display=drawing_information->user_interface->display;
+										display=User_interface_get_display(drawing_information->user_interface);
 										colour_map=drawing_information->colour_map;
 										spectrum_pixels=drawing_information->spectrum_colours;
 										/* use background drawing colour for the whole spectrum */
@@ -16853,8 +16853,8 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 				{
 					if (ButtonPress==callback->event->type)
 					{
-						display=analysis->user_interface->display;
-						widget_spacing=analysis->user_interface->widget_spacing;
+						display=User_interface_get_display(analysis->user_interface);
+						widget_spacing=User_interface_get_widget_spacing(analysis->user_interface);
 						button_event= &(callback->event->xbutton);
 						pointer_x=button_event->x;
 						pointer_y=button_event->y;
@@ -17437,7 +17437,7 @@ Creates the windows associated with the analysis work area.
 		analysis->write_signal_file_data=(struct File_open_data *)NULL;
 		analysis->overlay_signal_file_data=(struct File_open_data *)NULL;
 		/* retrieve the settings */
-		XtVaGetApplicationResources(user_interface->application_shell,analysis,
+		XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),analysis,
 			resources,XtNumber(resources),NULL);
 		if (analysis->events_file_extension)
 		{
@@ -17461,7 +17461,7 @@ Creates the windows associated with the analysis work area.
 		{
 			/* create the analysis window shell */
 			if (!create_analysis_window_shell(&(analysis->window_shell),parent,
-				user_interface->screen_width,user_interface->screen_height,
+				User_interface_get_screen_width(user_interface),User_interface_get_screen_height(user_interface),
 				user_interface))
 			{
 				display_message(ERROR_MESSAGE,
@@ -17543,7 +17543,7 @@ Creates the windows associated with the analysis work area.
 							analysis->identifying_colour,analysis->signal_order,
 							SEPARATE_LAYOUT,&(analysis->start_search_interval),
 							&(analysis->search_interval_divisions),
-							&(analysis->end_search_interval),user_interface->screen_height,
+							&(analysis->end_search_interval),User_interface_get_screen_height(user_interface),
 							postscript_file_extension,analysis->events_file_extension,
 							analysis->signal_drawing_information,user_interface,
 							&(analysis->signal_order)))

@@ -50,6 +50,7 @@ DESCRIPTION :
 #endif /* defined (UNEMAP_USE_3D) */
 #include "user_interface/confirmation.h"
 #include "unemap/setup_dialog.h"
+#include "user_interface/event_dispatcher.h"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/printer.h"
@@ -1416,10 +1417,9 @@ Finds the id of the mapping animate button.
 	LEAVE;
 } /* identify_mapping_animate_button */
 
-static void draw_activation_animation_frame(XtPointer mapping_window,
-	XtIntervalId *timer_id)
+static int draw_activation_animation_frame(void *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 25 June 1998
+LAST MODIFIED : 6 March 2002
 
 DESCRIPTION :
 Draws a frame in the activation map animation.
@@ -1428,7 +1428,7 @@ Draws a frame in the activation map animation.
 	Colormap colour_map;
 	Display *display;
 	float contour_maximum,contour_minimum,maximum_value,minimum_value;
-	int cell_number,i,number_of_contours,number_of_spectrum_colours;
+	int cell_number,i,number_of_contours,number_of_spectrum_colours,return_code;
 	Pixel *spectrum_pixels;
 	struct Drawing_2d *drawing;
 	struct Map *map;
@@ -1437,7 +1437,6 @@ Draws a frame in the activation map animation.
 	XColor colour,spectrum_rgb[MAX_SPECTRUM_COLOURS];
 
 	ENTER(draw_activation_animation_frame);
-	USE_PARAMETER(timer_id);
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(map=mapping->map)&&
 		(map->type)&&((SINGLE_ACTIVATION== *(map->type))||
 		((MULTIPLE_ACTIVATION== *(map->type))&&
@@ -1447,6 +1446,7 @@ Draws a frame in the activation map animation.
 		(mapping->user_interface==drawing_information->user_interface)&&
 		(drawing=mapping->map_drawing))
 	{
+		return_code = 1;
 		if (SINGLE_ACTIVATION== *(map->type))
 		{
 			number_of_spectrum_colours=
@@ -1461,7 +1461,7 @@ Draws a frame in the activation map animation.
 				}
 				else
 				{
-					display=drawing_information->user_interface->display;
+					display=User_interface_get_display(drawing_information->user_interface);
 					colour_map=drawing_information->colour_map;
 					spectrum_pixels=drawing_information->spectrum_colours;
 					/* use background drawing colour for the whole spectrum */
@@ -1521,8 +1521,10 @@ Draws a frame in the activation map animation.
 				(map->activation_front)++;
 				if (map->activation_front<number_of_spectrum_colours)
 				{
-					(void)XtAppAddTimeOut(mapping->user_interface->application_context,
-						(long unsigned)100,draw_activation_animation_frame,mapping_window);
+					Event_dispatcher_add_timeout_callback(
+						User_interface_get_event_dispatcher(mapping->user_interface),
+						/*seconds*/0, /*nanoseconds*/100000000, draw_activation_animation_frame, 
+						(void *)mapping_window);
 				}
 				else
 				{
@@ -1550,9 +1552,9 @@ Draws a frame in the activation map animation.
 				(*(map->datum))++;
 				if (*(map->datum)< *(map->end_search_interval))
 				{
-					(void)XtAppAddTimeOut(
-						mapping->user_interface->application_context,(long unsigned)10,
-						draw_activation_animation_frame,mapping_window);
+					Event_dispatcher_add_timeout_callback(
+						User_interface_get_event_dispatcher(mapping->user_interface), /*seconds*/0,
+						/*nanoseconds*/10000000, draw_activation_animation_frame, (void *)mapping_window);
 				}
 				else
 				{
@@ -1576,10 +1578,10 @@ Draws a frame in the activation map animation.
 							(map->sub_map_number)++;
 							if (map->sub_map_number<map->number_of_sub_maps)
 							{
-								(void)XtAppAddTimeOut(
-									mapping->user_interface->application_context,
-									(long unsigned)100,draw_activation_animation_frame,
-									mapping_window);
+								Event_dispatcher_add_timeout_callback(
+									User_interface_get_event_dispatcher(mapping->user_interface),
+									/*seconds*/0, /*nanoseconds*/100000000, draw_activation_animation_frame, 
+									(void *)mapping_window);
 							}
 							else
 							{
@@ -1599,10 +1601,10 @@ Draws a frame in the activation map animation.
 							(*(map->potential_time))++;
 							if (*(map->potential_time)< *(map->end_search_interval))
 							{
-								(void)XtAppAddTimeOut(
-									mapping->user_interface->application_context,
-									(long unsigned)10,draw_activation_animation_frame,
-									mapping_window);
+								Event_dispatcher_add_timeout_callback(
+									User_interface_get_event_dispatcher(mapping->user_interface),
+									/*seconds*/0, /*nanoseconds*/10000000, draw_activation_animation_frame,
+									(void *)mapping_window);
 							}
 							else
 							{
@@ -1619,7 +1621,13 @@ Draws a frame in the activation map animation.
 			}
 		}
 	}
+	else
+	{
+		return_code = 0;
+	}
 	LEAVE;
+
+	return (return_code);
 } /* draw_activation_animation_frame */
 
 static void animate_activation_map(Widget widget,XtPointer mapping_window,
@@ -1705,7 +1713,7 @@ Starts the activation map animation.
 					} break;
 				}
 				bring_up_time_editor_dialog(&mapping->time_editor_dialog,
-					mapping->user_interface->application_shell,
+					User_interface_get_application_shell(mapping->user_interface),
 					time_keeper,mapping->user_interface);
 				Time_keeper_play(time_keeper,TIME_KEEPER_PLAY_FORWARD);
 			}
@@ -1743,7 +1751,7 @@ Starts the activation map animation.
 			}
 			/* only one animation at a time */
 			XtSetSensitive(mapping->animate_button,False);
-			draw_activation_animation_frame(mapping_window,(XtIntervalId *)NULL);
+			draw_activation_animation_frame(mapping_window);
 		}
 	}
 	else
@@ -3035,7 +3043,7 @@ area.
 				{
 					if (Expose==callback->event->type)
 					{
-						display=mapping->user_interface->display;
+						display=User_interface_get_display(mapping->user_interface);
 						event= &(callback->event->xexpose);
 						if (mapping->colour_or_auxiliary_drawing_area)
 						{
@@ -3231,7 +3239,7 @@ The callback for redrawing part of a mapping drawing area.
 				{
 					if (Expose==callback->event->type)
 					{
-						display=mapping->user_interface->display;
+						display=User_interface_get_display(mapping->user_interface);
 						event= &(callback->event->xexpose);
 						if (mapping->map_drawing_area_2d)
 						{
@@ -3351,7 +3359,7 @@ The callback for resizing a mapping drawing area.
 				{
 					if (mapping->map_drawing_area_2d)
 					{
-						display=mapping->user_interface->display;
+						display=User_interface_get_display(mapping->user_interface);
 						/* find the size of the old rectangle */
 						if (mapping->map_drawing)
 						{
@@ -3725,7 +3733,7 @@ The callback for resizing a colour bar or auxiliary devices drawing area.
 				{
 					if (mapping->colour_or_auxiliary_drawing_area)
 					{
-						display=mapping->user_interface->display;
+						display=User_interface_get_display(mapping->user_interface);
 						/* find the size of the old rectangle */
 						if (mapping->colour_or_auxiliary_drawing)
 						{
@@ -3931,7 +3939,7 @@ mapping_window.
 	{
 		if (open_printer(&printer,mapping->user_interface))
 		{
-			if (XGetWindowAttributes(mapping->user_interface->display,
+			if (XGetWindowAttributes(User_interface_get_display(mapping->user_interface),
 				XtWindow(mapping->map_drawing_area_2d),&window_attributes))
 			{
 				/* open the postscript file */
@@ -3956,7 +3964,7 @@ mapping_window.
 						if (map->maintain_aspect_ratio)
 						{
 							pixel_aspect_ratio=get_pixel_aspect_ratio(
-								mapping->user_interface->display);
+								User_interface_get_display(mapping->user_interface));
 							if ((float)(mapping->map_drawing->height)*pixel_aspect_ratio*
 								postscript_page_width<0.85*postscript_page_height*
 								(float)(mapping->map_drawing->width))
@@ -4006,7 +4014,7 @@ mapping_window.
 						if (map->maintain_aspect_ratio)
 						{
 							pixel_aspect_ratio=get_pixel_aspect_ratio(
-								mapping->user_interface->display);
+								User_interface_get_display(mapping->user_interface));
 							if ((float)(mapping->map_drawing->height)*pixel_aspect_ratio*
 								postscript_page_width<postscript_page_height*
 								(float)(mapping->map_drawing->width))
@@ -4239,7 +4247,7 @@ mapping_window.
 			number_of_frames=drawing_information->number_of_spectrum_colours;
 			number_of_spectrum_colours=
 				drawing_information->number_of_spectrum_colours;
-			display=drawing_information->user_interface->display;
+			display=User_interface_get_display(drawing_information->user_interface);
 			colour_map=drawing_information->colour_map;
 			spectrum_pixels=drawing_information->spectrum_colours;
 			map->activation_front=0;
@@ -4604,15 +4612,16 @@ DESCRIPTION :
 						if (mapping->colour_or_auxiliary_drawing)
 						{
 							/* clear the colour or auxiliary area */
-							XFillRectangle(
-								mapping->map->drawing_information->user_interface->display,
+							XFillRectangle(User_interface_get_display(
+								mapping->map->drawing_information->user_interface),
 								mapping->colour_or_auxiliary_drawing->pixel_map,
 								(mapping->map->drawing_information->graphics_context).background_drawing_colour,
 								0,0,mapping->colour_or_auxiliary_drawing->width,
 								mapping->colour_or_auxiliary_drawing->height);
 							draw_colour_or_auxiliary_area(mapping->map,
 								mapping->colour_or_auxiliary_drawing);
-							XCopyArea(mapping->map->drawing_information->user_interface->display,
+							XCopyArea(User_interface_get_display(
+								mapping->map->drawing_information->user_interface),
 								mapping->colour_or_auxiliary_drawing->pixel_map,
 								XtWindow(mapping->colour_or_auxiliary_drawing_area),
 								(mapping->map->drawing_information->graphics_context).copy,0,0,
@@ -4934,8 +4943,8 @@ the created mapping window.  If unsuccessful, NULL is returned.
 						if (MrmSUCCESS==MrmFetchWidget(mapping_window_hierarchy,
 							"mapping_window",parent,&(mapping->window),&mapping_window_class))
 						{
-							/* other Xt stuff set up in */
-							widget_spacing=user_interface->widget_spacing;
+							/* other Xt stuff set up in */						
+							widget_spacing=User_interface_get_widget_spacing(user_interface);
 							/* set the height and background colour of the interval drawing
 								area */
 							XtVaSetValues(mapping->colour_or_auxiliary_drawing_area,
@@ -5408,12 +5417,12 @@ the interpolation functions are also recalculated.
 		(drawing_information->user_interface))
 	{
 		/* clear the map drawing area */
-		XFillRectangle(drawing_information->user_interface->display,
+		XFillRectangle(User_interface_get_display(drawing_information->user_interface),
 			drawing->pixel_map,(drawing_information->graphics_context).
 			background_drawing_colour,0,0,drawing->width,drawing->height);
 		/* draw the map */
 		draw_map(mapping->map,recalculate,drawing);
-		XCopyArea(drawing_information->user_interface->display,
+		XCopyArea(User_interface_get_display(drawing_information->user_interface),
 			drawing->pixel_map,XtWindow(mapping->map_drawing_area_2d),
 			(drawing_information->graphics_context).copy,0,0,
 			drawing->width,drawing->height,0,0);
@@ -5487,13 +5496,13 @@ The callback for redrawing the colour bar or auxiliary devices drawing area.
 		(drawing_information->user_interface))
 	{
 		/* clear the colour or auxiliary area */
-		XFillRectangle(drawing_information->user_interface->display,
+		XFillRectangle(User_interface_get_display(drawing_information->user_interface),
 			drawing->pixel_map,
 			(drawing_information->graphics_context).background_drawing_colour,
 			0,0,drawing->width,drawing->height);
 		/* draw the colour bar or the auxiliary devices */
 		draw_colour_or_auxiliary_area(mapping->map,drawing);
-		XCopyArea(drawing_information->user_interface->display,
+		XCopyArea(User_interface_get_display(drawing_information->user_interface),
 			mapping->colour_or_auxiliary_drawing->pixel_map,
 			XtWindow(mapping->colour_or_auxiliary_drawing_area),
 			(drawing_information->graphics_context).copy,0,0,
@@ -5572,8 +5581,8 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 					mapping->number_of_regions=number_of_regions;
 					mapping->regions=regions;
 					current_region=(Widget)NULL;
-					XtSetArg(attributes[1],XmNfontList,XmFontListCreate(mapping->
-						user_interface->button_font,XmSTRING_DEFAULT_CHARSET));
+					XtSetArg(attributes[1],XmNfontList,
+						User_interface_get_button_fontlist(mapping->user_interface));
 					if (number_of_regions>1)
 					{
 						XtSetArg(attributes[0],XmNlabelString,
@@ -5918,7 +5927,7 @@ window.
 		device)
 #endif /* defined (UNEMAP_USE_NODES) */
 	{
-		display=drawing_information->user_interface->display;
+		display=User_interface_get_display(drawing_information->user_interface);
 		font=drawing_information->font;
 		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
 		spectrum_pixels=drawing_information->spectrum_colours;

@@ -203,7 +203,8 @@ Creates the windows associated with the acquisition work area.
 				create_page_window_shell
 #endif /* defined (UNIMA_ACQUISITION) */
 				(&(acquisition->window_shell),parent,
-				user_interface->screen_width,user_interface->screen_height,
+				User_interface_get_screen_width(user_interface),
+				User_interface_get_screen_height(user_interface),
 				user_interface))
 			{
 				display_message(ERROR_MESSAGE,

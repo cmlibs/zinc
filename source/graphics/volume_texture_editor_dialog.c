@@ -5339,7 +5339,7 @@ DESCRIPTION :
 						/* create shell */
 						if (create_finite_elements_dialog->shell=XtVaCreatePopupShell(
 							"create_finite_elements_dialog_shell",xmDialogShellWidgetClass,
-							user_interface->application_shell,
+							User_interface_get_application_shell(user_interface),
 							XmNmwmDecorations,MWM_DECOR_ALL|MWM_DECOR_RESIZEH,
 							XmNmwmFunctions,MWM_FUNC_MOVE|MWM_FUNC_CLOSE,
 							XmNtitle,"Save as finite elements",

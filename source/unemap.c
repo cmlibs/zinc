@@ -57,6 +57,7 @@ Main program for unemap.  Based on cmgui.
 #endif /* defined (WINDOWS) */
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 #include "user_interface/confirmation.h"
+#include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -387,6 +388,8 @@ Main program for unemap
 	struct Coordinate_system rect_coord_system;
 	struct Element_point_ranges_selection *element_point_ranges_selection=
 		(struct Element_point_ranges_selection *)NULL;
+	struct Event_dispatcher *event_dispatcher=
+		(struct Event_dispatcher *)NULL;
 	struct FE_element_selection *element_selection=(struct FE_element_selection *)NULL;
 	struct FE_field *map_fit_field=(struct FE_field *)NULL;
 	struct FE_node_selection *node_selection=(struct FE_node_selection *)NULL;
@@ -457,7 +460,7 @@ Main program for unemap
 #endif /* defined (WINDOWS) */
 #endif /* defined (OLD_CODE) */
 #endif /* defined (NOT_ACQUISITION_ONLY) */
-	struct User_interface user_interface;
+	struct User_interface *user_interface;
 #if defined (MOTIF)
 #define XmNidentifyingColour "identifyingColour"
 #define XmCIdentifyingColour "IdentifyingColour"
@@ -524,23 +527,9 @@ Main program for unemap
 #if defined (MOTIF)
 	display_message(INFORMATION_MESSAGE, VERSION "\n");
 #endif /* defined (MOTIF) */
-	/* open the user interface */
-#if defined (MOTIF)
-	user_interface.application_context=(XtAppContext)NULL;
-	user_interface.application_name="unemap";
-	user_interface.application_shell=(Widget)NULL;
-	user_interface.argc_address= &argc;
-	user_interface.argv=argv;
-	user_interface.class_name="Unemap";
-	user_interface.display=(Display *)NULL;
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
-	user_interface.instance=current_instance;
-	user_interface.main_window=(HWND)NULL;
-	user_interface.main_window_state=initial_main_window_state;
-	user_interface.command_line=command_line;
-#endif /* defined (WINDOWS) */
-	if (open_user_interface(&user_interface))
+	if ((event_dispatcher = CREATE(Event_dispatcher)())
+		&& (user_interface = CREATE(User_interface)(&argc, argv, event_dispatcher,
+		"Unemap", "unemap")))
 	{
 		/* set up messages */
 		set_display_message_function(ERROR_MESSAGE,display_error_message,
@@ -566,7 +555,7 @@ Main program for unemap
 #endif
 		/* retrieve application specific constants */
 #if defined (MOTIF)
-		XtVaGetApplicationResources(user_interface.application_shell,
+		XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 			&user_settings,resources,XtNumber(resources),NULL);
 			/*???DB.  User settings should be divided among tools */
 #endif /* defined (MOTIF) */
@@ -754,7 +743,7 @@ Main program for unemap
 		/* create the main window */
 #if defined (NOT_ACQUISITION_ONLY)
 		time_keeper=ACCESS(Time_keeper)(
-			CREATE(Time_keeper)("default",&user_interface));
+			CREATE(Time_keeper)("default",user_interface));
 #if defined (UNEMAP_USE_3D)
 		texture_manager=CREATE_MANAGER(Texture)();	
 		fe_field_manager=CREATE_MANAGER(FE_field)();
@@ -974,8 +963,8 @@ Main program for unemap
 		node_tool=CREATE(Node_tool)(interactive_tool_manager,
 			node_manager,/*use_data*/0,node_group_manager,element_manager,
 			node_selection,computed_field_package,default_graphical_material,
-			&user_interface, time_keeper);		
-		transform_tool=create_Interactive_tool_transform(&user_interface);
+			user_interface, time_keeper);		
+		transform_tool=create_Interactive_tool_transform(user_interface);
 		ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,interactive_tool_manager);
 		all_FE_element_field_info=CREATE_LIST(FE_element_field_info)();
 		/* FE_element_shape manager */
@@ -988,8 +977,8 @@ Main program for unemap
 #else /* defined (UNEMAP_USE_3D) */
 		unemap_package=(struct Unemap_package *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
-		if (system=create_System_window(user_interface.application_shell,
-			exit_unemap,time_keeper,&user_interface,unemap_package
+		if (system=create_System_window(User_interface_get_application_shell(user_interface),
+			exit_unemap,time_keeper,user_interface,unemap_package
 #if defined (UNEMAP_USE_3D)
 			,element_point_ranges_selection,element_selection,node_selection,
 			data_selection,texture_manager,interactive_tool_manager,scene_manager,
@@ -1004,20 +993,20 @@ Main program for unemap
 		if (open_Page_window(&page_window,
 			(struct Mapping_window **)NULL,&acquisition_rig,
 #if defined (MOTIF)
-			user_settings.identifying_colour,user_interface.screen_width,
-			user_interface.screen_height,
+			user_settings.identifying_colour,User_interface_get_screen_width(user_interface),
+			User_interface_get_screen_height(user_interface),
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 #if defined (MIRADA)
 			device_driver,
 #endif /* defined (MIRADA) */
 #endif /* defined (WINDOWS) */
-			5,".sig",&user_interface))
+			5,".sig",user_interface))
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 		{
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (MOTIF)
-			create_Shell_list_item(&(system->window_shell),&user_interface);
+			create_Shell_list_item(&(system->window_shell),user_interface);
 #endif /* defined (MOTIF) */
 #if defined (MOTIF)		
 			XtAddCallback(system->window_shell,XmNdestroyCallback,close_emap,
@@ -1083,12 +1072,12 @@ Main program for unemap
 				XtNumber(System_window_resources),NULL);
 			if (-1==system_window_data.x)
 			{
-				system_window_data.x = ((user_interface.screen_width)
+				system_window_data.x = ((User_interface_get_screen_width(user_interface))
 					-window_width)/2;
 			}
 			if (-1==system_window_data.y)
 			{
-				system_window_data.y = ((user_interface.screen_height)
+				system_window_data.y = ((User_interface_get_screen_height(user_interface))
 					-window_height)/2;
 			}
 			XtVaSetValues(system->window_shell,
@@ -1144,9 +1133,8 @@ Main program for unemap
 						"Invalid memory reference occured");
 				} break;
 			}
-			/* user interface loop */		
-			return_code=application_main_loop(&user_interface);			
-			
+			/* user interface loop */
+			return_code=Event_dispatcher_main_loop(event_dispatcher);
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_3D )
 			DESTROY(Unemap_package)(&unemap_package);	
@@ -1199,7 +1187,7 @@ Main program for unemap
 /*			END_ERROR_HANDLING;*/
 			/* free application memory */
 			/* close the user interface */
-			close_user_interface(&user_interface);
+			DESTROY(User_interface)(&user_interface);
 				/*???DB.  Should this actually be inside the application and be
 					used to set a flag that terminates the main loop ? */
 		}

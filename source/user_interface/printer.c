@@ -131,19 +131,19 @@ Open the <printer>.
 	{
 		return_code=0;
 #if defined (MOTIF)
-		XtVaGetApplicationResources(user_interface->application_shell,
+		XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 			printer,resources,XtNumber(resources),NULL);
 		colour.pixel=printer->background_colour_pixel;
-		XQueryColor(user_interface->display,
-			XDefaultColormap(user_interface->display,
-			DefaultScreen(user_interface->display)),&colour);
+		XQueryColor(User_interface_get_display(user_interface),
+			XDefaultColormap(User_interface_get_display(user_interface),
+			DefaultScreen(User_interface_get_display(user_interface))),&colour);
 		printer->background_colour.red=(float)(colour.red)/65535.;
 		printer->background_colour.green=(float)(colour.green)/65535.;
 		printer->background_colour.blue=(float)(colour.blue)/65535.;
 		colour.pixel=printer->foreground_colour_pixel;
-		XQueryColor(user_interface->display,
-			XDefaultColormap(user_interface->display,
-			DefaultScreen(user_interface->display)),&colour);
+		XQueryColor(User_interface_get_display(user_interface),
+			XDefaultColormap(User_interface_get_display(user_interface),
+			DefaultScreen(User_interface_get_display(user_interface))),&colour);
 		printer->foreground_colour.red=(float)(colour.red)/65535.;
 		printer->foreground_colour.green=(float)(colour.green)/65535.;
 		printer->foreground_colour.blue=(float)(colour.blue)/65535.;

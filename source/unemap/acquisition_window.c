@@ -282,9 +282,9 @@ Draws the line segment that represents the current acquisition interval.
 		marker_top&&acquisition)
 	{
 #if defined (MOTIF)
-		display=acquisition->user_interface->display;
-		widget_spacing=acquisition->user_interface->widget_spacing;
-		font=acquisition->user_interface->normal_font;
+		display=User_interface_get_display(acquisition->user_interface);
+		widget_spacing=User_interface_get_widget_spacing(acquisition->user_interface);
+		font=User_interface_get_normal_font(acquisition->user_interface);
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 		widget_spacing=5;
@@ -424,7 +424,7 @@ The callback for redrawing part of an acquisition drawing area.
 							if (!(acquisition->drawing))
 							{
 								/* determine the size of the drawing area */
-								XGetWindowAttributes(acquisition->user_interface->display,
+								XGetWindowAttributes(User_interface_get_display(acquisition->user_interface),
 									XtWindow(acquisition->drawing_area),&attributes);
 								/* create a pixel map */
 									/*???not used because of problems with fonts */
@@ -452,7 +452,7 @@ The callback for redrawing part of an acquisition drawing area.
 							/* redisplay the specified part of the pixmap */
 							if (acquisition->drawing)
 							{
-								XCopyArea(acquisition->user_interface->display,
+								XCopyArea(User_interface_get_display(acquisition->user_interface),
 									acquisition->drawing->pixel_map,
 									XtWindow(acquisition->drawing_area),
 									(acquisition->graphics_context).copy,event->x,event->y,
@@ -542,7 +542,7 @@ The callback for resizing a acquisition drawing area.
 							height=0;
 						}
 						/* find the size of the new rectangle */
-						XGetWindowAttributes(acquisition->user_interface->display,
+						XGetWindowAttributes(User_interface_get_display(acquisition->user_interface),
 							callback->window,&attributes);
 						/* create a new pixmap */
 						if (acquisition->drawing=create_Drawing_2d(
@@ -567,7 +567,7 @@ The callback for resizing a acquisition drawing area.
 							{
 								height=attributes.height;
 							}
-							XCopyArea(acquisition->user_interface->display,
+							XCopyArea(User_interface_get_display(acquisition->user_interface),
 								acquisition->drawing->pixel_map,
 								XtWindow(acquisition->drawing_area),
 								(acquisition->graphics_context).copy,0,0,width,height,0,0);
@@ -647,9 +647,9 @@ area.
 		(drawing=acquisition->drawing))
 	{
 		frequency=(float)(acquisition->sampling_frequency_hz);
-		display=acquisition->user_interface->display;
-		widget_spacing=acquisition->user_interface->widget_spacing;
-		font=acquisition->user_interface->normal_font;
+		display=User_interface_get_display(acquisition->user_interface);
+		widget_spacing=User_interface_get_widget_spacing(acquisition->user_interface);
+		font=User_interface_get_normal_font(acquisition->user_interface);
 		acquisition_interval_colour=
 			(acquisition->graphics_context).acquisition_interval_colour;
 		acquisition_interval_colour_tex=
@@ -1604,7 +1604,7 @@ unsuccessful, NULL is returned.
 				acquisition->user_interface=user_interface;
 #if defined (MOTIF)
 				/* retrieve the settings */
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					acquisition,resources,XtNumber(resources),NULL);
 				/* register the callbacks */
 				if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
@@ -1675,15 +1675,15 @@ unsuccessful, NULL is returned.
 								XtSetSensitive(acquisition->experiment_toggle,False);
 							}
 							/* create the graphics contexts */
-							display=user_interface->display;
+							display=User_interface_get_display(user_interface);
 							/* the drawable has to have the correct depth and screen */
-							XtVaGetValues(user_interface->application_shell,XmNdepth,&depth,
+							XtVaGetValues(User_interface_get_application_shell(user_interface),XmNdepth,&depth,
 								NULL);
-							depth_screen_drawable=XCreatePixmap(user_interface->display,
-								XRootWindow(user_interface->display,
-								XDefaultScreen(user_interface->display)),1,1,depth);
+							depth_screen_drawable=XCreatePixmap(User_interface_get_display(user_interface),
+								XRootWindow(User_interface_get_display(user_interface),
+								XDefaultScreen(User_interface_get_display(user_interface))),1,1,depth);
 							mask=GCLineStyle|GCBackground|GCFont|GCForeground|GCFunction;
-							values.font=user_interface->normal_font->fid;
+							values.font=User_interface_get_normal_font(user_interface)->fid;
 							values.line_style=LineSolid;
 							values.background=acquisition->background_drawing_colour;
 							values.foreground=acquisition->acquisition_interval_colour^
@@ -1699,7 +1699,7 @@ unsuccessful, NULL is returned.
 								XCreateGC(display,depth_screen_drawable,mask,&values);
 							(acquisition->graphics_context).copy=
 								XCreateGC(display,depth_screen_drawable,mask,&values);
-							XFreePixmap(user_interface->display,depth_screen_drawable);
+							XFreePixmap(User_interface_get_display(user_interface),depth_screen_drawable);
 							if (address)
 							{
 								*address=acquisition;
@@ -1730,7 +1730,7 @@ unsuccessful, NULL is returned.
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 				/* check if the class is registered */
-				if (TRUE!=(win32_return_code=GetClassInfoEx(user_interface->instance,
+				if (TRUE!=(win32_return_code=GetClassInfoEx(User_interface_get_instance(user_interface),
 					class_name,&class_information)))
 				{
 					class_information.cbClsExtra=0;
@@ -1744,9 +1744,9 @@ unsuccessful, NULL is returned.
 					class_information.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);
 					class_information.hCursor=LoadCursor(NULL,IDC_ARROW);
 					class_information.hIcon=(HICON)NULL;
-/*					class_information.hIcon=LoadIcon(user_interface->instance,class_name);*/
+/*					class_information.hIcon=LoadIcon(User_interface_get_instance(user_interface),class_name);*/
 						/*???DB.  Do I need an icon ? */
-					class_information.hInstance=user_interface->instance;
+					class_information.hInstance=User_interface_get_instance(user_interface);
 					class_information.lpfnWndProc=Acquisition_window_class_proc;
 					class_information.lpszClassName=class_name;
 					class_information.style=CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
@@ -1755,7 +1755,7 @@ unsuccessful, NULL is returned.
 					/*???DB.  Extra in WNDCLASSEX over WNDCLASS */
 					class_information.cbSize=sizeof(WNDCLASSEX);
 					class_information.hIconSm=(HICON)NULL;
-/*					class_information.hIconSm=LoadIcon(user_interface->instance,
+/*					class_information.hIconSm=LoadIcon(User_interface_get_instance(user_interface),
 						"Acquisition_window" "_small");*/
 						/*???DB.  Do I need an icon ? */
 					if (RegisterClassEx(&class_information))
@@ -1768,7 +1768,7 @@ unsuccessful, NULL is returned.
 				{
 #if defined (USE_DIALOG)
 					if (acquisition->window=CreateDialogParam(
-						user_interface->instance,"Acquisition_window",(HWND)NULL,
+						User_interface_get_instance(user_interface),"Acquisition_window",(HWND)NULL,
 						Acquisition_window_dialog_proc,(LPARAM)NULL))
 #endif /* defined (USE_DIALOG) */
 #if defined (USE_WINDOW)
@@ -1794,7 +1794,7 @@ unsuccessful, NULL is returned.
 							/* parent or owner window - none */
 						(HMENU)NULL,
 							/* menu to be used - use class menu */
-						user_interface->instance,
+						User_interface_get_instance(user_interface),
 							/* instance handle */
 						acquisition
 							/* window creation data */

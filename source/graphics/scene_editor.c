@@ -1666,7 +1666,7 @@ to the previous widget, but its widgets and child widgets are not updated.
 							XtSetArg(args[num_args], XmNspacing, 0);
 							num_args++;
 							XtSetArg(args[num_args], XmNfontList,
-								(XtPointer)scene_editor->user_interface->normal_fontlist);
+								(XtPointer)User_interface_get_normal_fontlist(scene_editor->user_interface));
 							num_args++;
 							scene_editor_object->visibility_button = XmCreateToggleButton(
 								scene_editor_object->form, "", args, num_args);
@@ -1709,7 +1709,7 @@ to the previous widget, but its widgets and child widgets are not updated.
 							XtSetArg(args[num_args], XmNmarginWidth, 3);
 							num_args++;
 							XtSetArg(args[num_args], XmNfontList,
-								(XtPointer)scene_editor->user_interface->normal_fontlist);
+								(XtPointer)User_interface_get_normal_fontlist(scene_editor->user_interface));
 							num_args++;
 							if (scene_editor_object->expanded)
 							{
@@ -1765,7 +1765,7 @@ to the previous widget, but its widgets and child widgets are not updated.
 						XtSetArg(args[num_args], XmNmarginWidth, 2);
 						num_args++;
 						XtSetArg(args[num_args], XmNfontList,
-							(XtPointer)scene_editor->user_interface->normal_fontlist);
+							(XtPointer)User_interface_get_normal_fontlist(scene_editor->user_interface));
 						num_args++;
 						scene_editor_object->select_button = XmCreatePushButton(
 							scene_editor_object->form, name, args, num_args);
@@ -1993,7 +1993,7 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 				XmNtopAttachment, XmATTACH_FORM,
 				XmNbottomAttachment, XmATTACH_FORM,
 				XmNleftAttachment, XmATTACH_FORM,
-				XmNfontList, (XtPointer)user_interface->normal_fontlist,
+				XmNfontList, (XtPointer)User_interface_get_normal_fontlist(user_interface),
 				NULL);
 			XtManageChild(scene_editor->scene_label);
 
@@ -2096,7 +2096,7 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 				XmNbottomWidget, down_arrow_button,
 				XmNleftAttachment, XmATTACH_WIDGET,
 				XmNleftWidget, down_arrow_button,
-				XmNfontList, (XtPointer)user_interface->normal_fontlist,
+				XmNfontList, (XtPointer)User_interface_get_normal_fontlist(user_interface),
 				NULL);
 			XtManageChild(scene_editor->object_label);
 
@@ -2109,7 +2109,7 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 				XmNborderWidth, 0,
 				XmNmarginHeight, 2,
 				XmNmarginWidth, 2,
-				XmNfontList, (XtPointer)scene_editor->user_interface->normal_fontlist,
+				XmNfontList, (XtPointer)User_interface_get_normal_fontlist(user_interface),
 				NULL);
 			XtAddCallback(scene_editor->revert_button, XmNactivateCallback,
 				Scene_editor_revert_button_callback, (XtPointer)scene_editor);
@@ -2125,7 +2125,7 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 				XmNborderWidth, 0,
 				XmNmarginHeight, 2,
 				XmNmarginWidth, 2,
-				XmNfontList, (XtPointer)scene_editor->user_interface->normal_fontlist,
+				XmNfontList, (XtPointer)User_interface_get_normal_fontlist(scene_editor->user_interface),
 				NULL);
 			XtAddCallback(scene_editor->apply_button, XmNactivateCallback,
 				Scene_editor_apply_button_callback, (XtPointer)scene_editor);
@@ -2137,7 +2137,7 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 				XmNrightAttachment, XmATTACH_WIDGET,
 				XmNrightWidget, scene_editor->apply_button,
 				XmNset, (0 != scene_editor->auto_apply),
-				XmNfontList, (XtPointer)scene_editor->user_interface->normal_fontlist,
+				XmNfontList, (XtPointer)User_interface_get_normal_fontlist(scene_editor->user_interface),
 				NULL);
 			XtAddCallback(scene_editor->auto_apply_button, XmNvalueChangedCallback,
 				Scene_editor_auto_apply_button_callback, (XtPointer)scene_editor);
@@ -2171,7 +2171,7 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 				XmNborderWidth, 0,
 				XmNset, (0 != scene_editor->transformation_expanded),
 				XmNspacing, 0,
-				XmNfontList, (XtPointer)user_interface->normal_fontlist,
+				XmNfontList, (XtPointer)User_interface_get_normal_fontlist(user_interface),
 				NULL);
 			XtManageChild(scene_editor->transformation_button);
 
@@ -2183,7 +2183,7 @@ Note on successful return the dialog is put at <*scene_editor_address>.
 				XmNborderWidth, 0,
 				XmNset, (0 != scene_editor->child_expanded),
 				XmNspacing, 0,
-				XmNfontList, (XtPointer)user_interface->normal_fontlist,
+				XmNfontList, (XtPointer)User_interface_get_normal_fontlist(user_interface),
 				NULL);
 			XtManageChild(scene_editor->child_button);
 

@@ -708,7 +708,7 @@ that are not are removed.
 					XtSetArg(args[num_args], XmNspacing, 0);
 					num_args++;
 					XtSetArg(args[num_args], XmNfontList,
-						(XtPointer)gelem_editor->user_interface->normal_fontlist);
+						(XtPointer)User_interface_get_normal_fontlist(gelem_editor->user_interface));
 					num_args++;
 					settings_item->visibility_button = XmCreateToggleButton(
 						settings_item->form, "", args, num_args);
@@ -748,7 +748,7 @@ that are not are removed.
 						XtSetArg(args[num_args], XmNmarginWidth, 2);
 						num_args++;
 					XtSetArg(args[num_args], XmNfontList,
-						(XtPointer)gelem_editor->user_interface->normal_fontlist);
+						(XtPointer)User_interface_get_normal_fontlist(gelem_editor->user_interface));
 					num_args++;
 					settings_item->select_button = XmCreatePushButton(
 						settings_item->form, settings_string, args, num_args);

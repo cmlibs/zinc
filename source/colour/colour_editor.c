@@ -496,7 +496,7 @@ Callback for the colour_editor dialog - tidies up all memory allocation
 	/* Get the pointer to the data for the colour_editor dialog */
 	XtVaGetValues(w,XmNuserData,&temp_colour_editor,NULL);
 	/* deallocate the memory for the user data */
-	XFreeColors(temp_colour_editor->user_interface->display,
+	XFreeColors(User_interface_get_display(temp_colour_editor->user_interface),
 		DefaultColormapOfScreen(XtScreen(temp_colour_editor->widget_parent)),
 		&temp_colour_editor->colour.pixel,
 		1,0);
@@ -581,7 +581,7 @@ colour_editor.
 	struct Colour colour_editor_temp;
 
 	ENTER(colour_editor_update_colour_editor);
-	XFreeColors(temp_colour_editor->user_interface->display,
+	XFreeColors(User_interface_get_display(temp_colour_editor->user_interface),
 		DefaultColormapOfScreen(XtScreen(temp_colour_editor->widget_parent)),
 		&temp_colour_editor->colour.pixel,1,0);
 	colour_editor_conversion(temp_colour_editor->current_mode,COLOUR_EDITOR_RGB,
@@ -589,7 +589,7 @@ colour_editor.
 	temp_colour_editor->colour.red=colour_editor_temp.red*65535;
 	temp_colour_editor->colour.green=colour_editor_temp.green*65535;
 	temp_colour_editor->colour.blue=colour_editor_temp.blue*65535;
-	if (!XAllocColor(temp_colour_editor->user_interface->display,
+	if (!XAllocColor(User_interface_get_display(temp_colour_editor->user_interface),
 		DefaultColormapOfScreen(XtScreen(temp_colour_editor->widget_parent)),
 		&temp_colour_editor->colour))
 	{
@@ -831,7 +831,7 @@ until a non-NULL colour is passed to it. See: colour_editor_set_colour.
 				temp_colour_editor->return_mode=mode;
 				temp_colour_editor->colour.flags=DoRed|DoGreen|DoBlue;
 				/* reserve a colour */
-				XAllocColor(user_interface->display,
+				XAllocColor(User_interface_get_display(user_interface),
 					DefaultColormapOfScreen(XtScreen(parent)),
 					&(temp_colour_editor->colour));
 				/* register the callbacks */

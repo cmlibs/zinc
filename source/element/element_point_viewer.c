@@ -2191,7 +2191,7 @@ fields.
 				if (element_point_viewer->window_shell=
 					XtVaCreatePopupShell("element_point_viewer",
 						topLevelShellWidgetClass,
-						user_interface->application_shell,
+						User_interface_get_application_shell(user_interface),
 						XmNdeleteResponse,XmDO_NOTHING,
 						XmNmwmDecorations,MWM_DECOR_ALL,
 						XmNmwmFunctions,MWM_FUNC_ALL,

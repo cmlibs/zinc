@@ -905,7 +905,7 @@ Increment the number of rows.
 			setup_dialog->dialog,setup_dialog->electrodes_in_row->form,
 			setup_dialog->separator,setup_dialog->number_of_rows,
 			setup_dialog->electrodes_in_row->number,setup_dialog->electrodes_in_row,
-			setup_dialog->user_interface->widget_spacing);
+			User_interface_get_widget_spacing(setup_dialog->user_interface));
 		sprintf(number_string,"%2d",setup_dialog->number_of_rows);
 		XtVaSetValues(setup_dialog->rows.number,
 			XmNlabelString,XmStringCreate(number_string,XmSTRING_DEFAULT_CHARSET),
@@ -1251,7 +1251,7 @@ initializes the appropriate fields.
 				/* create the dialog shell */
 				if (!(parent=activation)||(True!=XtIsWidget(parent)))
 				{
-					parent=user_interface->application_shell;
+					parent=User_interface_get_application_shell(user_interface);
 				}
 				if (setup_dialog->shell=XtVaCreatePopupShell(
 					"setup_dialog_shell",
@@ -1290,7 +1290,7 @@ initializes the appropriate fields.
 									(setup_dialog->electrodes_in_row=create_Electrodes_in_row(
 									setup_dialog->dialog,above,setup_dialog->separator,i,8,
 									setup_dialog->electrodes_in_row,
-									user_interface->widget_spacing)))
+									User_interface_get_widget_spacing(user_interface))))
 								{
 									above=setup_dialog->electrodes_in_row->form;
 									i++;

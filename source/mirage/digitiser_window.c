@@ -765,7 +765,7 @@ will be printed on the windows title bar.
 				/* create a shell for the window */
 				if (!(digitiser_window->window_shell=XtVaCreatePopupShell(
 					"digitiser_shell",xmDialogShellWidgetClass,
-					user_interface->application_shell,
+					User_interface_get_application_shell(user_interface),
 					XmNdeleteResponse,XmDO_NOTHING,
 					XmNmwmDecorations,MWM_DECOR_ALL,
 					XmNmwmFunctions,MWM_FUNC_ALL,

@@ -425,7 +425,7 @@ orthographic up and front directions from the Xdefaults file.
 		graphics_window_defaults.up_axis_name=(char *)NULL;
 		graphics_window_defaults.front_axis_name=(char *)NULL;
 		XtVaGetApplicationResources(
-			graphics_window->user_interface->application_shell,
+			User_interface_get_application_shell(graphics_window->user_interface),
 			&graphics_window_defaults,resources,XtNumber(resources),NULL);
 		if (graphics_window_defaults.up_axis_name)
 		{
@@ -2597,7 +2597,7 @@ will be printed on the windows title bar.
 				/* create a shell for the window */
 				if (graphics_window->window_shell=XtVaCreatePopupShell(
 					"graphics_shell",xmDialogShellWidgetClass,
-					user_interface->application_shell,
+					User_interface_get_application_shell(user_interface),
 					XmNdeleteResponse,XmDO_NOTHING,
 					XmNmwmDecorations,MWM_DECOR_ALL,
 					XmNmwmFunctions,MWM_FUNC_ALL,

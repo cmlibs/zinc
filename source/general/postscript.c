@@ -214,22 +214,22 @@ y.  The axes are scaled so that the units are mm.
 					"unscaled_transformation_matrix currentmatrix pop\n");
 				/* set the font */
 				/* get the family name, weight and point size */
-				family_name=XInternAtom(user_interface->display,"FAMILY_NAME",True);
-				weight=XInternAtom(user_interface->display,"WEIGHT_NAME",True);
-				point_size=XInternAtom(user_interface->display,"POINT_SIZE",True);
+				family_name=XInternAtom(User_interface_get_display(user_interface),"FAMILY_NAME",True);
+				weight=XInternAtom(User_interface_get_display(user_interface),"WEIGHT_NAME",True);
+				point_size=XInternAtom(User_interface_get_display(user_interface),"POINT_SIZE",True);
 				font_property=font->properties;
 				for (i=font->n_properties;i>0;i--)
 				{
 					if (font_property->name==family_name)
 					{
-						font_name=XGetAtomName(user_interface->display,
+						font_name=XGetAtomName(User_interface_get_display(user_interface),
 							(Atom)(font_property->card32));
 					}
 					else
 					{
 						if (font_property->name==weight)
 						{
-							font_weight=XGetAtomName(user_interface->display,
+							font_weight=XGetAtomName(User_interface_get_display(user_interface),
 								(Atom)(font_property->card32));
 						}
 						else

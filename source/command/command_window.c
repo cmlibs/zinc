@@ -1412,7 +1412,7 @@ Create the structures and retrieve the command window from the uil file.
 				command_window->shell=(Widget)NULL;
 				/* create the command window shell */
 				if (command_window->shell=XtVaCreatePopupShell("command_window_shell",
-					xmDialogShellWidgetClass,user_interface->application_shell,
+					xmDialogShellWidgetClass,User_interface_get_application_shell(user_interface),
 					XmNtransient,FALSE,
 					NULL))
 				{
@@ -1447,24 +1447,24 @@ Create the structures and retrieve the command window from the uil file.
 								XtManageChild(command_window->window);
 								XtRealizeWidget(command_window->shell);
 								/* set up for communication with other applications */
-								XA_CMGUI_VERSION=XInternAtom(user_interface->display,
+								XA_CMGUI_VERSION=XInternAtom(User_interface_get_display(user_interface),
 									CMGUI_VERSION_PROPERTY,False);
-								XA_CMGUI_LOCK=XInternAtom(user_interface->display,
+								XA_CMGUI_LOCK=XInternAtom(User_interface_get_display(user_interface),
 									CMGUI_LOCK_PROPERTY,False);
-								XA_CMGUI_COMMAND=XInternAtom(user_interface->display,
+								XA_CMGUI_COMMAND=XInternAtom(User_interface_get_display(user_interface),
 									CMGUI_COMMAND_PROPERTY,False);
-								XA_CMGUI_RESPONSE=XInternAtom(user_interface->display,
+								XA_CMGUI_RESPONSE=XInternAtom(User_interface_get_display(user_interface),
 									CMGUI_RESPONSE_PROPERTY,False);
-								XChangeProperty(user_interface->display,
+								XChangeProperty(User_interface_get_display(user_interface),
 									XtWindow(command_window->shell),XA_CMGUI_VERSION,XA_STRING,8,
 									PropModeReplace,(unsigned char *)version_id_string,
 									strlen(version_id_string));
 #if defined (OLD_CODE)								
-								XGetWindowAttributes(user_interface->display,
+								XGetWindowAttributes(User_interface_get_display(user_interface),
 									XtWindow(command_window->shell),&window_attributes);
 								event_mask=(window_attributes.your_event_mask)|
 									PropertyChangeMask;
-								XSelectInput(user_interface->display,
+								XSelectInput(User_interface_get_display(user_interface),
 									XtWindow(command_window->shell), event_mask);
 #endif /* defined (OLD_CODE) */
 								set_property_notify_callback(user_interface,
@@ -1477,7 +1477,7 @@ Create the structures and retrieve the command window from the uil file.
 									finds a window at or below the specified one which has the
 									WM_STATE property set */
 #if defined (OLD_CODE)								
-								XmuClientWindow(user_interface->display,
+								XmuClientWindow(User_interface_get_display(user_interface),
 									XtWindow(command_window->shell));
 #endif /* defined (OLD_CODE) */
 							}
@@ -1601,6 +1601,8 @@ DESCRIPTION:
 		{
 			fclose(command_window->out_file);
 		}
+		set_property_notify_callback(command_window->user_interface,
+			(Property_notify_callback)NULL, (void *)NULL, (Widget)NULL);
 		destroy_Shell_list_item_from_shell(&(command_window->shell),
 			command_window->user_interface);
 		DEALLOCATE(*command_window_pointer);

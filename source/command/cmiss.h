@@ -41,6 +41,7 @@ DESCRIPTION :
 #if !defined (WINDOWS_DEV_FLAG)
 	struct Element_point_tool *element_point_tool;
 	struct Element_tool *element_tool;
+	struct Event_dispatcher *event_dispatcher;
 	struct Node_tool *data_tool,*node_tool;
 	struct Select_tool *select_tool;
 	struct Interactive_tool *transform_tool;
@@ -87,6 +88,8 @@ DESCRIPTION :
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *data_selection,*node_selection;
+	struct Socket *command_socket;
+	XtInputId command_socket_input_id;
 	struct Spectrum *default_spectrum;
 	struct Streampoint *streampoint_list;
 		/*???SAB.  This definitely doesn't belong in here... but where? */

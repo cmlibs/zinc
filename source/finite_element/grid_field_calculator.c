@@ -173,7 +173,7 @@ DESCRIPTION :
 		}
 		bring_up_control_curve_editor_dialog(
 			grid_calc->control_curve_editor_dialog_address,
-			grid_calc->user_interface->application_shell,
+			User_interface_get_application_shell(grid_calc->user_interface),
 			grid_calc->control_curve_manager,curve,grid_calc->user_interface);
 	}
 	else
@@ -242,7 +242,7 @@ DESCRIPTION :
 		}
 		bring_up_control_curve_editor_dialog(
 			grid_calc->control_curve_editor_dialog_address,
-			grid_calc->user_interface->application_shell,
+			User_interface_get_application_shell(grid_calc->user_interface),
 			grid_calc->control_curve_manager,curve,grid_calc->user_interface);
 	}
 	else
@@ -311,7 +311,7 @@ DESCRIPTION :
 		}
 		bring_up_control_curve_editor_dialog(
 			grid_calc->control_curve_editor_dialog_address,
-			grid_calc->user_interface->application_shell,
+			User_interface_get_application_shell(grid_calc->user_interface),
 			grid_calc->control_curve_manager,curve,grid_calc->user_interface);
 	}
 	else

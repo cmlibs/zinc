@@ -1456,7 +1456,7 @@ current device
 		return_code=1;
 		/* set up */
 #if defined (MOTIF)
-		display=page_window->user_interface->display;
+		display=User_interface_get_display(page_window->user_interface);
 		drawable=XtWindow(page_window->scrolling_area);
 		XGetWindowAttributes(display,drawable,&attributes);
 		width=attributes.width;
@@ -1656,7 +1656,7 @@ DESCRIPTION :
 		/* set up */
 #if !defined (NO_SCROLLING_WINDOW_UPDATE)
 #if defined (MOTIF)
-		display=page_window->user_interface->display;
+		display=User_interface_get_display(page_window->user_interface);
 		drawable=XtWindow(page_window->scrolling_area);
 		XGetWindowAttributes(display,drawable,&attributes);
 		width=attributes.width;
@@ -1874,7 +1874,7 @@ DESCRIPTION :
 	{
 		/* set up */
 #if defined (MOTIF)
-		display=page_window->user_interface->display;
+		display=User_interface_get_display(page_window->user_interface);
 		drawable=XtWindow(page_window->scrolling_area);
 		XGetWindowAttributes(display,drawable,&attributes);
 		width=attributes.width;
@@ -2848,7 +2848,7 @@ DESCRIPTION :
 			if (unemap_configure(page_window->sampling_frequency,
 				page_window->number_of_samples,
 #if defined (MOTIF)
-				page_window->user_interface->application_context,
+				User_interface_get_application_context(page_window->user_interface),
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 				(HWND)NULL,(UINT)0,
@@ -5916,7 +5916,7 @@ Called to start experiment on the <page_window>.
 				if (unemap_configure(page_window->sampling_frequency,
 					(int)(page_window->number_of_samples),
 #if defined (MOTIF)
-					page_window->user_interface->application_context,
+					User_interface_get_event_dispatcher(page_window->user_interface),
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 					(HWND)NULL,(UINT)0,
@@ -8799,7 +8799,7 @@ DESCRIPTION :
 				restitution_time_pacing=0;
 				SetWindowLong(window,DLGWINDOWEXTRA,(LONG)page_window);
 				/* retrieve the control windows and do any setup required */
-				widget_spacing=page_window->user_interface->widget_spacing;
+				widget_spacing=User_interface_get_widget_spacing(page_window->user_interface);
 				/* auto_range_button */
 				page_window->auto_range_button=GetDlgItem(window,AUTO_RANGE_BUTTON);
 				GetWindowRect(page_window->auto_range_button,&rectangle);
@@ -9512,7 +9512,7 @@ DESCRIPTION :
 				/* resize menu bar */
 				menu_bar_height=0;
 				/* control_menu */
-				widget_spacing=page_window->user_interface->widget_spacing;
+				widget_spacing=User_interface_get_widget_spacing(page_window->user_interface);
 				number_of_widgets=0;
 				experiment_checkbox_width=page_window->experiment_checkbox_width;
 				number_of_widgets++;
@@ -9654,7 +9654,7 @@ DESCRIPTION :
 					menu_bar_height += 25;
 				}
 				/* all_devices_menu */
-				widget_spacing=page_window->user_interface->widget_spacing;
+				widget_spacing=User_interface_get_widget_spacing(page_window->user_interface);
 				number_of_widgets=0;
 				auto_range_button_width=page_window->auto_range_button_width;
 				number_of_widgets++;
@@ -9750,7 +9750,7 @@ DESCRIPTION :
 					menu_bar_height += 25;
 				}
 				/* current_device_menu */
-				widget_spacing=page_window->user_interface->widget_spacing;
+				widget_spacing=User_interface_get_widget_spacing(page_window->user_interface);
 				number_of_widgets=0;
 				electrode_arrows_width=(page_window->electrode).arrows_width;
 				electrode_edit_width=(page_window->electrode).edit_width;
@@ -10533,7 +10533,7 @@ the created page window.  If unsuccessful, NULL is returned.
 				page_window->test_checkbox=(Widget)NULL;
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
-				page_window->instance=user_interface->instance;
+				page_window->instance=User_interface_get_instance(user_interface);
 				page_window->window=(HWND)NULL;
 				page_window->auto_range_button=(HWND)NULL;
 				page_window->calibrate_button=(HWND)NULL;
@@ -10595,7 +10595,7 @@ the created page window.  If unsuccessful, NULL is returned.
 				}
 #else /* defined (MIRADA) */
 #if defined (MOTIF)
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&settings,resources,XtNumber(resources),NULL);
 #if defined (OLD_CODE)
 /*???DB.  Always use environment variable */
@@ -10938,14 +10938,14 @@ the created page window.  If unsuccessful, NULL is returned.
 								} break;
 							}
 							/* create the graphics contexts */
-							display=user_interface->display;
+							display=User_interface_get_display(user_interface);
 							/* the drawable has to have the correct depth and screen */
-							XtVaGetValues(user_interface->application_shell,XmNdepth,&depth,
+							XtVaGetValues(User_interface_get_application_shell(user_interface),XmNdepth,&depth,
 								NULL);
 							depth_screen_drawable=XCreatePixmap(display,XRootWindow(display,
 								XDefaultScreen(display)),1,1,depth);
 							mask=GCLineStyle|GCBackground|GCFont|GCForeground|GCFunction;
-							values.font=user_interface->normal_font->fid;
+							values.font=User_interface_get_normal_font(user_interface)->fid;
 							values.line_style=LineSolid;
 							values.background=settings.background_colour;
 							values.function=GXcopy;
@@ -11005,7 +11005,7 @@ the created page window.  If unsuccessful, NULL is returned.
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 				/* check if the class is registered */
-				if (TRUE!=(win32_return_code=GetClassInfoEx(user_interface->instance,
+				if (TRUE!=(win32_return_code=GetClassInfoEx(User_interface_get_instance(user_interface),
 					class_name,&class_information)))
 				{
 					class_information.cbClsExtra=0;
@@ -11014,9 +11014,9 @@ the created page window.  If unsuccessful, NULL is returned.
 					class_information.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);
 					class_information.hCursor=LoadCursor(NULL,IDC_ARROW);
 					class_information.hIcon=(HICON)NULL;
-/*					class_information.hIcon=LoadIcon(user_interface->instance,class_name);*/
+/*					class_information.hIcon=LoadIcon(User_interface_get_instance(user_interface),class_name);*/
 						/*???DB.  Do I need an icon ? */
-					class_information.hInstance=user_interface->instance;
+					class_information.hInstance=User_interface_get_instance(user_interface);
 					class_information.lpfnWndProc=Page_window_class_proc;
 					class_information.lpszClassName=class_name;
 					class_information.style=CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
@@ -11025,7 +11025,7 @@ the created page window.  If unsuccessful, NULL is returned.
 					/*???DB.  Extra in WNDCLASSEX over WNDCLASS */
 					class_information.cbSize=sizeof(WNDCLASSEX);
 					class_information.hIconSm=(HICON)NULL;
-/*					class_information.hIconSm=LoadIcon(user_interface->instance,
+/*					class_information.hIconSm=LoadIcon(User_interface_get_instance(user_interface),
 						"Page_window" "_small");*/
 						/*???DB.  Do I need an icon ? */
 					if (RegisterClassEx(&class_information))
@@ -11037,7 +11037,7 @@ the created page window.  If unsuccessful, NULL is returned.
 				if (TRUE==win32_return_code)
 				{
 					if (page_window->window=CreateDialogParam(
-						user_interface->instance,"Page_window",parent,
+						User_interface_get_instance(user_interface),"Page_window",parent,
 						Page_window_dialog_proc,(LPARAM)page_window))
 					{
 						if (address)
@@ -11122,7 +11122,7 @@ If <*address> is NULL, a page window with the specified <parent> and
 		{
 #if defined (MOTIF)
 			if (page_window_shell=create_page_window_shell((Widget *)NULL,
-				user_interface->application_shell,screen_width,screen_height,
+				User_interface_get_application_shell(user_interface),screen_width,screen_height,
 				user_interface))
 			{
 #endif /* defined (MOTIF) */

@@ -165,7 +165,7 @@ button is clicked.
 		message_box=(Widget)NULL;
 		if (!(message_parent=parent))
 		{
-			message_parent=user_interface->application_shell;
+			message_parent=User_interface_get_application_shell(user_interface);
 		}
 		switch (type)
 		{

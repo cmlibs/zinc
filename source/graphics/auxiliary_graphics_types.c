@@ -227,7 +227,7 @@ any x application - incl. for compatibility with win32.
 			if (user_interface)
 			{
 				/* retrieve the settings */
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&discretization,resources,XtNumber(resources),NULL);
 				resources_read=1;
 			}
@@ -445,7 +445,7 @@ any x application - incl. for compatibility with win32.
 			if (user_interface)
 			{
 				/* retrieve the settings */
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&discretization,resources,XtNumber(resources),NULL);
 				resources_read=1;
 			}

@@ -500,8 +500,8 @@ Creates a <*time_editor_address>.
 			{
 				/* initialise the structure */
 				/* time_editor->manager_callback_id=(void *)NULL; */
-				time_editor_defaults.step=1.0;
-				XtVaGetApplicationResources(user_interface->application_shell,
+				time_editor_defaults.step = 1.0;
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&time_editor_defaults,resources,XtNumber(resources),NULL);
 				time_editor->step=time_editor_defaults.step;
 				time_editor->frame_text=(Widget)NULL;

@@ -538,7 +538,7 @@ resource manager hierarchy.
 				/* create the window shell */
 				if (comfile_window->shell = XtVaCreatePopupShell(
 					"comfile_window_shell", topLevelShellWidgetClass,
-					user_interface->application_shell,
+					User_interface_get_application_shell(user_interface),
 					XmNallowShellResize,True,
 					XmNdeleteResponse,XmDO_NOTHING,
 					XmNmwmDecorations,MWM_DECOR_ALL,

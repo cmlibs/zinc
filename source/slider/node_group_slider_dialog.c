@@ -855,11 +855,11 @@ else create a new one.  If there is not a slider for the <fixed_node> and
 		if (node_group_slider_widget=XtVaCreateManagedWidget("slider_form",
 			xmFormWidgetClass,parent,
 			XmNleftAttachment,XmATTACH_FORM,
-			XmNleftOffset,user_interface->widget_spacing,
+			XmNleftOffset,User_interface_get_widget_spacing(user_interface),
 			XmNrightAttachment,XmATTACH_FORM,
-			XmNrightOffset,user_interface->widget_spacing,
+			XmNrightOffset,User_interface_get_widget_spacing(user_interface),
 			XmNtopAttachment,XmATTACH_WIDGET,
-			XmNtopOffset,user_interface->widget_spacing,
+			XmNtopOffset,User_interface_get_widget_spacing(user_interface),
 			XmNbottomAttachment,XmATTACH_NONE,NULL))
 		{
 			if (ALLOCATE(node_group_slider,struct Node_group_slider,1)&&
@@ -1002,7 +1002,7 @@ else create a new one.  If there is not a slider for the <fixed_node> and
 						XmNleftAttachment,XmATTACH_FORM,
 						XmNleftOffset,0,
 						XmNrightAttachment,XmATTACH_WIDGET,
-						XmNrightOffset,user_interface->widget_spacing,
+						XmNrightOffset,User_interface_get_widget_spacing(user_interface),
 						XmNrightWidget,node_group_slider->label,
 						XmNtopAttachment,XmATTACH_FORM,
 						XmNtopOffset,0,
@@ -1245,24 +1245,24 @@ else create a new one.  If there is not a slider for the <fixed_node> and
 							node_group_slider_dialog->outer_form,
 							XmNlabelString,label_string,
 							XmNleftAttachment,XmATTACH_FORM,
-							XmNleftOffset,user_interface->widget_spacing,
+							XmNleftOffset,User_interface_get_widget_spacing(user_interface),
 							XmNrightAttachment,XmATTACH_NONE,
 							XmNtopAttachment,XmATTACH_NONE,
 							XmNbottomAttachment,XmATTACH_FORM,
-							XmNbottomOffset,user_interface->widget_spacing,NULL))&&
+							XmNbottomOffset,User_interface_get_widget_spacing(user_interface),NULL))&&
 						(node_group_slider_dialog->separator=XtVaCreateManagedWidget(
 							"separator",xmSeparatorWidgetClass,
 							node_group_slider_dialog->outer_form,
 							XmNseparatorType,XmNO_LINE,
 							XmNleftAttachment,XmATTACH_FORM,
-							XmNleftOffset,user_interface->widget_spacing,
+							XmNleftOffset,User_interface_get_widget_spacing(user_interface),
 							XmNrightAttachment,XmATTACH_FORM,
-							XmNrightOffset,user_interface->widget_spacing,
+							XmNrightOffset,User_interface_get_widget_spacing(user_interface),
 							XmNbottomAttachment,XmATTACH_WIDGET,
-							XmNbottomOffset,user_interface->widget_spacing,
+							XmNbottomOffset,User_interface_get_widget_spacing(user_interface),
 							XmNbottomWidget,node_group_slider_dialog->reset_button,
 							XmNtopAttachment,XmATTACH_WIDGET,
-							XmNtopOffset,user_interface->widget_spacing,NULL)))
+							XmNtopOffset,User_interface_get_widget_spacing(user_interface),NULL)))
 					{
 						XtVaSetValues(node_group_slider_dialog->outer_form,
 							XmNuserData,node_group_slider_dialog,
@@ -1293,12 +1293,12 @@ else create a new one.  If there is not a slider for the <fixed_node> and
 									XtVaCreateManagedWidget("variable_slider_form",
 									xmFormWidgetClass, node_group_slider_dialog->outer_form,
 									XmNleftAttachment,XmATTACH_FORM,
-									XmNleftOffset,user_interface->widget_spacing,
+									XmNleftOffset,User_interface_get_widget_spacing(user_interface),
 									XmNrightAttachment,XmATTACH_FORM,
-									XmNrightOffset,user_interface->widget_spacing,
+									XmNrightOffset,User_interface_get_widget_spacing(user_interface),
 									XmNtopAttachment,XmATTACH_NONE,
 									XmNbottomAttachment,XmATTACH_WIDGET,
-									XmNbottomOffset,user_interface->widget_spacing,
+									XmNbottomOffset,User_interface_get_widget_spacing(user_interface),
 									XmNbottomWidget,node_group_slider_dialog->reset_button,
 									NULL))
 								{
@@ -1328,7 +1328,7 @@ else create a new one.  If there is not a slider for the <fixed_node> and
 										XmNleftAttachment,XmATTACH_FORM,
 										XmNleftOffset,0,
 										XmNrightAttachment,XmATTACH_WIDGET,
-										XmNrightOffset,user_interface->widget_spacing,
+										XmNrightOffset,User_interface_get_widget_spacing(user_interface),
 										XmNrightWidget,node_group_slider_dialog->variable_label,
 										XmNtopAttachment,XmATTACH_FORM,
 										XmNtopOffset,0,

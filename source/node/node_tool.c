@@ -2077,7 +2077,7 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				if (node_tool->window_shell=
 					XtVaCreatePopupShell(tool_display_name,
 						topLevelShellWidgetClass,
-						user_interface->application_shell,
+						User_interface_get_application_shell(user_interface),
 						XmNdeleteResponse,XmDO_NOTHING,
 						XmNmwmDecorations,MWM_DECOR_ALL,
 						XmNmwmFunctions,MWM_FUNC_ALL,

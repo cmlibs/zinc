@@ -517,7 +517,7 @@ Then it sets the help topic edit field and gets the help on the string.
 	/* check arguments */
 	if (user_interface&&execute_command)
 	{
-		display=user_interface->display;
+		display=User_interface_get_display(user_interface);
 		/* initialize atoms */
 		if (!XA_MOZILLA_VERSION)
 		{
@@ -545,7 +545,7 @@ Then it sets the help topic edit field and gets the help on the string.
 		{
 			if (!netscape_command)
 			{
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&netscape_command,resources,XtNumber(resources),NULL);
 				if (ALLOCATE(temp_string,char,strlen(netscape_command)+3))
 				{
@@ -603,7 +603,7 @@ Then it sets the help topic edit field and gets the help on the string.
 		{
 			examples_directory=help_examples_directory;
 			help_execute_command=execute_command;
-			initHelp(user_interface->application_shell);
+			initHelp(User_interface_get_application_shell(user_interface));
 			setUnknownURLCallback(example_url_callback);
 			hypertext_help_initialized=1;
 		}

@@ -1151,7 +1151,7 @@ DESCRIPTION :
 			if (X3dCR_INPUT==callback->reason)
 			{
 			/* find window coords */
-			XGetGeometry(texture_window->user_interface->display,
+			XGetGeometry(User_interface_get_display(texture_window->user_interface),
 				callback->window,&win,&x,&y,&width,&height,&border_width,&depth);
 /*??? debug */
 printf("window size = %u, %u\n",width,height);
@@ -1436,7 +1436,7 @@ DESCRIPTION :
 	if (window=(struct Texture_window *)texture_window)
 	{
 		bring_up_material_editor_dialog(window->material_editor_address,
-			window->user_interface->application_shell,
+			User_interface_get_application_shell(window->user_interface),
 			window->graphical_material_manager,window->texture_manager,
 			window->current_material,window->user_interface);
 	}
@@ -4682,7 +4682,7 @@ General deselect operation
 			/* make the dialog shell */
 			if (window->graphical_material_palette_shell=XtVaCreatePopupShell(
 				"Graphical Material Palette",topLevelShellWidgetClass,
-				window->user_interface->application_shell,XmNallowShellResize,
+				User_interface_get_application_shell(window->user_interface),XmNallowShellResize,
 				TRUE,NULL))
 			{
 				if (CREATE_SELECT_WIDGET(Graphical_material)(&select_widget,
@@ -4739,7 +4739,7 @@ printf("Creating Environment map palette\n");
 			/* make the dialog shell */
 			if (window->envmap_palette_shell=XtVaCreatePopupShell(
 				"Environment map Palette",topLevelShellWidgetClass,
-				window->user_interface->application_shell,XmNallowShellResize,
+				User_interface_get_application_shell(window->user_interface),XmNallowShellResize,
 				TRUE,NULL))
 			{
 				if (CREATE_SELECT_WIDGET(Environment_map)(&select_widget,
@@ -5319,7 +5319,7 @@ printf("create_texture_edit_window  %p\n",texture_window->voltex);
 				/* create window widget */
 				if (texture_window->texture_window_shell=XtVaCreatePopupShell(
 					"Volume editor",transientShellWidgetClass,
-					user_interface->application_shell,
+					User_interface_get_application_shell(user_interface),
 					XmNmwmDecorations, MWM_DECOR_ALL|MWM_DECOR_MAXIMIZE,
 					XmNmwmFunctions, MWM_FUNC_ALL|MWM_FUNC_MAXIMIZE,
 					XmNtransient, FALSE,

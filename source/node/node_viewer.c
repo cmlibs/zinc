@@ -590,7 +590,7 @@ Since both nodes and data can depend on embedded fields, the
 				/* make the dialog shell */
 				if (node_viewer->window_shell=XtVaCreatePopupShell(dialog_title,
 					topLevelShellWidgetClass,
-					user_interface->application_shell,
+					User_interface_get_application_shell(user_interface),
 					XmNdeleteResponse,XmDO_NOTHING,
 					XmNmwmDecorations,MWM_DECOR_ALL,
 					XmNmwmFunctions,MWM_FUNC_ALL,

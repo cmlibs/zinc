@@ -1589,7 +1589,7 @@ continuation.  Write the file.
 				{
 					if ((!(parent=widget))||(True!=XtIsWidget(parent)))
 					{
-						parent=analysis->user_interface->application_shell;
+						parent=User_interface_get_application_shell(analysis->user_interface);
 					}
 					if (warning_box_shell=XtVaCreatePopupShell(
 						"write_event_times_warning_shell",
@@ -1898,7 +1898,7 @@ Writes the PostScript for drawing either <all> the signals from the
 		((number_of_devices=rig->number_of_devices)>0)&&
 		((signals_per_page=analysis->signals_per_printer_page)>0))
 	{
-		display=analysis->user_interface->display;
+		display=User_interface_get_display(analysis->user_interface);
 		first_data=buffer->start;
 		last_data=buffer->end;
 		current_region=get_Rig_current_region(rig);
@@ -2825,7 +2825,7 @@ nodes similar to rig->devices. This FE_node_order_info is also used elsewhere.
 		drawing_width=drawing->width;
 		drawing_height=drawing->height;
 		/* clear the drawing area */
-		XFillRectangle(user_interface->display,pixel_map,
+		XFillRectangle(User_interface_get_display(user_interface),pixel_map,
 			(signal_drawing_information->graphics_context).background_drawing_colour,
 			0,0,drawing_width,drawing_height);
 		using_rig_node_group=0;
@@ -3231,7 +3231,7 @@ The callback for redrawing part of an analysis drawing area.
 							if (!(signals->drawing))
 							{
 								/* determine the size of the drawing area */
-								XGetWindowAttributes(analysis->user_interface->display,
+								XGetWindowAttributes(User_interface_get_display(analysis->user_interface),
 									XtWindow(signals->drawing_area),&attributes);
 								/* create a pixel map */
 								if (signals->drawing=create_Drawing_2d(signals->drawing_area,
@@ -3256,7 +3256,7 @@ The callback for redrawing part of an analysis drawing area.
 							/* redisplay the specified part of the pixmap */
 							if (signals->drawing)
 							{
-								XCopyArea(analysis->user_interface->display,
+								XCopyArea(User_interface_get_display(analysis->user_interface),
 									signals->drawing->pixel_map,XtWindow(signals->drawing_area),
 									(analysis->signal_drawing_information->graphics_context).
 									copy,event->x,event->y,event->width,event->height,event->x,
@@ -3344,7 +3344,7 @@ The callback for resizing an analysis drawing area.
 							height=0;
 						}
 						/* find the size of the new rectangle */
-						XGetWindowAttributes(analysis->user_interface->display,
+						XGetWindowAttributes(User_interface_get_display(analysis->user_interface),
 							callback->window,&attributes);
 						/* create a new pixmap */
 						if (signals->drawing=create_Drawing_2d(signals->drawing_area,
@@ -3369,7 +3369,7 @@ The callback for resizing an analysis drawing area.
 							{
 								height=attributes.height;
 							}
-							XCopyArea(analysis->user_interface->display,
+							XCopyArea(User_interface_get_display(analysis->user_interface),
 								signals->drawing->pixel_map,XtWindow(signals->drawing_area),
 								(analysis->signal_drawing_information->graphics_context).copy,
 								0,0,width,height,0,0);
@@ -3463,7 +3463,7 @@ The callback for redrawing part of an analysis interval drawing area.
 						interval= &(analysis->interval);
 						if (interval->drawing_area)
 						{
-							display=analysis->user_interface->display;
+							display=User_interface_get_display(analysis->user_interface);
 							if (!(interval->drawing))
 							{
 								/* determine the size of the drawing area */
@@ -3627,7 +3627,7 @@ The callback for resizing an analysis interval drawing area.
 					interval= &(analysis->interval);
 					if (interval->drawing_area)
 					{
-						display=analysis->user_interface->display;
+						display=User_interface_get_display(analysis->user_interface);
 						/* find the size of the old rectangle */
 						if (interval->drawing)
 						{
@@ -3839,7 +3839,7 @@ so there could be inconsistencies.
 	if ((*analysis->highlight)&&(highlight_device= **(analysis->highlight))&&
 		(buffer=get_Device_signal_buffer(highlight_device))&&(times=buffer->times))
 	{
-		display=analysis->user_interface->display;
+		display=User_interface_get_display(analysis->user_interface);
 		frequency=buffer->frequency;
 		font=analysis->signal_drawing_information->font;
 		interval= &(analysis->interval);
@@ -4234,10 +4234,10 @@ DESCRIPTION :
 	if (interval&&(interval->drawing_area)&&(interval->drawing)&&
 		(interval->drawing->pixel_map)&&signal_drawing_information&&user_interface)
 	{
-		XDrawRectangle(user_interface->display,XtWindow(interval->drawing_area),
+		XDrawRectangle(User_interface_get_display(user_interface),XtWindow(interval->drawing_area),
 			(signal_drawing_information->graphics_context).interval_box_colour,
 			left,top,width,height);
-		XDrawRectangle(user_interface->display,interval->drawing->pixel_map,
+		XDrawRectangle(User_interface_get_display(user_interface),interval->drawing->pixel_map,
 			(signal_drawing_information->graphics_context).interval_box_colour,
 			left,top,width,height);
 		return_code=1;
@@ -4467,7 +4467,7 @@ returned.
 	ENTER(create_Analysis_window);
 	if (signal_drawing_information&&user_interface)
 	{
-		no_cascade_pixmap=user_interface->no_cascade_pixmap;
+		no_cascade_pixmap=User_interface_get_no_cascade_pixmap(user_interface);
 		if (MrmOpenHierarchy_base64_string(analysis_window_uidh,
 			&analysis_window_hierarchy,&analysis_window_hierarchy_open))
 		{
@@ -4505,10 +4505,10 @@ returned.
 				analysis->write_times_file_open_data=create_File_open_data(
 					events_file_extension,REGULAR,write_times_undecided_accepted,analysis,
 					0,user_interface);
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&signal_aspect_ratio_percent,resources_1,XtNumber(resources_1),NULL);
 				analysis->signal_aspect_ratio=(float)(signal_aspect_ratio_percent)/100;
-				XtVaGetApplicationResources(user_interface->application_shell,analysis,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),analysis,
 					resources_2,XtNumber(resources_2),NULL);
 				analysis->window=(Widget)NULL;
 				analysis->menu=(Widget)NULL;
@@ -4621,7 +4621,7 @@ returned.
 							"analysis_window",parent,&(analysis->window),
 							&analysis_window_class))
 						{
-							widget_spacing=user_interface->widget_spacing;
+							widget_spacing=User_interface_get_widget_spacing(user_interface);
 							/* set the dialog title */
 							dialog_title=XmStringCreateSimple("Analysis");
 							XtVaSetValues(analysis->window,
@@ -4899,7 +4899,7 @@ The callback for redrawing the analysis drawing area.
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #define UNEMAP_USE_NODES 1
 #endif /* defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)*/
-		XCopyArea(analysis->user_interface->display,signals->drawing->pixel_map,
+		XCopyArea(User_interface_get_display(analysis->user_interface),signals->drawing->pixel_map,
 			XtWindow(signals->drawing_area),
 			(analysis->signal_drawing_information->graphics_context).copy,
 			0,0,signals->drawing->width,signals->drawing->height,0,0);
@@ -4946,7 +4946,7 @@ The function for redrawing the analysis interval drawing area.
 	if (analysis&&((analysis->interval).drawing)&&
 		((analysis->interval).drawing_area))
 	{
-		display=analysis->user_interface->display;
+		display=User_interface_get_display(analysis->user_interface);
 		interval= &(analysis->interval);
 		/* clear the drawing area */
 		XFillRectangle(display,interval->drawing->pixel_map,
@@ -5152,8 +5152,8 @@ Updates the analysis region menu to be consistent with the current rig.
 					analysis->number_of_regions=number_of_regions;
 					analysis->regions=regions;
 					current_region=(Widget)NULL;
-					XtSetArg(attributes[1],XmNfontList,XmFontListCreate(analysis->
-						user_interface->button_font,XmSTRING_DEFAULT_CHARSET));
+					XtSetArg(attributes[1],XmNfontList,
+						User_interface_get_button_fontlist(analysis->user_interface));
 					if (number_of_regions>1)
 					{
 						XtSetArg(attributes[0],XmNlabelString,
@@ -5322,7 +5322,7 @@ Highlights/dehighlights the <device> in the <signals> area.
 #if defined (UNEMAP_USE_NODES)
 		}
 #endif /* defined (UNEMAP_USE_NODES)*/
-		XCopyArea(user_interface->display,signals->drawing->pixel_map,
+		XCopyArea(User_interface_get_display(user_interface),signals->drawing->pixel_map,
 			XtWindow(signals->drawing_area),
 			(signal_drawing_information->graphics_context).copy,xpos,ypos,
 			signals->drawing->width,signals->drawing->height,xpos,ypos);

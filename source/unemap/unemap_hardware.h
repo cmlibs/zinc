@@ -72,7 +72,7 @@ int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
 	HWND scrolling_window,UINT scrolling_message,
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-	XtAppContext application_context,
+	struct Event_dispatcher *event_dispatcher,
 #endif /* defined (MOTIF) */
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card);

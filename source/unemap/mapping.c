@@ -6678,16 +6678,16 @@ NULL if not successful.
 			map->contour_thickness=contour_thickness;
 			map->undecided_accepted=0;
 			map->rig_pointer=rig_pointer;
-			XtVaGetApplicationResources(user_interface->application_shell,map,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),map,
 				resources_1,XtNumber(resources_1),NULL);
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&membrane_smoothing_ten_thous,resources_2,XtNumber(resources_2),NULL);
 			map->membrane_smoothing=(float)membrane_smoothing_ten_thous/10000;
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&plate_bending_smoothing_ten_tho,resources_3,XtNumber(resources_3),
 				NULL);
 			map->plate_bending_smoothing=(float)plate_bending_smoothing_ten_tho/10000;
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&finite_element_interpolation,resources_4,XtNumber(resources_4),
 				NULL);
 			if (fuzzy_string_compare(finite_element_interpolation,"bicubic"))
@@ -6705,7 +6705,7 @@ NULL if not successful.
 					map->interpolation_type=NO_INTERPOLATION;
 				}
 			}
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&electrodes_marker_type,resources_5,XtNumber(resources_5),
 				NULL);
 			if (fuzzy_string_compare(electrodes_marker_type,"square"))
@@ -6723,14 +6723,14 @@ NULL if not successful.
 					map->electrodes_marker_type=PLUS_ELECTRODE_MARKER;
 				}
 			}
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&(map->electrodes_marker_size),resources_6,XtNumber(resources_6),
 				NULL);
 			if (map->electrodes_marker_size<1)
 			{
 				map->electrodes_marker_size=1;
 			}
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&fixed_automatic_range,resources_7,XtNumber(resources_7),
 				NULL);
 			if (fuzzy_string_compare(fixed_automatic_range,"automatic"))
@@ -6742,13 +6742,13 @@ NULL if not successful.
 				map->fixed_range=1;
 			}
 			map->range_changed=0;
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&(map->minimum_value),resources_8,XtNumber(resources_8),
 				NULL);
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&(map->maximum_value),resources_9,XtNumber(resources_9),
 				NULL);
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&draw_on_update,resources_10,XtNumber(resources_10),NULL);
 			if (fuzzy_string_compare(draw_on_update,"true"))
 			{
@@ -7101,7 +7101,7 @@ Called by (see also) update_colour_map_unemap.
 		(drawing_information->user_interface)&&drawing)
 	{
 		return_code=1;
-		display=drawing_information->user_interface->display;
+		display=User_interface_get_display(drawing_information->user_interface);
 		minimum_value=map->minimum_value;
 		maximum_value=map->maximum_value;
 		contour_minimum=map->contour_minimum;
@@ -9318,7 +9318,7 @@ draw the constant thickness contours
 		map_y_offset=sub_map->y_offset;
 		map_width=sub_map->width;
 		map_height=sub_map->height;
-		display=drawing->user_interface->display;
+		display=User_interface_get_display(drawing->user_interface);
 		number_of_contours=map->number_of_contours;
 		contour_minimum=map->contour_minimum;
 		contour_maximum=map->contour_maximum;
@@ -9908,7 +9908,7 @@ Works off map min and max values, not sub_map.
 	frame=(struct Map_frame *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
 	if (map&&sub_map&&drawing&&(drawing->user_interface)&&
-		(display=drawing->user_interface->display)
+		(display=User_interface_get_display(drawing->user_interface))
 		&&(drawing->pixel_map)&&(drawing_information=map->drawing_information))
 	{
 		return_code=1;
@@ -10084,7 +10084,7 @@ Draw the fibres
 	display=(Display *)NULL;
 	region_item=(struct Region_list_item *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
-	if (map&&sub_map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
+	if (map&&sub_map&&drawing&&(drawing->user_interface)&&(display=User_interface_get_display(drawing->user_interface))
 		&&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
 		&&(rig=*(map->rig_pointer)))
 	{
@@ -10581,7 +10581,7 @@ draw the extrema
 	region_item=(struct Region_list_item *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
 	if (map&&sub_map&&drawing&&(drawing->user_interface)&&
-		(display=drawing->user_interface->display)
+		(display=User_interface_get_display(drawing->user_interface))
 		&&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
 		&&(rig=*(map->rig_pointer)))
 	{
@@ -10750,7 +10750,7 @@ draw the landmarks
 	region_item=(struct Region_list_item *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
 	if (map&&sub_map&&drawing&&(drawing->user_interface)&&
-		(display=drawing->user_interface->display)
+		(display=User_interface_get_display(drawing->user_interface))
 		&&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
 		&&(rig=*(map->rig_pointer)))
 	{
@@ -10899,7 +10899,7 @@ Write the title,using the sub_map->potential_time
 	drawing_information=(struct Map_drawing_information *)NULL;
 	display=(Display *)NULL;
 	if (drawing&&sub_map&&(drawing->user_interface)&&
-		(display=drawing->user_interface->display)&&map&&
+		(display=User_interface_get_display(drawing->user_interface))&&map&&
 		(drawing_information=map->drawing_information))
 	{
 		return_code=1;
@@ -10961,7 +10961,7 @@ a static string of length 11.
 	ENTER(set_electrode_2d_name_and_colour);
 	spectrum_pixels=(Pixel *)NULL;
 	if (map&&(drawing_information=map->drawing_information)&&graphics_context&&
-		electrode&&electrode_drawn&&(display=drawing->user_interface->display))
+		electrode&&electrode_drawn&&(display=User_interface_get_display(drawing->user_interface)))
 	{
 		return_code=1;
 		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
@@ -11167,7 +11167,7 @@ DESCRIPTION :  Draw the electrode in 2D, and write it's name.
 	display=(Display *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
 	if (map&&sub_map&&drawing&&(drawing->user_interface)&&
-		(display=drawing->user_interface->display)
+		(display=User_interface_get_display(drawing->user_interface))
 		&&(drawing->pixel_map)&&electrode&&(drawing_information=map->drawing_information))
 	{
 		return_code=1;
@@ -11288,7 +11288,7 @@ Must call map_2d_delaunay first.
 	(drawing_information=map->drawing_information)&&(drawing->user_interface))
 	{
 		return_code=1;
-		display=drawing->user_interface->display;
+		display=User_interface_get_display(drawing->user_interface);
 		graphics_context=(drawing_information->graphics_context).highlighted_colour;
 		electrode_x=sub_map->electrode_x;
 		electrode_y=sub_map->electrode_y;
@@ -11379,7 +11379,7 @@ Actually draw the map from the calculated data.
 		map_type=*(map->type);
 		spectrum_pixels=drawing_information->spectrum_colours;
 		number_of_electrodes=map->number_of_electrodes;
-		display=drawing->user_interface->display;
+		display=User_interface_get_display(drawing->user_interface);
 		if (NO_MAP_FIELD!=map_type)
 		{
 			if (NO_INTERPOLATION!=map->interpolation_type)
@@ -13256,7 +13256,7 @@ Construct a colour map image for colour map or contours or  values  in the
 		rig= *(map->rig_pointer);
 		number_of_regions=rig->number_of_regions;
 		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
-		display=drawing->user_interface->display;
+		display=User_interface_get_display(drawing->user_interface);
 		frame=&(sub_map->frame);
 		if (recalculate||!(frame->pixel_values))
 		{
@@ -13605,7 +13605,7 @@ to the drawing or writes to a postscript file.
 		/*???DB.  Am I going overboard with getting rid of globals ?  Should display
 			be a global ? */
 	{
-		display=drawing->user_interface->display;
+		display=User_interface_get_display(drawing->user_interface);	
 		font=drawing_information->font;
 		if (map->type)
 		{
@@ -14317,8 +14317,8 @@ It should not be called until draw_map has been called.
 		(drawing_information->user_interface)&&
 		(drawing_information->user_interface=drawing->user_interface))
 	{
-		display=drawing->user_interface->display;
-		widget_spacing=drawing->user_interface->widget_spacing;
+		display=User_interface_get_display(drawing->user_interface);
+		widget_spacing=User_interface_get_widget_spacing(drawing->user_interface);
 		spectrum_pixels=drawing_information->spectrum_colours;
 		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
 		font=drawing_information->font;
@@ -14836,12 +14836,12 @@ DESCRIPTION :
 	{
 		if (ALLOCATE(map_drawing_information,struct Map_drawing_information,1))
 		{
-			display=user_interface->display;
+			display=User_interface_get_display(user_interface);
 			screen_number=XDefaultScreen(display);
 			/* the drawable has to have the correct depth and screen */
-			XtVaGetValues(user_interface->application_shell,XmNdepth,&depth,NULL);
-			depth_screen_drawable=XCreatePixmap(user_interface->display,
-				XRootWindow(user_interface->display,screen_number),1,1,depth);
+			XtVaGetValues(User_interface_get_application_shell(user_interface),XmNdepth,&depth,NULL);
+			depth_screen_drawable=XCreatePixmap(User_interface_get_display(user_interface),
+				XRootWindow(User_interface_get_display(user_interface),screen_number),1,1,depth);
 			colour_map=XDefaultColormap(display,screen_number);
 			visual=XDefaultVisual(display,screen_number);
 #if defined (TEST_TRUE_COLOUR_VISUAL)
@@ -14850,7 +14850,7 @@ colour_map=default_colour_map;
 visual=default_visual;
 #endif /* defined (TEST_TRUE_COLOUR_VISUAL) */
 			map_drawing_information->user_interface=user_interface;
-			map_drawing_information->font=user_interface->normal_font;
+			map_drawing_information->font=User_interface_get_normal_font(user_interface);
 			map_drawing_information->number_of_spectrum_colours=MAX_SPECTRUM_COLOURS;
 			map_drawing_information->colour_map=colour_map;
 			map_drawing_information->spectrum=CREATE(Spectrum)("mapping_spectrum");
@@ -14982,20 +14982,20 @@ printf("read only colour map\n");
 			}
 			map_drawing_information->spectrum_colours=(Pixel *)NULL;
 			/* retrieve_settings */
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&((background_colour_resource[0]).default_addr),
 				background_colour_default_resource,
 				XtNumber(background_colour_default_resource),NULL);
 			/* NB.  XtVaGetApplicationResources does not allocate memory for the
 				default colour String, so it does not need to be free'd */
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				map_drawing_information,background_colour_resource,
 				XtNumber(background_colour_resource),NULL);
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				map_drawing_information,resources,XtNumber(resources),NULL);
 			/* create the graphics contexts */
 			mask=GCLineStyle|GCBackground|GCFont|GCForeground|GCFunction;
-			values.font=user_interface->normal_font->fid;
+			values.font=User_interface_get_normal_font(user_interface)->fid;
 			values.line_style=LineSolid;
 			values.background=map_drawing_information->background_drawing_colour;
 			values.foreground=map_drawing_information->background_drawing_colour;
@@ -15033,7 +15033,7 @@ printf("read only colour map\n");
 			values.foreground=map_drawing_information->unhighlighted_colour;
 			(map_drawing_information->graphics_context).unhighlighted_colour=
 				XCreateGC(display,depth_screen_drawable,mask,&values);
-			XFreePixmap(user_interface->display,depth_screen_drawable);
+			XFreePixmap(User_interface_get_display(user_interface),depth_screen_drawable);
 			number_of_spectrum_colours=MAX_SPECTRUM_COLOURS;
 			ALLOCATE(spectrum_colours,Pixel,number_of_spectrum_colours);
 			ALLOCATE(spectrum_rgb,XColor,number_of_spectrum_colours);
@@ -15137,8 +15137,8 @@ destroys the map_drawing_information
 	if (map_drawing_information_address&&
 		(map_drawing_information= *map_drawing_information_address)&&
 		(map_drawing_information->user_interface))
-	{
-		display=map_drawing_information->user_interface->display;
+	{		
+		display=User_interface_get_display(map_drawing_information->user_interface);
 		XFreeGC(display,(map_drawing_information->graphics_context).
 			background_drawing_colour);
 		XFreeGC(display,(map_drawing_information->graphics_context).contour_colour);

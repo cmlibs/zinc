@@ -247,8 +247,8 @@ current_item of the chooser.
 					XtSetArg(args[0], XmNuserData, (XtPointer)item);
 					new_string = XmStringCreateSimple(item_name);
 					XtSetArg(args[1], XmNlabelString, (XtPointer)new_string);
-					XtSetArg(args[2], XmNfontList,
-						(XtPointer)(chooser->user_interface->normal_fontlist));
+					XtSetArg(args[2], XmNfontList, (XtPointer)(
+						User_interface_get_normal_fontlist(chooser->user_interface)));
 					if (button=XmCreatePushButtonGadget(menu, item_name, args, 3))
 					{
 						if (item == chooser->current_item)
@@ -329,7 +329,7 @@ current_item of the chooser.
 					new_string = XmStringCreateSimple(item_name);
 					XtSetArg(args[0], XmNlabelString, (XtPointer)new_string);
 					XtSetArg(args[1], XmNfontList,
-						(XtPointer)(chooser->user_interface->normal_fontlist));
+						(XtPointer)(User_interface_get_normal_fontlist(chooser->user_interface)));
 					if ((submenu=Chooser_build_menu(menu,
 						items_in_submenu,subitems,subitem_names,chooser,item_widget))&&
 						(button=XmCreateCascadeButtonGadget(menu,item_name,args,2)))
@@ -425,7 +425,7 @@ these may be added by the calling code.
 				*chooser_widget = chooser->widget;
 				if (chooser->main_cascade = XtVaCreateWidget("cascade",
 					xmCascadeButtonGadgetClass, chooser->widget,
-					XmNfontList, (XtPointer)user_interface->normal_fontlist,
+					XmNfontList, (XtPointer)User_interface_get_normal_fontlist(user_interface),
 					NULL))
 				{
 					if (Chooser_build_main_menu(chooser, number_of_items,

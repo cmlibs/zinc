@@ -1915,7 +1915,7 @@ initializes the appropriate fields.
 				/* create the dialog shell */
 				if (!(parent=activation)||(True!=XtIsWidget(parent)))
 				{
-					parent=user_interface->application_shell;
+					parent=User_interface_get_application_shell(user_interface);
 				}
 				if (map_dialog->shell=XtVaCreatePopupShell(
 					"mapping_map_dialog_shell",

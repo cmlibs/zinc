@@ -522,7 +522,7 @@ Writes the selected file in the user specified way.
 							{
 								if (file_open_data->warning_shell=XtVaCreatePopupShell(
 									"file_exists_warning_shell",xmDialogShellWidgetClass,
-									file_open_data->user_interface->application_shell,
+									User_interface_get_application_shell(file_open_data->user_interface),
 									XmNtitle,"Warning",
 									NULL))
 								{
@@ -850,7 +850,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 				file_open_data->activation=widget;
 				if (!(parent=widget)||(True!=XtIsWidget(parent)))
 				{
-					parent=file_open_data->user_interface->application_shell;
+					parent=User_interface_get_application_shell(file_open_data->user_interface);
 				}
 				/* assign the shell title */
 				temp_string=(char *)NULL;
@@ -1124,8 +1124,9 @@ specified file.
 		/*???DB.  Do better ? */
 		if (!printer_command)
 		{
-			XtVaGetApplicationResources(file_open_data->user_interface->
-				application_shell,&printer_command,resources,XtNumber(resources),NULL);
+			XtVaGetApplicationResources(
+				User_interface_get_application_shell(file_open_data->user_interface),
+				&printer_command,resources,XtNumber(resources),NULL);
 		}
 		if (printer_command&&strcmp(printer_command,"print to file")&&
 			(file_open_data->allow_direct_to_printer))
@@ -1172,7 +1173,7 @@ specified file.
 					file_open_data->activation=widget;
 					if (!(parent=widget)||(True!=XtIsWidget(parent)))
 					{
-						parent=file_open_data->user_interface->application_shell;
+						parent=User_interface_get_application_shell(file_open_data->user_interface);
 					}
 					/* assign the shell title */
 					switch (file_open_data->type)

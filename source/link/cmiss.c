@@ -2615,7 +2615,8 @@ does not wait for cm commands to complete, otherwise it does.
 {
 	struct CMISS_connection *return_struct;
 	int i,j,base_number,count;
-	char connection_info[3][2][100],cmiss_parameter[300],temp[100];
+	char connection_info[3][2][100],cmiss_parameter[300],temp[100],
+		*local_machine_name;
 		/*???GMH.  Naughty */
 	char *cm_executable,*cwd,*mycm_executable;
 #if defined (VMS)
@@ -2663,7 +2664,8 @@ does not wait for cm commands to complete, otherwise it does.
 			return_struct->asynchronous_commands=asynchronous_commands;
 			return_struct->command_in_progress=0;
 			return_struct->cm_quit=0;
-			if (ALLOCATE(return_struct->name,char,strlen(machine)+1))
+			if (ALLOCATE(return_struct->name,char,strlen(machine)+1) &&
+				User_interface_get_local_machine_name(user_interface, &local_machine_name))
 			{
 				strcpy(return_struct->name,machine);
 				if (attach)
@@ -2681,7 +2683,7 @@ does not wait for cm commands to complete, otherwise it does.
 				}
 #if defined (USE_WORMHOLE_PIPES)
 				if ((user_interface->local_machine_info->type==MACHINE_UNIX)&&
-					!strcmp(machine,user_interface->local_machine_info->name))
+					!strcmp(machine,local_machine_name))
 				{
 					/* can use pipes */
 					/* local process, so connect via /tmp pipe */
@@ -2706,8 +2708,7 @@ does not wait for cm commands to complete, otherwise it does.
 							sprintf(connection_info[i][j],"sock:%s:",machine);
 						}
 					}
-					sprintf(cmiss_parameter,"sock:%s:",
-						user_interface->local_machine_info->name);
+					sprintf(cmiss_parameter,"sock:%s:", local_machine_name);
 				}
 				/* we need a different name for each wormhole */
 				count=0;
@@ -2736,16 +2737,16 @@ does not wait for cm commands to complete, otherwise it does.
 				if (!attach)
 				{
 #if defined (MOTIF)
-					XtVaGetApplicationResources(user_interface->application_shell,
+					XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 						&cm_executable,cm_resource,XtNumber(cm_resource),NULL);
-					XtVaGetApplicationResources(user_interface->application_shell,
+					XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 						&mycm_executable,mycm_resource,XtNumber(mycm_resource),NULL);
 #else
 					cm_executable="cm";
 					mycm_executable="mycm";
 #endif /* defined (MOTIF) */
 #if defined (UNIX)
-					if (!strcmp(machine,user_interface->local_machine_info->name))
+					if (!strcmp(machine,local_machine_name))
 					{
 						if (mycm_flag)
 						{
@@ -2950,6 +2951,7 @@ does not wait for cm commands to complete, otherwise it does.
 					display_message(ERROR_MESSAGE,"CREATE(CMISS_connection).  %s",
 						"Could not create wormholes");
 				}
+				DEALLOCATE(local_machine_name);
 			}
 			else
 			{
@@ -3319,7 +3321,7 @@ the CMISS_connection being valid after a call to this routine.
 							{
 								write_question(formatted_output_string,
 									connection->prompt_window_address,
-									connection->user_interface->application_shell);
+									User_interface_get_application_shell(connection->user_interface));
 								DEALLOCATE(formatted_output_string);
 							}
 							else

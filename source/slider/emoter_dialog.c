@@ -4763,7 +4763,7 @@ DESCRIPTION :
 
 		if ( name = confirmation_get_string( "Add Marker",
 			"Specify name for new marker",(char *)NULL,
-			marker->shared->user_interface->application_shell,
+			User_interface_get_application_shell(marker->shared->user_interface),
 			marker->shared->user_interface ))
 		{
 			new_marker = create_emoter_marker(name,

@@ -1417,7 +1417,7 @@ printf("creating texture_graphics_window\n");
 #endif /* defined (DEBUG) */
 		(texture_window->graphics_window_shell=XtVaCreatePopupShell(
 		"texture_window_graphics_shell",transientShellWidgetClass,
-		texture_window->user_interface->application_shell,XmNtransient,FALSE,
+		User_interface_get_application_shell(texture_window->user_interface),XmNtransient,FALSE,
 		/*???DB.  application_shell should be passed ? */
 		XtNallowShellResize,True,NULL))&&
 		(texture_window->graphics_window=XtVaCreateWidget(
@@ -1458,7 +1458,7 @@ printf("loading mc tables\n");
 #if defined (OPENGL_API)
 #if defined (OLD_CODE)
 		/* create the raster font */
-		if (raster_font_info=XLoadQueryFont(texture_window->user_interface->display,
+		if (raster_font_info=XLoadQueryFont(User_interface_get_display(texture_window->user_interface),
 			"-adobe-helvetica-medium-r-normal--17-120-100-100-p-88-iso8859-1"))
 		{
 			raster_font_id=raster_font_info->fid;
@@ -4597,7 +4597,7 @@ printf("In texture_graphics_input_callback\n");
 			if (X3dCR_INPUT==callback->reason)
 			{
 				/* find window coords */
-				XGetGeometry(texture_window->user_interface->display,callback->window,
+				XGetGeometry(User_interface_get_display(texture_window->user_interface),callback->window,
 					&win,&x,&y,&width,&height,&border_width,&depth);
 /*???debug */
 printf("window size = %d, %d\n",width,height);

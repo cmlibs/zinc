@@ -587,7 +587,7 @@ Selects elements in <element_selection> in response to interactive_events.
 				if (element_tool->window_shell=
 					XtVaCreatePopupShell("Element tool",
 						topLevelShellWidgetClass,
-						user_interface->application_shell,
+						User_interface_get_application_shell(user_interface),
 						XmNdeleteResponse,XmDO_NOTHING,
 						XmNmwmDecorations,MWM_DECOR_ALL,
 						XmNmwmFunctions,MWM_FUNC_ALL,

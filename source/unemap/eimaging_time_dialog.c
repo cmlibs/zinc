@@ -1010,7 +1010,7 @@ necessary widgets and initializes the appropriate fields.
 	/* check arguments */
 	if (user_interface)
 	{
-		no_cascade_pixmap=user_interface->no_cascade_pixmap;
+		no_cascade_pixmap=User_interface_get_no_cascade_pixmap(user_interface);
 		if (MrmOpenHierarchy_base64_string(eimaging_time_dialog_uidh,
 			&eimaging_time_dialog_hierarchy,&eimaging_time_dialog_hierarchy_open))
 		{
@@ -1048,7 +1048,7 @@ necessary widgets and initializes the appropriate fields.
 				/* create the dialog shell */
 				if (!(parent=activation)||(True!=XtIsWidget(parent)))
 				{
-					parent=user_interface->application_shell;
+					parent=User_interface_get_application_shell(user_interface);
 				}
 				if (eimaging_time_dialog->shell=XtVaCreatePopupShell(
 					"eimaging_time_dialog_shell",
@@ -1104,7 +1104,7 @@ necessary widgets and initializes the appropriate fields.
 								}
 
 								/* retrieve the settings (max_period) */
-								XtVaGetApplicationResources(user_interface->application_shell,
+								XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 									eimaging_time_dialog,resources_1,XtNumber(resources_1),NULL);
 								XtVaGetValues(eimaging_time_dialog->period_scroll,
 									XmNminimum,&scroll_min,NULL);

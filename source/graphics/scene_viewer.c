@@ -46,6 +46,7 @@ November 97 Created from rendering part of Drawing.
 #include "graphics/scene_viewer.h"
 #include "graphics/texture.h"
 #include "graphics/transform_tool.h"
+#include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -163,7 +164,7 @@ DESCRIPTION :
 	/* lights in this list are oriented relative to the viewer */
 	struct LIST(Light) *list_of_lights;
 	Widget drawing_widget,parent;
-	XtWorkProcId idle_update_proc;
+	struct Event_dispatcher_idle_callback *idle_update_callback_id;
 	/* managers and callback IDs for automatic updates */
 	struct MANAGER(Light) *light_manager;
 	void *light_manager_callback_id;
@@ -184,7 +185,7 @@ DESCRIPTION :
 	/* kept tumble axis and angle for spinning scene viewer */
 	double tumble_axis[3], tumble_angle;
 	int tumble_active;
-	XtWorkProcId tumble_callback_id;
+	struct Event_dispatcher_idle_callback *tumble_callback_id;
 	/* background */
 	struct Colour background_colour;
 	enum Scene_viewer_buffer_mode buffer_mode;
@@ -218,7 +219,7 @@ Module prototypes
 -----------------
 */
 /* Need to prototype this function as these two functions call each other */
-static Boolean Scene_viewer_automatic_tumble_callback(XtPointer scene_viewer_void);
+static int Scene_viewer_automatic_tumble_callback(void *scene_viewer_void);
 
 /*
 Module functions
@@ -1481,22 +1482,22 @@ all the dimensions are zero).
 	return (return_code);
 } /* Scene_viewer_render_scene_in_viewport */
 
-static Boolean Scene_viewer_idle_update(XtPointer scene_viewer_void)
+static int Scene_viewer_idle_update_callback(void *scene_viewer_void)
 /*******************************************************************************
 LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
-A WorkProc that updates the scene_viewer, and then returns TRUE so that it is
-removed from WorkProc queue.
+Updates the scene_viewer.
 ==============================================================================*/
 {
+	int return_code;
 	struct Scene_viewer *scene_viewer;
 
-	ENTER(Scene_viewer_idle_update);
+	ENTER(Scene_viewer_idle_update_callback);
 	if (scene_viewer=(struct Scene_viewer *)scene_viewer_void)
 	{
 		/* set workproc no longer pending */
-		scene_viewer->idle_update_proc=(XtWorkProcId)NULL;
+		scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 		X3dThreeDDrawingMakeCurrent(scene_viewer->drawing_widget);
 		Scene_viewer_render_scene(scene_viewer);
 		if (scene_viewer->swap_buffers)
@@ -1507,25 +1508,28 @@ removed from WorkProc queue.
 		{
 			if(!scene_viewer->tumble_callback_id)
 			{
-				scene_viewer->tumble_callback_id=XtAppAddWorkProc(
-					scene_viewer->user_interface->application_context,
-					Scene_viewer_automatic_tumble_callback,scene_viewer);			
+				scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_event_callback(
+					User_interface_get_event_dispatcher(scene_viewer->user_interface),
+					Scene_viewer_automatic_tumble_callback, (void *)scene_viewer,
+					EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY);			
 			}
 		}
 		else
 		{
 			scene_viewer->tumble_angle = 0.0;
 		}
+		return_code = 0;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_idle_update.  Missing scene_viewer");
+			"Scene_viewer_idle_update_callback.  Missing scene_viewer");
+		return_code = 0;
 	}
 	LEAVE;
 
-	return (TRUE); /* so workproc finished */
-} /* Scene_viewer_idle_update */
+	return (return_code); /* so workproc finished */
+} /* Scene_viewer_idle_update_callback */
 
 static int Scene_viewer_redraw_in_idle_time(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
@@ -1544,11 +1548,12 @@ put in the queue, but the old one will update the window to the new state.
 	ENTER(Scene_viewer_redraw_in_idle_time);
 	if (scene_viewer)
 	{
-		if (!scene_viewer->idle_update_proc)
+		if (!scene_viewer->idle_update_callback_id)
 		{
-			scene_viewer->idle_update_proc=XtAppAddWorkProc(
-				scene_viewer->user_interface->application_context,
-				Scene_viewer_idle_update,scene_viewer);
+			scene_viewer->idle_update_callback_id = Event_dispatcher_add_idle_event_callback(
+				User_interface_get_event_dispatcher(scene_viewer->user_interface),
+				Scene_viewer_idle_update_callback, (void *)scene_viewer,
+				EVENT_DISPATCHER_IDLE_UPDATE_SCENE_VIEWER_PRIORITY);
 		}
 		return_code=1;
 	}
@@ -1563,7 +1568,7 @@ put in the queue, but the old one will update the window to the new state.
 	return (return_code);
 } /* Scene_viewer_redraw_in_idle_time */
 
-static Boolean Scene_viewer_automatic_tumble_callback(XtPointer scene_viewer_void)
+static int Scene_viewer_automatic_tumble_callback(void *scene_viewer_void)
 /*******************************************************************************
 LAST MODIFIED : 28 September 2000
 
@@ -1575,6 +1580,7 @@ removed from WorkProc queue.
 	double centre_x,centre_y,size_x,size_y,viewport_bottom,viewport_height,
 		viewport_left,viewport_width;
 	enum Interactive_event_type interactive_event_type;
+	int return_code;
 	struct Scene_viewer *scene_viewer;
 	GLint viewport[4];
 	struct Interactive_event *interactive_event;
@@ -1635,16 +1641,19 @@ removed from WorkProc queue.
 		{
 			scene_viewer->tumble_angle = 0.0;
 		}
-		scene_viewer->tumble_callback_id = (XtWorkProcId)NULL;
+		scene_viewer->tumble_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
+		/* So it doesn't call again */
+		return_code = 0;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_automatic_tumble_callback.  Missing scene_viewer");
+		return_code = 0;
 	}
 	LEAVE;
 
-	return (TRUE);
+	return (return_code);
 } /* Scene_viewer_automatic_tumble_callback */
 
 static void Scene_viewer_initialize_callback(Widget scene_viewer_widget,
@@ -2355,9 +2364,11 @@ Converts mouse button-press and motion events into viewing transformations in
 												/* Add this now, if we hold still it will stop the
 													 rotate if not it will happen after the button
 													 release */
-												scene_viewer->tumble_callback_id=XtAppAddWorkProc(
-													scene_viewer->user_interface->application_context,
-													Scene_viewer_automatic_tumble_callback,scene_viewer);
+												scene_viewer->tumble_callback_id = 
+													Event_dispatcher_add_idle_event_callback(
+													User_interface_get_event_dispatcher(scene_viewer->user_interface),
+													Scene_viewer_automatic_tumble_callback, (void *)scene_viewer,
+													EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY);			
 											}
 										}
 										else
@@ -2714,9 +2725,9 @@ returned to the scene.
 				key_press=(XKeyEvent *)event;
 				if (0==f_key_code)
 				{
-					f_key_code=XKeysymToKeycode(scene_viewer->user_interface->display,
+					f_key_code=XKeysymToKeycode(User_interface_get_display(scene_viewer->user_interface),
 						102);
-					F_key_code=XKeysymToKeycode(scene_viewer->user_interface->display,
+					F_key_code=XKeysymToKeycode(User_interface_get_display(scene_viewer->user_interface),
 						70);
 				}
 				if ((f_key_code==key_press->keycode)||(f_key_code==key_press->keycode))
@@ -3121,7 +3132,7 @@ performed in idle time so that multiple redraws are avoided.
 					threeDDrawingWidgetClass,parent,
 					X3dNbufferColourMode,X3dCOLOUR_RGB_MODE,
 					X3dNbufferingMode,x3d_buffering_mode,
-					X3dNvisualId,user_interface->specified_visual_id,
+					X3dNvisualId,User_interface_get_specified_visual_id(user_interface),
 					XmNleftAttachment,XmATTACH_FORM,
 					XmNrightAttachment,XmATTACH_FORM,
 					XmNbottomAttachment,XmATTACH_FORM,
@@ -3142,7 +3153,7 @@ performed in idle time so that multiple redraws are avoided.
 						scene_viewer->temporary_transform_mode=0;
 						scene_viewer->parent=parent;
 						scene_viewer->user_interface=user_interface;
-						scene_viewer->idle_update_proc=(XtWorkProcId)NULL;
+						scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 						(scene_viewer->background_colour).red=background_colour->red;
 						(scene_viewer->background_colour).green=background_colour->green;
 						(scene_viewer->background_colour).blue=background_colour->blue;
@@ -3354,8 +3365,10 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		/* Remove Tumble callback */
 		if (scene_viewer->tumble_callback_id)
 		{
-			XtRemoveWorkProc(scene_viewer->tumble_callback_id);
-			scene_viewer->tumble_callback_id = (XtWorkProcId)NULL;
+			Event_dispatcher_remove_idle_event_callback(
+				User_interface_get_event_dispatcher(scene_viewer->user_interface),
+				scene_viewer->tumble_callback_id);
+			scene_viewer->tumble_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 		}
 		/* must destroy the widget */
 		XtDestroyWidget(scene_viewer->drawing_widget);				
@@ -3450,8 +3463,10 @@ eg. automatic tumble.
 	{
 		if (scene_viewer->tumble_callback_id)
 		{
-			XtRemoveWorkProc(scene_viewer->tumble_callback_id);
-			scene_viewer->tumble_callback_id=(XtWorkProcId)NULL;
+			Event_dispatcher_remove_idle_event_callback(
+				User_interface_get_event_dispatcher(scene_viewer->user_interface),
+				scene_viewer->tumble_callback_id);
+			scene_viewer->tumble_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
 		}
 		scene_viewer->tumble_active = 0;
 		scene_viewer->tumble_angle = 0.0;
@@ -3484,17 +3499,19 @@ Must call this in DESTROY function.
 	ENTER(Scene_viewer_sleep);
 	if (scene_viewer)
 	{
-		/* if there's an update pending, then remove the workproc from the queue */
-		/*???DB.  Is a workproc really necessary ? */
-		if (scene_viewer->idle_update_proc)
+		if (scene_viewer->idle_update_callback_id)
 		{
-			XtRemoveWorkProc(scene_viewer->idle_update_proc);
-			scene_viewer->idle_update_proc=(XtWorkProcId)NULL;
+			Event_dispatcher_remove_idle_event_callback(
+				User_interface_get_event_dispatcher(scene_viewer->user_interface),
+				scene_viewer->idle_update_callback_id);
+			scene_viewer->idle_update_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
 		}
 		if (scene_viewer->tumble_callback_id)
 		{
-			XtRemoveWorkProc(scene_viewer->tumble_callback_id);
-			scene_viewer->tumble_callback_id=(XtWorkProcId)NULL;
+			Event_dispatcher_remove_idle_event_callback(
+				User_interface_get_event_dispatcher(scene_viewer->user_interface),
+				scene_viewer->tumble_callback_id);
+			scene_viewer->tumble_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
 		}
 		scene_viewer->tumble_active = 0;
 		scene_viewer->tumble_angle = 0.0;
@@ -3891,8 +3908,10 @@ Sets the input_mode of the Scene_viewer.
 		/* clear automatic tumble since cannot make successful input while on */
 		if (scene_viewer->tumble_callback_id)
 		{
-			XtRemoveWorkProc(scene_viewer->tumble_callback_id);
-			scene_viewer->tumble_callback_id=(XtWorkProcId)NULL;
+			Event_dispatcher_remove_idle_event_callback(
+				User_interface_get_event_dispatcher(scene_viewer->user_interface),
+				scene_viewer->tumble_callback_id);
+			scene_viewer->tumble_callback_id=(struct Event_dispatcher_idle_callback *)NULL;
 		}
 		scene_viewer->tumble_active = 0;
 		scene_viewer->tumble_angle = 0.0;
@@ -5819,22 +5838,26 @@ Requests a full redraw immediately.
 ==============================================================================*/
 {
 	int return_code;
+	struct Event_dispatcher *event_dispatcher;
 
 	ENTER(Scene_viewer_redraw_now);
 	if (scene_viewer)
 	{
 		/* remove idle update workproc if pending */
-		if (scene_viewer->idle_update_proc)
+		if (scene_viewer->idle_update_callback_id)
 		{
-			XtRemoveWorkProc(scene_viewer->idle_update_proc);
-			scene_viewer->idle_update_proc=(XtWorkProcId)NULL;
+			event_dispatcher = User_interface_get_event_dispatcher(
+				scene_viewer->user_interface);
+			Event_dispatcher_remove_idle_event_callback(
+				event_dispatcher, scene_viewer->idle_update_callback_id);
+			scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 			if (scene_viewer->tumble_active)
 			{
 				if(!scene_viewer->tumble_callback_id)
 				{
-					scene_viewer->tumble_callback_id=XtAppAddWorkProc(
-						scene_viewer->user_interface->application_context,
-						Scene_viewer_automatic_tumble_callback,scene_viewer);			
+					scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_event_callback(
+						event_dispatcher, Scene_viewer_automatic_tumble_callback, (void *)scene_viewer,
+						EVENT_DISPATCHER_TUMBLE_SCENE_VIEWER_PRIORITY);
 				}
 			}
 			else

@@ -32,6 +32,7 @@ DESCRIPTION :
 #include "projection/projection_dialog.h"
 #include "projection/projection_window.h"
 #include "projection/projection_window.uidh"
+#include "user_interface/event_dispatcher.h"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/printer.h"
@@ -161,10 +162,9 @@ Finds the id of the projection animate button.
 	LEAVE;
 } /* identify_projection_animate_but */
 
-static void draw_animation_frame(XtPointer projection_window,
-	XtIntervalId *timer_id)
+static int draw_animation_frame(void *projection_window)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1995
+LAST MODIFIED : 4 March 2002
 
 DESCRIPTION :
 Draws a frame in the projection animation.
@@ -172,14 +172,13 @@ Draws a frame in the projection animation.
 {
 	Display *display;
 	float contour_maximum,contour_minimum,maximum_value,minimum_value;
-	int cell_number,i,number_of_contours,number_of_spectrum_colours;
+	int cell_number,i,number_of_contours,number_of_spectrum_colours,return_code;
 	Pixel *spectrum_pixels;
 	struct Projection_window *window;
 	struct Projection *projection;
 	XColor colour,spectrum_rgb[MAX_SPECTRUM_COLOURS];
 
 	ENTER(draw_animation_frame);
-	USE_PARAMETER(timer_id);
 	if ((window=(struct Projection_window *)projection_window)&&
 		(projection=window->projection))
 	{
@@ -187,7 +186,7 @@ Draws a frame in the projection animation.
 		if ((0<=window->animation_front)&&
 			(window->animation_front<number_of_spectrum_colours))
 		{
-			display=window->user_interface->display;
+			display=User_interface_get_display(window->user_interface);
 			/* use background drawing colour for the whole spectrum */
 			colour.pixel=(projection->pixel).background_colour;
 			XQueryColor(display,projection->colour_map,&colour);
@@ -243,8 +242,9 @@ Draws a frame in the projection animation.
 			(window->animation_front)++;
 			if (window->animation_front<number_of_spectrum_colours)
 			{
-				(void)XtAppAddTimeOut(window->user_interface->application_context,
-					(long unsigned)100,draw_animation_frame,projection_window);
+				Event_dispatcher_add_timeout_callback(
+					User_interface_get_event_dispatcher(window->user_interface),
+					/*seconds*/0,/*nanoseconds*/100000000, draw_animation_frame, (void *)projection_window);
 			}
 			else
 			{
@@ -253,8 +253,11 @@ Draws a frame in the projection animation.
 				(void)update_colour_map(projection);
 			}
 		}
+		return_code = 1;
 	}
 	LEAVE;
+
+	return (return_code);
 } /* draw_animation_frame */
 
 static void animate_projection(Widget widget,XtPointer projection_window,
@@ -279,7 +282,7 @@ Starts the projection animation.
 		/* initialize the animation front */
 		window->animation_front=0;
 		/* start the animation */
-		draw_animation_frame(projection_window,(XtIntervalId *)NULL);
+		draw_animation_frame(projection_window);
 	}
 	else
 	{
@@ -470,7 +473,7 @@ The callback for redrawing part of a projection drawing area.
 				{
 					if (Expose==callback->event->type)
 					{
-						display=window->user_interface->display;
+						display=User_interface_get_display(window->user_interface);
 #if defined (DEBUG)
 						if (first_call&&(window->projection))
 						{
@@ -639,7 +642,7 @@ The callback for resizing a projection drawing area.
 				{
 					if (window->projection_drawing_area)
 					{
-						display=window->user_interface->display;
+						display=User_interface_get_display(window->user_interface);
 						/* find the size of the old rectangle */
 						if (window->projection_drawing)
 						{
@@ -773,7 +776,7 @@ The callback for redrawing part of spectrum drawing area.
 						event= &(callback->event->xexpose);
 						if (window->spectrum_drawing_area)
 						{
-							display=window->user_interface->display;
+							display=User_interface_get_display(window->user_interface);
 #if defined (DEBUG)
 							if (first_call&&(window->projection))
 							{
@@ -883,7 +886,7 @@ The callback for resizing a spectrum drawing area.
 				{
 					if (window->spectrum_drawing_area)
 					{
-						display=window->user_interface->display;
+						display=User_interface_get_display(window->user_interface);
 						/* find the size of the old rectangle */
 						if (window->spectrum_drawing)
 						{
@@ -1054,8 +1057,8 @@ the projection_window.
 						/* set the area of the postscript page for the projection */
 						if (projection->maintain_aspect_ratio)
 						{
-							pixel_aspect_ratio=get_pixel_aspect_ratio(window->user_interface->
-								display);
+							pixel_aspect_ratio=get_pixel_aspect_ratio(
+								User_interface_get_display(window->user_interface));
 							if ((float)(window->projection_drawing->height)*
 								pixel_aspect_ratio*postscript_page_width<
 								0.85*postscript_page_height*
@@ -1105,8 +1108,8 @@ the projection_window.
 						/* set the area of the postscript page for the projection */
 						if (projection->maintain_aspect_ratio)
 						{
-							pixel_aspect_ratio=get_pixel_aspect_ratio(window->user_interface->
-								display);
+							pixel_aspect_ratio=get_pixel_aspect_ratio(
+								User_interface_get_display(window->user_interface));
 							if ((float)(window->projection_drawing->height)*
 								pixel_aspect_ratio*postscript_page_width<postscript_page_height*
 								(float)(window->projection_drawing->width))
@@ -1838,15 +1841,15 @@ then opened with the specified <modifications>.
 			}
 			else
 			{
-				if (colour_map=XCreateColormap(user_interface->display,
-					XDefaultRootWindow(user_interface->display),
-					XDefaultVisual(user_interface->display,
-					XDefaultScreen(user_interface->display)),AllocNone))
+				if (colour_map=XCreateColormap(User_interface_get_display(user_interface),
+					XDefaultRootWindow(User_interface_get_display(user_interface)),
+					XDefaultVisual(User_interface_get_display(user_interface),
+					XDefaultScreen(User_interface_get_display(user_interface))),AllocNone))
 				{
 					/* create the projection window shell */
 					if (shell=XtVaCreatePopupShell(
 						"projection_window_shell",topLevelShellWidgetClass,
-						user_interface->application_shell,
+						User_interface_get_application_shell(user_interface),
 						XtNcolormap,colour_map,
 						NULL))
 					{
@@ -1952,7 +1955,7 @@ the interpolation functions are also recalculated.
 		(window->projection_drawing_area))
 	{
 		draw_projection(window->projection,recalculate,window->projection_drawing);
-		XCopyArea(window->user_interface->display,
+		XCopyArea(User_interface_get_display(window->user_interface),
 			window->projection_drawing->pixel_map,
 			XtWindow(window->projection_drawing_area),
 			(window->projection->graphics_context).copy,0,0,
@@ -1983,7 +1986,7 @@ The callback for redrawing the colour bar or auxiliary devices drawing area.
 		(window->spectrum_drawing_area))
 	{
 		draw_spectrum_area(window->projection,window->spectrum_drawing);
-		XCopyArea(window->user_interface->display,
+		XCopyArea(User_interface_get_display(window->user_interface),
 			window->spectrum_drawing->pixel_map,
 			XtWindow(window->spectrum_drawing_area),
 			(window->projection->graphics_context).copy,0,0,

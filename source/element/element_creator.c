@@ -998,7 +998,7 @@ enable the creation of a coordinate field.
 				if (element_creator->window_shell=
 					XtVaCreatePopupShell("Element Creator",
 						topLevelShellWidgetClass,
-						user_interface->application_shell,
+						User_interface_get_application_shell(user_interface),
 						XmNdeleteResponse,XmDO_NOTHING,
 						XmNmwmDecorations,MWM_DECOR_ALL,
 						XmNmwmFunctions,MWM_FUNC_ALL,

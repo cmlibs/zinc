@@ -1941,10 +1941,10 @@ Add the <element>'s nodes to the node list if they are not already in it.
 			{
 				drawing=draw_node_data->drawing;
 				/* draw plus */
-				XPSDrawLineFloat(drawing->user_interface->display,drawing->pixel_map,
+				XPSDrawLineFloat(User_interface_get_display(drawing->user_interface),drawing->pixel_map,
 					(draw_node_data->graphics_context).marker_colour,
 					draw_x-2,draw_y,draw_x+2,draw_y);
-				XPSDrawLineFloat(drawing->user_interface->display,drawing->pixel_map,
+				XPSDrawLineFloat(User_interface_get_display(drawing->user_interface),drawing->pixel_map,
 					(draw_node_data->graphics_context).marker_colour,
 					draw_x,draw_y-2,draw_x,draw_y+2);
 				/* write name */
@@ -1977,7 +1977,7 @@ Add the <element>'s nodes to the node list if they are not already in it.
 						y_string=draw_node_data->drawing_height-descent;
 					}
 				}
-				XPSDrawString(drawing->user_interface->display,drawing->pixel_map,
+				XPSDrawString(User_interface_get_display(drawing->user_interface),drawing->pixel_map,
 					(draw_node_data->graphics_context).text_colour,x_string,y_string,name,
 					name_length);
 			}
@@ -2099,7 +2099,7 @@ DESCRIPTION :
 					min_x=draw_element_data->min_x;
 					min_y=draw_element_data->min_y;
 					pixel_map=drawing->pixel_map;
-					display=drawing->user_interface->display;
+					display=User_interface_get_display(drawing->user_interface);
 					marker_colour_context=
 						(draw_element_data->graphics_context).marker_colour;
 					cut_height=drawing_height/3;
@@ -2453,24 +2453,24 @@ and NULL if unsuccessful.
 			XtVaGetValues(widget,
 				XmNdepth,&(drawing->depth),
 				NULL);
-			if (drawing->pixel_map=XCreatePixmap(user_interface->display,
-				XRootWindow(user_interface->display,
-				XDefaultScreen(user_interface->display)),(unsigned int)width,
+			if (drawing->pixel_map=XCreatePixmap(User_interface_get_display(user_interface),
+				XRootWindow(User_interface_get_display(user_interface),
+				XDefaultScreen(User_interface_get_display(user_interface))),(unsigned int)width,
 				(unsigned int)height,(unsigned int)(drawing->depth)))
 			{
 				if (create_image)
 				{
 					/* the number of bits for each pixel */
-					bit_map_unit=BitmapUnit(user_interface->display);
+					bit_map_unit=BitmapUnit(User_interface_get_display(user_interface));
 					/* each scan line occupies a multiple of this number of bits */
-					bit_map_pad=BitmapPad(user_interface->display);
+					bit_map_pad=BitmapPad(User_interface_get_display(user_interface));
 					/* create image */
 					if (!((ALLOCATE(image_data,char,drawing->height*
 						(scan_line_bytes=(((drawing->width*bit_map_unit-1)/
 						bit_map_pad+1)*bit_map_pad-1)/8+1)))&&
-						(drawing->image=XCreateImage(user_interface->display,
-						XDefaultVisual(user_interface->display,
-						XDefaultScreen(user_interface->display)),drawing->depth,
+						(drawing->image=XCreateImage(User_interface_get_display(user_interface),
+						XDefaultVisual(User_interface_get_display(user_interface),
+						XDefaultScreen(User_interface_get_display(user_interface))),drawing->depth,
 						ZPixmap,0,image_data,drawing->width,drawing->height,bit_map_pad,
 						scan_line_bytes))))
 					{
@@ -2527,7 +2527,7 @@ the memory for <**drawing> and changes <*drawing> to NULL.
 	if (*drawing)
 	{
 		/* free the pixel map */
-		XFreePixmap((*drawing)->user_interface->display,(*drawing)->pixel_map);
+		XFreePixmap((*drawing)->User_interface_get_display(user_interface),(*drawing)->pixel_map);
 		/* free the image */
 		if ((*drawing)->image)
 		{
@@ -2708,7 +2708,7 @@ successful and NULL if not successful.
 		{
 			projection->user_interface=user_interface;
 			projection->element_manager=element_manager;
-			display=user_interface->display;
+			display=User_interface_get_display(user_interface);
 			XtVaGetValues(window,XtNcolormap,&(projection->colour_map),NULL);
 			if (projection->colour_map)
 			{
@@ -2964,7 +2964,7 @@ for <**projection> and sets <*projection> to NULL.
 	return_code=1;
 	if (projection&&(*projection))
 	{
-		display=(*projection)->user_interface->display;
+		display=User_interface_get_display((*projection)->user_interface);
 		XFreeGC(display,((*projection)->graphics_context).background_colour);
 		XFreeGC(display,((*projection)->graphics_context).contour_colour);
 		XFreeGC(display,((*projection)->graphics_context).copy);
@@ -3079,16 +3079,16 @@ Updates the colour map being used for <projection>.
 			}
 			/* hide the map boundary */
 			colour.pixel=(projection->pixel).background_colour;
-			XQueryColor(projection->user_interface->display,colour_map,&colour);
+			XQueryColor(User_interface_get_display(projection->user_interface),colour_map,&colour);
 			colour.pixel=boundary_pixel;
 			colour.flags=DoRed|DoGreen|DoBlue;
-			XStoreColor(projection->user_interface->display,colour_map,&colour);
+			XStoreColor(User_interface_get_display(projection->user_interface),colour_map,&colour);
 		}
 		else
 		{
 			/* use background drawing colour for the whole spectrum */
 			colour.pixel=(projection->pixel).background_colour;
-			XQueryColor(projection->user_interface->display,colour_map,&colour);
+			XQueryColor(User_interface_get_display(projection->user_interface),colour_map,&colour);
 			for (i=0;i<number_of_spectrum_colours;i++)
 			{
 				spectrum_rgb[i].pixel=spectrum_pixels[i];
@@ -3099,10 +3099,10 @@ Updates the colour map being used for <projection>.
 			}
 			/* show the map boundary */
 			colour.pixel=(projection->pixel).contour_colour;
-			XQueryColor(projection->user_interface->display,colour_map,&colour);
+			XQueryColor(User_interface_get_display(projection->user_interface),colour_map,&colour);
 			colour.pixel=(projection->pixel).boundary_colour;
 			colour.flags=DoRed|DoGreen|DoBlue;
-			XStoreColor(projection->user_interface->display,colour_map,&colour);
+			XStoreColor(User_interface_get_display(projection->user_interface),colour_map,&colour);
 		}
 		/* adjust the computer colour map for contours */
 		if (SHOW_CONTOURS==projection->contours_option)
@@ -3111,7 +3111,7 @@ Updates the colour map being used for <projection>.
 				!(projection->pixel_values))
 			{
 				colour.pixel=(projection->pixel).contour_colour;
-				XQueryColor(projection->user_interface->display,colour_map,&colour);
+				XQueryColor(User_interface_get_display(projection->user_interface),colour_map,&colour);
 				number_of_contours=projection->number_of_contours;
 				for (i=0;i<number_of_contours;i++)
 				{
@@ -3127,7 +3127,7 @@ Updates the colour map being used for <projection>.
 				}
 			}
 		}
-		XStoreColors(projection->user_interface->display,colour_map,spectrum_rgb,
+		XStoreColors(User_interface_get_display(projection->user_interface),colour_map,spectrum_rgb,
 			number_of_spectrum_colours);
 	}
 	else
@@ -3190,7 +3190,7 @@ the projection is also recalculated.
 	{
 		if (node_list=CREATE_LIST(FE_node)())
 		{
-			display=drawing->user_interface->display;
+			display=User_interface_get_display(drawing->user_interface);
 			number_of_spectrum_colours=projection->number_of_spectrum_colours;
 			number_of_contours=projection->number_of_contours;
 			drawing_width=drawing->width;
@@ -4657,7 +4657,7 @@ This function draws the colour bar in the <drawing>.
 	/* check arguments */
 	if (projection&&drawing)
 	{
-		display=drawing->user_interface->display;
+		display=User_interface_get_display(drawing->user_interface);
 		spectrum_pixels=(projection->pixel).spectrum;
 		number_of_spectrum_colours=projection->number_of_spectrum_colours;
 		/* clear the colour or auxiliary drawing area */

@@ -3376,7 +3376,7 @@ editor at a time.  This implementation may be changed later.
 			{
 				return_code=bring_up_material_editor_dialog(
 					&(command_data->material_editor_dialog),
-					command_data->user_interface->application_shell,
+					User_interface_get_application_shell(command_data->user_interface),
 					command_data->graphical_material_manager,
 					command_data->texture_manager,(struct Graphical_material *)NULL,
 					command_data->user_interface);
@@ -3434,7 +3434,7 @@ Invokes the grid field calculator dialog.
 			{
 				return_code=bring_up_grid_field_calculator(
 					&(command_data->grid_field_calculator_dialog),
-					command_data->user_interface->application_shell,
+					User_interface_get_application_shell(command_data->user_interface),
 					command_data->computed_field_package,
 					&(command_data->control_curve_editor_dialog),
 					command_data->control_curve_manager,
@@ -3499,7 +3499,7 @@ Executes a GFX CREATE IM_CONTROL command.
 #if defined (EXT_INPUT)
 				return_code=bring_up_input_module_dialog(
 					&(command_data->input_module_dialog),
-					command_data->user_interface->application_shell,
+					User_interface_get_application_shell(command_data->user_interface),
 					command_data->default_graphical_material,
 					command_data->graphical_material_manager,command_data->default_scene,
 					command_data->scene_manager, command_data->user_interface);
@@ -3566,7 +3566,7 @@ Executes a GFX CREATE INTERACTIVE_DATA_EDITOR command.
 			{
 				return_code=bring_up_interactive_node_editor_dialog(
 					&(command_data->interactive_data_editor_dialog),
-					command_data->user_interface->application_shell,
+					User_interface_get_application_shell(command_data->user_interface),
 					command_data->data_manager,command_data->execute_command,
 					(struct FE_node *)NULL);
 			}
@@ -3628,7 +3628,7 @@ Executes a GFX CREATE INTERACTIVE_NODE_EDITOR command.
 			{
 				return_code=bring_up_interactive_node_editor_dialog(
 					&(command_data->interactive_node_editor_dialog),
-					command_data->user_interface->application_shell,
+					User_interface_get_application_shell(command_data->user_interface),
 					command_data->node_manager,command_data->execute_command,
 					(struct FE_node *)NULL);
 			}
@@ -4909,7 +4909,7 @@ new slider.
 		{
 			return_code=create_node_group_slider_dialog(state,
 				&(command_data->node_group_slider_dialog),
-				command_data->user_interface->application_shell,
+				User_interface_get_application_shell(command_data->user_interface),
 				command_data->node_manager,command_data->node_group_manager,
 				command_data->execute_command,command_data->user_interface);
 		}
@@ -7232,7 +7232,7 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 								/* bring up interactive_streamline dialog */
 								bring_up_interactive_streamline_dialog(
 									&(command_data->interactive_streamlines_dialog),
-									command_data->user_interface->application_shell,
+									User_interface_get_application_shell(command_data->user_interface),
 									command_data->interactive_streamline_manager,
 									streamline,command_data->user_interface,
 									command_data->scene_manager);
@@ -8985,7 +8985,7 @@ editor at a time.  This implementation may be changed later.
 			{
 				return_code=bring_up_time_editor_dialog(
 					&(command_data->time_editor_dialog),
-					command_data->user_interface->application_shell,
+					User_interface_get_application_shell(command_data->user_interface),
 					command_data->default_time_keeper, 
 					command_data->user_interface);
 			}
@@ -9050,7 +9050,7 @@ editor at a time.  This implementation may be changed later.
 			{
 				return_code=bring_up_control_curve_editor_dialog(
 					&(command_data->control_curve_editor_dialog),
-					command_data->user_interface->application_shell,
+					User_interface_get_application_shell(command_data->user_interface),
 					command_data->control_curve_manager,
 					(struct Control_curve *)NULL,
 					command_data->user_interface);
@@ -9996,26 +9996,35 @@ Executes a GFX CREATE WINDOW command.
 				}
 				else
 				{
-					if (window=CREATE(Graphics_window)(name,
-						buffer_mode,&(command_data->background_colour),
-						command_data->light_manager,command_data->default_light,
-						command_data->light_model_manager,command_data->default_light_model,
-						command_data->scene_manager,command_data->default_scene,
-						command_data->texture_manager,
-						command_data->interactive_tool_manager,
-						command_data->user_interface))
+				   if (command_data->user_interface)
 					{
-						if (!ADD_OBJECT_TO_MANAGER(Graphics_window)(window,
-							command_data->graphics_window_manager))
+					   if (window=CREATE(Graphics_window)(name,
+						   buffer_mode,&(command_data->background_colour),
+							command_data->light_manager,command_data->default_light,
+							command_data->light_model_manager,command_data->default_light_model,
+							command_data->scene_manager,command_data->default_scene,
+							command_data->texture_manager,
+							command_data->interactive_tool_manager,
+							command_data->user_interface))
 						{
-							DESTROY(Graphics_window)(&window);
-							return_code=0;
+						   if (!ADD_OBJECT_TO_MANAGER(Graphics_window)(window,
+							   command_data->graphics_window_manager))
+							{
+							   DESTROY(Graphics_window)(&window);
+							   return_code=0;
+							}
+						}
+						else
+					   {
+						  display_message(ERROR_MESSAGE,
+							 "gfx_create_window.  Could not create graphics window");
+						  return_code=0;
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"gfx_create_window.  Could not create graphics window");
+							"gfx_create_window.  Cannot create a graphics window without a display.");
 						return_code=0;
 					}
 				}
@@ -10163,7 +10172,7 @@ a time.  This implementation may be changed later.
 			{
 				return_code=bring_up_data_grabber_dialog(
 					&(command_data->data_grabber_dialog),
-					command_data->user_interface->application_shell,
+					User_interface_get_application_shell(command_data->user_interface),
 					command_data->execute_command,command_data->user_interface,
 					command_data->fe_field_manager, command_data->fe_time,
 					command_data->node_manager, command_data->data_manager,
@@ -10263,22 +10272,8 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 			{
 				parameters_file_name=(char *)NULL;
 			}
-			if ((command_data->user_interface)&&
-				(command_data->user_interface->local_machine_info)&&
-				(command_data->user_interface->local_machine_info->name))
-			{
-				if (ALLOCATE(host_name,char,
-					strlen(command_data->user_interface->local_machine_info->name)+1))
-				{
-					strcpy(host_name,
-						command_data->user_interface->local_machine_info->name);
-				}
-				else
-				{
-					host_name=(char *)NULL;
-				}
-			}
-			else
+			if ((!command_data->user_interface) ||
+				(!User_interface_get_local_machine_name(command_data->user_interface, &host_name)))
 			{
 				host_name=(char *)NULL;
 			}
@@ -10290,8 +10285,8 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 #if defined (MOTIF)
 			if (command_data->user_interface)
 			{
-				XtVaGetApplicationResources(command_data->user_interface->
-					application_shell,&wormhole_timeout_seconds,resources,
+				XtVaGetApplicationResources(User_interface_get_application_shell(
+					command_data->user_interface),&wormhole_timeout_seconds,resources,
 					XtNumber(resources),NULL);
 				wormhole_timeout=(double)wormhole_timeout_seconds;
 			}
@@ -10651,7 +10646,7 @@ Executes a GFX CREATE command.
 				if (command_data->user_interface)
 				{
 					create_node_group_slider_data.parent=
-						command_data->user_interface->application_shell;
+						User_interface_get_application_shell(command_data->user_interface);
 				}
 				else
 				{
@@ -10712,7 +10707,7 @@ Executes a GFX CREATE command.
 				if (command_data->user_interface)
 				{
 					create_emoter_slider_data.parent=
-						command_data->user_interface->application_shell;
+						User_interface_get_application_shell(command_data->user_interface);
 				}
 				else
 				{
@@ -12899,7 +12894,7 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 				if ((!command_data->user_interface) ||
 					(!CREATE(Scene_editor)(
 						&(command_data->scene_editor),
-						command_data->user_interface->application_shell,
+						User_interface_get_application_shell(command_data->user_interface),
 						command_data->scene_manager,
 						scene,
 						command_data->computed_field_package,
@@ -12969,7 +12964,7 @@ Invokes the graphical spectrum group editor.
 			{
 				return_code=bring_up_spectrum_editor_dialog(
 					&(command_data->spectrum_editor_dialog),
-					command_data->user_interface->application_shell,
+					User_interface_get_application_shell(command_data->user_interface),
 					command_data->spectrum_manager,spectrum,command_data->user_interface,
 					command_data->glyph_list,
 					command_data->graphical_material_manager,command_data->light_manager,
@@ -23195,7 +23190,7 @@ Executes a UNEMAP OPEN command.
 						/* create a shell */
 						if (shell=XtVaCreatePopupShell("system_window_shell",
 							topLevelShellWidgetClass,
-							command_data->user_interface->application_shell,
+							User_interface_get_application_shell(command_data->user_interface),
 							XmNallowShellResize,False,NULL))
 						{
 							if (system=create_System_window(shell,close_emap,
@@ -23243,13 +23238,13 @@ Executes a UNEMAP OPEN command.
 									XtNumber(system_window_resources),NULL);
 								if (system_window_data.x == -1)
 								{
-									system_window_data.x = ((command_data->user_interface->
-										screen_width)-window_width)/2;
+									system_window_data.x = (User_interface_get_screen_width(
+										command_data->user_interface)-window_width)/2;
 								}
 								if (system_window_data.y == -1)
 								{
-									system_window_data.y = ((command_data->user_interface->
-										screen_height)-window_height)/2;
+									system_window_data.y = (User_interface_get_screen_height(
+										command_data->user_interface)-window_height)/2;
 								}
 								XtVaSetValues(system->window_shell,
 									XmNx, system_window_data.x,

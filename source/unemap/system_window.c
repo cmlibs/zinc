@@ -212,7 +212,7 @@ Associate the mapping window with the acquisition work area
 				system->acquisition_colour,ACQUISITION_ASSOCIATE,
 				(XtPointer)set_mapping_acquisition_region,(XtPointer)NULL,
 				(XtPointer)NULL,(XtPointer)&(system->acquisition),
-				user_interface->screen_width,user_interface->screen_height,
+				User_interface_get_screen_width(user_interface),User_interface_get_screen_height(user_interface),
 				system->configuration_file_extension,system->postscript_file_extension,
 				system->map_drawing_information,user_interface,
 				system->unemap_package,&((system->analysis).first_eimaging_event),
@@ -653,8 +653,8 @@ Associate the mapping window with the analysis work area
 				ANALYSIS_ASSOCIATE,(XtPointer)set_mapping_analysis_region,
 				(XtPointer)analysis_select_map_drawing_are,
 				(XtPointer)analysis_select_auxiliary_drawi,
-				(XtPointer)&(system->analysis),user_interface->screen_width,
-				user_interface->screen_height,system->configuration_file_extension,
+				(XtPointer)&(system->analysis),User_interface_get_screen_width(user_interface),
+				User_interface_get_screen_height(user_interface),system->configuration_file_extension,
 				system->postscript_file_extension,system->map_drawing_information,
 				user_interface,system->unemap_package,
 				&((system->analysis).first_eimaging_event),
@@ -890,7 +890,7 @@ Opens the windows associated with the mapping work area.
 							(int *)NULL,(int *)NULL,system->acquisition_colour,
 							ACQUISITION_ASSOCIATE,(XtPointer)set_mapping_acquisition_region,
 							(XtPointer)NULL,(XtPointer)NULL,(XtPointer)&(system->acquisition),
-							user_interface->screen_width,user_interface->screen_height,
+							User_interface_get_screen_width(user_interface),User_interface_get_screen_height(user_interface),
 							system->configuration_file_extension,
 							system->postscript_file_extension,system->map_drawing_information,
 							user_interface,system->unemap_package,
@@ -994,8 +994,8 @@ Opens the windows associated with the mapping work area.
 							(XtPointer)set_mapping_analysis_region,
 							(XtPointer)analysis_select_map_drawing_are,
 							(XtPointer)analysis_select_auxiliary_drawi,
-							(XtPointer)&(system->analysis),user_interface->screen_width,
-							user_interface->screen_height,
+							(XtPointer)&(system->analysis),User_interface_get_screen_width(user_interface),
+							User_interface_get_screen_height(user_interface),
 							system->configuration_file_extension,
 							system->postscript_file_extension,system->map_drawing_information,
 							user_interface,system->unemap_package,
@@ -1444,7 +1444,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				}
 				system->close_button=(Widget)NULL;
 				/* retrieve the settings */
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					system,resources_1,XtNumber(resources_1),NULL);
 				if (system->configuration_file_extension)
 				{
@@ -1514,7 +1514,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 						system->signal_file_extension_write=(char *)NULL;
 					}
 				}
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&temp_string,resources_2,XtNumber(resources_2),NULL);
 				if (fuzzy_string_compare(temp_string,"threshold"))
 				{
@@ -1531,7 +1531,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 						system->analysis.detection=EDA_INTERVAL;
 					}
 				}
-				XtVaGetApplicationResources(user_interface->application_shell,
+				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&temp_string,resources_3,XtNumber(resources_3),NULL);
 				if (fuzzy_string_compare(temp_string,"negative slope"))
 				{

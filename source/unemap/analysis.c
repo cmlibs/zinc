@@ -319,7 +319,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 			{
 				/* local variables initialised OK.  Use them only from now on */
 				font=signal_drawing_information->font;
-				display=user_interface->display;
+				display=User_interface_get_display(user_interface);
 				graphics_context=
 					(signal_drawing_information->graphics_context).axis_colour;
 				/* calculate the data time range from the current interval of the first
@@ -1076,12 +1076,12 @@ DESCRIPTION : draws the datum_marker
 			{
 				x_marker=SCALE_X(datum,first_data,axes_left,
 					SCALE_FACTOR(last_data-first_data,axes_width-1));
-				XPSDrawLine(user_interface->display,pixel_map,
+				XPSDrawLine(User_interface_get_display(user_interface),pixel_map,
 					(signal_drawing_information->graphics_context).datum_colour,x_marker,
 					axes_top,x_marker,axes_top+axes_height);
 				if (drawing_area_window)
 				{
-					XPSDrawLine(user_interface->display,drawing_area_window,
+					XPSDrawLine(User_interface_get_display(user_interface),drawing_area_window,
 						(signal_drawing_information->graphics_context).datum_colour,
 						x_marker,axes_top,x_marker,axes_top+axes_height);
 				}
@@ -1135,7 +1135,7 @@ DESCRIPTION :
 	{
 		if ((time>=first_data)&&(time<=last_data))
 		{
-			display=user_interface->display;
+			display=User_interface_get_display(user_interface);
 #if defined (NO_ALIGNMENT)
 			font=signal_drawing_information->font;
 #endif /* defined (NO_ALIGNMENT) */
@@ -1289,7 +1289,7 @@ DESCRIPTION : draws the event_marker
 	if (event&&times&&((PRINTER_DETAIL!=detail)||(event->status==ACCEPTED)||
 		(event->status==UNDECIDED))&&user_interface&&signal_drawing_information)
 	{
-		display=user_interface->display;
+		display=User_interface_get_display(user_interface);
 #if defined (NO_ALIGNMENT)
 		font=signal_drawing_information->font;
 #endif /* defined (NO_ALIGNMENT) */
@@ -1753,14 +1753,14 @@ DESCRIPTION : creates the Signal_drawing_information
 			1))
 		{
 			signal_drawing_information->user_interface=user_interface;
-			signal_drawing_information->font=user_interface->normal_font;
+			signal_drawing_information->font=User_interface_get_normal_font(user_interface);
 			/* retrieve_settings */
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				signal_drawing_information,resources,XtNumber(resources),NULL);
 			/*???DB.  Would like to make a type converter, but there isn't a pixel
 				array type */
 			overlay_colours_string=(char *)NULL;
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&overlay_colours_string,overlay_resources,XtNumber(overlay_resources),
 				NULL);
 			/* NB.  XtVaGetApplicationResources does not allocate memory for
@@ -1806,7 +1806,7 @@ DESCRIPTION : creates the Signal_drawing_information
 						from.size=strlen(temp_string_1);
 						to.addr=(XPointer)(overlay_colours+number_of_overlay_colours);
 						to.size=sizeof(overlay_colours[number_of_overlay_colours]);
-						XtConvertAndStore(user_interface->application_shell,XtRString,
+						XtConvertAndStore(User_interface_get_application_shell(user_interface),XtRString,
 							&from,XtRPixel,&to);
 						*temp_string_2=temp_char;
 						temp_string_1=temp_string_2;
@@ -1819,14 +1819,14 @@ DESCRIPTION : creates the Signal_drawing_information
 				number_of_overlay_colours;
 			signal_drawing_information->signal_overlay_colours=overlay_colours;
 			/* create the graphics contexts */
-			display=user_interface->display;
+			display=User_interface_get_display(user_interface);
 			/* the drawable has to have the correct depth and screen */
-			XtVaGetValues(user_interface->application_shell,XmNdepth,&depth,NULL);
-			depth_screen_drawable=XCreatePixmap(user_interface->display,
-				XRootWindow(user_interface->display,
-				XDefaultScreen(user_interface->display)),1,1,depth);
+			XtVaGetValues(User_interface_get_application_shell(user_interface),XmNdepth,&depth,NULL);
+			depth_screen_drawable=XCreatePixmap(User_interface_get_display(user_interface),
+				XRootWindow(User_interface_get_display(user_interface),
+				XDefaultScreen(User_interface_get_display(user_interface))),1,1,depth);
 			mask=GCLineStyle|GCBackground|GCFont|GCForeground|GCFunction;
-			values.font=user_interface->normal_font->fid;
+			values.font=User_interface_get_normal_font(user_interface)->fid;
 			values.line_style=LineSolid;
 			values.background=signal_drawing_information->background_drawing_colour;
 			values.foreground=signal_drawing_information->axis_colour;
@@ -1952,7 +1952,7 @@ DESCRIPTION : creates the Signal_drawing_information
 			values.function=GXcopy;
 			(signal_drawing_information->graphics_context).copy=XCreateGC(display,
 				depth_screen_drawable,GCFunction,&values);
-			XFreePixmap(user_interface->display,depth_screen_drawable);
+			XFreePixmap(User_interface_get_display(user_interface),depth_screen_drawable);
 		}
 		else
 		{
@@ -1989,7 +1989,7 @@ DESCRIPTION : destroys the Signal_drawing_information
 		(signal_drawing_information->user_interface))
 	{
 		/* DPN 18 June 2001 - Need to check things */
-		if (display=signal_drawing_information->user_interface->display)
+		if (display=User_interface_get_display(signal_drawing_information->user_interface))
 		{
 			if ((signal_drawing_information->graphics_context).accepted_colour)
 			{

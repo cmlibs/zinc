@@ -54,6 +54,7 @@ Source code for the tracking editor dialog box.
 #include "mirage/tracking_editor_dialog.uidh"
 #include "three_d_drawing/ThreeDDraw.h"
 #include "user_interface/confirmation.h"
+#include "user_interface/event_dispatcher.h"
 #include "user_interface/filedir.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
@@ -119,10 +120,10 @@ DESCRIPTION :
 	int tracking_port;
 
    /* The socket processes input callback id */
-	XtInputId input_id;
+	struct Event_dispatcher_file_descriptor_handler *input_id;
 
    /* The kill process timeout callback id */
-	XtIntervalId kill_process_interval_id;
+	struct Event_dispatcher_timeout_callback *kill_process_callback_id;
 	int kill_attempts;
 
 	/* following needed to remotely run and control processes */
@@ -164,7 +165,7 @@ DESCRIPTION :
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct User_interface *user_interface;
 	/* for redrawing the bar chart in idle time */
-	XtWorkProcId idle_update_proc;
+	struct Event_dispatcher_idle_callback *idle_update_callback_id;
 
 	/* bar chart display parameters: */
 	Widget drawing_widget;
@@ -361,10 +362,9 @@ DESCRIPTION :
 Prototype declaration.
 ==============================================================================*/
 
-static void tracking_editor_kill_process_timeout_cb(XtPointer track_ed_void,
-	XtIntervalId *interval_id)
+static int tracking_editor_kill_process_timeout_cb(void *track_ed_void)
 /*******************************************************************************
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Callback set up by XtAppAddTimeout.  If this timeout is called then the kill
@@ -372,14 +372,15 @@ didn't work in the expected time.  For five attempts this routine will attempt
 to kill the process again.
 ==============================================================================*/
 {
+	int return_code;
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_kill_process_timeout_cb);
-	USE_PARAMETER(interval_id);
 	if (track_ed=(struct Tracking_editor_dialog *)track_ed_void)
 	{
 		if (track_ed->remote_host&&track_ed->process_ID)
 		{ 
+			return_code = 1;
 			if (track_ed->kill_attempts < 5)
 			{
 				track_ed->kill_attempts++;
@@ -391,9 +392,9 @@ to kill the process again.
 				system(buff);
 
 				/* Add timeout callback so we can try again if process doesn't respond */
-				track_ed->kill_process_interval_id = XtAppAddTimeOut(
-					track_ed->user_interface->application_context, /*milliseconds*/5000,
-					tracking_editor_kill_process_timeout_cb, (XtPointer)track_ed);
+				track_ed->kill_process_callback_id = Event_dispatcher_add_timeout_callback(
+					User_interface_get_event_dispatcher(track_ed->user_interface), /*seconds*/5,
+					/*nanoseconds*/0,tracking_editor_kill_process_timeout_cb, (void *)track_ed);
 			}
 			else
 			{
@@ -416,15 +417,18 @@ to kill the process again.
 		{
 			display_message(ERROR_MESSAGE, "tracking_editor_kill_process_timeout_cb.  "
 				"Callback enabled but no process ID or host.");
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE, "tracking_editor_kill_process_timeout_cb.  "
 			"Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
+	return (return_code);
 } /* tracking_editor_kill_process_timeout_cb */
 
 static void tracking_editor_kill_process(struct Tracking_editor_dialog *track_ed)
@@ -451,9 +455,9 @@ Kills the process running on the remote host.
 		track_ed->kill_attempts = 1;
 
 		/* Add timeout callback so we can try again if process doesn't respond */
-		track_ed->kill_process_interval_id = XtAppAddTimeOut(
-			track_ed->user_interface->application_context, /*milliseconds*/5000,
-			tracking_editor_kill_process_timeout_cb, (XtPointer)track_ed);
+		track_ed->kill_process_callback_id = Event_dispatcher_add_timeout_callback(
+			User_interface_get_event_dispatcher(track_ed->user_interface), /*seconds*/5,
+			/*nanoseconds*/0,tracking_editor_kill_process_timeout_cb, (void *)track_ed);
 	}
 	else
 	{
@@ -2677,10 +2681,9 @@ MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER to indicate a node was selected.
 	LEAVE;
 } /* Tracking_editor_dialog_node_change */
 
-static void tracking_editor_process_input_cb(XtPointer track_ed_void,
-	int *source, XtInputId *input_id)
+static int tracking_editor_process_input_cb(int source, void *track_ed_void)
 /*******************************************************************************
-LAST MODIFIED : 6 September 2000
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Callback set up by XtAppAddInput. When XVG is running this callback is active
@@ -2690,7 +2693,7 @@ If there are it processes them, updating the bar chart accordingly.
 {
 	char *args=NULL;
 	static char InCom[XVG_SOCKET_COMMAND_LEN+1],cbuf[1024];
-	int poll_value,frame_no,view_no;
+	int poll_value,frame_no,view_no, return_code;
 #if defined (SGI)
 	int PollReadEvents;
 	struct pollfd pfd;
@@ -2705,7 +2708,6 @@ If there are it processes them, updating the bar chart accordingly.
 
 	ENTER(tracking_editor_process_input_cb);
 	USE_PARAMETER(source);
-	USE_PARAMETER(input_id);
 	if ((track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
 		(movie=track_ed->mirage_movie))
 	{
@@ -2736,8 +2738,10 @@ If there are it processes them, updating the bar chart accordingly.
 				allow X callbacks */
 			if (track_ed->input_id)
 			{
-				XtRemoveInput(track_ed->input_id);
-				track_ed->input_id = 0;
+				Event_dispatcher_remove_file_descriptor_handler(
+					User_interface_get_event_dispatcher(track_ed->user_interface),
+					track_ed->input_id);
+				track_ed->input_id = (struct Event_dispatcher_file_descriptor_handler *)NULL;
 			}
 
 			/********* decode incoming message **********/
@@ -2745,11 +2749,13 @@ If there are it processes them, updating the bar chart accordingly.
 			if (strcmp("ABRT",InCom) == 0)
 			{
 				/*tracking_editor_send_message(remoteClient, "OK  ", NULL, 0);*/
-				if (track_ed->kill_process_interval_id)
+				if (track_ed->kill_process_callback_id)
 				{
 					/* This is the response from the kill that we want. */
-					XtRemoveTimeOut(track_ed->kill_process_interval_id);
-					track_ed->kill_process_interval_id = 0;
+					Event_dispatcher_remove_timeout_callback(
+						User_interface_get_event_dispatcher(track_ed->user_interface),
+						track_ed->kill_process_callback_id);
+					track_ed->kill_process_callback_id = (struct Event_dispatcher_timeout_callback *)NULL;
 				}
 				track_ed->processing=0;
 				track_ed->process_ID=0;
@@ -2905,21 +2911,26 @@ If there are it processes them, updating the bar chart accordingly.
 		if (track_ed->processing)
 		{
 			/* Reinstate the callback */
-			track_ed->input_id = XtAppAddInput(track_ed->user_interface->application_context,
-				track_ed->process_remote_client, (XtPointer) XtInputReadMask,
-				tracking_editor_process_input_cb, (XtPointer) track_ed);
+			track_ed->input_id = Event_dispatcher_add_file_descriptor_handler(
+				User_interface_get_event_dispatcher(track_ed->user_interface),
+				track_ed->process_remote_client,
+				tracking_editor_process_input_cb, (void *)track_ed);
 		}
 		else
 		{
 			tracking_editor_exit_process_mode(track_ed);
 		}
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"tracking_editor_process_input_cb.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
+
+	return (return_code);
 } /* tracking_editor_process_input_cb */
 
 static int tracking_editor_enter_process_mode(
@@ -2967,9 +2978,9 @@ Turns on the Abort button.
 			track_ed->node_group_manager_callback_id=NULL;
 		}
 
-		track_ed->input_id = XtAppAddInput(track_ed->user_interface->application_context,
-			track_ed->process_remote_client, (XtPointer) XtInputReadMask,
-			tracking_editor_process_input_cb, (XtPointer) track_ed);
+		track_ed->input_id = Event_dispatcher_add_file_descriptor_handler(
+			User_interface_get_event_dispatcher(track_ed->user_interface),
+			track_ed->process_remote_client, tracking_editor_process_input_cb, (void *)track_ed);
 	}
 	else
 	{
@@ -3000,8 +3011,10 @@ Turns on the Abort button.
 	{
 		if (track_ed->input_id)
 		{
-			XtRemoveInput(track_ed->input_id);
-			track_ed->input_id = 0;
+			Event_dispatcher_remove_file_descriptor_handler(
+				User_interface_get_event_dispatcher(track_ed->user_interface),
+				track_ed->input_id);
+			track_ed->input_id = (struct Event_dispatcher_file_descriptor_handler *)NULL;
 		}
 		if (track_ed->process_remote_client)
 		{
@@ -4006,7 +4019,7 @@ DESCRIPTION :
 				XmNleftOffset,0,
 				XmNleftPosition, 10,
 				XmNtopAttachment,XmATTACH_WIDGET,
-				XmNtopOffset,user_interface->widget_spacing,
+				XmNtopOffset,User_interface_get_widget_spacing(user_interface),
 				XmNtopWidget,tolerance_option_menu,
 				XmNlabelString, search_radius_label_string,
 				NULL);
@@ -4015,10 +4028,10 @@ DESCRIPTION :
 			search_radius_text = XtVaCreateManagedWidget("tracking_search_radius_label",
 				xmTextWidgetClass, option_form,
 				XmNleftAttachment,XmATTACH_WIDGET,
-				XmNleftOffset,user_interface->widget_spacing,
+				XmNleftOffset,User_interface_get_widget_spacing(user_interface),
 				XmNleftWidget, search_radius_label,
 				XmNtopAttachment,XmATTACH_WIDGET,
-				XmNtopOffset,user_interface->widget_spacing,
+				XmNtopOffset,User_interface_get_widget_spacing(user_interface),
 				XmNtopWidget,tolerance_option_menu,
 				XmNvalue, search_radius_value,
 				XmNwidth, 50,
@@ -4035,7 +4048,7 @@ DESCRIPTION :
 				XmNleftOffset,0,
 				XmNleftPosition, 10,
 				XmNtopAttachment,XmATTACH_WIDGET,
-				XmNtopOffset,user_interface->widget_spacing,
+				XmNtopOffset,User_interface_get_widget_spacing(user_interface),
 				XmNtopWidget,search_radius_text,
 				XmNlabelString, port_label_string,
 				NULL);
@@ -4044,10 +4057,10 @@ DESCRIPTION :
 			port_text = XtVaCreateManagedWidget("tracking_port_label",
 				xmTextWidgetClass, option_form,
 				XmNleftAttachment,XmATTACH_WIDGET,
-				XmNleftOffset,user_interface->widget_spacing,
+				XmNleftOffset,User_interface_get_widget_spacing(user_interface),
 				XmNleftWidget, port_label,
 				XmNtopAttachment,XmATTACH_WIDGET,
-				XmNtopOffset,user_interface->widget_spacing,
+				XmNtopOffset,User_interface_get_widget_spacing(user_interface),
 				XmNtopWidget,search_radius_text,
 				XmNvalue, port_value,
 				XmNwidth, 90,
@@ -4279,7 +4292,7 @@ Sets tracking or other process running if in one of these modes.
 									/* request timeout to check socket messages */
 									tracking_editor_enter_process_mode(track_ed);
 #if defined (OLD_CODE)
-									XtAppAddTimeOut(track_ed->user_interface->application_context,
+									XtAppAddTimeOut(User_interface_get_application_context(track_ed->user_interface),
 										20,tracking_editor_process_input_cb,(XtPointer)track_ed);
 #endif /* defined (OLD_CODE) */
 								}
@@ -4655,9 +4668,11 @@ Tidys up when the user destroys the map dialog box.
 
 		/* if there's an update pending, then remove the workproc from the queue */
 		/*???DB.  Is a workproc really necessary ? */
-		if (track_ed->idle_update_proc)
+		if (track_ed->idle_update_callback_id)
 		{
-			XtRemoveWorkProc(track_ed->idle_update_proc);
+			Event_dispatcher_remove_idle_event_callback(
+				User_interface_get_event_dispatcher(track_ed->user_interface),
+				track_ed->idle_update_callback_id);
 		}
 
 		DEALLOCATE(track_ed);
@@ -4698,33 +4713,35 @@ This is the configuration callback for the GL widget.
 	LEAVE;
 } /* tracking_editor_bar_chart_initialize_callback */
 
-static Boolean tracking_editor_bar_chart_idle_update(
-	XtPointer track_ed_void)
+static int tracking_editor_bar_chart_idle_update(void *track_ed_void)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 A WorkProc that updates the track_ed, and then returns TRUE so that it is
 removed from WorkProc queue.
 ==============================================================================*/
 {
+	int return_code;
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_bar_chart_idle_update);
 	if (track_ed=(struct Tracking_editor_dialog *)track_ed_void)
 	{
 		/* set workproc no longer pending */
-		track_ed->idle_update_proc=(XtWorkProcId)NULL;
+		track_ed->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 		tracking_editor_update_bar_chart(track_ed);
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"tracking_editor_bar_chart_idle_update.  Missing track_ed");
+		return_code = 1;
 	}
 	LEAVE;
 
-	return (TRUE); /* so workproc finished */
+	return (return_code); /* so idle event finished */
 } /* tracking_editor_bar_chart_idle_update */
 
 static void tracking_editor_bar_chart_expose_callback(Widget drawing_widget,
@@ -4751,11 +4768,12 @@ pending.
 		/* if no more expose events in series */
 		if (0==expose_event->count)
 		{
-			if (!track_ed->idle_update_proc)
+			if (!track_ed->idle_update_callback_id)
 			{
-				track_ed->idle_update_proc=XtAppAddWorkProc(
-					track_ed->user_interface->application_context,
-					tracking_editor_bar_chart_idle_update,track_ed);
+				track_ed->idle_update_callback_id=Event_dispatcher_add_idle_event_callback(
+					User_interface_get_event_dispatcher(track_ed->user_interface),
+					tracking_editor_bar_chart_idle_update,track_ed,
+					EVENT_DISPATCHER_TRACKING_EDITOR_PRIORITY);
 			}
 		}
 	}
@@ -5494,7 +5512,7 @@ DESCRIPTION :
 					track_ed->texture_manager=texture_manager;
 					track_ed->interactive_tool_manager=interactive_tool_manager;
 					track_ed->user_interface = user_interface;
-					track_ed->idle_update_proc=(XtWorkProcId)NULL;
+					track_ed->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 
 					track_ed->process_ID=0;
 					track_ed->processing=0;
@@ -5503,7 +5521,7 @@ DESCRIPTION :
 					track_ed->process_remote_client=0;
 					track_ed->process_socket=0;
 
-					track_ed->kill_process_interval_id=0;
+					track_ed->kill_process_callback_id = (struct Event_dispatcher_timeout_callback *)NULL;
 					track_ed->kill_attempts=0;
 
 					/* default values for process mode settings */
@@ -5538,7 +5556,7 @@ DESCRIPTION :
 					/* create shell */
 					if (track_ed->shell = XtVaCreatePopupShell(
 						"tracking_editor_dialog_shell",xmDialogShellWidgetClass,
-						user_interface->application_shell,
+						User_interface_get_application_shell(user_interface),
 						XmNmwmDecorations,MWM_DECOR_ALL,
 						XmNmwmFunctions,MWM_FUNC_ALL,
 						XmNtitle,"Tracking Editor",
@@ -5746,7 +5764,7 @@ int main ()
 				/*???debug*/fprintf(stderr,"process_cb #2\n");
 				/* request timeout to check socket messages */
 				/* tracking_editor_enter_process_mode(track_ed); */
-				/* XtAppAddTimeOut(track_ed->user_interface->application_context,
+				/* XtAppAddTimeOut(User_interface_get_application_context(track_ed->user_interface),
 					20,tracking_editor_process_input_cb,(XtPointer)track_ed); */
 			}
 		}

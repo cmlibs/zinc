@@ -83,10 +83,10 @@ DESCRIPTION :
 Disassociates the image buffer that is associated with this movie instance.
 ==============================================================================*/
 
-int X3d_movie_add_callback(struct X3d_movie *movie, XtAppContext app_context,
-	X3d_movie_callback callback, void *user_data);
+int X3d_movie_add_callback(struct X3d_movie *movie, X3d_movie_callback callback,
+	void *user_data);
 /*******************************************************************************
-LAST MODIFIED : 15 September 1998
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Adds a callback routine which is triggered every time a new valid frame

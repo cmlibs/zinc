@@ -14,6 +14,7 @@ DESCRIPTION :
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "io_devices/io_device.h"
+#include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #if defined (PERL_INTERPRETER)
@@ -41,7 +42,7 @@ Io_device structure.
 	char *perl_action;
 	char *file_descriptor_flags;
 	struct User_interface *user_interface;
-	XtInputId xt_input_id;
+	struct Event_dispatcher_file_descriptor_handler *callback_id;
 #endif /* defined (SELECT_DESCRIPTORS) */
 	int access_count;
 };
@@ -60,8 +61,7 @@ Module functions
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Io_device,name,char *,strcmp)
 
 #if defined (SELECT_DESCRIPTORS)
-static void Io_device_descriptor_callback(XtPointer device_void, int *filehandle, 
-	XtInputId *id)
+static int Io_device_descriptor_callback(int filehandle, XtPointer device_void)
 /*******************************************************************************
 LAST MODIFIED : 16 May 2001
 
@@ -75,7 +75,6 @@ Called when this device has file descriptors that are waiting.
 
 	ENTER(Io_device_descriptor_callback);
 	USE_PARAMETER(filehandle);
-	USE_PARAMETER(id);
 	if ((device = (struct Io_device *)device_void))
 	{
 #if defined (DEBUG)
@@ -97,14 +96,17 @@ Called when this device has file descriptors that are waiting.
 		  }
 	  }
 #endif /* defined (PERL_INTERPRETER) */
+	  return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"Io_device_descriptor_callback.  "
 			"Invalid arguments");
+		return_code = 0;
 	}
 	LEAVE;
 
+	return (return_code);
 } /* Io_device_descriptor_callback */
 #endif /* defined (SELECT_DESCRIPTORS) */
 
@@ -140,7 +142,7 @@ Allocates memory and assigns fields for a device.
 #if defined (SELECT_DESCRIPTORS)
 			device->perl_action = (char *)NULL;
 			device->file_descriptor_flags = (char *)NULL;
-			device->xt_input_id = (XtInputId)NULL;
+			device->callback_id = (struct Event_dispatcher_file_descriptor_handler *)NULL;
 #endif /* defined (SELECT_DESCRIPTORS) */
 			strcpy(device->name,name);
 		}
@@ -193,9 +195,11 @@ and sets <*device> to NULL.
 			{
 				DEALLOCATE(device->file_descriptor_flags);
 			}
-			if (device->xt_input_id)
+			if (device->callback_id)
 			{
-				XtRemoveInput(device->xt_input_id);
+				Event_dispatcher_remove_file_descriptor_handler(
+					User_interface_get_event_dispatcher(device->user_interface),
+					device->callback_id);
 			}
 #endif /* defined (SELECT_DESCRIPTORS) */
 			DEALLOCATE(*device_ptr);
@@ -293,10 +297,9 @@ between the start and end detection are assumed to belong to the <device>.
 					if (-1 != fcntl(i, F_GETFD))
 					{
 						printf ("Adding Io_device callback %d\n", i);
-						device->xt_input_id = XtAppAddInput(
-							device->user_interface->application_context,
-							i, (XtPointer)XtInputReadMask, Io_device_descriptor_callback,
-							(void *)device);
+						device->callback_id = Event_dispatcher_add_file_descriptor_handler(
+							User_interface_get_event_dispatcher(device->user_interface),
+							i, Io_device_descriptor_callback, (void *)device);
 					}
 				}
 			}

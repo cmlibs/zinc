@@ -350,19 +350,19 @@ font and graphics_context information read in from the Cmgui defaults file.
 			struct Control_curve_drawing_information,1))
 		{
 			curve_drawing_information->user_interface=user_interface;
-			curve_drawing_information->font=user_interface->normal_font;
+			curve_drawing_information->font=User_interface_get_normal_font(user_interface);
 			/* retrieve_settings */
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				curve_drawing_information,resources,XtNumber(resources),NULL);
 			/* create the graphics contexts */
-			display=user_interface->display;
+			display=User_interface_get_display(user_interface);
 			/* the drawable has to have the correct depth and screen */
-			XtVaGetValues(user_interface->application_shell,XmNdepth,&depth,NULL);
-			depth_screen_drawable=XCreatePixmap(user_interface->display,
-				XRootWindow(user_interface->display,
-				XDefaultScreen(user_interface->display)),1,1,depth);
+			XtVaGetValues(User_interface_get_application_shell(user_interface),
+				XmNdepth,&depth,NULL);
+			depth_screen_drawable=XCreatePixmap(display,
+				XRootWindow(display, XDefaultScreen(display)),1,1,depth);
 			mask=GCLineStyle|GCBackground|GCFont|GCForeground|GCFunction;
-			values.font=user_interface->normal_font->fid;
+			values.font=curve_drawing_information->font->fid;
 			values.line_style=LineSolid;
 			values.background=curve_drawing_information->background_colour;
 			values.foreground=curve_drawing_information->axis_colour;
@@ -398,7 +398,7 @@ font and graphics_context information read in from the Cmgui defaults file.
 			values.function=GXcopy;
 			curve_drawing_information->cursor_gc=
 				XCreateGC(display,depth_screen_drawable,mask,&values);
-			XFreePixmap(user_interface->display,depth_screen_drawable);
+			XFreePixmap(display,depth_screen_drawable);
 		}
 		else
 		{
@@ -435,7 +435,7 @@ Frees memory used by the struct Control_curve_drawing_information.
 		(curve_drawing_information= *curve_drawing_information_address)&&
 		(curve_drawing_information->user_interface))
 	{
-		display=curve_drawing_information->user_interface->display;
+		display=User_interface_get_display(curve_drawing_information->user_interface);
 		XFreeGC(display,curve_drawing_information->axis_gc);
 		XFreeGC(display,curve_drawing_information->control_point_gc);
 		XFreeGC(display,curve_drawing_information->drag_gc);
@@ -962,7 +962,7 @@ of a node.
 	if (curve_editor&&curve_editor->user_interface&&curve_editor->drawing_area&&
 		curve_editor->curve_drawing_information&&
 		(curve=curve_editor->edit_curve)&&
-		(display=curve_editor->user_interface->display)&&
+		(display=User_interface_get_display(curve_editor->user_interface))&&
 		(window=XtWindow(curve_editor->drawing_area))&&
 		(0 <= component_no)&&
 		(Control_curve_get_number_of_components(curve)>component_no))
@@ -1374,7 +1374,7 @@ Draws the x-axis used by all components.
 	if (curve_editor&&curve_editor->user_interface&&curve_editor->drawing_area&&
 		curve_editor->curve_drawing_information&&
 		(curve=curve_editor->edit_curve)&&
-		(display=curve_editor->user_interface->display)&&
+		(display=User_interface_get_display(curve_editor->user_interface))&&
 		(window=XtWindow(curve_editor->drawing_area)))
 	{
 		font=curve_editor->curve_drawing_information->font;
@@ -1483,7 +1483,7 @@ Draws the x-axis used by all components.
 	if (curve_editor&&curve_editor->user_interface&&curve_editor->drawing_area&&
 		curve_editor->curve_drawing_information&&
 		(curve_editor->edit_curve)&&
-		(display=curve_editor->user_interface->display)&&
+		(display=User_interface_get_display(curve_editor->user_interface))&&
 		(window=XtWindow(curve_editor->drawing_area)))
 	{
 		gc=curve_editor->curve_drawing_information->cursor_gc;
@@ -2289,7 +2289,7 @@ be moved.
 			{
 				/* remove currently drawn rubber_band, if any */
 				control_curve_editor_drawing_area_redraw(curve_editor,1);
-				display=curve_editor->user_interface->display;
+				display=User_interface_get_display(curve_editor->user_interface);
 				button_event= &(callback->event->xbutton);
 				pointer_x=button_event->x;
 				pointer_y=button_event->y;

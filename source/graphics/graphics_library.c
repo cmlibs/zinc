@@ -512,7 +512,7 @@ Graphics font name now read in from Cmgui XDefaults file.
 		text_defaults.graphics_font=(XFontStruct *)NULL;
 		text_defaults.offsetX = 0;
 		text_defaults.offsetY = 0;
-		XtVaGetApplicationResources(user_interface->application_shell,
+		XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 			&text_defaults,resources,XtNumber(resources),NULL);
 		glXUseXFont(text_defaults.graphics_font->fid,0,256,fontOffset);
 	}

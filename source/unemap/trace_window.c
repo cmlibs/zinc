@@ -547,7 +547,7 @@ The callback for redrawing part of the drawing area in trace area 2.
 		trace_area_2= &(trace->area_2);
 		if (trace_area_2->drawing_area)
 		{
-			display=user_interface->display;
+			display=User_interface_get_display(user_interface);
 			if (callback=(XmDrawingAreaCallbackStruct *)call_data)
 			{
 				if ((XmCR_EXPOSE==callback->reason)&&(callback->event)&&
@@ -4881,8 +4881,8 @@ DESCRIPTION : draws a box showing the cardiac interval
 			(buffer->frequency));
 		sprintf(time_string,"%d",time);
 
-		/* draw the box */
-		display=signal_drawing_information->user_interface->display;
+		/* draw the box */		
+		display=User_interface_get_display(signal_drawing_information->user_interface);		
 		XDrawLine(display,XtWindow(drawing_area),box_colour,interval_start,
 			top,interval_start,top+height);
 		XDrawLine(display,drawing->pixel_map,box_colour,interval_start,
@@ -5039,7 +5039,7 @@ DESCRIPTION : Draws the marker of the Electrical_imaging_event <event>
 		event_time=SCALE_X(event->time,start_analysis_interval,
 			axes_left,x_scale);
 		/* draw the line */
-		display=signal_drawing_information->user_interface->display;
+		display=User_interface_get_display(signal_drawing_information->user_interface);		
 		graphics_context=(signal_drawing_information->graphics_context).
 			eimaging_event_colour;
 		XDrawLine(display,XtWindow(drawing_area),graphics_context,event_time,
@@ -8436,7 +8436,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 	/* check arguments */
 	if (signal_drawing_information&&user_interface&&detection)
 	{
-		no_cascade_pixmap=user_interface->no_cascade_pixmap;
+		no_cascade_pixmap=User_interface_get_no_cascade_pixmap(user_interface);
 		if (MrmOpenHierarchy_base64_string(trace_window_uidh,
 			&trace_window_hierarchy,&trace_window_hierarchy_open))
 		{
@@ -8445,7 +8445,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 				(auto_correlation_string=XmStringCreateSimple("Auto correlation"))&&
 				ALLOCATE(trace,struct Trace_window,1))
 			{
-				widget_spacing=user_interface->widget_spacing;
+				widget_spacing=User_interface_get_widget_spacing(user_interface);
 				/* assign fields */
 				trace->first_interval=(struct Cardiac_interval *)NULL;
 				trace->calculate_rms=0;
@@ -11002,7 +11002,7 @@ DESCRIPTION :
 		signal_drawing_information&&
 		(signal_drawing_information->user_interface==drawing->user_interface))
 	{
-		display=signal_drawing_information->user_interface->display;
+		display=User_interface_get_display(signal_drawing_information->user_interface);
 		graphics_context=(signal_drawing_information->graphics_context).
 			highlighted_box_colour;
 		switch (detection)
@@ -11055,7 +11055,7 @@ DESCRIPTION :
 		signal_drawing_information&&
 		(signal_drawing_information->user_interface==drawing->user_interface))
 	{
-		display=signal_drawing_information->user_interface->display;
+		display=User_interface_get_display(signal_drawing_information->user_interface);
 		graphics_context=(signal_drawing_information->graphics_context).
 			interval_box_colour;
 		XDrawRectangle(display,XtWindow(drawing_area),graphics_context,left,top,
@@ -12038,7 +12038,7 @@ either individually or the whole box.
 		return_code=1;
 		if ((ButtonPress==callback->event->type)&&(interval=trace->first_interval))
 		{
-			display=user_interface->display;
+			display=User_interface_get_display(user_interface);
 			button_event= &(callback->event->xbutton);
 			working_button=button_event->button;
 			pointer_x=button_event->x;
@@ -12197,7 +12197,7 @@ The callback for redrawing part of the drawing area in trace area 1.
 		(user_interface=trace->user_interface)&&
 		(signal_drawing_information=trace->signal_drawing_information))
 	{
-		display=user_interface->display;
+		display=User_interface_get_display(user_interface);
 		trace_area_1= &(trace->area_1);
 		if (trace_area_1->drawing_area)
 		{
@@ -12626,7 +12626,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 		(user_interface=trace->user_interface)&&
 		(signal_drawing_information=trace->signal_drawing_information))
 	{
-		display=user_interface->display;
+		display=User_interface_get_display(user_interface);
 		trace_area_3= &(trace->area_3);
 		if (trace_area_3->drawing_area)
 		{
@@ -13838,8 +13838,8 @@ Updates the datum marker in the <trace> window.
 						beat_averaging.beat_averaging_toggle))))
 					{
 						update_trace_area_3=1;
-					}
-					display=trace->user_interface->display;
+					}				
+					display=User_interface_get_display(trace->user_interface);
 					start_analysis_interval=buffer->start;
 					end_analysis_interval=buffer->end;
 					frequency=buffer->frequency;

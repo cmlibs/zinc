@@ -608,7 +608,7 @@ Creates the Cell interface main window.
         cell_window->model_file_save_data = (struct File_open_data *)NULL;
         cell_window->ipcell_file_save_data = (struct File_open_data *)NULL;
         if (cell_window->shell = XtVaCreatePopupShell("cell_window_shell",
-          xmDialogShellWidgetClass,user_interface->application_shell,
+          xmDialogShellWidgetClass,User_interface_get_application_shell(user_interface),
 					XmNdeleteResponse,XmDO_NOTHING,
           XmNmwmDecorations,MWM_DECOR_ALL,
           XmNmwmFunctions,MWM_FUNC_ALL,

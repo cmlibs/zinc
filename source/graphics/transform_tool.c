@@ -259,7 +259,7 @@ scene_viewers.
 		if (ALLOCATE(transform_tool,struct Transform_tool,1))
 		{
 			transform_tool_defaults.free_spin = False;
-			XtVaGetApplicationResources(user_interface->application_shell,
+			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&transform_tool_defaults,resources,XtNumber(resources),NULL);
 			if (transform_tool_defaults.free_spin)
 			{

@@ -86,6 +86,7 @@ DESCRIPTION :
 #include "three_d_drawing/movie_extensions.h"
 #endif /* defined (SGI_MOVIE_FILE) */
 #include "time/time_keeper.h"
+#include "user_interface/event_dispatcher.h"
 #if !defined (WINDOWS_DEV_FLAG)
 #include "user_interface/filedir.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
@@ -412,7 +413,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -433,6 +434,7 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 #if defined (MOTIF)
 	char *arg;
+	Display *display;
 	int i;
 #define XmNbackgroundColour "backgroundColour"
 #define XmCBackgroundColour "BackgroundColour"
@@ -639,7 +641,6 @@ Main program for the CMISS Graphical User Interface
 		{NULL,NULL,NULL,set_file_name}
 	};
 #endif /* !defined (WINDOWS_DEV_FLAG) */
-	struct User_interface user_interface;
 	User_settings user_settings;
 
 #if defined (MOTIF)
@@ -770,7 +771,7 @@ Main program for the CMISS Graphical User Interface
 	/* display the version */
 	display_message(INFORMATION_MESSAGE, VERSION "\n");
 
-	/* check for command_list (needed because don't open_user_interface for
+	/* check for command_list (needed because don't CREATE(User_interface) for
 		command_list) */
 	command_list=0;
 	batch_mode = 0;
@@ -801,34 +802,6 @@ Main program for the CMISS Graphical User Interface
 	if (i<argc)
 	{
 		no_display = 1;
-	}
-
-	if(no_display || command_list)
-	{
-		command_data.user_interface= (struct User_interface *)NULL;
-	}
-	else
-	{
-		user_interface.local_machine_info=(struct Machine_information *)NULL;
-#if defined (MOTIF)
-		user_interface.application_context=(XtAppContext)NULL;
-		user_interface.application_name="cmgui";
-		user_interface.application_shell=(Widget)NULL;
-		user_interface.argc_address= &argc;
-		user_interface.argv=argv;
-		user_interface.class_name="Cmgui";
-		user_interface.display=(Display *)NULL;
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
-		user_interface.instance=current_instance;
-		user_interface.main_window=(HWND)NULL;
-		user_interface.main_window_state=initial_main_window_state;
-		user_interface.command_line=command_line;
-#endif /* defined (WINDOWS) */
-#if defined (OPENGL_API)
-		user_interface.specified_visual_id = 0;
-#endif /* defined (OPENGL_API) */
-		command_data.user_interface= &user_interface;
 	}
 
 	/* create the managers */
@@ -1264,27 +1237,31 @@ Main program for the CMISS Graphical User Interface
 
 	if (!command_list)
 	{
-		if (no_display)
+		if (command_data.event_dispatcher = CREATE(Event_dispatcher)())
 		{
-			return_code = 1;
-		}
-		else
-		{
-			if (open_user_interface(&user_interface))
+			if (no_display)
 			{
 				return_code = 1;
-				/* get the name of the machine we are running on */
-				if (!(user_interface.local_machine_info=CREATE(Machine_information)()))
-				{
-					display_message(WARNING_MESSAGE,
-						"Could not determine local machine information");
-				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"Could not open user interface");
-				return_code=0;
+				if (command_data.user_interface = CREATE(User_interface)
+					(&argc, argv, command_data.event_dispatcher, "Cmgui",
+					"cmgui"))
+				{
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Could not create User interface");
+					return_code=0;
+				}
 			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Could not create Event dispatcher.");
+			return_code=0;
 		}
 	}
 	if (return_code)
@@ -1425,7 +1402,8 @@ Main program for the CMISS Graphical User Interface
 						{
 							/* read in the specified visual */
 							i++;
-							user_interface.specified_visual_id = atoi(argv[i]);
+							User_interface_set_specified_visual_id(command_data.user_interface,
+								atoi(argv[i]));
 						} break;
 						case 'e':
 						{
@@ -1618,19 +1596,13 @@ Main program for the CMISS Graphical User Interface
 			/* set up image library */
 			Open_image_environment(*argv);
 
-			if(no_display)
+			command_data.default_time_keeper=ACCESS(Time_keeper)(
+				CREATE(Time_keeper)("default", command_data.event_dispatcher,
+				command_data.user_interface));
+			if(command_data.default_scene)
 			{
-				command_data.default_time_keeper = (struct Time_keeper *)NULL;
-			}
-			else
-			{
-				command_data.default_time_keeper=ACCESS(Time_keeper)(
-					CREATE(Time_keeper)("default", &user_interface));
-				if(command_data.default_scene)
-				{
-					Scene_enable_time_behaviour(command_data.default_scene,
-						command_data.default_time_keeper);
-				}
+				Scene_enable_time_behaviour(command_data.default_scene,
+					command_data.default_time_keeper);
 			}
 			if (command_data.user_interface)
 			{
@@ -1704,21 +1676,20 @@ Main program for the CMISS Graphical User Interface
 				{
 					/* retrieve application specific constants */
 #if defined (MOTIF)
-					XtVaGetApplicationResources(user_interface.application_shell,
-						&user_settings,resources,XtNumber(resources),NULL);
+					display = User_interface_get_display(command_data.user_interface);
+					XtVaGetApplicationResources(User_interface_get_application_shell(
+						command_data.user_interface),&user_settings,resources,XtNumber(resources),NULL);
 					/*???DB.  User settings should be divided among tools */
 					/* retrieve the background rgb settings */
 					rgb.pixel=user_settings.background_colour;
-					XQueryColor(user_interface.display,DefaultColormap(
-						user_interface.display,DefaultScreen(user_interface.display)),&rgb);
+					XQueryColor(display,DefaultColormap(display,DefaultScreen(display)),&rgb);
 					/*???DB.  Get rid of 65535 ? */
 					command_data.background_colour.red=(float)(rgb.red)/(float)65535;
 					command_data.background_colour.green=(float)(rgb.green)/(float)65535;
 					command_data.background_colour.blue=(float)(rgb.blue)/(float)65535;
 					/* retrieve the foreground rgb settings */
 					rgb.pixel=user_settings.foreground_colour;
-					XQueryColor(user_interface.display,DefaultColormap(
-						user_interface.display,DefaultScreen(user_interface.display)),&rgb);
+					XQueryColor(display,DefaultColormap(display,DefaultScreen(display)),&rgb);
 					/*???DB.  Get rid of 65535 ? */
 					command_data.foreground_colour.red=(float)(rgb.red)/(float)65535;
 					command_data.foreground_colour.green=(float)(rgb.green)/(float)65535;
@@ -1842,7 +1813,7 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (INCLUDE_XVG) */
 
 							if (command_window=CREATE(Command_window)(execute_command,
-								&user_interface,version_id_string))
+								command_data.user_interface,version_id_string))
 							{
 								command_data.command_window=command_window;
 								if (!batch_mode)
@@ -1963,30 +1934,10 @@ Main program for the CMISS Graphical User Interface
 					if(!batch_mode)
 					{
 						/* user interface loop */						
-						return_code=application_main_loop(&user_interface);						
-						/*???DB.  Need better way to stop error handling because
-						  application_main_loop is infinite.  Alternatively make sure that
-						  application_main_loop is not infinite */
-						/*							END_ERROR_HANDLING;*/
+						return_code=Event_dispatcher_main_loop(command_data.event_dispatcher);
 						/*???RC.  Need clean up routines, eg.
 						  X3dThreeDDrawingCleanUp(display); */
-						/* free application memory */
 					}
-				}
-				if(!no_display)
-				{
-					DESTROY(Command_window)(&command_data.command_window);
-					/* reset up messages */
-					set_display_message_function(ERROR_MESSAGE,
-					  (Display_message_function *)NULL, NULL);
-					set_display_message_function(INFORMATION_MESSAGE,
-					  (Display_message_function *)NULL, NULL);
-					set_display_message_function(WARNING_MESSAGE,
-					  (Display_message_function *)NULL, NULL);
-					/* close the user interface */
-					close_user_interface(&user_interface);
-					DESTROY(Machine_information)(&user_interface.local_machine_info);
-					DEACCESS(Time_keeper)(&command_data.default_time_keeper);
 				}
 
 #if defined (SGI_MOVIE_FILE)
@@ -2063,6 +2014,21 @@ Main program for the CMISS Graphical User Interface
 
 				DEACCESS(Scene)(&(command_data.default_scene));
 				DESTROY(MANAGER(Scene))(&command_data.scene_manager);
+
+				if(!no_display)
+				{
+					DESTROY(Command_window)(&command_data.command_window);
+					/* reset up messages */
+					set_display_message_function(ERROR_MESSAGE,
+					  (Display_message_function *)NULL, NULL);
+					set_display_message_function(INFORMATION_MESSAGE,
+					  (Display_message_function *)NULL, NULL);
+					set_display_message_function(WARNING_MESSAGE,
+					  (Display_message_function *)NULL, NULL);
+					/* close the user interface */
+					DESTROY(User_interface)(&(command_data.user_interface));
+					DEACCESS(Time_keeper)(&command_data.default_time_keeper);
+				}
 
 				DESTROY(Computed_field_package)(&command_data.computed_field_package);
 

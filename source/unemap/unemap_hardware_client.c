@@ -64,6 +64,7 @@ extern int errno;
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #include "general/debug.h"
 #include "general/mystring.h"
+#include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #include "unemap/unemap_hardware.h"
@@ -158,10 +159,10 @@ Information needed for each SCU crate/NI computer pair.
 	int scrolling_socket;
 #endif /* defined (UNIX) */
 #if defined (MOTIF)
-	XtAppContext application_context;
-	XtInputId acquired_socket_xid;
-	XtInputId calibration_socket_xid;
-	XtInputId scrolling_socket_xid;
+	struct Event_dispatcher *event_dispatcher;
+	struct Event_dispatcher_file_descriptor_handler *acquired_socket_xid;
+	struct Event_dispatcher_file_descriptor_handler *calibration_socket_xid;
+	struct Event_dispatcher_file_descriptor_handler *scrolling_socket_xid;
 #endif /* defined (MOTIF) */
 #endif /* defined (USE_SOCKETS) */
 	unsigned short acquired_port,calibration_port,command_port,scrolling_port;
@@ -438,8 +439,9 @@ Closes the connection with the unemap hardware service for the <crate>.
 #if defined (MOTIF)
 		if (crate->scrolling_socket_xid)
 		{
-			XtRemoveInput(crate->scrolling_socket_xid);
-			crate->scrolling_socket_xid=0;
+			Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
+				crate->scrolling_socket_xid);
+			crate->scrolling_socket_xid=(struct Event_dispatcher_file_descriptor_handler *)NULL;
 		}
 		if (INVALID_SOCKET!=crate->scrolling_socket)
 		{
@@ -448,8 +450,9 @@ Closes the connection with the unemap hardware service for the <crate>.
 		}
 		if (crate->calibration_socket_xid)
 		{
-			XtRemoveInput(crate->calibration_socket_xid);
-			crate->calibration_socket_xid=0;
+			Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
+				crate->calibration_socket_xid);
+			crate->calibration_socket_xid=(struct Event_dispatcher_file_descriptor_handler *)NULL;
 		}
 		if (INVALID_SOCKET!=crate->calibration_socket)
 		{
@@ -458,8 +461,9 @@ Closes the connection with the unemap hardware service for the <crate>.
 		}
 		if (crate->acquired_socket_xid)
 		{
-			XtRemoveInput(crate->acquired_socket_xid);
-			crate->acquired_socket_xid=0;
+			Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
+				crate->acquired_socket_xid);
+			crate->acquired_socket_xid=(struct Event_dispatcher_file_descriptor_handler *)NULL;
 		}
 		if (INVALID_SOCKET!=crate->acquired_socket)
 		{
@@ -749,17 +753,16 @@ Wrapper function for send.
 
 #if defined (USE_SOCKETS)
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
-static void acquired_socket_callback(XtPointer crate_void,int *source,
-	XtInputId *id);
+static int acquired_socket_callback(int file_descriptor, void *crate_void);
 
 static void *acquired_socket_callback_process(void *crate_void)
 #else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
-static void acquired_socket_callback(
+static int acquired_socket_callback(
 #if defined (WINDOWS)
 	LPVOID *crate_void
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-	XtPointer crate_void,int *source,XtInputId *id
+	int file_descriptor, void *crate_void
 #endif /* defined (MOTIF) */
 	)
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
@@ -794,8 +797,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 #endif /* defined (DEBUG) */
 #if defined (MOTIF)
 #if !defined (BACKGROUND_SAVING)
-	USE_PARAMETER(source);
-	USE_PARAMETER(id);
+	USE_PARAMETER(file_descriptor);
 #endif /* !defined (BACKGROUND_SAVING) */
 #endif /* defined (MOTIF) */
 	if (crate=(struct Unemap_crate *)crate_void)
@@ -923,9 +925,9 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 		}
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
 		crate=(struct Unemap_crate *)crate_void;
-		crate->acquired_socket_xid=XtAppAddInput(crate->application_context,
-			crate->acquired_socket,(XtPointer)XtInputReadMask,
-			acquired_socket_callback,(XtPointer)crate);
+		crate->acquired_socket_xid=Event_dispatcher_add_file_descriptor_handler(
+			crate->event_dispatcher,crate->acquired_socket,
+			acquired_socket_callback,(void *)crate);
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 		unlock_mutex(crate->acquired_socket_mutex);
 	}
@@ -943,8 +945,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	return (NULL);
 } /* acquired_socket_callback_process */
 
-static void acquired_socket_callback(XtPointer crate_void,int *source,
-	XtInputId *id)
+static int acquired_socket_callback(int file_descriptor, void *crate_void)
 /*******************************************************************************
 LAST MODIFIED : 13 January 2002
 
@@ -954,6 +955,7 @@ Called when there is input on the acquired socket.
 The <module_acquired_callback> is responsible for deallocating the samples.
 ==============================================================================*/
 {
+	int return_code;
 	pthread_t thread_id;
 	struct Unemap_crate *crate;
 
@@ -962,8 +964,8 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	/*???debug */
 	printf("enter acquired_socket_callback.  %p\n",crate_void);
 #endif /* defined (DEBUG) */
-	USE_PARAMETER(source);
-	USE_PARAMETER(id);
+	USE_PARAMETER(file_descriptor);
+	return_code = 1;
 	if ((crate=(struct Unemap_crate *)crate_void)&&(crate->acquired_socket_xid))
 	{
 #if defined (DEBUG)
@@ -971,8 +973,9 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 		printf("crate->acquired_socket_xid=%lx\n",crate->acquired_socket_xid);
 #endif /* defined (DEBUG) */
 		/* so that don't get multiple acquired_socket_callback calls */
-		XtRemoveInput(crate->acquired_socket_xid);
-		crate->acquired_socket_xid=0;
+		Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
+			crate->acquired_socket_xid);
+		crate->acquired_socket_xid=(struct Event_dispatcher_file_descriptor_handler *)NULL;
 		if (pthread_create(&thread_id,(pthread_attr_t *)NULL,
 			acquired_socket_callback_process,(void *)crate_void))
 		{
@@ -986,6 +989,8 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	printf("leave acquired_socket_callback\n");
 #endif /* defined (DEBUG) */
 	LEAVE;
+
+	return (return_code);
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 } /* acquired_socket_callback */
 #endif /* defined (USE_SOCKETS) */
@@ -1091,12 +1096,12 @@ Thread to watch the acquired socket.
 #endif /* defined (WINDOWS) && defined (USE_SOCKETS) */
 
 #if defined (USE_SOCKETS)
-void calibration_socket_callback(
+int calibration_socket_callback(
 #if defined (WINDOWS)
 	LPVOID *crate_void
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-	XtPointer crate_void,int *source,XtInputId *id
+	int file_descriptor, void *crate_void
 #endif /* defined (MOTIF) */
 	)
 /*******************************************************************************
@@ -1107,7 +1112,7 @@ Called when there is input on the calibration socket.
 ==============================================================================*/
 {
 	float *channel_gains,*channel_offsets;
-	int *channel_numbers,i,number_of_channels;
+	int *channel_numbers,i,number_of_channels, return_code;
 	long message_size;
 	struct Unemap_crate *crate;
 	unsigned char message_header[2+sizeof(long)];
@@ -1118,9 +1123,9 @@ Called when there is input on the calibration socket.
 		module_calibration_end_callback);
 #endif /* defined (DEBUG) */
 #if defined (MOTIF)
-	USE_PARAMETER(source);
-	USE_PARAMETER(id);
+	USE_PARAMETER(file_descriptor);
 #endif /* defined (MOTIF) */
+	return_code = 1;
 	if (crate=(struct Unemap_crate *)crate_void)
 	{
 		(crate->calibration).complete=1;
@@ -1238,6 +1243,8 @@ Called when there is input on the calibration socket.
 		}
 	}
 	LEAVE;
+
+	return (return_code);
 } /* calibration_socket_callback */
 #endif /* defined (USE_SOCKETS) */
 
@@ -1341,12 +1348,12 @@ Thread to watch the calibration socket.
 #endif /* defined (WINDOWS) && defined (USE_SOCKETS) */
 
 #if defined (USE_SOCKETS)
-void scrolling_socket_callback(
+int scrolling_socket_callback(
 #if defined (WINDOWS)
 	LPVOID crate_void
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-	XtPointer crate_void,int *source,XtInputId *id
+	int file_descriptor, void *crate_void
 #endif /* defined (MOTIF) */
 	)
 /*******************************************************************************
@@ -1359,7 +1366,7 @@ Called when there is input on the scrolling socket.
 ==============================================================================*/
 {
 	int *channel_numbers,i,number_of_channels,number_of_values_per_channel,
-		*temp_channel_numbers;
+		return_code,*temp_channel_numbers;
 	long message_size;
 	short *temp_values,*values;
 	struct Unemap_crate *crate;
@@ -1371,8 +1378,7 @@ Called when there is input on the scrolling socket.
 
 	ENTER(scrolling_socket_callback);
 #if defined (MOTIF)
-	USE_PARAMETER(source);
-	USE_PARAMETER(id);
+	USE_PARAMETER(file_descriptor);
 #endif /* defined (MOTIF) */
 #if defined (DEBUG)
 	/*???debug */
@@ -1389,6 +1395,7 @@ Called when there is input on the scrolling socket.
 		}
 	}
 #endif /* defined (DEBUG) */
+	return_code = 1;
 	if (crate=(struct Unemap_crate *)crate_void)
 	{
 		/* get the header back */
@@ -1611,6 +1618,8 @@ Called when there is input on the scrolling socket.
 		}
 	}
 	LEAVE;
+
+	return (return_code);
 } /* scrolling_socket_callback */
 #endif /* defined (USE_SOCKETS) */
 
@@ -1733,7 +1742,7 @@ static int crate_configure_start(struct Unemap_crate *crate,int slave,
 	HWND scrolling_window,UINT scrolling_message,
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-	XtAppContext application_context,
+	struct Event_dispatcher *event_dispatcher,
 #endif /* defined (MOTIF) */
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
@@ -1784,7 +1793,7 @@ See <unemap_configure> for more details.
 		{
 			(crate->scrolling).complete=SCROLLING_NO_CHANNELS_FOR_CRATE;
 #if defined (MOTIF)
-			crate->application_context=application_context;
+			crate->event_dispatcher=event_dispatcher;
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 			if (scrolling_thread=CreateThread(
@@ -1793,9 +1802,10 @@ See <unemap_configure> for more details.
 				&scrolling_thread_id))
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-			if (!application_context||(crate->scrolling_socket_xid=XtAppAddInput(
-				application_context,crate->scrolling_socket,(XtPointer)XtInputReadMask,
-				scrolling_socket_callback,(XtPointer)crate)))
+			if (!event_dispatcher||(crate->scrolling_socket_xid=
+				Event_dispatcher_add_file_descriptor_handler(
+				event_dispatcher,crate->scrolling_socket,
+				scrolling_socket_callback,(void *)crate)))
 #endif /* defined (MOTIF) */
 			{
 #if defined (WINDOWS)
@@ -1805,10 +1815,10 @@ See <unemap_configure> for more details.
 					/*use default creation flags*/0,&calibration_thread_id))
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-				if (!application_context||(crate->calibration_socket_xid=XtAppAddInput(
-					application_context,crate->calibration_socket,
-					(XtPointer)XtInputReadMask,calibration_socket_callback,
-					(XtPointer)crate)))
+				if (!event_dispatcher||(crate->calibration_socket_xid=
+					Event_dispatcher_add_file_descriptor_handler(
+					event_dispatcher,crate->calibration_socket,
+					calibration_socket_callback,(void *)crate)))
 #endif /* defined (MOTIF) */
 				{
 #if defined (WINDOWS)
@@ -1818,10 +1828,10 @@ See <unemap_configure> for more details.
 						/*use default creation flags*/0,&acquired_thread_id))
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-					if (!application_context||(crate->acquired_socket_xid=XtAppAddInput(
-						application_context,crate->acquired_socket,
-						(XtPointer)XtInputReadMask,acquired_socket_callback,
-						(XtPointer)crate)))
+					if (!event_dispatcher||(crate->acquired_socket_xid=
+						Event_dispatcher_add_file_descriptor_handler(
+						event_dispatcher,crate->acquired_socket,
+						acquired_socket_callback,(void *)crate)))
 #endif /* defined (MOTIF) */
 					{
 						lock_mutex(crate->command_socket_mutex);
@@ -1847,7 +1857,7 @@ See <unemap_configure> for more details.
 							||scrolling_window
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-							&&application_context
+							&&event_dispatcher
 #endif /* defined (MOTIF) */
 							))
 						{
@@ -2022,7 +2032,7 @@ static int crate_configure(struct Unemap_crate *crate,int slave,
 	HWND scrolling_window,UINT scrolling_message,
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-	XtAppContext application_context,
+	struct Event_dispatcher *event_dispatcher,
 #endif /* defined (MOTIF) */
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
@@ -2079,9 +2089,10 @@ See <unemap_configure> for more details.
 				&scrolling_thread_id))
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-			if (!application_context||(crate->scrolling_socket_xid=XtAppAddInput(
-				application_context,crate->scrolling_socket,(XtPointer)XtInputReadMask,
-				scrolling_socket_callback,(XtPointer)crate)))
+			if (!event_dispatcher||(crate->scrolling_socket_xid=
+				Event_dispatcher_add_file_descriptor_handler(
+				event_dispatcher,crate->scrolling_socket,
+				scrolling_socket_callback,(void *)crate)))
 #endif /* defined (MOTIF) */
 			{
 #if defined (WINDOWS)
@@ -2091,10 +2102,10 @@ See <unemap_configure> for more details.
 					/*use default creation flags*/0,&calibration_thread_id))
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-				if (!application_context||(crate->calibration_socket_xid=XtAppAddInput(
-					application_context,crate->calibration_socket,
-					(XtPointer)XtInputReadMask,calibration_socket_callback,
-					(XtPointer)crate)))
+				if (!event_dispatcher||(crate->calibration_socket_xid=
+					Event_dispatcher_add_file_descriptor_handler(
+					event_dispatcher,crate->calibration_socket,
+					calibration_socket_callback,(void *)crate)))
 #endif /* defined (MOTIF) */
 				{
 #if defined (WINDOWS)
@@ -2104,10 +2115,10 @@ See <unemap_configure> for more details.
 						/*use default creation flags*/0,&acquired_thread_id))
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-					if (!application_context||(crate->acquired_socket_xid=XtAppAddInput(
-						application_context,crate->acquired_socket,
-						(XtPointer)XtInputReadMask,acquired_socket_callback,
-						(XtPointer)crate)))
+					if (!event_dispatcher||(crate->acquired_socket_xid=
+						Event_dispatcher_add_file_descriptor_handler(
+						event_dispatcher,crate->acquired_socket,
+						acquired_socket_callback,(void *)crate)))
 #endif /* defined (MOTIF) */
 					{
 						buffer[0]=UNEMAP_CONFIGURE_CODE;
@@ -2132,7 +2143,7 @@ See <unemap_configure> for more details.
 							||scrolling_window
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-							&&application_context
+							&&event_dispatcher
 #endif /* defined (MOTIF) */
 							))
 						{
@@ -9193,7 +9204,7 @@ int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
 	HWND scrolling_window,UINT scrolling_message,
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-	XtAppContext application_context,
+	struct Event_dispatcher *event_dispatcher,
 #endif /* defined (MOTIF) */
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
@@ -9274,7 +9285,7 @@ attached SCU.  All other SCUs output the synchronization signal.
 					scrolling_window,scrolling_message,
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-					application_context,
+				event_dispatcher,
 #endif /* defined (MOTIF) */
 					scrolling_callback,scrolling_callback_data,
 					scrolling_refresh_frequency,synchronization_card))
@@ -9289,7 +9300,7 @@ attached SCU.  All other SCUs output the synchronization signal.
 						scrolling_window,scrolling_message,
 #endif /* defined (WINDOWS) */
 #if defined (MOTIF)
-						application_context,
+					event_dispatcher,
 #endif /* defined (MOTIF) */
 						scrolling_callback,scrolling_callback_data,
 						scrolling_refresh_frequency,synchronization_card));

@@ -300,7 +300,7 @@ Create the structures and retrieve the menu window from the uil file.
 					menu_window->num_macros=0;
 					strcpy(menu_window->file_name, file_name);
 					if (menu_window->shell=XtVaCreatePopupShell("menu_window_shell",
-						xmDialogShellWidgetClass,user_interface->application_shell,
+						xmDialogShellWidgetClass,User_interface_get_application_shell(user_interface),
 						XmNallowShellResize,TRUE,
 						XmNmwmDecorations,MWM_DECOR_ALL|MWM_DECOR_MAXIMIZE,
 						XmNmwmFunctions,MWM_FUNC_RESIZE|MWM_FUNC_MOVE|MWM_FUNC_MINIMIZE,

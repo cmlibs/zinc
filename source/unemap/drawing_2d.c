@@ -110,7 +110,7 @@ and NULL if unsuccessful.
 			drawing->width=width;
 			drawing->height=height;
 			drawing->user_interface=user_interface;
-			display=user_interface->display;
+			display=User_interface_get_display(user_interface);
 			/* create pixel map */
 			XtVaGetValues(widget,
 				XmNdepth,&(drawing->depth),
@@ -188,7 +188,7 @@ the memory for <**drawing> and changes <*drawing> to NULL.
 	if (drawing&&(*drawing)&&((*drawing)->user_interface))
 	{
 		/* free the pixel map */
-		XFreePixmap((*drawing)->user_interface->display,(*drawing)->pixel_map);
+		XFreePixmap(User_interface_get_display((*drawing)->user_interface),(*drawing)->pixel_map);
 		/* free the image */
 		if ((*drawing)->image)
 		{
@@ -245,7 +245,7 @@ with the current contents of the <drawing>.
 	/* check arguments */
 	if (drawing)
 	{
-		display=drawing->user_interface->display;
+		display=User_interface_get_display(drawing->user_interface);
 		if (pixel_image=XGetImage(display,drawing->pixel_map,0,0,drawing->width,
 			drawing->height,(unsigned long)0xffffffff,ZPixmap))
 		{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : user_interface.h
 
-LAST MODIFIED : 20 November 2001
+LAST MODIFIED : 6 March 2002
 
 DESCRIPTION :
 Function definitions for the user interface.
@@ -28,90 +28,19 @@ Function definitions for the user interface.
 Global types
 ------------
 */
-struct Shell_stack_item;
-struct Shell_list_item;
+struct Event_dispatcher;
+
+struct User_interface;
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+==============================================================================*/
 
 #if defined (MOTIF)
-/* for communication with other applications */
-struct User_interface;
-
 typedef int (*Property_notify_callback)(XPropertyEvent *,void *,
 	struct User_interface *);
 #endif /* defined (MOTIF) */
-
-struct User_interface
-/*******************************************************************************
-LAST MODIFIED : 20 November 2001
-
-DESCRIPTION :
-The variables that control the interaction of the application with the
-application/window manager.
-???DB.  Used to be globals.
-==============================================================================*/
-{
-	int continue_interface;
-#if defined (OPENGL_API)
-	/* If non-zero forces OpenGL to select a particular visual ID */
-	int specified_visual_id;
-#endif /* defined (OPENGL_API) */
-#if defined (MOTIF)
-	char *application_name,**argv,*class_name;
-	Cursor busy_cursor;
-	Display *display;
-	int *argc_address,screen_height,screen_width,widget_spacing;
-	/* to avoid large gaps on the right of cascade buttons (option menus) */
-	Pixmap no_cascade_pixmap;
-	/* for communication with other applications */
-	Property_notify_callback property_notify_callback;
-	void *property_notify_data;
-	Widget application_shell;
-	XFontStruct *button_font,*heading_font,*list_font,*menu_font,*normal_font,
-		*normal_non_proportional_font,*small_font;
-	XmFontList normal_fontlist;
-	XtAppContext application_context;
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
-	HINSTANCE instance;
-	HWND main_window;
-	int main_window_state,widget_spacing;
-	LPSTR command_line;
-#endif /* defined (WINDOWS) */
-	struct Machine_information *local_machine_info;
-	struct Shell_list_item *shell_list;
-	struct Shell_stack_item *active_shell_stack;
-}; /* struct User_interface */
-
-#if defined (OLD_CODE)
-#if defined (MOTIF)
-typedef struct
-/*******************************************************************************
-LAST MODIFIED : 11 December 1996
-
-DESCRIPTION :
-???DB.  Shouldn't really be here because application dependent.
-==============================================================================*/
-{
-	Pixel background_colour,foreground_colour;
-	float background_rgb[3],foreground_rgb[3];
-	Pixel background_printer_colour,foreground_printer_colour;
-	int printer_page_bottom_margin_mm,printer_page_height_mm,
-		printer_page_left_margin_mm,printer_page_right_margin_mm,
-		printer_page_top_margin_mm,printer_page_width_mm;
-	char *examples_directory,*help_directory,*help_url;
-} User_settings;
-#endif /* defined (MOTIF) */
-#endif /* defined (OLD_CODE) */
-
-/*
-Global variables
-----------------
-*/
-#if defined (OLD_CODE)
-#if defined (MOTIF)
-extern User_settings user_settings;
-	/*???DB.  Shouldn't really be here because application dependent */
-#endif /* defined (MOTIF) */
-#endif /* defined (OLD_CODE) */
 
 /*
 Global Functions
@@ -217,17 +146,19 @@ Switchs from the busy cursor to the default cursor for all shells except the
 ???DB.  Move in with windowing macros ?
 ==============================================================================*/
 
-int open_user_interface(struct User_interface *user_interface);
+struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
+	struct Event_dispatcher *event_dispatcher, char *class_name, 
+	char *application_name);
 /*******************************************************************************
-LAST MODIFIED : 27 May 1996
+LAST MODIFIED : 11 March 2002
 
 DESCRIPTION :
 Open the <user_interface>.
 ==============================================================================*/
 
-int close_user_interface(struct User_interface *user_interface);
+int DESTROY(User_interface)(struct User_interface **user_interface);
 /*******************************************************************************
-LAST MODIFIED : 30 May 1996
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -235,6 +166,135 @@ DESCRIPTION :
 int User_interface_end_application_loop(struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 7 July 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+#if defined (MOTIF)
+Widget User_interface_get_application_shell(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Returns the application shell widget
+==============================================================================*/
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+Display *User_interface_get_display(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Returns the application shell widget
+==============================================================================*/
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+int User_interface_get_screen_width(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Returns the application shell widget
+==============================================================================*/
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+int User_interface_get_screen_height(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Returns the application shell widget
+==============================================================================*/
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+int User_interface_get_widget_spacing(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Returns the application shell widget
+==============================================================================*/
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+int User_interface_set_specified_visual_id(struct User_interface *user_interface,
+	int specified_visual_id);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Returns the application shell widget
+==============================================================================*/
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+int User_interface_get_specified_visual_id(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Returns the application shell widget
+==============================================================================*/
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+XFontStruct *User_interface_get_normal_font(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Returns the application shell widget
+==============================================================================*/
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+XmFontList User_interface_get_normal_fontlist(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Returns the application shell widget
+==============================================================================*/
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+XmFontList User_interface_get_button_fontlist(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Returns the application shell widget
+==============================================================================*/
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+Pixmap User_interface_get_no_cascade_pixmap(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 6 March 2002
+
+DESCRIPTION :
+Returns a pixmap to avoid large gaps on the right of cascade buttons (option menus)
+==============================================================================*/
+#endif /* defined (MOTIF) */
+
+int User_interface_get_local_machine_name(struct User_interface *user_interface,
+	char **name);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+If the local machine name is know ALLOCATES and returns a string containing that
+name.
+==============================================================================*/
+
+struct Event_dispatcher *User_interface_get_event_dispatcher(
+	struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 ==============================================================================*/

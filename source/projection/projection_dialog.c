@@ -1953,7 +1953,7 @@ and initializes the appropriate fields.
 				/* create the dialog shell */
 /*        if (!(parent=creator)||(True!=XtIsWidget(parent)))
 				{*/
-					parent=user_interface->application_shell;
+					parent=User_interface_get_application_shell(user_interface);
 /*        }*/
 				if (projection_dialog->shell=XtVaCreatePopupShell(
 					"projection_dialog_shell",
