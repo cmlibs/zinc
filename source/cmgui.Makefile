@@ -370,6 +370,10 @@ else # ! CELL
    XML_INC = -I$(XML_PATH)/include
 endif # ! CELL
 
+XML2_PATH = $(CMISS_ROOT)/image_libraries/
+XML2_INC = -I$(XML2_PATH)/include/$(LIB_ARCH_DIR)/libxml2/
+XML2_LIB = $(XML2_PATH)/lib/$(LIB_ARCH_DIR)/libxml2.a
+
 STEREO_DISPLAY_DEFINES = -DSTEREO
 # STEREO_DISPLAY_DEFINES =
 
@@ -518,7 +522,8 @@ ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(IMAGEMAGICK_DEFINES)
 
 ALL_INCLUDES = $(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) $(XML_INC) \
-	$(UIDH_INC) $(USER_INTERFACE_INC) $(INTERPRETER_INC) $(IMAGEMAGICK_INC)
+	$(UIDH_INC) $(USER_INTERFACE_INC) $(INTERPRETER_INC) $(IMAGEMAGICK_INC) \
+	$(XML2_INC)
 
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
@@ -625,7 +630,9 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
 	finite_element/import_finite_element.c \
-	finite_element/snake.c
+	finite_element/read_fieldml.c \
+	finite_element/snake.c \
+	finite_element/write_fieldml.c
 FINITE_ELEMENT_INTERFACE_SRCS = \
 	finite_element/grid_field_calculator.c
 GENERAL_SRCS = \
