@@ -609,10 +609,10 @@ Runs a job through the photoface interface.
 	pf_set_display_message_function(PF_WARNING_MESSAGE,display_message_function,NULL);
 #endif /* defined (MANUAL_CMISS) */
 
-	image_array = (char *)malloc(3 * IMAGE_WIDTH * IMAGE_HEIGHT);
-	texture_array = (char *)malloc(3 * TEXTURE_WIDTH * TEXTURE_HEIGHT);
-	hair_texture_array = (char *)malloc(3 * TEXTURE_WIDTH * TEXTURE_HEIGHT);
-	distorted_background_array = (char *)malloc(3 * TEXTURE_WIDTH * TEXTURE_HEIGHT);
+	ALLOCATE(image_array, char, 3 * IMAGE_WIDTH * IMAGE_HEIGHT);
+	ALLOCATE(texture_array, char, 3 * TEXTURE_WIDTH * TEXTURE_HEIGHT);
+	ALLOCATE(hair_texture_array, char, 3 * TEXTURE_WIDTH * TEXTURE_HEIGHT);
+	ALLOCATE(distorted_background_array, char, 3 * TEXTURE_WIDTH * TEXTURE_HEIGHT);
 
 	pf_specify_paths("/home/blackett/lifefx/photoface/", "/home/blackett/lifefx/photoface/");
 
@@ -780,13 +780,13 @@ Runs a job through the photoface interface.
 		fprintf(stderr, "ERROR: pf_get_hair_texture failed\n");
 	}
 
-	if (0 == pf_get_distorted_background(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, 
+	if (0 == pf_get_distorted_background(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, 
 			 PF_RGB_IMAGE, distorted_background_array))
 	{
-		printf ("Distorted Background[30][30]: %d %d %d\n", distorted_background_array[3 * 30 * IMAGE_WIDTH + 3 * 30],
-			distorted_background_array[3 * 30 * IMAGE_WIDTH + 3 * 30 + 1], distorted_background_array[3 * 30 * IMAGE_WIDTH + 3 * 30 + 2]);
-		printf ("Distorted Background[70][70]: %d %d %d\n", distorted_background_array[3 * 70 * IMAGE_WIDTH + 3 * 70],
-			distorted_background_array[3 * 70 * IMAGE_WIDTH + 3 * 70 + 1], distorted_background_array[3 * 70 * IMAGE_WIDTH + 3 * 70 + 2]);
+		printf ("Distorted Background[30][30]: %d %d %d\n", distorted_background_array[3 * 30 * TEXTURE_WIDTH + 3 * 30],
+			distorted_background_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 1], distorted_background_array[3 * 30 * TEXTURE_WIDTH + 3 * 30 + 2]);
+		printf ("Distorted Background[70][70]: %d %d %d\n", distorted_background_array[3 * 70 * TEXTURE_WIDTH + 3 * 70],
+			distorted_background_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 1], distorted_background_array[3 * 70 * TEXTURE_WIDTH + 3 * 70 + 2]);
 	}
 	else
 	{
@@ -827,6 +827,11 @@ Runs a job through the photoface interface.
 
 	/* Free up the path memory */
 	pf_specify_paths(NULL, NULL);
+
+	DEALLOCATE(image_array);
+	DEALLOCATE(texture_array);
+	DEALLOCATE(hair_texture_array);
+	DEALLOCATE(distorted_background_array);
 
 #if defined (MEMORY_CHECKING)
 	list_memory(/*count*/0, /*show_pointers*/1, /*increment_counter*/1, 
