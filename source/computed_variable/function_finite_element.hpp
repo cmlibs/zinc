@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.hpp
 //
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 8 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -18,6 +18,12 @@ extern "C"
 }
 #include "computed_variable/function.hpp"
 #include "computed_variable/function_variable.hpp"
+
+//???DB.  Testing.
+//???DB.  Function_derivatnew_finite_element doesn't currently handle
+//  composite independent variables.  Would have to fall back to
+//  Function_derivatnew.  End up slower?
+//#define USE_Function_derivatnew_finite_element
 
 class Function_element : public Function
 //******************************************************************************
@@ -75,7 +81,7 @@ typedef boost::intrusive_ptr<Function_element> Function_element_handle;
 
 class Function_element_xi : public Function
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 8 March 2005
 //
 // DESCRIPTION :
 // An identity function whose input/output is element/xi.
@@ -86,6 +92,8 @@ class Function_element_xi : public Function
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
 	public:
+		// for construction exception
+		class Invalid_element_xi {};
 		// constructor
 		Function_element_xi(struct FE_element *element,const Vector& xi);
 		// destructor
@@ -143,7 +151,7 @@ typedef boost::intrusive_ptr<Function_finite_element>
 
 class Function_finite_element : public Function
 //******************************************************************************
-// LAST MODIFIED : 13 January 2005
+// LAST MODIFIED : 17 February 2005
 //
 // DESCRIPTION :
 // A function for a finite element interpolation field.
@@ -154,6 +162,10 @@ class Function_finite_element : public Function
 {
 	friend class Function_variable_matrix_components;
 	friend class Function_variable_matrix_nodal_values;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+	friend class Function_derivatnew_finite_element;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 	public:
 		// constructor
 		Function_finite_element(struct FE_field *field);
@@ -249,6 +261,14 @@ class Function_finite_element : public Function
 		bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#if defined (USE_Function_derivatnew_finite_element)
+		bool evaluate_derivative_matrix(Function_size_type component_number,
+			std::list<Function_variable_handle>& independent_variables,
+			Matrix& matrix);
+#endif // defined (USE_Function_derivatnew_finite_element)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		bool set_value(Function_variable_handle atomic_variable,
 			Function_variable_handle atomic_value);
 		Function_handle get_value(Function_variable_handle atomic_variable);
