@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 24 July 2002
+LAST MODIFIED : 16 September 2002
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -2374,7 +2374,7 @@ signal type file
 
 static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2002
+LAST MODIFIED : 13 September 2002
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -2897,8 +2897,11 @@ Sets up the analysis work area for analysing a set of signals.
 		/* convert the loaded rig to nodes/elements/fields */
 		if (convert_rig_to_nodes(analysis->rig))
 		{
+#if defined (OLD_CODE)
+/*???DB.  No matching DEACCESS */
 			/* same as rig->unemap_package */
 			ACCESS(Unemap_package)(analysis->unemap_package);
+#endif /* defined (OLD_CODE) */
 			return_code=1;
 		}
 		else
@@ -3164,7 +3167,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 6 December 2001
+LAST MODIFIED : 13 September 2002
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -4162,7 +4165,10 @@ signals.
 					/* convert the loaded rig to nodes/elements/fields */
 					if (convert_rig_to_nodes(analysis->rig))
 					{
+#if defined (OLD_CODE)
+/*???DB.  No matching DEACCESS */
 						ACCESS(Unemap_package)(analysis->unemap_package);
+#endif /* defined (OLD_CODE) */
 						/* highlight the  node (and everything else) */
 						if ((analysis->highlight)&&(*(analysis->highlight)))
 						{
@@ -4584,7 +4590,7 @@ for analysing the signals.
 static int analysis_read_bdf_or_edf_file(struct Analysis_work_area *analysis,
 	int bdf)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2002
+LAST MODIFIED : 13 September 2002
 
 DESCRIPTION :
 Reads in the signals from the bdf or edf file and sets up the analysis work area
@@ -4683,8 +4689,11 @@ for analysing the signals.  <bdf>!=0 reads bdf files, else reads edf files
 			/*???DB.  Would be better to be another callback from the same button ? */
 			if (convert_rig_to_nodes(analysis->rig))
 			{
+#if defined (OLD_CODE)
+/*???DB.  No matching DEACCESS */
 				/* same as rig->unemap_package */
 				ACCESS(Unemap_package)(analysis->unemap_package);
+#endif /* defined (OLD_CODE) */
 			}
 			else
 			{
@@ -10700,7 +10709,7 @@ should be done as a callback from the trace_window.
 
 static struct Rig *create_processed_rig(struct Rig *raw_rig)
 /*******************************************************************************
-LAST MODIFIED : 15 August 2002
+LAST MODIFIED : 4 September 2002
 
 DESCRIPTION :
 Duplicates the raw rig, except that
@@ -10837,7 +10846,8 @@ Duplicates the raw rig, except that
 								set_Region_rig_node_group((*region_item_address)->region,
 									rig_node_group);
 							}
-							if (unrejected_node_group=get_Region_unrejected_node_group(raw_region))
+							if (unrejected_node_group=
+								get_Region_unrejected_node_group(raw_region))
 							{
 								set_Region_unrejected_node_group((*region_item_address)->region,
 									unrejected_node_group);
@@ -10989,6 +10999,10 @@ Duplicates the raw rig, except that
 														auxiliary->type=raw_auxiliary->type;
 														switch (raw_auxiliary->type)
 														{
+															case AUXILIARY_DEVICE_CHANNEL:
+															{
+																/* nothing to do */
+															} break;
 															case AUXILIARY_DEVICE_EXPRESSION:
 															{
 																if (((raw_auxiliary->combination).expression.
@@ -11126,7 +11140,9 @@ Duplicates the raw rig, except that
 																	else
 																	{
 																		display_message(ERROR_MESSAGE,
-"create_processed_rig.  Could not create electrode for an auxiliary device that is a linear combination");
+																			"create_processed_rig.  Could not create "
+																			"electrode for an auxiliary device that "
+																			"is a linear combination");
 																		while (j>0)
 																		{
 																			j--;
@@ -11139,7 +11155,9 @@ Duplicates the raw rig, except that
 															else
 															{
 																display_message(ERROR_MESSAGE,
-"create_processed_rig.  Could not allocate memory for an auxiliary device that is a linear combination");
+																	"create_processed_rig.  Could not allocate "
+																	"memory for an auxiliary device that is a "
+																	"linear combination");
 																DEALLOCATE(auxiliary->electrodes);
 																DEALLOCATE(auxiliary->electrode_coefficients);
 																destroy_Rig(&rig);
@@ -11395,7 +11413,7 @@ Duplicates the raw rig, except that
 static void analysis_reset_to_raw_signals(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 19 June 1998
+LAST MODIFIED : 16 September 2002
 
 DESCRIPTION :
 Resets the signals being analysed back to the raw data.
@@ -11439,6 +11457,12 @@ Resets the signals being analysed back to the raw data.
 			destroy_Rig(&(analysis->rig));
 			analysis->rig=rig;
 			analysis->raw_rig=(struct Rig *)NULL;
+			if (analysis->trace)
+			{
+				/* recalculate the power spectrum minimum and maximum */
+				(analysis->trace->power_spectra).maximum_frequency= -1;
+				(analysis->trace->power_spectra).minimum_frequency= -1;
+			}
 			/* ghost the reset button */
 			XtSetSensitive(analysis->window->interval.reset_button,False);
 			/* update the display */
@@ -17400,7 +17424,7 @@ int create_analysis_work_area(struct Analysis_work_area *analysis,
 	struct User_interface *user_interface, struct Time_keeper *time_keeper,
 	struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2001
+LAST MODIFIED : 16 September 2002
 
 DESCRIPTION :
 Creates the windows associated with the analysis work area.
@@ -17496,6 +17520,12 @@ Creates the windows associated with the analysis work area.
 		)
 	{
 		analysis->unemap_package=package;
+#if defined (UNEMAP_USE_3D)
+		if (package)
+		{
+			ACCESS(Unemap_package)(analysis->unemap_package);
+		}
+#endif /* defined (UNEMAP_USE_3D) */
 		analysis->signal_drawing_package=(struct Signal_drawing_package *)NULL;
 #if defined (UNEMAP_USE_NODES)
 		analysis->highlight_rig_node=(struct FE_node *)NULL;
@@ -17786,7 +17816,7 @@ Closes the windows associated with the analysis work area.
 
 int destroy_analysis_work_area(struct Analysis_work_area *analysis)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2001
+LAST MODIFIED : 16 September 2002
 
 DESCRIPTION :
 Frees up the memory associated with the <analysis> work area object given. Does
@@ -17882,6 +17912,9 @@ is used in Cell.
 		{
 			DEALLOCATE(analysis->events_file_extension);
 		}
+#if defined (UNEMAP_USE_3D)
+		DEACCESS(Unemap_package)(&(analysis->unemap_package));
+#endif /* defined (UNEMAP_USE_3D) */
 	}
 	else
 	{
