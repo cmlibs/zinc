@@ -597,9 +597,12 @@ Clear the type specific data used by this type.
 		{
 			DEALLOCATE(data->projection_matrix);
 		}
-		Scene_viewer_remove_destroy_callback(data->scene_viewer, 
-			Computed_field_window_projection_scene_viewer_destroy_callback,
-			(void *)field);
+		if (data->scene_viewer)
+		{
+			Scene_viewer_remove_destroy_callback(data->scene_viewer, 
+				Computed_field_window_projection_scene_viewer_destroy_callback,
+				(void *)field);
+		}
 		DEALLOCATE(field->type_specific_data);
 		return_code = 1;
 	}
