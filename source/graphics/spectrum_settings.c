@@ -65,10 +65,10 @@ Stores one group of settings for a single part of a spectrum rendition.
 		of the black bands */
 	int number_of_bands, black_band_proportion;
 
-#if defined (GL_EXT_texture_object)
+#if defined (OPENGL_API)
 	/* Texture number for banded and step spectrums */
 	unsigned int texture_id;
-#endif /* defined (GL_EXT_texture_object) */
+#endif /* defined (OPENGL_API) */
 	 
 	/* For accessing objects */
 	int access_count;
@@ -324,9 +324,9 @@ Allocates memory and assigns fields for a struct Spectrum_settings.
 		settings->number_of_bands = 10;
 		settings->black_band_proportion = 200;
 		settings->active=1;
-#if defined (GL_EXT_texture_object)
+#if defined (OPENGL_API)
 		settings->texture_id=0;
-#endif /* defined (GL_EXT_texture_object) */
+#endif /* defined (OPENGL_API) */
 		settings->access_count=0;
 	}
 	else
@@ -356,10 +356,12 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 	{
 		if (settings= *settings_ptr)
 		{
+#if defined (OPENGL_API)
 			if (settings->texture_id)
 			{
 				glDeleteTextures(1, &(settings->texture_id));
 			}
+#endif /* defined (OPENGL_API) */
 			switch (settings->settings_type)
 			{
 				case SPECTRUM_LINEAR:
