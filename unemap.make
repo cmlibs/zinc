@@ -36,10 +36,10 @@ unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug u
 unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug : USER_INTERFACE=MOTIF_USER_INTERFACE
 unemap-static unemap-static-debug : STATIC_LINK_OPTION=STATIC_LINK=$(STATIC_LINK)
 unemap-static unemap-static-debug : STATIC_LINK=true
-unemap unemap-nodes unemap-3d unemap64 : DEBUG_OPTION=DEBUG=$(DEBUG)
-unemap unemap-nodes unemap-3d unemap64 : DEBUG=false
-unemap-debug unemap-debug-memorycheck unemap-3d-debug unemap64-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
-unemap-debug unemap-debug-memorycheck unemap-3d-debug unemap64-debug : DEBUG=true
+unemap unemap-nodes unemap-static unemap-3d unemap64 : DEBUG_OPTION=DEBUG=$(DEBUG)
+unemap unemap-nodes unemap-static unemap-3d unemap64 : DEBUG=false
+unemap-debug unemap-debug-memorycheck unemap-static-debug unemap-3d-debug unemap64-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
+unemap-debug unemap-debug-memorycheck unemap-static-debug unemap-3d-debug unemap64-debug : DEBUG=true
 unemap64 unemap64-debug utilities64 : ABI_OPTION=ABI=$(ABI)
 unemap64 unemap64-debug utilities64 : ABI=64
 unemap-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
