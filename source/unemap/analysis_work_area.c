@@ -771,6 +771,9 @@ analysis work area.
 {
 	char found;
 	int number_of_devices;
+#if defined (UNEMAP_USE_NODES)
+	int rig_node_group_count;
+#endif /* defined (UNEMAP_USE_NODES) */
 	struct Device **highlight;
 	struct Analysis_window *analysis_window;
 	struct Analysis_work_area *analysis;
@@ -800,6 +803,13 @@ analysis work area.
 					{
 						/* update the analysis rig */
 						current_region=(struct Region *)NULL;
+#if defined (UNEMAP_USE_NODES)
+						/*??JW getting the rig_node_groups from the unemap_package */
+						/*should we store elsewhere, eg at analysis?*/
+						/* first (0th) rig node group is all_devices */
+						analysis->rig_node_group=
+							get_unemap_package_rig_node_group(analysis->unemap_package,0);
+#endif /* defined (UNEMAP_USE_NODES) */						 
 						found=1;
 					}
 					else
@@ -809,17 +819,29 @@ analysis work area.
 				}
 				if (!found)
 				{
+#if defined (UNEMAP_USE_NODES)
+					rig_node_group_count=0;
+#endif /* defined (UNEMAP_USE_NODES) */
 					region_item=rig->region_list;
 					while (region_item&&(selected_region!= *region))
 					{
 						region_item=region_item->next;
 						region++;
-					}
+#if defined (UNEMAP_USE_NODES)
+						rig_node_group_count++; 
+#endif /* defined (UNEMAP_USE_NODES) */
+					}								
 					if (region_item)
 					{
 						found=1;
 						/* update the analysis rig */
 						current_region=region_item->region;
+#if defined (UNEMAP_USE_NODES)
+						/* rig_node_group_count+1 as 0 is all_devices */
+						analysis->rig_node_group=
+							get_unemap_package_rig_node_group(analysis->unemap_package,
+							rig_node_group_count+1);
+#endif /* defined (UNEMAP_USE_NODES) */
 					}
 				}
 				if (found)
