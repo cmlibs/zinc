@@ -175,7 +175,7 @@ update :
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
 		$(MAKE) -f cmgui.make cmgui cmgui_optimised cmgui64 cmgui_lite cmgui_memorycheck && \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmgui.make cmgui_linux cmgui_linux_optimised cmgui_linux_optimised_dynamic' && \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmgui.make cmgui_linux cmgui_linux_memorycheck cmgui_linux_optimised cmgui_linux_optimised_dynamic' && \
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers *; \
 	else \
