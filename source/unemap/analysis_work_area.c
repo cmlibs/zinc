@@ -2756,11 +2756,6 @@ Sets up the analysis work area for analysing a set of signals.
 				(buffer->frequency);
 			map->end_time=map->start_time;
 		}
-		else
-		{
-			map->start_time=0;
-			map->end_time=0;
-		}
 #if defined (UNEMAP_USE_3D)
 		/* convert the loaded rig to nodes/elements/fields */
 		if (convert_rig_to_nodes(analysis->rig))
