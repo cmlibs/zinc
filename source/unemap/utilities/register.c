@@ -6028,6 +6028,7 @@ static void process_keyboard(
 									}
 									for (i=0;i<number_of_s1-1;i++)
 									{
+#if defined (OLD_CODE)
 										for (j=0;j<number_of_s1_voltages;j++)
 										{
 											if (j<number_of_s1_voltages/2)
@@ -6039,6 +6040,15 @@ static void process_keyboard(
 											{
 												pacing_voltages[number_of_pacing_voltages]=0;
 											}
+											number_of_pacing_voltages++;
+										}
+#endif /* defined (OLD_CODE) */
+										pacing_voltages[number_of_pacing_voltages]=
+											control_amplitude;
+										number_of_pacing_voltages++;
+										for (j=number_of_s1_voltages-1;j>0;j--)
+										{
+											pacing_voltages[number_of_pacing_voltages]=0;
 											number_of_pacing_voltages++;
 										}
 									}
@@ -6055,6 +6065,7 @@ static void process_keyboard(
 										number_of_pacing_voltages=number_of_pacing_voltages_save;
 										number_of_s2_voltages=
 											(int)(s2_delay/s2_resolution+0.5);
+#if defined (OLD_CODE)
 										for (j=0;j<number_of_s2_voltages;j++)
 										{
 											if (j<number_of_s2_voltages/2)
@@ -6076,6 +6087,20 @@ static void process_keyboard(
 										}
 										pacing_voltages[number_of_pacing_voltages]=0;
 										number_of_pacing_voltages++;
+#endif /* defined (OLD_CODE) */
+										pacing_voltages[number_of_pacing_voltages]=
+											control_amplitude;
+										number_of_pacing_voltages++;
+										for (j=number_of_s2_voltages-1;j>0;j--)
+										{
+											pacing_voltages[number_of_pacing_voltages]=0;
+											number_of_pacing_voltages++;
+										}
+										pacing_voltages[number_of_pacing_voltages]=
+											control_amplitude;
+										number_of_pacing_voltages++;
+										pacing_voltages[number_of_pacing_voltages]=0;
+										number_of_pacing_voltages++;
 										unemap_load_voltage_stimulating(number_of_pacing_channels,
 											pacing_channels,number_of_pacing_voltages,
 											voltages_per_second,pacing_voltages,1);
@@ -6095,15 +6120,19 @@ static void process_keyboard(
 												case 's': case 'S':
 												{
 													/* do nothing */
+													unemap_stop_stimulating(0);
 												} break;
 												case 'y': case 'Y': case 'u': case 'U':
 												{
+													unemap_stop_stimulating(0);
 													if (('u'==response)||('U'==response))
 													{
 														sprintf(signal_file_name+signal_file_name_length,
 															"%d.signal",signal_file_number);
 														signal_file_number++;
+														unemap_stop_sampling();
 														register_write_signal_file(signal_file_name,1);
+														unemap_start_sampling();
 													}
 													response='y';
 													if (response!=previous_response)
@@ -6117,12 +6146,15 @@ static void process_keyboard(
 												} break;
 												case 'n': case 'N': case 'm': case 'M':
 												{
+													unemap_stop_stimulating(0);
 													if (('m'==response)||('M'==response))
 													{
 														sprintf(signal_file_name+signal_file_name_length,
 															"%d.signal",signal_file_number);
 														signal_file_number++;
+														unemap_stop_sampling();
 														register_write_signal_file(signal_file_name,1);
+														unemap_start_sampling();
 													}
 													response='n';
 													if (response!=previous_response)
