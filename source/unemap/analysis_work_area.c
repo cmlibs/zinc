@@ -5689,8 +5689,8 @@ set to automatic and reorder the devices if this is required.
 					device=rig->devices;
 					number_of_devices=rig->number_of_devices;
 					while (number_of_devices>0)
-					{
-						if ((*device)->signal->status!=REJECTED)
+					{					
+						if (((*device)->signal)&&(*device)->signal->status!=REJECTED)
 						{
 							calculate_device_objective(*device,analysis->detection,
 								analysis->objective,objective_values,number_of_objective_values,
@@ -5732,8 +5732,8 @@ set to automatic and reorder the devices if this is required.
 						}
 						/* determine the datum */
 						if (AUTOMATIC_DATUM==analysis->datum_type)
-						{
-							if ((device=rig->devices)&&
+						{						
+							if ((device=rig->devices)&&((*device)->signal)&&
 								(event=(*device)->signal->first_event))
 							{
 								analysis->datum=event->time;
@@ -5754,8 +5754,8 @@ set to automatic and reorder the devices if this is required.
 								datum=(buffer->times)[buffer->number_of_samples-1]+1;
 								number_of_devices=rig->number_of_devices;
 								while (number_of_devices>0)
-								{
-									if ((event=(*device)->signal->first_event)&&
+								{								
+									if (((*device)->signal)&&(event=(*device)->signal->first_event)&&
 										(event->time<datum))
 									{
 										datum=event->time;

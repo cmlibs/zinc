@@ -8542,8 +8542,11 @@ Updates the selectability of the signal controls.
 	rig=(struct Rig *)NULL;;
 	if (trace)
 	{
+		/* should perhaps set up current_region=rig->current_region */
+		/* but this has never been set up(!) and seems to dim the 'calculate'*/
+		/* button in the signal window for large signal files */
 		if ((trace->rig)&&(rig= *(trace->rig))&&(trace->highlight)&&
-			(highlight= *(trace->highlight))&&(current_region=rig->current_region))
+			(highlight= *(trace->highlight)))
 		{
 			switch (trace->analysis_mode)
 			{
