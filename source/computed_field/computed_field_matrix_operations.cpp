@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_matrix_operations.c
 
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 11 December 2000
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
@@ -18,6 +18,73 @@ struct Computed_field_matrix_operations_package
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
 };
+
+static int Computed_field_get_square_matrix_size(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+If <field> can represent a square matrix with numerical components, the number
+of rows = number of columns is returned.
+==============================================================================*/
+{
+	int n, return_code, size;
+
+	ENTER(Computed_field_get_square_matrix_size);
+	return_code = 0;
+	if (field)
+	{
+		size = field->number_of_components;
+		n = 1;
+		while (n * n < size)
+		{
+			n++;
+		}
+		if (n * n == size)
+		{
+			return_code = n;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_square_matrix_size.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_square_matrix_size */
+
+static int Computed_field_is_square_matrix(struct Computed_field *field,
+	void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Returns true if <field> can represent a square matrix, on account of having n*n
+components, where n is a positive integer. If matrix is square, n is returned.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_square_matrix);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		return_code =
+			Computed_field_has_numerical_components(field, (void *)NULL) &&
+			(0 != Computed_field_get_square_matrix_size(field));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_square_matrix.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_square_matrix */
 
 struct Computed_field_eigenvalues_type_specific_data
 /*******************************************************************************
@@ -81,7 +148,7 @@ List conditional function version of Computed_field_is_type_eigenvalues.
 static int Computed_field_eigenvalues_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 11 December 2000
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -91,7 +158,9 @@ Clear the type specific data used by this type.
 	struct Computed_field_eigenvalues_type_specific_data *data;
 
 	ENTER(Computed_field_eigenvalues_clear_type_specific);
-	if (field && (data = field->type_specific_data))
+	if (field && (data =
+		(struct Computed_field_eigenvalues_type_specific_data *)
+		field->type_specific_data))
 	{
 		if (data->a)
 		{
@@ -521,7 +590,7 @@ DESCRIPTION :
 int Computed_field_set_type_eigenvalues(struct Computed_field *field,
 	struct Computed_field *source_field)
 /*******************************************************************************
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 11 December 2000
 
 DESCRIPTION :
 Converts <field> to type 'eigenvalues' which performs a full eigenanalysis on
@@ -531,20 +600,14 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	int matrix_size, n, number_of_source_fields, return_code;
+	int number_of_source_fields, return_code;
 	struct Computed_field **source_fields;
 	struct Computed_field_eigenvalues_type_specific_data *data;
 
 	ENTER(Computed_field_set_type_eigenvalues);
 	if (field && source_field)
 	{
-		matrix_size = source_field->number_of_components;
-		n = 1;
-		while (n * n < matrix_size)
-		{
-			n++;
-		}
-		if (n * n == matrix_size)
+		if (Computed_field_is_square_matrix(source_field, (void *)NULL))
 		{
 			/* 1. make dynamic allocations for any new type-specific data */
 			number_of_source_fields = 1;
@@ -557,7 +620,8 @@ although its cache may be lost.
 				/* 3. establish the new type */
 				field->type = COMPUTED_FIELD_NEW_TYPES;
 				field->type_string = computed_field_eigenvalues_type_string;
-				field->number_of_components = n;
+				field->number_of_components =
+					Computed_field_get_square_matrix_size(source_field);
 				source_fields[0] = ACCESS(Computed_field)(source_field);
 				field->source_fields = source_fields;
 				field->number_of_source_fields = number_of_source_fields;
@@ -663,7 +727,7 @@ eigenvalues of is returned.
 static int define_Computed_field_type_eigenvalues(struct Parse_state *state,
 	void *field_void, void *computed_field_matrix_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 11 December 2000
 
 DESCRIPTION :
 Converts <field> into type 'eigenvalues' (if it is not already) and allows its
@@ -698,7 +762,7 @@ contents to be modified.
 			}
 			option_table = CREATE(Option_table)();
 			set_source_field_data.conditional_function =
-				Computed_field_has_numerical_components;
+				Computed_field_is_square_matrix;
 			set_source_field_data.conditional_function_user_data = (void *)NULL;
 			set_source_field_data.computed_field_manager =
 				computed_field_matrix_operations_package->computed_field_manager;
@@ -1320,6 +1384,704 @@ its contents to be modified.
 
 	return (return_code);
 } /* define_Computed_field_type_eigenvectors */
+
+struct Computed_field_matrix_invert_type_specific_data
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	/* cache for LU decomposed matrix, RHS vector and pivots */
+	double *a, *b;
+	int *indx;
+}; /* struct Computed_field_matrix_invert_type_specific_data */
+
+static char computed_field_matrix_invert_type_string[] = "matrix_invert";
+
+int Computed_field_is_type_matrix_invert(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Returns true if <field> has the appropriate static type string.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_matrix_invert);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_matrix_invert_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_matrix_invert.  Missing field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_type_matrix_invert */
+
+static int Computed_field_matrix_invert_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_matrix_invert_type_specific_data *data;
+
+	ENTER(Computed_field_matrix_invert_clear_type_specific);
+	if (field && (data =
+		(struct Computed_field_matrix_invert_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (data->a)
+		{
+			DEALLOCATE(data->a);
+		}
+		if (data->b)
+		{
+			DEALLOCATE(data->b);
+		}
+		if (data->indx)
+		{
+			DEALLOCATE(data->indx);
+		}
+		DEALLOCATE(field->type_specific_data);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_matrix_invert_clear_type_specific.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_matrix_invert_clear_type_specific */
+
+static void *Computed_field_matrix_invert_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	struct Computed_field_matrix_invert_type_specific_data *destination;
+
+	ENTER(Computed_field_matrix_invert_copy_type_specific);
+	if (field)
+	{
+		if (ALLOCATE(destination,
+			struct Computed_field_matrix_invert_type_specific_data, 1))
+		{
+			/* following arrays are allocated when field calculated, cleared when
+				 cache cleared */
+			destination->a = (double *)NULL;
+			destination->b = (double *)NULL;
+			destination->indx = (int *)NULL;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_eigenvalues_copy_type_specific.  "
+				"Unable to allocate memory");
+			destination = NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_matrix_invert_copy_type_specific.  Invalid argument(s)");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_matrix_invert_copy_type_specific */
+
+static int Computed_field_matrix_invert_clear_cache_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 7 November 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_matrix_invert_type_specific_data *data;
+
+	ENTER(Computed_field_matrix_invert_clear_cache_type_specific);
+	if (field && (data = 
+		(struct Computed_field_matrix_invert_type_specific_data *)
+		field->type_specific_data))
+	{
+		if (data->a)
+		{
+			DEALLOCATE(data->a);
+		}
+		if (data->b)
+		{
+			DEALLOCATE(data->b);
+		}
+		if (data->indx)
+		{
+			DEALLOCATE(data->indx);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_matrix_invert_clear_cache_type_specific.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_matrix_invert_clear_cache_type_specific */
+
+static int Computed_field_matrix_invert_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_matrix_invert_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_matrix_invert_type_specific_contents_match */
+
+#define Computed_field_matrix_invert_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_matrix_invert_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_matrix_invert_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_matrix_invert_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
+static int Computed_field_evaluate_matrix_invert(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Evaluates the inverse of the matrix held in the <source_field>. The cache is
+used to store intermediate LU-decomposed matrix and RHS vector in double
+precision, as well as the integer pivot indx. Expects that source_field has
+been pre-calculated before calling this.
+==============================================================================*/
+{
+	double d;
+	int i, j, matrix_size, n, return_code;
+	struct Computed_field *source_field;
+	struct Computed_field_matrix_invert_type_specific_data *data;
+	
+	ENTER(Computed_field_evaluate_matrix_invert);
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_matrix_invert_type_string) &&
+		(data = (struct Computed_field_matrix_invert_type_specific_data *)
+			field->type_specific_data))
+	{
+		source_field = field->source_fields[0];
+		n = Computed_field_get_square_matrix_size(source_field);
+		matrix_size = n * n;
+		if ((data->a || ALLOCATE(data->a, double, matrix_size)) &&
+			(data->b || ALLOCATE(data->b, double, n)) &&
+			(data->indx || ALLOCATE(data->indx, int, n)))
+		{
+			for (i = 0; i < matrix_size; i++)
+			{
+				data->a[i] = (double)(source_field->values[i]);
+			}
+			if (LU_decompose(n, data->a, data->indx, &d))
+			{
+				return_code = 1;
+				for (i = 0; (i < n) && return_code; i++)
+				{
+					/* take a column of the identity matrix */
+					for (j = 0; j < n; j++)
+					{
+						data->b[j] = 0.0;
+					}
+					data->b[i] = 1.0;
+					if (LU_backsubstitute(n, data->a, data->indx, data->b))
+					{
+						/* extract a column of the inverse matrix */
+						for (j = 0; j < n; j++)
+						{
+							field->values[j*n + i] = (FE_value)data->b[j];
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Computed_field_evaluate_matrix_invert.  "
+							"Could not LU backsubstitute matrix");
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_evaluate_matrix_invert.  "
+					"Could not LU decompose matrix");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_evaluate_matrix_invert.  Could not allocate cache");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_evaluate_matrix_invert.  Invalid argument(s)");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_evaluate_matrix_invert */
+
+static int Computed_field_matrix_invert_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_matrix_invert_evaluate_cache_at_node);
+	if (field && node)
+	{
+		return_code =
+			Computed_field_evaluate_source_fields_cache_at_node(field, node) &&
+			Computed_field_evaluate_matrix_invert(field);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_matrix_invert_evaluate_cache_at_node.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_matrix_invert_evaluate_cache_at_node */
+
+static int Computed_field_matrix_invert_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Evaluate the fields cache in the element.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_matrix_invert_evaluate_cache_in_element);
+	if (field && element && xi)
+	{
+		if (0 == calculate_derivatives)
+		{
+			field->derivatives_valid = 0;
+			return_code = Computed_field_evaluate_source_fields_cache_in_element(
+				field, element, xi, top_level_element, calculate_derivatives) &&
+				Computed_field_evaluate_matrix_invert(field);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_matrix_invert_evaluate_cache_in_element.  "
+				"Cannot calculate derivatives of matrix_invert");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_matrix_invert_evaluate_cache_in_element.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_matrix_invert_evaluate_cache_in_element */
+
+#define Computed_field_matrix_invert_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_matrix_invert_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_matrix_invert_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_matrix_invert_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_matrix_invert_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_matrix_invert_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_matrix_invert(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(List_Computed_field_matrix_invert);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,"    source field : %s\n",
+			field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_matrix_invert.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_matrix_invert */
+
+static int list_Computed_field_matrix_invert_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(list_Computed_field_matrix_invert_commands);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE," field %s",
+			field->source_fields[0]->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_matrix_invert_commands.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_matrix_invert_commands */
+
+int Computed_field_set_type_matrix_invert(struct Computed_field *field,
+	struct Computed_field *source_field)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Converts <field> to type 'matrix_invert' which performs a full eigenanalysis on
+the symmetric matrix in <source_field> and returns the n matrix_invert, where
+<source_field> must have n x n components.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int number_of_source_fields, return_code;
+	struct Computed_field **source_fields;
+	struct Computed_field_matrix_invert_type_specific_data *data;
+
+	ENTER(Computed_field_set_type_matrix_invert);
+	if (field && source_field)
+	{
+		if (Computed_field_is_square_matrix(source_field, (void *)NULL))
+		{
+			/* 1. make dynamic allocations for any new type-specific data */
+			number_of_source_fields = 1;
+			if (ALLOCATE(source_fields,struct Computed_field *,
+				number_of_source_fields) && ALLOCATE(data,
+					struct Computed_field_matrix_invert_type_specific_data, 1))
+			{
+				/* 2. free current type-specific data */
+				Computed_field_clear_type(field);
+				/* 3. establish the new type */
+				field->type = COMPUTED_FIELD_NEW_TYPES;
+				field->type_string = computed_field_matrix_invert_type_string;
+				field->number_of_components =
+					Computed_field_get_number_of_components(source_field);
+				source_fields[0] = ACCESS(Computed_field)(source_field);
+				field->source_fields = source_fields;
+				field->number_of_source_fields = number_of_source_fields;
+				field->type_specific_data = (void *)1;
+				data->a = (double *)NULL;
+				data->b = (double *)NULL;
+				data->indx = (int *)NULL;
+				field->type_specific_data = (void *)data;
+
+				/* Set all the methods */
+				field->computed_field_clear_type_specific_function =
+					Computed_field_matrix_invert_clear_type_specific;
+				field->computed_field_copy_type_specific_function =
+					Computed_field_matrix_invert_copy_type_specific;
+				field->computed_field_clear_cache_type_specific_function =
+					Computed_field_matrix_invert_clear_cache_type_specific;
+				field->computed_field_type_specific_contents_match_function =
+					Computed_field_matrix_invert_type_specific_contents_match;
+				field->computed_field_is_defined_in_element_function =
+					Computed_field_matrix_invert_is_defined_in_element;
+				field->computed_field_is_defined_at_node_function =
+					Computed_field_matrix_invert_is_defined_at_node;
+				field->computed_field_has_numerical_components_function =
+					Computed_field_matrix_invert_has_numerical_components;
+				field->computed_field_evaluate_cache_at_node_function =
+					Computed_field_matrix_invert_evaluate_cache_at_node;
+				field->computed_field_evaluate_cache_in_element_function =
+					Computed_field_matrix_invert_evaluate_cache_in_element;
+				field->computed_field_evaluate_as_string_at_node_function =
+					Computed_field_matrix_invert_evaluate_as_string_at_node;
+				field->computed_field_evaluate_as_string_in_element_function =
+					Computed_field_matrix_invert_evaluate_as_string_in_element;
+				field->computed_field_set_values_at_node_function =
+					Computed_field_matrix_invert_set_values_at_node;
+				field->computed_field_set_values_in_element_function =
+					Computed_field_matrix_invert_set_values_in_element;
+				field->computed_field_get_native_discretization_in_element_function =
+					Computed_field_matrix_invert_get_native_discretization_in_element;
+				field->computed_field_find_element_xi_function =
+					Computed_field_matrix_invert_find_element_xi;
+				field->list_Computed_field_function = 
+					list_Computed_field_matrix_invert;
+				field->list_Computed_field_commands_function = 
+					list_Computed_field_matrix_invert_commands;
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_set_type_matrix_invert.  Not enough memory");
+				DEALLOCATE(source_fields);
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Computed_field_set_type_matrix_invert.  "
+				"Field %s cannot hold a square matrix", source_field->name);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_matrix_invert.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_matrix_invert */
+
+int Computed_field_get_type_matrix_invert(struct Computed_field *field,
+	struct Computed_field **source_field)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+If the field is of type 'matrix_invert', the <source_field> it calculates the
+matrix_invert of is returned.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_get_type_matrix_invert);
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_matrix_invert_type_string) &&
+		source_field)
+	{
+		*source_field = field->source_fields[0];
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_matrix_invert.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_matrix_invert */
+
+static int define_Computed_field_type_matrix_invert(struct Parse_state *state,
+	void *field_void, void *computed_field_matrix_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2000
+
+DESCRIPTION :
+Converts <field> into type 'matrix_invert' (if it is not already) and allows its
+contents to be modified.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *field, *source_field;
+	struct Computed_field_matrix_operations_package 
+		*computed_field_matrix_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_matrix_invert);
+	if (state && (field = (struct Computed_field *)field_void) &&
+		(computed_field_matrix_operations_package=
+			(struct Computed_field_matrix_operations_package *)
+			computed_field_matrix_operations_package_void))
+	{
+		return_code = 1;
+		source_field = (struct Computed_field *)NULL;
+		if (computed_field_matrix_invert_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code = Computed_field_get_type_matrix_invert(field, &source_field);
+		}
+		if (return_code)
+		{
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
+			option_table = CREATE(Option_table)();
+			set_source_field_data.conditional_function =
+				Computed_field_is_square_matrix;
+			set_source_field_data.conditional_function_user_data = (void *)NULL;
+			set_source_field_data.computed_field_manager =
+				computed_field_matrix_operations_package->computed_field_manager;
+			Option_table_add_entry(option_table, "field", &source_field,
+				&set_source_field_data, set_Computed_field_conditional);
+			return_code = Option_table_multi_parse(option_table, state) &&
+				Computed_field_set_type_matrix_invert(field, source_field);
+			DESTROY(Option_table)(&option_table);
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_matrix_invert.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_matrix_invert */
 
 struct Computed_field_matrix_multiply_type_specific_data
 /*******************************************************************************
@@ -3643,7 +4405,7 @@ already) and allows its contents to be modified.
 int Computed_field_register_types_matrix_operations(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 11 December 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3658,32 +4420,38 @@ DESCRIPTION :
 		computed_field_matrix_operations_package.computed_field_manager =
 			Computed_field_package_get_computed_field_manager(
 				computed_field_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_eigenvalues_type_string,
-			define_Computed_field_type_eigenvalues,
-			&computed_field_matrix_operations_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_eigenvectors_type_string,
-			define_Computed_field_type_eigenvectors,
-			&computed_field_matrix_operations_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_matrix_multiply_type_string,
-			define_Computed_field_type_matrix_multiply,
-			&computed_field_matrix_operations_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_projection_type_string,
-			define_Computed_field_type_projection,
-			&computed_field_matrix_operations_package);
-		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_transpose_type_string,
-			define_Computed_field_type_transpose,
-			&computed_field_matrix_operations_package);
+
+		return_code =
+			Computed_field_package_add_type(computed_field_package,
+				computed_field_eigenvalues_type_string,
+				define_Computed_field_type_eigenvalues,
+				&computed_field_matrix_operations_package) &&
+			Computed_field_package_add_type(computed_field_package,
+				computed_field_eigenvectors_type_string,
+				define_Computed_field_type_eigenvectors,
+				&computed_field_matrix_operations_package) &&
+			Computed_field_package_add_type(computed_field_package,
+				computed_field_matrix_invert_type_string,
+				define_Computed_field_type_matrix_invert,
+				&computed_field_matrix_operations_package) &&
+			Computed_field_package_add_type(computed_field_package,
+				computed_field_matrix_multiply_type_string,
+				define_Computed_field_type_matrix_multiply,
+				&computed_field_matrix_operations_package) &&
+			Computed_field_package_add_type(computed_field_package,
+				computed_field_projection_type_string,
+				define_Computed_field_type_projection,
+				&computed_field_matrix_operations_package) &&
+			Computed_field_package_add_type(computed_field_package,
+				computed_field_transpose_type_string,
+				define_Computed_field_type_transpose,
+				&computed_field_matrix_operations_package);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_register_types_matrix_operations.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
