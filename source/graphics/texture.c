@@ -4668,6 +4668,7 @@ direct_render_Texture.
 			/* If using texture_objects then we need to check that the texture
 				is still resident */
 			glAreTexturesResident(1, &texture->texture_id, &resident);
+#if defined (OLD_CODE)
 			if (GL_TRUE != resident)
 			{
 #if defined (DM_BUFFERS)
@@ -4685,6 +4686,7 @@ direct_render_Texture.
 					direct_render_Texture(texture);
 				}
 			}
+#endif /* defined (OLD_CODE) */
 			return_code=1;
 #else /* defined (OPENGL_API) */
 			display_message(ERROR_MESSAGE,
