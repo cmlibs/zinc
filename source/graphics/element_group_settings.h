@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 15 February 2000
+LAST MODIFIED : 24 February 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -119,7 +119,7 @@ Subset of command data passed to g_element modify routines.
 
 struct GT_element_settings_to_graphics_object_data
 /*******************************************************************************
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 21 February 2000
 
 DESCRIPTION :
 Data required to produce or edit a graphics object for a GT_element_settings
@@ -137,6 +137,8 @@ object.
 	/* objects changed which require editing of existing graphics_objects */
 	struct FE_element *changed_element;
 	struct FE_node *changed_node;
+	/* for highlighting of selected objects */
+	struct LIST(FE_node) *selected_node_list;
 
 	/* additional values for passing to element_to_graphics_object */
 	struct GT_element_settings *settings;
@@ -181,6 +183,7 @@ Structure for passing to GT_element_settings_get_nearest_node iterator.
 Global functions
 ----------------
 */
+
 PROTOTYPE_OBJECT_FUNCTIONS(GT_element_settings);
 DECLARE_LIST_TYPES(GT_element_settings);
 
@@ -366,24 +369,26 @@ etc. If a value outside of 0 to 5 is passed, no face is specified.
 For 1-D and 2-D settings types only.
 ==============================================================================*/
 
-int GT_element_settings_get_glyph_edit_mode(
-	struct GT_element_settings *settings,enum Glyph_edit_mode *glyph_edit_mode);
+enum Graphics_select_mode GT_element_settings_get_select_mode(
+	struct GT_element_settings *settings);
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
-Returns the enumerator determining whether names are output with the glyph and
-how the mesh editor should use them.
+Returns the enumerator determining whether names are output with the graphics
+for the settings, and if so which graphics are output depending on their
+selection status.
 ==============================================================================*/
 
-int GT_element_settings_set_glyph_edit_mode(
-	struct GT_element_settings *settings,enum Glyph_edit_mode glyph_edit_mode);
+int GT_element_settings_set_select_mode(struct GT_element_settings *settings,
+	enum Graphics_select_mode select_mode);
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
-Sets the enumerator determining whether names are output with the glyph and
-how the mesh editor should use them.
+Sets the enumerator determining whether names are output with the graphics
+for the settings, and if so which graphics are output depending on their
+selection status.
 ==============================================================================*/
 
 int GT_element_settings_get_glyph_parameters(
@@ -474,6 +479,27 @@ LAST MODIFIED : 5 June 1998
 DESCRIPTION :
 Sets the <material> used by <settings>. Must set the material for each new
 settings created.
+==============================================================================*/
+
+struct Graphical_material *GT_element_settings_get_selected_material(
+	struct GT_element_settings *settings);
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+Returns the selected material used by <settings>.
+Selected objects relevant to the settings are displayed with this material.
+==============================================================================*/
+
+int GT_element_settings_set_selected_material(
+	struct GT_element_settings *settings,
+	struct Graphical_material *selected_material);
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+Sets the <selected_material> used by <settings>.
+Selected objects relevant to the settings are displayed with this material.
 ==============================================================================*/
 
 struct FE_field *GT_element_settings_get_native_discretization_field(
@@ -993,6 +1019,17 @@ Creates a GT_object and fills it with the objects described by settings.
 The graphics object is stored with with the settings it was created from.
 ==============================================================================*/
 
+int GT_element_settings_selected_nodes_change(
+	struct GT_element_settings *settings,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 24 February 2000
+
+DESCRIPTION :
+Tells <settings> that if the graphics resulting from it depend on selection,
+that they should be updated. Must call GT_element_settings_to_graphics_object
+afterwards to complete.
+==============================================================================*/
+
 int GT_element_settings_compile_visible_settings(
 	struct GT_element_settings *settings,void *dummy_void);
 /*******************************************************************************
@@ -1181,20 +1218,5 @@ DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT STREAMLINES command.
 If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
-==============================================================================*/
-
-int GT_element_settings_get_nearest_node(
-	struct GT_element_settings *settings,void *settings_nearest_node_data_void);
-/*******************************************************************************
-LAST MODIFIED : 15 February 2000
-
-DESCRIPTION :
-If the settings is of type GT_ELEMENT_SETTINGS_NODE_POINTS, calculates the
-coordinate field of the nodes in the given list, and the end point of the
-first vector if there is an orientation_scale field. Remembers the nearest of
-any of these points to the given centre. Returns the nearest node, settings
-and edit_vector flag which is true if the end of the vector is picked.
-Note that the centre given must be in the coordinate area of the nodes/settings
-referred to, ie. any transformations of the graphics must be inverted.
 ==============================================================================*/
 #endif /* !defined (ELEMENT_GROUP_SETTINGS_H) */

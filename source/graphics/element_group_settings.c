@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -13,6 +13,7 @@ appearance of graphical finite element groups.
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/compare.h"
+#include "general/multi_range.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "finite_element/computed_field.h"
@@ -38,7 +39,7 @@ Module types
 
 struct GT_element_settings
 /*******************************************************************************
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Stores one group of settings for a single line/surface/etc. part of the
@@ -55,6 +56,8 @@ finite element group rendition.
 	/* for all graphic types */
 	enum GT_element_settings_type settings_type;
 	struct Computed_field *coordinate_field;
+	enum Graphics_select_mode select_mode;
+
 	/* for 1-D and 2-D elements only */
 	char exterior;
 	/* face number is from -1 to 5, where -1 is none/all, 0 is xi1=0, 1 is xi1=1,
@@ -74,7 +77,6 @@ finite element group rendition.
 	Triple glyph_centre,glyph_scale_factors,glyph_size;
 	struct Computed_field *orientation_scale_field;
 	struct Computed_field *label_field;
-	enum Glyph_edit_mode glyph_edit_mode;
 	/* for element_points and iso_surfaces */
 	enum Use_element_type use_element_type;
 	/* for element_points only */
@@ -100,13 +102,15 @@ finite element group rendition.
 	/* appearance settings */
 	/* for all graphic types */
 	int visibility;
-	struct Graphical_material *material;
+	struct Graphical_material *material,*selected_material;
 	struct Computed_field *data_field;
 	struct Spectrum *spectrum;
 
 	/* rendering information */
 	/* use pointer to graphics_object when rebuilding graphics_objects */
 	struct GT_object *graphics_object;
+	/* flag indicating that selected graphics have changed */
+	int selected_graphics_changed;
 
 	/* for accessing objects */
 	int access_count;
@@ -125,6 +129,7 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GT_element_settings,position,int, \
 Global functions
 ----------------
 */
+
 DECLARE_OBJECT_FUNCTIONS(GT_element_settings)
 DECLARE_INDEXED_LIST_FUNCTIONS(GT_element_settings)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GT_element_settings, \
@@ -186,7 +191,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->glyph_size[2]=1.0;
 			settings->orientation_scale_field=(struct Computed_field *)NULL;
 			settings->label_field=(struct Computed_field *)NULL;
-			settings->glyph_edit_mode=GLYPH_EDIT_OFF;
+			settings->select_mode=GRAPHICS_SELECT_ON;
 			/* for element_points and iso_surfaces */
 			settings->use_element_type=USE_ELEMENTS;
 			/* for element_points only */
@@ -218,6 +223,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			/* for all graphic types */
 			settings->visibility=1;
 			settings->material=(struct Graphical_material *)NULL;
+			settings->selected_material=(struct Graphical_material *)NULL;
 			settings->data_field=(struct Computed_field *)NULL;
 			settings->spectrum=(struct Spectrum *)NULL;
 			/* for streamlines only */
@@ -225,6 +231,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 
 			/* rendering information defaults */
 			settings->graphics_object=(struct GT_object *)NULL;
+			settings->selected_graphics_changed=0;
 
 			settings->access_count=0;
 		}
@@ -350,7 +357,7 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 
 PROTOTYPE_COPY_OBJECT_FUNCTION(GT_element_settings)
 /*******************************************************************************
-LAST MODIFIED : 28 June 1999
+LAST MODIFIED : 24 February 2000
 
 DESCRIPTION :
 syntax: COPY(GT_element_settings)(destination,source)
@@ -381,7 +388,8 @@ Note: destination->access_count is not changed by COPY.
 		destination->settings_type=source->settings_type;
 		REACCESS(Computed_field)(&(destination->coordinate_field),
 			source->coordinate_field);
-		/* For surfaces only at the moment */
+		destination->select_mode=source->select_mode;
+		/* for surfaces only at the moment */
 		REACCESS(Computed_field)(&(destination->texture_coordinate_field),
 			source->texture_coordinate_field);
 		/* for 1-D and 2-D elements only */
@@ -435,7 +443,6 @@ Note: destination->access_count is not changed by COPY.
 			}
 		}
 		REACCESS(Computed_field)(&(destination->label_field),source->label_field);
-		destination->glyph_edit_mode=source->glyph_edit_mode;
 		/* for element_points and iso_surfaces */
 		destination->use_element_type=source->use_element_type;
 		/* for element_points only */
@@ -472,8 +479,7 @@ Note: destination->access_count is not changed by COPY.
 		/* copy appearance settings */
 		/* for all graphic types */
 		destination->visibility=source->visibility;
-		REACCESS(Graphical_material)(&(destination->material),
-			source->material);
+		REACCESS(Graphical_material)(&(destination->material),source->material);
 		if (GT_ELEMENT_SETTINGS_STREAMLINES==source->settings_type)
 		{
 			GT_element_settings_set_data_spectrum_parameters_streamlines(destination,
@@ -484,9 +490,13 @@ Note: destination->access_count is not changed by COPY.
 			GT_element_settings_set_data_spectrum_parameters(destination,
 				source->data_field,source->spectrum);
 		}
+		REACCESS(Graphical_material)(&(destination->selected_material),
+			source->selected_material);
+
 		/* copy rendering information */
 		REACCESS(GT_object)(&(destination->graphics_object),
 			source->graphics_object);
+		destination->selected_graphics_changed=source->selected_graphics_changed;
 
 		if (!return_code)
 		{
@@ -1126,68 +1136,64 @@ For 1-D and 2-D settings types only.
 	return (return_code);
 } /* GT_element_settings_set_face */
 
-int GT_element_settings_get_glyph_edit_mode(
-	struct GT_element_settings *settings,enum Glyph_edit_mode *glyph_edit_mode)
+enum Graphics_select_mode GT_element_settings_get_select_mode(
+	struct GT_element_settings *settings)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
-Returns the enumerator determining whether names are output with the glyph and
-how the mesh editor should use them.
+Returns the enumerator determining whether names are output with the graphics
+for the settings, and if so which graphics are output depending on their
+selection status.
+==============================================================================*/
+{
+	enum Graphics_select_mode select_mode;
+
+	ENTER(GT_element_settings_get_select_mode);
+	if (settings)
+	{
+		select_mode = settings->select_mode;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_get_select_mode.  Invalid argument(s)");
+		select_mode=GRAPHICS_SELECT_MODE_INVALID;
+	}
+	LEAVE;
+
+	return (select_mode);
+} /* GT_element_settings_get_select_mode */
+
+int GT_element_settings_set_select_mode(struct GT_element_settings *settings,
+	enum Graphics_select_mode select_mode)
+/*******************************************************************************
+LAST MODIFIED : 23 February 2000
+
+DESCRIPTION :
+Sets the enumerator determining whether names are output with the graphics
+for the settings, and if so which graphics are output depending on their
+selection status.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(GT_element_settings_get_glyph_edit_mode);
-	if (settings&&glyph_edit_mode&&
-		((GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)||
-		(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type)||
-		(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)))
+	ENTER(GT_element_settings_set_select_mode);
+	if (settings)
 	{
-		*glyph_edit_mode = settings->glyph_edit_mode;
+		settings->select_mode = select_mode;
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_element_settings_get_glyph_edit_mode.  Invalid argument(s)");
+			"GT_element_settings_set_select_mode.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* GT_element_settings_get_glyph_edit_mode */
-
-int GT_element_settings_set_glyph_edit_mode(
-	struct GT_element_settings *settings,enum Glyph_edit_mode glyph_edit_mode)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Sets the enumerator determining whether names are output with the glyph and
-how the mesh editor should use them.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_element_settings_set_glyph_edit_mode);
-	if (settings&&((GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)||
-		(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type)||
-		(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)))
-	{
-		settings->glyph_edit_mode = glyph_edit_mode;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_settings_set_glyph_edit_mode.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_settings_set_glyph_edit_mode */
+} /* GT_element_settings_set_select_mode */
 
 int GT_element_settings_get_glyph_parameters(
 	struct GT_element_settings *settings,struct GT_object **glyph,
@@ -1469,6 +1475,65 @@ settings created.
 
 	return (return_code);
 } /* GT_element_settings_set_material */
+
+struct Graphical_material *GT_element_settings_get_selected_material(
+	struct GT_element_settings *settings)
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+Returns the selected material used by <settings>.
+Selected objects relevant to the settings are displayed with this material.
+==============================================================================*/
+{
+	struct Graphical_material *selected_material;
+
+	ENTER(GT_element_settings_get_selected_material);
+	if (settings)
+	{
+		selected_material=settings->selected_material;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_get_selected_material.  Invalid argument(s)");
+		selected_material=(struct Graphical_material *)NULL;
+	}
+	LEAVE;
+
+	return (selected_material);
+} /* GT_element_settings_get_selected_material */
+
+int GT_element_settings_set_selected_material(
+	struct GT_element_settings *settings,
+	struct Graphical_material *selected_material)
+/*******************************************************************************
+LAST MODIFIED : 18 February 2000
+
+DESCRIPTION :
+Sets the <selected_material> used by <settings>.
+Selected objects relevant to the settings are displayed with this material.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_settings_set_selected_material);
+	if (settings&&selected_material)
+	{
+		return_code=1;
+		REACCESS(Graphical_material)(&(settings->selected_material),
+			selected_material);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_set_selected_material.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_set_selected_material */
 
 struct FE_field *GT_element_settings_get_native_discretization_field(
 	struct GT_element_settings *settings)
@@ -2732,7 +2797,7 @@ Returns the position of <settings> in <list_of_settings>.
 int GT_element_settings_same_geometry(struct GT_element_settings *settings,
 	void *second_settings_void)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 GT_element_settings list conditional function returning 1 iff the two
@@ -2758,7 +2823,8 @@ settings describe EXACTLY the same geometry.
 				(settings->coordinate_field==second_settings->coordinate_field)&&
 				((((char *)NULL==settings->name)&&((char *)NULL==second_settings->name))
 					||((settings->name)&&(second_settings->name)&&
-						(0==strcmp(settings->name,second_settings->name))));
+						(0==strcmp(settings->name,second_settings->name))))&&
+				(settings->select_mode==second_settings->select_mode);
 		}
 		/* for 1-D and 2-D elements only */
 		if (return_code)
@@ -2806,8 +2872,7 @@ settings describe EXACTLY the same geometry.
 				(settings->glyph_centre[2]==second_settings->glyph_centre[2])&&
 				(settings->orientation_scale_field==
 					second_settings->orientation_scale_field)&&
-				(settings->label_field==second_settings->label_field)&&
-				(settings->glyph_edit_mode==second_settings->glyph_edit_mode);
+				(settings->label_field==second_settings->label_field);
 		}
 		/* for element_points and iso_surfaces */
 		if (return_code&&
@@ -2949,7 +3014,7 @@ spectrum which can be changed in the graphics object to match the new settings .
 int GT_element_settings_extract_graphics_object_from_list(
 	struct GT_element_settings *settings,void *list_of_settings_void)
 /*******************************************************************************
-LAST MODIFIED : 11 June 1998
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 If <settings> does not already have a graphics object, this function attempts
@@ -2979,7 +3044,7 @@ any trivial differences are fixed up in the graphics_obejct.
 					matching_settings->graphics_object=(struct GT_object *)NULL;
 					/* make sure settings and graphics object have same material and
 						 spectrum */
-					if (settings->material)
+					if (settings->material != matching_settings->material)
 					{
 						set_GT_object_default_material(settings->graphics_object,
 							settings->material);
@@ -2987,6 +3052,12 @@ any trivial differences are fixed up in the graphics_obejct.
 						{
 							update_GT_voltex_materials_to_default(settings->graphics_object);
 						}
+					}
+					if (settings->selected_material !=
+						matching_settings->selected_material)
+					{
+						set_GT_object_selected_material(settings->graphics_object,
+							settings->selected_material);
 					}
 					if (settings->data_field&&settings->spectrum)
 					{
@@ -3278,7 +3349,7 @@ Returns the <GT_element_settings_type> described by
 char *GT_element_settings_string(struct GT_element_settings *settings,
 	enum GT_element_settings_string_details settings_detail)
 /*******************************************************************************
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 22 February 2000
 
 DESCRIPTION :
 Returns a string describing the settings, suitable for entry into the command
@@ -3488,9 +3559,6 @@ if no coordinate field. Currently only write if we have a field.
 						error=1;
 					}
 				}
-				append_string(&settings_string," ",&error);
-				append_string(&settings_string,
-					Glyph_edit_mode_string(settings->glyph_edit_mode),&error);
 			}
 			else
 			{
@@ -3624,6 +3692,9 @@ if no coordinate field. Currently only write if we have a field.
 			append_string(&settings_string,
 				Streamline_data_type_string(settings->streamline_data_type),&error);
 		}
+		append_string(&settings_string," ",&error);
+		append_string(&settings_string,
+			Graphics_select_mode_string(settings->select_mode),&error);
 
 		if ((SETTINGS_STRING_COMPLETE==settings_detail)||
 			(SETTINGS_STRING_COMPLETE_PLUS==settings_detail))
@@ -3683,6 +3754,15 @@ if no coordinate field. Currently only write if we have a field.
 					append_string(&settings_string,name,&error);
 					DEALLOCATE(name);
 				}
+			}
+			if (settings->selected_material&&
+				GET_NAME(Graphical_material)(settings->selected_material,&name))
+			{
+				/* put quotes around name if it contains special characters */
+				make_valid_token(&name);
+				append_string(&settings_string," selected_material ",&error);
+				append_string(&settings_string,name,&error);
+				DEALLOCATE(name);
 			}
 		}
 		if (error)
@@ -4085,7 +4165,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								settings->glyph,settings->glyph_centre,settings->glyph_size,
 								settings_to_object_data->wrapper_orientation_scale_field,
 								settings->glyph_scale_factors,settings->data_field,
-								settings->label_field,settings->glyph_edit_mode))
+								settings->label_field,settings->select_mode))
 							{
 								if (!GT_OBJECT_ADD(GT_glyph_set)(
 									settings->graphics_object,time,glyph_set))
@@ -4210,7 +4290,7 @@ Converts a finite element into a graphics object with the supplied settings.
 int GT_element_settings_to_graphics_object(
 	struct GT_element_settings *settings,void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Creates a GT_object and fills it with the objects described by settings.
@@ -4229,6 +4309,7 @@ The graphics object is stored with with the settings it was created from.
 	struct GROUP(FE_node) *node_group;
 	struct GT_element_settings_to_graphics_object_data *settings_to_object_data;
 	struct GT_glyph_set *glyph_set;
+	struct Multi_range *subranges;
 
 	ENTER(GT_element_settings_to_graphics_object);
 	if (settings&&(settings_to_object_data=
@@ -4377,6 +4458,12 @@ The graphics object is stored with with the settings it was created from.
 									group_string, settings_name);
 								settings->graphics_object=CREATE(GT_object)(
 									graphics_object_name,graphics_object_type,settings->material);
+								/*???RC needs work */
+								if (settings->selected_material)
+								{
+									set_GT_object_selected_material(settings->graphics_object,
+										settings->selected_material);
+								}
 								ACCESS(GT_object)(settings->graphics_object);
 								DEALLOCATE(group_string);
 								DEALLOCATE(settings_name);
@@ -4411,6 +4498,9 @@ The graphics object is stored with with the settings it was created from.
 								if (GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)
 								{
 									node_group=settings_to_object_data->node_group;
+									/*???RC should be elsewhere once selection supported by other
+										types */
+									settings->selected_graphics_changed=1;
 								}
 								else
 								{
@@ -4423,7 +4513,8 @@ The graphics object is stored with with the settings it was created from.
 									settings->glyph,settings->glyph_centre,settings->glyph_size,
 									settings_to_object_data->wrapper_orientation_scale_field,
 									settings->glyph_scale_factors,settings->data_field,
-									settings->label_field,settings->glyph_edit_mode))
+									settings->label_field,settings->select_mode,
+									settings_to_object_data->selected_node_list))
 								{
 									if (!GT_OBJECT_ADD(GT_glyph_set)(settings->graphics_object,
 										time,glyph_set))
@@ -4573,6 +4664,42 @@ The graphics object is stored with with the settings it was created from.
 					return_code=0;
 				}
 			}
+			if (settings->selected_graphics_changed)
+			{
+				if (settings->graphics_object)
+				{
+					GT_object_clear_selected_graphic_list(settings->graphics_object);
+					switch (settings->settings_type)
+					{
+						case GT_ELEMENT_SETTINGS_NODE_POINTS:
+						{
+							if (0<NUMBER_IN_LIST(FE_node)(
+								settings_to_object_data->selected_node_list))
+							{
+								if (subranges=CREATE(Multi_range)())
+								{
+									FOR_EACH_OBJECT_IN_LIST(FE_node)(
+										add_FE_node_number_to_Multi_range,(void *)subranges,
+										settings_to_object_data->selected_node_list);
+									if (!GT_object_select_graphic(settings->graphics_object,
+										0,subranges))
+									{
+										DESTROY(Multi_range)(&subranges);
+									}
+								}
+							}
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"GT_element_settings_to_graphics_object.  "
+								"Cannot update selected graphics for %s",
+								GT_element_settings_type_string(settings->settings_type));
+						} break;
+					}
+				}
+				settings->selected_graphics_changed=0;
+			}
 		}
 		else
 		{
@@ -4596,6 +4723,64 @@ The graphics object is stored with with the settings it was created from.
 
 	return (return_code);
 } /* GT_element_settings_to_graphics_object */
+
+int GT_element_settings_selected_nodes_change(
+	struct GT_element_settings *settings,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 24 February 2000
+
+DESCRIPTION :
+Tells <settings> that if the graphics resulting from it depend on selection,
+that they should be updated. Must call GT_element_settings_to_graphics_object
+afterwards to complete.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_settings_selected_nodes_change);
+	USE_PARAMETER(dummy_void);
+	if (settings)
+	{
+		return_code=1;
+		if ((GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)&&
+			settings->graphics_object)
+		{
+			switch (settings->select_mode)
+			{
+				case GRAPHICS_SELECT_ON:
+				{
+					/* for efficiency, just request update of selected graphics */
+					settings->selected_graphics_changed=1;
+				} break;
+				case GRAPHICS_NO_SELECT:
+				{
+					/* nothing to do as no names put out with graphic */
+				} break;
+				case GRAPHICS_DRAW_SELECTED:
+				case GRAPHICS_DRAW_UNSELECTED:
+				{
+					/* need to rebuild graphics_object from scratch */
+					DEACCESS(GT_object)(&(settings->graphics_object));
+					settings->graphics_object=(struct GT_object *)NULL;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"GT_element_settings_selected_nodes_change.  Unknown select_mode");
+				} break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_selected_nodes_change.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_selected_nodes_change */
 
 int GT_element_settings_compile_visible_settings(
 	struct GT_element_settings *settings,void *time_void)
@@ -4976,7 +5161,7 @@ If there is a visible graphics_object in <settings>, expands the
 int gfx_modify_g_element_node_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT NODE_POINTS command.
@@ -4984,7 +5169,7 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *glyph_edit_mode_string,invisible_flag,**valid_strings;
+	char invisible_flag,*select_mode_string,**valid_strings;
 	int number_of_components,number_of_valid_strings,return_code;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
@@ -5011,6 +5196,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* set essential parameters not set by CREATE function */
 					GT_element_settings_set_material(settings,
 						g_element_command_data->default_material);
+					GT_element_settings_set_selected_material(settings,
+						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+							"default_selected",
+							g_element_command_data->graphical_material_manager));
 					/* default to point glyph for fastest possible display */
 					GT_element_settings_set_glyph_parameters(settings,
 						FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
@@ -5046,14 +5235,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* delete */
 					Option_table_add_entry(option_table,"delete",
 						&(modify_g_element_data->delete_flag),NULL,set_char_flag);
-					/* edit_mode: edit_off|edit_position|edit_select|edit_vector */
-					glyph_edit_mode_string=
-						Glyph_edit_mode_string(settings->glyph_edit_mode);
-					valid_strings=Glyph_edit_mode_get_valid_strings(
-						&number_of_valid_strings);
-					Option_table_add_enumerator(option_table,number_of_valid_strings,
-						valid_strings,&glyph_edit_mode_string);
-					DEALLOCATE(valid_strings);
 					/* glyph */
 					Option_table_add_entry(option_table,"glyph",&(settings->glyph),
 						g_element_command_data->glyph_list,set_Graphics_object);
@@ -5093,6 +5274,19 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
+					/* select_mode */
+					select_mode_string=
+						Graphics_select_mode_string(settings->select_mode);
+					valid_strings=Graphics_select_mode_get_valid_strings(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(settings->selected_material),
+						g_element_command_data->graphical_material_manager,
+						set_Graphical_material);
 					/* size */
 					Option_table_add_entry(option_table,"size",
 						&(settings->glyph_size),"*",set_special_float3);
@@ -5117,8 +5311,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"No glyph specified for node_points");
 							return_code=0;
 						}
-						GT_element_settings_set_glyph_edit_mode(settings,
-							Glyph_edit_mode_from_string(glyph_edit_mode_string));
+						GT_element_settings_set_select_mode(settings,
+							Graphics_select_mode_from_string(select_mode_string));
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -5162,7 +5356,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_data_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT DATA_POINTS command.
@@ -5170,7 +5364,7 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *glyph_edit_mode_string,invisible_flag,**valid_strings;
+	char invisible_flag,*select_mode_string,**valid_strings;
 	int number_of_components,number_of_valid_strings,return_code;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
@@ -5197,6 +5391,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* set essential parameters not set by CREATE function */
 					GT_element_settings_set_material(settings,
 						g_element_command_data->default_material);
+					GT_element_settings_set_selected_material(settings,
+						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+							"default_selected",
+							g_element_command_data->graphical_material_manager));
 					/* default to point glyph for fastest possible display */
 					GT_element_settings_set_glyph_parameters(settings,
 						FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
@@ -5232,14 +5430,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* delete */
 					Option_table_add_entry(option_table,"delete",
 						&(modify_g_element_data->delete_flag),NULL,set_char_flag);
-					/* edit_mode: edit_off|edit_position|edit_select|edit_vector */
-					glyph_edit_mode_string=
-						Glyph_edit_mode_string(settings->glyph_edit_mode);
-					valid_strings=Glyph_edit_mode_get_valid_strings(
-						&number_of_valid_strings);
-					Option_table_add_enumerator(option_table,number_of_valid_strings,
-						valid_strings,&glyph_edit_mode_string);
-					DEALLOCATE(valid_strings);
 					/* glyph */
 					Option_table_add_entry(option_table,"glyph",&(settings->glyph),
 						g_element_command_data->glyph_list,set_Graphics_object);
@@ -5279,6 +5469,18 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
+					/* select_mode */
+					select_mode_string=Graphics_select_mode_string(settings->select_mode);
+					valid_strings=Graphics_select_mode_get_valid_strings(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(settings->selected_material),
+						g_element_command_data->graphical_material_manager,
+						set_Graphical_material);
 					/* size */
 					Option_table_add_entry(option_table,"size",
 						&(settings->glyph_size),"*",set_special_float3);
@@ -5303,8 +5505,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"No glyph specified for data_points");
 							return_code=0;
 						}
-						GT_element_settings_set_glyph_edit_mode(settings,
-							Glyph_edit_mode_from_string(glyph_edit_mode_string));
+						GT_element_settings_set_select_mode(settings,
+							Graphics_select_mode_from_string(select_mode_string));
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -5348,7 +5550,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_lines(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT LINES command.
@@ -5356,8 +5558,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag;
-	int return_code;
+	char invisible_flag,*select_mode_string,**valid_strings;
+	int number_of_valid_strings,return_code;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
@@ -5383,6 +5585,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* set essential parameters not set by CREATE function */
 					GT_element_settings_set_material(settings,
 						g_element_command_data->default_material);
+					GT_element_settings_set_selected_material(settings,
+						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+							"default_selected",
+							g_element_command_data->graphical_material_manager));
 					invisible_flag=0;
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -5428,6 +5634,19 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
+					/* select_mode */
+					select_mode_string=
+						Graphics_select_mode_string(settings->select_mode);
+					valid_strings=Graphics_select_mode_get_valid_strings(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(settings->selected_material),
+						g_element_command_data->graphical_material_manager,
+						set_Graphical_material);
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
@@ -5451,6 +5670,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->face=-1;
 						}
+						GT_element_settings_set_select_mode(settings,
+							Graphics_select_mode_from_string(select_mode_string));
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -5493,7 +5714,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_cylinders(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT CYLINDERS command.
@@ -5501,8 +5722,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag;
-	int return_code;
+	char invisible_flag,*select_mode_string,**valid_strings;
+	int number_of_valid_strings,return_code;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
@@ -5528,6 +5749,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* set essential parameters not set by CREATE function */
 					GT_element_settings_set_material(settings,
 						g_element_command_data->default_material);
+					GT_element_settings_set_selected_material(settings,
+						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+							"default_selected",
+							g_element_command_data->graphical_material_manager));
 					invisible_flag=0;
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -5589,6 +5814,19 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
+					/* select_mode */
+					select_mode_string=
+						Graphics_select_mode_string(settings->select_mode);
+					valid_strings=Graphics_select_mode_get_valid_strings(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(settings->selected_material),
+						g_element_command_data->graphical_material_manager,
+						set_Graphical_material);
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
@@ -5612,6 +5850,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->face=-1;
 						}
+						GT_element_settings_set_select_mode(settings,
+							Graphics_select_mode_from_string(select_mode_string));
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -5655,7 +5895,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_surfaces(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT SURFACES command.
@@ -5663,8 +5903,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag;
-	int return_code;
+	char invisible_flag,*select_mode_string,**valid_strings;
+	int number_of_valid_strings,return_code;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
@@ -5690,6 +5930,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* set essential parameters not set by CREATE function */
 					GT_element_settings_set_material(settings,
 						g_element_command_data->default_material);
+					GT_element_settings_set_selected_material(settings,
+						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+							"default_selected",
+							g_element_command_data->graphical_material_manager));
 					invisible_flag=0;
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -5735,6 +5979,19 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
+					/* select_mode */
+					select_mode_string=
+						Graphics_select_mode_string(settings->select_mode);
+					valid_strings=Graphics_select_mode_get_valid_strings(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(settings->selected_material),
+						g_element_command_data->graphical_material_manager,
+						set_Graphical_material);
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
@@ -5768,6 +6025,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->face=-1;
 						}
+						GT_element_settings_set_select_mode(settings,
+							Graphics_select_mode_from_string(select_mode_string));
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -5811,7 +6070,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_iso_surfaces(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ISO_SURFACES command.
@@ -5819,7 +6078,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,*use_element_type_string,**valid_strings;
+	char invisible_flag,*select_mode_string,*use_element_type_string,
+		**valid_strings;
 	int number_of_valid_strings,return_code;
 	struct Computed_field *scalar_field;
 	struct Modify_g_element_data *modify_g_element_data;
@@ -5850,6 +6110,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* set essential parameters not set by CREATE function */
 					GT_element_settings_set_material(settings,
 						g_element_command_data->default_material);
+					GT_element_settings_set_selected_material(settings,
+						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+							"default_selected",
+							g_element_command_data->graphical_material_manager));
 					/* must start with valid iso_scalar_field: */
 					if (scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_has_1_component,(void *)NULL,computed_field_manager))
@@ -5914,6 +6178,19 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
+					/* select_mode */
+					select_mode_string=
+						Graphics_select_mode_string(settings->select_mode);
+					valid_strings=Graphics_select_mode_get_valid_strings(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(settings->selected_material),
+						g_element_command_data->graphical_material_manager,
+						set_Graphical_material);
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
@@ -5953,6 +6230,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->face=-1;
 						}
+						GT_element_settings_set_select_mode(settings,
+							Graphics_select_mode_from_string(select_mode_string));
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -5996,7 +6275,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_element_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ELEMENT_POINTS command.
@@ -6004,7 +6283,7 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *glyph_edit_mode_string,invisible_flag,*use_element_type_string,
+	char invisible_flag,*select_mode_string,*use_element_type_string,
 		**valid_strings,*xi_discretization_mode_string;
 	int number_of_components,number_of_valid_strings,return_code;
 	struct Modify_g_element_data *modify_g_element_data;
@@ -6032,6 +6311,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* set essential parameters not set by CREATE function */
 					GT_element_settings_set_material(settings,
 						g_element_command_data->default_material);
+					GT_element_settings_set_selected_material(settings,
+						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+							"default_selected",
+							g_element_command_data->graphical_material_manager));
 					/* default to point glyph for fastest possible display */
 					GT_element_settings_set_glyph_parameters(settings,
 						FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
@@ -6079,14 +6362,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"discretization",
 						&(settings->discretization),g_element_command_data->user_interface,
 						set_Element_discretization);
-					/* edit_mode: edit_off|edit_position|edit_select|edit_vector */
-					glyph_edit_mode_string=
-						Glyph_edit_mode_string(settings->glyph_edit_mode);
-					valid_strings=Glyph_edit_mode_get_valid_strings(
-						&number_of_valid_strings);
-					Option_table_add_enumerator(option_table,number_of_valid_strings,
-						valid_strings,&glyph_edit_mode_string);
-					DEALLOCATE(valid_strings);
 					/* exterior */
 					Option_table_add_entry(option_table,"exterior",&(settings->exterior),
 						NULL,set_char_flag);
@@ -6136,6 +6411,19 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
+					/* select_mode */
+					select_mode_string=
+						Graphics_select_mode_string(settings->select_mode);
+					valid_strings=Graphics_select_mode_get_valid_strings(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(settings->selected_material),
+						g_element_command_data->graphical_material_manager,
+						set_Graphical_material);
 					/* size */
 					Option_table_add_entry(option_table,"size",
 						&(settings->glyph_size),"*",set_special_float3);
@@ -6181,8 +6469,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"No glyph specified for element_points");
 							return_code=0;
 						}
-						GT_element_settings_set_glyph_edit_mode(settings,
-							Glyph_edit_mode_from_string(glyph_edit_mode_string));
+						GT_element_settings_set_select_mode(settings,
+							Graphics_select_mode_from_string(select_mode_string));
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -6226,7 +6514,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_volumes(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT VOLUMES command.
@@ -6234,8 +6522,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag;
-	int return_code;
+	char invisible_flag,*select_mode_string,**valid_strings;
+	int number_of_valid_strings,return_code;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
@@ -6263,6 +6551,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* set essential parameters not set by CREATE function */
 					GT_element_settings_set_material(settings,
 						g_element_command_data->default_material);
+					GT_element_settings_set_selected_material(settings,
+						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+							"default_selected",
+							g_element_command_data->graphical_material_manager));
 					/* must have a volume texture */
 					if (volume_texture=FIRST_OBJECT_IN_MANAGER_THAT(VT_volume_texture)(
 						(MANAGER_CONDITIONAL_FUNCTION(VT_volume_texture) *)NULL,
@@ -6327,6 +6619,19 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"seed_element",
 						&(settings->seed_element),g_element_command_data->element_manager,
 						set_FE_element_dimension_3);
+					/* select_mode */
+					select_mode_string=
+						Graphics_select_mode_string(settings->select_mode);
+					valid_strings=Graphics_select_mode_get_valid_strings(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(settings->selected_material),
+						g_element_command_data->graphical_material_manager,
+						set_Graphical_material);
 					/* smooth_field */
 					set_blur_field_data.computed_field_package=
 						g_element_command_data->computed_field_package;
@@ -6361,6 +6666,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							display_message(WARNING_MESSAGE,"No volume texture specified");
 							return_code=0;
 						}
+						GT_element_settings_set_select_mode(settings,
+							Graphics_select_mode_from_string(select_mode_string));
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -6404,7 +6711,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_streamlines(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT STREAMLINES command.
@@ -6412,8 +6719,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,reverse_track,*streamline_data_type_string,
-		*streamline_type_string,**valid_strings;
+	char invisible_flag,reverse_track,*select_mode_string,
+		*streamline_data_type_string,*streamline_type_string,**valid_strings;
 	enum Streamline_type streamline_type;
 	enum Streamline_data_type streamline_data_type;
 	float length, width;
@@ -6448,6 +6755,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* set essential parameters not set by CREATE function */
 					GT_element_settings_set_material(settings,
 						g_element_command_data->default_material);
+					GT_element_settings_set_selected_material(settings,
+						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+							"default_selected",
+							g_element_command_data->graphical_material_manager));
 					stream_vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_is_stream_vector_capable,(void *)NULL,
 						computed_field_manager);
@@ -6519,6 +6830,19 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"seed_element",
 						&(settings->seed_element),g_element_command_data->element_manager,
 						set_FE_element_dimension_3);
+					/* select_mode */
+					select_mode_string=
+						Graphics_select_mode_string(settings->select_mode);
+					valid_strings=Graphics_select_mode_get_valid_strings(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&select_mode_string);
+					DEALLOCATE(valid_strings);
+					/* selected_material */
+					Option_table_add_entry(option_table,"selected_material",
+						&(settings->selected_material),
+						g_element_command_data->graphical_material_manager,
+						set_Graphical_material);
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
@@ -6590,6 +6914,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								settings,streamline_data_type,settings->data_field,
 								settings->spectrum);
 						}
+						GT_element_settings_set_select_mode(settings,
+							Graphics_select_mode_from_string(select_mode_string));
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -6629,221 +6955,4 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 
 	return (return_code);
 } /* gfx_modify_g_element_streamlines */
-
-struct Nearest_node_data
-{
-	/* centre must be in the coordinate space of the fields below */
-	FE_value centre[3],distance,glyph_centre[3],glyph_size[3],
-		glyph_scale_factors[3];
-	int edit_vector;
-	struct Computed_field *rc_coordinate_field,*wrapper_orientation_scale_field;
-	struct FE_node *node;
-};
-
-static int get_nearest_FE_node(struct FE_node *node,
-	void *nearest_node_data_void)
-/*******************************************************************************
-LAST MODIFIED : 15 February 2000
-
-DESCRIPTION :
-Up to calling function to clear cache for the passed field.
-==============================================================================*/
-{
-	FE_value a[3],b[3],c[3],coordinates[3],delta,distance,end_coordinates[3],
-		orientation_scale[9],size[3];
-	int i,number_of_orientation_scale_components,return_code;
-	struct Computed_field *coordinate_field,*orientation_scale_field;
-	struct Nearest_node_data *nearest_node_data;
-
-	ENTER(get_nearest_FE_node);
-	/* must set following to 0 = valid if no orientation_scale_field */
-	number_of_orientation_scale_components=0;
-	if (node&&(nearest_node_data=
-		(struct Nearest_node_data *)nearest_node_data_void)&&
-		(coordinate_field=nearest_node_data->rc_coordinate_field)&&
-		(3>=Computed_field_get_number_of_components(coordinate_field))&&
-		((!(orientation_scale_field=
-			nearest_node_data->wrapper_orientation_scale_field))||
-			(9>=(number_of_orientation_scale_components=
-				Computed_field_get_number_of_components(orientation_scale_field))))&&
-		nearest_node_data->centre)
-	{
-		/* in case less than 3 coordinates */
-		coordinates[1]=0.0;
-		coordinates[2]=0.0;
-		if (Computed_field_evaluate_at_node(coordinate_field,node,coordinates)&&
-			((!orientation_scale_field)||Computed_field_evaluate_at_node(
-				orientation_scale_field,node,orientation_scale))&&
-				make_glyph_orientation_scale_axes(
-					number_of_orientation_scale_components,orientation_scale,a,b,c,size))
-		{
-			/* size = base_size + variable_size * scale_factor */
-			for (i=0;i<3;i++)
-			{
-				size[i] = nearest_node_data->glyph_size[i] +
-					size[i]*nearest_node_data->glyph_scale_factors[i];
-			}
-			for (i=0;i<3;i++)
-			{
-				a[i] *= size[0];
-				b[i] *= size[1];
-				c[i] *= size[2];
-				coordinates[i] -= (
-					nearest_node_data->glyph_centre[0]*a[i] +
-					nearest_node_data->glyph_centre[1]*b[i] +
-					nearest_node_data->glyph_centre[2]*c[i]);
-			}
-			if (orientation_scale_field)
-			{
-				distance=0.0;
-				for (i=0;i<3;i++)
-				{
-					end_coordinates[i] = coordinates[i] + a[i];
-					delta = (end_coordinates[i] - nearest_node_data->centre[i]);
-					distance += delta*delta;
-				}
-				distance = sqrt(distance);
-				if ((!nearest_node_data->node)||
-					(distance < nearest_node_data->distance))
-				{
-					nearest_node_data->node = node;
-					nearest_node_data->distance = distance;
-					nearest_node_data->edit_vector = 1;
-				}
-			}
-			distance=0.0;
-			for (i=0;i<3;i++)
-			{
-				delta = (coordinates[i] - nearest_node_data->centre[i]);
-				distance += delta*delta;
-			}
-			distance = sqrt(distance);
-			if ((!nearest_node_data->node)||
-				(distance < nearest_node_data->distance))
-			{
-				nearest_node_data->node = node;
-				nearest_node_data->distance = distance;
-				nearest_node_data->edit_vector = 0;
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_nearest_FE_node.  Could not evaluate fields");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_nearest_FE_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_nearest_FE_node */
-
-int GT_element_settings_get_nearest_node(
-	struct GT_element_settings *settings,void *settings_nearest_node_data_void)
-/*******************************************************************************
-LAST MODIFIED : 15 February 2000
-
-DESCRIPTION :
-If the settings is of type GT_ELEMENT_SETTINGS_NODE_POINTS, calculates the
-coordinate field of the nodes in the given list, and the end point of the
-first vector if there is an orientation_scale field. Remembers the nearest of
-any of these points to the given centre. Returns the nearest node, settings
-and edit_vector flag which is true if the end of the vector is picked.
-Note that the centre given must be in the coordinate area of the nodes/settings
-referred to, ie. any transformations of the graphics must be inverted.
-==============================================================================*/
-{
-	int return_code;
-	struct Computed_field *coordinate_field;
-	struct FE_node *last_node;
-	struct GT_element_settings_nearest_node_data *settings_nearest_node_data;
-	struct Nearest_node_data nearest_node_data;
-
-	ENTER(GT_element_settings_get_nearest_node);
-	if (settings&&(settings_nearest_node_data=
-		(struct GT_element_settings_nearest_node_data *)
-		settings_nearest_node_data_void)&&
-		settings_nearest_node_data->default_coordinate_field&&
-		settings_nearest_node_data->node_list)
-	{
-		if (GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)
-		{
-			nearest_node_data.centre[0]=settings_nearest_node_data->centre[0];
-			nearest_node_data.centre[1]=settings_nearest_node_data->centre[1];
-			nearest_node_data.centre[2]=settings_nearest_node_data->centre[2];
-			nearest_node_data.distance=settings_nearest_node_data->distance;
-			nearest_node_data.glyph_centre[0]=settings->glyph_centre[0];
-			nearest_node_data.glyph_centre[1]=settings->glyph_centre[1];
-			nearest_node_data.glyph_centre[2]=settings->glyph_centre[2];
-			nearest_node_data.glyph_size[0]=settings->glyph_size[0];
-			nearest_node_data.glyph_size[1]=settings->glyph_size[1];
-			nearest_node_data.glyph_size[2]=settings->glyph_size[2];
-			nearest_node_data.glyph_scale_factors[0]=settings->glyph_scale_factors[0];
-			nearest_node_data.glyph_scale_factors[1]=settings->glyph_scale_factors[1];
-			nearest_node_data.glyph_scale_factors[2]=settings->glyph_scale_factors[2];
-			nearest_node_data.edit_vector=settings_nearest_node_data->edit_vector;
-			nearest_node_data.node=last_node=settings_nearest_node_data->node;
-			if (!(coordinate_field=
-				GT_element_settings_get_coordinate_field(settings)))
-			{
-				coordinate_field=settings_nearest_node_data->default_coordinate_field;
-			}
-			/* make sure we are passing RC coordinates */
-			nearest_node_data.rc_coordinate_field=
-				Computed_field_begin_wrap_coordinate_field(coordinate_field);
-			nearest_node_data.wrapper_orientation_scale_field=
-				(struct Computed_field *)NULL;
-			if (settings->orientation_scale_field)
-			{
-				nearest_node_data.wrapper_orientation_scale_field=
-					Computed_field_begin_wrap_orientation_scale_field(
-						settings->orientation_scale_field,
-						nearest_node_data.rc_coordinate_field);
-			}
-			if (FOR_EACH_OBJECT_IN_LIST(FE_node)(get_nearest_FE_node,
-				(void *)&nearest_node_data,settings_nearest_node_data->node_list))
-			{
-				if (nearest_node_data.node != last_node)
-				{
-					settings_nearest_node_data->node = nearest_node_data.node;
-					settings_nearest_node_data->edit_vector =
-						nearest_node_data.edit_vector;
-					settings_nearest_node_data->settings = settings;
-				}
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"GT_element_settings_get_nearest_node.  Could not get nearest node");
-				return_code=0;
-			}
-			if (nearest_node_data.wrapper_orientation_scale_field)
-			{
-				Computed_field_end_wrap(
-					&(nearest_node_data.wrapper_orientation_scale_field));
-			}
-			Computed_field_end_wrap(&(nearest_node_data.rc_coordinate_field));
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_settings_get_nearest_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_settings_get_nearest_node */
 
