@@ -946,23 +946,6 @@ Main program for the CMISS Graphical User Interface
 		/*???RC.  Eventually want graphics object manager */
 	command_data.graphics_object_list=CREATE(LIST(GT_object))();
 
-	/* create the grid_point_number field and add to FE_field_manager - 
-		 wrapper Computed_field will automatically be made for it. Created here
-		 as has special meaning for setting grid_points in Element_point_viewer */
-	temp_coordinate_system.type = NOT_APPLICABLE;
-	if (!((fe_field=CREATE(FE_field)())&&
-		set_FE_field_name(fe_field,"grid_point_number")&&
-		set_FE_field_value_type(fe_field,INT_VALUE)&&
-		set_FE_field_number_of_components(fe_field,1)&&
-		set_FE_field_type_general(fe_field)&&
-		set_CM_field_information(&cm_field_information,CM_FIELD,(int *)NULL)&&
-		set_FE_field_CM_field_information(fe_field,&cm_field_information)&&
-		set_FE_field_coordinate_system(fe_field,&temp_coordinate_system)&&
-		set_FE_field_component_name(fe_field,0,"grid_point_number")&&
-		ADD_OBJECT_TO_MANAGER(FE_field)(fe_field,command_data.fe_field_manager)))
-	{
-		DESTROY(FE_field)(&fe_field);
-	}
 	/* create glyph list */
 		/*???RC.  Eventually want glyph manager */
 	if (command_data.glyph_list=CREATE(LIST(GT_object))())
@@ -1096,6 +1079,26 @@ Main program for the CMISS Graphical User Interface
 			{
 				DESTROY(Computed_field)(&computed_field);
 			}
+
+			/* create the grid_point_number field and add to FE_field_manager - 
+				 wrapper Computed_field will automatically be made for it. Has special
+				 use for setting grid_points in Element_point_viewer */
+			temp_coordinate_system.type = NOT_APPLICABLE;
+			if (!((fe_field=CREATE(FE_field)())&&
+				set_FE_field_name(fe_field,"grid_point_number")&&
+				set_FE_field_value_type(fe_field,INT_VALUE)&&
+				set_FE_field_number_of_components(fe_field,1)&&
+				set_FE_field_type_general(fe_field)&&
+				set_CM_field_information(&cm_field_information,CM_FIELD,(int *)NULL)&&
+				set_FE_field_CM_field_information(fe_field,&cm_field_information)&&
+				set_FE_field_coordinate_system(fe_field,&temp_coordinate_system)&&
+				set_FE_field_component_name(fe_field,0,"grid_point_number")&&
+				ADD_OBJECT_TO_MANAGER(FE_field)(fe_field,
+					command_data.fe_field_manager)))
+			{
+				DESTROY(FE_field)(&fe_field);
+			}
+
 			if (!((computed_field=CREATE(Computed_field)("xi"))&&
 				Computed_field_set_coordinate_system(computed_field,
 					&rect_coord_system)&&
