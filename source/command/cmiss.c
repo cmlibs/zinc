@@ -15067,10 +15067,12 @@ Executes a GFX MODIFY command.
 				/* egroup */
 				Option_table_add_entry(option_table,"egroup",NULL, 
 					(void *)command_data, gfx_modify_element_group);
+#if defined (MOTIF)
 				/* emoter */
 				Option_table_add_entry(option_table,"emoter",NULL, 
 					(void *)command_data->emoter_slider_dialog,
 					gfx_modify_emoter);
+#endif /* defined (MOTIF) */
 				/* environment_map */
 				modify_environment_map_data.graphical_material_manager=
 					command_data->graphical_material_manager;
