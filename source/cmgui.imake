@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 22 November 2001
+XCOMM LAST MODIFIED : 23 November 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -463,6 +463,7 @@ XVG_SRCS = \
 	xvg/custom/imgproc.c \
 	xvg/custom/matlab.c \
 	xvg/custom/morphoIPOPs.c \
+	xvg/custom/nag.c \
 	xvg/custom/sgi.c \
 	xvg/custom/spacedomIPOPs.c \
 	xvg/custom/stereoIPOPs.c \
@@ -660,14 +661,6 @@ VIDEO_SWITCH =
 VIDEO_LIB =
 VIDEO_SRCS =
 
-#if defined (OLD_CODE)
-NAG_LIB = -lnag
-NAG_LIB = /usr/local/libnag.a
-NAG_LIB =
-#endif /* defined (OLD_CODE) */
-NAG_SRCS = xvg/custom/nag.c
-NAG_LIB =
-
 HELP_DEFINES = -DNETSCAPE_HELP
 HELP_INCLUDE =
 HELP_LIB =
@@ -739,7 +732,7 @@ ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 
 ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(WORMHOLE_LIB) \
 		$(INTERPRETER_LIB) $(IMAGEMAGICK_LIB) \
-		$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB) \
+		$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
 	  $(MOVIE_FILE_LIB) $(XML_LIB) $(LIB)
 
 APPLICATION_SRCS = \
@@ -993,7 +986,6 @@ SRCS_1 = \
 	$(MATERIAL_SRCS) \
 	$(MENU_SRCS) \
 	$(MIRAGE_SRCS) \
-	$(NAG_SRCS) \
 	$(NODE_SRCS) \
 	$(PROJECTION_SRCS) \
 	$(PROMPT_SRCS) \
