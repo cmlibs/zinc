@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 17 March 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -11311,7 +11311,7 @@ DESCRIPTION :
 static void trace_analysis_mode_apply(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 17 March 2000
 
 DESCRIPTION :
 Applies the current analysis mode settings to all signals.
@@ -11509,9 +11509,23 @@ Applies the current analysis mode settings to all signals.
 						}
 						(trace->area_3).edit.first_data -= start;
 						(trace->area_3).edit.last_data -= start;
+						if (divisions)
+						{
+							for (i=number_of_beats-2;i>=0;i--)
+							{
+								divisions[i] -= start;
+							}
+						}
 						start=0;
 						*(trace->event_detection.start_search_interval)=0;
 						*(trace->event_detection.end_search_interval)=end;
+						if (divisions)
+						{
+							for (i=number_of_beats-2;i>=0;i--)
+							{
+								divisions[i] -= start;
+							}
+						}
 						buffer->number_of_samples=end+1;
 						buffer->start=0;
 						buffer->end=end;
@@ -11572,7 +11586,6 @@ Applies the current analysis mode settings to all signals.
 									{
 										*beat_count=0;
 										beat_count++;
-										beat_counts[i]=0;
 									}
 									beat_end=start-1;
 									for (beat_number=1;beat_number<=number_of_beats;beat_number++)
