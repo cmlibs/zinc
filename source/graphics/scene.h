@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 24 August 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -16,6 +16,7 @@ December 1997. Created MANAGER(Scene).
 #if !defined (SCENE_H)
 #define SCENE_H
 
+#include "general/any_object.h"
 #include "general/callback.h"
 #include "graphics/element_point_ranges.h"
 #include "graphics/graphical_element.h"
@@ -370,6 +371,24 @@ LAST MODIFIED : 20 November 1998
 DESCRIPTION :
 Scene_object iterator function returning true if <scene_object> references
 <child_scene> (or any child scene if NULL).
+==============================================================================*/
+
+struct Any_object *Scene_object_get_represented_object(
+	struct Scene_object *scene_object);
+/*******************************************************************************
+LAST MODIFIED : 23 August 2000
+
+DESCRIPTION :
+Returns the global object that <scene_object> represents, if any.
+==============================================================================*/
+
+int Scene_object_set_represented_object(struct Scene_object *scene_object,
+	struct Any_object *represented_object);
+/*******************************************************************************
+LAST MODIFIED : 23 August 2000
+
+DESCRIPTION :
+Sets the global object that <scene_object> will represent, if any.
 ==============================================================================*/
 
 double Scene_object_get_time(struct Scene_object *scene_object);
@@ -874,6 +893,27 @@ coordinates [x y z h(=1)] to give [x' y' z' h'], with xm = x'/h', etc. as in:
 However, if none of the scene objects have transformations, the flag
 <transformation_required> will be set to 0 and the <transformation_matrix> will
 be set to the identity.
+==============================================================================*/
+
+struct Any_object *Scene_picked_object_list_get_nearest_any_object(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	struct Scene_picked_object **scene_picked_object_address);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2000
+
+DESCRIPTION :
+Returns the nearest picked any_object in <scene_picked_object_list>.
+If <scene_picked_object_address> is supplied, the pointer to the
+Scene_picked_object referring to the nearest any_object is put there.
+==============================================================================*/
+
+struct LIST(Any_object) *Scene_picked_object_list_get_picked_any_objects(
+	struct LIST(Scene_picked_object) *scene_picked_object_list);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2000
+
+DESCRIPTION :
+Returns the list of all any_objects in the <scene_picked_object_list>. 
 ==============================================================================*/
 
 struct FE_element *Scene_picked_object_list_get_nearest_element(

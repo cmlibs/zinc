@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -77,7 +77,7 @@ Module types
 
 struct Scene_object
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 23 August 2000
 
 DESCRIPTION :
 Scenes store a list of these wrappers to GT_objects so that the same
@@ -106,6 +106,8 @@ graphics object may have different visibility on different scenes.
 		 never accessed as the scene that owns this object destroys it before
 		 the scene itself is destroyed. */
 	struct Scene *scene;
+	/* the optional global object which this Scene_object represents */
+	struct Any_object *represented_object;
 	int access_count;
 }; /* struct Scene_object */
 
@@ -204,7 +206,7 @@ display hierarchy.
 	int number_of_subobjects;
 	int *subobjects; /*???RC unsigned int instead? */
 	/* z-range of picked part of graphics_object/sub_objects: */
-	unsigned int nearest,farthest;
+	double nearest,farthest;
 	/* so LISTs etc. can be used: */
 	int access_count;
 }; /* struct Scene_picked_object */
@@ -790,7 +792,7 @@ scene on this window are modified, redraw.
 
 static struct Scene_object *CREATE(Scene_object)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 23 August 2000
 
 DESCRIPTION :
 Creates a vanilla Scene_object that is able to be DESTROYed, must be properly
@@ -821,6 +823,7 @@ and is visible.
 			scene_object->scene = (struct Scene *)NULL;
 			scene_object->scene_manager = (struct MANAGER(Scene) *)NULL;
 			scene_object->scene_manager_callback_id = NULL;
+			scene_object->represented_object = (struct Any_object *)NULL;
 			scene_object->access_count=0;
 		}
 		else
@@ -961,7 +964,7 @@ Creates a Scene_object with ACCESSed <gt_object> and visibility on.
 
 static int DESTROY(Scene_object)(struct Scene_object **scene_object_ptr)
 /*******************************************************************************
-LAST MODIFIED : 10 February 2000
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 DEACCESSes the member GT_object and removes any other dynamic fields.
@@ -1019,7 +1022,10 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 				{
 					DEALLOCATE(scene_object->name);
 				}
-				DEALLOCATE(*scene_object_ptr);
+				if (scene_object->represented_object)
+				{
+					DEACCESS(Any_object)(&scene_object->represented_object);
+				}
 			}
 			else
 			{
@@ -2042,6 +2048,111 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Scene_object_update_time_behaviour */
+
+struct Scene_picked_object_get_nearest_any_object_data
+{
+	/* "nearest" value from Scene_picked_object for picked_any_object */
+	double nearest;
+	struct Any_object *nearest_any_object;
+	/* information about the nearest any_object */
+	struct Scene_picked_object *scene_picked_object;
+};
+
+static int Scene_picked_object_get_nearest_any_object(
+	struct Scene_picked_object *scene_picked_object,
+	void *nearest_any_object_data_void)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2000
+
+DESCRIPTION :
+If the <scene_picked_object> refers to an any_object, the "nearest" value is
+compared with that for the current nearest any_object in the
+<nearest_any_object_data>. If there was no current nearest any_object or the new
+any_object is nearer, it becomes the nearest any_object and its "nearest" value
+is stored in the nearest_any_object_data.
+==============================================================================*/
+{
+	int return_code;
+	struct Any_object *any_object;
+	struct Scene_object *scene_object;
+	struct Scene_picked_object_get_nearest_any_object_data
+		*nearest_any_object_data;
+
+	ENTER(Scene_picked_object_get_nearest_any_object);
+	if (scene_picked_object&&(nearest_any_object_data=
+		(struct Scene_picked_object_get_nearest_any_object_data	*)
+		nearest_any_object_data_void))
+	{
+		return_code=1;
+		/* proceed only if there is no picked_any_object or object is nearer */
+		if (((struct Any_object *)NULL ==
+			nearest_any_object_data->nearest_any_object) ||
+			(Scene_picked_object_get_nearest(scene_picked_object) <
+				nearest_any_object_data->nearest))
+		{
+			/* if the last scene_object represents an any_object, add it to list */
+			if ((scene_object=Scene_picked_object_get_Scene_object(
+				scene_picked_object,Scene_picked_object_get_number_of_scene_objects(
+					scene_picked_object)-1))&&
+				(any_object=Scene_object_get_represented_object(scene_object)))
+			{
+				nearest_any_object_data->nearest_any_object=any_object;
+				nearest_any_object_data->scene_picked_object=scene_picked_object;
+				nearest_any_object_data->nearest=
+					Scene_picked_object_get_nearest(scene_picked_object);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_nearest_any_object.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_picked_object_get_nearest_any_object */
+
+static int Scene_picked_object_get_picked_any_objects(
+	struct Scene_picked_object *scene_picked_object,
+	void *any_object_list_void)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2000
+
+DESCRIPTION :
+If the <scene_picked_object> refers to an any_object, it is converted into
+an Any_object and added to the <picked_any_objects_list>.
+==============================================================================*/
+{
+	int return_code;
+	struct Any_object *any_object;
+	struct LIST(Any_object) *any_object_list;
+	struct Scene_object *scene_object;
+
+	ENTER(Scene_picked_object_get_picked_any_objects);
+	if (scene_picked_object&&
+		(any_object_list=(struct LIST(Any_object) *)any_object_list_void))
+	{
+		return_code=1;
+		/* if the last scene_object represents an any_object, add it to list */
+		if ((scene_object=Scene_picked_object_get_Scene_object(scene_picked_object,
+			Scene_picked_object_get_number_of_scene_objects(scene_picked_object)-1))&&
+			(any_object=Scene_object_get_represented_object(scene_object)))
+		{
+			ADD_OBJECT_TO_LIST(Any_object)(any_object,any_object_list);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_get_picked_any_objects.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_picked_object_get_picked_any_objects */
 
 struct Scene_picked_object_get_nearest_element_data
 {
@@ -3297,6 +3408,62 @@ SCENE_OBJECT_SCENE and references <child_scene> (or any child_scene if NULL).
 	return (return_code);
 } /* Scene_object_has_child_scene */
 
+struct Any_object *Scene_object_get_represented_object(
+	struct Scene_object *scene_object)
+/*******************************************************************************
+LAST MODIFIED : 23 August 2000
+
+DESCRIPTION :
+Returns the global object that <scene_object> represents, if any.
+==============================================================================*/
+{
+	struct Any_object *represented_object;
+
+	ENTER(Scene_object_get_represented_object);
+	if (scene_object)
+	{
+		represented_object=scene_object->represented_object;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_get_represented_object.  Missing scene_object");
+		represented_object=(struct Any_object *)NULL;
+	}
+	LEAVE;
+
+	return (represented_object);
+} /* Scene_object_get_represented_object */
+
+int Scene_object_set_represented_object(struct Scene_object *scene_object,
+	struct Any_object *represented_object)
+/*******************************************************************************
+LAST MODIFIED : 23 August 2000
+
+DESCRIPTION :
+Sets the global object that <scene_object> will represent, if any.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_set_represented_object);
+	if (scene_object)
+	{
+		REACCESS(Any_object)(&(scene_object->represented_object),
+			represented_object);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_set_represented_object.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_set_represented_object */
+
 double Scene_object_get_time(struct Scene_object *scene_object)
 /*******************************************************************************
 LAST MODIFIED : 5 October 1998
@@ -3394,7 +3561,7 @@ Returns the Time_object referenced by <scene_object>.
 int Scene_object_set_time_object(struct Scene_object *scene_object,
 	struct Time_object *time)
 /*******************************************************************************
-LAST MODIFIED : 5 October 1998
+LAST MODIFIED : 23 August 2000
 
 DESCRIPTION :
 Changes the Time_object referenced by <scene_object>.
@@ -3405,14 +3572,9 @@ Changes the Time_object referenced by <scene_object>.
 	ENTER(Scene_object_set_time_object);
 	if (scene_object&&time)
 	{
-		if(scene_object->type == SCENE_OBJECT_GRAPHICS_OBJECT)
+		if (scene_object->type == SCENE_OBJECT_GRAPHICS_OBJECT)
 		{
-			ACCESS(Time_object)(time);
-			if (scene_object->time_object)
-			{
-				DEACCESS(Time_object)(&(scene_object->time_object));
-			}
-			scene_object->time_object = ACCESS(Time_object)(time);
+			REACCESS(Time_object)(&(scene_object->time_object),time);
 			Time_object_add_callback(time, Scene_object_time_update_callback,
 				scene_object);
 			return_code=1;
@@ -5634,6 +5796,84 @@ be set to the identity.
 DECLARE_OBJECT_FUNCTIONS(Scene_picked_object)
 
 DECLARE_LIST_FUNCTIONS(Scene_picked_object)
+
+struct Any_object *Scene_picked_object_list_get_nearest_any_object(
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	struct Scene_picked_object **scene_picked_object_address)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2000
+
+DESCRIPTION :
+Returns the nearest picked any_object in <scene_picked_object_list>.
+If <scene_picked_object_address> is supplied, the pointer to the
+Scene_picked_object referring to the nearest any_object is put there.
+==============================================================================*/
+{
+	struct Scene_picked_object_get_nearest_any_object_data
+		nearest_any_object_data;
+
+	ENTER(Scene_picked_object_list_get_nearest_any_object);
+	nearest_any_object_data.nearest=0.0;
+	nearest_any_object_data.nearest_any_object=(struct Any_object *)NULL;
+	nearest_any_object_data.scene_picked_object=
+		(struct Scene_picked_object *)NULL;
+	if (scene_picked_object_list)
+	{
+		FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
+			Scene_picked_object_get_nearest_any_object,
+			(void *)&nearest_any_object_data,scene_picked_object_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_list_get_nearest_any_object.  Invalid argument(s)");
+	}
+	if (scene_picked_object_address)
+	{
+		*scene_picked_object_address=nearest_any_object_data.scene_picked_object;
+	}
+	LEAVE;
+
+	return (nearest_any_object_data.nearest_any_object);
+} /* Scene_picked_object_list_get_nearest_any_object */
+
+struct LIST(Any_object) *Scene_picked_object_list_get_picked_any_objects(
+	struct LIST(Scene_picked_object) *scene_picked_object_list)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2000
+
+DESCRIPTION :
+Returns the list of all any_objects in the <scene_picked_object_list>. 
+==============================================================================*/
+{
+	struct LIST(Any_object) *any_object_list;
+
+	ENTER(Scene_picked_object_list_get_picked_any_objects);
+	if (scene_picked_object_list)
+	{	
+		if (any_object_list=CREATE(LIST(Any_object))())
+		{
+			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
+				Scene_picked_object_get_picked_any_objects,(void *)any_object_list,
+				scene_picked_object_list);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_picked_object_list_get_picked_any_objects.  "
+				"Could not create any_object list");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_picked_object_list_get_picked_any_objects.  Invalid argument(s)");
+		any_object_list=(struct LIST(Any_object) *)NULL;
+	}
+	LEAVE;
+
+	return (any_object_list);
+} /* Scene_picked_object_list_get_picked_any_objects */
 
 struct FE_element *Scene_picked_object_list_get_nearest_element(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
