@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_field_viewer_widget.h
 
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 15 October 2001
 
 DESCRIPTION :
 Widget for displaying and editing component values of computed fields defined
@@ -13,7 +13,7 @@ Note the element_point passed to this widget should be a non-managed local copy.
 
 #include "general/callback.h"
 #include "computed_field/computed_field.h"
-#include "finite_element/field_value_index_ranges.h"
+#include "computed_field/computed_field_value_index_ranges.h"
 #include "finite_element/finite_element.h"
 #include "graphics/element_point_ranges.h"
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.h
 
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 15 October 2001
 
 DESCRIPTION :
 Structure for storing ranges of points in elements according to the various
@@ -10,7 +10,7 @@ Xi_discretization_modes.
 #if !defined (ELEMENT_POINT_RANGES_H)
 #define ELEMENT_POINT_RANGES_H
 
-#include "finite_element/field_value_index_ranges.h"
+#include "computed_field/computed_field_value_index_ranges.h"
 #include "finite_element/finite_element.h"
 #include "general/list.h"
 #include "general/multi_range.h"
