@@ -556,6 +556,17 @@ slider.
 		axis_num=temp_dof3->current_axis;
 		temp_data=(XmScrollBarCallbackStruct *)reason;
 		/* update the data value */
+		/*???debug*/
+		{
+			int max, min;
+
+			XtVaGetValues(w,XmNmaximum,&max,NULL);
+			XtVaGetValues(w,XmNminimum,&min,NULL);
+			printf("min = %d  max = %d\n",min,max);
+			printf("temp_data->value = %d\n", temp_data->value);
+			printf("temp_dof3->slider_ofs = %d\n", temp_dof3->slider_ofs);
+			printf("\n");
+		}
 		sprintf(temp_str,"%i.0E%i",(temp_data->value-temp_dof3->slider_ofs),temp_dof3->resolution[axis_num]);
 		sscanf(temp_str,"%"DOF3_PRECISION_STRING,&temp_increment.data[axis_num]);
 		temp_dof3->slider_ofs=temp_data->value;
