@@ -1232,6 +1232,15 @@ Main program for the CMISS Graphical User Interface
 	create_interpreter(argc, argv, comfile_name, &status);
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
+	command_data.default_time_keeper=ACCESS(Time_keeper)(
+		CREATE(Time_keeper)("default", command_data.event_dispatcher,
+			command_data.user_interface));
+	if(command_data.default_scene)
+	{
+		Scene_enable_time_behaviour(command_data.default_scene,
+			command_data.default_time_keeper);
+	}
+
 	if (command_data.user_interface)
 	{
 #if defined (MOTIF)
@@ -1251,14 +1260,6 @@ Main program for the CMISS Graphical User Interface
 		Open_image_environment("cmgui");
 #endif /* switch (Operating_System) */
 
-		command_data.default_time_keeper=ACCESS(Time_keeper)(
-			CREATE(Time_keeper)("default", command_data.event_dispatcher,
-				command_data.user_interface));
-		if(command_data.default_scene)
-		{
-			Scene_enable_time_behaviour(command_data.default_scene,
-				command_data.default_time_keeper);
-		}
 #if defined (MOTIF)
 		command_data.transform_tool=create_Interactive_tool_transform(
 			command_data.user_interface);
