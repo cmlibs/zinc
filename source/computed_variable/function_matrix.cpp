@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix.cpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 22 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -13,7 +13,7 @@
 #endif // defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 
 #if defined (__GNUC__)
-EXPORT template<>
+template<>
 bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
