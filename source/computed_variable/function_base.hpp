@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_base.hpp
 //
-// LAST MODIFIED : 21 July 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Basic declarations and #defines for functions.
@@ -59,6 +59,41 @@ typedef ublas::matrix<Scalar,ublas::column_major> Matrix;
 typedef ublas::vector<Scalar> Vector;
 
 #include "boost/intrusive_ptr.hpp"
+
+// intentional ambiguity to prevent use of boost::intrusive_ptr::operator==
+//   Use equivalent instead
+template<class Value_type_1,class Value_type_2>
+bool operator==(boost::intrusive_ptr<Value_type_1> const & first,
+	boost::intrusive_ptr<Value_type_2> const & second);
+template<class Value_type>
+bool operator==(boost::intrusive_ptr<Value_type> const & first,
+	Value_type * second);
+template<class Value_type>
+bool operator==(Value_type * first,
+	boost::intrusive_ptr<Value_type> const & second);
+
+// intentional ambiguity to prevent use of boost::intrusive_ptr::operator!=
+//   Use !equivalent instead
+template<class Value_type_1,class Value_type_2>
+bool operator!=(boost::intrusive_ptr<Value_type_1> const & first,
+	boost::intrusive_ptr<Value_type_2> const & second);
+template<class Value_type>
+bool operator!=(boost::intrusive_ptr<Value_type> const & first,
+	Value_type * second);
+template<class Value_type>
+bool operator!=(Value_type * first,
+	boost::intrusive_ptr<Value_type> const & second);
+
+template<class Value_type_1,class Value_type_2>
+bool equivalent(boost::intrusive_ptr<Value_type_1> const & first,
+	boost::intrusive_ptr<Value_type_2> const & second)
+{
+	Value_type_1 *first_ptr=first.get();
+	Value_type_2 *second_ptr=second.get();
+
+	return (((0==first_ptr)&&(0==second_ptr))||
+		(first_ptr&&second_ptr&&(*first_ptr== *second_ptr)));
+}
 
 // forward declaration so that _handle can be used in definitions
 class Function;
