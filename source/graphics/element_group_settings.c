@@ -6697,11 +6697,11 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *glyph_scaling_mode_string, invisible_flag, *select_mode_string,
-		**valid_strings;
+	char *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Graphics_select_mode select_mode;
-	int number_of_components,number_of_valid_strings,return_code;
+	int number_of_components,number_of_valid_strings,return_code,
+		visibility;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_element_settings *settings;
 	struct GT_object *glyph;
@@ -6765,7 +6765,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					}
 					ACCESS(GT_object)(glyph);
 					number_of_components = 3;
-					invisible_flag = !GT_element_settings_get_visibility(settings);
+					visibility = settings->visibility;
 
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -6797,9 +6797,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* glyph */
 					Option_table_add_entry(option_table,"glyph",&glyph,
 						g_element_command_data->glyph_list,set_Graphics_object);
-					/* invisible */
-					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
-						NULL,set_char_flag);
 					/* label */
 					set_label_field_data.computed_field_manager=
 						g_element_command_data->computed_field_manager;
@@ -6875,6 +6872,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"variable_scale",
 						&variable_scale_field, &set_variable_scale_field_data,
 						set_Computed_field_conditional);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						if (settings->data_field&&!settings->spectrum)
@@ -6882,10 +6881,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							settings->spectrum=ACCESS(Spectrum)(
 								g_element_command_data->default_spectrum);
 						}
-						if (invisible_flag)
-						{
-							settings->visibility=0;
-						}
+						settings->visibility = visibility;
 						if (glyph)
 						{
 							STRING_TO_ENUMERATOR(Glyph_scaling_mode)(
@@ -6969,11 +6965,10 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *glyph_scaling_mode_string, invisible_flag, *select_mode_string,
-		**valid_strings;
+	char *glyph_scaling_mode_string, *select_mode_string, **valid_strings;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Graphics_select_mode select_mode;
-	int number_of_components,number_of_valid_strings,return_code;
+	int number_of_components,number_of_valid_strings,return_code,visibility;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_element_settings *settings;
 	struct GT_object *glyph;
@@ -7037,7 +7032,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					}
 					ACCESS(GT_object)(glyph);
 					number_of_components = 3;
-					invisible_flag = !GT_element_settings_get_visibility(settings);
+					visibility = settings->visibility;
 
 					option_table=CREATE(Option_table)();
 					/* as */
@@ -7069,9 +7064,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* glyph */
 					Option_table_add_entry(option_table,"glyph",&glyph,
 						g_element_command_data->glyph_list,set_Graphics_object);
-					/* invisible */
-					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
-						NULL,set_char_flag);
 					/* label */
 					set_label_field_data.computed_field_manager=
 						g_element_command_data->computed_field_manager;
@@ -7147,6 +7139,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"variable_scale",
 						&variable_scale_field, &set_variable_scale_field_data,
 						set_Computed_field_conditional);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						if (settings->data_field&&!settings->spectrum)
@@ -7154,10 +7148,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							settings->spectrum=ACCESS(Spectrum)(
 								g_element_command_data->default_spectrum);
 						}
-						if (invisible_flag)
-						{
-							settings->visibility=0;
-						}
+						settings->visibility = visibility;
 						if (glyph)
 						{
 							STRING_TO_ENUMERATOR(Glyph_scaling_mode)(
@@ -7241,9 +7232,9 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,*select_mode_string,**valid_strings;
+	char *select_mode_string,**valid_strings;
 	enum Graphics_select_mode select_mode;
-	int number_of_valid_strings,return_code;
+	int number_of_valid_strings,return_code, visibility;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
@@ -7289,7 +7280,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"default_selected",
 								g_element_command_data->graphical_material_manager));
 					}
-					invisible_flag = !GT_element_settings_get_visibility(settings);
+					visibility = settings->visibility;
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
@@ -7320,9 +7311,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* face */
 					Option_table_add_entry(option_table,"face",&(settings->face),
 						NULL,set_exterior);
-					/* invisible */
-					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
-						NULL,set_char_flag);
 					/* line_width */
 					Option_table_add_int_non_negative_entry(option_table,"line_width",
 						&(settings->line_width));
@@ -7357,6 +7345,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
 						set_Spectrum);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						if (settings->data_field&&!settings->spectrum)
@@ -7364,18 +7354,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							settings->spectrum=ACCESS(Spectrum)(
 								g_element_command_data->default_spectrum);
 						}
-						if (invisible_flag)
-						{
-							settings->visibility=0;
-						}
-						if (0 < settings->face)
-						{
-							settings->face -= 2;
-						}
-						else
-						{
-							settings->face=-1;
-						}
+						settings->visibility = visibility;
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
 						GT_element_settings_set_select_mode(settings, select_mode);
@@ -7429,9 +7408,9 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,*select_mode_string,**valid_strings;
+	char *select_mode_string,**valid_strings;
 	enum Graphics_select_mode select_mode;
-	int number_of_valid_strings,return_code;
+	int number_of_valid_strings,return_code, visibility;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
@@ -7478,7 +7457,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"default_selected",
 								g_element_command_data->graphical_material_manager));
 					}
-					invisible_flag = !GT_element_settings_get_visibility(settings);
+					visibility = settings->visibility;
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
@@ -7512,9 +7491,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* face */
 					Option_table_add_entry(option_table,"face",&(settings->face),
 						NULL,set_exterior);
-					/* invisible */
-					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
-						NULL,set_char_flag);
 					/* material */
 					Option_table_add_entry(option_table,"material",&(settings->material),
 						g_element_command_data->graphical_material_manager,
@@ -7569,6 +7545,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"texture_coordinates",
 						&(settings->texture_coordinate_field),
 						&set_texture_coordinate_field_data,set_Computed_field_conditional);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						if (settings->data_field&&!settings->spectrum)
@@ -7576,18 +7554,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							settings->spectrum=ACCESS(Spectrum)(
 								g_element_command_data->default_spectrum);
 						}
-						if (invisible_flag)
-						{
-							settings->visibility=0;
-						}
-						if (0 < settings->face)
-						{
-							settings->face -= 2;
-						}
-						else
-						{
-							settings->face=-1;
-						}
+						settings->visibility = visibility;
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
 						GT_element_settings_set_select_mode(settings, select_mode);
@@ -7642,10 +7609,10 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,*render_type_string,*select_mode_string,**valid_strings;
+	char *render_type_string,*select_mode_string,**valid_strings;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
-	int number_of_valid_strings,return_code;
+	int number_of_valid_strings,return_code, visibility;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
@@ -7691,7 +7658,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"default_selected",
 								g_element_command_data->graphical_material_manager));
 					}
-					invisible_flag = !GT_element_settings_get_visibility(settings);
+					visibility = settings->visibility;
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
@@ -7722,9 +7689,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* face */
 					Option_table_add_entry(option_table,"face",&(settings->face),
 						NULL,set_exterior);
-					/* invisible */
-					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
-						NULL,set_char_flag);
 					/* material */
 					Option_table_add_entry(option_table,"material",&(settings->material),
 						g_element_command_data->graphical_material_manager,
@@ -7775,6 +7739,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"texture_coordinates",
 						&(settings->texture_coordinate_field),
 						&set_texture_coordinate_field_data,set_Computed_field_conditional);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						if (settings->data_field&&!settings->spectrum)
@@ -7782,18 +7748,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							settings->spectrum=ACCESS(Spectrum)(
 								g_element_command_data->default_spectrum);
 						}
-						if (invisible_flag)
-						{
-							settings->visibility=0;
-						}
-						if (0 < settings->face)
-						{
-							settings->face -= 2;
-						}
-						else
-						{
-							settings->face=-1;
-						}
+						settings->visibility = visibility;
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
 						GT_element_settings_set_select_mode(settings, select_mode);
@@ -7850,13 +7805,13 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,*render_type_string,*select_mode_string,
+	char *render_type_string,*select_mode_string,
 		*surface_data_region_path,*use_element_type_string, **valid_strings;
 	double iso_value;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
 	enum Use_element_type use_element_type;
-	int number_of_valid_strings,return_code;
+	int number_of_valid_strings,return_code, visibility;
 	struct Computed_field *scalar_field;
 	struct Cmiss_region *surface_data_region;
 	struct Modify_g_element_data *modify_g_element_data;
@@ -7930,7 +7885,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								scalar_field,0.0);
 						}
 					}
-					invisible_flag = !GT_element_settings_get_visibility(settings);
+					visibility = settings->visibility;
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
@@ -7961,9 +7916,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* face */
 					Option_table_add_entry(option_table,"face",&(settings->face),
 						NULL,set_exterior);
-					/* invisible */
-					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
-						NULL,set_char_flag);
 					/* iso_scalar */
 					set_iso_scalar_field_data.computed_field_manager=
 						g_element_command_data->computed_field_manager;
@@ -8063,6 +8015,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&use_element_type_string);
 					DEALLOCATE(valid_strings);
+					/* visible/invisible */
+					Option_table_add_switch(option_table, "visible", "invisible", &visibility);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						if ((struct Computed_field *)NULL==settings->iso_scalar_field)
@@ -8080,18 +8034,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							settings->spectrum=ACCESS(Spectrum)(
 								g_element_command_data->default_spectrum);
 						}
-						if (invisible_flag)
-						{
-							settings->visibility=0;
-						}
-						if (0 < settings->face)
-						{
-							settings->face -= 2;
-						}
-						else
-						{
-							settings->face=-1;
-						}
+						settings->visibility = visibility;
 						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
 							&select_mode);
 						GT_element_settings_set_select_mode(settings, select_mode);
@@ -8206,13 +8149,13 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char *glyph_scaling_mode_string, invisible_flag, *select_mode_string,
+	char *glyph_scaling_mode_string,  *select_mode_string,
 		*use_element_type_string,	**valid_strings, *xi_discretization_mode_string;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Graphics_select_mode select_mode;
 	enum Use_element_type use_element_type;
 	enum Xi_discretization_mode xi_discretization_mode;
-	int number_of_components,number_of_valid_strings,return_code;
+	int number_of_components,number_of_valid_strings,return_code,visibility;
 	struct Computed_field *orientation_scale_field, *variable_scale_field,
 		*xi_point_density_field;
 	struct FE_region *fe_region;
@@ -8283,7 +8226,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				ACCESS(Computed_field)(xi_point_density_field);
 			}
 			number_of_components = 3;
-			invisible_flag = !GT_element_settings_get_visibility(settings);
+			visibility = settings->visibility;
 
 			option_table=CREATE(Option_table)();
 			/* as */
@@ -8345,9 +8288,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			/* glyph */
 			Option_table_add_entry(option_table,"glyph",&glyph,
 				g_element_command_data->glyph_list,set_Graphics_object);
-			/* invisible */
-			Option_table_add_entry(option_table,"invisible",&(invisible_flag),
-				NULL,set_char_flag);
 			/* label */
 			set_label_field_data.computed_field_manager=
 				g_element_command_data->computed_field_manager;
@@ -8441,6 +8381,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			Option_table_add_entry(option_table,"variable_scale",
 				&variable_scale_field, &set_variable_scale_field_data,
 				set_Computed_field_conditional);
+			/* visible/invisible */
+			Option_table_add_switch(option_table, "visible", "invisible", &visibility);
 			if (return_code=Option_table_multi_parse(option_table,state))
 			{
 				if (settings->data_field&&!settings->spectrum)
@@ -8448,18 +8390,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					settings->spectrum=ACCESS(Spectrum)(
 						g_element_command_data->default_spectrum);
 				}
-				if (invisible_flag)
-				{
-					settings->visibility=0;
-				}
-				if (0 < settings->face)
-				{
-					settings->face -= 2;
-				}
-				else
-				{
-					settings->face=-1;
-				}
+				settings->visibility = visibility;
 				STRING_TO_ENUMERATOR(Xi_discretization_mode)(
 					xi_discretization_mode_string, &xi_discretization_mode);
 				if (((XI_DISCRETIZATION_CELL_DENSITY != xi_discretization_mode) &&
@@ -8552,9 +8483,9 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,*select_mode_string,**valid_strings;
+	char *select_mode_string,**valid_strings;
 	enum Graphics_select_mode select_mode;
-	int number_of_valid_strings,return_code;
+	int number_of_valid_strings,return_code, visibility;
 	struct FE_region *fe_region;
 	struct GT_element_settings *settings;
 	struct G_element_command_data *g_element_command_data;
@@ -8611,7 +8542,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					GT_element_settings_set_volume_texture(settings,volume_texture);
 				}
 			}
-			invisible_flag = !GT_element_settings_get_visibility(settings);
+			visibility = settings->visibility;
 			option_table=CREATE(Option_table)();
 			/* as */
 			Option_table_add_entry(option_table,"as",&(settings->name),
@@ -8650,9 +8581,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			/* displacement_map_xi_direction */
 			Option_table_add_entry(option_table,"displacement_map_xi_direction",
 				&(settings->displacement_map_xi_direction),NULL,set_int_positive);
-			/* invisible */
-			Option_table_add_entry(option_table,"invisible",&(invisible_flag),
-				NULL,set_char_flag);
 			/* material */
 			Option_table_add_entry(option_table,"material",&(settings->material),
 				g_element_command_data->graphical_material_manager,
@@ -8697,6 +8625,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			Option_table_add_entry(option_table,"spectrum",
 				&(settings->spectrum),g_element_command_data->spectrum_manager,
 				set_Spectrum);
+			/* visible/invisible */
+			Option_table_add_switch(option_table, "visible", "invisible", &visibility);
 			/* vtexture */
 			Option_table_add_entry(option_table,"vtexture",
 				&(settings->volume_texture),
@@ -8709,10 +8639,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					settings->spectrum=ACCESS(Spectrum)(
 						g_element_command_data->default_spectrum);
 				}
-				if (invisible_flag)
-				{
-					settings->visibility=0;
-				}
+				settings->visibility = visibility;
 				if ((struct VT_volume_texture *)NULL==settings->volume_texture)
 				{
 					display_message(WARNING_MESSAGE,"No volume texture specified");
@@ -8758,14 +8685,14 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,reverse_track,*select_mode_string,
+	char reverse_track,*select_mode_string,
 		*streamline_data_type_string,*streamline_type_string,**valid_strings;
 	enum Graphics_select_mode select_mode;
 	enum Streamline_type streamline_type;
 	enum Streamline_data_type streamline_data_type;
 	float length, width;
 	int number_of_components,number_of_valid_strings,return_code,
-		reverse_track_int;
+		reverse_track_int, visibility;
 	struct Computed_field *stream_vector_field;
 	struct FE_region *fe_region;
 	struct GT_element_settings *settings;
@@ -8820,7 +8747,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			{
 				reverse_track = 0;
 			}
-			invisible_flag = !GT_element_settings_get_visibility(settings);
+			visibility = settings->visibility;
 			option_table=CREATE(Option_table)();
 			/* as */
 			Option_table_add_entry(option_table,"as",&(settings->name),
@@ -8856,9 +8783,6 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			Option_table_add_enumerator(option_table,number_of_valid_strings,
 				valid_strings,&streamline_type_string);
 			DEALLOCATE(valid_strings);
-			/* invisible */
-			Option_table_add_entry(option_table,"invisible",&(invisible_flag),
-				NULL,set_char_flag);
 			/* length */
 			Option_table_add_entry(option_table,"length",
 				&(settings->streamline_length),NULL,set_float);
@@ -8925,16 +8849,15 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			/* width */
 			Option_table_add_entry(option_table,"width",
 				&(settings->streamline_width),NULL,set_float);
+			/* visible/invisible */
+			Option_table_add_switch(option_table, "visible", "invisible", &visibility);
 			/* xi */
 			number_of_components = 3;
 			Option_table_add_entry(option_table,"xi",
 				settings->seed_xi,&number_of_components,set_float_vector);
 			if (return_code = Option_table_multi_parse(option_table,state))
 			{
-				if (invisible_flag)
-				{
-					settings->visibility=0;
-				}
+				settings->visibility = visibility;
 				if (!(settings->stream_vector_field))
 				{
 					display_message(ERROR_MESSAGE,"Must specify a vector");

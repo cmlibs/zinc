@@ -1194,7 +1194,7 @@ Executes a GFX CREATE CYLINDERS command.
 		discretization.number_in_xi2=6;
 		discretization.number_in_xi3=0;
 		exterior_flag=0;
-		face_number=0;
+		face_number=-1;
 
 		option_table=CREATE(Option_table)();
 		/* as */
@@ -1275,7 +1275,6 @@ Executes a GFX CREATE CYLINDERS command.
 					"gfx_create_cylinders.  Invalid region");
 				return_code = 0;
 			}
-			face_number -= 2;
 			if (!coordinate_field)
 			{
 				display_message(WARNING_MESSAGE, "Must specify a coordinate field");
@@ -1531,7 +1530,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 		data_field = (struct Computed_field *)NULL;
 		xi_point_density_field = (struct Computed_field *)NULL;
 		exterior_flag=0;
-		face_number=0;
+		face_number=-1;
 		if (glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
 			command_data->glyph_list))
 		{
@@ -1694,7 +1693,6 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 					"gfx_create_element_points.  Invalid region");
 				return_code = 0;
 			}
-			face_number -= 2;
 			STRING_TO_ENUMERATOR(Xi_discretization_mode)(
 				xi_discretization_mode_string, &xi_discretization_mode);
 			if (((XI_DISCRETIZATION_CELL_DENSITY == xi_discretization_mode) ||
@@ -2739,7 +2737,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 		discretization.number_in_xi2=4;
 		discretization.number_in_xi3=4;
 		exterior_flag=0;
-		face_number=0;
+		face_number=-1;
 
 		option_table=CREATE(Option_table)();
 		/* as */
@@ -2857,7 +2855,6 @@ Executes a GFX CREATE ISO_SURFACES command.
 		/* no errors, not asking for help */
 		if (return_code)
 		{
-			face_number -= 2;
 			if (!(Cmiss_region_get_region_from_path(command_data->root_region,
 				region_path, &region) &&
 				(fe_region = Cmiss_region_get_FE_region(region))))
@@ -3341,7 +3338,7 @@ Executes a GFX CREATE LINES command.
 		discretization.number_in_xi2=0;
 		discretization.number_in_xi3=0;
 		exterior_flag=0;
-		face_number=0;
+		face_number=-1;
 
 		option_table=CREATE(Option_table)();
 		/* as */
@@ -3405,7 +3402,6 @@ Executes a GFX CREATE LINES command.
 		}
 		if (return_code)
 		{
-			face_number -= 2;
 			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 				graphics_object_name,command_data->graphics_object_list))
 			{
@@ -5281,7 +5277,7 @@ Executes a GFX CREATE SURFACES command.
 		discretization.number_in_xi2=4;
 		discretization.number_in_xi3=0;
 		exterior_flag=0;
-		face_number=0;
+		face_number=-1;
 		nurb=0;
 		reverse_normals=0;
 
@@ -5380,7 +5376,6 @@ Executes a GFX CREATE SURFACES command.
 			{
 				object_type = g_SURFACE;
 			}
-			face_number -= 2;
 			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 				graphics_object_name,command_data->graphics_object_list))
 			{

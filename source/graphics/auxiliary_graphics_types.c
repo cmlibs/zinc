@@ -64,7 +64,7 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Graphics_select_mode)
 int set_exterior(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data)
 /*******************************************************************************
-LAST MODIFIED : 13 July 1996
+LAST MODIFIED : 8 June 2004
 
 DESCRIPTION :
 A modifier function for setting exterior flag and face number.
@@ -88,47 +88,47 @@ A modifier function for setting exterior flag and face number.
 					/*???DB.  Only valid for cubes (not polygons) */
 					if (fuzzy_string_compare(current_token,"XI1_0"))
 					{
-						*value_address=2;
+						*value_address=0;
 						shift_Parse_state(state,1);
 					}
 					else
 					{
 						if (fuzzy_string_compare(current_token,"XI1_1"))
 						{
-							*value_address=3;
+							*value_address=1;
 							shift_Parse_state(state,1);
 						}
 						else
 						{
 							if (fuzzy_string_compare(current_token,"XI2_0"))
 							{
-								*value_address=4;
+								*value_address=2;
 								shift_Parse_state(state,1);
 							}
 							else
 							{
 								if (fuzzy_string_compare(current_token,"XI2_1"))
 								{
-									*value_address=5;
+									*value_address=3;
 									shift_Parse_state(state,1);
 								}
 								else
 								{
 									if (fuzzy_string_compare(current_token,"XI3_0"))
 									{
-										*value_address=6;
+										*value_address=4;
 										shift_Parse_state(state,1);
 									}
 									else
 									{
 										if (fuzzy_string_compare(current_token,"XI3_1"))
 										{
-											*value_address=7;
+											*value_address=5;
 											shift_Parse_state(state,1);
 										}
 										else
 										{
-											*value_address=1;
+											*value_address=-1;
 										}
 									}
 								}
