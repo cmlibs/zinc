@@ -253,7 +253,8 @@ to kill the process again.
 				/* Also kill in tracking_editor_kill_process */
 				sprintf(buff, "rsh %s kill -INT %d",
 					track_ed->remote_host, track_ed->process_ID);
-				
+				system(buff);
+
 				/* Add timeout callback so we can try again if process doesn't respond */
 				track_ed->kill_process_interval_id = XtAppAddTimeOut(
 					track_ed->user_interface->application_context, /*milliseconds*/5000,
