@@ -45,7 +45,7 @@ Also could have different conditions before and after curve.
 	CONTROL_CURVE_EXTEND_CYCLE,
 	CONTROL_CURVE_EXTEND_SWING,
 	CONTROL_CURVE_EXTEND_MODE_AFTER_LAST
-};
+}; /* enum Control_curve_extend_mode */
 
 enum Control_curve_type
 /*******************************************************************************
@@ -64,7 +64,7 @@ The type is not intended to be seen by the editor at this point
 	CONTROL_CURVE_TYPE_EMOTER_MODES,
 	CONTROL_CURVE_TYPE_EMOTER_COMBINE,
 	CONTROL_CURVE_TYPE_EMOTER_TIMEBASE
-};
+}; /* enum Control_curve_extend_mode */
 
 enum Control_curve_continuity_mode
 /*******************************************************************************
@@ -91,7 +91,6 @@ DECLARE_MANAGER_TYPES(Control_curve);
 Global functions
 ----------------
 */
-
 char **Control_curve_FE_basis_type_get_valid_strings(
 	int *number_of_valid_strings);
 /*******************************************************************************
@@ -706,5 +705,4 @@ temporary managers to use import_finite_element functions. Mesh is checked for
 appropriateness to curve usage.
 ???RC Later autorange
 ==============================================================================*/
-
 #endif /* !defined (CONTROL_CURVE_H) */
