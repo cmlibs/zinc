@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 27 January 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -2724,7 +2724,7 @@ Returns the position of <settings> in <list_of_settings>.
 int GT_element_settings_same_geometry(struct GT_element_settings *settings,
 	void *second_settings_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 27 January 2000
 
 DESCRIPTION :
 GT_element_settings list conditional function returning 1 iff the two
@@ -2744,9 +2744,13 @@ settings describe EXACTLY the same geometry.
 		/* for all graphic types */
 		if (return_code)
 		{
+			/* note: different if names are different */
 			return_code=
 				(settings->settings_type==second_settings->settings_type)&&
-				(settings->coordinate_field==second_settings->coordinate_field);
+				(settings->coordinate_field==second_settings->coordinate_field)&&
+				((((char *)NULL==settings->name)&&((char *)NULL==second_settings->name))
+					||((settings->name)&&(second_settings->name)&&
+						(0==strcmp(settings->name,second_settings->name))));
 		}
 		/* for 1-D and 2-D elements only */
 		if (return_code)
