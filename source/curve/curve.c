@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 26 July 2002
 
 DESCRIPTION :
 Definition of struct Control_curve used to describe time-value or x-y functions.
@@ -223,8 +223,8 @@ If <derivatives> is NULL, they will not be calculated.
 	ENTER(cc_calculate_element_field_values);
 	if (element&&field&&values)
 	{
-		if (calculate_FE_element_field_values(element,field,
-			((FE_value *)NULL != derivatives),/*time*/0,&element_field_values,
+		if (calculate_FE_element_field_values(element,field,/*time*/0,
+			((FE_value *)NULL != derivatives),&element_field_values,
 			/*top_level_element*/(struct FE_element *)NULL))
 		{
 			return_code=calculate_FE_element_field(-1,&element_field_values,&xi,
@@ -2840,7 +2840,7 @@ Returns the FE_basis_type used by the curve.
 int Control_curve_set_fe_basis_type(struct Control_curve *curve,
 	enum FE_basis_type fe_basis_type)
 /*******************************************************************************
-LAST MODIFIED : 15 November 1999
+LAST MODIFIED : 26 July 2002
 
 DESCRIPTION :
 Allows the basis to be changed for an existing curve. The elements and node
@@ -2863,7 +2863,7 @@ of information, and when changing to cubic Hermite the slopes will be smoothed.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Control_curve_set_number_of_components.  Could not convert curve");
+					"Control_curve_set_fe_basis_type.  Could not convert curve");
 				return_code=0;
 			}
 		}
@@ -4029,7 +4029,7 @@ Used for efficiently drawing the curve in the Curve editor.
 		if (element=cc_get_element(curve,element_no))
 		{
 			if (calculate_FE_element_field_values(element,curve->value_field,
-				/*calculate_derivatives*/0,/*time*/0,&element_field_values,
+				/*time*/0,/*calculate_derivatives*/0,&element_field_values,
 				/*top_level_element*/(struct FE_element *)NULL))
 			{
 				return_code=1;
@@ -4711,6 +4711,7 @@ DESCRIPTION :
 
 	ENTER(gfx_define_Control_curve);
 	USE_PARAMETER(dummy_to_be_modified);
+	return_code=0;
 	if (state)
 	{
 		if (control_curve_manager=
@@ -5235,7 +5236,6 @@ appropriateness to curve usage.
 	FILE *element_file,*node_file;
 	struct Control_curve *curve;
 	struct FE_element_field *element_field;
-	struct FE_time *fe_time;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 
@@ -5249,18 +5249,17 @@ appropriateness to curve usage.
 			data_group_manager=CREATE(MANAGER(GROUP(FE_node)))();
 			element_group_manager=CREATE(MANAGER(GROUP(FE_element)))();
 			node_group_manager=CREATE(MANAGER(GROUP(FE_node)))();
-			fe_time=ACCESS(FE_time)(CREATE(FE_time)());
 			ALLOCATE(file_name,char,strlen(file_name_stem)+14);
 			if (data_group_manager&&element_group_manager&&node_group_manager&&
-				file_name&&fe_time)
+				file_name)
 			{
 				return_code=1;
 				sprintf(file_name,"%s.curve.exnode",file_name_stem);
 				if (node_file=fopen(file_name,"r"))
 				{
-					if (!read_FE_node_group(node_file,curve->fe_field_manager,fe_time,
-						curve->node_manager,curve->element_manager,node_group_manager,
-						data_group_manager,element_group_manager))
+					if (!read_FE_node_group(node_file,curve->fe_field_manager,
+						(struct FE_time *)NULL,curve->node_manager,curve->element_manager,
+						node_group_manager,data_group_manager,element_group_manager))
 					{
 						return_code=0;
 					}
@@ -5274,9 +5273,9 @@ appropriateness to curve usage.
 				if (element_file=fopen(file_name,"r"))
 				{
 					if (!read_FE_element_group(element_file,curve->element_manager,
-						element_group_manager,curve->fe_field_manager,fe_time,
-						curve->node_manager,node_group_manager,data_group_manager,
-						curve->basis_manager))
+						element_group_manager,curve->fe_field_manager,
+						(struct FE_time *)NULL,curve->node_manager,node_group_manager,
+						data_group_manager,curve->basis_manager))
 					{
 						return_code=0;
 					}
@@ -5371,7 +5370,6 @@ appropriateness to curve usage.
 				DESTROY(Control_curve)(&curve);
 			}
 			DEALLOCATE(file_name);
-			DEACCESS(FE_time)(&fe_time);
 			DESTROY(MANAGER(GROUP(FE_node)))(&data_group_manager);
 			DESTROY(MANAGER(GROUP(FE_element)))(&element_group_manager);
 			DESTROY(MANAGER(GROUP(FE_node)))(&node_group_manager);
@@ -5391,4 +5389,3 @@ appropriateness to curve usage.
 
 	return (curve);
 } /* create_Control_curve_from_file */
-
