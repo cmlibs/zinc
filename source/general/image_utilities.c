@@ -33,7 +33,8 @@ Utilities for handling images.
 Module constants
 ----------------
 */
-
+#define MagickFalse 0
+#define MagickTrue 1
 #if ! defined (IMAGEMAGICK)
 
 #define TIFF_HI_LO 0x4D4D
