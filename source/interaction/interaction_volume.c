@@ -401,15 +401,15 @@ and will span between their centres.
 					/* handle case where pointer is back where it started */
 					if (0.0 >= size_x)
 					{
-						size_x = interaction_volume1->data.centred_box.size_x;
+						size_x = 0.0001*interaction_volume1->data.centred_box.size_x;
 					}
 					if (0.0 >= size_y)
 					{
-						size_y = interaction_volume1->data.centred_box.size_y;
+						size_y = 0.0001*interaction_volume1->data.centred_box.size_y;
 					}
 					if (0.0 >= size_z)
 					{
-						size_z = interaction_volume1->data.centred_box.size_z;
+						size_z = 0.0001*interaction_volume1->data.centred_box.size_z;
 					}
 					interaction_volume=create_Interaction_volume_centred_box(
 						centre_x,centre_y,centre_z,size_x,size_y,size_z);
@@ -452,11 +452,11 @@ and will span between their centres.
 						/* handle case where pointer is back where it started */
 						if (0.0 >= size_x)
 						{
-							size_x = interaction_volume1->data.ray_frustum.size_x;
+							size_x = 0.0001*interaction_volume1->data.ray_frustum.size_x;
 						}
 						if (0.0 >= size_y)
 						{
-							size_y = interaction_volume1->data.ray_frustum.size_y;
+							size_y = 0.0001*interaction_volume1->data.ray_frustum.size_y;
 						}
 						interaction_volume=create_Interaction_volume_ray_frustum(
 							interaction_volume1->data.ray_frustum.modelview_matrix,
