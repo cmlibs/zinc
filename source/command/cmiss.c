@@ -4744,7 +4744,6 @@ If the material already exists, then behaves like gfx modify material.
 } /* gfx_create_material */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_morph(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -4778,17 +4777,10 @@ graphics objects, and produces a new object
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
-			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
-			{
-				strcpy(graphics_object_name,default_name);
-			}
-			else
-			{
-				graphics_object_name=(char *)NULL;
-			}
-			proportion=0.0;
-			initial=(gtObject *)NULL;
-			final=(gtObject *)NULL;
+			graphics_object_name = duplicate_string(default_name);
+			proportion = 0.0;
+			initial = (gtObject *)NULL;
+			final = (gtObject *)NULL;
 			(option_table[0]).to_be_modified= &graphics_object_name;
 			(option_table[1]).to_be_modified= &final;
 			(option_table[1]).user_data= (void *)command_data->graphics_object_list;
@@ -4853,7 +4845,6 @@ graphics objects, and produces a new object
 
 	return (return_code);
 } /* gfx_create_morph */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if defined (OLD_CODE)
 #if !defined (WINDOWS_DEV_FLAG)
@@ -24122,10 +24113,11 @@ Executes a CELL SET command.
 } /* execute_command_cell_set() */
 #endif /* defined (CELL) */
 
+#if defined (CELL)
 static int execute_command_cell(struct Parse_state *state,
 	void *prompt_void,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 06 July 2000
+LAST MODIFIED : 28 March 2001
 
 DESCRIPTION :
 Executes a CELL command.
@@ -24140,7 +24132,6 @@ Executes a CELL command.
 	if (state)
 	{
     option_table = CREATE(Option_table)();
-#if defined (CELL)
     Option_table_add_entry(option_table,"open",NULL,command_data_void,
       execute_command_cell_open);
     Option_table_add_entry(option_table,"close",NULL,command_data_void,
@@ -24153,9 +24144,6 @@ Executes a CELL command.
       execute_command_cell_read);
     return_code = Option_table_parse(option_table,state);
     DESTROY(Option_table)(&option_table);
-#else
-    return_code = 1;
-#endif /* defined (CELL) */
 	}
 	else
 	{
@@ -24166,6 +24154,7 @@ Executes a CELL command.
 
 	return (return_code);
 } /* execute_command_cell */
+#endif /* defined (CELL) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_assign(struct Parse_state *state,
@@ -25388,7 +25377,7 @@ Global functions
 void execute_command(char *command_string,void *command_data_void, int *quit,
   int *error)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 March 2001
 
 DESCRIPTION:
 ==============================================================================*/
@@ -25402,7 +25391,9 @@ DESCRIPTION:
 	static struct Modifier_entry option_table[]=
 	{
 		{"assign","assign",NULL,execute_command_assign},
+#if defined (CELL)
 		{"cell","cell",NULL,execute_command_cell},
+#endif /* defined (CELL) */
 		{"command_window","command_window",NULL,modify_Command_window},
 		{"create","create",NULL,execute_command_create},
 		{"fem","fem",NULL,execute_command_cm},
@@ -25461,9 +25452,11 @@ DESCRIPTION:
 					/* assign */
 					(option_table[i]).user_data=command_data_void;
 					i++;
+#if defined (CELL)
 					/* cell */
 					(option_table[i]).user_data=command_data_void;
 					i++;
+#endif /* defined (CELL) */
 					/* command_window */
 					(option_table[i]).user_data=command_data->command_window;
 					i++;
