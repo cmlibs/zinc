@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -27,6 +27,7 @@ December 1997. Created MANAGER(Scene).
 #include "graphics/light.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
+#include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
 #include "time/time_keeper.h"
@@ -116,7 +117,7 @@ DECLARE_MANAGER_TYPES(Scene);
 
 struct Modify_scene_data
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Structure to pass to modify_Scene.
@@ -134,6 +135,7 @@ Structure to pass to modify_Scene.
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct MANAGER(FE_node) *data_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
+	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *node_selection;
 	struct User_interface *user_interface;
@@ -583,11 +585,12 @@ int Scene_set_graphical_element_mode(struct Scene *scene,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Sets the mode controlling how graphical element groups are displayed in the

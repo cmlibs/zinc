@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 24 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -26,6 +26,7 @@ Main program for unemap.  Based on cmgui.
 #include "graphics/material.h"
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
+#include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -246,7 +247,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 24 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Main program for unemap
@@ -264,6 +265,7 @@ Main program for unemap
 #if defined (NOT_ACQUISITION_ONLY)
 	struct Unemap_package *unemap_package;
 #if defined (UNEMAP_USE_NODES)
+	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *node_selection;
 	struct MANAGER(Control_curve) *control_curve_manager;
@@ -585,6 +587,8 @@ Main program for unemap
 		graphics_window_manager=CREATE_MANAGER(Graphics_window)();
 
 		/* global list of selected objects */
+		element_point_ranges_selection=
+			CREATE(Element_point_ranges_selection)();
 		element_selection=CREATE(FE_element_selection)();
 		node_selection=CREATE(FE_node_selection)();
 
@@ -602,8 +606,8 @@ Main program for unemap
 		glyph_list=CREATE(LIST(GT_object))();
 		unemap_package=CREATE(Unemap_package)(fe_field_manager,
 			element_group_manager,node_manager,data_group_manager,node_group_manager,
-			fe_basis_manager,element_manager,element_selection,node_selection,
-			computed_field_manager,
+			fe_basis_manager,element_manager,element_point_ranges_selection,
+			element_selection,node_selection,computed_field_manager,
 			graphics_window_manager,texture_manager,scene_manager,light_model_manager,
 			light_manager,spectrum_manager,graphical_material_manager,data_manager,
 			glyph_list);
@@ -728,6 +732,11 @@ Main program for unemap
 				application_main_loop is not infinite */
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_NODES )
+			DESTROY(FE_node_selection)(&(command_data.node_selection));
+			DESTROY(FE_element_selection)(&(command_data.element_selection));
+			DESTROY(Element_point_ranges_selection)(
+				&(command_data.element_point_ranges_selection));
+
 			DESTROY(Unemap_package)(&unemap_package);	
 			DESTROY(MANAGER(FE_field))(&fe_field_manager);
 			DESTROY(MANAGER(GROUP(FE_node)))(&node_group_manager);

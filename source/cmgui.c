@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 27 March 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -48,6 +48,7 @@ DESCRIPTION :
 #include "io_devices/conversion.h"
 #include "node/graphical_node_editor.h"
 #endif /* !defined (WINDOWS_DEV_FLAG) */
+#include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
 #if defined (OLD_CODE)
@@ -980,6 +981,8 @@ Main program for the CMISS Graphical User Interface
 	}
 
 	/* global list of selected objects */
+	command_data.element_point_ranges_selection=
+		CREATE(Element_point_ranges_selection)();
 	command_data.element_selection=CREATE(FE_element_selection)();
 	command_data.node_selection=CREATE(FE_node_selection)();
 
@@ -1003,6 +1006,7 @@ Main program for the CMISS Graphical User Interface
 				command_data.element_group_manager,command_data.fe_field_manager,
 				command_data.node_manager,command_data.node_group_manager,
 				command_data.data_manager,command_data.data_group_manager,
+				command_data.element_point_ranges_selection,
 				command_data.element_selection,command_data.node_selection,
 				command_data.user_interface);
 			/*???RC.  May want to use functions to modify default_scene here */
@@ -1025,9 +1029,9 @@ Main program for the CMISS Graphical User Interface
 		command_data.fe_field_manager,command_data.element_group_manager,
 		command_data.node_manager,command_data.data_group_manager,
 		command_data.node_group_manager,command_data.basis_manager,
-		command_data.element_manager,command_data.element_selection,
-		command_data.node_selection,computed_field_manager,
-		command_data.graphics_window_manager,
+		command_data.element_manager,command_data.element_point_ranges_selection,
+		command_data.element_selection,command_data.node_selection,
+		computed_field_manager,command_data.graphics_window_manager,
 		command_data.texture_manager,command_data.scene_manager,
 		command_data.light_model_manager,command_data.light_manager,
 		command_data.spectrum_manager,command_data.graphical_material_manager,
@@ -1764,6 +1768,8 @@ Main program for the CMISS Graphical User Interface
 
 				DESTROY(FE_node_selection)(&(command_data.node_selection));
 				DESTROY(FE_element_selection)(&(command_data.element_selection));
+				DESTROY(Element_point_ranges_selection)(
+					&(command_data.element_point_ranges_selection));
 
 				DESTROY(LIST(GT_object))(&command_data.graphics_object_list);
 				DESTROY(LIST(GT_object))(&command_data.glyph_list);

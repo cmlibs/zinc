@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 22 March 2000
+XCOMM LAST MODIFIED : 27 March 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -761,6 +761,7 @@ SELECT_SRCS = \
 	select/select_private.c \
 	select/select_spectrum.c
 SELECTION_SRCS = \
+	selection/element_point_ranges_selection.c \
 	selection/element_selection.c \
 	selection/node_selection.c
 SLIDER_SRCS = \

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -96,7 +96,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Scene_object);
 
 struct Scene
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Stores the collections of objects that make up a 3-D graphical model.
@@ -133,6 +133,7 @@ Stores the collections of objects that make up a 3-D graphical model.
 	void *data_group_manager_callback_id;
 
 	/* global stores of selected objects */
+	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *node_selection;
 
@@ -1282,7 +1283,7 @@ scene_object.
 static int Scene_add_graphical_finite_element(struct Scene *scene,
 	struct GROUP(FE_element) *element_group)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Adds a graphical <element_group> to the <scene> with some default settings.
@@ -1327,8 +1328,8 @@ Adds a graphical <element_group> to the <scene> with some default settings.
 				if (node_group&&data_group)
 				{
 					if (gt_element_group=CREATE(GT_element_group)(element_group,
-						node_group,data_group,scene->element_selection,
-						scene->node_selection))
+						node_group,data_group,scene->element_point_ranges_selection,
+						scene->element_selection,scene->node_selection))
 					{
 						if (!(scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
 							Scene_object_has_name, (void *)element_group_name,
@@ -4439,7 +4440,7 @@ from the default versions of these functions.
 
 int DESTROY(Scene)(struct Scene **scene_address)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Closes the scene and disposes of the scene data structure.
@@ -4465,6 +4466,7 @@ Closes the scene and disposes of the scene data structure.
 				(struct MANAGER(GROUP(FE_node)) *)NULL,
 				(struct MANAGER(FE_node) *)NULL,
 				(struct MANAGER(GROUP(FE_node)) *)NULL,
+				(struct Element_point_ranges_selection *)NULL,
 				(struct FE_element_selection *)NULL,
 				(struct FE_node_selection *)NULL,
 				(struct User_interface *)NULL);
@@ -4839,11 +4841,12 @@ int Scene_set_graphical_element_mode(struct Scene *scene,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Sets the mode controlling how graphical element groups are displayed in the
@@ -4859,7 +4862,8 @@ material and spectrum.
 	if (scene&&((GRAPHICAL_ELEMENT_NONE == graphical_element_mode)||(
 		computed_field_package&&element_manager&&element_group_manager&&
 		fe_field_manager&&node_manager&&node_group_manager&&data_manager&&
-		data_group_manager&&element_selection&&node_selection)))
+		data_group_manager&&element_point_ranges_selection&&element_selection&&
+		node_selection)))
 	{
 		return_code=1;
 		if (GRAPHICAL_ELEMENT_NONE == graphical_element_mode)
@@ -4923,6 +4927,8 @@ material and spectrum.
 			scene->node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
 			scene->data_manager=(struct MANAGER(FE_node) *)NULL;
 			scene->data_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
+			scene->element_point_ranges_selection=
+				(struct Element_point_ranges_selection *)NULL;
 			scene->element_selection=(struct FE_element_selection *)NULL;
 			scene->node_selection=(struct FE_node_selection *)NULL;
 			scene->user_interface=(struct User_interface *)NULL;
@@ -4954,6 +4960,8 @@ material and spectrum.
 						scene->node_group_manager=node_group_manager;
 						scene->data_manager=data_manager;
 						scene->data_group_manager=data_group_manager;
+						scene->element_point_ranges_selection=
+							element_point_ranges_selection;
 						scene->element_selection=element_selection;
 						scene->node_selection=node_selection;
 						scene->user_interface=user_interface;
@@ -5122,7 +5130,9 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 			source->element_group_manager,source->fe_field_manager,
 			source->node_manager,source->node_group_manager,
 			source->data_manager,source->data_group_manager,
-			source->element_selection,source->node_selection,source->user_interface);
+			source->element_point_ranges_selection,
+			source->element_selection,source->node_selection,
+			source->user_interface);
 		/* copy list of lights to destination */
 		/* duplicate each scene_object in source and put in destination list */
 		if ((temp_list_of_lights=CREATE(LIST(Light))())&&
@@ -8085,7 +8095,7 @@ work on these sub_elements.  These created scenes are not added to the manager.
 int modify_Scene(struct Parse_state *state,void *scene_void,
 	void *modify_scene_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Parser commands for modifying scenes - lighting, etc.
@@ -8152,6 +8162,7 @@ Parser commands for modifying scenes - lighting, etc.
 								modify_scene_data->node_group_manager,
 								modify_scene_data->data_manager,
 								modify_scene_data->data_group_manager,
+								modify_scene_data->element_point_ranges_selection,
 								modify_scene_data->element_selection,
 								modify_scene_data->node_selection,
 								modify_scene_data->user_interface);

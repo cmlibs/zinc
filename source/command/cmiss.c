@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 27 March 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -5136,6 +5136,8 @@ Executes a GFX CREATE SCENE command.
 				modify_scene_data.node_group_manager=command_data->node_group_manager;
 				modify_scene_data.data_manager=command_data->data_manager;
 				modify_scene_data.data_group_manager=command_data->data_group_manager;
+				modify_scene_data.element_point_ranges_selection=
+					command_data->element_point_ranges_selection;
 				modify_scene_data.element_selection=command_data->element_selection;
 				modify_scene_data.node_selection=command_data->node_selection;
 				modify_scene_data.user_interface=command_data->user_interface;
@@ -7505,6 +7507,7 @@ Executes a GFX CREATE TRACKING_EDITOR command.
 					command_data->node_group_manager,
 					command_data->data_manager,
 					command_data->data_group_manager,
+					command_data->element_point_ranges_selection,
 					command_data->element_selection,
 					command_data->node_selection,
 					command_data->scene_manager,
@@ -15078,6 +15081,8 @@ Executes a GFX MODIFY command.
 				modify_scene_data.node_group_manager=command_data->node_group_manager;
 				modify_scene_data.data_manager=command_data->data_manager;
 				modify_scene_data.data_group_manager=command_data->data_group_manager;
+				modify_scene_data.element_point_ranges_selection=
+					command_data->element_point_ranges_selection;
 				modify_scene_data.element_selection=command_data->element_selection;
 				modify_scene_data.node_selection=command_data->node_selection;
 				modify_scene_data.user_interface=command_data->user_interface;
@@ -16243,7 +16248,7 @@ Executes a GFX READ command.
 static int execute_command_gfx_select(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Executes a GFX SELECT command.
@@ -16254,6 +16259,7 @@ Executes a GFX SELECT command.
 		total_number_in_ranges;
 	struct CM_element_information cm;
 	struct Cmiss_command_data *command_data;
+	struct Element_point_ranges *element_point_ranges;
 	struct FE_element *element;
 	struct FE_node *node;
 	struct Multi_range *element_ranges,*face_ranges,*line_ranges,*multi_range,
@@ -16270,6 +16276,7 @@ Executes a GFX SELECT command.
 			face_ranges=CREATE(Multi_range)();
 			line_ranges=CREATE(Multi_range)();
 			node_ranges=CREATE(Multi_range)();
+			element_point_ranges=(struct Element_point_ranges *)NULL;
 			option_table=CREATE(Option_table)();
 			Option_table_add_entry(option_table,"elements",element_ranges,
 				(void *)NULL,set_Multi_range);
@@ -16279,8 +16286,16 @@ Executes a GFX SELECT command.
 				(void *)NULL,set_Multi_range);
 			Option_table_add_entry(option_table,"nodes",node_ranges,
 				(void *)NULL,set_Multi_range);
+			Option_table_add_entry(option_table,"points",&element_point_ranges,
+				(void *)command_data->element_manager,set_Element_point_ranges);
 			if (return_code=Option_table_multi_parse(option_table,state))
 			{
+				/* element_points */
+				if (element_point_ranges)
+				{
+					Element_point_ranges_selection_select_element_point_ranges(
+						command_data->element_point_ranges_selection,element_point_ranges);
+				}
 				/* elements */
 				if (0<(total_number_in_ranges=
 					Multi_range_get_total_number_in_ranges(element_ranges)))
@@ -16501,6 +16516,10 @@ Executes a GFX SELECT command.
 			DESTROY(Multi_range)(&line_ranges);
 			DESTROY(Multi_range)(&face_ranges);
 			DESTROY(Multi_range)(&element_ranges);
+			if (element_point_ranges)
+			{
+				DESTROY(Element_point_ranges)(&element_point_ranges);
+			}
 		}
 		else
 		{
@@ -16522,7 +16541,7 @@ Executes a GFX SELECT command.
 static int execute_command_gfx_unselect(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Executes a GFX SELECT command.
@@ -16533,6 +16552,7 @@ Executes a GFX SELECT command.
 		total_number_in_ranges;
 	struct CM_element_information cm;
 	struct Cmiss_command_data *command_data;
+	struct Element_point_ranges *element_point_ranges;
 	struct FE_element *element;
 	struct FE_node *node;
 	struct Multi_range *element_ranges,*face_ranges,*line_ranges,*multi_range,
@@ -16549,6 +16569,7 @@ Executes a GFX SELECT command.
 			face_ranges=CREATE(Multi_range)();
 			line_ranges=CREATE(Multi_range)();
 			node_ranges=CREATE(Multi_range)();
+			element_point_ranges=(struct Element_point_ranges *)NULL;
 			option_table=CREATE(Option_table)();
 			Option_table_add_entry(option_table,"elements",element_ranges,
 				(void *)NULL,set_Multi_range);
@@ -16558,8 +16579,16 @@ Executes a GFX SELECT command.
 				(void *)NULL,set_Multi_range);
 			Option_table_add_entry(option_table,"nodes",node_ranges,
 				(void *)NULL,set_Multi_range);
+			Option_table_add_entry(option_table,"points",&element_point_ranges,
+				(void *)command_data->element_manager,set_Element_point_ranges);
 			if (return_code=Option_table_multi_parse(option_table,state))
 			{
+				/* element_points */
+				if (element_point_ranges)
+				{
+					Element_point_ranges_selection_unselect_element_point_ranges(
+						command_data->element_point_ranges_selection,element_point_ranges);
+				}
 				/* elements */
 				if (0<(total_number_in_ranges=
 					Multi_range_get_total_number_in_ranges(element_ranges)))

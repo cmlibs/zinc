@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tracking_editor_dialog.c
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Source code for the tracking editor dialog box.
@@ -143,6 +143,7 @@ DESCRIPTION :
 	void *node_group_manager_callback_id;
 	struct MANAGER(FE_node) *data_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
+	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *node_selection;
 	struct MANAGER(Scene) *scene_manager;
@@ -2534,6 +2535,7 @@ Reads a movie file into the tracking editor.
 				track_ed->default_graphical_material,track_ed->light_manager,
 				track_ed->node_manager,track_ed->node_group_manager,
 				track_ed->data_manager,track_ed->data_group_manager,
+				track_ed->element_point_ranges_selection,
 				track_ed->element_selection,track_ed->node_selection,
 				track_ed->scene_manager,track_ed->default_scene,
 				track_ed->spectrum_manager,track_ed->default_spectrum,
@@ -4948,6 +4950,7 @@ int open_tracking_editor_dialog(struct Tracking_editor_dialog **address,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
 	struct MANAGER(Scene) *scene_manager,
@@ -4957,7 +4960,7 @@ int open_tracking_editor_dialog(struct Tracking_editor_dialog **address,
 	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5041,7 +5044,7 @@ DESCRIPTION :
 		graphics_window_manager&&light_manager&&default_light&&
 		light_model_manager&&default_light_model&&
 		node_manager&&node_group_manager&&data_manager&&data_group_manager&&
-		element_selection&&node_selection&&
+		element_point_ranges_selection&&element_selection&&node_selection&&
 		scene_manager&&default_scene&&spectrum_manager&&default_spectrum&&
 		texture_manager&&user_interface)
 	{
@@ -5086,6 +5089,8 @@ DESCRIPTION :
 					track_ed->node_group_manager=node_group_manager;
 					track_ed->data_manager=data_manager;
 					track_ed->data_group_manager=data_group_manager;
+					track_ed->element_point_ranges_selection=
+						element_point_ranges_selection;
 					track_ed->element_selection=element_selection;
 					track_ed->node_selection=node_selection;
 					track_ed->scene_manager=scene_manager;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 17 March 2000
+LAST MODIFIED : 27 March 2000
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -79,6 +79,7 @@ DESCRIPTION :
 	struct Prompt_window *prompt_window;
 	struct Projection_window *projection_window;
 	/* global list of selected objects */
+	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *node_selection;
 	struct Spectrum *default_spectrum;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.h
 
-LAST MODIFIED : 24 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Graphical element group data structure.
@@ -11,6 +11,7 @@ Graphical element group data structure.
 
 #include "finite_element/finite_element.h"
 #include "graphics/element_group_settings.h"
+#include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
 
@@ -55,10 +56,11 @@ PROTOTYPE_OBJECT_FUNCTIONS(GT_element_group);
 struct GT_element_group *CREATE(GT_element_group)(
 	struct GROUP(FE_element) *element_group,struct GROUP(FE_node) *node_group,
 	struct GROUP(FE_node) *data_group,
+	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection);
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 28 March 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphical finite element group for
@@ -70,8 +72,8 @@ The GT_element_group does not access the element group, but it does access the
 node and data groups. It must therefore be destroyed in response to element
 group manager delete messages - currently handled by a Scene - which must
 precede removing the node and data groups from their respective managers.
-Callbacks from the selections ensure objects in this group are automatically
-highlighted in the graphics.
+If supplied, callbacks are requested from the <element_selection> and
+<node_selection> to enable automatic highlighting of selected graphics.
 ==============================================================================*/
 
 struct GT_element_group *create_editor_copy_GT_element_group(

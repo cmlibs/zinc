@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 22 March 2000
+XCOMM LAST MODIFIED : 27 March 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -460,6 +460,7 @@ POSITION_SRCS = \
 	io_devices/input_module.c \
 	io_devices/matrix.c
 SELECTION_SRCS = \
+	selection/element_point_ranges_selection.c \
 	selection/element_selection.c \
 	selection/node_selection.c
 THREE_D_DRAWING_SRCS = \
