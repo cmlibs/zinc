@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : debug.c
 
-LAST MODIFIED : 10 June 1999
+LAST MODIFIED : 6 January 2000
 
 DESCRIPTION :
 Function definitions for debugging.
@@ -293,25 +293,27 @@ Wrapper for reallocate which keeps track of allocated memory.
 	return (result);
 } /* reallocate */
 
-int list_memory(int count, int show_pointers, int increment_counter)
+int list_memory(int count,int show_pointers,int increment_counter)
 /*******************************************************************************
-LAST MODIFIED : 20 October 1999
+LAST MODIFIED : 6 January 2000
 
 DESCRIPTION :
-Writes out memory blocks currently allocated.  Each time this is called an internal
-counter is incremented and all subsequent ALLOCATIONS marked with this new
-count_number.  i.e. To find a leak run till before the leak (all these allocations
-will be marked count 1), call list_memory increment, 
-do the leaky thing several times (these have count 2), call list_memory increment, 
-do the leaky thing once (so that any old stuff with count 2 should have been deallocated 
-and recreated with count 3) and then list_memory 2.  This should list no memory.
-If <count_number> is zero all the memory allocated is written out.
-If <count_number> is negative no memory is written out, just the total.
-If <count_number> is positive only the memory with that count is written out.
+Writes out memory blocks currently allocated.  Each time this is called an
+internal counter is incremented and all subsequent ALLOCATIONS marked with this
+new <count>.  i.e. To find a leak run till before the leak (all these
+allocations will be marked count 1), call list_memory increment, do the leaky
+thing several times (these have count 2), call list_memory increment, do the
+leaky thing once (so that any old stuff with count 2 should have been
+deallocated and recreated with count 3) and then list_memory 2.  This should
+list no memory.
+If <count> is zero all the memory allocated is written out.
+If <count> is negative no memory is written out, just the total.
+If <count> is positive only the memory with that count is written out.
+<show_pointers> toggles the output format to include the actual memory addresses
+or not.  (It isn't useful for testing and output to record the changing
+addresses).
 ???DB.  printf used because want to make sure that no allocation is going on
 	while printing.
-<show_pointers> toggles the output format to include the actual memory addresses
-or not.  (It isn't useful for testing and output to record the changing addresses).
 ==============================================================================*/
 {
 	int return_code;
@@ -351,7 +353,6 @@ or not.  (It isn't useful for testing and output to record the changing addresse
 				if (!count||(list->count==count))
 				{
 					printf("%s size %d\n",list->filename_line,list->size);
-					count_total += list->size;
 				}
 				count_total[list->count] += list->size;
 				total += list->size;
