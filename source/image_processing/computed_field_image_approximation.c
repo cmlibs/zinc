@@ -566,7 +566,7 @@ DESCRIPTION : Implement image approximation based on variational model.
 			}
 			for (i = 0; i < storage_size / image->depth; i++)
 			{
-			        //u[i] += dot; /* When to approximate an image using  this code */
+			        /*u[i] += dot;*/ /* When to approximate an image using  this code */
 			        if (u[i] < 0.0)
 				{
 				        u[i] = 0.0;
